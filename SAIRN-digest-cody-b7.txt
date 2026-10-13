@@ -1,23 +1,28 @@
-STATUS: b7 CLOSED, all six items. On origin/main; every commit tested as an
-ancestor one at a time. Suites 25/10/15/10/8 arms, all exit 0, 0 unproven.
-tooling_inventory, defect_register, external_file_index and unproven_arm_check
-all exit 0. NO api/ file edited; settings.json never committed; no hook
-restored; SAIRN_SEED_GATE unused.
+STATUS: b7 LANDED, NOT closed -- item 4 never ran. On origin/main, every commit
+tested as an ancestor one at a time. Suites 25/10/15/10/8 arms, all exit 0, 0
+unproven; tooling_inventory, external_file_index and unproven_arm_check exit 0.
+Four gate refusals, all repaired at their cause. No api/ edit, no hook restored,
+settings.json never committed, SAIRN_SEED_GATE unused.
 
 DECISION-NEEDED:
-1. Michael: should `billing` read a MAR? ALF_FAMILY_READ_ROLES inherits it onto
-   a clinical record. Role vocabulary, not a code fix.
+1. SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are BOTH missing, so item 4's
+   --check-only exited 2 and --write never ran. Guardian Check 29 unsatisfied.
+2. Should `billing` read a MAR? ALF_FAMILY_READ_ROLES inherits it onto a
+   clinical record. Role vocabulary, not a code fix.
+3. Something other than me edited files in this clone, repeatedly, including
+   this digest. Report section 0. Observed, not diagnosed.
 
-CHANGED: 1D 2D-partial 3D 4D 5D 6D
+CHANGED: 1D 2-PARTIAL 3D 4-STOPPED 5D 6D
 
-EVIDENCE-path: SAIRN-report-cody-b7.txt sections 1-9; handoff
-SAIRN-handoff-cody-b7.md
+EVIDENCE-path: SAIRN-report-cody-b7.txt sections 1-9.
+<scratch>/dcd1868a/scratchpad/b7/. Handoff docs/SAIRN-handoff-cody-b7.md.
 
-UNVERIFIED: no live endpoint, no database. My four test files are traced to no
-requirement (204 untraced, up from 200). 12 CONTRADICTED scrutiny rows,
-pre-existing. hank's 2026-09-27 Tier A record is UNRESEATABLE here.
+UNVERIFIED: no live endpoint, no database. 19 seam pairs routed, not closed.
+Four WEAKENING flags resolved by their own author, none signed off. A4
+unimplemented. One Tier A record's client half unreviewed. hank's 2026-09-27
+record is UNRESEATABLE from here. 12 CONTRADICTED scrutiny rows, pre-existing.
 
-NEXT: hank re-seats that record in his own clone; cc discharges 2026-10-12; any
-non-cody session confirms the WEAKENING false positive.
+NEXT: release claim cody-1791888490, 9.94h past expiry. hank re-seats 2026-09-27
+in his own clone; cc discharges 2026-10-12 and takes the 19 seam pairs.
 
-CONTEXT 2%
+CONTEXT 38% used (382k of the 1M window, from the session token budget)
