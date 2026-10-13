@@ -26414,7 +26414,7 @@
       "recurrence_open": "Five Tier A SAIRNfreedom resources remain ungated by decision, not oversight: sf_district_imports (register:353), sf_events (:358), sf_permit_flags (:367), sf_products (:368), sf_vehicles (:380). The gate adds no ROLE check for any of the four gated here, so any signed-in session of any role can still write them. NOT PROVEN LIVE -- no bare-key call was driven against a real SAIRNfreedom licence; the evidence is the register letters, the two-list derivation and the client write sites read at this HEAD."
     },
     {
-      "commit": "0927eb546b1d",
+      "commit": "cc6d3c525262",
       "date": "2026-10-12",
       "subject": "fix(register feed gate): the THIRD gate carrying D9's one-sentence-for-every-cause -- and the cause it names is the one that actually happens",
       "files": [
@@ -26660,7 +26660,7 @@
       "factors_unknown_reason": "one shared mechanism in two files; recorded as one defect naming both rather than as structured factors"
     },
     {
-      "commit": "364257bb5949",
+      "commit": "9d435023f5c7",
       "date": "2026-10-12",
       "subject": "feat(defect register): superseded_by had a validator and no writer, so four pairs sat unresolved for five days -- and --check was advertising work --reseat refuses",
       "files": [
