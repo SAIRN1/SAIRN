@@ -1,0 +1,471 @@
+REPORT fourth b11
+
+BATCH b11 -- 2026-10-13
+EVERY COUNT, RANGE AND TOTAL BELOW NAMES THE COMMAND THAT PRODUCED IT. That is
+this batch's own item 4, applied to this report first rather than promised for
+the next one.
+
+
+0. STATE
+
+    HEAD                      083bc809
+      CMD git rev-parse --short=8 HEAD
+    origin/main               083bc809
+      CMD git rev-parse --short=8 origin/main
+    behind / ahead            0  /  0
+      CMD git rev-list --left-right --count origin/main...HEAD
+    working tree              clean (tracked)
+      CMD git status --porcelain
+    b11 pushes                a072c99d..708222c2   1 commit   the work
+                              4c331874..083bc809   1 commit   the handoff
+      CMD git rev-list --count <range>
+    push forced?              NO. Two attempts lost a race to another clone
+                              (non-fast-forward), each fetched and rebased and
+                              landed on the next attempt. No --force and no
+                              --force-with-lease, either of which would have
+                              discarded another clone's work.
+    SAIRN_SEED_GATE=off       NOT USED, in any form
+    .claude/settings.json     NOT COMMITTED; hooks 0 groups, 0 entries
+      CMD python -c "json.load(io.open('.claude/settings.json'))['hooks']"
+    files edited under tools/  0 -- item 2 is route-only, by instruction
+
+The push carrying this report is a third range and is not predicted here.
+
+
+1. ITEM 1 -- THE 36 UNDRIVEN SUITES, COMMITTED AS A GENERATED DOCUMENT
+
+    docs/2026-10-13-fourth-b10-undriven-suites.md
+      CMD python scratchpad/gen_undriven_doc.py
+
+NOT ONE FIGURE IN IT IS TYPED. The generator reads three inputs --
+scratchpad/undriven.txt (the derived list), scratchpad/owner_map.log (the
+derived totals) and the committed
+docs/2026-10-13-fourth-b10-red-suite-owners.tsv -- and EMBEDS THE FIRST TWO
+VERBATIM in the output, so a reader re-derives every count without trusting the
+page.
+
+AND IT REFUSES TO WRITE AT ALL IF ITS INPUTS DISAGREE. The generator asserts
+that the name set in undriven.txt and the name set of TSV rows marked
+b9_driven=NO are IDENTICAL before it emits a line. A stale input cannot produce
+a confident page. That assertion is the only reason the document is worth more
+than the sentence it replaces -- and it is the strongest form of item 4's rule:
+a figure that cannot be produced unless two independent inputs agree beats a
+figure with a command beside it.
+
+    undriven rows        : 36
+    list/TSV cross-check : IDENTICAL (36 names)
+    by owner             : hank 5, cody 79
+    undriven by owner    : cody 36
+    driven b9 states     : RED 43, COULD NOT RUN 5
+    entries with no why  : 21
+      CMD all six lines above: python scratchpad/gen_undriven_doc.py
+
+THE ASSIGNMENT, by the directory rule on each suite's own path:
+
+    owner    directory   entries   NEVER DRIVEN
+    hank     api/              5             0
+    cody     tests/           79            36
+    cc       tools/            0             0
+    fourth   docs/             0             0
+    total                     84            36
+
+cc AND fourth ARE ZERO AND THAT IS A MEASUREMENT, not an empty section. It is
+also NOT a statement that tools/ or docs/ is healthy: it is a statement about
+what this register COVERS, and a suite nobody has ever driven cannot be red in
+it.
+
+NOT-RUN IS NOT RED AND IT IS NOT GREEN. All 36 are in the register because
+something once failed and none has been driven since, so the honest label is
+the third state. A sweep reporting them as still-red would be claiming a
+measurement nobody took.
+
+cody's EXACT NEXT STEP, in the document: drive them IN A WORKTREE, not the live
+clone -- several write when run. 180s x 36 is up to 1.8 hours, which is why b9
+and b10 both stated a denominator instead of half-sweeping. One JSON record per
+suite with its real exit code, then exit 0 moves the entry OUT of `entries`,
+and exit 2, exit 3 or a timeout MUST NOT -- b9 found 5 in that third state and
+left all 5, because moving one would quietly declare a red suite fixed.
+
+hank's EXACT NEXT STEP: his 5 are *.test.js under api/, a node-runner question;
+all 5 were already driven alone in b9 and came back with a real exit code, so
+they are confirmed red rather than stale rows.
+
+
+2. ITEM 2 -- THE 4th UNFETCHED-BASE INSTANCE, AND A RULING INSTEAD OF A THIRD ROUTING
+
+tools/ IS cc's DIRECTORY AND NOTHING UNDER IT WAS EDITED BY THIS BATCH.
+
+THE SITE, file:line:
+
+    tools/hover_auditor_scope_gate.py, in changed_outgoing() declared at :351
+      :402    rng = lsha if rsha == ZERO else '%s..%s' % (rsha, lsha)
+      :407    code, out, err = git('diff', '--name-only', rng)
+      :409    return None, 'could not read the outgoing range %s: %s' % (rng, ...)
+
+:402 builds the range from rsha -- the REMOTE's sha, read off git's own pre-push
+stdin line -- with no existence test, and :409 reports the failure as a property
+of the RANGE. With five sessions pushing one branch that sha is routinely an
+object this clone has never fetched: the ordinary case, not an anomaly.
+
+THE FOURTH INSTANCE OF A SHAPE FIXED THREE TIMES, all on origin/main:
+    tools/register_feed_gate.py:747   ac9d47d8   refused this clone TWICE,
+                                                 eight days apart
+    tools/copy_exactly_gate.py        55777a74   found by it refusing the very
+                                                 next push attempt
+    tools/sairn_push_gate_hook.py     9c36aa7c   a FALSE FINDING, not a refusal:
+                                                 NO OWNER: 4 over four
+                                                 pre-existing shared tools
+
+THE ROUTING IS DELIBERATELY NOT A THIRD COPY OF THE PATCH.
+docs/2026-10-13-fourth-b11-routed-to-cc.md names the site at file:line,
+restates the 6-arm lock, and POINTS AT docs/2026-10-13-fourth-b10-routed-to-cc.md
+for the replacement rather than duplicating it. Two copies of a patch is two
+things to drift, which is convention 8 arriving inside a routing document.
+
+THE 6-ARM LOCK, with the load-bearing arm named:
+    1  unguarded rsha reaching git diff                      finding
+    2  rsha guarded by cat-file -e and branched on            clean
+    3  cat-file -e <sha>:<path> with no prior existence test  FINDING
+    4  the LOCAL sha unguarded                                clean, skipped
+    5  a sha from argv unguarded                              clean, skipped
+    6  a taint binding that is not a plain subscript          exit 2, named
+
+ARM 3 IS THE ONE THAT DECIDES WHETHER THE TOOL IS WORTH HAVING.
+`cat-file -e <sha>:<path>` LOOKS like an existence test and is a question about
+a PATH AT A COMMIT, not about the commit. A checker treating it as a guard
+would pass the worst of the three real instances -- the one that printed
+NO OWNER: 4 -- while reporting itself clean.
+
+THE RULING, RECORDED ONCE:
+
+    docs/by-design-register.json
+      rulings: 1
+        CMD python -c "len(json.load(io.open('docs/by-design-register.json'))['rulings'])"
+      id     2026-10-13-unfetched-base-scope-gate
+      owner  cc
+      state  DECIDE_OR_NOT_PROMOTED
+
+WHY A NEW REGISTER RATHER THAN A FOURTH DOCUMENT. A routed finding had no state
+anywhere. docs/defect-density-register.json records defects that were FIXED;
+docs/known-red-suites.json records suites that FAIL; neither can say "this was
+handed to somebody and nobody has answered". So the item was routed in b10,
+went unanswered, and b11's only new content would have been "this is the second
+routing" -- which is how a document gets re-written instead of a question
+getting closed. A row with an owner and a state is read in one line.
+
+THE STATE IS A REAL FORK, NOT A HOLDING PEN: cc either applies the fix and
+builds the checker, OR records a NOT_PROMOTED entry in
+tools/report_only_checks.py saying why neither should exist. BOTH ARE
+ACKNOWLEDGEMENTS and the decline is explicitly the preferred answer if the view
+is that a gate exiting early in every build clone is not worth hardening. What
+the register refuses is the third option -- neither done nor declined for
+another five batches.
+
+The row is IDEMPOTENT BY ID, driven: a second run of
+scratchpad/mk_bydesign.py prints "already recorded -- nothing changed". A
+ruling recorded twice is two facts that can disagree.
+
+
+3. ITEM 3 -- BOTH INDEXES RESOLVE, 0 DEAD ENTRIES
+
+    CMD python scratchpad/index_resolve.py        ->  exit 0
+
+    DRIVE INDEX   docs/external-files-index.json
+                  64 declared file/dir paths     ALL resolve
+                  20 authoritative_copy fields   ALL resolve
+    docs/ INDEX   docs/SAIRN-OPEN-WORK-INDEX.md
+                  1,004 lines scanned LINE BY LINE -- 2.38MB, never loaded
+                  whole, per CLAUDE.md
+                  155 distinct path tokens, 3 do not resolve
+
+    VERDICT  dead Drive entries 0; b10-rename casualties 0;
+             unexplained docs/ tokens 0
+
+ZERO CASUALTIES FROM THE b10 RENAMES, which was the actual question. b10 renamed
+two repo files and two Drive copies, and a rename is exactly the operation that
+turns an index row from true into false with no error anywhere.
+
+ALL THREE NON-RESOLVING TOKENS ARE CORRECT AS WRITTEN, each read in context:
+    SAIRN-SESSION-N-HANDOFF.md
+        a NAMING PLACEHOLDER in prose -- N is a variable, not a file
+    docs/2026-10-06-cc-routed-to-hank.md
+        THE ABSENCE IS THE FINDING. The row's own text reads "CC'S ROUTED TEXT
+        FOR HANK DOES NOT EXIST -- the claim names the file, the file is not in
+        the tree". Repairing this reference would DELETE the finding.
+    docs/backup-reader-verification.json
+        a RUNTIME INPUT whose absence is a documented handled state -- the row
+        says so in the same sentence: "absent, the band stays 0.30-0.95 and the
+        tool prints WHY on every run". The committed artefact is
+        docs/backup-reader-verification.template.json, which exists.
+
+Each is CLASSIFIED IN THE TOOL with its reason, so a FOURTH one is visible
+immediately rather than hiding in a count that always says three. That is the
+stale-alarm shape and it is the reason the three are not simply listed.
+
+THE RESOLVER'S OWN FIRST RUN PRODUCED A FALSE DEAD ENTRY AND IT IS REPORTED
+RATHER THAN QUIETLY FIXED. It reported docs/backup-reader-verification.json
+unresolved by matching a SUFFIX of
+docs/backup-reader-verification.template.json, which exists, because nothing
+anchored the token's left edge. A resolver that INVENTS a dead entry sends
+somebody to repair a row that is already correct -- and in an index five
+sessions write, that repair is an edit to another session's finding. The left
+edge is now anchored and the fix is commented at the site.
+
+NOTHING WAS FIXED BECAUSE NOTHING WAS BROKEN. The --fix path exists and was not
+needed: 0 of the 3 unresolved tokens are b10 renames, which are the only
+substitutions it would make.
+
+
+4. ITEM 4 -- A COUNT MUST NAME THE COMMAND, AND THE LAST THREE RE-DERIVED
+
+THE RULE, now in docs/METHODOLOGY.md: any count, range, total, percentage or
+denominator in a report, digest, handoff or standing document CARRIES THE
+COMMAND THAT PRODUCED IT, in the document, next to the figure -- not a
+description of the method, the command, runnable as written.
+
+WHY RULE E WAS NOT ENOUGH, measured on two of this platform's own figures:
+
+    b9 reported 65 undriven suites; the real number was 36. The source was a
+    census sentence in docs/known-red-suites.json saying "20 of the 86 entries
+    ... were driven" while ITS OWN AUTHORITY LOG HELD 50 RECORDS -- and the
+    same paragraph said "THE SWEEP LOG IS THE AUTHORITY, not this sentence". It
+    NAMED THE AUTHORITY AND STILL PUBLISHED THE WRONG NUMBER, because naming a
+    source is not naming a command. A reader cannot re-run a source.
+
+    b10 reported 538 defect records; b11 re-derives 542. That one is NOT an
+    error -- four landed from other sessions in between -- and it is the better
+    illustration: a shared append-only ledger has NO STABLE TOTAL, so a figure
+    quoted from it is only true as of a read, and the only honest way to
+    publish one is to publish the read.
+
+WHAT THE RULE BUYS THAT RULE E DOES NOT: RULE E makes a figure true at the
+moment of writing. Naming the command makes it FALSIFIABLE AFTERWARDS, which is
+the only property that matters, because every figure in a report is read later
+than it was written. A reader with the command can disagree with me; a reader
+with a prose source has to trust me, and three of my own published figures have
+now been wrong.
+
+NOT ACCEPTABLE AS "NAMING THE COMMAND", each of which has appeared in a SAIRN
+document: "derived from the sweep log" (a source -- the exact wording that
+produced the 65), "measured 2026-10-13" (a date is not a method), and a bare
+figure with nothing beside it.
+
+APPLIED BACKWARDS -- CMD scratchpad/rederive_b11.log
+
+    figure                          b10 said   b11 re-derives   moved?
+    undriven red suites             36 of 84   36 of 84         no
+      CMD python scratchpad/gen_undriven_doc.py
+    convention headings / NEXT FREE  34 / 35   34, 1->34, no
+                                               gap, no dup, 35  no
+      CMD re.finditer(r'(?m)^## (\d+)\.') over
+          docs/2026-09-13-cross-domain-disciplines.md
+    defect register records              538   542              YES, +4
+      CMD python -c "len(json.load(...)['records'])"
+    b10 push ranges                  1 each    1 each           no
+      CMD git rev-list --count <range>
+
+ONE OF FOUR MOVED AND THE REASON IS THE RULE. b10 was not wrong; the figure
+simply had a shelf life nobody could see, because it was published without the
+read that produced it. THE OTHER THREE HELD, which is the arm that makes the
+exercise worth anything -- a re-derivation that moves everything proves only
+that the method changed.
+
+WHAT THE RULE DOES NOT DO, stated in the document: it does not make a figure
+correct. A named command can be the WRONG command -- counting the wrong
+population, or counting a population the document then describes differently.
+The rule makes the figure CHECKABLE, and catching a wrong command still needs a
+reader. Nothing mechanises it.
+
+
+5. ITEM 5 -- 6 OF 9 ROUTED FINDINGS ARE UNACKNOWLEDGED BY THEIR OWNER
+
+    CMD python scratchpad/ack_check.py        ->  exit 1
+
+THE POPULATION IS DERIVED FROM THE ROUTING DOCUMENTS, not from memory. The four
+documents this session wrote in b9 and b10 are the record of what was routed,
+so they are the population, and every <dir>/<file>:<line> token in them is a
+candidate.
+
+    routing documents read      : 4
+    file:line findings in scope : 9
+
+ACKNOWLEDGEMENT IS MEASURED FOUR WAYS, every one a real signal a session leaves
+behind rather than an inference about intent:
+    ACK_COMMIT    a commit on origin/main touching the routed FILE, dated AFTER
+                  the routing commit
+    ACK_CLAIM     the owner holds an ACTIVE claim whose task string names it
+    ACK_STATUS    the owner's ~/SAIRN-SESSION-LOCKS/status row names it
+    ACK_DECIDED   a NOT_PROMOTED entry names the FILE AND THE LINE
+    MENTION_ONLY  the basename appears in NOT_PROMOTED prose but NOT about this
+                  line -- NOT counted as acknowledgement
+    UNACK         none of the above
+
+THE RESULT
+
+    b    owner  file:line                                      state
+    b9   cody   tests/faults/grd_write_faults.js:385            UNACK
+    b9   cody   tests/push_gate/check8_probe.py:209             UNACK
+    b9   cody   tests/sairnlegacy_session_gate_review_probe.js:202  UNACK
+    b9   cody   tests/seed_never_syncs_platform.js:274          UNACK
+    b10  cc     tools/hover_auditor_scope_gate.py:409           MENTION_ONLY
+    b9   cc     tools/session_lock_check.py:128                 MENTION_ONLY
+    b9   cc     tools/register_feed_gate.py:747                 ACK_COMMIT
+    b9   cc     tools/sairn_claim.py:1281                       ACK_STATUS
+    b9   cc     tools/sairn_claim.py:1966                       ACK_STATUS
+
+    BY STATE: UNACK 4, MENTION_ONLY 2, ACK_COMMIT 1, ACK_STATUS 2
+    UNACKNOWLEDGED (UNACK + MENTION_ONLY): 6
+
+AND THE CHECKER'S OWN FIRST RUN WAS FAIL-OPEN. ACK_DECIDED began as a bare
+`basename in NOT_PROMOTED` substring test and reported TWO FALSE
+ACKNOWLEDGEMENTS. Both were read in context and both are wrong:
+
+    hover_auditor_scope_gate.py:409  the basename appears inside ANOTHER
+                                     entry's prose, describing that file as the
+                                     PREVENT half of a two-layer control.
+                                     Nothing about :409.
+    session_lock_check.py:128        there IS a NOT_PROMOTED entry for the
+                                     tool, and its subject is why the check is
+                                     SessionStart-only rather than push-time.
+                                     Nothing about :128.
+
+A basename in a large prose block cannot establish that a decision is ABOUT a
+routed line. The test now requires the line number within 600 characters of the
+basename, and anything weaker is MENTION_ONLY and does not count. A CHECKER
+THAT REPORTS A FINDING AS HANDLED WHEN NOBODY HANDLED IT CLOSES THE QUESTION,
+which is worse than no checker -- and this one would have reported 2 of its 6
+findings as resolved.
+
+hank HAS 0 ROUTED file:line FINDINGS, stated rather than left as an empty
+section. What hank owns is a count, not a line: 5 red suites under api/, and
+the audit-log constraint result -- 3 of 16 tables rejecting 11 emitted values
+plus sv_audit_log with no event_type CHECK at all -- which needs one live
+pg_constraint read nobody in this clone can do.
+
+THE EXCLUSIONS ARE PRINTED RATHER THAN APPLIED SILENTLY:
+    109 tokens with NO LINE NUMBER, 98 distinct. A routing document names
+        dozens of files in prose and the red-suite tables alone are 84 rows;
+        those are tracked by docs/2026-10-13-fourth-b10-undriven-suites.md as
+        their own population. A routed FINDING is a claim about a specific
+        place in a specific file, which is what a line number is.
+    2 tokens NOT ON DISK: tools/foo_gate.py:88 and tools/bar_gate.py:140, both
+        ILLUSTRATIVE names inside the b10 checker spec's example output.
+        Counting them would be this checker inventing work, which is the one
+        thing an acknowledgement report must not do.
+
+WHAT IT CANNOT DO, said first: it cannot tell an owner who READ the routing and
+chose to do nothing from one who never saw it. That needs a reply, and this
+platform has no reply channel -- which is precisely why ACK_DECIDED exists as a
+state and why docs/by-design-register.json was created in this batch.
+
+
+6. ITEM 6 -- PUSH, NOT FORCED, CONFIRMED
+
+    a072c99d..708222c2    1 commit    the b11 work
+    4c331874..083bc809    1 commit    the b11 handoff
+      CMD git rev-list --count <range>
+
+    HEAD        083bc809
+    origin/main 083bc809
+    behind/ahead 0  0
+      CMD git rev-list --left-right --count origin/main...HEAD
+
+TWO RACES LOST AND BOTH ARE REPORTED RATHER THAN SMOOTHED. Each attempt was
+rejected non-fast-forward because another clone landed first; the response each
+time was fetch, rebase with the repo's own tools/sairn_rebase_resolve.py, push
+again. No --force and no --force-with-lease, either of which would have
+discarded that clone's work. Every gate passed on every attempt.
+
+
+7. CLAIMS, LOCKS AND HOLDS
+
+    repo claims held       1   b11, 9 declared FILES, committed AND PUSHED.
+                               Taken as the FIRST action of the batch; the b10
+                               claim was RELEASED first.
+    session locks held     1   fourth.lock. Release DENIED by the permission
+                               layer for a FIFTH successive batch -- a standing
+                               fact about this clone, not an event.
+    locks released by me   0   none of the dead ones is attributable to me
+    worktrees besides main 4   NONE MINE: gate12-65340-3, invis-c0-75132,
+                               sairn-abl-q_gv10j5,
+                               sairn-gate-base-d78d62e71203 -- the last is the
+                               push gate's own throwaway, which it failed to
+                               remove and says so on stderr
+      CMD git worktree list
+    git stash              0
+      CMD git stash list
+    refs/salvage/*         0   bundled, verified and deleted in b9
+      CMD git for-each-ref refs/salvage/
+
+NOTHING WAS EDITED OUTSIDE THE DECLARED FILES SET. NO FILE UNDER tools/ WAS
+EDITED, by instruction -- item 2's entire output is a document and a register
+row.
+
+
+8. UNVERIFIED, AND WHAT IS NOT CLOSED
+
+  * 6 ROUTED FINDINGS UNACKNOWLEDGED -- cody 4, cc 2. Each closes on a commit
+    touching the line, or a NOT_PROMOTED entry naming the file AND the line.
+  * tools/hover_auditor_scope_gate.py:409 -- UNFIXED, fourth instance. cc's,
+    and now carrying a ruling row rather than a third routing document.
+  * THE UNFETCHED-BASE CHECKER IS SPECIFIED AND BUILT BY NOBODY. A fifth gate
+    can still be authored with the shape. Planned action on defect record
+    55777a74.
+  * 36 red suites have NEVER been driven, so their state is the THIRD STATE and
+    not "red". cody's.
+  * 21 of 84 register entries carry no `why`; 5 of the 48 driven came back
+    COULD NOT RUN -- the sharper group, because a suite that cannot run has no
+    verdict and reads as "still red" for ever.
+  * 4 pre-existing bad rows in docs/scrutiny-flags.json, already on
+    origin/main, cody's files. They make tools/sairn_rebase_resolve.py REFUSE
+    on every scrutiny-flags conflict, a tax on every rebase in every clone.
+  * docs/TOOLING-INVENTORY.md under-reports every pre-commit-wired tool as
+    UNWIRED. Needs an eighth derivation source, in a file two sessions contest.
+  * NOTHING MECHANISES THE NEXT FREE COUNT -- 34 headings, NEXT FREE 35, by the
+    named regex. No check refuses a duplicate or a gap.
+  * NOTHING MECHANISES ITEM 4's RULE EITHER, and that is the honest limit of
+    this batch's own contribution: a named command can still be the WRONG
+    command, and no gate reads a report looking for a bare figure.
+  * docs/by-design-register.json HAS EXACTLY 1 ROW AND NO TOOL READS IT. It is
+    a register nothing validates -- no --check, no gate, no probe. That is the
+    obvious next piece of work on it and it was not done here.
+  * NOTHING WAS RE-DRIVEN THIS BATCH. No red suite was driven, no push gate was
+    driven live. The only tool outputs quoted above are index_resolve.py (exit
+    0), ack_check.py (exit 1), gen_undriven_doc.py, mk_bydesign.py and the four
+    re-derivations. Everything else is cited as b9's or b10's measurement.
+  * THE 36 IS A COUNT OF ROWS WITH NO LOG RECORD, not of suites proven to
+    exist. A register entry naming a since-deleted file would appear in it too;
+    nothing in this pass stats those paths. Stated in the generated document.
+
+
+9. EVIDENCE
+
+All paths relative to
+C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\d1bef68d-f747-45a9-89b1-59dd99a42ae2\scratchpad\
+
+    gen_undriven_doc.py gen_undriven.log   item 1, the generator and its run
+    ack_check.py ack_check.log             item 5, the population and verdicts
+    index_resolve.py                       item 3
+    index_resolve3.log                     the run that classified the three
+    index_resolve_post.log                 re-run AFTER the push, exit 0
+    mk_bydesign.py bydesign.log            item 2's ruling row, idempotent
+    rederive_b11.log                       item 4's four re-derivations
+    meth_b11.md                            the methodology section as appended
+    reb.py                                 the fetch/rebase driver -- never
+                                           amends, never forces
+    final_counts.log                       the report's own closing figures
+    undriven.txt owner_map.py owner_map.log
+    drive_red86.jsonl                      b9's sweep log, THE AUTHORITY for
+                                           every driven/undriven figure
+
+IN THE REPO:
+    docs/2026-10-13-fourth-b10-undriven-suites.md   generated, 36 + 5 rows
+    docs/2026-10-13-fourth-b11-routed-to-cc.md      item 2
+    docs/2026-10-13-fourth-b11-routed-acknowledgement.md  item 5
+    docs/by-design-register.json                    the ruling, 1 row
+    docs/METHODOLOGY.md                             item 4's rule
+    docs/external-files-index.json                  the b11 Drive copy declared
+    docs/SAIRN-handoff-fourth-b11.md                written BEFORE this report
+
+SHA256 d57f54852660e1bce3fd2d0d34568e90e62647199cd40a13f0894423c991e474
+END-OF-REPORT

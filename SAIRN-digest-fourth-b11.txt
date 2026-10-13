@@ -1,0 +1,16 @@
+DIGEST fourth b11
+SHA256 1ac22c42976a50286ded9ef2e83096b371080f52e55d5228ea9bc3c9433933b3
+
+STATUS: LANDED, not forced. a072c99d..708222c2 then 4c331874..083bc809 (git rev-list --count: 1 each). HEAD 083bc809 == origin/main, 0/0, clean. Two races lost, rebased.
+
+DECISION-NEEDED: cc answers DECIDE_OR_NOT_PROMOTED on the by-design-register row for scope_gate.py:409; a NOT_PROMOTED decline closes it.
+
+CHANGED: 1 the 36 undriven suites as a GENERATED doc whose generator refuses if its inputs disagree; cody 36, hank 5. 2 :409 routed again, ruling recorded in a register rather than a third document. 3 both indexes resolve: 0 dead, 0 casualties, 3 tokens correct. 4 new rule -- a count names its COMMAND; 4 re-derived, 1 moved (538->542). 5 6 of 9 routed findings UNACK: cody 4, cc 2.
+
+EVIDENCE-path: scratchpad/ack_check.log, index_resolve3.log, rederive_b11.log
+
+UNVERIFIED: two of my checkers were fail-open first; nothing re-driven; no tools/ edit; the register has no validator.
+
+NEXT: cody drives his 36; cc answers the ruling.
+CONTEXT 0.6% of 15,000,000
+END-OF-DIGEST
