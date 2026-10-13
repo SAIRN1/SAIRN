@@ -467,6 +467,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/faults/grd_write_faults.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "4577544fb1d8358a9aef58cb448707d86e9c70bd",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/phi_cache_scoped_to_user.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'and saying so, rather than skipping on an unknown.');"
+    }
+   ],
+   "sha": "4577544fb1d8358a9aef58cb448707d86e9c70bd",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_self_exclusion_guard_sabotage_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -1491,6 +1512,46 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "dd1bcbe2d6dfea730168d4c86f90b4e5daf41087",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/courtlistener-rate-limit.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "dfa57069599d640996db247934504bb5afb1140a",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-endpoint-inputs.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "dfa57069599d640996db247934504bb5afb1140a",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-jurisdiction-labels.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "dfa57069599d640996db247934504bb5afb1140a",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/dental-gfe.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "dfa57069599d640996db247934504bb5afb1140a",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/mech-assets.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "dfa57069599d640996db247934504bb5afb1140a",
    "criteria_version": "2026-10-06.1"
   },
   {

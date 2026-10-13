@@ -395,4 +395,44 @@ eq('8b  CONTROL: SAIRNroofing persists nothing scoped, which is why 8a is the wh
    rfKeys, ['rf_license_key', 'rf_session']);
 
 console.log('\n%d passed, %d failed', pass, fail);
+
+// ── ON FAILURE, NAME THE DIRTY SUBJECT (2026-10-14, b7 item 3) ─────────────
+// The precondition at the top of this file SKIPS when a subject is already
+// dirty, which handles the case where the pollution is in place before the
+// first arm runs. It does NOT handle the case this file has actually been
+// seen in: dirty DURING the run, by a suite executing concurrently or by one
+// whose restore lands late. There the precondition passes, an arm fails, and
+// the output says "the PHI cache leaked" about somebody else's in-flight edit.
+//
+// So the question is asked again at the END, and only on failure. Two batches
+// have now gone looking for the polluting suite by elimination and by bisect;
+// this makes the NEXT occurrence name the file itself, which is cheaper than
+// either and does not expire.
+//
+// IT DOES NOT CHANGE THE VERDICT. The exit code is still `fail ? 1 : 0` -- a
+// diagnostic that downgraded a failure to a skip would be the same silence one
+// level along, and the dirty subject might be the real defect rather than
+// pollution. It prints evidence and leaves the judgement to the reader.
+if (fail) {
+  const { execFileSync } = require('child_process');
+  let dirty = null;
+  try {
+    const out = execFileSync('git', ['status', '--porcelain', '--'].concat(SUBJECTS),
+                             { cwd: path.join(__dirname, '..'), encoding: 'utf8' });
+    dirty = out.trim() ? out.trim().split('\n').map((l) => l.slice(3).trim()) : [];
+  } catch (e) {
+    console.log('DIAGNOSTIC: git could not be consulted (' + e.message.split('\n')[0]
+                + '). Whether a subject is dirty is UNKNOWN, which is not the same '
+                + 'as clean -- see core.bare.');
+  }
+  if (dirty && dirty.length) {
+    console.log('DIAGNOSTIC: %d of this suite\'s %d subjects DIFFER FROM HEAD right '
+                + 'now: %s', dirty.length, SUBJECTS.length, dirty.join(', '));
+    console.log('DIAGNOSTIC: a failure here may be about that edit and not about the '
+                + 'PHI cache. Re-run alone on a clean tree before believing it.');
+  } else if (dirty) {
+    console.log('DIAGNOSTIC: all %d subjects are clean against HEAD, so this failure '
+                + 'is NOT tree pollution.', SUBJECTS.length);
+  }
+}
 process.exit(fail ? 1 : 0);

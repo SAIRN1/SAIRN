@@ -35,6 +35,13 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 const vm = require('vm');
+// ── ONE STRIPPER, 2026-10-13 (b7 item 4) ──────────────────────────────────
+// Each call below is chosen from its SUBJECT, not from this file: HTML takes
+// `stripComments` (outside a <script> only <!-- --> is a comment and /* is
+// not), bare JS and any slice taken from inside a script take `stripJs`. A
+// private `//`-only strip eats the rest of any line containing `//` inside a
+// string or a URL, so an absence it reports can be an absence it created.
+const { stripComments } = require('./lib/strip_comments.js');
 
 const ROOT = path.join(__dirname, '..');
 const FILE = 'sairnbiz.html';
@@ -160,8 +167,8 @@ test('neither function throws when the Company panel elements are absent', () =>
 section('both call sites go through the one helper');
 
 test('saveEmp no longer DISCARDS the sync promise', () => {
-  const squashed = fs.readFileSync(path.join(ROOT, FILE), 'utf8')
-    .replace(/\/\/[^\n]*/g, '')      // the new comment quotes the old line
+  const squashed = stripComments(
+    fs.readFileSync(path.join(ROOT, FILE), 'utf8'))
     .replace(/\s+/g, '');
   assert.ok(!/rEmps\(\);syncEmps\(emps\);/.test(squashed),
     'saveEmp is back to firing syncEmps() and throwing the result away');

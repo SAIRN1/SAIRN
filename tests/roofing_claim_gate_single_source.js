@@ -30,6 +30,13 @@ const assert = require('assert');
 
 const ROOT = path.join(__dirname, '..');
 const rfAuth = require(path.join(ROOT, 'api', 'rf-auth.js'));
+// ── ONE STRIPPER, 2026-10-13 (b7 item 4) ──────────────────────────────────
+// Each call below is chosen from its SUBJECT, not from this file: HTML takes
+// `stripComments` (outside a <script> only <!-- --> is a comment and /* is
+// not), bare JS and any slice taken from inside a script take `stripJs`. A
+// private `//`-only strip eats the rest of any line containing `//` inside a
+// string or a URL, so an absence it reports can be an absence it created.
+const { stripJs } = require('./lib/strip_comments.js');
 const src = fs.readFileSync(path.join(ROOT, 'api', 'sd-data.js'), 'utf8');
 
 let pass = 0, fail = 0;
@@ -132,7 +139,7 @@ test('seesAllRows keeps BOTH terms, which no behavioural test can check today', 
   const authSrc = fs.readFileSync(path.join(ROOT, 'api', 'rf-auth.js'), 'utf8');
   const i = authSrc.indexOf('function seesAllRows(session)');
   assert.ok(i > 0, 'seesAllRows not found');
-  const body = authSrc.slice(i, authSrc.indexOf('\n}', i)).replace(/\/\/[^\n]*/g, '');
+  const body = stripJs(authSrc.slice(i, authSrc.indexOf('\n}', i)));
   // THE ANCHOR ACCEPTS TWO SPELLINGS, since 2026-09-24. The lookup changed from
   // `SET[session.role]` to `hasRole(SET, session.role)` when the role maps were
   // made null-prototype, and this assertion failed -- correctly and loudly,
@@ -168,7 +175,7 @@ test('MANAGEMENT_ROLES is currently a SUBSET of BROAD_READ_ROLES', () => {
 section('the hand-written gate has not come back');
 
 test('no branch spells the assignment predicate itself any more', () => {
-  const code = src.replace(/\/\/[^\n]*/g, '');   // comments discuss it on purpose
+  const code = stripJs(src);   // comments discuss it on purpose
   const hand = code.match(/MANAGEMENT_ROLES\[session\.role\][^\n]*assigned_employee_id !== session\.employee_id/g) || [];
   assert.deepStrictEqual(hand, [],
     'the assignment gate is hand-written again at ' + hand.length + ' site(s)');
@@ -183,7 +190,7 @@ test('all six claim/job gates go through ownsRow', () => {
 test('the rf_claims write path no longer keeps its own role booleans', () => {
   const i = src.indexOf("resource === 'rf_claims' && action === 'write'");
   assert.ok(i > 0, 'could not find the rf_claims write branch');
-  const block = src.slice(i, i + 2600).replace(/\/\/[^\n]*/g, '');
+  const block = stripJs(src.slice(i, i + 2600));
   assert.ok(!/const isManagement =/.test(block), 'isManagement is back');
   assert.ok(!/const isBroad =/.test(block), 'isBroad is back');
   assert.match(block, /rfAuth\.seesAllRows\(session\)/);
@@ -209,7 +216,7 @@ test('the fifteen ROLE-ONLY sites are still there and still counted', () => {
   // Out of scope for this change and recorded in the open-work index. The count
   // is asserted so the row cannot quietly go stale the way "four ways" did --
   // it was 21 when someone finally counted.
-  const code = src.replace(/\/\/[^\n]*/g, '');
+  const code = stripJs(src);
   const roleOnly = code.match(/!rfAuth\.MANAGEMENT_ROLES\[session\.role\] && !rfAuth\.BROAD_READ_ROLES\[session\.role\]/g) || [];
   assert.strictEqual(roleOnly.length, 15,
     'the role-only count moved to ' + roleOnly.length + ' -- update the index row, or sweep them');
@@ -327,7 +334,7 @@ test('the write branch strips assigned_employee_id from the stored blob', () => 
   // make this arm go red again on the next refactor for the same non-reason.
   const i = src.indexOf("resource === 'rf_claims' && action === 'write'");
   assert.ok(i > 0, 'could not find the rf_claims write branch');
-  const block = claimWriteBlock(i).replace(/\/\/[^\n]*/g, '');
+  const block = stripJs(claimWriteBlock(i));
   const stripped = /delete dataBlob\.assigned_employee_id;/.test(block)
     || /storedBlob\(payload,\s*\[[^\]]*'assigned_employee_id'[^\]]*\]\s*\)/.test(block);
   assert.ok(stripped,

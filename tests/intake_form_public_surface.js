@@ -20,6 +20,13 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
+// ── ONE STRIPPER, 2026-10-13 (b7 item 4) ──────────────────────────────────
+// Each call below is chosen from its SUBJECT, not from this file: HTML takes
+// `stripComments` (outside a <script> only <!-- --> is a comment and /* is
+// not), bare JS and any slice taken from inside a script take `stripJs`. A
+// private `//`-only strip eats the rest of any line containing `//` inside a
+// string or a URL, so an absence it reports can be an absence it created.
+const { stripJs } = require('./lib/strip_comments.js');
 
 const ROOT = path.join(__dirname, '..');
 const R = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -168,7 +175,7 @@ test('the panel builds ?shop= from sd_public_shop, not a display name', () => {
   const i = app.indexOf('function intakeBuildLink()');
   const j = app.indexOf('function intakeCopyLink()');
   assert.ok(i > 0 && j > i, 'could not bound intakeBuildLink');
-  const block = app.slice(i, j).replace(/\/\/[^\n]*/g, '');
+  const block = stripJs(app.slice(i, j));
   assert.match(block, /sdData\('read', 'sd_public_shop'/);
   assert.match(block, /\?shop=' \+ encodeURIComponent\(slug\)/);
   assert.ok(!/company_name/.test(block),

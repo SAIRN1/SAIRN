@@ -34,6 +34,13 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 const vm = require('vm');
+// ── ONE STRIPPER, 2026-10-13 (b7 item 4) ──────────────────────────────────
+// Each call below is chosen from its SUBJECT, not from this file: HTML takes
+// `stripComments` (outside a <script> only <!-- --> is a comment and /* is
+// not), bare JS and any slice taken from inside a script take `stripJs`. A
+// private `//`-only strip eats the rest of any line containing `//` inside a
+// string or a URL, so an absence it reports can be an absence it created.
+const { stripComments } = require('./lib/strip_comments.js');
 
 const ROOT = path.join(__dirname, '..');
 const FILE = 'sairnvet.html';
@@ -351,8 +358,8 @@ test('neither one-liner is back, in any formatting', () => {
   // Whitespace-normalised, for the reason the ld() suite learned twice: two
   // literals cannot keep up with formatting, and a reformatted return of the
   // defect is still the defect.
-  const squashed = fs.readFileSync(path.join(ROOT, FILE), 'utf8')
-    .replace(/\/\/[^\n]*/g, '')      // the new comments quote the old code
+  const squashed = stripComments(
+    fs.readFileSync(path.join(ROOT, FILE), 'utf8'))
     .replace(/\s+/g, '');
   assert.ok(!/functionsvLoad\(k,d\)\{try\{varr=localStorage\.getItem\('sv_'\+k\);returnr\?JSON\.parse\(r\):d;\}catch\(e\)\{returnd;\}\}/.test(squashed),
     'the swallowing svLoad one-liner is back');

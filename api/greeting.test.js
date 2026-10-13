@@ -91,9 +91,16 @@ test('same inputs, same sentence, every time', () => {
 // Math.random()" -- the naive extraction finding the thing it was written to
 // forbid. sql/demo_license_keys_seed.sql records the same mistake producing a
 // phantom table count; stripping comments is the fix in both places.
+// ── ONE STRIPPER, 2026-10-13 (b7 item 4) ──────────────────────────────────
+// The header above already records why this function exists: the naive
+// extraction found the phrase "No Math.random()" in this file's own comment and
+// failed on it. The fix was right and the implementation was private -- a block
+// regex that runs to the first `*/` anywhere, plus a filter that only drops a
+// `//` starting a line. `stripJs` is the shared implementation, and the subject
+// is a bare .js file.
 function codeOnly() {
   const src = require('fs').readFileSync(require.resolve('./greeting.js'), 'utf8');
-  return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  return require('../tests/lib/strip_comments.js').stripJs(src);
 }
 
 test('no randomness and no server clock read', () => {

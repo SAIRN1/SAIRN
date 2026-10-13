@@ -34,6 +34,13 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 const vm = require('vm');
+// ── ONE STRIPPER, 2026-10-13 (b7 item 4) ──────────────────────────────────
+// Each call below is chosen from its SUBJECT, not from this file: HTML takes
+// `stripComments` (outside a <script> only <!-- --> is a comment and /* is
+// not), bare JS and any slice taken from inside a script take `stripJs`. A
+// private `//`-only strip eats the rest of any line containing `//` inside a
+// string or a URL, so an absence it reports can be an absence it created.
+const { stripJs } = require('./lib/strip_comments.js');
 
 const ROOT = path.join(__dirname, '..');
 const html = fs.readFileSync(path.join(ROOT, 'stonedesk.html'), 'utf8');
@@ -347,7 +354,7 @@ test('no bare catch remains around an intake_submissions call', () => {
   // `try{...}catch(e){}` in prose to describe what was wrong, and the first
   // version of this assertion matched its own documentation -- the same
   // quoted-mention false positive that a naive override matcher hits.
-  const block = html.slice(i, j).replace(/\/\/[^\n]*/g, '');
+  const block = stripJs(html.slice(i, j));
   const bare = block.match(/catch\s*\([A-Za-z_$][\w$]*\)\s*\{\s*\}/g) || [];
   assert.strictEqual(bare.length, 0,
     'bare empty catch still present in the intake block: ' + JSON.stringify(bare));

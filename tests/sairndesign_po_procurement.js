@@ -26,6 +26,13 @@ const path = require('path');
 const assert = require('assert');
 const vm = require('vm');
 const { fnBody } = require('./lib/fn_span.js');
+// ── ONE STRIPPER, 2026-10-13 (b7 item 4) ──────────────────────────────────
+// Each call below is chosen from its SUBJECT, not from this file: HTML takes
+// `stripComments` (outside a <script> only <!-- --> is a comment and /* is
+// not), bare JS and any slice taken from inside a script take `stripJs`. A
+// private `//`-only strip eats the rest of any line containing `//` inside a
+// string or a URL, so an absence it reports can be an absence it created.
+const { stripComments } = require('./lib/strip_comments.js');
 
 const ROOT = path.join(__dirname, '..');
 const APP = fs.readFileSync(path.join(ROOT, 'sairndesign.html'), 'utf8');
@@ -187,7 +194,7 @@ t('C8. the table head and the colspan agree with the 9 columns', function () {
 console.log('\nD. sales tax is REFUSED and the refusal is on screen');
 
 t('D1. the app still computes no tax -- the capability is absent, deliberately', function () {
-  const code = APP.replace(/<!--[\s\S]*?-->/g, '');     // comments are not code
+  const code = stripComments(APP);     // comments are not code
   assert.ok(!/tax_rate|taxable|calcTax|salesTax/i.test(code),
     'a tax calculation appeared. The audit\'s finding 1 is that this app must '
     + 'NOT pick a rate for a reseller\'s client invoice');

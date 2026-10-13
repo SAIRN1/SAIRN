@@ -47,6 +47,13 @@
 const fs = require('fs');
 const path = require('path');
 const K = require('./faultkit');
+// ── ONE STRIPPER, 2026-10-13 (b7 item 4) ──────────────────────────────────
+// Each call below is chosen from its SUBJECT, not from this file: HTML takes
+// `stripComments` (outside a <script> only <!-- --> is a comment and /* is
+// not), bare JS and any slice taken from inside a script take `stripJs`. A
+// private `//`-only strip eats the rest of any line containing `//` inside a
+// string or a URL, so an absence it reports can be an absence it created.
+const { stripJs } = require('../lib/strip_comments.js');
 const assert = K.assert;
 
 const FILE = 'stonedesk.html';
@@ -266,7 +273,7 @@ section('the two fire-and-forget sites stay that way, deliberately');
 test('recordSharedTopics reads no result and raises no toast', () => {
   const body = grabRaw('function recordSharedTopics(');
   assert.ok(/sdData\(\s*'write'\s*,\s*'shared_knowledge'/.test(body));
-  assert.ok(!/showToast|\.then\(/.test(body.replace(/\/\/[^\n]*/g, '')),
+  assert.ok(!/showToast|\.then\(/.test(stripJs(body)),
     'a best-effort topic counter gained a handler or a toast -- if that was '
     + 'deliberate, say why at the site');
 });
@@ -313,7 +320,7 @@ test('saveSD3Data stays UN-AWAITED AND still says why at the site', () => {
     'the reason for not awaiting is no longer stated at the site -- the next '
     + 'reader will file this as a defect and "fix" a render path into a blocking '
     + 'one');
-  assert.ok(!/showToast/.test(body.replace(/\/\/[^\n]*/g, '')),
+  assert.ok(!/showToast/.test(stripJs(body)),
     'a per-record toast was added to a function called from a render path');
 });
 

@@ -32,6 +32,16 @@ const path = require('path');
 const assert = require('assert');
 const vm = require('vm');
 
+// ── ONE STRIPPER, 2026-10-13 (b7 item 4) ──────────────────────────────────
+// THREE private strips here and THEY ARE NOT ALL THE SAME FUNCTION, which is
+// why this file is the one worth reading. `ep` and `data` are bare .js files
+// (public-book.js, api/sd-data.js) and take `stripJs`; `app` is
+// sairndental.html and takes `stripComments`, because outside a `<script>` only
+// `<!-- -->` is a comment and `/*` is not -- the `accept="image/*"` bug that
+// blanked 80% of a file. Using one for the other is the defect the shared
+// library's own header records three times.
+const { stripComments, stripJs } = require('../../tests/lib/strip_comments.js');
+
 const ROOT = path.join(__dirname, '..', '..');
 const ep = fs.readFileSync(path.join(__dirname, 'public-book.js'), 'utf8');
 const page = fs.readFileSync(path.join(ROOT, 'sairndental-book.html'), 'utf8');
@@ -128,7 +138,7 @@ test('THE CHECK IS REACHABLE -- the refusal is driven by the rule, not a constan
   // wrapped around the whole block. Now the predicate itself is exercised.
   assert.ok(guardianProblem({ dob: '2015-01-01' }), 'a minor with no guardian is not refused');
   assert.strictEqual(guardianProblem({ dob: '1980-01-01' }), null, 'an adult is refused');
-  const code = ep.replace(/\/\/[^\n]*/g, '');
+  const code = stripJs(ep);
   assert.match(code, /const guardianGap = guardianProblem\(/,
     'the endpoint no longer consults the shared rule');
   assert.match(code, /if \(guardianGap\) \{/,
@@ -149,7 +159,7 @@ test('the rule is name AND (phone OR email) -- the same one the app uses', () =>
   // api/sd-data.js receives from sairndental.html.
   assert.strictEqual(guardianProblem({ dob: dob, guardian_name: 'A Parent', guardian_phone: '5555555555' }), null,
     'the stored field names are not accepted, so the in-app write would be refused wrongly');
-  const appRule = app.replace(/\/\/[^\n]*/g, '');
+  const appRule = stripComments(app);
   assert.match(appRule, /if\(isMinor&&\(!gName\|\|\(!gPhone&&!gEmail\)\)\)/,
     'the in-app browser rule changed shape -- the paths would now disagree');
 });
@@ -168,7 +178,7 @@ test('BOTH SERVER PATHS USE THE SAME MODULE -- neither keeps a private copy', ()
 
 test('the AUTHENTICATED write path enforces it too, which it did not before', () => {
   const data = fs.readFileSync(path.join(ROOT, 'api', 'sd-data.js'), 'utf8');
-  const code = data.replace(/\/\/[^\n]*/g, '');
+  const code = stripJs(data);
   const i = code.indexOf("if (DNT_RESOURCES[resource] && action === 'write')");
   assert.ok(i > 0, 'the generic dnt write block moved');
   const block = code.slice(i, i + 4000);

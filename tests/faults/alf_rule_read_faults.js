@@ -63,6 +63,13 @@
 const fs = require('fs');
 const path = require('path');
 const K = require('./faultkit');
+// ── ONE STRIPPER, 2026-10-13 (b7 item 4) ──────────────────────────────────
+// Each call below is chosen from its SUBJECT, not from this file: HTML takes
+// `stripComments` (outside a <script> only <!-- --> is a comment and /* is
+// not), bare JS and any slice taken from inside a script take `stripJs`. A
+// private `//`-only strip eats the rest of any line containing `//` inside a
+// string or a URL, so an absence it reports can be an absence it created.
+const { stripComments, stripJs } = require('../lib/strip_comments.js');
 const assert = K.assert;
 
 const FILE = 'sairncare.html';
@@ -259,7 +266,7 @@ test('and a complete state still counts as complete', async () => {
 section('the structural half -- this shape must not come back anywhere');
 
 test('neither cache coalesces a failed read to an empty array', () => {
-  const src = SRC.replace(/\/\/[^\n]*/g, '');
+  const src = stripComments(SRC);
   ['_prRules', '_cqRules'].forEach((v) => {
     assert.ok(!new RegExp(v + '\\s*=\\s*Array\\.isArray\\(\\s*rows\\s*\\)\\s*\\?\\s*rows\\s*:\\s*\\[\\s*\\]').test(src),
       v + ' coalesces a failed read to [] again, which makes the `=== null` '
@@ -268,7 +275,7 @@ test('neither cache coalesces a failed read to an empty array', () => {
 });
 
 test('and both still HAVE the null guard the coalesce used to defeat', () => {
-  const src = SRC.replace(/\/\/[^\n]*/g, '');
+  const src = stripComments(SRC);
   ['_prRules', '_cqRules'].forEach((v) => {
     assert.ok(new RegExp(v + '\\s*===\\s*null').test(src),
       v + ' lost its null guard -- the fix has to keep BOTH halves, or a '
@@ -281,7 +288,7 @@ test('the failure flag is set from the SAME test that decides the value', () => 
   // incoherent state: a null cache with failed=false, which renders the
   // click-refresh message after a real failure.
   ['prRefresh', 'cqRefresh'].forEach((fn) => {
-    const body = grab('function ' + fn + '(').replace(/\/\/[^\n]*/g, '');
+    const body = stripJs(grab('function ' + fn + '('));
     assert.ok(/ReadFailed\s*=\s*!Array\.isArray\(\s*rows\s*\)/.test(body),
       fn + ' no longer derives its failure flag from Array.isArray(rows)');
     assert.ok(/Rules\s*=\s*Array\.isArray\(\s*rows\s*\)\s*\?\s*rows\s*:\s*null/.test(body),

@@ -35,6 +35,13 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 const vm = require('vm');
+// ── ONE STRIPPER, 2026-10-13 (b7 item 4) ──────────────────────────────────
+// Each call below is chosen from its SUBJECT, not from this file: HTML takes
+// `stripComments` (outside a <script> only <!-- --> is a comment and /* is
+// not), bare JS and any slice taken from inside a script take `stripJs`. A
+// private `//`-only strip eats the rest of any line containing `//` inside a
+// string or a URL, so an absence it reports can be an absence it created.
+const { stripComments, stripJs } = require('./lib/strip_comments.js');
 
 const ROOT = path.join(__dirname, '..');
 const FILE = 'stonedesk.html';
@@ -125,7 +132,7 @@ section('the six sites, asserted on the source');
 test('NOT ONE `rate || 28` survives anywhere in the file', () => {
   // Whitespace-normalised, and comments stripped because the new comment
   // quotes the old expression.
-  const squashed = SRC.replace(/\/\/[^\n]*/g, '').replace(/\s+/g, '');
+  const squashed = stripComments(SRC).replace(/\s+/g, '');
   assert.ok(!/x\.rate\|\|28/.test(squashed), 'a $28 fallback is back');
   assert.ok(!/rate\|\|28/.test(squashed), 'a $28 fallback is back in some other spelling');
   // WIDENED 2026-09-08 by the independent review, which defeated both greps
@@ -136,7 +143,7 @@ test('NOT ONE `rate || 28` survives anywhere in the file', () => {
   const modStart = SRC.indexOf('function tsRate(x){');
   const modEnd = SRC.indexOf('window.sdTSRender=render;');
   assert.ok(modStart > 0 && modEnd > modStart, 'the timesheet module could not be located');
-  const mod = SRC.slice(modStart, modEnd).replace(/\/\/[^\n]*/g, '').replace(/\s+/g, '');
+  const mod = stripJs(SRC.slice(modStart, modEnd)).replace(/\s+/g, '');
   assert.ok(!/\|\|28/.test(mod), 'SOME $28 fallback is back in the timesheet module');
 });
 
@@ -154,7 +161,7 @@ test('sdTSLog REFUSES a blank rate instead of defaulting to 28', () => {
   // `return;` matched somewhere else entirely. The GUARD has to be pinned, not
   // the words near it. This is the weakness this file's own header warns about,
   // demonstrated rather than asserted.
-  const sq = body.replace(/\/\/[^\n]*/g, '').replace(/\s+/g, '');
+  const sq = stripJs(body).replace(/\s+/g, '');
   assert.ok(/varrate=rateRaw===""\?NaN:parseFloat\(rateRaw\);/.test(sq),
     'a blank rate no longer becomes NaN, so it can be coerced into a rate the user never gave');
   assert.ok(/if\(!isFinite\(rate\)\|\|rate<0\)\{showToast\([\s\S]{0,400}?return;\}/.test(sq),
@@ -188,7 +195,7 @@ test('the printed timesheet discloses a partial total ON THE PAGE', () => {
   // TIGHTENED 2026-09-08 by the independent review, which defeated the grep
   // above by changing the guard to `if(false)`. The text stayed; the page
   // stopped saying it. The CONDITION is the assertion.
-  const sqp = body.slice(0, 4000).replace(/\/\/[^\n]*/g, '').replace(/\s+/g, '');
+  const sqp = stripJs(body.slice(0, 4000)).replace(/\s+/g, '');
   assert.ok(/if\(payT\.unpriced\)w\.document\.write\([\s\S]{0,160}?Partialtotal/.test(sqp),
     'the disclosure is in the source but no longer conditional on there being omitted rows');
 });

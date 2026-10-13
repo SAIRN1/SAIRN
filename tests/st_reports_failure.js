@@ -22,6 +22,13 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 const vm = require('vm');
+// ── ONE STRIPPER, 2026-10-13 (b7 item 4) ──────────────────────────────────
+// Each call below is chosen from its SUBJECT, not from this file: HTML takes
+// `stripComments` (outside a <script> only <!-- --> is a comment and /* is
+// not), bare JS and any slice taken from inside a script take `stripJs`. A
+// private `//`-only strip eats the rest of any line containing `//` inside a
+// string or a URL, so an absence it reports can be an absence it created.
+const { stripComments } = require('./lib/strip_comments.js');
 
 const ROOT = path.join(__dirname, '..');
 const APPS = [
@@ -187,8 +194,8 @@ APPS.forEach((app) => {
   });
 
   test('the silent one-liner is gone from the source, not merely bypassed', () => {
-    const src = fs.readFileSync(path.join(ROOT, app.file), 'utf8')
-      .replace(/\/\/[^\n]*/g, '');   // the new comment quotes the old code
+    const src = stripComments(
+      fs.readFileSync(path.join(ROOT, app.file), 'utf8'));   // the new comment quotes the old code
     // BOTH pre-fix spellings, because they were not the same across the apps.
     // Three had an empty catch; SAIRNcare and SAIRNfreedom returned FALSE and
     // logged nothing, which is why they were never on the swallowing-catch

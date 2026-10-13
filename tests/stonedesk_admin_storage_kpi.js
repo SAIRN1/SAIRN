@@ -38,6 +38,13 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
+// ── ONE STRIPPER, 2026-10-13 (b7 item 4) ──────────────────────────────────
+// Each call below is chosen from its SUBJECT, not from this file: HTML takes
+// `stripComments` (outside a <script> only <!-- --> is a comment and /* is
+// not), bare JS and any slice taken from inside a script take `stripJs`. A
+// private `//`-only strip eats the rest of any line containing `//` inside a
+// string or a URL, so an absence it reports can be an absence it created.
+const { stripJs } = require('./lib/strip_comments.js');
 
 const HTML = fs.readFileSync(path.join(__dirname, '..', 'stonedesk.html'),
                              'utf8').replace(/\r\n/g, '\n');
@@ -71,9 +78,7 @@ function bodyOf(src) {
 // means the code or the file, because a fix that documents what it removed is
 // the normal case and not an edge one. Same rule as
 // api/sd-data-active-credential.test.js, which strips before asserting.
-const BODY = bodyOf(HTML)
-  .replace(/^[ \t]*\/\/[^\n]*$/gm, '')
-  .replace(/\/\*[\s\S]*?\*\//g, '');
+const BODY = stripJs(bodyOf(HTML));
 
 test('NO ASSUMED QUOTA: the browser storage limit is not hardcoded', () => {
   assert.ok(!/\b5120\b/.test(BODY),
