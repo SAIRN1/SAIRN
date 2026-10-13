@@ -283,8 +283,8 @@
       "task": "batch b19 -- audit role, read-only on platform code except register-add. Rotation: sairndesign sweep then next rota target. Verify hank b7 if landed (scp_* ruling, sairnlaw_audit_log CHECK, 2 sql-sync gaps) else skip and say so. Re-validate register after prior rebases/auto-merges: no dup seq, no lost records, closed findings cite evidence. Mirror anchor: drop email step per Michael's RFC3161-token decision. Tip beacon check. Handoff+report. FILES: docs/defect-density-register.json",
       "claimed_at": "2026-10-13T11:55:32Z",
       "claimed_at_epoch": 1791892532.240391,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-13T20:52:13Z",
       "files": [
         "docs/defect-density-register.json"
       ]
@@ -296,8 +296,8 @@
       "task": "batch b19 resume -- claim expired mid-batch (long delegated sweeps), re-claiming to close out handoff+report cleanly. Work already done: sairndesign+sairnroofing sweeps, hank-b7 skip confirmed, register re-validated, mirror anchor retired per Michael. FILES: docs/defect-density-register.json",
       "claimed_at": "2026-10-13T20:46:17Z",
       "claimed_at_epoch": 1791924377.6339657,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-13T20:52:13Z",
       "files": [
         "docs/defect-density-register.json"
       ]
