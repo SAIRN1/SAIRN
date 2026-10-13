@@ -2164,6 +2164,15 @@
      "declared_by": "fourth",
      "declared_on": "2026-10-13",
      "note_on_this_declaration": "THE NAME IS THE POINT OF THIS ROW AS MUCH AS THE DECLARATION. b10 renamed both b9 handoffs off their date suffixes -- handoff-fourth-2026-10-16.md was dated three days into the future and CLAUDE.md says to find the latest handoff BY THE DATE IN THE FILENAME, so a date-sort put the stale document first. The rows above carry `renamed_from` for the two old Drive paths. Convention from here: SAIRN-handoff-<session>-b<n>.md, with -2 when one batch writes a second. DECLARED EVEN THOUGH THE CHECK IS WARN-ONLY on handoff names since 2026-10-13: it reports 9 UNINDEXED handoffs and refuses nothing, which is the right call for a backlog no session can clear on another's behalf and is also how a warn becomes permanent. None of those 9 is mine and none is declared here -- a build agent declaring another session's artefact is what produced the five hand-declared rows further up."
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/SAIRN-handoff-fourth-b11.md",
+     "purpose": "fourth's b11 handoff, Drive DELIVERY copy, uploaded with the report and digest as the batch brief requires. Checkable like the rows above: `git ls-files --error-unmatch docs/SAIRN-handoff-fourth-b11.md` exits 0, so the authoritative copy is committed in this clone as CLAUDE.md requires, and `belongs_in_git` is false for THE DRIVE PATH rather than for the file.",
+     "belongs_in_git": false,
+     "authoritative_copy": "docs/SAIRN-handoff-fourth-b11.md",
+     "declared_by": "fourth",
+     "declared_on": "2026-10-13",
+     "note_on_this_declaration": "THIS ROW IS ALSO THE REASON b11 COULD VERIFY ITS OWN INDEX. `python scratchpad/index_resolve.py` stats every declared `path` and every `authoritative_copy` in this file -- 64 and 20 respectively at b11 -- and exits 1 if any does not resolve. b10 renamed two Drive copies and two repo files, which is exactly the operation that turns a row from true into false with no error anywhere, and the resolver found 0 casualties. A row that is never stat-ed is a row nobody can tell apart from a correct one."
     }
    ]
   },

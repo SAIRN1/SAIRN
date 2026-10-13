@@ -687,3 +687,93 @@ while sessions keep running the snippet by hand — which is precisely the shape
 the eighth discipline, about checks that stop testing anything. A heading-count
 gate would be a few lines; nobody owns the conventions file, which is why this
 paragraph is a routed observation and not a plan.
+
+---
+
+## 2026-10-13 (fourth, b11): A COUNT, RANGE OR TOTAL MUST NAME THE COMMAND THAT PRODUCED IT — added to the procedure, and applied backwards to the last three
+
+**THE RULE.** Any count, range, total, percentage or denominator that appears in
+a report, digest, handoff or standing document **carries the command that
+produced it**, in the document, next to the figure. Not a description of the
+method — the command, runnable as written.
+
+**THIS IS STEP 7 OF THE PROCEDURE above, and it is also its own rule**, because
+it applies to every document and not only to a push refusal.
+
+### Why, and it is measured rather than argued
+
+RULE E already said *re-derive at finalisation*. It was not enough, and the gap
+is visible in two of this platform's own figures:
+
+* **b9 reported 65 undriven red suites. The real number was 36.** The source was
+  a census sentence in `docs/known-red-suites.json` saying *"20 of the 86 entries
+  ... were driven"* while **its own authority log held 50 records** — and the
+  same paragraph said *"THE SWEEP LOG IS THE AUTHORITY, not this sentence."* It
+  named the authority and still published the wrong number, because **naming a
+  source is not naming a command**. A reader cannot re-run a source.
+* **b10 reported 538 defect records. Re-derived in b11 with the command: 542.**
+  That one is not an error — four landed from other sessions in between — and it
+  is the better illustration. **A shared append-only ledger has no stable
+  total**, so a figure quoted from it is only ever true as of a read, and the
+  only honest way to publish one is to publish the read.
+
+### What this buys that RULE E does not
+
+RULE E makes a figure true **at the moment of writing**. Naming the command
+makes it **falsifiable afterwards** — which is the only property that matters,
+because every figure in a report is read later than it was written. A reader with
+the command can disagree with me; a reader with a prose source has to trust me,
+and three of my own published figures have now been wrong.
+
+### The form, and what counts as naming the command
+
+Acceptable, because each can be pasted and run:
+
+    git rev-list --count c5af98dc..d30e9e42
+    python -c "import io,json; print(len(json.load(io.open('docs/defect-density-register.json',encoding='utf-8'))['records']))"
+    python scratchpad/gen_undriven_doc.py
+
+**NOT acceptable**, and each of these has appeared in a SAIRN document:
+
+* *"derived from the sweep log"* — names a source, not a command. This is the
+  exact wording that produced the 65.
+* *"measured 2026-10-13"* — names a date. A date is not a method.
+* *"84 entries"* with no command at all — the default, and the thing this rule
+  replaces.
+
+**A GENERATOR IS THE STRONGEST FORM OF THE RULE.** Where a document's figures
+all come from one derivation, make the document itself the generator's output and
+name the generator — `docs/2026-10-13-fourth-b10-undriven-suites.md` is produced
+by `scratchpad/gen_undriven_doc.py`, embeds its two inputs verbatim, and
+**refuses to write at all if its two inputs disagree**. A figure that cannot be
+produced without the inputs agreeing is stronger than a figure with a command
+beside it.
+
+### APPLIED BACKWARDS: the last three reported counts, re-derived
+
+Run as `scratchpad/rederive_b11.log`, with each command shown beside its result.
+
+| figure | b10 reported | b11 re-derived | command | moved? |
+|---|---|---|---|---|
+| undriven red suites | 36 of 84 | **36 of 84** | `python scratchpad/gen_undriven_doc.py` | no |
+| convention headings / NEXT FREE | 34, next 35 | **34, 1→34, no gap, no dup, next 35** | `re.finditer(r'(?m)^## (\d+)\.')` over `docs/2026-09-13-cross-domain-disciplines.md` | no |
+| defect register records | 538 | **542** | `len(json.load(...)['records'])` | **YES, +4** |
+| b10 push ranges | 1 commit each | **1 commit each** | `git rev-list --count <range>` | no |
+
+**ONE OF FOUR MOVED, and the reason is the rule.** The register gained four
+records from other sessions between b10's write and b11's read. **b10 was not
+wrong**; the figure simply had a shelf life nobody could see, because it was
+published without the read that produced it. With the command attached, the next
+session re-runs it in one line instead of inheriting a number.
+
+**The other three held**, which is the arm that makes the exercise worth
+anything: a re-derivation that moves everything proves only that the method
+changed.
+
+### What the rule does NOT do
+
+It does not make a figure correct. A named command can be the **wrong** command —
+counting the wrong population, or counting a population the document then
+describes differently. The rule makes the figure **checkable**, and checkable is
+the most a document can offer. Catching a wrong command still needs a reader,
+and that is not mechanised anywhere.
