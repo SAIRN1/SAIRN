@@ -235,8 +235,8 @@
       "task": "batch b15 -- audit role, read-only on platform code. Item 6 (audit event_type constraint check) DEFERRED, not run as a primary deliverable: fourth is LIVE right now (PID confirmed running, claimed 2026-10-13T08:15:26Z) running tools/audit_event_type_check.py for the identical purpose -- will cross-check fourth's output when it lands rather than duplicate. No write to docs/defect-density-register.json planned this batch; if a rotation re-verify needs a register filing it will be held and routed, not written, given fourth's live claim on that file. bld_draws item is a REPRO-TOOL mutation-proof extension in this role's own tools-hover2/bld_draws_bypass_repro.py, not a live-deployment verify. Also: tip-beacon path fix, sf_ five-table repro+baseline (read-only), hank claim reconcile (read-only), diff sweep since 766c3842 (read-only), undirected sweep (read-only), rotation Rule Q draw (read-only re-verify, register filing deferred if needed), methodology override note (external repo only), handoff+report. FILES: .claude/skills/sairn-hover-auditor/tools-hover2/bld_draws_bypass_repro.py .claude/skills/sairn-hover-auditor/tools-hover2/hover_tip_beacon.py .claude/skills/sairn-hover-auditor/tools-hover2/hover_coverage_ledger.py .claude/skills/sairn-hover-auditor/tools-hover2/sf_officers_provisioning_bypass_repro.py",
       "claimed_at": "2026-10-13T08:16:08Z",
       "claimed_at_epoch": 1791879368.8326128,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-13T10:12:01Z",
       "files": [
         ".claude/skills/sairn-hover-auditor/tools-hover2/bld_draws_bypass_repro.py",
         ".claude/skills/sairn-hover-auditor/tools-hover2/hover_coverage_ledger.py",
