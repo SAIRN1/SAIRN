@@ -3570,6 +3570,27 @@
         "docs/external-files-index.json",
         "docs/known-red-suites.json"
       ]
+    },
+    {
+      "id": "fourth-1791924352",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "batch b11 -- claimed as the FIRST action. (1) the 36 undriven red suites committed as a routing doc docs/2026-10-13-fourth-b10-undriven-suites.md, generated from scratchpad/undriven.txt and owner_map.log with NO hand re-count: cody 36 under tests/ to drive in a worktree, hank 5 under api/. (2) tools/hover_auditor_scope_gate.py:409 and the 6-arm unfetched-base checker spec routed to cc in docs/ with file:line, and the ruling recorded ONCE in the by-design register as owner cc, state DECIDE_OR_NOT_PROMOTED. (3) verify the docs/ index and the Drive index both RESOLVE after the b9 handoff renames -- every entry must point at a real file -- and fix dead entries. (4) methodology: any count, range or total in a report must NAME THE COMMAND that produced it; the rule added to my procedure and my last three reported counts re-derived with it, reporting any that move. (5) check no routed finding from b9 or b10 is unacknowledged by hank, cody or cc, listing each with file:line and owner state. (6) push without force and confirm it landed. Then the handoff BEFORE the report, then the report and digest. HOOKS STAY CLEARED and .claude/settings.json is never committed. No SAIRN_SEED_GATE=off. No file under tools/ is edited by this batch. FILES: docs/2026-10-13-fourth-b10-undriven-suites.md docs/2026-10-13-fourth-b11-routed-to-cc.md docs/by-design-register.json docs/external-files-index.json docs/METHODOLOGY.md docs/2026-10-13-fourth-b11-routed-acknowledgement.md docs/SAIRN-handoff-fourth-b11.md SAIRN-report-fourth-b11.txt SAIRN-digest-fourth-b11.txt",
+      "claimed_at": "2026-10-13T20:45:52Z",
+      "claimed_at_epoch": 1791924352.842652,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b11.txt",
+        "SAIRN-report-fourth-b11.txt",
+        "docs/2026-10-13-fourth-b10-undriven-suites.md",
+        "docs/2026-10-13-fourth-b11-routed-acknowledgement.md",
+        "docs/2026-10-13-fourth-b11-routed-to-cc.md",
+        "docs/METHODOLOGY.md",
+        "docs/SAIRN-handoff-fourth-b11.md",
+        "docs/by-design-register.json",
+        "docs/external-files-index.json"
+      ]
     }
   ],
   "refusals": [
