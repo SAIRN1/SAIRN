@@ -23,11 +23,59 @@
  "criteria_version": "2026-10-06.1",
  "flags": [
   {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "008078c3991b037b26b315255e52f9a6f09e9d39",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/claims/run_matcher_probe.py",
    "class": "test file",
    "level": "CHANGE",
    "shapes": [],
    "sha": "0112a8be4b003c8fd925be79d65e07f6ab650dd4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/courtlistener-rate-limit.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "01fae17c6194bc967ad43fbe8324e261a194d967",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-endpoint-inputs.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "01fae17c6194bc967ad43fbe8324e261a194d967",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-jurisdiction-labels.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "01fae17c6194bc967ad43fbe8324e261a194d967",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/dental-gfe.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "01fae17c6194bc967ad43fbe8324e261a194d967",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/mech-assets.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "01fae17c6194bc967ad43fbe8324e261a194d967",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -44,6 +92,51 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "0442646cb78136d0a97a8feabfe2dbf22c9d55eb",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/alf-append-only-read-order.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "052b39c1095758b1026c08cdc693bd76c2b6eced",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/auth-setup-attribution.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "052b39c1095758b1026c08cdc693bd76c2b6eced",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/faults/sd_write_faults.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "052b39c1095758b1026c08cdc693bd76c2b6eced",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/phi_cache_scoped_to_user.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "052b39c1095758b1026c08cdc693bd76c2b6eced",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/strip_consolidation_pinning.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "'api/_lib/courtlistener-rate-limit.test.js',"
+    }
+   ],
+   "sha": "052b39c1095758b1026c08cdc693bd76c2b6eced",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -92,6 +185,134 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "12cc52c96dd71b889a837a10e7f5aec90082b1c6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/greeting.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "134384d5486593cb5267afd0d253659b93b8ee8d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sairndental/public-book-guardian.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "134384d5486593cb5267afd0d253659b93b8ee8d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/faults/alf_rule_read_faults.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "134384d5486593cb5267afd0d253659b93b8ee8d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/faults/sd_write_faults.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "134384d5486593cb5267afd0d253659b93b8ee8d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/intake_form_public_surface.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "134384d5486593cb5267afd0d253659b93b8ee8d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/intake_link_no_credential.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "134384d5486593cb5267afd0d253659b93b8ee8d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/intake_no_false_success.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "134384d5486593cb5267afd0d253659b93b8ee8d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/ld_reports_unreadable.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "134384d5486593cb5267afd0d253659b93b8ee8d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/phi_cache_scoped_to_user.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "134384d5486593cb5267afd0d253659b93b8ee8d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/roofing_claim_gate_single_source.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "134384d5486593cb5267afd0d253659b93b8ee8d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairndesign_po_procurement.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "134384d5486593cb5267afd0d253659b93b8ee8d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sb_sync_badge_honesty.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "134384d5486593cb5267afd0d253659b93b8ee8d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_timesheet_pay_est.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "134384d5486593cb5267afd0d253659b93b8ee8d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/st_reports_failure.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "134384d5486593cb5267afd0d253659b93b8ee8d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/stonedesk_admin_storage_kpi.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "134384d5486593cb5267afd0d253659b93b8ee8d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sv_storage_guard.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "134384d5486593cb5267afd0d253659b93b8ee8d",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -589,6 +810,46 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/_lib/courtlistener-rate-limit.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "46e2e6526ea9f5a222ceb7b59cd6d3f75bc346a8",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-endpoint-inputs.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "46e2e6526ea9f5a222ceb7b59cd6d3f75bc346a8",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-jurisdiction-labels.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "46e2e6526ea9f5a222ceb7b59cd6d3f75bc346a8",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/dental-gfe.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "46e2e6526ea9f5a222ceb7b59cd6d3f75bc346a8",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/mech-assets.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "46e2e6526ea9f5a222ceb7b59cd6d3f75bc346a8",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_self_exclusion_guard_sabotage_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -610,6 +871,46 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "4ec0d5d51f56c14d072bda2d8c0e6f875c617672",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/courtlistener-rate-limit.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "4f6a715387b44c11660f8ccbb563969ef47784f4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-endpoint-inputs.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "4f6a715387b44c11660f8ccbb563969ef47784f4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-jurisdiction-labels.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "4f6a715387b44c11660f8ccbb563969ef47784f4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/dental-gfe.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "4f6a715387b44c11660f8ccbb563969ef47784f4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/mech-assets.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "4f6a715387b44c11660f8ccbb563969ef47784f4",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -651,6 +952,27 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "51b8f707acacf6e343325f4a5718470bfdf8f8f3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": ".githooks/pre-commit",
+   "class": "CI / hook configuration",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "echo \"  --cached --diff-filter=A failed). REFUSING rather than skipping.\" >&2"
+    }
+   ],
+   "sha": "52273b572c6cffa81ad24d1e311eb40c88580986",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "52273b572c6cffa81ad24d1e311eb40c88580986",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -717,6 +1039,46 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "58fbb240da2451240df8a926d51882d9c7749885",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/courtlistener-rate-limit.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "5a8099a2069b6bdb4fb1d426bb238a7d6a8dcf0f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-endpoint-inputs.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "5a8099a2069b6bdb4fb1d426bb238a7d6a8dcf0f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-jurisdiction-labels.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "5a8099a2069b6bdb4fb1d426bb238a7d6a8dcf0f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/dental-gfe.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "5a8099a2069b6bdb4fb1d426bb238a7d6a8dcf0f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/mech-assets.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "5a8099a2069b6bdb4fb1d426bb238a7d6a8dcf0f",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -852,6 +1214,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/faults/grd_write_faults.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6942098b0fed7589606621735bddc08169ef0569",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/phi_cache_scoped_to_user.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'and saying so, rather than skipping on an unknown.');"
+    }
+   ],
+   "sha": "6942098b0fed7589606621735bddc08169ef0569",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/hydrate-gate-coupling.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -865,6 +1248,27 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "6ca448c96012e10c2a8faa669ac8c77c21a8516e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/faults/grd_write_faults.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6f0ae080b8c59163a505c42317899888a1c1e8d8",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/phi_cache_scoped_to_user.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'and saying so, rather than skipping on an unknown.');"
+    }
+   ],
+   "sha": "6f0ae080b8c59163a505c42317899888a1c1e8d8",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -882,6 +1286,27 @@
     }
    ],
    "sha": "72d757efae5ab9df8c43faac4383e28f2b3c73ab",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/faults/grd_write_faults.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "75108ef74ad200273466a7015063a67ddb973192",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/phi_cache_scoped_to_user.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'and saying so, rather than skipping on an unknown.');"
+    }
+   ],
+   "sha": "75108ef74ad200273466a7015063a67ddb973192",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -1066,6 +1491,51 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/alf-append-only-read-order.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "8085a493a45bd35cba7488c23fced42e79c07b14",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/auth-setup-attribution.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "8085a493a45bd35cba7488c23fced42e79c07b14",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/faults/sd_write_faults.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "8085a493a45bd35cba7488c23fced42e79c07b14",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/phi_cache_scoped_to_user.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "8085a493a45bd35cba7488c23fced42e79c07b14",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/strip_consolidation_pinning.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "'api/_lib/courtlistener-rate-limit.test.js',"
+    }
+   ],
+   "sha": "8085a493a45bd35cba7488c23fced42e79c07b14",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/hydrate-gate-coupling.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -1211,6 +1681,155 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "8ff247a2890edf5f3af0483030980424a17113f4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/faults/grd_write_faults.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "91cb57c86e758a5f755ad91b8f0175d2bc5d4fc7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/phi_cache_scoped_to_user.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'and saying so, rather than skipping on an unknown.');"
+    }
+   ],
+   "sha": "91cb57c86e758a5f755ad91b8f0175d2bc5d4fc7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/greeting.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sairndental/public-book-guardian.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/faults/alf_rule_read_faults.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/faults/sd_write_faults.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/intake_form_public_surface.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/intake_link_no_credential.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/intake_no_false_success.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/ld_reports_unreadable.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/phi_cache_scoped_to_user.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/roofing_claim_gate_single_source.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairndesign_po_procurement.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sb_sync_badge_honesty.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_timesheet_pay_est.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/st_reports_failure.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/stonedesk_admin_storage_kpi.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sv_storage_guard.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -1396,6 +2015,51 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/alf-append-only-read-order.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a0cf0a417f0ed24296b15a5d0e12cce7d312e66e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/auth-setup-attribution.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a0cf0a417f0ed24296b15a5d0e12cce7d312e66e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/faults/sd_write_faults.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a0cf0a417f0ed24296b15a5d0e12cce7d312e66e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/phi_cache_scoped_to_user.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a0cf0a417f0ed24296b15a5d0e12cce7d312e66e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/strip_consolidation_pinning.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "'api/_lib/courtlistener-rate-limit.test.js',"
+    }
+   ],
+   "sha": "a0cf0a417f0ed24296b15a5d0e12cce7d312e66e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_tier_a_review_gate_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -1409,6 +2073,35 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "a4b4b5bb49d55e58f713967fcd9385d3aa4939a0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a7615e0f442db750920775f2e9d948da198dc0cb",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/faults/grd_write_faults.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ab839b8aea86b095c29db4b8d8225c4883d09bd3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/phi_cache_scoped_to_user.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'and saying so, rather than skipping on an unknown.');"
+    }
+   ],
+   "sha": "ab839b8aea86b095c29db4b8d8225c4883d09bd3",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -1442,6 +2135,134 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "ab919080da74207947a258834713c8a5f9c74d30",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/greeting.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sairndental/public-book-guardian.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/faults/alf_rule_read_faults.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/faults/sd_write_faults.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/intake_form_public_surface.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/intake_link_no_credential.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/intake_no_false_success.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/ld_reports_unreadable.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/phi_cache_scoped_to_user.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/roofing_claim_gate_single_source.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairndesign_po_procurement.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sb_sync_badge_honesty.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_timesheet_pay_est.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/st_reports_failure.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/stonedesk_admin_storage_kpi.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sv_storage_guard.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -1542,6 +2363,48 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "b7f6fb54116e42a0af1ea0681d9f195473588929",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": ".githooks/pre-commit",
+   "class": "CI / hook configuration",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "echo \"  --cached --diff-filter=A failed). REFUSING rather than skipping.\" >&2"
+    }
+   ],
+   "sha": "baaaa7f3dcadc519903647d2a0edeb834b2595e0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "baaaa7f3dcadc519903647d2a0edeb834b2595e0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": ".githooks/pre-commit",
+   "class": "CI / hook configuration",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "echo \"  --cached --diff-filter=A failed). REFUSING rather than skipping.\" >&2"
+    }
+   ],
+   "sha": "beef16df447f4ac8cc6822f3e414fefb87d70596",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "beef16df447f4ac8cc6822f3e414fefb87d70596",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -1751,6 +2614,134 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "d5abcf579cbc79515db8f09ea893de984443e3a3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/greeting.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sairndental/public-book-guardian.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/faults/alf_rule_read_faults.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/faults/sd_write_faults.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/intake_form_public_surface.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/intake_link_no_credential.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/intake_no_false_success.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/ld_reports_unreadable.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/phi_cache_scoped_to_user.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/roofing_claim_gate_single_source.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairndesign_po_procurement.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sb_sync_badge_honesty.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_timesheet_pay_est.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/st_reports_failure.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/stonedesk_admin_storage_kpi.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sv_storage_guard.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -2117,6 +3108,51 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/alf-append-only-read-order.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f269a82602d6e45681d5f9565f45fdcb9111316b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/auth-setup-attribution.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f269a82602d6e45681d5f9565f45fdcb9111316b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/faults/sd_write_faults.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f269a82602d6e45681d5f9565f45fdcb9111316b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/phi_cache_scoped_to_user.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f269a82602d6e45681d5f9565f45fdcb9111316b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/strip_consolidation_pinning.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "'api/_lib/courtlistener-rate-limit.test.js',"
+    }
+   ],
+   "sha": "f269a82602d6e45681d5f9565f45fdcb9111316b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_dup_dom_ids_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -2236,88 +3272,6 @@
    "criteria_version": "2026-10-06.1"
   },
   {
-   "path": "tests/faults/grd_write_faults.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "6942098b0fed7589606621735bddc08169ef0569",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/phi_cache_scoped_to_user.js",
-   "class": "test file",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "+ 'and saying so, rather than skipping on an unknown.');"
-    }
-   ],
-   "sha": "6942098b0fed7589606621735bddc08169ef0569",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/_lib/courtlistener-rate-limit.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "46e2e6526ea9f5a222ceb7b59cd6d3f75bc346a8",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/_lib/deadline-endpoint-inputs.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "46e2e6526ea9f5a222ceb7b59cd6d3f75bc346a8",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/_lib/deadline-jurisdiction-labels.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "46e2e6526ea9f5a222ceb7b59cd6d3f75bc346a8",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/_lib/dental-gfe.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "46e2e6526ea9f5a222ceb7b59cd6d3f75bc346a8",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/_lib/mech-assets.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "46e2e6526ea9f5a222ceb7b59cd6d3f75bc346a8",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/faults/grd_write_faults.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "91cb57c86e758a5f755ad91b8f0175d2bc5d4fc7",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/phi_cache_scoped_to_user.js",
-   "class": "test file",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "+ 'and saying so, rather than skipping on an unknown.');"
-    }
-   ],
-   "sha": "91cb57c86e758a5f755ad91b8f0175d2bc5d4fc7",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
    "path": ".githooks/pre-commit",
    "class": "CI / hook configuration",
    "level": "WEAKENING",
@@ -2327,7 +3281,7 @@
      "detail": "echo \"  --cached --diff-filter=A failed). REFUSING rather than skipping.\" >&2"
     }
    ],
-   "sha": "beef16df447f4ac8cc6822f3e414fefb87d70596",
+   "sha": "fe19dcd6306410ae8bb995e671142a9642810044",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -2335,698 +3289,7 @@
    "class": "push-gate logic",
    "level": "CHANGE",
    "shapes": [],
-   "sha": "beef16df447f4ac8cc6822f3e414fefb87d70596",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/greeting.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/sairndental/public-book-guardian.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/faults/alf_rule_read_faults.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/faults/sd_write_faults.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/intake_form_public_surface.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/intake_link_no_credential.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/intake_no_false_success.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/ld_reports_unreadable.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/phi_cache_scoped_to_user.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/roofing_claim_gate_single_source.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/sairndesign_po_procurement.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/sb_sync_badge_honesty.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/sd_timesheet_pay_est.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/st_reports_failure.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/stonedesk_admin_storage_kpi.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/sv_storage_guard.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/alf-append-only-read-order.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "f269a82602d6e45681d5f9565f45fdcb9111316b",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/auth-setup-attribution.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "f269a82602d6e45681d5f9565f45fdcb9111316b",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/faults/sd_write_faults.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "f269a82602d6e45681d5f9565f45fdcb9111316b",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/phi_cache_scoped_to_user.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "f269a82602d6e45681d5f9565f45fdcb9111316b",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/strip_consolidation_pinning.test.js",
-   "class": "test file",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a bound or threshold ADDED",
-     "detail": "'api/_lib/courtlistener-rate-limit.test.js',"
-    }
-   ],
-   "sha": "f269a82602d6e45681d5f9565f45fdcb9111316b",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/_lib/courtlistener-rate-limit.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "01fae17c6194bc967ad43fbe8324e261a194d967",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/_lib/deadline-endpoint-inputs.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "01fae17c6194bc967ad43fbe8324e261a194d967",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/_lib/deadline-jurisdiction-labels.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "01fae17c6194bc967ad43fbe8324e261a194d967",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/_lib/dental-gfe.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "01fae17c6194bc967ad43fbe8324e261a194d967",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/_lib/mech-assets.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "01fae17c6194bc967ad43fbe8324e261a194d967",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": ".githooks/pre-commit",
-   "class": "CI / hook configuration",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "echo \"  --cached --diff-filter=A failed). REFUSING rather than skipping.\" >&2"
-    }
-   ],
-   "sha": "52273b572c6cffa81ad24d1e311eb40c88580986",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tools/sairn_push_gate_hook.py",
-   "class": "push-gate logic",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "52273b572c6cffa81ad24d1e311eb40c88580986",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/greeting.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/sairndental/public-book-guardian.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/faults/alf_rule_read_faults.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/faults/sd_write_faults.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/intake_form_public_surface.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/intake_link_no_credential.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/intake_no_false_success.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/ld_reports_unreadable.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/phi_cache_scoped_to_user.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/roofing_claim_gate_single_source.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/sairndesign_po_procurement.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/sb_sync_badge_honesty.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/sd_timesheet_pay_est.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/st_reports_failure.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/stonedesk_admin_storage_kpi.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/sv_storage_guard.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "927d6c525cd7147ea7459750f7c1bbe5c59bfec7",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/alf-append-only-read-order.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "a0cf0a417f0ed24296b15a5d0e12cce7d312e66e",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/auth-setup-attribution.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "a0cf0a417f0ed24296b15a5d0e12cce7d312e66e",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/faults/sd_write_faults.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "a0cf0a417f0ed24296b15a5d0e12cce7d312e66e",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/phi_cache_scoped_to_user.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "a0cf0a417f0ed24296b15a5d0e12cce7d312e66e",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/strip_consolidation_pinning.test.js",
-   "class": "test file",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a bound or threshold ADDED",
-     "detail": "'api/_lib/courtlistener-rate-limit.test.js',"
-    }
-   ],
-   "sha": "a0cf0a417f0ed24296b15a5d0e12cce7d312e66e",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/faults/grd_write_faults.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "ab839b8aea86b095c29db4b8d8225c4883d09bd3",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/phi_cache_scoped_to_user.js",
-   "class": "test file",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "+ 'and saying so, rather than skipping on an unknown.');"
-    }
-   ],
-   "sha": "ab839b8aea86b095c29db4b8d8225c4883d09bd3",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tools/sairn_push_gate_hook.py",
-   "class": "push-gate logic",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "008078c3991b037b26b315255e52f9a6f09e9d39",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/_lib/courtlistener-rate-limit.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "5a8099a2069b6bdb4fb1d426bb238a7d6a8dcf0f",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/_lib/deadline-endpoint-inputs.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "5a8099a2069b6bdb4fb1d426bb238a7d6a8dcf0f",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/_lib/deadline-jurisdiction-labels.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "5a8099a2069b6bdb4fb1d426bb238a7d6a8dcf0f",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/_lib/dental-gfe.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "5a8099a2069b6bdb4fb1d426bb238a7d6a8dcf0f",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/_lib/mech-assets.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "5a8099a2069b6bdb4fb1d426bb238a7d6a8dcf0f",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/faults/grd_write_faults.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "75108ef74ad200273466a7015063a67ddb973192",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/phi_cache_scoped_to_user.js",
-   "class": "test file",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "+ 'and saying so, rather than skipping on an unknown.');"
-    }
-   ],
-   "sha": "75108ef74ad200273466a7015063a67ddb973192",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/alf-append-only-read-order.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "8085a493a45bd35cba7488c23fced42e79c07b14",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/auth-setup-attribution.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "8085a493a45bd35cba7488c23fced42e79c07b14",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/faults/sd_write_faults.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "8085a493a45bd35cba7488c23fced42e79c07b14",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/phi_cache_scoped_to_user.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "8085a493a45bd35cba7488c23fced42e79c07b14",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/strip_consolidation_pinning.test.js",
-   "class": "test file",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a bound or threshold ADDED",
-     "detail": "'api/_lib/courtlistener-rate-limit.test.js',"
-    }
-   ],
-   "sha": "8085a493a45bd35cba7488c23fced42e79c07b14",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/greeting.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "api/sairndental/public-book-guardian.test.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/faults/alf_rule_read_faults.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/faults/sd_write_faults.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/intake_form_public_surface.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/intake_link_no_credential.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/intake_no_false_success.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/ld_reports_unreadable.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/phi_cache_scoped_to_user.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/roofing_claim_gate_single_source.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/sairndesign_po_procurement.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/sb_sync_badge_honesty.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/sd_timesheet_pay_est.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/st_reports_failure.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/stonedesk_admin_storage_kpi.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/sv_storage_guard.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": ".githooks/pre-commit",
-   "class": "CI / hook configuration",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "echo \"  --cached --diff-filter=A failed). REFUSING rather than skipping.\" >&2"
-    }
-   ],
-   "sha": "baaaa7f3dcadc519903647d2a0edeb834b2595e0",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tools/sairn_push_gate_hook.py",
-   "class": "push-gate logic",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "baaaa7f3dcadc519903647d2a0edeb834b2595e0",
+   "sha": "fe19dcd6306410ae8bb995e671142a9642810044",
    "criteria_version": "2026-10-06.1"
   }
  ],
