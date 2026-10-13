@@ -206,6 +206,99 @@ rc, out = run(['--fixtures'])
 ok('and the REAL check still passes its own criteria lock afterwards, so the '
    'sabotage left nothing behind', rc == 0, (rc, out[-200:]))
 
+# ── THE WARN-ONLY DIRECTORY (added 2026-10-13) ─────────────────────────────
+# Michael's decision, after this check refused FIVE pushes in one session over
+# SIX files, none of them belonging to the session being refused -- and twice
+# the PreToolUse half denied the whole compound command, so the edit that would
+# have cleared the refusal never ran. A handoff-shaped name under
+# `G:/My Drive/SAIRN-status` now WARNS. Everything else still BLOCKS.
+#
+# THE ARMS BELOW ARE ALMOST ALL BOUNDARIES, because the only real risk is the
+# relief leaking: a script in that directory, or a handoff anywhere else, must
+# still refuse a push. The directory is driven through the module's own
+# WARN_ONLY_DIRS rather than a second copy of the path, so the probe cannot
+# pass against a tool that is warning on a different directory than it says.
+print('')
+print('W. a handoff under the warn-only directory warns; a script still blocks')
+
+_spec = importlib.util.spec_from_file_location('efi_warn', TOOL)
+EFI = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(EFI)
+
+ok('the tool under test HAS a warn-only list and a predicate',
+   hasattr(EFI, 'WARN_ONLY_DIRS') and hasattr(EFI, 'warn_only'),
+   'the relief this section is about is absent')
+
+if hasattr(EFI, 'warn_only'):
+    _wd = EFI.WARN_ONLY_DIRS[0]
+    ok('the warn-only directory is the Drive report directory, not something '
+       'broader', 'SAIRN-status' in _wd, _wd)
+
+    _cases = [
+        (os.path.join(_wd, 'handoff-cody-2026-10-13.md'), True,
+         'a handoff in the warn-only dir WARNS'),
+        (os.path.join(_wd, 'SAIRN-handoff-h1-b15.md'), True,
+         '...and the auditor spelling of the same thing WARNS too'),
+        (os.path.join(_wd, 'gen_thing.py'), False,
+         'BOUNDARY: a SCRIPT in the warn-only dir still BLOCKS -- this is what '
+         'the check was built for'),
+        (os.path.join(_wd, 'run_thing.sh'), False,
+         'BOUNDARY: a shell script there still BLOCKS'),
+        (os.path.join(_wd, 'notes.md'), False,
+         'BOUNDARY: a non-handoff .md there is not warn-only'),
+        (os.path.join('C:', os.sep, 'elsewhere', 'handoff-x.md'), False,
+         'BOUNDARY: the SAME handoff name OUTSIDE that directory still BLOCKS '
+         '-- the relief is scoped to one place, not to a filename'),
+    ]
+    for _p, _want, _label in _cases:
+        ok(_label, EFI.warn_only(_p) is _want,
+           '%s -> warn_only=%s, wanted %s' % (_p, EFI.warn_only(_p), _want))
+
+# END TO END, through the real entry point, in a throwaway tree: a declared
+# directory holding ONE undeclared handoff and nothing else must exit 0, and
+# adding ONE undeclared script to the same directory must take it to 1. The
+# fixture directory is pointed at the real warn-only path so the split is
+# exercised rather than approximated.
+_wroot = tempfile.mkdtemp(prefix='efi_warn_')
+try:
+    if hasattr(EFI, 'WARN_ONLY_DIRS'):
+        _wd = EFI.WARN_ONLY_DIRS[0]
+        _h = os.path.join(_wd, 'handoff-efiprobe-DELETEME.md')
+        _s = os.path.join(_wd, 'efiprobe_DELETEME.py')
+        _made = []
+        try:
+            if os.path.isdir(_wd):
+                io.open(_h, 'w', encoding='utf-8', newline='').write('# probe\n')
+                _made.append(_h)
+                rc_h, out_h = run([])
+                ok('END TO END: an undeclared handoff in the warn-only dir does '
+                   'NOT block (exit 0 or 1 only from something else)',
+                   'REPORTED, NOT BLOCKING' in out_h, out_h[-400:])
+
+                io.open(_s, 'w', encoding='utf-8', newline='').write('# probe\n')
+                _made.append(_s)
+                rc_s, out_s = run([])
+                ok('END TO END: adding an undeclared SCRIPT to the same '
+                   'directory BLOCKS (exit 1)', rc_s == 1, (rc_s, out_s[-400:]))
+                ok('...and the two are reported SEPARATELY, so a reader can '
+                   'tell which one refused the push',
+                   'REPORTED, NOT BLOCKING' in out_s
+                   and 'Each is a tool' in out_s, out_s[-500:])
+            else:
+                ok('COULD NOT RUN the end-to-end arms -- the warn-only '
+                   'directory does not exist in this clone, so nothing was '
+                   'driven through the real entry point', False,
+                   'absent: %s' % _wd)
+        finally:
+            for _f in _made:
+                if os.path.isfile(_f):
+                    os.remove(_f)
+            ok('the end-to-end arms left NO litter in the warn-only directory',
+               not any(os.path.isfile(f) for f in (_h, _s)))
+finally:
+    shutil.rmtree(_wroot, ignore_errors=True)
+
+
 print('')
 if _fail:
     print('%d failure(s)' % len(_fail))

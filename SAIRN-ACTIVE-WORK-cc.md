@@ -7121,3 +7121,85 @@ held an active claim on any of them at that HEAD.
 
 **No overrides. `SAIRN_SEED_GATE=off` was never used** — five gate refusals
 across five rebases, every one satisfied rather than bypassed.
+
+---
+
+## 2026-10-13 — batch b5
+
+**HEAD `93aea737`→ pushed; full account in `SAIRN-report-cc-b5.txt`, six-field
+digest in `SAIRN-digest-cc-b5.txt`, handoff at `docs/handoff-cc-2026-10-13.md`
+(written BEFORE the report, per the brief).**
+
+**THE HOOKS ARE OFF AND NOW COMMITTED OFF.** Michael cleared them on 2026-10-11
+because they caused agent compaction; this session restored 23 from HEAD on
+2026-10-12 before being told, and that is the reason `hooks: {}` is now
+**committed** — left as a working-tree edit it is one checkout, reset, rebase or
+fresh clone away from coming back silently. The 23 are preserved verbatim in
+`docs/hooks-disabled-2026-10-13.json`. `hook_integrity_check --wiring-only`
+reports INTENTIONALLY DISARMED and exits 0, and still calls a **half-wired** or
+**absent** `hooks` key drift — the half-wired shape is exactly what 2026-10-11
+actually was.
+
+**MECHANICAL PERMISSION RULES, AND TWO PARTS OF THE BRIEF ARE NOT EXPRESSIBLE.**
+project deny 3→75 / ask 4→0 / allow 13→79; user deny 25→85 (the 25 **merged**,
+not replaced) / ask 4→0 / allow 42→91. Syntax, precedence and compound
+behaviour were verified against current documentation **before** a rule was
+written. Every class driven with a harmless matching command; the rules took
+effect **immediately**, no restart.
+Two holes found by testing: an exact deny rule is exactly exact, so
+`git checkout HEAD .` — which discards the whole working tree — matched
+**nothing** while the broad `Bash(git checkout *)` sat in ALLOW underneath (fixed
+twice over: wildcard denies for every discard spelling AND the broad allow
+removed); and **`SAIRN_SEED_GATE=off` cannot be stopped by any permission rule**
+— not as a deny (the assignment is stripped before matching) and not by falling
+out of allow (documented to prompt; **it ran with no prompt**). The gate-side
+design in item 7 is therefore the only available control, not a second layer.
+
+**THE bld_draws FIX IS LIVE-VERIFIED AT LAST** — b4 could not, the platform was
+402 on every route. Bare licence key: **401 NO_SESSION on BOTH read and write**.
+Valid session: 200, three draws visible. **No write persisted** — checked by the
+probe id being absent, which is the only way to tell "refused" from "refused
+after writing". Three wrong turns corrected from evidence rather than guessed
+(`/api/bld-auth` not `/api/sd-auth`; `login` not `signin`; `employee_id`/`pin`
+at the top level per `api/bld-auth.js:241-242`), and a connection reset is
+retried because a reset is not a verdict about a gate.
+
+**THE 2.38MB OPEN-WORK INDEX IS SHARDED**, and per-app sharding **was not
+enough** — measured after the first run, not predicted: `platform.md` is 838,657
+bytes against a 400,000 ceiling, because these rows average ~2.9KB. So
+`docs/open-work/ACTIVE.md` carries one short line per open row with a pointer to
+`<app>.md:<line>` and never the paragraph. No row was edited — whole lines
+copied, PR §2.1 respected. The index stays **canonical** because 14 tools parse
+those rows and `doc_sha_reseat.py` rewrites them on every rebase;
+`open_work_shard.py --check` is what makes two copies safe and reports CLEAN at
+812 of 812.
+
+**I REPRODUCED A DEFECT CLAUDE.md NAMES BY NAME.** The closed-word regex arrived
+in the file as `(?i)<BS>(closed|...)<BS>` — a literal backspace, a pattern that
+can never match — and the first run classified **all 812 rows as open**. Built
+from a word list now, and the module refuses to run if the pattern cannot match
+a word it is made of.
+
+**AND EVERY ONE OF THE 11 `api/sd-data.js` ROUTED CITATIONS HAS MOVED.** That
+file is now 17,047 lines; four were spot-checked and none was within ±6 lines,
+so all 11 were re-derived and tabulated. Two have **no such field token anywhere
+in the file** — a rename, a removal, or an already-fixed finding, and all three
+are different facts. The four `ai-scan-redaction.js` citations still resolve
+exactly, so the drift is specific to the file four sessions keep editing.
+
+**CONFLICTS DECLARED AND NOT OVERRIDDEN (PR §4.3):** `docs/tier-a-reviews.json`
+and `api/sd-data.js` are both in hank's live b5 FILES, so the Tier A discharge
+and the sd-data.js rows are **report-only**. 17 open obligations, all overdue;
+**five carry COULD-NOT-TELL** — their recorded sha does not resolve, so a third
+of the open rows cannot be verified against the code they are about.
+
+**Rule E routed to ted, not written into his entries.** Next free convention
+number is **34**, recounted at this HEAD by ted's own method (33 headings, 33
+distinct, no duplicates, no gaps).
+
+**Files written that were not in my declared FILES**, all named in the handoff:
+`tools/defect_register.py`, `tests/run_defect_register_superseded_probe.py`,
+`tools/open_work_shard.py`, `docs/open-work/*`, `docs/METHODOLOGY.md`,
+`docs/2026-10-13-per-gate-skip-design.md`, `~/.claude/settings.json`.
+
+**No overrides. `SAIRN_SEED_GATE=off` was never used.**

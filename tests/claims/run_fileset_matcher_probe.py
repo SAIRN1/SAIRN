@@ -275,8 +275,22 @@ arm('...and the block names THAT PATH rather than the bigram that matched',
     + out[:400])
 
 # THE THIRD STATE, driven end to end.
-NOFILES = 'review the leg_invoices obligation, read only'
-WITHFILES = 'FILES: docs/tier-a-reviews.json -- discharge the leg_invoices obligation'
+# ── THE FIXTURE TOKEN IS NOT A REAL RESOURCE NAME (renamed 2026-10-13) ────
+# This pair used `leg_invoices`, a real Tier A resource, so every edit to this
+# file named it on a changed line and opened a PHANTOM review obligation in
+# tools/tier_a_review_gate.py -- measured on 2026-10-12, when one was recorded
+# against hank for a change touching no SAIRNlegacy code at all.
+#
+# The gate is behaving as documented and was NOT the thing to change:
+# strip_diff_noise() keeps SHORT strings, because `resource === 'leg_invoices'`
+# is real code and a two-word fixture is character-for-character the same
+# thing. So the fix belongs here. `zzz_fixture_resource` carries an underscore,
+# so idents() still treats it as an identifier and the arm still means exactly
+# what it says -- which is the property that matters, and the arm below is
+# unchanged otherwise.
+NOFILES = 'review the zzz_fixture_resource obligation, read only'
+WITHFILES = ('FILES: docs/zzz-fixture-note.md -- discharge the '
+             'zzz_fixture_resource obligation')
 arm('CONTROL: those two DO collide lexically',
     SC.block_reason('a', NOFILES, 'b', WITHFILES) is not None)
 code, out = check_against('their-review', NOFILES, 'my-review', WITHFILES)

@@ -346,6 +346,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": ".claude/settings.json",
+   "class": "CI / hook configuration",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "39224920668936b8453f92f205c6aed6eafa2f34",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_tool_usage_refusal_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -483,6 +491,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/claims/run_fileset_matcher_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "4f6f03f903a1e08dd53a688c69d75e65b5511f4e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_defect_register_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "4f6f03f903a1e08dd53a688c69d75e65b5511f4e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/exit_status_attributable.py",
    "class": "push-gate logic",
    "level": "WEAKENING",
@@ -526,6 +550,19 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "535c261c04ac198ad825b34d57cfb8fb62374892",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_external_file_index_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(_wroot, ignore_errors=True)"
+    }
+   ],
+   "sha": "54ead33fef5eaa5776c754b0a0e1b85ff66ceb17",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -1125,6 +1162,39 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": ".claude/settings.json",
+   "class": "CI / hook configuration",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ab919080da74207947a258834713c8a5f9c74d30",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_hook_integrity_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "errors='replace', timeout=120)"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "'...and says what it does NOT excuse, so the exemption cannot be read '"
+    }
+   ],
+   "sha": "ab919080da74207947a258834713c8a5f9c74d30",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/hook_integrity_check.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ab919080da74207947a258834713c8a5f9c74d30",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_tier_a_review_gate_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -1262,6 +1332,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "c465743b34b08d59d050ff5507e6d58f01d247dc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_defect_register_superseded_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c2c4aa7bad9e5cfab675c0861b284fe5f277c591",
    "criteria_version": "2026-10-06.1"
   },
   {

@@ -2049,10 +2049,34 @@ def cmd_reseat():
             n += 1
     if not n:
         if superseded_skipped and not collided:
-            print('nothing re-seated: %d record(s) are SUPERSEDED and are never '
-                  're-seated. That is not a no-op to report as success.'
+            # ── A SUPERSEDED RECORD IS A CLOSED STATE, NOT AN OUTSTANDING
+            #    ONE (2026-10-13) ─────────────────────────────────────────
+            # This returned 1, and the sentence beside it -- "that is not a
+            # no-op to report as success" -- was right about a DIFFERENT
+            # situation. A record is superseded only once somebody has written
+            # a pointer to a survivor that EXISTS and is an ancestor of the
+            # branch, and --check has validated every one of them. There is
+            # nothing left for anybody to do, so there is nothing for a
+            # non-zero exit to prompt.
+            #
+            # MEASURED CONSEQUENCE OF LEAVING IT AT 1: the four pointers
+            # written on 2026-10-12 made `--reseat` exit 1 in every clone, on
+            # every run, permanently -- a recurring finding nobody can act on,
+            # which is precisely how a checker gets switched off. That is the
+            # same argument this file already accepted for the external-file
+            # gate the same day.
+            #
+            # IT IS STILL SAID OUT LOUD. The records are named one per line
+            # above and the count is printed here; what changes is only that a
+            # fully-resolved state stops being reported as a problem.
+            print('nothing re-seated, and nothing is outstanding: %d record(s) '
+                  'are SUPERSEDED, each with a survivor --check has verified '
+                  'exists and is an ancestor of the branch. They are never '
+                  're-seated and there is nothing left to do about them.'
                   % superseded_skipped)
-            return 1
+            print('  A COLLISION or a dangling SHA would still exit 1 -- those '
+                  'need a human. This does not.')
+            return 0
         if collided:
             print('nothing re-seated: %d record(s) COLLIDE with an existing '
                   'record at their destination and were left alone. That is a '
