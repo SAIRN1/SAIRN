@@ -81,11 +81,22 @@ batch b8/b9's citations unchecked.
 
 | Resource | Finding | File:line | Chain seq | Confirmed owner |
 |---|---|---|---|---|
-| `api/sb-auth.js` / `api/dnt-auth.js` `setup` action | employee-credential provisioning write body carries no caller/actor attribution field (`license_hash, employee_id, display_name, role, pin_hash, pin_salt, active, updated_at` only) | `api/sb-auth.js:297-304`, `api/dnt-auth.js:403-410` | seq958 | **hank** |
+| ~~`api/sb-auth.js` / `api/dnt-auth.js` `setup` action~~ **FIXED, commit `16245537`** (`auditPinSetup`, see item 12 below) | employee-credential provisioning write body carries no caller/actor attribution field | `api/sb-auth.js:297-304`, `api/dnt-auth.js:403-410` | seq958 | **CLOSED** (was hank) |
 | `sen_caregivers` `read` | any authenticated session (any role) gets the full `data` blob via a bare `verifySessionToken` check, no role gate -- deliberate-by-comment design (line 6027), same class as the already-fixed `alf_staff/read` (seq963) | `api/sd-data.js:6030-6039` | seq965 | **cody** |
 
-Both re-confirmed STILL OPEN and unchanged at `7671a011` -- no commit has
-touched either file since batch b8's last re-verify (HEAD `d4ed1a98`).
+Both re-confirmed STILL OPEN at `7671a011` as of batch b10; seq958 is
+now CLOSED (see above, b14 item 5) and seq965 remains open (see the
+follow-on section below, b13 item 5).
+
+**seq958, batch b14 item 5 correction:** a naive grep for the new
+`auditPinSetup` helper across all 17 `*-auth.js` files found 3 without
+it (`law-auth.js`, `sc-auth.js`, `sd-auth.js`), which looked like 3
+still-open files. All three already have real caller attribution via a
+different/older mechanism -- `sc-auth.js`/`sd-auth.js` via a direct
+`writeAuditLog` call dated to the original fix (commit `94becffb`,
+confirmed back in batch b7), `law-auth.js` via its own pre-existing
+local wrapper, deliberately left alone. True count: zero of 17 genuinely
+open. No routing needed.
 
 ## tools/sairn_status.py / tools/sairn_claim.py -- claim-liveness defect, added H1 batch b10 item 7
 
@@ -239,6 +250,14 @@ upstream movement, not a local error.
 | 1022 | Every resource gated through `SD_SESSION_GATED` (`api/sd-data.js:817-1437`, recount: 93 action-strings now, not 70 or 77 -- the comment's own count has drifted further) is session-verified but never attributed; `gateSession` (`api/sd-data.js:1753`, was `:1510`) resolves an identity and discards it -- `grep -c gateSession.employee_id` is still 0 | `api/sd-data.js:817`, `:1753` | Stamp `gateSession.employee_id` onto the write body wherever the generic `SD_SESSION_GATED` dispatch performs a write, mirroring the one-off pattern already used for `msbCaller`/`employeeCaller` elsewhere in this file -- a single shared fix point since the gate itself is one function | **hank** |
 | 1036 | Stale comment: code says "70 action-pairs" twice (`:1629`, `:1765`, was `:1386`/`:1522`); real count is now 93, not 77 -- the drift has grown, not shrunk | `api/sd-data.js:1629`, `:1765` | Update both comment occurrences to the real, re-derived count (93 as of this batch) or better, replace the hardcoded number with a computed one (`Object.keys(SD_SESSION_GATED).length`-equivalent) so the comment cannot drift again | **hank** |
 | 1037 | `docs/scrutiny-flags.json`'s commit `5080cf60`'s own WEAKENING-flag count no longer matches its landing-commit claim of "3 of 3 WEAKENING flags were PROSE" | `docs/scrutiny-flags.json`, the single entry with `sha` `5080cf60737544eb5f95cff4aa390a50ef9673e4` (1 entry now, `level: WEAKENING` -- unchanged from b10's re-verify, b10 noted this had already dropped from 9/2 to 1/1, likely corrected/deduplicated by cc) | Re-confirm against commit `5080cf60`'s actual diff whether 1 WEAKENING flag is the CORRECT count (it may already be fixed) or whether the ledger still owes a correction; if correct, update/retire the landing-commit's own prose claim ("3 of 3") rather than the ledger | **ted** (reassigned this batch; original target was `cc`) |
+
+**Re-run H1 batch b14 item 3, by-directory routing confirmed** (`api/`
+-> hank, `docs/` -> ted, matching the table above exactly): all four
+re-confirmed STILL OPEN at current HEAD `5d753979` (after this batch's
+own rebase onto real current origin/main) -- anchors unchanged from the
+row above (`:4929`, `:817`/`:1753`, `:1629`/`:1765` all identical; the
+`docs/scrutiny-flags.json` entry still 1/WEAKENING). No upstream
+movement on any of the four this round.
 
 ## hover2 cluster (seq630-660), rotated in H1 batch b11 item 9
 
@@ -399,3 +418,43 @@ signal, named for tightening rather than as an open vulnerability.
 | Finding | File:line | Anchor | Fix spec | Owner |
 |---|---|---|---|---|
 | `sen_visits`/`readiness` (`api/sd-data.js:6725`) reads `sen_caregivers` RAW at `:6746`, bypassing `SEN_CAREGIVER_HR_FIELD_ROLES`; reachable by the broader `SEN_READINESS_ROLES` (owner/billing/coordinator/scheduler) | `api/sd-data.js:6746`, `api/_lib/sen-evv-readiness.js:291` (`caregiver.state_caregiver_id` presence check) | `const gr = await fetch(rest('sen_caregivers?...` | Apply the same `SEN_CAREGIVER_HR_FIELD_ROLES`-style strip to the `caregiversById` map before passing it to `summarize()`, or have `checkVisit` only ever receive a pre-redacted caregiver object | **cody** (owns the seq965 area this batch) |
+
+## seq992, recounted -- H1 batch b14 item 4
+
+Recounted fresh, not copied: `docs/BYPASS-LOG.jsonl` now has 93 raw rows
+(up from 77 at b13 -- 16 new rows all landed as `blanket`), 1 retraction,
+92 live. **Scoped uses: still exactly 13** -- the dispatch's own figure
+holds, unchanged from b13, because none of the 16 new entries used the
+scoped form. Ratio: 13/92 = 14.1% (down from b13's 17.1%, purely from
+blanket-row growth with zero new scoped adoption).
+
+Exact `docs/BYPASS-LOG.jsonl` line numbers for the 13 scoped rows (1
+line = 1 JSON object): `:42` (hank, 2026-09-26), `:58-69` (cc, all on
+2026-10-07, the same adoption burst b7 first reported as "1->13"). No
+scoped use has landed from ANY session since 2026-10-07T15:59:21Z --
+the adoption trend has been flat for multiple batches running now, not
+merely "plateaued."
+
+**Routed to hank** (standing target for this platform-wide finding) --
+not a single-file fix, a behavioral metric: worth a direct question
+rather than another routing row, since re-measuring the same flat number
+every batch adds no new information.
+
+## seq664 (bld_draws), hover2's own repro DISAGREED WITH -- H1 batch b14 item 8
+
+Ran `.claude/skills/sairn-hover-auditor/tools-hover2/bld_draws_bypass_repro.py`
+against this clone's tree (confirmed byte-identical to origin/main on
+`api/sd-data.js` first, so this stands in for a fresh clone). The script
+says `BYPASS CONFIRMED`. **This role disagrees, by direct code read, not
+by re-running the tool again**: commit `86189e37` added a dedicated
+`resource === 'bld_draws' && (action === 'read' || action === 'write')`
+branch at `api/sd-data.js:13273-13278` that requires a real session
+(`verifySessionToken`) and returns 401 if absent -- placed BEFORE the
+generic `BLD_RESOURCES` loop the script inspects (`:13310`, `:13322`).
+The generic blocks genuinely have no session check of their own, but
+execution only reaches them for `bld_draws` after the prepended gate has
+already passed. **The fix is correct and complete; the script is stale**
+and gives a false positive because it has no model of the new prepended
+branch. Not fixed here -- `tools-hover2/` is hover2's own tooling, not
+this role's to edit. Flagged so the next session does not trust the
+script's bare exit code over the code itself.

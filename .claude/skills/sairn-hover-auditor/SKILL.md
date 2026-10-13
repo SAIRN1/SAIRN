@@ -4486,6 +4486,46 @@ way, and the related log convention (a reversal of this role's own prior
 verdict gets a `contradicts`-linked entry, never folded into a routine
 recheck): `references/tool-building-discipline.md`.
 
+## A re-verify that greps for the finding's own string can hit the WRONG occurrence -- root-caused H1 batch b14 item 10
+
+seq951 (`api/legal-citator.js`, a `cl_feedback_log` write with no
+employee attribution) was reported **STILL OPEN** twice, in b11 item 12
+and again in b12 item 11, when it had actually been FIXED (commit
+`9bc99c05`). Both checks ran `grep -n "employee_id: caller"
+api/legal-citator.js`, got a hit at `:187`, read that line, and stopped
+-- without noticing that `:187` was a different, unrelated,
+ALWAYS-attributed write (present since before the finding existed), not
+the `logRec` object the finding was actually about. The real write site
+was never re-read past the first grep match in either check.
+
+**Root cause, stated plainly: a re-verify that re-derives its own
+search term from scratch, rather than from the finding's OWN stated
+reproducing command, can match a different line that happens to contain
+the same substring.** The original finding's reproducing artifact (its
+own `REPRODUCING ARTIFACT` block, logged at the time it was found) named
+TWO greps, not one -- `employee_id: caller` (showing attribution exists
+*elsewhere* in the file) AND `logRec =` (showing the actual write *lacks*
+it). A re-verify that only re-runs the first half, or stops at its first
+hit, answers a different question than the one the finding asked.
+
+**The standing check, going forward, since this role cannot write a new
+`tools/*.py` checker itself (platform code is out of scope) and the fix
+has to be a discipline, not a script:** before reporting ANY status
+(open/fixed/partial) on a previously-logged finding, re-run or re-derive
+**every** anchor the original finding's own reproducing artifact named
+-- not a fresh, convenient grep invented at re-verify time -- and if a
+search term has more than one match in the file, read all of them before
+concluding which one is the finding's actual subject. A re-verify that
+cannot point to the SAME anchor the original finding cited is not a
+re-verify of that finding; it is a new, unrelated check that happens to
+share a search string.
+
+Both wrong "still open" calls (b11 item 12's spot-check, b12 item 11's
+rotation entry) stand unedited in the self-log, AS-FOUND; the
+correction is logged separately (b13 item 6) and the routing-doc row is
+marked CLOSED-with-correction rather than silently rewritten, per this
+role's own AS-FOUND/AS-LEFT rule.
+
 ## Report to Michael only when
 
 A real finding needs a decision, or a deep pass completed with a real
