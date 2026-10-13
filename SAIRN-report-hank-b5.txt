@@ -1,0 +1,814 @@
+REPORT hank b5
+================================================================================
+SAIRN -- hank -- BATCH 20 (b5)                               2026-10-13
+================================================================================
+
+GIT STATE
+  HEAD at open      0732b1fd
+  HEAD at close     38dce9b5
+  pushed range      326f2894..38dce9b5
+  ahead/behind      0 / 0 of origin/main
+  ONE PUSH, as item 12 required. SAIRN_SEED_GATE=off NOT USED.
+  diffstat (by script, git diff --shortstat 326f2894..38dce9b5):
+      19 files changed, 29516 insertions(+), 27383 deletions(-)
+  of which real source, excluding generated documents:
+      api/audit-shape-pinning.test.js                197 +
+      api/hydrate-gate-coupling.test.js              333 +
+      api/sd-data-cross-tenant-dispatchers.test.js    49 +-
+      api/sd-data-sen-caregiver-pii-scope.test.js     98 +
+      sairnsenior.html                                49 +-
+      sairnvet.html                                   79 +
+      6 files changed, 802 insertions(+), 3 deletions(-)
+
+  THE OVERRIDE COUNT FOR THIS BATCH IS ZERO, and it was checked against the
+  gate's own log rather than against recollection -- which is the b4 lesson
+  applied. docs/BYPASS-LOG.jsonl holds FIVE hank rows dated 2026-10-13, and
+  every one was introduced by 0732b1fd and d78d62e7, both of which are b4's
+  commits (d78d62e7's own subject is "the gate rows for b4's last push"):
+
+      git log --oneline -S "2026-10-13T05:59:05Z" -- docs/BYPASS-LOG.jsonl
+
+  b4 ran across the midnight boundary, so its override rows carry b5's date.
+  Attributing by COMMIT rather than by date is the only way that question has
+  a right answer.
+
+  api/sd-data.js WAS NOT EDITED IN THIS BATCH.
+  `git diff --quiet api/sd-data.js` clean at every checkpoint. Item 10 was
+  read-only and item 6 was design-only, as instructed.
+
+================================================================================
+ITEM 1 -- HOOKS CLEARED, AND THE ANSWER TO THE QUESTION ASKED
+================================================================================
+
+`.claude/settings.json` now carries `hooks: {}`. It held 23 hook commands.
+Unstaged, NOT committed, `.bak` files untouched -- confirmed with
+`git status --porcelain` showing only ` M .claude/settings.json` plus the two
+untracked `.bak`s.
+
+ANSWER: tools/hook_integrity_check.py IS NOT WIRED INTO ANY GATE THAT FAILS ON
+EMPTY HOOKS. Four independent checks, not one:
+
+  * Wired ONLY at SessionStart in .claude/settings.json, which is now empty.
+  * tools/sairn_push_gate_hook.py never invokes it:
+        grep -c hook_integrity_check tools/sairn_push_gate_hook.py  ->  0
+  * It is EXPLICITLY declined from the push-gate registry at
+    tools/report_only_checks.py:2758, in that file's NOT_PROMOTED list, with
+    the reason spelled out: "NOT A REGISTRY CANDIDATE BECAUSE IT IS ALREADY
+    WIRED ... SessionStart is the right event and a push is the wrong one".
+  * Driven BOTH WAYS, because a one-sided run proves nothing:
+        session_surface_check.py        exit 0  (hooks empty)
+        hank_session_start_check.py     exit 0  (hooks empty)
+        invocation_path_scan.py         exit 1  WITH HOOKS ARMED
+        invocation_path_scan.py         exit 1  WITH HOOKS EMPTY
+    The third is PRE-EXISTING and unchanged by the clearing -- measured by
+    stashing the change and re-running, not inferred. It is also itself
+    NOT_PROMOTED ("PROMOTING IT HERE WOULD MAKE IT AN INSTANCE OF ITS OWN
+    FINDING"), so it is not a gate either.
+
+ONE STALE CLAIM, REPORTED AND NOT EDITED, as the brief required:
+  tools/report_only_checks.py:2758-2762 says hook_integrity_check "runs at
+  SessionStart (.claude/settings.json:171)". In THIS clone it now runs
+  nowhere. The sentence is false here and true in the other clones, which is
+  the awkward part and the reason it is reported rather than corrected: a
+  shared file cannot carry a per-clone fact.
+
+AND A PRACTICAL CONSEQUENCE THAT COST TIME IN THIS BATCH, recorded so the next
+session does not rediscover it: EVERY `git rebase` IN THIS CLONE NOW REFUSES
+with `cannot rebase: You have unstaged changes`, because the deliberate change
+is unstaged and must stay that way. The working pattern is to park the file,
+rebase, and put it back:
+
+      cp .claude/settings.json "$SCRATCH/hooks-empty.json"
+      git checkout -q -- .claude/settings.json
+      git fetch origin main -q && git rebase origin/main
+      cp "$SCRATCH/hooks-empty.json" .claude/settings.json
+
+AND IT BIT ME. During the push loop a `git checkout -- .claude/settings.json`
+ran without a matching restore, and the hooks were SILENTLY RE-ARMED -- 23 of
+them -- for several commands. Caught by reading the file rather than by
+assuming, re-emptied, and verified. The failure mode is worth naming: the
+instruction "never restore the hooks" is violated by an ordinary `git checkout`
+of a tracked file, and nothing announces it.
+
+================================================================================
+ITEM 2 -- seq965 REVIEWED. THE FIX REACHED ONE OF THREE RENDERS
+================================================================================
+
+THE OBLIGATION WAS A REVIEW, NOT A BUILD, and that was established before any
+code was written: `git log -- api/sd-data-sen-caregiver-pii-scope.test.js`
+showed b384a513, cody's fix, already landed, and
+docs/tier-a-reviews.json's record of 2026-10-12T11:21:02Z names
+reviewer_owner=hank. The gate refuses a self-review, so cody could not close
+it and I could. 18/18 arms passed at pickup.
+
+THE SERVER HALF IS CORRECT AND WELL ARGUED. SEN_CAREGIVER_HR_FIELD_ROLES
+{owner, billing}, SEN_CAREGIVER_HR_FIELDS [bgcheck_date, state_caregiver_id,
+notes] deleted per row, `hr_fields_visible` declared on the response, a NEW
+constant rather than reusing SEN_CLIENT_MANAGEMENT_ROLES, the field list taken
+from the real write site rather than from the branch, and the round-trip-wipe
+question answered rather than assumed.
+
+WHAT THE REVIEW DID THAT READING THE BRANCH WOULD NOT: grepped every READ of
+the resource and every RENDER of the three fields. That found three more
+places, two of them defects.
+
+  DEFECT 1 -- sairnsenior.html:5722, THE COMPLIANCE PANEL.
+  Its "Background Check" column rendered fdate(c.bgcheck_date) with no
+  management guard. The server now strips that field for every role outside
+  owner/billing, so fdate(undefined) rendered EXACTLY what a caregiver with no
+  check on file renders: every row read "no background check" on the one column
+  a state surveyor asks about, in the panel built to answer them.
+
+  THIS IS THE IDENTICAL FAILURE THE FIX'S OWN COMMENT DESCRIBES CLOSING, at
+  api/sd-data.js:6318-6322 -- "a blank background-check date reads as 'no check
+  on file' on a compliance column". The roster was fixed. This panel was not.
+  Now behind senIsManagement() with the same Restricted badge and title text.
+
+  DEFECT 2 -- sairnsenior.html:5745, exportCsv('caregivers'). THE SHARPER ONE.
+  Ungated, so a non-management export wrote a CSV carrying a "Background Check"
+  header EMPTY FOR EVERY ROW: a document asserting the agency holds no
+  background checks, with nothing on the file to say the exporter was not
+  permitted to see them. A CSV LEAVES THE BUILDING.
+
+  FIXED BY DROPPING THE COLUMN, NOT BLANKING THE CELL. A blank cell is a claim;
+  an absent column is a visibly shorter file. The pattern was already four
+  lines below in the same function -- the `claims` branch refuses outright on
+  !senIsManagement(). That one refuses because a non-management user has no
+  business with any of it; here they have business with four of five columns,
+  so the file is NARROWED rather than refused.
+
+  NOT A DEFECT, NOW PINNED -- api/sd-data.js:6746, the EVV-readiness branch.
+  It loads the UNREDACTED blob into caregiversById under SEN_READINESS_ROLES
+  {owner, billing, coordinator, scheduler}, WIDER than the redaction tier.
+  Traced through api/_lib/sen-evv-readiness.js: checkVisit tests PRESENCE only
+  (nonEmpty(caregiver.state_caregiver_id) at :291), miss() stores fixed
+  {element, label, reason, fixable_in} strings, and checkVisit's `out` object
+  carries no caregiver field. NO VALUE ESCAPES TODAY. The redaction is
+  bypassable the day summarize() echoes one, so an arm now fails if any
+  caregiver field VALUE reaches an output channel -- guarded against vacuity by
+  also asserting the engine still references the field at all.
+
+THREE ARMS ADDED BY THE REVIEWER, NOT THE AUTHOR. 18 -> 21, exit 0. The two
+client arms assert against page SOURCE, not a rendered DOM: this suite has no
+DOM, and the arms say so rather than implying coverage they do not have.
+
+AND ONE OF THEM CAUGHT MY OWN REGEX: the first draft anchored on `IsMgmt` with
+a capital I, matched only `cpIsMgmt` and reported "1 of 2". The failure was the
+regex, not the page. It is recorded in the arm so the next reader does not
+re-derive it.
+
+DISCHARGED with the full verdict, including the thing left out of scope: the
+write branch still spells its gate SEN_CLIENT_MANAGEMENT_ROLES while the read
+redacts on SEN_CAREGIVER_HR_FIELD_ROLES, so the round-trip-wipe safety argument
+depends on two differently-named sets having equal membership. Correct today,
+enforced by nothing.
+
+================================================================================
+ITEM 3 -- LIVE VERIFICATION: COULD NOT RUN. THE DEPLOYMENT IS PAUSED.
+================================================================================
+
+*** THIS IS THE MOST IMPORTANT FINDING IN THIS REPORT AND IT IS NOT A BATCH
+*** ITEM. THE ENTIRE sairn.vercel.app DEPLOYMENT IS PAUSED.
+
+Every path answers HTTP 402 with a Vercel "Deployment Paused" page. Driven
+through tools/sairn_http.py, which is the required transport (not bare curl):
+
+      /api/sd-data                           402
+      /stonedesk.html                        402
+      /api/sairncash/firebase-config         402
+      /                                      402
+
+The item-3 probe ran all fifteen cases anyway and every one returned 402 --
+INCLUDING THE UNGATED CONTROLS (sf_events, sf_products, scp_jobs,
+scp_irr_zones). That is exactly what makes this a deployment finding rather
+than a gate finding: a bad key or a broken gate cannot make an UNGATED resource
+refuse too.
+
+  licence            resource               gated  read  write
+  SF-PINNACLE-2026   sf_officers            YES    402   402
+  SF-PINNACLE-2026   sf_sessions            YES    402   402
+  SF-PINNACLE-2026   sf_shifts              YES    402   402
+  SF-PINNACLE-2026   sf_tickets             YES    402   402
+  SF-PINNACLE-2026   sf_rentals             YES    402   402
+  SF-PINNACLE-2026   sf_events              no     402   402   <- CONTROL
+  SF-PINNACLE-2026   sf_products            no     402   402   <- CONTROL
+  SCP-DEMO-2026      scp_designs            YES    402   402
+  SCP-DEMO-2026      scp_quotes             YES    402   402
+  SCP-DEMO-2026      invoices               YES    402   402
+  SCP-DEMO-2026      scp_vendors            YES    402   402
+  SCP-DEMO-2026      scp_progress_photos    YES    402   402
+  SCP-DEMO-2026      customers              YES    402   402
+  SCP-DEMO-2026      scp_jobs               no     402   402   <- CONTROL
+  SCP-DEMO-2026      scp_irr_zones          no     402   402   <- CONTROL
+
+EVIDENCE COMMITTED, because a report citing a file in %TEMP% is a dangling
+citation: docs/hank-evidence/b5_live_bare_key_probe.py and
+docs/hank-evidence/b5_live_bare_key_probe.out.
+
+NO WRITE PERSISTED AND NONE COULD HAVE. Every write attempt used an ID-LESS
+payload by design, so even on a total gate failure the handler's own
+"payload.id is required" 400 refuses BEFORE any store call. Nothing was
+deleted; the brief's stop-condition (an unexpectedly successful write) never
+arose because no request reached a handler at all.
+
+THE VALID-SESSION CONTROL READ COULD NOT BE DONE EITHER, and for a second
+independent reason that would still apply if the deployment came back: minting
+a session needs an employee ID and PIN for SF-PINNACLE-2026 and SCP-DEMO-2026,
+and this session holds neither. The control that WAS available -- an ungated
+sibling on the same key -- is the one the 2026-10-05 `customers` entry used,
+and it is the pattern this probe is built around.
+
+WHAT THIS MEANS BEYOND ITEM 3:
+  * No gate on this platform can be proven live by anybody right now.
+  * CLAUDE.md's post-push rule -- "live-verify the specific fix against the
+    real deployed URL" -- is UNSATISFIABLE. A 402 means UNVERIFIED exactly as
+    a 403 does.
+  * tools/deploy_verify_notify.py would see 402 on every push.
+  * Every b4 and b5 commit already says NOT PROVEN LIVE. That was written
+    before this was known and is now the only honest thing it could have said.
+
+ROUTED TO MICHAEL. This is a production outage, not a work item.
+
+================================================================================
+ITEM 4 -- GATE SUITES AND THE PAIR COUNT, RE-RUN
+================================================================================
+
+  api/sd-data-sf-session-gate.test.js                        exit 0
+  api/sd-data-session-gate.test.js                           exit 0
+  api/sf-session-gate.test.js                                exit 0
+  api/sd-data-scp-session-gate.test.js                       exit 0
+
+  PAIR COUNT: 94, MEASURED at this HEAD by re-running the same regex the
+  tripwire arm uses over SD_SESSION_GATED's raw text. UNCHANGED from b4, which
+  is correct: b5 added no gate entry.
+  GATED RESOURCES IN THE TABLE: 46.
+
+================================================================================
+ITEM 5 -- TIER A: THREE DISCHARGED, FOURTEEN LEFT, AND THE ASYMMETRY
+================================================================================
+
+docs/2026-10-13-hank-tier-a-routing.md -- GENERATED, not hand-counted.
+
+b4 SAID "6 UNSTAMPED + 12 OVERDUE". RE-MEASURED: ZERO ARE UNSTAMPED. Five
+carry a sha that cannot be followed -- 3 DANGLING (does not resolve even
+locally), 2 ORPHANED (resolves here, no ref reaches it) -- and the distinction
+decides the repair. An ORPHANED sha can be re-seated; a DANGLING one cannot,
+and the record must be re-opened against a real commit or closed as
+unreviewable. b4's figure was describing this population with the wrong word.
+
+DISCHARGED THREE, REVIEWED RATHER THAN TICKED:
+
+  cody, sen_caregivers (2026-10-12T11:21:02Z) -- item 2 above. Two defects
+  found that the fix did not reach.
+
+  cc, bld_draws + bld_bids (2026-10-12T11:35:03Z) -- SOUND. All four
+  release-field carry-over paths are closed, and the fourth is the one that
+  matters: an unreadable pre-read is 502 RELEASE_FIELDS_UNREADABLE and the save
+  is REFUSED, so a draw is never written without its release history merely
+  because the history could not be read. Control re-run at this HEAD, 35/35.
+  WHAT I ADDED THAT THE OBLIGATION DID NOT ASK FOR: the client half could have
+  been the b4 silent-failure class, since bld_draws is now in
+  BLD_SESSION_REQUIRED. It is not -- the new coupling suite reports
+  bldHydrateAll with one call site at :2960, parseTimeOnly=no, emptyCatch=false
+  -- and three client paths all consult one list rather than a condition per
+  call site. Left standing and named: ANY sairnbuild session can still author
+  or inflate a draw AMOUNT; the carry-over protects the release fields only.
+  That is the open product question, and it is cc's to have reported rather
+  than shipped inside a security fix.
+
+  fourth, invoices (2026-10-05T09:50:00Z) -- SOUND, by --takeover at 189.4h
+  past the deadline, was assigned to `cloud`. Said out loud rather than quietly
+  reassigned. THE RECORD'S FIRST QUESTION WAS ANSWERED MORE STRONGLY THAN BY A
+  TEST ARM: it asked whether any other body-supplied field (customer,
+  customer_id, cus) can reach billingPortal.sessions.create.
+  `grep -c req.body api/sairncash/portal.js` is 1, and that one is
+  req.body.subscriptionId at :66. There is no second read of the request body
+  in the file, so the question cannot be asked of a handler that never looks.
+  That bounds the surface REGARDLESS of which field names anybody thought to
+  test, which a per-name arm cannot. 19/19 re-run.
+  I did NOT re-plant the four sabotages: re-sabotaging a live payments file to
+  re-derive somebody else's before-number is destructive for no new
+  information, and the count above is the independent check that is not
+  self-confirming.
+  NAMED, NOT TREATED AS A DEFECT: that endpoint is unauthenticated, so a
+  subscription id is a bearer credential for opening a customer's billing
+  portal -- the same structural property verify.js's Firebase mint had before
+  b4 narrowed it. The same narrowing is available and is not in that
+  obligation.
+
+THE ASYMMETRY IS THE FINDING, NOT THE COUNT. Of the fourteen still open:
+  * api/ holds THREE and I can discharge NONE -- all three are hank-authored,
+    and the gate refuses a self-review at write time, which is the one thing it
+    exists to refuse.
+  * FIVE of the fourteen are hank-authored. ZERO are assigned to hank.
+    My queue is empty and my own backlog is unclearable by me.
+  * Two reviewers are not sessions that run here. `cloud` holds 2 and its last
+    claim expired 386h ago; nothing has ever discharged through it. Those two
+    will sit forever unless reassigned.
+  * `.claude` holds 2, both hover2's own auditor tools. A build agent must not
+    reach into that clone, so they can be reviewed by READING and not by
+    touching -- tools/hover_auditor_scope_gate.py is why that distinction is
+    not pedantry.
+
+THE THREE DANGLING RECORDS ARE THE FIRST THING TO FIX, and they are not mine:
+they belong to fourth, cody and cc, and the routing document lists the files to
+re-point each against. --reseat-shas REFUSES them rather than guessing, and its
+own message is the reason: following a sha to a subject twin whose diff does not
+contain the record's files "would preserve the original mis-stamp faithfully",
+and a wrong sha is worse than a dangling one because a dangling one is visibly
+broken.
+
+================================================================================
+ITEM 6 -- sf_officers SERVER GUARDS: DESIGN ONLY, NO CODE
+================================================================================
+
+docs/2026-10-13-hank-sf-officers-server-guard-design.md
+
+THE BRIEF'S LINE NUMBERS HAD MOVED ~67 LINES -- b4's sfHydrateAfterSignIn()
+pushed that region down. Re-derived by grep rather than trusted:
+  activeProvisioners()            :2916-2918  (brief said :2849)
+  SPEC 1c, last-provisioner       :2927-2940  (brief said :2860-2869)
+  sole-holder refusal             :2942-2956  (brief said :2878-2885)
+That table will go stale the same way; the document says so.
+
+THE DESIGN'S ACTUAL CONTRIBUTION IS THAT THE THREE GUARDS ARE THREE DIFFERENT
+KINDS OF RULE, which decides where each belongs:
+
+  activeProvisioners()  a DERIVED READ. Nothing to enforce; it is the input to
+                        the other two. Needs no endpoint and no column.
+  SPEC 1c               a WHOLE-TABLE INVARIANT. "At least one active
+                        provisioner, or zero officers" is a property of the
+                        SET, so a per-row handler cannot evaluate it without
+                        reading the rest of the table. -> THE HANDLER.
+  sole-holder           a UNIQUENESS CONSTRAINT in disguise. -> A PARTIAL
+                        UNIQUE INDEX, because a read-then-write loses to two
+                        concurrent writes, and an outgoing plus an incoming
+                        Commander is exactly that race.
+
+SHIPPING BOTH AS HANDLER CODE WOULD PUT A SET-INVARIANT AND A UNIQUENESS RULE
+IN ONE `if` BLOCK, which is how one of them ends up only approximately
+enforced. That is the point of the document.
+
+THE INDEX'S COST IS STATED RATHER THAN BURIED: it puts the capability list in
+TWO places -- CAPABILITIES in the page and the index predicate in SQL -- which
+is the two-lists-that-must-agree shape this platform keeps paying for. SO THE
+RECOMMENDATION IS WORSE THAN THE STATUS QUO WITHOUT a test asserting the
+predicate names exactly the `sole:true` ids.
+
+THREE THINGS THAT WILL GO WRONG IF THE HANDLER HALF IS WRITTEN CARELESSLY, all
+in the document: the write is an UPSERT so the invariant must be computed
+against the MERGED roster and not the payload; the pre-read must fail CLOSED;
+and ZERO OFFICERS IS A SAFE END STATE that must stay writable, or a post trying
+to start over is bricked by the guard meant to prevent exactly that.
+
+ORDER: INVARIANT AND UNIQUENESS FIRST, ROLE RESTRICTION SECOND. They are
+independent, and both hold whichever roles end up allowed to write -- a
+Commander can deactivate the last provisioner as easily as anyone. So the two
+guards are NOT blocked on Michael's role-matrix answer.
+
+THE CLIENT GUARDS SHOULD STAY. They give an immediate specific refusal with the
+post's own org-type title in it; the server gives a 409 a page has to
+translate. Removing them would make a correct refusal read as a server error.
+
+================================================================================
+ITEM 7 -- THE TWO AUDIT SHAPES, PINNED
+================================================================================
+
+api/audit-shape-pinning.test.js, 7 arms, exit 0. NO ROW REWRITTEN, as required.
+
+Michael decided to LEAVE api/law-auth.js divergent. THE RISK IS NOT THE
+DIVERGENCE, IT IS A TIDY-UP: sixteen files doing one thing and one doing
+another invites a refactor by somebody who draws the obvious conclusion -- and
+sairnlaw_audit_log is the ONLY one of the seventeen target tables that both
+EXISTS and PERMITS pin_setup, so it is the only one holding real rows. A
+"cleanup" there is a data migration on a regulated log, not a refactor.
+
+PINNED BOTH DIRECTIONS, which is what makes it a pin and not a preference: the
+family must not drift toward SAIRNlaw's nesting either. With:
+  * a NEGATIVE CONTROL proving the two shapes are genuinely different, so one
+    pattern cannot satisfy both arms;
+  * an arm that the divergence is EXACTLY ONE FILE WIDE -- one documented
+    exception is a decision, two is a second convention nobody decided on;
+  * an arm that the REASON lives beside the helper somebody would use to undo
+    it, because "left alone" with no reason is indistinguishable from
+    forgotten.
+
+THE COST IS STATED IN THE SUITE'S OWN CLOSING LINES: the two shapes CANNOT be
+queried together. That is the accepted price of the decision, and it is written
+where a reader will hit it rather than left to be discovered by whoever first
+tries to answer "who was granted access" across all seventeen apps.
+
+================================================================================
+ITEM 8 -- THE b4 CLASS, SWEPT. ONE LIVE INSTANCE, AND IT IS WORSE
+================================================================================
+
+SAIRNvet's SERVER BACKUP WAS READ-DEAD FOR EVERY PAGE LOAD THAT BEGAN AT THE
+SIGN-IN PANE, FOR ALL 46 OF ITS RESOURCES.
+
+svHydrateAll() had exactly ONE call site: sairnvet.html:10782, at script PARSE
+time, before any PIN is entered. api/sd-data.js:13552 reads
+
+      if (SV_RESOURCES[resource]) { ...401 NO_SESSION if absent... }
+
+which gates EVERY SAIRNvet resource. So: hydrate runs with no session, all 46
+reads answer 401, the per-resource `.catch` swallows every one, svEnterApp()
+does not fetch again, and nothing says so. Additive hydration makes "the server
+had nothing" and "the server refused" identical on screen, and the console
+warning written for exactly this case sits on the OUTER promise, which never
+rejected because the inner catch ate the refusal.
+
+BROADER THAN THE SAIRNfreedom INSTANCE THAT DEFINED THE CLASS: there the gate
+covered 22 of 36 resources; here it covers all of them.
+
+AND THE FILE ALREADY CLAIMED THE OPPOSITE, WHICH IS HOW IT SURVIVED. The
+comment at sairnvet.html:10018 said a teleconsult "reaches them when they next
+SIGN IN, because svHydrateAll() runs there and nowhere else." It ran at PARSE
+time and nowhere else. A reader checking this precise question would have been
+reassured by the one sentence that was wrong. Corrected in place, with the
+correction kept rather than the sentence deleted.
+
+FIXED with svHydrateAfterSignIn() at the TWO INTERACTIVE entry points
+(svGateSignIn, svGateBootstrap) and deliberately NOT at svRestoreSession --
+that path has its token in sessionStorage before the parse-time call runs and
+was never broken.
+
+THE EMPTY CATCH IS LEFT, DELIBERATELY. It is correct for its real purpose: one
+unprovisioned table must not abort the other 45 reads. Removing it would trade
+a silent refusal for a broken hydrate. The fix is the second call site, which
+is what the SAIRNfreedom instance also did.
+
+── AND THE SWEEP IS A SUITE, BECAUSE ITS OWN FIRST FOUR DRAFTS WERE WRONG ────
+api/hydrate-gate-coupling.test.js, 4 arms, exit 0. It exists in the tree
+because the sweep that produced it made FOUR detector errors, each of which
+would have cleared a real defect. Every one is recorded at the function that
+made it, not silently fixed:
+
+  1. A global /\*[\s\S]*?\*\// comment stripper consumed from a `/*` inside a
+     string to the next `*/` thousands of lines away in stonedesk.html, and the
+     sweep reported StoneDesk's hydrate as NEVER CALLED. Replaced with the
+     line-based form api/sd-data-sf-session-gate.test.js:83 already uses, with
+     its error direction stated.
+  2. A lookbehind excluding `[\w.]` -- meant to skip `window.fn = fn` -- also
+     excluded the real call `window.sdHydrateAll()`, which is the ONLY form
+     StoneDesk calls it in.
+  3. THE ONE THAT MATTERED: it intersected each app's registry against
+     SD_SESSION_GATED alone, reported SAIRNvet as `gated=0`, and PASSED it.
+     THE SUITE WRITTEN TO FIND THIS DEFECT CLEARED THE ONLY LIVE INSTANCE OF
+     IT. Same class as the SAIRNscape progress-photo finding, where a gate
+     inside a narrower branch read as no gate at all.
+  4. In the fix for (3): `[^)]*?` cannot cross the `)` of
+     `tokenFromRequest(req)`, so every block matched and every app came back
+     undefined -- an empty set that read as a computed one.
+
+AND THE VACUITY ARM RE-POINTED ITSELF WITHIN THE HOUR. It first asserted that
+some REAL app was two-of-three, and named SAIRNvet. Fixing SAIRNvet made it red
+with the message it was written to carry: "that is good news and it makes the
+arm above unfalsifiable, so re-point it or retire it rather than leaving a
+green bar over no data." It now drives the detector against SYNTHETIC FIXTURES
+in both directions -- the planted shape must be flagged, a second call site
+must clear it, a reporting catch must clear it, and NEITHER CHANGE MAY CLEAR
+BOTH, or the two conditions are not being measured independently.
+
+PER-APP RESULT, printed by the suite as a LIST and not a count:
+  sairnvet 46 gated, sairnfreedom 22, sairnlegacy 37, sairnlaw 22,
+  sairndesign 9, stonedesk 1, sairnmechanical 1, sairnbiz 0, sairnbuild 0.
+  parseTimeOnly: NONE.
+  Two apps remain two-of-three and are safe ONLY because nothing they hydrate
+  is gated; the suite names them every run, so the day one gains a gate it
+  fails instead of going quiet.
+
+================================================================================
+ITEM 9 -- BARE-RUN WRITE SWEEP, REPO-WIDE
+================================================================================
+
+docs/2026-10-13-hank-bare-run-routing.md; full log at
+docs/hank-evidence/b5_bare_run_write_check.out. Run in an ISOLATED SCRATCH
+CLONE (git clone --local --no-hardlinks), never the live one, because the tool
+runs every tool it finds. Scratch clone removed afterwards.
+
+  tools swept       313
+  WRITES(bare)        2
+  WRITES(SHARED)     11
+  INTENDED            4   allowlisted, each naming its path
+  COULD NOT RUN      34   did not finish in 25s
+
+COULD NOT RUN IS A THIRD STATE AND IS NOT A PASS. The sweep is conclusive for
+279 of 313. Any figure quoted from this run has to carry that denominator; "13
+findings" without it overstates the coverage by 11%.
+
+ROUTED ENTIRELY TO cc. Every one of the 13 is a tools/*.py file. Several write
+TARGETS are under docs/, but the file that needs changing is the TOOL, so
+nothing lands on api/ (hank), tests/ (cody) or docs/ (ted). Said plainly
+because routing by write target instead of by tool would have split this four
+ways and given three sessions nothing they can act on.
+
+THE SHARPEST ITEM: THREE CHECKERS EDIT ANOTHER SESSION'S STATUS ROW merely by
+being run.
+  idempotency_check.py              -> LOCKS:status/hover.json
+  register_freshness_check.py --help -> LOCKS:status/fourth.json
+  shape_antipattern_check.py        -> LOCKS:status/hover2.json
+That registry is what every clone reads to decide whether somebody else is
+working, and it lives OUTSIDE every clone -- so unlike the WORKTREES and
+GITCONFIG findings, these are global and not artefacts of the scratch clone.
+
+AND FOUR OF THE THIRTEEN FIRE ON `--help`. A read-only-sounding invocation that
+mutates is PR 1.4, and I hit a FRESH instance of it myself this batch:
+tools/sairn_rebase_resolve.py --help PERFORMED A MERGE instead of printing
+usage. It happened to be the merge I wanted, which is the worst way to discover
+it.
+
+The two WRITES(bare) -- tools/mech_gate_live_probe.py and
+tools/tool_owner_map.py -- are probably INTENDED writers missing an allowlist
+entry rather than defects; tool_owner_map.py is a generator by name. That is
+cc's judgement. The allowlist's own note is the reason it matters: "an
+exemption nobody can see is indistinguishable from a check that stopped
+running."
+
+================================================================================
+ITEM 10 -- READ-ONLY INVENTORY OF api/sd-data.js
+================================================================================
+
+docs/2026-10-13-hank-sd-data-inventory.md. `git diff --quiet api/sd-data.js`
+clean. Grep and offset reads only, no edit, as instructed.
+
+152 resources the dispatch branches on, classified across FIVE gate
+mechanisms, with `NO GATE FOUND` reported as an explicit THIRD STATE rather
+than a verdict:
+
+  TABLE                      15   a row in SD_SESSION_GATED
+  INLINE-APP                  3   <PREFIX>_RESOURCES[resource] -> 401, app-wide
+  PER-BRANCH                 83   verifySessionToken in the branch, or a gate
+                                  helper (dntGate, sdExecGate)
+  BY DESIGN                   5   UNGATED_REST, each with its columns read
+  NO GATE FOUND              46   this scan found none within 45 lines
+
+TWO OF MY OWN MEASUREMENTS WERE WRONG AND ARE RECORDED AS SUCH:
+
+  * The first draft read the gate table out of COMMENT-BLANKED source and got
+    15 rows where the table holds 46 -- blanking had truncated the literal at
+    an earlier `\n    };`. The established suites read it from RAW text for
+    exactly this reason.
+  * The first classification had no PER-BRANCH category at all and reported
+    129 resources as ungated. The real figure for "no gate this scan can find"
+    is 46, and the difference is 83 resources whose gate is in their own
+    branch. Publishing 129 would have been a confident wrong number in a
+    standing document.
+
+================================================================================
+ITEM 11 -- THE SHARED SUITE FAILURE: A TRIPWIRE THAT HAD BEEN FIRING
+================================================================================
+
+api/sd-data-cross-tenant-dispatchers.test.js: 405 passed / 14 failed  ->
+419 passed / 0 failed, exit 0.
+
+THE SECTION WAS A DELIBERATE TRIPWIRE AND IT HAD FIRED. `GRD (named branches,
+NO session gate)` carried `app: null, role: null` ON PURPOSE, and its own
+paragraph said why: with no token the arms "answer 403, land in UNREACHED, and
+force the config to be updated deliberately -- which is the only difference
+between a disclosure and a tripwire."
+
+All fourteen arms reported, honestly:
+
+      UNREACHED: the read answered 401 {"code":"NO_SESSION"} -- this arm never
+      reached the tenant filter, so it proves nothing about isolation
+
+THE ARMS WERE NEVER WRONG. THE SECTION'S PREMISE WAS STALE. And the cost is
+specific: SIX TIER A SAIRNGROUNDS RESOURCES HAD NO TENANT-ISOLATION COVERAGE
+AT ALL for as long as the gate had existed -- not because anyone disabled it,
+but because a correct tripwire firing is indistinguishable from the 75 other
+red suites in docs/known-red-suites.json.
+
+AND THE GATE WAS NOT WHERE THE STALE PARAGRAPH LOOKED. That paragraph checked
+the six BRANCHES and SD_SESSION_GATED, and was right about both: the branches
+still go straight from the resource test to the fetch, and no grd_ name is in
+the table. The gate is ABOVE them -- api/sd-data.js:4343-4366 declares
+GRD_SESSION_RESOURCES, a NAMED SET of 21 resource names, gated pre-dispatch
+with hasOwnProperty.call(GRD_SESSION_RESOURCES, resource) -> 401.
+
+*** THAT IS A FIFTH GATE MECHANISM ON THIS PLATFORM, AND IT WAS FOUND BY A RED
+*** SUITE RATHER THAN BY READING THE FILE.
+
+      1. SD_SESSION_GATED                 the table
+      2. <PREFIX>_RESOURCES[resource]     app-wide: sairnlaw, sairnlegacy,
+                                          sairnvet
+      3. verifySessionToken in the branch
+      4. a gate helper                    dntGate, sdExecGate
+      5. a NAMED SET + hasOwnProperty     GRD_SESSION_RESOURCES  <- THIS ONE
+
+MY OWN b5 WORK GOT IT WRONG TWICE: the inventory classified those six as
+NO GATE FOUND, and the hydrate sweep classified sairngrounds as ungated. Both
+were keyed on the four mechanisms known at the time. Both corrected in the same
+batch, and the inventory now reports an unclassifiable resource as a third
+state so a sixth mechanism surfaces as unknown rather than as a clean bill.
+
+ROLE CHOSEN `superintendent`, NOT `owner`: the pre-dispatch gate checks only
+that a session EXISTS for the app -- no role set -- so a non-owner role proves
+the arms are testing the TENANT boundary and not an owner exemption.
+
+THE TRIPWIRE PROPERTY IS NOT LOST, but it has MOVED and that is said out loud:
+the section now tests tenant isolation with a real session, which is this
+suite's actual subject. The ARRIVAL of a future gate on those resources is held
+only by GRD_SESSION_RESOURCES being 21 names in one place, not by any arm.
+
+================================================================================
+ITEM 12 -- THE PUSH
+================================================================================
+
+ONE PUSH, 326f2894..38dce9b5, ahead 0 / behind 0. SAIRN_SEED_GATE=off NOT USED.
+
+IT TOOK FIVE ATTEMPTS AND NONE OF THE REFUSALS WAS A DRIVE HANDOFF, so the
+brief's stop-condition never triggered. Recorded because the sequence is the
+real cost of pushing from this clone:
+
+  1. BLOCKED: "could not tell what is being pushed" -- a derived-document
+     conflict had left a rebase in progress. docs/MASTER-PLAN.md and
+     docs/traceability-matrix.md both conflicted; resolved by PR 2.5 --
+     SKIP the commit and RE-DERIVE, never merge the text of two generated
+     files into a third that matches neither tree.
+  2. BLOCKED: "this push closes a defect and does not feed the register."
+     Three records added (item 13 below).
+  3. BLOCKED: "could not tell what is being pushed" -- behind 6. Rebased.
+  4. BLOCKED: same, behind 1. Rebased, re-seated the register shas again.
+  5. PUSHED.
+
+THE REGISTER SHAS HAD TO BE RE-SEATED TWICE, because each rebase rewrote the
+commits the three new records cite. Derive after the final rebase is the rule;
+"final" is not knowable in advance when another session is pushing every few
+minutes.
+
+AND THE REBASES RE-ARMED THE HOOKS BEHIND MY BACK -- see ITEM 1.
+
+================================================================================
+ITEM 13 -- THE HANDOFF, WRITTEN BEFORE THIS REPORT
+================================================================================
+
+docs/handoff-hank-2026-10-13.md, committed at 311c7120, BEFORE this report was
+started and at a point where nothing was half-finished: every item committed or
+explicitly open, the bare-run sweep finished and its scratch clone removed, no
+file mid-edit.
+
+Its first open item is the paused deployment, because that is not a batch item.
+It carries the claim to release, the hooks rebase pattern, the three
+undischargeable api/ obligations, and the transcript path.
+
+================================================================================
+DEFECT REGISTER
+================================================================================
+
+  5b2ff541  sairnsenior   moderate  code-review      the redaction reached one
+                                                     of three renders
+  15a8ff9a  sairnvet      high      static-checker   the backup was read-dead
+                                                     on every pre-login load
+  501bcd15  sairngrounds  moderate  code-review      a tripwire fired and was
+                                                     read as a known-red suite
+  --check   525 records, every commit resolves, every field in vocabulary  0
+
+ONE CITES A REAL STANDING RULE -- PR 1.1, "a check that stopped checking" --
+and it is the sharpest instance of that section filed yet, because the check
+did NOT stop checking. It started reporting correctly, and the report was
+indistinguishable from the 75 other red suites.
+
+THE OTHER TWO CITE not-citable WITH A NOTE, and the notes are the finding: no
+section of docs/SAIRN-PROCESS-RULES.md covers a redacted field rendering as an
+absent one, and the hydrate silent-failure shape is described in prose in the
+primer and in PR Part 5 but is stated as a numbered rule NOWHERE. Across b4 and
+b5 that is FIVE not-citable records on access-control and silent-failure
+shapes. The process rules have a hole in exactly the area this platform spends
+its batches on.
+
+TWO FACTORS ARE `declined` RATHER THAN `planned`, with reasons, because a
+planned action with no owner and no date is the CAPA box the factors list
+exists to replace.
+
+NO TIER A OBLIGATION WAS OPENED BY b5. Nothing in it changed a line serving a
+Tier A resource: the two client fixes narrow what a non-management role SEES,
+the four new/edited suites are tests, and the three documents are documents.
+Not asserted -- the gate's own refusal on b4's equivalent push is the
+precedent, and no --open call was made.
+
+================================================================================
+METHODOLOGY -- THE CONVENTION CANDIDATE, TEXT ONLY
+================================================================================
+
+b4 proposed:
+
+  A CHECKER'S UNIVERSE MUST EXCLUDE THE ARTEFACTS THAT DESCRIBE ITS OWN
+  FINDINGS -- AND ANY CHANGE THAT MOVES A PATTERN BEHIND A SHARED HELPER MUST
+  EXTEND THE CHECKER THAT RESOLVED THE OLD SHAPE, IN THE SAME PUSH.
+
+b5 PAID FOR IT FOUR MORE TIMES, all in detectors I wrote this batch, and that
+is the evidence for it rather than a restatement:
+
+  * a comment stripper that consumed a thousand lines of stonedesk.html and
+    reported a working hydrate as never called;
+  * a lookbehind that excluded the `window.fn()` call form, which is the ONLY
+    form StoneDesk uses;
+  * an intersection against ONE of five gate mechanisms, which cleared the only
+    live instance of the defect the suite was written to find;
+  * a regex anchored on `IsMgmt` that matched one of two real call sites.
+
+AND b5 ADDS A SECOND CLAUSE, which the tripwire finding earns:
+
+  A CHECK WHOSE FIRING LOOKS LIKE AN ORDINARY FAILURE WILL BE READ AS ONE. A
+  TRIPWIRE MUST BE DISTINGUISHABLE FROM A BUG, IN ITS OUTPUT, OR IT COSTS
+  COVERAGE SILENTLY.
+
+The GRD section did everything right -- it explained itself, it used UNREACHED
+rather than a false pass, it said in its own words that firing should "force
+the config to be updated deliberately." And it still cost six Tier A resources
+their isolation coverage, because a red suite in a repo with 76 known-red
+suites is just another row. The register that would carry the distinction is
+docs/known-red-suites.json, which another session maintains.
+
+TEXT ONLY, PER THE BRIEF. NOT added to
+docs/2026-09-13-cross-domain-disciplines.md: that file's numbering has been
+wrong twice from two sessions adding an item within the same hour, and it has
+an owner. ROUTED.
+
+================================================================================
+WHAT IS NOT DONE
+================================================================================
+
+  * ITEM 3 IS UNVERIFIABLE, NOT UNDONE. The deployment is PAUSED. Nothing on
+    this platform can be live-verified by anybody until that clears.
+  * The valid-session control read needs an employee PIN for SF-PINNACLE-2026
+    and SCP-DEMO-2026. This session holds neither, and that would still be true
+    with the deployment up.
+  * THREE api/ Tier A obligations stay open and hank cannot discharge any of
+    them. Two of the three carry ORPHANED shas, so their assigned reviewer
+    cannot even fetch the diff.
+  * THREE DANGLING Tier A records belong to fourth, cody and cc.
+  * sf_officers server guards: DESIGN ONLY. No code, by instruction.
+  * The 13 bare-run findings are cc's; none is fixed here.
+  * 34 of 313 tools are UNCLASSIFIED by the bare-run sweep.
+  * The convention candidate is text, routed, not added.
+  * tools/report_only_checks.py:2758-2762's claim about where
+    hook_integrity_check runs is false in this clone. Reported, not edited, as
+    the brief required.
+  * Michael holds b4 Q1/Q2/Q3 and the five unlocked sf_* tables. The migration
+    SQL doc was NOT run and NOT edited.
+
+================================================================================
+VERIFICATION -- EVERY EXIT CODE MEASURED ALONE
+================================================================================
+
+  api/sd-data-sen-caregiver-pii-scope.test.js    21 passed, 0 failed       0
+                                                 (was 18, +3 by the reviewer)
+  api/hydrate-gate-coupling.test.js               4 passed, 0 failed       0
+  api/audit-shape-pinning.test.js                 7 passed, 0 failed       0
+  api/sd-data-cross-tenant-dispatchers.test.js  419 passed, 0 failed       0
+                                                 (was 405 passed, 14 failed)
+  api/_lib/sairnbuild-retainage-endpoint.test.js 35 passed, 0 failed       0
+  api/sairncash/portal.test.js                   19 passed, 0 failed       0
+  api/sd-data-sf-session-gate.test.js                                      0
+  api/sd-data-session-gate.test.js   pair count 94, MEASURED               0
+  api/sf-session-gate.test.js                                              0
+  api/sd-data-scp-session-gate.test.js                                     0
+  tools/tier_a_review_gate.py --validate   242 records                     0
+  tools/defect_register.py --check         525 records                     0
+  tools/master_plan.py                                                     0
+  tools/traceability_matrix.py                                             0
+  tools/bare_run_write_check.py --repo <scratch>  313 swept                0
+  tools/session_surface_check.py           with hooks EMPTY                0
+  tools/hank_session_start_check.py        with hooks EMPTY                0
+  tools/invocation_path_scan.py            hooks ARMED                     1
+  tools/invocation_path_scan.py            hooks EMPTY                     1
+      pre-existing, identical both ways, and itself NOT_PROMOTED
+  node --check on every changed .js                                        0
+  sairnvet.html    2 inline blocks, HTML-parser-extracted                  0
+  sairnsenior.html 2 inline blocks, HTML-parser-extracted                  0
+
+  LIVE: NOTHING. Every path on sairn.vercel.app answers 402 Deployment Paused.
+
+================================================================================
+CLAIM
+================================================================================
+
+HELD: `sairnsenior`, claimed 35e53203, CLEAR -- no blocking overlap. The matcher
+flagged fourth's b7 claim on the shared phrase "docs txt" and cleared it itself
+because the declared FILE SETS ARE DISJOINT, which is the files-based matcher
+working as intended rather than a judgement I had to make.
+
+TO RELEASE:  python tools/sairn_claim.py release sairnsenior
+
+THE CLAIM WAS PUSHED ON ITS OWN, BEFORE THE WORK, and that is a deliberate
+departure from "push once": a claim nobody can see is not a claim, and
+sairn_claim.py commits and pushes as its own mechanism. It took two attempts --
+the first exited 3 (not reaching origin) because the rebase ahead of it refused
+on the unstaged settings.json, which is ITEM 1's consequence arriving
+immediately.
+
+ONE DECLARED-FILE ADDITION, SAID OUT LOUD: sairnsenior.html was NOT in the
+claim's FILES and item 2's review required it. No other live claim holds it --
+fourth's b7 set is disjoint and cody's b4 set was released 18h earlier -- and
+under-declaring one's own file set is the same defect as rewording past the
+matcher, so it is recorded in the commit message rather than left to be noticed.
+
+================================================================================
+END OF BODY
+--------------------------------------------------------------------------------
+SHA256 of the body is on the second-to-last line. The BODY is every line of this
+file AFTER line 1 ("REPORT hank b5") and BEFORE the SHA256 line, inclusive of
+this paragraph and the line of dashes above it, with LF line endings.
+SHA256(body)=e85335621773595b0786eac59f707c2d9651086bcaa95c866091213e3e2e01e3
+END-OF-REPORT
