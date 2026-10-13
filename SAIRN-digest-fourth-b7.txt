@@ -1,0 +1,15 @@
+DIGEST fourth b7
+SHA256 1cbcef3d5ca2dcfe1bddc914df7c79b57e7d8b03edd7c0b4f403eb18637e864b
+
+STATUS: HEAD beac266c; work 33618da5; 19 files, +535 -41. 18 ahead, 16 behind. Rebase landed; one conflict, not my file, union-resolved. One push, refused by the hooks-off generated-document check; no override.
+
+DECISION-NEEDED: none arose.
+
+CHANGED: 1 D 2 D 3 D (class ruled out in one run; diagnostic added; chose not to bisect again) 4 P (27 of 29; 2 declined -- a comment, a SQL subject) 5 D (report-only, 14 control arms; chose not to gate) 6 D (4 retired by superseded_by) 7 D (routed to cc, nothing edited) 8 D (kept) 9 D (0 released) 10 D (visible here only) 11 D 12 D 13 D.
+
+EVIDENCE-path: scratchpad/ -- bisect/round-00.log, g4a_*.log, g4b_*.log, leak_*.log, item7.txt, item9_b7.md, counts7.txt; routing doc 11-15.
+
+UNVERIFIED: the phi_cache polluter. sd_write_faults.js red at baseline, unregistered.
+
+NEXT: 3 stripper sites; register or fix sd_write_faults; push when item 0 is decided.
+END-OF-DIGEST

@@ -1,0 +1,415 @@
+REPORT fourth b7
+BATCH b7 -- fourth / Ted -- 2026-10-13
+
+HASH RULE: line 1 is the title, the LAST line is END-OF-REPORT, the
+SECOND-TO-LAST line is `SHA256 <hex>`, and the BODY is line 2 through the line
+before the SHA. Checked by tool, not by hand (item 11):
+
+  python tools/report_sha_check.py --check SAIRN-report-fourth-b7.txt
+
+================================================================================
+0.  RESUME CHECK, BEFORE ANYTHING WAS TOUCHED
+================================================================================
+
+  HEAD at pickup    77d22bd5  "docs(b6): the report and digest, both sealed by
+                    tools/report_sha_check.py"
+  working tree      1 modified tracked path -- .claude/settings.json, hooks off
+                    by instruction -- plus 4 untracked, all named in b6
+  position          13 ahead, 22 behind
+  handoff read      docs/handoff-fourth-2026-10-13.md by heading and item table.
+                    THE BRIEF NAMED THE 10-12 FILE, WHICH IS b5'S. The most
+                    recent by date is the 10-13 one and its subject is b6, so
+                    that is the one read -- CLAUDE.md says find it by DATE and
+                    confirm the subject, not by the name in the instruction.
+  SKIPPED AS LANDED nothing. Every b7 item was new or carried forward open.
+
+================================================================================
+1.  ITEM 1 -- THE REBASE, AND THE ONE CONFLICT WAS NOT IN A FILE OF MINE
+================================================================================
+
+  before   22 behind, 13 ahead      (origin/main had moved 22 commits)
+  after     0 behind, 15 ahead      (then 16 behind again by report time, as
+                                     other sessions kept pushing)
+
+`git rebase` refuses outright on a dirty tree and the dirt is the hooks-off
+settings.json that must stay, so the rebase ran with
+`-c rebase.autoStash=true`, which stashes and restores rather than discarding.
+
+ONE CONFLICT: docs/BYPASS-LOG.jsonl. NOT MINE -- it is the shared append-only
+bypass audit log that every session writes to. Reported as item 1 requires:
+
+  from origin/main   7 rows, every one hank's
+  from my commit     1 row, fourth's, 2026-10-12T10:25:05Z -- b4's residue
+  rows before it     77
+
+RESOLVED BY UNION, NOT BY A CHOICE, and the distinction is the whole reason this
+was safe to do in somebody else's file. A conflict in an append-only log is
+never a disagreement about content; it is two sessions appending at the same
+place. The only correct resolution keeps BOTH sides, and the only defensible
+ordering is the `at` field each row already carries. The script REFUSES unless
+the output row count equals ours plus theirs, and re-parses every row as JSON
+before writing:
+
+  77 + 7 + 1 = 85 rows written
+  by session: cody 13, fourth 47, hank 11, cc 14
+
+NO OTHER FILE CONFLICTED, and my b6 work survived the replay -- verified by
+counting stripJs call sites in two of the files it had touched rather than by
+assuming a clean rebase means a correct one.
+
+================================================================================
+2.  ITEM 2 -- ONE PUSH, REFUSED, NOT OVERRIDDEN
+================================================================================
+
+The condition item 2 set was the EXTERNAL-FILES GATE, and it was CLEAR:
+
+  python tools/external_file_index_check.py   EXIT 0
+    TRACKED 0   INDEXED 12   UNINDEXED 0
+
+So one push was attempted. It was refused by a DIFFERENT check:
+
+  "Blocked: this push makes a GENERATED document stop matching what it is
+   derived from.
+     docs/TOOLING-INVENTORY.md -- the generator REFUSES to run (exit 2)
+           hook entries -- read from .claude\settings.json"
+
+THAT IS ITEM 0 OF EVERY HANDOFF SINCE b5, NOT A NEW PROBLEM. The hook table is
+empty by Michael's instruction, the generator cannot tell an empty table from a
+broken reader, so it refuses, so the gate blocks. ONE ATTEMPT, NO SECOND TRY,
+NO SAIRN_SEED_GATE=off -- docs/BYPASS-LOG.jsonl gained no row from this batch,
+which is the mechanical check on that sentence rather than the sentence.
+
+AND THE EXTERNAL-FILES GATE HAS MOVED AGAIN SINCE. At report time it exits 1
+with THREE unindexed files, none of them mine:
+
+  ! g:\my drive\sairn-status\handoff-hank-2026-10-12.md
+  ! g:\my drive\sairn-status\handoff-h2-2026-10-12d.md
+  ! g:\my drive\sairn-status\SAIRN-handoff-h1-b13.md
+
+The queue refills as fast as it drains, because every session is ordered to
+upload a handoff to a declared non-transient directory. Routed since b5 and
+still open. IT WAS NOT THE BLOCKER FOR MY PUSH and is not claimed as one.
+
+================================================================================
+3.  ITEM 3 -- THE BISECT ENDED IN ONE RUN, AND THAT IS THE RESULT
+================================================================================
+
+b6 eliminated 8 candidates one at a time and found nothing; item 3 said stop
+doing that and binary-bisect. THE BISECT TERMINATED AFTER THE ROOT ROUND,
+because the predicate is FALSE AT THE ROOT -- there is nothing to halve.
+
+  candidate set, derived not guessed                                 95
+    every suite under tests/ or tools/ that NAMES one of phi_cache's
+    seven subjects AND contains a write primitive
+  rounds needed                                                       1
+  subjects that moved during the round   NONE -- 0 `MOVED` lines in the log
+  core.bare after                                                 false
+  phi_cache after                        EXIT 0, 72 passed, 0 failed
+
+Each of the 95 was driven in order and the seven subjects were re-hashed after
+EVERY one, so a transient mutation that was restored before the end would still
+have been caught. None was.
+
+SO THE POLLUTER IS NOT A SUITE THAT WRITES A SUBJECT. That rules out the entire
+class b5 and b6 were searching inside, which is worth more than a narrowed range
+would have been: three batches of candidate-hunting inside that class can stop.
+
+WHAT I AM NOT CLAIMING: not that hank's "63 passed, 1 failed" was wrong. It was
+produced under a tree state that nothing in this class can create.
+
+AND THE NEXT OCCURRENCE NAMES ITSELF. A diagnostic was added at the END of
+tests/phi_cache_scoped_to_user.js, on the FAILURE PATH ONLY: it re-reads all
+seven subjects and prints which differ from HEAD, or says all seven are clean so
+the failure is NOT tree pollution. If git cannot be consulted it says UNKNOWN
+rather than clean. IT DOES NOT CHANGE THE EXIT CODE -- a diagnostic that
+downgraded a failure to a skip would be the same silence one level along, and
+the dirty subject might be the real defect rather than pollution.
+
+================================================================================
+4.  ITEM 4 -- 27 OF THE 29 SITES, IN TWO GROUPS, AND THE OTHER TWO DECLINED
+================================================================================
+
+  GROUP A, api/        4 sites consolidated, 2 declined     4 suites run
+  GROUP B, tests/     23 sites consolidated                13 suites run
+  TOTAL               27 consolidated, 2 declined with a reason
+
+EVERY FUNCTION WAS CHOSEN FROM ITS SUBJECT, NOT FROM ITS FILE, and that is the
+part that takes the care:
+
+  HTML (a whole .html app)                 stripComments
+  bare JS (a .js file, a function body,
+    or a slice taken from INSIDE a script) stripJs
+
+api/sairndental/public-book-guardian.test.js is the file worth reading: THREE
+sites, TWO different functions. `ep` is public-book.js and `data` is
+api/sd-data.js -- both bare JS, both stripJs -- while `app` is
+sairndental.html and takes stripComments, because outside a `<script>` only
+`<!-- -->` is a comment and `/*` is not. That is the `accept="image/*"` bug
+that once blanked 80% of a file.
+
+AND FOUR SLICES TAKE stripJs *BECAUSE* stripComments WOULD BE WRONG. A slice
+bounded by two function declarations starts INSIDE a script block, and
+stripComments assumes it starts outside one -- it would treat the whole slice as
+markup and strip nothing a JS assertion cares about. Those four are
+intake_form_public_surface.js:171, intake_no_false_success.js:350,
+roofing_claim_gate_single_source.js:186 and sd_timesheet_pay_est.js:139/:191.
+
+THE SWAP REFUSED ON ANY COUNT BUT THE EXPECTED ONE, per site, and wrote nothing
+for a file whose counts did not match. 23 of 23 matched in group B.
+
+EVERY SUITE DRIVEN BEFORE AND AFTER:
+
+  group A    4 suites   4 exit 0 before   4 exit 0 after
+  group B   13 suites  12 exit 0 before  12 exit 0 after
+  node --check on all 17                 exit 0
+  python tools/jscomments.py --probe     EXIT 0  "0 case(s) failed"
+  node tests/lib/strip_comments.test.js  EXIT 0  "27 passed, 0 failed"
+
+THE ONE NON-ZERO IS PRE-EXISTING AND IS A FINDING OF ITS OWN.
+tests/faults/sd_write_faults.js was ALREADY RED at baseline -- EXIT 1,
+"7 passed, 11 FAILED" -- and is red after with the SAME counts. The swap did not
+cause it and did not change it. IT IS NOT IN docs/known-red-suites.json, so it
+is an unregistered red suite: while that stands, its next real regression reads
+as part of the existing noise. Not diagnosed here and not registered here --
+tests/ is cody's by the b6 directory rule -- but named.
+
+THE TWO DECLINED SITES ARE DECLINED WITH REASONS, NOT MISSED:
+
+  api/sairnvet-transcribe.test.js:152   the regex is quoted INSIDE A COMMENT
+    describing a previous version; the file already uses a scanner. An
+    INVENTORY FALSE POSITIVE, so the "29" was really 28 plus one miscount.
+  api/alf-append-only-read-order.test.js:192   strips a trailing comment from
+    SQL statement lines. stripJs is a JavaScript stripper and would be the
+    wrong language on a .sql payload.
+
+AND A THIRD SITE HAS APPEARED SINCE THE b5 INVENTORY, in
+api/auth-setup-attribution.test.js -- another session's file, not part of the 29,
+reported rather than absorbed into my count. Remaining at this HEAD: 3 sites in
+3 files.
+
+================================================================================
+5.  ITEM 5 -- THE LEAK CHECK IS BUILT AND PROVEN, AND ITS NAMED LIVE CASE IS
+    NO LONGER LIVE
+================================================================================
+
+tools/temp_state_leak_check.py. REPORT ONLY, wired to no hook and no gate, and
+that is a decision rather than a stage: a check that BLOCKED on a probe's
+leftovers would stop a session over a condition it can fix in one command, and
+the thing worth having first is the NAME of the probe that leaks.
+
+FOUR FACTS, each invisible to `git status` and each with a recorded instance:
+
+  core.bare           tests/push_gate/check8_probe.py:209 records it in its own
+                      comment. b5 MEASURED what it costs: with it set,
+                      `git status` exits 128, every `git checkout --` restore
+                      fails SILENTLY, and two live API files were left
+                      sabotaged with one of them not parsing.
+  user.name
+  user.email          with an explicit probe-identity test, because attribution
+                      is the only thing tying a defect record to a session.
+  worktree entries    a probe that dies after adding one leaves a registration
+                      pointing at a directory that is gone. b6 cleared two.
+
+NOT A GENERAL CONFIG DIFFER, deliberately. A differ over a file people
+legitimately edit produces noise, and noise is how a report-only check stops
+being read.
+
+THE CONTROL PAIR: 14 ARMS, 0 FAILED, BOTH DIRECTIONS.
+  4 planted leaks FIRED      core.bare=true; user.email=probe@local;
+                             a changed user.name; a left-behind worktree
+  every clean arm SILENT     and restoring each planted value cleared it
+  the third state            a missing snapshot and an unreadable worktree
+                             list are COULD NOT RUN, exit 2, never a pass
+  in a THROWAWAY repo        a control that mutated the live clone to prove a
+                             checker works would be the defect it is about
+
+ONE CONTROL ARM FAILED FIRST AND THE TOOL WAS RIGHT. The worktree arm compared
+the path it passed in against the path git printed back, and git normalises
+separators on Windows -- so the arm was failing against CORRECT output, which is
+a control reporting a defect in the thing it controls. The fix went in the arm.
+
+THE NAMED LIVE CASE DID NOT REPRODUCE, driven at this HEAD on a quiet tree:
+
+  --probe tests/push_gate/check8_probe.py   probe exit 0   NO LEAK, EXIT 0
+  --probe tests/push_gate/check4_probe.py   probe exit 1   NO LEAK, EXIT 0
+
+All four facts unchanged across both. So either the dry-run path that comment
+describes has been fixed since it was written, or it does not run here. THE
+CHECK IS PROVEN BY ITS CONTROLS AND THE INSTANCE IT WAS POINTED AT IS GONE --
+stated that way rather than reported as a pass over a condition nobody saw.
+
+AND THE FIRST MEASUREMENT WAS CONTAMINATED BY MY OWN SWEEP, which is recorded
+rather than quietly re-run. Run while the item-3 bisect was still driving 95
+suites in the background, the check reported a leak -- and the leak it named was
+"worktree REMOVED across the probe", which was the BISECT's worktree, not
+check8's doing. A two-point-in-time comparison cannot tell a concurrent sweep
+from its subject. That is a limit of the method, not a defect in it, and it
+would otherwise have read as a confirmation of something never observed.
+
+NO EDITS WERE MADE TO cody's FILES. check8_probe.py is named, not touched.
+
+================================================================================
+6.  ITEM 6 -- THE FOUR COLLIDING HASHES, RETIRED WITH superseded_by
+================================================================================
+
+THE NAMED ROUTING DOC DOES NOT EXIST IN THIS CLONE.
+docs/2026-10-12-hover2-register-phantom-hash-duplicates-routing.md is absent
+from the repo and from the Drive folder, so the premise was re-derived from the
+tool instead of taken from a document -- and the tool reproduces the brief's own
+figures exactly:
+
+  python tools/defect_register.py --reseat   EXIT 1
+    "nothing re-seated: 4 record(s) COLLIDE with an existing record at their
+     destination and were left alone. That is a finding for a human, not a
+     no-op."
+
+  88d7543b2698 -> f2ee7be0d6da      the stale sha STILL RESOLVES  <- the "stale
+                                    rebase citation", 1 of the 4
+  8ae20da10239 -> 6a2690bec035      the stale sha no longer resolves
+  e90d8775c7b2 -> d051c89faa16      the stale sha no longer resolves
+  f13f4f4982d3 -> 7ed27c5e78fa      the stale sha no longer resolves
+                                    <- the three DUPLICATES
+
+So the brief's "3 duplicates and 1 stale rebase citation" IS the split the data
+shows, and it is visible in the resolve column rather than taken on trust.
+
+THE TOOL'S REFUSAL IS CORRECT AND THE DECISION IS MINE: "deciding which survives
+is a content question and is not this command's to make." The rule applied, and
+it is stated so it can be disagreed with: THE RECORD WHOSE COMMIT STILL RESOLVES
+AT HEAD SURVIVES, and the pre-rebase record is retired by pointing at it.
+
+  records given superseded_by      4
+  records total before and after   514 and 514 -- NOTHING DELETED
+  python tools/defect_register.py --check   EXIT 0
+    "SUPERSEDED (4): retired from the duplicate test, each with a survivor that
+     EXISTS and is an ancestor of origin/main. Not deleted -- this ledger is
+     append-only."
+
+AND THE FIRST WRITE OF THIS WAS A 27,000-LINE DIFF, WHICH I CAUGHT AND REDID.
+json.dump with indent=1 against a file written with indent=2 reformatted every
+line of a shared register -- 27,033 insertions and 27,025 deletions to change
+four records. The indent was then MEASURED from the file rather than assumed,
+the original restored from HEAD~1, and the four edits re-applied: 16 insertions,
+8 deletions. A diff that large on a shared data file is an orthogonal change
+whatever its intent, and it would have been unreviewable.
+
+================================================================================
+7.  ITEMS 7, 8, 9, 10 -- SKILLS, REFS, LOCKS, CLAIMS
+================================================================================
+
+ITEM 7, THE HOVER-AUDITOR DIVERGENCE -- PRINTED, ROUTED, NOTHING EDITED.
+Both copies by their real resolved path, and the diff computed in a script so
+neither 280KB file was read into a session window. Line endings normalised
+first, because the user store is CRLF and the repo is LF and a bare comparison
+would report every line as changed.
+
+  repo  C:\Users\marsh\Documents\SAIRN-fourth\.claude\skills\sairn-hover-auditor
+        167 files
+  user  C:\Users\marsh\.claude\skills\sairn-hover-auditor
+        79 files
+
+  89 files only in the repo (almost all the auditor's own handoffs)
+  1 only in the user store: `tools$f` -- a filename that looks like an
+    unexpanded shell variable, i.e. a mistyped redirection
+  9 shared files DIFFER, +362 lines / -12 lines, the repo AHEAD in every one
+
+THE DIRECTION IS THE FINDING: one-way means the user store is a STALE COPY, not
+a fork with its own work. Full table in docs/2026-10-12-fourth-b5-routing.md
+section 11. ROUTED TO cc and not acted on, for two reasons that both stand on
+their own: that store is shared by every clone on this machine, so an edit there
+is a change to five sessions made by one; and the subtree is the hover auditor's,
+which a build agent must not reach into.
+
+ITEM 8, THE SALVAGE REFS -- LISTED AND KEPT.
+
+  refs/salvage/b6-defreg-probe   fdce1b4b  "PROBE ambiguous-subject fixture"
+  refs/salvage/b6-gate12         549a372a  "drop a generator"
+
+The instruction is to keep them until the push lands and then delete them. THE
+PUSH DID NOT LAND, so both are kept; deleting them now would orphan two commits
+whose worktrees b6 already removed. The two `git update-ref -d` commands are in
+routing doc section 14 for whoever lands it.
+
+ITEM 9, THE LOCKS -- 0 RELEASED, FOURTH BATCH RUNNING. 14 locks: 6 holders LIVE
+(all six sessions), 8 DEAD, 0 ATTRIBUTABLE. Full PID-and-age table in routing
+doc section 13. The structural reason is unchanged and is why this keeps
+repeating: the registry's pid->session map holds only the LIVE pids, so a dead
+pid can never be attributed through it, and the lock files carry no session
+field. Routed to cc: tools/session_lock_check.py:128, :349, :357.
+  AND fourth.lock WAS RECREATED AFTER b6 RELEASED IT. sairn_claim.py takes the
+  lock on its own start path, so releasing it at report close does not keep it
+  released across batches -- worth knowing before reading that as drift.
+  Released again at b7 close.
+
+ITEM 10, THE CLAIM -- TAKEN BY FILES, AND IT IS VISIBLE.
+
+  taken        b7, 24 files declared, `check` CLEAR
+  on git       NO -- the push is refused, so it is not on origin/main
+  in the registry  YES -- 1 claim, 24 files, in
+                   ~/SAIRN-SESSION-LOCKS/status/fourth.json, read back to
+                   confirm. Visible to the other five sessions on this machine
+                   with no fetch.
+  released first   the b6 claim, WHICH WAS STILL ACTIVE AT PICKUP. Same shape
+                   b6 found at its own pickup: a claim is not released by a
+                   batch ending.
+
+So the answer item 10 asks for is: VISIBLE ON THIS MACHINE, INVISIBLE OFF IT.
+b6 routed the misleading message to cc -- tools/sairn_claim.py:1966, :1921 and
+:2414, the last of which prints "nothing published" when publish_claims has
+just run -- and that routing stands unchanged.
+
+================================================================================
+8.  WHAT IS NOT DONE, PLAINLY
+================================================================================
+
+  - 3 STRIPPER SITES IN 3 FILES. Two declined with reasons, one new from another
+    session. Not a shortfall against the 29 and not claimed as finished.
+  - tests/faults/sd_write_faults.js IS RED AND UNREGISTERED. Pre-existing,
+    7 passed / 11 failed, not mine to diagnose, named here.
+  - THE phi_cache POLLUTER. The class is ruled out; the suite self-reports from
+    now on. No further bisect is planned and that is deliberate.
+  - THE HOVER-AUDITOR DIVERGENCE. Routed to cc, untouched.
+  - run_delegation_probe.py:76, :80, :113, :119 -- the fail-open restore. cody's.
+  - session_lock_check.py:128, :349, :357 -- the unattributable locks. cc's.
+  - clone_health_check.py:209-211 -- detects core.bare=true, nothing refuses.
+  - sairn_claim.py:1966, :1921, :2414 -- the wrong visibility message. cc's.
+  - THE TWO UPSTREAM DEFECTS behind the not_red five.
+  - 17 UNPUSHED COMMITS, 16 BEHIND. Nothing from b5, b6 or b7 is on origin/main.
+  - 3 UNINDEXED external handoffs, none of them mine.
+
+================================================================================
+9.  QUESTIONS ONLY MICHAEL CAN ANSWER
+================================================================================
+
+  1. THREE BATCHES OF WORK EXIST ONLY IN THIS CLONE. 17 commits. The blocker is
+     the same every time: hooks are off by instruction, so the tooling-inventory
+     generator exits 2 and the push gate refuses. b7 attempted exactly one push
+     and did not override it. HOW DOES THIS WORK REACH origin/main?
+  2. THE SALVAGE REFS -- delete after a push, or keep the probe commits?
+  3. sairn-hover-auditor DIFFERS between the project and user stores, one-way,
+     +362/-12. Who reconciles the auditor's own skill?
+  4. THREE UNTRACKED settings.json BACKUPS in .claude/. Delete, or keep?
+  5. sql/restore_demo_pins_2026-09-29.sql -- ELEVENTH batch carried, not mine,
+     writes credential rows. Commit, delete, or carry?
+  6. ~350 FILES IN C:\Users\marsh\ classified as throwaway in b4. Nothing
+     deleted and nothing will be without your word.
+
+================================================================================
+10. COMMITS THIS BATCH
+================================================================================
+
+  7 commits. The work commit is 33618da5 --
+    19 files changed, 535 insertions(+), 41 deletions(-)
+
+  the claim release and the b7 claim
+  33618da5  items 4, 5, 6 and the item-3 diagnostic
+  3abb71ed  the routing doc: items 3, 5, 7, 8, 9
+  beac266c  the handoff, written BEFORE this report
+  (later)   this report and the digest
+
+  Re-derive rather than trusting this list, which a later commit carries:
+    git log --oneline -8
+    git rev-list --left-right --count origin/main...HEAD
+    git diff --shortstat 33618da5~1 33618da5
+SHA256 159715217a417c541bdd549ad5b4b0bd3e8264560be64eac9e4f0ec4ef8f9817
+END-OF-REPORT
