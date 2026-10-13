@@ -433,3 +433,111 @@ convention by me:** I hold `docs/METHODOLOGY.md` in this batch's claim, and
 writing myself a number in a file I hold is the self-promotion cody, cc and hank
 have each declined this cycle. **ROUTED, with the text written, for whoever runs
 the intake.**
+
+---
+
+## 2026-10-13 (fourth, b9 continuation): THE CHECK THAT WOULD HAVE CAUGHT THE PUSH REFUSAL, and the rule the refusal itself needed
+
+**ONE CHECK BUILT AND WIRED, ONE RULE ROUTED, and the two are about different
+halves of the same stall.** `tools/commit_tool_entry_check.py` is in
+`.githooks/pre-commit` as of this batch; the rule below is written out and
+**NOT promoted to a numbered convention by me**, for the reason this file
+already records twice — I hold `docs/METHODOLOGY.md` in this batch's claim and
+writing myself a number into a file I hold is the self-promotion cody, cc and
+hank have each declined this cycle. **Re-counted at this HEAD by the stated
+method, not quoted from any page: 34 headings, 1→34, no gap, no duplicate,
+NEXT FREE 35.** Count them yourself.
+
+### What actually happened, because the cause was not what the message said
+
+Five batches of finished work — **48 commits** — sat unpushed. The refusal on
+screen said a generated document had stopped matching its sources. Re-diagnosed
+at HEAD it was **four distinct defects wearing one message**, and each was
+measured before it was fixed:
+
+| # | the real cause | fixed in |
+|---|---|---|
+| 1 | `tools/report_sha_check.py` (b5, `d7accea0`) and `tools/temp_state_leak_check.py` (b7, `7db6bf03`) carried no `PURPOSES` or `REGISTRY` entry | two entries + a regenerate |
+| 2 | push-gate check 12 measured the TIP in the live working tree and the BASE in a clean checkout | `f2f9953b` |
+| 3 | `tools/register_feed_gate.py` and `tools/copy_exactly_gate.py` treated the REMOTE's sha, read off pre-push stdin, as a local object | `ac9d47d8`, `55777a74` |
+| 4 | the same unfetched base made the owner-header check classify every MODIFIED `tools/*.py` as newly ADDED | `9c36aa7c` |
+
+**Defect 4 is the one worth the section.** It did not refuse to answer — it
+answered wrongly, and its remedy instructed a land grab: `NO OWNER: 4` over
+`copy_exactly_gate.py`, `register_feed_gate.py`, `sairn_push_gate_hook.py` and
+`tooling_inventory.py`, all four pre-existing, all four grandfathered by that
+check's own written scope, with the printed fix being to add `# OWNER:` lines.
+One session would have written itself as owner of four shared tools, two of
+them contested, to get an unrelated push out.
+
+### The check: ask at the commit, not at the boundary
+
+**The inventory rule was never the gap. The TIMING was.** Three things already
+enforced "no `tools/` file is mergeable without an entry" — push-gate checks 12
+and 14, and the generator's own refusal — and **all three ask at push time**.
+So a one-line omission in b5 became a blocked queue in b9, and the session that
+had to clear it was whichever one pushed next rather than the one that wrote
+the tool.
+
+`tools/commit_tool_entry_check.py` asks the same question at the commit that
+adds the file. Three decisions in it are load-bearing and each is a measurement
+rather than a preference:
+
+1. **It reads the STAGED blobs, not the working tree.** The case worth catching
+   is a tool staged with its entry written and *not* staged — a working-tree
+   reader passes exactly that commit. Driven live: that sabotage exits 1, and
+   re-staging the inventory returns it to 0.
+2. **It accepts `PURPOSES` *or* `report_only_checks.REGISTRY`,** because
+   `missing_purposes` does. A `PURPOSES`-only reader looks correct, passes every
+   obvious fixture, and refuses every report-only tool on the platform. That is
+   the third arm of the lock, and it is the arm that would have made the tool
+   wrong.
+3. **A historical range is judged against the inventory AS IT WAS,** read at the
+   range tip. Reading today's copy would have let the two entries written this
+   batch retroactively clean the commits that caused the stall — convention 8
+   arriving inside the fix for it.
+
+10/10 fixture arms, and **validated against the real defect in both
+directions**: exit 1 naming the right file over `d7accea0~1..d7accea0` and
+`7db6bf03~1..7db6bf03`, exit 0 over `ca81d59d` and `8acd7896`, which added tools
+*with* entries.
+
+**It does not replace checks 12 and 14 and the header says so.** A pre-commit
+hook is per-clone state; a clone that never ran `install_git_hooks.py` has
+none. The boundary stays the backstop and this moves the first notice.
+
+### ROUTED, NOT PROMOTED: a sha a hook reads off stdin is not an object this clone has
+
+**Three gates were written with this shape independently, and the fourth is
+still live.** `git` hands a pre-push hook the sha THE REMOTE currently has.
+Five sessions push one branch here, so between a clone's last fetch and its
+push that sha is routinely an object the clone has never fetched — **the
+ordinary case, not an anomaly**. Every consumer then produces a different wrong
+answer and none of them says "the base could not be read":
+
+* `register_feed_gate.py` → *"the outgoing range A..B could not be read"*, a
+  symptom with no cause. Refused this clone **twice, eight days apart**.
+* `copy_exactly_gate.py` → *"does not resolve in this clone ... nothing was
+  checked (PR §1.11)"*, true sentence, ordinary condition.
+* `sairn_push_gate_hook.py` → **a false finding**, as above.
+* `hover_auditor_scope_gate.py:409` → **same shape, not fixed.** It runs first
+  in `.githooks/pre-push`, it passed every attempt this batch, and it is the
+  auditor separation gate. Routed with the line rather than edited.
+
+**The proposed rule, for whoever runs the intake:** *a value a hook receives
+from its caller — a sha on stdin, a path in argv, a ref name — is INPUT, and a
+check must establish it exists before deriving anything from it. The three
+states are not "valid" and "invalid" but **present, absent, and unreadable**,
+and an absent REMOTE object is a statement about the remote rather than about
+the change.* The mechanism, so this is not advice: resolve the input **once,
+where it enters**, and have the resolution print what it substituted — the
+central fix at `9c36aa7c` rather than the two per-gate fixes, which is why a
+check added later inherits a readable base instead of repeating this a fifth
+time.
+
+**WHAT IS STILL OPEN AND IS NOT CLOSED BY ANY OF THE ABOVE.** No checker exists
+for the shape itself, so a fifth gate can still be authored with it; the planned
+action is recorded on defect record `55777a74` and nothing has been built. And
+it was never measured how many of the push gate's *other* checks were silently
+reading a wrong answer off the same absent base — only the owner check happened
+to fail loudly, which is the whole reason it was found at all.
