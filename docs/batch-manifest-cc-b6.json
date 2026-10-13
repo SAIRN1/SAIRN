@@ -1,0 +1,44 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "cc",
+  "batch": "b6",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "implement the approved per-gate skip; blanket form fails loudly; log every use",
+      "status": "done",
+      "evidence": "tools/gate_skip.py 14/14 fixtures; tests/run_gate_skip_probe.py 37/0"
+    },
+    {
+      "id": 2,
+      "title": "compaction-survival SessionStart hook for six clones; drive the permission rules in the other four",
+      "status": "done",
+      "evidence": "tools/compaction_brief.py 13/13; run_hook_integrity_probe.py 43/0; docs/2026-10-13-cc-b6-clone-rules.txt 4 of 5 PASS"
+    },
+    {
+      "id": 3,
+      "title": "cleanup sweep tool: own scratch only, after the push landed, never another agent",
+      "status": "done",
+      "evidence": "tools/batch_cleanup.py 16/16; tests/run_batch_cleanup_probe.py 35/0"
+    },
+    {
+      "id": 4,
+      "title": "batch manifest + validator; push gate scoped to the pushing agent; retries capped at 2",
+      "status": "done",
+      "evidence": "tools/batch_manifest.py 21/21; tests/run_batch_manifest_probe.py 41/0"
+    },
+    {
+      "id": 5,
+      "title": "migrate the 14 open-work row parsers to the shards; close/re-date overdue Tier A",
+      "status": "open",
+      "evidence": ""
+    },
+    {
+      "id": 6,
+      "title": "push and confirm it landed",
+      "status": "open",
+      "evidence": ""
+    }
+  ]
+}

@@ -443,7 +443,25 @@ def _emit_collected():
             'now.\nThe gate used to stop at the first, so each one cost a '
             'separate rebase\nand retry. Every reason follows.\n\n' % (n, n)
             if n > 1 else '')
-    reason = head + joined
+    # ── THE RETRY CAP, COUNTED HERE BECAUSE THIS IS THE ONE EXIT EVERY
+    #    COLLECTED REFUSAL TAKES (2026-10-13, item 4) ──────────────────────
+    # Bumped once per refused push for this (agent, tip). A rebase renames the
+    # tip and legitimately resets the count, which is right: a new tip is a new
+    # push, not a retry of the old one.
+    _tip = None
+    try:
+        _tip = git(os.getcwd(), 'rev-parse', 'HEAD').strip()[:12]
+    except Exception:                                   # noqa: BLE001
+        _tip = 'unknown'
+    _n = retry_count(_tip, bump=True)
+    if _n > RETRY_CAP:
+        reason = (head + joined + chr(10)
+                  + chr(10).join(escalation_lines(_n, _tip, [])))
+    else:
+        reason = head + joined + chr(10) + chr(10) + (
+            'Refusal %d of %d for tip %s. At %d this stops retrying and '
+            'escalates with the full error text.'
+            % (_n, RETRY_CAP, _tip, RETRY_CAP + 1))
     if MODE == 'prepush':
         sys.stderr.write('\n' + reason + '\n\n')
         sys.stderr.write('(blocked by .githooks/pre-push -> '
@@ -659,6 +677,108 @@ def outgoing_files(repo, base=None, tip='HEAD'):
         if out.strip():
             return sorted({ln.strip().replace('\\', '/') for ln in out.splitlines() if ln.strip()})
     return []
+
+
+# ── SCOPING A FINDING TO THE PUSHING AGENT'S OWN FILES (2026-10-13, item 4) ──
+# MEASURED, FIVE TIMES IN b4 AND ONCE IN b5: this gate refused cc's push for
+# files belonging to hank, cody, fourth and the hover auditor -- undeclared
+# handoffs on the shared Drive, manifest rows another session had drifted, a
+# tier-A obligation somebody else opened. Every one of those is a real finding
+# about the PLATFORM and none of them is actionable by the session being
+# refused, which is how a gate gets overridden instead of satisfied.
+#
+# SO A FINDING IS SPLIT, NEVER DROPPED. `mine` is reported as a refusal;
+# `theirs` is reported as a NOTICE with the owner named, and does not block.
+# A file that stopped being reported would be a file nobody hears about again,
+# which is the worse trade.
+#
+# OWNERSHIP IS DERIVED FROM THE COMMITS IN THIS PUSH, not from a table. A path
+# this push TOUCHED is this push's problem; a path it did not touch is
+# somebody else's, and the pushing agent cannot fix it without reaching into
+# another clone -- which the standing rule forbids anyway.
+def scope_to_mine(paths, repo, base=None, tip='HEAD'):
+    """-> (mine, theirs). `mine` are paths THIS PUSH touched."""
+    touched = set(outgoing_files(repo, base, tip))
+    mine, theirs = [], []
+    for p in paths:
+        key = str(p).replace('\\', '/')
+        (mine if key in touched else theirs).append(p)
+    return mine, theirs
+
+
+# ── THE RETRY CAP (2026-10-13, item 4) ──────────────────────────────────────
+# b4's push loop ran NINE attempts across SIX rebases, each refused by a gate
+# that was satisfied and then replaced by the next one. Nothing counted, so
+# nothing escalated, and the ninth attempt looked exactly like the first.
+#
+# TWO is the cap because the second attempt is the first one that carries
+# information: attempt 1 finds the refusal, attempt 2 proves the fix worked.
+# A third identical refusal is not progress, it is a loop, and the right
+# response is to stop and show the error text rather than to try again.
+#
+# COUNTED PER (agent, tip), OUTSIDE EVERY CLONE, so a rebase that renames the
+# tip legitimately resets the count -- a new tip is a new push, not a retry.
+RETRY_DIR = os.path.join(os.path.expanduser('~'), 'SAIRN-SESSION-LOCKS',
+                         'push-retries')
+RETRY_CAP = 2
+
+
+def _retry_path(tip):
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import bypass_log
+        who = bypass_log.session_name() or 'unknown'
+    except Exception:                                   # noqa: BLE001
+        who = 'unknown'
+    return os.path.join(RETRY_DIR, '%s-%s.json' % (who, str(tip)[:12]))
+
+
+def retry_count(tip, bump=False):
+    """-> how many times this (agent, tip) has been refused. Best-effort.
+
+    FAIL-OPEN ON ITS OWN BOOKKEEPING, deliberately: a push refused because the
+    retry COUNTER could not be written would turn bookkeeping into an outage,
+    which is the same decision _record_bypass already makes and for the same
+    reason. The cost is an undercount, which is visible as a missing escalation
+    rather than as a false one.
+    """
+    p = _retry_path(tip)
+    n = 0
+    try:
+        if os.path.isfile(p):
+            n = int(json.loads(io.open(p, encoding='utf-8').read()
+                               ).get('count') or 0)
+        if bump:
+            n += 1
+            os.makedirs(RETRY_DIR, exist_ok=True)
+            io.open(p, 'w', encoding='utf-8', newline=chr(10)).write(
+                json.dumps({'tip': str(tip), 'count': n}, indent=2) + chr(10))
+    except Exception:                                   # noqa: BLE001
+        return n
+    return n
+
+
+def escalation_lines(n, tip, reasons):
+    return [
+        '',
+        'ESCALATING: this is refusal %d for tip %s, and the cap is %d.'
+        % (n, str(tip)[:12], RETRY_CAP),
+        '',
+        'Attempt 1 finds a refusal and attempt 2 proves the fix worked. A '
+        'third is a loop,',
+        'not progress -- b4 ran NINE attempts across SIX rebases, each gate '
+        'satisfied and',
+        'replaced by the next, with nothing counting and nothing escalating.',
+        '',
+        'THE FULL ERROR TEXT OF EVERY OUTSTANDING REFUSAL FOLLOWS. Take it to '
+        'chat rather',
+        'than trying again: either a gate is mis-specified, or the work needs '
+        'a decision',
+        'nobody in this session can make.',
+        '',
+        ('=' * 66),
+        '',
+    ] + reasons
 
 
 def outgoing_subjects(repo, base=None, tip='HEAD'):
