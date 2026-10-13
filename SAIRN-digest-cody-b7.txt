@@ -1,8 +1,8 @@
-STATUS: TWO b7 RUNS SHARE THIS CLONE AND THESE FILENAMES -- first fact, because
-it decides how to read the rest. Both readings kept, neither overwritten. LANDED
-on origin/main, every commit tested as an ancestor singly. Suites 25/10/15/10/8
-arms, all exit 0, 0 unproven. Four gate refusals, each repaired at its cause. No
-api/ edit, no hook restored, settings.json never committed, seed gate unused.
+STATUS: TWO b7 RUNS SHARE THIS CLONE AND THESE FILENAMES. Both readings kept,
+neither overwritten. LANDED on origin/main, every commit tested as an ancestor
+singly. Suites 25/10/15/10/8 arms, all exit 0, 0 unproven. Four gate refusals,
+each repaired at its cause. No api/ edit, no hook restored, settings.json never
+committed, seed gate unused.
 
 DECISION-NEEDED:
 1. Two sessions writing one clone's report, digest and test files.
