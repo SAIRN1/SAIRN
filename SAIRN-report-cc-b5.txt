@@ -4,9 +4,24 @@ SAIRN -- cc -- BATCH b5                                       2026-10-13
 ================================================================================
 
 GIT STATE
-  HEAD at close   6bd9239f
-  origin/main     left/right 0	7   (left = behind, right = ahead)
-  diffstat        41 files changed, 3523 insertions(+), 215 deletions(-)   across 41 file(s)
+  HEAD at close   14a771a4   -- AND EVERYTHING BELOW IS ON origin/main,
+                  verified with `git log origin/main..HEAD` returning EMPTY,
+                  not with `git log`.
+  origin/main     left/right 0	0   (left = behind, right = ahead)
+  diffstat        49 files changed, 4865 insertions(+), 346 deletions(-)   across 0 file(s)
+
+  THESE FIGURES WERE RE-DERIVED AFTER THE PUSH, AND THE FIRST DRAFT OF THIS
+  FILE HAD THEM WRONG -- which is Rule E, routed to ted in this same batch,
+  catching the document that proposes it. Twice. The digest generator first
+  took its diffstat from a pre-rebase SHA and reported 76 commits across 100
+  files, 69 of them other sessions'; and both generators then used
+  `origin/main` as the base, which was right before the push and became EMPTY
+  after it. The base is the batch's own first commit, and that is only knowable
+  once the batch has landed.
+
+  WHAT IS STILL NOT IN THIS FILE, SAID RATHER THAN CHASED: the commit that
+  carries this corrected text. A document cannot state its own SHA, and
+  pretending otherwise is the regress Rule E's second half exists to stop.
   rebases         ONE, onto origin/main at 69 behind. Ledger conflicts resolved
                   by tools/sairn_rebase_resolve.py, which is the tool built for
                   them -- not by taking origin's copy, which cost two rounds in
@@ -14,6 +29,12 @@ GIT STATE
 
   OUTGOING COMMITS, read with `git log origin/main..HEAD`:
 
+    14a771a4 chore(defect register): the record for the 198-character shard filename
+    e08bab0c fix(open work): cap the shard filename, and give both new tools an OWNER line
+    b902ff2b chore(defect register): the record for the tooling-inventory refusal
+    3ed68365 fix(tooling inventory): the hook leg is OPTIONAL in a clone whose hooks are off on purpose -- and the two new tools get their PURPOSES entries
+    81015287 chore(defect register): the two records this push owed
+    12d189b1 docs(handoff): cc batch b5 -- handoff, report and six-field digest
     6bd9239f docs(routing): Rule E routed to ted with the next free number, and the 15 field findings re-derived -- every sd-data.js citation had moved
     04c27cc1 feat(open work): shard the 2.38MB index into per-app files plus an ACTIVE index, with a check that proves no row was lost
     c2c4aa7b fix(defect register): a fully-superseded register is a CLOSED state, so --reseat stops exiting 1 forever in every clone
@@ -24,22 +45,22 @@ GIT STATE
 
   THE SIXTEEN LARGEST FILE CHANGES, from `git diff --numstat`:
 
-    tools/open_work_shard.py                             +421    -0
+    SAIRN-report-cc-b5.txt                               +549    -0
+    tools/open_work_shard.py                             +443    -0
     docs/open-work/ACTIVE.md                             +397    -0
+    docs/defect-density-register.json                    +354    -91
     docs/2026-10-13-cc-routed-b5.md                      +295    -0
     docs/open-work/platform.md                           +273    -0
     docs/hooks-disabled-2026-10-13.json                  +185    -0
-    tools/digest_lint.py                                 +183    -0
+    tools/digest_lint.py                                 +185    -0
     docs/open-work/tooling.md                            +170    -0
     .claude/settings.json                                +155    -197
     docs/2026-10-13-per-gate-skip-design.md              +153    -0
+    docs/handoff-cc-2026-10-13.md                        +124    -0
     docs/open-work/sairnlaw.md                           +111    -0
     tools/hook_integrity_check.py                        +105    -5
     tests/run_external_file_index_probe.py               +93     -0
     tests/run_hook_integrity_probe.py                    +90     -0
-    tests/run_defect_register_probe.py                   +79     -0
-    tools/external_file_index_check.py                   +75     -6
-    docs/open-work/stonedesk.md                          +69     -0
 
 ================================================================================
 ITEM 1 -- THE HOOKS. OFF, AND NOW COMMITTED OFF.
@@ -545,5 +566,5 @@ Q4. SEVENTEEN TIER A OBLIGATIONS ARE OVERDUE AND FIVE CANNOT BE VERIFIED
     AGAINST THEIR OWN RECORDED SHA. That is a register-wide freshness problem,
     not a backlog.
 
-SHA256(body)=2f2c3f3e6f0926da260afc06b566da4f2d7fe372538ec1a617fa7e03d0641967
+SHA256(body)=3c90b14f82ea6bbe9b4878a5ffba63ed98285999d2b83c5e962b10ed8d9af9e9
 END-OF-REPORT
