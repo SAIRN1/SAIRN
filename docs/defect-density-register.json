@@ -27654,6 +27654,74 @@
         }
       ],
       "recurrence_open": "OPEN. Nothing asks of a checker whether its findings are ACTIONABLE, and two tools reached this same failure independently within hours on 2026-10-13 -- this one and tools/external_file_index_check.py. The next permanently-red checker looks exactly like these two did."
+    },
+    {
+      "commit": "e08bab0c2471",
+      "date": "2026-10-13",
+      "subject": "fix(open work): cap the shard filename, and give both new tools an OWNER line",
+      "files": [
+        "docs/open-work/ACTIVE.md",
+        "docs/open-work/{awaiting-independent-verification-mdash-eb640ae8-the-four-vendor-supply-collections-now-reach-a-server-and-the-one-that-can-be-deleted-soft-deletes-mdash-reviewed-and-the-finding-is-already-fixed.md => awaiting-independent-verification-mdash-eb640ae8-02241601.md}",
+        "tools/digest_lint.py",
+        "tools/open_work_shard.py"
+      ],
+      "lines_added": 26,
+      "lines_removed": 2,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "tools/open_work_shard.py generated a 198-CHARACTER FILENAME. slug() is derived from a prose table cell and had no length cap; one row's App cell is a struck-through section marker rather than an app, so the shard was named after the whole sentence. git could not stat it, and the push-gate control-byte check exited 2 COULD NOT RUN -- a check that cannot read a file reports nothing, which is the worst of the three states and exactly why that gate refuses instead of passing over it. Capped at 48 characters plus an 8-character hash of the FULL app string: truncation alone would silently merge two long App values sharing a prefix into one shard, a data loss dressed as a filename that --check could not have caught because both row sets would be present in the merged file.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/sairn_push_gate_hook.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "23dc5e433aad",
+        "date": "2026-10-13",
+        "subject": "feat(open work): shard the 2.38MB index into per-app files plus an ACTIVE index, with a check that proves no row was lost",
+        "lag_days": 0
+      },
+      "citation_note": "1.11 is cited for the DETECTION rather than the defect: the control-byte check treated an unreadable file as a third state and refused, instead of folding it into a pass. That is the rule working, and it is the only reason a 198-character path did not ship.",
+      "contributing_factors": [
+        {
+          "factor": "slug() had no length cap. It is derived from a prose table cell, and one row's App cell is a struck-through section marker rather than an app name, so the filename came out at 198 characters -- long enough that git could not stat it.",
+          "kind": "technical",
+          "action": "Capped at 48 characters plus an 8-character hash of the FULL app string.",
+          "action_status": "done"
+        },
+        {
+          "factor": "TRUNCATION ALONE WOULD HAVE BEEN WORSE THAN THE BUG. Two long App values sharing a prefix would collapse into one shard -- a data loss wearing a filename -- and --check would not have caught it, because both sets of rows would be present in the merged file. The hash makes the mapping injective, and is taken from the text rather than a counter so it is stable across runs.",
+          "kind": "technical",
+          "action": "Hash included from the first version of the fix rather than added after somebody hit the collision.",
+          "action_status": "done"
+        },
+        {
+          "factor": "THE DETECTION WAS A GATE REPORTING COULD-NOT-RUN, NOT A FAILING ASSERTION. The control-byte check exited 2 because it could not stat the file, and said so rather than passing over it. Had it folded an unreadable file into a clean result, a 198-character path would have shipped and the next tool to walk docs/ would have been the one to find it.",
+          "kind": "detection",
+          "action": "No change needed -- this is the third state working. Recorded as the thing that worked.",
+          "action_status": "declined",
+          "note": "Nothing to fix. Recorded so a future reader does not read the exit 2 as the defect rather than as the detection."
+        },
+        {
+          "factor": "A generator writing paths from untrusted text had no bound on any of them, and nothing else in the repo would have caught it: the standing-doc size check measures BYTES, not path length, and md_table_check reads rows rather than filenames.",
+          "kind": "latent-condition",
+          "action": "Only this generator is fixed.",
+          "action_status": "planned",
+          "note": "Any future generator naming files from table cells has the same hole. A path-length check over docs/ would catch the class; it is not written."
+        },
+        {
+          "factor": "The OWNER-line refusal in the same push was a second, unrelated correctness gap in the same two new tools -- and the FIRST fix for it also failed, because `# OWNER: cc -- written ...` is not the form the checker accepts. An owner line that nearly matches is worse than none: it reads as declared.",
+          "kind": "process",
+          "action": "Provenance moved to the line below; both tools declare OWNER: cc and the checker exits 0.",
+          "action_status": "done"
+        }
+      ],
+      "recurrence_open": "OPEN. Any generator that names files from untrusted table text has this hole, and nothing in the repo would catch it: the standing-doc check measures BYTES not path length, and md_table_check reads rows rather than filenames. A path-length sweep over docs/ would catch the class and is not written."
     }
   ],
   "started": "2026-09-09",
