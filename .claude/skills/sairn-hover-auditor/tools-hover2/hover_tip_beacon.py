@@ -47,8 +47,39 @@ import tempfile
 from datetime import datetime, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-LOG = os.path.join(HERE, 'hover-audit-log.jsonl')
-BEACON = os.path.join(HERE, 'TIP-BEACON.md')
+# THIS FILE IS A MIRROR, NOT NECESSARILY THE WORKING COPY (batch b15
+# fix). hover_self_health_hook.py's own own_project_slug() already
+# documents the shape: "The platform-repo backup copy under
+# .claude/skills/sairn-hover-auditor/tools-hover2/ ... is a source
+# backup, never meant to run in-place ... Only the ORIGINAL copy in
+# this real projects-directory location is ever actually invoked." A
+# PARENT-OF-HERE fallback would be wrong here for the same reason it is
+# wrong there: the mirror's parent is `.claude/skills/sairn-hover-
+# auditor/` inside the PLATFORM repo, which has no filesystem
+# relationship to the external log repo at all. The real, hardcoded
+# location is the same one citation_resolve_check.py's DEFAULT_LOG and
+# hover_self_health_hook.py's own fallback already use for this exact
+# directory -- reused here rather than re-derived, so the three cannot
+# name three different paths for the same real directory.
+_REAL_LOG_DIR = os.path.join(
+    os.path.expanduser('~'), '.claude', 'projects',
+    'C--Users-marsh-Documents-SAIRN-hover2', 'hover-audit-log')
+
+
+def _resolve(name):
+    here_path = os.path.join(HERE, name)
+    if os.path.exists(here_path):
+        return here_path
+    real_path = os.path.join(_REAL_LOG_DIR, name)
+    if os.path.exists(real_path):
+        return real_path
+    return here_path  # neither exists; keep the HERE path so the error
+                       # message names the location this invocation
+                       # checked first, not a path it never tried.
+
+
+LOG = _resolve('hover-audit-log.jsonl')
+BEACON = _resolve('TIP-BEACON.md')
 STALE_AFTER = 15  # REASONED starting number, not yet calibrated -- see doc
 
 

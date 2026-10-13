@@ -72,6 +72,36 @@ DEDICATED_DRAWS_RW = re.compile(
     r"if \(resource === 'bld_draws' && \(action === 'read' \|\| "
     r"action === 'write'\)\) \{(.*?)\n    \}",
     re.S)
+ROLE_SET_LITERAL = re.compile(r'roleSet\(\{([^}]*)\}\)')
+
+# ── MICHAEL'S DECISION, batch b15: upper management/owner only, NOT
+# supervisors, access assigned by ownership ────────────────────────────
+# The dedicated read/write branch found in b13 (DEDICATED_DRAWS_RW above)
+# closed the UNAUTHENTICATED bypass -- it requires A session -- but never
+# checked WHICH role that session holds. sairnbuild's role vocabulary is
+# owner/pm/office (api/_lib/auth.js:203); 'pm' is the on-site project
+# manager, the closest thing this app has to "supervisor." Right now any
+# of the three can read AND write bld_draws through this branch with no
+# role gate at all -- confirmed live below, not assumed from the comment.
+# Michael's decision narrows this to owner only (not pm, and -- per "owner
+# only," not plain office staff either) PLUS a per-record ownership
+# check, neither of which hank has landed yet (no "supervisor" or
+# ownership string found anywhere in api/sd-data.js as of this batch).
+# These two checks are forward-looking: they are EXPECTED to fail today
+# and are here so the next run against hank's real commit needs no new
+# code, only a re-run.
+
+
+def _role_set(src, name):
+    """{'owner': True, ...} parsed from `const NAME = roleSet({...})`, or
+    None if NAME is not declared in src at all."""
+    m = re.search(r'const %s = roleSet\(\{([^}]*)\}\)' % re.escape(name), src)
+    if not m:
+        return None
+    out = {}
+    for rm in re.finditer(r"(\w+)\s*:\s*(true|false)", m.group(1)):
+        out[rm.group(1)] = (rm.group(2) == 'true')
+    return out
 
 
 def selftest():
@@ -163,6 +193,66 @@ def selftest():
           'ungated-bespoke=no-bypass (different question, correctly not '
           'flagged), dedicated-gated-branch=no-bypass, '
           'dedicated-ungated-branch=bypass (control pair)')
+
+    # ── MUTATION PROOF, batch b15, Michael's decision ──────────────────
+    # No real post-fix commit exists yet (hank's change has not landed --
+    # confirmed via `git log -S"supervisor"` and `-S"ownership"` against
+    # api/sd-data.js, both empty, before writing this). The PRE-FIX
+    # fixture below is the REAL current shape of the dedicated read/write
+    # branch (session required, no role check at all) -- not a stand-in,
+    # copied from the live analyze() read above. The POST-FIX fixture is
+    # SYNTHETIC: the target shape stated in the decision (owner-only role
+    # gate + a per-record ownership check), built so this tool's own
+    # assertions are proven to fire on the real current gap and fall
+    # silent on the shape hank's change is expected to produce, without
+    # waiting for that commit to exist first.
+    fx_pre_fix_real_shape = """
+    if (resource === 'bld_draws' && (action === 'read' || action === 'write')) {
+      const dSession = verifySessionToken(tokenFromRequest(req), licHash, 'sairnbuild');
+      if (!dSession) { return; }
+      const r = await fetch(x);
+    }
+    """
+    fx_post_fix_synthetic = """
+    if (resource === 'bld_draws' && (action === 'read' || action === 'write')) {
+      const dSession = verifySessionToken(tokenFromRequest(req), licHash, 'sairnbuild');
+      if (!dSession) { return; }
+      if (!BLD_DRAW_OWNER_ONLY_ROLES[dSession.role]) { return; }
+      if (dSession.role !== 'owner' && draw.owner_id !== dSession.employee_id) { return; }
+      const r = await fetch(x);
+    }
+    const BLD_DRAW_OWNER_ONLY_ROLES = roleSet({ owner: true });
+    """
+    mp1 = analyze(fx_pre_fix_real_shape)
+    mp2 = analyze(fx_post_fix_synthetic)
+    assert mp1['dedicated_rw_role_check_present'] is False, (
+        'mutation proof, pre-fix: today\'s real dedicated branch shape has '
+        'NO role check -- must fire (be False), not be mistaken for fixed')
+    assert mp1['supervisor_pm_denied'] is False, (
+        'mutation proof, pre-fix: supervisor (pm) must be RED (not denied) '
+        'on the real current shape')
+    assert mp1['owner_allowed'] is True, (
+        'mutation proof, pre-fix: owner must still be allowed today (any '
+        'session passes) -- this was never the gap')
+    assert mp1['ownership_check_present'] is False, (
+        'mutation proof, pre-fix: no ownership check exists today')
+    assert mp2['dedicated_rw_role_check_present'] is True, (
+        'mutation proof, post-fix: the synthetic fixed shape must register '
+        'a role check -- if this fires False the detector, not the fix, is '
+        'broken')
+    assert mp2['supervisor_pm_denied'] is True, (
+        'mutation proof, post-fix: supervisor (pm) must be GREEN (denied) '
+        'once the owner-only role gate lands')
+    assert mp2['owner_allowed'] is True, (
+        'mutation proof, post-fix: owner must remain allowed after the fix')
+    assert mp2['ownership_check_present'] is True, (
+        'mutation proof, post-fix: the per-record ownership check must be '
+        'detected once present')
+    print('MUTATION PROOF PASS: pre-fix (real current shape) fires on '
+          'supervisor_pm_denied=False/ownership_check_present=False; '
+          'post-fix (synthetic target shape) is silent on both -- '
+          'detector proven to distinguish the two before hank\'s real '
+          'commit exists')
     return 0
 
 
@@ -170,7 +260,13 @@ def analyze(src):
     out = {'bld_draws_in_dict': False, 'generic_read_has_session': None,
            'bespoke_has_session': None, 'bespoke_has_role': None,
            'dedicated_rw_present': False, 'dedicated_rw_has_session': None,
-           'bypass': None}
+           'bypass': None,
+           # batch b15, Michael's decision -- see module docstring above
+           # ROLE_SET_LITERAL for why these are forward-looking:
+           'dedicated_rw_role_check_present': None,
+           'dedicated_rw_allowed_roles': None,
+           'supervisor_pm_denied': None, 'owner_allowed': None,
+           'ownership_check_present': None}
     m = BLD_RESOURCES_DICT.search(src)
     if m and 'bld_draws' in m.group(1):
         out['bld_draws_in_dict'] = True
@@ -184,7 +280,27 @@ def analyze(src):
     dm = DEDICATED_DRAWS_RW.search(src)
     if dm:
         out['dedicated_rw_present'] = True
-        out['dedicated_rw_has_session'] = 'verifySessionToken' in dm.group(1)
+        body = dm.group(1)
+        out['dedicated_rw_has_session'] = 'verifySessionToken' in body
+        role_var = re.search(r'([A-Z][A-Z0-9_]*_ROLES)\s*\[', body)
+        out['dedicated_rw_role_check_present'] = bool(role_var)
+        if role_var:
+            allowed = _role_set(src, role_var.group(1))
+            out['dedicated_rw_allowed_roles'] = allowed
+            if allowed is not None:
+                out['supervisor_pm_denied'] = not allowed.get('pm', False)
+                out['owner_allowed'] = allowed.get('owner', False)
+        else:
+            # NO role check on this branch at all -- every sairnbuild role
+            # that can authenticate, including 'pm', reads and writes
+            # bld_draws today. 'pm' is therefore NOT denied (False), and
+            # 'owner' is allowed only because EVERY role is (not because
+            # owner was singled out) -- both facts worth keeping distinct
+            # from "owner allowed because owner is the only role granted."
+            out['supervisor_pm_denied'] = False
+            out['owner_allowed'] = out['dedicated_rw_has_session']
+        out['ownership_check_present'] = bool(re.search(
+            r'owner_id|assigned_to|ownership', body, re.I))
     if not (out['bld_draws_in_dict'] and gm and bm):
         return out
     # A dedicated, earlier-in-source bld_draws read/write branch that itself
@@ -225,6 +341,23 @@ def main():
           "has a *_ROLES check: %s" % (r['bespoke_has_session'], r['bespoke_has_role']))
     print("dedicated bld_draws read/write branch present: %s, has verifySessionToken: %s"
           % (r['dedicated_rw_present'], r['dedicated_rw_has_session']))
+    print('-- ROLE GRANULARITY (Michael\'s decision, batch b15): owner/upper-'
+          'management only, not supervisors (pm), access assigned by '
+          'ownership. This is a SEPARATE question from the bypass verdict '
+          'below and does not change its exit code. --')
+    print('  dedicated_rw role check present: %s (allowed roles: %s)'
+          % (r['dedicated_rw_role_check_present'], r['dedicated_rw_allowed_roles']))
+    print('  supervisor (pm) DENIED: %s -- %s'
+          % (r['supervisor_pm_denied'],
+             'GREEN' if r['supervisor_pm_denied'] else
+             'RED, expected until hank\'s change lands'))
+    print('  owner ALLOWED: %s -- %s'
+          % (r['owner_allowed'],
+             'GREEN' if r['owner_allowed'] else 'RED'))
+    print('  per-record ownership check present: %s -- %s'
+          % (r['ownership_check_present'],
+             'GREEN' if r['ownership_check_present'] else
+             'RED, expected until hank\'s change lands (not built yet)'))
     if r['bypass'] is True:
         print('BYPASS CONFIRMED: the generic action=read path returns the same '
               "bld_draws.data column with NO session check, routing around the "

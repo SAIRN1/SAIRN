@@ -40,7 +40,15 @@ import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-LOG = os.path.join(HERE, 'hover-audit-log.jsonl')
+# Same mirror-vs-working-copy fix as hover_tip_beacon.py, batch b15 --
+# see that file's comment for the full reasoning. Reused verbatim rather
+# than re-derived so the two cannot name two different real paths.
+_REAL_LOG_DIR = os.path.join(
+    os.path.expanduser('~'), '.claude', 'projects',
+    'C--Users-marsh-Documents-SAIRN-hover2', 'hover-audit-log')
+_here_log = os.path.join(HERE, 'hover-audit-log.jsonl')
+LOG = _here_log if os.path.exists(_here_log) else os.path.join(
+    _REAL_LOG_DIR, 'hover-audit-log.jsonl')
 LOG_TOOL = os.path.join(HERE, 'hover_log.py')
 CADENCE = 40  # REASONED, uncalibrated -- disclosed in every output line
 REAL_TYPES = ('check', 'finding')
