@@ -27322,7 +27322,7 @@
       "factors_unknown_reason": "one policy gap across 19 resources, recorded as one defect with the full table in api/_lib/law-roles.js rather than modelled as structured factors"
     },
     {
-      "commit": "90228883a23a",
+      "commit": "f9a4e5a0032b",
       "date": "2026-10-13",
       "subject": "fix(audit-checkpoint,sql): sixteen-log coverage in one idempotent block, and three sql files that no longer described the database",
       "files": [

@@ -18,11 +18,22 @@ CLAUDE.md's rule is that a handoff lives only in a real clone — never written 
 ## Committed this batch
 
 **THESE SHAS ARE POST-REBASE AND EVERY EARLIER SET IS DEAD.** `origin/main`
-moved 65 commits while b7 ran and **moved again between the first push attempt
-and the second**, so the batch was rebased TWICE and every sha was rewritten
-each time. Two earlier printings of this table cited `1400bd90` / `e064ceee` /
-`972eeb9d` / `c3983131` and then `1315205f` / `8fff5bab` / `807c26de` /
-`58ba1b31`; none of those resolves in any clone but this one's reflog. **A
+moved 65 commits while b7 ran and **moved twice more during the push attempts**, the
+third time with a real content conflict in `docs/known-red-suites.json`, so the batch was rebased THREE TIMES and every sha was rewritten
+each time. Three earlier printings of this table cited `1400bd90` / `e064ceee` /
+`972eeb9d` / `c3983131`, then `1315205f` / `8fff5bab` / `807c26de` /
+`58ba1b31`, then `90228883` / `dde6aaed` / `bc9b87f3` / `a247322f`; none of
+those resolves in any clone but this one's reflog.
+
+**THE THIRD REBASE CARRIED A REAL CONTENT CONFLICT and it is worth reading**:
+another session had edited the same `docs/known-red-suites.json` row,
+setting `owner` from `unassigned` to `hank` while leaving the `why` text that
+names `ceremonial.manage` — a capability that is in all three lists. Resolved by
+rebuilding the four lines whole (never by splitting on a delimiter), keeping the
+corrected `why`, and widening the owner cell to
+**`michael (the decision) / hank (the three code places, once it is made)`**
+rather than discarding either session's intent. Their assignment was not wrong
+about who writes the code; it was wrong about who decides. **A
 dangling citation is what a rebase silently creates in every document that
 stamps a sha** — which is exactly the condition that left two `api/` Tier A
 obligations unreviewable by anybody, and the reason the b6 methodology proposal
@@ -30,18 +41,18 @@ asks `--open` to stamp a sha the assignee can actually fetch.
 
 | sha | item |
 |---|---|
-| `a13b4466` | the claim |
-| `90228883` | **items 1 + 2** — audit-checkpoint sixteen-log coverage as one idempotent SQL block, the `CHECK_NOT_WIDENED` refusal, four new ablated test arms; three stale `sql/*_audit_log_schema.sql` CHECKs synced to what ran; `api/sf-auth.test.js` split into four arms |
-| `dde6aaed` | **item 3** — the SAIRNfreedom demo credential, round-tripped twice |
-| `bc9b87f3` | **item 4** — the last nine `sf_` resources gated, 36 of 36 |
-| `a247322f` | **item 5** — `docs/2026-10-13-context-budget-procedure.md` |
-| `8722b141`, `8779b21e` | this handoff, first two printings |
-| `ebe6d2ff` | the claim release |
-| `f023569f` | the defect-register record the push gate required |
+| `5fc1a307` | the claim |
+| `f9a4e5a0` | **items 1 + 2** — audit-checkpoint sixteen-log coverage as one idempotent SQL block, the `CHECK_NOT_WIDENED` refusal, four new ablated test arms; three stale `sql/*_audit_log_schema.sql` CHECKs synced to what ran; `api/sf-auth.test.js` split into four arms |
+| `867c4aec` | **item 3** — the SAIRNfreedom demo credential, round-tripped twice |
+| `93785bf9` | **item 4** — the last nine `sf_` resources gated, 36 of 36 |
+| `3d797561` | **item 5** — `docs/2026-10-13-context-budget-procedure.md` |
+| `ee2b7897`, `49cb2d9a` | this handoff, first two printings |
+| `47bd62cf` | the claim release |
+| `fa6b006a` | the defect-register record the push gate required |
 
 **THE REGISTER RECORD'S SHA WAS RE-SEATED AUTOMATICALLY AND THAT IS WORTH
 KNOWING.** The record was written against `1315205f`; the repo's own
-post-rebase git hook re-pointed it to `90228883` in the working tree, leaving
+post-rebase git hook re-pointed it to `f9a4e5a0` in the working tree, leaving
 the change UNSTAGED — so a session that committed and pushed without looking at
 `git status` again would have published a record citing a sha nobody can fetch.
 `python tools/defect_register.py --reseat` then reported a COLLISION rather than
