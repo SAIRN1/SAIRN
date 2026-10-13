@@ -5,8 +5,12 @@ five code/doc items are committed, every suite has been run in an isolated
 worktree at HEAD with its exit code read from the program's own output, the
 worktree has been removed, and no file is mid-edit.
 
-**Push state is the one thing this file cannot assert.** It is written before
-the push. Verify with `git log --oneline origin/main`, not from here.
+**PUSH STATE, ADDED AFTER THE FACT AND MARKED AS SUCH.** The first printing of
+this file said push state was the one thing it could not assert, because it was
+written before the push -- which was true then. The push has since landed:
+`origin/main` is at `69ca56e4`, eleven b7 commits, `main...origin/main` with no
+divergence, no `--force` at any point. Verify with `git log --oneline
+origin/main` rather than from this paragraph.
 
 **Naming note.** The brief asked for `SAIRN-handoff-hank-b7.md`. It is in
 `docs/` because that is where every handoff in this repo lives, and because
@@ -19,11 +23,11 @@ CLAUDE.md's rule is that a handoff lives only in a real clone — never written 
 
 **THESE SHAS ARE POST-REBASE AND EVERY EARLIER SET IS DEAD.** `origin/main`
 moved 65 commits while b7 ran and **moved twice more during the push attempts**, the
-third time with a real content conflict in `docs/known-red-suites.json`, so the batch was rebased THREE TIMES and every sha was rewritten
-each time. Three earlier printings of this table cited `1400bd90` / `e064ceee` /
+third time with a real content conflict in `docs/known-red-suites.json`, so the batch was rebased FOUR TIMES and every sha was rewritten
+each time. **THESE ARE THE PUBLISHED SHAS -- `origin/main` is at `69ca56e4` and these eleven commits are reachable from it, verified by `git log --oneline origin/main` after the push rather than from this sentence.** Four earlier printings of this table cited `1400bd90` / `e064ceee` /
 `972eeb9d` / `c3983131`, then `1315205f` / `8fff5bab` / `807c26de` /
-`58ba1b31`, then `90228883` / `dde6aaed` / `bc9b87f3` / `a247322f`; none of
-those resolves in any clone but this one's reflog.
+`58ba1b31`, then `90228883` / `dde6aaed` / `bc9b87f3` / `a247322f`, then `f9a4e5a0` /
+`867c4aec` / `93785bf9` / `3d797561`; none of those resolves in any clone but this one's reflog.
 
 **THE THIRD REBASE CARRIED A REAL CONTENT CONFLICT and it is worth reading**:
 another session had edited the same `docs/known-red-suites.json` row,
@@ -41,18 +45,18 @@ asks `--open` to stamp a sha the assignee can actually fetch.
 
 | sha | item |
 |---|---|
-| `5fc1a307` | the claim |
-| `f9a4e5a0` | **items 1 + 2** — audit-checkpoint sixteen-log coverage as one idempotent SQL block, the `CHECK_NOT_WIDENED` refusal, four new ablated test arms; three stale `sql/*_audit_log_schema.sql` CHECKs synced to what ran; `api/sf-auth.test.js` split into four arms |
-| `867c4aec` | **item 3** — the SAIRNfreedom demo credential, round-tripped twice |
-| `93785bf9` | **item 4** — the last nine `sf_` resources gated, 36 of 36 |
-| `3d797561` | **item 5** — `docs/2026-10-13-context-budget-procedure.md` |
-| `ee2b7897`, `49cb2d9a` | this handoff, first two printings |
-| `47bd62cf` | the claim release |
-| `fa6b006a` | the defect-register record the push gate required |
+| `6fec7c26` | the claim |
+| `5bb0950a` | **items 1 + 2** — audit-checkpoint sixteen-log coverage as one idempotent SQL block, the `CHECK_NOT_WIDENED` refusal, four new ablated test arms; three stale `sql/*_audit_log_schema.sql` CHECKs synced to what ran; `api/sf-auth.test.js` split into four arms |
+| `7787318a` | **item 3** — the SAIRNfreedom demo credential, round-tripped twice |
+| `46d74678` | **item 4** — the last nine `sf_` resources gated, 36 of 36 |
+| `433c6576` | **item 5** — `docs/2026-10-13-context-budget-procedure.md` |
+| `e094c74c`, `6d8bf1e6` | this handoff, first two printings |
+| `c34d5bd2` | the claim release |
+| `c437f4fd` | the defect-register record the push gate required |
 
 **THE REGISTER RECORD'S SHA WAS RE-SEATED AUTOMATICALLY AND THAT IS WORTH
 KNOWING.** The record was written against `1315205f`; the repo's own
-post-rebase git hook re-pointed it to `f9a4e5a0` in the working tree, leaving
+post-rebase git hook re-pointed it to `5bb0950a` in the working tree, leaving
 the change UNSTAGED — so a session that committed and pushed without looking at
 `git status` again would have published a record citing a sha nobody can fetch.
 `python tools/defect_register.py --reseat` then reported a COLLISION rather than
