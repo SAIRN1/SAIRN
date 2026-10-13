@@ -122,6 +122,31 @@ Supabase, so the fix also needs a live migration run, which this role
 cannot do. **Routed to hank** (owns both `sc-auth.js`/`sairncode` and
 `sd-auth.js`/stonedesk, the two affected apps).
 
+**Update, H1 batch b16 items 3/4: the exact SQL already exists, written
+by hank, in `docs/2026-10-07-hank-migration-sql-for-michael.md` STEP
+0a (SAIRNcode), 0b (StoneDesk), 0c (SAIRNlaw). Per the new fact this
+batch, Michael ran the full migration in Supabase on 2026-10-13.** But
+the repo's own tracked `sql/sairncode_audit_log_schema.sql:56-61` and
+`sql/stonedesk_audit_log_schema.sql` (same shape) still carry the OLD,
+narrow `CHECK` -- confirmed by direct read, no `pin_setup` in either
+file's list. **Two independent facts, neither proves the other**: a
+live Supabase run does not update a checked-in `.sql` file, and this
+role has no live DB access to confirm the live run's own success either.
+`tools/audit_event_type_check.py` (file-based) will keep reporting
+these as REJECTING until the DDL files themselves are edited to match
+STEP 0a/0b/0c -- a real repo-vs-production sync gap, separate from
+whether Michael's live run itself succeeded. **Still routed to hank**:
+update the two DDL files to match what was actually run.
+
+The 13 new tables (STEPS 1-13) and `rf_schedule`'s 3 new columns (STEP
+14) are confirmed present in `sql/` and self-consistent with current
+code (zero rejections reported for any of them). The CODE that would
+USE the 13 new tables (most of `api/_lib/audit.js`'s 14-file
+`auditPinSetup()` set already does) and `rf_schedule/set_status`'s own
+use of its 3 new columns are correctly EXPECTED still open pending
+hank's next batch -- not re-flagged as a defect here, per this batch's
+own instruction.
+
 ## tools/sairn_status.py / tools/sairn_claim.py -- claim-liveness defect, added H1 batch b10 item 7
 
 Audited by direct instruction: ted found that stripped hooks make a LIVE
@@ -548,6 +573,13 @@ script, not applied here**: add a third pattern matching
 block in the file, not just the two hardcoded shapes) before concluding
 `bypass = True`.
 
+**CLOSED, H1 batch b16 item 6.** H2 fixed it -- pulled 97 new lines in
+`bld_draws_bypass_repro.py`. Ran it independently: main run now reports
+`NO BYPASS` (a dedicated, gated branch is detected correctly); `--selftest`
+now PASSES with a genuine control pair added (`dedicated-gated=no-bypass`
+vs `dedicated-ungated=bypass`), proving the fix discriminates rather than
+just reporting clean unconditionally. Confirmed real.
+
 ## Hooks-off exposure audit, 4 citation-drift findings -- H1 batch b15 item 4
 
 Audited the 5 commits since 2026-10-11 touching `api/*-auth.js`,
@@ -577,3 +609,78 @@ the file, not six independent slips. **Routed to hank** (owns
 `api/sd-data.js`, `sairnbuild.html`, `sairnfreedom.html`) -- fix spec:
 re-point each citation to its real current line; no code-behavior
 change needed, comment-only.
+
+## Three new rules, spec + baseline only -- H1 batch b16 items 7-9, not implemented
+
+Full detail in the three files below, not duplicated here. Each
+confirms the baseline by an independently re-run, selftest-passing
+probe, not assumed.
+
+- **bld_draws, owner/upper-management-only rule**:
+  `.claude/skills/sairn-hover-auditor/references/bld-draws-ownership-rule-probe-spec.md`
+  + `.claude/skills/sairn-hover-auditor/tools/bld_draws_ownership_rule_probe.py`.
+  Real sairnbuild roles: `owner`, `pm`, `office` -- no `supervisor`/`employee`
+  role exists. Baseline gap: `pm` currently ALLOWED on `bld_draws`
+  read/write (the new rule would DENY it); per-job ownership scoping
+  does not exist on `bld_draws`/`bld_jobs` at all (new schema work, not
+  invented here).
+- **SAIRNfreedom post-staff gate, 5 named Tier A resources**:
+  `.claude/skills/sairn-hover-auditor/references/sf-post-staff-gate-rule-probe-spec.md`
+  + `.claude/skills/sairn-hover-auditor/tools/sf_post_staff_gate_probe.py`.
+  Baseline: all 10 cells (5 resources x read/write) open on BOTH the
+  unauthenticated and cross-post axes today, confirmed, no partial
+  protection on any of them.
+- **SAIRNfreedom per-resource role matrix (all 36 `sf_` resources)**:
+  `.claude/skills/sairn-hover-auditor/references/sf-role-matrix-adversarial-checklist.md`.
+  **Premise corrected in the file itself**: no real SAIRNlaw role-matrix
+  template existed yet when this was written (cody's b5 landed later,
+  mid-batch) -- built from cody's own DESCRIBED spec instead. Real role
+  vocabulary: `post.govern`, `post.govern.deputy`, `records.write`,
+  `finance.write`, `member.admit`, `services.refer`, `legal.review`,
+  `history.write`, `ceremonial.manage`, `chaplain.pastoral` -- not
+  "officers/canteen/members." Current state: 14/36 ungated, 22/36
+  session-only, 0/36 role-checked.
+
+**Routed to hank** (owns SAIRNbuild and SAIRNfreedom) as specs +
+baselines for a future implementation decision -- no fix made, per
+explicit instruction.
+
+## Citation-drift findings re-verified against current HEAD -- H1 batch b18 item 3
+
+Re-read each of the 4 citation-drift findings above directly against
+origin/main HEAD (`618cbd9f`) rather than trusting the b15 table's "real
+location" column, which was itself already two batches old. All 4 are
+STILL OPEN -- none have been corrected -- and every one has drifted
+FURTHER since b15, confirming these are genuinely stale comments (not
+self-correcting) rather than a one-time miss:
+
+| Stale comment, still at | Still cites | b15's real (now stale too) | REAL as of this batch | Drift since b15 |
+|---|---|---|---|---|
+| `api/sd-data.js:5422` (+3 others, see below) | `api/sd-data.js:5231` | `:5314` | `api/sd-data.js:5422` | +108 |
+| `api/sd-data.js:13260` | `api/sd-data.js:8496` | `:8796` | `api/sd-data.js:8822` | +26 |
+| `api/sd-data.js:13283` | `sairnbuild.html:5726` | `:5743-5745` | `sairnbuild.html:5743-5745` | **0 -- unchanged** |
+| `api/sd-data.js:1145` (+3 others, see below) | `sairnfreedom.html:7684` | `:7721` | `sairnfreedom.html:7740` | +19 |
+
+The 6/7-citation block (`api/sd-data.js:1139-1140`, unchanged location)
+has drifted NON-uniformly this time -- b15's finding that it moved by a
+uniform +55 across all 7 numbers no longer holds:
+
+| Still cites | b16/b17's real (stale too) | REAL now | Drift since b16/b17 |
+|---|---|---|---|
+| `:3424` (sf_sessions write) | `:3479` | `sairnfreedom.html:3492` | +13 |
+| `:3523` (inside sfRecordResults, `:3509`) | `:3578` (fn at `:3564`) | `:3591` (fn at `sairnfreedom.html:3577`) | +13 |
+| `:4976` (sf_sessions write) | `:5031` | `sairnfreedom.html:5050` | +19 |
+| `:4628` (sf_tickets write) | `:4683` | `sairnfreedom.html:4702` | +19 |
+| `:4739` (sf_shifts write) | `:4794` | `sairnfreedom.html:4813` | +19 |
+| `:5168` (sf_rentals write) | `:5223` | `sairnfreedom.html:5242` | +19 |
+
+The split (+13 for the two sites inside/near `sfRecordResults`, +19 for
+the four later sites) means something was inserted between those two
+groups since b16/b17 -- the block is no longer drifting as one uniform
+unit the way it was at b15. Named as its own small observation, not
+chased further (out of this batch's scope to find what inserted those 6
+lines).
+
+Comment-only fix needed on all of the above; no code-behavior change.
+Still routed to hank, same as b15/b16/b17 -- unchanged ownership, now
+three batches open with no action taken.

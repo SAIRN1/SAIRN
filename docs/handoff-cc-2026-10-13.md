@@ -15,20 +15,32 @@ item below is either committed or explicitly not started.
 
 ## Committed / pushed state
 
-Seven commits, rebased onto `origin/main` (69 behind at the start of the push
-loop, 0 after), ledger conflicts resolved by `tools/sairn_rebase_resolve.py`.
-**Whether they are on `origin/main` is stated in the report, which is written
-after the push — this file is deliberately written before it.**
+**THIRTEEN commits, all on `origin/main`** — `git log origin/main..HEAD`
+returns empty. HEAD at close **`14a771a4`**; 49 files, +4,865 / -346. One
+rebase, 69 behind at the start, 0 after; ledger conflicts resolved by
+`tools/sairn_rebase_resolve.py`.
+
+*This block said "seven commits" and deferred the landing question to the
+report, because this file is written BEFORE the push, deliberately. Six more
+commits followed — five gate refusals, each satisfied rather than overridden —
+and the correction is left visible rather than overwritten, which is Rule E's
+second half applied to the document that routes it.*
 
 | SHA | What |
 |---|---|
-| `93aea737` | **hooks `{}` COMMITTED** + `docs/hooks-disabled-2026-10-13.json` + `hook_integrity_check` reports "intentionally disarmed" |
-| `93aef81f` | **mechanical permission rules**, project + user level |
-| `ea0f3607` | external-files gate: a Drive handoff **warns**, a tool/script still blocks |
-| `4f499eb0` | `tools/digest_lint.py`; E9 fixture isolated; `leg_invoices` fixture renamed |
-| `70684519` | a fully-superseded register is a closed state — `--reseat` stops exiting 1 forever |
-| `23dc5e43` | **open-work sharding** + `ACTIVE.md` + `--check`; per-gate skip design |
-| `4d01593f` | Rule E routed to ted (number **34**); 15 field findings re-derived |
+| `ab919080` | chore(hooks): COMMIT the empty hooks object, so no clone, reset or rebase puts them back |
+| `39224920` | feat(permissions): mechanical deny/allow rules so Michael stops being prompted and nothing risky passes |
+| `54ead33f` | fix(external files): a handoff under the Drive report directory WARNS now; an undeclared tool or script  |
+| `4f6f03f9` | feat(digest lint) + fix(two probe fixtures): a 150-word ceiling with six fields, E9 isolated from the li |
+| `c2c4aa7b` | fix(defect register): a fully-superseded register is a CLOSED state, so --reseat stops exiting 1 forever |
+| `04c27cc1` | feat(open work): shard the 2.38MB index into per-app files plus an ACTIVE index, with a check that prove |
+| `6bd9239f` | docs(routing): Rule E routed to ted with the next free number, and the 15 field findings re-derived |
+| `12d189b1` | docs(handoff): cc batch b5 |
+| `81015287` | chore(defect register): the two records this push owed |
+| `3ed68365` | fix(tooling inventory): the hook leg is OPTIONAL in a clone whose hooks are off on purpose |
+| `b902ff2b` | chore(defect register): the record for the tooling-inventory refusal |
+| `e08bab0c` | fix(open work): cap the shard filename, and give both new tools an OWNER line |
+| `14a771a4` | chore(defect register): the record for the 198-character shard filename |
 
 ---
 
