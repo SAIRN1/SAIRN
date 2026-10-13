@@ -136,3 +136,78 @@ against it** -- not because the verdict was wrong, but because a verdict whose
 stated limit has since been removed should say so.
 
 END-OF-ADDENDUM
+
+================================================================================
+PUSH BLOCKED AND STOPPED, PER THE BRIEF. TWO COMMITS ARE UNPUSHED.
+================================================================================
+
+The brief for item 12 says: "If blocked by another session's Drive handoff,
+retry once after rebase, then stop and record the exact refusal."
+
+THAT IS WHAT HAPPENED, AND I STOPPED. SAIRN_SEED_GATE=off WAS NOT USED.
+
+UNPUSHED, LOCAL ONLY, IN ORDER:
+    f0e81b92  docs(addendum): ITEM 3 IS DONE -- the deployment came back
+              mid-batch and the gates are PROVEN LIVE
+    dfb20c0c  chore(tier-a): the obligation the gate asked for on the
+              addendum's PROSE, recorded rather than argued away
+
+Everything else in b5 IS pushed: HEAD on origin/main is f442989b, which carries
+the report, the digest, the handoff, all three fixes, the four suites, the four
+routing/design/inventory documents and the three defect records.
+
+THE EXACT REFUSAL, verbatim from the pre-push gate:
+
+    EXTERNAL FILE INDEX: a tool, script or handoff sits in a DECLARED external
+      directory and is neither git-tracked nor named in
+      docs/external-files-index.json.
+    EXTERNAL FILE INDEX -- criteria 2026-10-08.2
+    ...
+    1 UNINDEXED work file(s) under a declared external directory. Each is a
+    tool, script or handoff that no other session can find:
+      ! g:\my drive\sairn-status\handoff-fourth-2026-10-16.md
+
+    Either commit it, or add it to docs\external-files-index.json with a
+    purpose.
+
+THE FILE IS FOURTH'S, NOT MINE. Both remedies the gate offers are the wrong
+thing for me to do, which is the same position b4 reached three times:
+
+  * committing another role's handoff into my clone reaches into their record;
+  * hand-adding a row for it to docs/external-files-index.json files another
+    session's file under my own agents block, and that index's own header says
+    the generated halves of it would drop such an edit anyway.
+
+b4 used the documented override three times for exactly this and said so each
+time. b5's brief removed that option and replaced it with "stop and record",
+which is the better rule: the override was papering over a structural problem
+that belongs to whoever owns the check.
+
+AND MICHAEL HAS ALREADY DECIDED IT. The b5 brief's answer to b4 Q6 is that the
+external-files rule goes to cc as WARN-NOT-BLOCK. cc's live b5 claim lists
+tools/external_file_index_check.py and tests/run_external_file_index_probe.py
+in its FILES, so the fix is in flight in another clone right now.
+
+WHAT THE NEXT SESSION SHOULD DO, in order:
+
+  1. Check whether cc's warn-not-block change has landed:
+         git log --oneline -3 -- tools/external_file_index_check.py
+  2. If it has, a plain `git push origin main` from this clone publishes both
+     commits with nothing further needed.
+  3. If it has not, EITHER wait for it, OR ask fourth to index its own handoff.
+     Do not override, and do not index another session's file.
+
+NOTHING IS LOST BY THE DELAY. Both commits are documents: the addendum's
+content is in this file, which is already on Drive at
+G:/My Drive/SAIRN-status/SAIRN-addendum-hank-b5.txt, and the Tier A obligation
+is recorded in the local docs/tier-a-reviews.json and will publish with the
+commit. The LIVE VERIFICATION RESULT ITSELF -- the thing that matters -- is
+reproducible in one command by anybody:
+
+    python docs/hank-evidence/b5_live_bare_key_probe.py
+
+which is committed and pushed, and its output from the restored deployment is
+committed at docs/hank-evidence/b5_live_bare_key_probe_RESTORED.out, also
+pushed. A reader does not have to take this addendum's word for any of it.
+
+END-OF-ADDENDUM (second close -- the first precedes this section)
