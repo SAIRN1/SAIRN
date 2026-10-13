@@ -36,11 +36,11 @@ SAIRN_SEED_GATE was never used, and no auditor clone was entered.
 1. EVIDENCE BLOCK -- SCRIPT OUTPUT
 ================================================================================
 
-  HEAD                 : afcec177315d3c027853f4b9b618a0a70ee259b2
-  origin/main          : 7c54590feaa7e57e7e658cad2ef1e1a8671b6b7c
+  HEAD                 : f52470d5435be23dd43a9a878009d5a67f3723d2
+  origin/main          : 2a0e62616eca6209af93a565457baa4368514d76
   HEAD == origin/main  : NO
-  behind / ahead       : 0 / 2
-  working tree         : CLEAN
+  behind / ahead       : 0 / 6
+  working tree         : 1 path(s) -- this report and its digest, being written
 
   EVERY b7 COMMIT, TESTED AS AN ANCESTOR OF origin/main ONE AT A TIME
   (git merge-base --is-ancestor <sha> origin/main; exit 0 means it landed)
@@ -54,10 +54,11 @@ SAIRN_SEED_GATE was never used, and no auditor clone was entered.
     b34308fc   ON-ORIGIN    merge origin/main -- register unioned, 538 -> 540
     7c54590f   ON-ORIGIN    merge origin/main -- register unioned by its own identity, anc
     afcec177   MISSING (exit 1) docs(handoff): cody b7
-  9 of 10 ON origin/main
+    f52470d5   MISSING (exit 1) test(b7 item 1): all 720 cells are now driven -- arm 4 failed 
+  9 of 11 ON origin/main
 
   SUITES -- each run ALONE, exit code read on its own line
-    exit=1  sf_role_matrix_driven.test.js                  24 passed, 1 failed
+    exit=0  sf_role_matrix_driven.test.js                  25 passed, 0 failed
             item 1 -- the driven SAIRNfreedom matrix
     exit=0  bld_draws_role_arms.test.js                    10 passed, 0 failed
             item 1 -- the bld_draws role arms
@@ -192,13 +193,27 @@ the policy is RIGHT. It proves the policy is REACHED, resource by resource and
 verb by verb -- which is the thing a locked table cannot tell you, because a
 table is still correct when nobody reads it.
 
-THE DENOMINATOR IS NOT 720. Ten roles x 36 resources x 2 verbs = 720 cells, but
-only 27 of the 36 resources enter SD_SESSION_GATED, so only 540 can be driven
-through a role gate AT ALL. The other 180 are LICENCE-KEY-ONLY: no session, so
-no role to decide against, and an arm asserting a refusal there would be
-asserting a gate that does not exist. Those nine resources are NAMED in the
-file's own output and their 180 cells are reported NOT-DRIVEN. 540 + 180 = 720,
-and the arithmetic is printed so neither number can be quoted without the other.
+THE DENOMINATOR MOVED UNDER THIS SUITE WHILE THE BATCH WAS RUNNING, AND THE ARM
+THAT NOTICED IS THE BEST THING IN ITEM 1. When the file was written, 27 of the
+36 sf_ resources entered SD_SESSION_GATED, so 540 cells were drivable and 180
+were LICENCE-KEY-ONLY: no session, so no role to decide against, and an arm
+asserting a refusal there would be asserting a gate that does not exist. Those
+nine were NAMED and their 180 cells were reported NOT-DRIVEN, never folded into
+a pass count.
+
+Then api/sd-data.js commit 46d74678 -- "the last nine resources gated -- 36 of
+36" -- landed, and ARM 4 FAILED. It failed with the message it was written with:
+"if this is 0 the nine have been gated and this arm plus the denominator above
+both need rewriting -- which is the correct outcome, not a failure of the app."
+A disclosure arm that goes red when the disclosure stops being true is the only
+kind worth writing: the alternative is a comment claiming a gap that closed.
+
+ALL 720 CELLS ARE NOW DRIVEN -- 362 DENY, 358 ALLOW, NOT-DRIVEN 0 for the first
+time. Arm 4 now handles BOTH states and asserts the full cell count when the gap
+is closed, so a 37th ungated resource restores the disclosure half by itself
+rather than needing somebody to remember. The header no longer hardcodes
+540/180; it records what the numbers were and what closed them, and the run
+prints the current ones.
 
 THE CONTROL PAIR RUNS FIRST, not last. It picks a DENY cell and an ALLOW cell at
 runtime -- no hardcoding -- drives both, and asserts that the INVERTED assertion
@@ -482,5 +497,5 @@ reuse rather than nineteen separate investigations.
   - One register record (f9a4e5a0032b) is external and unverified in this clone.
   - The 2026-09-27 Tier A record is UNREVIEWED and UNRESEATABLE from here.
   - The sairnbuild Draw Requests panel is still not role-gated client-side.
-SHA256 9af95e2f79ec9662f71d69540b95fe2d9030d2cee41612d31edee71bcaded428
+SHA256 140f0f2a6f0ab7a2715256820a5eb527670facd329d44ee43f93e11fdab4fe01
 END-OF-REPORT

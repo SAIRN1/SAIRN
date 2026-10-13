@@ -10,8 +10,8 @@ belongs to somebody else or because a tool refused and the refusal is recorded.
 
 | | |
 |---|---|
-| HEAD / origin/main | `7c54590f` — identical, `0 0` |
-| b7 commits, each tested as an ancestor of origin/main | `db2a47f1` item 1 · `24e88957` item 3a · `5ee4406b` item 3b · `4ff63a51` items 2+3c+5 · `a339112d` OWNER lines · `3b8f23d3` item 3c correction · `e1801b06` the register record · `b34308fc` + `7c54590f` merges — **9 of 9 ON-ORIGIN** |
+| HEAD / origin/main when this was written | `7c54590f` — identical, `0 0` |
+| b7 commits, each tested as an ancestor of origin/main | `db2a47f1` item 1 · `24e88957` item 3a · `5ee4406b` item 3b · `4ff63a51` items 2+3c+5 · `a339112d` OWNER lines · `3b8f23d3` item 3c correction · `e1801b06` the register record · `b34308fc` + `7c54590f` merges — **9 of 9 ON-ORIGIN at the time of writing.** Two more follow this file: `afcec177` (this handoff) and `f52470d5` (the arm-4 update). `SAIRN-report-cody-b7.txt` §1 re-tests every one of them at generation time and is the authoritative list |
 | claim | `tests` — **released after this handoff, the report and the digest** |
 | settings.json | never committed. No hook restored or re-added. `SAIRN_SEED_GATE` never used |
 
@@ -41,18 +41,21 @@ no-ref-lines message as a live item.
 
 ---
 
-## 3. Item 1 — 540 driven cells, and the 180 that cannot be driven
+## 3. Item 1 — 720 driven cells, and the arm that went red when the gap closed
 
-`tests/sf_role_matrix_driven.test.js` — 25 arms, exit 0. Ten roles × **27**
-session-gated `sf_` resources × 2 verbs = **540 cells**, expectation from
-`SF_ROLE_MATRIX` and observation from the handler, never both from the table.
-282 DENY cells each also assert **no row was fetched before the 403**.
+`tests/sf_role_matrix_driven.test.js` — 25 arms, exit 0. Ten roles × **36**
+session-gated `sf_` resources × 2 verbs = **720 cells, all driven**, expectation
+from `SF_ROLE_MATRIX` and observation from the handler, never both from the
+table. 362 DENY cells each also assert **no row was fetched before the 403**.
 
-**The denominator is printed rather than implied.** 720 cells exist; only 540
-can be driven, because **9 of the 36 resources are licence-key-only — no
-session, so no role to decide against.** Those nine are NAMED and their 180
-cells are reported NOT-DRIVEN, never counted as passes. The control pair runs
-**first** and asserts the inverted assertion throws.
+**THE DENOMINATOR MOVED UNDER THIS SUITE AND ARM 4 CAUGHT IT.** The file was
+written when only 27 of the 36 resources were session-gated, disclosing 180
+cells as NOT-DRIVEN and naming the nine. `api/sd-data.js` commit `46d74678`
+("the last nine resources gated — 36 of 36") then landed and **arm 4 went red
+with the message it was written with** — *"this is the correct outcome, not a
+failure of the app."* Arm 4 now handles both states, so a 37th ungated resource
+restores the disclosure half by itself. The control pair runs **first** and
+asserts the inverted assertion throws.
 
 `tests/bld_draws_role_arms.test.js` — 10 arms, exit 0. `pm` denied read AND
 write with the parsed message and no row fetched; `owner` and `office` reach the
