@@ -243,6 +243,22 @@
         ".claude/skills/sairn-hover-auditor/tools-hover2/hover_tip_beacon.py",
         ".claude/skills/sairn-hover-auditor/tools-hover2/sf_officers_provisioning_bypass_repro.py"
       ]
+    },
+    {
+      "id": "hover2-1791886389",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "batch b17 -- audit role, read-only on platform code except register-add. Re-check hank b5/cc b5-b6 landed status with file:line, re-run own repros. Live-DB SQL for Supabase, UNVERIFIED pending chat run. Fresh rotation scan, route by directory. Chain tip+token. Handoff+report. FILES: docs/defect-density-register.json .claude/skills/sairn-hover-auditor/tools-hover2/scp_session_gate_repro.py .claude/skills/sairn-hover-auditor/tools-hover2/bld_draws_bypass_repro.py .claude/skills/sairn-hover-auditor/tools-hover2/sf_five_tables_lock_repro.py",
+      "claimed_at": "2026-10-13T10:13:09Z",
+      "claimed_at_epoch": 1791886389.3003116,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools-hover2/bld_draws_bypass_repro.py",
+        ".claude/skills/sairn-hover-auditor/tools-hover2/scp_session_gate_repro.py",
+        ".claude/skills/sairn-hover-auditor/tools-hover2/sf_five_tables_lock_repro.py",
+        "docs/defect-density-register.json"
+      ]
     }
   ],
   "refusals": [
