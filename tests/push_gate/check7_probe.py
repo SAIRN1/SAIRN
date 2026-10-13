@@ -94,16 +94,43 @@ EP = 'api/sb-auth.js'
 # not fire" and actually meant "the push never got that far".
 #
 # Built on the fetched tip, the outgoing range is exactly the fixture commit.
-_fetch = subprocess.run(['git', '-C', MAIN, 'fetch', '--quiet', 'origin', 'main'],
-                        capture_output=True, text=True, encoding='utf-8', errors='replace')
-if _fetch.returncode != 0:
-    print('SKIPPED: could not fetch origin/main, so the fixture below could not be')
-    print('built on the tip the gate compares against, and nothing about check 7')
-    print('was verified: %s' % (_fetch.stderr or '').strip()[:200])
-    sys.exit(3)
-BASE = subprocess.run(['git', '-C', MAIN, 'rev-parse', 'FETCH_HEAD'],
-                      capture_output=True, text=True, encoding='utf-8',
-                      errors='replace').stdout.strip()
+#
+# ── OR A THROWAWAY BARE REMOTE, OPT-IN (2026-10-13, b5 item 6) ────────────
+# `SAIRN_PROBE_LOCAL_REMOTE=1` or `--local-remote` builds a bare repo on local
+# disk at BASE and points the clone's origin at it, so the verdict stops
+# depending on the network and on origin/main moving under the run. The hook is
+# NOT stubbed -- same `core.hooksPath`, same real gate, every check still votes.
+# tests/push_gate/_local_remote.py carries the argument and what it does NOT
+# fix. The real-remote path stays the DEFAULT.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _local_remote                                          # noqa: E402
+
+LOCAL_REMOTE = _local_remote.requested(sys.argv[1:])
+BARE = None
+if LOCAL_REMOTE:
+    _b = subprocess.run(['git', '-C', MAIN, 'rev-parse', 'origin/main'],
+                        capture_output=True, text=True, encoding='utf-8',
+                        errors='replace')
+    if _b.returncode != 0:
+        _b = subprocess.run(['git', '-C', MAIN, 'rev-parse', 'HEAD'],
+                            capture_output=True, text=True, encoding='utf-8',
+                            errors='replace')
+    BASE = (_b.stdout or '').strip()
+    if not BASE:
+        print('SKIPPED: could not resolve a BASE commit for the local-remote '
+              'mode, so nothing about check 7 was verified.')
+        sys.exit(3)
+else:
+    _fetch = subprocess.run(['git', '-C', MAIN, 'fetch', '--quiet', 'origin', 'main'],
+                            capture_output=True, text=True, encoding='utf-8', errors='replace')
+    if _fetch.returncode != 0:
+        print('SKIPPED: could not fetch origin/main, so the fixture below could not be')
+        print('built on the tip the gate compares against, and nothing about check 7')
+        print('was verified: %s' % (_fetch.stderr or '').strip()[:200])
+        sys.exit(3)
+    BASE = subprocess.run(['git', '-C', MAIN, 'rev-parse', 'FETCH_HEAD'],
+                          capture_output=True, text=True, encoding='utf-8',
+                          errors='replace').stdout.strip()
 WT = os.path.join(tempfile.gettempdir(), 'check7-probe-%d' % os.getpid())
 
 
@@ -114,11 +141,20 @@ def _setup_clone():
                        encoding='utf-8', errors='replace')
     if r.returncode != 0:
         return 'clone failed: %s' % (r.stderr or '').strip()[:200]
-    url = subprocess.run(['git', '-C', MAIN, 'remote', 'get-url', 'origin'],
-                         capture_output=True, text=True, encoding='utf-8',
-                         errors='replace').stdout.strip()
-    if not url:
-        return 'could not read origin url from %s' % MAIN
+    global BARE
+    if LOCAL_REMOTE:
+        BARE, why = _local_remote.create(
+            MAIN, BASE,
+            os.path.join(tempfile.gettempdir(), 'check7-bare-%d' % os.getpid()))
+        if why:
+            return 'local bare remote: %s' % why
+        url = BARE
+    else:
+        url = subprocess.run(['git', '-C', MAIN, 'remote', 'get-url', 'origin'],
+                             capture_output=True, text=True, encoding='utf-8',
+                             errors='replace').stdout.strip()
+        if not url:
+            return 'could not read origin url from %s' % MAIN
     for args in (['remote', 'set-url', 'origin', url],
                  ['config', 'core.hooksPath', '.githooks'],
                  ['config', 'user.email', 'check7-probe@example.invalid'],
@@ -173,7 +209,13 @@ def _rmtree_loud(p):
 @atexit.register
 def _remove_clone():
     _rmtree_loud(WT)
+    if BARE:
+        _local_remote.destroy(BARE)
 
+
+print('  remote mode: %s'
+      % ('LOCAL BARE at %s -- no network, tip cannot move' % BARE
+         if LOCAL_REMOTE else 'the REAL origin (default)'))
 
 # Every git and filesystem operation below happens in the clone. The name is
 # kept so the arms and the existing `finally` read unchanged.
@@ -426,8 +468,26 @@ a = R['clean_change']
 # whatever stopped this one and not to check 7. Reporting those arms as check-7
 # failures is a failure report about check 7 written on evidence that says
 # nothing about check 7. Could-not-run is a third state: exit 3, with the text.
+#
+# ── A REFUSAL BY A DIFFERENT CHECK IS A FOURTH STATE (2026-10-13, b5) ──────
+# Same change and same reason as check4_probe.py's. The paragraph above is
+# right that a refused clean push makes a LATER refusal unattributable; it is
+# NOT right that it makes the whole run unverifiable, and that cost this probe
+# its verdict on 2026-10-12 and again on 2026-10-13 when the
+# external-file-index check refused over another session's handoff on a shared
+# Google Drive -- a reason entirely outside this repository.
+#
+# CLASSIFIED, NOT JUST COUNTED. If the clean push's refusal carries check 7's
+# OWN markers it is a check-7 failure and still exits 3. If it carries none,
+# some other check voted no: arm 1 is UNPROVEN, the run CONTINUES, and the
+# planted arms stay attributable because they assert markers no other check
+# emits. The hook is not stubbed, nothing is skipped, no override is set --
+# the probe simply stops reading another check's verdict as its own.
 _unattributable = [k for k, v in R.items() if v.get('could_not_run')]
-if a['exit'] != 0 or _unattributable:
+_clean_foreign = (a['exit'] != 0 and not a['blocked_by_preauth']
+                  and not a['unchecked'] and not a['blocked_undeclared']
+                  and not a['names_the_file'])
+if _unattributable or (a['exit'] != 0 and not _clean_foreign):
     print('SKIPPED: a push was refused before check 7 could answer, so nothing')
     print('here is attributable to it. Nothing about check 7 was verified.')
     if _unattributable:
@@ -436,10 +496,16 @@ if a['exit'] != 0 or _unattributable:
     print('  the refusal: %s' % (R[_unattributable[0]]['err'] if _unattributable
                                  else a['err']))
     sys.exit(3)
-check('a clean change to a touched endpoint is NOT blocked by check 7',
-      not a['blocked_by_preauth'], str(a))
-check('...and check 7 did not silently fail open on it',
-      not a['unchecked'], str(a))
+if _clean_foreign:
+    print('NOTE: the clean push was refused by a DIFFERENT check in the hook, so')
+    print('the two arms below are UNPROVEN rather than failed. The planted arms')
+    print('are still attributable. The foreign refusal:')
+    print('  %s\n' % a['err'][-300:])
+else:
+    check('a clean change to a touched endpoint is NOT blocked by check 7',
+          not a['blocked_by_preauth'], str(a))
+    check('...and check 7 did not silently fail open on it',
+          not a['unchecked'], str(a))
 
 b = R['planted_disclosure']
 check('the reorder put back IS blocked', b['blocked_by_preauth'], str(b))
@@ -504,6 +570,15 @@ check('...and no linked worktree was registered in the clone at all',
 # checks actually ran -- the same derived-subject blindness the 2026-09-10
 # sweep went looking for, in the one line a reader uses to judge coverage.
 # Adding a check would have left it reporting 10 of 11.
-print('\n%s  check7_probe: %d checks, %d failed'
-      % ('FAILED' if fails else 'ok', RAN[0], len(fails)))
+if _clean_foreign:
+    # SAID IN THE VERDICT LINE, not only in a note 60 lines up. A reader who
+    # scrolls to the bottom must not read "0 failed" as "every arm held" --
+    # two arms did not run at all.
+    print('\n  ARM 1 UNPROVEN: the clean push was refused by a DIFFERENT check')
+    print('  in the same hook, so "a clean change is not blocked by check 7"')
+    print('  and "check 7 did not fail open on it" were not demonstrated on')
+    print('  this run. The planted arms were.')
+print('\n%s  check7_probe: %d checks, %d failed%s'
+      % ('FAILED' if fails else 'ok', RAN[0], len(fails),
+         '  (2 ARMS UNPROVEN -- see above)' if _clean_foreign else ''))
 sys.exit(1 if fails else 0)

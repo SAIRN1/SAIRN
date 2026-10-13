@@ -110,16 +110,48 @@ EP = 'api/legal-deadlines.js'
 #
 # Built on the fetched tip, the outgoing range is exactly the fixture commit,
 # which is the range these arms are actually about.
-_fetch = subprocess.run(['git', '-C', MAIN, 'fetch', '--quiet', 'origin', 'main'],
-                        capture_output=True, text=True, encoding='utf-8', errors='replace')
-if _fetch.returncode != 0:
-    print('SKIPPED: could not fetch origin/main, so the fixture below could not be')
-    print('built on the tip the gate compares against, and nothing about check 4')
-    print('was verified: %s' % (_fetch.stderr or '').strip()[:200])
-    sys.exit(3)
-BASE = subprocess.run(['git', '-C', MAIN, 'rev-parse', 'FETCH_HEAD'],
-                      capture_output=True, text=True, encoding='utf-8',
-                      errors='replace').stdout.strip()
+#
+# ── OR A THROWAWAY BARE REMOTE, OPT-IN (2026-10-13, b5 item 6) ────────────
+# `SAIRN_PROBE_LOCAL_REMOTE=1` or `--local-remote` builds a bare repo on local
+# disk at BASE and points the clone's origin at it, so the verdict stops
+# depending on the network and on origin/main moving under the run. The hook is
+# NOT stubbed -- same `core.hooksPath`, same real gate, every check still votes.
+# tests/push_gate/_local_remote.py carries the whole argument, including what
+# this does NOT fix. The real-remote path stays the DEFAULT, because a probe
+# that can only run against a local remote has stopped proving anything about
+# the push that actually ships.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _local_remote                                          # noqa: E402
+
+LOCAL_REMOTE = _local_remote.requested(sys.argv[1:])
+BARE = None
+if LOCAL_REMOTE:
+    # No network at all. BASE is local origin/main when this clone has it, and
+    # local HEAD otherwise -- either is a real commit, and nothing else pushes
+    # to the bare remote, so the outgoing range is exactly the fixture commit.
+    _b = subprocess.run(['git', '-C', MAIN, 'rev-parse', 'origin/main'],
+                        capture_output=True, text=True, encoding='utf-8',
+                        errors='replace')
+    if _b.returncode != 0:
+        _b = subprocess.run(['git', '-C', MAIN, 'rev-parse', 'HEAD'],
+                            capture_output=True, text=True, encoding='utf-8',
+                            errors='replace')
+    BASE = (_b.stdout or '').strip()
+    if not BASE:
+        print('SKIPPED: could not resolve a BASE commit for the local-remote '
+              'mode, so nothing about check 4 was verified.')
+        sys.exit(3)
+else:
+    _fetch = subprocess.run(['git', '-C', MAIN, 'fetch', '--quiet', 'origin', 'main'],
+                            capture_output=True, text=True, encoding='utf-8', errors='replace')
+    if _fetch.returncode != 0:
+        print('SKIPPED: could not fetch origin/main, so the fixture below could not be')
+        print('built on the tip the gate compares against, and nothing about check 4')
+        print('was verified: %s' % (_fetch.stderr or '').strip()[:200])
+        sys.exit(3)
+    BASE = subprocess.run(['git', '-C', MAIN, 'rev-parse', 'FETCH_HEAD'],
+                          capture_output=True, text=True, encoding='utf-8',
+                          errors='replace').stdout.strip()
 WT = os.path.join(tempfile.gettempdir(), 'check4-probe-%d' % os.getpid())
 
 
@@ -138,11 +170,22 @@ def _setup_clone():
                        encoding='utf-8', errors='replace')
     if r.returncode != 0:
         return 'clone failed: %s' % (r.stderr or '').strip()[:200]
-    url = subprocess.run(['git', '-C', MAIN, 'remote', 'get-url', 'origin'],
-                         capture_output=True, text=True, encoding='utf-8',
-                         errors='replace').stdout.strip()
-    if not url:
-        return 'could not read origin url from %s' % MAIN
+    global BARE
+    if LOCAL_REMOTE:
+        # The bare remote is built from MAIN at BASE, then becomes this clone's
+        # origin. No network is touched and nothing else can move the tip.
+        BARE, why = _local_remote.create(
+            MAIN, BASE,
+            os.path.join(tempfile.gettempdir(), 'check4-bare-%d' % os.getpid()))
+        if why:
+            return 'local bare remote: %s' % why
+        url = BARE
+    else:
+        url = subprocess.run(['git', '-C', MAIN, 'remote', 'get-url', 'origin'],
+                             capture_output=True, text=True, encoding='utf-8',
+                             errors='replace').stdout.strip()
+        if not url:
+            return 'could not read origin url from %s' % MAIN
     for args in (['remote', 'set-url', 'origin', url],
                  ['config', 'core.hooksPath', '.githooks'],
                  ['config', 'user.email', 'check4-probe@example.invalid'],
@@ -201,11 +244,16 @@ def _rmtree_loud(p):
 @atexit.register
 def _remove_clone():
     _rmtree_loud(WT)
+    if BARE:
+        _local_remote.destroy(BARE)
 
 
 # Every git and filesystem operation below now happens in the clone. The name
 # is kept so the arms read unchanged.
 REPO = WT
+print('  remote mode: %s'
+      % ('LOCAL BARE at %s -- no network, tip cannot move' % BARE
+         if LOCAL_REMOTE else 'the REAL origin (default)'))
 
 
 # ── THIS PROBE DECLARES ITSELF TO PUSH-GATE CHECK 8 (2026-09-10) ──────────
@@ -362,11 +410,45 @@ os.remove(p)
 # evidence that says nothing about check 4 -- the exact shape CLAUDE.md names:
 # could-not-run is a third state and is never folded into either of the others.
 # Exit 3, with the refusal text, so the runner records a SKIP rather than a red.
-if R['clean_api_change']['exit'] != 0:
-    print('SKIPPED: a CLEAN push is already being refused, so nothing below could')
-    print('be attributed to check 4. Nothing about check 4 was verified.')
-    print('  the refusal: %s' % R['clean_api_change']['err'])
+#
+# ── A REFUSAL BY A DIFFERENT CHECK IS A FOURTH STATE (2026-10-13, b5) ──────
+# The paragraph above is right that a refused clean push makes a LATER
+# refusal unattributable. It is NOT right that it makes the whole run
+# unverifiable, and that distinction cost this probe its verdict twice:
+# on 2026-10-12 and again on 2026-10-13 it exited 3 because the
+# external-file-index check refused over ANOTHER SESSION'S handoff on a
+# shared Google Drive -- a reason entirely outside this repository, which
+# will keep being true for as long as that loop runs.
+#
+# So the clean push's refusal is CLASSIFIED rather than only counted:
+#   OURS      the refusal carries check 4's own marker. The check really did
+#             block a clean change, which IS a check-4 failure. Exit 3 is
+#             wrong for this and it still exits 3 below -- unchanged,
+#             because calling it a pass would be worse.
+#   FOREIGN   the refusal carries NO check-4 marker. Some other check in the
+#             hook voted no. Nothing about check 4 is proved by it either
+#             way, so the ARM is reported UNPROVEN and the run CONTINUES --
+#             because "the planted violation was refused WITH check 4's
+#             marker" is evidence about check 4 no matter what else also
+#             refused on the same push.
+#
+# THIS IS NOT A BYPASS AND THE DIFFERENCE MATTERS. The hook still runs, every
+# check still votes, nothing is skipped and no override is set. What changed is
+# that the probe no longer reads another check's verdict as its own.
+_clean = R['clean_api_change']
+_clean_foreign = (_clean['exit'] != 0 and not _clean['blocked_by_seam']
+                  and not _clean.get('names_field'))
+if _clean['exit'] != 0 and not _clean_foreign:
+    print('SKIPPED: a CLEAN push is already being refused BY CHECK 4 itself, so')
+    print('nothing below could be attributed to it. Nothing was verified.')
+    print('  the refusal: %s' % _clean['err'])
     sys.exit(3)
+if _clean_foreign:
+    print('NOTE: the clean push was refused by a DIFFERENT check in the hook, so')
+    print('arm 1 is UNPROVEN rather than failed. The planted arms below are still')
+    print('attributable -- they assert check 4\'s own marker, which no other')
+    print('check emits. The foreign refusal:')
+    print('  %s' % _clean['err'][-300:])
 
 # ---- ARM 2: PLANTED seam violation must block ----
 path = os.path.join(REPO, EP)
@@ -476,4 +558,10 @@ ok = (R['planted_violation']['blocked_by_seam'] and R['planted_violation']['name
       # config was the one thing this probe was actually damaging.
       and R['clone_config_unchanged'] and R['no_worktree_registered'])
 print('CHECK 4 VERIFIED (planted blocks by seam + names the field, clean not blocked by seam):', ok)
+if _clean_foreign:
+    # SAID IN THE VERDICT LINE, NOT ONLY IN A NOTE 150 LINES UP. A reader who
+    # scrolls to the bottom must not read a bare True as "all four arms held".
+    print('  ...WITH ARM 1 UNPROVEN: the clean push was refused by a different')
+    print('  check in the same hook, so "a clean change is not blocked by check')
+    print('  4" was not demonstrated on this run. The three planted arms were.')
 sys.exit(0 if ok else 1)
