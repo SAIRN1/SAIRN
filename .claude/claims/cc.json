@@ -3737,6 +3737,32 @@
         "tools/defect_register.py",
         "tools/sairn_push_gate_hook.py"
       ]
+    },
+    {
+      "id": "cc-1791875336",
+      "session": "cc",
+      "subject": "cc",
+      "task": "cc batch b5 -- hooks disarmed and COMMITTED in this clone per Michael (hank holds the same item for HIS clone and explicitly does NOT commit his; different clones, no overlap). Mechanical permission rules in the six project settings files plus the user-level one. Live-verify bld_draws 86189e37 on the restored deployment. external_file_index_check warn-not-block for handoff names. digest_lint. E9 fixture isolation. the leg_invoices fixture rename. SAIRN-OPEN-WORK-INDEX sharding. superseded_by remainder. no-ref-lines message. Rule E routed to ted by document rather than edited. CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: docs/tier-a-reviews.json and api/sd-data.js are BOTH in hank's live b5 FILES, so the tier-A discharge and the sd-data.js ownership rows are REPORT-ONLY here and are NOT taken. No auditor clone is entered. FILES: .claude/settings.json docs/hooks-disabled-2026-10-13.json tools/hook_integrity_check.py tools/external_file_index_check.py tests/run_external_file_index_probe.py tools/digest_lint.py tests/run_defect_register_probe.py tests/claims/run_fileset_matcher_probe.py docs/SAIRN-OPEN-WORK-INDEX.md docs/2026-10-13-cc-routed-b5.md docs/handoff-cc-2026-10-13.md SAIRN-report-cc-b5.txt SAIRN-digest-cc-b5.txt SAIRN-ACTIVE-WORK-cc.md",
+      "claimed_at": "2026-10-13T07:08:56Z",
+      "claimed_at_epoch": 1791875336.3562827,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        ".claude/settings.json",
+        "SAIRN-ACTIVE-WORK-cc.md",
+        "SAIRN-digest-cc-b5.txt",
+        "SAIRN-report-cc-b5.txt",
+        "docs/2026-10-13-cc-routed-b5.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/handoff-cc-2026-10-13.md",
+        "docs/hooks-disabled-2026-10-13.json",
+        "tests/claims/run_fileset_matcher_probe.py",
+        "tests/run_defect_register_probe.py",
+        "tests/run_external_file_index_probe.py",
+        "tools/digest_lint.py",
+        "tools/external_file_index_check.py",
+        "tools/hook_integrity_check.py"
+      ]
     }
   ],
   "refusals": [
