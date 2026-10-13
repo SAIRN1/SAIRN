@@ -2775,3 +2775,42 @@ Two resume findings nobody was told about: every enforcement hook in this clone 
 Landed: four Tier A SAIRNfreedom money records gated (sf_sessions/sf_shifts/sf_tickets/sf_rentals, pair count 86→94 measured); the SAIRNfreedom hydrate-before-sign-in silent failure, already live for 18 resources; dnt_appointments write-ownership; the SAIRNcash Firebase-mint ownership precondition; credential-grant attribution across all 17 `api/*-auth.js` via one shared `auditPinSetup()` — **and the code is not the fix, 16 of 17 apps record nothing until the SQL runs**; `audit_event_type_check.py` extended in the same push because the refactor would otherwise have blinded it; the ghost-field scan circularity, where the probe's own payloads and the write-up of its own failure were silencing the detection.
 
 Open and routed: the unrun SQL (highest value, two ALTERs for StoneDesk and SAIRNcode); five Tier A SAIRNfreedom resources left ungated by decision; nothing proven live; no role check anywhere; sen_caregivers seq965 assigned to hank, not started. `SAIRN_SEED_GATE=off` used SIX times (corrected from three in the addendum), every one on another session's undeclared Drive handoff.
+
+---
+
+## 2026-10-13 — hank batch b7
+
+Appended, not read: this file is ~945 KB and the context-budget procedure
+written this batch (`docs/2026-10-13-context-budget-procedure.md`) says to grep
+it rather than open it.
+
+**Claim:** `sairnfreedom`, taken at the start (`52be9eb3`), released at the end.
+`.claude/settings.json` stayed modified and UNCOMMITTED all batch; hooks stay
+cleared; cc owns that file's merges and holds it in a live claim.
+
+| sha | item |
+|---|---|
+| `1400bd90` | 1 + 2: audit-checkpoint 16-log coverage in one idempotent SQL block, three stale `sql/*_audit_log_schema.sql` CHECKs synced, `api/sf-auth.test.js` split into four arms |
+| `e064ceee` | 3: SAIRNfreedom demo credential, round-tripped twice |
+| `972eeb9d` | 4: the last nine `sf_` resources gated — 36 of 36 |
+| `c3983131` | 5: the context-budget procedure |
+
+**What b7 found that nobody asked for:**
+
+1. **A b6 comment in `api/sd-data.js` claimed all 36 `sf_` resources were
+   gated. It was 27**, and the same file said 27 correctly 650 lines below.
+   The optimistic half was the one a reader meets first, and it said *"which
+   makes the question unaskable"* — a false all-clear that retires the check
+   rather than merely being wrong.
+2. **A negative control arm was vacuous and ablation found it, not review.**
+   The rewritten "gate is table-driven" arm used an invented resource name,
+   which the dispatch allow-list refuses 400 before the gate is consulted.
+3. **`api/sf-auth.test.js`'s single red arm hid two more causes** — a
+   schema-CHECK comparison that had not run since 2026-09-27, and a
+   transcribed `caps.size === 10` stale since the same day.
+4. **`docs/known-red-suites.json`'s `why` for that suite named the wrong
+   capability** (`ceremonial.manage`, which is in all three lists).
+
+**Open:** the trustee sign-in question (Michael), four SQL runs (Michael), and
+`docs/SAIRN-OPEN-WORK-INDEX.md` row 221, routed to cc with replacement text.
+Full detail: `docs/SAIRN-handoff-hank-b7.md`.
