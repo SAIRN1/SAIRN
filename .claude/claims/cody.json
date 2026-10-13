@@ -3670,6 +3670,26 @@
         "tools/dup_dom_ids_check.py",
         "tools/verify_citator_feedback.py"
       ]
+    },
+    {
+      "id": "cody-1791880002",
+      "session": "cody",
+      "subject": "cody",
+      "task": "cody -- batch 27 (b6). TESTS ONLY: every code change lands in tests/ and nothing in api/, tools/ or docs/ is edited -- api/sd-data.js, docs/tier-a-reviews.json and api/sd-data-sen-caregiver-pii-scope.test.js are in HANK's live b5 FILES and .claude/settings.json, tools/external_file_index_check.py, tests/run_external_file_index_probe.py, tests/claims/run_fileset_matcher_probe.py, tests/run_defect_register_probe.py and docs/SAIRN-OPEN-WORK-INDEX.md are in CC's -- NONE of those is taken here and nothing is overridden (PR 4.3). Hooks stay cleared; .claude/settings.json is never committed by this session. SAIRN_SEED_GATE=off is never used. The work: (1) fix the arm-11 two-thread save_reviews race in tests/run_tier_a_review_gate_probe.py so a writer that dies is VISIBLE rather than silently swallowed; (2) write the b5 item-8 fix whose cause was already measured -- 305 of 400 driven iterations raise PermissionError on Windows MoveFileEx and 12 of 12 gate-probe logs carried it while all 12 exited 0 -- with the save_reviews retry half ROUTED to tools/ owner rather than edited; (3) make check4 arm1 and check7 arms1-2 exit as a real PASS or a NAMED failure with the exact reason, never UNPROVEN; (4) print sql/sairnlaw_citator_schema.sql in full in the report plus the exact verification command, read-only; (5) a blameless METHODOLOGY note on how three arms shipped UNPROVEN and whether a suite may exit 0 with UNPROVEN arms, proposing the rule and ROUTING the check spec to cc, building nothing; (6) push and confirm 0 ahead 0 behind before anything else. Then handoff BEFORE report, report, digest. DECIDED BY MICHAEL AND NOT REVISITED: paralegals stay denied on law_portalmessages and trust reconciliation stays owner-only; both are the stated defaults, no change, no further work. FILES: tests/run_tier_a_review_gate_probe.py tests/push_gate/check4_probe.py tests/push_gate/check7_probe.py tests/push_gate/_local_remote.py docs/2026-10-13-cody-b6-methodology-unproven.md docs/2026-10-13-cody-b6-routed-to-cc.md docs/handoff-cody-2026-10-13b.md SAIRN-ACTIVE-WORK-cody.md",
+      "claimed_at": "2026-10-13T08:26:42Z",
+      "claimed_at_epoch": 1791880002.9360006,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/2026-10-13-cody-b6-methodology-unproven.md",
+        "docs/2026-10-13-cody-b6-routed-to-cc.md",
+        "docs/handoff-cody-2026-10-13b.md",
+        "tests/push_gate/_local_remote.py",
+        "tests/push_gate/check4_probe.py",
+        "tests/push_gate/check7_probe.py",
+        "tests/run_tier_a_review_gate_probe.py"
+      ]
     }
   ],
   "refusals": [
