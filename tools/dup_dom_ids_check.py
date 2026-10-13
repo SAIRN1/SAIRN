@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# OWNER: cody
 """Duplicate DOM ids across every SAIRN app file. REPORT-ONLY.
 
 `document.getElementById` returns the FIRST element with a duplicated id, so a

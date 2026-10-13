@@ -211,6 +211,35 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/push_gate/_local_remote.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "It does not stub, skip or weaken the pre-push hook. `core.hooksPath` still"
+    }
+   ],
+   "sha": "2567062ed30953d32b7c22104282d1222397e316",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/push_gate/check4_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "2567062ed30953d32b7c22104282d1222397e316",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/push_gate/check7_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "2567062ed30953d32b7c22104282d1222397e316",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_tier_a_review_gate_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -314,6 +343,19 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "392426154bd584266f315b17d26843221534fc2c",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_dup_dom_ids_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(D, ignore_errors=True)"
+    }
+   ],
+   "sha": "3a1ab998c516156fba8f6e3c8c408d2e7db924db",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -789,6 +831,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "8acd789616e763672cc51348553d546d38c11bd8",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-sen-caregiver-read-paths.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "8c5d9741e97a88714406f46f23855857f3eefbb8",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -1385,6 +1435,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "f8fade035082ab5b6f6b6e9f529e667ff5bf6fd4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-law-role-matrix.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "fa6a390edbc3bc44dbcc171a5d66b4fdadd3745f",
    "criteria_version": "2026-10-06.1"
   },
   {

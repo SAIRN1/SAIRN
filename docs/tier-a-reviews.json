@@ -6065,6 +6065,56 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-13T07:38:22Z",
+      "opened_at_sha": "3a1ab998c516156fba8f6e3c8c408d2e7db924db",
+      "opened_at_sha_basis": "file-set",
+      "resources": [
+        "invoices",
+        "law_bankstatements",
+        "law_barcerts",
+        "law_clecredits",
+        "law_clerequirements",
+        "law_clients",
+        "law_deadlines",
+        "law_invoices",
+        "law_matterdocs",
+        "law_mattermilestones",
+        "law_matters",
+        "law_mattertasks",
+        "law_opaccounts",
+        "law_optx",
+        "law_picases",
+        "law_pimedical",
+        "law_portalesign",
+        "law_portalmessages",
+        "law_timeentries",
+        "law_trust_reconcile",
+        "law_trusttx",
+        "quotes",
+        "sen_caregivers",
+        "sen_clients",
+        "sen_settings",
+        "sen_visits",
+        "sf_ledger"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/_lib/law-roles.js",
+        "api/sd-data-law-role-matrix.test.js",
+        "api/sd-data-sen-caregiver-read-paths.test.js",
+        "tools/dup_dom_ids_check.py"
+      ],
+      "what": "api/sd-data-sen-caregiver-read-paths.test.js, b5 item 5. A READ-ONLY TEST FILE. It names sen_settings and sen_visits because the sen_visits/readiness branch -- the SECOND of the two sen_caregivers read paths -- fetches sen_visits, sen_clients, sen_caregivers and sen_settings, so its fixture must seed all four tables or the path is never reached. NO CODE SERVING EITHER RESOURCE IS IN THIS RANGE. The gate reads names rather than call sites, which is the correct direction for a gate to fail, so this is recorded rather than argued away. WHAT A REVIEWER SHOULD CHECK, since the obligation exists either way: (1) confirm by diff that no api/ or sql/ file serving sen_settings or sen_visits is in the range -- the only api/sd-data.js change in this batch is the sairnlaw role gate at two call sites; (2) the arm that matters most is the one asserting the readiness fetch is STILL UNREDACTED -- redacting there would make every visit report a missing state caregiver ID, because checkVisit reads caregiver.state_caregiver_id to decide whether one is on file, so the right boundary for that path is the RESPONSE and the arm exists to stop somebody fixing it the wrong way; (3) the fetch-site COUNT arm is deliberately brittle and says so in its own failure message -- if a third read path is added, add an arm rather than raising the number.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-10-13T07:38:22Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

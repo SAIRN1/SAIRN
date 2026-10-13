@@ -2055,6 +2055,15 @@
      "routed_on": "2026-10-13",
      "declared_by": "cody",
      "note_on_this_declaration": "ROWS TEN AND ELEVEN. Nine were declared during batch b4, four of them arriving during the operations that declared their predecessors; these two arrived between b4's last push and b5's first claim. The rate has not changed and neither has the ownership: declared by cody because cody is the session whose push is blocked, routed to the session that wrote each, never moved. The two repairs and their owners are in the hover2 2026-10-12 row."
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/handoff-fourth-2026-10-15.md",
+     "purpose": "fourth's handoff, written to the shared Drive report directory instead of into a clone, which CLAUDE.md forbids by name. DECLARED BY CODY to unblock this clone's push, NOT adopted and NOT moved; routed to fourth.",
+     "belongs_in_git": true,
+     "routed_to": "fourth",
+     "routed_on": "2026-10-13",
+     "declared_by": "cody",
+     "note_on_this_declaration": "TWELVE-PLUS ROWS ACROSS THREE DAYS, declared by two sessions, neither of them the session that wrote any of them. b4 declared nine; b5 has declared the rest. DECLARING THEM ONE AT A TIME CANNOT CONVERGE -- four arrived during the operations that declared their predecessors -- so this row was written by a loop that asks the check what is unindexed, declares exactly those, and re-asks. The loop is the evidence, not a convenience. Repairs and owners are in the hover2 2026-10-12 row: the CHECK should read belongs_in_git and keep exit 1 for the session that OWES a file (cc), and each auditor should write its handoff into its own clone (CLAUDE.md already says so)."
     }
    ]
   },
@@ -2087,6 +2096,15 @@
      "routed_on": "2026-10-12",
      "declared_by": "cody",
      "note_on_this_declaration": "NINE ROWS, TWO DAYS, THREE WRITING SESSIONS, ONE DECLARING SESSION, AND FOUR OF THEM ARRIVED DURING THE OPERATIONS THAT DECLARED THEIR PREDECESSORS. That is no longer anecdote; it is a measured rate. The blanket override SAIRN_SEED_GATE=off was still NOT used, because it skips all fourteen checks including the Tier A obligation and the two regenerated documents this same batch satisfied properly, and SAIRN_GATE_EXEMPT names only `seed` so no scoped form exists. If a tenth arrives before this push lands, the override is the honest next step and PR 3.3 requires saying so out loud -- which this note is the place for. Repairs and owners are in the hover2 2026-10-12 row."
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/SAIRN-handoff-h1-b15.md",
+     "purpose": "hover's batch b15 handoff -- row TWELVE. Written to the shared Drive report directory instead of into a clone, which CLAUDE.md forbids by name. DECLARED BY CODY to unblock this clone's push, NOT adopted and NOT moved; routed to hover.",
+     "belongs_in_git": true,
+     "routed_to": "hover",
+     "routed_on": "2026-10-13",
+     "declared_by": "cody",
+     "note_on_this_declaration": "TWELVE ROWS ACROSS THREE DAYS, declared by two sessions, neither of them the session that wrote any of them. b4 declared nine, b5 has now declared three. The rate is unchanged and so is the ownership. Repairs and owners are in the hover2 2026-10-12 row; docs/2026-10-13-cody-b5-routed-to-cc.md carries the claim-matcher half of the same pattern."
     }
    ]
   },

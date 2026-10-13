@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# OWNER: cody
 """Verify cl_feedback_log attribution AGAINST THE REAL DATABASE. Run AFTER the SQL.
 
 ── WHAT THIS IS FOR (b5 item 12) ─────────────────────────────────────────────

@@ -86,6 +86,35 @@ GATE = os.path.join('tools', 'sairn_push_gate_hook.py')
 # LIVE means it makes a real network or database request, so it cannot be wired
 # into a hook without making every push talk to the outside world.
 PURPOSES = {
+    'dup_dom_ids_check.py': ('CHECKER',
+        'a DOM id declared twice in the markup of an app file. '
+        'getElementById returns the FIRST match, so a duplicate is never '
+        'cosmetic -- one of the two features silently operates on the other '
+        'one\'s element. All three found by hand on 2026-10-12 were live '
+        'defects: an accounts table that never rendered, a bingo-session '
+        'account that could not be opened under the name typed in, and a '
+        'facility name stored from the wrong input box. Guardian Check 8 has '
+        'required this since the skill was written and nothing ran it. '
+        'REPORT-ONLY and deliberately not a push gate: promoting it while real '
+        'findings exist would refuse every push to the affected file, which is '
+        'how a gate gets switched off. Parses with html.parser rather than '
+        'grep, because every SAIRN app builds tables from JS template strings '
+        'and a regex counts hundreds of in-script `id="..."` that are not '
+        'markup. Says nothing about ids generated at RUNTIME. '
+        'Control-paired by tests/run_dup_dom_ids_probe.py, 23 arms.'),
+    'verify_citator_feedback.py': ('CHECKER',
+        'Guardian Check 29\'s missing half for cl_feedback_log: a REAL write '
+        'through the real table, read back, in both directions -- with an '
+        'employee and without one. Written 2026-10-13 because b4 closed hover2 '
+        'seq 951 at the application and schema layers with no database access, '
+        'so the suite asserts the row that WOULD be written and nothing has '
+        'proved the stored value. RUN IT AFTER Michael runs '
+        'sql/sairnlaw_citator_schema.sql, never before. Refuses to write '
+        'without --write, because the rows it leaves are indistinguishable '
+        'from an attorney\'s real feedback in the table whose whole subject is '
+        'attribution. Every arm reads the row back by id rather than trusting '
+        'a 201, since the defect being closed was a 200 with no employee on '
+        'the row. COULD-NOT-TELL is a third state throughout.'),
     'audit_event_type_check.py': ('CHECKER',
         'an event_type the code EMITS that the CHECK constraint on its '
         'target audit table REJECTS -- so the insert fails, '
