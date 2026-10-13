@@ -3535,8 +3535,8 @@
       "task": "batch b9 continuation after compaction -- get HEAD pushed, priority one. The b8 unreadable-range refusal was already diagnosed (the remote tip sha handed to the hook on stdin was absent from this clone's object store; a fetch fixed it) and the STANDING blocker is check 12's generated-document refusal over docs/TOOLING-INVENTORY.md, re-diagnosed this session to TWO distinct causes: (a) in a clean worktree of HEAD the generator exits 2 because tools/report_sha_check.py (added by my b5) and tools/temp_state_leak_check.py (added by my b7) carry no PURPOSES entry, which is Michael's 2026-09-13 decision and is MINE to clear, and (b) in the live working tree the hook-entries derivation source reads 0 because hooks are cleared on purpose, which is an UNCOMMITTED state this push does not carry and must not be attributed to it. Fix (a) with two PURPOSES entries naming what each tool CATCHES plus a regenerate; fix (b) by making check 12 measure the tip the same way it already measures the base -- in a worktree of the pushed commit rather than in the live working tree. Then the methodology item: a commit-time check so an unentered tools/ file is refused at the commit that adds it rather than five batches later at push time. Then bundle and delete refs/salvage/b6-* once the push is confirmed landed, move the three .claude/settings.json backups to scratchpad, drop the demo-pins SQL and the throwaway probe SQL, handoff BEFORE the report, then report and digest. HOOKS STAY CLEARED and .claude/settings.json is never committed. No SAIRN_SEED_GATE=off. FILES: tools/tooling_inventory.py docs/TOOLING-INVENTORY.md tools/sairn_push_gate_hook.py tools/commit_tool_entry_check.py docs/METHODOLOGY.md docs/handoff-fourth-2026-10-16.md SAIRN-report-fourth-b9.txt SAIRN-digest-fourth-b9.txt",
       "claimed_at": "2026-10-13T09:19:44Z",
       "claimed_at_epoch": 1791883184.5506332,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-13T11:32:44Z",
       "files": [
         "SAIRN-digest-fourth-b9.txt",
         "SAIRN-report-fourth-b9.txt",
