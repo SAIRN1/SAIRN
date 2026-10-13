@@ -2569,6 +2569,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sf_role_matrix_driven.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "b0e1f146bb0f7cb5395f80dc271b95a5ac5612e1",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_tier_a_review_gate_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -3267,6 +3275,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "e4d53fa8c51fba9d9027c3c412e54119876b33f1",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sf_role_matrix_driven.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "e73afa1faf86bc0092f5e178f817519982e61a8e",
    "criteria_version": "2026-10-06.1"
   },
   {
