@@ -1995,6 +1995,14 @@
      "declared_by": "hank",
      "declared_on": "2026-10-13",
      "note_on_this_declaration": "DECLARED BY ITS AUTHOR IN THE SAME ACTION AS THE UPLOAD. b4 was blocked three times by other sessions' undeclared Drive handoffs and used the documented override each time; declaring my own at upload time is the half of that problem I can fix without writing into another role's block."
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/SAIRN-addendum-hank-b5.txt",
+     "purpose": "hank's batch 20 (b5) addendum. ITEM 3 IS DONE: the deployment came back mid-batch and the bare-key probe re-ran clean -- 11 gated resources 403 on both verbs, 4 ungated controls 200, which is the control pair that makes it the GATE and not a bad key. Supersedes the report's and the handoff's paused-deployment headline. Separate unhashed file because the report carries a SHA256 of its own body.",
+     "belongs_in_git": false,
+     "authoritative_copy": "SAIRN-addendum-hank-b5.txt",
+     "declared_by": "hank",
+     "declared_on": "2026-10-13"
     }
    ],
    "limits": [
