@@ -1957,9 +1957,78 @@ too, and for the same reason: neither can distinguish its cases.
 
 ---
 
+## 34. A CHECKER'S UNIVERSE MUST EXCLUDE THE ARTEFACTS THAT DESCRIBE ITS OWN FINDINGS -- AND A CHANGE THAT MOVES A PATTERN BEHIND A SHARED HELPER MUST EXTEND THE CHECKER KEYED TO THE OLD SHAPE, IN THE SAME PUSH
+
+**Adopted 2026-10-13 BY DIRECT INSTRUCTION. DERIVED BY HANK** -- the
+`CONVENTION CANDIDATE` section of `SAIRN-report-hank-b4.txt`, which carried the
+text and routed the number rather than self-promoting it, saying so in terms:
+*"That file's numbering has been wrong twice from two sessions adding an item
+within the same hour, and the file has an owner. ROUTED."* The number was the
+only thing missing and the only thing this promotion adds; the rule, the three
+instances and the argument against folding it into 8 are hank's and are carried
+as written.
+
+**Counted before assigning, because that is the failure the routing was
+avoiding:** 33 `## <n>.` headings at this HEAD, 1-33, **no gap and no
+duplicate**, and no existing use of a convention 34 anywhere under `docs/`,
+`tools/` or `tests/`. So 34 is the next free number rather than the next number
+after the one somebody remembered.
+
+**PAID FOR THREE TIMES IN ONE BATCH, all hank's, all b4:**
+
+1. `tests/run_ghost_field_read_probe.py`'s own planted payloads entered the
+   universe it tests, and silenced the detection of those exact payloads.
+2. `docs/known-red-suites.json`'s write-up of that failure did the same, through
+   a file extension the existing `*.md` rule did not cover -- **so the act of
+   DOCUMENTING the finding is what kept it true.**
+3. Moving fourteen `api/*-auth.js` files onto `auditPinSetup()` would have
+   removed all fourteen from `tools/audit_event_type_check.py`'s field of view
+   **while its printed total went on looking the same** -- a fix closing one gap
+   opening a blind spot in the same push, silently.
+
+**WHY IT IS NOT ALREADY COVERED BY CONVENTION 8.** Convention 8 says nothing
+announces the day a check stops testing anything, and prescribes re-referencing
+against the SOURCE on a cadence taken from a measured drift rate. **A CADENCE
+DOES NOT HELP HERE.** In all three cases the check stopped testing AT THE MOMENT
+OF A COMMIT, by an author who was improving something, and a periodic
+re-reference would have found it a drift-interval later at best. This names the
+two specific mechanisms and makes both actionable AT THE MOMENT OF THE CHANGE: a
+checker that reads the whole repo will eventually read the description of its own
+findings, and a refactor that centralises a pattern removes it from every lexical
+checker keyed to the old shape.
+
+**THE MEMBERSHIP QUESTION, asked rather than assumed. 34 IS A MEMBER of the
+group ten of the thirty-three share, so that group is now ELEVEN.** The group is
+a CHECK THAT READS AS COVERAGE AND STRUCTURALLY CANNOT FIRE, and both halves of
+34 are exactly that: a checker whose universe has swallowed its own findings
+cannot report them, and a checker keyed to a shape that no longer exists cannot
+match anything -- in both cases the printed total is unchanged and the check is
+dead. That is the distinction 29, 31 and 32 were each kept OUT of the group for
+lacking: they are faults of provenance or of distinguishing cases, where this one
+is an inability to fire. **The heading's denominator moves from TEN to ELEVEN
+rather than being left to drift.**
+
+**AND IT IS THE FIRST MEMBER WHOSE TRIGGER IS A COMMIT RATHER THAN TIME**, which
+is why it earns its own number beside 8 instead of a cross-reference inside it.
+
+**Cause tag:**
+`verification/checker-universe/self-describing-artefact-and-helper-refactor-blind-spot`.
+
 ---
 
-## The failure mode TEN of the thirty-three share
+---
+
+## The failure mode ELEVEN of the thirty-four share
+
+*(Denominator moved 2026-10-13 when hank's 34 was landed, and the membership
+question was asked rather than assumed. **34 IS AN ELEVENTH MEMBER**, and the
+argument is in its own section: both halves of it -- a checker whose universe has
+swallowed the description of its own findings, and a checker keyed to a shape a
+refactor has just removed -- are a check that reads as coverage and structurally
+cannot fire, with the printed total unchanged either way. It is the first member
+whose TRIGGER IS A COMMIT rather than elapsed time, which is why it sits beside 8
+rather than inside it. The heading moved from "TEN of the thirty-three" to
+"ELEVEN of the thirty-four" rather than being left to drift.)*
 
 *(Denominator moved 2026-10-11 when cody's 33 was landed, and the membership question was asked rather than assumed. **33 IS NOT A MEMBER; the group stays at TEN.** The group is a CHECK THAT READS AS COVERAGE AND STRUCTURALLY CANNOT FIRE. 33's warning **fired, correctly, and loudly** -- the suite said its own tree was dirtied and that statement was true. The defect is on the other side of the output: the warning is unfalsifiable by reasoning, so it condemns 73 correct verdicts along with 3 wrong ones, and it carries no way to tell them apart. That is a mechanism which cannot DISTINGUISH its cases, which is where **29** was put for the same reason and by the same argument -- and 33 is 29's mirror: 29 distrusts a blanket PASS, 33 distrusts a blanket DOUBT. Both stay outside the group. **The heading's denominator was changed from "thirty-two" to "thirty-three" rather than left to drift, and the TEN is untouched.**)*
 

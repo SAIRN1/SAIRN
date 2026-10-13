@@ -338,6 +338,46 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/_lib/courtlistener-rate-limit.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "3639c079320c4407b4711906299db72a76660b54",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-endpoint-inputs.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "3639c079320c4407b4711906299db72a76660b54",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/deadline-jurisdiction-labels.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "3639c079320c4407b4711906299db72a76660b54",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/dental-gfe.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "3639c079320c4407b4711906299db72a76660b54",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/mech-assets.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "3639c079320c4407b4711906299db72a76660b54",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_defect_register_superseded_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -1316,6 +1356,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/faults/grd_write_faults.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bf3afee50363833e6aa9ab584d208c750de163bc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/phi_cache_scoped_to_user.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'and saying so, rather than skipping on an unknown.');"
+    }
+   ],
+   "sha": "bf3afee50363833e6aa9ab584d208c750de163bc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/claims/run_matcher_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -1643,6 +1704,134 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "eb430f255b407c969b350bcec39bccd39905aea3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/greeting.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ed6a321e4c109ba77cdc72518bcb3a218f3e92b7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sairndental/public-book-guardian.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ed6a321e4c109ba77cdc72518bcb3a218f3e92b7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/faults/alf_rule_read_faults.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ed6a321e4c109ba77cdc72518bcb3a218f3e92b7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/faults/sd_write_faults.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ed6a321e4c109ba77cdc72518bcb3a218f3e92b7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/intake_form_public_surface.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ed6a321e4c109ba77cdc72518bcb3a218f3e92b7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/intake_link_no_credential.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ed6a321e4c109ba77cdc72518bcb3a218f3e92b7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/intake_no_false_success.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ed6a321e4c109ba77cdc72518bcb3a218f3e92b7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/ld_reports_unreadable.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ed6a321e4c109ba77cdc72518bcb3a218f3e92b7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/phi_cache_scoped_to_user.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ed6a321e4c109ba77cdc72518bcb3a218f3e92b7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/roofing_claim_gate_single_source.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ed6a321e4c109ba77cdc72518bcb3a218f3e92b7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairndesign_po_procurement.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ed6a321e4c109ba77cdc72518bcb3a218f3e92b7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sb_sync_badge_honesty.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ed6a321e4c109ba77cdc72518bcb3a218f3e92b7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_timesheet_pay_est.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ed6a321e4c109ba77cdc72518bcb3a218f3e92b7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/st_reports_failure.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ed6a321e4c109ba77cdc72518bcb3a218f3e92b7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/stonedesk_admin_storage_kpi.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ed6a321e4c109ba77cdc72518bcb3a218f3e92b7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sv_storage_guard.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ed6a321e4c109ba77cdc72518bcb3a218f3e92b7",
    "criteria_version": "2026-10-06.1"
   },
   {

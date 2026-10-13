@@ -68,6 +68,8 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
+// The one stripper -- see the note at the strip site below (b8 item 2).
+const { stripJs } = require('../tests/lib/strip_comments.js');
 
 let passed = 0;
 function test(name, fn) {
@@ -187,9 +189,18 @@ function _statementsFor(src, ident) {
       const start = m.index;
       const semi = src.indexOf(';', re.lastIndex);
       const stmt = src.slice(start, semi < 0 ? src.length : semi);
-      // Strip a trailing line comment from EVERY line of the statement. A
-      // multi-line concatenation can carry one on any of its lines.
-      out.push(stmt.split('\n').map((l) => l.replace(/\/\/.*$/, '')).join('\n'));
+      // ── ONE STRIPPER, 2026-10-13 (b8 item 2) ────────────────────────────
+      // CORRECTING b7, WHICH DECLINED THIS SITE AS "SQL". The subject is not
+      // SQL: `stmt` is a slice of JavaScript source -- a multi-line expression
+      // that BUILDS a SQL string -- so a JavaScript stripper is exactly right
+      // and b7's reason for leaving it was wrong about the language.
+      //
+      // The private version was worse than the usual case, not better: it
+      // applied `/\/\/.*$/` PER LINE, so any line of the concatenation holding
+      // a `//` inside a string literal lost the rest of itself, and the
+      // statement this function returns is what the ordering assertions then
+      // read.
+      out.push(stripJs(stmt));
     }
   });
   return out;

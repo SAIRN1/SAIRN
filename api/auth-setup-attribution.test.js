@@ -71,8 +71,22 @@ function setupBranch(src) {
 // this suite green, which is the precise shape of a check that stopped
 // checking. Blanked, not skipped: the line structure is preserved so a
 // reported offset still points somewhere real.
+// ── ONE STRIPPER, 2026-10-13 (b8 item 2) ──────────────────────────────────
+// The paragraph above is right about WHY this exists and the implementation was
+// still private. `/\/\/[^\n]*/g` eats the rest of any line containing `//`
+// inside a string or a URL, so the "blanked, not skipped" promise above it was
+// only half kept: line structure survived, but a call site sitting after an
+// `https://` on the same line was removed along with the comment -- and this
+// suite's whole point is that deleting a CALL must not leave it green.
+//
+// THE LOCAL NAME IS KEPT AND IT IS NOT THE LIBRARY'S `stripComments`. The two
+// call sites below pass `branch`, a slice of API JavaScript, so the right
+// entry point is `stripJs`; the library's `stripComments` is the HTML-aware one
+// and would be wrong here. The name stays so the call sites do not move, and
+// this comment is why it is not a contradiction.
+const { stripJs } = require('../tests/lib/strip_comments.js');
 function stripComments(s) {
-  return s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+  return stripJs(s);
 }
 
 // Three accepted spellings, because three exist in the tree and all three

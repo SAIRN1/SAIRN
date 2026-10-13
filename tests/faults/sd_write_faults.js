@@ -116,6 +116,32 @@ function ctxFor(opts) {
   };
   K.vm.createContext(ctx);
   K.vm.runInContext(SRC.slice(SRC.indexOf('var SD_FETCH_TIMEOUT_MS')).split(/\r?\n/)[0], ctx);
+  // ── THE MODULE-LEVEL STATE sdData WRITES, 2026-10-13 (b8 item 3) ─────────
+  // THIS SUITE WAS RED FOR ELEVEN ARMS AND THE APP WAS RIGHT. sdData() sets
+  // `_sdWriteOk[resource] = false` on entry and the other three maps on its
+  // paths, and none of them was loaded into this context -- so the real
+  // function threw `_sdWriteOk is not defined` INSIDE the vm, never reached its
+  // own `catch`, and never reached the `return null` that is the whole contract
+  // these arms assert. Arm 1 then reported "the transport REJECTS on a
+  // timeout", which is a true statement about the HARNESS and a false one about
+  // stonedesk.html: the app catches, calls sdDataFailed() and returns null
+  // (verified at the catch tail, `return null`).
+  //
+  // The remaining ten failures were CASCADE from that one -- `_sdWriteOk is not
+  // defined` again, nine times -- which is why the cause is single despite the
+  // count.
+  //
+  // LOADED FROM THE REAL FILE BY NAME, not stubbed with `{}` here: a stub would
+  // let the app rename or re-shape one of these and keep this suite green,
+  // which is the same seam defect one level in. A declaration that goes missing
+  // takes the suite red instead.
+  ['var _sdAuthRefused', 'var _sdReadFailed', 'var _sdLastStatus',
+   'var _sdWriteOk'].forEach((decl) => {
+    const i = SRC.indexOf(decl);
+    assert.ok(i > 0, decl + ' is gone from stonedesk.html -- this harness loads '
+      + 'the real declarations and will not substitute its own');
+    K.vm.runInContext(SRC.slice(i).split(/\r?\n/)[0], ctx);
+  });
   K.vm.runInContext(grabRaw('function sdFetchTimeoutSignal()'), ctx);
   // The reporter, loaded from the real file and never stubbed: stubbing it would
   // let its wording and its own try/catch rot while these arms stayed green.

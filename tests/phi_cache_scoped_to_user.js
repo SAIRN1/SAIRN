@@ -55,7 +55,6 @@ function eq(name, actual, expected) {
   console.log('FAIL  ' + name + '\n        expected ' + e + '\n        actual   ' + a);
 }
 
-function readApp(file) { return fs.readFileSync(path.join(__dirname, '..', file), 'utf8'); }
 
 // ── A DIRTY SUBJECT IS A SKIP, NOT A FAILURE (2026-10-12, batch b5 item 3) ──
 // THE SYMPTOM. hank's 2026-10-08 whole-tree table records this file as
@@ -111,6 +110,44 @@ const SUBJECTS = [
                 + 'verified: ' + dirty.join(', '));
     process.exit(3);
   }
+}
+
+// ── SELF-ISOLATING SETUP, 2026-10-13 (b8 item 4) ──────────────────────────
+// THE PROBLEM THIS CLOSES IS NOT "MODULE STATE" IN THE USUAL SENSE. This suite
+// holds no mutable globals and shares no objects between arms -- each simulated
+// browser gets its own `store`. What it DID do is read its seven subjects at
+// FOUR different points during the run: a top-level const at :263, two more at
+// :381 and :389, and `readApp()` inside two loops. So a subject edited by
+// anything else WHILE this suite was running changed the answer an arm got
+// depending on where in the file that arm sat, which is order-dependence
+// wearing a different hat -- the suite was sampling a moving subject.
+//
+// EVERY SUBJECT IS NOW READ EXACTLY ONCE, HERE, BEFORE ANY ARM RUNS, and every
+// later read is served from that snapshot. After this point the suite cannot
+// see a mid-run change at all: 72 arms all measure the same seven files as they
+// stood at setup. Combined with the precondition above (which SKIPS if a
+// subject is already dirty at start) and the diagnostic at the end (which NAMES
+// a subject that moved by the time a failure happened), the three cover the
+// three distinct moments something could interfere.
+//
+// FROZEN, so a later edit to this file cannot accidentally mutate the snapshot
+// and reintroduce the thing being removed. And NOT CACHED LAZILY: a lazy cache
+// would still take its first read whenever the first arm asked, which is the
+// defect with an extra step.
+const SNAP = Object.freeze(SUBJECTS.reduce((acc, rel) => {
+  acc[rel] = fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
+  return acc;
+}, {}));
+
+function readApp(file) {
+  // A subject outside the declared seven would be read live and silently
+  // reintroduce the order-dependence, so it is an error rather than a fallback.
+  if (!Object.prototype.hasOwnProperty.call(SNAP, file)) {
+    throw new Error('readApp(' + JSON.stringify(file) + '): not one of this '
+      + "suite's declared SUBJECTS, so it has no snapshot. Add it to SUBJECTS "
+      + 'rather than reading it live -- a live read is what b8 item 4 removed.');
+  }
+  return SNAP[file];
 }
 
 // THE KEYS THE APP ACTUALLY WRITES -- FROM CODE, NOT FROM PROSE.
@@ -260,7 +297,7 @@ APPS.forEach(function (app) {
 // into six apps and a finite list -- and it is what stops this suite silently
 // falling behind a NEW scoped read added tomorrow. If this number moves, an app
 // gained or lost a scoped read and this file must be revisited, not adjusted.
-const API = fs.readFileSync(path.join(__dirname, '..', 'api', 'sd-data.js'), 'utf8');
+const API = readApp('api/sd-data.js');
 const SCOPED_READS = (API.match(/out = out\.filter\(\(r\) => r\.(?:assigned|subject)_employee_id === session\.employee_id\)/g) || []).length;
 eq('0a  api/sd-data.js scoped-read branches across six apps', SCOPED_READS, 9);
 ok('0b  and every app carrying one is covered here, or named as another session\'s',
@@ -378,7 +415,7 @@ APPS.forEach(function (app) {
 //     ones, and THREE sign-in paths rather than one enter function.
 //   SAIRNroofing persists NOTHING scoped -- checked, not assumed -- so its
 //     exposure is an in-memory list across a same-tab re-login.
-const SD = fs.readFileSync(path.join(__dirname, '..', 'stonedesk.html'), 'utf8');
+const SD = readApp('stonedesk.html');
 ok('7a  StoneDesk purges the assignment-scoped CRM cache',
    /var SD_SCOPED_CACHES = \['sd_crm'\];/.test(SD), '');
 eq('7b  StoneDesk wires the check into EVERY sign-in path, not one',
@@ -386,7 +423,7 @@ eq('7b  StoneDesk wires the check into EVERY sign-in path, not one',
 ok('7c  and doLogout purges it',
    /currentUser = null;[\s\S]{0,260}sdPurgeScopedCaches\(\);/.test(SD), '');
 
-const RF = fs.readFileSync(path.join(__dirname, '..', 'sairnroofing.html'), 'utf8');
+const RF = readApp('sairnroofing.html');
 ok('8a  SAIRNroofing clears the in-memory job list on sign-out',
    /rfSession=null;[\s\S]{0,1600}currentJobs=\[\];/.test(RF), '');
 const rfKeys = [...new Set((RF.match(/localStorage\.(?:setItem|getItem|removeItem)\('rf_[a-z_]+'/g) || [])
