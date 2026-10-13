@@ -27141,7 +27141,7 @@
       "recurrence_open": "OPEN. The skip list is a hand-maintained list of what a path IS, and nothing re-derives it when a new artefact convention appears -- the next root-level prose deliverable in a new extension lands in scope the same way. A coverage control exists for tracked path CLASSES but it cannot know about a convention that has not been invented yet."
     },
     {
-      "commit": "79573e525476",
+      "commit": "af5057c0f734",
       "date": "2026-10-13",
       "subject": "fix(hover2-tools): bld_draws_bypass_repro.py missed a dedicated fix branch and kept reporting BYPASS CONFIRMED against an already-fixed resource; extend anchor_drift_check.py coverage 8 -> 12",
       "files": [
@@ -27170,7 +27170,7 @@
       "factors_unknown_reason": "Named in the commit body rather than as structured factors this pass."
     },
     {
-      "commit": "ae97907e2a0c",
+      "commit": "98f33b675d97",
       "date": "2026-10-13",
       "subject": "fix(hover2-tools): scp_session_gate_repro.py's branch_gate check was a bare substring test -- a QC-decision's nested verifySessionToken call scored a whole write path FIXED when it was not",
       "files": [
@@ -27198,7 +27198,7 @@
       "factors_unknown_reason": "Named in the commit body rather than as structured factors this pass."
     },
     {
-      "commit": "bf7b2b6f1afb",
+      "commit": "a031dbe4bbdc",
       "date": "2026-10-13",
       "subject": "fix(hover2-tools): hover2_external_file_check.py generalizes handoff_glob_prefix to a glob_prefixes list -- SAIRN-report-h2-/SAIRN-digest-h2- per batch showed up UNINDEXED the first run after Michael asked for a per-batch Drive upload",
       "files": [
