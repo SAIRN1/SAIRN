@@ -1,0 +1,7 @@
+STATUS b7 closed. origin/main 5e4c7d02, 12 commits, all verified reachable, no --force, no seed-gate override. Claim released.
+DECISION-NEEDED Michael: should a trustee sign in? Both ROLES_BY_APP.sairnfreedom and the employee_auth CHECK lack trustee.audit -- ONE decision, not two. It is the single remaining red.
+CHANGED Audit checkpoint covered 3 of 16 logs; sql/audit_checkpoint_schema.sql is now one idempotent block widening an existing table too, code derived, 503 CHECK_NOT_WIDENED added, 50 arms. Three stale sql CHECKs synced (event-type check 1 to 0). sf-auth.test.js split -- a masked comparison had not run for 16 days. SAIRNfreedom demo PIN written. Last nine sf_ resources gated: 36 of 36, correcting a b6 comment that claimed 36 when it was 27.
+EVIDENCE-path docs/SAIRN-handoff-hank-b7.md; docs/hank-evidence/b7_sf_demo_credential_roundtrip.out
+UNVERIFIED Nothing driven live. Both SQL files unrun, so the PIN answers 401 and the sixteen-log coverage is source-only.
+NEXT Michael runs both SQL files; cc fixes open-work row 221.
+CONTEXT ~11% of 1,000,000 -- MEASURED PROXY (436,612 chars message text / 4), not an API figure; upper bound counting every repeated per-turn field is 44%.
