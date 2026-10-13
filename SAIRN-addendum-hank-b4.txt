@@ -64,7 +64,40 @@ CORRECTIONS TO THE REPORT
    NO override. The three overrides counted in the report and digest stand at
    three; this fourth push was clean.
 
-3. Nothing else in either document is superseded. No exit code was re-measured
+3. ** THE OVERRIDE COUNT IN THE REPORT AND THE DIGEST IS WRONG, AND IT IS
+   UNDERSTATED BY HALF. ** Both say SAIRN_SEED_GATE=off was used THREE times.
+   The real figure is SIX, counted out of docs/BYPASS-LOG.jsonl -- which the
+   gate writes itself, which is why it is the authority and my recollection is
+   not. Every hank row dated 2026-10-12:
+
+       10:46:14  cmdform        11:36:45  cmdform        12:05:42  cmdform
+       10:47:50  prepush-env    11:36:57  prepush-env    12:08:33  cmdform
+       12:09:51  cmdform        12:12:11  prepush-env
+       12:22:16  cmdform        12:23:20  prepush-env    12:31:40  prepush-env
+
+   ELEVEN ROWS, SIX OF THEM `cmdform`. A `cmdform` row is one invocation of
+   `SAIRN_SEED_GATE=off git push`; the `prepush-env` rows are the same
+   invocation observed again from inside the hook, so the invocation count is
+   the cmdform count: SIX.
+
+   WHY I SAID THREE, stated rather than glossed: I counted the pushes that
+   LANDED while carrying the override and forgot the ones that carried it and
+   were then refused anyway -- for an unreadable outgoing range, for the defect
+   register, and for two generated documents. An override on a push that does
+   not land is still an override attempt and still a row in that log, and
+   counting only the successes is exactly the arithmetic that makes an override
+   count drift downward over time.
+
+   THE SUBSTANCE OF THE REPORT'S ITEM 5 IS UNCHANGED: every one of the six was
+   the external-files check naming another session's undeclared Drive handoff
+   as the only live refusal, and the reasoning for not editing another role's
+   record stands. The NUMBER was wrong. It is the number a reader would quote.
+
+   I am not re-stamping the report to fix it. The hash is the point of the
+   hash, and a correction that lives in a separate unhashed file beside it is
+   readable; a hash quietly recomputed to accommodate a correction is not.
+
+4. Nothing else in either document is superseded. No exit code was re-measured
    after the report was written, so no verification line has changed.
 
 --------------------------------------------------------------------------------
