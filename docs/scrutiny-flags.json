@@ -184,6 +184,27 @@
   {
    "path": "tests/run_tier_a_review_gate_probe.py",
    "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "isinstance(g.skip_reason('SAIRN-report-cc-b4.txt'), str),"
+    }
+   ],
+   "sha": "23d0f73ce2219f757d0b2c01295579983de4c089",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/tier_a_review_gate.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "23d0f73ce2219f757d0b2c01295579983de4c089",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_tier_a_review_gate_probe.py",
+   "class": "test file",
    "level": "CHANGE",
    "shapes": [],
    "sha": "2a3a95c20d55ae860c7554bbc0598329410591f6",

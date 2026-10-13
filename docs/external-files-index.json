@@ -2160,13 +2160,87 @@
      "purpose": "the hover auditor's H1 batch-13 handoff on the Drive. NOT cc's and NOT cc's to move or commit; a discovery pointer only.",
      "belongs_in_git": false,
      "declared_by": "cc, on behalf of nobody -- a pointer, not a claim"
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/handoff-fourth-2026-10-14.md",
+     "purpose": "fourth's handoff on the Drive. NOT cc's and NOT cc's to move or commit; a discovery pointer only.",
+     "belongs_in_git": false,
+     "declared_by": "cc, on behalf of nobody -- a pointer, not a claim"
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/SAIRN-handoff-h1-b10.md",
+     "purpose": "a session handoff on the Drive report directory Michael reads. NOT cc's and NOT cc's to move or commit; a discovery pointer only, declared because the push gate requires every file under that directory to be named.",
+     "belongs_in_git": false,
+     "declared_by": "cc, on behalf of nobody -- a pointer, not a claim"
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/SAIRN-handoff-h1-b11.md",
+     "purpose": "a session handoff on the Drive report directory Michael reads. NOT cc's and NOT cc's to move or commit; a discovery pointer only, declared because the push gate requires every file under that directory to be named.",
+     "belongs_in_git": false,
+     "declared_by": "cc, on behalf of nobody -- a pointer, not a claim"
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/SAIRN-handoff-h1-b12.md",
+     "purpose": "a session handoff on the Drive report directory Michael reads. NOT cc's and NOT cc's to move or commit; a discovery pointer only, declared because the push gate requires every file under that directory to be named.",
+     "belongs_in_git": false,
+     "declared_by": "cc, on behalf of nobody -- a pointer, not a claim"
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/SAIRN-handoff-h1-b14.md",
+     "purpose": "a session handoff on the Drive report directory Michael reads. NOT cc's and NOT cc's to move or commit; a discovery pointer only, declared because the push gate requires every file under that directory to be named.",
+     "belongs_in_git": false,
+     "declared_by": "cc, on behalf of nobody -- a pointer, not a claim"
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/handoff-fourth-2026-10-11.md",
+     "purpose": "a session handoff on the Drive report directory Michael reads. NOT cc's and NOT cc's to move or commit; a discovery pointer only, declared because the push gate requires every file under that directory to be named.",
+     "belongs_in_git": false,
+     "declared_by": "cc, on behalf of nobody -- a pointer, not a claim"
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/handoff-fourth-2026-10-12.md",
+     "purpose": "a session handoff on the Drive report directory Michael reads. NOT cc's and NOT cc's to move or commit; a discovery pointer only, declared because the push gate requires every file under that directory to be named.",
+     "belongs_in_git": false,
+     "declared_by": "cc, on behalf of nobody -- a pointer, not a claim"
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/handoff-fourth-2026-10-13.md",
+     "purpose": "a session handoff on the Drive report directory Michael reads. NOT cc's and NOT cc's to move or commit; a discovery pointer only, declared because the push gate requires every file under that directory to be named.",
+     "belongs_in_git": false,
+     "declared_by": "cc, on behalf of nobody -- a pointer, not a claim"
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/handoff-h2-2026-10-11.md",
+     "purpose": "a session handoff on the Drive report directory Michael reads. NOT cc's and NOT cc's to move or commit; a discovery pointer only, declared because the push gate requires every file under that directory to be named.",
+     "belongs_in_git": false,
+     "declared_by": "cc, on behalf of nobody -- a pointer, not a claim"
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/handoff-h2-2026-10-11b.md",
+     "purpose": "a session handoff on the Drive report directory Michael reads. NOT cc's and NOT cc's to move or commit; a discovery pointer only, declared because the push gate requires every file under that directory to be named.",
+     "belongs_in_git": false,
+     "declared_by": "cc, on behalf of nobody -- a pointer, not a claim"
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/handoff-h2-2026-10-12.md",
+     "purpose": "a session handoff on the Drive report directory Michael reads. NOT cc's and NOT cc's to move or commit; a discovery pointer only, declared because the push gate requires every file under that directory to be named.",
+     "belongs_in_git": false,
+     "declared_by": "cc, on behalf of nobody -- a pointer, not a claim"
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/handoff-h2-2026-10-12c.md",
+     "purpose": "a session handoff on the Drive report directory Michael reads. NOT cc's and NOT cc's to move or commit; a discovery pointer only, declared because the push gate requires every file under that directory to be named.",
+     "belongs_in_git": false,
+     "declared_by": "cc, on behalf of nobody -- a pointer, not a claim"
     }
    ],
    "limits": [
     "THIS IS A POINTER BLOCK, NOT AN AUDIT. hank's block was produced by WALKING every declared directory; these two entries were produced by the push gate naming two files and this session confirming they exist. Do not read the block as coverage of anything else on the Drive.",
     "THE TREADMILL IS THE REAL FINDING AND IT IS NOT FIXED HERE. G:/My Drive/SAIRN-status is declared non-transient, so EVERY handoff written there must be named individually or it blocks the next push from every clone. Handoffs arrive there continuously, from five sessions, which means the index is stale the hour after any push that updates it -- f12e6042's own subject says so: \"the SEVENTH Drive handoff, arriving during the push that declared the sixth\". A pattern or date-scoped allowance for that one directory is the structural fix; it is a change to the gate's semantics and was NOT improvised inside a push, it is reported.",
     "SECOND INSTANCE IN ONE SESSION, 40 minutes after the first, and that is the measurement rather than the complaint: the push that declared handoff-h2-2026-10-12b.md and handoff-cody-2026-10-12.md was refused on the NEXT attempt by handoff-hank-2026-10-12.md and handoff-h2-2026-10-12d.md, which had arrived in between. Each push by any clone must name whatever handoffs happen to exist at that second, and the index is wrong again before the push finishes.",
-    "THIRD INSTANCE IN ONE SESSION, AND THE THIRD ONE BLOCKED A COMMAND THAT WAS NOT A PUSH. Declaring two files unblocked one push attempt; the next was refused by two more; the next by SAIRN-handoff-h1-b13.md -- and that refusal came from the PreToolUse half of the gate, which DENIED the whole compound command, so the edit that would have cleared it never ran. Three refusals, five files, one session, zero of them cc's. The count is the argument: a gate that must be fed by hand on every push, for files other sessions write continuously, gets OVERRIDDEN rather than satisfied -- SAIRN_SEED_GATE=off is one keystroke away. A pattern allowance for handoff-shaped names under this ONE declared directory keeps the real teeth (an undeclared TOOL or SCRIPT) and drops the part nobody can keep up with. Reported, not implemented: it is another session's gate."
+    "THIRD INSTANCE IN ONE SESSION, AND THE THIRD ONE BLOCKED A COMMAND THAT WAS NOT A PUSH. Declaring two files unblocked one push attempt; the next was refused by two more; the next by SAIRN-handoff-h1-b13.md -- and that refusal came from the PreToolUse half of the gate, which DENIED the whole compound command, so the edit that would have cleared it never ran. Three refusals, five files, one session, zero of them cc's. The count is the argument: a gate that must be fed by hand on every push, for files other sessions write continuously, gets OVERRIDDEN rather than satisfied -- SAIRN_SEED_GATE=off is one keystroke away. A pattern allowance for handoff-shaped names under this ONE declared directory keeps the real teeth (an undeclared TOOL or SCRIPT) and drops the part nobody can keep up with. Reported, not implemented: it is another session's gate.",
+    "FOURTH INSTANCE IN ONE SESSION: handoff-fourth-2026-10-14.md, arriving while the previous three were being declared. Six files now, across four refusals, none of them cc's. Every number in these notes was read off a real refusal rather than estimated.",
+    "FIFTH REFUSAL, AND THE APPROACH CHANGED HERE. Four of the five were 'the next handoff arrived while you were declaring the last one', so this pass declared EVERY .md present under the directory at once rather than only the file the refusal named: 11 more. That shortens the loop; it does not close it, because a handoff written after this second starts it again. The structural fix is still a pattern allowance for handoff-shaped names under this one directory."
    ]
   }
  }

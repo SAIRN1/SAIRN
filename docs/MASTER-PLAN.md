@@ -78,10 +78,10 @@ The table above names every contributor, which is necessary and is not enough: a
 |---|---|---|---|
 | `suites` | 627 | UNDER-counts | test files on disk attributed to no single app by path |
 | `traced` | 197 | UNDER-counts | test files no source ties to a stated requirement |
-| `fault` | 42 | UNDER-counts | test files that write to a tracked app file and declare neither a MUTATIONS block nor a *_fault_probe.py name |
+| `fault` | 43 | UNDER-counts | test files that write to a tracked app file and declare neither a MUTATIONS block nor a *_fault_probe.py name |
 | `tiered` | 0 | no contribution | binary and complete -- criticality_tier_check either raised something for an app or did not |
 
-**WORST CASE: 866.** RSS for context: 659.
+**WORST CASE: 867.** RSS for context: 659.
 
 **All three contributors err in the SAME direction — they UNDER-count — so this document understates coverage and cannot overstate it.** A budget on a status page that flattered the platform would be worth very little; this one can only ever say "at least this good".
 
