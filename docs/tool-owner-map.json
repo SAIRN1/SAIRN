@@ -8,11 +8,11 @@
   "UNRECORDED": "no OWNER line and no claim, but the file HAS git history -- so ownership is UNRECORDED rather than absent, and `first_commit` -- the commit that INTRODUCED it, which is the routing target -- says where to start. ROUTABLE."
  },
  "_meta": {
-  "claim_commits_read": 2492,
-  "claim_commits_with_files": 370,
+  "claim_commits_read": 2539,
+  "claim_commits_with_files": 389,
   "criteria": "2026-10-07.1",
-  "owner_line": 67,
-  "tools": 1001
+  "owner_line": 76,
+  "tools": 1013
  },
  "_regenerate": "python tools/tool_owner_map.py",
  "_what_this_is": "Who owns each tool, derived from the claim-commit history rather than guessed.",
@@ -126,10 +126,12 @@
    "owner": null
   },
   "tests/claims/run_fileset_matcher_probe.py": {
-   "also_claimed_by": [],
-   "basis": "LAST_CLAIM",
-   "last_claim": "548e73ef",
-   "owner": "cody"
+   "also_claimed_by": [
+    "cody"
+   ],
+   "basis": "CONTESTED",
+   "last_claim": "16504f2c",
+   "owner": "cc"
   },
   "tests/claims/run_fileset_matcher_sabotage_probe.py": {
    "also_claimed_by": [],
@@ -153,6 +155,12 @@
    "also_claimed_by": [],
    "basis": "UNRECORDED",
    "first_commit": "1f25f8bf6613",
+   "owner": null
+  },
+  "tests/claims/run_own_claim_state_probe.py": {
+   "also_claimed_by": [],
+   "basis": "UNRECORDED",
+   "first_commit": "41130c84682e",
    "owner": null
   },
   "tests/claims/run_push_verify_probe.py": {
@@ -423,9 +431,9 @@
   },
   "tests/faults/alf_rule_read_faults.js": {
    "also_claimed_by": [],
-   "basis": "UNRECORDED",
-   "first_commit": "dd0fc32f14ae",
-   "owner": null
+   "basis": "LAST_CLAIM",
+   "last_claim": "09ca7706",
+   "owner": "fourth"
   },
   "tests/faults/dnt_vendor_write_faults.js": {
    "also_claimed_by": [],
@@ -441,9 +449,9 @@
   },
   "tests/faults/grd_write_faults.js": {
    "also_claimed_by": [],
-   "basis": "UNRECORDED",
-   "first_commit": "bfe591a24c6a",
-   "owner": null
+   "basis": "LAST_CLAIM",
+   "last_claim": "c6ae4fb9",
+   "owner": "fourth"
   },
   "tests/faults/run_fault_suite_probe.py": {
    "also_claimed_by": [],
@@ -453,9 +461,9 @@
   },
   "tests/faults/sd_write_faults.js": {
    "also_claimed_by": [],
-   "basis": "UNRECORDED",
-   "first_commit": "a3d8c8551fe5",
-   "owner": null
+   "basis": "LAST_CLAIM",
+   "last_claim": "09ca7706",
+   "owner": "fourth"
   },
   "tests/faults/sv_backup_write_faults.js": {
    "also_claimed_by": [],
@@ -548,10 +556,12 @@
    "owner": null
   },
   "tests/hover_separation_ci_probe.py": {
-   "also_claimed_by": [],
-   "basis": "LAST_CLAIM",
-   "last_claim": "81cf7fbf",
-   "owner": "cody"
+   "also_claimed_by": [
+    "cody"
+   ],
+   "basis": "CONTESTED",
+   "last_claim": "0f41f2da",
+   "owner": "cc"
   },
   "tests/idless_rows_are_reported.js": {
    "also_claimed_by": [],
@@ -567,15 +577,15 @@
   },
   "tests/intake_form_public_surface.js": {
    "also_claimed_by": [],
-   "basis": "UNRECORDED",
-   "first_commit": "95bf15199b87",
-   "owner": null
+   "basis": "LAST_CLAIM",
+   "last_claim": "09ca7706",
+   "owner": "fourth"
   },
   "tests/intake_link_no_credential.js": {
    "also_claimed_by": [],
-   "basis": "UNRECORDED",
-   "first_commit": "508eaa59eed3",
-   "owner": null
+   "basis": "LAST_CLAIM",
+   "last_claim": "09ca7706",
+   "owner": "fourth"
   },
   "tests/intake_link_no_credential_probe.py": {
    "also_claimed_by": [],
@@ -585,9 +595,9 @@
   },
   "tests/intake_no_false_success.js": {
    "also_claimed_by": [],
-   "basis": "UNRECORDED",
-   "first_commit": "c2ac74cd8962",
-   "owner": null
+   "basis": "LAST_CLAIM",
+   "last_claim": "09ca7706",
+   "owner": "fourth"
   },
   "tests/invoice_panel_kpis.js": {
    "also_claimed_by": [],
@@ -669,9 +679,9 @@
   },
   "tests/ld_reports_unreadable.js": {
    "also_claimed_by": [],
-   "basis": "UNRECORDED",
-   "first_commit": "1c667a145b5b",
-   "owner": null
+   "basis": "LAST_CLAIM",
+   "last_claim": "09ca7706",
+   "owner": "fourth"
   },
   "tests/lib/active_credential_stub.js": {
    "also_claimed_by": [],
@@ -792,7 +802,7 @@
   "tests/phi_cache_scoped_to_user.js": {
    "also_claimed_by": [],
    "basis": "LAST_CLAIM",
-   "last_claim": "e651ef53",
+   "last_claim": "09ca7706",
    "owner": "fourth"
   },
   "tests/pricing_single_source.js": {
@@ -831,6 +841,12 @@
    "first_commit": "eeb4cd879543",
    "owner": null
   },
+  "tests/push_gate/_local_remote.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "326f2894",
+   "owner": "cody"
+  },
   "tests/push_gate/check11_probe.py": {
    "also_claimed_by": [],
    "basis": "LAST_CLAIM",
@@ -857,15 +873,15 @@
   },
   "tests/push_gate/check4_probe.py": {
    "also_claimed_by": [],
-   "basis": "UNRECORDED",
-   "first_commit": "db31097d0497",
-   "owner": null
+   "basis": "LAST_CLAIM",
+   "last_claim": "326f2894",
+   "owner": "cody"
   },
   "tests/push_gate/check7_probe.py": {
    "also_claimed_by": [],
-   "basis": "UNRECORDED",
-   "first_commit": "7315b7d4ccdc",
-   "owner": null
+   "basis": "LAST_CLAIM",
+   "last_claim": "326f2894",
+   "owner": "cody"
   },
   "tests/push_gate/check8_probe.py": {
    "also_claimed_by": [],
@@ -1013,9 +1029,9 @@
   },
   "tests/roofing_claim_gate_single_source.js": {
    "also_claimed_by": [],
-   "basis": "UNRECORDED",
-   "first_commit": "7d4cb7928c14",
-   "owner": null
+   "basis": "LAST_CLAIM",
+   "last_claim": "09ca7706",
+   "owner": "fourth"
   },
   "tests/roofing_claim_photo_export.js": {
    "also_claimed_by": [],
@@ -1500,7 +1516,7 @@
   "tests/run_defect_register_probe.py": {
    "also_claimed_by": [],
    "basis": "LAST_CLAIM",
-   "last_claim": "536421ff",
+   "last_claim": "16504f2c",
    "owner": "cc"
   },
   "tests/run_defect_register_reseat_probe.py": {
@@ -1573,6 +1589,12 @@
    "last_claim": "54e29eba",
    "owner": "cc"
   },
+  "tests/run_dup_dom_ids_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "2c4d7ecc",
+   "owner": "cody"
+  },
   "tests/run_eaten_substitution_probe.py": {
    "also_claimed_by": [],
    "basis": "UNRECORDED",
@@ -1601,6 +1623,11 @@
    "also_claimed_by": [],
    "basis": "LAST_CLAIM",
    "last_claim": "2c65ffff",
+   "owner": "cc"
+  },
+  "tests/run_external_file_index_probe.py": {
+   "also_claimed_by": [],
+   "basis": "OWNER_LINE",
    "owner": "cc"
   },
   "tests/run_fact_sheet_regenerates_probe.py": {
@@ -2571,7 +2598,7 @@
     "fourth"
    ],
    "basis": "CONTESTED",
-   "last_claim": "98694d69",
+   "last_claim": "326f2894",
    "owner": "cody"
   },
   "tests/run_tier_a_review_gate_sabotage_probe.py": {
@@ -3194,7 +3221,7 @@
   "tests/sairndesign_po_procurement.js": {
    "also_claimed_by": [],
    "basis": "LAST_CLAIM",
-   "last_claim": "6076262d",
+   "last_claim": "09ca7706",
    "owner": "fourth"
   },
   "tests/sairndesign_pricing.js": {
@@ -3565,9 +3592,9 @@
   },
   "tests/sb_sync_badge_honesty.js": {
    "also_claimed_by": [],
-   "basis": "UNRECORDED",
-   "first_commit": "e4f11fd14e87",
-   "owner": null
+   "basis": "LAST_CLAIM",
+   "last_claim": "09ca7706",
+   "owner": "fourth"
   },
   "tests/sc_credentials_probe.py": {
    "also_claimed_by": [],
@@ -3685,9 +3712,9 @@
   },
   "tests/sd_timesheet_pay_est.js": {
    "also_claimed_by": [],
-   "basis": "UNRECORDED",
-   "first_commit": "11fc0f3092a7",
-   "owner": null
+   "basis": "LAST_CLAIM",
+   "last_claim": "09ca7706",
+   "owner": "fourth"
   },
   "tests/sd_timesheet_pay_est_probe.py": {
    "also_claimed_by": [],
@@ -3829,9 +3856,9 @@
   },
   "tests/st_reports_failure.js": {
    "also_claimed_by": [],
-   "basis": "UNRECORDED",
-   "first_commit": "9bcc24347cb3",
-   "owner": null
+   "basis": "LAST_CLAIM",
+   "last_claim": "09ca7706",
+   "owner": "fourth"
   },
   "tests/stale_row_sweep_control.py": {
    "also_claimed_by": [],
@@ -3840,10 +3867,12 @@
    "owner": null
   },
   "tests/stonedesk_admin_storage_kpi.js": {
-   "also_claimed_by": [],
-   "basis": "LAST_CLAIM",
-   "last_claim": "ba0e26ab",
-   "owner": "cc"
+   "also_claimed_by": [
+    "cc"
+   ],
+   "basis": "CONTESTED",
+   "last_claim": "09ca7706",
+   "owner": "fourth"
   },
   "tests/stonedesk_bare_envelope_actions.js": {
    "also_claimed_by": [],
@@ -3983,6 +4012,12 @@
    "claim_subject_commit": "057430856c82",
    "owner": "cody"
   },
+  "tests/strip_consolidation_pinning.test.js": {
+   "also_claimed_by": [],
+   "basis": "UNRECORDED",
+   "first_commit": "f269a82602d6",
+   "owner": null
+  },
   "tests/style_profile_parity.js": {
    "also_claimed_by": [],
    "basis": "UNRECORDED",
@@ -4009,9 +4044,9 @@
   },
   "tests/sv_storage_guard.js": {
    "also_claimed_by": [],
-   "basis": "UNRECORDED",
-   "first_commit": "1baff64c2c38",
-   "owner": null
+   "basis": "LAST_CLAIM",
+   "last_claim": "09ca7706",
+   "owner": "fourth"
   },
   "tests/sv_witness_probe.py": {
    "also_claimed_by": [],
@@ -4361,6 +4396,11 @@
    "first_commit": "b8e215687dfa",
    "owner": null
   },
+  "tools/commit_tool_entry_check.py": {
+   "also_claimed_by": [],
+   "basis": "OWNER_LINE",
+   "owner": "fourth"
+  },
   "tools/committer_identity_check.py": {
    "also_claimed_by": [],
    "basis": "UNRECORDED",
@@ -4504,7 +4544,7 @@
     "cody"
    ],
    "basis": "CONTESTED",
-   "last_claim": "745855ff",
+   "last_claim": "aff7f8ce",
    "owner": "cc"
   },
   "tools/demo_credentials_check.py": {
@@ -4572,6 +4612,11 @@
    "first_commit": "16fa7251c0de",
    "owner": null
   },
+  "tools/dup_dom_ids_check.py": {
+   "also_claimed_by": [],
+   "basis": "OWNER_LINE",
+   "owner": "cody"
+  },
   "tools/duplicate_global_check.py": {
    "also_claimed_by": [],
    "basis": "CLAIM_SUBJECT_ONLY",
@@ -4625,6 +4670,13 @@
    "also_claimed_by": [],
    "basis": "OWNER_LINE",
    "owner": "cody"
+  },
+  "tools/external_file_index_check.py": {
+   "also_claimed_by": [
+    "hover2"
+   ],
+   "basis": "OWNER_LINE",
+   "owner": "cc"
   },
   "tools/extract_panels.py": {
    "also_claimed_by": [],
@@ -4845,16 +4897,20 @@
    "owner": null
   },
   "tools/hook_integrity_check.py": {
-   "also_claimed_by": [],
-   "basis": "LAST_CLAIM",
-   "last_claim": "3b12f19c",
-   "owner": "hank"
+   "also_claimed_by": [
+    "hank"
+   ],
+   "basis": "CONTESTED",
+   "last_claim": "16504f2c",
+   "owner": "cc"
   },
   "tools/hover_auditor_scope_gate.py": {
-   "also_claimed_by": [],
-   "basis": "LAST_CLAIM",
-   "last_claim": "2aad5fc0",
-   "owner": "cc"
+   "also_claimed_by": [
+    "cc"
+   ],
+   "basis": "CONTESTED",
+   "last_claim": "6df3d52c",
+   "owner": "hover2"
   },
   "tools/hover_eqa_escalation.py": {
    "also_claimed_by": [],
@@ -4891,9 +4947,9 @@
   },
   "tools/hover_separation_ci.py": {
    "also_claimed_by": [],
-   "basis": "UNRECORDED",
-   "first_commit": "46e77c3f4ca7",
-   "owner": null
+   "basis": "LAST_CLAIM",
+   "last_claim": "0f41f2da",
+   "owner": "cc"
   },
   "tools/html_script_check.py": {
    "also_claimed_by": [],
@@ -4969,8 +5025,7 @@
   },
   "tools/jscomments.py": {
    "also_claimed_by": [],
-   "basis": "LAST_CLAIM",
-   "last_claim": "6d5a0c21",
+   "basis": "OWNER_LINE",
    "owner": "fourth"
   },
   "tools/key_collision_check.py": {
@@ -5378,6 +5433,11 @@
    "last_claim": "7511f48b",
    "owner": "cc"
   },
+  "tools/report_sha_check.py": {
+   "also_claimed_by": [],
+   "basis": "OWNER_LINE",
+   "owner": "fourth"
+  },
   "tools/required_write_permission_check.py": {
    "also_claimed_by": [],
    "basis": "OWNER_LINE",
@@ -5543,7 +5603,7 @@
     "cody"
    ],
    "basis": "CONTESTED",
-   "last_claim": "2aad5fc0",
+   "last_claim": "0f41f2da",
    "owner": "cc"
   },
   "tools/sairn_claim_doc_freshness.py": {
@@ -5598,12 +5658,14 @@
   },
   "tools/sairn_push_gate_hook.py": {
    "also_claimed_by": [
+    "cc",
     "cody",
-    "hank"
+    "hank",
+    "hover2"
    ],
    "basis": "CONTESTED",
-   "last_claim": "2aad5fc0",
-   "owner": "cc"
+   "last_claim": "4b0d85e4",
+   "owner": "fourth"
   },
   "tools/sairn_reachability_check.py": {
    "also_claimed_by": [],
@@ -5739,6 +5801,11 @@
    "also_claimed_by": [],
    "basis": "OWNER_LINE",
    "owner": "cody"
+  },
+  "tools/scrutiny_ledger_check.py": {
+   "also_claimed_by": [],
+   "basis": "OWNER_LINE",
+   "owner": "cc"
   },
   "tools/seam_cannot_tell_watch.py": {
    "also_claimed_by": [],
@@ -5893,6 +5960,11 @@
    "last_claim": "e0cf0fd6",
    "owner": "fourth"
   },
+  "tools/temp_state_leak_check.py": {
+   "also_claimed_by": [],
+   "basis": "OWNER_LINE",
+   "owner": "fourth"
+  },
   "tools/temporary_state_check.py": {
    "also_claimed_by": [],
    "basis": "UNRECORDED",
@@ -5971,13 +6043,13 @@
   },
   "tools/tooling_inventory.py": {
    "also_claimed_by": [
-    "fourth",
+    "cc",
     "hank",
     "cody"
    ],
    "basis": "CONTESTED",
-   "last_claim": "745855ff",
-   "owner": "cc"
+   "last_claim": "4b0d85e4",
+   "owner": "fourth"
   },
   "tools/traceability_matrix.py": {
    "also_claimed_by": [],
@@ -6026,6 +6098,11 @@
    "basis": "UNRECORDED",
    "first_commit": "5a92f9a46b8a",
    "owner": null
+  },
+  "tools/verify_citator_feedback.py": {
+   "also_claimed_by": [],
+   "basis": "OWNER_LINE",
+   "owner": "cody"
   },
   "tools/verify_review_gates.py": {
    "also_claimed_by": [],
