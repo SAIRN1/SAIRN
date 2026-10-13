@@ -71,8 +71,17 @@ create table if not exists sairnlaw_audit_log (
   -- population instead of by hand on two tables.
   --
   -- RE-RUNNING THIS FILE DOES NOT WIDEN AN EXISTING TABLE -- `create table if
-  -- not exists` skips it, constraint and all. The ALTER that acts on a live
-  -- table is STEP 0c in that document, and it is already applied.
+  -- not exists` skips it, constraint and all.
+  --
+  -- TWO ALTERs NOW APPLY TO THIS TABLE AND THEY ARE IN DIFFERENT STATES. Said
+  -- plainly, because a reader who saw only the first sentence would conclude the
+  -- list below is live:
+  --   * STEP 0c of docs/2026-10-07-hank-migration-sql-for-michael.md -- the six
+  --     ai_/deadline_/legal_reference values. RUN on 2026-10-13. APPLIED.
+  --   * the block AT THE FOOT OF THIS FILE -- the three credential-lifecycle
+  --     values added 2026-10-13 (b8). NOT RUN AS AT THIS COMMIT. Until it is,
+  --     every deactivation, reactivation and refusal in SAIRNlaw silently
+  --     writes no audit row.
   event_type text not null check (event_type in (
     'login_success', 'login_failed', 'lockout',
     'pin_bootstrap', 'pin_setup',
@@ -84,7 +93,34 @@ create table if not exists sairnlaw_audit_log (
     'ai_reviewed',
     'ai_used_in_filing',
     'deadline_engine',
-    'legal_reference_lookup'
+    'legal_reference_lookup',
+    -- ── THE CREDENTIAL LIFECYCLE, ADDED 2026-10-13 ─────────────────────────
+    -- EVERY DEACTIVATION, REACTIVATION AND REFUSAL IN SAIRNlaw WAS FAILING TO
+    -- WRITE ITS AUDIT ROW, silently. api/law-auth.js's set_active calls the
+    -- shared engine in api/_lib/employee-lifecycle.js, which emits
+    -- `credential_deactivated` / `credential_reactivated` (line 301) and
+    -- `credential_change_refused` on three separate refusal paths (lines 202,
+    -- 214, 267). This CHECK rejected all three, and writeAuditLog is NON-FATAL
+    -- and returns false -- so the calling code carried on, the caller got its
+    -- 200, and the row was simply absent. An audit log that silently drops the
+    -- one event class it exists to record for credentials is worse than no log,
+    -- because its emptiness reads as "nothing happened".
+    --
+    -- MEASURED ACROSS THE WHOLE POPULATION, not just here: ELEVEN api/*-auth.js
+    -- files call lifecycle.setActive, and SAIRNlaw was the ONLY ONE of the
+    -- eleven whose CHECK rejected these three. The other ten already permit
+    -- them. That is why this is a one-table fix and the denominator is stated
+    -- rather than implied.
+    --
+    -- WHY NO CHECKER CAUGHT IT: tools/audit_event_type_check.py resolves helper
+    -- call sites through `const APP`, and it follows ONE helper -- the pin-setup
+    -- one -- which its own LIMITS section says out loud. The lifecycle engine is
+    -- a second helper and is not followed, so these emissions are invisible to
+    -- it. The tool exits 0 today with this gap live. Extending it is routed
+    -- rather than done here: tools/ is cc's.
+    'credential_deactivated',
+    'credential_reactivated',
+    'credential_change_refused'
   )),
   detail jsonb,
   created_at timestamptz not null default now()
@@ -114,3 +150,86 @@ create policy sairnlaw_audit_log_service_insert
   on sairnlaw_audit_log for insert
   to service_role
   with check (true);
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- THE CREDENTIAL-LIFECYCLE WIDENING -- 2026-10-13, ONE IDEMPOTENT BLOCK
+-- ═══════════════════════════════════════════════════════════════════════════
+-- RUN THIS. The `create table if not exists` above does NOT amend an existing
+-- table -- it skips it, constraint and all -- so on the live database the three
+-- values added to the inline list above are not permitted until these two
+-- statements run. A re-run of the file alone reports success and changes
+-- nothing, which is the silent no-op that cost thirteen audit logs their
+-- tamper-evidence until 2026-10-13.
+--
+-- WHAT IS BROKEN UNTIL IT RUNS: every credential deactivation, reactivation and
+-- refusal in SAIRNlaw writes no audit row. The INSERT is rejected 23514,
+-- writeAuditLog is non-fatal and returns false, api/law-auth.js carries on, and
+-- the caller gets a 200. Nothing anywhere says the row is missing.
+--
+-- IDEMPOTENT BY CONSTRUCTION: `drop constraint if exists` makes the `add` safe
+-- on a second run, and the name is the one Postgres generates for the inline
+-- CHECK above.
+--
+-- SAFE AGAINST EXISTING ROWS: the new list is a strict SUPERSET of the old
+-- seventeen, so every stored row satisfies it and the validation scan cannot
+-- fail.
+--
+-- THE FULL LIST IS RESTATED rather than appended to, because `add constraint`
+-- replaces the whole predicate. Dropping a value here REVOKES it, so the
+-- seventeen that were already permitted are all present below -- checked
+-- against the inline CHECK above, not retyped from memory.
+alter table public.sairnlaw_audit_log
+  drop constraint if exists sairnlaw_audit_log_event_type_check;
+alter table public.sairnlaw_audit_log
+  add constraint sairnlaw_audit_log_event_type_check
+  check (event_type in (
+    'login_success',
+    'login_failed',
+    'lockout',
+    'pin_bootstrap',
+    'pin_setup',
+    'mfa_enrolled',
+    'mfa_verified',
+    'mfa_failed',
+    'sso_login',
+    'sso_link',
+    'citator_lookup',
+    'ai_interaction',
+    'ai_rejected',
+    'ai_reviewed',
+    'ai_used_in_filing',
+    'deadline_engine',
+    'legal_reference_lookup',
+    'credential_deactivated',
+    'credential_reactivated',
+    'credential_change_refused'
+  ));
+
+-- ── VERIFY, with the answer each must give ────────────────────────────────
+-- 1. TWENTY event types are permitted. Expect: 20
+select count(*)
+  from pg_constraint c,
+       lateral regexp_matches(pg_get_constraintdef(c.oid), '''([a-z0-9_]+)''', 'g') m
+ where c.conname = 'sairnlaw_audit_log_event_type_check';
+
+-- 2. And the three new ones are among them. Expect exactly 3 rows.
+select m[1] as event_type
+  from pg_constraint c,
+       lateral regexp_matches(pg_get_constraintdef(c.oid), '''([a-z0-9_]+)''', 'g') m
+ where c.conname = 'sairnlaw_audit_log_event_type_check'
+   and m[1] in ('credential_deactivated', 'credential_reactivated',
+                'credential_change_refused')
+ order by 1;
+
+-- 3. THEN PROVE IT END TO END, because a permitted value is not a written row.
+--    Deactivate a non-provisioning SAIRNlaw credential through the API, then:
+--
+--      select event_type, employee_id, created_at
+--        from public.sairnlaw_audit_log
+--       where event_type like 'credential_%'
+--       order by created_at desc limit 5;
+--
+--    One or more rows -> the widening landed AND the emission path works
+--    ZERO rows        -> this block has not been run, or the emission never
+--                        fired. Those are different problems: query 1 tells
+--                        them apart.
