@@ -163,6 +163,41 @@ SKIP_REASONS = (
     (lambda c: c.lower().endswith('.md'),
      'markdown is prose, never a request handler -- and every session worklog '
      'lives at the repo root by convention'),
+    # ── THE BATCH REPORT AND DIGEST (added 2026-10-13, cc) ─────────────────
+    # The clause above says "every session worklog lives at the repo root by
+    # convention" and keys on `.md` because worklogs are markdown. The batch
+    # REPORT and DIGEST are the same class of artefact and are `.txt`, so they
+    # were in scope -- and a report whose whole job is to EXPLAIN a Tier A
+    # finding names the resource it is about.
+    #
+    # MEASURED, NOT ASSUMED, AND THE EVIDENCE IS AN OVERRIDE LOG. This push was
+    # refused for `leg_invoices` and `rf_draws`, named nowhere in its code and
+    # only in SAIRN-report-cc-b4.txt and SAIRN-digest-cc-b4.txt -- one of them
+    # in a sentence reporting a DIFFERENT false positive in this same gate. The
+    # four agents' eight report/digest files are all tracked, all prose, and
+    # docs/BYPASS-LOG.jsonl carries 93 rows whose recent entries are hank using
+    # the BLANKET SAIRN_SEED_GATE=off form, which disables every check in the
+    # push. That is the hollowing-out this gate's own override message warns
+    # about, arriving through a false positive rather than through impatience.
+    #
+    # THE ALTERNATIVES WERE WORSE AND ARE RECORDED SO THEY ARE NOT RETRIED.
+    # Rewording the report to avoid the resource names is rewording to slip a
+    # matcher, on the document whose value IS naming what was found. Opening an
+    # obligation for leg_invoices and rf_draws would record a review of code
+    # this session never touched -- a false entry in the one register that
+    # decides who reviews what.
+    #
+    # SCOPED TO THE NAME, THE EXTENSION AND THE ROOT, all three. A `.txt`
+    # anywhere would be too wide (a fixture or a golden file is not prose), and
+    # the path must carry no separator, so docs/ and tools/ keep their own
+    # classifications. Same "the predicate is about WHAT THE FILE IS" axis as
+    # every clause above.
+    (lambda c: ('/' not in c and '\\' not in c
+                and c.lower().endswith('.txt')
+                and re.match(r'^SAIRN-(report|digest)-', c)),
+     'a batch report or digest is prose about findings -- the same class as the '
+     'worklog above, in .txt rather than .md. A report that EXPLAINS a Tier A '
+     'finding has to name the resource'),
     # ── THE HOVER AUDITOR'S OWN TOOLING (H2 seq 425, added 2026-09-30) ──────
     # This gate tripped TWICE in one session on a resource NAME appearing as a
     # bare token in auditor tooling -- "leg_insurance" in the citation linter's

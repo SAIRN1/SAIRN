@@ -2551,6 +2551,59 @@ finally:
           not os.path.isdir(_rs_base), _rs_base)
 
 
+# ── THE BATCH REPORT / DIGEST CLAUSE (added 2026-10-13) ────────────────────
+# A real refusal, not a hypothetical: this gate blocked the push that landed
+# SAIRN-report-cc-b4.txt and SAIRN-digest-cc-b4.txt on `leg_invoices` and
+# `rf_draws`, named nowhere in that push's code and only in those two prose
+# files -- one of them in a sentence reporting a DIFFERENT false positive in
+# this same gate. docs/BYPASS-LOG.jsonl shows how the other agents have been
+# getting their reports in: 93 rows, the recent ones the BLANKET
+# SAIRN_SEED_GATE=off form, which disables every check in the push. A false
+# positive that forces a blanket override is worse than no gate on that path.
+#
+# THE ARMS BELOW ARE MOSTLY ABOUT THE BOUNDARY, because the clause's whole risk
+# is widening into `.txt` generally -- a fixture or a golden file is not prose.
+check('a batch REPORT at the repo root is prose, not code serving a resource',
+      isinstance(g.skip_reason('SAIRN-report-cc-b4.txt'), str),
+      g.skip_reason('SAIRN-report-cc-b4.txt'))
+check('...and a batch DIGEST is the same class',
+      isinstance(g.skip_reason('SAIRN-digest-hank-b4.txt'), str),
+      g.skip_reason('SAIRN-digest-hank-b4.txt'))
+check('...and the reason says WHY rather than just excluding it',
+      'prose' in (g.skip_reason('SAIRN-report-cc-b4.txt') or ''),
+      g.skip_reason('SAIRN-report-cc-b4.txt'))
+check('BOUNDARY: a .txt that is NOT a report or digest stays IN SCOPE -- the '
+      'clause is a name, not an extension',
+      g.skip_reason('notes.txt') is None, g.skip_reason('notes.txt'))
+check('BOUNDARY: a report-NAMED file in a subdirectory stays IN SCOPE -- a '
+      'fixture under tools/ is not a session worklog',
+      g.skip_reason('tools/fixtures/SAIRN-report-fake.txt') is None,
+      g.skip_reason('tools/fixtures/SAIRN-report-fake.txt'))
+check('BOUNDARY: a report-NAMED file that is not .txt stays IN SCOPE -- the '
+      'extension is load-bearing, because .py with that name would be code',
+      g.skip_reason('SAIRN-report-cc-b4.py') is None,
+      g.skip_reason('SAIRN-report-cc-b4.py'))
+check('BOUNDARY: a WINDOWS-separated subdirectory path is not read as root '
+      'either -- the diff can carry either separator',
+      g.skip_reason('tools\\SAIRN-report-fake.txt') is None,
+      g.skip_reason('tools\\SAIRN-report-fake.txt'))
+check('CONTROL: real serving code is STILL in scope, so none of the above '
+      'widened the gate',
+      g.skip_reason('api/sd-data.js') is None
+      and g.skip_reason('sairnbuild.html') is None)
+# AND THE CLAUSE REALLY BITES END TO END, not just in skip_reason(): a diff
+# naming a Tier A resource inside a report must produce NO obligation.
+_rep_hits = g.touched_tier_a(
+    diff_for('SAIRN-report-cc-b4.txt', "'sc_claims'"), RES)
+check('END TO END: a resource named on a changed line of a report produces no '
+      'obligation',
+      _rep_hits == {}, _rep_hits)
+_code_hits = g.touched_tier_a(
+    diff_for('api/zzz-probe.js', "'sc_claims'"), RES)
+check('CONTROL: the same name in a real code file DOES produce one, so the arm '
+      'above is about the PATH and not about the fixture',
+      list(_code_hits) == ['sc_claims'], _code_hits)
+
 if fails:
     print('%d ARM(S) FAILED:' % len(fails))
     for f in fails:
