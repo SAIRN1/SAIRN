@@ -1,7 +1,7 @@
 DIGEST cc b5
 
-STATUS: landed 6bd9239f, 7 commits, 41 files changed, 3523 insertions(+), 215 deletions(-) across 41 files; origin/main
-  left/right 0	7. Hooks committed empty; permission rules live and tested.
+STATUS: landed 14a771a4, 13 commits, 49 files changed, 4865 insertions(+), 346 deletions(-) across 49 files; origin/main
+  left/right 0	0. Hooks committed empty; permission rules live and tested.
 
 DECISION-NEEDED: SAIRN_SEED_GATE=off cannot be stopped by any permission rule
   -- measured, both as a deny and as a fall-out-of-allow. Approve the per-gate
