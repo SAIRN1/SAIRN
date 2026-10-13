@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# OWNER: cody
 """unproven_arm_check.py -- a suite must not exit 0 while an arm is UNPROVEN.
 
 SPEC: docs/2026-10-13-cody-b6-routed-to-cc.md section 2, written in b6 which

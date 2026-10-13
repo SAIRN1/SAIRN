@@ -71,6 +71,26 @@ import subprocess
 import sys
 import tempfile
 
+# -- THE LIVE-CLONE GUARD (cody, b7) -----------------------------------------
+# Imported by path rather than by package, because tools/ is not a package and
+# this file is run as a script from several directories. A LOAD FAILURE STOPS
+# THIS TOOL rather than silently un-guarding it: PR 1.11, a check that depends
+# on another tool fails CLOSED when that tool is absent.
+import importlib.util as _ilu
+import os as _os  # local alias: this block must not depend on WHERE it
+                  # was inserted relative to the file's own imports.
+_guard_path = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)),
+                            'git_config_isolation.py')
+_spec = _ilu.spec_from_file_location('_sairn_git_iso', _guard_path)
+if _spec is None or _spec.loader is None:
+    print('COULD NOT RUN: tools/git_config_isolation.py is not loadable, so')
+    print('this tool cannot prove it is isolated from the live clone.')
+    raise SystemExit(2)
+_iso_mod = _ilu.module_from_spec(_spec)
+_spec.loader.exec_module(_iso_mod)
+_require_isolation = _iso_mod.require_isolation
+
+
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SUBJECT = os.path.join('api', 'sd-data.js')
 # `[ \t]*` AND NOT `\s*`, AND THE DIFFERENCE COST A GATE. `\s` includes the
@@ -195,6 +215,16 @@ def main(argv):
 
     wt = tempfile.mkdtemp(prefix='sairn-abl-')
     shutil.rmtree(wt, ignore_errors=True)
+    # -- FAIL CLOSED BEFORE TOUCHING THE LIVE CLONE (cody, b7) -------------
+    # MEASURED, not theorised: `python tools/guard_ablation.py --help` run
+    # bare on 2026-10-13 created .git/worktrees/sairn-abl-8c6o2uub in the LIVE
+    # clone and, killed mid-run, LEFT IT THERE. git status never showed it,
+    # `git worktree prune` would not take it while its temp directory existed,
+    # and a stale entry makes the NEXT add refuse -- so one dead probe blocks
+    # an unrelated run. require_isolation() is SILENT under
+    # tools/git_config_isolation.py and exits 2 COULD NOT RUN otherwise, which
+    # is a refusal nobody can read as a clean sweep.
+    _require_isolation(REPO, 'guard_ablation.py')
     add = subprocess.run(['git', '-C', REPO, 'worktree', 'add', '-q',
                           '--detach', wt, 'HEAD'], capture_output=True, text=True, encoding='utf-8', errors='replace')
     if add.returncode != 0:

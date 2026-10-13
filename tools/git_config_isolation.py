@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# OWNER: cody
 """git_config_isolation.py -- run a probe so it CANNOT leave this clone's git
 administrative state changed, and prove it rather than trust it.
 
