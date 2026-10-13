@@ -1,0 +1,749 @@
+REPORT cody b6
+
+================================================================================
+0. SHAPE, AND THE ONE THING THAT DID NOT HAPPEN
+================================================================================
+
+Batch 27 b6, 2026-10-13. Six items plus the final item.
+
+ITEMS 1, 2, 3, 4 AND 5 ARE DONE. ITEM 6 IS NOT: THE PUSH WAS REFUSED.
+Two gate checks refused it, both true, and the batch's standing instruction is
+to record the exact text and stop rather than unblock. The verbatim refusal is
+section 7. SAIRN_SEED_GATE=off was never used.
+
+So the headline is: four commits sit locally at 009ff176, 4 ahead / 0 behind,
+NOT on origin/main. Everything below that describes a result describes a result
+in a local branch.
+
+HASH RULE, stated so the SHA line can be checked rather than trusted: line 1 is
+the title, the LAST line is END-OF-REPORT, the SECOND-TO-LAST is the SHA256. The
+BODY is every byte from line 2 through the line immediately before the SHA line,
+LF, UTF-8. Recompute with:
+  python -c "import hashlib,io;L=io.open('SAIRN-report-cody-b6.txt',encoding='utf-8',newline='').read().split(chr(10));b=chr(10).join(L[1:-3]);print(hashlib.sha256(b.encode()).hexdigest())"
+
+SCOPE HELD EXACTLY. Every code change is under tests/. Nothing in api/, tools/
+or any PRE-EXISTING docs/ file was edited; the three docs/ files in the diff are
+new and mine. .claude/settings.json was never touched and hooks were never
+restored. Michael's two decisions were applied and not revisited: paralegals
+stay denied on law_portalmessages and trust reconciliation stays owner-only.
+
+================================================================================
+1. EVIDENCE BLOCK -- SCRIPT OUTPUT, VERBATIM
+================================================================================
+
+B6 EVIDENCE
+  HEAD        : 009ff176e9cdb3bcc85bd16f9604577929e3cb90
+  range base  : 618cbd9fb723
+  ahead/behind: 4	0
+
+COMMITS (first-parent)
+  009ff176 docs(handoff): cody b6 -- written at a settled point, with the push refused and recorded rather than un
+  672f61ca Merge remote-tracking branch 'origin/main'
+  5f7bc94f docs(b6): the save_reviews retry routed to cc, and a blameless note on how three arms shipped UNPROVEN
+  c465743b fix(tests): the arm that reported a two-writer race with one writer dead, and the three arms that shipp
+  (4 commit(s))
+
+DIFF STAT 618cbd9fb723..HEAD, THIS BATCH OWN PATHS ONLY
+     236 +       0 -  docs/handoff-cody-2026-10-13b.md
+     202 +       0 -  docs/2026-10-13-cody-b6-routed-to-cc.md
+     186 +       0 -  docs/2026-10-13-cody-b6-methodology-unproven.md
+     122 +      12 -  tests/push_gate/check4_probe.py
+     121 +       2 -  tests/run_tier_a_review_gate_probe.py
+      90 +      17 -  tests/push_gate/check7_probe.py
+  6 file(s) changed, 957 insertion(s), 31 deletion(s)
+
+TEST COUNTS -- each program run ALONE, exit code read on its own line
+  exit=0  run_tier_a_review_gate_probe.py    [default]  ALL ARMS PASS
+          retry count: 0
+  exit=0  check4_probe.py                    [local-remote]  CHECK 4 VERIFIED
+  exit=0  check7_probe.py                    [local-remote]  check7_probe: 13 checks, 0 failed
+
+MEASUREMENTS QUOTED BY ITEM
+  items 1-2 fail-first (old shape)     RED in 31 of 40
+  items 1-2 fail-first (with retry)    GREEN in 40 of 40
+  item 3 fail-first arms               ALL 10 ARMS PASS
+  item 3 seam measurement              96 clean, 0 not-forwarded, 19 could-not-tell, exit 2
+  item 6 inventory at origin/main      --check exits 0
+  items 1-2 suite runs                 6 run(s), exit codes {'0': 6}
+    logs with a swallowed traceback    0 of 6
+
+ARMS IN THE UNPROVEN STATE, ACROSS ALL THREE SUITES: 0.
+  check4_probe.py   arm-in-that-state 0   bare mentions in prose 1
+  check7_probe.py   arm-in-that-state 0   bare mentions in prose 2
+  gate probe        arm-in-that-state 0   bare mentions in prose 0
+
+AND MY FIRST DETECTOR FOR THAT LINE WAS WRONG, WHICH IS WORTH THE SPACE. It
+matched the WORD "UNPROVEN" and fired on both probes -- on prose that says the
+arms are NOT unproven. That is EXACTLY the false-positive shape
+docs/2026-10-13-cody-b6-methodology-unproven.md names in advance for the checker
+it specs ("a file that merely mentions UNPROVEN in prose must not trip it"). I
+wrote the warning and then tripped over it inside the hour. The detector now
+matches the two CONSTRUCTS b5 actually used to announce the state, not the word.
+
+================================================================================
+2. ITEMS 1 AND 2 -- ARM 11 WAS ANNOUNCING A RACE IT HAD NOT RUN
+================================================================================
+
+tests/run_tier_a_review_gate_probe.py arm 11 claims "two concurrent saves leave
+a file that still PARSES". `_saver` called save_reviews() with NO try/except.
+
+On POSIX, rename(2) is atomic and a concurrent rename onto one destination is
+safe. ON WINDOWS os.replace is MoveFileEx(MOVEFILE_REPLACE_EXISTING), which
+fails ERROR_ACCESS_DENIED when the destination is held open -- INCLUDING by
+another MoveFileEx in flight on the same target. So the arm creates precisely
+the condition Windows does not guarantee.
+
+THE EXCEPTION THEN WENT NOWHERE. Raised inside a thread, printed by `threading`,
+process exit code untouched -- and BOTH assertions still PASSED, because the
+SURVIVING writer left a file that parses with no leftovers.
+
+MEASURED, NOT INFERRED:
+  b5, the race driven in isolation, 400 iterations   305 raised PermissionError
+  b5, this suite, consecutive runs                   12 of 12 carried the
+                                                     traceback; all 12 exited 0
+  b6, the new arm's condition on the OLD saver        RED in 31 of 40 iterations
+  b6, the same condition with the retry               GREEN in 40 of 40
+  b6, this suite after the fix, 6 runs                0 tracebacks, exit 0 x6,
+                                                      0 or 1 retries per run
+
+AND ON THE SAME RED ITERATION the old arm's two conditions were parses=True and
+leftovers=[] -- which is exactly why it was invisible for as long as the arm has
+existed. The fail-first driver prints both facts from the same run so the pair
+cannot be read apart.
+
+SAFETY AND LIVENESS ARE KEPT APART, AND THAT DISTINCTION IS THE FINDING.
+Safety held throughout: a reader never sees half a file, which is the property
+the arm exists to prove and the one whose absence once blocked every push on the
+platform. What failed is LIVENESS -- one of two writers ERRORS instead of
+completing. That is a missing retry in save_reviews, in tools/, which this batch
+does not own.
+
+WHAT LANDED IN tests/:
+  - each writer retries its own save on PermissionError BY NAME. A bare
+    `except Exception` would swallow the next real defect in save_reviews
+    exactly as the missing one swallowed this
+  - a NEW arm, FIRST, asserts BOTH writers completed -- the one the old code was
+    silently failing
+  - a second asserts no writer failed for an unrecognised reason
+  - the retry cap is 20, and the bound is a decision: against the measured ~76%
+    per-attempt failure rate that puts exhaustion near 1e-11, so exhaustion is a
+    signal rather than noise. UNBOUNDED is named as wrong in the code -- it
+    turns a deadlock into a hang, which PR 1.12 forbids
+  - the retry COUNT is PRINTED and deliberately NOT asserted. Zero is correct on
+    POSIX and nonzero on Windows, so failing on either would make the suite red
+    on one platform for something that is not a defect in this repo
+
+ARM 12 HAD THE SAME HOLE WITH A WORSE FAILURE MODE. `_opener` was also unguarded,
+and arm 12's expected answer is `len(names) == 1` -- WHICH A DEAD WRITER ALSO
+SATISFIES. So it could report "two concurrent --open calls lose one record
+because both read before either writes" when one of them never wrote at all. A
+true conclusion reached from the wrong evidence is the hardest kind to notice,
+because nothing looks wrong. Fixed the same way, with its own both-writers arm
+placed first.
+
+ROUTED, NOT FIXED -- THE PRODUCT HALF. save_reviews still has no retry, and
+--open, --discharge and --reseat-shas all end there, so two sessions landing
+together means one record is simply not written. Paste-ready patch, with
+PermissionError by name, re-raise on exhaustion and the cap reasoned:
+docs/2026-10-13-cody-b6-routed-to-cc.md section 1. AND THE MEASUREMENT IT OWES
+IS ALREADY INSTRUMENTED: the probe prints the retry count its own threads
+needed, so with the fix in save_reviews that count should fall to 0 on every
+run. If it does not, the fix is not working and the probe says so without
+anyone adding an arm.
+
+================================================================================
+3. ITEM 3 -- THE THREE ARMS ARE REAL PASSES, IN BOTH REMOTE MODES
+================================================================================
+
+b5 made a foreign refusal a fourth state and reported the arms UNPROVEN. That
+was honest and not good enough: UNPROVEN is an ABSENCE of information and the
+information was available the whole time.
+
+CHECK 4's ARM 1 now runs tools/sairn_seam_check.py DIRECTLY. The gate shells out
+to exactly that script, so the answer is check 4's own verdict on this change,
+first-hand, with no other check able to speak over it.
+
+AND THE CRITERION IS THE NOT-FORWARDED COUNT, NOT THE EXIT CODE. That was found
+by running it, not by reading it: the seam checker exits 2 on ANY tree in this
+repo, because 19 endpoint/engine pairs are genuinely unparseable -- roleSet()
+destructures its input, so the tool cannot see the reads -- and it refuses to
+call those a pass. The GATE treats exit 2 as ALLOW with a disclosed note (its
+own comment: "blocking on it would make an unanalysable shape unshippable") and
+denies only on exit 1. So keying the arm on the exit code would have made it red
+for ever over a repo-wide backlog that has nothing to do with the fixture.
+
+  MEASURED: 96 clean, 0 NOT-FORWARDED, 19 could-not-tell, exit 2.
+
+The 19 are DISCLOSED in the arm's own output rather than dropped, and a
+consistency arm fails if the direct run and the gate disagree -- two sources that
+disagree is a third failure, not a pass on whichever is convenient.
+
+CHECK 7's ARMS 1 AND 2 now call preauth_oracle_check.scan() -- the same function
+the gate imports and calls, not a reimplementation. scan() returns
+(rel, boundary, found) and both arms come out of it: `boundary is None` means
+the file has no auth boundary at all, which is what failing open MEANS here; and
+`found` carries every refusal above the boundary tagged ORACLE or DISCLOSURE,
+with check 7 blocking on the DISCLOSURE tier.
+
+ARM 2 IS THE SHARPER OF THE TWO AND IT IS WHY `boundary` IS CHECKED AND NOT ONLY
+THE FINDING LIST. An empty list is produced BOTH by a clean file AND by one
+whose boundary could not be located, because scan() returns early in that case.
+Reading an empty list as a pass would be a checker that is silent because it
+never looked -- the exact shape check 7 exists to refuse one level down.
+
+FAIL-FIRST FOR ALL THREE, 10 ARMS, DRIVEN AGAINST PLANTED FIXTURES:
+  a DISCLOSURE-tier refusal above the boundary        -> arm 1 FIRES
+  a file with no auth call at all                     -> arm 2 FIRES
+  ...AND ITS FINDING LIST IS EMPTY ON THAT SAME FIXTURE, which is the proof
+     arm 2 is needed rather than an argument for it
+  the clean fixture                                   -> both SILENT
+  the seam summary line parses, not-forwarded is 0, exit IS 2, and the
+  could-not-tell count is NONZERO -- so the arm discloses a real number rather
+  than a zero that happens to look clean
+
+AND MY FIRST DISCLOSURE FIXTURE SCORED **ORACLE**, SO THE ARM CORRECTLY REFUSED
+TO CALL IT A FIRE. The tier rule is `len(set(names)) >= 2 or JOINED_RE.search`,
+and my message held the whole verb list inside ONE quoted string -- one name,
+ORACLE tier. The real shape in this codebase builds it with `.join(', ')`. A
+fixture that does not reach the tier it claims to plant is a plant that plants
+nothing, and the arm saying so is the arm working.
+
+A SECOND COULD-NOT-READ-THE-PUSH MARKER WAS ALSO NEEDED, because without it the
+PLANTED arms reported FAILED on a run where the check was never reached.
+register_feed_gate denies with "stdin is not a terminal and carried NO ref
+lines", and its own text says what that means: "the push was issued from inside
+a SHELL SCRIPT, a pipe or any other wrapper ... a nested `git push` inside a
+script does not reproduce it ... ISSUE THE PUSH DIRECTLY -- that is the fix, and
+THERE IS NOTHING WRONG WITH THE CHANGE." A probe drives every push from Python,
+so it is permanently in that case. That is the gate COULD NOT READ THE PUSH --
+the same third state RANGE_UNREADABLE already names -- and not a verdict about
+check 4 or check 7.
+
+VERDICTS, BOTH MODES, NOTHING UNPROVEN:
+  local bare remote   check4 exit 0  CHECK 4 VERIFIED True
+                      check7 exit 0  13 checks, 0 failed
+  default (real)      check4 exit 0  CHECK 4 VERIFIED True
+                      check7 exit 0  13 checks, 0 failed
+
+================================================================================
+4. ITEM 5 -- THE METHODOLOGY NOTE, AND THE RULE IT PROPOSES
+================================================================================
+
+docs/2026-10-13-cody-b6-methodology-unproven.md. Blameless, about my own arms,
+and it does not treat the b5 step as a mistake -- it treats it as a correct local
+decision with a bad global property, which is the class that trying harder does
+not catch.
+
+THE DEFECT IN ONE SENTENCE: b5 added a third ARM-LEVEL verdict without touching
+the two-state machinery that turns arms into an EXIT CODE, so both suites exited
+0 -- the code every runner and hook reads as "this passed" -- while an arm had
+not been evaluated at all.
+
+FOUR CAUSES, NONE OF THEM CARELESSNESS:
+  (a) the new state lived at the arm level and the exit code lives at the suite
+      level. `fails` was the only list, so an arm that was neither pass nor fail
+      appeared in neither and the summary arithmetic could not see it
+  (b) the comparison I made was b5-vs-b4, by which it was real progress.
+      The comparison that mattered was b5-vs-what-a-reader-of-the-exit-code
+      concludes. Improving on the previous state is not reaching a sound one,
+      and the first is much easier to feel satisfied by
+  (c) the disclosure was LOAD-BEARING and prose does not scale. The note was at
+      the top, in the verdict line, and beside the count -- every one of them a
+      human-readable string, while the whole-tree runner reads exit codes
+  (d) THE INFORMATION WAS AVAILABLE AND NOBODY ASKED. Both checks are scripts
+      this repo ships. I spent b5 reasoning about how to report not knowing
+      rather than whether the thing was knowable. Three times out of three it
+      was
+
+THE CASE FOR ALLOWING EXIT 0 IS STATED FAIRLY BEFORE IT IS REJECTED, because it
+is the position I was implicitly holding and it is not stupid: an arm blocked by
+another session's Drive file is not a defect in this repo, and a suite that is
+red for an unfixable reason GETS DISABLED -- which this platform has recorded
+repeatedly and is the whole reason dup_dom_ids_check.py and
+sairn_reachability_check.py ship report-only.
+
+IT LOSES ANYWAY. Exit 0 is consumed by machines and prose is not, so any state
+the code cannot carry is one the automation cannot see -- and the disclosure
+protects only a reader who was going to read the log, the case that needed
+protecting least. From outside it is indistinguishable from a suite that passed,
+which is the same fold this repo refuses everywhere else under "could-not-run is
+never folded into passed". And exit 3 already existed and already meant this; I
+did not need a new state, I needed the existing one to carry a COUNT instead of
+replacing the whole run.
+
+THE RULE:
+  A suite must not exit 0 while any arm is UNPROVEN. An arm that could not be
+  evaluated is not a passing arm. A suite with unproven arms exits 3, and its
+  summary line states the unproven count beside the pass and fail counts.
+  UNPROVEN must be COUNTED, not printed -- a state the summary arithmetic cannot
+  see is a state the exit code cannot reflect, which is this whole finding in
+  one sentence.
+  An arm may be unproven at most ONCE. Twice means the evidence is not
+  intermittently unavailable, it is unavailable.
+  And before adding the state at all, ask whether the component can be asked
+  directly.
+  IT DOES NOT FORBID UNPROVEN. An honest third state beats a false pass and a
+  false failure. It forbids exit 0 while one exists.
+
+THE CHECK SPEC, ROUTED TO CC, NOT BUILT (docs/2026-10-13-cody-b6-routed-to-cc.md
+section 2): tools/unproven_arm_check.py, report-only, three signals -- A1 a file
+using UNPROVEN whose summary print carries no unproven count (the exact b5
+defect); A2 a sys.exit(0) reachable with an unproven arm recorded; A3 the
+inverse, a file printing a count it never sets. With the control pair and the
+current-count measurement this repo requires of any new gate, and the
+false-positive shape named IN ADVANCE -- which I then tripped over myself, see
+section 1.
+
+THE LINE THE RULE MUST NOT CROSS, also in the note: a checker may be
+deliberately NON-BLOCKING -- dup_dom_ids_check.py is, in writing, with a reason
+-- but it may not be deliberately INACCURATE. The defect was an exit code that
+said something untrue about its own run.
+
+AND THE COST, HONESTLY: nothing shipped wrong, no gate was weakened, no
+production behaviour changed, and all three arms turned out to be passing. The
+cost was a batch's worth of confidence in the wrong place, and the gap between
+reading the report and reading the exit codes was one print() wide.
+
+================================================================================
+5. WHAT WAS NOT DONE, AND WHY -- THE DECIDED ITEMS
+================================================================================
+
+PARALEGALS STAY DENIED ON law_portalmessages. Michael's decision, applied as
+given. No code, no test and no document was changed for it, and no further work
+was done on it. The row in api/_lib/law-roles.js already carries the reasoning
+and the flag; the flag stands as the stated default rather than as an open
+question.
+
+TRUST RECONCILIATION STAYS OWNER-ONLY. Same -- no change, no further work.
+api/sd-data.js's own comment recording it as "the open question, not a rejected
+one" is now answered, and answered in the direction of the existing behaviour.
+
+Neither was revisited, re-argued or re-measured in this batch.
+
+================================================================================
+6. WHAT IS NOT VERIFIED
+================================================================================
+
+- NOT PUSHED. Nothing in b6 is on origin/main. Every result above is about a
+  local branch at 009ff176, 4 ahead / 0 behind.
+- NO LIVE REQUEST to any deployed endpoint. The sairnlaw role gate from b5 was
+  not live-verified in b6 either.
+- NO DATABASE. sql/sairnlaw_citator_schema.sql was NOT run, and
+  tools/verify_citator_feedback.py was not run against it. Guardian Check 29
+  remains unsatisfied for the b4 cl_feedback_log change.
+- THE save_reviews RETRY IS ROUTED, NOT WRITTEN. Every real caller is still
+  exposed to the liveness defect; only the probe's own threads retry.
+- tools/unproven_arm_check.py DOES NOT EXIST and its current-count measurement
+  has not been taken. Building it was explicitly out of scope.
+- THE 19 COULD-NOT-TELL SEAMS ARE DISCLOSED, NOT RESOLVED. check 4's arm passes
+  on the criterion the gate actually blocks on; it does not claim those 19 pairs
+  are fine.
+- THE RETRY COUNT OF 0 IN SECTION 1 IS ONE RUN. Across six runs it was 0 or 1.
+  A single 0 is not evidence the Windows failure has stopped happening.
+
+================================================================================
+7. ITEM 6 -- THE PUSH REFUSAL, VERBATIM
+================================================================================
+
+Command: git push origin main
+Branch at the time: main...origin/main [ahead 3, behind 0], HEAD 672f61ca.
+The PreToolUse gate denied the command, so no redirect ran; this is transcribed
+unchanged from the tool result. Also preserved at
+<scratch>/b6/REFUSAL-VERBATIM.txt.
+
+SAIRN_SEED_GATE=off WAS NOT USED. The override line is part of the gate's own
+output and is reproduced because it is part of the refusal, not because it was
+taken.
+
+--------------------------------------------------------------------------------
+Blocked: 2 check(s) refused this push, and all 2 are true right now.
+The gate used to stop at the first, so each one cost a separate rebase
+and retry. Every reason follows.
+
+EXTERNAL FILE INDEX: a tool, script or handoff sits in a DECLARED external
+  directory and is neither git-tracked nor named in docs/external-files-index.json.
+EXTERNAL FILE INDEX -- criteria 2026-10-08.2
+criteria lock: 15/15 fixtures classify correctly
+
+  index                 docs\external-files-index.json
+  agents declared       7
+  dirs declared        11  (9 transient, 0 recursive)
+  files declared       33
+  git-tracked paths   3395
+  TRACKED              0
+  INDEXED             24
+  TRANSIENT            0
+  UNINDEXED            1
+
+1 UNINDEXED work file(s) under a declared external directory. Each is a tool,
+script or handoff that no other session can find:
+  ! g:\my drive\sairn-status\handoff-fourth-2026-10-16.md
+
+Either commit it, or add it to docs\external-files-index.json with a purpose.
+
+  Either commit it, or declare it with a purpose. A handoff nobody can find is
+  worse than no handoff -- the next session reads the one it CAN find.
+
+------------------------------------------------------------------
+
+Blocked: this push makes a GENERATED document stop matching what it is
+derived from. It was clean at the base commit and is not at this tip,
+so this push is what changed the answer.
+
+  docs/TOOLING-INVENTORY.md -- no longer matches its sources
+        recorded NOT-promoted decisions     86   report_only_checks.NOT_PROMOTED
+        numbered gate checks                17   tools\sairn_push_gate_hook.py
+      every leg closed. NOTE: a closed traverse is not a correct survey --
+      it means no source is MISSING, not that any source is RIGHT.
+      FAIL: docs\TOOLING-INVENTORY.md no longer matches the repo -- a tool was added, promoted, wired or removed and the document was not regenerated. That is a finding, not a document somebody forgot.
+          python tools/tooling_inventory.py
+      fix: python tools/tooling_inventory.py
+
+Exit 1 and exit 2 are different problems and the fix differs. 1 means
+regenerate. 2 means the generator's HAND-WRITTEN half has drifted -- a
+tool this push adds with no entry describing it -- and it refuses rather
+than emitting a blank cell. A refusal also FREEZES every unrelated
+correction behind it, which is why it blocks here instead of waiting.
+
+This check refuses only what THIS push broke. A document left stale by
+somebody else is reported above and does not block you.
+Override by putting SAIRN_SEED_GATE=off at the FRONT of the push command itself (SAIRN_SEED_GATE=off git push ...), not in a separate export. Say so out loud if you do.
+--------------------------------------------------------------------------------
+
+7.1 THE ATTRIBUTION, TESTED RATHER THAN ACCEPTED
+
+The gate says the inventory "was clean at the base commit and is not at this
+tip, so this push is what changed the answer." That needed testing, because my
+commits touch ONLY tests/ and add no tools/ file:
+
+  git diff --name-only over my own commits ->
+      tests/push_gate/check4_probe.py
+      tests/push_gate/check7_probe.py
+      tests/run_tier_a_review_gate_probe.py
+  git diff --diff-filter=A -- tools/ over my own commits -> (empty)
+
+  tooling_inventory.py --check at origin/main (618cbd9f) ALONE, in a throwaway
+  clone WITHOUT my commits:  exit 0, "OK: docs\TOOLING-INVENTORY.md matches the
+  repo."
+
+  Each of my commits walked in a throwaway clone:
+      c465743b  FAIL   fix(tests): the arm that reported a two-writer race ...
+      5f7bc94f  FAIL   docs(b6): the save_reviews retry routed to cc ...
+      672f61ca  FAIL   Merge remote-tracking branch 'origin/main'
+
+  So the FIRST commit -- three tests/ files -- flips it.
+
+WHY: the generator's own declared legs include "tools invoked by tests/ -- 232 --
+tests/**/*.py, *.js". Item 3 made check4_probe.py invoke
+tools/sairn_seam_check.py and check7_probe.py import
+tools/preauth_oracle_check.py directly, so the WIRING CLASSIFICATION of those
+two tools genuinely changed. THE GATE IS RIGHT, the refusal is earned, and the
+remedy is one command.
+
+7.2 WHY IT WAS NOT RUN
+
+Both remedies are docs/ edits. b6's scope is "edit only tests/; route anything
+in api/, tools/ or docs/ to its owner", and the batch says "if a push is
+refused, record the exact text and stop." Both instructions point the same way,
+so the refusal was recorded and the push stopped. Nothing was overridden, no
+docs/ file was regenerated, and the four commits lose nothing by sitting.
+
+7.3 THE EXACT NEXT STEP, ONE COMMAND EACH
+
+  python tools/tooling_inventory.py        # regenerate; the drift is b6's own
+  # then declare fourth's handoff-fourth-2026-10-16.md in
+  #   docs/external-files-index.json  (the 16th row of the standing Drive loop,
+  #   not caused by b6)
+  git push origin main
+
+Whoever lands these four commits should run the regeneration IN THE SAME PUSH,
+because the drift is b6's and will follow the commits wherever they go.
+
+================================================================================
+8. ITEM 4 -- sql/sairnlaw_citator_schema.sql, IN FULL, AND THE ONE-STEP SEQUENCE
+================================================================================
+
+8.1 THE SEQUENCE FOR MICHAEL, ONE STEP AT A TIME
+
+  STEP 1.  In the Supabase SQL editor, paste and run the ENTIRE file in 8.2.
+           It is `create table if not exists` plus `alter table ... add column
+           if not exists` throughout, so it is SAFE TO RE-RUN on an install that
+           already has it.
+           WATCH FOR THE SILENT HALF: the Supabase SQL editor returns success
+           for the statements it DID run, so a multi-statement paste can apply
+           partway and look complete. Step 2 is what catches that.
+
+  STEP 2.  Confirm the two attribution columns exist, reading only:
+
+             python tools/verify_citator_feedback.py --check-only
+
+           Expect exit 0. Exit 1 means the alter-table did not land -- re-run
+           step 1. Exit 2 means it could not tell, which is NOT a pass.
+
+  STEP 3.  Prove a real write in both directions -- with a session and without
+           one -- and read both rows back:
+
+             python tools/verify_citator_feedback.py --write
+
+           This writes TWO real rows into cl_feedback_log, marked
+           ZZ-VERIFY-SEQ951 in their note. It does not delete them; they are
+           real rows in a global cache and removing them is a separate
+           decision.
+
+  Guardian Check 29 is NOT satisfied until step 3 passes. Steps 1 and 2 alone
+  prove the columns exist, not that a value is stored.
+
+  Env required by steps 2 and 3: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.
+  With either unset the script exits 2 and says "nothing was read and nothing
+  was written ... a missing credential is not evidence that the schema is
+  correct."
+
+  NOT RUN IN THIS BATCH. The SQL was not executed and the verification script
+  was not run against a database.
+
+8.2 THE FILE, VERBATIM (sql/sairnlaw_citator_schema.sql, 233 lines)
+
+-- sql/sairnlaw_citator_schema.sql
+-- SAIRNlaw legal-research citator -- Supabase schema
+--
+-- DELIBERATELY GLOBAL, NOT license_hash-scoped (unlike every other table in
+-- this repo's sd-data.js-pattern schemas). Whether a case has been followed,
+-- distinguished, questioned, or overruled is a fact about public case law --
+-- identical regardless of which firm on the platform is asking. Scoping this
+-- cache per-license would mean every firm separately burns CourtListener's
+-- real (and very small -- 5/min, 50/hr, 125/day on the free authenticated
+-- tier, confirmed live 2026-08-08) rate limit re-discovering the same public
+-- facts. A shared cache means the FIRST firm to look up a popular case pays
+-- the CourtListener/Claude cost once; every other firm on the platform gets
+-- it free from cache after that. This is the correct architecture given the
+-- real rate-limit constraint, not a shortcut.
+--
+-- The one thing that IS per-firm/per-attorney is the feedback log (who
+-- confirmed/corrected which classification) -- that table alone carries
+-- license_hash, for attribution, while still feeding into a GLOBAL
+-- confidence signal (see cl_citing_treatments.feedback_confirm_count /
+-- feedback_correct_count below).
+--
+-- SECURITY MODEL: service-role only, RLS enabled, no anon policy -- same as
+-- every other table in this repo. api/courtlistener.js and
+-- api/legal-citator.js are the only doors in.
+
+create extension if not exists pgcrypto;
+
+-- One row per CourtListener opinion cluster (a "case") that's ever been
+-- looked up through the citator, caching the case-identifying metadata so
+-- repeat lookups don't re-hit CourtListener's search/cluster endpoints.
+create table if not exists public.cl_case_cache (
+  id                uuid primary key default gen_random_uuid(),
+  cl_cluster_id     bigint not null,               -- CourtListener cluster_id
+  case_name         text not null,
+  citation          text,                          -- primary reporter citation string, e.g. "384 U.S. 436"
+  court_id          text,                           -- CourtListener court_id, e.g. "scotus"
+  court_name        text,
+  date_filed        date,
+  cite_count        integer,                        -- CourtListener's own reported citeCount at last refresh
+  last_refreshed_at timestamptz not null default now(),
+  created_at        timestamptz not null default now(),
+  unique (cl_cluster_id),
+  constraint clcache_data_size check (octet_length(case_name) <= 2000)
+);
+create index if not exists idx_clcache_cluster on public.cl_case_cache(cl_cluster_id);
+
+-- CourtListener's own court table, mirrored locally for hierarchy weighting
+-- (position/jurisdiction/appeals_to are real fields on CourtListener's
+-- /courts/ endpoint, confirmed live 2026-08-08 -- not invented here).
+-- Refreshed periodically, not per-request -- court structure changes rarely.
+create table if not exists public.cl_court_cache (
+  id             text primary key,                 -- CourtListener court_id, e.g. "scotus", "ohioctapp"
+  full_name      text not null,
+  jurisdiction   text,                              -- CourtListener's jurisdiction code, e.g. "F", "SA"
+  position       numeric,                           -- CourtListener's own ordinal ranking -- lower = higher authority
+  parent_court   text,
+  appeals_to     jsonb default '[]'::jsonb,
+  last_refreshed_at timestamptz not null default now()
+);
+
+-- The core citator record: one row per (cited case, citing opinion) pair --
+-- i.e. one row per "how does opinion Y treat case X." This is what item 2
+-- and item 3 of the brief are actually built on.
+create table if not exists public.cl_citing_treatments (
+  id                    uuid primary key default gen_random_uuid(),
+  cited_cluster_id      bigint not null,             -- the case being researched
+  citing_opinion_id     bigint not null,             -- the CourtListener opinion doing the citing
+  citing_case_name      text,
+  citing_court_id       text,
+  citing_date_filed     date,
+  court_hierarchy_weight numeric,                    -- copied from cl_court_cache.position at classification time
+  -- Multi-pass classification results -- run_results is the raw per-pass
+  -- output (never fewer than 2 passes, see api/legal-citator.js), so
+  -- agreement/disagreement is inspectable after the fact, not just
+  -- collapsed into a single number.
+  run_results           jsonb not null default '[]'::jsonb,
+  -- one of: followed / distinguished / questioned / overruled / criticized /
+  -- unclear -- "unclear" exists specifically so a low-agreement result has
+  -- somewhere honest to land instead of being forced into a confident-
+  -- looking label it didn't earn.
+  final_treatment        text not null,
+  agreement_pct           numeric,                    -- fraction of passes that agreed with final_treatment
+  -- Asymmetric caution (brief item 4): the LOWER threshold required to flag
+  -- something as questioned/overruled/criticized than to affirmatively call
+  -- it still-good-law. Recorded per-row so the actual threshold applied is
+  -- auditable, not just described in code comments that can drift from
+  -- what shipped.
+  caution_threshold_applied numeric,
+  -- The real evidence -- brief item 3 requires the actual supporting
+  -- sentence and a link, not a bare label.
+  supporting_sentence    text not null,
+  supporting_sentence_context text,                   -- a bit more surrounding text, for real verification
+  source_url             text not null,                -- real CourtListener link to the citing opinion
+  -- Feedback loop (brief item 6) -- aggregate counts only here; the
+  -- individual feedback events themselves live in cl_feedback_log below.
+  -- These are what a future confidence-weighting pass would actually read.
+  feedback_confirm_count integer not null default 0,
+  feedback_correct_count integer not null default 0,
+  classified_at           timestamptz not null default now(),
+  updated_at              timestamptz not null default now(),
+  unique (cited_cluster_id, citing_opinion_id),
+  constraint cltreat_evidence_size check (octet_length(supporting_sentence) <= 4000 and octet_length(coalesce(supporting_sentence_context,'')) <= 8000)
+);
+create index if not exists idx_cltreat_cited on public.cl_citing_treatments(cited_cluster_id);
+create index if not exists idx_cltreat_treatment on public.cl_citing_treatments(cited_cluster_id, final_treatment);
+
+-- Coverage tracking per cited case -- brief item 5 requires an HONEST
+-- statement of what's actually been processed, not an implied full-parity
+-- claim. This is what that statement is computed from: real counts, not a
+-- percentage pulled from nowhere.
+create table if not exists public.cl_coverage (
+  cited_cluster_id       bigint primary key,
+  total_citing_reported  integer,                    -- CourtListener's own citeCount for this case
+  total_citing_processed integer not null default 0, -- how many of those this system has actually fetched+classified
+  jurisdiction_filter     text,                        -- if processing was scoped to a jurisdiction, record it honestly
+  date_filter_from        date,                        -- if processing was scoped to "cases after YYYY", record it honestly
+  last_processed_at       timestamptz,
+  processing_status       text not null default 'not_started', -- not_started / in_progress / complete_within_filter
+  created_at              timestamptz not null default now(),
+  updated_at              timestamptz not null default now()
+);
+
+-- Feedback loop (brief item 6): one row per attorney confirm/correct action.
+-- license_hash-scoped, but the SIGNAL this produces (confirm vs. correct
+-- rates) is meant to inform the GLOBAL cl_citing_treatments row via
+-- feedback_confirm_count/feedback_correct_count above -- the firm's feedback
+-- is identified, its effect on confidence is shared.
+--
+-- ── "INDIVIDUAL FEEDBACK STAYS ATTRIBUTABLE" WAS A PROMISE THIS TABLE COULD
+--    NOT KEEP (hover2 seq 951, fixed 2026-10-12) ───────────────────────────
+-- Those were this comment's own words until today, and the table as built had
+-- no employee column of any kind: id / license_hash / app_id / treatment_id /
+-- action / corrected_to / note / created_at. Every row was attributable to a
+-- FIRM and to nobody. api/legal-citator.js:184 resolves a session and uses it
+-- for the audit log on every OTHER action, so the caller was in scope and the
+-- feedback insert simply did not carry it -- an omission at the application
+-- layer AND at this one, which is why both are changed together.
+--
+-- THE COLUMNS ARE NULLABLE AND THAT IS THE DESIGN, NOT A SHORTCUT. This
+-- endpoint's access control is the bearer licence key and the session token is
+-- OPTIONAL by design (api/legal-citator.js:178-183 says so and why: requiring
+-- one would break every existing caller). So a row CAN legitimately have no
+-- person on it, and the handler writes NULL rather than guessing. A NULL here
+-- means "no signed-in employee on the request", never "we lost it".
+create table if not exists public.cl_feedback_log (
+  id                  uuid primary key default gen_random_uuid(),
+  license_hash        text not null,
+  app_id              text not null default 'sairnlaw',
+  treatment_id         uuid not null references public.cl_citing_treatments(id) on delete cascade,
+  action               text not null,                -- 'confirmed' or 'corrected'
+  corrected_to         text,                          -- new treatment label, only set when action='corrected'
+  note                 text,
+  employee_id          text,                          -- the signed-in employee, or NULL when the request carried no session
+  employee_role        text,                          -- their sairnlaw role at the time, or NULL with employee_id
+  created_at           timestamptz not null default now(),
+  constraint clfeed_note_size check (octet_length(coalesce(note,'')) <= 2000)
+);
+
+-- ── REQUIRED FOR ANY INSTALL THAT ALREADY RAN THIS FILE ───────────────────
+-- `create table if not exists` above does NOTHING to an existing table, so on
+-- every live install these two columns arrive here or not at all. Until this
+-- runs, api/legal-citator.js's feedback action answers 503 NOT_PROVISIONED
+-- naming this file -- a loud refusal rather than a feedback row silently
+-- missing the person again.
+alter table public.cl_feedback_log
+  add column if not exists employee_id   text,
+  add column if not exists employee_role text;
+-- "who has been confirming classifications in this firm" is the question the
+-- attribution exists to answer, so it gets the index.
+create index if not exists idx_clfeed_employee
+  on public.cl_feedback_log (license_hash, employee_id, created_at desc);
+create index if not exists idx_clfeed_treatment on public.cl_feedback_log(treatment_id);
+create index if not exists idx_clfeed_license on public.cl_feedback_log(license_hash);
+
+-- Real, Supabase-backed sliding-window rate-limit log for outbound calls to
+-- CourtListener. Necessary because: (1) CourtListener's authenticated free
+-- tier is genuinely small -- 5 requests/minute, 50/hour, 125/day, confirmed
+-- against their live docs 2026-08-08 -- and (2) that budget is shared by
+-- EVERY SAIRNlaw firm through one server-side token, so an in-memory
+-- counter in a stateless Vercel function (resets on cold start, not shared
+-- across concurrent invocations) would systematically undercount and blow
+-- through the real limit. One row per outbound CourtListener request;
+-- api/courtlistener.js checks recent row counts before each call and
+-- refuses with 429 if within an unsafe margin of the real limit. Pruned
+-- periodically (rows older than 25 hours have no further use for any of
+-- the three windows this checks).
+create table if not exists public.cl_rate_limit_log (
+  id           bigserial primary key,
+  requested_at timestamptz not null default now()
+);
+create index if not exists idx_clratelimit_time on public.cl_rate_limit_log(requested_at);
+
+-- ── RLS: service-role only ────────────────────────────────────────────────
+alter table public.cl_case_cache        enable row level security;
+alter table public.cl_court_cache       enable row level security;
+alter table public.cl_citing_treatments enable row level security;
+alter table public.cl_coverage          enable row level security;
+alter table public.cl_feedback_log      enable row level security;
+alter table public.cl_rate_limit_log    enable row level security;
+
+drop policy if exists "svc only cl_case_cache"        on public.cl_case_cache;
+drop policy if exists "svc only cl_court_cache"       on public.cl_court_cache;
+drop policy if exists "svc only cl_citing_treatments" on public.cl_citing_treatments;
+drop policy if exists "svc only cl_coverage"          on public.cl_coverage;
+drop policy if exists "svc only cl_feedback_log"      on public.cl_feedback_log;
+drop policy if exists "svc only cl_rate_limit_log"    on public.cl_rate_limit_log;
+
+create policy "svc only cl_case_cache" on public.cl_case_cache
+  for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
+create policy "svc only cl_court_cache" on public.cl_court_cache
+  for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
+create policy "svc only cl_citing_treatments" on public.cl_citing_treatments
+  for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
+create policy "svc only cl_coverage" on public.cl_coverage
+  for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
+create policy "svc only cl_feedback_log" on public.cl_feedback_log
+  for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
+create policy "svc only cl_rate_limit_log" on public.cl_rate_limit_log
+  for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
+
+grant usage on schema public to service_role;
+-- DELETE removed 2026-08-25 -- these lines previously granted it. The live
+-- grant was revoked platform-wide by sql/unused_delete_grant_revoke_2026-08-24.sql
+-- (134 tables, verified 134 LOST / 0 GAINED). This file is `create table if not
+-- exists` and safe to re-run, so leaving `delete` here would silently restore it.
+-- The platform's ONLY reachable delete path is api/sd-data.js's SC_RESOURCES
+-- (SAIRNcode) branch; do NOT re-add `delete` here when fixing a missing grant.
+grant select, insert, update on public.cl_case_cache        to service_role;
+grant select, insert, update on public.cl_court_cache       to service_role;
+grant select, insert, update on public.cl_citing_treatments to service_role;
+grant select, insert, update on public.cl_coverage          to service_role;
+grant select, insert, update on public.cl_feedback_log      to service_role;
+grant select, insert, update on public.cl_rate_limit_log    to service_role;
+
+8.3 ONE THING TO READ BEFORE RUNNING IT
+
+The `grant` block at the end deliberately OMITS `delete`, and the comment above
+it says why: the platform-wide delete grant was revoked on 2026-08-24 across 134
+tables, and because this file is safe to re-run, leaving `delete` here would
+silently restore it. If a later fix appears to need a missing grant on these
+tables, the answer is not to add `delete` to this file.
+
+SHA256 754c00c84df0b5c28dc3e92bb370a11c6a37468562255ce014a7993a2e05203e
+END-OF-REPORT
