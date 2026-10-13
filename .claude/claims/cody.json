@@ -3698,8 +3698,8 @@
       "task": "cody -- batch 27 (b6) LANDING, item 6 only: the two gate refusals recorded in SAIRN-report-cody-b6.txt section 7 are repaired AT THEIR CAUSE and the push retried. No override, SAIRN_SEED_GATE not used. (1) regenerate the generated tooling inventory, whose drift this batch's own tests/ change caused; (2) declare fourth's handoff-fourth-2026-10-16.md in the external files index with a purpose, the gate's own prescribed remedy and the fourteenth row of the same standing loop, routed to fourth and NOT moved -- this also unblocks hank, who is BLOCKED ON exactly that file. No tool and no check is edited: tools/external_file_index_check.py is in cc's live FILES and the warn-not-block change there stays cc's. FILES: docs/external-files-index.json docs/TOOLING-INVENTORY.md docs/handoff-cody-2026-10-13c.md SAIRN-report-cody-b6.txt SAIRN-digest-cody-b6.txt SAIRN-ACTIVE-WORK-cody.md .claude/claims/cody.json",
       "claimed_at": "2026-10-13T09:54:19Z",
       "claimed_at_epoch": 1791885259.0905957,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-13T10:26:59Z",
       "files": [
         ".claude/claims/cody.json",
         "SAIRN-ACTIVE-WORK-cody.md",
