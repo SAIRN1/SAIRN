@@ -20,8 +20,11 @@ restored or re-added, and `.claude/settings.json` was never committed by me.**
 | added this session | `34995623` inventory regeneration · `f73a9834` claim · `8831e465` release · three merges of `origin/main` |
 | claim | **HELD and PUBLISHED** — `cody-1791885259`, claimed 09:54Z, `f73a9834` is on `origin/main` |
 
-The handoff commit, then the report+digest commit, follow this file. Their SHAs
-are in `SAIRN-report-cody-b6.txt` §8.
+The handoff commit, then the report+digest commit, follow this file.
+`SAIRN-report-cody-b6.txt` **§9** is the landing evidence — script-generated, and
+captured at `e767eb2d` **before** the report+digest commit existed, so the one
+SHA it cannot contain is its own. The commit that carries the report says so in
+its message.
 
 ---
 

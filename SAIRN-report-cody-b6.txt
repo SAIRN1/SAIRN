@@ -1,19 +1,33 @@
 REPORT cody b6
 
 ================================================================================
-0. SHAPE, AND THE ONE THING THAT DID NOT HAPPEN
+0. SHAPE, AND THE THING THAT WAS REFUSED AND THEN EARNED
 ================================================================================
 
 Batch 27 b6, 2026-10-13. Six items plus the final item.
 
-ITEMS 1, 2, 3, 4 AND 5 ARE DONE. ITEM 6 IS NOT: THE PUSH WAS REFUSED.
-Two gate checks refused it, both true, and the batch's standing instruction is
-to record the exact text and stop rather than unblock. The verbatim refusal is
-section 7. SAIRN_SEED_GATE=off was never used.
+ALL SIX ITEMS ARE DONE AND b6 IS ON origin/main.
 
-So the headline is: four commits sit locally at 009ff176, 4 ahead / 0 behind,
-NOT on origin/main. Everything below that describes a result describes a result
-in a local branch.
+THIS SECTION WAS REWRITTEN IN A SECOND SITTING AND THE FIRST VERSION'S CLAIM IS
+KEPT RATHER THAN QUIETLY REPLACED, because the refusal is the more useful half
+of the record. Written first: "ITEMS 1, 2, 3, 4 AND 5 ARE DONE. ITEM 6 IS NOT:
+THE PUSH WAS REFUSED. Two gate checks refused it, both true, and the batch's
+standing instruction is to record the exact text and stop rather than unblock."
+That was true and the verbatim text is still in section 7, UNCHANGED.
+
+A later session did item 6 and only item 6. BOTH REFUSALS WERE CLEARED AT THEIR
+CAUSE -- one by regenerating the document b6's own change had invalidated, and
+ONE BY SOMEBODY ELSE'S FIX LANDING, which means the remedy section 7.3 names
+was NOT the remedy and was deliberately not run. Section 9 is that work, with
+the exit codes and the landing SHAs.
+
+NOTHING WAS OVERRIDDEN AT ANY POINT. SAIRN_SEED_GATE=off was never used, in
+either sitting. No hook was restored or re-added and .claude/settings.json was
+never committed by me.
+
+So the headline is: b6 landed. Section 1's evidence block was captured at
+009ff176 while the branch was still local and is left at that reading on
+purpose; section 9 carries the current one.
 
 HASH RULE, stated so the SHA line can be checked rather than trusted: line 1 is
 the title, the LAST line is END-OF-REPORT, the SECOND-TO-LAST is the SHA256. The
@@ -459,6 +473,26 @@ docs/ file was regenerated, and the four commits lose nothing by sitting.
 Whoever lands these four commits should run the regeneration IN THE SAME PUSH,
 because the drift is b6's and will follow the commits wherever they go.
 
+7.4 WHAT 7.3 GOT RIGHT AND WHAT IT GOT WRONG -- WRITTEN AFTER THE LANDING
+
+7.3 IS HALF WRONG AND IT IS LEFT STANDING SO THE ERROR IS LEGIBLE.
+
+The regeneration was right and ran exactly as written. The second line was
+WRONG: declaring handoff-fourth-2026-10-16.md was never the fix and was NOT
+done. The fix was cc's warn-not-block change to the check itself, which landed
+on origin/main while b6's commits were sitting, and it had already been written
+into docs/external-files-index.json in b4 and b5 that hand-declaring these
+"one at a time cannot converge" -- new handoffs keep arriving DURING the
+declaration. So b6's own handoff proposed a remedy its own index rows had
+already recorded as futile. Section 9.2 has the check's current output.
+
+THE SHAPE OF THE MISTAKE, which is worth more than the mistake: a refusal was
+read as "this is mine to fix" when the refusing check was in somebody else's
+declared file set and a structural fix was already in flight. The correct next
+step for a blocked push is to re-run the check before acting on a remedy
+written hours earlier -- the eighth cross-domain discipline, that nothing
+announces the day a check stops saying what it said.
+
 ================================================================================
 8. ITEM 4 -- sql/sairnlaw_citator_schema.sql, IN FULL, AND THE ONE-STEP SEQUENCE
 ================================================================================
@@ -745,5 +779,137 @@ tables, and because this file is safe to re-run, leaving `delete` here would
 silently restore it. If a later fix appears to need a missing grant on these
 tables, the answer is not to add `delete` to this file.
 
-SHA256 754c00c84df0b5c28dc3e92bb370a11c6a37468562255ce014a7993a2e05203e
+================================================================================
+9. ITEM 6 -- THE LANDING, AND THE TWO REFUSALS CLEARED AT THEIR CAUSE
+================================================================================
+
+Written in a second sitting. Section 7 is unchanged; this is what happened
+after it. EVERY LINE BELOW IS SCRIPT OUTPUT from the generator named at the
+end of this section, not a transcription.
+
+9.1 LANDING EVIDENCE
+
+  HEAD                : e767eb2d3a529bdcf54d42ac812da2b482bbe1e5
+  origin/main         : e767eb2d3a529bdcf54d42ac812da2b482bbe1e5
+  HEAD == origin/main : YES
+  behind / ahead      : 0 / 0
+  working tree        : DIRTY -- 4 path(s), AND THEY ARE THIS REPORT, THE DIGEST, THE HANDOFF AND THE ACTIVE-WORK FILE,
+                        being written right now. Named rather than summarised:
+                          M SAIRN-ACTIVE-WORK-cody.md
+                          M SAIRN-digest-cody-b6.txt
+                          M SAIRN-report-cody-b6.txt
+                          M docs/handoff-cody-2026-10-13c.md
+
+  EVERY b6 COMMIT, TESTED AS AN ANCESTOR OF origin/main ONE AT A TIME
+  (git merge-base --is-ancestor <sha> origin/main; exit 0 means it landed)
+    c465743b   ON-ORIGIN    fix(tests): arm-11 race fix + the three UNPROVEN arms
+    5f7bc94f   ON-ORIGIN    docs(b6): save_reviews routed to cc + the UNPROVEN note
+    672f61ca   ON-ORIGIN    merge of origin/main @ 618cbd9f
+    009ff176   ON-ORIGIN    docs(handoff): b6 handoff, push refused and recorded
+    8c561e2a   ON-ORIGIN    report+digest(cody b6)
+    34995623   ON-ORIGIN    chore(tooling inventory): regenerate -- b6's own drift
+    f73a9834   ON-ORIGIN    chore(claims): cody claims tooling (the landing claim)
+    6da2bb26   ON-ORIGIN    docs(handoff): cody b6 LANDING
+  8 of 8 ON origin/main
+
+9.2 THE TWO REFUSALS, RE-RUN NOW
+
+  REFUSAL 2 -- docs/TOOLING-INVENTORY.md
+    python tools/tooling_inventory.py --check
+    exit=0  OK: docs\TOOLING-INVENTORY.md matches the repo.
+    Fixed here, and the drift was b6's OWN: regenerating changed exactly two
+    rows, the 'tools invoked by tests/' wiring for sairn_seam_check.py
+    (+check4_probe.py) and preauth_oracle_check.py (+check7_probe.py), which
+    is precisely what item 3 did to those two probes.
+
+  REFUSAL 1 -- EXTERNAL FILE INDEX
+    python tools/external_file_index_check.py
+    exit=0
+      UNINDEXED            3
+      3 UNINDEXED HANDOFF(S) under a warn-only directory -- REPORTED, NOT BLOCKING.
+      ~ g:\my drive\sairn-status\handoff-fourth-2026-10-16.md
+      ~ g:\my drive\sairn-status\handoff-h2-2026-10-13c.md
+      ~ g:\my drive\sairn-status\handoff-cc-2026-10-13.md
+      worse than no handoff. It no longer refuses a push, per Michael 2026-10-13.
+      NO BLOCKING FINDING -- the only unindexed files are handoffs under a warn-only
+    CLEARED WITHOUT AN EDIT BY ME. cc's warn-not-block change to
+    tools/external_file_index_check.py landed on origin/main between the two
+    sittings. NO ROW WAS ADDED to docs/external-files-index.json, on purpose
+    -- see 7.4. That file is in cc's live FILES and stays cc's.
+
+  THE GATE ITSELF
+    python tools/sairn_push_gate_hook.py --preflight
+    exit=0  NOTHING FOUND. That is not a promise the push will pass: this mode runs the checks as they are, and a check th
+    RUN BY HAND BECAUSE NOTHING RUNS IT FOR ME ANY MORE: this clone's hook
+    entries are 0 by Michael's decision, so the preflight IS the gate here
+    and skipping it would be silent. It says of itself that it is 'not a
+    promise the push will pass', and that is quoted rather than buried.
+
+    THE ONE THING IT STILL FLAGS, NOT DISCHARGED BY THIS LANDING:
+      [WEAKENING] tests/push_gate/check4_probe.py -- assertions NET REMOVED,
+      3 removed 2 added. Recorded under c465743b34b0 in
+      docs/scrutiny-flags.json. It is a review obligation against b6 and it
+      is OPEN. Section 2 says what the three removed prints were.
+
+9.3 TWO FAILURES THAT ARE NOT GATE REFUSALS, AND ARE NOT RECORDED AS ONE
+
+  (a) tools/sairn_claim.py's OWN PUSH CANNOT LAND FROM THIS HISTORY. It
+      rebases, so it replays 009ff176 and hits the same
+      docs/scrutiny-flags.json conflict every time:
+        PUSH FAILED after 3 attempts. The claim is committed locally and is
+        therefore INVISIBLE to every other clone -- treat this as NOT CLAIMED.
+        last error: Could not apply 009ff176...
+      Twice. It aborted cleanly each time -- no .git/rebase-merge or
+      .git/rebase-apply was left behind, checked both -- and a plain
+      git merge origin/main + git push published the SAME entry with no
+      second claim added. NOT filed as a defect: the tool did the safe thing
+      and said so loudly. A session whose history carries a merge commit
+      should expect this and publish the claim with an ordinary push.
+
+  (b) THE FIRST REAL git push WAS REJECTED BY A REF LOCK, NOT A CHECK:
+        ! [remote rejected]   main -> main (cannot lock ref 'refs/heads/main':
+          is at bef3f6df660792a88080a338bdc11c5ce7eb7ab3 but expected
+          c0eb14d73a8bf1c53873dd83d4033c08684d461a)
+      Four sessions pushing into one branch. origin/main moved 13 commits,
+      then 19, then again mid-push. A fetch-merge-RECHECK-push loop landed it
+      on the next attempt; the RECHECK matters, because each merge can
+      re-stale the generated inventory and a loop that only retries the push
+      would have shipped the drift it had just fixed.
+
+  docs/scrutiny-flags.json CONFLICTED TWICE AND BOTH RESOLUTIONS KEPT BOTH
+  SIDES. Always the same shape: two sessions appending to one list, the
+  markers landing INSIDE one object so the stray criteria_version tail
+  belongs to whichever side is kept. Resolved in Python and verified BY
+  PARSING, not by eye:
+    entries total 179
+    missing criteria_version 0
+      tests/push_gate/check4_probe.py                      4 row(s)
+      tests/push_gate/check7_probe.py                      4 row(s)
+      tests/run_tier_a_review_gate_probe.py                12 row(s)
+      tests/run_defect_register_superseded_probe.py        4 row(s)
+    (exit=0)
+
+9.4 SCOPE OF THE SECOND SITTING
+
+  Item 6 and nothing else. Files it changed, in the repo:
+    docs/TOOLING-INVENTORY.md        regenerated by its own generator
+    docs/scrutiny-flags.json         merge resolution only, both sides kept
+    docs/handoff-cody-2026-10-13c.md new, mine
+    SAIRN-report-cody-b6.txt         this file
+    SAIRN-digest-cody-b6.txt         the digest
+    .claude/claims/cody.json         release + claim
+  NOT touched: api/, tools/, tests/, .claude/settings.json, any other
+  session's file, any auditor clone, any live row.
+
+  MY CLAIM STRING STILL NAMES docs/external-files-index.json AND THE
+  DECLARATION I DID NOT DO. It was re-published UNCHANGED rather than
+  reworded: PR 4.3 forbids editing a task string other sessions may have
+  read, and the tool itself said to re-run the earlier wording because it is
+  the same work. The scope correction lives here and in the handoff, which is
+  the direction a correction is allowed to run.
+
+  Generated by <scratch>/gen_b6_landing.py, which also recomputes the SHA256
+  below under the hash rule stated in section 0.
+
+SHA256 f18829ff7c688a78af63a3ca1c32e15c364b58fab89b86e2439d1caf543aa1dd
 END-OF-REPORT

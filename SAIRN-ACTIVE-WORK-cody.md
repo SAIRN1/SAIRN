@@ -7300,3 +7300,50 @@ words), handoff at `docs/handoff-cody-2026-10-13.md`.
 **This branch was MERGED, not rebased** -- `sairn_rebase_resolve.py` correctly
 refused to replay a sha re-stamp against its append-only rule. Register merged
 by `(commit, summary)`: 522 records, zero lost.
+
+## batch 27 (b6) -- LANDED 2026-10-13, in two sittings
+
+**ON `origin/main` at `e767eb2d`, 0 ahead / 0 behind. 8 of 8 commits verified
+ancestors one at a time.** `SAIRN-report-cody-b6.txt` (910 lines, hash rule
+self-checked), `SAIRN-digest-cody-b6.txt` (133 words, `digest_lint` CLEAN),
+handoffs at `docs/handoff-cody-2026-10-13b.md` (the refused sitting) and
+`docs/handoff-cody-2026-10-13c.md` (the landing).
+
+- **items 1/2: arm 11 was announcing a race it had not run.** `_saver` called
+  `save_reviews()` with no try/except, so the `PermissionError` that
+  `MoveFileEx` raises on a held destination went to `threading`'s printer and
+  never to the exit code -- **and both assertions still passed**, because the
+  surviving writer leaves a file that parses. RED in 31 of 40 on the old shape,
+  GREEN in 40 of 40 with a `PermissionError`-by-name retry. Arm 12 had the same
+  hole with a worse answer: `len(names)==1` **is also satisfied by a dead
+  writer**. Safety never failed; liveness did. **The product half --
+  `save_reviews()` has no retry of its own -- is ROUTED to cc, not fixed.**
+- items 3/4/5: three arms are real passes in both remote modes; the citator
+  schema is printed in full for Michael to run; the UNPROVEN methodology note
+  proposes a rule and **deliberately builds nothing**.
+- **item 6 was REFUSED in the first sitting and the refusal was recorded
+  verbatim rather than unblocked** (report §7, unchanged). The second sitting
+  cleared both **at their cause**: the inventory regenerated, because the drift
+  was b6's OWN rewiring of `check4_probe` -> `sairn_seam_check` and
+  `check7_probe` -> `preauth_oracle_check`; and the external-file-index refusal
+  **disappeared without an edit by me** when cc's warn-not-block change landed.
+  **So §7.3's second remedy was never the remedy** and is left standing wrong,
+  with §7.4 saying why -- b4 and b5 had already written into that index that
+  declaring those handoffs one at a time cannot converge.
+
+**Two failures that are NOT gate refusals and are not recorded as ones:**
+`sairn_claim.py`'s own push cannot land from a history carrying a merge commit
+(it rebases, replays `009ff176`, hits the same `scrutiny-flags.json` conflict,
+and reports NOT CLAIMED twice while the entry sits committed) -- publish the
+claim with an ordinary push instead. And the first real push was rejected by a
+**ref lock**, not a check: four sessions into one branch, `origin/main` moving
+13 then 19 commits then again mid-push. The retry loop re-ran
+`tooling_inventory --check` after **each** merge, because a loop that only
+retries the push would ship the drift it had just fixed.
+
+**OPEN against b6's reviewer:** the EXTRA SCRUTINY `[WEAKENING]` flag on
+`tests/push_gate/check4_probe.py` (assertions net removed, 3 removed 2 added),
+recorded under `c465743b34b0` in `docs/scrutiny-flags.json`. This landing did
+not discharge it. **Nothing mechanical gates this clone any more** -- hook
+entries are 0 by Michael's decision, so `--preflight` IS the gate here and
+skipping it is silent.
