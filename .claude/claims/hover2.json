@@ -341,8 +341,8 @@
       "task": "hover2 batch b21 -- (1) rotation sweep sairndesign (sdn_) every resource/role/gate file:line. (2) re-check scp_* gate / sairnlaw_audit_log CHECK credential values / rf_schedule DDL landed on origin/main, file:line, no re-route if already routed. (3) sairnfreedom trustee role: if landed, verify view-only+financial-scope, file:line; else say so. (4) role-list vs sql CHECK drift for sairnbiz and sairndesign, file:line per mismatch. (5) chain tip + RFC3161 check, republish only if >15 behind. (6) push without force, confirm landed. FINAL: handoff h2-b21 before report, report+digest, upload all 3 to Drive folder 14Xc5oT0xzSLa_rTSOSXWVK3Kko1Fbx09, read back and confirm match. FILES: SAIRN-handoff-h2-b21.md SAIRN-report-h2-b21.txt SAIRN-digest-h2-b21.txt docs/2026-10-13-hover2-b21-sdn-sweep.md docs/2026-10-13-hover2-b21-role-sql-drift.md",
       "claimed_at": "2026-10-13T21:38:36Z",
       "claimed_at_epoch": 1791927516.6726532,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-13T21:45:41Z",
       "files": [
         "SAIRN-digest-h2-b21.txt",
         "SAIRN-handoff-h2-b21.md",
