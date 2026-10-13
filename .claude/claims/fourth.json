@@ -3591,6 +3591,27 @@
         "docs/by-design-register.json",
         "docs/external-files-index.json"
       ]
+    },
+    {
+      "id": "fourth-1791926967",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "batch b12 -- claimed as the FIRST action. (1) the two checkers that were FAIL-OPEN on their first run -- scratchpad/ack_check.py and scratchpad/index_resolve.py -- re-driven on a DELIBERATELY BAD input each, recording with the command and the output that each now fails CLOSED. (2) methodology: the rule that every checker ships with a deliberately bad input fixture proving it fails closed, written into docs/METHODOLOGY.md and APPLIED to those two with real fixtures. (3) a docs spec for a by-design-register VALIDATOR -- required fields, file:line for both the flag and the rebuttal, the ruling recorded ONCE, no duplicate rows -- routed to the tools/ owner (cc) with NO tools/ edit. (4) the routed-findings ack check re-run against the CURRENT origin/main, was 6 of 9 UNACK (4 cody, 2 cc), new counts recorded by command. (5) the 36-undriven-suites doc REGENERATED after cody's latest push, counts named by command. (6) push without force and confirm HEAD == origin/main, 0 ahead 0 behind. Then the handoff BEFORE the report, then the report and digest, all three uploaded to the Drive folder and READ BACK to confirm title, first line and size. HOOKS STAY CLEARED and .claude/settings.json is never committed. No SAIRN_SEED_GATE=off. No file under tools/ is edited by this batch. FILES: docs/METHODOLOGY.md docs/2026-10-13-fourth-b12-routed-to-cc-bydesign-validator.md docs/2026-10-13-fourth-b10-undriven-suites.md docs/2026-10-13-fourth-b12-ack-recheck.md docs/by-design-register.json docs/external-files-index.json docs/SAIRN-handoff-fourth-b12.md SAIRN-report-fourth-b12.txt SAIRN-digest-fourth-b12.txt",
+      "claimed_at": "2026-10-13T21:29:27Z",
+      "claimed_at_epoch": 1791926967.5283675,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b12.txt",
+        "SAIRN-report-fourth-b12.txt",
+        "docs/2026-10-13-fourth-b10-undriven-suites.md",
+        "docs/2026-10-13-fourth-b12-ack-recheck.md",
+        "docs/2026-10-13-fourth-b12-routed-to-cc-bydesign-validator.md",
+        "docs/METHODOLOGY.md",
+        "docs/SAIRN-handoff-fourth-b12.md",
+        "docs/by-design-register.json",
+        "docs/external-files-index.json"
+      ]
     }
   ],
   "refusals": [
