@@ -3182,6 +3182,10 @@ function svGateSignIn(){
     svStore('auth',new Date().toISOString());
     svGateMsg('',false);
     svEnterApp(r.data.role);
+    /* Added 2026-10-13: the only other call to svHydrateAll() runs at PARSE
+       time, before this PIN was entered, so every SV_RESOURCES read in it
+       answered 401 and was swallowed. See svHydrateAfterSignIn(). */
+    if(typeof svHydrateAfterSignIn==='function') svHydrateAfterSignIn();
   });
 }
 window.svGateSignIn = svGateSignIn;
@@ -3213,6 +3217,9 @@ function svGateBootstrap(){
     svStore('auth',new Date().toISOString());
     svGateMsg('',false);
     svEnterApp(r.data.role);
+    /* Same reason as svGateSignIn above: this is the FIRST credential on a
+       licence, so the parse-time hydrate certainly ran without a session. */
+    if(typeof svHydrateAfterSignIn==='function') svHydrateAfterSignIn();
   });
 }
 window.svGateBootstrap = svGateBootstrap;
@@ -10014,6 +10021,18 @@ window.submitPeerConsult = function(){
   // defect as the old over-promise, pointing the other way: the sentence does
   // not describe what the software does.
   //
+  // ── THE NEXT SENTENCE WAS FALSE FROM THE DAY IT WAS WRITTEN UNTIL
+  //    2026-10-13, AND IT IS CORRECTED RATHER THAN DELETED ────────────────
+  // It says svHydrateAll() "runs there" -- at sign-in -- "and nowhere else".
+  // The opposite was true: its ONLY call site ran at script PARSE time, before
+  // any PIN was entered, so every SV_RESOURCES read in it answered 401
+  // (api/sd-data.js:13552 gates all of them) and the per-resource catch
+  // swallowed it. On a page load that began at the sign-in pane the backup was
+  // read-dead for the life of the page, and THIS COMMENT is what a reader
+  // would have checked first and been reassured by.
+  // It is true NOW, because svHydrateAfterSignIn() was added at the two
+  // interactive entry points. The claim and the code agree for the first time.
+  //
   // WHAT IS SAID IS EXACTLY WHAT IS TRUE, and no more. It reaches them when
   // they next SIGN IN, because svHydrateAll() runs there and nowhere else --
   // this is a backup that is read back, not live delivery, and saying "sent"
@@ -10810,6 +10829,66 @@ svHydrateAll().then(function(n){
 });
 window.svHydrateAll = svHydrateAll;
 window.svSyncCollection = svSyncCollection;
+
+/* ── HYDRATE AGAIN AFTER AN INTERACTIVE SIGN-IN, 2026-10-13 ─────────────────
+   THE BACKUP WAS READ-DEAD FOR THE LIFE OF EVERY PAGE LOAD THAT STARTED AT
+   THE SIGN-IN PANE, FOR EVERY SAIRNVET RESOURCE. The call above is the ONLY
+   call site svHydrateAll() had, and it runs when this script is PARSED --
+   before any PIN is entered. api/sd-data.js:13552 gates EVERY SV_RESOURCES
+   resource on a signed session:
+
+       if (SV_RESOURCES[resource]) { ...401 NO_SESSION if absent... }
+
+   so the parse-time hydrate answered 401 on all of them, the per-resource
+   `.catch` inside svHydrateAll swallowed each one, svEnterApp() did not fetch
+   again, and nothing anywhere said so. Additive hydration makes "the server
+   had nothing" and "the server refused" identical on screen, and the console
+   warning written for exactly this case sits on the OUTER promise -- which
+   never rejected, because the inner catch ate the refusal.
+
+   THIS IS BROADER THAN THE SAIRNfreedom INSTANCE IT WAS FOUND BY. There the
+   gate covered 22 of 36 resources; here the gate is `if (SV_RESOURCES[...])`,
+   which is ALL of them.
+
+   AND THE FILE ALREADY CLAIMED THE OPPOSITE, which is how it stayed hidden:
+   the comment at :10018 says a consult "reaches them when they next SIGN IN,
+   because svHydrateAll() runs there and nowhere else". It runs at PARSE time
+   and nowhere else. That sentence is corrected in place rather than deleted.
+
+   FOUND BY A PLATFORM SWEEP, NOT BY THIS APP. api/hydrate-gate-coupling.test.js
+   now fails on any app with all three conditions at once. Its first pass MISSED
+   this one, because it intersected against SD_SESSION_GATED and SAIRNvet's gate
+   is an INLINE per-app check -- the same "a gate inside a narrower branch is
+   invisible to a table scan" class the SAIRNscape progress-photo finding was.
+
+   ONLY THE INTERACTIVE PATH NEEDS IT. svRestoreSession-style boot entry
+   happens before the parse-time call completes and was never broken; this is
+   wired where the PIN is accepted.
+
+   FIRE-AND-FORGET, AND IT REPORTS. Same policy as the parse-time call: a
+   failure is a console line, never a thrown error that leaves a signed-in user
+   staring at a pane that already accepted their PIN. */
+function svHydrateAfterSignIn(){
+  try{
+    svHydrateAll().then(function(n){
+      if(n){
+        try{ console.info('SAIRNvet: hydrated '+n+' record(s) from the server '+
+          'backup after sign-in.'); }catch(e){}
+        if(typeof svRenderAfterHydrate==='function'){ try{ svRenderAfterHydrate(); }catch(e){} }
+      }
+    }).catch(function(e){
+      try{ console.warn('SAIRNvet: the server backup could not be read after '+
+        'sign-in, so nothing was hydrated. Local records are unaffected. '+
+        ((e&&e.message)||e)); }catch(_e){}
+    });
+  }catch(e){
+    /* NOT A BARE CATCH and never fatal: the sign-in SUCCEEDED and the app is
+       open. A throw here must not undo that. */
+    try{ console.warn('SAIRNvet: post-sign-in hydration could not start. '+
+      'Local records are unaffected. '+((e&&e.message)||e)); }catch(_e){}
+  }
+}
+window.svHydrateAfterSignIn = svHydrateAfterSignIn;
 
 // BOOT INTEGRITY GATE (2026-09-04) -- runs before setupPinPad() and before
 // any render*() call, because by the time a panel renders its get*() has

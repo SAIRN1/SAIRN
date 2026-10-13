@@ -5716,10 +5716,29 @@ function cpRender(){
     '<div class="kpi"><div class="klbl">EVV Completion (30d)</div><div class="kval">'+(evvRate===null?'--':evvRate+'%')+'</div><div class="kt">'+(last30.length?last30.length+' visits scheduled':'No visits in range')+'</div></div>'+
     '<div class="kpi"><div class="klbl">EVV Exceptions</div><div class="kval">'+exceptions.length+'</div><div class="kt d">Missing GPS or open clock-in</div></div>';
   var ctb=$('cp-certstbody');
+  // ── THE SECOND PLACE THE REDACTED FIELD RENDERS, FIXED 2026-10-13 ───────
+  // The roster at :2707 got this treatment on 2026-10-12 and THIS PANEL DID
+  // NOT, which is the half of hover2 seq 965 the fix did not reach. Found
+  // while reviewing that fix to discharge its Tier A obligation, by grepping
+  // every render of `bgcheck_date` rather than by reading the panel it names.
+  //
+  // IT IS THE SAME DEFECT AND IT IS WORSE HERE, because this is the
+  // COMPLIANCE panel: the column header says "Background Check" and
+  // `fdate(undefined)` renders exactly what a caregiver with no check on file
+  // renders. For any role outside owner/billing the server now strips the
+  // field, so every row read "no background check" -- on the one column a
+  // state surveyor asks about, in the panel built to answer them.
+  //
+  // THE TIER IS senIsManagement(), the same one the server redacts on and the
+  // same one the roster uses, so the three cannot disagree without somebody
+  // changing all three.
+  var cpIsMgmt=senIsManagement();
   ctb.innerHTML=cg.length?cg.map(function(c){
     var d=certDaysUntil(c.cpr_expiry);
     var status=d===null?'--':(d<0?'<span class="badge br">Expired</span>':(d<=30?'<span class="badge bw">Expiring</span>':'<span class="badge bg">Current</span>'));
-    return '<tr><td>'+H(c.name)+'</td><td>'+fdate(c.cpr_expiry)+'</td><td>'+fdate(c.bgcheck_date)+'</td><td>'+status+'</td></tr>';
+    var bgCell=cpIsMgmt?fdate(c.bgcheck_date)
+      :'<span class="badge bx" title="Background-check dates are visible to management only. This is not a statement about whether a check is on file.">Restricted</span>';
+    return '<tr><td>'+H(c.name)+'</td><td>'+fdate(c.cpr_expiry)+'</td><td>'+bgCell+'</td><td>'+status+'</td></tr>';
   }).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">No caregivers on file</td></tr>';
   var etb=$('cp-evvtbody');
   etb.innerHTML=exceptions.length?exceptions.map(function(v){
@@ -5742,7 +5761,33 @@ function rpRender(){
 function exportCsv(type){
   var rows=[],headers=[];
   if(type==='clients'){headers=['Name','Phone','Address','Payer','Authorized Hours','Status'];rows=clients().map(function(c){return [c.name,c.phone,c.address,c.payer,c.authorized_hours,c.status];});}
-  else if(type==='caregivers'){headers=['Name','Phone','CPR Expiry','Background Check','Status'];rows=caregivers().map(function(c){return [c.name,c.phone,c.cpr_expiry,c.bgcheck_date,c.status];});}
+  // ── AND THE THIRD PLACE, WHICH LEAVES THE BUILDING (fixed 2026-10-13) ────
+  // Same defect as the roster and the compliance panel, and this one is the
+  // sharpest of the three: a CSV is a document. For any role outside
+  // owner/billing the server strips bgcheck_date, so this exported a
+  // "Background Check" column that was EMPTY FOR EVERY CAREGIVER -- a file
+  // asserting the agency holds no background checks, with nothing on it to say
+  // the exporter was not allowed to see them.
+  //
+  // THE COLUMN IS DROPPED, NOT BLANKED, and that is the difference. A blank
+  // cell is a claim; an absent column is a visibly shorter file. The function's
+  // own header says it exports "exactly what's on screen" -- so the column
+  // disappears for the same roles it now reads "Restricted" for on screen.
+  //
+  // THE PATTERN WAS ALREADY IN THIS FUNCTION, four lines below: the `claims`
+  // branch refuses outright on !senIsManagement(). A refusal is right there
+  // because a non-management user has no business with any of it; here they
+  // have business with four of the five columns, so the file is narrowed
+  // rather than refused.
+  else if(type==='caregivers'){
+    var exIsMgmt=senIsManagement();
+    headers=exIsMgmt?['Name','Phone','CPR Expiry','Background Check','Status']
+                    :['Name','Phone','CPR Expiry','Status'];
+    rows=caregivers().map(function(c){
+      return exIsMgmt?[c.name,c.phone,c.cpr_expiry,c.bgcheck_date,c.status]
+                     :[c.name,c.phone,c.cpr_expiry,c.status];
+    });
+  }
   else if(type==='visits'){headers=['Client','Caregiver','Date','Start','End','Status'];rows=visits().map(function(v){return [v.client_name,senEmployeeName(v.assigned_employee_id),v.scheduled_date,v.scheduled_start,v.scheduled_end,v.status];});}
   else if(type==='claims'){
     if(!senIsManagement()){toast('Only management can export claims');return;}

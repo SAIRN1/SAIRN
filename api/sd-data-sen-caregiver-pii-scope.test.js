@@ -339,6 +339,104 @@ function firstItem(res) {
         + 'turned the session refusal into a partial answer.');
     });
 
+  // ══ ADDED 2026-10-13 BY THE REVIEWER OF THIS FIX, NOT ITS AUTHOR ═════════
+  // Discharging the Tier A obligation on seq965 meant grepping every render
+  // and every read of the three HR fields rather than reading the branch the
+  // finding named. That found THREE more places, two of them defects:
+  //
+  //   sairnsenior.html:5722   the COMPLIANCE panel's "Background Check"
+  //                           column, ungated -- every row read "no check on
+  //                           file" for any role outside owner/billing, on the
+  //                           one column a state surveyor asks about. FIXED.
+  //   sairnsenior.html:5745   exportCsv('caregivers'), ungated -- a CSV
+  //                           asserting the agency holds no background checks,
+  //                           with nothing on the file to say otherwise. FIXED
+  //                           by dropping the COLUMN, not blanking the cell.
+  //   api/sd-data.js:6746     the EVV-readiness branch loads the UNREDACTED
+  //                           blob under a WIDER role set. NOT a defect today
+  //                           and pinned below so it cannot become one.
+  //
+  // The two client fixes are pinned by source assertion rather than by driving
+  // the page: this suite has no DOM. That limit is stated rather than implied,
+  // and a source assertion is still the thing that fails if somebody deletes
+  // the guard -- which is the regression being guarded.
+  section('THE OTHER THREE PLACES THE HR FIELDS ARE REACHED (reviewer, 2026-10-13)');
+
+  await test('the EVV-readiness branch reads sen_caregivers under a WIDER role '
+    + 'set than the redaction tier, and its engine emits no HR VALUE -- only '
+    + 'presence. If summarize() ever echoes one, this arm is what fails',
+    function () {
+      const fs = require('fs');
+      const ev = fs.readFileSync(require.resolve('./_lib/sen-evv-readiness.js'), 'utf8');
+      // The engine may TEST a field; it must never put one in its output. Its
+      // only output channels are miss() and warn(), both of which take fixed
+      // label/reason strings, plus the `out` object built at the top of
+      // checkVisit.
+      const emits = ev.match(/(?:reason|label|value|detail)\s*:\s*[^,\n]*caregiver\.\w+/g) || [];
+      assert.deepStrictEqual(emits, [],
+        'the readiness engine puts a caregiver field VALUE into its output: '
+        + emits.join(' | ') + '. That output goes to SEN_READINESS_ROLES '
+        + '(owner, billing, coordinator, scheduler), which is WIDER than the '
+        + 'redaction tier (owner, billing), so it would route around the '
+        + 'redaction this whole suite exists to hold.');
+      // ...and the arm is not vacuous: the engine really does reference the
+      // fields, so a regex that matched nothing would prove nothing.
+      assert.ok(/caregiver\.state_caregiver_id/.test(ev),
+        'the readiness engine no longer references state_caregiver_id at all, '
+        + 'so the arm above passed over nothing. Re-point it at whatever reads '
+        + 'the caregiver row now.');
+    });
+
+  await test('sairnsenior.html renders the background-check column behind '
+    + 'senIsManagement() in ALL THREE places, not just the roster', function () {
+      const fs = require('fs');
+      const path = require('path');
+      const html = fs.readFileSync(
+        path.join(__dirname, '..', 'sairnsenior.html'), 'utf8');
+      const renders = html.match(/fdate\(c\.bgcheck_date\)/g) || [];
+      assert.ok(renders.length >= 2,
+        'expected at least the roster and the compliance panel to render '
+        + 'bgcheck_date, found ' + renders.length + '. A zero here would make '
+        + 'this arm vacuous rather than satisfied.');
+      // Every render must sit on the TRUE side of a management ternary. Checked
+      // by requiring the guarded form and forbidding a bare one.
+      // THE VARIABLE NAME DIFFERS PER SITE AND THE FIRST DRAFT OF THIS ARM
+      // MISSED ONE BECAUSE OF IT: the roster uses `isMgmt`, the compliance
+      // panel `cpIsMgmt`, and a pattern anchored on `IsMgmt` with a capital I
+      // matched only the second. It reported 1 of 2 and the "failure" was this
+      // regex, not the page. Matched case-correctly on any local whose name
+      // ends in `sMgmt` rather than on one spelling.
+      const guarded = html.match(/[A-Za-z]*[Ii]sMgmt\s*\?\s*fdate\(c\.bgcheck_date\)/g) || [];
+      assert.strictEqual(guarded.length, renders.length,
+        guarded.length + ' of ' + renders.length + ' bgcheck_date renders are '
+        + 'behind a management ternary. An UNGUARDED render does not leak the '
+        + 'value -- the server already stripped it -- it renders the ABSENCE as '
+        + 'a fact, on a compliance column. That is the defect, not a cosmetic '
+        + 'one.');
+    });
+
+  await test('...and the caregivers CSV export DROPS the column rather than '
+    + 'exporting an empty one, because a file leaves the building', function () {
+      const fs = require('fs');
+      const path = require('path');
+      const html = fs.readFileSync(
+        path.join(__dirname, '..', 'sairnsenior.html'), 'utf8');
+      const m = html.match(/else if\s*\(type==='caregivers'\)\s*\{([\s\S]{0,900}?)\n  \}/);
+      assert.ok(m, "the exportCsv caregivers branch could not be located, so "
+        + 'this arm checked NOTHING -- a third state, not a pass');
+      const body = m[1];
+      assert.ok(/senIsManagement\(\)/.test(body),
+        'exportCsv(\'caregivers\') does not consult senIsManagement(), so a '
+        + 'non-management export writes a Background Check column that is '
+        + 'empty for every caregiver: a document asserting no checks are on '
+        + 'file. The claims branch in the same function already gates; this '
+        + 'one must too.');
+      assert.ok(/\[\s*'Name'\s*,\s*'Phone'\s*,\s*'CPR Expiry'\s*,\s*'Status'\s*\]/.test(body),
+        'the non-management header row still carries Background Check. The '
+        + 'column has to be ABSENT, not blank -- a blank cell is a claim, a '
+        + 'missing column is a visibly shorter file.');
+    });
+
   if (UNREACHED.length) {
     console.log('\nUNREACHED -- arms that never got to the redaction:');
     UNREACHED.forEach(function (u) { console.log('  %s -> %s %s', u[0], u[1], u[2]); });
