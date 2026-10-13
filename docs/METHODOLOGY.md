@@ -327,3 +327,109 @@ with `re.match(r'^## (\d+)\.')` over the file plus a duplicate count and a gap
 scan -- not by eye and not by `grep -c`. **Do not take 33 from this page
 either.** It was 30 at `7ae272cc`, 32 within the hour at `2290bd45`, and 32 at
 `263f736f` when this edit began. Count the headings.
+
+---
+
+## Count at the close of this edit, 2026-10-13 (fourth, b9)
+
+**34 `## <n>.` headings in `docs/2026-09-13-cross-domain-disciplines.md`, numbers
+1-34 with no gap and no duplicate**, measured the same way: `re.match(r'^## (\d+)\.')`
+over the file, a `Counter` for duplicates and a gap scan over `1..max`. The
+denominator heading reads **"ELEVEN of the thirty-four"** and agrees with `max`.
+**17 promotion rows in the table above, max 34, and every row has a heading** --
+the reverse does not hold and must not be asserted: 17 of the first 17
+conventions have no row, because this table started later.
+
+**No other session added a 35 while b9 ran**, which was the thing to check rather
+than assume. **Do not take 34 from this page.** Count the headings.
+
+---
+
+## BLAMELESS: batch b8 edited 23 files with no live claim, and the tool has no link between release and claim
+
+**WHAT HAPPENED, mechanically.** At b8 pickup the b7 claim was still active, so
+`release` ran. `claim` never followed: the queue went straight into a rebase and
+the batch then edited 23 files and made 3 commits with **no live claim of its
+own**. Found and reported by b8 in its own handoff and report rather than by
+anybody else, and repeated here because the fix is a tool change and this file is
+where tool changes get argued.
+
+**WHY THIS IS NOT A DISCIPLINE PROBLEM, and the distinction is the whole note.**
+
+`release` and `claim` are **two independent commands with no state connecting
+them**. Nothing in `release` knows a new claim is intended; nothing in `claim`
+knows a release just happened; and **no third thing watches the gap**. So:
+
+* The window between them is **unbounded**. A session can sit in it for a whole
+  batch.
+* **Every signal that would notice points the other way.** `sairn_claim.py list`
+  shows no claim, which is indistinguishable from a session that has not started.
+  The status registry shows a row, because `sairn_status.py set` is a separate
+  call that succeeded. The push gate's `CLAIM STATE` line is the one thing that
+  would have said it out loud -- and it only speaks **on a push**, which this
+  clone has not completed in four batches.
+* **The one moment a human would catch it is the moment the tool is loudest
+  about something else.** `release --no-push` prints a four-line warning about
+  the release not reaching `origin/main`. That warning is correct, it is the last
+  thing on screen, and it is about the release rather than about the absence that
+  follows.
+
+**SO THE OBSERVABLE WAS A SILENCE, which is the shape CLAUDE.md names as the
+most expensive one on this platform.** Nothing failed. Nothing printed. The work
+was good and the record simply does not contain it.
+
+**AND THE NEAR MISS IS WORTH MORE THAN THE MISS.** b9's brief made the claim the
+FIRST ACTION, before any edit, and that worked -- but it worked because a human
+put it first in a list, not because anything would have stopped it otherwise.
+**A rule that depends on being item 1 of the next brief is not a fix.**
+
+### The check, specified -- ROUTED TO cc, BUILT BY NOBODY HERE
+
+Routing line with the file:line targets:
+`docs/2026-10-13-fourth-routed-to-cc.md` §4.
+
+**WHAT IT ASSERTS.** At **batch close**, given the edited paths (dirty tree plus
+this batch's commits), does a **live claim of this session cover them**?
+
+| state | when | exit |
+|---|---|---|
+| OK | a live claim exists and its `FILES` cover every edited path | 0 |
+| FINDING | edits exist with **no** live claim, or paths outside the claim's `FILES` | 1 |
+| **COULD NOT RUN** | the registry is unreadable, or the claim's liveness is unknown | **2** |
+
+**THE THIRD STATE IS THE ONE THAT MAKES IT WORTH BUILDING.** A coverage check
+that returned OK when it could not read the registry would be worse than no
+check, because the registry is precisely what is unreadable when something has
+already gone wrong. Exit 2, named, never folded into either other answer --
+PR §1.11 applied to a check about claims rather than about code.
+
+**LIVENESS MUST COME FROM `registry_claims()` (`tools/sairn_claim.py:1281`) AND
+NOT FROM THE 4-HOUR WINDOW**, because the tool's own two paths already disagree:
+b4 measured `check` calling a claim ACTIVE while `own` called it DEAD on the same
+claim in the same second. A new check keyed to the stale half would inherit that
+disagreement on its first run.
+
+**IT MUST NOT BLOCK EDITING, and that is a design constraint rather than a
+concession.** A gate refusing the first unclaimed keystroke would be overridden
+within a day: `EXEMPTABLE = {'seed': 'seed-gate'}` is one entry, and
+`docs/BYPASS-LOG.jsonl` carries **21 blanket `SAIRN_SEED_GATE=off` rows from one
+session** -- the measured consequence of a gate with no scoped exemption.
+**Batch close is late enough to be accurate and early enough to fix.**
+
+**THE CHEAPEST HALF, worth doing even if the check is never built:** make
+`release` say, when the tree is dirty, that a release with uncommitted edits
+leaves them uncovered. One print statement at the one moment the session is
+looking at that output.
+
+### Why convention 8 does not already cover it
+
+Convention 8 is about a check that **stops testing** over time and prescribes
+re-referencing on a measured cadence. **There is no check here to go stale.**
+Convention 34, landed this week, is about a checker's universe and a refactor
+that moves a pattern -- also not this. **This is an absence with no instrument
+pointed at it at all**, and the honest place for it is a new instrument rather
+than a cross-reference inside an existing rule. **NOT PROMOTED to a numbered
+convention by me:** I hold `docs/METHODOLOGY.md` in this batch's claim, and
+writing myself a number in a file I hold is the self-promotion cody, cc and hank
+have each declined this cycle. **ROUTED, with the text written, for whoever runs
+the intake.**

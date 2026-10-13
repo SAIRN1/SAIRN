@@ -1,0 +1,53 @@
+# docs/2026-10-13-ted-seq17a-owners.tsv
+# fourth/ted, batch b9 item 6. ONE ROW PER FINDING -- 36 rows across 17
+# sites. docs/2026-10-07-fourth-routed.md:1698 is the source of the sites and
+# magnitudes; the subject of every one was verified at HEAD (3 in b4, 16 in
+# b8, and the 4 WITHDRAWN rows in b9), so 23 of 23 sites are now verified.
+#
+# THE OWNER IS A DIRECTORY RULE, NOT A RECORD: api/ hank, tests/ cody,
+# tools/ cc, docs/ ted. Weaker than a file's own `# OWNER:` line, stronger
+# than UNOWNED, and `owner_basis` says which on every row. None of these 17
+# files carries an OWNER header -- that was measured in b5 and is why the
+# directory rule is being used at all.
+#
+# NOTHING HERE IS FIXED. The 36 findings are open by design: the b4 pass
+# recorded their real subjects so the next session would not re-measure
+# against the wrong file, and that is all it claimed.
+#
+n	suite	line	k_of_n	subject_class	owner	owner_basis	subject_verified_in	note
+1	tests/licence_rekey_isolation.js	400	1 of 14	APP-SLICE	cody	directory rule tests/ -> cody	b8	
+2	tests/licence_rekey_isolation.js	400	2 of 14	APP-SLICE	cody	directory rule tests/ -> cody	b8	same site and subject as row 1
+3	tests/licence_rekey_isolation.js	400	3 of 14	APP-SLICE	cody	directory rule tests/ -> cody	b8	same site and subject as row 1
+4	tests/licence_rekey_isolation.js	400	4 of 14	APP-SLICE	cody	directory rule tests/ -> cody	b8	same site and subject as row 1
+5	tests/licence_rekey_isolation.js	400	5 of 14	APP-SLICE	cody	directory rule tests/ -> cody	b8	same site and subject as row 1
+6	tests/licence_rekey_isolation.js	400	6 of 14	APP-SLICE	cody	directory rule tests/ -> cody	b8	same site and subject as row 1
+7	tests/licence_rekey_isolation.js	400	7 of 14	APP-SLICE	cody	directory rule tests/ -> cody	b8	same site and subject as row 1
+8	tests/licence_rekey_isolation.js	400	8 of 14	APP-SLICE	cody	directory rule tests/ -> cody	b8	same site and subject as row 1
+9	tests/licence_rekey_isolation.js	400	9 of 14	APP-SLICE	cody	directory rule tests/ -> cody	b8	same site and subject as row 1
+10	tests/licence_rekey_isolation.js	400	10 of 14	APP-SLICE	cody	directory rule tests/ -> cody	b8	same site and subject as row 1
+11	tests/licence_rekey_isolation.js	400	11 of 14	APP-SLICE	cody	directory rule tests/ -> cody	b8	same site and subject as row 1
+12	tests/licence_rekey_isolation.js	400	12 of 14	APP-SLICE	cody	directory rule tests/ -> cody	b8	same site and subject as row 1
+13	tests/licence_rekey_isolation.js	400	13 of 14	APP-SLICE	cody	directory rule tests/ -> cody	b8	same site and subject as row 1
+14	tests/licence_rekey_isolation.js	400	14 of 14	APP-SLICE	cody	directory rule tests/ -> cody	b8	same site and subject as row 1
+15	tests/sairnbiz_incidents_kpi.js	264	1 of 1	APP-SLICE	cody	directory rule tests/ -> cody	b8	
+16	tests/sairnbiz_server_backup.js	191	1 of 1	APP-SLICE	cody	directory rule tests/ -> cody	b8	
+17	tests/sairncode_gates.js	301	1 of 1	api/sd-data.js SLICE	cody	directory rule tests/ -> cody	b8	cite :301-303 -- :301 declares the regex, :303 makes m[1] the subject
+18	tests/sairnlegacy_processions_isolation.js	72	1 of 1	APP-SLICE	cody	directory rule tests/ -> cody	b8	
+19	tests/sairnlegacy_session_gate_review_probe.js	202	1 of 1	APP-SLICE	cody	directory rule tests/ -> cody	b8	TAKE FIRST: its own comment records its first spelling was vacuous in the reassuring direction
+20	tests/sairnlegacy_write_failure_voice.js	197	1 of 1	APP-SLICE	cody	directory rule tests/ -> cody	b8	
+21	tests/seed_never_syncs_platform.js	105	1 of 2	APP-SLICE	cody	directory rule tests/ -> cody	b8	
+22	tests/seed_never_syncs_platform.js	105	2 of 2	APP-SLICE	cody	directory rule tests/ -> cody	b8	same site and subject as row 21
+23	tests/seed_never_syncs_platform.js	147	1 of 5	APP-SLICE	cody	directory rule tests/ -> cody	b8	
+24	tests/seed_never_syncs_platform.js	147	2 of 5	APP-SLICE	cody	directory rule tests/ -> cody	b8	same site and subject as row 23
+25	tests/seed_never_syncs_platform.js	147	3 of 5	APP-SLICE	cody	directory rule tests/ -> cody	b8	same site and subject as row 23
+26	tests/seed_never_syncs_platform.js	147	4 of 5	APP-SLICE	cody	directory rule tests/ -> cody	b8	same site and subject as row 23
+27	tests/seed_never_syncs_platform.js	147	5 of 5	APP-SLICE	cody	directory rule tests/ -> cody	b8	same site and subject as row 23
+28	tests/seed_never_syncs_platform.js	250	1 of 1	APP-WHOLE	cody	directory rule tests/ -> cody	b4	the ONLY whole-app subject of the 23
+29	tests/seed_never_syncs_platform.js	274	1 of 2	APP-SLICE	cody	directory rule tests/ -> cody	b8	TAKE EARLY: already lost a round to a regex that silently matched nothing
+30	tests/seed_never_syncs_platform.js	274	2 of 2	APP-SLICE	cody	directory rule tests/ -> cody	b8	same site and subject as row 29
+31	tests/sen_hydrate_comparator_review_probe.js	209	1 of 1	TEST-FILE SOURCE	cody	directory rule tests/ -> cody	b8	
+32	tests/sen_hydrate_comparator_review_probe.js	210	1 of 1	TEST-FILE SOURCE	cody	directory rule tests/ -> cody	b8	
+33	tests/stonedesk_server_backup.js	47	1 of 1	api SLICE	cody	directory rule tests/ -> cody	b8	
+34	tests/stonedesk_server_backup.js	55	1 of 1	api SLICE	cody	directory rule tests/ -> cody	b8	
+35	tools/citation_drift_hook.py	411	1 of 1	ITS OWN .py SOURCE	cc	directory rule tools/ -> cc	b8	cite :406 for the subject -- `lines` is BOUND there, :411 only consumes it
+36	tools/citation_drift_hook.py	416	1 of 1	ITS OWN .py SOURCE	cc	directory rule tools/ -> cc	b8	cite :406 for the subject, second pass

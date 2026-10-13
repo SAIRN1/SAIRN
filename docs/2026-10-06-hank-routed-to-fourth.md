@@ -361,6 +361,53 @@ cannot.
 > b4 report records as exiting 1 on exactly these three constraints; **re-running
 > it is the one-line confirmation and it is the next step, not a done thing.**
 > b8 did not run it: it belongs to the session that owns the attribution work.
+>
+> ---
+>
+> **RUN 2026-10-13 (fourth, b9 item 5). IT IS STILL EXIT 1, AND THE RESULT DOES
+> NOT MEAN WHAT IT LOOKS LIKE.**
+>
+> ```
+> python tools/audit_event_type_check.py     EXIT 1
+> 3 of 16 table(s) with a CHECK reject at least one emitted value.
+> 11 distinct value(s) in total.
+> ```
+>
+> | table | values its CHECK rejects | emitted by |
+> |---|---|---|
+> | `sairncode_audit_log` | `credential_change_refused`, `pin_setup` | `api/sc-ai.js`, `api/sc-auth.js` |
+> | `sairnlaw_audit_log` | `ai_interaction`, `ai_rejected`, `ai_reviewed`, `ai_used_in_filing`, `deadline_engine`, `legal_reference_lookup` | `api/law-auth.js`, `api/legal-citator.js`, `api/legal-deadlines.js`, `api/legal-reference.js` |
+> | `stonedesk_audit_log` | `order_link_created`, `order_link_revoked`, `pin_setup`, `sub_roster_write` | `api/sd-auth.js`, `api/sd-sub-auth.js`, `api/sd-sub-data.js`, `api/stonedesk-track.js` |
+>
+> **THIS CHECK CANNOT CONFIRM OR REFUTE THE MIGRATION, and that is its own
+> stated limit rather than my hedge.** It reads the CHECK constraint out of
+> `sql/*.sql` and the emitted values out of `api/**/*.js` — two files in the
+> repo. Its own LIMITS block says it in terms: *"a CHECK this tool reads out of a
+> file is not proof the constraint exists in Supabase"* and *"it does NOT replace
+> a live round trip and does not claim to."*
+>
+> **SO THE RED IS ABOUT THE REPO'S SQL FILES, NOT NECESSARILY THE DATABASE.** If
+> Michael's migration widened the constraints in Supabase and the `sql/*.sql` DDL
+> in the repo was not updated to match, this tool is comparing the code against a
+> stale copy of the constraint and would print exactly what it printed. **The two
+> readings — "the migration did not take" and "the repo's DDL lags the database"
+> — are indistinguishable from here**, and the honest thing is to say so rather
+> than pick the one that reads better.
+>
+> **WHAT WOULD SETTLE IT, and neither is mine:** one `information_schema` /
+> `pg_constraint` read against Supabase for those three tables, or one real
+> insert of a rejected value. Both need live credentials.
+>
+> **ROUTED TO hank** (`api/` owner by the directory rule), three rows, with the
+> emitting files named above. hank's b4 report already carries this as *"the only
+> thing standing between the code and a working audit trail for StoneDesk and
+> SAIRNcode"*; b9 adds the sairnlaw row, the per-table value lists, and the
+> reason the file-level red is not an answer about the database.
+>
+> **ALSO WORTH ONE LINE: `sv_audit_log` has NO `event_type` CHECK at all** — 1 of
+> 17 tables — and the tool lists it separately rather than counting it clean,
+> because a table with no constraint cannot be violated and is not the same as a
+> table that passes.
 
 **INSTANCE 2 — TIER 2 USED AS TIER 3, AND THIS ONE IS STILL BROKEN IN
 PRODUCTION.** The same batch's attribution fix emits four event types that the
