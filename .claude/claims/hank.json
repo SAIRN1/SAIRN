@@ -3777,6 +3777,30 @@
         "tools/cron_liveness_check.py",
         "tools/hank_session_start_check.py"
       ]
+    },
+    {
+      "id": "hank-1791872382",
+      "session": "hank",
+      "subject": "sairnsenior",
+      "task": "hank -- batch 20 (b5) -- (1) hooks set to {} in this clone per Michael, never restored, never committed. (2) seq965 sen_caregivers PII field scope, ALF_CRED_READ_ROLES-style scoped set from seq963, api/sd-data.js sen_caregivers read branch, api/sd-data-sen-caregiver-pii-scope.test.js, discharge the tier-a record. (3) live bare-key verification of the nine gated resources on SF-PINNACLE-2026 and SCP-DEMO-2026 with session controls. (4) re-run both gate suites and the pair-count. (5) tier-a UNSTAMPED and overdue routing table. (6) sf_officers server-side trapdoor DESIGN ONLY to docs. (7) a reader-side test pinning law-auth and the family audit shapes, no row rewrites. (8) sweep every app HTML for the hydrate-before-sign-in class. (9) bare_run_write_check repo-wide, route by directory. (10) read-only api/sd-data.js resource inventory to docs. (11) the shared suite failure from b4. FILES: api/sd-data.js api/sd-data-sen-caregiver-pii-scope.test.js docs/tier-a-reviews.json docs/2026-10-13-hank-sd-data-inventory.md docs/2026-10-13-hank-sf-officers-server-guard-design.md docs/2026-10-13-hank-tier-a-routing.md docs/2026-10-13-hank-hydrate-sweep.md api/audit-shape-pinning.test.js SAIRN-report-hank-b5.txt SAIRN-digest-hank-b5.txt docs/handoff-hank-2026-10-13.md SAIRN-ACTIVE-WORK-hank.md",
+      "claimed_at": "2026-10-13T06:19:42Z",
+      "claimed_at_epoch": 1791872382.2313182,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-hank.md",
+        "SAIRN-digest-hank-b5.txt",
+        "SAIRN-report-hank-b5.txt",
+        "api/audit-shape-pinning.test.js",
+        "api/sd-data-sen-caregiver-pii-scope.test.js",
+        "api/sd-data.js",
+        "docs/2026-10-13-hank-hydrate-sweep.md",
+        "docs/2026-10-13-hank-sd-data-inventory.md",
+        "docs/2026-10-13-hank-sf-officers-server-guard-design.md",
+        "docs/2026-10-13-hank-tier-a-routing.md",
+        "docs/handoff-hank-2026-10-13.md",
+        "docs/tier-a-reviews.json"
+      ]
     }
   ],
   "refusals": [
