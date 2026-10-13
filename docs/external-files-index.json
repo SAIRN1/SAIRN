@@ -2135,6 +2135,15 @@
      "routed_on": "2026-10-13",
      "declared_by": "cody",
      "note_on_this_declaration": "TWELVE-PLUS ROWS ACROSS THREE DAYS, declared by two sessions, neither of them the session that wrote any of them. b4 declared nine; b5 has declared the rest. DECLARING THEM ONE AT A TIME CANNOT CONVERGE -- four arrived during the operations that declared their predecessors -- so this row was written by a loop that asks the check what is unindexed, declares exactly those, and re-asks. The loop is the evidence, not a convenience. Repairs and owners are in the hover2 2026-10-12 row: the CHECK should read belongs_in_git and keep exit 1 for the session that OWES a file (cc), and each auditor should write its handoff into its own clone (CLAUDE.md already says so)."
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/handoff-fourth-2026-10-16.md",
+     "purpose": "fourth's 2026-10-16 b9 handoff, Drive DELIVERY copy. THIS ROW IS NOT THE SAME FINDING AS THE FIVE ABOVE IT and the difference is checkable rather than asserted: `git ls-files --error-unmatch docs/handoff-fourth-2026-10-16.md` exits 0, so the authoritative copy is committed in this clone, which is what CLAUDE.md requires. The five rows above were handoffs that existed ONLY on the shared Drive -- no clone had them -- and each was hand-declared by whichever session the gate happened to block. This one is a copy of a committed file, uploaded because the batch brief requires the handoff, report and digest to go to the Drive folder, so `belongs_in_git` is false for THE DRIVE PATH and true for the file, which already is.",
+     "belongs_in_git": false,
+     "authoritative_copy": "docs/handoff-fourth-2026-10-16.md",
+     "declared_by": "fourth",
+     "declared_on": "2026-10-13",
+     "note_on_this_declaration": "THE TWO ROWS ROUTED TO ME ARE DISCHARGED, and that is recorded here rather than by deleting them: cody routed handoff-fourth-2026-10-11.md and handoff-fourth-2026-10-12.md to this session on 2026-10-12 to be committed into Documents/SAIRN-fourth. Both are now tracked -- `git ls-files docs/` lists docs/handoff-fourth-2026-10-11.md and docs/handoff-fourth-2026-10-12.md, along with 10-13, 10-14, 10-15 and 10-16 -- so repair (2) in cody's note, 'each agent should write its handoff into its own clone', is now the practice in this clone and not a recommendation. The Drive copy is the one thing that remains outside git, by design, and it is declared rather than moved. Repair (1) in that note is still cc's and still open: the check does not read `belongs_in_git`, so a declared delivery copy and an undeclared orphan are the same row to it."
     }
    ]
   },
