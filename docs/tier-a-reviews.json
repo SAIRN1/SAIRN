@@ -6122,6 +6122,37 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-13T09:03:35Z",
+      "opened_at_sha": "f0e81b92459cd1f7bc1241ebacf1bf35a138d5f8",
+      "opened_at_sha_basis": "file-set",
+      "resources": [
+        "bld_draws",
+        "invoices",
+        "scp_designs",
+        "scp_quotes",
+        "sf_events",
+        "sf_officers",
+        "sf_products",
+        "sf_rentals",
+        "sf_sessions",
+        "sf_shifts",
+        "sf_tickets"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "SAIRN-addendum-hank-b5.txt"
+      ],
+      "what": "DOCUMENT ONLY -- NO CODE IN THIS PUSH. The gate names bld_draws, sf_events and sf_products as uncovered Tier A resources because SAIRN-addendum-hank-b5.txt MENTIONS them in prose. The obligation is recorded rather than argued away, which is the same call cody made on 2026-10-12 for the same reason (\"the batch's documents NAME 22 Tier A resources\").\n\nWHAT THE ADDENDUM ACTUALLY CONTAINS ABOUT EACH:\n\nsf_events and sf_products -- they appear ONLY as the UNGATED CONTROLS in the re-run live probe table. Both answered 200 on read and 400 on an id-less write with a bare licence key, which is the expected and correct behaviour for a resource that is deliberately NOT gated (both are named in b4's five-left list, with Michael, and were not touched). Their presence in the table is what makes the eleven 403s evidence rather than a guess: same key, same request shape, gated refuses and ungated does not. NO CODE PATH SERVING EITHER WAS CHANGED IN THIS BATCH.\n\nbld_draws -- mentioned in the addendum's closing routing note, not in the probe. cc's live claim says it will \"Live-verify bld_draws 86189e37 on the restored deployment\"; that is the obligation I DISCHARGED earlier this batch (cc's record of 2026-10-12T11:35:03Z) on source evidence, with the verdict explicitly recording \"NOT PROVEN LIVE, and it cannot be today\". The note says that when cc's live evidence lands, that discharge is worth re-reading against it, because a verdict whose stated limit has been removed should say so. NO bld_draws CODE WAS CHANGED BY ME IN THIS BATCH -- api/sd-data.js was not edited at all, and `git diff --quiet api/sd-data.js` was clean at every checkpoint.\n\nWHAT A REVIEWER SHOULD ACTUALLY CHECK, since there is no diff to read:\n\n1. That the three resource names in the addendum are prose and nothing more -- `git show --stat` on this push should show SAIRN-addendum-hank-b5.txt, docs/external-files-index.json, docs/hank-evidence/* and docs/scrutiny-flags.json, and no api/ or *.html file.\n\n2. THE ONE SUBSTANTIVE CLAIM WORTH ATTACKING: the addendum asserts that the eleven 403s are the gate, on the strength of four ungated controls answering 200 on the same key. The counter-argument to test is whether a 403 could come from somewhere other than the session gate -- a licence-scope refusal, for instance. The controls rule that out only if they share the same licence and the same dispatch path, which they do (sf_events and sf_products on SF-PINNACLE-2026 alongside the five sf_ gated ones; scp_jobs and scp_irr_zones on SCP-DEMO-2026 alongside the six scp/invoices/customers ones). Read docs/hank-evidence/b5_live_bare_key_probe_RESTORED.out and the probe source, both committed.\n\n3. That the addendum does NOT overclaim. It should say, and does, that the VALID-SESSION half remains unverified for want of an employee PIN, and that no ROLE check exists on any of the eleven -- so \"a bare key is refused\" is the whole of what was proven.\n\nNOT PROVEN LIVE DOES NOT APPLY TO THIS PUSH: there is nothing in it to deploy.",
+      "status": "open",
+      "reviewer_owner": "cloud",
+      "owner_assigned_at": "2026-10-13T09:03:35Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
