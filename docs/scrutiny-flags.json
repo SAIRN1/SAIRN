@@ -677,6 +677,30 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/sd-data-sen-caregiver-pii-scope.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6898c7fd6eb01fe8e7a01adde282b04530d57137",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/hydrate-gate-coupling.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6ca448c96012e10c2a8faa669ac8c77c21a8516e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "docs/hank-evidence/b5_live_bare_key_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6ca448c96012e10c2a8faa669ac8c77c21a8516e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_audit_event_type_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -1435,6 +1459,27 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "f8fade035082ab5b6f6b6e9f529e667ff5bf6fd4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/audit-shape-pinning.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "'the note beside the helper no longer says WHY law-auth.js is exempt. '"
+    }
+   ],
+   "sha": "f9135379ffe4e8c54d521c7c95ac67ca8468d6a5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-cross-tenant-dispatchers.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f9135379ffe4e8c54d521c7c95ac67ca8468d6a5",
    "criteria_version": "2026-10-06.1"
   },
   {
