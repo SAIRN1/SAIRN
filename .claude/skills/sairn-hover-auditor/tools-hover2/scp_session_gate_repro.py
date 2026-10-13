@@ -61,6 +61,42 @@ def per_action_blocks(src, resource):
     return out
 
 
+def unconditional_session_gate(body):
+    """True only if verifySessionToken is called at brace-depth 0 inside
+    this block -- i.e. BEFORE any nested `if (...)` that could make the
+    check conditional on the payload, not merely present SOMEWHERE in the
+    body.
+
+    FIXED, batch b10 (2026-10-12), a real defect a build agent found and
+    reported rather than silently editing (this tool is hover2's --
+    tools-hover2/0442646c's own commit message, verbatim): the prior
+    version was `'verifySessionToken' in body`, a bare substring test.
+    api/sd-data.js's scp_progress_photos write branch calls
+    verifySessionToken ONLY inside `if (payload.qc_status === 'approved'
+    || ...)` -- a QC-decision sub-branch, not the action's own gate -- so
+    the substring test scored the whole write path FIXED when an upload
+    with no qc_status at all reached the table with no session check at
+    all. The real figure at the time was 16 of 22 REPRODUCES, not 15.
+
+    This walks the body tracking brace depth and returns True only if
+    `verifySessionToken` is first reached while depth == 0 (not yet
+    inside any nested `{` opened by an `if` other than the block's own
+    opening, which per_action_blocks() already stripped). A call found
+    only at depth >= 1 is conditional and does NOT count as the action's
+    own unconditional gate.
+    """
+    idx = body.find('verifySessionToken')
+    if idx == -1:
+        return False
+    depth = 0
+    for ch in body[:idx]:
+        if ch == '{':
+            depth += 1
+        elif ch == '}':
+            depth -= 1
+    return depth <= 0
+
+
 def check_one(resource, repo, gated_set):
     src, err = read_src(repo)
     if err:
@@ -73,7 +109,7 @@ def check_one(resource, repo, gated_set):
     result = {}
     for action, body in blocks.items():
         global_gate = resource in gated_set
-        branch_gate = 'verifySessionToken' in body
+        branch_gate = unconditional_session_gate(body)
         result[action] = global_gate or branch_gate
     return result, None
 
@@ -131,6 +167,13 @@ def selftest():
     if (resource === 'fx_ungated' && action === 'read') {
       res.status(200).json({ ok: true, data: [] });
     }
+    if (resource === 'fx_nested_gate' && action === 'write') {
+      if (payload.qc_status === 'approved' || payload.qc_status === 'rejected') {
+        const session = verifySessionToken(tokenFromRequest(req), licHash, 'fx');
+        if (!session) { return; }
+      }
+      res.status(200).json({ ok: true });
+    }
 """
     import tempfile
     d = tempfile.mkdtemp()
@@ -140,7 +183,7 @@ def selftest():
 
     global RESOURCES, BLOCK_RE
     old_r, old_re = RESOURCES, BLOCK_RE
-    RESOURCES = ['fx_global_gated', 'fx_branch_gated', 'fx_ungated']
+    RESOURCES = ['fx_global_gated', 'fx_branch_gated', 'fx_ungated', 'fx_nested_gate']
     BLOCK_RE = re.compile(r"if \(resource === '(%s)' && action === '(\w+)'\) \{" %
                           '|'.join(re.escape(r) for r in RESOURCES))
     try:
@@ -150,11 +193,39 @@ def selftest():
         g2, _ = check_one('fx_branch_gated', d, gated_set)
         g3, _ = check_one('fx_ungated', d, gated_set)
         g4, err4 = check_one('fx_nonexistent', d, gated_set)
+        # THE REGRESSION FIXTURE for the real scp_progress_photos defect
+        # (0442646c): verifySessionToken called ONLY inside a payload-
+        # conditional sub-branch must NOT count as the action's own
+        # unconditional gate -- this must report False, not True.
+        g5, _ = check_one('fx_nested_gate', d, gated_set)
+        # PARTIAL-FAILURE CASE, batch b14: --all's real exit code comes from
+        # `any_reproduces`, which main() sets True on EITHER a REPRODUCES
+        # finding OR a COULD_NOT_RUN error (no dispatch branch at all for a
+        # listed resource) -- two different failure shapes folded into one
+        # exit code. The risk this guards against: a --all run where every
+        # OTHER resource is FIXED must still exit non-zero and must still
+        # print the COULD_NOT_RUN line distinctly, not silently drop the
+        # missing resource and report a clean pass because nothing
+        # REPRODUCED among the ones it could check. Mirrors main()'s own
+        # --all loop logic directly (check_one per resource, OR the
+        # booleans) rather than invoking main(), since main() only prints
+        # and exits -- it returns nothing a selftest can assert on.
+        g6, err6 = check_one('fx_missing_entirely', d, gated_set)
+        any_reproduces_mixed = False
+        for res, err in ((g1, None), (g6, err6)):
+            if err is not None:
+                any_reproduces_mixed = True
+            elif res is not None and not all(res.values()):
+                any_reproduces_mixed = True
+        partial_ok = (g6 is None and err6 is not None and
+                      'COULD NOT RUN' in err6 and any_reproduces_mixed)
         ok = (gated_set == {'fx_global_gated'} and
               g1 == {'read': True} and g2 == {'read': True} and
-              g3 == {'read': False} and g4 is None and err4 is not None)
-        print('SELFTEST %s: global=%r branch=%r ungated=%r missing_err=%r' %
-              ('PASS' if ok else 'FAIL', g1, g2, g3, err4))
+              g3 == {'read': False} and g4 is None and err4 is not None and
+              g5 == {'write': False} and partial_ok)
+        print('SELFTEST %s: global=%r branch=%r ungated=%r missing_err=%r '
+              'nested_gate=%r partial_failure_ok=%r' %
+              ('PASS' if ok else 'FAIL', g1, g2, g3, err4, g5, partial_ok))
         return 0 if ok else 1
     finally:
         RESOURCES, BLOCK_RE = old_r, old_re

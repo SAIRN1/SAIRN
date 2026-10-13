@@ -140,9 +140,93 @@
       "task": "batch b9 -- read-only audit rotation. Re-verify 5 stale open access-control findings (sf officers write gate, dnt appointments write gate, scp session gate, a payment-token mint, a draws bypass), unchanged expected. Re-verify fix status of the two remaining items from the standing open list, no write anywhere by this role ever. Chain tip and token check. External-files mechanical check. Rotate to next-oldest findings not yet re-verified. Session-config and compaction check. Write report plus digest plus handoff, upload to Drive.",
       "claimed_at": "2026-10-12T00:11:44Z",
       "claimed_at_epoch": 1791763904.4368036,
+      "status": "released",
+      "released_at": "2026-10-12T01:48:14Z",
+      "files": null
+    },
+    {
+      "id": "hover2-1791801129",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "batch b10 -- RFC3161 tip+token check. Direct-assign 5 CRITICAL open findings outside routing cycle (sf officers dnt appointments scp sairncash to hank, bld draws to cc) with exact fix specs file:line, stop re-running repros every batch. Commit sv/law role-granularity routing docs. Re-check law fix. Rotate next 4+1 findings by FILES not wording. Re-check gate-widening and FILES matcher. Extend session-config check to read per-clone settings.json hooks table report-only. External-files unindexed list both files by owner, route to cc, no edit to the index. Compaction discipline. Handoff before report. FILES: docs/2026-10-07-hover2-sv-role-granularity-routing.md docs/2026-10-08-hover2-law-role-granularity-routing.md",
+      "claimed_at": "2026-10-12T10:32:09Z",
+      "claimed_at_epoch": 1791801129.1459053,
+      "status": "released",
+      "released_at": "2026-10-12T11:05:26Z",
+      "files": [
+        "docs/2026-10-07-hover2-sv-role-granularity-routing.md",
+        "docs/2026-10-08-hover2-law-role-granularity-routing.md"
+      ]
+    },
+    {
+      "id": "hover2-1791803351",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "batch b11 -- resume, read-only re-verification rotation. Chain tip+token check, republish only if >15 behind. Re-verify bld_draws fix (api/sd-data.js:12939), sairncash fix (api/sairncash/verify.js:126), scp_ remainder fixes (api/sd-data.js multiple ranges + SD_SESSION_GATED/SD_GATE_APP), sf_officers/dnt_appointments/3-fixed-scp still hold, law_role_granularity, sv_role_granularity count. Check gate-widening/docs commit status, unindexed external files inventory. Independently re-verify 2 of H1's b10 routed findings (api/sb-auth.js:297-304, api/sd-data.js:6030-6039) plus spot-check seq1018/seq1036. Rotate next 5 older findings by FILES weighted random. Re-run session-config hooks check across 6 clones. Handoff before report. FILES: api/sd-data.js api/sairncash/verify.js api/sb-auth.js tools/hover_auditor_scope_gate.py tools/sairn_push_gate_hook.py tools/external_file_index_check.py docs/2026-10-07-hover2-sv-role-granularity-routing.md docs/2026-10-08-hover2-law-role-granularity-routing.md",
+      "claimed_at": "2026-10-12T11:09:11Z",
+      "claimed_at_epoch": 1791803351.0733755,
+      "status": "released",
+      "released_at": "2026-10-12T11:30:15Z",
+      "files": [
+        "api/sairncash/verify.js",
+        "api/sb-auth.js",
+        "api/sd-data.js",
+        "docs/2026-10-07-hover2-sv-role-granularity-routing.md",
+        "docs/2026-10-08-hover2-law-role-granularity-routing.md",
+        "tools/external_file_index_check.py",
+        "tools/hover_auditor_scope_gate.py",
+        "tools/sairn_push_gate_hook.py"
+      ]
+    },
+    {
+      "id": "hover2-1791805126",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "batch b12 -- resume, read-only re-verification. Chain tip+token check, republish only if >15 behind. Re-locate bld_draws/BLD_BID_MANAGEMENT_ROLES/refusal shape, update routing doc. Re-check sairncash verify.js:126. Re-locate scp_ remainder ranges, update routing doc, rerun scp_session_gate_repro.py --all. Re-check law_role_granularity and cody claim. Write sv_role_granularity facts table (42 resources) into routing doc. List 3 register duplicate/phantom-hash entries, write finding into routing doc routed to ted, no register edit. Report external-files unindexed count+names, check cc fix landed. Build a report-only anchor-based drift check for routed findings, control-pair tested. Independently verify one of H1's b11 fixes. Rotate 5 older findings by FILES weighted random. Rerun all repro scripts, report exit codes. Re-check 6 clones for hooks/compaction reappearing, read-only. Handoff before report. FILES: api/sd-data.js api/sairncash/verify.js docs/2026-10-07-hover2-bld-draws-bypass-routing.md docs/2026-10-07-hover2-scp-session-gate-routing.md docs/2026-10-07-hover2-sv-role-granularity-routing.md docs/2026-10-08-hover2-law-role-granularity-routing.md",
+      "claimed_at": "2026-10-12T11:38:46Z",
+      "claimed_at_epoch": 1791805126.6790693,
+      "status": "released",
+      "released_at": "2026-10-12T12:04:24Z",
+      "files": [
+        "api/sairncash/verify.js",
+        "api/sd-data.js",
+        "docs/2026-10-07-hover2-bld-draws-bypass-routing.md",
+        "docs/2026-10-07-hover2-scp-session-gate-routing.md",
+        "docs/2026-10-07-hover2-sv-role-granularity-routing.md",
+        "docs/2026-10-08-hover2-law-role-granularity-routing.md"
+      ]
+    },
+    {
+      "id": "hover2-1791806938",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "batch b13 -- resume, read-only re-verification. This role never writes platform code; api/sd-data.js and api/sairncash/verify.js are READ ONLY this batch, not declared as files touched since cody's live claim b5 genuinely covers api/sd-data.js writes and this is not a write conflict. Chain tip+token check, republish only if >15 behind. Sync (fetch, report ahead/behind, rebase). Push only if external-files gate clear after rebase. Run anchor_drift_check.py on all routed findings. Re-verify bld_draws/scp_ remainder only if drifted or changed per anchor check. Grep api/ for other firebaseToken mint sites, report only. Independently re-verify sen_caregivers PII fix seq965/b384a513 by reading, no write. Check cody claim/commit status for law_role_granularity, report only. Group sv_role_granularity 42 resources by sensitivity class in the routing doc, facts only. Extend anchor_drift_check.py coverage across H1+H2 routing docs, control-pair test new rules. Rotate 5 older findings by FILES weighted random, read only. Re-check 6 clones hooks/compaction read-only. Rerun all repro scripts read-only. Handoff before report. FILES: .claude/skills/sairn-hover-auditor/tools-hover2/anchor_drift_check.py docs/2026-10-07-hover2-bld-draws-bypass-routing.md docs/2026-10-07-hover2-scp-session-gate-routing.md docs/2026-10-07-hover2-sv-role-granularity-routing.md docs/2026-10-08-hover2-law-role-granularity-routing.md",
+      "claimed_at": "2026-10-12T12:08:58Z",
+      "claimed_at_epoch": 1791806938.86119,
+      "status": "released",
+      "released_at": "2026-10-12T12:35:30Z",
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools-hover2/anchor_drift_check.py",
+        "docs/2026-10-07-hover2-bld-draws-bypass-routing.md",
+        "docs/2026-10-07-hover2-scp-session-gate-routing.md",
+        "docs/2026-10-07-hover2-sv-role-granularity-routing.md",
+        "docs/2026-10-08-hover2-law-role-granularity-routing.md"
+      ]
+    },
+    {
+      "id": "hover2-1791871797",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "batch b14 -- resume. Register-citation gate: print refusal text + offending entries, data/citation fix only, no history rewrite, retry push once. scp_ rerun --all, route to hank. Re-verify bld_draws/sf_officers/dnt_appointments/sairncash on a fresh clone of origin, not working tree. Rotation pool exhausted: set oldest-covered-first re-pick policy in own methodology doc, technical call. Diff-based sweep of hank/cody/cc commits since last HEAD for new ungated write paths. Re-verify sv_role_granularity grouping against current code, no decision made. Confirm law_role_granularity 19-row doc matches current code. Add scp_ partial-failure selftest case. Extend anchor_drift_check.py for new routing docs since b13. Independently re-verify H1 seq958 (14 of 17) by repro. Chain tip+token check, republish only if >15 behind. External-files inventory, index new files created. Handoff before report. This role never writes platform application code; api/sd-data.js and other platform files are READ ONLY, not declared as files touched. FILES: .claude/skills/sairn-hover-auditor/tools-hover2/anchor_drift_check.py .claude/skills/sairn-hover-auditor/methodology-h2.md docs/2026-10-07-hover2-scp-session-gate-routing.md",
+      "claimed_at": "2026-10-13T06:09:57Z",
+      "claimed_at_epoch": 1791871797.7468154,
       "status": "active",
       "released_at": null,
-      "files": null
+      "files": [
+        ".claude/skills/sairn-hover-auditor/methodology-h2.md",
+        ".claude/skills/sairn-hover-auditor/tools-hover2/anchor_drift_check.py",
+        "docs/2026-10-07-hover2-scp-session-gate-routing.md"
+      ]
     }
   ],
   "refusals": [
@@ -196,6 +280,21 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "shared phrase: \"check drift\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-12T12:08:29Z",
+      "my_subject": "hover2",
+      "my_task": "batch b13 -- resume, read-only re-verification. Chain tip+token check, republish only if >15 behind. Sync (fetch, report ahead/behind, rebase). Push only if external-files gate clear after rebase. Run anchor_drift_check.py on all routed findings. Re-verify bld_draws/scp_ remainder only if drifted or changed. Grep api/ for other firebaseToken mint sites. Independently re-verify sen_caregivers PII fix seq965/b384a513. Check cody claim/commit status for law_role_granularity. Group sv_role_granularity 42 resources by sensitivity class, facts only. Extend anchor_drift_check.py coverage across H1+H2 routing docs, control-pair test new rules. Rotate 5 older findings by FILES weighted random. Re-check 6 clones hooks/compaction read-only. Rerun all repro scripts. Handoff before report. FILES: api/sd-data.js api/sairncash/verify.js .claude/skills/sairn-hover-auditor/tools-hover2/anchor_drift_check.py docs/2026-10-07-hover2-bld-draws-bypass-routing.md docs/2026-10-07-hover2-scp-session-gate-routing.md docs/2026-10-07-hover2-sv-role-granularity-routing.md docs/2026-10-08-hover2-law-role-granularity-routing.md",
+      "other_session": "cody",
+      "other_subject": "cody",
+      "other_task": "cody -- batch 27 (b5). (1) implement a law role matrix for the 19 sairnlaw resources, owner/attorney/paralegal, ONE data table read by ONE function; trust resources hard-locked. (2) a 19x3 role-matrix test failing on any law resource with no rule. (3) a monotonicity metamorphic relation, control-pair tested. (4) docs spec ONLY for owner-adjustable per-firm permissions, no build. (5) a local regression test for sen_caregivers field redaction across every read path. (6) make check4/check7 probe verdicts runnable against a throwaway bare remote. (7) build tools/dup_dom_ids_check.py report-only, control-pair tested, run on all apps. (8) run the tier-a sabotage probe 20x and find the nondeterminism. (9) locate the FMEA drafts in history or confirm never committed. (10) classify the 145 no-sha tier-a records as derivable vs absent, counts only. (11) write the claim-matcher collision finding with file:line and a files-based fix proposal, ROUTED to cc, no edits to cc files. (12) prepare but DO NOT RUN the citator schema verification script. (13) handoff BEFORE the report. (14) report plus digest. FILES: api/sd-data.js api/sd-data-law-role-matrix.test.js docs/2026-10-12-cody-b5-law-permissions-spec.md docs/2026-10-12-cody-b5-routed-to-cc.md api/sd-data-sen-caregiver-pii-scope.test.js tests/push_gate/check4_probe.py tests/push_gate/check7_probe.py tools/dup_dom_ids_check.py tests/run_dup_dom_ids_probe.py tools/verify_citator_feedback.py docs/handoff-cody-2026-10-12b.md SAIRN-ACTIVE-WORK-cody.md",
+      "other_claimed_at": "2026-10-12T12:04:53Z",
+      "shared_files": [
+        "api/sd-data.js"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]

@@ -12,14 +12,23 @@ silently joining the pile.
 
 RULE: for each declared directory that is not blanket-exempt, every real
 file (not a subdirectory) must be either (a) listed in the index's
-"indexed" array, (b) match the directory's "handoff_glob_prefix" (handoffs
-are open-ended by nature -- gating on an exact filename list would refuse
-every new date), or (c) resolve as a git-tracked blob under
+"indexed" array, (b) match the directory's "handoff_glob_prefix" or any
+entry in its "glob_prefixes" list (handoffs, and now every batch's
+SAIRN-report-h2-/SAIRN-digest-h2- pair, are open-ended by nature -- gating
+on an exact filename list would refuse every new date/batch), or (c)
+resolve as a git-tracked blob under
 .claude/skills/sairn-hover-auditor/tools-hover2/ in the platform repo (for
 genuinely new tools that landed there first and have not yet been added to
 the index by name -- being committed is itself sufficient evidence of
 intent, same standard citation_resolve_check.py already uses for --ref).
 Anything matching NONE of the three is UNINDEXED and fails the check.
+
+ADDED batch b9: SAIRN-report-h2-b8.txt/SAIRN-digest-h2-b8.txt showed up
+UNINDEXED the first time this check ran after Michael asked for a per-batch
+Drive upload -- the per-batch report/digest pair was a new, growing file
+family this check had never seen, same shape as the handoff glob already
+had a field for. "glob_prefixes" (list) generalizes that one field instead
+of bolting on a second single-purpose one.
 
 Exit 0: zero unindexed files. Exit 1: N unindexed files found, each
 printed with its full path. Exit 2: COULD NOT RUN (index missing/unreadable,
@@ -71,6 +80,9 @@ def check_directory(entry, repo):
 
     indexed = set(entry.get('indexed', []))
     handoff_prefix = entry.get('handoff_glob_prefix')
+    glob_prefixes = list(entry.get('glob_prefixes', []))
+    if handoff_prefix:
+        glob_prefixes.append(handoff_prefix)
     tracked = git_tracked_tools(repo)
 
     unindexed = []
@@ -80,7 +92,7 @@ def check_directory(entry, repo):
             continue
         if name in indexed:
             continue
-        if handoff_prefix and name.startswith(handoff_prefix):
+        if any(name.startswith(p) for p in glob_prefixes):
             continue
         if name in tracked:
             continue
@@ -184,6 +196,23 @@ def _selftest():
             json.dump(index, f)
         rc4 = run(index_path, repo)
         assert rc4 == 0, "blanket_exempt directory must not be scanned, got %r" % rc4
+
+        # ARM 5 (batch b9): a "glob_prefixes" list entry must clear a
+        # matching file the same way handoff_glob_prefix does, AND a file
+        # matching NEITHER prefix in the list must still be flagged -- so
+        # this is not just "any prefix clears anything".
+        with open(os.path.join(ext_dir, 'SAIRN-digest-x-b1.txt'), 'w') as f:
+            f.write('# digest\n')
+        with open(os.path.join(ext_dir, 'still-unindexed.txt'), 'w') as f:
+            f.write('# not covered by any prefix\n')
+        index["directories"][0]["glob_prefixes"] = ['SAIRN-digest-x-', 'SAIRN-report-x-']
+        with open(index_path, 'w') as f:
+            json.dump(index, f)
+        rc5 = run(index_path, repo)
+        assert rc5 == 1, "expected exit 1 (still-unindexed.txt uncovered), got %r" % rc5
+        os.remove(os.path.join(ext_dir, 'still-unindexed.txt'))
+        rc5b = run(index_path, repo)
+        assert rc5b == 0, "expected exit 0 once the uncovered file is removed, got %r" % rc5b
 
         print("ALL SELFTEST CASES PASS")
         return 0
