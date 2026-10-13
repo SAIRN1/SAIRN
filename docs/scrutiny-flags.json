@@ -866,6 +866,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_defect_register_superseded_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d435023f5c7109dd4cdad44799f8b28ca7e5652",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/claims/run_own_claim_state_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -1056,6 +1064,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "c6a841cb9f235ac763992738ff019a47c3913718",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_register_feed_gate_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "cc6d3c525262bba301ba2bddcd1b93e963f99ddb",
    "criteria_version": "2026-10-06.1"
   },
   {

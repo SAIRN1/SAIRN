@@ -1,0 +1,226 @@
+DIGEST cc b4
+================================================================================
+
+HEAD / PUSH
+  HEAD at open    4024ab44, tree DIRTY (1 modified, 1 untracked)
+  HEAD at close   2697518e
+  origin/main     ahead 0 / behind 0 at the close
+  PUSHED          yes, every commit below is on origin/main, verified with
+                  `git log origin/main`, not `git log`
+  REBASED         FIVE times. Four other sessions pushed into main during this
+                  batch, and each rebase renamed every outgoing SHA -- which is
+                  why there are three separate re-seat commits below rather
+                  than one.
+
+  3b99c19c  fix(hover separation) the dead control -- unpushed at pickup, NOT
+                                  this session's commit, carried and recorded
+  86189e37  fix(bld_draws)        THE AUTH BYPASS, seq664. Client + server.
+  9b0bfd51  fix(claim matcher)    declared FILES is the primary mode
+  dd1bcbe2  chore(tier A)         the obligation + the phantom-limb fixture
+  aff7f8ce  chore(claims)         cc claims, second half
+  0cbd7a84  chore(claims)         cc releases two expired claims
+  5ae06f11  chore(records)        3 register records + tier A, re-derived
+  9d55424e  chore(register)       re-seat x3
+  2a1189d2  chore(external files) 2 Drive handoffs declared
+  cc6d3c52  fix(register feed gate) D9 on the third gate
+  9d435023  feat(defect register) --supersede, the writer the field never had
+  22e11a16  chore(register)       2 records
+  ad04aa57  chore(external files) 2 MORE Drive handoffs, 40 min later
+  1c4ccfb6  chore(external+reg)   the THIRD refusal, re-seat x2, scrutiny rows
+  2697518e  chore(register)       re-seat after the fifth rebase
+
+================================================================================
+READ THIS FIRST -- NOT ON THE TASK LIST, BIGGER THAN EVERYTHING ON IT
+================================================================================
+
+  **EVERY SAIRN APP IS DOWN. sairn.vercel.app RETURNS HTTP 402 ON EVERY
+  ROUTE.** Found while doing the push protocol's live-verification step, which
+  is the only reason anybody knows.
+
+      402  https://sairn.vercel.app/
+      402  https://sairn.vercel.app/stonedesk
+      402  https://sairn.vercel.app/sairnbuild
+      402  https://sairn.vercel.app/api/sd-data
+
+  402 Payment Required from Vercel means the project is disabled -- a spend
+  limit or a billing state, not a code fault and not a bad deploy. No app, no
+  API, no proxy. Every customer-facing URL on the platform is serving nothing.
+  ONLY MICHAEL CAN FIX THIS. Nothing in the repo is wrong.
+
+  Consequence for this batch, stated rather than hidden: the push protocol's
+  after-pushing step is UNVERIFIED for the bld_draws fix. It is verified
+  present on origin/main as GitHub serves it -- `BLD_SESSION_REQUIRED` in
+  sairnbuild.html, the bld_draws read/write gate in api/sd-data.js, both
+  fetched over raw.githubusercontent.com -- and NOT verified against a running
+  deployment, because there is not one.
+
+================================================================================
+ONE LINE PER ITEM
+================================================================================
+
+0  RESUME CHECK -- DONE, and the dirty tree was a DISARMED CLONE.
+   .claude/settings.json in the working tree had `hooks: {}` against 23
+   committed hook commands -- every PreToolUse, PostToolUse, SessionStart,
+   PreCompact and UserPromptSubmit hook in this clone, gone, with `git status`
+   clean-looking enough to walk past. The untracked `.hooks.bak` beside it was
+   BYTE-IDENTICAL to HEAD, which is what proved nothing was meant to change:
+   a PowerShell JSON round-trip had rewritten the file and dropped the nested
+   object. Restored from HEAD, wiring re-counted at 23 hook commands. Nothing
+   was discarded -- the .bak was removed only after the comparison.
+   (fourth's released claim says it did this too; both of us found it.)
+
+1  bld_draws seq664 AUTH_BYPASS -- FIXED, client and server, with a control
+   measured both ways. `wip` and `release_retainage` were gated behind a
+   session and owner/office; `read` and `write` ON THE SAME TABLE fell into the
+   generic BLD_RESOURCES loop and took the LICENCE KEY ALONE. So: retainage
+   figures readable with no session, and -- the half that matters -- a generic
+   write whose `data` blob REPLACES the row, so one unauthenticated request
+   could author a release that never happened, inflate one, or set
+   retainage_released to zero, defeating bld_release_retainage_atomic's CAS,
+   the no-reduce rule in wip-accounting.js and the append-only trail at once.
+   Fix: session required; the three release-owned fields CARRIED OVER from the
+   stored row (not stripped -- stripping blanks a real release on the next
+   ordinary save, because the client echoes them back through this same
+   write); fail-closed pre-read. Client sends the session on push, retry and
+   hydrate through one list. NOT narrowed to owner/office -- see Q1.
+
+2  THE TWO STAGED H1 PATHS -- ALREADY LANDED, re-derived rather than redone.
+   tools/hover_separation_ci.py and the scope gate's ALLOWED entry were both in
+   at pickup (4024ab44 and earlier). Re-ran the baseline: 148 passed / 0
+   failed. Also re-ran the revived control tests/hover_separation_ci_probe.py:
+   exit 0.
+
+3  WIDEN THE SCOPE GATE FOR ROUTING DOCS -- NOT NEEDED, MEASURED. The ALLOWED
+   list already covers `.claude/skills/sairn-hover-auditor/` as a prefix, so
+   `routing/` inside it is allowed for hover, hover2 AND hover3 -- driven
+   through violations() for each. The three "previously-refused" routing-doc
+   commits (6409aa66, cc0ee901, 1b6b5bc0) are ALL ON origin/main, and their
+   file sets are entirely under routing/. Widening would have been a change
+   with no defect behind it. The ONLY refused routing path is one written to
+   `docs/`, which is platform territory and must stay refused.
+
+4  CLAIM MATCHER -- FIXED. The declared FILES set is now the primary mode. A
+   one-sided pair whose block rests on no EVIDENCE rule is demoted to the
+   UNPROVABLE state instead of refusing. Measured over all 637,096
+   cross-session pairs in the 1,285-claim record: BLOCK 22,222 -> 20,606.
+
+5  TIER A -- OBLIGATION OPENED, assigned to hank (bld_bids, bld_draws). Found
+   and killed a PHANTOM THIRD LIMB in passing: `leg_invoices` was named only
+   because a two-word string fixture in a probe mentions it. The gate is
+   behaving as documented -- a short string cannot be told from real code --
+   so the fixture was renamed, not the gate.
+
+6  CARRYOVERS -- three closed, four reported open. See the open list below.
+
+7  PARKED STASHES -- DROPPED, and the count in the brief was wrong.
+   hank had SEVEN cc-scrutiny stashes, not five; cody had ten. All 17 dropped
+   after confirming each contained ONLY docs/scrutiny-flags.json. hank's
+   stash@{5} -- "my 3 register records" -- was NOT dropped; it is his.
+
+8  COMPACTION DISCIPLINE -- HELD. docs/SAIRN-OPEN-WORK-INDEX.md was never
+   opened; every read of it was a grep. No mid-task model or MCP switch. No
+   subagent was dispatched: every scan this batch needed was a grep.
+
+9  REPORT / DIGEST / HANDOFF -- this file, plus SAIRN-report-cc-b4.txt and
+   docs/handoff-cc-2026-10-12.md. Uploaded to Drive as each was written.
+
+================================================================================
+EXACT file:line FOR EVERYTHING ROUTED
+================================================================================
+
+TO MICHAEL -- THE PLATFORM IS DOWN
+  sairn.vercel.app returns 402 on every route including /api/sd-data. Not a
+  code fault. See the top of this file.
+
+TO MICHAEL -- A PRODUCT DECISION INSIDE THE bld_draws FIX (Q1)
+  api/sd-data.js, the new bld_draws gate. It requires a SESSION and does not
+  require a ROLE, and that is deliberate: sairnbuild.html's Draw Requests
+  panel is NOT role-gated client-side (bldIsManagement() guards the bid and
+  roster panels, not this one), so management-only would 403 every field
+  role's save of a draw it can still open, and the failure would be a silent
+  console.warn. SAIRNroofing's rf_draws DOES require management for the same
+  resource. One of the two is wrong and it is a product call.
+
+TO WHOEVER OWNS tools/external_file_index_check.py (hank's block declares the
+dir)
+  `G:/My Drive/SAIRN-status` is declared non-transient, so every handoff
+  written there must be named individually or it blocks the next push from
+  EVERY clone. THREE refusals in this one session, five files, none of them
+  cc's; each cleared only for the next to arrive. The third refusal came from
+  the PreToolUse half and DENIED A COMPOUND COMMAND, so the edit that would
+  have cleared it never ran. A gate that blocks the repair of its own finding
+  is one keystroke from SAIRN_SEED_GATE=off. Proposed: a pattern allowance for
+  handoff-shaped names under that ONE directory, keeping the real teeth (an
+  undeclared TOOL or SCRIPT). All three instances dated in the index's own cc
+  block `limits`. NOT implemented -- another session's gate.
+
+TO WHOEVER OWNS tests/run_defect_register_probe.py
+  E9 "--reseat succeeds" is RED and was red before this batch (2 failures
+  before, 1 after -- this batch's --check fix turned E13 green). Its throwaway
+  worktree is built from the LIVE register, so an unrelated session's rebase
+  leftovers decide that arm's colour. Isolating the fixture is a probe
+  redesign; the arm was NOT edited to pass.
+
+TO WHOEVER OWNS tools/tier_a_review_gate.py
+  Not a defect, a cost worth knowing: strip_diff_noise() keeps SHORT strings
+  (correctly -- `resource === 'leg_invoices'` is real code), so any probe
+  fixture naming a real Tier A resource opens a phantom obligation on every
+  edit to that probe. tests/claims/run_fileset_matcher_probe.py section 3
+  still carries a `leg_invoices` fixture and will re-open one; this batch's
+  own new fixture was renamed to avoid it.
+
+================================================================================
+CLAIMS TAKEN / RELEASED
+================================================================================
+
+TAKEN     cc, "batch W (b4) resume, second half ... FILES: tools/
+          defect_register.py tools/sairn_push_gate_hook.py docs/
+          external-files-index.json docs/handoff-cc-2026-10-12.md
+          SAIRN-ACTIVE-WORK-cc.md SAIRN-report-cc-b4.txt
+          SAIRN-digest-cc-b4.txt"
+          First attempt did NOT reach origin (push race); re-run landed it.
+
+RELEASED  two EXPIRED but unreleased cc claims, both older than 4h, which
+          another session would have read as live work.
+
+BLOCKED   at pickup, by the defect this batch then fixed: `check cc "batch W b4
+          resume"` was refused against fourth's claim on the shared words
+          "batch resume". NOT reworded to slip the matcher (PR 4.3) -- the
+          matcher was fixed instead.
+
+TOUCHED A FILE NOT IN MY DECLARED FILES, said out loud:
+          tools/register_feed_gate.py and tests/run_register_feed_gate_probe.py
+          (the D9 item; the claim names sairn_push_gate_hook.py, which invokes
+          it), and tests/run_defect_register_superseded_probe.py. No session
+          held an active claim on anything at that HEAD.
+
+================================================================================
+OVERRIDES
+================================================================================
+
+  NONE. SAIRN_SEED_GATE=off was never used. Every gate that refused this push
+  was satisfied rather than bypassed: the register-feed gate (5 records), the
+  Tier A gate (1 obligation), the external-file gate (5 declarations, three
+  separate refusals).
+
+================================================================================
+QUESTIONS ONLY MICHAEL CAN ANSWER
+================================================================================
+
+Q1. THE PLATFORM. sairn.vercel.app is 402 on every route. Billing/spend limit?
+    Nothing in the repo can fix it and no live verification is possible until
+    it is back.
+
+Q2. bld_draws ROLE SCOPE. Should the draw schedule be management-only, as
+    SAIRNroofing's rf_draws is? Today any signed-in SAIRNbuild employee can
+    read and save a draw (the panel is not role-gated), and this batch
+    deliberately did not change that inside a security fix. If yes, the UI
+    needs gating in the same change or field roles get a silent console.warn.
+
+Q3. THE EXTERNAL-FILE GATE. Approve a pattern allowance for handoff-shaped
+    names under `G:/My Drive/SAIRN-status`? Three refusals in one session, and
+    the third blocked the command that would have fixed it.
+
+================================================================================
+END-OF-DIGEST
+================================================================================

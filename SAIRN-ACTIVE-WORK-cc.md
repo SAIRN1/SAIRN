@@ -7030,3 +7030,94 @@ handoff: `tools/va_rule_currency.py`, `tests/run_tool_usage_refusal_probe.py`,
 `tools/cross_tenant_isolation_scope.py`, and `docs/SAIRN-OPEN-WORK-INDEX.md` —
 the last being a direct deviation from my own claim text, one line, PR §2.1
 respected (unique-substring edit, pipe count 8 before and 8 after).
+
+---
+
+## 2026-10-12 into 2026-10-13 — batch W (b4, resume)
+
+**HEAD `4024ab44` -> `2697518e`, ahead 0 / behind 0. Full account in
+`SAIRN-report-cc-b4.txt`; one line per item in `SAIRN-digest-cc-b4.txt`;
+handoff at `docs/handoff-cc-2026-10-12.md`.**
+
+**THE BIGGEST THING THIS BATCH FOUND IS NOT ON ITS TASK LIST.
+`sairn.vercel.app` returns HTTP 402 on EVERY route — `/`, `/stonedesk`,
+`/sairnbuild`, `/api/sd-data` — measured with `tools/sairn_http.py` during the
+push protocol's live-verification step. 402 from Vercel is a disabled project,
+a billing or spend-limit state; not a bad deploy and not a code fault. Every
+customer-facing SAIRN URL is serving nothing, including the proxy every app
+depends on. Only Michael can fix it, and until he does, no fix on this
+platform can be live-verified — a 402 is UNVERIFIED, the same rule as a 403.**
+
+**The clone was DISARMED at pickup.** `.claude/settings.json` carried
+`"hooks": {}` against 23 committed hook commands, with PowerShell's
+indentation — a `ConvertTo-Json` round trip had dropped the nested object. The
+untracked `.hooks.bak` was byte-identical to `HEAD` after `tr -d '\r'`, which
+is what proved nothing was meant to change and made restoring from `HEAD`
+safe rather than a judgement call. Third session to hit this (hank b20,
+fourth's released claim, here).
+
+**`bld_draws` seq664, the AUTH_BYPASS — FIXED, both halves.** `wip` and
+`release_retainage` were gated behind a session and owner/office; `read` and
+`write` **on the same table** fell through to the generic `BLD_RESOURCES` loop
+and took the licence key alone. The generic write is a merge-duplicates upsert
+replacing `data` wholesale, so one unauthenticated request could author a
+release that never happened, inflate one, or zero `retainage_released` —
+defeating `bld_release_retainage_atomic`'s CAS, the no-reduce rule in
+`api/_lib/wip-accounting.js` and the append-only trail at once, with no
+employee recorded. The fix requires a session AND carries the three
+release-owned fields over from the stored row rather than taking them from the
+caller: stripping them would BLANK a real release on the next ordinary save,
+because `sairnbuild.html` echoes them back through the same write. Pre-read
+fails closed. Client sends the session on push, retry and hydrate through one
+`BLD_SESSION_REQUIRED` list. **Not narrowed to owner/office, deliberately** —
+the Draw Requests panel is not role-gated client-side, so management-only
+would 403 every field role with a silent `console.warn`; that is a product
+call and it is Q2 in the handoff. Control: 35/0 with the fix, **30/5 against
+the stashed pre-fix handler**, the five failures being the bypass itself.
+
+**The claim matcher now treats the declared FILES set as its primary mode.**
+This batch was itself refused at pickup — `check cc "batch W b4 resume"`
+blocked against a claim declaring six files, none of them mine, on the shared
+words "batch resume". Not reworded to slip the matcher (PR §4.3); the matcher
+was fixed. A one-sided pair whose block rests on no EVIDENCE rule is demoted
+to the UNPROVABLE state, never to CLEAR. Measured over all 637,096
+cross-session pairs: BLOCK 22,222 -> 20,606, 1,022 of the 1,616 being `same
+subject` — a bucket name three of four sessions reuse for a whole day.
+`rests_on_evidence()` derives the rule by CALLING the evidence predicates; the
+first draft parsed `block_reason()`'s own message and measured 2,105
+demotions, the 489 difference being pairs that share an app or a file and must
+keep blocking.
+
+**Two carryovers closed that were about tools lying quietly.**
+`tools/register_feed_gate.py` was the THIRD gate printing one sentence for
+every cause of "no ref lines on stdin"; the fourth cause is new and was
+measured here — it refuses a push issued from inside a shell script, because
+`main()` reads stdin whenever it is not a tty. And `superseded_by` had a
+VALIDATOR AND NO WRITER since 2026-10-07, so the four pending duplicate pairs
+sat unresolved and `--reseat` reported them as COLLIDES in every clone every
+day; `--supersede` now exists, refuses everything but the one mechanical
+shape, and fixing the `--check`/`--reseat` disagreement it exposed turned a
+pre-existing RED arm green.
+
+**Item 3 was NOT NEEDED and that was measured rather than argued.** The scope
+gate's `ALLOWED` already covers `.claude/skills/sairn-hover-auditor/` as a
+prefix, so routing docs inside it are allowed for `hover`, `hover2` and
+`hover3` — driven through `violations()` for each — and the three
+"previously-refused" routing-doc commits are all already on `origin/main`.
+Widening would have been a change with no defect behind it.
+
+**Seventeen parked stashes dropped, one preserved.** The brief said "hank's
+5"; there were seven. Each was read by file list first; hank's `stash@{5}` is
+his own register records and was kept.
+
+**Files written that were not in my declared FILES**, all declared in the
+handoff and in the digest: `api/sd-data.js`, `sairnbuild.html`,
+`api/_lib/sairnbuild-retainage-endpoint.test.js`, `tools/sairn_claim.py`,
+`tests/claims/run_fileset_matcher_probe.py`,
+`tools/register_feed_gate.py`, `tests/run_register_feed_gate_probe.py`,
+`tests/run_defect_register_superseded_probe.py`, `docs/tier-a-reviews.json`,
+`docs/defect-density-register.json`, `docs/scrutiny-flags.json`. No session
+held an active claim on any of them at that HEAD.
+
+**No overrides. `SAIRN_SEED_GATE=off` was never used** — five gate refusals
+across five rebases, every one satisfied rather than bypassed.

@@ -1,0 +1,495 @@
+REPORT cc b4
+================================================================================
+SAIRN -- cc -- BATCH W (b4, resume)          2026-10-12 into 2026-10-13
+================================================================================
+
+GIT STATE
+  HEAD at open   4024ab44   tree DIRTY: 1 modified, 1 untracked
+  HEAD at close  2697518e
+  ahead/behind   0 / 0 of origin/main at the close
+  branch         main
+  rebases        FIVE. Four other sessions pushed into main during this batch.
+
+  EVERY COMMIT BELOW IS ON origin/main. Verified with
+  `git log origin/main --format='%h %s'`, not with `git log`.
+
+    3b99c19c  fix(hover separation)   -- NOT this session's commit; unpushed at
+                                         pickup, carried through and recorded
+    86189e37  fix(bld_draws)          -- the AUTH_BYPASS, seq664
+    9b0bfd51  fix(claim matcher)      -- declared FILES is the primary mode
+    dd1bcbe2  chore(tier A)           -- obligation + phantom-limb fixture
+    aff7f8ce  chore(claims)           -- cc claims, second half
+    0cbd7a84  chore(claims)           -- cc releases two expired claims
+    5ae06f11  chore(records)          -- 3 register records + tier A re-derived
+    9d55424e  chore(register)         -- re-seat x3
+    2a1189d2  chore(external files)   -- 2 Drive handoffs declared
+    cc6d3c52  fix(register feed gate) -- D9 on the third gate
+    9d435023  feat(defect register)   -- --supersede
+    22e11a16  chore(register)         -- 2 records
+    ad04aa57  chore(external files)   -- 2 more handoffs, 40 minutes later
+    1c4ccfb6  chore(external+reg)     -- the third refusal, re-seat x2, rows
+    2697518e  chore(register)         -- re-seat after the fifth rebase
+
+================================================================================
+THE PLATFORM IS DOWN, AND IT IS NOT IN THE BRIEF
+================================================================================
+
+The push protocol's after-pushing step says live-verify the specific fix
+against the real deployed URL, not with bare curl. Doing that produced:
+
+    402  https://sairn.vercel.app/
+    402  https://sairn.vercel.app/stonedesk
+    402  https://sairn.vercel.app/sairnbuild
+    402  https://sairn.vercel.app/api/sd-data
+
+Four routes, measured with tools/sairn_http.py, all 402 Payment Required.
+That is Vercel disabling a project -- a billing or spend-limit state -- not a
+failed deploy, not a code fault and not something any commit can repair.
+EVERY CUSTOMER-FACING SAIRN URL IS SERVING NOTHING, including the API proxy
+every app depends on.
+
+WHAT THIS DOES TO THIS BATCH'S VERIFICATION, said plainly rather than quietly
+upgraded:
+
+  * VERIFIED: both halves of the bld_draws fix are present on origin/main as
+    GitHub serves it. `BLD_SESSION_REQUIRED` found in sairnbuild.html
+    (587,834 bytes fetched) and
+    `resource === 'bld_draws' && (action === 'read' || action === 'write')`
+    found in api/sd-data.js (1,110,427 bytes fetched), both over
+    raw.githubusercontent.com.
+  * UNVERIFIED: the fix against a running deployment. A 402 is UNVERIFIED, the
+    same rule as a 403 (PR 3.2). It is not verified-good and it is not
+    verified-bad.
+
+================================================================================
+ITEM 0 -- RESUME CHECK. THE CLONE WAS DISARMED.
+================================================================================
+
+`git status` at open: `M .claude/settings.json`, `?? .claude/settings.json.
+hooks.bak`. The diff is the whole finding -- the working-tree copy carried
+
+    "hooks":  {
+              },
+
+against 23 committed hook commands. Every PreToolUse gate, every PostToolUse
+check, the SessionStart suite and the PreCompact handoff reminder: absent. The
+indentation is PowerShell's, so a JSON round-trip through
+ConvertTo-Json/ConvertFrom-Json had rewritten the file and dropped the nested
+object -- the same shape hank recorded in b20 and fourth recorded in its
+released claim. Three sessions have now hit it.
+
+WHAT MADE IT SAFE TO RESTORE RATHER THAN A JUDGEMENT CALL: the untracked
+`.hooks.bak` was compared, after `tr -d '\r'`, against `git show
+HEAD:.claude/settings.json` and was BYTE-IDENTICAL. So the backup proved no
+content was ever meant to change, and restoring from HEAD discarded nothing.
+The .bak was removed only after that comparison, not before.
+
+    git checkout -- .claude/settings.json
+    hook events: PostToolUse 2, PreToolUse 3, PreCompact 1, SessionStart 1,
+                 UserPromptSubmit 1  -- 23 hook commands
+
+WHY IT MATTERS MORE THAN AN ORDINARY DIRTY FILE: every mechanical protection
+this platform has in this clone runs from that file, and `git status` stays
+clean-looking enough to walk past. A session that had started work would have
+had no push gate, no redaction check, no session lock, no citation drift hook
+and no claim hook -- and nothing would have said so.
+
+================================================================================
+ITEM 1 -- bld_draws seq664. THE AUTH BYPASS. FIXED, BOTH HALVES.
+================================================================================
+
+WHAT THE HOLE WAS, read rather than inferred.
+
+api/sd-data.js gates two of bld_draws' four actions. At :5430:
+
+    if (resource === 'bld_draws' && (action === 'wip' || action === 'release_retainage')) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnbuild');
+      if (!session) { 401 NO_SESSION }
+      if (!BLD_BID_MANAGEMENT_ROLES[session.role]) { 403 }
+
+`read` and `write` on the same table fell through to the generic
+BLD_RESOURCES loop, whose own comment says:
+
+    NO SESSION GATE HERE, and that is a decision rather than an omission.
+    ... These thirty are the shared job record -- every role in a building
+    company reads the schedule, the punch list and the daily log
+
+That reasoning is true of twenty-nine of its thirty members. It is false of
+bld_draws, which is PROGRESS BILLING -- the row this platform re-tiered B -> A
+on the money limb in docs/CRITICALITY-TIERS.md, and the resource SAIRNroofing
+keeps behind a session AND a role gate at its own rf_draws branch (:8496,
+`read || write || wip`, all three).
+
+So a caller holding the licence key and no session at all could:
+
+  * READ every draw's retainage figures, and
+  * POST `action:'write'` with a `data` blob of its own choosing.
+
+The second is the one that matters. The generic write is a merge-duplicates
+upsert that REPLACES `data` entirely, so one request could author a release
+that never happened, inflate an existing one, or set `retainage_released` back
+to zero. That defeats bld_release_retainage_atomic's optimistic CAS, the
+no-reduce rule in api/_lib/wip-accounting.js and the append-only
+retainage_release_log in a single call, with no employee recorded against any
+of it.
+
+THE FIX IS TWO THINGS, BECAUSE A SESSION ALONE CLOSES ONLY HALF.
+
+  1. A valid sairnbuild session is required for `read` and `write`, as
+     rf_draws requires one.
+  2. The three fields THE RELEASE OWNS -- retainage_released,
+     retainage_released_at, retainage_release_log -- are carried over from the
+     STORED row and never taken from the caller.
+
+(2) is not optional and the reason is specific. sairnbuild.html, after a
+server-authored release, writes the returned figures back into its local row
+and calls st('bld_draws', list) -- which fires the sync hook and pushes that
+row through this same generic write. So STRIPPING the release fields would
+BLANK A REAL RELEASE on the next ordinary draw save: a data-loss bug
+introduced by the security fix. Carried, not trusted. The pre-read FAILS
+CLOSED -- a stored row that cannot be read refuses the save with
+RELEASE_FIELDS_UNREADABLE rather than writing it unprotected.
+
+THE CLIENT HALF, because the gate is useless if the app cannot reach it. The
+sync push sent no session: `bldData('write', key, r)`. One list,
+BLD_SESSION_REQUIRED, now drives all three sites -- the sync push, the pending
+retry and the hydrate. It used to read `key==='bld_bids'` inline at one of the
+three, which was correct until there were two. Both hydrate and push run
+inside bldEnterApp() after bldSession is set, so the ordinary path has a
+token; a push without one returns null, marks pending, and lands on the next
+sign-in.
+
+NOT RESTRICTED TO owner/office, AND THAT IS A DECISION STATED RATHER THAN
+QUIETLY MADE. The Draw Requests panel is NOT role-gated in sairnbuild.html --
+bldIsManagement() guards the bid and roster panels, not this one -- so
+management-only here would 403 every field role's save of a draw it can still
+open, and the failure would be a console.warn nobody sees. That is a product
+restriction. It is Q2 below, not a line in a security fix.
+
+THE CONTROL, MEASURED BOTH WAYS.
+
+Section 5 of api/_lib/sairnbuild-retainage-endpoint.test.js drives the two
+actions nothing in that file had ever driven. Twenty-nine arms covered wip and
+release_retainage; zero covered read or write on the same table, so every rule
+those arms assert was reachable around via a different action and the suite
+stayed green the whole time.
+
+    with the fix          35 passed, 0 failed   (exit 0)
+    pre-fix handler       30 passed, 5 FAILED   (exit 1, git stash of
+                                                 api/sd-data.js only)
+
+The five failures are the bypass itself:
+
+    generic read with NO session is refused            got 200, wanted 401
+    generic write with NO session is refused           got 200, wanted 401
+    a FORGED release on the generic write does not land  7800 landed
+    a REAL release survives the next ordinary draw save  4500 -> undefined
+    a REDUCED release cannot be smuggled in              4500 -> 0
+
+The SIXTH arm -- another tenant's draw -- passes BOTH ways, and that is
+reported rather than counted: licence scoping was never the hole. The stub
+gained a real merge-duplicates upsert, because an arm asserting "the forged
+release did not land" against a stub that never writes asserts nothing.
+
+NO REGRESSION ELSEWHERE: api/sd-data-cross-tenant-dispatchers.test.js reports
+405 passed / 14 failed before AND after, byte-identical counts,
+stash-confirmed. All 14 are grd_* unit-config mismatches the suite diagnoses
+itself.
+
+SYNTAX: sairnbuild.html's 4 script blocks extracted with the HTML parser and
+`node --check`ed individually -- 0 errors. `node --check api/sd-data.js` clean.
+
+================================================================================
+ITEM 2 -- THE TWO STAGED H1 PATHS. ALREADY LANDED.
+================================================================================
+
+Both were in at pickup rather than staged: tools/hover_separation_ci.py
+landed in 4024ab44 (which was HEAD at open) and the scope gate's SEPARATION_CI
+entry in ALLOWED was already there -- confirmed by running
+`--explain`, which prints it with its justifying quotation. Nothing to commit.
+
+Baselines re-run rather than quoted:
+
+    tests/run_hover_separation_probe.py    148 passed, 0 failed, exit 0
+    tests/hover_separation_ci_probe.py     0 failures, exit 0
+
+================================================================================
+ITEM 3 -- WIDEN THE SCOPE GATE FOR ROUTING DOCS. NOT NEEDED.
+================================================================================
+
+MEASURED rather than argued. ALLOWED's first entry is the prefix
+`.claude/skills/sairn-hover-auditor/`, and the gate matches prefixes ending in
+`/` with startswith. So routing docs inside the skill directory are already
+allowed. Driven through `violations()` for three instance names:
+
+    hover   ALLOWED  routing/2026-10-08-routed-field-findings.md
+                     routing/x.patch
+                     tools-hover2/whatever.py
+            REFUSED  docs/2026-10-11-hover-routed.md
+    hover2  same
+    hover3  same
+
+And the three commits the brief calls previously-refused are ALL ON
+origin/main already -- 6409aa66, cc0ee901, 1b6b5bc0 -- with file sets
+entirely under `routing/`. So there was nothing to widen; widening would have
+been a change with no defect behind it, against an allowlist whose own bar is
+"a quotable sentence in the role's own skill file, not a judgement made at the
+gate".
+
+The ONE refused routing path is a routing doc written to `docs/`. That is
+platform territory and must stay refused -- the same boundary running the
+other way.
+
+================================================================================
+ITEM 4 -- THE CLAIM MATCHER. DECLARED FILES IS NOW THE PRIMARY MODE.
+================================================================================
+
+THE REFUSAL THAT SENT THIS happened at this batch's own pickup, before
+anything was changed:
+
+    python tools/sairn_claim.py check cc "batch W b4 resume"
+    BLOCKED -- blocked by: one task is entirely inside the other: "batch resume"
+
+against fourth's live claim, which declares six files, none of them cc's.
+`batch` and `resume` describe WHEN work is happening, not what it touches.
+
+Both-sides-declared has been decided by the file sets since 2026-09-22. The
+ONE-SIDED case was the last place prose alone could hard-block. Now a
+one-sided pair whose block rests on NO evidence rule is demoted to the
+UNPROVABLE state that already existed for the symmetrical case -- their
+declared paths printed, with the demoted word match printed beside them so the
+reader sees what was downgraded. NOT demoted to CLEAR: this file's whole
+history is false CLEARs.
+
+EVIDENCE STILL BLOCKS. rests_on_evidence() re-derives the three rules that
+name a THING -- an obligation id or commit sha, an app, a file or resource --
+by CALLING them. `reason.startswith('same subject')` was the first draft and
+is refused: parsing block_reason()'s own prose is a stale anchor of the shape
+that silently disarmed five controls in tools/sabotage_control_check.py.
+
+MEASURED over all 637,096 cross-session pairs in the 1,285-claim record:
+
+    BLOCK now        22,222
+    BLOCK proposed   20,606
+    demoted           1,616
+
+    by rule:  1,022  same subject
+                495  shared phrase
+                 89  one task is entirely inside the other
+                 10  subject containment
+
+`same subject` dominating is the point: three of the four sessions use their
+own session name as the subject for a whole day's work, which is the same
+reason the containment rule already excludes the subject. Reading the pairs is
+what justifies it -- "phase 1 build" against an SAIRNfreedom competitive-gap
+audit is not one piece of work.
+
+THE NAIVE VERSION WAS MEASURED TOO: the prefix test demoted 2,105. The 489
+difference is pairs that ALSO share an app or a file and must keep blocking.
+That gap is the whole argument for deriving the rule rather than parsing its
+message.
+
+shared_identifiers() was EXTRACTED from block_reason() so rests_on_evidence()
+asks the same question through the same code. BEHAVIOUR-PRESERVING BY
+MEASUREMENT, not by inspection: every block_reason() string over 204,422
+distinct cross-session pairs, before and after -- 0 differing.
+
+CONTROL: 16 arms in section 5 of tests/claims/run_fileset_matcher_probe.py.
+0 failures with the fix; 5 FAIL against the stashed pre-change tool, and the
+probe's own output carries the real refusal verbatim. THREE arms pass in BOTH
+directions and are the scope proof -- a one-sided pair sharing an APP still
+blocks, one naming the same RESOURCE in prose still blocks, and a pair where
+NEITHER side declared files still blocks on prose.
+
+THE FIRST NEGATIVE CONTROL WAS A CRASH, NOT A MEASUREMENT, and that is fixed
+rather than left: the CONTROL arms called the new predicate directly, so
+against the pre-change tool the probe died on AttributeError at arm 2 and the
+four behavioural arms never ran. The predicate's presence is now its own arm,
+the arms needing it SKIP by name, and the cmd_check arms run either way.
+
+REGRESSION: all 12 claim probes run. 10 clean. 2 RED BEFORE AND AFTER, same
+counts, stash-confirmed -- run_own_claim_overlap_probe.py 3 FAIL and
+run_push_verify_probe.py 68/1. Neither is mine, and the second is why
+run_claim_retype_mutation_control.py reports COULD NOT RUN rather than
+catching its five mutations.
+
+================================================================================
+ITEM 5 -- TIER A. OBLIGATION OPENED, AND A PHANTOM LIMB KILLED.
+================================================================================
+
+The gate refused the push until an obligation existed, which is what it is
+for. Opened, assigned to hank: bld_bids, bld_draws. bld_draws is the real
+change; bld_bids is in it only because it shares sairnbuild.html and its own
+branch was not touched.
+
+THE THIRD LIMB WAS A FIXTURE ARTEFACT. The gate also named `leg_invoices`,
+which appears nowhere in this batch's code -- it is a two-word string fixture
+in tests/claims/run_fileset_matcher_probe.py, and editing that file names the
+resource on a changed line. MEASURED rather than assumed:
+
+    strip_diff_noise("+ID_MINE = 'leg_invoices rotation'")
+      -> unchanged
+    strip_diff_noise("+ID_THEIRS = 'FILES: docs/... -- leg_invoices ...'")
+      -> blanked
+
+So the gate is behaving as documented: a short string cannot be told from
+`resource === 'leg_invoices'`, which is real code. The fix belongs in the
+FIXTURE, and this batch's own new fixture is renamed to
+`zzz_fixture_resource` -- still carrying an underscore, so idents() still
+treats it as an identifier and the arm still means what it says. Section 3's
+older `leg_invoices` fixture is NOT rewritten (not this change's to touch) and
+is reported as the thing that will re-open the phantom.
+
+The register file conflicted on two of five rebases. BOTH TIMES IT WAS
+RESOLVED BY RE-DERIVING, never by merging text (PR 2.5): origin's copy taken
+whole, the obligation re-opened by the tool that owns the format.
+
+================================================================================
+ITEM 6 -- CARRYOVERS. THREE CLOSED, FOUR OPEN.
+================================================================================
+
+CLOSED
+
+  (a) THE EXTERNAL-FILES INDEX. Five Drive handoffs declared across three
+      separate push refusals. The INDEX half of the item is done; see the
+      OPEN list for what it revealed.
+
+  (b) THE PUSH-GATE "no ref lines on stdin" MESSAGE. tools/
+      register_feed_gate.py was the THIRD gate carrying that one sentence for
+      every cause -- the other two were fixed on 2026-10-08. Four messages
+      now, each naming its cause and naming the gate. THE FOURTH CAUSE IS NEW
+      AND WAS MEASURED HERE: this gate refused a push issued from inside a
+      SHELL SCRIPT, because main() reads stdin whenever it is not a tty and a
+      script's stdin carries no refs. Neither earlier fix names that case, and
+      it is the one a session hits -- wrapping the push in a script is the
+      obvious way to shrink the window in a four-session push race, which is
+      exactly what this session was doing.
+      Probe 50/0 (was 40/0). Against the pre-change gate: 44/6 FAILED, with
+      the four both-ways arms being the controls.
+
+  (c) superseded_by, PLUS ITS FOUR PENDING DELTAS. The field had a VALIDATOR
+      AND NO WRITER: --check has enforced it since 2026-10-07 and the only way
+      to set one was hand-editing 26,000 lines of JSON. `--supersede <stale>
+      --by <survivor>` now exists and refuses everything but the one
+      mechanical shape. All four deltas applied, each measured first --
+      identical apart from `commit` (zero differing keys), stale side no
+      longer resolving, survivor reachable.
+      AND IT EXPOSED A SECOND DEFECT: --check listed superseded records as
+      RE-SEATABLE and told the reader to run --reseat, which answers that
+      superseded records are never re-seated and exits 1. Fixed, and it turned
+      a PRE-EXISTING RED ARM green (E13).
+      Probe 23/23 (was 12/12).
+
+OPEN, AND WHY
+
+  (d) CONVENTION 25 and (e) METHODOLOGY.md RULE E. Both need
+      docs/2026-09-13-cross-domain-disciplines.md and docs/METHODOLOGY.md,
+      which were fourth's in FILES when this batch was claimed. They were
+      REMOVED from scope rather than reworded (PR 4.3). fourth's claim has
+      since been released, so the files are free -- but adding them now would
+      be scope growth against a claim that does not name them, so they are
+      reported open rather than taken.
+
+  (f) THE SESSIONSTART UNINDEXED COUNT. The hook is wired and prints the
+      count; what is NOT done is anything about the count being wrong within
+      the hour. See the open list below.
+
+  (g) 8 of 11 sd-data.js ownership rows + 4 ai-scan-redaction.js candidates.
+      Not in this batch's declared FILES and not started.
+
+================================================================================
+ITEM 7 -- THE PARKED STASHES. DROPPED. THE COUNT WAS WRONG.
+================================================================================
+
+The brief says "hank's 5 and cody's 10". hank had SEVEN cc-scrutiny stashes,
+not five -- the five in the brief trace to docs/scrutiny-flags.json's own note
+about "20 rows parked across five stashes ... rounds 2-6", and rounds 1 and 7
+exist too.
+
+EVERY STASH WAS READ BEFORE IT WAS DROPPED, by file list, and the SHA of each
+recorded first (recoverable from the object for as long as gc keeps it):
+
+    hank  stash@{0,1,2,3,4,6,7}  docs/scrutiny-flags.json only   DROPPED
+    hank  stash@{5}              docs/defect-density-register.json
+                                 "my 3 register records"          KEPT -- HIS
+    cody  stash@{0..9}           docs/scrutiny-flags.json only   DROPPED
+
+Seventeen dropped, one preserved. Nothing was lost: docs/scrutiny-flags.json's
+own `_corrected_2026_10_08` note already records that those rows were
+DISCARDED rather than applied and that the four real facts behind them were
+back-filled from the landed commits instead -- which is stronger than the
+stashed rows, because each is self-verifiable with `git show <sha> -- <path>`.
+
+================================================================================
+ITEM 8 -- COMPACTION DISCIPLINE. HELD.
+================================================================================
+
+  * docs/SAIRN-OPEN-WORK-INDEX.md (2.38MB) was NEVER opened. Every read of it
+    was a grep, and the two greps that overflowed were persisted to the
+    scratchpad rather than pulled into context.
+  * No file over 400KB was read whole. sairnbuild.html and api/sd-data.js were
+    read by line range and by grep only.
+  * No mid-task model switch. No mid-task MCP switch.
+  * No subagent was dispatched: every scan this batch needed was a grep, and
+    delegating a grep costs more than it saves.
+
+================================================================================
+THE PUSH LOOP -- FIVE REBASES, FIVE REFUSALS, ZERO OVERRIDES
+================================================================================
+
+Recorded because it is most of the batch's wall-clock and because the pattern
+is worth someone's attention.
+
+  attempt 1  register-feed gate: 3 commits close a defect and feed no record
+             -> 3 records written. NOT escaped with no-defect-record.
+  attempt 2  "the outgoing range could not be read" -- origin had moved
+             -> fetch + rebase. Register and tier-A files conflicted; the
+                first two times they were resolved by taking origin's copy and
+                re-adding by hand, which cost two rounds. THE RIGHT TOOL IS
+                tools/sairn_rebase_resolve.py (union-by-identity from the
+                common ancestor, the merge_policy the register itself
+                declares) and it was used for every later conflict.
+  attempt 3  external-file gate: 2 undeclared Drive handoffs -> declared.
+  attempt 4  external-file gate again: 2 DIFFERENT handoffs, 40 minutes later.
+  attempt 5  external-file gate a third time, and this one DENIED A COMPOUND
+             COMMAND through its PreToolUse half -- so the edit that would
+             have cleared the refusal never ran and the commit in the same
+             command never happened. The fix had to be issued as a separate
+             command with no git verb in it.
+
+Each rebase renamed every outgoing SHA, so the register records had to be
+re-seated three separate times -- 9d55424e, 1c4ccfb6 and 2697518e are those
+re-seats. None of them is an `--amend` (PR 2.4).
+
+A SCRIPTED PUSH IS NOT A SHORTCUT: wrapping the loop in land.sh is what
+produced the D9 refusal in item 6(b), because a nested `git push` gives the
+pre-push hook no ref lines. The script now ends BEFORE the push and says why.
+
+================================================================================
+WHAT I WOULD TELL THE NEXT SESSION
+================================================================================
+
+1. THE PLATFORM IS 402. Check it before you believe any live-verification
+   result, and do not report a fix as verified against a deployment that is
+   not serving.
+
+2. REACH FOR tools/sairn_rebase_resolve.py ON THE FIRST LEDGER CONFLICT, not
+   the third. Taking origin's copy whole works and costs you every record you
+   wrote.
+
+3. ISSUE THE PUSH AS ITS OWN COMMAND. Not inside a script, not in an `&&`
+   chain with the edit that clears a gate -- the PreToolUse half can deny the
+   whole thing, and then nothing in it ran.
+
+4. NO BACKTICKS IN A CLI BODY. This batch lost the two most important
+   fragments of a register summary to bash command substitution, read it back,
+   found the holes, and had to re-add the record through a Python argv list.
+   The read-back is the only reason it was caught.
+
+5. A DIFF SHAPE IS A CHECK. A one-string correction to the register produced
+   26,701 insertions / 26,576 deletions because json.dumps reformatted the
+   file. `git diff --numstat` before every commit on a generated document.
+
+================================================================================
+END-OF-REPORT
+================================================================================
