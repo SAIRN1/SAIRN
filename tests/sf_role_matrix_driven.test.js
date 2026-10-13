@@ -279,24 +279,49 @@ function refusedByRoleGate(res, resource, role) {
 
   // ── THE NINE. NOT a pass, and not silence either.
   section('4. THE NINE LICENCE-KEY-ONLY RESOURCES -- DISCLOSED, NOT DRIVEN');
-  await test('4. each of the nine is confirmed ABSENT from the gated set, and the '
-             + 'role gate is confirmed NOT to fire for one of them', async () => {
-    assert.ok(UNGATED.length > 0, 'if this is 0 the nine have been gated and this '
-      + 'arm plus the denominator above both need rewriting -- which is the '
-      + 'correct outcome, not a failure of the app');
+  await test('4. the LICENCE-KEY-ONLY set, whichever state it is in -- and it '
+             + 'CHANGED under this arm on 2026-10-13', async () => {
+    // THIS ARM FAILED ONCE, ON PURPOSE, AND THE FAILURE WAS THE APP GETTING
+    // BETTER. Written when SD_SESSION_GATED held 27 of the 36 sf_ resources, it
+    // asserted the other nine were absent and that the role gate did NOT fire
+    // for them -- an honest disclosure that 180 of the 720 cells could not be
+    // driven. Commit 46d74678, "the last nine resources gated -- 36 of 36",
+    // landed between that writing and the next run, so the arm fired with its
+    // own message: "if this is 0 the nine have been gated and this arm plus the
+    // denominator above both need rewriting -- which is the correct outcome,
+    // not a failure of the app."
+    //
+    // IT IS NOW WRITTEN FOR BOTH STATES rather than re-pinned to the new one,
+    // because a disclosure arm that has to be hand-edited every time coverage
+    // moves is an arm that gets deleted the second time. If a 37th resource
+    // arrives ungated, the first branch takes over again and says so.
+    if (UNGATED.length === 0) {
+      assert.strictEqual(GATED.length, TABLE.length,
+        'nothing is ungated, but the gated set (' + GATED.length + ') and the '
+        + 'table (' + TABLE.length + ') disagree -- one of the two parses is '
+        + 'wrong and the 720 above would be measuring the wrong population');
+      assert.strictEqual(cells, ROLES.length * TABLE.length * 2,
+        'every resource is gated, so every cell must have been driven: '
+        + 'expected ' + (ROLES.length * TABLE.length * 2) + ', drove ' + cells);
+      console.log('       THE GAP IS CLOSED. All ' + TABLE.length + ' resources '
+        + 'are session-gated, so all ' + cells + ' cells were driven and the');
+      console.log('       NOT-DRIVEN count is 0 for the first time. Closed by '
+        + 'api/sd-data.js commit 46d74678.');
+      return;
+    }
     for (const r of UNGATED) {
       assert.strictEqual(GATED.indexOf(r), -1, r + ' is in both lists');
     }
-    // The honest half: pick the role the table denies hardest and show the
-    // handler does NOT refuse, because there is no gate here to refuse.
+    // The honest half while a gap exists: pick the role the table denies
+    // hardest and show the handler does NOT refuse, because there is no gate
+    // here to refuse.
     const r = UNGATED[0];
     const role = ROLES[ROLES.length - 1];
     const { res } = await call(r, 'write', role);
     assert.strictEqual(refusedByRoleGate(res, r, role), false,
-      r + ' IS now role-gated. That is an improvement and this arm is the thing '
-      + 'that noticed -- move it into GATED and re-run.');
-    console.log('       ' + UNGATED.length + ' resource(s) × ' + ROLES.length
-      + ' roles × 2 verbs = ' + (UNGATED.length * ROLES.length * 2)
+      r + ' IS now role-gated. Move it into GATED and re-run.');
+    console.log('       ' + UNGATED.length + ' resource(s) x ' + ROLES.length
+      + ' roles x 2 verbs = ' + (UNGATED.length * ROLES.length * 2)
       + ' cells NOT DRIVEN, and not counted as passes');
   });
 
