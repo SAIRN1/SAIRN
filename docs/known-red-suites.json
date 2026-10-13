@@ -172,24 +172,6 @@
    "exit_code": 1
   },
   {
-   "file": "tests/faults/sd_write_faults.js",
-   "kind": "node",
-   "tail": "7 passed, 11 FAILED",
-   "since": "2026-10-06",
-   "why": "",
-   "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
-   "environment": {
-    "where": "live-clone",
-    "pinned": false,
-    "tool": "the suite itself, invoked directly, one process per suite",
-    "sha": "4fa9843a",
-    "basis": "RE-MEASURED 2026-10-07 by fourth at HEAD 4fa9843a, driven ALONE in its own process in the live clone with a 300s ceiling. THE BOUNDARY WAS VERIFIED AFTER EVERY SUITE, not once at the end (convention 10): `git status --porcelain` digest, sha256 of `.git/config`, and `node --check api/sd-data.js`. All three unchanged by all six, start digest == end digest (e4e3186acdf6 / 789cfb6edb72 / 0). EXIT CODE ONLY -- the failing arm names below are recorded in `tail` where a row had none, but no `why` is written, because an exit code and an arm name are not a diagnosis."
-   },
-   "exit_code": 1
-  },
-  {
    "file": "tests/faults/transport_timeout_sweep.js",
    "kind": "node",
    "tail": "77 passed, 4 FAILED",
@@ -225,25 +207,6 @@
    },
    "exit_code": 1,
    "cause_tag": "tooling/vocabulary/hand-maintained-list-went-stale"
-  },
-  {
-   "file": "tests/hover_separation_ci_probe.py",
-   "kind": "py",
-   "tail": "    audit = set(A.AUDITOR_SCOPE)",
-   "since": "2026-10-06",
-   "why": "THE GATE CRASHES, SO IT IS NOT ENFORCING -- and the subject is the BUILD/AUDIT BOUNDARY. AttributeError at tools/hover_separation_ci.py:97, inside scope_definitions_agree(), on 'audit = set(A.AUDITOR_SCOPE)' -- which is verbatim the `tail` this register row already carried. tools/hover_separation_audit.py:122 explains why it fails: 'there is deliberately no AUDITOR_SCOPE tuple any more: a flat tuple cannot express...'. SO ONE MODULE REMOVED A CONSTANT ON PURPOSE AND A CONSUMER IN ANOTHER MODULE STILL READS IT. The probe's arms report the consequence honestly -- 'a commit inside the auditor's own directory PASSES' and '...and the refusal NAMES the offending path' both FAIL -- because a crashed gate refuses nothing. THIS IS THE HIGHEST-CONSEQUENCE ROW IN THIS BATCH: the hover auditor's separation is enforced by prevent-and-detect, and the prevent half is dead. ROUTED, NOT PATCHED: the fix is to replace the removed flat tuple with whatever hover_separation_audit.py now exposes, and the function's own docstring argues the two constants must stay separate, so the right shape is a decision for whoever removed it.",
-   "owner": "unassigned",
-   "diagnosed": "2026-10-07",
-   "diagnosed_by": "fourth",
-   "environment": {
-    "where": "live-clone",
-    "pinned": false,
-    "tool": "the suite itself, invoked directly",
-    "sha": "a7b6b58c",
-    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, tree verified clean before and after the batch; exit code read from the program's own output"
-   },
-   "exit_code": 1,
-   "cause_tag": "tooling/consumer/deliberate-removal-broke-a-caller"
   },
   {
    "file": "tests/install_git_hooks_check_probe.py",
@@ -1707,6 +1670,34 @@
      "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
     }
    }
+  },
+  {
+   "file": "tests/faults/sd_write_faults.js",
+   "exit_code": 0,
+   "recovered": "2026-10-13",
+   "recovered_by": "fourth",
+   "was_registered_since": "2026-10-06",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process",
+    "sha": "988a1d8f",
+    "basis": "MEASURED 2026-10-13 (fourth, b9 item 10) by driving every suite this register lists as red, ALONE, one process each, 180s ceiling. Moved on EXIT 0 only: exit 2, exit 3 and a timeout are the third state and were left in `entries` rather than declared fixed. The sweep was INCOMPLETE when this row was written and the count driven is in _b9_census_2026_10_13."
+   }
+  },
+  {
+   "file": "tests/hover_separation_ci_probe.py",
+   "exit_code": 0,
+   "recovered": "2026-10-13",
+   "recovered_by": "fourth",
+   "was_registered_since": "2026-10-06",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process",
+    "sha": "988a1d8f",
+    "basis": "MEASURED 2026-10-13 (fourth, b9 item 10) by driving every suite this register lists as red, ALONE, one process each, 180s ceiling. Moved on EXIT 0 only: exit 2, exit 3 and a timeout are the third state and were left in `entries` rather than declared fixed. The sweep was INCOMPLETE when this row was written and the count driven is in _b9_census_2026_10_13."
+   }
   }
  ],
  "_b5_addition_2026_10_12": "ELEVEN entries added by fourth, batch b5 item 2, and the brief asked for THIRTY. The 30 is hank's 2026-10-08 figure (\"101 red, registry records 75, 30 RED AND NOT RECORDED\") and it was re-derived rather than carried: the gap against this register at HEAD 327e9e80 is 23, not 30, because the register has absorbed some of them since and cody's later run moved others. Of those 23, driving each ALONE returned 11 RED, 7 GREEN, 2 exit-2 COULD NOT RUN, 2 exit-3 SKIPPED and 1 TIMEOUT at 180s. ONLY THE 11 ARE RED. The 7 GREEN are the finding that matters: a run log named them red and they are not, so the stale half of a census is a wrong answer in both directions. The 12 non-red are listed by name with their measured state in docs/2026-10-12-fourth-b5-routing.md -- they are NOT in this file, because an entry here is an exemption and an exemption over a suite that is green or that never ran would swallow its next real failure.",
@@ -1797,5 +1788,6 @@
     "basis": "MEASURED 2026-10-12 by fourth driving each suite ALONE with a 180s ceiling (batch b5 item 2), ROOT-CAUSED 2026-10-13 (batch b6 item 3) by reading the tail each one printed rather than by re-running it. The exit code is the one that process returned; the cause is quoted from the suite's own output."
    }
   }
- ]
+ ],
+ "_b9_census_2026_10_13": "RE-DRIVEN 2026-10-13 (fourth, b9 item 10) at HEAD 988a1d8f. 20 of the 86 entries this register listed as red were driven ALONE: COULD NOT RUN 1, GREEN 2, RED 17. 2 RECOVERED (exit 0) and were moved out of `entries` -- the file's own rule is that an entry whose suite has gone green \"swallows the next real failure of that file\". 4 came back in the THIRD STATE (exit 2, exit 3 or a timeout) and were LEFT IN PLACE: not-run is not green, and moving one would quietly declare a red suite fixed. 66 WERE NOT DRIVEN and are therefore NOT re-verified by this pass -- 86 entries is about three hours at the 180s ceiling, and a partial sweep reported as a whole one is the exact shape this file exists to prevent. THE SWEEP LOG IS THE AUTHORITY, not this sentence: scratchpad/drive_red86.jsonl, one JSON record per suite with its real exit code and the tail it printed."
 }
