@@ -3555,8 +3555,8 @@
       "task": "batch b10 -- claimed as the FIRST action. (1) ROUTE ONLY, no edit to tools/: a doc in docs/ for cc with the exact fix for tools/hover_auditor_scope_gate.py:409, the 4th unfetched-base instance, plus a spec for an unfetched-base checker -- shape detected, how it runs, expected output. (2) the b9 digest listed item 6 as a bare D with no text, so the b10 report records the push evidence properly: ranges c5af98dc..d30e9e42 and ae3a5cfb..79a0b04f with commit counts and what each of the six b9 items changed. (3) the undriven red suites assigned by directory -- api hank, tests cody, tools cc, docs me -- map written in docs/ and each owner routed their list; the b9 digest said 65 and the real number is re-derived from the sweep log rather than quoted. (4) handoff naming: docs/handoff-fourth-2026-10-16.md is misdated three days into the future, renamed to the SAIRN-handoff-fourth-b-n form with every reference in docs/ fixed. (5) methodology: the reusable procedure for diagnosing a push refusal that hides several defects, b9's having been four, including how NEXT FREE numbering is kept so routed rules never collide. (6) push without force and confirm it landed. Then the handoff BEFORE the report, then the report and digest. HOOKS STAY CLEARED and .claude/settings.json is never committed. No SAIRN_SEED_GATE=off. No file under tools/ is edited by this batch. FILES: docs/2026-10-13-fourth-b10-routed-to-cc.md docs/2026-10-13-fourth-b10-red-suite-owners.tsv docs/2026-10-13-fourth-b10-routed-red-suites.md docs/known-red-suites.json docs/METHODOLOGY.md docs/SAIRN-handoff-fourth-b9.md docs/SAIRN-handoff-fourth-b9-2.md docs/external-files-index.json docs/SAIRN-handoff-fourth-b10.md SAIRN-report-fourth-b10.txt SAIRN-digest-fourth-b10.txt",
       "claimed_at": "2026-10-13T11:34:07Z",
       "claimed_at_epoch": 1791891247.302987,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-13T20:45:23Z",
       "files": [
         "SAIRN-digest-fourth-b10.txt",
         "SAIRN-report-fourth-b10.txt",
