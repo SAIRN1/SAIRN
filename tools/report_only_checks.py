@@ -154,6 +154,72 @@ def by_section(rc, out):
 
 
 REGISTRY = [
+    # -- ADDED 2026-10-13 (cody, b7). Built to the b6 spec in
+    # docs/2026-10-13-cody-b6-routed-to-cc.md section 2, which routed it and
+    # deliberately built nothing.
+    {
+        'tool': 'unproven_arm_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-10-13, report-only, and the reason is the one this '
+                    'repo already records twice: a checker promoted to '
+                    'blocking while real findings exist refuses every push to '
+                    'the affected file, which is how a gate gets switched off. '
+                    'THE CURRENT COUNT IS ZERO AND THAT IS WHY IT IS STILL NOT '
+                    'A GATE -- a zero measured on one tree is not yet evidence '
+                    'the shape is retired. Measured 2026-10-13: 399 files in '
+                    'scope, 146 carrying a pass/fail summary construct, 1 with '
+                    'an unproven mechanism, 0 findings. The denominator is '
+                    'printed beside the zero on every run because "0 findings '
+                    'over 399 files" and "0 findings over 399 files, 1 of '
+                    'which could trip anything" are different claims and only '
+                    'the second is honest. Controls: tests/'
+                    'run_unproven_arm_probe.py, 15 arms, 0 unproven, driving '
+                    'the real CLI in a subprocess over fixture trees written '
+                    'to tempfile.mkdtemp. TWO ARMS CORRECTED THE TOOL RATHER '
+                    'THAN CONFIRMING IT, and both are the reason to believe '
+                    'the zero: the ABLATION arm runs it against the only two '
+                    'real instances the defect has ever had (check4_probe.py '
+                    'and check7_probe.py at c465743b~1) and the first version '
+                    'caught NEITHER -- A2 was gated on a summary line neither '
+                    'probe has, so both were quarantined as NOT ASSESSED, '
+                    'which is the right failure direction and still a checker '
+                    'that cannot fire. 0 of 2 before, 2 of 2 after. And arm 6 '
+                    'caught the tool firing on ITS OWN PROBE, whose fixtures '
+                    'were concatenated string literals; they now live in one '
+                    'triple-quoted block, which is the tool own normalise() '
+                    'escape hatch.',
+        'catches': 'a test suite that exits 0 while an arm is UNPROVEN -- not '
+                   'passed, not failed, NOT EVALUATED. Three signals, each '
+                   'keyed to a CONSTRUCT and never to the word, because the '
+                   'false positive was named in advance and is unavoidable '
+                   'otherwise: the word appears in prose in the two documents '
+                   'that specify this tool and in the probe that fixed the '
+                   'defect. A1 an unproven verdict emitted or counted while no '
+                   'summary print carries an unproven number -- the exact b5 '
+                   'defect. A2 an exit expression that names a failure counter '
+                   'or a boolean outcome flag and no unproven counter, so '
+                   'unproven arms cannot change the exit code. A3 the inverse, '
+                   'which keeps A1 honest -- a summary printing an unproven '
+                   'count the file never sets, a state it cannot reach. WHAT '
+                   'IT CANNOT SEE, printed on every run rather than left to be '
+                   'discovered: the third sub-rule, "an arm may be unproven at '
+                   'most once; twice is a FAILURE", is a property of two '
+                   'consecutive RUNS and is invisible to a static read of '
+                   'source. It is NOT implemented and NOT reported as clean.',
+        'evidence': 'The defect is reproducible from git in one command: '
+                    'python tools/unproven_arm_check.py --root <a tree holding '
+                    'tests/push_gate/check4_probe.py and check7_probe.py as '
+                    'they were at c465743b~1> reports A2 on both, at '
+                    'check4_probe.py:567 and check7_probe.py:584. Those are '
+                    'the two suites that exited 0 in b5 with three arms never '
+                    'evaluated, and the whole account is '
+                    'docs/2026-10-13-cody-b6-methodology-unproven.md. Exit '
+                    'codes: 0 scanned-no-finding, 1 finding (report-only), '
+                    '2 COULD NOT RUN when the scan matches no files at all, '
+                    'because 0 findings over 0 files is indistinguishable from '
+                    'a clean tree.',
+    },
     # -- ADDED 2026-10-07 (cc), REPORT-ONLY, and item 9's own instruction is
     # that promotion to blocking is a LATER decision somebody else makes.
     {

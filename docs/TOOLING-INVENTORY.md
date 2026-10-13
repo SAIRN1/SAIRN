@@ -21,12 +21,12 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**340 files in `tools/`.** By what actually invokes them:
+**341 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 13 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 75 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 76 | runs automatically on every push, never blocks |
 | **ADVISORY** | 0 | session-start or prompt hooks, informational |
 | **DECIDED** | 86 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 82 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
@@ -37,7 +37,7 @@ By what they are, independent of wiring:
 | Kind | Count |
 |---|---:|
 | ADVISORY | 4 |
-| CHECKER | 238 |
+| CHECKER | 239 |
 | GATE | 1 |
 | GENERATOR | 23 |
 | GUARD | 1 |
@@ -201,7 +201,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (75)
+## REPORT-ONLY (76)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -283,6 +283,7 @@ quiet in practice.
 | `tooling_inventory.py` | 2026-09-12, the day it was built | docs/TOOLING-INVENTORY.md no longer matching the wiring -- a tool added, promoted, wired or removed without the inventory being regenerated |
 | `traceability_matrix.py` | 2026-09-10, the day it was built | docs/traceability-matrix.md no longer matching the sources it is derived from -- a guard test, a gate check, a registry entry or an index row moved and the matrix did not |
 | `truthy_sum_check.py` | 2026-09-11, the day it was built | a NEW `+ (x ││ 0)` in a numeric fold with no Number() around it -- the guard never fires on a non-empty string, so `+` CONCATENATES instead of adding |
+| `unproven_arm_check.py` | 2026-10-13, report-only, and the reason is the one this repo already records twice: a checker promoted to blocking while real findings exist refuses every push to the affected file, which is how a gate gets switched off. THE CURRENT COUNT IS ZERO AND THAT IS WHY IT IS STILL NOT A GATE -- a zero measured on one tree is not yet evidence the shape is retired. Measured 2026-10-13: 399 files in scope, 146 carrying a pass/fail summary construct, 1 with an unproven mechanism, 0 findings. The denominator is printed beside the zero on every run because "0 findings over 399 files" and "0 findings over 399 files, 1 of which could trip anything" are different claims and only the second is honest. Controls: tests/run_unproven_arm_probe.py, 15 arms, 0 unproven, driving the real CLI in a subprocess over fixture trees written to tempfile.mkdtemp. TWO ARMS CORRECTED THE TOOL RATHER THAN CONFIRMING IT, and both are the reason to believe the zero: the ABLATION arm runs it against the only two real instances the defect has ever had (check4_probe.py and check7_probe.py at c465743b~1) and the first version caught NEITHER -- A2 was gated on a summary line neither probe has, so both were quarantined as NOT ASSESSED, which is the right failure direction and still a checker that cannot fire. 0 of 2 before, 2 of 2 after. And arm 6 caught the tool firing on ITS OWN PROBE, whose fixtures were concatenated string literals; they now live in one triple-quoted block, which is the tool own normalise() escape hatch. | a test suite that exits 0 while an arm is UNPROVEN -- not passed, not failed, NOT EVALUATED. Three signals, each keyed to a CONSTRUCT and never to the word, because the false positive was named in advance and is unavoidable otherwise: the word appears in prose in the two documents that specify this tool and in the probe that fixed the defect. A1 an unproven verdict emitted or counted while no summary print carries an unproven number -- the exact b5 defect. A2 an exit expression that names a failure counter or a boolean outcome flag and no unproven counter, so unproven arms cannot change the exit code. A3 the inverse, which keeps A1 honest -- a summary printing an unproven count the file never sets, a state it cannot reach. WHAT IT CANNOT SEE, printed on every run rather than left to be discovered: the third sub-rule, "an arm may be unproven at most once; twice is a FAILURE", is a property of two consecutive RUNS and is invisible to a static read of source. It is NOT implemented and NOT reported as clean. |
 | `vercel_config_check.py` | 2026-09-09 | a buildCommand over Vercel's 256-char schema limit, and a route whose destination file no cp copies |
 | `verification_owed_report.py` | 2026-09-28, report-only and it must STAY report-only. It lists commits whose own message says a live run is owed with nothing recording it done. A GATE HERE WOULD BE CLEARED BY DELETING THE SENTENCE rather than by doing the verification, which would make honest disclosure the expensive option. Built after the alf_incidents fix shipped with "LIVE RE-VERIFICATION IS STILL OWED" in its own commit message -- accurate, in the right place, and the last anybody heard of it until the live run the next day found the fix did not work. Control: tests/run_verification_owed_probe.py. | a commit whose own message says a live run is OWED, with nothing anywhere recording that the run happened -- the debt a session disclosed honestly and then nobody collected |
 | `write_without_readback_check.py` | 2026-09-10 | a resource an app WRITES to the server and never reads back -- a backup nobody could restore from |
@@ -618,11 +619,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      340   git ls-files tools/
+  tools on disk                      341   git ls-files tools/
   hook entries                         0   .claude\settings.json  (zero, allowed: this clone's hooks are intentionally EMPTY -- Michael disabl)
   push-gate invocations               13   tools\sairn_push_gate_hook.py
-  report-only registry                76   report_only_checks.REGISTRY
-  tools invoked by tests/            232   tests/**/*.py, *.js
+  report-only registry                77   report_only_checks.REGISTRY
+  tools invoked by tests/            233   tests/**/*.py, *.js
   recorded NOT-promoted decisions     86   report_only_checks.NOT_PROMOTED
   numbered gate checks                17   tools\sairn_push_gate_hook.py
 ```

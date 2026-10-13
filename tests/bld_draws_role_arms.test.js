@@ -114,8 +114,24 @@ async function call(action, role) {
   return { res, calls };
 }
 
-const DENY_MESSAGE = 'Draw requests are progress billing and are available to '
-  + 'the owner and the office only. Ask the owner if you need access.';
+// THE DENY MESSAGE IS PARSED TOO, for the same reason the role list is. It was
+// a transcribed literal here until this arm was reviewed, which contradicted
+// this file's own header: a retyped message agrees with the handler until
+// somebody rewords it, and then every DENY arm fails for a reason that has
+// nothing to do with the gate. Parsed from the `message:` inside the 403 that
+// immediately follows the BLD_DRAW_ROLES test, and REFUSED if not found.
+function denyMessageFromSource() {
+  const src = fs.readFileSync(path.join(API, 'sd-data.js'), 'utf8');
+  const at = src.indexOf('const BLD_DRAW_ROLES = [');
+  assert.ok(at > 0, 'could not find BLD_DRAW_ROLES in api/sd-data.js');
+  const m = src.slice(at, at + 1200).match(/message:\s*'((?:[^'\\]|\\.)*)'/);
+  assert.ok(m, 'found BLD_DRAW_ROLES but no `message:` in the 403 that follows '
+    + 'it. This parse is this file\'s only source for the refusal text; without '
+    + 'it refusedByRoleGate() would compare against undefined and EVERY DENY arm '
+    + 'below would fail -- so it is refused here, where the cause is visible.');
+  return m[1].replace(/\\'/g, "'").replace(/\\\\/g, '\\');
+}
+const DENY_MESSAGE = denyMessageFromSource();
 
 function refusedByRoleGate(res) {
   return res.statusCode === 403
