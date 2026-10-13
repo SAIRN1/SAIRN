@@ -810,6 +810,30 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/sd-data-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "46d74678347aff3fc3651483fc37b18ca37e2cd4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-sf-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "46d74678347aff3fc3651483fc37b18ca37e2cd4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sf-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "46d74678347aff3fc3651483fc37b18ca37e2cd4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/_lib/courtlistener-rate-limit.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -1140,6 +1164,22 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "5ad263684df8a5c9629793190ca979beee5cbe20",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/audit-checkpoint.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "5bb0950a51b6225a793e9fb2394b3f2afbd835cc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sf-auth.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "5bb0950a51b6225a793e9fb2394b3f2afbd835cc",
    "criteria_version": "2026-10-06.1"
   },
   {
