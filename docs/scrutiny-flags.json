@@ -182,6 +182,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/sd-data-sen-caregiver-read-paths.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "2118b6830de563b4b86c5364c5b2cec3e20a1ec4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_tier_a_review_gate_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -216,6 +224,35 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "2a3a95c20d55ae860c7554bbc0598329410591f6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/push_gate/_local_remote.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "It does not stub, skip or weaken the pre-push hook. `core.hooksPath` still"
+    }
+   ],
+   "sha": "315800a7143a37d84865a234d1ae28dccdb9ba66",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/push_gate/check4_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "315800a7143a37d84865a234d1ae28dccdb9ba66",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/push_gate/check7_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "315800a7143a37d84865a234d1ae28dccdb9ba66",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -587,6 +624,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "64a1e5e899c0178fb8db16fffd74c8cff0e82e84",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-law-role-matrix.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "684f0fcd4f6a3012d547a3a7a0f2bf31b3c22b83",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -1298,6 +1343,19 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "f1d2fd1988785a6e4a3f9ee00f87ab8d9d1a5456",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_dup_dom_ids_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(D, ignore_errors=True)"
+    }
+   ],
+   "sha": "f45ea2ba48bbe3a791eff07aa253f7ac0a4ba74b",
    "criteria_version": "2026-10-06.1"
   },
   {
