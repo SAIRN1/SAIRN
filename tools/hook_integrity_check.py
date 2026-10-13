@@ -87,6 +87,10 @@ from checker_kit import EXIT_CLEAN, EXIT_FINDING, EXIT_COULD_NOT_RUN  # noqa: E4
 CRITERIA_VERSION = '2026-09-29.1'
 MANIFEST_REL = os.path.join('docs', 'hook-manifest.json')
 SETTINGS_REL = os.path.join('.claude', 'settings.json')
+# The record of the hook-disabling decision. Its PRESENCE is what tells an
+# empty `hooks` object apart from one a tool stripped by accident -- see
+# intentionally_disarmed().
+DISARMED_REL = os.path.join('docs', 'hooks-disabled-2026-10-13.json')
 SELF_REL = os.path.join('tools', 'hook_integrity_check.py')
 
 # The hook events whose wiring is enforcement. PostToolUse is included: several
@@ -329,8 +333,44 @@ def wiring_findings(obs, man):
 # this file, because nothing it can be wired to is guaranteed to survive. The
 # remaining residue is named in the report rather than left for somebody to
 # discover the same way.
+def intentionally_disarmed(repo):
+    """Is `hooks` present and EMPTY in this clone's settings.json?
+
+    ── AN EMPTY HOOKS OBJECT IS A DECISION NOW, NOT DRIFT (2026-10-13) ──────
+    Michael cleared the hooks on 2026-10-11 because they were causing agent
+    compaction, and the decision is standing: they are never to be restored.
+    This check was built for the opposite case -- a control silently going
+    missing -- and at that point `hooks: {}` and `hooks: <stripped by a
+    PowerShell round trip>` were indistinguishable from here. They no longer
+    are, because the empty object is now COMMITTED and
+    docs/hooks-disabled-2026-10-13.json carries what was removed and why.
+
+    SO THE TEST IS DELIBERATELY NARROW: the key must EXIST and be EMPTY. A
+    `hooks` key that is absent entirely is still a finding -- that is a
+    different file, not a disarmed one -- and a hooks object with SOME events
+    wired and others missing is still drift, which is the case the 2026-10-11
+    incident actually was (`{"SessionStart": []}` against 23 commands).
+    """
+    path = os.path.join(repo, SETTINGS_REL)
+    try:
+        doc = json.loads(io.open(path, encoding='utf-8').read())
+    except Exception:                                            # noqa: BLE001
+        return False
+    if 'hooks' not in doc:
+        return False
+    h = doc.get('hooks')
+    if not isinstance(h, dict) or h:
+        return False
+    # The record of the decision has to be THERE. Without it this is just an
+    # empty object again, and accepting it would be the self-certifying
+    # exemption this file refuses everywhere else.
+    return os.path.isfile(os.path.join(repo, DISARMED_REL))
+
+
 def wiring_only(repo):
     """(findings, could_not) for the settings wiring alone. May raise."""
+    if intentionally_disarmed(repo):
+        return [], []
     wmap = wiring(repo)
     man = load_manifest(repo)
     obs = {'wiring': dict((ev, sha256_text('\n'.join(rows)))
@@ -385,14 +425,52 @@ def compare(repo, obs, man):
                         'that is gone enforces nothing, and its absence is the '
                         'quietest possible failure.' % n)
 
+    # ── THE DISARMED CASE, AND WHAT IT DOES *NOT* EXCUSE (2026-10-13) ───────
+    # `invoked_tools()` DERIVES its set from the hook files and the settings
+    # wiring, so an intentionally empty `hooks` object makes that set shrink to
+    # whatever .githooks/ still names -- and every manifest tool it no longer
+    # reaches reports as "no longer hashed". Measured on the clone the moment
+    # the hooks were emptied: 17 of those rows plus 4 WIRING rows, all of them
+    # restating the decision rather than finding anything.
+    #
+    # THE NARROWNESS IS THE WHOLE POINT. Only the two WIRING-DERIVED families
+    # are expected: a tool the wiring no longer reaches, and the wiring hashes
+    # themselves. The `TOOL x CHANGED IN A COMMIT AND THE MANIFEST WAS NOT
+    # REGENERATED` rows are NOT excused -- they are about a tool's CONTENT
+    # against its recorded expectation, they were red before the hooks were
+    # emptied, and they stay red. 7 of them at this HEAD, none of them this
+    # session's.
+    disarmed = intentionally_disarmed(repo)
+    expected_under_disarm = []
     for t, sha in sorted(obs['tools'].items()):
         three_way('tools', t, os.path.join('tools', t), sha)
     for t in sorted(set(man.get('tools') or {}) - set(obs['tools'])):
-        findings.append('TOOL %s is in the manifest and is no longer hashed -- '
-                        'either the file is gone or no hook invokes it any more. '
-                        'Both change what is enforced.' % t)
+        row = ('TOOL %s is in the manifest and is no longer hashed -- either '
+               'the file is gone or no hook invokes it any more. Both change '
+               'what is enforced.' % t)
+        if disarmed and os.path.isfile(os.path.join(repo, 'tools', t)):
+            # The FILE IS STILL THERE, so "gone" is excluded by measurement
+            # rather than by assumption; what changed is which hook reaches it.
+            expected_under_disarm.append(
+                'TOOL %s is unreached because the hooks are intentionally '
+                'empty. The file is still on disk.' % t)
+        else:
+            findings.append(row)
 
-    findings.extend(wiring_findings(obs, man))
+    if disarmed:
+        expected_under_disarm.extend(
+            'EXPECTED: ' + w for w in wiring_findings(obs, man))
+    else:
+        findings.extend(wiring_findings(obs, man))
+    # A THIRD CHANNEL, AND NOT could_not. The first draft appended this to
+    # could_not and the run exited 2 -- COULD NOT RUN -- which is false: the
+    # check ran, compared everything, and these rows are a DELIBERATE
+    # exemption with a committed record behind them. Exit 2 is reserved for
+    # "nothing was checked" and overloading it would make a working run
+    # indistinguishable from a broken one, which is the defect this file's own
+    # header is about. Carried on the function so the signature stays
+    # (findings, could_not) for every existing caller.
+    compare.expected_under_disarm = expected_under_disarm
 
     expected_path = man.get('hooks_path')
     if expected_path is None:
@@ -559,6 +637,18 @@ def main(argv=None):
         print('HOOK WIRING ONLY -- settings.json against the manifest')
         print('  criteria : %s' % CRITERIA_VERSION)
         print('  repo     : %s' % repo)
+        if intentionally_disarmed(repo):
+            print('')
+            print('INTENTIONALLY DISARMED -- `hooks` is present and EMPTY, and')
+            print('%s records what was removed,' % DISARMED_REL)
+            print('by whom and why. Michael cleared the hooks on 2026-10-11')
+            print('because they were causing agent compaction; the decision is')
+            print('standing and they are NOT to be restored.')
+            print('')
+            print('NOT a pass over an unchecked wiring -- there is no wiring to')
+            print('check. A `hooks` key that is ABSENT, or one with some events')
+            print('wired and others missing, is still drift and still reported.')
+            return EXIT_CLEAN
         try:
             findings, could_not = wiring_only(repo)
         except CouldNotRun as exc:
@@ -607,9 +697,18 @@ def main(argv=None):
     print('  hooksPath: %r' % obs['hooks_path'])
     print('  covers itself: %s' % ('yes' if man.get('self') else 'NO'))
 
+    compare.expected_under_disarm = []
     findings, could_not = compare(repo, obs, man)
+    expected = getattr(compare, 'expected_under_disarm', [])
 
     print()
+    if expected:
+        print('EXPECTED UNDER THE HOOK-DISABLING DECISION (%d) -- not findings, '
+              'not failures,' % len(expected))
+        print('and not dropped either. See %s.' % DISARMED_REL)
+        for e in expected:
+            print('  = %s' % e)
+        print()
     if could_not:
         print('COULD NOT CHECK (%d) -- NOT a pass:' % len(could_not))
         for c in could_not:
@@ -632,7 +731,8 @@ def main(argv=None):
     if args.json:
         print(json.dumps({'criteria': CRITERIA_VERSION, 'repo': repo,
                           'observed': obs, 'findings': findings,
-                          'could_not_check': could_not}, indent=2))
+                          'could_not_check': could_not,
+                          'expected_under_disarm': expected}, indent=2))
 
     if could_not:
         return EXIT_COULD_NOT_RUN
