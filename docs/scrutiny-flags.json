@@ -1306,6 +1306,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_defect_register_superseded_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c2c4aa7bad9e5cfab675c0861b284fe5f277c591",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/push_gate/check4_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -1332,14 +1340,6 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "c465743b34b08d59d050ff5507e6d58f01d247dc",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/run_defect_register_superseded_probe.py",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "c2c4aa7bad9e5cfab675c0861b284fe5f277c591",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -1414,6 +1414,46 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "d5abcf579cbc79515db8f09ea893de984443e3a3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-cross-tenant-dispatchers.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d7773533f3715230bd1b68876be3422cc3646f0c",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d7773533f3715230bd1b68876be3422cc3646f0c",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-sf-role-matrix.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d7773533f3715230bd1b68876be3422cc3646f0c",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-sf-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d7773533f3715230bd1b68876be3422cc3646f0c",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "docs/hank-evidence/b6_live_session_control_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d7773533f3715230bd1b68876be3422cc3646f0c",
    "criteria_version": "2026-10-06.1"
   },
   {

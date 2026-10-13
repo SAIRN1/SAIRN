@@ -1,0 +1,28 @@
+DIGEST hank b6
+
+STATUS: 6/6 done. Pushed 6bbafbe3..f6029381, 0 ahead/0 behind, no
+SAIRN_SEED_GATE=off, no claim held. b4 Q1-Q3 answered and applied.
+
+DECISION-NEEDED:
+ 1 CAN A TRUSTEE SIGN IN? sairnfreedom.html declares trustee.audit,
+   ROLES_BY_APP does not -- an assignable office nobody can provision.
+   api/sf-auth.test.js red at HEAD for it, before and after b6.
+ 2 ONE ALTER: the audit checkpoint covers 3 of 16 logs. And confirm
+   sql/audit_checkpoint_schema.sql was ever run; if not, nothing is
+   checkpointed anywhere.
+
+CHANGED: 15 files, 2037+/29- (api/ only: 7 files, 1206+/20-)
+
+EVIDENCE-path: SAIRN-report-hank-b6.txt; docs/handoff-hank-2026-10-13b.md;
+docs/2026-10-13-hank-b6-routing.md; docs/hank-evidence/b6_*
+
+TESTS: sf-role-matrix 14/14 new; cross-tenant 419/0; audit-checkpoint 46/46;
+pairs 94->104. sf-auth 37/1 pre-existing; event-type check 1 (stale sql).
+
+UNVERIFIED: SAIRNfreedom source-only, no PIN in repo. Cron beat untellable.
+SAIRNscape gates proven live both directions.
+
+NEXT: Michael the two above; cody the driven matrices; cc the bare-run
+findings and three Tier A records hank cannot self-discharge.
+
+END-OF-DIGEST

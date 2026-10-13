@@ -1,0 +1,731 @@
+REPORT hank b6
+================================================================================
+SAIRN -- hank -- BATCH b6                                        2026-10-13
+================================================================================
+
+GIT STATE
+  HEAD at open      1ecb650e  (3 b5 commits unpushed, carried in)
+  HEAD at close     f6029381
+  pushed range      6bbafbe3..f6029381
+  ahead/behind      0 / 0 of origin/main
+  SAIRN_SEED_GATE=off NOT USED. Zero rows added to docs/BYPASS-LOG.jsonl.
+
+  diffstat for b6 (by script, git diff --shortstat 8a572a6e..f6029381):
+      15 files changed, 2037 insertions(+), 29 deletions(-)
+  api/ only -- everything else is the routing doc, the handoff, two generated
+  documents, the obligation ledger and two probe artefacts:
+      api/_lib/sf-roles.js                            358 +   NEW
+      api/sd-data.js                                  343 +-
+      api/sd-data-sf-role-matrix.test.js              287 +   NEW
+      api/audit-checkpoint.js                         139 +-
+      api/sd-data-sf-session-gate.test.js              36 +
+      api/sd-data-session-gate.test.js                 34 +-
+      api/sd-data-cross-tenant-dispatchers.test.js     29 +-
+      7 files changed, 1206 insertions(+), 20 deletions(-)
+
+  THE THREE b5 COMMITS THAT WERE STUCK ARE NOW ON origin/main. b5 stopped on
+  an external-files refusal naming fourth's Drive handoff and recorded it
+  rather than overriding. The block cleared on its own; 13f3a3be, d498c34f and
+  8a572a6e landed in this batch's push.
+
+  EDIT SCOPE HONOURED. Every code change is in api/. docs/ changes are the
+  routing document, the handoff, two REGENERATED documents, the Tier A ledger
+  written by its own tool, and docs/hank-evidence/ (two probe artefacts,
+  committed because this report cites them and a cited file in %TEMP% is a
+  dangling citation). tests/, tools/ and sql/ were not touched; everything
+  found in them is routed in docs/2026-10-13-hank-b6-routing.md.
+
+================================================================================
+b4 Q1-Q3, RESTATED IN ONE LINE EACH -- ALL THREE NOW ANSWERED
+================================================================================
+
+  Q1  "Will you run docs/2026-10-07-hank-migration-sql-for-michael.md?"
+      ANSWERED YES -- Michael ran it 2026-10-13: CHECK constraints widened, 13
+      new sairn*_audit_log tables including sairnvet_audit_log, and
+      rf_schedule.status_changed_by/_role/_at. b6 landed the code halves that
+      were waiting on it.
+
+  Q2  "Gate the five remaining Tier A SAIRNfreedom resources, or leave them?"
+      ANSWERED GATE THEM -- b6 instruction (a). All five are in
+      SD_SESSION_GATED and SD_GATE_APP as of this push, and there is now NO
+      Tier A sf_ resource left ungated.
+
+  Q3  "Is a per-resource role matrix wanted for SAIRNfreedom, and at what
+      granularity?"
+      ANSWERED YES, LIKE SAIRNlaw's, THOROUGH -- b6 instruction (b). 36
+      resources x 10 roles in api/_lib/sf-roles.js, one table read by one
+      function, plus the three sf_officers trapdoor guards moved server-side.
+
+================================================================================
+ITEM 1 -- THE SITE IS UP, AND THE HALF b5 COULD NOT DRIVE IS NOW DRIVEN
+================================================================================
+
+RE-PROBED ONCE, through tools/sairn_http.py as required:
+
+      https://sairn.vercel.app/                       200, 2,755,287 bytes
+      https://sairn.vercel.app/api/sd-data            405  (GET on a POST-only
+                                                            endpoint -- correct)
+      https://sairn.vercel.app/api/audit-checkpoint   401  (the cron auth gate)
+
+The 402 "Deployment Paused" that b5 reported is gone.
+
+── THE VALID-SESSION CONTROL. THIS IS THE NEW RESULT ──────────────────────
+b5 proved a BARE KEY is refused. That answers "is the 403 the gate" and NOT
+"does a correctly signed-in caller get through", and a gate that refuses
+everybody is indistinguishable from one that works until the positive half is
+driven. b5 recorded that gap explicitly. It is closed for SAIRNscape.
+
+Logged in with the real demo credential -- SCP-DEMO-2026 / sairn-demo-owner /
+73018452 via /api/scp-auth -- which returned 200 with a 342-byte token and
+role=owner. Then every resource, twice, same key, with and without the token:
+
+  resource               BARE KEY (no session)   WITH SESSION
+  scp_designs            403 FORBIDDEN           200 ok rows=2  provisioned
+  scp_quotes             403 FORBIDDEN           200 ok rows=1  provisioned
+  invoices               403 FORBIDDEN           200 ok rows=1  provisioned
+  scp_vendors            403 FORBIDDEN           200 ok rows=1  provisioned
+  scp_progress_photos    403 FORBIDDEN           200 ok rows=0  provisioned
+  customers              403 FORBIDDEN           200 ok rows=3  provisioned
+  scp_jobs    (ungated)  200 ok rows=2           200 ok rows=2
+  scp_irr_zones (ungated)200 ok rows=0           200 ok rows=0
+
+  write scp_designs WITH SESSION, id-less payload  ->  400
+
+BOTH HALVES HOLD, AND THE WRITE IS THE SHARPEST LINE IN THE TABLE. A 400 on
+that write is the HANDLER refusing a missing payload.id -- which means the
+session passed the GATE and the id check stopped it. A 403 there would have
+meant the gate refused; a 200 would have meant something was stored. 400 is the
+only answer that proves the session got through AND that nothing persisted.
+
+NO WRITE COULD HAVE PERSISTED, BY DESIGN RATHER THAN BY LUCK: every write
+attempt sends an ID-LESS payload, so even with no gate at all the handler's own
+"payload.id is required" refuses before any store call. Nothing was deleted and
+the brief's stop-condition never arose.
+
+EVIDENCE COMMITTED: docs/hank-evidence/b6_live_session_control_probe.py and
+docs/hank-evidence/b6_live_session_control_probe.out.
+
+── SAIRNfreedom COULD NOT BE DRIVEN, AND THAT IS A SEARCH RESULT ──────────
+The brief said to record and skip if the PIN is not in my files. It is not.
+docs/2026-09-03-demo-credentials.md carries a row for EVERY app with a demo
+employee credential -- StoneDesk, SAIRNbiz, SAIRNgrounds, SAIRNscape and the
+rest -- and HAS NO SAIRNfreedom ROW. A repo-wide grep for SF-PINNACLE-2026
+across *.md, *.sql, *.json, *.txt and *.py returns the licence seed
+(sql/sairnfreedom_license_seed.sql, which creates the LICENCE and no
+credential) and the open-work index, neither of which carries a PIN.
+
+So the five tables locked this batch and the whole 36x10 matrix are
+SOURCE-VERIFIED ONLY. Said plainly rather than left to be inferred from the
+absence of a table.
+
+── THE audit-checkpoint SCHEDULED JOB: COULD NOT TELL, WITH A LIKELIER CAUSE
+   THAN THE PAUSE ────────────────────────────────────────────────────────────
+The route exists and is deployed -- it answers 401 to an unauthenticated GET,
+which is its cron gate. Whether the JOB has beaten since the restart cannot be
+answered from this clone: there is no CRON_SECRET here, so
+tools/cron_liveness_check.py exits 3 without calling the watchdog, and
+tools/audit_checkpoint_status.py exits 3 and writes nothing. THAT IS A THIRD
+STATE AND IS NOT REPORTED AS ALIVE.
+
+WHAT I COULD ESTABLISH FROM api/, WHICH IS WHAT THE BRIEF ASKED FOR:
+
+  * THE SCHEDULE AND THE WATCHDOG DO NOT LINE UP THE WAY THE EMAIL SUGGESTS.
+    vercel.json has /api/audit-checkpoint at `30 3 * * *` and /api/cron-watchdog
+    at `15 * * * *`. So a DEAD report at 3:15 AM describes the state BEFORE the
+    3:30 run, not after it.
+  * A DAILY REFUSAL WOULD NOT READ AS DEAD. api/cron-watchdog.js classifies on
+    AGE alone (`if (ageSec > deadAfter(interval)) entry.status = 'DEAD'`), and
+    api/audit-checkpoint.js's 503 path DOES beat -- `outcome: 'failed'`, fixed
+    2026-09-16 precisely so a job that refuses daily is distinguishable from one
+    that never fires. So a job 503ing every day would show ALIVE-but-failing.
+    DEAD means NO BEAT for over two days.
+  * WHICH LEAVES TWO CANDIDATES. Either the pause suppressed the runs entirely
+    (crons do not fire on a paused deployment, and that window covered at least
+    one 3:30), or sql/audit_checkpoint_schema.sql HAS NEVER BEEN RUN -- its own
+    header says "WRITTEN 2026-09-14. NOT RUN", and docs/AUDIT-CHECKPOINT-STATUS.md
+    has said COULD NOT TELL since that date. If the table is absent the endpoint
+    503s on every run and nothing on the platform is checkpointed at all.
+
+  I FOUND NO DEFECT IN api/ THAT WOULD CAUSE THE DEAD REPORT, and I am not
+  inventing one. What I did find in api/ while looking is far worse and is
+  ITEM 4 below. Confirming which of the two candidates it is needs either
+  CRON_SECRET or one look at the Supabase table list -- routed to Michael.
+
+================================================================================
+ITEM 2 -- SAIRNfreedom: FIVE TABLES LOCKED, 36x10 MATRIX, GUARDS SERVER-SIDE
+================================================================================
+
+── 2a. THE LAST FIVE TIER A TABLES ───────────────────────────────────────
+sf_district_imports, sf_events, sf_permit_flags, sf_products and sf_vehicles
+join SD_SESSION_GATED and SD_GATE_APP in ONE edit -- the rule sf_trustee_audits
+broke on main on 2026-09-29, when a resource gated with no expectedApp entry
+resolved to 'stonedesk' and refused every correctly signed-in officer with
+FORBIDDEN "sign in first": it fails CLOSED AND CONFUSINGLY, which is the
+failure that gets a security change reverted as broken rather than fixed.
+
+WHY THESE FIVE AND NOT A DERIVATION OF MY OWN: b4 derived nine Tier A sf_
+resources still ungated, gated the four carrying a money or statutory figure,
+and NAMED these five with their register lines rather than sweeping them in --
+because widening the gate is a product decision and b4 was not asked to make
+it. Michael made it. The five are the whole of it.
+
+  sf_district_imports  register:353  district records the post neither authors
+                                     nor can re-request
+  sf_events            register:358  the calendar every programme, ceremony and
+                                     gaming session hangs off
+  sf_permit_flags      register:367  gaming permit state. A wrong flag is a
+                                     post running gaming it is not permitted to
+                                     run -- an ORC Chapter 2915 exposure
+  sf_products          register:368  the priced catalogue every sf_tickets row
+                                     snapshots unitPrice from, so a wrong price
+                                     is wrong takings for every later sale
+  sf_vehicles          register:380  computes its service-due flag from the
+                                     odometer sf_vehicle_service advances -- and
+                                     that WRITER was gated 2026-09-29 while this
+                                     READER stayed open for two weeks
+
+PAIR COUNT 94 -> 104, MEASURED at this HEAD after the edit, not predicted. 27
+of 36 sf_ resources are now gated AND THERE IS NO TIER A sf_ RESOURCE LEFT
+UNGATED, which retires the stopping rule that governed four waves of this app.
+
+THE NINE THAT REMAIN are all B/B and are NAMED in api/sd-data.js beside the
+matrix call site: sf_bottle_fills, sf_ceremonial_items, sf_documents,
+sf_honor_details, sf_inventory_counts, sf_national_categories,
+sf_service_hours, sf_service_referrals, sf_vendors. They are named THERE rather
+than only here because that is where their absence has a consequence -- see
+below.
+
+── 2b. THE ROLE MATRIX ───────────────────────────────────────────────────
+api/_lib/sf-roles.js. 36 rows x 10 roles, no empty cell, two locks, one
+decide().
+
+THE DEFECT IT CLOSES: SAIRNfreedom had NO role distinction OF ANY KIND. Before
+the gate waves every resource was authorised by the licence key alone; AFTER
+them, by a session of ANY ROLE. So a chaplain's sign-in could rewrite the
+general ledger and a service officer could edit the officer roster. Ten
+distinct capability roles, treated by the server as one.
+
+BUILT ON api/_lib/law-roles.js STRUCTURALLY, NOT BY ANALOGY. One table read by
+one function, wired at the gate that already exists. That shape was chosen
+there with a reason that applies harder here: "a role check written at one call
+site and not the nineteen others is indistinguishable from no policy at all
+when read one branch at a time." SAIRNfreedom has 36 branches.
+
+THE ROLE VOCABULARY IS THE APP'S OWN AND IS NOT INVENTED. SAIRNfreedom's roles
+ARE its capability ids -- post.govern, finance.write, chaplain.pastoral and so
+on -- because an officer holds a CAPABILITY, not a title (titles vary per org
+type: a Commander, an Exalted Ruler, a Worthy President). The authoritative
+list is ROLES_BY_APP.sairnfreedom, which api/sf-auth.js:80 reads to validate a
+provisioned role.
+
+TWO LOCKS, each a separate structure consulted AFTER the table agrees, so
+editing the table cannot open them -- a default is a policy an override can
+erase:
+
+  GOVERNANCE  sf_officers WRITE -> post.govern / post.govern.deputy only.
+              That roster is the post's governance record and three guards run
+              off it; docs/CRITICALITY-TIERS.md:365 carries it A on integrity.
+  MONEY       sf_ledger, sf_accounts, sf_disbursements, sf_gaming_expenses
+              WRITE -> governance plus finance.write, which the app's own label
+              calls "Finance (bonded)". A post whose chaplain can write a
+              disbursement row has an ORC 2915.10 problem, not a UX problem.
+
+THE WEAKEST LINK IS THE POLICY AND IT IS MINE. Nobody handed down a 36x10 grid.
+Every grant is derived from the capability LABEL THE APP ITSELF SHIPS, and
+every row carries a `why` naming which label it came from -- so a reviewer
+checks a MAPPING rather than re-deriving a policy. The matrix suite refuses any
+row whose `why` is shorter than a sentence (it caught sf_vendors on the first
+run). Where a resource sat in no capability's stated scope, the non-governing
+roles got READ and not WRITE: read because this is one post's own records and a
+member-facing officer genuinely needs to see the roster, the calendar and the
+inventory; not write because write is where the integrity tier lives. THAT
+DEFAULT IS A JUDGEMENT AND IS THE MOST LIKELY THING TO BE WRONG IN THE GENEROUS
+DIRECTION. It is the first thing the obligation body asks a reviewer to attack.
+
+THE SHARPEST ROW ARGUES AGAINST ITSELF. sf_trustee_audits gives finance.write
+READ ONLY, not write, because the VFW Manual of Procedure the client cites says
+THE QUARTERMASTER MUST NOT PREPARE THE AUDIT. Granting finance write there
+would encode the opposite of the source. The capability that SHOULD write it is
+not a server role at all -- see DECISION NEEDED below.
+
+FAILS CLOSED IN FIVE DIRECTIONS, each a shape this platform has been bitten by:
+an sf_ resource with no row -> DENY (a 37th resource gets nothing, loudly); a
+role not in the row -> DENY (an 11th role inherits nothing rather than
+inheriting post.govern); an absent or empty role -> DENY; any verb that is not
+'read' -> WRITE-class, so a future verb cannot arrive on a read grant; and
+NOT_SF as a third verdict so another app's resource is neither allowed nor
+denied by a SAIRNfreedom table -- this function sits in a gate every app passes
+through, and folding NOT_SF into ALLOW would make every other app read as
+approved by this policy.
+
+WHAT THE MATRIX COVERS AND WHAT THE CALL SITE REACHES ARE DIFFERENT NUMBERS,
+AND I SAID SO IN THE CODE RATHER THAN LET THE ARITHMETIC IMPLY IT. The table
+has 36 rows; the gate reaches 27. For the other nine a role check is not merely
+absent, IT IS IMPOSSIBLE -- no session means no role. The table covers them
+anyway so that the day one is gated its policy is already written and reviewed
+rather than invented in the same hurried edit that gates it. AND THERE IS NO
+SECOND CALL SITE, unlike SAIRNlaw's two: adding one that reads a session which
+cannot exist would be a check that can never fire, which is worse than an
+absent one because it looks like coverage.
+
+── 2c. THE THREE sf_officers GUARDS, NOW SERVER-SIDE ─────────────────────
+All three ran ENTIRELY IN THE BROWSER until today:
+  sairnfreedom.html:2916  activeProvisioners()
+  sairnfreedom.html:2927  SPEC 1c -- refuses deactivating the LAST active
+                          provisioner
+  sairnfreedom.html:2942  refuses a second holder of a sole-holder capability
+
+A write from anywhere else -- curl with a stolen session, a modified tab, a
+future integration -- went past all three, and could leave a post at ZERO
+ACTIVE PROVISIONERS, which is unrecoverable through the API. RF-PINNACLE-2026
+is the live instance of that state.
+
+IMPLEMENTS b5'S OWN DESIGN DOCUMENT rather than re-deriving it, including all
+three traps that document predicted a careless implementation would hit:
+
+  1. THE WRITE IS AN UPSERT, so the invariant is computed against the roster AS
+     IT WOULD BE -- every stored row, with this payload replacing the one it
+     shares an id with, or appended if new. A payload that deactivates the last
+     provisioner WITHOUT MENTIONING `capability` is exactly the case a
+     payload-only check waves through.
+  2. FAILS CLOSED. An unreadable roster is 502 ROSTER_UNREADABLE and nothing is
+     written; an absent table is 503 NOT_PROVISIONED. Never a write that
+     proceeds without the check (PR 1.11).
+  3. ZERO OFFICERS REMAINS WRITABLE. A naive "always require one active
+     provisioner" bricks a post trying to start over -- the opposite of the
+     trapdoor this guard exists to prevent.
+
+THE SOLE-HOLDER RULE IS ENFORCED HERE TOO, and the design's preference for a
+partial unique index is restated rather than dropped: a read-then-write loses
+to two concurrent writes, and an outgoing plus an incoming Commander is exactly
+that race. An index is SQL and is not mine. Routed.
+
+THE MIRROR IS CHECKED, NOT HOPED. api/sd-data.js copies two facts out of the
+page -- which capabilities provision, and which is sole-holder. A mirrored
+constant with no check drifts, so the matrix suite reads CAPABILITIES and
+PROVISIONING_CAPS out of sairnfreedom.html and asserts both match, with a
+vacuity guard requiring at least ten CAPABILITIES entries to parse before the
+comparison counts.
+
+── AND THE NEW GUARD IMMEDIATELY MADE AN EXISTING ARM UNREACHABLE ────────
+api/sd-data-cross-tenant-dispatchers.test.js's sf_officers write arm reported:
+
+      UNREACHED: no upsert was sent; the handler answered 409
+      {"code":"LAST_PROVISIONER"}
+
+THE ARM WAS RIGHT AND THE FIXTURE WAS STALE. It carried an id-only payload,
+which describes exactly the state SPEC 1c refuses. RE-POINTED WITH AN ACTIVE
+PROVISIONING OFFICER, NOT SILENCED -- b5's GRD tripwire is the precedent for
+what leaving it red costs: six Tier A SAIRNgrounds resources lost their
+tenant-isolation coverage for a fortnight because a correct UNREACHED report
+was read as a known-red suite. 418/1 -> 419/0.
+
+================================================================================
+ITEM 3 -- bld_draws: OWNER AND OFFICE ONLY, SUPERVISORS DENIED
+================================================================================
+
+MICHAEL: "bld_draws is upper management/owner only, not supervisors, access
+assigned by ownership."
+
+ROLES_BY_APP.sairnbuild is EXACTLY ['owner', 'pm', 'office']. There is no role
+literally called "supervisor", so the instruction had to be MAPPED, and the
+mapping is stated in the code so it can be corrected in one place rather than
+re-derived from behaviour:
+
+  owner   ALLOW   "access assigned by ownership" names it directly, and
+                  api/bld-auth.js:72 already has PROVISIONING_ROLES = ['owner']
+                  alone -- owner is this app's sole existing authority role.
+  office  ALLOW   Back-office administration. A draw request IS PROGRESS
+                  BILLING -- this branch's own 401 message says so -- and
+                  billing is the office function. Same shape as every money
+                  resource on the platform: governance plus the bonded/office
+                  finance role, never the field role.
+  pm      DENY    THE SUPERVISOR. On a construction job the project manager is
+                  the field supervisor who REQUESTS a draw. "Not supervisors"
+                  has to bite somewhere and `pm` is the only role it can bite --
+                  and cc's own seq664 comment called the same role "every field
+                  role".
+
+IF THAT MAPPING IS WRONG IT IS WRONG IN ONE LINE: BLD_DRAW_ROLES is the whole
+policy and nothing else in the branch reads a role.
+
+READ **AND** WRITE, not write only. Retainage figures and a draw schedule are
+what a competitor or a disgruntled sub would want, and a supervisor who cannot
+author a draw has no reason to read the release log either.
+
+FAILS CLOSED ON AN UNKNOWN ROLE: a fourth role added to ROLES_BY_APP.sairnbuild
+without a line here gets nothing rather than inheriting owner's access.
+
+THIS CLOSES THE OPEN PRODUCT QUESTION cc REPORTED RATHER THAN SHIPPED in
+seq664 -- "that product question is reported rather than shipped inside a
+security fix" -- and which I left standing in b5's discharge verdict: "ANY
+sairnbuild session can still author or inflate a draw AMOUNT." That is no
+longer true for pm. The b5 verdict text is unchanged and the routing document
+carries the amendment for H2.
+
+WHAT IT DOES NOT DO: the Draw Requests panel is still not role-gated
+client-side, so a pm can open it and will now see a 403 rather than a hidden
+tab. Refusing is the server's job and hiding is the page's; the panel half is a
+client change nobody has asked for and is routed, not shipped.
+
+================================================================================
+ITEM 4 -- THE AUDIT CHECKPOINT COVERED 3 OF 16 AUDIT LOGS
+================================================================================
+
+*** THIS IS THE FINDING OF THE BATCH AND NOBODY ASKED FOR IT. ***
+
+api/audit-checkpoint.js:47 read:
+
+      const TABLES = ['sairnlaw_audit_log', 'sairncode_audit_log',
+                      'stonedesk_audit_log'];
+
+a hardcoded three. IT WAS COMPLETE WHEN WRITTEN -- those were the only audit
+logs that existed. Michael then ran the migration on 2026-10-13, which creates
+THIRTEEN MORE, and this constant did not move.
+
+WHAT THAT COSTS, in this file's own terms: a checkpoint is what makes an audit
+log TAMPER-EVIDENT. Its stated subject is catching "an insertion into a window
+that has already closed". THIRTEEN TABLES HAD NO CHECKPOINT AT ALL, so a
+back-dated row in any of them was undetectable -- including the logs carrying
+credential grants for a dental practice, an assisted-living facility and a
+gaming post under ORC Chapter 2915. The daily job kept passing, and its pass
+covered 19% of the population.
+
+NOTHING ANNOUNCED IT. The migration is SQL; this is a JavaScript constant; no
+check compares them. That is the two-lists-that-must-agree shape this platform
+keeps paying for.
+
+THE FIX IS DERIVATION, AND IT IS GATED FOR A REASON THAT IS NOT CAUTION.
+AUDIT_TABLE_BY_APP in api/_lib/audit.js is authoritative -- every api/*-auth.js
+credential grant resolves its target table from that map -- so the list is
+derived from it: 16 distinct tables across 17 apps. BUT
+sql/audit_checkpoint_schema.sql:57-59 declares
+
+      audit_table text not null check (audit_table in (
+        'sairnlaw_audit_log', 'sairncode_audit_log', 'stonedesk_audit_log'))
+
+so an INSERT naming any of the other thirteen IS REJECTED BY THE DATABASE.
+DERIVING ALONE WOULD NOT HAVE FIXED THE GAP -- it would have turned a silent
+gap into thirteen failed inserts and a run that throws where it used to pass.
+So the derived list is FILTERED through SCHEMA_PERMITTED, which mirrors that
+CHECK, and api/audit-checkpoint.test.js's own arm (`every table the code
+checkpoints is allowed by the schema CHECK`) reads the SQL file and compares --
+so a drift between the mirror and the real constraint fails there rather than
+at 03:30 in production. 46 passed, 0 failed.
+
+AND THE GAP IS NOW A VALUE RATHER THAN A COMMENT, because the whole defect was
+that 13 of 16 logs had no checkpoint AND NOTHING SAID SO. Every response now
+carries `tables_covered`, `tables_total`, `uncovered` and `uncovered_why`, and
+every heartbeat carries the same counts -- the watchdog's detail being the one
+place a reader sees this job without reading a response body Vercel throws
+away. `ok: true` on 3 of 16 is true and misleading together; `ok: true` with
+the thirteen NAMED is just true.
+
+ONE ALTER AND ONE CONSTANT CLOSE IT. The ALTER is written out in the routing
+document; after it runs, SCHEMA_PERMITTED = ALL_AUDIT_TABLES is the only code
+change. FAILS CLOSED AT LOAD: an empty derived list throws at require time
+rather than digesting nothing and reporting a clean chain.
+
+── THE REST OF ITEM 4 ─────────────────────────────────────────────────────
+sairnvet_audit_log IN api/_lib/audit.js: ALREADY DONE, in b4. Verified rather
+than redone -- 17 apps, 16 distinct tables, sairnvet -> sairnvet_audit_log.
+
+api/sv-auth.js AUDIT_TABLE AND THE setup BRANCH WITH `attributed`: ALREADY
+DONE, in b4, through the shared helper rather than a per-file constant.
+api/auth-setup-attribution.test.js passes 17/17 attributed.
+
+rf_schedule/set_status NOW WRITES status_changed_by, status_changed_by_role and
+status_changed_at, AND DROPS ITS READ-THEN-MERGE. The long note explaining why
+it HAD to be a blob merge is KEPT rather than deleted, because its own last
+sentence named this exit: "a `status_changed_by` column removes the trade and
+is named in the handoff as the follow-up." Michael ran STEP 14. So:
+
+  * THE LOST-UPDATE WINDOW IS CLOSED. This PATCH no longer sends `data` at all,
+    so a concurrent rf_schedule/write changing the window or the notes between
+    the select and this call can no longer have its change overwritten. That
+    window was narrow, real, and accepted in writing; it is now absent.
+  * THE ATTRIBUTION IS A COLUMN, so it can be indexed, queried and constrained,
+    and a future blob rewrite cannot silently drop it.
+  * created_by IS STILL UNTOUCHED -- it is `not null` and means who CREATED the
+    day, and overwriting it to record a later edit was the thing the original
+    note refused to do.
+
+EXIT CODES, as asked:
+  tools/audit_event_type_check.py            exit 1
+  tests/run_audit_event_type_probe.py        exit 1  (10 passed, 1 failed)
+
+BOTH ARE EXPLAINED AND NEITHER IS A b6 REGRESSION:
+
+  audit_event_type_check.py reports three tables whose CHECK rejects a value
+  they emit -- sairncode_audit_log, sairnlaw_audit_log, stonedesk_audit_log.
+  THOSE FINDINGS ARE NOW FALSE POSITIVES ABOUT STALE FILES, not about the
+  database: it reads CHECK constraints out of sql/ files, Michael widened the
+  real constraints on 2026-10-13, and `grep -c pin_setup
+  sql/stonedesk_audit_log_schema.sql` is 0. The files no longer describe the
+  database. sql/ was out of scope; routed to Michael.
+
+  run_audit_event_type_probe.py's arm H0 -- "the AUDIT_TABLES allowlist is
+  found and parsed at all" -- HAS BEEN FAILING SINCE b4, and the cause is mine:
+  it parses the `const AUDIT_TABLES = { name: true, ... }` literal, and b4 made
+  AUDIT_TABLES DERIVED from AUDIT_TABLE_BY_APP, so the literal is `{}` and the
+  parse returns nothing. Arms H1 and H2 pass. tests/ is out of scope; routed to
+  cody with the one-line fix (parse AUDIT_TABLE_BY_APP and take its values).
+
+  THAT IS THE SAME CLASS AS THE CONVENTION b5 PROPOSED: a refactor that
+  centralises a pattern silently removes it from every checker keyed to the old
+  shape, and the checker goes on printing a number.
+
+================================================================================
+AND MY OWN COMMENT DISABLED A CHECKER. THIRD INSTANCE OF ONE SHAPE.
+================================================================================
+
+A first draft of the api/audit-checkpoint.js comment MENTIONED the shared
+pin-setup helper BY NAME. tools/audit_event_type_check.py treats any file
+containing that name as a caller and then demands a `const APP = '...'` to
+resolve its table from. api/audit-checkpoint.js is not a caller and has no APP,
+so the tool answered:
+
+      COULD NOT RUN: api/audit-checkpoint.js calls auditPinSetup but has no
+      `const APP = '...'` for this check to resolve its table from.
+      This is NOT "every event type is allowed". Nothing was compared.
+
+A PROSE MENTION DISABLED THE WHOLE CHECK. I wrote that detector in b4.
+
+Reworded so the tool runs again -- and the reword is itself documented in the
+file, because the next mention does it again. The detector should blank comments
+before that membership test; it is in tools/ and is routed to cc with a fixture
+arm specified (a file naming the helper ONLY in a comment must not count as a
+caller).
+
+THIS IS THE THIRD INSTANCE IN THIS BATCH FAMILY of a checker whose universe
+includes the text that DESCRIBES its subject. The first two were b5's: the
+ghost-field probe's own planted payloads, and docs/known-red-suites.json's
+write-up of that very failure. The b5 convention candidate stands and is now
+paid for three times:
+
+  A CHECKER'S UNIVERSE MUST EXCLUDE THE ARTEFACTS THAT DESCRIBE ITS OWN
+  FINDINGS -- AND ANY CHANGE THAT MOVES A PATTERN BEHIND A SHARED HELPER MUST
+  EXTEND THE CHECKER THAT RESOLVED THE OLD SHAPE, IN THE SAME PUSH.
+
+================================================================================
+ITEM 5 -- METHODOLOGY: THE AUTHOR CANNOT REVIEW HIS OWN RECORD, AND THE GATE
+          LETS HIM QUEUE ONE ANYWAY
+================================================================================
+
+BLAMELESS, AND THE BLAME-FREE PART IS LOAD-BEARING: nothing here is a mistake
+anybody made. It is a rule interacting with an assignment policy.
+
+THE STATE. Three api/ Tier A obligations are open, ALL AUTHORED BY HANK, and
+hank can discharge NONE -- tools/tier_a_review_gate.py refuses a self-review at
+write time, which is the one thing it exists to refuse.
+
+  2026-09-27T03:42:29Z  reviewer fourth  sha ORPHANED   387h+
+  2026-10-06T06:14:34Z  reviewer cody    sha ORPHANED
+  2026-10-12T01:51:33Z  reviewer cc      sha REACHABLE  reviewable as-is
+
+Five of the fourteen open records are hank-authored; ZERO are assigned to hank.
+My queue is empty and my own backlog is unclearable by me.
+
+WHY IT HAPPENS. `--open` ASSIGNS A REVIEWER AT OPEN TIME and the author has no
+say. So an author can queue a record whose reviewer never runs -- `cloud` holds
+two, has never discharged one, and its last claim expired 386h ago. Two of the
+three above also carry a sha the assigned reviewer CANNOT FETCH, which makes
+the record unreviewable by anybody rather than merely unassigned. The author can
+fix neither: he may not review it, and --reseat-shas REFUSES an orphaned sha
+whose subject twin does not contain the record's files, on the correct grounds
+that "a wrong sha is worse than a dangling one, because a dangling one is
+visibly broken."
+
+THE PROPOSED RULE:
+
+      `--open` must REFUSE, at open time, to assign a reviewer that cannot
+      discharge -- and must stamp a sha the assignee can actually fetch.
+
+Three checks, each failing closed:
+
+  1. THE ASSIGNEE MUST BE A LIVE SESSION. tools/sairn_status.py already knows:
+     it prints LIVE/DEAD per session from a real PID check. An assignment to a
+     session with no live row, or whose last claim expired over 48h ago, is
+     refused with the list of eligible sessions. THIS ALONE RETIRES THE `cloud`
+     PROBLEM.
+  2. THE SHA MUST BE REACHABLE FROM origin/main at open time, not merely
+     resolvable locally. An obligation stamped on an unpushed commit is
+     unreviewable the moment it is rebased, and on a five-clone repo that is the
+     NORMAL case -- both orphaned records above are exactly this. --open already
+     has the sha; `git merge-base --is-ancestor` is the check. Refuse, and say
+     "push first, then open".
+  3. NEVER ASSIGN THE AUTHOR. Already enforced at --discharge; moving it to
+     --open makes the refusal arrive when it can still be acted on.
+
+WHY AT --open AND NOT --discharge: at discharge the information is USELESS --
+the push has landed, the rebase has happened, and the author is the only person
+present. At open the author is still in the loop and can push, re-stamp or pick
+a live reviewer. THAT IS THE SAME REASONING THE GATE ITSELF USED to move the
+self-review refusal to write time: "refusing to WRITE a self-signed record and
+refusing to PASS one are different controls."
+
+ROUTED: the rule and the three records to cc (tools/tier_a_review_gate.py is
+cc's, and re-seating is a judgement about the AUTHOR'S files -- I am the
+author). The 13 bare-run findings to cc with the three that edit another
+session's status/*.json LISTED FIRST, as asked. Everything in
+docs/2026-10-13-hank-b6-routing.md.
+
+================================================================================
+ITEM 6 -- THE CLAIM AND THE PUSH
+================================================================================
+
+THE CLAIM WAS ALREADY RELEASED AND THAT WAS VERIFIED RATHER THAN ASSUMED.
+`release sairnsenior` exits 3 with "No active claim of yours matches
+'sairnsenior'" plus a push complaint -- which is the CORRECT answer to an
+already-released claim, not a failure. It was released at the end of b5 and the
+release is on origin/main: `git merge-base --is-ancestor 618cbd9f origin/main`
+succeeds, and `sairn_claim.py list` shows only cody and cc active. Hank holds
+NOTHING.
+
+The push half of that exit 3 fails for one reason and it is ITEM 1 of the
+hooks instruction: .claude/settings.json is deliberately unstaged, and
+`git rebase` refuses outright with unstaged changes.
+
+NO CLAIM WAS TAKEN FOR b6. Every file touched is api/ except the routing doc,
+the handoff, the report, the digest, two generated documents and the obligation
+ledger -- and no other live claim declares any of them. cody's b6 claim is
+TESTS ONLY and says explicitly that api/sd-data.js is hank's; cc's b5 claim
+declares .claude/settings.json and tools and says explicitly that it does not
+take api/sd-data.js.
+
+THE PUSH LANDED: 6bbafbe3..f6029381, ahead 0 / behind 0, SAIRN_SEED_GATE=off
+NOT USED, zero new rows in docs/BYPASS-LOG.jsonl.
+
+IT TOOK FOUR ATTEMPTS AND EVERY REFUSAL WAS LEGITIMATE. Recorded because the
+sequence is the real cost of pushing from this clone:
+
+  1. BLOCKED: "the outgoing range could not be read" -- another clone had
+     pushed between the fetch and the push. Rebased.
+  2. BLOCKED: a derived-document conflict on docs/scrutiny-flags.json stopped
+     the rebase. tools/sairn_rebase_resolve.py REFUSED to merge it -- upstream
+     rows whose diffs are empty, another session's -- and PR 2.5 says a conflict
+     in a DERIVED document is resolved by re-deriving, never by merging the text
+     of two generated files into a third that matches neither tree. Took
+     upstream; the gate regenerates my rows.
+  3. BLOCKED, TWO CHECKS AT ONCE: a Tier A obligation was owed for 32
+     resources, and docs/MASTER-PLAN.md plus docs/traceability-matrix.md no
+     longer matched their sources. Opened the obligation with a body that ORDERS
+     what a reviewer should attack, and regenerated both documents.
+  4. PUSHED.
+
+NO EXTERNAL-FILES REFUSAL THIS TIME. The one that stopped b5 -- fourth's
+unindexed Drive handoff -- had cleared.
+
+================================================================================
+DECISION NEEDED -- ONE QUESTION, AND IT IS A REAL-USER PRODUCT QUESTION
+================================================================================
+
+*** CAN A TRUSTEE SIGN IN? ***
+
+sairnfreedom.html:2314 declares `trustee.audit` in CAPABILITIES -- added
+2026-09-27 for the VFW quarterly trustee audit, with its own written
+justification citing the VFW Manual of Procedure: trustees audit QUARTERLY,
+they are individually liable, the Quartermaster must not prepare the audit, and
+a missed audit can VOID THE BOND.
+
+IT IS NOT IN ROLES_BY_APP.sairnfreedom. So api/sf-auth.js REFUSES to provision
+a credential with that role. A post can assign the Trustee office in the Access
+panel and then CANNOT GIVE THAT TRUSTEE A SIGN-IN.
+
+api/sf-auth.test.js has been RED AT HEAD for exactly this, before and after b6
+-- 37 passed / 1 failed both ways, measured by stashing my changes and
+re-running:
+
+      FAIL  ROLES_BY_APP, the schema check constraint and CAPABILITIES agree
+            ROLES_BY_APP.sairnfreedom and sairnfreedom.html CAPABILITIES
+            disagree
+
+  IF YES: three places change together -- ROLES_BY_APP.sairnfreedom, an
+  eleventh column on the sf_trustee_audits row in api/_lib/sf-roles.js granting
+  it rw, and the employee-auth CHECK constraint.
+  IF NO: the capability is display-only and sairnfreedom.html should say so,
+  because it currently reads as an assignable office.
+
+I DID NOT DECIDE IT, and the reason is the rule rather than caution: a per-app
+role vocabulary is what CLAUDE.md names as needing an explicit judgment call,
+and that arm exists precisely to force it. Today sf_trustee_audits write is
+governance-only and finance.write has READ ONLY -- deliberately, because the
+source says the Quartermaster must not prepare the audit.
+
+================================================================================
+WHAT IS NOT DONE
+================================================================================
+
+  * SAIRNfreedom IS SOURCE-VERIFIED ONLY. No session can be driven for any sf_
+    resource from this clone -- there is no SF-PINNACLE-2026 employee PIN in
+    this repo, and docs/2026-09-03-demo-credentials.md has no SAIRNfreedom row.
+  * The driven 10x36x2 SAIRNfreedom role matrix is cody's.
+  * The bld_draws supervisor-denied and owner-allowed arms are cody's.
+  * THE AUDIT CHECKPOINT STILL COVERS 3 OF 16. One ALTER (written out, routed to
+    Michael) plus one constant.
+  * WHETHER sql/audit_checkpoint_schema.sql HAS EVER BEEN RUN IS UNKNOWN. If
+    not, nothing on the platform is checkpointed at all.
+  * Whether the audit-checkpoint cron has beaten since the restart could not be
+    told from this clone -- no CRON_SECRET here.
+  * The three sql/*_audit_log_schema.sql files no longer describe the database,
+    so audit_event_type_check.py's exit 1 is now a false positive.
+  * tests/run_audit_event_type_probe.py arm H0 and
+    tests/sd_data_write_attribution_three_apps.js arm D3 are cody's.
+  * tools/audit_event_type_check.py's comment-blindness and the 13 bare-run
+    findings are cc's.
+  * THREE api/ TIER A OBLIGATIONS REMAIN AND HANK CANNOT DISCHARGE ANY OF THEM.
+  * The sf_officers sole-holder rule would be better as a partial unique index.
+    SQL, not mine.
+  * The Draw Requests panel is still not role-gated client-side.
+  * The nine B/B sf_ resources remain ungated -- not in Michael's decision and
+    not swept in on my own authority.
+
+================================================================================
+VERIFICATION -- EVERY EXIT CODE MEASURED ALONE
+================================================================================
+
+  node --check on every changed .js                                       0
+  api/sd-data-sf-role-matrix.test.js         14 passed, 0 failed   NEW    0
+  api/sd-data-sf-session-gate.test.js                                     0
+  api/sd-data-session-gate.test.js    pair count 104, MEASURED            0
+  api/sf-session-gate.test.js                                             0
+  api/sd-data-scp-session-gate.test.js                                    0
+  api/sd-data-law-role-matrix.test.js                                     0
+  api/sd-data-cross-tenant-dispatchers.test.js  419 passed, 0 failed      0
+       (418/1 immediately after the sf_officers guard landed -- the arm
+        reported UNREACHED, the fixture was re-pointed, not silenced)
+  api/audit-checkpoint.test.js               46 passed, 0 failed          0
+  api/_lib/sairnbuild-retainage-endpoint.test.js  35 passed, 0 failed     0
+  api/hydrate-gate-coupling.test.js           4 passed, 0 failed          0
+  api/audit-shape-pinning.test.js             7 passed, 0 failed          0
+  api/auth-setup-attribution.test.js    17/17 attributed                  0
+  api/sd-data-sen-caregiver-pii-scope.test.js  21 passed, 0 failed        0
+  api/auth-license-app-scope.test.js                                      0
+  api/sv-auth.test.js                                                     0
+  api/sf-auth.test.js                        37 passed, 1 failed          1
+       PRE-EXISTING. Measured at HEAD by stashing: 37/1 before AND after.
+       The trustee.audit vocabulary gap. See DECISION NEEDED.
+  tools/master_plan.py  tools/traceability_matrix.py                      0
+  tools/audit_event_type_check.py                                         1
+       three tables, all now FALSE POSITIVES about stale sql/ files
+  tests/run_audit_event_type_probe.py        10 passed, 1 failed          1
+       arm H0, failing since b4, cause measured, routed to cody
+  tools/cron_liveness_check.py                                            3
+       COULD NOT RUN -- no CRON_SECRET in this clone. A third state.
+  tier_a_review_gate.py --open                                            0
+
+  LIVE, SAIRNscape, BOTH DIRECTIONS: 6 gated resources 403 bare / 200 with a
+  real owner session; 2 ungated controls 200 both ways; an id-less write WITH
+  the session 400 FROM THE HANDLER. Exit 0.
+  docs/hank-evidence/b6_live_session_control_probe.py and .out.
+
+  LIVE, SAIRNfreedom: NOT DRIVEN. No PIN in this repo.
+
+================================================================================
+END OF BODY
+--------------------------------------------------------------------------------
+SHA256 of the body is on the second-to-last line. The BODY is every line of this
+file AFTER line 1 ("REPORT hank b6") and BEFORE the SHA256 line, inclusive of
+this paragraph and the line of dashes above it, with LF line endings.
+SHA256(body)=ee187eddebfab78e65539a15f5f23e258e7adc20c364620024e0a2a1305d9fb2
+END-OF-REPORT
