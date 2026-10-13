@@ -109,6 +109,17 @@ REMOTE_NAME = 'backup2'
 TOKEN_FILE = os.path.join(HERE, '.mirror-token')
 META_FILE = os.path.join(HERE, '.mirror2-token-meta.json')
 ANCHOR_OUTBOX = os.path.join(HERE, '.mirror2-anchor-outbox.jsonl')
+# batch b19, Michael's decision: the emailed anchor is RETIRED. The real
+# requirement it served was an off-disk, independently-verifiable
+# witness to the chain state at push time -- a local file proves
+# nothing about what existed before a compromised or lost disk. A
+# third-party-signed RFC 3161 timestamp (hover2_timestamp.py's own
+# .tsr, over the SAME chain_head this anchor names) satisfies that
+# exact requirement, arguably more strongly than an email sitting in
+# an inbox this tool cannot itself verify. RFC3161_MESSAGE_FILE is
+# read-only here -- this file does not own the TSA call, only checks
+# whether one already covers the anchor in question.
+RFC3161_MESSAGE_FILE = os.path.join(HERE, 'chain-tip-timestamp.message.txt')
 # THE MIRROR'S ENTIRE PUSHED SURFACE, decided by Michael 2026-09-29: the
 # hash-chained log itself, the anchor outbox, and the tip beacon. No tool
 # scripts, no other files -- the tools have their own off-disk remote (the
@@ -412,6 +423,20 @@ def last_anchor(outbox=ANCHOR_OUTBOX):
     return rows[-1] if rows else None
 
 
+def rfc3161_witness_seq(path=RFC3161_MESSAGE_FILE):
+    """-> int seq covered by the current chain-tip-timestamp.message.txt,
+    or None if the file is absent or unparseable. Does not re-verify the
+    .tsr itself (hover2_timestamp.py's own job, and its README-equivalent
+    openssl command is the independent check) -- this only reads which
+    seq the LAST RUN claims, so a caller can compare it against an
+    anchor's seq without re-deriving the whole timestamp."""
+    if not os.path.isfile(path):
+        return None
+    text = io.open(path, encoding='utf-8').read()
+    m = re.search(r'seq=(\d+)', text)
+    return int(m.group(1)) if m else None
+
+
 # -- CLI -------------------------------------------------------------------
 
 def cmd_status():
@@ -583,12 +608,22 @@ def cmd_restore_test():
               'verifies against the anchor, so it cannot run before the '
               'first anchored push')
         return EXIT_COULD_NOT_RUN
-    if not a.get('sent'):
-        print('COULD NOT RUN: the last anchor (%s) was never stamped sent '
-              '-- an anchor still on this disk is not an off-disk anchor, '
-              'so the drill would verify against nothing independent'
-              % a.get('ts'))
+    witness_seq = rfc3161_witness_seq()
+    rfc3161_covers = (witness_seq is not None
+                       and witness_seq >= a.get('n_entries', -1))
+    if not a.get('sent') and not rfc3161_covers:
+        print('COULD NOT RUN: the last anchor (%s, seq %s) has neither a '
+              'stamped-sent email NOR an RFC 3161 token covering it '
+              '(chain-tip-timestamp.message.txt is at seq %s) -- an '
+              'anchor still on this disk is not an off-disk anchor, so '
+              'the drill would verify against nothing independent'
+              % (a.get('ts'), a.get('n_entries'), witness_seq))
         return EXIT_COULD_NOT_RUN
+    if rfc3161_covers and not a.get('sent'):
+        print('NOTE: proceeding on the RFC 3161 witness (seq %s >= anchor '
+              'seq %s), not an emailed anchor -- the email step is '
+              'retired per Michael\'s batch b19 decision.'
+              % (witness_seq, a.get('n_entries')))
     scratch = tempfile.mkdtemp(prefix='hover2-restore-')
     env = dict(os.environ)
     env['GIT_ASKPASS'] = _write_shim(empty=False)
@@ -870,6 +905,34 @@ def selftest():
        not last_anchor(ob) is None and
        (lambda rows: rows)(last_anchor(ob))['sent'] is True and
        last_anchor(ob)['ts'] != 't1')
+
+    # RFC3161 WITNESS arms, batch b19 (Michael's decision: the emailed
+    # anchor is retired, a verified RFC 3161 token over the same seq
+    # satisfies the same off-disk-witness requirement).
+    rfc_msg = os.path.join(tmp, 'ts-msg.txt')
+    io.open(rfc_msg, 'w', encoding='utf-8').write(
+        'chain_head=abc;seq=810;date=2026-10-13T00:00:00Z')
+    ck('RFC1 a witness file at seq 810 is read as covering seq 810',
+       rfc3161_witness_seq(rfc_msg) == 810)
+    ck('RFC2 KNOWN-BAD CONTROL: an absent witness file reads as None, '
+       'not as covering seq 0 or any other number that could pass a '
+       'careless >= comparison',
+       rfc3161_witness_seq(os.path.join(tmp, 'does-not-exist.txt')) is None)
+    io.open(ob, 'a', encoding='utf-8').write(
+        json.dumps({'ts': 't3', 'chain_head': 'h3', 'n_entries': 810,
+                    'sent': False}) + '\n')
+    anchor3 = last_anchor(ob)
+    ck('RFC3 an unsent anchor at seq 810 IS covered by a witness at seq '
+       '810 (the >= comparison this tool\'s own restore-test gate uses)',
+       rfc3161_witness_seq(rfc_msg) >= anchor3.get('n_entries', -1))
+    io.open(ob, 'a', encoding='utf-8').write(
+        json.dumps({'ts': 't4', 'chain_head': 'h4', 'n_entries': 850,
+                    'sent': False}) + '\n')
+    anchor4 = last_anchor(ob)
+    ck('RFC4 KNOWN-BAD CONTROL: an unsent anchor at seq 850 is NOT '
+       'covered by a stale witness at seq 810 -- a witness proves only '
+       'what it actually names, never a later state nobody timestamped',
+       not (rfc3161_witness_seq(rfc_msg) >= anchor4.get('n_entries', -1)))
 
     # SCOPE ALLOWLIST arms (Michael's 2026-09-29 decision: log, anchors,
     # beacon only).
