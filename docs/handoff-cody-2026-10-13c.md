@@ -172,7 +172,11 @@ Removed: nothing from the repo, and nothing of any other agent's.
 reproduced in the report where it matters: `claims ck claim claim2 claim3 cl2
 rel rel2 rel3 rel4 merge mc m2 ti tic tic2 efi efi2 pf pf2 pf3 push loop_merge
 loop_ti loop_push lm lt lg lp lm2 lt2 lg2 lp2 gen gen2 dl dl2 st stset st2 g`
-(all `.txt`). **Note for anyone cleaning up after a Bash tool here:** `/tmp` in
+(all `.txt`), **plus the five that this cleanup record's own push then produced
+— `pfx mx tx gx px` — which is the regress and the reason this count is stated
+as "the 41 named here plus the handful the final push makes" rather than as a
+total that goes stale the moment it is written.** **Note for anyone cleaning up
+after a Bash tool here:** `/tmp` in
 Git Bash is **not** a path Python can see — `glob('/tmp/*.txt')` returned 0 and
 would have reported a clean sweep that deleted nothing. `tempfile.gettempdir()`
 is what resolves it.
