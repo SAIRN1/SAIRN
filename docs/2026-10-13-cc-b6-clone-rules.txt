@@ -1,0 +1,16 @@
+PERMISSION RULES AND COMPACTION HOOK, PER CLONE -- read-only
+  wanted: deny >= 75, allow >= 79, ask == 0
+
+  clone   deny  allow  ask    rules hook                 HEAD
+  cc      75    79     0      PASS  compaction_brief     35a25017
+  hank    3     13     4      FAIL  none                 f6029381
+  cody    75    79     0      PASS  none                 65b9a5e8
+  fourth  75    79     0      PASS  none                 abeb99a1
+  hover   75    79     0      PASS  none                 e767eb2d
+
+1 clone(s) do NOT carry the rules yet: hank
+They arrive by REBASE -- .claude/settings.json is ONE tracked path.
+Each of those clones needs, in its own session:
+    git fetch origin && git rebase origin/main
+NOT done from here: writing another clone's working tree is not
+this session's to do, and the brief forbids it.

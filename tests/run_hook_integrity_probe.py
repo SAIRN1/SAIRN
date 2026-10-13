@@ -448,5 +448,67 @@ finally:
         shutil.rmtree(d, ignore_errors=True)
 
 
+# ── THE ONE AUTHORISED HOOK (added 2026-10-13) ─────────────────────────────
+# Michael authorised a single SessionStart/compact hook for compaction
+# survival -- the OPPOSITE problem to the one that got the 23 cleared. So
+# "disarmed" now means EMPTY *or* exactly that one entry. The arms are
+# boundaries, because the failure being guarded against is a hook quietly
+# reappearing beside it.
+print(NL + 'E. the one authorised compaction hook, and nothing beside it')
+
+_BRIEF = {'SessionStart': [{'matcher': 'compact', 'hooks': [
+    {'type': 'command', 'command': 'python tools/compaction_brief.py'}]}]}
+
+_cases = [
+    ('the authorised compaction hook ALONE is still disarmed', _BRIEF, True),
+    ('BOUNDARY: a SECOND command beside it is drift',
+     {'SessionStart': [{'matcher': 'compact', 'hooks': [
+         {'type': 'command', 'command': 'python tools/compaction_brief.py'},
+         {'type': 'command', 'command': 'python tools/other.py'}]}]}, False),
+    ('BOUNDARY: the same tool on a DIFFERENT matcher is drift -- `compact` is '
+     'what keeps it off every ordinary session start',
+     {'SessionStart': [{'matcher': 'startup', 'hooks': [
+         {'type': 'command', 'command': 'python tools/compaction_brief.py'}]}]},
+     False),
+    ('BOUNDARY: a SECOND event beside it is drift',
+     {'SessionStart': [{'matcher': 'compact', 'hooks': [
+         {'type': 'command', 'command': 'python tools/compaction_brief.py'}]}],
+      'PreToolUse': [{'matcher': 'Bash', 'hooks': [
+          {'type': 'command', 'command': 'python tools/x.py'}]}]}, False),
+    ('BOUNDARY: a DIFFERENT tool on the compact matcher is drift',
+     {'SessionStart': [{'matcher': 'compact', 'hooks': [
+         {'type': 'command', 'command': 'python tools/something_else.py'}]}]},
+     False),
+    ('BOUNDARY: two GROUPS on SessionStart is drift',
+     {'SessionStart': [
+         {'matcher': 'compact', 'hooks': [
+             {'type': 'command', 'command': 'python tools/compaction_brief.py'}]},
+         {'matcher': 'compact', 'hooks': [
+             {'type': 'command', 'command': 'python tools/compaction_brief.py'}]}]},
+     False),
+]
+_made2 = []
+try:
+    for _label, _hooks, _want in _cases:
+        d = disarm_fixture(_hooks)
+        _made2.append(d)
+        rc, out = wiring_run(d)
+        got = 'INTENTIONALLY DISARMED' in out
+        ok(got is _want, _label, (rc, out[-300:]))
+    # AND THE MESSAGE MUST NOT LIE. It used to say "present and EMPTY"
+    # unconditionally, which became false the moment one hook was allowed.
+    d = disarm_fixture(_BRIEF)
+    _made2.append(d)
+    rc, out = wiring_run(d)
+    ok('EMPTY' not in out.split('INTENTIONALLY DISARMED')[1][:120],
+       '...and the message does NOT claim the hooks are empty when one is '
+       'wired', out[-300:])
+    ok('compaction brief' in out,
+       '...it names the hook that IS wired instead', out[-300:])
+finally:
+    for d in _made2:
+        shutil.rmtree(d, ignore_errors=True)
+
+
 print(NL + '%d passed, %d failed' % (passed, failed))
 sys.exit(EXIT_FINDING if failed else EXIT_CLEAN)

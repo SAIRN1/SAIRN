@@ -333,6 +333,35 @@ def wiring_findings(obs, man):
 # this file, because nothing it can be wired to is guaranteed to survive. The
 # remaining residue is named in the report rather than left for somebody to
 # discover the same way.
+# ── THE ONE HOOK THE DISARMED STATE STILL ALLOWS (2026-10-13) ──────────────
+# Michael authorised a single SessionStart hook with matcher `compact` for
+# compaction survival -- the OPPOSITE problem to the one that got the 23
+# cleared. So "disarmed" now means EMPTY *or* exactly that one entry, and
+# nothing else.
+#
+# THE TEST IS DELIBERATELY EXACT, not a prefix or a count. One event, one
+# matcher, one command, and the command must name this tool. A second command
+# beside it, a different matcher, or any other event is drift again -- which is
+# the whole point, because the failure being guarded against is a hook quietly
+# reappearing.
+COMPACTION_TOOL = 'compaction_brief.py'
+
+
+def _only_compaction_brief(hooks):
+    if set(hooks) != {'SessionStart'}:
+        return False
+    groups = hooks.get('SessionStart') or []
+    if len(groups) != 1:
+        return False
+    g = groups[0] or {}
+    if (g.get('matcher') or '') != 'compact':
+        return False
+    cmds = g.get('hooks') or []
+    if len(cmds) != 1:
+        return False
+    return COMPACTION_TOOL in (cmds[0] or {}).get('command', '')
+
+
 def intentionally_disarmed(repo):
     """Is `hooks` present and EMPTY in this clone's settings.json?
 
@@ -359,7 +388,9 @@ def intentionally_disarmed(repo):
     if 'hooks' not in doc:
         return False
     h = doc.get('hooks')
-    if not isinstance(h, dict) or h:
+    if not isinstance(h, dict):
+        return False
+    if h and not _only_compaction_brief(h):
         return False
     # The record of the decision has to be THERE. Without it this is just an
     # empty object again, and accepting it would be the self-certifying
@@ -639,7 +670,12 @@ def main(argv=None):
         print('  repo     : %s' % repo)
         if intentionally_disarmed(repo):
             print('')
-            print('INTENTIONALLY DISARMED -- `hooks` is present and EMPTY, and')
+            _hk = wiring(repo)
+            _n = sum(len(v) for v in _hk.values())
+            print('INTENTIONALLY DISARMED -- %s, and'
+                  % ('`hooks` is present and EMPTY' if not _n else
+                     'the ONLY wired hook is the authorised '
+                     'SessionStart/compact compaction brief'))
             print('%s records what was removed,' % DISARMED_REL)
             print('by whom and why. Michael cleared the hooks on 2026-10-11')
             print('because they were causing agent compaction; the decision is')
