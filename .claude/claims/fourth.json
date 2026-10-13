@@ -3505,6 +3505,28 @@
         "tests/sv_storage_guard.js",
         "tools/temp_state_leak_check.py"
       ]
+    },
+    {
+      "id": "fourth-1791879326",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "batch b9 -- FIRST ACTION is this claim, because b8 ran unclaimed: the b7 release landed and no new claim followed, and item 12 of this brief is the methodology note plus a routed spec for the check that would have caught it. The work: diagnose the b8 push refusal (outgoing range 71a61f4c..ba5a98dc could not be read) with cat-file and rev-list, re-check the two generated docs at the final HEAD, push ONCE with the gate allowed to finish and no retry loop; on a landed push bundle refs/salvage/b6-* before deleting them and move the three settings.json backups to scratchpad; run tools/audit_event_type_check.py now the Oct 13 audit-log migration has landed and route any failing constraint to hank; classify the last 4 of the 23 seq 17-A sites and assign owners by directory for all 36 real findings in a TSV; route the tier-a-review-gate exit-0-with-PermissionError and the delegation-probe fail-open lines to cody; route the lock-attribution, claim-visibility and release-then-no-claim items to cc; re-count the convention headings and reconcile the denominator; re-drive every suite listed red and report RECOVERED and NEW; re-sweep the register for same-summary different-commit duplicates at the post-push HEAD; handoff before the report. HOOKS STAY CLEARED and settings.json is never committed. No SAIRN_SEED_GATE=off. FILES: docs/2026-10-12-fourth-b5-routing.md docs/2026-10-06-hank-routed-to-fourth.md docs/2026-10-13-ted-seq17a-owners.tsv docs/METHODOLOGY.md docs/2026-09-13-cross-domain-disciplines.md docs/known-red-suites.json docs/defect-density-register.json SAIRN-report-fourth-b9.txt SAIRN-digest-fourth-b9.txt docs/handoff-fourth-2026-10-16.md",
+      "claimed_at": "2026-10-13T08:15:26Z",
+      "claimed_at_epoch": 1791879326.2725263,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b9.txt",
+        "SAIRN-report-fourth-b9.txt",
+        "docs/2026-09-13-cross-domain-disciplines.md",
+        "docs/2026-10-06-hank-routed-to-fourth.md",
+        "docs/2026-10-12-fourth-b5-routing.md",
+        "docs/2026-10-13-ted-seq17a-owners.tsv",
+        "docs/METHODOLOGY.md",
+        "docs/defect-density-register.json",
+        "docs/handoff-fourth-2026-10-16.md",
+        "docs/known-red-suites.json"
+      ]
     }
   ],
   "refusals": [
