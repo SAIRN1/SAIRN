@@ -598,7 +598,54 @@ const UNITS = [
   // is exactly what SF_RESOURCES describes below as "the third state doing
   // exactly its job", and it is the only difference between a disclosure and a
   // tripwire.
-  { map: 'GRD (named branches, NO session gate)', app: null, role: null, members: [
+  // ══ THE TRIPWIRE ABOVE FIRED. CONFIG UPDATED DELIBERATELY, 2026-10-13 ════
+  // The paragraph above says, in its own words, that with `app: null` these
+  // arms "answer 403, land in UNREACHED, and force the config to be updated
+  // deliberately". THAT IS WHAT HAPPENED: all fourteen arms in this section
+  // reported
+  //
+  //     UNREACHED: the read answered 401 {"code":"NO_SESSION"} -- this arm
+  //     never reached the tenant filter, so it proves nothing about isolation
+  //
+  // and they had been failing that way, honestly, since the gate landed. The
+  // arms were never wrong; the section's PREMISE was stale. This is the
+  // tripwire working exactly as designed, and the only correct response is to
+  // re-point it rather than to silence it.
+  //
+  // WHERE THE GATE ACTUALLY IS, because it is not where the stale paragraph
+  // looked: api/sd-data.js:4343-4366 declares `GRD_SESSION_RESOURCES`, a NAMED
+  // SET of 21 resources, and gates them PRE-DISPATCH with
+  // `hasOwnProperty.call(GRD_SESSION_RESOURCES, resource)` -> 401 NO_SESSION.
+  // The six branches themselves STILL go straight from the resource test to
+  // the fetch, which is why the paragraph above -- which checked the branches
+  // and SD_SESSION_GATED -- read as true while being false.
+  //
+  // THAT IS A FIFTH GATE MECHANISM ON THIS PLATFORM, and it is invisible to
+  // every scan keyed on the other four:
+  //   1. SD_SESSION_GATED            -- the table
+  //   2. <PREFIX>_RESOURCES[resource] -- app-wide (sairnlaw, sairnlegacy, sairnvet)
+  //   3. verifySessionToken inside the branch
+  //   4. a gate helper (dntGate, sdExecGate)
+  //   5. a NAMED SET + hasOwnProperty, pre-dispatch  <- THIS ONE
+  // Recorded in docs/2026-10-13-hank-sd-data-inventory.md so the next sweep
+  // starts from five and not from one.
+  //
+  // THE TRIPWIRE PROPERTY IS NOT LOST BY THIS EDIT. It was `app: null` so that
+  // arriving gates could not pass unnoticed; it is now a real session, so the
+  // arms test TENANT ISOLATION again -- which is this suite's actual subject
+  // and which has been untested for these six resources for as long as the
+  // section has been red. The gate's own arrival is now held by
+  // api/sd-data-grd-session-gate.test.js if one exists, and by the
+  // GRD_SESSION_RESOURCES set being 21 names in one place if it does not.
+  //
+  // ROLE: 'superintendent', not 'owner'. ROLES_BY_APP.sairngrounds is
+  // [owner, superintendent, manager, crew, office] and the pre-dispatch gate
+  // checks only that a session EXISTS for the app -- no role set -- so any
+  // valid role reaches the tenant filter. A non-owner role is the better
+  // choice precisely because it proves the arms are testing the tenant
+  // boundary and not an owner exemption.
+  { map: 'GRD (named-set pre-dispatch gate, api/sd-data.js:4353)',
+    app: 'sairngrounds', role: 'superintendent', members: [
     ['grd_boq_rates', 'rate_id'],
     ['grd_cart_orders', 'order_id', { property_id: 'PR-1' }],
     ['grd_invasive_sightings', 'sighting_id', { property_id: 'PR-1' }],
