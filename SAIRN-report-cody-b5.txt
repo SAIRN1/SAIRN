@@ -1,0 +1,698 @@
+REPORT cody b5
+
+================================================================================
+0. SHAPE OF THIS REPORT
+================================================================================
+
+Batch 27 b5, 2026-10-13. Fourteen items. All fourteen are DONE; none is partial
+and none was dropped.
+
+Every number below was produced by a script, not typed. The script is
+`evidence.py` in this batch's scratchpad and its output is reproduced verbatim
+in section 1.
+
+HASH RULE, stated so the SHA line can actually be checked rather than taken on
+trust: line 1 is the title, the LAST line is END-OF-REPORT, the SECOND-TO-LAST
+is the SHA256. The BODY is every byte from line 2 through the line immediately
+before the SHA line, LF, UTF-8. Recompute with:
+  python -c "import hashlib,io;L=io.open('SAIRN-report-cody-b5.txt',encoding='utf-8',newline='').read().split(chr(10));b=chr(10).join(L[1:-3]);print(hashlib.sha256(b.encode()).hexdigest())"
+A SHA line that does not verify is worse than no SHA line -- adopted from
+SAIRN-digest-ted-b4.txt's own correction, which found both halves of a
+"carries a verifiable body hash" claim false. Where something was NOT verified, that is stated beside the claim
+rather than collected at the end.
+
+FOUR ITEMS CONTRADICTED THEIR OWN PREMISE, and those are the four worth reading:
+item 8 (the b4 "flake" was not a flake, and I misattributed it in b4), item 9
+(the drafts are not missing), item 10 (the brief's framing was right and the
+counts were unknown), and item 11 (the collision cc was asked about is already
+fixed; the gap that remains is bigger than the one reported).
+
+================================================================================
+1. EVIDENCE BLOCK -- SCRIPT OUTPUT, VERBATIM
+================================================================================
+
+B5 EVIDENCE
+  HEAD        : 054ffcd077416584d0d14c84fc0f1541d0a639b7
+  range base  : 08823799c113  (parent of this batch first commit)
+
+COMMITS IN THIS BATCH (first-parent only)
+  054ffcd0 Merge remote-tracking branch 'origin/main'
+  33967e58 chore(gates): declare the thirteenth Drive handoff and regenerate the traceability matrix
+  b45111ff Merge remote-tracking branch 'origin/main'
+  6a688c29 chore(gates): five refusals, all five true, all five satisfied -- no override
+  d5320cec chore(scrutiny): gate-appended rows from the rebase-and-retry loop
+  0b712b67 chore(scrutiny): the rows the gate appended during the rebase-and-retry
+  a8e68603 chore(scrutiny): the flags the push gate itself appended for b5's six commits
+  53b69566 chore(defects): re-seat b5's two records onto their post-rebase shas
+  29d38ddd chore(defects): two records for b5 -- the law role gap and the probes that could produce no verdict
+  e8ee8e37 docs+tools(b5): the per-firm permissions SPEC, the citator verification script, and the matcher finding route
+  2567062e feat(push-gate probes): verdicts without the network -- and a refusal by a DIFFERENT check is a fourth state
+  3a1ab998 feat(tools): a duplicate-DOM-id checker, report-only -- Guardian Check 8 has existed since the skill was writ
+  8c5d9741 test(sairnsenior): EVERY sen_caregivers read path, not just the one that was fixed -- and there are two
+  fa6a390e feat(sairnlaw): role granularity for all 19 resources -- ONE table, ONE function, and the trust lock is a sec
+  (14 commit(s))
+
+DIFF STAT 08823799c113..HEAD, THIS BATCH OWN PATHS ONLY
+     505 +       0 -  api/sd-data-law-role-matrix.test.js
+     379 +       0 -  api/sd-data-sen-caregiver-read-paths.test.js
+     326 +       0 -  tests/run_dup_dom_ids_probe.py
+     316 +       0 -  tools/verify_citator_feedback.py
+     249 +       0 -  docs/2026-10-13-cody-b5-law-permissions-spec.md
+     228 +       0 -  tools/dup_dom_ids_check.py
+     226 +       0 -  docs/2026-10-13-cody-b5-routed-to-cc.md
+     175 +       0 -  api/_lib/law-roles.js
+     141 +       0 -  tests/push_gate/_local_remote.py
+     107 +      19 -  tests/push_gate/check4_probe.py
+      97 +      22 -  tests/push_gate/check7_probe.py
+      42 +       0 -  api/sd-data.js
+      29 +       0 -  tools/tooling_inventory.py
+  13 file(s) changed, 2820 insertion(s), 41 deletion(s)
+
+TEST COUNTS -- each program run ALONE, exit code read on its own line
+  exit=0  sd-data-law-role-matrix.test.js                25 passed, 0 failed
+  exit=0  sd-data-sen-caregiver-read-paths.test.js       19 passed, 0 failed
+  exit=0  sd-data-sen-caregiver-pii-scope.test.js        18 passed, 0 failed
+  exit=0  run_dup_dom_ids_probe.py                       ALL 23 ARMS PASS
+  exit=0  dup_dom_ids_check.py                           files scanned: 22
+  exit=0  run_tier_a_review_gate_probe.py                ALL ARMS PASS
+
+MEASUREMENTS QUOTED BY ITEM
+  item 7  dup-dom-ids: 22 file(s), 7752 id(s), 0 duplicate(s)
+  item 8  sabotage 20x: 20 run(s), exit codes {'0': 20}
+  item 8  gate probe 12x: 12 run(s), exit codes {'0': 12}
+  item 8  isolated race: 305 of 400 iteration(s) raised PermissionError
+  item 8  gate probe logs containing PermissionError: 12 of 12
+  item 10 DERIVABLE, strong: 82
+  item 10 DERIVABLE, needs a human: 61
+  item 10 TRULY ABSENT: 2
+  item 9  fmea ON DISK: 112
+  item 9  fmea GIT-TRACKED: 112
+  item 9  fmea coverage: 108 of 831 register files have a draft
+
+THE RANGE IS FIRST-PARENT AND THE DIFF STAT IS PATH-SCOPED, DELIBERATELY. This
+branch was MERGED rather than rebased (section 9), so the naive `base..HEAD`
+range pulls in 33 commits and a 27,000-line register churn that other sessions
+wrote. Reporting that total would be a true number about the wrong thing.
+
+================================================================================
+2. ITEM 1 -- THE LAW ROLE MATRIX, AND WHY IT IS ONE TABLE
+================================================================================
+
+BEFORE: exactly ONE role check existed across SAIRNlaw's whole data surface --
+LAW_RECONCILE_ROLES, owner-only, and it was on the TWENTIETH resource. The other
+19 were session-gated with no role distinction, so any signed-in role could read
+and write law_picases (settlement figures, Tier A/A), law_pimedical (health
+information about an identified person held by a law firm, Tier A/A) and
+law_bankstatements (the bank side of an IOLTA three-way reconciliation) exactly
+as freely as a managing attorney.
+
+THE POLICY IS MICHAEL'S AND IS TRANSCRIBED, NOT DERIVED, and api/_lib/law-roles.js
+says so at the top. b4 refused this item because api/sd-data.js declined to
+invent the split TWICE IN WRITING -- ":13789 ... a product decision with no
+obvious answer, and inventing one here would break the app for the people it is
+for" and ":15719 ... a bar-rules judgement for the firm" -- and hover2 routed
+the finding without prescribing a fix. b5 arrived with the decision made, so
+this batch transcribes it. Changing it needs the same authority.
+
+  owner, attorney        full read+write on all nineteen
+  paralegal read+write   law_matters, law_picases, law_clients, law_matterdocs,
+                         law_portalesign, law_deadlines, law_mattermilestones,
+                         law_mattertasks, law_timeentries
+  paralegal read only    law_invoices, law_opaccounts, law_optx, law_pimedical
+  paralegal none         law_trusttx, law_bankstatements (TRUST-LOCKED),
+                         law_portalmessages, law_barcerts, law_clecredits,
+                         law_clerequirements
+
+EVERY ROW CARRIES THE CATEGORY IT WAS PLACED IN. The policy arrived as
+categories -- "cases, documents, calendar, contacts, tasks and time entries" --
+and the mapping from a category to a resource NAME is the part a reviewer has to
+be able to check. Six are denied to paralegal and FOUR of those are denied by
+the STATED DEFAULT rather than by a judgment, which the row says rather than
+leaving the reader to infer from an absence:
+
+  law_portalmessages    FLAGGED IN THE TABLE as the most likely of the six to
+                        need revisiting. Client CORRESPONDENCE is not
+                        "documents" and not "contacts", so it falls outside
+                        every named category. A paralegal who cannot read
+                        messages on a matter they work may be operationally
+                        wrong -- but widening it is the same kind of decision as
+                        the rest of the table, so it is denied and flagged
+                        rather than guessed into a category.
+  law_barcerts          an attorney's bar admission record
+  law_clecredits        an attorney's CLE credits
+  law_clerequirements   CLE requirements per jurisdiction
+
+TWO JUDGMENT CALLS INSIDE THE MAPPING, both stated in the code:
+  law_portalesign  placed in "documents" -- an executed e-signature record IS a
+                   document.
+  law_opaccounts   placed in "billing" and read-only. These are the firm's
+  law_optx         OPERATING account and its transactions, deliberately NOT a
+                   trust account, which is the distinction the whole trust lock
+                   rests on.
+
+ONE TABLE, ONE FUNCTION, TWO CALL SITES -- AND THE TWO ARE NOT A SECOND COPY OF
+THE POLICY. They are the gates that were ALREADY there: the SD_SESSION_GATED
+block for the four resources named individually, and the LAW_RESOURCES prelude
+for the fifteen in the dict. Each passes the same three arguments to the same
+`decide`. Nineteen ifs is the shape being FIXED, not a style preference -- a
+role check at one call site and not the others is indistinguishable from no
+policy at all when read one branch at a time, which is how this app arrived
+here.
+
+THREE VERDICTS, NOT TWO, AND THAT IS WHAT MAKES IT SAFE TO PUT IN A SHARED
+BLOCK. The SD_SESSION_GATED gate covers 70 action-pairs across the whole
+platform. `decide` returns NOT_LAW for anything that is not one of the
+nineteen, so a StoneDesk or SAIRNscape resource is neither allowed nor denied by
+a law table -- only an explicit DENY stops a request. Folding NOT_LAW into ALLOW
+would have made every non-law resource read as "the law policy approved it".
+
+THE TRUST LOCK IS A SEPARATE STRUCTURE CONSULTED AFTER THE TABLE AGREES, and it
+is the one design decision worth arguing. The table already denies paralegal on
+both locked resources, so today the lock is redundant. It exists so it survives
+somebody editing the table, or the per-firm override from item 4 being layered
+on top. A policy expressed only as a default is a policy an override can erase.
+Arm E drives it: the table is mutated to grant paralegal law_trusttx and
+`decide` must STILL deny.
+
+FAILS CLOSED IN FIVE DIRECTIONS, each driven by its own arm:
+  - a law resource with no row DENIES, not "allowed by default" -- which is
+    precisely the state this fixes
+  - an undeclared fourth role gets NOTHING rather than inheriting owner's access
+  - a missing role in a row DENIES
+  - any verb that is not 'read' is treated as WRITE-class, so a future
+    soft_delete or export cannot ride in on a read grant (driven: law_pimedical
+    read ALLOW, soft_delete DENY, export DENY)
+  - a trust-locked resource DENIES regardless of the table
+
+law_trust_reconcile IS DELIBERATELY ABSENT and `LAW_EXCLUDED` says so, with an
+arm asserting it returns NOT_LAW. Its gate is owner-only, while the trust policy
+is owner AND attorney -- an asymmetry left in place on purpose, because
+api/sd-data.js's own comment records widening it as "THE OPEN QUESTION, not a
+rejected one ... a bar-rules judgement for the firm". The batch was about the
+nineteen. Open item 11 in the handoff.
+
+NOT VERIFIED: no live request. The handler arms drive the real dispatcher with a
+mocked PostgREST, so this is verified at the handler and is NOT live-verified
+per PR 3.2.
+
+================================================================================
+3. ITEMS 2 AND 3 -- THE MATRIX TEST AND THE METAMORPHIC RELATION
+================================================================================
+
+api/sd-data-law-role-matrix.test.js, 25 arms, exit 0.
+
+RUN BEFORE AND AFTER, MEASURED:
+  BEFORE  23 passed, 2 failed, exit 1 -- against the pre-fix handler in a
+          throwaway clone, with the lib and test copied in so the structural
+          arms could still run. The two failures are the two WIRED arms, ONE PER
+          GATE. The table was correct and nothing read it, which is the exact
+          fail-first signal wanted.
+  AFTER   25 passed, 0 failed, exit 0.
+
+A TABLE LIKE THIS HAS FOUR WAYS TO BE WRONG AND ONLY ONE OF THEM IS "A RULE IS
+MISSING". Each gets its own section:
+
+COMPLETENESS -- the one the batch asked for by name. Every one of the 19 has a
+row and every row has a rule for all 3 roles; it fails if any law resource has
+no rule. And a second arm the brief did not ask for: the table must carry NO
+resource the handler does not gate, so it cannot drift into fiction.
+
+DERIVED FROM THE SOURCE, which is what keeps COMPLETENESS from going vacuous.
+The 19 are PARSED out of SD_SESSION_GATED and LAW_RESOURCES in api/sd-data.js --
+4 and 15, asserted separately -- and the 3 roles out of ROLES_BY_APP.sairnlaw.
+Neither is retyped. A list typed into a test agrees with whatever its author
+believed, so on the day a twentieth resource lands a hardcoded list would report
+clean. AND IF EITHER PARSE FINDS NOTHING THE FILE REFUSES rather than reporting
+a clean 0-of-0, because a regex over source is exactly the anchor that stops
+matching silently.
+
+MONOTONICITY (item 3) -- a METAMORPHIC RELATION rather than a table of expected
+values: allowed(paralegal) implies allowed(attorney) implies allowed(owner), for
+every resource and every action. Checked BOTH over the raw table and THROUGH
+`decide`, so the function cannot disagree with the data. It needs no right
+answers, so it keeps working when the policy changes -- which an expected-value
+test does not.
+
+WIRED -- the half a perfect table cannot give. The gate arms assert NO ROW WAS
+FETCHED and NO POST WAS ISSUED, not just the status: a 403 returned after the
+read is a leak with a tidy status code. And the negative half drives all 19 x 2
+as an ATTORNEY and requires ZERO refusals, so the gate cannot be passing by
+denying everything.
+
+THE CONTROL PAIRS (item 3's "plant a violation, confirm it fires; plant clean,
+confirm silent"), five planted and each asserted to FIRE:
+  - a resource with no row
+  - a row with a MISSING ROLE -- the half a "does the key exist" check misses
+  - paralegal granted where attorney is not
+  - attorney granted where owner is not
+  - A TRUST-LOCKED RESOURCE OPENED TO PARALEGAL, and this arm PROVES ITS OWN
+    NECESSITY: it re-runs the ordering check alone on the same planted table and
+    asserts ordering reports CLEAN, because owner and attorney still hold rw. A
+    monotonicity-only relation would have MISSED it. That is why the lock is
+    part of the relation and not a separate idea.
+Then the CLEAN half, asserted SILENT on the real table for both completeness and
+monotonicity -- a check that fires on everything is as useless as one that fires
+on nothing, and the silent half is the one usually left out.
+
+ONE ARM OF MINE FAILED FOR THE WRONG REASON FIRST AND IS KEPT AS A COMMENT.
+"A non-law resource still passes" asserted on the STATUS and went red because
+`memory` resolves its expected app from the CALLER, so a sairnlaw-signed token
+fails the PRE-EXISTING session gate with a different 403. Two 403s, two causes.
+The arm now asserts on the refusal REASON and adds a direct NOT_LAW assertion at
+the function. That is the could-not-tell-two-refusals-apart mistake this repo
+already records, caught on my own test rather than on the code.
+
+================================================================================
+4. ITEM 5 -- EVERY sen_caregivers READ PATH, AND THERE ARE TWO
+================================================================================
+
+api/sd-data-sen-caregiver-read-paths.test.js, 19 arms, exit 0. The b4 scope
+suite still 18 arms, exit 0.
+
+THE REPORTABLE ANSWER: there are exactly TWO read paths and NEITHER returns
+unredacted PII to a caller outside owner/billing.
+
+  sen_caregivers/read    REDACTS. bgcheck_date, state_caregiver_id and notes are
+                         removed; hr_fields_visible declares it.
+  sen_visits/readiness   CONSUMES WITHOUT EMITTING. It fetches the whole blob and
+                         reads caregiver.name and caregiver.state_caregiver_id to
+                         decide whether each is PRESENT, then returns miss-reasons
+                         built from string literals. No value reaches the response.
+
+FOUND BY GREPPING FOR EVERY FETCH SITE, not by reading the fix. The readiness
+path is nowhere near the redaction and nothing in the b4 work would have
+surfaced it.
+
+THE PATH COUNT IS DERIVED AND ASSERTED, DELIBERATELY BRITTLE. A third read path
+added later is exactly the event this file exists to catch, and the arm says in
+its own failure message not to raise the number but to add an arm. A suite
+silently covering 2 of 3 reports clean while the new path leaks.
+
+LEAKS ARE DETECTED BY SUBSTRING OVER THE WHOLE SERIALISED RESPONSE, with
+distinctive marker values (ZZBGCHECKZZ and friends) rather than realistic ones.
+Asserting on a named field only catches a leak arriving in the shape you
+predicted; a sweep catches one nested in an error message, a joined label, or a
+field nobody thought of.
+
+AND READINESS IS ARMED IN BOTH DIRECTIONS, which is the part worth arguing:
+  - it must NOT be redacted at the fetch. An arm asserts the fetch still asks
+    for the whole blob, because redacting there would make EVERY VISIT REPORT A
+    MISSING STATE CAREGIVER ID -- checkVisit reads that field to decide whether
+    one is on file. The right boundary for this path is the RESPONSE, and the
+    arm exists to stop somebody "fixing" it the wrong way.
+  - it must really CONSUME the field. An arm removes state_caregiver_id from the
+    fixture and requires the report to CHANGE. Without it, the no-leak arms
+    would pass against a path that read nothing.
+
+TWO HARNESS DEFECTS OF MINE, BOTH KEPT AS COMMENTS BECAUSE BOTH ARE REUSABLE:
+
+(1) The fetch-site count said 3. The third was the WRITE upsert --
+    `?on_conflict=` also matches `sen_caregivers\?`. Narrowed to sites carrying
+    `select=`, which is what a read is. Worth keeping because the count was
+    wrong in the ALARMING direction, and that is the lucky case: the same regex
+    one character looser would have been wrong in the reassuring one.
+    The narrowed regex then matched ZERO, because `[^)]*` stops at the
+    `enc(licHash)` close-paren before reaching `select=`. Bounded to the LINE
+    instead. It went red BOTH times rather than matching the wrong thing, which
+    is the only reason either was cheap to find.
+
+(2) THE READINESS FIXTURE JOINED NOTHING. `caregiversById` is keyed on
+    `caregiver_id` and looked up by `visit.assigned_employee_id`, so a caregiver
+    row 'CG-1' against a visit assigned to 'emp-7' reported "a caregiver record
+    that could not be found" and the state-caregiver-ID branch was NEVER
+    REACHED -- the no-leak arms were passing against a path that had consumed
+    nothing. That is the check-that-tests-nothing shape, caught by the
+    consumption arm written for exactly that risk rather than by review.
+
+NOT VERIFIED: no live request, no database, and no click-through of
+sairnsenior.html's Restricted badge from b4.
+
+================================================================================
+5. ITEM 6 -- PROBE VERDICTS WITHOUT THE NETWORK
+================================================================================
+
+VERDICTS, WHICH IS THE POINT OF THE ITEM:
+  check4_probe.py   exit 0   CHECK 4 VERIFIED: True      (arm 1 UNPROVEN)
+  check7_probe.py   exit 0   11 checks, 0 failed         (2 arms UNPROVEN)
+Default mode, re-run against the real origin afterwards: check4 exit 0, check7
+exit 0. The change moved the DEPENDENCY, not the behaviour.
+
+Both probes exited 3 COULD NOT RUN on 2026-10-12 and again on 2026-10-13, and
+neither failure had anything to do with check 4 or check 7.
+
+HALF ONE -- A THROWAWAY BARE REMOTE, OPT-IN.
+tests/push_gate/_local_remote.py builds a bare repo on local disk at BASE and
+points the clone's origin at it. That removes two of the three dependencies that
+have nothing to do with the check: the NETWORK, and ORIGIN/MAIN MOVING mid-run
+(five clones push to this branch; both probes already carried a fetch-and-retry
+and both still reported COULD NOT RUN when it persisted).
+
+NOT A BYPASS, and the header says so rather than leaving it to be trusted:
+core.hooksPath still points at the clone's own .githooks, the real
+tools/sairn_push_gate_hook.py still runs, every check still votes. Only the
+destination changes. It is OPT-IN (SAIRN_PROBE_LOCAL_REMOTE=1 or
+--local-remote) with the real remote as the DEFAULT, because a probe that can
+only run against a local remote has stopped proving anything about the push that
+ships. Each probe prints which mode it used.
+
+THE SEED IS A FETCH INTO THE BARE REPO, NOT A PUSH OUT OF THE CLONE. The first
+version pushed, which ran the clone's OWN pre-push hook against fixture setup
+and failed with "copy-exactly: new branch, no remote base" plus two other
+checks. The alternative was --no-verify -- a probe for a push gate bypassing a
+push gate to start up. A fetch runs no pre-push hook, so nothing is bypassed and
+nothing is gated.
+
+HALF TWO -- AND THIS IS THE HALF THAT ACTUALLY RECOVERED THE VERDICTS.
+The local remote does NOT fix the third dependency: every other check in the
+hook. Both probes were refused on a CLEAN push by the external-file-index check
+over ANOTHER SESSION'S handoff on a shared Google Drive -- a reason entirely
+outside this repository, which stays true while that loop runs.
+
+The existing precondition was right that a refused clean push makes a LATER
+refusal unattributable. It was NOT right that it makes the whole run
+unverifiable. So the clean push's refusal is now CLASSIFIED:
+  OURS     carries the check's OWN marker -> a real check failure. Still exits
+           3, unchanged, because calling that a pass would be worse.
+  FOREIGN  carries none of them -> another check voted no. The affected ARM is
+           UNPROVEN and the run CONTINUES, because "the planted violation was
+           refused WITH check 4's marker" is evidence about check 4 no matter
+           what else also refused on the same push.
+
+AND UNPROVEN IS SAID IN THE VERDICT LINE, not only in a note sixty lines up. A
+reader who scrolls to the bottom must not read "0 failed" as "every arm held".
+check7 prints "(2 ARMS UNPROVEN -- see above)" beside its count; check4 prints
+the caveat under its True. MY FIRST ATTEMPT AT THAT PATCH DID NOT MATCH THE REAL
+STRING AND SILENTLY CHANGED NOTHING, which is why the line was confirmed in the
+committed output rather than assumed.
+
+A LEAK OF MY OWN, FOUND BY `ls` AND NOT BY REVIEW. When seeding failed,
+create() returned a reason and left the half-built bare repo in %TEMP% -- and
+because it returned None the caller's handle stayed None, so atexit had nothing
+to remove and never warned. One directory was found after four runs, identified
+as the failed attempt because it carried no refs/heads/main. Every failure path
+now cleans up, and that is DRIVEN in both directions: a scratch script calls
+create() with a bogus BASE and asserts nothing is left behind, then with a real
+BASE and asserts a usable remote IS built -- the silent half, because a _fail
+that fired on everything would be as wrong as one that fired on nothing. It also
+swept the one stale directory and REPORTED the count rather than removing it
+quietly.
+
+Residue after the final runs: no bare remote in %TEMP%, no worktree registered,
+clone clean.
+
+WHAT IS STILL NOT PROVED: check 4's arm 1 and check 7's arms 1-2. "A clean
+change is NOT blocked by this check" has not been demonstrated on any run,
+because a clean push is still refused for a foreign reason. That is UNPROVEN,
+not passed, and both probes say so.
+
+================================================================================
+6. ITEM 7 -- THE DUPLICATE-DOM-ID CHECKER
+================================================================================
+
+tools/dup_dom_ids_check.py, report-only, plus its control pair at
+tests/run_dup_dom_ids_probe.py (23 arms, exit 0).
+
+RUN ON EVERY APP: 22 root-level tracked html files, 7,752 ids, ZERO duplicates,
+exit 0.
+
+THE BRIEF SAID "ALL 11 APPS" AND THERE ARE 22 FILES -- 17 apps plus 5 companion
+pages. Not corrected in the brief's favour: the scope is DERIVED from
+`git ls-files '*.html'` and the count is whatever that returns, because the
+Guardian App File Map has been wrong about which apps exist SEVEN times and
+every one was a claim about the repo rather than something read out of it.
+
+WHY IT DID NOT EXIST. Guardian Check 8 has required "each HTML id= appears
+exactly once" since the skill was written. The three duplicates fixed in b4 were
+found by an id scan typed inline during that batch and thrown away -- the same
+"a tool that exists is not a mechanism; a tool that RUNS is" problem this repo
+records against its own app-map checker. All three were LIVE defects: an
+accounts table that never rendered, an ORC 2915.10(C) bingo account that could
+not be opened under the name typed in, and a facility name stored from the wrong
+input box.
+
+AN HTML PARSER, NOT A REGEX, AND BOTH DIRECTIONS ARE DRIVEN RATHER THAN ARGUED.
+Every SAIRN app builds its tables by assigning innerHTML from JS template
+strings, so the source carries hundreds of in-script `id="..."` that are not
+markup -- a regex counts them and buries every real finding. And an id written
+single-quoted, unquoted or as `ID=` is still a real id to the browser, which a
+naive pattern misses.
+
+REPORT-ONLY AS A DECISION WITH A REASON: it is not wired as a push gate and must
+not be until the platform is clean, because promoting a checker to blocking
+while real findings exist refuses every push to the affected file -- which is
+how a gate gets switched off and then protects nothing. Exit codes still mean
+something: 1 finding, 2 COULD NOT RUN, 0 clean, and could-not-run is never
+folded into passed.
+
+THE CONTROL PAIR IS LONGER THAN THE TOOL AND THAT IS THE POINT -- IT RETURNED
+CLEAN ON ITS FIRST RUN OVER 7,752 IDS, which is exactly when a checker is least
+trustworthy. 23 arms:
+  FIRES   a planted duplicate naming the id and both lines; a SELF-CLOSING tag
+          (handle_startendtag, not handle_starttag -- missing it under-counts,
+          the silent direction); single-quoted vs double; unquoted; ID= vs id=;
+          a three-way duplicate reporting all three lines.
+  SILENT  the same document without the duplicate; a duplicate ONLY inside a
+          <script> template string (the real SAIRN shape); only inside an HTML
+          comment; only inside <style>; and three EMPTY id attributes, which are
+          not three duplicates of each other.
+  THIRD   an unreadable file exits 2 and says COULD NOT READ -- and ONE
+  STATE   unreadable file among readable clean ones STILL exits 2, because a
+          partial scan is not a clean one.
+  SCALE   a REAL app file is COPIED out of the clone, the exact ac-tbody
+          collision b4 fixed is recreated in the copy, and the checker must find
+          it among 400 real ids and hundreds of in-script decoys. Both plant
+          anchors are asserted to occur exactly once FIRST, so a renamed id
+          fails loudly instead of silently planting nothing.
+  ITSELF  a final arm asserts the probe modified no tracked file.
+
+TWO PROBE ARMS OF MINE FAILED FIRST, BOTH KEPT AS COMMENTS:
+(1) the archive/-exclusion arm asserted `'archive/' not in out` and failed on
+    the tool CORRECTLY PRINTING "archive/ and subdirectories excluded" in its
+    own scope line. A substring sweep over a report that describes its own
+    criteria will match the criteria. Now asserts on the file ROWS.
+(2) the full-scale plant used `cgtbody`, which is in sairncare.html and NOT in
+    sairnfreedom.html, so the "duplicate" was a unique id and the checker was
+    right to stay silent. A plant that plants nothing must not read as a tool
+    that missed something -- which is why both anchors are now counted first.
+
+NOT DONE, DELIBERATELY: runtime ids. A template string rendering
+`id="row-' + i + '"` in a loop can duplicate in the live DOM where no static
+read can see it. The tool's header says so rather than implying coverage.
+
+================================================================================
+7. ITEM 8 -- THE "FLAKE" WAS NOT A FLAKE, AND b4 GOT IT WRONG
+================================================================================
+
+THIS SECTION CORRECTS MY OWN b4 REPORT. b4 recorded the sabotage-probe baseline
+failure as a Windows `os.replace` FLAKE. That attribution was wrong in both
+halves: the failure was not a flake, and `os.replace` is not why the suite
+exited 1.
+
+MEASUREMENT 1 -- 20 RUNS, ISOLATED CLONE: 20 x exit 0, ALL 17 ARMS PASS each.
+No recurrence. (A first attempt at 20 runs returned 20 x exit 3 COULD NOT RUN
+because the throwaway clone had no `.git/sairn-session`; provisioning it with
+`sairn_session_identity.py --provision cody` fixed the setup, and the 20 real
+runs followed. The exit-3 batch is reported because it is not a pass.)
+
+MEASUREMENT 2 -- THE b4 FAILURE STATED ITS OWN CAUSE AND I UNDER-READ IT. The
+b4 log says, in its own words:
+
+    FILES THIS CLONE HAS CHANGED THAT THE SUITE NAMES AND `stage` DOES NOT:
+        docs/tier-a-reviews.json
+    The worktree is at HEAD, so the baseline just measured the OLD
+    version of these against a suite that expects the new one.
+
+My working tree held 5 reseated records in that ledger and the probe's `stage`
+argument did not include it. THE VARIABLE WAS TREE CLEANLINESS, NOT SCHEDULING,
+and the probe's own message named it. The PermissionError traceback printed in
+the same block was incidental, which is exactly how I misattributed it.
+
+MEASUREMENT 3 -- AND THERE IS A REAL, SEPARATE, PERMANENT DEFECT, FOUND ON THE
+WAY. Arms 11 and 12 of tests/run_tier_a_review_gate_probe.py start TWO THREADS
+that both call `save_reviews()` on the SAME path, barrier-synchronised to
+collide deliberately. `save_reviews` does mkstemp then `os.replace`. On POSIX
+rename(2) is atomic and a concurrent rename onto one destination is safe. ON
+WINDOWS os.replace is MoveFileEx, which fails ERROR_ACCESS_DENIED when the
+destination is held open -- including by another MoveFileEx in flight on the
+same target. So the arm creates precisely the condition Windows does not
+guarantee.
+
+  DRIVEN DIRECTLY, 400 ITERATIONS: 305 raised PermissionError [WinError 5].
+  Same error, same path shape (atomic.json.tmp-... -> atomic.json) as b4's.
+  AND 12 OF 12 GATE-PROBE LOGS CONTAIN IT WHILE ALL 12 EXIT 0.
+
+SO IT IS NOT A FLAKE -- IT IS A PERMANENT SILENT FAILURE. The exception is
+raised inside a thread, so `threading` prints it and the process exit code is
+unaffected; and the arm's own assertions still pass, because the OTHER thread's
+save succeeded and left a file that parses with no leftovers. ARM 11 HAS
+THEREFORE BEEN ASSERTING ATOMICITY AGAINST A RACE IN WHICH, ROUGHLY THREE TIMES
+IN FOUR ON THIS PLATFORM, ONLY ONE WRITER EVER COMPLETED. The arm is weaker than
+it reads, permanently, on Windows -- and nothing in the suite says so.
+
+NOT FIXED. Item 8 asked for the cause or the narrowed candidates; the cause is
+measured. Open, owner cody, with the fix named in the handoff: catch the
+exception IN each thread and assert on what was caught, so a dead writer is
+visible instead of invisible.
+
+================================================================================
+8. ITEMS 9, 10, 11 AND 12
+================================================================================
+
+ITEM 9 -- THE FMEA DRAFTS ARE NOT MISSING.
+  docs/fmea/ holds 112 files ON DISK and 112 GIT-TRACKED. Zero drift in either
+  direction -- nothing on disk is untracked and nothing tracked is absent.
+  The TWO the b4 FMEA loop named -- tools/tier_a_review_gate.py and
+  tests/run_tier_a_review_gate_probe.py -- have no draft on disk, none in git,
+  and NO HISTORY AT ALL. Never committed.
+  AND THE REAL FINDING IS COVERAGE: 831 distinct files appear in the defect
+  register and 108 of them have a draft. 13%. So "was this one foreseen?" is
+  unanswerable for seven files in eight, which is a fact about the FMEA loop
+  rather than about these two drafts.
+
+ITEM 10 -- THE 145 NO-SHA RECORDS, CLASSIFIED. COUNTS ONLY, NOTHING WRITTEN.
+  DERIVABLE_FILESET_unique                      82   one superset commit in a 6h window
+  DERIVABLE_FILESET_ambiguous                   53   several; needs a human to pick
+  DERIVABLE_TIME_partial_overlap                 8   partial file overlap only
+  ABSENT_nothing_in_window_touches_its_files     2
+  ABSENT_no_files_named                          0
+  TOTAL                                        145
+  => 82 strong-derivable, 61 needs-a-human, 2 truly absent.
+  ALL 145 ARE STATUS `reviewed`; none is open. By author: cc 45, hank 36,
+  cody 35, fourth 29.
+  THE CAVEAT IS STATED RATHER THAN LEFT TO INFERENCE: the window is 6h, the same
+  number tier_a_review_gate.py uses for a WEAK basis. A record whose commit
+  landed outside it classifies ABSENT here and may still be recoverable by hand.
+  ABSENT IS A FLOOR ON WHAT IS DERIVABLE, NOT A CEILING.
+
+ITEM 11 -- THE COLLISION IS ALREADY FIXED BY cc. THE RESIDUAL GAP IS BIGGER.
+  Full account and the paste-ready patch:
+  docs/2026-10-13-cody-b5-routed-to-cc.md. NO EDIT to tools/sairn_claim.py,
+  tests/claims/ or any file cc declares.
+  Re-derived at HEAD from the VERBATIM claim strings: block_reason() still
+  returns 'shared phrase: "digest plus"' and {digest, plus} is NOT exempt as a
+  common phrase -- but cc's 2026-10-12 one-sided-FILES narrowing at :2174
+  demotes it to UNPROVABLE. It would not block today.
+  MY FIRST REPRODUCTION WAS INVALID AND THE DOC SAYS SO. I retyped a SHORTENED
+  cody task string and the shortening removed "plus" from beside "digest", so
+  there was no bigram left to collide and block_reason() returned None for a
+  reason unrelated to any fix. A reproduction that edits its own input is not a
+  reproduction. It now reads both strings from .claude/claims/*.json and
+  ASSERTS the colliding bigram is present in BOTH before reading any verdict,
+  exiting 2 COULD NOT REPRODUCE otherwise.
+  THE GAP THAT REMAINS: the narrowing is conditional on ONE side declaring
+  FILES. When NEITHER does, one_sided_files() is empty, the demotion never
+  fires, and a phrase hard-blocks -- reproduced at HEAD,
+  'shared phrase: "audit rotation"' -> BLOCKS. AND THAT IS THE MAJORITY SHAPE:
+  measured over the committed record, 375 of 1288 claims declare FILES. 29%.
+  hank 21%. hover2 ZERO of 13 -- the audit role declares none ever.
+  The proposal is the narrower of two options, gated on cc's own
+  rests_on_evidence() and demoting only `shared phrase`, with the BLOCK->CLEAR
+  measurement that file's convention demands stated as OWED rather than
+  claimed. Option B -- mandating FILES on every claim -- is recorded as REJECTED
+  so it is not re-proposed: it would refuse the audit role's claims outright.
+  common_phrases() is deliberately NOT touched; silencing one phrase leaves the
+  next one.
+
+ITEM 12 -- PREPARED, NOT RUN, AND THE SQL WAS NOT RUN.
+  tools/verify_citator_feedback.py is Guardian Check 29's missing half for b4's
+  cl_feedback_log change: a real write through the real table, read back, in
+  both directions.
+  It REFUSES to write without --write, because a verification script that writes
+  by default is one somebody runs by accident while exploring -- and the rows it
+  leaves are indistinguishable from an attorney's real feedback, in the table
+  whose whole subject is attribution.
+  EVERY ARM HAS A WAY TO FAIL THAT IS NOT "THE REQUEST ERRORED", because the
+  defect being closed was a 200 with no employee on the row. Each insert is READ
+  BACK BY ID and the stored value compared. The NULL direction asserts the key
+  is PRESENT and the value null -- a different claim from the key being absent --
+  and carries its own negative half: the two rows must DIFFER, so it cannot pass
+  because every row looks the same. COULD-NOT-TELL is a third state throughout.
+  It does not run the migration and does not fabricate the cl_citing_treatments
+  row its FK needs -- that would put an invented classification into a GLOBAL
+  cache every firm reads.
+  EXERCISED ONLY ON THE PATH THAT TOUCHES NOTHING: with credentials unset it
+  exits 2 and says "nothing was read and nothing was written ... a missing
+  credential is not evidence that the schema is correct."
+
+================================================================================
+9. THE PUSH -- SEVEN REFUSALS, A REFUSED REBASE, AND NO OVERRIDE
+================================================================================
+
+SAIRN_SEED_GATE=off WAS NOT USED AT ANY POINT IN THIS BATCH.
+
+FIVE CHECKS REFUSED ONE PUSH AT ONCE, all five true, all five satisfied:
+  1 TOOL OWNER HEADER -- both new tools/*.py carried no `# OWNER:` line. Both
+    are mine; both now say so. The gate also prints that 266 existing tools/*.py
+    are GRANDFATHERED and not refused, a backlog it reports every run rather
+    than letting it become the normal state.
+  2 TOOL INVENTORY -- the generator REFUSES rather than emitting a blank cell
+    for a tool with no PURPOSES entry, which is how the last inventory went
+    stale. Both now have one; regenerated, 615 lines.
+  3 TIER A OBLIGATION on sen_settings and sen_visits, assigned to hank. The
+    read-paths test NAMES them because the readiness branch fetches four tables,
+    so its fixture must seed all four or the path is never reached. NO CODE
+    SERVING EITHER RESOURCE IS IN THE RANGE. The gate reads names rather than
+    call sites, which is the correct direction for a gate to fail.
+  4 docs/MASTER-PLAN.md stopped matching its sources -- four new test and probe
+    files change the declared-fault-probe count. Regenerated.
+  5 EXTERNAL FILE INDEX, twice in one push, then a third time after.
+
+AND TWO MORE AFTER THEM: docs/traceability-matrix.md (regenerated, 963 lines)
+and a repeated "outgoing range could not be read" as the remote tip moved under
+the run.
+
+THE DRIVE LOOP IS NOW THIRTEEN ROWS ACROSS THREE DAYS, declared by two sessions,
+NEITHER of them the session that wrote any of them. b4 declared nine; b5
+declared four more -- hover's b15, fourth's 2026-10-15, hover2's 2026-10-13, and
+one that arrived while the previous was being declared.
+SO THE LAST ONES WERE DECLARED BY A LOOP, and the loop is the evidence rather
+than a convenience: it asks the check what is unindexed, declares exactly those,
+re-asks, and stops when clean or when nothing new can be declared. It touches
+only the Drive report directory, derives the owner from the filename, SKIPS
+anything it cannot attribute instead of guessing, and never moves a file.
+Repairs and owners unchanged and not taken here: the CHECK should read
+`belongs_in_git` -- which it already parses and ignores -- and keep exit 1 for
+the session that OWES a file (cc's file); or each auditor should write its
+handoff into its own clone, which CLAUDE.md already says.
+
+THE REBASE WAS REFUSED, CORRECTLY, AND THAT IS WHY THIS BRANCH WAS MERGED.
+tools/sairn_rebase_resolve.py refused to resolve the register conflict while
+replaying one of my commits -- the one that re-stamps two records' `commit`
+field onto post-rebase shas. That is a MODIFICATION, the resolver's rule is
+append-only, and it read it as "4 ancestor records DELETED" and said so:
+"A union would put every one of them back, which is a different wrong answer,
+not a safer one." THE REFUSAL IS THE TOOL WORKING, and the honest response was
+to stop rebasing rather than to force it.
+A merge has no sha re-stamping to replay, so the register was merged by
+(commit, summary) identity -- the register's OWN declared merge_policy -- with a
+script that REFUSES if the union would lose a record:
+  records: base 517 | ours 519 | upstream 520 -> merged 522, LOST 0
+  confirmations: 5 | 5 | 5 -> 5, LOST 0
+  defect_register --check: OK, 522 records, exit 0, run BEFORE the file was
+  written.
+
+================================================================================
+10. WHAT IS NOT VERIFIED
+================================================================================
+
+- NO LIVE REQUEST to any deployed endpoint. The sairnlaw role gate and both
+  sen_caregivers suites drive the real dispatcher against a mocked PostgREST.
+  PR 3.2 applies to all of it.
+- NO DATABASE. sql/sairnlaw_citator_schema.sql was not run and
+  verify_citator_feedback.py was exercised only on the credentials-unset path.
+  Guardian Check 29 is NOT satisfied for the b4 cl_feedback_log change.
+- NO CLICK-THROUGH. dup_dom_ids_check.py reports 0 duplicates across 22 files,
+  which is id uniqueness in the MARKUP -- not a rendered-DOM check, and it says
+  nothing about ids generated at runtime.
+- CHECK 4 ARM 1 AND CHECK 7 ARMS 1-2 ARE UNPROVEN, NOT PASSED. A clean push is
+  still refused for a foreign reason, so "a clean change is not blocked by this
+  check" was not demonstrated on any run.
+- ITEM 8'S FIX IS NOT WRITTEN. The cause is measured; the arm is unchanged, and
+  it is open with me as owner.
+- THE ROLE POLICY ITSELF IS NOT TESTABLE. Whether a paralegal should read
+  law_pimedical is a decision, transcribed in api/_lib/law-roles.js. A test can
+  check that the table is complete, monotonic and wired; it cannot check that
+  the policy is right.
+
+SHA256 7906875e72eede95da7e3dad7fa3c22aea1b870c3fdf389119e49ae7aaca8a27
+END-OF-REPORT

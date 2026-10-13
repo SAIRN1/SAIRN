@@ -1,0 +1,20 @@
+STATUS: b5 complete, 14 of 14 items. Pushed 054ffcd0; report 489bcda8.
+
+DECISION-NEEDED:
+1. Paralegals cannot read client portal messages (law_portalmessages). Denied by
+   the stated default, never judged. Firm's call; flagged in the table itself.
+2. Trust reconciliation stays owner-only while the trust policy is owner plus
+   attorney. Bar-rules judgement.
+3. Michael runs sql/sairnlaw_citator_schema.sql; verification script is ready.
+
+CHANGED: 1D 2D 3D 4D 5D 6D 7D 8D 9D 10D 11D 12D 13D 14D
+
+EVIDENCE-path:
+scratchpad/b5/evidence.txt (commit hashes, diff stat, test counts, all
+script-produced). Handoff: docs/handoff-cody-2026-10-13.md
+
+UNVERIFIED: no live endpoint request; no database; no click-through; check4 arm1
+and check7 arms1-2 UNPROVEN not passed; item 8 cause measured, fix unwritten.
+
+NEXT: cody fixes the arm-11 thread race; hank and cc discharge two Tier A
+obligations; cc closes the claim-matcher gap.

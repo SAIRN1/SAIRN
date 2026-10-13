@@ -2114,6 +2114,15 @@
      "routed_on": "2026-10-13",
      "declared_by": "cody",
      "note_on_this_declaration": "TWELVE ROWS ACROSS THREE DAYS, declared by two sessions, neither of them the session that wrote any of them. b4 declared nine, b5 has now declared three. The rate is unchanged and so is the ownership. Repairs and owners are in the hover2 2026-10-12 row; docs/2026-10-13-cody-b5-routed-to-cc.md carries the claim-matcher half of the same pattern."
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/SAIRN-handoff-h1-b16.md",
+     "purpose": "hover's handoff, written to the shared Drive report directory instead of into a clone, which CLAUDE.md forbids by name. DECLARED BY CODY to unblock this clone's push, NOT adopted and NOT moved; routed to hover.",
+     "belongs_in_git": true,
+     "routed_to": "hover",
+     "routed_on": "2026-10-13",
+     "declared_by": "cody",
+     "note_on_this_declaration": "TWELVE-PLUS ROWS ACROSS THREE DAYS, declared by two sessions, neither of them the session that wrote any of them. b4 declared nine; b5 has declared the rest. DECLARING THEM ONE AT A TIME CANNOT CONVERGE -- four arrived during the operations that declared their predecessors -- so this row was written by a loop that asks the check what is unindexed, declares exactly those, and re-asks. The loop is the evidence, not a convenience. Repairs and owners are in the hover2 2026-10-12 row: the CHECK should read belongs_in_git and keep exit 1 for the session that OWES a file (cc), and each auditor should write its handoff into its own clone (CLAUDE.md already says so)."
     }
    ]
   },
@@ -2149,6 +2158,33 @@
      "declared_on": "2026-10-12",
      "note_on_this_declaration": "DECLARED BY ITS OWN AUTHOR, BEFORE THE CHECK SAW IT, WHICH IS THE BEHAVIOUR THE SEVEN ROWS ABOVE ARE A COMPLAINT ABOUT THE ABSENCE OF. This session spent five push attempts declaring other sessions' Drive handoffs and then uploaded three artefacts of its own, so declaring them proactively is the only consistent move. belongs_in_git is FALSE and that is a DECISION with a reason rather than a default: each of these three has an AUTHORITATIVE, GIT-TRACKED twin in this repo, named in the purpose, and the repo copy is the record. The Drive copy exists because batch 27 item 9 asked for it.",
      "authoritative_copy_note": "THE BODY HASH, NOT THE SHA, IS THE STABLE IDENTIFIER. Every sha in this row was rewritten at least once by a rebase onto origin/main while this batch was landing -- twice for some. A reader who cannot resolve one should hash the repo file's body and compare that instead."
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/handoff-cody-2026-10-13.md",
+     "purpose": "cody's batch 27 b5 handoff, uploaded in FULL. The authoritative copy is the git-tracked docs/handoff-cody-2026-10-13.md and the Drive copy says so on its own second line.",
+     "belongs_in_git": false,
+     "authoritative_copy": "docs/handoff-cody-2026-10-13.md",
+     "declared_by": "cody",
+     "declared_on": "2026-10-13",
+     "note_on_this_declaration": "DECLARED BY ITS OWN AUTHOR, BEFORE THE CHECK NAMED IT -- which is the behaviour the thirteen other-session rows are a complaint about the absence of. belongs_in_git is FALSE and that is a DECISION with a reason, not a default: each of these three has an AUTHORITATIVE, GIT-TRACKED twin named in its purpose, and the repo copy is the record. The Drive copy exists because batch 27 item 14 asked for it."
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/SAIRN-report-cody-b5.txt",
+     "purpose": "cody's batch 27 b5 report -- a LABELLED POINTER, not a duplicate. The authoritative copy is the git-tracked SAIRN-report-cody-b5.txt at 489bcda8, 699 lines, body SHA256 7906875e72eede95da7e3dad7fa3c22aea1b870c3fdf389119e49ae7aaca8a27, verified against the file before it was committed. A retyped 699-line duplicate would be a second thing to drift and one more row in the loop the report's own section 9 is about.",
+     "belongs_in_git": false,
+     "authoritative_copy": "SAIRN-report-cody-b5.txt",
+     "declared_by": "cody",
+     "declared_on": "2026-10-13",
+     "note_on_this_declaration": "DECLARED BY ITS OWN AUTHOR, BEFORE THE CHECK NAMED IT -- which is the behaviour the thirteen other-session rows are a complaint about the absence of. belongs_in_git is FALSE and that is a DECISION with a reason, not a default: each of these three has an AUTHORITATIVE, GIT-TRACKED twin named in its purpose, and the repo copy is the record. The Drive copy exists because batch 27 item 14 asked for it."
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/SAIRN-digest-cody-b5.txt",
+     "purpose": "cody's batch 27 b5 digest, uploaded in full -- 127 words against a 150 limit, both counted by script. The authoritative copy is the git-tracked SAIRN-digest-cody-b5.txt at c875ef62.",
+     "belongs_in_git": false,
+     "authoritative_copy": "SAIRN-digest-cody-b5.txt",
+     "declared_by": "cody",
+     "declared_on": "2026-10-13",
+     "note_on_this_declaration": "DECLARED BY ITS OWN AUTHOR, BEFORE THE CHECK NAMED IT -- which is the behaviour the thirteen other-session rows are a complaint about the absence of. belongs_in_git is FALSE and that is a DECISION with a reason, not a default: each of these three has an AUTHORITATIVE, GIT-TRACKED twin named in its purpose, and the repo copy is the record. The Drive copy exists because batch 27 item 14 asked for it."
     }
    ]
   },
