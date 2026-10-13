@@ -3535,8 +3535,8 @@
       "task": "batch b9 continuation after compaction -- get HEAD pushed, priority one. The b8 unreadable-range refusal was already diagnosed (the remote tip sha handed to the hook on stdin was absent from this clone's object store; a fetch fixed it) and the STANDING blocker is check 12's generated-document refusal over docs/TOOLING-INVENTORY.md, re-diagnosed this session to TWO distinct causes: (a) in a clean worktree of HEAD the generator exits 2 because tools/report_sha_check.py (added by my b5) and tools/temp_state_leak_check.py (added by my b7) carry no PURPOSES entry, which is Michael's 2026-09-13 decision and is MINE to clear, and (b) in the live working tree the hook-entries derivation source reads 0 because hooks are cleared on purpose, which is an UNCOMMITTED state this push does not carry and must not be attributed to it. Fix (a) with two PURPOSES entries naming what each tool CATCHES plus a regenerate; fix (b) by making check 12 measure the tip the same way it already measures the base -- in a worktree of the pushed commit rather than in the live working tree. Then the methodology item: a commit-time check so an unentered tools/ file is refused at the commit that adds it rather than five batches later at push time. Then bundle and delete refs/salvage/b6-* once the push is confirmed landed, move the three .claude/settings.json backups to scratchpad, drop the demo-pins SQL and the throwaway probe SQL, handoff BEFORE the report, then report and digest. HOOKS STAY CLEARED and .claude/settings.json is never committed. No SAIRN_SEED_GATE=off. FILES: tools/tooling_inventory.py docs/TOOLING-INVENTORY.md tools/sairn_push_gate_hook.py tools/commit_tool_entry_check.py docs/METHODOLOGY.md docs/handoff-fourth-2026-10-16.md SAIRN-report-fourth-b9.txt SAIRN-digest-fourth-b9.txt",
       "claimed_at": "2026-10-13T09:19:44Z",
       "claimed_at_epoch": 1791883184.5506332,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-13T11:32:44Z",
       "files": [
         "SAIRN-digest-fourth-b9.txt",
         "SAIRN-report-fourth-b9.txt",
@@ -3546,6 +3546,29 @@
         "tools/commit_tool_entry_check.py",
         "tools/sairn_push_gate_hook.py",
         "tools/tooling_inventory.py"
+      ]
+    },
+    {
+      "id": "fourth-1791891247",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "batch b10 -- claimed as the FIRST action. (1) ROUTE ONLY, no edit to tools/: a doc in docs/ for cc with the exact fix for tools/hover_auditor_scope_gate.py:409, the 4th unfetched-base instance, plus a spec for an unfetched-base checker -- shape detected, how it runs, expected output. (2) the b9 digest listed item 6 as a bare D with no text, so the b10 report records the push evidence properly: ranges c5af98dc..d30e9e42 and ae3a5cfb..79a0b04f with commit counts and what each of the six b9 items changed. (3) the undriven red suites assigned by directory -- api hank, tests cody, tools cc, docs me -- map written in docs/ and each owner routed their list; the b9 digest said 65 and the real number is re-derived from the sweep log rather than quoted. (4) handoff naming: docs/handoff-fourth-2026-10-16.md is misdated three days into the future, renamed to the SAIRN-handoff-fourth-b-n form with every reference in docs/ fixed. (5) methodology: the reusable procedure for diagnosing a push refusal that hides several defects, b9's having been four, including how NEXT FREE numbering is kept so routed rules never collide. (6) push without force and confirm it landed. Then the handoff BEFORE the report, then the report and digest. HOOKS STAY CLEARED and .claude/settings.json is never committed. No SAIRN_SEED_GATE=off. No file under tools/ is edited by this batch. FILES: docs/2026-10-13-fourth-b10-routed-to-cc.md docs/2026-10-13-fourth-b10-red-suite-owners.tsv docs/2026-10-13-fourth-b10-routed-red-suites.md docs/known-red-suites.json docs/METHODOLOGY.md docs/SAIRN-handoff-fourth-b9.md docs/SAIRN-handoff-fourth-b9-2.md docs/external-files-index.json docs/SAIRN-handoff-fourth-b10.md SAIRN-report-fourth-b10.txt SAIRN-digest-fourth-b10.txt",
+      "claimed_at": "2026-10-13T11:34:07Z",
+      "claimed_at_epoch": 1791891247.302987,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b10.txt",
+        "SAIRN-report-fourth-b10.txt",
+        "docs/2026-10-13-fourth-b10-red-suite-owners.tsv",
+        "docs/2026-10-13-fourth-b10-routed-red-suites.md",
+        "docs/2026-10-13-fourth-b10-routed-to-cc.md",
+        "docs/METHODOLOGY.md",
+        "docs/SAIRN-handoff-fourth-b10.md",
+        "docs/SAIRN-handoff-fourth-b9-2.md",
+        "docs/SAIRN-handoff-fourth-b9.md",
+        "docs/external-files-index.json",
+        "docs/known-red-suites.json"
       ]
     }
   ],

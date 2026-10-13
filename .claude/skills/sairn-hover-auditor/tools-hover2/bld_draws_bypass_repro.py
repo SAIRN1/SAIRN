@@ -93,15 +93,26 @@ ROLE_SET_LITERAL = re.compile(r'roleSet\(\{([^}]*)\}\)')
 
 
 def _role_set(src, name):
-    """{'owner': True, ...} parsed from `const NAME = roleSet({...})`, or
-    None if NAME is not declared in src at all."""
+    """{'owner': True, ...} parsed from EITHER of the two shapes this
+    platform actually uses for a role allowlist -- `const NAME =
+    roleSet({...})` (a dict, checked elsewhere as NAME[role]) or `const
+    NAME = ['a', 'b']` (a plain array, checked elsewhere as
+    NAME.indexOf(role) === -1). hank's real b6 bld_draws fix used the
+    array shape (api/sd-data.js:13607, `BLD_DRAW_ROLES = ['owner',
+    'office']`) -- this tool originally only recognized the dict shape
+    and silently reported the real fix as RED. Returns None if NAME is
+    not declared in src at all, in either shape."""
     m = re.search(r'const %s = roleSet\(\{([^}]*)\}\)' % re.escape(name), src)
-    if not m:
-        return None
-    out = {}
-    for rm in re.finditer(r"(\w+)\s*:\s*(true|false)", m.group(1)):
-        out[rm.group(1)] = (rm.group(2) == 'true')
-    return out
+    if m:
+        out = {}
+        for rm in re.finditer(r"(\w+)\s*:\s*(true|false)", m.group(1)):
+            out[rm.group(1)] = (rm.group(2) == 'true')
+        return out
+    m = re.search(r"const %s = \[([^\]]*)\]" % re.escape(name), src)
+    if m:
+        names = re.findall(r"'(\w+)'|\"(\w+)\"", m.group(1))
+        return {(a or b): True for a, b in names}
+    return None
 
 
 def selftest():
@@ -253,6 +264,43 @@ def selftest():
           'post-fix (synthetic target shape) is silent on both -- '
           'detector proven to distinguish the two before hank\'s real '
           'commit exists')
+
+    # ── REAL-HISTORY MUTATION PROOF, batch b18 ──────────────────────────
+    # hank's actual fix landed (commit d7773533) and it used an ARRAY +
+    # .indexOf() shape (`BLD_DRAW_ROLES = ['owner', 'office']`, checked
+    # as `.indexOf(dSession.role) === -1`), not the roleSet()+bracket
+    # shape the b15 synthetic fixture above assumed. The first run of
+    # this tool against the real fix silently reported
+    # supervisor_pm_denied=False (RED) -- a FALSE NEGATIVE, not a real
+    # gap -- because `_role_set()` and the role_var regex only knew the
+    # dict shape. Fixed by recognizing both shapes. This fixture is the
+    # real array-shape text, copied verbatim from api/sd-data.js:13607
+    # (not re-typed from memory), so a future regression in either
+    # shape's parsing fires here before it fires silently on live code.
+    fx_real_array_shape = """
+    if (resource === 'bld_draws' && (action === 'read' || action === 'write')) {
+      const dSession = verifySessionToken(tokenFromRequest(req), licHash, 'sairnbuild');
+      if (!dSession) { return; }
+      const BLD_DRAW_ROLES = ['owner', 'office'];
+      if (BLD_DRAW_ROLES.indexOf(dSession.role) === -1) { return; }
+      const r = await fetch(x);
+    }
+    """
+    mp3 = analyze(fx_real_array_shape)
+    assert mp3['dedicated_rw_role_check_present'] is True, (
+        'real-history mutation proof: the array+.indexOf() shape hank '
+        'actually shipped must be detected -- this is the exact false '
+        'negative b18 found live')
+    assert mp3['dedicated_rw_allowed_roles'] == {'owner': True, 'office': True}, (
+        'real-history mutation proof: allowed roles must resolve to '
+        'exactly owner+office from the array literal')
+    assert mp3['supervisor_pm_denied'] is True, (
+        'real-history mutation proof: pm is absent from the array, so '
+        'supervisor_pm_denied must be True (GREEN), not False')
+    assert mp3['owner_allowed'] is True
+    print('REAL-HISTORY MUTATION PROOF PASS: the array+.indexOf() shape '
+          'hank actually shipped is now detected correctly '
+          '(supervisor_pm_denied=True, allowed={owner, office})')
     return 0
 
 
@@ -282,7 +330,8 @@ def analyze(src):
         out['dedicated_rw_present'] = True
         body = dm.group(1)
         out['dedicated_rw_has_session'] = 'verifySessionToken' in body
-        role_var = re.search(r'([A-Z][A-Z0-9_]*_ROLES)\s*\[', body)
+        role_var = re.search(
+            r'([A-Z][A-Z0-9_]*_ROLES)\s*(?:\[|\.indexOf\()', body)
         out['dedicated_rw_role_check_present'] = bool(role_var)
         if role_var:
             allowed = _role_set(src, role_var.group(1))
@@ -299,8 +348,19 @@ def analyze(src):
             # from "owner allowed because owner is the only role granted."
             out['supervisor_pm_denied'] = False
             out['owner_allowed'] = out['dedicated_rw_has_session']
+        # batch b18: a comment-text match is not a code match (PR 1.2's
+        # shape -- grep cannot tell code from text that describes code).
+        # Live against hank's real b6 fix: the branch's own comment says
+        # "access assigned by ownership" and reasons through why role-
+        # based access answers it, with no per-record owner_id/assigned_to
+        # field check anywhere in the real code -- the FIRST version of
+        # this check matched that comment text and reported True. Code
+        # lines only, line comments stripped first (a '//' inside a
+        # string literal would still be mis-stripped, but none of this
+        # file's real checks here contain one).
+        code_only = re.sub(r'//.*', '', body)
         out['ownership_check_present'] = bool(re.search(
-            r'owner_id|assigned_to|ownership', body, re.I))
+            r'owner_id|assigned_to', code_only, re.I))
     if not (out['bld_draws_in_dict'] and gm and bm):
         return out
     # A dedicated, earlier-in-source bld_draws read/write branch that itself

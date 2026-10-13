@@ -1,0 +1,15 @@
+DIGEST fourth b9
+SHA256 d92102707611d97cfc34add0f02895a2491a48f8cf70a2dd8297ea7bda5f53f8
+
+STATUS: LANDED after five batches. c5af98dc..d30e9e42 (48, b5-b9), then ae3a5cfb..79a0b04f (3). HEAD 79a0b04f == origin/main, 0/0, clean. No SEED_GATE override; hooks 0.
+
+DECISION-NEEDED: hover_auditor_scope_gate.py:409, the 4th unfetched-base instance, needs its owner; no checker exists for that shape.
+
+CHANGED: 1 D -- one refusal was FOUR defects: f2f9953b check-12 tip/base asymmetry, ac9d47d8 + 55777a74 range gates, 9c36aa7c central base whose NO OWNER was a false finding. 2 D -- exit 1, 3/16 tables, 11 values; hank. 3 D -- bundle verified, 2 probe refs deleted. 4 D -- 3 backups, 2 SQL moved; 1566/1873 scratch deleted, 307 locked. 5 D -- commit_tool_entry_check.py WIRED, 10/10 plus real defect; rule routed, NEXT FREE 35. 6 D.
+
+EVIDENCE-path: scratchpad/gate_arm_unfetched.log, cte_reseated.log, item2_audit.log
+
+UNVERIFIED: gate-freshness NOTICE both pushes; other checks reading that absent base; 4 scrutiny rows (cody's); 65 suites unqueued.
+
+NEXT: route :409; build the checker; hank reads pg_constraint.
+END-OF-DIGEST
