@@ -17,16 +17,31 @@ CLAUDE.md's rule is that a handoff lives only in a real clone — never written 
 
 ## Committed this batch
 
+**THESE SHAS ARE POST-REBASE AND THE PRE-REBASE ONES ARE DEAD.** `origin/main`
+moved 65 commits while b7 ran, so the batch was rebased onto `2364cf88` before
+the push and every sha below was rewritten. The first printing of this table
+cited the pre-rebase set (`1400bd90`, `e064ceee`, `972eeb9d`, `c3983131`), which
+resolves in no clone but this one's reflog — a dangling citation is the thing a
+rebase silently creates in any document that stamps a sha.
+
 | sha | item |
 |---|---|
-| `52be9eb3` | the claim |
-| `1400bd90` | **items 1 + 2** — audit-checkpoint sixteen-log coverage as one idempotent SQL block, the `CHECK_NOT_WIDENED` refusal, four new ablated test arms; three stale `sql/*_audit_log_schema.sql` CHECKs synced to what ran; `api/sf-auth.test.js` split into four arms |
-| `e064ceee` | **item 3** — the SAIRNfreedom demo credential, round-tripped twice |
-| `972eeb9d` | **item 4** — the last nine `sf_` resources gated, 36 of 36 |
-| `c3983131` | **item 5** — `docs/2026-10-13-context-budget-procedure.md` |
+| `b677ece8` | the claim |
+| `1315205f` | **items 1 + 2** — audit-checkpoint sixteen-log coverage as one idempotent SQL block, the `CHECK_NOT_WIDENED` refusal, four new ablated test arms; three stale `sql/*_audit_log_schema.sql` CHECKs synced to what ran; `api/sf-auth.test.js` split into four arms |
+| `8fff5bab` | **item 3** — the SAIRNfreedom demo credential, round-tripped twice |
+| `807c26de` | **item 4** — the last nine `sf_` resources gated, 36 of 36 |
+| `58ba1b31` | **item 5** — `docs/2026-10-13-context-budget-procedure.md` |
+| `547fee33` | this handoff (first printing) |
+| `7cafa03d` | the claim release |
 
 Nothing from an earlier batch was carried: `origin/main` was at `f779644e`
 (0 ahead / 0 behind) at pickup.
+
+**THE REBASE WAS CLEAN AND THE VERIFICATION WAS RE-RUN AFTER IT, not before.**
+All eight suites and five `tools/*.py` checks were driven again at the rebased
+HEAD — identical results to the table below, 65 other-session commits
+notwithstanding — and the second worktree was clean after and removed. A pass
+measured before a rebase is a pass against a tree that no longer exists.
 
 ---
 
