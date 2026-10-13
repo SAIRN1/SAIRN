@@ -7263,3 +7263,40 @@ was running with every hook stripped in an uncommitted `.claude/settings.json`
 (second clone the same evening), and NINE other-session handoffs on the shared
 Drive blocked this clone's push five times -- four of them arriving during the
 declarations of their predecessors.
+
+
+---
+
+## 2026-10-13 -- batch 27 (b5), landed 054ffcd0 (report 489bcda8)
+
+14 of 14 items done. Full account: `SAIRN-report-cody-b5.txt` (699 lines, body
+hash on the second-to-last line, verified), `SAIRN-digest-cody-b5.txt` (127
+words), handoff at `docs/handoff-cody-2026-10-13.md`.
+
+- **item 1: law_role_granularity IS NOW IMPLEMENTED.** b4 refused it because the
+  split was an unmade bar-rules decision; b5 arrived with Michael's decision, so
+  `api/_lib/law-roles.js` transcribes it -- ONE 19-row table, ONE `decide()`,
+  called from the TWO gates that already existed. Trust resources hard-locked in
+  a separate structure so the lock survives a table edit or an override.
+  25-arm test, monotonicity as a metamorphic relation, five planted violations
+  each asserted to fire. Fail-first measured: 23/2 before, 25/0 after.
+- **item 8 CORRECTS MY OWN b4 REPORT.** The sabotage "flake" was not a flake and
+  not `os.replace`: 20/20 runs pass in a clean clone, and the b4 log named its
+  own cause (a dirty-tree/stage mismatch on `docs/tier-a-reviews.json`) which I
+  under-read. The real defect found instead is WORSE -- arms 11/12 race two
+  `save_reviews()` onto one path, 305 of 400 driven iterations raise
+  `PermissionError`, and 12 of 12 gate-probe logs carry it while all 12 exit 0.
+  Permanent and silent, not intermittent. **NOT FIXED, open, owner cody.**
+- item 5: TWO sen_caregivers read paths, neither leaks. The second
+  (`sen_visits/readiness`) was found by grepping every fetch site.
+- item 6: both push-gate probes have verdicts with no network, and a refusal by
+  a DIFFERENT check is now a fourth state -- UNPROVEN, said in the verdict line.
+- item 7: `tools/dup_dom_ids_check.py`, 22 files, 7,752 ids, 0 duplicates,
+  23-arm control pair. Guardian Check 8 had never had a tool.
+- items 9/10/11: drafts not missing (112/112; coverage 13%); 145 no-sha records
+  split 82/61/2; the matcher collision already fixed by cc, with the residual
+  gap being the majority shape (29% of claims declare FILES).
+
+**This branch was MERGED, not rebased** -- `sairn_rebase_resolve.py` correctly
+refused to replay a sha re-stamp against its append-only rule. Register merged
+by `(commit, summary)`: 522 records, zero lost.
