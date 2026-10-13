@@ -2765,3 +2765,13 @@ NARROWER claim than the one it is used to license.
 
 **Inventory:** `docs/2026-10-07-inventory-hank-batch11.md`.
 **Handoff:** `docs/handoff-hank-2026-10-07.md`.
+
+## 2026-10-12 — batch 20 (b4)
+
+HEAD at close `24a99874`. Full account: `SAIRN-report-hank-b4.txt`, `SAIRN-digest-hank-b4.txt`, `SAIRN-addendum-hank-b4.txt`, `docs/handoff-hank-2026-10-12.md`.
+
+Two resume findings nobody was told about: every enforcement hook in this clone was disarmed (`.claude/settings.json` had `hooks: {}` against 22 committed commands — PowerShell `ConvertTo-Json` default `-Depth 2` — with `git status` clean), and batch 19's two fixes had never reached `origin/main`, which is why hover2's b9 handoff reported sf_officers STILL UNFIXED.
+
+Landed: four Tier A SAIRNfreedom money records gated (sf_sessions/sf_shifts/sf_tickets/sf_rentals, pair count 86→94 measured); the SAIRNfreedom hydrate-before-sign-in silent failure, already live for 18 resources; dnt_appointments write-ownership; the SAIRNcash Firebase-mint ownership precondition; credential-grant attribution across all 17 `api/*-auth.js` via one shared `auditPinSetup()` — **and the code is not the fix, 16 of 17 apps record nothing until the SQL runs**; `audit_event_type_check.py` extended in the same push because the refactor would otherwise have blinded it; the ghost-field scan circularity, where the probe's own payloads and the write-up of its own failure were silencing the detection.
+
+Open and routed: the unrun SQL (highest value, two ALTERs for StoneDesk and SAIRNcode); five Tier A SAIRNfreedom resources left ungated by decision; nothing proven live; no role check anywhere; sen_caregivers seq965 assigned to hank, not started. `SAIRN_SEED_GATE=off` used SIX times (corrected from three in the addendum), every one on another session's undeclared Drive handoff.
