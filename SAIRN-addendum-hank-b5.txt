@@ -1,0 +1,213 @@
+ADDENDUM hank b5
+================================================================================
+
+*** ITEM 3 IS DONE. THE DEPLOYMENT CAME BACK AND THE GATES ARE PROVEN LIVE. ***
+
+SAIRN-report-hank-b5.txt and docs/handoff-hank-2026-10-13.md both state, as
+their first and loudest finding, that the whole sairn.vercel.app deployment
+answers 402 "Deployment Paused" and that item 3 could not be run. THAT WAS TRUE
+WHEN BOTH WERE WRITTEN AND IS NO LONGER TRUE.
+
+The report carries a SHA256 of its own body. Re-stamping it to accommodate a
+later fact would make the hash mean nothing, so the correction lives here, in an
+unhashed file beside it. This is the same decision b4's addendum made for the
+same reason.
+
+--------------------------------------------------------------------------------
+HOW IT WAS NOTICED, WHICH MATTERS MORE THAN THE RESULT
+--------------------------------------------------------------------------------
+
+Not by re-checking. By READING ANOTHER SESSION'S CLAIM. `sairn_claim.py list`,
+run to confirm my own release had landed, printed cc's live b5 claim, which
+contains the phrase
+
+      "Live-verify bld_draws 86189e37 on the restored deployment"
+
+"the restored deployment". Re-checked immediately:
+
+      https://sairn.vercel.app/            -> 200, 2,755,287 bytes
+      https://sairn.vercel.app/api/sd-data -> 405  (GET on a POST-only endpoint,
+                                                    which is the correct answer)
+
+So the outage had cleared at some point between the probe run and the close of
+the batch, and my report's headline went stale inside the same session that
+wrote it. The lesson is the one b4's addendum already recorded in a different
+costume: A MEASUREMENT IS A SNAPSHOT, AND A SNAPSHOT IN A REPORT'S HEADLINE
+NEEDS A RE-READ BEFORE THE REPORT IS CALLED DONE.
+
+--------------------------------------------------------------------------------
+ITEM 3, RE-RUN. THE RESULT IS A CLEAN PASS WITH A REAL CONTROL PAIR
+--------------------------------------------------------------------------------
+
+Same probe, unchanged: docs/hank-evidence/b5_live_bare_key_probe.py, through
+tools/sairn_http.py, no X-SD-Auth header on any call. Exit 0.
+
+  licence            resource               gated  read            write(id-less)
+  SF-PINNACLE-2026   sf_officers            YES    403 FORBIDDEN   403 FORBIDDEN
+  SF-PINNACLE-2026   sf_sessions            YES    403 FORBIDDEN   403 FORBIDDEN
+  SF-PINNACLE-2026   sf_shifts              YES    403 FORBIDDEN   403 FORBIDDEN
+  SF-PINNACLE-2026   sf_tickets             YES    403 FORBIDDEN   403 FORBIDDEN
+  SF-PINNACLE-2026   sf_rentals             YES    403 FORBIDDEN   403 FORBIDDEN
+  SF-PINNACLE-2026   sf_events              no     200 ok          400       <- CONTROL
+  SF-PINNACLE-2026   sf_products            no     200 ok          400       <- CONTROL
+  SCP-DEMO-2026      scp_designs            YES    403 FORBIDDEN   403 FORBIDDEN
+  SCP-DEMO-2026      scp_quotes             YES    403 FORBIDDEN   403 FORBIDDEN
+  SCP-DEMO-2026      invoices               YES    403 FORBIDDEN   403 FORBIDDEN
+  SCP-DEMO-2026      scp_vendors            YES    403 FORBIDDEN   403 FORBIDDEN
+  SCP-DEMO-2026      scp_progress_photos    YES    403 FORBIDDEN   403 FORBIDDEN
+  SCP-DEMO-2026      customers              YES    403 FORBIDDEN   403 FORBIDDEN
+  SCP-DEMO-2026      scp_jobs               no     200 ok          400       <- CONTROL
+  SCP-DEMO-2026      scp_irr_zones          no     200 ok          400       <- CONTROL
+
+ELEVEN GATED RESOURCES REFUSED 403 ON BOTH VERBS WITH A BARE LICENCE KEY. The
+brief expected 403 on bare writes; the reads refuse too, which is what the b4
+commits said they would.
+
+AND THE CONTROLS ARE WHAT MAKE IT EVIDENCE RATHER THAN A GUESS. On the SAME key,
+in the same request shape, four ungated resources answered 200 on read. So:
+
+  * the licence keys are valid -- a bad key could not read anything;
+  * the endpoint is reachable and dispatching -- a dead endpoint could not
+    return rows;
+  * the 403s are THE GATE and nothing else.
+
+This is the control pattern the 2026-10-05 `customers` entry established, and
+until now these nine resources had only source-level evidence. b4 and b5 both
+said NOT PROVEN LIVE on every commit. THAT CAVEAT IS NOW DISCHARGED for the
+eleven resources above.
+
+NO WRITE PERSISTED, AND THE DESIGN IS WHY RATHER THAN LUCK. Every write attempt
+carried an ID-LESS payload, so even on a total gate failure the handler's own
+"payload.id is required" refuses before any store call. The four ungated
+controls prove that path ran: they answered 400 FROM THE HANDLER BODY, which
+means the gate did not fire and the id check did. The brief's stop-condition --
+an unexpectedly successful write -- never arose. Nothing was deleted.
+
+--------------------------------------------------------------------------------
+WHAT THIS CORRECTS, PRECISELY
+--------------------------------------------------------------------------------
+
+1. SAIRN-report-hank-b5.txt, ITEM 3 ("LIVE VERIFICATION: COULD NOT RUN. THE
+   DEPLOYMENT IS PAUSED") -- SUPERSEDED. The outage was real and is recorded
+   accurately for the window in which it happened; the conclusion that item 3
+   could not be completed is no longer true. The fifteen-row 402 table in the
+   report is a true record of that window, not an error.
+
+2. The report's "WHAT IS NOT DONE" first bullet, "ITEM 3 IS UNVERIFIABLE, NOT
+   UNDONE" -- SUPERSEDED. It is DONE.
+
+3. The report's VERIFICATION block line "LIVE: NOTHING" -- SUPERSEDED by the
+   table above.
+
+4. SAIRN-digest-hank-b5.txt, DECISION-NEEDED item 1 and UNVERIFIED --
+   SUPERSEDED. The outage is cleared and item 3 passed.
+
+5. docs/handoff-hank-2026-10-13.md, open item 1 -- SUPERSEDED. The handoff's
+   warning that "no gate on this platform can be proven live by anybody" and
+   that CLAUDE.md's post-push rule is unsatisfiable applied to the outage
+   window only.
+
+STILL TRUE AND NOT CORRECTED BY THIS FILE:
+
+  * The VALID-SESSION control read was still not done, and the reason is
+    unchanged by the deployment coming back: minting a session needs an employee
+    ID and PIN for SF-PINNACLE-2026 and SCP-DEMO-2026, and this session holds
+    neither. What the probe has is the ungated-sibling control, which answers
+    the question that was asked -- is the 403 the gate -- and does not answer
+    "does a correctly signed-in caller get through". THAT HALF REMAINS
+    UNVERIFIED.
+  * No ROLE check exists on any of the eleven, so any signed-in session of any
+    role can still write them. Proving a bare key is refused says nothing about
+    that.
+  * Everything else in the report and the handoff stands: the three defects, the
+    fifth gate mechanism, the three discharged obligations, the thirteen
+    bare-run findings, the paused-deployment record for its window.
+
+--------------------------------------------------------------------------------
+ONE THING THE NEXT SESSION SHOULD DO AND I DID NOT
+--------------------------------------------------------------------------------
+
+cc's claim says it will "Live-verify bld_draws 86189e37 on the restored
+deployment". bld_draws is the obligation I discharged this batch on SOURCE
+evidence, with the verdict explicitly recording "NOT PROVEN LIVE, and it cannot
+be today". cc is about to produce exactly the evidence that verdict said was
+unavailable. **When it lands, the bld_draws discharge is worth re-reading
+against it** -- not because the verdict was wrong, but because a verdict whose
+stated limit has since been removed should say so.
+
+END-OF-ADDENDUM
+
+================================================================================
+PUSH BLOCKED AND STOPPED, PER THE BRIEF. TWO COMMITS ARE UNPUSHED.
+================================================================================
+
+The brief for item 12 says: "If blocked by another session's Drive handoff,
+retry once after rebase, then stop and record the exact refusal."
+
+THAT IS WHAT HAPPENED, AND I STOPPED. SAIRN_SEED_GATE=off WAS NOT USED.
+
+UNPUSHED, LOCAL ONLY, IN ORDER:
+    f0e81b92  docs(addendum): ITEM 3 IS DONE -- the deployment came back
+              mid-batch and the gates are PROVEN LIVE
+    dfb20c0c  chore(tier-a): the obligation the gate asked for on the
+              addendum's PROSE, recorded rather than argued away
+
+Everything else in b5 IS pushed: HEAD on origin/main is f442989b, which carries
+the report, the digest, the handoff, all three fixes, the four suites, the four
+routing/design/inventory documents and the three defect records.
+
+THE EXACT REFUSAL, verbatim from the pre-push gate:
+
+    EXTERNAL FILE INDEX: a tool, script or handoff sits in a DECLARED external
+      directory and is neither git-tracked nor named in
+      docs/external-files-index.json.
+    EXTERNAL FILE INDEX -- criteria 2026-10-08.2
+    ...
+    1 UNINDEXED work file(s) under a declared external directory. Each is a
+    tool, script or handoff that no other session can find:
+      ! g:\my drive\sairn-status\handoff-fourth-2026-10-16.md
+
+    Either commit it, or add it to docs\external-files-index.json with a
+    purpose.
+
+THE FILE IS FOURTH'S, NOT MINE. Both remedies the gate offers are the wrong
+thing for me to do, which is the same position b4 reached three times:
+
+  * committing another role's handoff into my clone reaches into their record;
+  * hand-adding a row for it to docs/external-files-index.json files another
+    session's file under my own agents block, and that index's own header says
+    the generated halves of it would drop such an edit anyway.
+
+b4 used the documented override three times for exactly this and said so each
+time. b5's brief removed that option and replaced it with "stop and record",
+which is the better rule: the override was papering over a structural problem
+that belongs to whoever owns the check.
+
+AND MICHAEL HAS ALREADY DECIDED IT. The b5 brief's answer to b4 Q6 is that the
+external-files rule goes to cc as WARN-NOT-BLOCK. cc's live b5 claim lists
+tools/external_file_index_check.py and tests/run_external_file_index_probe.py
+in its FILES, so the fix is in flight in another clone right now.
+
+WHAT THE NEXT SESSION SHOULD DO, in order:
+
+  1. Check whether cc's warn-not-block change has landed:
+         git log --oneline -3 -- tools/external_file_index_check.py
+  2. If it has, a plain `git push origin main` from this clone publishes both
+     commits with nothing further needed.
+  3. If it has not, EITHER wait for it, OR ask fourth to index its own handoff.
+     Do not override, and do not index another session's file.
+
+NOTHING IS LOST BY THE DELAY. Both commits are documents: the addendum's
+content is in this file, which is already on Drive at
+G:/My Drive/SAIRN-status/SAIRN-addendum-hank-b5.txt, and the Tier A obligation
+is recorded in the local docs/tier-a-reviews.json and will publish with the
+commit. The LIVE VERIFICATION RESULT ITSELF -- the thing that matters -- is
+reproducible in one command by anybody:
+
+    python docs/hank-evidence/b5_live_bare_key_probe.py
+
+which is committed and pushed, and its output from the restored deployment is
+committed at docs/hank-evidence/b5_live_bare_key_probe_RESTORED.out, also
+pushed. A reader does not have to take this addendum's word for any of it.
+
+END-OF-ADDENDUM (second close -- the first precedes this section)

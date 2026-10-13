@@ -1,0 +1,21 @@
+LIVE BARE-KEY VERIFICATION -- no X-SD-Auth header on any call below
+endpoint https://sairn.vercel.app/api/sd-data
+
+licence            resource               gated  read                       write(id-less)            
+SF-PINNACLE-2026   sf_officers            YES    403 FORBIDDEN              403 FORBIDDEN             
+SF-PINNACLE-2026   sf_sessions            YES    403 FORBIDDEN              403 FORBIDDEN             
+SF-PINNACLE-2026   sf_shifts              YES    403 FORBIDDEN              403 FORBIDDEN             
+SF-PINNACLE-2026   sf_tickets             YES    403 FORBIDDEN              403 FORBIDDEN             
+SF-PINNACLE-2026   sf_rentals             YES    403 FORBIDDEN              403 FORBIDDEN             
+SF-PINNACLE-2026   sf_events              no     200 ok                     400                       
+SF-PINNACLE-2026   sf_products            no     200 ok                     400                       
+SCP-DEMO-2026      scp_designs            YES    403 FORBIDDEN              403 FORBIDDEN             
+SCP-DEMO-2026      scp_quotes             YES    403 FORBIDDEN              403 FORBIDDEN             
+SCP-DEMO-2026      invoices               YES    403 FORBIDDEN              403 FORBIDDEN             
+SCP-DEMO-2026      scp_vendors            YES    403 FORBIDDEN              403 FORBIDDEN             
+SCP-DEMO-2026      scp_progress_photos    YES    403 FORBIDDEN              403 FORBIDDEN             
+SCP-DEMO-2026      customers              YES    403 FORBIDDEN              403 FORBIDDEN             
+SCP-DEMO-2026      scp_jobs               no     200 ok                     400                       
+SCP-DEMO-2026      scp_irr_zones          no     200 ok                     400                       
+
+ALL AS EXPECTED: every gated resource refused 403 on both verbs with a bare key, and every ungated control did not.

@@ -216,6 +216,42 @@ const APPROVED = [
   'sf_shifts',
   'sf_tickets',
   'sf_rentals',
+  // 2026-10-13, FIVE, AND THEY CLOSE THE TIER A SET. Michael's decision, which
+  // is what this list has always needed and what the arm at the bottom of this
+  // file calls "a product decision about who may see a duty roster".
+  //
+  // b4 derived NINE Tier A resources still ungated, gated the four carrying a
+  // money or statutory figure, and NAMED these five with their register lines
+  // rather than sweeping them in -- because the derivation was mine and the
+  // decision was not. It has now been made, so the asymmetry b4 recorded is
+  // closed rather than carried.
+  //
+  //   sf_district_imports  register:353  records arriving from the district;
+  //                        the post neither authors them nor can re-request
+  //                        them, so a wrong row has no upstream to re-read.
+  //   sf_events            register:358  the post calendar every programme,
+  //                        ceremony and gaming session hangs off.
+  //   sf_permit_flags      register:367  gaming permit state. A wrong flag is
+  //                        a post running gaming it is not permitted to run --
+  //                        an ORC Chapter 2915 exposure, not a UI bug.
+  //   sf_products          register:368  the priced catalogue every sf_tickets
+  //                        row snapshots unitPrice from, so a wrong price is
+  //                        wrong takings for every sale after it.
+  //   sf_vehicles          register:380  computes its service-due flag from
+  //                        the odometer sf_vehicle_service advances -- and that
+  //                        sibling has been gated since 2026-09-29, so the pair
+  //                        sat split across the gate for two weeks with the
+  //                        WRITER protected and the READER open.
+  //
+  // 27 OF 36 ARE NOW GATED and the nine that are not are all B/B. They are
+  // named in api/sd-data.js beside the role-matrix call site, because that is
+  // where their absence has a consequence: a resource with no session has no
+  // role, so the matrix cannot reach them.
+  'sf_district_imports',
+  'sf_events',
+  'sf_permit_flags',
+  'sf_products',
+  'sf_vehicles',
 ];
 
 function gatedSet() {

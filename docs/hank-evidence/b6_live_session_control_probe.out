@@ -1,0 +1,23 @@
+LIVE SESSION CONTROL -- SAIRNscape, b6 item 1
+data  https://sairn.vercel.app/api/sd-data
+auth  https://sairn.vercel.app/api/scp-auth
+
+login -> 200  token=YES len=342  role=owner
+
+resource               BARE KEY (no session)        WITH SESSION                
+scp_designs            403 FORBIDDEN                200 ok rows=2 provisioned=True GATED
+scp_quotes             403 FORBIDDEN                200 ok rows=1 provisioned=True GATED
+invoices               403 FORBIDDEN                200 ok rows=1 provisioned=True GATED
+scp_vendors            403 FORBIDDEN                200 ok rows=1 provisioned=True GATED
+scp_progress_photos    403 FORBIDDEN                200 ok rows=0 provisioned=True GATED
+customers              403 FORBIDDEN                200 ok rows=3 provisioned=True GATED
+scp_jobs               200 ok rows=2 provisioned=True 200 ok rows=2 provisioned=True ungated
+scp_irr_zones          200 ok rows=0 provisioned=True 200 ok rows=0 provisioned=True ungated
+
+write scp_designs WITH SESSION, id-less payload -> 400 
+  a 400 here is the HANDLER refusing, not the gate -- which is what
+  proves the session got through. Nothing is stored by an id-less write.
+
+BOTH HALVES HOLD: every gated resource refused the bare key 403 and
+ANSWERED a valid session; every ungated control answered the bare key.
+The 403 is the gate, and the gate opens for a real sign-in.

@@ -1593,6 +1593,46 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/sd-data-cross-tenant-dispatchers.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f82a177b67290cb5ffec87585636aa64bdc8bf25",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f82a177b67290cb5ffec87585636aa64bdc8bf25",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-sf-role-matrix.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f82a177b67290cb5ffec87585636aa64bdc8bf25",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-sf-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f82a177b67290cb5ffec87585636aa64bdc8bf25",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "docs/hank-evidence/b6_live_session_control_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f82a177b67290cb5ffec87585636aa64bdc8bf25",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_tier_a_review_gate_probe.py",
    "class": "test file",
    "level": "WEAKENING",
