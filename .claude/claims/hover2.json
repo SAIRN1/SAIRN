@@ -259,6 +259,22 @@
         ".claude/skills/sairn-hover-auditor/tools-hover2/sf_five_tables_lock_repro.py",
         "docs/defect-density-register.json"
       ]
+    },
+    {
+      "id": "hover2-1791888075",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "batch b18 -- audit role, read-only on platform code except register-add. Re-test 4 open findings (bld_draws, scp_*, sf_ 5-table lock, audit event_type) against hank b6 (6bbafbe3..f6029381). Close UNVERIFIED items from Michael-supplied live-DB SQL facts. rf_schedule sql-sync finding routed to hank. sairncode rotation sweep. Chain tip+token. Handoff+report. FILES: docs/defect-density-register.json .claude/skills/sairn-hover-auditor/tools-hover2/scp_session_gate_repro.py .claude/skills/sairn-hover-auditor/tools-hover2/bld_draws_bypass_repro.py .claude/skills/sairn-hover-auditor/tools-hover2/sf_five_tables_lock_repro.py",
+      "claimed_at": "2026-10-13T10:41:15Z",
+      "claimed_at_epoch": 1791888075.309459,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools-hover2/bld_draws_bypass_repro.py",
+        ".claude/skills/sairn-hover-auditor/tools-hover2/scp_session_gate_repro.py",
+        ".claude/skills/sairn-hover-auditor/tools-hover2/sf_five_tables_lock_repro.py",
+        "docs/defect-density-register.json"
+      ]
     }
   ],
   "refusals": [
