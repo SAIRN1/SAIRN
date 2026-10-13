@@ -86,6 +86,32 @@ GATE = os.path.join('tools', 'sairn_push_gate_hook.py')
 # LIVE means it makes a real network or database request, so it cannot be wired
 # into a hook without making every push talk to the outside world.
 PURPOSES = {
+    'digest_lint.py': ('CHECKER',
+        'a batch digest that is over 150 words or missing one of its six '
+        'schema fields -- STATUS, DECISION-NEEDED, CHANGED, EVIDENCE-path, '
+        'UNVERIFIED, NEXT. Michael set the number after cc\'s b4 digest came '
+        'in at 2,062 words, which is a second report rather than the one '
+        'screen a coordinating session can act on. Field detection is '
+        'anchored at a LINE START, so the word STATUS inside a sentence does '
+        'not satisfy the schema, and one fixture drives exactly that. A '
+        '6-fixture criteria lock RUNS BEFORE EVERY REAL VERDICT, because a '
+        'lint whose own criteria are broken reports a pass it never '
+        'performed. It says out loud what it does NOT check: whether anything '
+        'in the digest is true. Every agent runs it before uploading.'),
+    'open_work_shard.py': ('GENERATOR',
+        'docs/open-work/, one shard per App value plus ACTIVE.md, from '
+        'docs/SAIRN-OPEN-WORK-INDEX.md -- which is 2,380,170 bytes, roughly '
+        '640,000 tokens, and fits no session window. Rows are copied WHOLE '
+        'and verbatim; PR 2.1 forbids editing a row by splitting on a pipe '
+        'and 812 of them is not the place to start. PER-APP SHARDING WAS NOT '
+        'ENOUGH, measured after the first run: platform.md is 838,657 bytes '
+        'against a 400,000 ceiling, because these rows average about 2.9KB. '
+        'So ACTIVE.md carries ONE SHORT LINE per open row with a pointer to '
+        'the shard and line, and never the paragraph. The index is STILL '
+        'CANONICAL -- fourteen tools parse those rows and doc_sha_reseat.py '
+        'rewrites them on every rebase -- so `--check` exists to prove the '
+        'two copies agree row for row, which is the only thing that makes '
+        'two copies safe.'),
     'dup_dom_ids_check.py': ('CHECKER',
         'a DOM id declared twice in the markup of an app file. '
         'getElementById returns the FIRST match, so a duplicate is never '
@@ -2900,7 +2926,39 @@ def build():
     # throughout. The diff caught it; the check never could have.
     tv = closing_error.Traverse(DOC)
     tv.leg('tools on disk', len(tools), 'git ls-files tools/')
-    tv.leg('hook entries', len(hk), SETTINGS)
+    # ── THE HOOK LEG IS OPTIONAL IN A CLONE WHOSE HOOKS ARE OFF ON PURPOSE ──
+    # Michael disabled every hook on 2026-10-11 because they were causing agent
+    # compaction, and on 2026-10-13 the empty object was COMMITTED so no
+    # checkout could put them back. This generator then refused to run at all
+    # -- correctly, by its own rule: "a zero here is a BROKEN READER or a MOVED
+    # SOURCE, not an empty repo". In a disarmed clone it is neither, and the
+    # refusal froze every unrelated correction behind it, which is the cost
+    # closing_error.py's own text warns about.
+    #
+    # optional_leg() IS THE MECHANISM THIS REPO ALREADY BUILT for exactly this
+    # and it REQUIRES a reason, so the allowance cannot become a silence.
+    #
+    # THE CONDITION IS THE SAME ONE hook_integrity_check USES, deliberately --
+    # the `hooks` key must EXIST and be EMPTY and the decision record must be
+    # PRESENT. A half-wired or absent `hooks` key is still a hard leg and still
+    # refuses, which is the 2026-10-11 shape and the one that must never pass.
+    _disarmed = False
+    try:
+        import hook_integrity_check as _hic
+        _disarmed = _hic.intentionally_disarmed(REPO)
+    except Exception:                                            # noqa: BLE001
+        _disarmed = False
+    if _disarmed:
+        tv.optional_leg(
+            'hook entries', len(hk), SETTINGS,
+            'this clone\'s hooks are intentionally EMPTY -- Michael disabled '
+            'them 2026-10-11 because they were causing agent compaction, and '
+            'docs/hooks-disabled-2026-10-13.json records all 23 verbatim. A '
+            'zero here is the DECISION, not a broken reader. A half-wired or '
+            'absent `hooks` key does NOT reach this branch and is still a hard '
+            'leg.')
+    else:
+        tv.leg('hook entries', len(hk), SETTINGS)
     tv.leg('push-gate invocations', len(gi), GATE)
     tv.leg('report-only registry', len(reg), 'report_only_checks.REGISTRY')
     tv.leg('tools invoked by tests/', len(suite), 'tests/**/*.py, *.js')
