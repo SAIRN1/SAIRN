@@ -27925,6 +27925,56 @@
       },
       "citation_note": "Cited for the probe's H0 regression specifically (a check that stopped checking after a legitimate refactor) -- the underlying event_type/CHECK mismatch itself is not cited to any section, same as this commit's own citation_confidence.",
       "factors_unknown_reason": "Named in the summary rather than as structured factors this pass; this record corrects/extends 16245537cc56's own recurrence_open rather than introducing a new root cause."
+    },
+    {
+      "commit": "ee06c61ce14a",
+      "date": "2026-10-13",
+      "subject": "fix(copy-exactly gate): the THIRD gate refusing a push because the REMOTE's sha is not an object in this clone",
+      "files": [
+        "tools/copy_exactly_gate.py"
+      ],
+      "lines_added": 53,
+      "lines_removed": 0,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/copy_exactly_gate.py --pre-push verified its range BASE with rev-parse --verify and refused 'COULD NOT RUN: <sha> does not resolve in this clone, so the range cannot be read and nothing was checked (PR 1.11)'. In --pre-push mode that base is the sha THE REMOTE currently has, read off git's stdin line, so with five sessions pushing one branch it is routinely an object this clone has never fetched -- an ordinary condition, refusing a push that has nothing to do with it. THIRD GATE WITH THIS EXACT SHAPE, and found by it refusing the very next push attempt after the same defect was fixed in tools/register_feed_gate.py at 774cf1d2: the remote tip was bef3f6df, unfetched, and the gate reported it as an unreadable range. Fixed by falling back to merge-base(origin/main, tip) when the base does not resolve, which is ALREADY this file's own pattern nine lines above the site -- a brand-new branch with no remote base compares against origin/main and says so -- and with an unfetched remote tip that base is a SUPERSET of the range asked for, so it judges more commits and never fewer. The TIP stays a hard refusal because it is a LOCAL sha this clone is pushing; the two causes are not folded together.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "e2222a4011d3",
+        "date": "2026-09-26",
+        "subject": "feat(gate): item 43 stops being a convention -- and the first thing it catches is this session's own propagation",
+        "lag_days": 17
+      },
+      "contributing_factors": [
+        {
+          "factor": "the remote sha off the pre-push stdin line was verified as if it were a local object, in a third independent gate",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "merge-base(origin/main, tip) fallback when the base does not resolve, with the cause printed and both shas named"
+        },
+        {
+          "factor": "the same shape was written three times in three gates with no check asking whether a sha read off stdin is a local object",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "a check that flags rev-parse/cat-file/log on a sha taken from pre-push stdin without an existence test -- not written in this batch"
+        },
+        {
+          "factor": "fixing it in one gate moved the refusal to the next gate in .githooks/pre-push rather than clearing it, so the first fix read as ineffective",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "both fixes print a NOTICE naming the gate, so the next refusal is attributable to a different gate rather than to the first fix not working"
+        }
+      ],
+      "recurrence_open": "tools/hover_auditor_scope_gate.py:409 is the third instance and is NOT fixed. It builds rsha..lsha and returns 'could not read the outgoing range' on a non-zero git exit; it runs first in .githooks/pre-push and has passed every push attempt this batch, and it is the auditor separation gate, so it is routed rather than edited. The planned factor above -- a checker for this shape -- is also not written, so a fourth gate can still be authored with it."
     }
   ],
   "started": "2026-09-09",
