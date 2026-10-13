@@ -27108,6 +27108,67 @@
       "factors_unknown_reason": "one policy gap across 19 resources, recorded as one defect with the full table in api/_lib/law-roles.js rather than modelled as structured factors"
     },
     {
+      "commit": "15a8ff9a94a3",
+      "date": "2026-10-13",
+      "subject": "fix(sairnvet): the server backup was READ-DEAD for every page load that began at the sign-in pane, for every SAIRNvet resource",
+      "files": [
+        "api/hydrate-gate-coupling.test.js",
+        "docs/hank-evidence/b5_live_bare_key_probe.out",
+        "docs/hank-evidence/b5_live_bare_key_probe.py",
+        "sairnvet.html"
+      ],
+      "lines_added": 508,
+      "lines_removed": 0,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "svHydrateAll had ONE call site, at script PARSE time, before any PIN was entered -- and api/sd-data.js:13552 gates EVERY SAIRNvet resource (46 of them) on a signed session via if (SV_RESOURCES[resource]), so on any page load that began at the sign-in pane all 46 reads answered 401 NO_SESSION, the per-resource empty catch swallowed each one, svEnterApp did not fetch again, and the server backup was READ-DEAD for the life of that page; broader than the SAIRNfreedom instance that defined the class, where the gate covered 22 of 36",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": "api/hydrate-gate-coupling.test.js",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The hydrate and the gate were each correct when written; the defect is the pair. The inline app-wide gate at api/sd-data.js:13552 made a pre-existing single parse-time call site wrong, so the injection is a commit that was correct for its own change."
+      },
+      "citation_note": "The silent-failure shape is described in prose in the primer and in PR Part 5 but no numbered section states it as a rule, so there is nothing to cite without inventing the citation. The same note was recorded for the SAIRNfreedom instance in b4.",
+      "contributing_factors": [
+        {
+          "factor": "svHydrateAll had exactly ONE call site and it ran when the script was PARSED, before any PIN was entered, while api/sd-data.js:13552 gates EVERY SAIRNvet resource on a signed session",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "svHydrateAfterSignIn() added and wired at the two INTERACTIVE entry points, svGateSignIn and svGateBootstrap. Not at svRestoreSession: that path has its token in sessionStorage before the parse-time call runs and was never broken."
+        },
+        {
+          "factor": "The per-resource catch inside the hydrate is empty, so a 401 produced no console line, no toast and no retry -- and the outer promise never rejected, so the warning written for exactly this case could not fire",
+          "kind": "technical",
+          "action_status": "declined",
+          "note": "The empty catch is LEFT. It is correct for its real purpose: one unprovisioned table must not abort the other 45 reads. Removing it would trade a silent refusal for a broken hydrate. The fix is the second call site, which is what the SAIRNfreedom instance also did."
+        },
+        {
+          "factor": "The file's own comment at sairnvet.html:10018 asserted that svHydrateAll runs at sign-in and nowhere else, which is the opposite of the truth -- so a reader checking this exact question would have been reassured by the one sentence that was wrong",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The sentence is corrected in place with the correction kept rather than the claim deleted, so the next reader sees that it was relied on and was false."
+        },
+        {
+          "factor": "The platform had no check coupling a gate to the client that reads through it, so the SAIRNfreedom instance was found by hand and this one would have been too",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/hydrate-gate-coupling.test.js sweeps all nine apps with a hydrate and fails on any app with a gated resource AND a parse-time-only hydrate AND a swallowing catch. Its vacuity arm is driven against synthetic fixtures in both directions rather than against a real app being broken, after the first version retired itself the moment SAIRNvet was fixed."
+        },
+        {
+          "factor": "The first three drafts of that sweep each had a detector bug that would have cleared a real defect -- a comment stripper that consumed thousands of lines, a lookbehind that excluded window.fn() calls, and an intersection against SD_SESSION_GATED alone which missed SAIRNvet's inline app-wide gate entirely",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "All three are recorded at the function that made them rather than silently fixed. The third is the one that matters: the suite written to find this defect CLEARED the only live instance of it, and it now detects <PREFIX>_RESOURCES[resource] app-wide gates too."
+        }
+      ],
+      "recurrence_open": "The empty per-resource catch is deliberately LEFT, so the failure mode still exists for any future app that acquires a gate without a post-sign-in hydrate -- which is exactly what the new coupling suite now fails on. Two apps remain two-of-three (swallowing catch plus parse-time call) and are safe only because nothing they hydrate is gated; the suite names them on every run. And the coupling suite reads SOURCE, not a rendered page: it cannot prove the hydrate works, only that the three conditions are not all present."
+    },
+    {
       "commit": "23d0f73ce221",
       "date": "2026-10-13",
       "subject": "fix(tier A gate): a batch REPORT that explains a Tier A finding was being read as code serving one -- and the override log shows how everyone else has been getting past it",
@@ -27199,6 +27260,128 @@
       "factors_unknown_reason": "one reasoning gap shared by two probes plus one cleanup leak in the new helper, recorded as one record naming all three"
     },
     {
+      "commit": "501bcd150db8",
+      "date": "2026-10-13",
+      "subject": "fix(tests,tier-a): a deliberate tripwire had been firing for as long as the gate it watches existed, and it found a FIFTH gate mechanism nobody had catalogued",
+      "files": [
+        "api/audit-shape-pinning.test.js",
+        "api/sd-data-cross-tenant-dispatchers.test.js",
+        "docs/2026-10-13-hank-sd-data-inventory.md",
+        "docs/2026-10-13-hank-sf-officers-server-guard-design.md",
+        "docs/2026-10-13-hank-tier-a-routing.md",
+        "docs/tier-a-reviews.json"
+      ],
+      "lines_added": 795,
+      "lines_removed": 10,
+      "app": "sairngrounds",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "api/sd-data-cross-tenant-dispatchers.test.js carried a section with app:null as a deliberate tripwire so that a gate arriving on six Tier A SAIRNgrounds resources could not pass unnoticed; the tripwire FIRED and nobody updated the config, so 14 arms reported UNREACHED on 401 NO_SESSION for as long as the gate had existed and those six resources had NO tenant-isolation coverage at all -- and the gate turned out to be a FIFTH mechanism nobody had catalogued, a named set plus hasOwnProperty pre-dispatch at api/sd-data.js:4343-4366 covering 21 resources, invisible to every scan keyed on the other four",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The tripwire was correct when written and the gate was correct when added; the defect is that firing a tripwire produces a red suite, and nothing read it as a signal. There is no single commit that broke anything."
+      },
+      "contributing_factors": [
+        {
+          "factor": "The suite section carried app:null as a deliberate tripwire so that an arriving gate could not pass unnoticed, and the tripwire fired -- but firing produces a RED SUITE, and a red suite in a repo with a known-red register is indistinguishable from the other 75 red suites",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Config re-pointed to app sairngrounds, role superintendent. The suite went 405 passed 14 failed to 419 passed 0 failed, and the six resources' tenant isolation is tested for the first time since the gate landed."
+        },
+        {
+          "factor": "The gate is a FIFTH mechanism -- a named set plus hasOwnProperty, pre-dispatch at api/sd-data.js:4343-4366 -- and the branches themselves still go straight from the resource test to the fetch, so the section's stale paragraph was right about the branches and about SD_SESSION_GATED while being wrong about the gate",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "All five mechanisms are now catalogued in docs/2026-10-13-hank-sd-data-inventory.md and named in the suite section itself, so the next scan starts from five rather than one."
+        },
+        {
+          "factor": "My own b5 inventory classified those six resources NO GATE FOUND and my own b5 hydrate sweep classified sairngrounds as ungated, because both were keyed on the four mechanisms known at the time",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Both corrected in the same batch. The inventory now reports NO GATE FOUND as an explicit THIRD STATE rather than a verdict, so a future unknown mechanism surfaces as unclassified instead of as a clean bill."
+        },
+        {
+          "factor": "Nothing distinguishes a tripwire firing from a suite that is simply red, so a correct signal sat in a register of known-red suites and cost six Tier A resources their isolation coverage",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "A convention for marking tripwire sections so their red is read differently from ordinary red is a real idea and is not mine to add: docs/known-red-suites.json is the register that would carry the distinction and it is maintained by another session. Routed in the batch digest rather than recorded as a planned action with no owner."
+        }
+      ],
+      "recurrence_open": "The section is no longer a tripwire -- it now tests tenant isolation with a real session, which is the suite's actual subject. So the ARRIVAL of a future gate on those resources is held only by GRD_SESSION_RESOURCES being 21 names in one place, not by any arm. And the general problem is untouched: a tripwire firing is still indistinguishable from an ordinary red suite, which is what cost six resources their coverage here."
+    },
+    {
+      "commit": "54ead33fef5e",
+      "date": "2026-10-13",
+      "subject": "fix(external files): a handoff under the Drive report directory WARNS now; an undeclared tool or script still blocks",
+      "files": [
+        "tests/run_external_file_index_probe.py",
+        "tools/external_file_index_check.py"
+      ],
+      "lines_added": 168,
+      "lines_removed": 6,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "live-verification",
+      "summary": "tools/external_file_index_check.py refused a push for every handoff any session wrote to `G:/My Drive/SAIRN-status`, which is declared non-transient. MEASURED: five push refusals in ONE session over SIX files, none of them belonging to the session being refused -- two handoffs, then two different ones forty minutes later, then one, then one, then one, each refusal cleared only for the next to arrive. TWICE the PreToolUse half denied the whole compound command, so the edit that would have cleared the refusal never ran and the commit in the same command never happened: a gate that blocks the repair of its own finding is a loop rather than strictness. And it was already being paid for in blanket overrides -- docs/BYPASS-LOG.jsonl carries 93 rows, mostly `SAIRN_SEED_GATE=off`, which switches off EVERY check in the push. A handoff-shaped `.md` under that one directory now WARNS; an undeclared tool or script still BLOCKS, which is what the check was built for.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "8acd789616e7",
+        "date": "2026-10-11",
+        "subject": "feat(external files): a REAL HANDOFF sat outside git for four and a half months, and now a gate refuses the next one",
+        "lag_days": 2
+      },
+      "citation_note": "No process rule produced this. The defect is a gate whose finding nobody could act on -- the file belonged to another session every time -- and SAIRN-PROCESS-RULES.md has no rule about the actionability of a finding. Recorded as a gap rather than cited loosely.",
+      "contributing_factors": [
+        {
+          "factor": "G:/My Drive/SAIRN-status is declared non-transient, so EVERY handoff written there had to be named individually in the index or it refused the next push from EVERY clone -- while four other sessions write handoffs there continuously.",
+          "kind": "technical",
+          "action": "A handoff-shaped .md under that one directory now WARNS. An undeclared tool or script anywhere, including there, still BLOCKS.",
+          "action_status": "done"
+        },
+        {
+          "factor": "MEASURED, NOT ESTIMATED: five push refusals in one session over six files, none of them belonging to the session being refused. Two handoffs, then two different ones forty minutes later, then one, then one, then one -- each refusal cleared only for the next handoff to arrive.",
+          "kind": "detection",
+          "action": "Recorded in the index's own cc-block limits with all five instances dated, and the b4 report carries the sequence.",
+          "action_status": "done"
+        },
+        {
+          "factor": "TWICE THE PreToolUse HALF DENIED THE WHOLE COMPOUND COMMAND, so the edit that would have cleared the refusal never ran and the commit in the same command never happened. A gate that blocks the repair of its own finding is a loop, not strictness.",
+          "kind": "technical",
+          "action": "Not fixed in the gate -- the compound-command behaviour is the harness's. Recorded as the reason the relief was needed rather than left as an anecdote.",
+          "action_status": "declined",
+          "note": "Nothing in this tool can change how a PreToolUse hook interacts with a compound command. The usable mitigation is procedural and is in the handoff: issue the push, and any gate repair, as its own top-level command."
+        },
+        {
+          "factor": "docs/BYPASS-LOG.jsonl carries 93 rows, mostly the BLANKET SAIRN_SEED_GATE=off form which switches off EVERY check in the push. So a false positive on one path was already costing the credential scanner, the seed check and the register feed.",
+          "kind": "latent-condition",
+          "action": "The design for a per-gate named skip with a required reason is in docs/2026-10-13-per-gate-skip-design.md. DESIGN ONLY, as instructed.",
+          "action_status": "planned",
+          "note": "Needs Michael's approval before any code. It is now the ONLY available control, because the b5 permission work measured that no permission rule can reach SAIRN_SEED_GATE=off."
+        },
+        {
+          "factor": "The relief could easily have leaked. A handoff name anywhere else, or a script in that directory, must still refuse -- and an exemption scoped to a filename rather than a path would have opened both.",
+          "kind": "detection",
+          "action": "Scoped three ways (name, extension, path) with 6 of the 12 new probe arms driving the boundaries, plus an end-to-end pair planting both shapes in the real directory.",
+          "action_status": "done"
+        }
+      ],
+      "recurrence_open": "OPEN in two directions. The declared-directory model has no notion of a file class that is expected to arrive continuously, so the next shared output directory will behave the same way. And the compound-command denial is the harness's behaviour, not this tool's: any gate wired as a PreToolUse hook can still deny the command that would fix its own finding."
+    },
+    {
       "commit": "5b2ff5415e51",
       "date": "2026-10-13",
       "subject": "fix(sairnsenior): the seq965 redaction landed on the roster and not on the compliance panel or the CSV export, so both reported \"no background check on file\" for every caregiver",
@@ -27254,67 +27437,6 @@
         }
       ],
       "recurrence_open": "The fix is three guarded renders, each consulting senIsManagement() independently; nothing couples them to the server's SEN_CAREGIVER_HR_FIELD_ROLES, so a fourth render added later is unguarded by default and a change to the server tier fails nothing. The new arms catch a MISSING guard on an EXISTING render, not a new render. Also the write branch's gate is a differently-named set whose membership happens to equal the read's, which is what makes the round-trip-wipe argument hold, and nothing enforces that equality."
-    },
-    {
-      "commit": "15a8ff9a94a3",
-      "date": "2026-10-13",
-      "subject": "fix(sairnvet): the server backup was READ-DEAD for every page load that began at the sign-in pane, for every SAIRNvet resource",
-      "files": [
-        "api/hydrate-gate-coupling.test.js",
-        "docs/hank-evidence/b5_live_bare_key_probe.out",
-        "docs/hank-evidence/b5_live_bare_key_probe.py",
-        "sairnvet.html"
-      ],
-      "lines_added": 508,
-      "lines_removed": 0,
-      "app": "sairnvet",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "static-checker",
-      "summary": "svHydrateAll had ONE call site, at script PARSE time, before any PIN was entered -- and api/sd-data.js:13552 gates EVERY SAIRNvet resource (46 of them) on a signed session via if (SV_RESOURCES[resource]), so on any page load that began at the sign-in pane all 46 reads answered 401 NO_SESSION, the per-resource empty catch swallowed each one, svEnterApp did not fetch again, and the server backup was READ-DEAD for the life of that page; broader than the SAIRNfreedom instance that defined the class, where the gate covered 22 of 36",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": "api/hydrate-gate-coupling.test.js",
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The hydrate and the gate were each correct when written; the defect is the pair. The inline app-wide gate at api/sd-data.js:13552 made a pre-existing single parse-time call site wrong, so the injection is a commit that was correct for its own change."
-      },
-      "citation_note": "The silent-failure shape is described in prose in the primer and in PR Part 5 but no numbered section states it as a rule, so there is nothing to cite without inventing the citation. The same note was recorded for the SAIRNfreedom instance in b4.",
-      "contributing_factors": [
-        {
-          "factor": "svHydrateAll had exactly ONE call site and it ran when the script was PARSED, before any PIN was entered, while api/sd-data.js:13552 gates EVERY SAIRNvet resource on a signed session",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "svHydrateAfterSignIn() added and wired at the two INTERACTIVE entry points, svGateSignIn and svGateBootstrap. Not at svRestoreSession: that path has its token in sessionStorage before the parse-time call runs and was never broken."
-        },
-        {
-          "factor": "The per-resource catch inside the hydrate is empty, so a 401 produced no console line, no toast and no retry -- and the outer promise never rejected, so the warning written for exactly this case could not fire",
-          "kind": "technical",
-          "action_status": "declined",
-          "note": "The empty catch is LEFT. It is correct for its real purpose: one unprovisioned table must not abort the other 45 reads. Removing it would trade a silent refusal for a broken hydrate. The fix is the second call site, which is what the SAIRNfreedom instance also did."
-        },
-        {
-          "factor": "The file's own comment at sairnvet.html:10018 asserted that svHydrateAll runs at sign-in and nowhere else, which is the opposite of the truth -- so a reader checking this exact question would have been reassured by the one sentence that was wrong",
-          "kind": "process",
-          "action_status": "done",
-          "action": "The sentence is corrected in place with the correction kept rather than the claim deleted, so the next reader sees that it was relied on and was false."
-        },
-        {
-          "factor": "The platform had no check coupling a gate to the client that reads through it, so the SAIRNfreedom instance was found by hand and this one would have been too",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "api/hydrate-gate-coupling.test.js sweeps all nine apps with a hydrate and fails on any app with a gated resource AND a parse-time-only hydrate AND a swallowing catch. Its vacuity arm is driven against synthetic fixtures in both directions rather than against a real app being broken, after the first version retired itself the moment SAIRNvet was fixed."
-        },
-        {
-          "factor": "The first three drafts of that sweep each had a detector bug that would have cleared a real defect -- a comment stripper that consumed thousands of lines, a lookbehind that excluded window.fn() calls, and an intersection against SD_SESSION_GATED alone which missed SAIRNvet's inline app-wide gate entirely",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "All three are recorded at the function that made them rather than silently fixed. The third is the one that matters: the suite written to find this defect CLEARED the only live instance of it, and it now detects <PREFIX>_RESOURCES[resource] app-wide gates too."
-        }
-      ],
-      "recurrence_open": "The empty per-resource catch is deliberately LEFT, so the failure mode still exists for any future app that acquires a gate without a post-sign-in hydrate -- which is exactly what the new coupling suite now fails on. Two apps remain two-of-three (swallowing catch plus parse-time call) and are safe only because nothing they hydrate is gated; the suite names them on every run. And the coupling suite reads SOURCE, not a rendered page: it cannot prove the hydrate works, only that the three conditions are not all present."
     },
     {
       "commit": "98f33b675d97",
@@ -27403,62 +27525,69 @@
       "factors_unknown_reason": "Named in the commit body rather than as structured factors this pass."
     },
     {
-      "commit": "501bcd150db8",
+      "commit": "c2c4aa7bad9e",
       "date": "2026-10-13",
-      "subject": "fix(tests,tier-a): a deliberate tripwire had been firing for as long as the gate it watches existed, and it found a FIFTH gate mechanism nobody had catalogued",
+      "subject": "fix(defect register): a fully-superseded register is a CLOSED state, so --reseat stops exiting 1 forever in every clone",
       "files": [
-        "api/audit-shape-pinning.test.js",
-        "api/sd-data-cross-tenant-dispatchers.test.js",
-        "docs/2026-10-13-hank-sd-data-inventory.md",
-        "docs/2026-10-13-hank-sf-officers-server-guard-design.md",
-        "docs/2026-10-13-hank-tier-a-routing.md",
-        "docs/tier-a-reviews.json"
+        "tests/run_defect_register_superseded_probe.py",
+        "tools/defect_register.py"
       ],
-      "lines_added": 795,
-      "lines_removed": 10,
-      "app": "sairngrounds",
-      "layer": "test",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "api/sd-data-cross-tenant-dispatchers.test.js carried a section with app:null as a deliberate tripwire so that a gate arriving on six Tier A SAIRNgrounds resources could not pass unnoticed; the tripwire FIRED and nobody updated the config, so 14 arms reported UNREACHED on 401 NO_SESSION for as long as the gate had existed and those six resources had NO tenant-isolation coverage at all -- and the gate turned out to be a FIFTH mechanism nobody had catalogued, a named set plus hasOwnProperty pre-dispatch at api/sd-data.js:4343-4366 covering 21 resources, invisible to every scan keyed on the other four",
+      "lines_added": 57,
+      "lines_removed": 5,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "live-verification",
+      "summary": "tools/defect_register.py: `--reseat` exited 1 FOREVER, in every clone, once any record carried a verified `superseded_by` pointer. The four pointers written on 2026-10-12 made every subsequent run report 'nothing re-seated: 4 record(s) are SUPERSEDED ... that is not a no-op to report as success'. That sentence was right about a DIFFERENT situation: a record is superseded only once `--supersede` has written a pointer to a survivor that EXISTS and is an ancestor of the branch, and `--check` re-validates every one on every run, so there is nothing left for a non-zero exit to prompt. A recurring finding nobody can act on is how a checker gets switched off -- the failure class this file's own header is about. A COLLISION or a dangling SHA still exits 1, because those do need a human, and the message says so.",
       "rules": [
         "1.1"
       ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
       "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "unknown_reason": "The tripwire was correct when written and the gate was correct when added; the defect is that firing a tripwire produces a red suite, and nothing read it as a signal. There is no single commit that broke anything."
+        "commit": "9b0bfd512250",
+        "date": "2026-10-12",
+        "subject": "fix(claim matcher): the declared FILES set is the PRIMARY mode -- two words about WHEN work happens stopped refusing a claim that had already said in paths WHAT it touches",
+        "lag_days": 1
       },
+      "citation_note": "1.1 is 'a check that stopped checking', cited for the class one step along: this check had not stopped checking, it had started reporting a resolved state as an outstanding one, which ends the same way -- a signal nobody reads.",
       "contributing_factors": [
         {
-          "factor": "The suite section carried app:null as a deliberate tripwire so that an arriving gate could not pass unnoticed, and the tripwire fired -- but firing produces a RED SUITE, and a red suite in a repo with a known-red register is indistinguishable from the other 75 red suites",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Config re-pointed to app sairngrounds, role superintendent. The suite went 405 passed 14 failed to 419 passed 0 failed, and the six resources' tenant isolation is tested for the first time since the gate landed."
-        },
-        {
-          "factor": "The gate is a FIFTH mechanism -- a named set plus hasOwnProperty, pre-dispatch at api/sd-data.js:4343-4366 -- and the branches themselves still go straight from the resource test to the fetch, so the section's stale paragraph was right about the branches and about SD_SESSION_GATED while being wrong about the gate",
+          "factor": "The refusal was correct for a world where nothing could WRITE superseded_by -- a hand-typed pointer deserved suspicion. A writer landed on 2026-10-12 with a validator that checks the survivor EXISTS and is an ancestor of the branch, and --check re-validates every pointer on every run, so the state stopped being suspicious and the exit code did not follow.",
           "kind": "technical",
-          "action_status": "done",
-          "action": "All five mechanisms are now catalogued in docs/2026-10-13-hank-sd-data-inventory.md and named in the suite section itself, so the next scan starts from five rather than one."
+          "action": "nothing-outstanding is now exit 0, with the records still named one per line and the count still printed.",
+          "action_status": "done"
         },
         {
-          "factor": "My own b5 inventory classified those six resources NO GATE FOUND and my own b5 hydrate sweep classified sairngrounds as ungated, because both were keyed on the four mechanisms known at the time",
+          "factor": "MEASURED CONSEQUENCE: the four pointers written on 2026-10-12 made --reseat exit 1 in every clone, on every run, permanently. A recurring finding nobody can act on is how a checker gets switched off, which is the failure class this file's own header is about.",
           "kind": "detection",
-          "action_status": "done",
-          "action": "Both corrected in the same batch. The inventory now reports NO GATE FOUND as an explicit THIRD STATE rather than a verdict, so a future unknown mechanism surfaces as unclassified instead of as a clean bill."
+          "action": "Same change. The message now says 'nothing is outstanding' in those words rather than leaving a reader to infer it from a zero.",
+          "action_status": "done"
         },
         {
-          "factor": "Nothing distinguishes a tripwire firing from a suite that is simply red, so a correct signal sat in a register of known-red suites and cost six Tier A resources their isolation coverage",
+          "factor": "A COLLISION and a dangling SHA look like the same no-op from the outside and are not: those need a human. Folding all three into one exit code is what made the signal useless in both directions.",
+          "kind": "technical",
+          "action": "Only the all-superseded case changed; collision and dangling still exit 1, and the message says so out loud so the relief cannot be read as blanket.",
+          "action_status": "done"
+        },
+        {
+          "factor": "An ARM encoded the old contract and had to change with it. Changing an arm to make a suite pass is the thing this platform refuses, so the change is declared in the file, the two arms either side are UNCHANGED (the record is not re-seated, and it is still NAMED as superseded), and two new arms pin the new message and the retained collision behaviour.",
+          "kind": "process",
+          "action": "25/25 arms, up from 23/23. The expectation change is commented at the arm with its reasoning.",
+          "action_status": "done"
+        },
+        {
+          "factor": "The same argument was accepted for tools/external_file_index_check.py on the same day, for the same reason -- a gate that fires on something nobody can act on gets overridden rather than satisfied. Two tools reached the same failure independently within hours.",
           "kind": "latent-condition",
-          "action_status": "declined",
-          "note": "A convention for marking tripwire sections so their red is read differently from ordinary red is a real idea and is not mine to add: docs/known-red-suites.json is the register that would carry the distinction and it is maintained by another session. Routed in the batch digest rather than recorded as a planned action with no owner."
+          "action": "Not generalised. There is no check that asks of a checker whether its findings are actionable.",
+          "action_status": "planned",
+          "note": "A convention candidate rather than code: a finding a reader cannot act on is a finding that will be switched off. Not promoted out of my own defect -- that is the shape convention 11 refuses."
         }
       ],
-      "recurrence_open": "The section is no longer a tripwire -- it now tests tenant isolation with a real session, which is the suite's actual subject. So the ARRIVAL of a future gate on those resources is held only by GRD_SESSION_RESOURCES being 21 names in one place, not by any arm. And the general problem is untouched: a tripwire firing is still indistinguishable from an ordinary red suite, which is what cost six resources their coverage here."
+      "recurrence_open": "OPEN. Nothing asks of a checker whether its findings are ACTIONABLE, and two tools reached this same failure independently within hours on 2026-10-13 -- this one and tools/external_file_index_check.py. The next permanently-red checker looks exactly like these two did."
     }
   ],
   "started": "2026-09-09",
