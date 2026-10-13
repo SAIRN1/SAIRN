@@ -68,6 +68,51 @@ EXIT_COULD_NOT_RUN = 2
 TRACKED_EXT = ('.py', '.js', '.sh', '.ps1')
 HANDOFF_HINTS = ('handoff', 'HANDOFF')
 
+# ── THE DIRECTORY WHERE A HANDOFF IS A WARNING, NOT A REFUSAL ──────────────
+# Decided by Michael on 2026-10-13 after this check refused FIVE pushes in one
+# session over SIX files, none of them belonging to the session being refused.
+# Measured, in order: two handoffs, then two different ones forty minutes
+# later, then one, then one, then one -- each refusal cleared only for the next
+# handoff to arrive. Twice the PreToolUse half denied the whole compound
+# command, so the edit that would have cleared the refusal never ran.
+#
+# A gate that must be hand-fed on every push, for files four other sessions
+# write continuously, is a gate that gets OVERRIDDEN rather than satisfied, and
+# docs/BYPASS-LOG.jsonl carries 93 rows proving that is not hypothetical --
+# mostly the BLANKET form, which switches off every other check in the push.
+#
+# SO A HANDOFF-SHAPED NAME UNDER THIS ONE DIRECTORY WARNS. Everything else
+# about this check is unchanged: an undeclared TOOL or SCRIPT anywhere,
+# including here, still BLOCKS. That is what the check was built for -- a
+# generator nobody can find -- and it is the half that was never the problem.
+#
+# NO OVERRIDE FLAG, deliberately. A flag is a thing somebody passes on every
+# run until it means nothing; this is a narrowing of what the check CLAIMS,
+# which is the honest version of the same relief.
+WARN_ONLY_DIRS = (
+    os.path.join('G:', os.sep, 'My Drive', 'SAIRN-status'),
+)
+
+
+def is_handoff_name(path):
+    """A handoff-shaped .md name. NOT a tool and NOT a script.
+
+    Deliberately the same test the UNINDEXED classifier already uses for the
+    handoff half, so the two cannot drift into disagreeing about what a handoff
+    is -- which would make one of them wrong in silence.
+    """
+    base = os.path.basename(path)
+    return (any(h in base for h in HANDOFF_HINTS)
+            and base.lower().endswith('.md'))
+
+
+def warn_only(path):
+    """Is this an unindexed finding that WARNS instead of blocking?"""
+    if not is_handoff_name(path):
+        return False
+    n = norm(path)
+    return any(n.startswith(norm(d)) for d in WARN_ONLY_DIRS)
+
 SCHEMA = """{
  "_what_this_is": "...",
  "agents": {
@@ -347,17 +392,41 @@ def main(argv=None):
         for p, _st, why in missing:
             print('  ? %s -- %s' % (p, why))
 
-    if unindexed:
+    # THE SPLIT IS APPLIED HERE AND NOWHERE ELSE, so the classifier above still
+    # reports every unindexed file and only the EXIT CODE changes for the
+    # handoff class. A file that stopped being COUNTED would be a file nobody
+    # ever hears about again, which is a worse trade than the one being made.
+    warn = [r for r in unindexed if warn_only(r[0])]
+    block = [r for r in unindexed if not warn_only(r[0])]
+
+    if warn:
+        print('\n%d UNINDEXED HANDOFF(S) under a warn-only directory -- '
+              'REPORTED, NOT BLOCKING.' % len(warn))
+        for p, _st, _why in warn[:40]:
+            print('  ~ %s' % p)
+        if len(warn) > 40:
+            print('  ... and %d more' % (len(warn) - 40))
+        print('  Declaring them in %s is still worth doing -- a handoff nobody '
+              'can find is\n  worse than no handoff. It no longer refuses a '
+              'push, per Michael 2026-10-13.' % os.path.relpath(idx, REPO))
+
+    if block:
         print('\n%d UNINDEXED work file(s) under a declared external directory. '
-              'Each is a tool,\nscript or handoff that no other session can '
-              'find:' % len(unindexed))
-        for p, _st, _why in unindexed[:40]:
+              'Each is a tool\nor script that no other session can find:'
+              % len(block))
+        for p, _st, _why in block[:40]:
             print('  ! %s' % p)
-        if len(unindexed) > 40:
-            print('  ... and %d more' % (len(unindexed) - 40))
+        if len(block) > 40:
+            print('  ... and %d more' % (len(block) - 40))
         print('\nEither commit it, or add it to %s with a purpose.'
               % os.path.relpath(idx, REPO))
         return 1
+
+    if warn:
+        print('\nNO BLOCKING FINDING -- the only unindexed files are handoffs '
+              'under a warn-only\ndirectory. An undeclared tool or script would '
+              'still refuse this push.')
+        return 0
 
     print('\nCLEAN -- every work file under a declared external directory is '
           'either git-tracked\nor named in the index.')

@@ -245,8 +245,36 @@ try:
                  reg_text(d) == pre, True))
     arms.append(('--reseat names it as SUPERSEDED rather than silently skipping',
                  'SUPERSEDED by' in out, True))
-    arms.append(('--reseat does NOT report success over it',
-                 ('re-seated 1 record(s).' in out, rc), (False, 1)))
+    # ── THIS ARM'S EXPECTATION CHANGED ON 2026-10-13, AND IT IS A CONTRACT
+    #    CHANGE RATHER THAN AN ARM BENT TO PASS ────────────────────────────
+    # It asserted `rc == 1`: a superseded record meant --reseat must not report
+    # success. That was right while nothing could WRITE the field -- a
+    # hand-edited pointer deserved suspicion. It is wrong now: a record is
+    # superseded only once `--supersede` has written a pointer to a survivor
+    # that EXISTS and is an ancestor of the branch, and `--check` validates
+    # every one on every run. There is nothing outstanding for a non-zero exit
+    # to prompt.
+    #
+    # THE MEASURED COST OF LEAVING IT AT 1: the four pointers written on
+    # 2026-10-12 made --reseat exit 1 in every clone on every run,
+    # permanently. A recurring finding nobody can act on is how a checker gets
+    # switched off, and this file's own header is about exactly that class.
+    #
+    # WHAT STOPS THIS BEING A WEAKENING is the pair of arms around it, both
+    # unchanged: the record is NOT re-seated (the file is byte-identical), and
+    # it is NAMED as SUPERSEDED rather than silently skipped. The two arms
+    # below keep the other half -- a COLLISION and a dangling SHA still exit 1,
+    # because those do need a human.
+    arms.append(('--reseat reports NO RE-SEAT and exits 0 over a record whose '
+                 'survivor is verified -- a closed state is not an outstanding '
+                 'one (contract changed 2026-10-13)',
+                 ('re-seated 1 record(s).' in out, rc), (False, 0)))
+    arms.append(('...and it says NOTHING IS OUTSTANDING in those words, so a '
+                 'reader is not left inferring it from a zero',
+                 'nothing is outstanding' in out, True))
+    arms.append(('...and it still says a COLLISION or a dangling SHA would '
+                 'exit 1, so the relief cannot be read as blanket',
+                 'would still exit 1' in out, True))
 
     # ── ARM 7: the control. WITHOUT the field, the same record IS re-seated,
     # so arm 6 is measuring the field rather than a broken reseat.

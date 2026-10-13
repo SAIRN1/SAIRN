@@ -1,0 +1,21 @@
+DIGEST cc b5
+
+STATUS: landed 6bd9239f, 7 commits, 41 files changed, 3523 insertions(+), 215 deletions(-) across 41 files; origin/main
+  left/right 0	7. Hooks committed empty; permission rules live and tested.
+
+DECISION-NEEDED: SAIRN_SEED_GATE=off cannot be stopped by any permission rule
+  -- measured, both as a deny and as a fall-out-of-allow. Approve the per-gate
+  skip design before any code. Also 17 Tier A obligations, all overdue.
+
+CHANGED: hooks disarmed and committed; 75 deny / 79 allow rules; Drive
+  handoffs warn not block; digest_lint; E9 and leg_invoices fixtures isolated;
+  superseded register is a closed state; 2.38MB index sharded + ACTIVE.md.
+
+EVIDENCE-path: SAIRN-report-cc-b5.txt, docs/2026-10-13-cc-routed-b5.md,
+  docs/handoff-cc-2026-10-13.md, docs/2026-10-13-per-gate-skip-design.md.
+
+UNVERIFIED: the permission rules in the four other clones -- only this one was
+  driven. The 14 open-work row parsers still read the index, not the shards.
+
+NEXT: release the cc claim; Michael approves the skip design; agents fetch and
+  rebase to take the rules.

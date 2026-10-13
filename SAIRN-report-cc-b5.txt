@@ -1,0 +1,549 @@
+REPORT cc b5
+================================================================================
+SAIRN -- cc -- BATCH b5                                       2026-10-13
+================================================================================
+
+GIT STATE
+  HEAD at close   6bd9239f
+  origin/main     left/right 0	7   (left = behind, right = ahead)
+  diffstat        41 files changed, 3523 insertions(+), 215 deletions(-)   across 41 file(s)
+  rebases         ONE, onto origin/main at 69 behind. Ledger conflicts resolved
+                  by tools/sairn_rebase_resolve.py, which is the tool built for
+                  them -- not by taking origin's copy, which cost two rounds in
+                  b4.
+
+  OUTGOING COMMITS, read with `git log origin/main..HEAD`:
+
+    6bd9239f docs(routing): Rule E routed to ted with the next free number, and the 15 field findings re-derived -- every sd-data.js citation had moved
+    04c27cc1 feat(open work): shard the 2.38MB index into per-app files plus an ACTIVE index, with a check that proves no row was lost
+    c2c4aa7b fix(defect register): a fully-superseded register is a CLOSED state, so --reseat stops exiting 1 forever in every clone
+    4f6f03f9 feat(digest lint) + fix(two probe fixtures): a 150-word ceiling with six fields, E9 isolated from the live register, and the phantom-obligation fixture renamed
+    54ead33f fix(external files): a handoff under the Drive report directory WARNS now; an undeclared tool or script still blocks
+    39224920 feat(permissions): mechanical deny/allow rules so Michael stops being prompted and nothing risky passes -- with the two parts that are NOT expressible named rather than faked
+    ab919080 chore(hooks): COMMIT the empty hooks object, so no clone, reset or rebase puts them back
+
+  THE SIXTEEN LARGEST FILE CHANGES, from `git diff --numstat`:
+
+    tools/open_work_shard.py                             +421    -0
+    docs/open-work/ACTIVE.md                             +397    -0
+    docs/2026-10-13-cc-routed-b5.md                      +295    -0
+    docs/open-work/platform.md                           +273    -0
+    docs/hooks-disabled-2026-10-13.json                  +185    -0
+    tools/digest_lint.py                                 +183    -0
+    docs/open-work/tooling.md                            +170    -0
+    .claude/settings.json                                +155    -197
+    docs/2026-10-13-per-gate-skip-design.md              +153    -0
+    docs/open-work/sairnlaw.md                           +111    -0
+    tools/hook_integrity_check.py                        +105    -5
+    tests/run_external_file_index_probe.py               +93     -0
+    tests/run_hook_integrity_probe.py                    +90     -0
+    tests/run_defect_register_probe.py                   +79     -0
+    tools/external_file_index_check.py                   +75     -6
+    docs/open-work/stonedesk.md                          +69     -0
+
+================================================================================
+ITEM 1 -- THE HOOKS. OFF, AND NOW COMMITTED OFF.
+================================================================================
+
+Michael cleared the hooks on 2026-10-11 because they were causing agent
+compaction. On 2026-10-12 this session RESTORED 23 of them from HEAD, before
+being told, and reported it as a finding. That was wrong, and this item is the
+correction.
+
+WHAT WAS DONE
+  * .claude/settings.json now carries `hooks: {}` AND IT IS COMMITTED. Left as
+    a working-tree edit it is one `git checkout`, reset, rebase or fresh clone
+    away from being silently replaced by the 23 committed commands -- which is
+    exactly how the restoration happened. HEAD now matches the decision.
+  * docs/hooks-disabled-2026-10-13.json carries all 23 verbatim, by event
+    (PostToolUse 2, PreToolUse 3, PreCompact 1, SessionStart 1,
+    UserPromptSubmit 1), with who disabled them, when, why, and a note that
+    restoring them is NOT an instruction.
+
+THE CHECK NOW CALLS IT A DECISION, AND THE NARROWNESS IS THE DESIGN.
+`hook_integrity_check.py --wiring-only` prints INTENTIONALLY DISARMED and exits
+0 only when BOTH hold: the `hooks` key EXISTS and is EMPTY, and
+docs/hooks-disabled-2026-10-13.json is PRESENT. Without that record an empty
+object is just an empty object, and accepting it would be the self-certifying
+exemption this file refuses everywhere else.
+
+STILL REPORTED AS DRIFT, each driven as its own probe arm:
+  * a `hooks` key MISSING ENTIRELY -- a different settings file, not a
+    disarmed one;
+  * a HALF-WIRED object -- which is the exact 2026-10-11 shape, one empty
+    event against 23 real commands;
+  * an object with a real entry.
+
+THE FULL RUN NEEDED THE SAME TREATMENT AND GOT A NARROWER VERSION.
+invoked_tools() derives its set from the hook files and the wiring, so emptying
+the hooks made 17 manifest tools report "no longer hashed" plus 4 WIRING rows:
+21 rows restating the decision. They now print on their OWN channel, EXPECTED
+UNDER THE HOOK-DISABLING DECISION, counted as neither findings nor could-not.
+
+AND THE FIRST DRAFT OF THAT PUT THEM IN could_not AND THE RUN EXITED 2. That is
+false -- the check ran and compared everything. Exit 2 is for "nothing was
+checked", and overloading it would make a working run look broken, which is the
+defect that file's own header is about. A tool is only excused if its FILE IS
+STILL ON DISK, measured rather than assumed.
+
+NOT EXCUSED, AND STILL RED: 7 `TOOL x CHANGED IN A COMMIT AND THE MANIFEST WAS
+NOT REGENERATED` rows, plus one self-drift row for this file's own edit. Those
+are about a tool's CONTENT against its recorded expectation and were red before
+the hooks were emptied. docs/hook-manifest.json was NOT regenerated: doing so
+would silently bless seven other sessions' tool changes.
+
+  tests/run_hook_integrity_probe.py   35 passed / 0 failed  (8 new arms, 6 of
+                                      them boundaries)
+  against the stashed pre-change tool 31 passed / 4 FAILED  -- measured
+                                      negative control
+
+================================================================================
+ITEM 2 and 3 -- THE PERMISSION RULES
+================================================================================
+
+  project .claude/settings.json   deny  3 -> 75   ask 4 -> 0   allow 13 -> 79
+  user    ~/.claude/settings.json deny 25 -> 85   ask 4 -> 0   allow 42 -> 91
+
+The user-level file's 25 pre-existing deny rules were MERGED, not replaced -- a
+rule somebody added on purpose is not this session's to drop. Backed up first
+to ~/.claude/settings.json.bak-b5 (2,793 bytes).
+
+BOTH `ask` LISTS ARE NOW EMPTY, and that is the point of the item. Every entry
+that was in them -- git add, git commit, git push, npx vercel, rm -rf,
+git reset --hard, git clean, git branch -D -- is now either an ALLOW or a DENY,
+so none of them prompts.
+
+THE SYNTAX, PRECEDENCE AND COMPOUND BEHAVIOUR WERE VERIFIED AGAINST THE CURRENT
+DOCUMENTATION BEFORE A RULE WAS WRITTEN. The facts that shaped them:
+  * `Bash(rm *)` and `Bash(rm:*)` are IDENTICAL; `:*` is recognised only at the
+    end, so one form is used throughout and the two are never mixed.
+  * THE SPACE BEFORE A TRAILING `*` IS LOAD-BEARING. `Bash(ls *)` does not
+    match `lsof`; `Bash(ls*)` does. Delete rules carry both spellings.
+  * DENY ALWAYS WINS, at every settings level, and an allow can NEVER carve an
+    exception out of a deny. This is what makes `Bash(git push *)` safe to
+    allow while every force spelling is refused.
+  * A compound command is SPLIT and each subcommand matched independently,
+    including inside `$( )`.
+  * Deny rules match PAST a leading env assignment; allow rules are documented
+    not to.
+  * Read/Edit deny covers Bash redirects and cat/sed/tee, but NOT a subprocess
+    that opens the file itself.
+
+EVERY CLASS WAS DRIVEN WITH A HARMLESS MATCHING COMMAND. The rules took effect
+IMMEDIATELY -- no restart was needed for this session's own calls, measured by
+`rm --help` being denied on the first attempt after the file was written.
+
+    class  |  command driven  |  expected  |  observed
+    delete  |  rm --help  |  DENY  |  DENIED
+    delete (abs path)  |  NOT DRIVEN -- /bin/rm absent on this box  |  DENY  |  rule present, untested
+    force (beats broad allow)  |  git push --force --dry-run origin main  |  DENY  |  DENIED
+    force  |  git reset --hard HEAD --quiet (as 2nd element of a compound)  |  DENY  |  DENIED whole compound
+    force (subshell)  |  echo "x: $(git clean -f --dry-run)"  |  DENY  |  DENIED whole command
+    discard (exact, 1st draft)  |  git checkout . --help  |  DENY  |  RAN -- exact rule, no trailing *
+    discard (after widening)  |  git checkout HEAD . --dry-run  |  DENY  |  DENIED
+    network  |  curl --version  |  DENY  |  DENIED
+    installs (npm)  |  npm install --dry-run --help  |  DENY  |  DENIED
+    installs (pip)  |  pip install --help  |  DENY  |  DENIED
+    SAIRN_SEED_GATE=off  |  SAIRN_SEED_GATE=off git push origin main --dry-run  |  PROMPT (per docs)  |  RAN, NO PROMPT
+    settings edit  |  Edit tool on .claude/settings.json  |  DENY  |  DENIED -- "File is in a directory that is denied by your permission settings."
+    settings edit (python)  |  python writing the same file  |  not covered  |  RAN -- documented limit, and the escape hatch a deliberate change keeps
+    allow: git  |  git status --short  |  ALLOW  |  ran
+    allow: grep  |  grep -c DENY <file>  |  ALLOW  |  ran
+    allow: python  |  python -c print(...)  |  ALLOW  |  ran
+    allow: Read/Edit/Write in repo  |  every edit this batch  |  ALLOW  |  ran
+
+  COVERAGE, STATED HONESTLY: every CLASS above was driven, not all 75 deny
+  strings. The absolute-path forms (/bin/rm and friends) are present and
+  UNTESTED -- those binaries are not on this box, so driving them would have
+  measured the box and not the rule.
+
+FINDING A -- AN EXACT DENY RULE IS EXACTLY EXACT, AND THE FIRST DRAFT HAD A
+HOLE. `Bash(git checkout .)` carries no trailing `*`, so it matched only that
+exact string and `git checkout . --help` RAN. Harmless itself; the proof that
+mattered is that `git checkout HEAD .` discards the entire working tree and
+matched NOTHING, because the broad `Bash(git checkout *)` sat in ALLOW
+underneath it.
+
+Fixed twice over, because one was not enough: wildcard denies for every discard
+spelling including the `git restore` equivalents, AND the broad checkout allow
+REMOVED. Chasing spellings in deny while the broad form is allowed is the losing
+half of that race. A branch switch now prompts, which is the right side to err
+on. Re-driven after: `git checkout HEAD . --dry-run` DENIED.
+
+FINDING B -- `SAIRN_SEED_GATE=off` CANNOT BE STOPPED BY A PERMISSION RULE AT
+ALL. This is the one the brief asked for and it cannot be delivered as a rule.
+  * As a DENY: not expressible. Deny rules match PAST a leading env assignment,
+    so the assignment is stripped before matching and the rule text never sees
+    it.
+  * As a FALL-OUT-OF-ALLOW: documented to prompt, AND IT DID NOT.
+    `SAIRN_SEED_GATE=off git push origin main --dry-run` ran with NO PROMPT.
+    The local settings file was checked and carries no `git push` allow, so the
+    match came from the new project rule matching past the unknown assignment.
+So the blanket override is still reachable and silent, and the gate-side design
+in item 7 is the ONLY available control rather than a second layer.
+
+FINDING C -- THE PYTHON HOLE, STATED RATHER THAN HIDDEN. `Bash(python *)` and
+`Bash(node *)` are allowed broadly because every tool, probe and gate here runs
+through them; narrowing to `python tools/*` would put a prompt on every heredoc
+this platform runs on. A deny rule does not reach a subprocess that opens files
+itself, so an allowed `python -c` can do what the shell is denied -- including
+rewriting .claude/settings.json, which is how the user-level file was edited
+this batch. THE DENY LIST IS NOT A SECURITY BOUNDARY. It stops accident and
+habit. That is written down so nobody later reads it as more.
+
+FINDING D -- "NETWORK FETCHES EXCEPT GITHUB/SUPABASE/VERCEL" IS NOT ONE RULE,
+because an allow cannot except a deny. The shell fetchers are denied outright
+and the exception is served by tools/sairn_http.py (already the house rule, PR
+3.2 forbids bare curl for live verification) and by WebFetch domain allows for
+nine GitHub/Supabase/Vercel hosts. COST, NAMED: tools/fetch_blocked_doc.sh
+shells out to curl and is now denied for an agent.
+
+FINDING E -- THE PER-CLONE settings.local.json FILES ARE THE REAL PROMPTING
+STORY. This clone's is 87,551 bytes with 1,325 allow entries and ZERO deny
+entries -- accumulated "don't ask again" approvals, untracked, per-clone, at
+HIGHER precedence than the committed file. They cannot weaken the new rules
+(deny wins at every level, so their `Bash(rm -f sql/__prepushprobe.sql)` entry
+is now dead) and they are NOT touched: each is its own clone's.
+
+ITEM 3 -- "ALL SIX PROJECT SETTINGS FILES" IS ONE TRACKED FILE, MEASURED.
+`git ls-files` finds exactly one tracked project settings file,
+.claude/settings.json. Each of the five clones has its own working copy of that
+ONE path plus an untracked settings.local.json. So committing it IS how all
+five clones take it, which is what the brief describes. No other clone's
+working tree was touched.
+
+THE RESTART STEP, PER AGENT, and only the first was verified here:
+  1. Nothing, if the agent is mid-session -- the file is read from disk.
+     VERIFIED in this clone.
+  2. `git fetch origin && git rebase origin/main` in that clone, so the
+     committed rules arrive. The only required step. NOT driven in another
+     clone -- entering another clone's working tree is not this session's to
+     do.
+  3. If a prompt appears for something in the allow list, restart that session
+     so the file is re-read. NOT driven.
+
+================================================================================
+ITEM 4 -- THE bld_draws FIX, LIVE-VERIFIED AT LAST
+================================================================================
+
+b4 could not do this: sairn.vercel.app returned 402 on every route. It is back.
+
+  bare key, action=read    HTTP 401  NO_SESSION
+  bare key, action=write   HTTP 401  NO_SESSION
+  session login            HTTP 200  token issued
+  session, action=read     HTTP 200  ok=true, 3 draws visible
+  probe id present in those rows?    NO
+
+So the AUTH_BYPASS is closed on the running deployment: a bare licence key is
+refused on BOTH read and write, a valid session reads, and NO WRITE PERSISTED.
+The write probe used a draw_id that cannot collide with a real row, and the
+check afterwards is that the id is ABSENT -- which is the only way to tell
+"refused" from "refused after writing". Nothing was deleted.
+
+THREE WRONG TURNS, EACH CORRECTED FROM EVIDENCE RATHER THAN GUESSED:
+  * /api/sd-auth answered 403 LICENSE_WRONG_APP. docs/2026-09-03-demo-
+    credentials.md names SAIRNbuild's own endpoint, /api/bld-auth.
+  * `action: signin` answered 400 and NAMED ITS OWN VOCABULARY --
+    check_license, whoami, bootstrap, login, setup, roster, set_active. That is
+    the right way for a wrong action to fail.
+  * `login` wanted employee_id and pin at the TOP LEVEL, not nested in
+    `payload`. Read out of api/bld-auth.js:241-242 rather than guessed.
+  * And the bare-key write hit WinError 10054, a connection reset. A reset is
+    NOT a verdict about a gate, and recording code 0 as "not refused" would be
+    exactly the wrong-way failure, so the probe retries a TRANSPORT failure and
+    returns any HTTP status at once.
+
+================================================================================
+ITEM 5 -- THE EXTERNAL-FILES GATE WARNS NOW
+================================================================================
+
+Michael's decision. The evidence is b4's five push refusals over six files,
+none of them belonging to the session being refused -- and twice the PreToolUse
+half denied the whole compound command, so the edit that would have cleared the
+refusal never ran.
+
+WHAT CHANGED IS THE EXIT CODE, NOT THE COUNT. Every unindexed file is still
+found, printed and named; a handoff-shaped `.md` under
+`G:/My Drive/SAIRN-status` prints under REPORTED, NOT BLOCKING. A file that
+stopped being COUNTED would be a file nobody hears about again.
+
+SCOPED THREE WAYS, each an arm: the NAME must be handoff-shaped, the EXTENSION
+`.md`, the PATH under that one directory. is_handoff_name() reuses the test the
+classifier already applies, so the two cannot drift into disagreeing about what
+a handoff is.
+
+MEASURED END TO END, by planting both shapes in the real directory and removing
+them again:
+  handoff only        exit 0, "NO BLOCKING FINDING"
+  handoff + one .py   exit 1, the two reported SEPARATELY
+  after cleanup       exit 0 with the two REAL undeclared handoffs present
+                      -- the treadmill is broken, not merely quieter
+
+  tests/run_external_file_index_probe.py  ALL ARMS PASS (12 new, 6 boundaries)
+  against the stashed pre-change tool     1 failure
+
+NO OVERRIDE FLAG, deliberately: a flag is a thing somebody passes on every run
+until it means nothing. This narrows what the check CLAIMS instead.
+
+================================================================================
+ITEM 6 -- tools/digest_lint.py
+================================================================================
+
+Fails unless a digest is 150 words or fewer AND carries STATUS,
+DECISION-NEEDED, CHANGED, EVIDENCE-path, UNVERIFIED and NEXT. The motivating
+measurement is this session's own: b4's digest is 2,062 words, and the lint
+reports both failures against it -- over the ceiling by 13x, zero of six fields.
+
+Field detection is ANCHORED AT A LINE START, not a substring search, so
+`STATUS` inside a sentence does not satisfy the schema; one fixture drives
+exactly that. The word count is DEFINED -- whitespace tokens over the whole
+file, labels included -- because excluding labels invites padding labels and
+"prose lines" needs its own definition.
+
+6-fixture criteria lock, INCLUDING THE BOUNDARY (exactly 150 words is CLEAN,
+the ceiling is <= not <), and THE LOCK RUNS BEFORE EVERY REAL VERDICT: a lint
+whose own criteria are broken reports a pass it never performed. It also says
+what it does NOT check -- whether the content is true.
+
+Run on this batch's own digest: 147 words, all six fields, CLEAN.
+
+================================================================================
+ITEM 8 -- E9 ISOLATED FROM THE LIVE REGISTER
+================================================================================
+
+E9 was RED for days and the arm was right the whole time. Read from what
+--reseat PRINTED rather than inferred from the exit code:
+
+    aaaaaaaaaaaa -> 41b423b209c3    <- the arm's own subject. RE-SEATED.
+    ea0f36077430 COLLIDES ...       <- not the arm's subject
+    ea0f36077430 COLLIDES ...       <- not the arm's subject
+    re-seated 1 record(s).
+    2 record(s) LEFT ALONE on a destination collision. This run is a partial
+    repair and says so.
+
+The worktree is built from HEAD, so it inherits every record four other clones
+have written. Two cannot be re-seated, the run is a PARTIAL repair, and exit 1
+is the right answer to a question E9 never asked.
+
+THE ARM IS NOT WEAKENED. E9 keeps `rc == 0`; E10, E11, E12 and E13 are
+untouched. All of them now run on a register the section BUILDS: the planted
+stale record plus four real ones whose commits resolve and whose summaries are
+unique, so nothing in it can collide. The full population is restored
+immediately after E13, because sections F onward measure a density denominator
+and per-app coverage and a five-record fixture would make those pass for free.
+FIVE records, not one, because E11's no-reorder assertion is vacuous on a
+single-record file.
+
+THREE NEW ARMS KEEP THE ISOLATION HONEST, and one earned its keep immediately:
+E8a asserts the fixture was really built, and the first version matched record
+SHAs against `git cat-file --batch-check` column 1 -- which echoes the FULL
+40-char sha for an abbreviated input, so the fixture came back EMPTY and E9
+would have passed over nothing. Paired by position instead.
+
+  tests/run_defect_register_probe.py  152 checks, 0 failed  (was 149/1)
+
+================================================================================
+ITEM 9 -- THE PHANTOM-OBLIGATION FIXTURE
+================================================================================
+
+tests/claims/run_fileset_matcher_probe.py section 3 used `leg_invoices`, a real
+Tier A resource, so every edit to that file opened a PHANTOM review obligation
+-- measured on 2026-10-12, when one was recorded against hank for a change
+touching no SAIRNlegacy code.
+
+The gate was NOT the thing to change, and that was measured too:
+strip_diff_noise() keeps SHORT strings, because `resource === 'leg_invoices'`
+is real code and a two-word fixture is character-for-character the same thing.
+Renamed to `zzz_fixture_resource`, which carries an underscore so idents() still
+treats it as an identifier and the arm means exactly what it did. Probe: 0
+failures. The five remaining mentions are all in COMMENTS, which the gate
+blanks, and tier_a_review_gate.py exits 0 on the staged change.
+
+================================================================================
+ITEM 13 -- A FULLY-SUPERSEDED REGISTER IS A CLOSED STATE
+================================================================================
+
+The four pointers written on 2026-10-12 made `--reseat` exit 1 in every clone,
+on every run, permanently. A recurring finding nobody can act on is how a
+checker gets switched off -- the same argument accepted the same day for the
+external-file gate.
+
+A record is superseded only once `--supersede` has written a pointer to a
+survivor that EXISTS and is an ancestor of the branch, and `--check`
+re-validates every one on every run. There is nothing left for anybody to do.
+A COLLISION or a dangling SHA still exits 1, because those do need a human.
+
+AN ARM'S EXPECTATION WAS CHANGED AND IT IS DECLARED RATHER THAN SLIPPED IN. The
+superseded probe asserted `rc == 1`; it now asserts `rc == 0` with the
+reasoning in the file, and TWO NEW ARMS keep the other half honest -- one that
+the message says "nothing is outstanding" in those words, one that it still
+says a collision or dangling SHA would exit 1. The arms either side are
+UNCHANGED: the record is not re-seated (file byte-identical) and it is NAMED as
+superseded rather than silently skipped.
+
+  superseded probe  25/25   (was 23/23)
+  reseat probe      11/11
+  register probe    152/0
+  --reseat          exit 0
+  --check           exit 0
+
+ALSO CLOSED BY MEASUREMENT RATHER THAN WORK: the "no ref lines on stdin"
+message. All three gates were fixed on 2026-10-08/12; the single remaining
+occurrence in tools/ is a COMMENT in copy_exactly_gate.py quoting it as the
+defect it closed.
+
+================================================================================
+ITEM 10 -- THE 2.38MB INDEX, SHARDED
+================================================================================
+
+  docs/open-work/ACTIVE.md    64,771 bytes, 367 open rows -- READ THIS ONE
+  docs/open-work/<app>.md     24 shards, 812 rows, BYTE FOR BYTE
+  tools/open_work_shard.py    --write to generate, --check to prove equality
+
+PER-APP SHARDING ALONE WAS NOT ENOUGH, AND THE MEASUREMENT IS WHY ACTIVE.md
+EXISTS. Measured after the first run rather than predicted before it:
+platform.md 838,657 bytes, tooling.md 397,113, against a 400,000-byte ceiling.
+Filtering to open rows does not rescue it either -- 146 open Platform rows are
+469,672 bytes. THE ROW IS THE PROBLEM, NOT THE COUNT: these rows average about
+2.9KB because the Status and Next-action cells carry whole paragraphs of
+evidence, which is what makes the index worth having. ACTIVE.md therefore
+carries one SHORT line per open row with a pointer to
+`open-work/<app>.md:<line>`, and never the paragraph.
+
+NO ROW WAS EDITED. Whole lines are copied verbatim. PR 2.1 forbids editing a
+row by splitting on `|`, and 812 of them is not the place to start. Only the
+App cell is read, and only to pick a filename.
+
+THE INDEX IS STILL CANONICAL AND THAT IS STAGING, NOT TIMIDITY. Fourteen tools
+parse those rows and doc_sha_reseat.py REWRITES the file on every rebase to
+re-seat 367 SHA citations. Deleting the rows first would at best break those
+loudly; at worst doc_sha_reseat would keep running, write nothing and report
+clean -- a silent coverage loss. The migrations are routed with file:line.
+
+TWO COPIES ARE ONLY SAFE BECAUSE SOMETHING FORCES THEM TO MATCH. `--check`
+exits 1 the moment a row is in one and not the other, in either direction, and
+is meant to become a push gate once the readers have moved. CLEAN now, 812 of
+812, re-run after the rebase.
+
+I REPRODUCED A DEFECT CLAUDE.md NAMES BY NAME, AND THE RUN CAUGHT IT. The
+closed-word pattern was written through two layers of shell quoting and its
+word boundaries arrived in the file as byte 0x08, so the compiled regex was
+`(?i)<BS>(closed|...)<BS>` -- a pattern that can never match. The first run
+reported ALL 812 ROWS OPEN. It is built from a word LIST now, with no backslash
+for a quoting layer to eat, and the module REFUSES TO RUN if the pattern cannot
+match a word it is made of. Two more measured fixes in the same pass: --check
+read ACTIVE.md back as a shard and reported drift against itself, and it DIED
+with a UnicodeEncodeError while printing a finding containing U+26A0 -- a check
+that crashes mid-report has reported nothing.
+
+NO PARSER REGRESSED: open_work_shard --check 0, md_table_check 0 (0 malformed
+rows, 444/444 and 175/175 rows checked), dispatch_state 0.
+index_duplicate_check exits 1 before AND after with identical output --
+stash-confirmed pre-existing, not mine.
+
+A DATA-QUALITY FIND, reported not fixed: one row's App cell is a struck-through
+section marker rather than an app, so it sharded to its own file. Faithfully
+carried; whether it is a row at all is a content question.
+
+================================================================================
+ITEMS 11, 12 and 14 -- REPORT-ONLY, AND ONE REAL FINDING
+================================================================================
+
+docs/tier-a-reviews.json and api/sd-data.js are BOTH in hank's live b5 claim
+FILES. Declared per PR 4.3, not overridden, and neither task string was
+reworded to slip the matcher. So items 11 and 12 are report-only.
+
+TIER A: 17 open obligations, EVERY ONE overdue past 48h -- cody 6, fourth 3,
+cloud 3, cc 3, hank 2. The two assigned to cc are named with authors and
+resources in the routing doc. AND FIVE OF THE 17 CARRY ** COULD-NOT-TELL **:
+the recorded sha does not resolve in this clone, so a third of the open rows
+cannot be verified against the code they are about.
+
+THE 15 FIELD FINDINGS, AND THE BRIEF'S FIGURE IS WRONG. The brief says "8 of
+11"; the source document says 11 -- 7 ownership plus 4 other field findings --
+and 4 more in api/_lib/ai-scan-redaction.js. Re-derived from the document
+rather than the brief; there is no 8-of-11 split anywhere in it.
+
+AND EVERY ONE OF THE 11 api/sd-data.js CITATIONS HAS MOVED. That file is now
+17,047 lines. Four were spot-checked and none was within +/-6 lines of its
+recorded line, so all 11 were re-derived by finding where the resource and the
+field appear together; the new lines are tabulated in the routing doc. TWO ARE
+WORSE THAN MOVED -- `alf_op_audits`/`temperature_f` and
+`rf_claim_agreements`/`include_signature` have no such field token anywhere in
+the file, which is a rename, a removal, or an already-fixed finding, and all
+three are different facts. Nothing guessed.
+
+The 4 api/_lib/ai-scan-redaction.js citations still resolve EXACTLY at 44, 48,
+72 and 84 -- so the drift is specific to the file four sessions keep editing,
+which is the useful half of the finding.
+
+ITEM 14 -- RULE E, ROUTED NOT WRITTEN. ted owns convention numbering, so the
+text went into METHODOLOGY.md's ROUTED queue and
+docs/2026-09-13-cross-domain-disciplines.md was NOT touched. The next free
+number is 34, recounted at this HEAD by ted's own method rather than quoted: 33
+headings, 33 distinct, no duplicates, range 1-33, no gaps.
+
+================================================================================
+ITEM 7 -- THE PER-GATE SKIP. DESIGN ONLY, AS INSTRUCTED.
+================================================================================
+
+docs/2026-10-13-per-gate-skip-design.md. No code.
+
+THE MEASUREMENT FIRST: docs/BYPASS-LOG.jsonl carries 94 rows from 2026-09-16 to
+2026-10-13. EIGHTY of them (85%) are `blanket: true` -- the form that disables
+EVERY check in the push. Only 13 carry a reason beyond the boilerplate. By
+session: fourth 46, hank 21, cc 14, cody 13.
+
+Two facts matter more than the total. The override that gets used is the one
+that switches off everything, because it was the only one available. And 81 of
+94 rows carry no reason a reader can act on -- the field is populated with the
+MECHANISM, not with why the push should proceed, which is the same empty-field
+shape the register already refused for `not-citable`.
+
+The design: SAIRN_SKIP names ONE gate from a list the gates publish themselves
+(unknown id REFUSES, no `all`, no comma list); SAIRN_SKIP_WHY is REQUIRED and
+checked for substance rather than length; the log row gains
+`skipped_findings` -- the findings the gate WOULD have raised, which is what
+turns the log from a count into evidence; and three gates refuse to be skipped
+at all (credential scanner, syntax check, hook integrity). Build order is in
+the document, with SAIRN_SEED_GATE=off retired LAST.
+
+================================================================================
+WHAT IS NOT DONE, AND WHY
+================================================================================
+
+  * THE 14 OPEN-WORK ROW PARSERS still read the index, not the shards. Routed
+    with file:line. The index stays canonical until they move, and
+    `open_work_shard.py --check` is the forcing function in the meantime.
+  * doc_sha_reseat.py's REWRITE tuple was NOT extended. After a rebase it
+    re-seats the index's SHAs and the shards go stale; `--check` catches it and
+    the fix is `--write`. Extending it is that tool's owner's call.
+  * THE TWO HOVER-AUDITOR ROW PARSERS are the auditor's, not a build agent's.
+  * docs/hook-manifest.json was NOT regenerated -- 7 pre-existing manifest-drift
+    rows belong to other sessions.
+  * THE TIER A DISCHARGES and the sd-data.js rows: hank's claim.
+  * THE PERMISSION RULES WERE DRIVEN IN THIS CLONE ONLY. Steps 2 and 3 of the
+    restart instruction are the mechanism and are NOT verified.
+
+================================================================================
+QUESTIONS ONLY MICHAEL CAN ANSWER
+================================================================================
+
+Q1. APPROVE THE PER-GATE SKIP DESIGN? It is now the only available control on
+    SAIRN_SEED_GATE=off, because no permission rule can reach it.
+
+Q2. THE SETTINGS DENY IS A ONE-WAY DOOR FOR THE EDIT TOOL. Editing
+    .claude/settings*.json with Edit/Write is now denied, including for me. A
+    python script can still write it (documented limit). If you want a
+    different balance, say which.
+
+Q3. tools/fetch_blocked_doc.sh shells out to curl and is now denied for an
+    agent. Retire it, or exempt it by moving its fetch into
+    tools/sairn_http.py?
+
+Q4. SEVENTEEN TIER A OBLIGATIONS ARE OVERDUE AND FIVE CANNOT BE VERIFIED
+    AGAINST THEIR OWN RECORDED SHA. That is a register-wide freshness problem,
+    not a backlog.
+
+SHA256(body)=2f2c3f3e6f0926da260afc06b566da4f2d7fe372538ec1a617fa7e03d0641967
+END-OF-REPORT

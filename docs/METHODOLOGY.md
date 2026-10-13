@@ -256,6 +256,68 @@ produced them.
 
 ---
 
+## Routed here 2026-10-13 by cc, batch b5 -- RULE E, and the NUMBER, not the edit
+
+**TED OWNS CONVENTION NUMBERING, so this is a routing entry and not a
+promotion.** Nothing in `docs/2026-09-13-cross-domain-disciplines.md` was
+touched, no existing entry was renumbered, and no text of ted's was reworded.
+
+**THE NEXT FREE NUMBER IS 34.** Recounted at this HEAD by ted's own method
+rather than quoted from any page, including the one below:
+
+```
+headings   : 33
+distinct   : 33
+duplicates : none
+range      : 1 -> 33
+gaps       : none
+NEXT FREE  : 34
+```
+
+measured with `re.match(r'^## (\d+)\.')` plus a duplicate count and a gap scan.
+**Do not take 34 from here either.** The section below records 30 at
+`7ae272cc`, 32 within the hour at `2290bd45`, and 32 at `263f736f`. Count the
+headings.
+
+### RULE E -- a figure a document states about its own run is only true as of the read behind it, and a long run must restate it at the end
+
+**PAID FOR IN ONE BATCH, THREE ARTEFACTS.** cc's b4 report and digest both
+recorded `HEAD at close 2697518e`; the push that landed them was then refused
+by the Tier A gate -- over two resource names that appear ONLY in those two
+files -- and four more commits followed, so the real close was `71a61f4c`. The
+handoff said five rebases; there were six. **None of the three was wrong when
+it was written.**
+
+**THE RULE IS NOT "CHECK YOUR NUMBERS", WHICH IS ADVICE AND NOT A MECHANISM.**
+It is structural, and it has two halves:
+
+1. **Re-derive at finalisation.** Any figure a document states about its own
+   run -- a HEAD, a commit count, a pass/fail tally, a rebase count, a byte
+   size -- is re-read at the moment the document is finalised, not when the
+   sentence was drafted.
+2. **The correction stays visible.** Where a figure changed, the document says
+   so in place rather than quietly carrying the new number. A silently-updated
+   figure destroys the only evidence a reader has about whether the FIRST
+   answer was reasonable -- and that is the thing that tells them whether to
+   trust the second.
+
+**WHY IT IS NOT COVERED BY WHAT IS ALREADY THERE.** The eighth discipline is
+about a CHECK that stops testing anything over time, and PR 2.3 is about a fact
+with a tense in a STANDING document. This is narrower and more immediate: a
+document describing its OWN run, overtaken inside the same batch, by the push
+that lands it. The b4 case is self-referential in a way neither covers -- the
+gate refused the push *because of the file being pushed*, which is precisely
+when a stated close is most likely to be wrong.
+
+**THE DETECTOR IS CHEAP, which is the usual test for whether a convention is
+worth having:** the figures a document states about itself are a short list and
+they are all re-derivable with one command each. `tools/digest_lint.py` is the
+first mechanical piece of this -- it refuses a digest that omits a field, and
+the fields it requires are exactly the ones that carry figures.
+
+**ROUTED, NOT PROMOTED BY ME.** Promoting a convention out of my own defect is
+the detector-blessing-its-own-fix shape convention **11** refuses.
+
 ## Count at the close of this edit, 2026-10-11
 
 **33 `## <n>.` headings in `docs/2026-09-13-cross-domain-disciplines.md` at the

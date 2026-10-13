@@ -358,5 +358,95 @@ ok(p.returncode in (EXIT_CLEAN, EXIT_FINDING, EXIT_COULD_NOT_RUN),
    'it exits one of the three defined codes (got %d)' % p.returncode,
    (p.stdout or '')[-400:])
 
+
+# ── THE DISARMED CASE (added 2026-10-13) ───────────────────────────────────
+# Michael cleared the hooks on 2026-10-11 because they were causing agent
+# compaction, and the decision is standing. This check was built for the
+# OPPOSITE case -- a control going silently missing -- so `hooks: {}` has to be
+# told apart from `hooks stripped by a PowerShell round trip`, which is what
+# actually happened on 2026-10-11 and what a session wrongly "restored" from
+# HEAD on 2026-10-12 before being told.
+#
+# DRIVEN AS A SUBPROCESS, like every arm above, rather than by importing the
+# predicate: what has to be right is what `--wiring-only` PRINTS and EXITS,
+# because that is what a reader and a gate see. The arms are mostly
+# BOUNDARIES, since the exemption's only real risk is accepting a half-wired or
+# absent hooks object as a decision.
+print(NL + 'D. hooks intentionally empty is a DECISION, not drift')
+
+
+def disarm_fixture(hooks_value, with_record=True, drop_key=False):
+    """A throwaway repo whose settings carry `hooks_value`."""
+    d = tempfile.mkdtemp(prefix='hic-disarm-')
+    os.makedirs(os.path.join(d, '.claude'))
+    os.makedirs(os.path.join(d, 'docs'))
+    doc = {'permissions': {}}
+    if not drop_key:
+        doc['hooks'] = hooks_value
+    io.open(os.path.join(d, '.claude', 'settings.json'), 'w',
+            encoding='utf-8', newline=NL).write(json.dumps(doc, indent=2))
+    if with_record:
+        io.open(os.path.join(d, 'docs', 'hooks-disabled-2026-10-13.json'), 'w',
+                encoding='utf-8', newline=NL).write('{"hooks": {}}')
+    return d
+
+
+def wiring_run(repo):
+    p = subprocess.run([sys.executable, TOOL, '--wiring-only', '--repo', repo],
+                       capture_output=True, text=True, encoding='utf-8',
+                       errors='replace', timeout=120)
+    return p.returncode, (p.stdout or '') + (p.stderr or '')
+
+
+_made = []
+try:
+    d = disarm_fixture({})
+    _made.append(d)
+    rc, out = wiring_run(d)
+    ok(rc == EXIT_CLEAN, 'hooks PRESENT and EMPTY, with the decision record '
+       'beside it, exits CLEAN from --wiring-only', (rc, out[-400:]))
+    ok('INTENTIONALLY DISARMED' in out,
+       '...and SAYS it is intentionally disarmed rather than going quiet',
+       out[-400:])
+    ok('hooks-disabled-2026-10-13.json' in out,
+       '...and names the record that makes it a decision', out[-400:])
+    ok('still drift' in out or 'still reported' in out,
+       '...and says what it does NOT excuse, so the exemption cannot be read '
+       'as a blanket pass', out[-400:])
+
+    d = disarm_fixture({}, with_record=False)
+    _made.append(d)
+    rc, out = wiring_run(d)
+    ok('INTENTIONALLY DISARMED' not in out,
+       'BOUNDARY: hooks EMPTY with NO decision record is NOT treated as a '
+       'decision -- the record is what tells a decision from a file something '
+       'stripped', out[-400:])
+
+    d = disarm_fixture({}, drop_key=True)
+    _made.append(d)
+    rc, out = wiring_run(d)
+    ok('INTENTIONALLY DISARMED' not in out,
+       'BOUNDARY: the hooks KEY MISSING ENTIRELY is not a disarmed clone, it '
+       'is a different settings file', out[-400:])
+
+    d = disarm_fixture({'SessionStart': []})
+    _made.append(d)
+    rc, out = wiring_run(d)
+    ok('INTENTIONALLY DISARMED' not in out,
+       'BOUNDARY: a HALF-WIRED hooks object is NOT disarmed -- this is the '
+       'exact 2026-10-11 shape, one empty event against 23 real commands',
+       out[-400:])
+
+    d = disarm_fixture({'SessionStart': [{'hooks': [{'command': 'x'}]}]})
+    _made.append(d)
+    rc, out = wiring_run(d)
+    ok('INTENTIONALLY DISARMED' not in out,
+       'BOUNDARY: a hooks object with a REAL entry is NOT disarmed',
+       out[-400:])
+finally:
+    for d in _made:
+        shutil.rmtree(d, ignore_errors=True)
+
+
 print(NL + '%d passed, %d failed' % (passed, failed))
 sys.exit(EXIT_FINDING if failed else EXIT_CLEAN)
