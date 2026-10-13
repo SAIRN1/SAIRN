@@ -391,3 +391,174 @@ before/after discipline is what caught it, within one run, and a consolidation
 done without it would have left a suite red and a session believing 10 sites
 were clean. After the require landed: 62/62, exit 0.
 
+
+---
+
+# ADDED BY BATCH b7, 2026-10-13 -- fourth
+
+## 11. The hover-auditor skill divergence -- ROUTED TO cc, nothing edited (b7 item 7)
+
+Both copies printed by their REAL resolved path, and the diff computed in a
+script so neither 280KB file was read into a session window. Line endings were
+normalised first: the user store is CRLF and the repo is LF, and a bare
+comparison would report every line as changed -- the false alarm `CLAUDE.md`
+names by name.
+
+| | path | files |
+|---|---|---:|
+| repo copy | `C:\Users\marsh\Documents\SAIRN-fourth\.claude\skills\sairn-hover-auditor` | 167 |
+| user copy | `C:\Users\marsh\.claude\skills\sairn-hover-auditor` | 79 |
+
+**89 files exist only in the repo copy and 1 only in the user copy.** The
+repo-only set is almost entirely the auditor's own handoffs
+(`handoffs/2026-10-07-h1-batch-q-handoff.md` and the like) plus
+`EXTERNAL-TOOLS-INDEX.md`. The single user-only path is **`tools$f`** -- a
+filename that looks like an unexpanded shell variable, i.e. a mistyped
+redirection that created a file instead of writing to one.
+
+**Of the 88 files present in both, NINE differ, and the repo copy is AHEAD in
+every one of them:**
+
+| file | +lines | -lines | repo bytes | user bytes |
+|---|---:|---:|---:|---:|
+| `SKILL.md` | 36 | 0 | 286,065 | 283,729 |
+| `tools-hover2/hover2_log_mirror.py` | 12 | 1 | 46,312 | 45,655 |
+| `tools-hover2/hover_coverage_ledger.py` | 11 | 1 | 14,092 | 13,362 |
+| `tools-hover2/hover_self_health_hook.py` | 172 | 3 | 22,890 | 14,440 |
+| `tools-hover2/sabotage_claim_verify.py` | 14 | 1 | 37,899 | 36,925 |
+| `tools-hover2/tool_provenance_status.py` | 15 | 4 | 11,677 | 10,871 |
+| `tools/hover_log.py` | 44 | 0 | 74,404 | 71,819 |
+| `tools/hover_self_health_fires.jsonl` | 4 | 0 | 5,397 | 4,835 |
+| `tools/hover_self_health_hook.py` | 54 | 2 | 19,733 | 16,847 |
+| **TOTAL** | **362** | **12** | | |
+
+`SKILL.md` sha256 after LF-normalising: repo `4baaaf8dc9ef71fe1edfa699`, user
+`0a74aee83a6b78b6154ae62b`.
+
+**WHAT THIS IS, AND WHAT IT IS NOT.** The direction is one-way: +362 / -12 means
+the user store is a STALE COPY of the repo, not a fork with its own work. The
+one thing that would make it a fork rather than a lag is the 12 removed lines,
+and nobody should conclude from a line count which 12 those are.
+
+**ROUTED TO cc** (`tools/` by the b6 directory rule) **and NOT ACTED ON, for two
+reasons that both matter:** the user store is shared by every clone on this
+machine, so an edit there is a change to five sessions made by one; and this
+subtree is the hover auditor's, which a build agent must not reach into --
+`docs/2026-09-15-hover-auditor-separation-enforcement.md` is the standing
+account. **NOTHING WAS EDITED IN EITHER STORE.**
+
+## 12. Temporary-state leak detection -- methodology item 34 (b7 item 5)
+
+`tools/temp_state_leak_check.py`, **REPORT ONLY and wired to no hook and no
+gate.** Four facts across a probe: `core.bare`, `user.name`, `user.email` (with
+an explicit probe-identity test) and the worktree registrations.
+
+**WHY THOSE FOUR AND NOT A GENERAL CONFIG DIFF.** The working tree has watchers
+-- `git status` is in every gate and every suite driver digests it.
+`.git/config` has none: `git status` cannot see it, a dirty-tree check passes
+while it is wrong, and b5 measured what that costs. With `core.bare = true`,
+`git status` exits 128, every `git checkout --` restore fails SILENTLY, and two
+live API files were left sabotaged with one of them not parsing. A general
+differ over a file people legitimately edit would produce noise, and noise is
+how a report-only check stops being read.
+
+**THE CONTROL PAIR: 14 arms, 0 failed, both directions.** Four planted leaks
+fired (`core.bare=true`, `user.email=probe@local`, a changed `user.name`, a
+left-behind worktree) and every clean arm was silent. Restoring each planted
+value cleared the finding. A missing snapshot and an unreadable worktree list
+are COULD NOT RUN, exit 2, never folded into a pass. The controls run in a
+THROWAWAY repo -- a control that mutated the live clone to prove a checker
+works would be the defect the checker is about.
+
+**ONE CONTROL ARM FAILED FIRST AND THE TOOL WAS RIGHT.** The worktree arm
+compared the path it passed in against the path git printed back, and git
+normalises separators on Windows. The arm was failing against CORRECT output --
+a control reporting a defect in the thing it controls -- and the fix was in the
+arm.
+
+**THE KNOWN LIVE CASE, and the first measurement of it was contaminated by my
+own sweep.** `tests/push_gate/check8_probe.py:209` records in its own comment
+that a dry-run push "was reliably leaving `core.bare = true` behind". Run while
+the item-3 bisect was still driving 95 suites in the background, the check
+reported a leak -- but the leak it named was `worktree REMOVED across the
+probe`, which was the bisect's worktree, not check8's doing. **A leak detector
+that compares two points in time cannot tell a concurrent sweep from its
+subject**, and that is a limit of the method rather than a defect in it; it is
+recorded here because the first run would otherwise read as a confirmation of
+something it did not observe. The clean re-run is in the b7 report.
+
+**NO EDITS WERE MADE TO cody's FILES.** `check8_probe.py` is named, not touched.
+
+## 13. The session locks, re-run (b7 item 9)
+
+| lock | holder pid | pid state | file age (h) | lock says | attributable to | verdict |
+|---|---:|---|---:|---|---|---|
+| `b12wt2.lock` | 78192 | DEAD | 121.2 | 134357762159212705 | NONE | LEAVE -- dead but UNATTRIBUTABLE |
+| `cc.lock` | 53560 | LIVE | 0.1 | 134362418688496853 | cc | LEAVE -- holder is LIVE |
+| `cody.lock` | 2204 | LIVE | 0.5 | 134362418402795108 | cody | LEAVE -- holder is LIVE |
+| `fourth.lock` | 61696 | LIVE | 0.3 | 134362418976255147 | fourth | LEAVE -- holder is LIVE |
+| `hank.lock` | 48956 | LIVE | 0.2 | 134362418846177203 | hank | LEAVE -- holder is LIVE |
+| `hover.lock` | 30428 | LIVE | 2.0 | 134362411605322071 | hover | LEAVE -- holder is LIVE |
+| `hover2.lock` | 83452 | LIVE | 2.0 | 134362419152238394 | hover2 | LEAVE -- holder is LIVE |
+| `repo.lock` | 39448 | DEAD | 148.1 | 134357133510386951 | NONE | LEAVE -- dead but UNATTRIBUTABLE |
+| `sairn_idem_o66nnvth.lock` | 58388 | DEAD | 299.6 | 134351763382256557 | NONE | LEAVE -- dead but UNATTRIBUTABLE |
+| `sairn_idem_q5p4bqkx.lock` | 58388 | DEAD | 299.8 | 134351763382256557 | NONE | LEAVE -- dead but UNATTRIBUTABLE |
+| `sairn_idem_rhbjx2yx.lock` | 61668 | DEAD | 307.5 | 134350675984514778 | NONE | LEAVE -- dead but UNATTRIBUTABLE |
+| `sairn_idem_uw3ebld2.lock` | 82012 | DEAD | 114.6 | 134358654468810777 | NONE | LEAVE -- dead but UNATTRIBUTABLE |
+| `tree.lock` | 82012 | DEAD | 115.1 | 134358654468810777 | NONE | LEAVE -- dead but UNATTRIBUTABLE |
+| `wt-tools.lock` | 73300 | DEAD | 117.0 | 134357847177782898 | NONE | LEAVE -- dead but UNATTRIBUTABLE |
+
+**0 RELEASED again, and the structural reason is unchanged**: the registry's
+pid->session map holds only the LIVE pids, so a dead pid can never be attributed
+through it, and the lock files carry no session field. Fourth batch reporting
+this. Routed to cc, unchanged: `tools/session_lock_check.py:128` `lock_path()`,
+`:349` `lock_payload()`, `:357` `'task': task`.
+
+`fourth.lock` is this session's own and was recreated after b6 released it --
+`sairn_claim.py` takes the lock on its own start path, so releasing it at report
+close does not keep it released across batches. Released again at b7 close.
+
+## 14. refs/salvage/b6-* -- LISTED AND KEPT (b7 item 8)
+
+| ref | commit | subject |
+|---|---|---|
+| `refs/salvage/b6-defreg-probe` | `fdce1b4b` | PROBE ambiguous-subject fixture -- not a real commit |
+| `refs/salvage/b6-gate12` | `549a372a` | drop a generator |
+
+The instruction is to keep them until the push lands and then delete them.
+**The push did not land** (b7 item 2), so **both are kept**. Deleting them now
+would orphan two commits whose worktrees b6 already removed. The exact command
+for whoever lands the push:
+
+```
+git update-ref -d refs/salvage/b6-defreg-probe
+git update-ref -d refs/salvage/b6-gate12
+```
+
+## 15. The phi_cache polluter -- RULED OUT AT THE CLASS LEVEL (b7 item 3)
+
+b6 eliminated 8 candidates one at a time. b7 was told to stop doing that and
+binary-bisect instead. **The bisect terminated in ONE run, not log2(95)≈7, and
+that is the result rather than a short-circuit:** the predicate is false at the
+root. All 95 candidates -- every suite that names one of phi_cache's seven
+subjects AND contains a write primitive -- were driven in order, then phi_cache.
+
+| | |
+|---|---|
+| candidate set | 95 suites |
+| rounds needed | 1 (the root predicate is false, so there is nothing to halve) |
+| subjects moved | **none**, 0 `MOVED` lines in the round log |
+| `core.bare` after | false |
+| phi_cache after | **exit 0, 72 passed, 0 failed** |
+
+**SO THE POLLUTER IS NOT A SUITE THAT WRITES A SUBJECT.** That rules out the
+entire class b5 and b6 were searching inside, which is worth more than another
+narrowed range would have been.
+
+**AND THE NEXT OCCURRENCE WILL NAME ITSELF.** A diagnostic was added at the END
+of `tests/phi_cache_scoped_to_user.js`, on the failure path only: it re-reads
+all seven subjects and prints which differ from HEAD, or states that all seven
+are clean so the failure is NOT tree pollution. **It does not change the exit
+code** -- a diagnostic that downgraded a failure to a skip would be the same
+silence one level along, and the dirty subject might be the real defect.
+
