@@ -27388,6 +27388,65 @@
       "recurrence_open": "The section is no longer a tripwire -- it now tests tenant isolation with a real session, which is the suite's actual subject. So the ARRIVAL of a future gate on those resources is held only by GRD_SESSION_RESOURCES being 21 names in one place, not by any arm. And the general problem is untouched: a tripwire firing is still indistinguishable from an ordinary red suite, which is what cost six resources their coverage here."
     },
     {
+      "commit": "52273b572c6c",
+      "date": "2026-10-13",
+      "subject": "fix(b9 push): the push refusal re-diagnosed to TWO causes, both fixed -- two tools undescribed since b5/b7, and a gate measuring the tip in the live working tree while measuring the base in a clean checkout",
+      "files": [
+        ".githooks/pre-commit",
+        "tools/commit_tool_entry_check.py",
+        "tools/sairn_push_gate_hook.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 577,
+      "lines_removed": 0,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/sairn_push_gate_hook.py check 12 measured the TIP in the live working tree and the BASE in a clean throwaway worktree, so 'clean there, dirty here' compared the base commit against the base commit PLUS this clone's uncommitted files. A push carries commits, not a working tree. The live-tree asymmetry fired on .claude/settings.json, which is tracked and is modified-not-committed in this clone by decision -- hooks cleared on purpose and never to be restored -- and tools/tooling_inventory.py derives one of seven sources from that file, so in the live tree hook entries reads 0 and the generator correctly REFUSES rather than writing a thinner document. In a worktree of the same tip it reads 19. Check 12 therefore attributed a deliberate uncommitted local condition to every push from this clone. THE WORSE HALF IS THAT IT MASKED A REAL FINDING: the live-tree refusal fires on the empty source before the generator reaches its undescribed-tool list, so the genuine defect in this push -- tools/report_sha_check.py added in b5 and tools/temp_state_leak_check.py added in b7, each with no PURPOSES or REGISTRY entry -- never appeared in the output check 12b greps. A wrong subject did not merely produce a false refusal, it replaced the true one. Check 12 now re-derives its tip verdicts in a worktree of the pushed commit, the same way the base side already does, with the live-tree run kept as a screen so a clean push still builds no worktree.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "9cd9907a460b",
+        "date": "2026-09-14",
+        "subject": "feat(push-gate): check 12 -- a generated document THIS push broke, and only that one",
+        "lag_days": 29
+      },
+      "contributing_factors": [
+        {
+          "factor": "the tip was read from the live working tree while the base was read from a clean checkout, so the two sides of the comparison were different kinds of thing",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "check 12 re-derives the tip verdicts in a worktree of the pushed commit; an unbuildable tip prints COULD NOT TELL and falls back to the prior behaviour"
+        },
+        {
+          "factor": "a refusal raised on the FIRST failing derivation source hid the second, so the true finding was never printed and check 12b had nothing to grep",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tools/commit_tool_entry_check.py asks the undescribed-tool question at the commit that adds the file, where no other refusal can mask it"
+        },
+        {
+          "factor": "three enforcement points for the inventory rule and all three ask at push time, so a one-line omission became a 36-commit blocked queue before anything said so",
+          "kind": "process",
+          "action_status": "done",
+          "action": "wired commit_tool_entry_check.py into .githooks/pre-commit scoped to --diff-filter=A over tools/*.py"
+        },
+        {
+          "factor": "a tracked file is deliberately kept modified-and-uncommitted in this clone, which no gate models as a legitimate standing state",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "the cleared hooks are a decision, not drift; gates have to read the pushed tree rather than ask the working tree to be clean"
+        }
+      ],
+      "recurrence_open": "The live-tree SCREEN still cannot see a document that the COMMITS break while an uncommitted edit compensates -- that direction is unchanged by this fix and is stated in the code rather than left to be discovered. docs/TOOLING-INVENTORY.md also lists commit_tool_entry_check.py as UNWIRED while it is wired into .githooks/pre-commit: the generator derives wiring from .claude/settings.json hook entries and from the push gate and reads .githooks/ for neither, so every pre-commit-wired tool is under-reported the same way. Not fixed here -- it is a change to the inventory's source list in a file two sessions contest."
+    },
+    {
       "commit": "54ead33fef5e",
       "date": "2026-10-13",
       "subject": "fix(external files): a handoff under the Drive report directory WARNS now; an undeclared tool or script still blocks",
@@ -27507,6 +27566,56 @@
         }
       ],
       "recurrence_open": "The fix is three guarded renders, each consulting senIsManagement() independently; nothing couples them to the server's SEN_CAREGIVER_HR_FIELD_ROLES, so a fourth render added later is unguarded by default and a change to the server tier fails nothing. The new arms catch a MISSING guard on an EXISTING render, not a new render. Also the write branch's gate is a differently-named set whose membership happens to equal the read's, which is what makes the round-trip-wipe argument hold, and nothing enforces that equality."
+    },
+    {
+      "commit": "774cf1d23186",
+      "date": "2026-10-13",
+      "subject": "fix(register feed gate): the UNREADABLE OUTGOING RANGE was the remote tip being an object this clone does not have, and it was reported as a malformed range",
+      "files": [
+        "tools/register_feed_gate.py"
+      ],
+      "lines_added": 71,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/register_feed_gate.py outgoing_range() returned the remote sha straight off the pre-push stdin line as the left side of its range, and commits_in() then printed 'Blocked: the outgoing range A..B could not be read' when that sha is not an object in this clone. Five sessions push this repo, so between a clone's last fetch and its push the remote tip moves and the hook is handed a sha that was never fetched here; git log exits 128 and the one line printed pointed at the range as though the change were malformed. MEASURED TWICE EIGHT DAYS APART ON THIS CLONE: b8 refused at 326f2894..94e608a4 with cat-file -t exit 128, and after a fetch the identical range read clean with 20 records and 0 malformed; b9 refused again at 14a771a4..79545180 because another session had pushed since that fetch. It held 36 commits across five batches. Fixed by testing the remote sha with git cat-file -e <sha>^{commit} and, when absent, falling back to merge-base(origin/main, tip)..tip -- the same answer the function already gives for a brand-new branch, and with an unfetched remote tip a SUPERSET of the range asked for, so it judges more commits and never fewer. The substitution is printed with both shas and the reason on every use; an unresolvable base still refuses, naming the remote rather than the commits.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "09b3ebb82015",
+        "date": "2026-09-25",
+        "subject": "fix(register-feed-gate): a NEW branch was measured as ALL of history, so no clone could push one",
+        "lag_days": 18
+      },
+      "contributing_factors": [
+        {
+          "factor": "the remote sha on stdin was treated as a local object with no existence test",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "git cat-file -e <sha>^{commit} before the range is built, and merge-base fallback when it is absent"
+        },
+        {
+          "factor": "one message served two causes -- a malformed range and an unfetched remote -- so the reader was sent to the wrong subject",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the fallback prints the cause with both shas; the remaining refusal says the REMOTE could not be read, not the commits"
+        },
+        {
+          "factor": "five sessions pushing one branch makes a stale remote tip the ordinary case rather than an anomaly, and a one-off fetch cannot close it",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "the push rate is the platform, not a defect; the gate has to tolerate it"
+        }
+      ],
+      "recurrence_open": "tools/hover_auditor_scope_gate.py:409 has the same shape and is NOT fixed here -- it builds rsha..lsha and returns 'could not read the outgoing range' on a non-zero git exit. It runs first in .githooks/pre-push and passed both of these pushes, so it is routed rather than edited. Nothing stops a third gate being written with the same shape; no check asks whether a sha read off stdin is a local object."
     },
     {
       "commit": "98f33b675d97",
