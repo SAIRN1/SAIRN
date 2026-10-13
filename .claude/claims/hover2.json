@@ -220,8 +220,8 @@
       "task": "batch b14 -- resume. Register-citation gate: print refusal text + offending entries, data/citation fix only, no history rewrite, retry push once. scp_ rerun --all, route to hank. Re-verify bld_draws/sf_officers/dnt_appointments/sairncash on a fresh clone of origin, not working tree. Rotation pool exhausted: set oldest-covered-first re-pick policy in own methodology doc, technical call. Diff-based sweep of hank/cody/cc commits since last HEAD for new ungated write paths. Re-verify sv_role_granularity grouping against current code, no decision made. Confirm law_role_granularity 19-row doc matches current code. Add scp_ partial-failure selftest case. Extend anchor_drift_check.py for new routing docs since b13. Independently re-verify H1 seq958 (14 of 17) by repro. Chain tip+token check, republish only if >15 behind. External-files inventory, index new files created. Handoff before report. This role never writes platform application code; api/sd-data.js and other platform files are READ ONLY, not declared as files touched. FILES: .claude/skills/sairn-hover-auditor/tools-hover2/anchor_drift_check.py .claude/skills/sairn-hover-auditor/methodology-h2.md docs/2026-10-07-hover2-scp-session-gate-routing.md",
       "claimed_at": "2026-10-13T06:09:57Z",
       "claimed_at_epoch": 1791871797.7468154,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-13T07:50:49Z",
       "files": [
         ".claude/skills/sairn-hover-auditor/methodology-h2.md",
         ".claude/skills/sairn-hover-auditor/tools-hover2/anchor_drift_check.py",
