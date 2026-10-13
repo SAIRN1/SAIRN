@@ -3709,6 +3709,27 @@
         "docs/external-files-index.json",
         "docs/handoff-cody-2026-10-13c.md"
       ]
+    },
+    {
+      "id": "cody-1791888490",
+      "session": "cody",
+      "subject": "tests",
+      "task": "cody -- batch b7. TESTS AND TOOLS ONLY. (1) the driven SAIRNfreedom per-role per-resource matrix and the bld_draws role arms hank routed to me in docs/2026-10-13-hank-b6-routing.md items 3 and 4, both NEW files under tests/, expectation derived from api/_lib/sf-roles.js and observation from the handler, never both from the table; (2) build tools/unproven_arm_check.py to the b6 spec in docs/2026-10-13-cody-b6-methodology-unproven.md, and re-derive then resolve the WEAKENING flag on tests/push_gate/check4_probe.py; (3) isolate the git-worktree probes so no probe can write the real .git/config, with a test that proves it; (4) the 19 disclosed seam pairs become a table with one named owner per pair plus a reusable closing procedure. CONFLICT DECLARED PER PR 4.3 AND NOT OVERRIDDEN: docs/tier-a-reviews.json is in cc's LIVE claim, so the three hank-authored Tier A records and the two orphaned-sha re-seats are ANALYSED AND ROUTED IN MY REPORT ONLY -- no write to that file is taken here, and the exact verified commands are handed over instead. NO api/ FILE IS EDITED and no auditor clone is entered. FILES: tests/api/sf_role_matrix_driven.test.js tests/api/bld_draws_role_arms.test.js tools/unproven_arm_check.py tests/run_unproven_arm_probe.py tools/git_config_isolation.py tests/run_worktree_isolation_probe.py docs/2026-10-13-cody-b7-seam-pair-owners.md docs/scrutiny-flags.json SAIRN-ACTIVE-WORK-cody.md",
+      "claimed_at": "2026-10-13T10:48:10Z",
+      "claimed_at_epoch": 1791888490.1395612,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/2026-10-13-cody-b7-seam-pair-owners.md",
+        "docs/scrutiny-flags.json",
+        "tests/api/bld_draws_role_arms.test.js",
+        "tests/api/sf_role_matrix_driven.test.js",
+        "tests/run_unproven_arm_probe.py",
+        "tests/run_worktree_isolation_probe.py",
+        "tools/git_config_isolation.py",
+        "tools/unproven_arm_check.py"
+      ]
     }
   ],
   "refusals": [
@@ -4001,6 +4022,21 @@
       "other_subject": "cc",
       "other_task": "batch15 at HEAD 15e56976, premises re-derived, and the headline is that A THREE-WAY CHOKEPOINT IS STALE IN BOTH DIRECTIONS. (0) TIER A: docs/tier-a-reviews.json is DECLARED IN FILES BY NOBODY at this HEAD -- fourth's claim that held it (2026-10-07T16:01:18Z) was RELEASED and replaced at 16:36:02Z by a batch16 claim whose FILES list does not contain it and whose task text contains no Tier A mention at all. cody (1.3h) and hank (1.2h) both stood down on that released claim and are listing their eligible obligations instead of discharging them. 23 open, oldest 255h. I hold 4 eligible and I discharge the most overdue first. tools/tier_a_review_gate.py IS declared by cody, so I run it and do not EDIT it. (1) The other half of the same stale read: cody, hank and fourth each re-derived that CC HOLDS tools/sairn_push_gate_hook.py, tools/report_only_checks.py, tools/doc_sha_reseat.py and docs/tool-owner-map.json. I RELEASED that claim at the close of batch 14 and sairn_claim.py list shows no cc row; all four are DECLARED BY NOBODY. Three sessions are blocked on files nobody holds, and this claim does NOT re-take them. (2) builder-inventory.txt exported to Drive root. (3) defect_register.py --reseat must not return 0 while leaving the register failing its own --check -- it re-seated 12 records and took --check from 0 to FAIL 4 duplicates, measured. (4) the six sys.exit(<string>) sites that exit 1 where the message means COULD NOT RUN, each cited by file. (5) Maine's 14 rules and 2 holiday years loaded, with a CHANGED COMPUTE on identical inputs as the evidence rather than the loader's exit code. (6) the --open stamps-HEAD-not-the-reviewed-commit bug is CODY'S -- tools/tier_a_review_gate.py is in cody's FILES and cody's own task text names this exact finding -- so I COORDINATE with a reproducing artifact and FIX NOTHING in that file. (7) condition_coverage.py:266, H1's routed unchecked-cleanup finding. (8) memory-checkpoint habit set to every item. (9)-(13) diagnostics: context breakdown, CLAUDE.md size, filtered vs raw run capture, large-file read discipline, proactive compaction. (14) handoff and the report file on Drive. CONFLICTS DECLARED PER PR 4.3, AND THE DISTINCTION IS DECLARED-IN-FILES VERSUS MENTIONED-IN-PROSE: tools/tier_a_review_gate.py is DECLARED by cody and is NOT touched. .claude/settings.json is CODY'S. docs/METHODOLOGY.md, docs/2026-09-13-cross-domain-disciplines.md, docs/known-red-suites.json and tools/truthy_sum_baseline.json are FOURTH'S. tests/phi_cache_scoped_to_user.js is FOURTH'S. api/sd-data.js is HANK'S. Everything in my FILES was checked against every live claim's FILES section at 15e56976 and is declared by nobody. A tool I probe is read-only BY CONSTRUCTION and git status is captured before and after every probe. I close only findings I originated and reclassify none. I read and reference no auditor tool. FILES: docs/tier-a-reviews.json tools/defect_register.py tools/sairn_load_state_check.py tools/load_deadline_seed.py tools/outline.py tools/condition_coverage.py docs/2026-10-07-cc-batch-15-diagnostics.md docs/2026-10-07-cc-routed-b15.md docs/handoff-cc-2026-10-07d.md SAIRN-ACTIVE-WORK-cc.md",
       "other_claimed_at": "2026-10-07T17:24:00Z",
+      "shared_files": [
+        "docs/tier-a-reviews.json"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-13T10:46:36Z",
+      "my_subject": "tests",
+      "my_task": "cody -- batch b7. TESTS AND TOOLS: (1) the driven SAIRNfreedom per-role per-resource matrix and the bld_draws role arms hank routed to me in docs/2026-10-13-hank-b6-routing.md items 3 and 4, both NEW FILES under tests/, expectation derived from api/_lib/sf-roles.js and observation from the handler, never both from the table; (2) REVIEW and DISCHARGE the three hank-authored api/ Tier A records hank cannot self-review, and RE-SEAT the two orphaned shas with --reseat-shas --write --write-weak-basis -- hank is the author and routed them, I am not the author; (3) build tools/unproven_arm_check.py to the b6 spec in docs/2026-10-13-cody-b6-methodology-unproven.md, and re-derive then resolve the check4_probe WEAKENING flag recorded under c465743b34b0 in docs/scrutiny-flags.json; (4) isolate the git-worktree probes so no probe can write the real .git/config, with a test that proves it; (5) the 19 disclosed seam pairs become a table with one named owner per pair plus a reusable closing procedure. NO api/ FILE IS EDITED and no auditor clone is entered. FILES: tests/api/sf_role_matrix_driven.test.js tests/api/bld_draws_role_arms.test.js tools/unproven_arm_check.py tests/run_unproven_arm_probe.py tools/git_config_isolation.py tests/run_worktree_isolation_probe.py docs/tier-a-reviews.json docs/2026-10-13-cody-b7-seam-pair-owners.md docs/scrutiny-flags.json SAIRN-handoff-cody-b7.md SAIRN-report-cody-b7.txt SAIRN-digest-cody-b7.txt SAIRN-ACTIVE-WORK-cody.md",
+      "other_session": "cc",
+      "other_subject": "cc",
+      "other_task": "cc batch b6 -- (1) implement the APPROVED per-gate scoped skip with gate/agent/reason/expiry, wire it into the push gate, make the blanket SAIRN_SEED_GATE=off fail loudly pointing at the scoped form, log every use in BYPASS-LOG; (2) a compaction-survival SessionStart hook with matcher compact for all six clones -- THE ONE AUTHORISED settings.json commit, and NOT a restoration of the 23 cleared hooks, which stay cleared -- plus driving the permission rules in the other four clones read-only; (3) tools/batch_cleanup.py, per-agent created-file lists, deletes only its own agent's scratch after that agent's push landed, never another agent's files and never live rows; (4) batch manifest JSON plus a validator that fails on renumbered or duplicate ids, push-gate scoped to the pushing agent's own files, retries capped at 2 then escalate with the error text; (5) migrate the 14 open-work row parsers onto docs/open-work shards, then close the highest-weight overdue Tier A obligations and re-date the rest with reasons; (6) push and confirm landed. CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: tests/run_tier_a_review_gate_probe.py, tests/push_gate/check4_probe.py, tests/push_gate/check7_probe.py and tests/push_gate/_local_remote.py are in CODY'S live b6 FILES and are NOT taken here -- item 4's tests go in new files instead. No auditor clone is entered and no other clone's working tree is written. FILES: tools/sairn_push_gate_hook.py tools/gate_skip.py tests/run_gate_skip_probe.py tools/batch_cleanup.py tests/run_batch_cleanup_probe.py tools/batch_manifest.py tests/run_batch_manifest_probe.py docs/batch-manifest-cc-b6.json docs/BYPASS-LOG.jsonl .claude/settings.json tools/dispatch_state.py tools/stale_row_sweep.py tools/index_duplicate_check.py tools/independence_check.py tools/orphan_register_check.py tools/traceability_matrix.py tools/accepted_risk_expiry_audit.py tools/md_table_check.py tools/open_work_shard.py docs/tier-a-reviews.json docs/2026-10-13-cc-routed-b6.md docs/handoff-cc-2026-10-13b.md SAIRN-report-cc-b6.txt SAIRN-digest-cc-b6.txt SAIRN-ACTIVE-WORK-cc.md",
+      "other_claimed_at": "2026-10-13T10:05:01Z",
       "shared_files": [
         "docs/tier-a-reviews.json"
       ],
