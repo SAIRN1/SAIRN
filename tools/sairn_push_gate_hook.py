@@ -465,7 +465,26 @@ def _deny_now_if_any():
         sys.exit(_emit_collected())
 
 
-def deny(reason):
+def deny(reason, gate=None):
+    """Refuse the push -- unless a SCOPED skip for `gate` is live.
+
+    ── WHERE THE SKIP IS HONOURED, AND WHY HERE (2026-10-13) ───────────────
+    `gate` is an id from tools/gate_skip.py's GATES. A check that passes one
+    becomes skippable; a check that passes nothing CANNOT be skipped by any
+    means, which is the safe default and is why the parameter is opt-in rather
+    than inferred. Threading it through all 54 deny() call sites in this file
+    was considered and rejected: most of them are not skippable classes, and a
+    mechanical sweep of a blocking hook to add an argument nobody reads is more
+    risk than the feature is worth.
+    SO AN UNWIRED GATE ID IS INERT, AND THAT IS VISIBLE RATHER THAN SILENT:
+    `python tools/gate_skip.py --gates` prints which ids this file actually
+    passes, measured by reading it, so a declared-but-unwired id shows up as a
+    finding instead of as a skip that mysteriously does nothing.
+    """
+    if gate and _scoped_skip(gate, [reason]):
+        # Not collected, not printed. The grant is already logged as SCOPED by
+        # _scoped_skip, with the refusal text recorded as what it let through.
+        return
     if COLLECT:
         COLLECTED.append(reason)
         return
@@ -1027,6 +1046,60 @@ def soft_capture_notice(check, tip):
 # write is a MISSING ROW, which is why tools/bypass_log.py reports its own line
 # count rather than implying completeness, and why it says in its own output that
 # an empty log is evidence about the hook rather than about the platform.
+def _blanket_refusal_lines():
+    """The refusal text, taken from tools/gate_skip.py rather than copied.
+
+    A second copy of this message is the drift this repo keeps recording: the
+    gate would go on naming a flag, a minimum and a ceiling that the tool had
+    since changed. If gate_skip cannot be imported the push is still REFUSED --
+    a blanket override honoured because the thing that explains the alternative
+    is missing is the worst of the three outcomes.
+    """
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import gate_skip
+        return list(gate_skip.BLANKET_REFUSAL)
+    except Exception as exc:                            # noqa: BLE001
+        return ['',
+                'REFUSED: SAIRN_SEED_GATE=off is the BLANKET form and no longer '
+                'works.',
+                '',
+                'tools/gate_skip.py could not be imported (%s), so the scoped '
+                'alternative' % exc,
+                'cannot be described here. The refusal stands anyway -- see that '
+                'file, or',
+                '`python tools/gate_skip.py --gates`.',
+                '']
+
+
+def _scoped_skip(gate, findings=None):
+    """Is a SCOPED skip live for this gate? Logs the grant when it is used.
+
+    Returns True only for a record that exists, names this agent and this gate,
+    and has not expired. Everything else -- absent, unreadable, expired,
+    mismatched -- is False, because an exemption that cannot be read is
+    indistinguishable from one that was never granted and must not be honoured.
+    """
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import gate_skip
+    except Exception:                                   # noqa: BLE001
+        return False
+    try:
+        rec, _why = gate_skip.active(gate)
+        if not rec:
+            return False
+        # WHAT IT LET THROUGH GOES ON THE RECORD. A skip that logs only that it
+        # happened is a count; a skip that logs what the gate would have said is
+        # evidence, and that is the field this design exists for.
+        if findings:
+            gate_skip.record_findings(gate, findings)
+        gate_skip.log(gate, rec, findings)
+        return True
+    except Exception:                                   # noqa: BLE001
+        return False
+
+
 def _record_bypass(check, reason, command=None, tip=None):
     try:
         sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__))))
@@ -1182,13 +1255,21 @@ def main():
         # Checked BEFORE any work so an override costs nothing and behaves
         # exactly like the env var does in prepush mode.
         if override_in_command(cmd):
-            # RECORDED BEFORE THE EXIT, so an override that crashes the hook
-            # afterwards is still on the record.
-            _record_bypass('ALL', 'SAIRN_SEED_GATE=off on a Bash git push -- the '
-                                  'BLANKET form, which disables every check in '
-                                  'this hook rather than a named one',
+            # ── THE BLANKET FORM IS REFUSED NOW (2026-10-13, approved) ──────
+            # It used to exit 0 here, before a single check ran, and 80 of the
+            # 94 rows in docs/BYPASS-LOG.jsonl are that shape. Nobody chose to
+            # switch off fourteen checks; it was the only thing available. It
+            # is still RECORDED before the refusal, so an override attempt is
+            # on the log whether or not it was honoured -- and `honoured:
+            # false` is the field that tells the two apart.
+            _record_bypass('ALL', 'SAIRN_SEED_GATE=off on a Bash git push -- '
+                                  'the BLANKET form. REFUSED, not honoured; '
+                                  'the scoped SAIRN_SKIP form was printed '
+                                  'instead',
                            command=cmd)
-            sys.exit(0)
+            for line in _blanket_refusal_lines():
+                print(line)
+            sys.exit(1)
         local = None
 
     repo = git(os.getcwd(), 'rev-parse', '--show-toplevel').strip()
@@ -1394,7 +1475,7 @@ def main():
         deny('EXTERNAL FILE INDEX: COULD NOT RUN -- tools/'
              'external_file_index_check.py is not in this clone, so NOTHING '
              'was checked about files kept outside git. A missing checker is '
-             'not a clean result.')
+             'not a clean result.', gate='external-files')
     elif not os.path.isfile(os.path.join(repo, 'docs',
                                          'external-files-index.json')):
         # ── THE INDEX IS ANOTHER SESSION'S FILE AND DOES NOT EXIST YET ──────
@@ -1432,13 +1513,13 @@ def main():
                  + (_r.stdout or '')[-2000:]
                  + '\n  Either commit it, or declare it with a purpose. A '
                  'handoff nobody can find is\n  worse than no handoff -- the '
-                 'next session reads the one it CAN find.')
+                 'next session reads the one it CAN find.', gate='external-files')
         elif _r.returncode != 0:
             deny('EXTERNAL FILE INDEX: COULD NOT RUN (exit %d) WITH THE INDEX '
                  'PRESENT, which is a\n  real failure rather than a missing '
                  'file. Third state, not a pass.\n%s'
                  % (_r.returncode,
-                    ((_r.stdout or '') + (_r.stderr or ''))[-1500:]))
+                    ((_r.stdout or '') + (_r.stderr or ''))[-1500:]), gate='external-files')
 
     # ── CHECK 15: THIS PUSH CHANGES THINGS THAT CHECK THE WORK (2026-10-06) ──
     # NON-BLOCKING, AND THAT IS THE DESIGN RATHER THAN TIMIDITY. Every one of
@@ -2714,7 +2795,7 @@ def main():
                         OVERRIDE_HINT,
                         "An override nobody mentions is how this gets hollowed out -- and",
                         "this is the check whose whole subject is somebody not being told.",
-                    ]))
+                    ]), gate='tier-a')
                 if _rev is not None and _rev.returncode == 2 and MODE == 'prepush':
                     sys.stderr.write(
                         "\nTier A review gate COULD NOT TELL -- this is NOT a pass:\n"
@@ -3268,7 +3349,7 @@ def main():
                 "that was already broken. This asks whether the refusal names a file in",
                 "THIS push, which is never somebody else's problem to clear.",
                 OVERRIDE_HINT,
-            ]))
+            ]), gate='derived-docs')
 
     if _gen_dirty:
         # Resolve the base ONCE, and only now -- the worktree is the expensive
@@ -3554,7 +3635,7 @@ def main():
                 drifted = []
             else:
                 lines.append(soft_capture_notice('seed', tip))
-                deny("\n".join(lines))
+                deny("\n".join(lines), gate='seed-gate')
         else:
             lines += [
                 "",
@@ -3568,7 +3649,7 @@ def main():
                 "That one disables ALL FOURTEEN checks rather than this one. An override",
                 "nobody mentions is how this gets hollowed out.",
             ]
-            deny("\n".join(lines))
+            deny("\n".join(lines), gate='seed-gate')
 
     if untold and MODE == 'prepush':
         # Same "could not tell is not a pass" rule, said where a pre-push caller
@@ -3666,9 +3747,15 @@ if __name__ == '__main__':
         if '--pre-push' in sys.argv:
             MODE = 'prepush'
         if os.environ.get('SAIRN_SEED_GATE', '').lower() == 'off':
+            # REFUSED, same as the Bash path above. Both entry points had to
+            # change together: leaving one open would have made the refusal a
+            # suggestion, and the env-var path is the one `--pre-push` uses.
             _record_bypass('ALL', 'SAIRN_SEED_GATE=off in the environment '
-                                  '(prepush mode) -- the BLANKET form')
-            sys.exit(0)
+                                  '(prepush mode) -- the BLANKET form. '
+                                  'REFUSED, not honoured')
+            for line in _blanket_refusal_lines():
+                print(line)
+            sys.exit(1)
         # ENFORCE, BUT COLLECT FIRST. Every check runs; every refusal is kept;
         # the push is denied at the end with all of them. `--one` restores the
         # old stop-at-the-first behaviour for anyone who wants it.
