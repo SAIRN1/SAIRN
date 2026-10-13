@@ -1,0 +1,455 @@
+REPORT fourth b8
+BATCH b8 -- fourth / Ted -- 2026-10-13
+
+HASH RULE: line 1 is the title, the LAST line is END-OF-REPORT, the
+SECOND-TO-LAST line is `SHA256 <hex>`, and the BODY is line 2 through the line
+before the SHA. Checked by tool:
+
+  python tools/report_sha_check.py --check SAIRN-report-fourth-b8.txt
+
+================================================================================
+1.  ITEM 1 -- FETCH, REBASE, REGENERATE, ONE PUSH, REFUSED
+================================================================================
+
+  at pickup           18 behind, 19 ahead
+  after the rebase     0 behind, 20 ahead
+  at report time      21 behind, 23 ahead -- other sessions kept landing
+
+THE REBASE HIT ONE CONFLICT, in docs/defect-density-register.json, four hunks.
+ANOTHER SESSION HAD INDEPENDENTLY ADDED `superseded_by` TO THE SAME FOUR RECORDS
+b7 RETIRED. That is the reassuring direction: two sessions reached the same
+conclusion about the same four duplicates. The only difference was that my side
+also carried `superseded_note` -- the sentence recording who decided and why --
+so MY SIDE WAS A STRICT SUPERSET and taking it lost nothing.
+
+  the resolver REFUSES unless every hunk is exactly that shape: the HEAD side
+  must be a prefix of the other once a trailing comma is accounted for. A
+  conflict where the two sides genuinely disagree is not resolved by a script.
+  It then re-parses the whole file as JSON before writing.
+  AFTER: 516 records, 4 superseded, 4 carrying a note.
+
+THE GENERATED DOCUMENTS WERE CLEAN AT PICKUP AND MY OWN COMMITS MADE THEM STALE.
+Both were checked before the rebase and again after -- EXIT 0 on
+`master_plan.py --check` and `traceability_matrix.py --check`. Then b8 added a
+tool, a convention heading, two docs and a TSV, and both went to EXIT 1. THAT IS
+MY CHANGE, NOT SOMEBODY ELSE'S, so both were regenerated in the batch that
+caused it: 5/5 and 5/4 lines, a counts-only drift, and both --check runs EXIT 0
+again. Whoever pushes next is not blocked by me.
+
+THE PUSH WAS ATTEMPTED ONCE AND REFUSED, VERBATIM:
+
+  Blocked: the outgoing range 71a61f4c29dd8464cc782d569bd464db2b2e1752..
+  ba5a98dcc94b99160442add5222cc7315cc5d002 could not be read.
+
+THREE THINGS ABOUT THAT REFUSAL, because it is not the one the last three
+batches have been reporting:
+
+  1. IT IS NOT A VERDICT ABOUT CONTENT. The gate failed to read its own outgoing
+     range -- the same shape b4 logged twice.
+  2. IT IS NOT THE HOOKS-OFF GENERATED-DOCUMENT BLOCK that stopped b5, b6 and
+     b7. That check did not get the chance to speak.
+  3. THE USUAL EXPLANATION DOES NOT APPLY. That message normally means the
+     remote has moved under you -- but the rebase had just landed and the tree
+     was 0 BEHIND when it fired. So "fetch and retry" is not the answer here,
+     and I did not retry: the brief said record it exactly and stop.
+
+  AND THE FIRST INVOCATION TIMED OUT IN MY SHELL AT 120s RATHER THAN BEING
+  REFUSED, which is a different thing and is not counted as an attempt. The gate
+  was still running -- it had printed COPY-EXACTLY, EXTRA SCRUTINY and the seam
+  check. The same single attempt was then allowed to finish and produced the
+  refusal above. A timeout in the caller is not a verdict from the callee, and
+  reading it as one is how a no-op push gets reported as a gate finding.
+
+  SAIRN_SEED_GATE=off WAS NOT USED. docs/BYPASS-LOG.jsonl gained no `fourth` row
+  this batch, which is the mechanical check on that sentence rather than the
+  sentence.
+
+================================================================================
+2.  ITEM 2 -- THE LAST THREE STRIPPER SITES, AND A PINNING TEST THAT PINS THE
+    DIFFERENCE RATHER THAN THE PASS
+================================================================================
+
+WHY A PINNING TEST AND NOT ANOTHER BEFORE/AFTER RUN. Across b5-b8, 29 private
+comment-strippers in 20 files were replaced and every suite was driven before and
+after with no change of verdict. That is good evidence and it is NOT A PIN: "all
+the suites still pass" cannot distinguish a correct swap from one whose
+difference nothing happens to assert on, and the next person to touch a call site
+has nothing to run.
+
+tests/strip_consolidation_pinning.test.js -- 39 arms, 0 failed, EXIT 0. It pins
+THE DIFFERENCE, in both directions:
+
+  A   each arm states an input where the private regex DESTROYS code and asserts
+      BOTH that the naive version loses it AND that the shared one keeps it. The
+      first half is what makes the arm able to fail -- revert a call site to the
+      private regex and this goes red.
+      The case that matters: `fetch('https://api.invalid/x'); auditPinSetup(ctx);`
+      -- the naive strip deletes the CALL, which is how a deleted call looks
+      present and an existing one looks deleted.
+  A2  THE SAFETY PROPERTY, asserted rather than argued: on every case the shared
+      output is at least as long as the naive one. It can only ever UNDER-strip,
+      so it leaves a comment in and never removes code.
+  A3  the HTML/JS distinction measured, not asserted: stripComments keeps code
+      after `accept="image/*"` and the naive block regex opens a comment on it.
+  B   the ANCHORS the real suites match on, read from the ten real subjects on
+      disk, must survive the strip -- so a moved subject takes this file red
+      rather than leaving a stale claim. A missing subject is a FAILURE, not a
+      skip (PR 1.11).
+  C   all 23 consolidated files still require the shared library and none has a
+      private `//` stripper left.
+
+THE THREE SITES THEMSELVES, and only one of them was what b7 called it:
+
+  api/auth-setup-attribution.test.js:75        A REAL PRIVATE STRIPPER, and new
+    since the b5 inventory. Its own paragraph above it is right about why it
+    exists and it was still a private `/\/\/[^\n]*/g`, so the "blanked, not
+    skipped" promise was only half kept: the line structure survived, and a call
+    site sitting after an `https://` on the same line did not. The local name
+    `stripComments` is KEPT and now delegates to stripJs -- the subject is API
+    JavaScript, so the library's HTML-aware stripComments would be the wrong
+    entry point, and a comment says why the name is not a contradiction.
+
+  api/alf-append-only-read-order.test.js:192   THIS CORRECTS b7, WHICH DECLINED
+    IT AS "SQL". It is not SQL. `stmt` is a slice of JAVASCRIPT -- a multi-line
+    expression that BUILDS a SQL string -- so a JavaScript stripper was right all
+    along and b7's reason for leaving it was wrong about the language. The
+    private version was worse than the usual case rather than better: it applied
+    `/\/\/.*$/` PER LINE, so any line of the concatenation carrying a `//` inside
+    a string lost the rest of itself, and that statement is what the ordering
+    assertions then read.
+
+  api/sairnvet-transcribe.test.js:152          STILL DECLINED, same reason, now
+    with the line quoted: the regex is inside a `//` comment describing a
+    previous version. The file already uses a scanner. An inventory false
+    positive, not a site.
+
+  before/after on all three: EXIT 0 before, EXIT 0 after, node --check clean.
+  python tools/jscomments.py --probe      EXIT 0  "0 case(s) failed"
+  node tests/lib/strip_comments.test.js   EXIT 0  "27 passed, 0 failed"
+
+THE INVENTORY NOW READS 4 SITES IN 2 FILES AND THAT IS NOT A REGRESSION: three
+of the four are the pinning test's own deliberate copies of the private
+implementations -- the thing being pinned against -- and the fourth is the regex
+quoted in a comment. ZERO REAL PRIVATE STRIPPERS REMAIN.
+
+================================================================================
+3.  ITEM 3 -- sd_write_faults WAS RED AND THE APP WAS RIGHT
+================================================================================
+
+  baseline   EXIT 1, 7 passed, 11 FAILED
+  after      EXIT 0, ALL 18 STONEDESK WRITE FAULT ARMS PASS
+
+THE CAUSE IS SINGLE, which is the branch the brief asked me to take if it was.
+Arm 1 reported:
+
+  "the transport REJECTS on a timeout -- every await caller would throw out of
+   its handler and skip the toast. The defect relocated, not fixed."
+
+TRUE OF THE HARNESS AND FALSE OF THE APP. stonedesk.html's sdData() catches,
+calls sdDataFailed() and `return null` -- read at the catch tail, not inferred.
+What the harness did was load sdData, sdDataFailed and sdFetchTimeoutSignal into
+its vm and NOT the module-level state sdData writes: it sets
+`_sdWriteOk[resource] = false` on entry. So the real function threw
+`_sdWriteOk is not defined` INSIDE the vm, never reached its own catch, and never
+reached the `return null` these arms exist to assert.
+
+  arm 2's message was literally `_sdWriteOk is not defined`, and so were the
+  other nine. ELEVEN FAILURES, ONE CAUSE.
+
+THE FIX LOADS THE FOUR MAPS FROM THE REAL FILE BY NAME -- `_sdAuthRefused`,
+`_sdReadFailed`, `_sdLastStatus`, `_sdWriteOk` -- and ASSERTS each declaration
+exists rather than substituting `{}`. A stub would let the app rename or reshape
+one of them and keep this suite green, which is the same seam defect one level
+in. A declaration that goes missing now takes the suite RED.
+
+================================================================================
+4.  ITEM 4 -- phi_cache IS SELF-ISOLATING, AND THE PROBLEM WAS NOT WHAT THE
+    PHRASE USUALLY MEANS
+================================================================================
+
+THIS SUITE HAS NO MUTABLE GLOBALS AND SHARES NO OBJECTS BETWEEN ARMS -- each
+simulated browser already got its own `store`. So "reset module state in its own
+setup" had nothing to reset. WHAT IT ACTUALLY DID was read its seven subjects at
+FOUR different points during the run: a top-level const, two more further down,
+and `readApp()` inside two loops. A subject edited by anything else WHILE the
+suite ran therefore changed the answer an arm got DEPENDING ON WHERE IN THE FILE
+THAT ARM SAT. That is order-dependence wearing a different hat: the suite was
+sampling a moving subject.
+
+  EVERY SUBJECT IS NOW READ EXACTLY ONCE, BEFORE ANY ARM, into a frozen
+  snapshot, and every later read is served from it. One readFileSync remains in
+  the file -- the snapshot loop.
+  readApp() THROWS on a subject outside the declared seven rather than falling
+  back to a live read, which is what would have reintroduced it quietly.
+
+  green alone                          EXIT 0, 72 passed, 0 failed
+  green after 24 writing suites run
+  in order, subjects re-hashed after
+  every one                            EXIT 0, 72 passed, 0 failed, none moved
+
+NOT VERIFIED AGAINST A WHOLE-TREE RUN, and I am saying so rather than letting
+"verified in the full run" stand on a proxy: that run is about an hour and
+mutates the tree. WHAT MAKES THE PROXY MEANINGFUL IS STRUCTURAL RATHER THAN
+STATISTICAL -- after setup there is no longer a window in which test order can
+matter, because there are no further reads to be affected.
+
+  AND THE FIRST VERSION DIED IN THE TEMPORAL DEAD ZONE. The snapshot referenced
+  the SUBJECTS const before its declaration. `node --check` passes a TDZ
+  violation happily -- it is a runtime error, not a syntax one -- so it was
+  caught by RUNNING it, which is the only reason it is not in this report as a
+  shipped defect.
+
+================================================================================
+5.  ITEMS 5 AND 6 -- CONVENTION 34, COUNTED BEFORE IT WAS ASSIGNED
+================================================================================
+
+HANK ROUTED THE NUMBER RATHER THAN SELF-PROMOTING IT, and said why: *"that
+file's numbering has been wrong twice from two sessions adding an item within the
+same hour, and the file has an owner. ROUTED."* So the count came first:
+
+  `## <n>.` headings before          33
+  the numbers                        1..33, contiguous
+  duplicates                         none
+  gaps                               none
+  any existing use of a "34"         none under docs/ tools/ tests/
+  NEXT FREE                          34
+
+CONVENTION 34 IS HANK'S TEXT, CARRIED AS WRITTEN -- the rule, the three b4
+instances and the argument against folding it into convention 8. The number is
+the only thing this promotion added. Landed at
+docs/2026-09-13-cross-domain-disciplines.md with the promotion row in
+docs/METHODOLOGY.md, inserted WHOLE and with its pipe count compared against row
+33's before and after (PR 2.1).
+
+  headings after 34   numbers 1..34, no duplicate, no gap
+  promotion rows      max 34; every row has a heading
+  rows missing a heading   none
+
+THE MEMBERSHIP QUESTION WAS ASKED RATHER THAN ASSUMED, which is the half these
+promotions keep getting wrong. 34 IS a member of the cannot-fire group -- both
+halves of it are a check that reads as coverage and structurally cannot fire,
+with the printed total unchanged either way -- so the group moved from TEN to
+ELEVEN and the heading's denominator from thirty-three to thirty-four, rather
+than being left to drift. AND IT IS THE FIRST MEMBER WHOSE TRIGGER IS A COMMIT
+RATHER THAN ELAPSED TIME, which is why it earns a number beside 8 instead of a
+cross-reference inside it.
+
+ITEM 6 NEEDED NO EDIT. Cody's contamination-warning convention is already
+number 33, with its promotion row at docs/METHODOLOGY.md:90 naming 7ae272cc and
+ffe43d70. Confirmed by grep, not by memory, and nothing was written.
+
+================================================================================
+6.  ITEMS 7 AND 12 -- TWO THINGS ROUTED TO cc, NEITHER OF THEM CODE
+================================================================================
+
+ITEM 7, THE CONVENTION-NUMBER CHECK -- SPEC ONLY. Routing doc section 16.
+Building it in the same batch that used it would make its first run its own
+author's self-assessment. THREE SOURCES, NOT TWO, and the third is the one a
+naive checker misses: besides the headings and the promotions table there is the
+WRITTEN-OUT DENOMINATOR in the group heading -- "ELEVEN of the thirty-four" --
+hand-edited on every promotion and the one figure a reader actually sees.
+  Five assertions, and the direction of the third is load-bearing: every
+  promotion row must have a heading, but A HEADING WITHOUT A ROW IS NOT A
+  FAILURE. 17 of the first 17 conventions have no row, because the table started
+  later. A checker demanding the reverse would EXIT 1 ON A CORRECT FILE from the
+  day it was installed, which is how a gate arrives pre-distrusted.
+  And a ZERO heading count must be EXIT 2, not 0: a regex that stops matching
+  would otherwise report "no duplicates, no gaps" over an empty population --
+  convention 34's own failure mode, which would be a fitting way for this
+  particular checker to die. Assert a floor of 30 headings or refuse.
+  It should start REPORT-ONLY. Both real failures were caught by a human
+  re-counting; a new gate on a document four sessions edit should earn blocking
+  rights by finding something first.
+
+ITEM 12, THE EXTERNAL-FILES DECISION RECORD.
+docs/2026-10-13-ted-external-files-warn-not-block-decision.md.
+
+  docs/BYPASS-LOG.jsonl, 95 rows: fourth 47, hank 21, cc 14, cody 13.
+  ALL 21 OF HANK'S ARE check:"ALL", blanket:true -- the form that disables every
+  check rather than the one that refused. Six of them cluster inside seven
+  minutes on 2026-10-13, IN PAIRS, because one push writes two rows. SO 21 ROWS
+  IS NOT 21 DECISIONS, it is roughly half that many pushes, and the record says
+  so rather than letting the figure be quoted as bypass count.
+
+WHY THE BLANKET FORM IS THE PREDICTABLE RESPONSE: `EXEMPTABLE` at
+tools/sairn_push_gate_hook.py:860 is `{'seed': 'seed-gate'}` -- ONE entry. A
+session blocked by the external-files check has the blanket flag or not pushing.
+A gate with no scoped exemption teaches the blanket one, and the log is what that
+looks like after a fortnight.
+
+WHY THIS CHECK SHOULD NOT BLOCK: measured across b5-b8, the file named in the
+refusal was SOMEBODY ELSE'S every time but once -- b5 one, not mine; b6 one,
+mine; b7 at push time the gate was CLEAR; b7 at report time three, none mine.
+And the queue is REFILLED BY COMPLIANCE: every session is told to upload its
+handoff to a declared non-transient directory, so following the instruction arms
+the gate against the next session, whose only lever is a blanket override of
+fourteen unrelated checks.
+
+WHAT THE RECORD REFUSES TO LOSE, which is the half a warn-only patch usually
+drops: the count stays in EVERY push's output rather than moving to a tool
+somebody must remember; MY OWN unindexed file STILL BLOCKS, because that is the
+only pressure keeping the index current; and an UNREADABLE directory still
+refuses, because could-not-tell is not a pass. The hard part -- deciding whose a
+file is from a filename convention with three spellings of a session name in it
+-- is named as cc's call and as the place to fail in the safe direction.
+
+================================================================================
+7.  ITEMS 8, 9, 10, 11 -- ASSIGNMENTS, THE RED CENSUS, SEQ 17-A, THE SWEEP
+================================================================================
+
+ITEM 8. docs/2026-10-13-ted-unowned-suites-assigned.tsv. 49 of cody's 76 rows
+were UNOWNED and all 49 are assigned: 45 cody, 4 hank, 0 left unowned. THE BASIS
+IS STATED PER ROW as a directory rule rather than a record -- weaker than a
+file's own OWNER line, stronger than UNOWNED, and the two must never be confused.
+CODY'S FILE IS NOT EDITED; the new file carries the same `suite` key so the two
+join and neither overwrites the other.
+
+ITEM 9. NOTHING IS MISSING FROM docs/known-red-suites.json. The gap against the
+available population is 13: FIVE are already in `not_red` with root causes, and
+the other EIGHT WERE DRIVEN ALONE AND ARE GREEN. Nothing was added, because an
+entry over a green suite absorbs that suite's next real failure -- the register's
+own stated reason for reporting RECOVERED as loudly as NEW.
+
+  AND ONE OF THE EIGHT IS A FINDING OF ITS OWN:
+  tests/run_tier_a_review_gate_probe.py EXITS 0 while printing
+  "PermissionError: [WinError 5] Access is denied". An exit code and an output
+  that disagree. It reads as green to every census on this platform. NOT MINE
+  (tests/ -> cody), not diagnosed, named.
+
+ITEM 10. The 16 remaining REAL SEQ 17-A sites, subject-verified at this HEAD by
+the method b4 demonstrated -- go to the recorded file:line, read what the
+derivation takes as input, say whether the recorded SUBJECT agrees. 16 OF 16
+AGREE. NONE DECLINED. The brief asked for 15; the sixteenth is the pair-line at
+citation_drift_hook.py:416 and leaving it out having just read :411 would have
+been absurd.
+
+  THE CITATION WAS RE-DERIVED BEFORE IT WAS TRUSTED, because 20 files in these
+  trees were edited this batch. Three needed refining by one line, and THAT is
+  the finding rather than a disagreement:
+    tests/sairncode_gates.js:301   the line DECLARES the regex; `re.exec(m[1])`
+                                   is at :303. Cite :301-303.
+    tools/citation_drift_hook.py   `lines` is BOUND at :406; :411 and :416 only
+                                   CONSUME it. Cite :406 for the subject.
+  Across b4 and b8 the classification is now verified at 19 of 23 sites. THE 36
+  REAL FINDINGS REMAIN OPEN BY DESIGN -- this pass verifies the classification
+  and fixes nothing, which is what the section says it is for.
+
+ITEM 11. THE DUPLICATE SWEEP IS CLEAN. 516 records, 4 already superseded, 512
+live, and ZERO live records share a `summary` at different commits. Nothing to
+retire. Option A as instructed: retire by pointing, never delete.
+
+  THE DEFINITION IS WHY THAT RESULT MEANS ANYTHING. A duplicate is the same
+  `summary` at a DIFFERENT commit -- the shape --reseat refuses to merge.
+  RECORDS SHARING A COMMIT ARE NOT DUPLICATES: one commit routinely fixes
+  several defects, and b7 measured 49 commits appearing more than once. A sweep
+  keyed to the commit would have "found" 49 duplicates and retired real records.
+  python tools/defect_register.py --check  EXIT 0.
+
+================================================================================
+8.  ITEM 13 -- THE OCT 13 MIGRATION, MARKED AND NOT OVERSTATED
+================================================================================
+
+Michael ran the audit-log migration SQL: the sairncode, stonedesk and sairnlaw
+audit-log CHECK constraints widened, 13 new sairn*_audit_log tables including
+SAIRNvet, and rf_schedule gained status_changed_by / _role / _at.
+
+ONE DOC OF MINE CARRIED IT OPEN and it is marked there:
+docs/2026-10-06-hank-routed-to-fourth.md, the section headed "INSTANCE 2 -- TIER
+2 USED AS TIER 3, AND THIS ONE IS STILL BROKEN IN PRODUCTION". The marker says
+that sentence is no longer true.
+
+  MARKED, NOT REWRITTEN. The analysis underneath stays verbatim, because it is
+  the record of how a green suite and six silent attribution paths coexisted,
+  and that is the reusable part. What changed is the database, not the argument.
+
+  AND IT IS NOT VERIFIED FROM HERE, which the marker says in terms. This is
+  Michael's statement that the migration ran, recorded where my own document
+  carried it open -- not a live read. No session in this clone has queried the
+  constraint or inserted a row since. THE ONE-LINE CONFIRMATION IS
+  tools/audit_event_type_check.py, which hank's b4 report records exiting 1 on
+  exactly these three constraints, and b8 DID NOT RUN IT -- it belongs to the
+  session that owns the attribution work.
+
+THE OTHER THREE DOCS OF MINE THAT MENTION `audit_log` WERE CHECKED AND LEFT
+ALONE: all three references are Tier A review obligations naming `sv_audit_log`
+as a RESOURCE, not migration items. Checked rather than assumed, and said so
+because "updated the docs" over four files when one was relevant is how a
+marker becomes noise.
+
+================================================================================
+9.  CLAIMS -- AND THE GAP IS MINE
+================================================================================
+
+  repo claims held               0
+  session locks held by me       1   fourth.lock, pid 61696, released at close
+  locks released by me           0   none of the 8 dead ones is attributable
+  worktrees besides the main one 0
+  git stash                      0
+  refs/salvage/b6-*              2   kept; a push still has not landed
+
+I DID NOT TAKE A b8 CLAIM, AND THAT IS A GAP RATHER THAN A DECISION. The release
+of the b7 claim ran and the new claim never followed -- the queue went straight
+into the rebase. So b8's 23-file edit RAN UNCLAIMED. No other session declared
+any of those paths and nothing was taken from anyone, but the record does not
+show this work, and on this machine the registry mirror would have shown it to
+the other five sessions even unpushed. Reported here rather than left for
+somebody to notice from the claim log.
+
+  THE LOCK TABLE, FIFTH BATCH: 14 locks, 6 holders LIVE, 8 DEAD, 0
+  ATTRIBUTABLE, 0 RELEASED. The structural reason is unchanged -- the registry's
+  pid->session map holds only the six LIVE pids, so a dead pid can never be
+  attributed through it, and the lock files carry no session field. Routed to
+  cc: tools/session_lock_check.py:128, :349, :357.
+
+================================================================================
+10. WHAT IS NOT DONE, PLAINLY
+================================================================================
+
+  - THE PUSH. 23 commits across four batches, none on origin/main. One attempt,
+    refused on an unreadable outgoing range, stopped as instructed.
+  - NO b8 CLAIM WAS TAKEN. Named above.
+  - tools/audit_event_type_check.py NOT RUN -- the confirmation that item 13's
+    migration did what it was meant to.
+  - tests/run_tier_a_review_gate_probe.py -- exit 0 with a PermissionError in
+    its output. cody's.
+  - THE CONVENTION-NUMBER CHECK -- spec routed, cc builds it.
+  - THE EXTERNAL-FILES WARN-NOT-BLOCK CHANGE -- decision routed, cc implements.
+  - THE 36 REAL SEQ 17-A FINDINGS -- classification verified at 19 of 23 sites,
+    the findings themselves open by design.
+  - run_delegation_probe.py:76, :80, :113, :119 -- cody's.
+  - session_lock_check.py:128, :349, :357 -- cc's, fifth batch.
+  - sairn_claim.py:1966, :1921, :2414 -- cc's.
+  - phi_cache NOT verified against a whole-tree run; the proxy and why it holds
+    are in section 4.
+
+================================================================================
+11. QUESTIONS ONLY MICHAEL CAN ANSWER
+================================================================================
+
+  1. FOUR BATCHES OF WORK EXIST ONLY IN THIS CLONE -- 23 commits. b8's refusal
+     was a NEW shape (the gate could not read its own outgoing range, with the
+     tree 0 behind) on top of the standing hooks-off generated-document block.
+     HOW DOES THIS WORK REACH origin/main?
+  2. THE SALVAGE REFS -- delete after a push, or keep the probe commits?
+  3. THREE UNTRACKED settings.json BACKUPS in .claude/. Delete, or keep?
+  4. sql/restore_demo_pins_2026-09-29.sql -- TWELFTH batch carried, not mine,
+     writes credential rows. Commit, delete, or carry?
+  5. ~350 FILES IN C:\Users\marsh\ classified as throwaway in b4. Nothing
+     deleted and nothing will be without your word.
+
+================================================================================
+12. COMMITS THIS BATCH
+================================================================================
+
+  46e4072b  items 2, 3, 4, 5, 6 -- 8 files, +548 -9
+  a5ad3b02  items 7, 8, 9, 10, 11, 12, 13 -- 4 files, +397
+  04488b32  the regenerated MASTER-PLAN and traceability matrix
+  17ec468b  the handoff, written BEFORE this report
+  (later)   this report and the digest
+
+  Re-derive rather than trusting this list, which a later commit carries:
+    git log --oneline -6
+    git rev-list --left-right --count origin/main...HEAD
+    git diff --shortstat 46e4072b~1 04488b32
+SHA256 fb4818ccd280e37423eace6582a42437d924377491f030f19f415f47dc043ec0
+END-OF-REPORT

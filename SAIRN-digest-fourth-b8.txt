@@ -1,0 +1,15 @@
+DIGEST fourth b8
+SHA256 3a45a57c85b2c725378d25f7364790b1880e0ae8ae1cf35cc49b1a9ab7e6437e
+
+STATUS: HEAD 17ec468b; work 46e4072b + a5ad3b02, 12 files, +945 -9. 23 ahead, 21 behind. Rebase landed; one register conflict, my side a strict superset. One push, REFUSED on an unreadable outgoing range; stopped.
+
+DECISION-NEEDED: how four batches reach origin/main; the demo-pins SQL, twelfth batch; the settings.json backups; refs/salvage/b6-*.
+
+CHANGED: 1 P (rebase+regenerate D, push refused) 2 D (39-arm pinning test; b7's "SQL" decline corrected) 3 D (18/18; harness under-loaded, app right) 4 D (frozen snapshot) 5 D (34, counted first) 6 D (already 33) 7 D (spec to cc) 8 D (49 assigned) 9 D (8 driven GREEN) 10 D (16 of 16) 11 D (0 duplicates) 12 D (to cc) 13 D (marked, unverified) 14 D.
+
+EVIDENCE-path: scratchpad/ counts8.txt, seq17a.txt, sdwf2.log, drive8.jsonl, push_b8b.log; routing doc 16-19.
+
+UNVERIFIED: audit_event_type_check.py not run; run_tier_a_review_gate_probe exits 0 printing PermissionError; NO b8 CLAIM TAKEN.
+
+NEXT: claim first; run audit_event_type_check.py; push.
+END-OF-DIGEST
