@@ -5693,7 +5693,7 @@
     {
       "author_session": "hank",
       "opened_at": "2026-10-06T06:14:34Z",
-      "opened_at_sha": "c0be1a70208834a800cbf8cdca914b229bebee93",
+      "opened_at_sha": "8246d8bab707815a24444e0b6bad0cd229dbbb71",
       "resources": [
         "alf_clients",
         "alf_family_contacts",
@@ -5706,12 +5706,15 @@
         "tests/sd_data_family_mar_gate.js"
       ],
       "what": "api/sd-data.js resource alf_family_contacts, action 'family_mar': added the caller gate it never had -- role set (ALF_FAMILY_READ_ROLES, inherited unchanged from the sibling 'read' action) resolved BEFORE the contact fetch with an empty assignment scope refused 403, then the stored contact row's resident_id checked against that scope with a FORBIDDEN kept distinct from NO_SUCH_CONTACT. Before this, any authenticated session on the licence including an unassigned med_aide could pass any contact_id and receive that resident's full medication administration record; the familyMarView() CONSENT check was standing in for an authorisation check. WHAT A REVIEWER SHOULD ATTACK: (1) the ORDER -- I refuse an empty scope before any contact query specifically so a caller who may not ask anything is not told whether the contact exists, but the second half necessarily runs AFTER the fetch, so a narrow caller with a NON-empty scope still learns existence for residents outside it; decide whether that residual oracle is acceptable or whether the fetch should be scoped by resident_id in the query itself. (2) ALF_FAMILY_READ_ROLES includes 'billing' and this change inherits it onto a CLINICAL record without narrowing -- I argue narrowing here would replace one sibling disagreement with another, silently; that argument is reviewable. (3) tests/sd_data_family_mar_gate.js arm C0 is a count==1 uniqueness guard added because the test's FIRST version had a false pass -- the bare anchor matched twice and C2 was grading read's body; check the guard is actually load-bearing and not just present.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cody",
       "owner_assigned_at": "2026-10-06T06:14:34Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cody",
+      "reviewed_at": "2026-10-13T11:24:54Z",
+      "verdict": "PASS, reviewed by cody in b7 after re-seating the record's dangling sha to\n8246d8bab707 on a FILE-SET SUBSET basis (declared weak, stamped\nopened_at_sha_reseated with its basis, and verified reachable from origin/main\nby git merge-base --is-ancestor before any review was attempted -- an\nunreachable sha is an unreviewable record, not a passing one).\n\nWHAT WAS CHECKED, and by two methods that do not share a source. (1) The\nrecord's own suite, tests/sd_data_family_mar_gate.js, run against HEAD: exit 0,\n10 passed 0 failed, including arm C0, which asserts the source anchor matches\nEXACTLY ONCE -- so arms C1-C3 are provably grading the family_mar branch and\nnot the sibling `read` body sixty lines above it, which is the false pass the\nauthor recorded and fixed in the commit message. (2) Independently of the\nsuite, the two refusal messages and the marBroad guard are present in\napi/sd-data.js at HEAD at lines 12544, 12546 and 12587, so the gate has not\nbeen removed or reordered by any commit since.\n\nWHY THE FIX IS RIGHT AND NOT MERELY PRESENT. The defect was a consent check\nstanding in for an authorisation check: familyMarView answers a question about\nthe CONTACT and was the only thing between any authenticated session on the\nlicence and a named resident's full medication administration record. The fix\nresolves the role set and the caller's assignment scope BEFORE the contact\nfetch, so a caller with no residents assigned is refused without being told\nwhether the contact_id exists -- the existence oracle the sibling `read`\nalready refuses -- and then checks the resident id off the STORED row rather\nthan a caller-supplied parameter. 403 FORBIDDEN is kept distinct from 404\nNO_SUCH_CONTACT so the pair is never one oracle. The empty-scope case returns a\nREFUSAL rather than an empty MAR, which is the right call on a clinical record:\na blank MAR reads as \"no medications administered\", a claim nobody made.\n\nWHAT I AM NOT DISCHARGING, because a reviewer who clears more than he checked\nis worse than one who checks nothing. ALF_FAMILY_READ_ROLES includes `billing`\non a clinical record. The author INHERITED that set from the sibling `read`\nrather than narrowing it here, flagged it in the batch inventory, and said so\nin the commit message. That was the correct choice for this fix -- a gate that\ndisagrees with its sibling is the defect being repaired -- but the question\n\"should billing read a MAR at all\" is a SAIRNcare role-vocabulary judgement\nthat is still open and is NOT closed by this verdict. It belongs to Michael,\nper CLAUDE.md's rule that per-app role vocabulary needs an explicit judgement\ncall and never a silent copy.",
+      "opened_at_sha_was": "c0be1a70208834a800cbf8cdca914b229bebee93",
+      "opened_at_sha_reseated": true,
+      "opened_at_sha_reseat_basis": "FILE-SET SUBSET"
     },
     {
       "author_session": "cc",
@@ -6207,6 +6210,32 @@
       "status": "open",
       "reviewer_owner": "cc",
       "owner_assigned_at": "2026-10-13T10:12:46Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-13T11:41:45Z",
+      "opened_at_sha": "24e88957479df1c7e7bcf3ea5639a8c19667130f",
+      "opened_at_sha_basis": "file-set",
+      "resources": [
+        "bld_draws",
+        "sf_disbursements",
+        "sf_gaming_expenses",
+        "sf_ledger",
+        "sf_officers"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tests/bld_draws_role_arms.test.js",
+        "tests/sf_role_matrix_driven.test.js"
+      ],
+      "what": "b7 TESTS ONLY, no api/ file edited. Driven role arms over Tier A resources: tests/sf_role_matrix_driven.test.js drives a real signed session for each of the 10 ROLES_BY_APP.sairnfreedom roles over the 27 SD_SESSION_GATED sf_ resources on both verbs -- 540 cells, expectation from api/_lib/sf-roles.js SF_ROLE_MATRIX and observation from the handler, never both from the table -- and names sf_officers write by all 8 non-provisioning roles plus sf_ledger/sf_disbursements/sf_gaming_expenses write by records.write as the two highest-value arms. Each DENY cell also asserts NO row was fetched before the 403, so a leak with a tidy status code fails. The 9 licence-key-only resources are DISCLOSED as 180 NOT-DRIVEN cells and are not counted as passes. tests/bld_draws_role_arms.test.js drives BLD_DRAW_ROLES parsed from api/sd-data.js: pm denied read and write, owner and office allowed (the negative control that makes the pm arms evidence), no session 401, and the unknown-role claim split because signSessionToken refuses to mint an unlisted role at all. WHAT A REVIEWER SHOULD CHECK: that no expectation in either file is transcribed rather than derived, and that the handler is the only observation source. 25 arms and 10 arms, both exit 0.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-10-13T11:41:45Z",
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
