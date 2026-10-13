@@ -311,21 +311,47 @@ const ROLES_BY_APP = roleSet({
   // one stable capability set, and its own words are that "hardcoding one
   // vocabulary would be wrong for three of the five target orders".
   //
-  // So these ten are sairnfreedom.html's CAPABILITIES ids verbatim. NOT a
+  // So these eleven are sairnfreedom.html's CAPABILITIES ids verbatim. NOT a
   // judgment call I made -- a judgment call the app made, recorded, and
   // justified, and the right move was to read it rather than decide again.
   //
-  // THE LIST NOW LIVES IN THREE PLACES and that is a real drift risk, named
-  // here rather than left to be discovered: this array,
+  // ── trustee.audit ADDED 2026-10-13 ON MICHAEL'S DECISION ────────────────
+  // It was declared in sairnfreedom.html's CAPABILITIES on 2026-09-27 and
+  // absent here, so api/sf-auth.js refused to provision it: a post could assign
+  // the Trustee office in the Access panel and then could not give that trustee
+  // a sign-in. api/sf-auth.test.js held that disagreement RED for sixteen days
+  // rather than letting it pass, because a per-app role vocabulary is the thing
+  // this platform names as needing an explicit judgment call.
+  //
+  // THE DECISION, in Michael's terms: a VFW post trustee gets their own login,
+  // VIEW-ONLY ON FINANCIAL RECORDS. The read scope is not transcribed from that
+  // sentence resource by resource -- it is DERIVED in api/_lib/sf-roles.js from
+  // the one column that already defines what a financial record is in this app
+  // (`finance.write` holding 'rw'), plus 'rw' on `sf_trustee_audits` alone,
+  // which is the audit the trustee is personally liable for producing. The
+  // source for the sentence is the VFW Manual of Procedure: trustees audit
+  // quarterly, are individually liable, and the Quartermaster must not prepare
+  // the audit -- which is why `finance.write` is READ-ONLY on that row and
+  // stays so.
+  //
+  // THE LIST LIVES IN THREE PLACES and that is a real drift risk, named here
+  // rather than left to be discovered: this array,
   // sql/sairnfreedom_employee_auth_schema.sql's check constraint, and
   // sairnfreedom.html's CAPABILITIES. api/sf-auth.js imports from here and
   // adds no fourth copy.
+  //
+  // ALL THREE COPIES ARE NOW CHECKED MECHANICALLY, FOR EVERY APP AND NOT JUST
+  // THIS ONE: api/role-vocabulary-agreement.test.js reads each app's
+  // `*_employee_auth` role CHECK out of sql/ and compares it to this map, in
+  // both directions. Naming a drift risk in a comment is what this file did for
+  // six weeks; the trustee gap is what that costs.
   //
   // PROVISIONING is post.govern and post.govern.deputy, from the app's own
   // PROVISIONING_CAPS. post.govern carries `sole:true` there, which is what
   // sf-auth.js's last-admin refusal keys on.
   sairnfreedom: [
     'post.govern', 'post.govern.deputy', 'records.write', 'finance.write',
+    'trustee.audit',
     'member.admit', 'services.refer', 'legal.review', 'history.write',
     'ceremonial.manage', 'chaplain.pastoral'
   ]

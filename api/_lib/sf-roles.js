@@ -97,7 +97,11 @@ const FINANCE = ['post.govern', 'post.govern.deputy', 'finance.write'];
 //
 // `why` IS NOT DECORATION. It names the capability label the grant comes from,
 // so a reviewer checks a mapping rather than re-deriving a policy.
-const SF_ROLE_MATRIX = Object.freeze(Object.assign(Object.create(null), {
+// NOT FROZEN ON THIS LINE ANY MORE. The eleventh column is DERIVED below the
+// literal (see THE ELEVENTH COLUMN IS DERIVED), so the freeze moved to after
+// that derivation. It is still frozen before anything can require() this file --
+// rows first, then the table.
+const SF_ROLE_MATRIX = Object.assign(Object.create(null), {
   // ── GOVERNANCE: the roster itself. Locked above as well. ────────────────
   sf_officers: { 'post.govern': 'rw', 'post.govern.deputy': 'rw',
     'records.write': 'r', 'finance.write': 'r', 'member.admit': 'r',
@@ -291,7 +295,68 @@ const SF_ROLE_MATRIX = Object.freeze(Object.assign(Object.create(null), {
     'services.refer': 'r', 'legal.review': '', 'history.write': '',
     'ceremonial.manage': 'r', 'chaplain.pastoral': '',
     why: 'THE ONLY THING THAT ADVANCES THE ODOMETER sf_vehicles computes its service-due flag from -- A on integrity for exactly that reason.' }
-}));
+});
+
+// ── THE ELEVENTH COLUMN IS DERIVED, NOT TRANSCRIBED (2026-10-13) ───────────
+// MICHAEL'S DECISION: a VFW post trustee gets their own login, VIEW-ONLY ON
+// FINANCIAL RECORDS. `trustee.audit` is now in ROLES_BY_APP.sairnfreedom and in
+// the employee_auth CHECK, so a trustee can hold a real session -- and
+// decide() DENIES any role without a cell, so without this the eleventh role
+// would have inherited nothing and the login would have been useless.
+//
+// THIRTY-SIX CELLS WERE NOT HAND-WRITTEN, AND THAT IS THE POINT RATHER THAN A
+// SHORTCUT. "View-only on financial records" is one sentence; transcribing it
+// into 36 cells makes 36 chances to disagree with it, and nothing afterwards
+// could tell a deliberate exception from a typo. So the column is COMPUTED from
+// the one thing in this file that already defines what a financial record IS in
+// this app:
+//
+//   THE RULE: trustee.audit READS exactly what the bonded finance office may
+//   WRITE. Every row where `finance.write` is 'rw' -> 'r'. Everything else ->
+//   '' (no access). Plus ONE named exception below.
+//
+// WHY THAT IS THE RIGHT SOURCE and not merely a convenient one: `finance.write`
+// is "Finance (bonded)" in the app's own capability label, and the rows it may
+// write are the rows the post's money passes through -- the ledger, the chart of
+// accounts, the two ORC 2915 payee records, the gaming floor, donations, and the
+// bar/retail chain that produces the takings those records reconcile against.
+// That IS the audit surface a quarterly trustee audit covers. Sixteen rows at
+// the time of writing; the figure is not written anywhere because the rule
+// yields it.
+//
+// THE ONE EXCEPTION, AND IT IS THE TRUSTEE'S OWN RECORD: `sf_trustee_audits`
+// gets 'rw'. The trustee is individually liable for producing the quarterly
+// audit, so read-only on the document they themselves must file would make the
+// login decorative. Note what is NOT changed by it: `finance.write` stays 'r'
+// on that row, deliberately, because the VFW Manual of Procedure is explicit
+// that the Quartermaster must not prepare the audit.
+//
+// WHAT A TRUSTEE DELIBERATELY CANNOT SEE, stated so it reads as a decision: the
+// member roster, minors' names, the felony and gambling-disqualification flags
+// on sf_operators, health and military status on waivers, and the VA-adjacent
+// referral records. Michael's decision was about financial records. The other
+// non-governing roles get 'r' on those rows because their capability's stated
+// scope covers them; a trustee's does not, so the derivation gives '' and no
+// separate argument is needed.
+//
+// IF THE DECISION CHANGES, ONE RULE CHANGES. That is the methodology half of
+// this batch: a role's scope is derived from a single source, and
+// api/sd-data-sf-role-matrix.test.js re-derives the same expectation
+// independently, so a hand-edit to any cell here would fail rather than pass
+// quietly.
+const TRUSTEE = 'trustee.audit';
+const TRUSTEE_RW = Object.freeze(['sf_trustee_audits']);
+Object.keys(SF_ROLE_MATRIX).forEach(function (resource) {
+  const row = SF_ROLE_MATRIX[resource];
+  row[TRUSTEE] = TRUSTEE_RW.indexOf(resource) !== -1
+    ? 'rw'
+    : (row['finance.write'] === 'rw' ? 'r' : '');
+});
+// FROZEN AFTER the column is added, not before: freezing the literal would have
+// made this loop a silent no-op in non-strict code and a throw in strict code,
+// and the silent half is the one worth engineering against.
+Object.keys(SF_ROLE_MATRIX).forEach(function (r) { Object.freeze(SF_ROLE_MATRIX[r]); });
+Object.freeze(SF_ROLE_MATRIX);
 
 const ALLOW = 'ALLOW';
 const DENY = 'DENY';
