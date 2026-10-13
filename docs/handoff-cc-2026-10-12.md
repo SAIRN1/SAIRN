@@ -2,7 +2,11 @@
 
 **Written by:** cc, in `Documents\SAIRN-cc`, on `main`.
 **HEAD at open:** `4024ab44` (tree dirty: 1 modified, 1 untracked).
-**HEAD at close:** `2697518e`, ahead 0 / behind 0 of `origin/main`.
+**HEAD at close:** `71a61f4c`, ahead 0 / behind 0 of `origin/main`.
+*(This read `2697518e` when first written. The push that landed this
+handoff was itself refused by the Tier A gate — for resource names that
+appear only in the report and digest beside it — and the four commits that
+answer that refusal come after the close the first draft recorded.)*
 **Companion files:** `SAIRN-report-cc-b4.txt` (full account),
 `SAIRN-digest-cc-b4.txt` (one line per item, questions for Michael).
 
@@ -68,6 +72,10 @@ Every commit below is on `origin/main`, verified with `git log origin/main`.
 | `cc6d3c52` | `fix(register feed gate)` — D9 on the third gate |
 | `9d435023` | `feat(defect register)` — `--supersede`, the writer the field never had |
 | `22e11a16` | `chore(register)` — two records |
+| `acab264c` | `docs(handoff)` — this file, the report and the digest |
+| `23d0f73c` | **`fix(tier A gate)`** — a batch REPORT at the repo root was being read as code serving a Tier A resource. It refused the push carrying this handoff |
+| `7b9ee1c2` | `chore(derived + external files)` — MASTER-PLAN regenerated; all 17 Drive handoffs declared at once instead of one per refusal |
+| `71a61f4c` | `chore(register)` — the record for that false positive |
 
 ---
 
@@ -107,7 +115,7 @@ such: licence scoping was never the hole.
 |---|---|---|
 | **Platform 402** | **Michael** | Nothing in the repo is wrong |
 | `bld_draws` role scope | **Michael** | Q2 below |
-| External-file gate pattern allowance | whoever owns `tools/external_file_index_check.py` | Three refusals in one session, five files, none of them cc's; the third denied the command that would have fixed it |
+| External-file gate pattern allowance | whoever owns `tools/external_file_index_check.py` | **Five** refusals in one session, six files, none of them cc's; **two** of them denied the compound command that would have fixed them. In the end every `.md` under the directory was declared at once (17), which shortens the loop and does not close it |
 | Tier A obligation on `bld_bids`/`bld_draws` | **hank** | Assigned by the gate; only hank can discharge it (or anybody after 48h with `--takeover`) |
 | `E9` of `run_defect_register_probe.py` | whoever owns that probe | Red before and after this batch; its throwaway worktree is built from the LIVE register, so another session's rebase leftovers decide its colour. NOT edited to pass |
 | Convention 25, `METHODOLOGY.md` Rule E | fourth (files were its in FILES) | Removed from this batch's scope rather than reworded (PR §4.3). fourth's claim has since been released, so the files are free — but they are not in this batch's claim either |

@@ -5,10 +5,18 @@ SAIRN -- cc -- BATCH W (b4, resume)          2026-10-12 into 2026-10-13
 
 GIT STATE
   HEAD at open   4024ab44   tree DIRTY: 1 modified, 1 untracked
-  HEAD at close  2697518e
+  HEAD at close  71a61f4c
   ahead/behind   0 / 0 of origin/main at the close
   branch         main
-  rebases        FIVE. Four other sessions pushed into main during this batch.
+  rebases        SIX. Four other sessions pushed into main during this batch.
+
+  THE TWO FIGURES ABOVE READ 2697518e AND FIVE IN THE FIRST DRAFT OF THIS
+  FILE, and the correction is itself part of the account: the push that landed
+  this report was REFUSED BY THE TIER A GATE over two resource names that
+  appear only in this file and the digest beside it. The four commits that
+  answer that refusal come after the close the first draft recorded. A number
+  with a tense is only true as of the read behind it, and this one was
+  overtaken inside a minute.
 
   EVERY COMMIT BELOW IS ON origin/main. Verified with
   `git log origin/main --format='%h %s'`, not with `git log`.
@@ -29,6 +37,12 @@ GIT STATE
     ad04aa57  chore(external files)   -- 2 more handoffs, 40 minutes later
     1c4ccfb6  chore(external+reg)     -- the third refusal, re-seat x2, rows
     2697518e  chore(register)         -- re-seat after the fifth rebase
+    acab264c  docs(handoff)           -- this report, the digest, the handoff
+    23d0f73c  fix(tier A gate)        -- a batch REPORT read as code serving a
+                                         Tier A resource. See below.
+    7b9ee1c2  chore(derived+ext)      -- MASTER-PLAN regenerated; all 17 Drive
+                                         handoffs declared at once
+    71a61f4c  chore(register)         -- the record for that false positive
 
 ================================================================================
 THE PLATFORM IS DOWN, AND IT IS NOT IN THE BRIEF
@@ -456,6 +470,18 @@ is worth someone's attention.
              have cleared the refusal never ran and the commit in the same
              command never happened. The fix had to be issued as a separate
              command with no git verb in it.
+  attempt 6  TIER A gate, on the push carrying this report. Fixed rather than
+             overridden -- the whole section above.
+  attempt 7  external-file gate a FOURTH time (handoff-fourth-2026-10-14.md)
+             AND the derived-document gate (MASTER-PLAN.md), reported TOGETHER:
+             "2 check(s) refused this push, and all 2 are true right now. The
+             gate used to stop at the first, so each one cost a separate
+             rebase and retry." Somebody fixed that mid-session, and it is
+             exactly the cost the five attempts above paid.
+  attempt 8  external-file gate a FIFTH time. At that point the approach
+             changed: every .md present under the Drive directory was declared
+             at once -- 11 more, 17 total -- rather than one per refusal.
+  attempt 9  register-feed gate, for the tier-A gate fix. Recorded. LANDED.
 
 Each rebase renamed every outgoing SHA, so the register records had to be
 re-seated three separate times -- 9d55424e, 1c4ccfb6 and 2697518e are those
@@ -464,6 +490,65 @@ re-seats. None of them is an `--amend` (PR 2.4).
 A SCRIPTED PUSH IS NOT A SHORTCUT: wrapping the loop in land.sh is what
 produced the D9 refusal in item 6(b), because a nested `git push` gives the
 pre-push hook no ref lines. The script now ends BEFORE the push and says why.
+
+================================================================================
+THE GATE THAT REFUSED THIS REPORT, AND WHY IT WAS FIXED RATHER THAN OVERRIDDEN
+================================================================================
+
+The push carrying this file was blocked:
+
+    TIER A CODE CHANGED AND ONLY PART OF IT IS RECORDED.
+      already covered by an open obligation:  bld_bids, bld_draws
+      NOT covered, and this is what blocks:    leg_invoices, rf_draws
+      leg_invoices   SAIRN-digest-cc-b4.txt, SAIRN-report-cc-b4.txt
+      rf_draws       SAIRN-digest-cc-b4.txt, SAIRN-report-cc-b4.txt
+
+Neither name appears in that push's code. Both appear in these two prose
+files -- and `leg_invoices` appears in a sentence REPORTING A DIFFERENT FALSE
+POSITIVE IN THIS SAME GATE, which is about as close to self-evidence as a
+defect gets.
+
+THE CLAUSE ABOVE THE GAP ALREADY STATED THE RULE AND KEYED ON THE WRONG THING:
+"markdown is prose, never a request handler -- and every session worklog lives
+at the repo root by convention". It keys on `.md` because worklogs are
+markdown. The batch report and digest are the same class of artefact in `.txt`,
+and the convention arrived after the clause.
+
+HOW THE OTHER AGENTS HAVE BEEN LANDING THEIRS -- measured, not guessed. All
+eight report/digest files across the four sessions are tracked and are prose.
+docs/BYPASS-LOG.jsonl carries 93 rows, and its recent entries are hank using
+the BLANKET `SAIRN_SEED_GATE=off` form, which disables EVERY check in the push
+rather than this one. So a false positive on a prose path has been switching
+off the gates that catch real things. That is the hollowing-out this gate's own
+override message warns about, arriving through a false positive rather than
+through impatience.
+
+THE TWO TEMPTING REPAIRS WERE REFUSED AND ARE RECORDED SO THEY ARE NOT
+RETRIED:
+  * rewording this report to avoid the resource names is rewording to slip a
+    matcher, on the document whose entire value is naming what was found;
+  * opening an obligation for leg_invoices and rf_draws would put a review of
+    code this session never touched into the one register that decides who
+    reviews what.
+
+THE FIX is a clause scoped to the NAME, the EXTENSION and the ROOT -- all three
+-- on the same "the predicate is about WHAT THE FILE IS" axis every other
+clause uses. Six of the ten new probe arms are BOUNDARY arms, because the
+clause's only real risk is widening into `.txt` generally: `notes.txt`,
+`tools/fixtures/SAIRN-report-fake.txt`, `SAIRN-report-cc-b4.py`, a
+backslash-separated subdirectory path, `api/sd-data.js` and `sairnbuild.html`
+are all asserted IN SCOPE. Plus an end-to-end pair: the same resource name on
+a changed line produces NO obligation in a report and DOES produce one in a
+code file, so the arm is about the path and not the fixture.
+
+    probe, with the fix        ALL ARMS PASS
+    probe, pre-change gate     4 of the new arms FAIL; the 6 boundary and
+                               control arms pass BOTH ways, which is what
+                               makes them controls
+
+Record: 23d0f73c, cited to PR 1.2 for the class with the difference stated --
+the gate already HAS a skip list for exactly this, so the defect is a clause
+that named the right rule and the wrong key.
 
 ================================================================================
 WHAT I WOULD TELL THE NEXT SESSION

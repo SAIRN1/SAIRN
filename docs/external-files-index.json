@@ -2232,6 +2232,12 @@
      "purpose": "a session handoff on the Drive report directory Michael reads. NOT cc's and NOT cc's to move or commit; a discovery pointer only, declared because the push gate requires every file under that directory to be named.",
      "belongs_in_git": false,
      "declared_by": "cc, on behalf of nobody -- a pointer, not a claim"
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/handoff-cc-2026-10-12.md",
+     "purpose": "cc's OWN batch W handoff, uploaded to the Drive report directory as the batch brief requires. THE ORIGINAL IS IN GIT at docs/handoff-cc-2026-10-12.md and is the authoritative copy; this is the Drive copy Michael reads. Declared because the gate matches by PATH -- the committed original does not satisfy it for a copy at a different path, which is correct and worth knowing: 'either commit it or declare it' cannot be satisfied by committing, for a deliverable whose whole purpose is to exist outside the repo as well.",
+     "belongs_in_git": false,
+     "declared_by": "cc, its author"
     }
    ],
    "limits": [
@@ -2240,7 +2246,8 @@
     "SECOND INSTANCE IN ONE SESSION, 40 minutes after the first, and that is the measurement rather than the complaint: the push that declared handoff-h2-2026-10-12b.md and handoff-cody-2026-10-12.md was refused on the NEXT attempt by handoff-hank-2026-10-12.md and handoff-h2-2026-10-12d.md, which had arrived in between. Each push by any clone must name whatever handoffs happen to exist at that second, and the index is wrong again before the push finishes.",
     "THIRD INSTANCE IN ONE SESSION, AND THE THIRD ONE BLOCKED A COMMAND THAT WAS NOT A PUSH. Declaring two files unblocked one push attempt; the next was refused by two more; the next by SAIRN-handoff-h1-b13.md -- and that refusal came from the PreToolUse half of the gate, which DENIED the whole compound command, so the edit that would have cleared it never ran. Three refusals, five files, one session, zero of them cc's. The count is the argument: a gate that must be fed by hand on every push, for files other sessions write continuously, gets OVERRIDDEN rather than satisfied -- SAIRN_SEED_GATE=off is one keystroke away. A pattern allowance for handoff-shaped names under this ONE declared directory keeps the real teeth (an undeclared TOOL or SCRIPT) and drops the part nobody can keep up with. Reported, not implemented: it is another session's gate.",
     "FOURTH INSTANCE IN ONE SESSION: handoff-fourth-2026-10-14.md, arriving while the previous three were being declared. Six files now, across four refusals, none of them cc's. Every number in these notes was read off a real refusal rather than estimated.",
-    "FIFTH REFUSAL, AND THE APPROACH CHANGED HERE. Four of the five were 'the next handoff arrived while you were declaring the last one', so this pass declared EVERY .md present under the directory at once rather than only the file the refusal named: 11 more. That shortens the loop; it does not close it, because a handoff written after this second starts it again. The structural fix is still a pattern allowance for handoff-shaped names under this one directory."
+    "FIFTH REFUSAL, AND THE APPROACH CHANGED HERE. Four of the five were 'the next handoff arrived while you were declaring the last one', so this pass declared EVERY .md present under the directory at once rather than only the file the refusal named: 11 more. That shortens the loop; it does not close it, because a handoff written after this second starts it again. The structural fix is still a pattern allowance for handoff-shaped names under this one directory.",
+    "THE REPORT AND DIGEST (.txt) WERE NOT FLAGGED AND THE HANDOFF (.md) WAS, which is a measured fact about the gate's work-file classes rather than a complaint: uploading all three to the Drive produced exactly one UNINDEXED finding. So the .txt deliverables are outside its scope and the .md one is inside it."
    ]
   }
  }
