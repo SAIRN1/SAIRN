@@ -27264,7 +27264,7 @@
       "factors_unknown_reason": "one reasoning gap shared by two probes plus one cleanup leak in the new helper, recorded as one record naming all three"
     },
     {
-      "commit": "35deee61c340",
+      "commit": "008078c3991b",
       "date": "2026-10-13",
       "subject": "fix(push gate): the unfetched remote base resolved ONCE, centrally -- it was producing a FALSE FINDING in the owner-header check, not a could-not-run",
       "files": [
@@ -27444,7 +27444,7 @@
       "recurrence_open": "The section is no longer a tripwire -- it now tests tenant isolation with a real session, which is the suite's actual subject. So the ARRIVAL of a future gate on those resources is held only by GRD_SESSION_RESOURCES being 21 names in one place, not by any arm. And the general problem is untouched: a tripwire firing is still indistinguishable from an ordinary red suite, which is what cost six resources their coverage here."
     },
     {
-      "commit": "52273b572c6c",
+      "commit": "baaaa7f3dcad",
       "date": "2026-10-13",
       "subject": "fix(b9 push): the push refusal re-diagnosed to TWO causes, both fixed -- two tools undescribed since b5/b7, and a gate measuring the tip in the live working tree while measuring the base in a clean checkout",
       "files": [
@@ -27624,7 +27624,7 @@
       "recurrence_open": "The fix is three guarded renders, each consulting senIsManagement() independently; nothing couples them to the server's SEN_CAREGIVER_HR_FIELD_ROLES, so a fourth render added later is unguarded by default and a change to the server tier fails nothing. The new arms catch a MISSING guard on an EXISTING render, not a new render. Also the write branch's gate is a differently-named set whose membership happens to equal the read's, which is what makes the round-trip-wipe argument hold, and nothing enforces that equality."
     },
     {
-      "commit": "774cf1d23186",
+      "commit": "6d9a3f98d759",
       "date": "2026-10-13",
       "subject": "fix(register feed gate): the UNREADABLE OUTGOING RANGE was the remote tip being an object this clone does not have, and it was reported as a malformed range",
       "files": [
@@ -27983,7 +27983,7 @@
       "factors_unknown_reason": "Named in the summary rather than as structured factors this pass; this record corrects/extends 16245537cc56's own recurrence_open rather than introducing a new root cause."
     },
     {
-      "commit": "ee06c61ce14a",
+      "commit": "fb912c4e11e2",
       "date": "2026-10-13",
       "subject": "fix(copy-exactly gate): the THIRD gate refusing a push because the REMOTE's sha is not an object in this clone",
       "files": [
