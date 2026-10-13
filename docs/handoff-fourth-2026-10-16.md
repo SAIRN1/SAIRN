@@ -1,3 +1,15 @@
+> **SUPERSEDED, AND THIS FILENAME IS WRONG.** It is dated 2026-10-16 and
+> was written on **2026-10-13**. CLAUDE.md says to find the latest handoff
+> **by the date in the filename**, so a date-sort puts this file above the
+> real latest one and a session following the rule reads the stale document
+> first. **Read `docs/handoff-fourth-2026-10-13b.md` instead** -- the push
+> this file records as blocked has since LANDED (`c5af98dc..d30e9e42`, 48
+> commits), so its section 2 and its items 4 and 5 are overtaken.
+>
+> NOT renamed, deliberately: a row in `docs/external-files-index.json` and
+> the Drive delivery copy both carry this name, and a rename would turn two
+> correct pointers into dead ones to fix one misleading sort.
+
 # HANDOFF — fourth / ted, batch b9, 2026-10-13
 
 **Written BEFORE the report**, at a point where nothing is half-finished: every
