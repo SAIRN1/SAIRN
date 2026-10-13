@@ -1,0 +1,28 @@
+DIGEST hank b5
+
+STATUS: 13/13 items done. Pushed 326f2894..38dce9b5, 0 ahead/0 behind, ONE
+push, no SAIRN_SEED_GATE=off. Claim sairnsenior held -- release it.
+
+DECISION-NEEDED:
+ 1 DEPLOYMENT PAUSED: every sairn.vercel.app path 402. Item 3 impossible;
+   nothing can be live-verified by anyone.
+ 2 Three api/ Tier A records are hank-authored so hank cannot discharge them;
+   two have orphaned shas.
+ 3 13 bare-run findings are cc's; three edit another session's status row.
+
+CHANGED: 19 files changed, 29516 insertions(+), 27383 deletions(-) (real source 6 files, 802+/3-)
+
+EVIDENCE-path: SAIRN-report-hank-b5.txt; docs/handoff-hank-2026-10-13.md;
+docs/2026-10-13-hank-*.md; docs/hank-evidence/b5_*
+
+TESTS: pii 21/21 (18); cross-tenant 419/0 (405/14); hydrate-coupling 4/4 new;
+audit-pinning 7/7 new; retainage 35/35; portal 19/19; 4 gate suites 0; pairs
+94; register 525.
+
+UNVERIFIED: nothing live. 34 of 313 tools unclassified. Client arms read
+source, not DOM.
+
+NEXT: release claim; Michael on outage and b4 Q1-Q3; reassign the three api/
+records; cc takes the tool writes.
+
+END-OF-DIGEST
