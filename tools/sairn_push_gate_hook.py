@@ -1197,6 +1197,65 @@ def main():
 
     if MODE == 'prepush':
         tip = local or 'HEAD'
+        # ── THE BASE GIT HANDS THIS HOOK IS THE REMOTE'S SHA, AND IT IS NOT
+        #    ALWAYS AN OBJECT THIS CLONE HAS (2026-10-13) ─────────────────────
+        # Five sessions push this repo, so between a clone's last fetch and its
+        # push the remote tip moves and `base` is a sha that was never fetched
+        # here. Every check below reads `base`, so one unfetched sha produces a
+        # different wrong answer in each of them, and NONE of those answers
+        # says "the base could not be read".
+        #
+        # MEASURED, AND THE WORST ONE IS A FALSE FINDING RATHER THAN A
+        # COULD-NOT-RUN. The owner-header check decides "is this file ADDED by
+        # this push" with `git cat-file -e <base>:<path>`. With an unfetched
+        # base that command fails for EVERY path, so every modified tools/*.py
+        # is classified as newly added and the gate demands an `# OWNER:` line
+        # for files that have existed for weeks. On 2026-10-13 it named
+        # copy_exactly_gate.py, register_feed_gate.py, sairn_push_gate_hook.py
+        # and tooling_inventory.py -- all four pre-existing, all four
+        # grandfathered by this check's own stated scope -- and blocked the
+        # push. The instruction it printed would have had one session write
+        # itself as OWNER of four shared tools to get a push out.
+        #
+        # THE SAME DEFECT WAS FOUND AND FIXED IN TWO OTHER GATES THE SAME DAY
+        # (774cf1d2 register_feed_gate, ee06c61c copy_exactly_gate), each
+        # reading the remote sha off the same stdin line. This is the third
+        # consumer and the fix is central rather than per-check: resolve it ONCE
+        # here, so a check added later inherits a readable base instead of
+        # repeating the same mistake a fourth time.
+        #
+        # merge-base(origin/main, tip) IS THE RIGHT SUBSTITUTE and not a
+        # weakening -- it is what this push ADDS since it diverged from the
+        # published trunk, and with a merely-unfetched remote tip it sits
+        # FURTHER BACK than the range asked for, so every check below judges
+        # MORE than it was asked to, never less. Said out loud on every use,
+        # with both shas: a gate that silently changes its own subject is
+        # convention 8 one step later. If neither resolves, `base` becomes None
+        # and the existing `base or 'origin/main'` fallbacks take over, which is
+        # the behaviour that was already there.
+        if base:
+            _known = subprocess.run(
+                ['git', 'cat-file', '-e', '%s^{commit}' % base],
+                cwd=repo, capture_output=True, text=True, encoding='utf-8',
+                errors='replace')
+            if _known.returncode != 0:
+                _mb = (git(repo, 'merge-base', 'origin/main', tip) or '').strip()
+                print('NOTICE (push gate): the remote base %s is not an object '
+                      'in this clone --\n  the remote moved since the last '
+                      'fetch, which is ordinary with five sessions\n  pushing. '
+                      '%s\n  Every check below reads this base, so it is '
+                      'resolved once here rather than\n  producing a different '
+                      'wrong answer in each of them. Not a finding about your\n'
+                      '  commits.'
+                      % (base[:12],
+                         ('Using merge-base(origin/main, %s) = %s instead, which is what '
+                          'this\n  push ADDS since it diverged from the published trunk '
+                          'and is a SUPERSET of the\n  range asked for.'
+                          % (str(tip)[:12], _mb[:12])) if _mb else
+                         ('merge-base(origin/main, %s) did not resolve either, so the '
+                          'base is\n  dropped and the existing origin/main fallbacks '
+                          'apply.' % str(tip)[:12])))
+                base = _mb or None
     else:
         tip = pushed_tip(repo, cmd)
         if tip is None:
