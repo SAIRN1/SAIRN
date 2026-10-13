@@ -26418,6 +26418,34 @@
       "recurrence_open": "Five Tier A SAIRNfreedom resources remain ungated by decision, not oversight: sf_district_imports (register:353), sf_events (:358), sf_permit_flags (:367), sf_products (:368), sf_vehicles (:380). The gate adds no ROLE check for any of the four gated here, so any signed-in session of any role can still write them. NOT PROVEN LIVE -- no bare-key call was driven against a real SAIRNfreedom licence; the evidence is the register letters, the two-list derivation and the client write sites read at this HEAD."
     },
     {
+      "commit": "0442646cb781",
+      "date": "2026-10-12",
+      "subject": "fix(scp): three of SAIRNscape's eight ungated resources gated -- and the repro that found them scored one of its own targets FIXED when it was not",
+      "files": [
+        "api/sd-data-scp-session-gate.test.js",
+        "api/sd-data-session-gate.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 261,
+      "lines_removed": 19,
+      "app": "sairnscape",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "hover-audit",
+      "summary": "batch b16 re-derives the scp_* 5-resource 'BY DESIGN' classification and finds it UNSUPPORTED by the schema. hank's 2026-10-13 inventory (docs/2026-10-13-hank-sd-data-inventory.md:185-192) and this commit's own contributing_factors both call the 5 UNGATED_REST resources (scp_jobs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features) deliberately-left because their columns 'justify leaving each.' Read directly: sql/sairnscape_data_schema_phase2.sql:22-24 states outright 'TYPE A (customer-scoped list): scp_designs, scp_irr_controllers, scp_irr_zones, scp_water_features (customer_id parent) and scp_irr_schedules (zone_id parent)' -- and every one of the 5 tables' own column list confirms it: scp_jobs has customer_id (sql/sairnscape_data_schema.sql:52), scp_irr_controllers customer_id (phase2.sql:53), scp_irr_zones customer_id (phase2.sql:67), scp_water_features customer_id (phase2.sql:97), scp_irr_schedules zone_id (phase2.sql:83, one hop from customer_id via scp_irr_zones). The original test comment that named UNGATED_REST (api/sd-data-scp-session-gate.test.js:113-114) calls this 'a disclosure rather than an absence,' not a safety judgement. FINDING STAYS OPEN: no written evidence exists anywhere in the schema, the test, or the inventory doc that these 5 hold no tenant/customer data -- the schema says the opposite. Routed to hank: same fix pattern as the 3 already gated in this commit (SD_SESSION_GATED + SD_GATE_APP entries), exact file:line in docs/2026-10-07-hover2-scp-session-gate-routing.md.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "unknown_reason": "The absence of a role/session gate on these 5 predates any commit in range; the mischaracterization itself was introduced by this very commit's own contributing_factors note, cited as --commit rather than --injection-commit since this record corrects that note rather than a code defect."
+      },
+      "citation_note": "Same situation as this commit's own sibling record: no PR section covers a data-classification disagreement specifically, and citing the nearest shape would be the manufactured agreement the not-citable hatch exists to prevent.",
+      "factors_unknown_reason": "A classification-disagreement finding, not a new code defect; the sibling record already attached this commit's structured factors and this record does not duplicate them."
+    },
+    {
       "commit": "16245537cc56",
       "date": "2026-10-12",
       "subject": "fix(auth,sairncash): fourteen apps could hand somebody a working sign-in with no record of who did it -- and an unauthenticated POST minted a Firebase auth token off one bearer string",
@@ -26502,6 +26530,188 @@
         }
       ],
       "recurrence_open": "THE CODE BEING PRESENT IS NOT THE FIX, and the SQL half is entirely outstanding. Measured by tools/audit_event_type_check.py at this commit, exit 1: SAIRNlaw works today; stonedesk_audit_log and sairncode_audit_log EXIST but their event_type CHECK REJECTS pin_setup (STEP 0a/0b of docs/2026-10-07-hank-migration-sql-for-michael.md, not run) -- so sd-auth.js and sc-auth.js attribution has been failing at the database since it landed on 2026-10-07; and the other 13 tables do not exist at all (STEPS 1-13, not run). Only ONE of seventeen apps records a row today. api/law-auth.js keeps a divergent detail shape by decision. The SAIRNcash half is bearer-credential strength, not identity, and was not proven live."
+    },
+    {
+      "commit": "16245537cc56",
+      "date": "2026-10-12",
+      "subject": "fix(auth,sairncash): fourteen apps could hand somebody a working sign-in with no record of who did it -- and an unauthenticated POST minted a Firebase auth token off one bearer string",
+      "files": [
+        "api/_lib/audit.js",
+        "api/alf-auth.js",
+        "api/auth-setup-attribution.test.js",
+        "api/bld-auth.js",
+        "api/dnt-auth.js",
+        "api/grd-auth.js",
+        "api/leg-auth.js",
+        "api/mech-auth.js",
+        "api/rf-auth.js",
+        "api/sairncash/verify.js",
+        "api/sairncash/verify.test.js",
+        "api/sb-auth.js",
+        "api/scp-auth.js",
+        "api/sd-sub-auth.js",
+        "api/sdn-auth.js",
+        "api/sen-auth.js",
+        "api/sf-auth.js",
+        "api/sv-auth.js",
+        "docs/2026-10-07-hank-migration-sql-for-michael.md",
+        "docs/BYPASS-LOG.jsonl",
+        "sairncash.html",
+        "sql/sairnbiz_audit_log_schema.sql",
+        "sql/sairnbuild_audit_log_schema.sql",
+        "sql/sairncare_audit_log_schema.sql",
+        "sql/sairndental_audit_log_schema.sql",
+        "sql/sairndesign_audit_log_schema.sql",
+        "sql/sairnfreedom_audit_log_schema.sql",
+        "sql/sairngrounds_audit_log_schema.sql",
+        "sql/sairnlegacy_audit_log_schema.sql",
+        "sql/sairnmechanical_audit_log_schema.sql",
+        "sql/sairnroofing_audit_log_schema.sql",
+        "sql/sairnscape_audit_log_schema.sql",
+        "sql/sairnsenior_audit_log_schema.sql",
+        "sql/sairnvet_audit_log_schema.sql",
+        "tools/audit_event_type_check.py"
+      ],
+      "lines_added": 1886,
+      "lines_removed": 44,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "batch b16 re-runs tools/audit_event_type_check.py and tests/run_audit_event_type_probe.py directly against current HEAD rather than trusting fourth's claimed-live status. CONFIRMED STILL OPEN, worse than this commit's own recurrence_open recorded: 3 of 16 audit tables reject an emitted event_type -- sairncode_audit_log rejects credential_change_refused/pin_setup (api/sc-ai.js, api/sc-auth.js); stonedesk_audit_log rejects order_link_created/order_link_revoked/pin_setup/sub_roster_write (api/sd-auth.js, api/sd-sub-auth.js, api/sd-sub-data.js, api/stonedesk-track.js); sairnlaw_audit_log rejects SIX values -- ai_interaction, ai_rejected, ai_reviewed, ai_used_in_filing, deadline_engine, legal_reference_lookup (api/law-auth.js, api/legal-citator.js, api/legal-deadlines.js, api/legal-reference.js) -- NOT previously named in this commit's own recurrence_open, which only listed stonedesk/sairncode. sv_audit_log has NO event_type CHECK constraint at all (separate, undetermined-severity gap, listed by the tool as WITHOUT-a-CHECK rather than a violation). SEPARATE FINDING, same run: tests/run_audit_event_type_probe.py's own H0 arm FAILS -- its regex 'const AUDIT_TABLES = \\{([^}]*)\\}' expects a static key:true literal, but api/_lib/audit.js:101-103 (2026-10-11) now builds AUDIT_TABLES dynamically from AUDIT_TABLE_BY_APP in a loop, so the probe's own allowlist-population check is now blind to a legitimate refactor -- a checker that stopped checking (PR 1.1 shape), not a security regression. This is checking the repo's own sql/*.sql CHECK literals against the repo's own emitted event_type literals; it says nothing about whether Michael's 2026-10-13 live Supabase migration applied a DIFFERENT, uncommitted CHECK -- only that the committed SQL and the committed code still disagree.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The event_type/CHECK mismatches predate this batch and this role did not bisect which commit introduced each of the 11 values; the H0 probe regression was introduced by api/_lib/audit.js's 2026-10-11 refactor (commit unresolved -- the diff was not bisected, only the current state read) which is a different file than the probe itself."
+      },
+      "citation_note": "Cited for the probe's H0 regression specifically (a check that stopped checking after a legitimate refactor) -- the underlying event_type/CHECK mismatch itself is not cited to any section, same as this commit's own citation_confidence.",
+      "factors_unknown_reason": "Named in the summary rather than as structured factors this pass; this record corrects/extends 16245537cc56's own recurrence_open rather than introducing a new root cause."
+    },
+    {
+      "commit": "16245537cc56",
+      "date": "2026-10-12",
+      "subject": "fix(auth,sairncash): fourteen apps could hand somebody a working sign-in with no record of who did it -- and an unauthenticated POST minted a Firebase auth token off one bearer string",
+      "files": [
+        "api/_lib/audit.js",
+        "api/alf-auth.js",
+        "api/auth-setup-attribution.test.js",
+        "api/bld-auth.js",
+        "api/dnt-auth.js",
+        "api/grd-auth.js",
+        "api/leg-auth.js",
+        "api/mech-auth.js",
+        "api/rf-auth.js",
+        "api/sairncash/verify.js",
+        "api/sairncash/verify.test.js",
+        "api/sb-auth.js",
+        "api/scp-auth.js",
+        "api/sd-sub-auth.js",
+        "api/sdn-auth.js",
+        "api/sen-auth.js",
+        "api/sf-auth.js",
+        "api/sv-auth.js",
+        "docs/2026-10-07-hank-migration-sql-for-michael.md",
+        "docs/BYPASS-LOG.jsonl",
+        "sairncash.html",
+        "sql/sairnbiz_audit_log_schema.sql",
+        "sql/sairnbuild_audit_log_schema.sql",
+        "sql/sairncare_audit_log_schema.sql",
+        "sql/sairndental_audit_log_schema.sql",
+        "sql/sairndesign_audit_log_schema.sql",
+        "sql/sairnfreedom_audit_log_schema.sql",
+        "sql/sairngrounds_audit_log_schema.sql",
+        "sql/sairnlegacy_audit_log_schema.sql",
+        "sql/sairnmechanical_audit_log_schema.sql",
+        "sql/sairnroofing_audit_log_schema.sql",
+        "sql/sairnscape_audit_log_schema.sql",
+        "sql/sairnsenior_audit_log_schema.sql",
+        "sql/sairnvet_audit_log_schema.sql",
+        "tools/audit_event_type_check.py"
+      ],
+      "lines_added": 1886,
+      "lines_removed": 44,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "batch b18: Michael ran the live pg_get_constraintdef query this role could not run itself (no Supabase credential), relayed via chat. Result: sairnlaw_audit_log's live CHECK constraint LACKS credential_deactivated, credential_reactivated and credential_change_refused -- three values api/_lib/employee-lifecycle.js:202,214,267,301 emits via doAudit() for every app (including sairnlaw, through api/law-auth.js) using the shared credential-lifecycle module. tools/audit_event_type_check.py MISSED these 3 independently -- it only reported 6 other rejected values (ai_interaction, ai_rejected, ai_reviewed, ai_used_in_filing, deadline_engine, legal_reference_lookup) in b16/b17/b18 live re-runs, never these 3, because its app-to-table/helper resolution does not follow employee-lifecycle.js's doAudit() the way it follows auditPinSetup() -- the tool's own stated limit ('ONE HELPER IS FOLLOWED AND THE REST ARE NOT') materializing as a real miss, not a false accusation. Independently cross-confirmed by H1 (hover)'s own live-DB run the same batch, logged at H1 seq1344. Real total for sairnlaw_audit_log is now 9 rejected values, not 6. HIGH: a credential deactivation/reactivation/refusal for a SAIRNlaw employee silently fails to record (writeAuditLog is non-fatal), the exact seq958-shaped gap this whole audit-log saga traces back to, now confirmed for a third app.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Predates this batch; employee-lifecycle.js's doAudit() calls and sairnlaw_audit_log's CHECK list were both already in place, neither added this batch."
+      },
+      "citation_note": "Same shape as the existing 16245537cc56 sibling records -- no PR section covers a CHECK-constraint/emitted-value mismatch specifically.",
+      "factors_unknown_reason": "Named in the summary; this role did not independently derive the live CHECK text, only Michael's relayed result and the local code read that explains WHY it is reachable."
+    },
+    {
+      "commit": "16245537cc56",
+      "date": "2026-10-12",
+      "subject": "fix(auth,sairncash): fourteen apps could hand somebody a working sign-in with no record of who did it -- and an unauthenticated POST minted a Firebase auth token off one bearer string",
+      "files": [
+        "api/_lib/audit.js",
+        "api/alf-auth.js",
+        "api/auth-setup-attribution.test.js",
+        "api/bld-auth.js",
+        "api/dnt-auth.js",
+        "api/grd-auth.js",
+        "api/leg-auth.js",
+        "api/mech-auth.js",
+        "api/rf-auth.js",
+        "api/sairncash/verify.js",
+        "api/sairncash/verify.test.js",
+        "api/sb-auth.js",
+        "api/scp-auth.js",
+        "api/sd-sub-auth.js",
+        "api/sdn-auth.js",
+        "api/sen-auth.js",
+        "api/sf-auth.js",
+        "api/sv-auth.js",
+        "docs/2026-10-07-hank-migration-sql-for-michael.md",
+        "docs/BYPASS-LOG.jsonl",
+        "sairncash.html",
+        "sql/sairnbiz_audit_log_schema.sql",
+        "sql/sairnbuild_audit_log_schema.sql",
+        "sql/sairncare_audit_log_schema.sql",
+        "sql/sairndental_audit_log_schema.sql",
+        "sql/sairndesign_audit_log_schema.sql",
+        "sql/sairnfreedom_audit_log_schema.sql",
+        "sql/sairngrounds_audit_log_schema.sql",
+        "sql/sairnlegacy_audit_log_schema.sql",
+        "sql/sairnmechanical_audit_log_schema.sql",
+        "sql/sairnroofing_audit_log_schema.sql",
+        "sql/sairnscape_audit_log_schema.sql",
+        "sql/sairnsenior_audit_log_schema.sql",
+        "sql/sairnvet_audit_log_schema.sql",
+        "tools/audit_event_type_check.py"
+      ],
+      "lines_added": 1886,
+      "lines_removed": 44,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "batch b18: CLOSES the live security half of the recurring sairncode/stonedesk pin_setup CHECK finding (seq958-shaped, tracked across b16-b18), OPENS a sql-sync finding for the DDL half. Michael's live-DB query (relayed via chat, this role has no Supabase credential): sairncode_audit_log and stonedesk_audit_log's live event_type CHECK now ALLOWS pin_setup. The attribution write (api/sc-auth.js, api/sd-auth.js) therefore records successfully in production today -- the original security gap (an unrecorded credential grant) is CLOSED on that evidence. NOT CLOSED: the repo's own tracked DDL. Direct read this batch: sql/sairncode_audit_log_schema.sql and sql/stonedesk_audit_log_schema.sql both still lack pin_setup in their CHECK list (grep -n pin_setup on both returns nothing) -- confirmed by tools/audit_event_type_check.py's own live re-run, still exit 1, still reporting both as rejecting. A fresh provision from the repo's own sql/ files would therefore recreate the ORIGINAL bug. Independently found and logged the same batch by H1 (hover), seq1345/1347. Routed to hank: add pin_setup to both DDL files' CHECK list to match what was actually run live.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "config",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The live CHECK alteration's timing is not observable by this role; no repo commit exists to cite."
+      },
+      "citation_note": "Same shape as this commit's own existing recurrence_open -- no PR section covers a repo/live schema sync gap specifically.",
+      "factors_unknown_reason": "Named in the summary; a DDL-sync gap, not a multi-factor root cause this pass."
     },
     {
       "commit": "3b99c19c38a4",
@@ -27264,60 +27474,56 @@
       "factors_unknown_reason": "one reasoning gap shared by two probes plus one cleanup leak in the new helper, recorded as one record naming all three"
     },
     {
-      "commit": "9c36aa7c09d2",
+      "commit": "3b8f23d3c062",
       "date": "2026-10-13",
-      "subject": "fix(push gate): the unfetched remote base resolved ONCE, centrally -- it was producing a FALSE FINDING in the owner-header check, not a could-not-run",
+      "subject": "fix(b7 item 3c): CORRECTION -- the guard adoption IS committed, is measured working, and my last commit message said the opposite",
       "files": [
-        "tools/sairn_push_gate_hook.py"
+        "docs/TOOLING-INVENTORY.md",
+        "tests/run_worktree_isolation_probe.py",
+        "tools/dead_rule_sweep.py",
+        "tools/tooling_inventory.py"
       ],
-      "lines_added": 59,
-      "lines_removed": 0,
+      "lines_added": 78,
+      "lines_removed": 24,
       "app": "tooling",
       "layer": "tooling",
-      "severity": "high",
+      "severity": "low",
       "detection_method": "code-review",
-      "summary": "tools/sairn_push_gate_hook.py read its range BASE from the pre-push stdin line -- the sha THE REMOTE currently has -- and passed it unverified to every check below. With five sessions pushing one branch that sha is routinely an object this clone has never fetched, and because every check reads the same variable, ONE unfetched sha produces a DIFFERENT wrong answer in each of them while none reports that the base could not be read. THE WORST CONSUMER PRODUCES A FALSE FINDING RATHER THAN A COULD-NOT-RUN: the owner-header check decides whether a file is ADDED by this push with \"git cat-file -e <base>:<path>\", which fails for EVERY path when the base is absent, so every modified tools/*.py is classified as newly added. On the real push it printed NO OWNER: 4 over tools/copy_exactly_gate.py, tools/register_feed_gate.py, tools/sairn_push_gate_hook.py and tools/tooling_inventory.py -- all four pre-existing and all four grandfathered by that check's own stated scope, 'ADDED FILES ONLY. The 282 that already exist are grandfathered' -- and blocked the push. The remedy it instructed would have had one session write itself as OWNER of four shared tools, two of them contested, to get an unrelated push out. Fixed centrally where the base is established rather than per check, because the identical defect had already been fixed twice the same day in tools/register_feed_gate.py (774cf1d2) and tools/copy_exactly_gate.py (ee06c61c) and a check added later would repeat it a fourth time: the base is tested with git cat-file -e <sha>^{commit} and replaced with merge-base(origin/main, tip) when absent, which is a SUPERSET of the range asked for, with the substitution printed and both shas named.",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "clean",
+      "summary": "tools/dead_rule_sweep.py lost its module __doc__ at import: an isolation-guard block was inserted above the docstring, so the docstring stopped being the first statement and a 700-line explanation of the tool's purpose was silently emptied. Import still succeeded and every arm still passed, so the only symptom was missing documentation. Introduced and fixed inside the same unpushed range; never on origin/main.",
+      "rules": [],
+      "citation_confidence": "not-citable",
       "injection_phase": "coding",
       "phase_confidence": "stated",
       "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "commit": "c86050b4b228",
-        "date": "2026-09-30",
-        "subject": "feat(methodology): the intended bare-run writers named and reasoned, and a new tool must say who owns it",
-        "lag_days": 13
+        "commit": "a339112de510",
+        "date": "2026-10-13",
+        "subject": "chore(b7): the OWNER line push-gate check 14 requires on both new tools",
+        "lag_days": 0
       },
+      "citation_note": "No standing rule in docs/SAIRN-PROCESS-RULES.md covers Python statement ORDER around a module docstring. The nearest rules are about silent failure and about checks that stop testing anything, and neither instantiates this: the import did not fail and no check was disabled. Forcing a citation would feed tools/fmea_prediction_check.py manufactured agreement, which is what not-citable exists to prevent.",
       "contributing_factors": [
         {
-          "factor": "the remote sha was shared by every check in the gate with no existence test at the one place it is established",
           "kind": "technical",
-          "action_status": "done",
-          "action": "resolved once in main() with cat-file -e and a merge-base fallback, so later checks inherit a readable base"
+          "factor": "The guard block was inserted above the module docstring, so the docstring was no longer the first statement and __doc__ became None at import -- a 700-line explanation of the tool's purpose deleted by an edit meant to make it safer.",
+          "action": "Block moved below the docstring in all three adopting tools; __doc__ measured PRESENT in all three afterwards and NONE before.",
+          "action_status": "done"
         },
         {
-          "factor": "the failure mode was a FALSE FINDING with a plausible remedy, not a refusal -- the gate told one session to claim OWNER of four shared tools",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "with the base resolved the owner check no longer fires on pre-existing files; driven both directions against the real repo"
-        },
-        {
-          "factor": "the same shape was independently written in three gates, so fixing it per gate moved the refusal along instead of clearing it",
           "kind": "process",
-          "action_status": "done",
-          "action": "this fix is central; the two earlier per-gate fixes stay because those files build their own ranges from stdin as well"
+          "factor": "`git add -A` re-staged a concurrent re-add of three files between a revert that had been verified and the commit that followed it, so a commit message asserting the revert became false with no further edit by its author.",
+          "action": "Stage by named path and re-read `git diff --cached` immediately before committing, rather than staging by wildcard. Recorded as a standing condition in SAIRN-handoff-cody-b7.md.",
+          "action_status": "done"
         },
         {
-          "factor": "five sessions pushing one branch makes a stale remote tip the ordinary case, and no gate modelled it as ordinary",
-          "kind": "latent-condition",
-          "action_status": "not-actionable",
-          "note": "the push rate is the platform; gates have to tolerate a moving remote rather than treat it as an anomaly"
+          "kind": "detection",
+          "factor": "Nothing checks that a Python module still has a __doc__ after an edit. The import succeeded, every arm passed, and the only visible symptom was absent documentation -- which no check reads.",
+          "action": "tests/run_worktree_isolation_probe.py arms 9 and 10 now drive the adopted tools end to end, and arm 10 specifically requires --help to still WORK, which is the observable that a destroyed docstring would break.",
+          "action_status": "done"
         }
       ],
-      "recurrence_open": "No checker exists for the shape itself -- a sha read off pre-push stdin and then passed to rev-parse, cat-file or log with no existence test. tools/hover_auditor_scope_gate.py:409 is a fourth instance, still unfixed and routed rather than edited because it is the auditor separation gate and passed every push attempt this batch. Nothing stops a fifth being authored. Also unmeasured: how many of the gate's other checks were silently reading a wrong answer off the same absent base before this fix, since only the owner check happened to fail loudly."
+      "recurrence_open": "The other ten of hank's thirteen bare-run write findings are not adopted yet, so the same insertion-point mistake can recur on each of them; the remedy is in the probe rather than in care."
     },
     {
       "commit": "3ed683657725",
@@ -27444,65 +27650,6 @@
       "recurrence_open": "The section is no longer a tripwire -- it now tests tenant isolation with a real session, which is the suite's actual subject. So the ARRIVAL of a future gate on those resources is held only by GRD_SESSION_RESOURCES being 21 names in one place, not by any arm. And the general problem is untouched: a tripwire firing is still indistinguishable from an ordinary red suite, which is what cost six resources their coverage here."
     },
     {
-      "commit": "f2f9953b9e60",
-      "date": "2026-10-13",
-      "subject": "fix(b9 push): the push refusal re-diagnosed to TWO causes, both fixed -- two tools undescribed since b5/b7, and a gate measuring the tip in the live working tree while measuring the base in a clean checkout",
-      "files": [
-        ".githooks/pre-commit",
-        "tools/commit_tool_entry_check.py",
-        "tools/sairn_push_gate_hook.py",
-        "tools/tooling_inventory.py"
-      ],
-      "lines_added": 577,
-      "lines_removed": 0,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "tools/sairn_push_gate_hook.py check 12 measured the TIP in the live working tree and the BASE in a clean throwaway worktree, so 'clean there, dirty here' compared the base commit against the base commit PLUS this clone's uncommitted files. A push carries commits, not a working tree. The live-tree asymmetry fired on .claude/settings.json, which is tracked and is modified-not-committed in this clone by decision -- hooks cleared on purpose and never to be restored -- and tools/tooling_inventory.py derives one of seven sources from that file, so in the live tree hook entries reads 0 and the generator correctly REFUSES rather than writing a thinner document. In a worktree of the same tip it reads 19. Check 12 therefore attributed a deliberate uncommitted local condition to every push from this clone. THE WORSE HALF IS THAT IT MASKED A REAL FINDING: the live-tree refusal fires on the empty source before the generator reaches its undescribed-tool list, so the genuine defect in this push -- tools/report_sha_check.py added in b5 and tools/temp_state_leak_check.py added in b7, each with no PURPOSES or REGISTRY entry -- never appeared in the output check 12b greps. A wrong subject did not merely produce a false refusal, it replaced the true one. Check 12 now re-derives its tip verdicts in a worktree of the pushed commit, the same way the base side already does, with the live-tree run kept as a screen so a clean push still builds no worktree.",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "9cd9907a460b",
-        "date": "2026-09-14",
-        "subject": "feat(push-gate): check 12 -- a generated document THIS push broke, and only that one",
-        "lag_days": 29
-      },
-      "contributing_factors": [
-        {
-          "factor": "the tip was read from the live working tree while the base was read from a clean checkout, so the two sides of the comparison were different kinds of thing",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "check 12 re-derives the tip verdicts in a worktree of the pushed commit; an unbuildable tip prints COULD NOT TELL and falls back to the prior behaviour"
-        },
-        {
-          "factor": "a refusal raised on the FIRST failing derivation source hid the second, so the true finding was never printed and check 12b had nothing to grep",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "tools/commit_tool_entry_check.py asks the undescribed-tool question at the commit that adds the file, where no other refusal can mask it"
-        },
-        {
-          "factor": "three enforcement points for the inventory rule and all three ask at push time, so a one-line omission became a 36-commit blocked queue before anything said so",
-          "kind": "process",
-          "action_status": "done",
-          "action": "wired commit_tool_entry_check.py into .githooks/pre-commit scoped to --diff-filter=A over tools/*.py"
-        },
-        {
-          "factor": "a tracked file is deliberately kept modified-and-uncommitted in this clone, which no gate models as a legitimate standing state",
-          "kind": "latent-condition",
-          "action_status": "not-actionable",
-          "note": "the cleared hooks are a decision, not drift; gates have to read the pushed tree rather than ask the working tree to be clean"
-        }
-      ],
-      "recurrence_open": "The live-tree SCREEN still cannot see a document that the COMMITS break while an uncommitted edit compensates -- that direction is unchanged by this fix and is stated in the code rather than left to be discovered. docs/TOOLING-INVENTORY.md also lists commit_tool_entry_check.py as UNWIRED while it is wired into .githooks/pre-commit: the generator derives wiring from .claude/settings.json hook entries and from the push gate and reads .githooks/ for neither, so every pre-commit-wired tool is under-reported the same way. Not fixed here -- it is a change to the inventory's source list in a file two sessions contest."
-    },
-    {
       "commit": "54ead33fef5e",
       "date": "2026-10-13",
       "subject": "fix(external files): a handoff under the Drive report directory WARNS now; an undeclared tool or script still blocks",
@@ -27567,6 +27714,56 @@
       "recurrence_open": "OPEN in two directions. The declared-directory model has no notion of a file class that is expected to arrive continuously, so the next shared output directory will behave the same way. And the compound-command denial is the harness's behaviour, not this tool's: any gate wired as a PreToolUse hook can still deny the command that would fix its own finding."
     },
     {
+      "commit": "55777a74de8f",
+      "date": "2026-10-13",
+      "subject": "fix(copy-exactly gate): the THIRD gate refusing a push because the REMOTE's sha is not an object in this clone",
+      "files": [
+        "tools/copy_exactly_gate.py"
+      ],
+      "lines_added": 53,
+      "lines_removed": 0,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/copy_exactly_gate.py --pre-push verified its range BASE with rev-parse --verify and refused 'COULD NOT RUN: <sha> does not resolve in this clone, so the range cannot be read and nothing was checked (PR 1.11)'. In --pre-push mode that base is the sha THE REMOTE currently has, read off git's stdin line, so with five sessions pushing one branch it is routinely an object this clone has never fetched -- an ordinary condition, refusing a push that has nothing to do with it. THIRD GATE WITH THIS EXACT SHAPE, and found by it refusing the very next push attempt after the same defect was fixed in tools/register_feed_gate.py at 774cf1d2: the remote tip was bef3f6df, unfetched, and the gate reported it as an unreadable range. Fixed by falling back to merge-base(origin/main, tip) when the base does not resolve, which is ALREADY this file's own pattern nine lines above the site -- a brand-new branch with no remote base compares against origin/main and says so -- and with an unfetched remote tip that base is a SUPERSET of the range asked for, so it judges more commits and never fewer. The TIP stays a hard refusal because it is a LOCAL sha this clone is pushing; the two causes are not folded together.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "e2222a4011d3",
+        "date": "2026-09-26",
+        "subject": "feat(gate): item 43 stops being a convention -- and the first thing it catches is this session's own propagation",
+        "lag_days": 17
+      },
+      "contributing_factors": [
+        {
+          "factor": "the remote sha off the pre-push stdin line was verified as if it were a local object, in a third independent gate",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "merge-base(origin/main, tip) fallback when the base does not resolve, with the cause printed and both shas named"
+        },
+        {
+          "factor": "the same shape was written three times in three gates with no check asking whether a sha read off stdin is a local object",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "a check that flags rev-parse/cat-file/log on a sha taken from pre-push stdin without an existence test -- not written in this batch"
+        },
+        {
+          "factor": "fixing it in one gate moved the refusal to the next gate in .githooks/pre-push rather than clearing it, so the first fix read as ineffective",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "both fixes print a NOTICE naming the gate, so the next refusal is attributable to a different gate rather than to the first fix not working"
+        }
+      ],
+      "recurrence_open": "tools/hover_auditor_scope_gate.py:409 is the third instance and is NOT fixed. It builds rsha..lsha and returns 'could not read the outgoing range' on a non-zero git exit; it runs first in .githooks/pre-push and has passed every push attempt this batch, and it is the auditor separation gate, so it is routed rather than edited. The planned factor above -- a checker for this shape -- is also not written, so a fourth gate can still be authored with it."
+    },
+    {
       "commit": "5b2ff5415e51",
       "date": "2026-10-13",
       "subject": "fix(sairnsenior): the seq965 redaction landed on the roster and not on the compliance panel or the CSV export, so both reported \"no background check on file\" for every caregiver",
@@ -27624,6 +27821,119 @@
       "recurrence_open": "The fix is three guarded renders, each consulting senIsManagement() independently; nothing couples them to the server's SEN_CAREGIVER_HR_FIELD_ROLES, so a fourth render added later is unguarded by default and a change to the server tier fails nothing. The new arms catch a MISSING guard on an EXISTING render, not a new render. Also the write branch's gate is a differently-named set whose membership happens to equal the read's, which is what makes the round-trip-wipe argument hold, and nothing enforces that equality."
     },
     {
+      "commit": "98f33b675d97",
+      "date": "2026-10-13",
+      "subject": "fix(hover2-tools): scp_session_gate_repro.py's branch_gate check was a bare substring test -- a QC-decision's nested verifySessionToken call scored a whole write path FIXED when it was not",
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools-hover2/scp_session_gate_repro.py"
+      ],
+      "lines_added": 55,
+      "lines_removed": 5,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "scp_session_gate_repro.py's branch_gate check was a bare substring test for 'verifySessionToken' anywhere in the action's body; it matched the call inside scp_progress_photos write's qc_status-gated sub-branch and scored the whole write path FIXED when an upload with no qc_status at all reached the table with no session check at all. Real figure at the time was 16 of 22 REPRODUCES, not the reported 15.",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The substring check and the nested QC sub-branch it was blind to were both already present when this tool was last touched; the bug was found via a build agent's own commit (0442646c) rather than a bisect, and an invented injection sha is worse than an absent one."
+      },
+      "citation_note": "Cited for the shape -- the anchor 'verifySessionToken' still matched the branch body, but did not point at the right thing (the action's OWN unconditional gate, as opposed to a nested payload-conditional sub-check) -- not because 1.3 was written about this repro tool.",
+      "factors_unknown_reason": "Named in the commit body rather than as structured factors this pass."
+    },
+    {
+      "commit": "9c36aa7c09d2",
+      "date": "2026-10-13",
+      "subject": "fix(push gate): the unfetched remote base resolved ONCE, centrally -- it was producing a FALSE FINDING in the owner-header check, not a could-not-run",
+      "files": [
+        "tools/sairn_push_gate_hook.py"
+      ],
+      "lines_added": 59,
+      "lines_removed": 0,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/sairn_push_gate_hook.py read its range BASE from the pre-push stdin line -- the sha THE REMOTE currently has -- and passed it unverified to every check below. With five sessions pushing one branch that sha is routinely an object this clone has never fetched, and because every check reads the same variable, ONE unfetched sha produces a DIFFERENT wrong answer in each of them while none reports that the base could not be read. THE WORST CONSUMER PRODUCES A FALSE FINDING RATHER THAN A COULD-NOT-RUN: the owner-header check decides whether a file is ADDED by this push with \"git cat-file -e <base>:<path>\", which fails for EVERY path when the base is absent, so every modified tools/*.py is classified as newly added. On the real push it printed NO OWNER: 4 over tools/copy_exactly_gate.py, tools/register_feed_gate.py, tools/sairn_push_gate_hook.py and tools/tooling_inventory.py -- all four pre-existing and all four grandfathered by that check's own stated scope, 'ADDED FILES ONLY. The 282 that already exist are grandfathered' -- and blocked the push. The remedy it instructed would have had one session write itself as OWNER of four shared tools, two of them contested, to get an unrelated push out. Fixed centrally where the base is established rather than per check, because the identical defect had already been fixed twice the same day in tools/register_feed_gate.py (774cf1d2) and tools/copy_exactly_gate.py (ee06c61c) and a check added later would repeat it a fourth time: the base is tested with git cat-file -e <sha>^{commit} and replaced with merge-base(origin/main, tip) when absent, which is a SUPERSET of the range asked for, with the substitution printed and both shas named.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "c86050b4b228",
+        "date": "2026-09-30",
+        "subject": "feat(methodology): the intended bare-run writers named and reasoned, and a new tool must say who owns it",
+        "lag_days": 13
+      },
+      "contributing_factors": [
+        {
+          "factor": "the remote sha was shared by every check in the gate with no existence test at the one place it is established",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "resolved once in main() with cat-file -e and a merge-base fallback, so later checks inherit a readable base"
+        },
+        {
+          "factor": "the failure mode was a FALSE FINDING with a plausible remedy, not a refusal -- the gate told one session to claim OWNER of four shared tools",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "with the base resolved the owner check no longer fires on pre-existing files; driven both directions against the real repo"
+        },
+        {
+          "factor": "the same shape was independently written in three gates, so fixing it per gate moved the refusal along instead of clearing it",
+          "kind": "process",
+          "action_status": "done",
+          "action": "this fix is central; the two earlier per-gate fixes stay because those files build their own ranges from stdin as well"
+        },
+        {
+          "factor": "five sessions pushing one branch makes a stale remote tip the ordinary case, and no gate modelled it as ordinary",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "the push rate is the platform; gates have to tolerate a moving remote rather than treat it as an anomaly"
+        }
+      ],
+      "recurrence_open": "No checker exists for the shape itself -- a sha read off pre-push stdin and then passed to rev-parse, cat-file or log with no existence test. tools/hover_auditor_scope_gate.py:409 is a fourth instance, still unfixed and routed rather than edited because it is the auditor separation gate and passed every push attempt this batch. Nothing stops a fifth being authored. Also unmeasured: how many of the gate's other checks were silently reading a wrong answer off the same absent base before this fix, since only the owner check happened to fail loudly."
+    },
+    {
+      "commit": "a031dbe4bbdc",
+      "date": "2026-10-13",
+      "subject": "fix(hover2-tools): hover2_external_file_check.py generalizes handoff_glob_prefix to a glob_prefixes list -- SAIRN-report-h2-/SAIRN-digest-h2- per batch showed up UNINDEXED the first run after Michael asked for a per-batch Drive upload",
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools-hover2/hover2-external-files-index.json",
+        ".claude/skills/sairn-hover-auditor/tools-hover2/hover2_external_file_check.py"
+      ],
+      "lines_added": 35,
+      "lines_removed": 5,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "hover2_external_file_check.py's handoff_glob_prefix field covered only one growing-filename family; SAIRN-report-h2-*/SAIRN-digest-h2-* showed up UNINDEXED on the first run after Michael asked for a per-batch Drive upload, because the field was never generalized to a list of prefixes.",
+      "rules": [
+        "1.7"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The single-prefix field predates the report/digest filename convention it failed to cover; separating which commit introduced the gap is not meaningful for a field that was simply never extended, and an invented sha is worse than an absent one."
+      },
+      "citation_note": "Cited for the shape -- a single glob prefix silently exempts a sibling filename family it was not written to reach -- not because 1.7 was written about this indexing tool.",
+      "factors_unknown_reason": "Named in the commit body rather than as structured factors this pass."
+    },
+    {
       "commit": "ac9d47d834fe",
       "date": "2026-10-13",
       "subject": "fix(register feed gate): the UNREADABLE OUTGOING RANGE was the remote tip being an object this clone does not have, and it was reported as a malformed range",
@@ -27672,63 +27982,6 @@
         }
       ],
       "recurrence_open": "tools/hover_auditor_scope_gate.py:409 has the same shape and is NOT fixed here -- it builds rsha..lsha and returns 'could not read the outgoing range' on a non-zero git exit. It runs first in .githooks/pre-push and passed both of these pushes, so it is routed rather than edited. Nothing stops a third gate being written with the same shape; no check asks whether a sha read off stdin is a local object."
-    },
-    {
-      "commit": "98f33b675d97",
-      "date": "2026-10-13",
-      "subject": "fix(hover2-tools): scp_session_gate_repro.py's branch_gate check was a bare substring test -- a QC-decision's nested verifySessionToken call scored a whole write path FIXED when it was not",
-      "files": [
-        ".claude/skills/sairn-hover-auditor/tools-hover2/scp_session_gate_repro.py"
-      ],
-      "lines_added": 55,
-      "lines_removed": 5,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "scp_session_gate_repro.py's branch_gate check was a bare substring test for 'verifySessionToken' anywhere in the action's body; it matched the call inside scp_progress_photos write's qc_status-gated sub-branch and scored the whole write path FIXED when an upload with no qc_status at all reached the table with no session check at all. Real figure at the time was 16 of 22 REPRODUCES, not the reported 15.",
-      "rules": [
-        "1.3"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The substring check and the nested QC sub-branch it was blind to were both already present when this tool was last touched; the bug was found via a build agent's own commit (0442646c) rather than a bisect, and an invented injection sha is worse than an absent one."
-      },
-      "citation_note": "Cited for the shape -- the anchor 'verifySessionToken' still matched the branch body, but did not point at the right thing (the action's OWN unconditional gate, as opposed to a nested payload-conditional sub-check) -- not because 1.3 was written about this repro tool.",
-      "factors_unknown_reason": "Named in the commit body rather than as structured factors this pass."
-    },
-    {
-      "commit": "a031dbe4bbdc",
-      "date": "2026-10-13",
-      "subject": "fix(hover2-tools): hover2_external_file_check.py generalizes handoff_glob_prefix to a glob_prefixes list -- SAIRN-report-h2-/SAIRN-digest-h2- per batch showed up UNINDEXED the first run after Michael asked for a per-batch Drive upload",
-      "files": [
-        ".claude/skills/sairn-hover-auditor/tools-hover2/hover2-external-files-index.json",
-        ".claude/skills/sairn-hover-auditor/tools-hover2/hover2_external_file_check.py"
-      ],
-      "lines_added": 35,
-      "lines_removed": 5,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "low",
-      "detection_method": "code-review",
-      "summary": "hover2_external_file_check.py's handoff_glob_prefix field covered only one growing-filename family; SAIRN-report-h2-*/SAIRN-digest-h2-* showed up UNINDEXED on the first run after Michael asked for a per-batch Drive upload, because the field was never generalized to a list of prefixes.",
-      "rules": [
-        "1.7"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The single-prefix field predates the report/digest filename convention it failed to cover; separating which commit introduced the gap is not meaningful for a field that was simply never extended, and an invented sha is worse than an absent one."
-      },
-      "citation_note": "Cited for the shape -- a single glob prefix silently exempts a sibling filename family it was not written to reach -- not because 1.7 was written about this indexing tool.",
-      "factors_unknown_reason": "Named in the commit body rather than as structured factors this pass."
     },
     {
       "commit": "af5057c0f734",
@@ -27825,6 +28078,40 @@
       "recurrence_open": "OPEN. Nothing asks of a checker whether its findings are ACTIONABLE, and two tools reached this same failure independently within hours on 2026-10-13 -- this one and tools/external_file_index_check.py. The next permanently-red checker looks exactly like these two did."
     },
     {
+      "commit": "d7773533f371",
+      "date": "2026-10-13",
+      "subject": "feat(sairnfreedom,sairnbuild): SAIRNfreedom gets a 36x10 role matrix and server-side officer guards, bld_draws becomes owner/office only, and the audit checkpoint covered 3 of 16 logs",
+      "files": [
+        "api/_lib/sf-roles.js",
+        "api/audit-checkpoint.js",
+        "api/sd-data-cross-tenant-dispatchers.test.js",
+        "api/sd-data-session-gate.test.js",
+        "api/sd-data-sf-role-matrix.test.js",
+        "api/sd-data-sf-session-gate.test.js",
+        "api/sd-data.js",
+        "docs/hank-evidence/b6_live_session_control_probe.out",
+        "docs/hank-evidence/b6_live_session_control_probe.py"
+      ],
+      "lines_added": 1352,
+      "lines_removed": 20,
+      "app": "sairnroofing",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "batch b18: SQL-SYNC finding, not a security gap. Michael's live-DB query (relayed via chat, this role has no Supabase credential) confirms rf_schedule's 3 new columns (status_changed_at, status_changed_by, status_changed_by_role) exist in the LIVE database. Direct repo read, this batch: grep -rn 'status_changed_by|status_changed_role|status_changed_at|status_changed_by_role' sql/ returns ZERO hits anywhere in sql/ -- no committed DDL file declares any of the 3 columns. This settles a b17 H1/H2 disagreement: H1's routing doc said 'confirmed present in sql/', this role's grep found none; both were partially right about different layers -- the columns are real and live, the repo's own tracked schema just never got the matching migration committed back. Independently found by H1 the same batch (logged H1 seq1348, same shape as H1's seq1345/1347 sairncode/stonedesk DDL-sync findings). Risk: a fresh provision from the repo's own sql/ files would NOT create these columns -- a real repo-vs-production sync gap, separate from whether the live run itself succeeded. Routed to hank: add the 3-column migration to the appropriate rf_schedule DDL file in sql/.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "config",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The live migration's timing relative to any repo commit was not this role's to observe -- Michael ran it directly in Supabase, and no corresponding repo commit exists to cite as either origin or fix."
+      },
+      "citation_note": "Same shape as 16245537cc56's own sql-sync recurrence_open and its siblings -- no PR section covers a repo/live schema sync gap specifically.",
+      "factors_unknown_reason": "Named in the summary; a one-line DDL-sync gap, not a multi-factor root cause this pass."
+    },
+    {
       "commit": "e08bab0c2471",
       "date": "2026-10-13",
       "subject": "fix(open work): cap the shard filename, and give both new tools an OWNER line",
@@ -27893,111 +28180,24 @@
       "recurrence_open": "OPEN. Any generator that names files from untrusted table text has this hole, and nothing in the repo would catch it: the standing-doc check measures BYTES not path length, and md_table_check reads rows rather than filenames. A path-length sweep over docs/ would catch the class and is not written."
     },
     {
-      "commit": "0442646cb781",
-      "date": "2026-10-12",
-      "subject": "fix(scp): three of SAIRNscape's eight ungated resources gated -- and the repro that found them scored one of its own targets FIXED when it was not",
-      "files": [
-        "api/sd-data-scp-session-gate.test.js",
-        "api/sd-data-session-gate.test.js",
-        "api/sd-data.js"
-      ],
-      "lines_added": 261,
-      "lines_removed": 19,
-      "app": "sairnscape",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "hover-audit",
-      "summary": "batch b16 re-derives the scp_* 5-resource 'BY DESIGN' classification and finds it UNSUPPORTED by the schema. hank's 2026-10-13 inventory (docs/2026-10-13-hank-sd-data-inventory.md:185-192) and this commit's own contributing_factors both call the 5 UNGATED_REST resources (scp_jobs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features) deliberately-left because their columns 'justify leaving each.' Read directly: sql/sairnscape_data_schema_phase2.sql:22-24 states outright 'TYPE A (customer-scoped list): scp_designs, scp_irr_controllers, scp_irr_zones, scp_water_features (customer_id parent) and scp_irr_schedules (zone_id parent)' -- and every one of the 5 tables' own column list confirms it: scp_jobs has customer_id (sql/sairnscape_data_schema.sql:52), scp_irr_controllers customer_id (phase2.sql:53), scp_irr_zones customer_id (phase2.sql:67), scp_water_features customer_id (phase2.sql:97), scp_irr_schedules zone_id (phase2.sql:83, one hop from customer_id via scp_irr_zones). The original test comment that named UNGATED_REST (api/sd-data-scp-session-gate.test.js:113-114) calls this 'a disclosure rather than an absence,' not a safety judgement. FINDING STAYS OPEN: no written evidence exists anywhere in the schema, the test, or the inventory doc that these 5 hold no tenant/customer data -- the schema says the opposite. Routed to hank: same fix pattern as the 3 already gated in this commit (SD_SESSION_GATED + SD_GATE_APP entries), exact file:line in docs/2026-10-07-hover2-scp-session-gate-routing.md.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover2",
-      "injection": {
-        "unknown_reason": "The absence of a role/session gate on these 5 predates any commit in range; the mischaracterization itself was introduced by this very commit's own contributing_factors note, cited as --commit rather than --injection-commit since this record corrects that note rather than a code defect."
-      },
-      "citation_note": "Same situation as this commit's own sibling record: no PR section covers a data-classification disagreement specifically, and citing the nearest shape would be the manufactured agreement the not-citable hatch exists to prevent.",
-      "factors_unknown_reason": "A classification-disagreement finding, not a new code defect; the sibling record already attached this commit's structured factors and this record does not duplicate them."
-    },
-    {
-      "commit": "16245537cc56",
-      "date": "2026-10-12",
-      "subject": "fix(auth,sairncash): fourteen apps could hand somebody a working sign-in with no record of who did it -- and an unauthenticated POST minted a Firebase auth token off one bearer string",
-      "files": [
-        "api/_lib/audit.js",
-        "api/alf-auth.js",
-        "api/auth-setup-attribution.test.js",
-        "api/bld-auth.js",
-        "api/dnt-auth.js",
-        "api/grd-auth.js",
-        "api/leg-auth.js",
-        "api/mech-auth.js",
-        "api/rf-auth.js",
-        "api/sairncash/verify.js",
-        "api/sairncash/verify.test.js",
-        "api/sb-auth.js",
-        "api/scp-auth.js",
-        "api/sd-sub-auth.js",
-        "api/sdn-auth.js",
-        "api/sen-auth.js",
-        "api/sf-auth.js",
-        "api/sv-auth.js",
-        "docs/2026-10-07-hank-migration-sql-for-michael.md",
-        "docs/BYPASS-LOG.jsonl",
-        "sairncash.html",
-        "sql/sairnbiz_audit_log_schema.sql",
-        "sql/sairnbuild_audit_log_schema.sql",
-        "sql/sairncare_audit_log_schema.sql",
-        "sql/sairndental_audit_log_schema.sql",
-        "sql/sairndesign_audit_log_schema.sql",
-        "sql/sairnfreedom_audit_log_schema.sql",
-        "sql/sairngrounds_audit_log_schema.sql",
-        "sql/sairnlegacy_audit_log_schema.sql",
-        "sql/sairnmechanical_audit_log_schema.sql",
-        "sql/sairnroofing_audit_log_schema.sql",
-        "sql/sairnscape_audit_log_schema.sql",
-        "sql/sairnsenior_audit_log_schema.sql",
-        "sql/sairnvet_audit_log_schema.sql",
-        "tools/audit_event_type_check.py"
-      ],
-      "lines_added": 1886,
-      "lines_removed": 44,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "batch b16 re-runs tools/audit_event_type_check.py and tests/run_audit_event_type_probe.py directly against current HEAD rather than trusting fourth's claimed-live status. CONFIRMED STILL OPEN, worse than this commit's own recurrence_open recorded: 3 of 16 audit tables reject an emitted event_type -- sairncode_audit_log rejects credential_change_refused/pin_setup (api/sc-ai.js, api/sc-auth.js); stonedesk_audit_log rejects order_link_created/order_link_revoked/pin_setup/sub_roster_write (api/sd-auth.js, api/sd-sub-auth.js, api/sd-sub-data.js, api/stonedesk-track.js); sairnlaw_audit_log rejects SIX values -- ai_interaction, ai_rejected, ai_reviewed, ai_used_in_filing, deadline_engine, legal_reference_lookup (api/law-auth.js, api/legal-citator.js, api/legal-deadlines.js, api/legal-reference.js) -- NOT previously named in this commit's own recurrence_open, which only listed stonedesk/sairncode. sv_audit_log has NO event_type CHECK constraint at all (separate, undetermined-severity gap, listed by the tool as WITHOUT-a-CHECK rather than a violation). SEPARATE FINDING, same run: tests/run_audit_event_type_probe.py's own H0 arm FAILS -- its regex 'const AUDIT_TABLES = \\{([^}]*)\\}' expects a static key:true literal, but api/_lib/audit.js:101-103 (2026-10-11) now builds AUDIT_TABLES dynamically from AUDIT_TABLE_BY_APP in a loop, so the probe's own allowlist-population check is now blind to a legitimate refactor -- a checker that stopped checking (PR 1.1 shape), not a security regression. This is checking the repo's own sql/*.sql CHECK literals against the repo's own emitted event_type literals; it says nothing about whether Michael's 2026-10-13 live Supabase migration applied a DIFFERENT, uncommitted CHECK -- only that the committed SQL and the committed code still disagree.",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The event_type/CHECK mismatches predate this batch and this role did not bisect which commit introduced each of the 11 values; the H0 probe regression was introduced by api/_lib/audit.js's 2026-10-11 refactor (commit unresolved -- the diff was not bisected, only the current state read) which is a different file than the probe itself."
-      },
-      "citation_note": "Cited for the probe's H0 regression specifically (a check that stopped checking after a legitimate refactor) -- the underlying event_type/CHECK mismatch itself is not cited to any section, same as this commit's own citation_confidence.",
-      "factors_unknown_reason": "Named in the summary rather than as structured factors this pass; this record corrects/extends 16245537cc56's own recurrence_open rather than introducing a new root cause."
-    },
-    {
-      "commit": "55777a74de8f",
+      "commit": "f2f9953b9e60",
       "date": "2026-10-13",
-      "subject": "fix(copy-exactly gate): the THIRD gate refusing a push because the REMOTE's sha is not an object in this clone",
+      "subject": "fix(b9 push): the push refusal re-diagnosed to TWO causes, both fixed -- two tools undescribed since b5/b7, and a gate measuring the tip in the live working tree while measuring the base in a clean checkout",
       "files": [
-        "tools/copy_exactly_gate.py"
+        ".githooks/pre-commit",
+        "tools/commit_tool_entry_check.py",
+        "tools/sairn_push_gate_hook.py",
+        "tools/tooling_inventory.py"
       ],
-      "lines_added": 53,
+      "lines_added": 577,
       "lines_removed": 0,
       "app": "tooling",
       "layer": "tooling",
       "severity": "high",
       "detection_method": "code-review",
-      "summary": "tools/copy_exactly_gate.py --pre-push verified its range BASE with rev-parse --verify and refused 'COULD NOT RUN: <sha> does not resolve in this clone, so the range cannot be read and nothing was checked (PR 1.11)'. In --pre-push mode that base is the sha THE REMOTE currently has, read off git's stdin line, so with five sessions pushing one branch it is routinely an object this clone has never fetched -- an ordinary condition, refusing a push that has nothing to do with it. THIRD GATE WITH THIS EXACT SHAPE, and found by it refusing the very next push attempt after the same defect was fixed in tools/register_feed_gate.py at 774cf1d2: the remote tip was bef3f6df, unfetched, and the gate reported it as an unreadable range. Fixed by falling back to merge-base(origin/main, tip) when the base does not resolve, which is ALREADY this file's own pattern nine lines above the site -- a brand-new branch with no remote base compares against origin/main and says so -- and with an unfetched remote tip that base is a SUPERSET of the range asked for, so it judges more commits and never fewer. The TIP stays a hard refusal because it is a LOCAL sha this clone is pushing; the two causes are not folded together.",
+      "summary": "tools/sairn_push_gate_hook.py check 12 measured the TIP in the live working tree and the BASE in a clean throwaway worktree, so 'clean there, dirty here' compared the base commit against the base commit PLUS this clone's uncommitted files. A push carries commits, not a working tree. The live-tree asymmetry fired on .claude/settings.json, which is tracked and is modified-not-committed in this clone by decision -- hooks cleared on purpose and never to be restored -- and tools/tooling_inventory.py derives one of seven sources from that file, so in the live tree hook entries reads 0 and the generator correctly REFUSES rather than writing a thinner document. In a worktree of the same tip it reads 19. Check 12 therefore attributed a deliberate uncommitted local condition to every push from this clone. THE WORSE HALF IS THAT IT MASKED A REAL FINDING: the live-tree refusal fires on the empty source before the generator reaches its undescribed-tool list, so the genuine defect in this push -- tools/report_sha_check.py added in b5 and tools/temp_state_leak_check.py added in b7, each with no PURPOSES or REGISTRY entry -- never appeared in the output check 12b greps. A wrong subject did not merely produce a false refusal, it replaced the true one. Check 12 now re-derives its tip verdicts in a worktree of the pushed commit, the same way the base side already does, with the live-tree run kept as a screen so a clean push still builds no worktree.",
       "rules": [
-        "1.11"
+        "1.1"
       ],
       "citation_confidence": "clean",
       "injection_phase": "coding",
@@ -28005,186 +28205,38 @@
       "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "commit": "e2222a4011d3",
-        "date": "2026-09-26",
-        "subject": "feat(gate): item 43 stops being a convention -- and the first thing it catches is this session's own propagation",
-        "lag_days": 17
+        "commit": "9cd9907a460b",
+        "date": "2026-09-14",
+        "subject": "feat(push-gate): check 12 -- a generated document THIS push broke, and only that one",
+        "lag_days": 29
       },
       "contributing_factors": [
         {
-          "factor": "the remote sha off the pre-push stdin line was verified as if it were a local object, in a third independent gate",
+          "factor": "the tip was read from the live working tree while the base was read from a clean checkout, so the two sides of the comparison were different kinds of thing",
           "kind": "technical",
           "action_status": "done",
-          "action": "merge-base(origin/main, tip) fallback when the base does not resolve, with the cause printed and both shas named"
+          "action": "check 12 re-derives the tip verdicts in a worktree of the pushed commit; an unbuildable tip prints COULD NOT TELL and falls back to the prior behaviour"
         },
         {
-          "factor": "the same shape was written three times in three gates with no check asking whether a sha read off stdin is a local object",
-          "kind": "latent-condition",
-          "action_status": "planned",
-          "action": "a check that flags rev-parse/cat-file/log on a sha taken from pre-push stdin without an existence test -- not written in this batch"
-        },
-        {
-          "factor": "fixing it in one gate moved the refusal to the next gate in .githooks/pre-push rather than clearing it, so the first fix read as ineffective",
+          "factor": "a refusal raised on the FIRST failing derivation source hid the second, so the true finding was never printed and check 12b had nothing to grep",
           "kind": "detection",
           "action_status": "done",
-          "action": "both fixes print a NOTICE naming the gate, so the next refusal is attributable to a different gate rather than to the first fix not working"
+          "action": "tools/commit_tool_entry_check.py asks the undescribed-tool question at the commit that adds the file, where no other refusal can mask it"
+        },
+        {
+          "factor": "three enforcement points for the inventory rule and all three ask at push time, so a one-line omission became a 36-commit blocked queue before anything said so",
+          "kind": "process",
+          "action_status": "done",
+          "action": "wired commit_tool_entry_check.py into .githooks/pre-commit scoped to --diff-filter=A over tools/*.py"
+        },
+        {
+          "factor": "a tracked file is deliberately kept modified-and-uncommitted in this clone, which no gate models as a legitimate standing state",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "the cleared hooks are a decision, not drift; gates have to read the pushed tree rather than ask the working tree to be clean"
         }
       ],
-      "recurrence_open": "tools/hover_auditor_scope_gate.py:409 is the third instance and is NOT fixed. It builds rsha..lsha and returns 'could not read the outgoing range' on a non-zero git exit; it runs first in .githooks/pre-push and has passed every push attempt this batch, and it is the auditor separation gate, so it is routed rather than edited. The planned factor above -- a checker for this shape -- is also not written, so a fourth gate can still be authored with it."
-    },
-    {
-      "commit": "16245537cc56",
-      "date": "2026-10-12",
-      "subject": "fix(auth,sairncash): fourteen apps could hand somebody a working sign-in with no record of who did it -- and an unauthenticated POST minted a Firebase auth token off one bearer string",
-      "files": [
-        "api/_lib/audit.js",
-        "api/alf-auth.js",
-        "api/auth-setup-attribution.test.js",
-        "api/bld-auth.js",
-        "api/dnt-auth.js",
-        "api/grd-auth.js",
-        "api/leg-auth.js",
-        "api/mech-auth.js",
-        "api/rf-auth.js",
-        "api/sairncash/verify.js",
-        "api/sairncash/verify.test.js",
-        "api/sb-auth.js",
-        "api/scp-auth.js",
-        "api/sd-sub-auth.js",
-        "api/sdn-auth.js",
-        "api/sen-auth.js",
-        "api/sf-auth.js",
-        "api/sv-auth.js",
-        "docs/2026-10-07-hank-migration-sql-for-michael.md",
-        "docs/BYPASS-LOG.jsonl",
-        "sairncash.html",
-        "sql/sairnbiz_audit_log_schema.sql",
-        "sql/sairnbuild_audit_log_schema.sql",
-        "sql/sairncare_audit_log_schema.sql",
-        "sql/sairndental_audit_log_schema.sql",
-        "sql/sairndesign_audit_log_schema.sql",
-        "sql/sairnfreedom_audit_log_schema.sql",
-        "sql/sairngrounds_audit_log_schema.sql",
-        "sql/sairnlegacy_audit_log_schema.sql",
-        "sql/sairnmechanical_audit_log_schema.sql",
-        "sql/sairnroofing_audit_log_schema.sql",
-        "sql/sairnscape_audit_log_schema.sql",
-        "sql/sairnsenior_audit_log_schema.sql",
-        "sql/sairnvet_audit_log_schema.sql",
-        "tools/audit_event_type_check.py"
-      ],
-      "lines_added": 1886,
-      "lines_removed": 44,
-      "app": "sairnlaw",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "batch b18: Michael ran the live pg_get_constraintdef query this role could not run itself (no Supabase credential), relayed via chat. Result: sairnlaw_audit_log's live CHECK constraint LACKS credential_deactivated, credential_reactivated and credential_change_refused -- three values api/_lib/employee-lifecycle.js:202,214,267,301 emits via doAudit() for every app (including sairnlaw, through api/law-auth.js) using the shared credential-lifecycle module. tools/audit_event_type_check.py MISSED these 3 independently -- it only reported 6 other rejected values (ai_interaction, ai_rejected, ai_reviewed, ai_used_in_filing, deadline_engine, legal_reference_lookup) in b16/b17/b18 live re-runs, never these 3, because its app-to-table/helper resolution does not follow employee-lifecycle.js's doAudit() the way it follows auditPinSetup() -- the tool's own stated limit ('ONE HELPER IS FOLLOWED AND THE REST ARE NOT') materializing as a real miss, not a false accusation. Independently cross-confirmed by H1 (hover)'s own live-DB run the same batch, logged at H1 seq1344. Real total for sairnlaw_audit_log is now 9 rejected values, not 6. HIGH: a credential deactivation/reactivation/refusal for a SAIRNlaw employee silently fails to record (writeAuditLog is non-fatal), the exact seq958-shaped gap this whole audit-log saga traces back to, now confirmed for a third app.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "Predates this batch; employee-lifecycle.js's doAudit() calls and sairnlaw_audit_log's CHECK list were both already in place, neither added this batch."
-      },
-      "citation_note": "Same shape as the existing 16245537cc56 sibling records -- no PR section covers a CHECK-constraint/emitted-value mismatch specifically.",
-      "factors_unknown_reason": "Named in the summary; this role did not independently derive the live CHECK text, only Michael's relayed result and the local code read that explains WHY it is reachable."
-    },
-    {
-      "commit": "16245537cc56",
-      "date": "2026-10-12",
-      "subject": "fix(auth,sairncash): fourteen apps could hand somebody a working sign-in with no record of who did it -- and an unauthenticated POST minted a Firebase auth token off one bearer string",
-      "files": [
-        "api/_lib/audit.js",
-        "api/alf-auth.js",
-        "api/auth-setup-attribution.test.js",
-        "api/bld-auth.js",
-        "api/dnt-auth.js",
-        "api/grd-auth.js",
-        "api/leg-auth.js",
-        "api/mech-auth.js",
-        "api/rf-auth.js",
-        "api/sairncash/verify.js",
-        "api/sairncash/verify.test.js",
-        "api/sb-auth.js",
-        "api/scp-auth.js",
-        "api/sd-sub-auth.js",
-        "api/sdn-auth.js",
-        "api/sen-auth.js",
-        "api/sf-auth.js",
-        "api/sv-auth.js",
-        "docs/2026-10-07-hank-migration-sql-for-michael.md",
-        "docs/BYPASS-LOG.jsonl",
-        "sairncash.html",
-        "sql/sairnbiz_audit_log_schema.sql",
-        "sql/sairnbuild_audit_log_schema.sql",
-        "sql/sairncare_audit_log_schema.sql",
-        "sql/sairndental_audit_log_schema.sql",
-        "sql/sairndesign_audit_log_schema.sql",
-        "sql/sairnfreedom_audit_log_schema.sql",
-        "sql/sairngrounds_audit_log_schema.sql",
-        "sql/sairnlegacy_audit_log_schema.sql",
-        "sql/sairnmechanical_audit_log_schema.sql",
-        "sql/sairnroofing_audit_log_schema.sql",
-        "sql/sairnscape_audit_log_schema.sql",
-        "sql/sairnsenior_audit_log_schema.sql",
-        "sql/sairnvet_audit_log_schema.sql",
-        "tools/audit_event_type_check.py"
-      ],
-      "lines_added": 1886,
-      "lines_removed": 44,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "batch b18: CLOSES the live security half of the recurring sairncode/stonedesk pin_setup CHECK finding (seq958-shaped, tracked across b16-b18), OPENS a sql-sync finding for the DDL half. Michael's live-DB query (relayed via chat, this role has no Supabase credential): sairncode_audit_log and stonedesk_audit_log's live event_type CHECK now ALLOWS pin_setup. The attribution write (api/sc-auth.js, api/sd-auth.js) therefore records successfully in production today -- the original security gap (an unrecorded credential grant) is CLOSED on that evidence. NOT CLOSED: the repo's own tracked DDL. Direct read this batch: sql/sairncode_audit_log_schema.sql and sql/stonedesk_audit_log_schema.sql both still lack pin_setup in their CHECK list (grep -n pin_setup on both returns nothing) -- confirmed by tools/audit_event_type_check.py's own live re-run, still exit 1, still reporting both as rejecting. A fresh provision from the repo's own sql/ files would therefore recreate the ORIGINAL bug. Independently found and logged the same batch by H1 (hover), seq1345/1347. Routed to hank: add pin_setup to both DDL files' CHECK list to match what was actually run live.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "config",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The live CHECK alteration's timing is not observable by this role; no repo commit exists to cite."
-      },
-      "citation_note": "Same shape as this commit's own existing recurrence_open -- no PR section covers a repo/live schema sync gap specifically.",
-      "factors_unknown_reason": "Named in the summary; a DDL-sync gap, not a multi-factor root cause this pass."
-    },
-    {
-      "commit": "d7773533f371",
-      "date": "2026-10-13",
-      "subject": "feat(sairnfreedom,sairnbuild): SAIRNfreedom gets a 36x10 role matrix and server-side officer guards, bld_draws becomes owner/office only, and the audit checkpoint covered 3 of 16 logs",
-      "files": [
-        "api/_lib/sf-roles.js",
-        "api/audit-checkpoint.js",
-        "api/sd-data-cross-tenant-dispatchers.test.js",
-        "api/sd-data-session-gate.test.js",
-        "api/sd-data-sf-role-matrix.test.js",
-        "api/sd-data-sf-session-gate.test.js",
-        "api/sd-data.js",
-        "docs/hank-evidence/b6_live_session_control_probe.out",
-        "docs/hank-evidence/b6_live_session_control_probe.py"
-      ],
-      "lines_added": 1352,
-      "lines_removed": 20,
-      "app": "sairnroofing",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "batch b18: SQL-SYNC finding, not a security gap. Michael's live-DB query (relayed via chat, this role has no Supabase credential) confirms rf_schedule's 3 new columns (status_changed_at, status_changed_by, status_changed_by_role) exist in the LIVE database. Direct repo read, this batch: grep -rn 'status_changed_by|status_changed_role|status_changed_at|status_changed_by_role' sql/ returns ZERO hits anywhere in sql/ -- no committed DDL file declares any of the 3 columns. This settles a b17 H1/H2 disagreement: H1's routing doc said 'confirmed present in sql/', this role's grep found none; both were partially right about different layers -- the columns are real and live, the repo's own tracked schema just never got the matching migration committed back. Independently found by H1 the same batch (logged H1 seq1348, same shape as H1's seq1345/1347 sairncode/stonedesk DDL-sync findings). Risk: a fresh provision from the repo's own sql/ files would NOT create these columns -- a real repo-vs-production sync gap, separate from whether the live run itself succeeded. Routed to hank: add the 3-column migration to the appropriate rf_schedule DDL file in sql/.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "config",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The live migration's timing relative to any repo commit was not this role's to observe -- Michael ran it directly in Supabase, and no corresponding repo commit exists to cite as either origin or fix."
-      },
-      "citation_note": "Same shape as 16245537cc56's own sql-sync recurrence_open and its siblings -- no PR section covers a repo/live schema sync gap specifically.",
-      "factors_unknown_reason": "Named in the summary; a one-line DDL-sync gap, not a multi-factor root cause this pass."
+      "recurrence_open": "The live-tree SCREEN still cannot see a document that the COMMITS break while an uncommitted edit compensates -- that direction is unchanged by this fix and is stated in the code rather than left to be discovered. docs/TOOLING-INVENTORY.md also lists commit_tool_entry_check.py as UNWIRED while it is wired into .githooks/pre-commit: the generator derives wiring from .claude/settings.json hook entries and from the push gate and reads .githooks/ for neither, so every pre-commit-wired tool is under-reported the same way. Not fixed here -- it is a change to the inventory's source list in a file two sessions contest."
     }
   ],
   "started": "2026-09-09",
