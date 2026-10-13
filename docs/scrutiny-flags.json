@@ -63,6 +63,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_register_feed_gate_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0927eb546b1d8c71927c33ff0c0a224884097372",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/hook_integrity_check.py",
    "class": "push-gate logic",
    "level": "CHANGE",
@@ -232,6 +240,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "338cf94c83dd01f5a5720e86d159c8a7b514c1ba",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_defect_register_superseded_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "364257bb594934e83c571a6077ce199d5eb0df16",
    "criteria_version": "2026-10-06.1"
   },
   {
