@@ -3833,6 +3833,33 @@
         "sql/stonedesk_audit_log_schema.sql",
         "tests/audit_checkpoint_probe.py"
       ]
+    },
+    {
+      "id": "hank-1791925702",
+      "session": "hank",
+      "subject": "sairnfreedom",
+      "task": "hank batch b8 -- (1) MICHAEL DECIDED YES: a VFW post trustee gets their own login, view-only on financial records; add trustee.audit to ROLES_BY_APP.sairnfreedom and the sairnfreedom_employee_auth role CHECK in ONE change, the CHECK ALTER as one idempotent block in sql/, and api/sf-auth.test.js to GREEN. (2) sairnlaw_audit_log event_type CHECK gains credential_deactivated, credential_reactivated, credential_change_refused, ALTER committed to sql/ as one idempotent block. (3) the scp_ five-resource gate: fix every resource that still reproduces, last measured 10 of 22, and prove it with tests. (4) the leg_bookings TOCTOU race, same fix pattern as leg_merch_units, with a test that FAILS BEFORE the fix. (5) methodology: derive role lists and sql CHECK lists from ONE source and add a cross-app test that FAILS when ROLES_BY_APP and any sql/ CHECK diverge, for every app. (6) push without force and confirm landed. HOOKS STAY CLEARED and .claude/settings.json is NEVER committed by this session. CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: docs/by-design-register.json docs/external-files-index.json docs/METHODOLOGY.md and fourth's b11 docs are in FOURTH'S LIVE claim, and hover2's b20 files are in ITS live claim -- none is taken here. No auditor clone is entered. FILES: api/_lib/auth.js api/_lib/sf-roles.js api/sf-auth.js api/sf-auth.test.js api/sd-data.js api/sd-data-scp-session-gate.test.js api/role-vocabulary-agreement.test.js sql/sairnfreedom_employee_auth_schema.sql sql/2026-10-13-hank-b8-trustee-role.sql sql/sairnlaw_audit_log_schema.sql sql/2026-10-13-hank-b8-sairnlaw-credential-events.sql docs/SAIRN-handoff-hank-b8.md SAIRN-report-hank-b8.txt SAIRN-digest-hank-b8.txt SAIRN-ACTIVE-WORK-hank.md",
+      "claimed_at": "2026-10-13T21:08:22Z",
+      "claimed_at_epoch": 1791925702.8894646,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-hank.md",
+        "SAIRN-digest-hank-b8.txt",
+        "SAIRN-report-hank-b8.txt",
+        "api/_lib/auth.js",
+        "api/_lib/sf-roles.js",
+        "api/role-vocabulary-agreement.test.js",
+        "api/sd-data-scp-session-gate.test.js",
+        "api/sd-data.js",
+        "api/sf-auth.js",
+        "api/sf-auth.test.js",
+        "docs/SAIRN-handoff-hank-b8.md",
+        "sql/2026-10-13-hank-b8-sairnlaw-credential-events.sql",
+        "sql/2026-10-13-hank-b8-trustee-role.sql",
+        "sql/sairnfreedom_employee_auth_schema.sql",
+        "sql/sairnlaw_audit_log_schema.sql"
+      ]
     }
   ],
   "refusals": [
