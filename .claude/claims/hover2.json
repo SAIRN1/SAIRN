@@ -251,8 +251,8 @@
       "task": "batch b17 -- audit role, read-only on platform code except register-add. Re-check hank b5/cc b5-b6 landed status with file:line, re-run own repros. Live-DB SQL for Supabase, UNVERIFIED pending chat run. Fresh rotation scan, route by directory. Chain tip+token. Handoff+report. FILES: docs/defect-density-register.json .claude/skills/sairn-hover-auditor/tools-hover2/scp_session_gate_repro.py .claude/skills/sairn-hover-auditor/tools-hover2/bld_draws_bypass_repro.py .claude/skills/sairn-hover-auditor/tools-hover2/sf_five_tables_lock_repro.py",
       "claimed_at": "2026-10-13T10:13:09Z",
       "claimed_at_epoch": 1791886389.3003116,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-13T10:36:10Z",
       "files": [
         ".claude/skills/sairn-hover-auditor/tools-hover2/bld_draws_bypass_repro.py",
         ".claude/skills/sairn-hover-auditor/tools-hover2/scp_session_gate_repro.py",
