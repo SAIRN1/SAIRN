@@ -342,6 +342,26 @@ runtime `ReferenceError`; both audits returned 502 and wrote nothing. Caught by
 `tests/provisioning_attribution.js` arms D1 and D3 — tier 2 doing what tier 1
 cannot.
 
+> **LANDED 2026-10-13 — "STILL BROKEN IN PRODUCTION" BELOW IS NO LONGER TRUE.**
+> Michael ran the audit-log migration SQL. The `sairncode`, `stonedesk` and
+> `sairnlaw` audit-log CHECK constraints were **widened**, 13 new
+> `sairn*_audit_log` tables were created including SAIRNvet, and `rf_schedule`
+> gained `status_changed_by` / `_role` / `_at`. So the two `ALTER`s this section
+> calls STEP 0 are applied and the six attribution paths it says record nothing
+> can now write.
+>
+> **MARKED, NOT REWRITTEN.** The analysis underneath stays exactly as it was,
+> because it is the record of how a green suite and six silent paths coexisted,
+> and that is the reusable part. What changed is the database, not the argument.
+>
+> **AND IT IS NOT VERIFIED FROM HERE.** This is Michael's statement that the
+> migration ran, marked where my own doc carried it open — not a live read. No
+> session in this clone has queried the constraint or inserted a row since. The
+> check that would settle it is `tools/audit_event_type_check.py`, which hank's
+> b4 report records as exiting 1 on exactly these three constraints; **re-running
+> it is the one-line confirmation and it is the next step, not a done thing.**
+> b8 did not run it: it belongs to the session that owns the attribution work.
+
 **INSTANCE 2 — TIER 2 USED AS TIER 3, AND THIS ONE IS STILL BROKEN IN
 PRODUCTION.** The same batch's attribution fix emits four event types that the
 **CHECK constraint on the audit table rejects**:

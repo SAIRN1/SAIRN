@@ -562,3 +562,189 @@ are clean so the failure is NOT tree pollution. **It does not change the exit
 code** -- a diagnostic that downgraded a failure to a skip would be the same
 silence one level along, and the dirty subject might be the real defect.
 
+
+---
+
+# ADDED BY BATCH b8, 2026-10-13 -- fourth
+
+## 16. METHODOLOGY: the spec for a convention-number uniqueness/gap check (b8 item 7)
+
+**SPEC ONLY. NO CODE WAS WRITTEN AND NOTHING WAS WIRED.** ROUTED TO **cc**
+(`tools/` by the b6 directory rule). The b8 brief asked for the spec; building it
+in the same batch that used it would make the first run of a checker its own
+author's self-assessment.
+
+**WHY IT IS WORTH A CHECKER AND NOT A HABIT.** The numbering has been wrong
+twice, both times from two sessions adding an item within the same hour, and
+both times the *author* was careful -- hank's b4 report declined to self-promote
+for exactly this reason and routed the number instead. A rule that depends on
+every session counting correctly under concurrency is a rule that fails on the
+busiest day.
+
+### The sources, and there are THREE not two
+
+| source | what it holds | authority |
+|---|---|---|
+| `docs/2026-09-13-cross-domain-disciplines.md` | `## <n>.` headings, the convention TEXT | the numbering itself |
+| `docs/METHODOLOGY.md` | the promotions table, one `\| **<date>** \| **<n>.**` row per promoted convention | the provenance |
+| the heading `## The failure mode ELEVEN of the thirty-four share` | the DENOMINATOR, prose | derived, and drifts silently |
+
+**THE THIRD SOURCE IS THE ONE A NAIVE CHECKER MISSES.** That heading carries a
+written-out count of conventions and a written-out count of group members, and
+both have been edited by hand on every promotion. A check that validates the
+numbers and ignores the prose leaves the one figure a reader actually sees.
+
+### What it must assert
+
+1. **UNIQUENESS.** No `## <n>.` number appears twice. This is the one that has
+   actually failed.
+2. **NO GAPS.** The set is exactly `1..max`. A gap means a convention was
+   removed or a number was skipped, and both need a human.
+3. **ROWS AND HEADINGS AGREE IN ONE DIRECTION ONLY.** Every promotion row must
+   have a heading; a heading **without** a row is NOT a failure -- 17 of the
+   first 17 conventions have no row, because the promotions table began later.
+   **A checker that demanded the reverse would exit 1 on a correct file from the
+   day it was installed**, which is how a gate arrives pre-distrusted.
+4. **THE DENOMINATOR IN THE PROSE MATCHES `max`.** Parse the written-out number
+   out of the group heading and compare. Words, not digits: "thirty-four".
+5. **THE GROUP COUNT MATCHES ITS MEMBERSHIP NOTES.** Each promotion appends a
+   parenthetical saying whether the new convention joined the cannot-fire group.
+   The count of "IS A MEMBER" notes plus the original members must equal the
+   written-out group size. This is the weakest assertion and should be
+   **report-only even inside the checker** -- the notes are prose and a parser
+   over them will have false positives.
+
+### The three states, and the one that matters
+
+| state | when | exit |
+|---|---|---|
+| OK | 1-5 hold | 0 |
+| FINDING | a duplicate, a gap, a row with no heading, or a denominator mismatch | 1 |
+| **COULD NOT RUN** | either file is unreadable, or **zero `## <n>.` headings were found** | **2** |
+
+**A ZERO HEADING COUNT MUST BE EXIT 2, NOT EXIT 0.** If the heading format ever
+changes, a regex that matches nothing would report "no duplicates, no gaps" --
+a perfect score over an empty population, which is convention 34's own failure
+mode and would be a fitting way for this particular checker to die. **Assert a
+floor: at least 30 headings, or refuse.**
+
+### The criteria lock
+
+Fixtures in BOTH directions, in a temp directory, never against the real file:
+a clean file passes; a duplicated number fails; a gap fails; a row with no
+heading fails; a heading with no row PASSES; a wrong written-out denominator
+fails; a file with no headings at all is exit 2. **The negative half is the
+point** -- a checker only ever shown a broken file cannot show it is not simply
+always failing.
+
+### Exact targets for cc
+
+| target | what |
+|---|---|
+| **new file** `tools/convention_number_check.py` | the checker, `--check` and `--fixtures` |
+| `docs/2026-09-13-cross-domain-disciplines.md` | source 1, read-only |
+| `docs/METHODOLOGY.md` | source 2, read-only |
+| `tools/sairn_push_gate_hook.py:860` | `EXEMPTABLE` -- add this check's name if it is ever promoted to blocking |
+| `docs/TOOLING-INVENTORY.md` | generated; a new tool needs its hand-written entry or the generator exits 2 |
+
+**AND IT SHOULD START REPORT-ONLY.** Both real failures were caught by a human
+re-counting; nothing has been lost to them since. A new gate on a document four
+sessions edit should earn blocking rights by finding something first.
+
+## 17. SEQ 17-A -- the next 15 REAL findings, subject-verified (b8 item 10)
+
+b4 verified 3 of 23 sites, ONE of them a REAL site. These are the **16 remaining
+REAL sites** -- the brief asked for 15 and the sixteenth is the pair-line at
+`tools/citation_drift_hook.py:416`, which would have been absurd to leave out
+having just read :411. Verified by
+the same method: go to the recorded `file:line`, read what the derivation
+actually takes as input, and say whether the recorded SUBJECT agrees. **Not a
+re-run and not a re-count.** The citation was re-derived before it was trusted,
+because 20 files in these trees were edited this batch.
+
+| # | site | recorded subject | verdict |
+|---|---|---|---|
+| 1 | `tests/licence_rekey_isolation.js:400` | see SEQ 17-A | AGREES |
+| 2 | `tests/sairnbiz_incidents_kpi.js:264` | see SEQ 17-A | AGREES |
+| 3 | `tests/sairnbiz_server_backup.js:191` | see SEQ 17-A | AGREES |
+| 4 | `tests/sairncode_gates.js:301` | see SEQ 17-A | DERIV-ONLY |
+| 5 | `tests/sairnlegacy_processions_isolation.js:72` | see SEQ 17-A | AGREES |
+| 6 | `tests/sairnlegacy_session_gate_review_probe.js:202` | see SEQ 17-A | AGREES |
+| 7 | `tests/sairnlegacy_write_failure_voice.js:197` | see SEQ 17-A | AGREES |
+| 8 | `tests/seed_never_syncs_platform.js:105` | see SEQ 17-A | AGREES |
+| 9 | `tests/seed_never_syncs_platform.js:147` | see SEQ 17-A | AGREES |
+| 10 | `tests/seed_never_syncs_platform.js:274` | see SEQ 17-A | AGREES |
+| 11 | `tests/sen_hydrate_comparator_review_probe.js:209` | see SEQ 17-A | AGREES |
+| 12 | `tests/sen_hydrate_comparator_review_probe.js:210` | see SEQ 17-A | AGREES |
+| 13 | `tests/stonedesk_server_backup.js:47` | see SEQ 17-A | AGREES |
+| 14 | `tests/stonedesk_server_backup.js:55` | see SEQ 17-A | AGREES |
+| 15 | `tools/citation_drift_hook.py:411` | see SEQ 17-A | MOVED CITATION |
+| 16 | `tools/citation_drift_hook.py:416` | see SEQ 17-A | MOVED CITATION |
+
+**16 of 16 AGREE. NONE DECLINED.** Three needed the citation refined by one line
+and the refinement is the finding rather than a disagreement:
+
+* `tests/sairncode_gates.js:301` -- the recorded line declares the regex; the
+  `re.exec(m[1])` that makes `m[1]` the subject is at **:303**. Subject
+  confirmed: the `SC_TIER_A_WRITE_ROLES_BY_RESOURCE` body out of
+  `api/sd-data.js`. **AGREES, cite :301-303.**
+* `tools/citation_drift_hook.py:411` and `:416` -- `lines` is BOUND at **:406**
+  (`lines = io_read_lines(os.path.join(REPO, me))`) and consumed by the
+  `findall` at :411 and the enumerate at :413. The recorded lines are the
+  consumption, not the binding. **AGREES, cite :406 for the subject.**
+
+**THE 36 REAL FINDINGS REMAIN OPEN BY DESIGN.** This verifies the
+classification; it fixes nothing, which is what SEQ 17-A's own section says the
+pass is for.
+
+## 18. The register duplicate sweep -- CLEAN (b8 item 11)
+
+Option A as instructed: retire by `superseded_by`, never delete.
+
+| | |
+|---|---|
+| records | 516 |
+| already superseded (b7 + the rebase) | 4 |
+| live records | 512 |
+| **live records sharing a `summary` at different commits** | **0** |
+| retired this batch | 0 |
+| groups reported but not touched | 0 |
+
+**THE SWEEP IS CLEAN AND THE DEFINITION IS THE REASON IT MEANS ANYTHING.** A
+duplicate is two records with the SAME `summary` at DIFFERENT commits -- the
+shape `--reseat` refuses to merge. **Records sharing a COMMIT are not
+duplicates**: one commit routinely fixes several defects, and b7 measured 49
+commits that appear more than once. A sweep keyed to the commit would have
+"found" 49 duplicates and retired real records.
+
+The survivor rule is unchanged from b7 so the two sweeps cannot disagree: the
+record whose commit resolves at HEAD and is an ancestor of `origin/main`
+survives. Where neither could be separated the pair would be REPORTED, not
+guessed -- there were none.
+
+## 19. The locks, re-run (b8 item 9's sibling)
+
+| lock | holder pid | pid state | file age (h) | lock says | attributable to | verdict |
+|---|---:|---|---:|---|---|---|
+| `b12wt2.lock` | 78192 | DEAD | 140.1 | 134357762159212705 | NONE | LEAVE -- dead but UNATTRIBUTABLE |
+| `cc.lock` | 53560 | LIVE | 0.3 | 134362418688496853 | cc | LEAVE -- holder is LIVE |
+| `cody.lock` | 2204 | LIVE | 1.5 | 134362418402795108 | cody | LEAVE -- holder is LIVE |
+| `fourth.lock` | 61696 | LIVE | 0.8 | 134362418976255147 | fourth | LEAVE -- holder is LIVE |
+| `hank.lock` | 48956 | LIVE | 1.2 | 134362418846177203 | hank | LEAVE -- holder is LIVE |
+| `hover.lock` | 30428 | LIVE | 1.3 | 134362411605322071 | hover | LEAVE -- holder is LIVE |
+| `hover2.lock` | 17908 | LIVE | 0.9 | 134363468736757962 | hover2 | LEAVE -- holder is LIVE |
+| `repo.lock` | 39448 | DEAD | 167.0 | 134357133510386951 | NONE | LEAVE -- dead but UNATTRIBUTABLE |
+| `sairn_idem_o66nnvth.lock` | 58388 | DEAD | 318.5 | 134351763382256557 | NONE | LEAVE -- dead but UNATTRIBUTABLE |
+| `sairn_idem_q5p4bqkx.lock` | 58388 | DEAD | 318.7 | 134351763382256557 | NONE | LEAVE -- dead but UNATTRIBUTABLE |
+| `sairn_idem_rhbjx2yx.lock` | 61668 | DEAD | 326.4 | 134350675984514778 | NONE | LEAVE -- dead but UNATTRIBUTABLE |
+| `sairn_idem_uw3ebld2.lock` | 82012 | DEAD | 133.5 | 134358654468810777 | NONE | LEAVE -- dead but UNATTRIBUTABLE |
+| `tree.lock` | 82012 | DEAD | 134.0 | 134358654468810777 | NONE | LEAVE -- dead but UNATTRIBUTABLE |
+| `wt-tools.lock` | 73300 | DEAD | 135.9 | 134357847177782898 | NONE | LEAVE -- dead but UNATTRIBUTABLE |
+
+**0 released, FIFTH batch running.** The registry's pid->session map holds only
+the six LIVE pids, so a dead pid can never be attributed through it, and the
+lock files carry no session field. Routed to cc, unchanged:
+`tools/session_lock_check.py:128` `lock_path()`, `:349` `lock_payload()`,
+`:357` `'task': task`. `fourth.lock` is this session's own and is released at
+report close.
+

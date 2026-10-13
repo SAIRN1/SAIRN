@@ -1,0 +1,65 @@
+# docs/2026-10-13-ted-unowned-suites-assigned.tsv
+# Written by fourth/ted, batch b8 item 8. cody's
+# docs/2026-10-11-cody-b4-suite-failure-routing.tsv IS NOT EDITED -- this
+# file carries the same `suite` key so the two JOIN, and neither overwrites
+# the other.
+#
+# THE BASIS IS A DIRECTORY RULE given in the b8 brief, not a record: api/ to
+# hank, tests/ to cody, tools/ to cc, docs/ to ted. That is WEAKER than a
+# file's own `# OWNER:` line and STRONGER than UNOWNED, and the `basis`
+# column says so on every row so the two can never be confused. An owner
+# assigned by directory is a ROUTING DESTINATION, not a claim of authorship.
+#
+# `prior_owner` is UNOWNED on every row by construction: these are exactly
+# the rows cody's file could not attribute.
+#
+suite	kind	rc	app	prior_owner	assigned_owner	basis	route_to	first_failing_line
+api/sd-data-customer-soft-delete.test.js	node	1	stonedesk	UNOWNED	hank	directory rule `api/` -> hank	next claim on stonedesk	5 passed
+api/sd-data-family-contacts.test.js	node	1	sairncare	UNOWNED	hank	directory rule `api/` -> hank	next claim on sairncare	FAILURES ABOVE
+api/sd-data-scp-licence-only.test.js	node	1	MULTI	UNOWNED	hank	directory rule `api/` -> hank	next claim naming this path	23 passed, 1 failed
+api/sf-auth.test.js	node	1	sairnfreedom	UNOWNED	hank	directory rule `api/` -> hank	next claim on sairnfreedom	37 passed, 1 failed
+tests/claims/run_registry_claim_probe.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	- end to end: a registry claim whose PROCESS IS GONE does not block, however recently it was taken
+tests/defect_register_capa_control.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	ok   malformed JSON is refused rather than stored as a string
+tests/faults/sd_write_faults.js	node	1	MULTI	UNOWNED	cody	directory rule `tests/` -> cody	next claim naming this path	7 passed, 11 FAILED
+tests/faults/transport_timeout_sweep.js	node	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	77 passed, 4 FAILED
+tests/hover_quotable_session_vocab_check.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	have gone unnoticed. Add the name to QUOTABLE.
+tests/law_reconcile_role_vocab_control.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	CRITERIA LOCKED BEFORE THE REAL RUN
+tests/local_only_self_evidence_probe.py	py	1	sairnbiz	UNOWNED	cody	directory rule `tests/` -> cody	next claim on sairnbiz	1 ARM(S) FAILED
+tests/local_only_shape_probe.py	py	1	MULTI	UNOWNED	cody	directory rule `tests/` -> cody	next claim naming this path	2 ARM(S) FAILED
+tests/push_gate/check4_probe.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	FAILED TWICE, the second time on its own: CHECK 4 VERIFIED (planted blocks by seam + names the field, clean not blocked
+tests/push_gate/check7_probe.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	FAILED TWICE, the second time on its own: FAILED  check7_probe: 11 checks, 5 failed
+tests/run_adversarial_prompt_corpus_probe.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	3 arm(s) FAILED: 4. the sweep runs and classifies: zero unfenced, 5 reported as fenced, 8. emptying the untrusted-field
+tests/run_alf_read_order_sabotage_probe.py	py	1	sairncare	UNOWNED	cody	directory rule `tests/` -> cody	next claim on sairncare	- 5. THE FIX IS STILL THERE BUT THE ARM CAN NO LONGER SEE IT: the alf_mar read is hoisted into a local, so the arm finds
+tests/run_all_tests_floor_probe.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	2. _main_body() -- THE COPY A HUMAN RUNS
+tests/run_checker_control_probe.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	EVERY CONTROLS_FOR under tests/ parses to a subject (these declare nothing: ['tests/criticality_rollup_list_review_probe
+tests/run_concurrency_retry_probe.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	B. the retry is driven with synthetic files, not the real three
+tests/run_condition_coverage_probe.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	5. THE PLANTED GAP -- it must find an operand no test covers
+tests/run_copy_exactly_gate_probe.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	0 passed, 1 failed
+tests/run_cron_liveness_probe.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	FAILED: the pre-change workflow had NO commit step -- only the artifact upload, which is the gap this closes
+tests/run_defect_dispersion_probe.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	ok   layer has a population of exactly three
+tests/run_dependency_graph_probe.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	7q  a PAST-DUE date prints REVIEW DUE and does NOT fail -- failing a push because a calendar date passed punishes whoeve
+tests/run_dispatch_state_probe.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	FAILED: ...and NO subprocess.run, so it never invokes sairn_claim.py to ask the claim matcher
+tests/run_eaten_substitution_probe.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	eaten_substitution_check: 2 ARM(S) FAILED
+tests/run_financial_invariant_probe.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	7f  a judgment for a file the checker no longer flags is called out as stale, not left to look current
+tests/run_first_article_probe.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	- NO RECORDED INSPECTION is stale, incomplete, or cites an arm that does not exist -- the half this probe controls
+tests/run_githook_install_probe.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	- --check passes once the clone is really installed
+tests/run_graduated_exemption_probe.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	- ...proven: the third push is refused again
+tests/run_index_duplicate_probe.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	7a  the real index has no undeclared duplicate pairs
+tests/run_nhi_clone_enumeration_probe.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	4 passed, 4 failed
+tests/run_rebase_resolve_probe.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	- ...and says nothing was staged
+tests/run_role_gate_negative_coverage_probe.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	FAILED  run_role_gate_negative_coverage_probe: 4 failed
+tests/run_secrets_inventory_probe.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	6c  SILENT: against the real committed document the same entry point exits 0 -- the pair is what makes 6a evidence rathe
+tests/run_selftest_sweep_probe.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	- subprocess_decode_check.py --selftest exits 0
+tests/run_tool_selftest_probe.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	FAILING (1): hover_separation_ci.py
+tests/sairncare/test-compliance-rules.js	node	1	sairncare	UNOWNED	cody	directory rule `tests/` -> cody	next claim on sairncare	47 passed, 3 failed
+tests/sairncare/test-op-audit.js	node	1	sairncare	UNOWNED	cody	directory rule `tests/` -> cody	next claim on sairncare	12 passed, 14 failed
+tests/sairnfreedom_auth_review_probe.js	node	1	sairnfreedom	UNOWNED	cody	directory rule `tests/` -> cody	next claim on sairnfreedom	? 15:11 (2) -- the sf-auth setup guard anchor has moved -- this arm is not reporting agreement it did not check
+tests/sairnfreedom_segregation_of_duties.js	node	1	sairnfreedom	UNOWNED	cody	directory rule `tests/` -> cody	next claim on sairnfreedom	FAIL -- 25 passed, 1 failed
+tests/sairnlegacy_fault_probe.py	py	1	sairnlegacy	UNOWNED	cody	directory rule `tests/` -> cody	next claim on sairnlegacy	The baseline is red, so no mutation below would mean anything. Stopping.
+tests/sairnlegacy_reservation_lock.js	node	1	sairnlegacy	UNOWNED	cody	directory rule `tests/` -> cody	next claim on sairnlegacy	1. reserving is an atomic conditional PATCH, not a read-then-write
+tests/scp_quotes_review_probe.js	node	1	MULTI	UNOWNED	cody	directory rule `tests/` -> cody	next claim naming this path	NOT REPRODUCED -- this finding appears to be closed.
+tests/seam_check/run_or_default_probe.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	2 ARM(S) FAILED
+tests/seam_check/run_ref_probe.py	py	1	PLATFORM	UNOWNED	cody	directory rule `tests/` -> cody	next claim on platform tooling	3 ARM(S) FAILED
+tests/sql_preflight/run_probe.py	py	1	sairndental	UNOWNED	cody	directory rule `tests/` -> cody	next claim on sairndental	sairn_circuit_breaker_schema.sql: UNDECLARED_TABLE sairn_circuit_breaker_step
+tests/suite_control_backfill_probe.py	py	1	sairnsenior	UNOWNED	cody	directory rule `tests/` -> cody	next claim on sairnsenior	CONTROLS THAT DID NOT BITE: ['2. a failed read is treated as an empty one', '3. the server copy clobbers local records i
+tests/write_readback_shape_probe.py	py	1	MULTI	UNOWNED	cody	directory rule `tests/` -> cody	next claim naming this path	2 ARM(S) FAILED
