@@ -17,22 +17,36 @@ CLAUDE.md's rule is that a handoff lives only in a real clone — never written 
 
 ## Committed this batch
 
-**THESE SHAS ARE POST-REBASE AND THE PRE-REBASE ONES ARE DEAD.** `origin/main`
-moved 65 commits while b7 ran, so the batch was rebased onto `2364cf88` before
-the push and every sha below was rewritten. The first printing of this table
-cited the pre-rebase set (`1400bd90`, `e064ceee`, `972eeb9d`, `c3983131`), which
-resolves in no clone but this one's reflog — a dangling citation is the thing a
-rebase silently creates in any document that stamps a sha.
+**THESE SHAS ARE POST-REBASE AND EVERY EARLIER SET IS DEAD.** `origin/main`
+moved 65 commits while b7 ran and **moved again between the first push attempt
+and the second**, so the batch was rebased TWICE and every sha was rewritten
+each time. Two earlier printings of this table cited `1400bd90` / `e064ceee` /
+`972eeb9d` / `c3983131` and then `1315205f` / `8fff5bab` / `807c26de` /
+`58ba1b31`; none of those resolves in any clone but this one's reflog. **A
+dangling citation is what a rebase silently creates in every document that
+stamps a sha** — which is exactly the condition that left two `api/` Tier A
+obligations unreviewable by anybody, and the reason the b6 methodology proposal
+asks `--open` to stamp a sha the assignee can actually fetch.
 
 | sha | item |
 |---|---|
-| `b677ece8` | the claim |
-| `1315205f` | **items 1 + 2** — audit-checkpoint sixteen-log coverage as one idempotent SQL block, the `CHECK_NOT_WIDENED` refusal, four new ablated test arms; three stale `sql/*_audit_log_schema.sql` CHECKs synced to what ran; `api/sf-auth.test.js` split into four arms |
-| `8fff5bab` | **item 3** — the SAIRNfreedom demo credential, round-tripped twice |
-| `807c26de` | **item 4** — the last nine `sf_` resources gated, 36 of 36 |
-| `58ba1b31` | **item 5** — `docs/2026-10-13-context-budget-procedure.md` |
-| `547fee33` | this handoff (first printing) |
-| `7cafa03d` | the claim release |
+| `a13b4466` | the claim |
+| `90228883` | **items 1 + 2** — audit-checkpoint sixteen-log coverage as one idempotent SQL block, the `CHECK_NOT_WIDENED` refusal, four new ablated test arms; three stale `sql/*_audit_log_schema.sql` CHECKs synced to what ran; `api/sf-auth.test.js` split into four arms |
+| `dde6aaed` | **item 3** — the SAIRNfreedom demo credential, round-tripped twice |
+| `bc9b87f3` | **item 4** — the last nine `sf_` resources gated, 36 of 36 |
+| `a247322f` | **item 5** — `docs/2026-10-13-context-budget-procedure.md` |
+| `8722b141`, `8779b21e` | this handoff, first two printings |
+| `ebe6d2ff` | the claim release |
+| `f023569f` | the defect-register record the push gate required |
+
+**THE REGISTER RECORD'S SHA WAS RE-SEATED AUTOMATICALLY AND THAT IS WORTH
+KNOWING.** The record was written against `1315205f`; the repo's own
+post-rebase git hook re-pointed it to `90228883` in the working tree, leaving
+the change UNSTAGED — so a session that committed and pushed without looking at
+`git status` again would have published a record citing a sha nobody can fetch.
+`python tools/defect_register.py --reseat` then reported a COLLISION rather than
+a re-seat, because the destination already held the re-seated record; the
+message is right and the state was already correct.
 
 Nothing from an earlier batch was carried: `origin/main` was at `f779644e`
 (0 ahead / 0 behind) at pickup.
