@@ -27141,7 +27141,7 @@
       "recurrence_open": "OPEN. The skip list is a hand-maintained list of what a path IS, and nothing re-derives it when a new artefact convention appears -- the next root-level prose deliverable in a new extension lands in scope the same way. A coverage control exists for tracked path CLASSES but it cannot know about a convention that has not been invented yet."
     },
     {
-      "commit": "ef2df3a949ab",
+      "commit": "fa6a390edbc3",
       "date": "2026-10-12",
       "subject": "feat(sairnlaw): role granularity for all 19 resources -- ONE table, ONE function, and the trust lock is a second structure",
       "files": [
@@ -27169,7 +27169,7 @@
       "factors_unknown_reason": "one policy gap across 19 resources, recorded as one defect with the full table in api/_lib/law-roles.js rather than modelled as structured factors"
     },
     {
-      "commit": "e576b5f95d84",
+      "commit": "2567062ed309",
       "date": "2026-10-13",
       "subject": "feat(push-gate probes): verdicts without the network -- and a refusal by a DIFFERENT check is a fourth state",
       "files": [
