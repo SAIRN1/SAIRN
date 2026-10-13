@@ -1210,9 +1210,25 @@ module.exports = async (req, res) => {
       //                        has been gated since 2026-09-29, so this pair
       //                        was split across the gate for two weeks.
       //
-      // ALL 36 sf_ RESOURCES ARE NOW IN THIS MAP, which makes the "which are
-      // still ungated" question unaskable rather than merely answered -- and
-      // retires the stopping rule that has governed four waves of this app.
+      // THAT SENTENCE WAS WRONG WHEN IT WAS WRITTEN, AND IT SAID THE ONE THING
+      // A READER WOULD NOT RE-CHECK (corrected 2026-10-13, b7). The b6 draft
+      // of this comment claimed "ALL 36 sf_ RESOURCES ARE NOW IN THIS MAP,
+      // which makes the question unaskable". IT WAS 27. Nine were still
+      // licence-key-only, and the SAME FILE said so correctly 650 lines below,
+      // beside the role-matrix call site, with all nine named. So the file
+      // contradicted itself and the optimistic half was the one in the place a
+      // reader arrives first.
+      //
+      // WHY THAT IS WORSE THAN AN UNDERCOUNT: "the question is unaskable" tells
+      // the next reader not to measure. An undercount invites a recount; a
+      // false all-clear retires the check. It is the same shape as a gate
+      // wrapped in `if tool_exists` -- the claim is not merely wrong, it
+      // suppresses the thing that would have found it wrong.
+      //
+      // The nine were added in b7 and the count is now genuinely 36. It is
+      // asserted rather than written: api/sd-data-sf-session-gate.test.js holds
+      // the approved set as data and fails on any difference in either
+      // direction, so this paragraph cannot go stale the way the last one did.
       //
       // THE CLIENT HALF NEEDS NO CHANGE and that is READ, not assumed: all five
       // go through the SF_SYNCED loop and sfData() at sairnfreedom.html:1986
@@ -1231,6 +1247,72 @@ module.exports = async (req, res) => {
       'sf_permit_flags':        ['read', 'write'],
       'sf_products':            ['read', 'write'],
       'sf_vehicles':            ['read', 'write'],
+      // ── THE LAST NINE. SAIRNfreedom IS GATED WHOLESALE, 2026-10-13 (b7) ──
+      // These are the nine the b6 comment above wrongly claimed were already
+      // here. All nine are B/B in docs/CRITICALITY-TIERS.md -- the only sf_
+      // resources that are neither A on integrity nor A on confidentiality --
+      // and that is why four previous waves stopped short of them.
+      //
+      // WHY THEY ARE GATED NOW, AND IT IS A DIFFERENT REASON FROM THE OTHER
+      // TWENTY-SEVEN. The earlier waves gated on the SENSITIVITY of the row:
+      // minors' names, a felony flag, ORC 2915 payee records, a statutory prize
+      // cap. None of these nine clears that bar on its own. What they clear is
+      // a different one: THE ROLE MATRIX ALREADY HAS A REVIEWED POLICY FOR
+      // THEM, and a role policy cannot run on a resource with no session,
+      // because no session means no role. api/_lib/sf-roles.js carries a row
+      // for every one of the 36 on purpose, so that the day one of these is
+      // gated its policy is already written and reviewed rather than invented
+      // in the same hurried edit. That day is today, and the policy is the one
+      // that was reviewed in b6 -- not a new one authored here.
+      //
+      // WHAT ACTUALLY CHANGES FOR A USER, STATED RATHER THAN IMPLIED. Before
+      // this edit any licence holder could read and write all nine with no
+      // session at all. After it, a session is required AND the matrix decides
+      // per role -- so for example a chaplain is now refused a write to the
+      // vendor list and a member-admissions officer is refused the bottle
+      // counts. Those refusals are the reviewed policy arriving, not a side
+      // effect: they are exactly the cells api/sd-data-sf-role-matrix.test.js
+      // already locks.
+      //
+      // AND THE CLIENT HALF NEEDS NO CHANGE, which was READ at this HEAD rather
+      // than assumed, resource by resource. All nine are in the SF_SYNCED list
+      // (sairnfreedom.html:1931-1942, which holds all 36); every read goes
+      // through the one sfHydrateAll() loop and every write through the one
+      // st() -> sfSyncCollection -> sfData chain; and sfData at :1999-2004
+      // attaches X-SD-Auth whenever a token is held, with no resource argument
+      // consulted and no per-call flag to forget. There are exactly three
+      // fetch() sites in the whole file and only one of them reaches sd-data.
+      //
+      // THE PRE-LOGIN HYDRATE STILL 403s AND IS STILL ABSORBED, unchanged by
+      // this edit: DOMContentLoaded calls sfHydrateAll() before any interactive
+      // sign-in, the refusal is swallowed at sfServerWinsMerge's non-array
+      // guard, and sfHydrateAfterSignIn() re-runs the full hydrate once a
+      // session exists. That was already true for the 27 and is why this is not
+      // a new breakage for the nine.
+      //
+      // WHAT IS **NOT** CLOSED BY THIS, and it is the client's half rather than
+      // the server's: sairnfreedom.html does no per-panel role gating at all
+      // (only the Access tab is hidden), and a backup refused by the matrix
+      // warns to the console and nothing else. So a denied role's LOCAL save
+      // still succeeds while its server copy silently does not. Refusing is the
+      // server's job and hiding is the page's; the page half is a client change
+      // nobody has been asked for, and it is newly reachable for these nine.
+      //
+      // NO TWO-VERB ARRAY LITERAL IS QUOTED IN THIS COMMENT and no resource
+      // name is written in quotes followed by a comma: the pair-count tripwire
+      // in api/sd-data-session-gate.test.js counts quoted words over this
+      // block's RAW text without blanking comments, so either would add phantom
+      // pairs. Measured on b4: a first draft that quoted one reported 82 for an
+      // edit that added 2.
+      'sf_bottle_fills':        ['read', 'write'],
+      'sf_ceremonial_items':    ['read', 'write'],
+      'sf_documents':           ['read', 'write'],
+      'sf_honor_details':       ['read', 'write'],
+      'sf_inventory_counts':    ['read', 'write'],
+      'sf_national_categories': ['read', 'write'],
+      'sf_service_hours':       ['read', 'write'],
+      'sf_service_referrals':   ['read', 'write'],
+      'sf_vendors':             ['read', 'write'],
       'slabs':   ['read', 'write', 'reserve', 'release'],
       'profile': ['read', 'write'],
       'memory':  ['read', 'write'],
@@ -1625,6 +1707,28 @@ module.exports = async (req, res) => {
       'sf_permit_flags': 'sairnfreedom',
       'sf_products': 'sairnfreedom',
       'sf_vehicles': 'sairnfreedom',
+      // ── THE LAST NINE, 2026-10-13 (b7), IN THE SAME EDIT AS THEIR GATE ────
+      // The rule this pair of lists carries, applied for the last time on this
+      // app: gated above with no entry here and expectedApp falls back to
+      // 'stonedesk', so EVERY correctly signed-in SAIRNfreedom officer is
+      // refused FORBIDDEN "sign in first" on all nine. sf_trustee_audits broke
+      // exactly that way on main for a day, and the b7 edit was checked against
+      // this table BEFORE the gate entries were written rather than after:
+      // none of the nine was here.
+      //
+      // With these, both maps hold all 36 sf_ resources and the sets are equal
+      // -- which is asserted as set equality in
+      // api/sd-data-sf-session-gate.test.js, in both directions, rather than
+      // counted.
+      'sf_bottle_fills': 'sairnfreedom',
+      'sf_ceremonial_items': 'sairnfreedom',
+      'sf_documents': 'sairnfreedom',
+      'sf_honor_details': 'sairnfreedom',
+      'sf_inventory_counts': 'sairnfreedom',
+      'sf_national_categories': 'sairnfreedom',
+      'sf_service_hours': 'sairnfreedom',
+      'sf_service_referrals': 'sairnfreedom',
+      'sf_vendors': 'sairnfreedom',
       // SAIRNscape's two, 2026-09-25, added in the SAME edit as their gate
       // entries -- this pair of lists is never grown one half at a time, and
       // the reason is at the top of this table: a resource gated above with no
@@ -1875,36 +1979,42 @@ module.exports = async (req, res) => {
       // check written at one branch and not the other thirty-five, which reads
       // as no policy at all one branch at a time.
       //
-      // ── WHAT THIS CALL SITE DOES AND DOES NOT COVER. MEASURED, 27 OF 36 ──
-      // SD_SESSION_GATED now holds 27 of SAIRNfreedom's 36 resources, so this
-      // one call site role-checks 27 of them. NINE ARE STILL LICENCE-KEY-ONLY
-      // and a role check is not merely absent for them, IT IS IMPOSSIBLE:
-      // there is no session, so there is no role to decide against. Naming them
-      // rather than letting the arithmetic imply them:
+      // ── WHAT THIS CALL SITE COVERS. MEASURED 2026-10-13 (b7): 36 OF 36 ───
+      // SD_SESSION_GATED holds all 36 of SAIRNfreedom's resources, so this one
+      // call site role-checks every one of them.
+      //
+      // THE NINE THAT COULD NOT BE ROLE-CHECKED UNTIL TODAY, kept here because
+      // the reason they were unreachable is the reason the matrix was written
+      // to cover them anyway. b6 left these licence-key-only --
       //
       //   sf_bottle_fills  sf_ceremonial_items  sf_documents
       //   sf_honor_details  sf_inventory_counts  sf_national_categories
       //   sf_service_hours  sf_service_referrals  sf_vendors
       //
-      // All nine are B/B in docs/CRITICALITY-TIERS.md. Michael's b6 decision
-      // named the FIVE TIER A resources that were still open, and those are
-      // gated in this same edit; the nine Tier B ones were not in that decision
-      // and are not swept in on my own authority -- the same stopping rule that
-      // governed the four prior waves of this app, applied one last time.
+      // -- all B/B in docs/CRITICALITY-TIERS.md, and for them a role check was
+      // not merely absent, IT WAS IMPOSSIBLE: no session means no role to
+      // decide against. b6's instruction named the five Tier A resources that
+      // were still open and said nothing about these, so they were left with
+      // the derivation written down rather than swept in. b7 was sent at them
+      // with the rule "lock whichever the role matrix already supports", and
+      // the matrix supports all nine, so they are gated above and this call
+      // site now reaches them.
       //
-      // THE TABLE IN api/_lib/sf-roles.js COVERS ALL 36 ANYWAY, deliberately.
-      // A row for an ungated resource costs nothing and means the day one of
-      // those nine is gated, its policy is already written and reviewed rather
-      // than invented in the same hurried edit that gates it. The matrix test
-      // asserts 36 rows against the registry, so the table cannot fall behind
-      // the app.
+      // THE TABLE IN api/_lib/sf-roles.js COVERED ALL 36 BEFORE THEY WERE
+      // GATED, deliberately, AND THAT IS WHAT MADE TODAY A ONE-LINE DECISION
+      // RATHER THAN A POLICY DESIGN. A row for an ungated resource costs
+      // nothing and means the day one of those nine is gated, its policy is
+      // already written and reviewed rather than invented in the same hurried
+      // edit that gates it. That is precisely how it played out. The matrix
+      // test asserts 36 rows against the registry, so the table cannot fall
+      // behind the app.
       //
-      // AND THERE IS NO SECOND CALL SITE, unlike SAIRNlaw's two. SAIRNlaw needs
-      // one in the LAW_RESOURCES prelude because fifteen of its nineteen are
-      // gated there instead of here. SAIRNfreedom's nine are gated NOWHERE, so
-      // a second call site would have nothing to check -- adding one that reads
-      // a session that cannot exist would be a check that can never fire, which
-      // is worse than an absent one because it looks like coverage.
+      // AND THERE IS STILL NO SECOND CALL SITE, unlike SAIRNlaw's two. SAIRNlaw
+      // needs one in the LAW_RESOURCES prelude because fifteen of its nineteen
+      // are gated there instead of here. Every SAIRNfreedom resource passes
+      // through this block, so a second call site would duplicate a decision
+      // rather than extend it -- and two places for one answer to drift is the
+      // shape whose fix is three lines above.
       //
       // NOT_SF IS WHY THIS IS SAFE IN A BLOCK EVERY APP PASSES THROUGH, exactly
       // as NOT_LAW is above: `decide` returns a THIRD verdict for anything that

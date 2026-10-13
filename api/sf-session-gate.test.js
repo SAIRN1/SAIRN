@@ -299,26 +299,65 @@ async function provision(w, employee_id, role) {
     }
   });
 
-  await test('an UNGATED sf_ resource is not refused -- the gate did not widen '
-            + 'by accident', async () => {
-    // Widening the gate to a bottle count is a product decision nobody has
-    // made, and a gate that grows by accident is how an app stops working for
-    // its users.
+  await test('THE GATE IS TABLE-DRIVEN, NOT BLANKET: a resource outside '
+            + 'SD_SESSION_GATED is not refused by THIS gate', async () => {
+    // ── MOVED 2026-10-13 (b7), WHICH IS WHAT THE OLD VERSION ASKED FOR ──────
+    // This arm drove sf_bottle_fills and required "not 403", as the negative
+    // half of the gate's control pair. Its own comment said: "if it is ever
+    // approved, this arm is the thing to move, not to delete." It was approved
+    // in b7 -- all 36 sf_ resources are now gated -- so the arm is moved.
     //
-    // sf_bottle_fills, NOT sf_members. This arm named sf_members until
-    // 2026-09-24 and sf_members was gated on 2026-09-22, so it was asserting
-    // the opposite of the approved state for two days. sf_bottle_fills is the
-    // literal "bottle count" the deferral comment in api/sd-data.js uses as
-    // its example of what nobody has decided about, which makes it the entry
-    // most likely to still be ungated when somebody reads this next -- but if
-    // it is ever approved, this arm is the thing to move, not to delete.
+    // IT COULD NOT STAY POINTED AT ANY sf_ RESOURCE, and that is a statement
+    // about the app rather than about this arm: THERE IS NO LONGER AN UNGATED
+    // ONE. A negative control needs a subject that should legitimately pass,
+    // and SAIRNfreedom no longer has one. Pretending otherwise by picking a
+    // gated resource and inverting the expectation would assert the opposite of
+    // the approved state -- which this arm already did once, for two days in
+    // September, when it named sf_members after sf_members was gated.
+    //
+    // SO THE CONTROL IS RE-AIMED AT THE PROPERTY THAT ACTUALLY MATTERS and that
+    // is still falsifiable: the gate must refuse by TABLE LOOKUP, not by app or
+    // by prefix. A resource absent from SD_SESSION_GATED must not come back
+    // with the gate's own refusal. If someone ever replaces the table lookup
+    // with a prefix test -- gate anything starting sf_, or anything on a
+    // SAIRNfreedom licence -- every positive arm in this file still passes and
+    // this is the arm that fails.
+    //
+    // THE SUBJECT IS `render_usage`: in the dispatch's resource allow-list, and
+    // NOT in SD_SESSION_GATED. The first draft of this arm used an invented
+    // name (`sf_not_a_real_resource`) and WAS VACUOUS -- an unknown resource is
+    // refused 400 by the allow-list BEFORE the gate is ever consulted, so the
+    // request never reached the thing under test. Found by ablation rather than
+    // by review: the gate's table lookup was replaced with a prefix test, this
+    // arm still passed, and that is what a vacuous control looks like from
+    // outside.
+    //
+    // WHAT THIS ARM CATCHES, stated as narrowly as it is true: a gate that
+    // refuses EVERYTHING on a SAIRNfreedom licence, and a gate that grows to
+    // cover a resource absent from its table.
+    //
+    // WHAT CATCHES THE PREFIX CASE IS A DIFFERENT ARM, and it was measured, not
+    // assumed: `if ((SD_SESSION_GATED[...] ...) || resource starts with sf_)`
+    // makes the single-dispatch-check arm in
+    // api/sd-data-sf-session-gate.test.js fail, because its regex requires the
+    // condition to BEGIN with the table lookup. Two arms in two files, each
+    // catching what the other cannot -- recorded here so the next reader does
+    // not have to re-derive which one is load-bearing for which failure.
     const w = world();
     const h = load('sd-data.js', LIC, w.fn);
-    const r = await call(h, { action: 'read', resource: 'sf_bottle_fills', app_id: 'sairnfreedom' });
-    assert.notStrictEqual(r.statusCode, 403,
-      'sf_bottle_fills answered 403 with no session, so the gate has widened '
-      + 'past what was approved -- or it was approved and this arm was not '
-      + 'moved, which is the same disagreement seen from the other side');
+    const r = await call(h, { action: 'read', resource: 'render_usage', app_id: 'sairnfreedom' });
+    const msg = String((r.body && r.body.error && r.body.error.message) || '');
+    assert.ok(!/sign in first/i.test(msg),
+      'render_usage is NOT in SD_SESSION_GATED and was refused by the session '
+      + 'gate anyway, so the gate is matching on something other than its '
+      + 'table. Answer was ' + r.statusCode + ' ' + JSON.stringify(r.body));
+    // AND IT MUST HAVE REACHED THE GATE AT ALL. The vacuity this arm was
+    // rewritten to remove: a 400 from the resource allow-list means the
+    // subject never got as far as the gate, and the assertion above would pass
+    // for that reason instead of the intended one.
+    assert.ok(!/resource must be one of/i.test(msg),
+      'the subject was rejected by the resource allow-list before reaching the '
+      + 'gate, so this control proves nothing: ' + r.statusCode + ' ' + msg);
   });
 
   // ── THE PAIRED POSITIVE, AND IT IS READ OFF THE TABLE ────────────────────
