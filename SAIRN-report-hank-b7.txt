@@ -1,0 +1,695 @@
+REPORT hank b7
+================================================================================
+SAIRN -- hank, batch b7 -- 2026-10-13
+================================================================================
+
+PUSH STATE: LANDED, VERIFIED, NO --force AT ANY POINT.
+
+  origin/main = 5e4c7d02.  main...origin/main with no divergence (0 ahead,
+  0 behind) measured after the push, not before it.  Twelve b7 commits, and
+  every one was checked REACHABLE from origin/main individually with
+  `git merge-base --is-ancestor` rather than inferred from the push output:
+
+    6fec7c26  the claim
+    5bb0950a  items 1 + 2  audit-checkpoint sixteen-log coverage in ONE
+              idempotent SQL block, the 503 CHECK_NOT_WIDENED refusal, four new
+              ablated test arms; three stale sql/*_audit_log_schema.sql CHECK
+              constraints synced to what actually ran; api/sf-auth.test.js split
+              into four arms so nothing is masked
+    7787318a  item 3  the SAIRNfreedom demo credential, round-tripped twice
+    46d74678  item 4  the last nine sf_ resources gated -- 36 of 36
+    433c6576  item 5  docs/2026-10-13-context-budget-procedure.md
+    e094c74c  the handoff, first printing
+    6d8bf1e6  the handoff, sha table re-seated after rebase 1
+    c34d5bd2  the claim release
+    c437f4fd  the defect-register record the push gate required
+    f7ab4ec7  the auto-re-seated register sha, committed
+    69ca56e4  third re-seat, including the known-red-suites conflict resolution
+    5e4c7d02  final seat against the published shas + the gate's scrutiny ledger
+
+  THE PUSH TOOK FOUR REBASES AND THAT IS PART OF THE RESULT, NOT A PREAMBLE.
+  origin/main moved 65 commits during the work and three more times during the
+  push attempts.  Every rebase rewrote every sha, and two documents stamp shas:
+  the handoff's table and the defect register.  The handoff's table is now in
+  its fourth printing and NAMES ALL FOUR DEAD SETS rather than quietly replacing
+  them, because a reader who already copied one needs to be able to tell what
+  happened.  The register record was auto-re-seated by the repo's own
+  post-rebase hook TWICE -- correctly, and both times LEFT UNSTAGED, so a
+  session that committed without re-reading `git status` would have published a
+  defect record citing a sha no other clone can fetch.  That is the same
+  orphaned-sha condition that left two api/ Tier A obligations unreviewable by
+  anybody, arriving by a different route.
+
+  The fourth rebase carried a REAL CONTENT CONFLICT -- see item 4 below.
+
+--------------------------------------------------------------------------------
+1.  THE AUDIT CHECKPOINT COVERED 3 OF 16 AUDIT LOGS.  ONE IDEMPOTENT BLOCK.
+--------------------------------------------------------------------------------
+
+WHAT WAS ASKED: one idempotent SQL block for Michael that creates the checkpoint
+table if missing and extends coverage to all 16 logs, with the code coverage list
+and the tests updated to match.
+
+WHAT LANDED: `sql/audit_checkpoint_schema.sql` IS that block.  Not a new file
+beside it -- the file itself, because the test arm that compares the code's
+covered list against the schema reads THIS file, and a second file would have
+left the authoritative one still describing three logs.
+
+It now handles both states a clone cannot tell apart:
+
+  * the table is ABSENT  -> `create table if not exists` builds it with all
+    sixteen names, and the widening block below is a no-op that drops and
+    re-adds an identical constraint.
+  * the table EXISTS with the original three-name CHECK -> the create is the
+    no-op, and the `drop constraint if exists` / `add constraint` pair is what
+    acts.
+
+BOTH HALVES ARE REQUIRED AND THAT IS THE TRAP THE OLD FILE CONTAINED.
+`create table if not exists` SKIPS an existing table, constraint and all.  So
+anyone who re-ran the previous file to "fix the coverage" would have got a clean
+run, no error, and the same three names -- a silent no-op that reads exactly like
+a successful migration.  The new ALTER half is asserted by a test arm, and that
+arm was ABLATED: remove the ALTER and it fails.
+
+THE CODE: `SCHEMA_PERMITTED` in api/audit-checkpoint.js is now `ALL_AUDIT_TABLES`
+-- DERIVED from `AUDIT_TABLE_BY_APP` rather than a second hand-kept list.  The
+hand-kept copy existed for one stated reason, written down in b6: deriving while
+the database still rejected thirteen names would have turned a silent gap into
+thirteen failed INSERTs.  That reason is gone the moment the schema file permits
+sixteen.
+
+AND THE DATABASE IS NOT ASSUMED TO HAVE BEEN MIGRATED.  No clone has a database
+handle, so nothing in the repo can prove the ALTER ran.  If it has not, the
+INSERT comes back SQLSTATE 23514 and the handler now answers
+
+    503 CHECK_NOT_WIDENED
+
+naming the file, with a heartbeat carrying `retry_helps: false`.  Before this
+branch that fell through to `502 Upstream error -- try again`, which is wrong
+twice over: the retry it advises can never help, and the one fact an operator
+needs is nowhere in the answer.
+
+TESTS: 46 -> 50 arms, exit 0.  Four new arms, and TWO OF THEM WERE ABLATED to
+prove they catch their own removal:
+
+    THE COVERAGE IS COMPLETE: nothing in AUDIT_TABLE_BY_APP is uncovered
+      -- asserts UNCOVERED is empty AND the derived population is >= 16, so it
+         cannot pass on an empty universe where [] == [] and 0 == 0 both hold
+    THE SCHEMA FILE WIDENS A TABLE THAT ALREADY EXISTS, not just a new one
+      -- ABLATED: removing the ALTER half fails it
+    AN UNWIDENED DATABASE IS REFUSED BY NAME, not reported as an upstream blip
+      -- ABLATED: disabling the isNarrowCheck branch fails it.  Also asserts the
+         heartbeat fires with retry_helps false
+    CONTROL: the same run on a WIDENED database writes
+      -- because a guard that refuses everything passes every refusal arm
+
+--------------------------------------------------------------------------------
+    *** SQL 1 OF 2 FOR MICHAEL -- RUN sql/audit_checkpoint_schema.sql WHOLE ***
+--------------------------------------------------------------------------------
+
+Run the file as ONE paste, top to bottom.  It is idempotent and re-runnable.
+The part that matters is reproduced here so it can be read without opening the
+file, but RUN THE FILE, not this excerpt -- the file also carries the grants, the
+revokes, the RLS policy and the verify block.
+
+    alter table public.sairn_audit_checkpoint
+      drop constraint if exists sairn_audit_checkpoint_audit_table_check;
+    alter table public.sairn_audit_checkpoint
+      add constraint sairn_audit_checkpoint_audit_table_check
+      check (audit_table in (
+        'sairnbiz_audit_log',
+        'sairnbuild_audit_log',
+        'sairncare_audit_log',
+        'sairncode_audit_log',
+        'sairndental_audit_log',
+        'sairndesign_audit_log',
+        'sairnfreedom_audit_log',
+        'sairngrounds_audit_log',
+        'sairnlaw_audit_log',
+        'sairnlegacy_audit_log',
+        'sairnmechanical_audit_log',
+        'sairnroofing_audit_log',
+        'sairnscape_audit_log',
+        'sairnsenior_audit_log',
+        'sairnvet_audit_log',
+        'stonedesk_audit_log'
+      ));
+
+THEN RUN VERIFY QUERIES 1b AND 1c AT THE FOOT OF THE FILE.  1b must answer 16.
+1c must NAME the sixteen, with NO `sv_audit_log`.  A count of 16 over the wrong
+names passes 1b alone, which is exactly why 1c exists:
+
+    select count(*)
+      from pg_constraint c,
+           lateral regexp_matches(pg_get_constraintdef(c.oid), '''([a-z0-9_]+)''', 'g') m
+     where c.conname = 'sairn_audit_checkpoint_audit_table_check';
+
+WHY THIS MATTERS AND NOT ONLY THAT IT WAS WRONG: a checkpoint is what makes an
+audit log tamper-EVIDENT, and the only tamper mode the grants leave open is
+INSERTION of a back-dated row.  The daily job covered three logs and passed.
+The other thirteen -- including credential grants for a dental practice, an
+assisted-living facility and an ORC Chapter 2915 gaming post -- had NO
+tamper-evidence at all, and a back-dated row in any of them was undetectable.
+
+STILL OPEN AND NOT SUPERSEDED: whether that table has EVER existed.
+docs/AUDIT-CHECKPOINT-STATUS.md has read COULD NOT TELL since 2026-09-14 and
+still does.  It is a GENERATED file and was deliberately NOT hand-edited;
+`CRON_SECRET` is not set in any clone, so its generator cannot ask and would
+rewrite it with the same verdict and a newer timestamp, which is worse than
+leaving it.  Running the file above answers the question either way.
+
+--------------------------------------------------------------------------------
+2.  api/sf-auth.test.js -- EVERY CAUSE FIXED EXCEPT THE ONE MICHAEL IS DECIDING
+--------------------------------------------------------------------------------
+
+STATE: 39 passed, 1 failed (was 37 passed, 1 failed).  Exit 1.  THE SINGLE
+REMAINING RED IS THE TRUSTEE ARM, deliberately.
+
+THE ARM WAS ONE ARM WITH THREE SEQUENTIAL ASSERTS, SO THE FIRST FAILURE MASKED
+THE REST.  That is the finding, and the split is the fix rather than tidying:
+
+  (a) THE MASKED COMPARISON: ROLES_BY_APP vs the employee_auth CHECK constraint.
+      This is the pair that breaks AT RUNTIME -- a role the server accepts that
+      the database rejects is a 400 with a Postgres check violation in it, raised
+      at the one moment a post is trying to give somebody a sign-in.  IT HAD NOT
+      RUN SINCE 2026-09-27.  It passes: both lists carry the same ten.
+
+  (b) A SECOND RED CAUSE HIDDEN IN THE SAME ARM: `assert.strictEqual(caps.size,
+      10)`.  That literal went stale on 2026-09-27, the day `trustee.audit` was
+      added to sairnfreedom.html, and has been failing invisibly ever since
+      behind the first assert.  A transcribed count is the wrong instrument here
+      anyway: whichever way the trustee question is decided the number MOVES (10
+      if display-only, 11 if assignable), so the next correct value would go
+      stale on the day the decision lands.  What the count was actually for is
+      non-vacuity -- if all three extractions returned empty sets, every
+      deepStrictEqual passes and three green arms cover nothing.  That is now
+      asserted directly, against a FLOOR and a NAMED ANCHOR (`post.govern` must
+      appear in each of the three lists) rather than an exact figure.
+
+  (c) THE ONE LEFT RED.  Untouched exactly as instructed: the
+      `ROLES_BY_APP.sairnfreedom` entry, the `sf_trustee_audits` row in
+      api/_lib/sf-roles.js, AND the `role in (...)` CHECK in
+      sql/sairnfreedom_employee_auth_schema.sql.  BOTH ROLES_BY_APP AND THE
+      SCHEMA CHECK LACK `trustee.audit`, WHICH IS ONE PENDING DECISION AND NOT
+      TWO -- worth stating, because the split arms could be misread as two
+      separate gaps.
+
+      THE QUESTION: should a trustee be able to sign in?  sairnfreedom.html:2314
+      declares trustee.audit in CAPABILITIES (added 2026-09-27 citing the VFW
+      Manual of Procedure -- trustees audit quarterly, are individually liable,
+      the Quartermaster must not prepare the audit, a missed audit can void the
+      bond), and api/sf-auth.js refuses to provision an unknown role.  So a post
+      can assign the Trustee office in the Access panel and then CANNOT give that
+      trustee a sign-in.
+        IF YES -- three places change together: ROLES_BY_APP.sairnfreedom, the
+          sf_trustee_audits row in api/_lib/sf-roles.js (an eleventh column
+          granting it rw), and the employee-auth CHECK.
+        IF NO  -- the capability is display-only and sairnfreedom.html should say
+          so, because today it looks like an assignable office.
+      It is not silenced with assert.ok(true): that would retire the only thing
+      keeping an unassignable office visible.
+
+docs/known-red-suites.json RE-DIAGNOSED, and its previous `why` WAS WRONG IN ITS
+ONE NAMED VALUE: it said the diff names `ceremonial.manage`, which is present in
+all three lists.  The diff names `trustee.audit`.
+
+2b.  THE STALE SQL THAT FAILED THE EVENT-TYPE CHECK -- NOW EXIT 0.
+
+`tools/audit_event_type_check.py` exited 1 on three tables because it reads CHECK
+constraints out of sql/ files and those files still carried the pre-migration
+lists.  Eleven event types the code emits were reported as rejected when the
+database had already been widened on 2026-10-13 -- a FALSE POSITIVE that costs
+the next reader the same investigation twice.
+
+  sairncode_audit_log   + pin_bootstrap, pin_setup, credential_deactivated,
+                          credential_reactivated, credential_change_refused
+  stonedesk_audit_log   + pin_bootstrap, pin_setup, sub_roster_write,
+                          order_link_created, order_link_revoked
+  sairnlaw_audit_log    + ai_interaction, ai_rejected, ai_reviewed,
+                          ai_used_in_filing, deadline_engine,
+                          legal_reference_lookup
+
+AMENDED VALUE-FOR-VALUE FROM STEP 0a / 0b / 0c of
+docs/2026-10-07-hank-migration-sql-for-michael.md, which is what ran.  NOT from
+sql/sairncode_audit_log_credential_events.sql -- that is the EARLIER printing and
+is superseded: it carries neither pin_bootstrap nor pin_setup, both of which
+api/sc-auth.js emits.  Each amended block says in a comment that re-running the
+file does NOT widen an existing table and names the ALTER that does.
+
+`tools/audit_event_type_check.py` now exits 0: "Every event_type emitted to a
+table with a CHECK constraint appears in that constraint."
+
+--------------------------------------------------------------------------------
+3.  SAIRNfreedom HAD NO DEMO PIN ANYWHERE IN THE REPO.  NOW IT HAS ONE.
+--------------------------------------------------------------------------------
+
+WHY IT MATTERED, measured rather than argued: b6 locked five sf_ tables and built
+a 10-role x 36-resource policy matrix for this app, and EVERY ONE OF THOSE CLAIMS
+IS SOURCE-VERIFIED ONLY -- no session was ever driven, because there was no
+credential to drive one with.  In the same batch SAIRNscape's gates WERE driven
+in both directions with SCP-DEMO-2026, and that found the half source review
+cannot reach: a session-bearing write answering 400 FROM THE HANDLER, which is
+what proves the session passed the gate rather than the gate being absent.
+
+A SEPARATE FILE, not an eighteenth insert in sql/demo_owner_credentials_
+2026-09-03.sql: that transaction has already been run and every insert carries
+`on conflict do update set pin_hash`, so appending to it would reset sixteen PINs
+nobody asked to change.
+
+THE ROLE IS post.govern, READ OFF THE APP.  SAIRNfreedom has NO `owner` role at
+all -- PROVISIONING_ROLES in api/sf-auth.js is ['post.govern',
+'post.govern.deputy'] and post.govern is the SOLE_ROLE the last-provisioner
+refusal keys on.  A file copied from a sibling would have inserted a role the
+CHECK constraint rejects.  Same trap CLAUDE.md records for SAIRNcode (`admin`,
+not `owner`), in a second app.
+
+THE HASHES WERE ROUND-TRIPPED TWICE AND THE SECOND TIME IS THE ONE THAT MATTERS.
+hashPin() produced them and verifyPin() accepted them -- then the literals were
+RE-PARSED OUT OF THE COMMITTED FILE and round-tripped again, because a
+transcription slip between generating and writing is otherwise invisible and
+presents as 401 INVALID_CREDENTIALS with correct-looking SQL.  Nine checks, all
+ok, evidence committed rather than left in %TEMP%:
+docs/hank-evidence/b7_sf_demo_credential_roundtrip.js and .out.
+
+`tools/employee_auth_guard_check.py` exits 0 -- 30 writers, 11 guarded, 0
+unguarded.  IT REFUSED THIS FILE ON FIRST WRITE, for exactly the reason its own
+docstring records: the marker "ZERO active provisioners" wrapped across a string
+literal between ZERO and active, the same wrap that made it refuse a correct file
+on 2026-09-29.
+
+--------------------------------------------------------------------------------
+    *** SQL 2 OF 2 FOR MICHAEL -- THE SAIRNfreedom DEMO CREDENTIAL ***
+    *** file: sql/sairnfreedom_demo_owner_credential_2026-10-13.sql ***
+--------------------------------------------------------------------------------
+
+RUN sql/sairnfreedom_license_seed.sql FIRST if it has not been run -- query 2
+below distinguishes that case, which otherwise presents as a bad PIN.
+
+    begin;
+
+    -- sairnfreedom  --  SF-PINNACLE-2026  --  PIN 64927108
+    insert into public.sairnfreedom_employee_auth
+      (license_hash, employee_id, display_name, role, pin_hash, pin_salt, active)
+    values (
+      '78a8517ee72db892008b29f116109b9cb2f03dcfef648a1a0bbc03df61b9045a',
+      'sairn-demo-owner',
+      'SAIRN Demo Owner',
+      'post.govern',
+      'e845f935acf7c8cba1ef26db719830c84827e94a9dfae9b4904f1511f9051903578f40c20cc73f0b8e4a66d652fdd1ad4e57c50c8edf8a637d87bc1738341d4d',
+      '31e985cf3708d5d90e874ed1b2ea7a82',
+      true
+    )
+    on conflict (license_hash, employee_id) do update
+      set pin_hash = excluded.pin_hash,
+          pin_salt = excluded.pin_salt,
+          role     = excluded.role,
+          active   = true;
+
+    do $$
+    declare
+      lh   text;
+      rows int;
+      prov int;
+    begin
+      lh := encode(digest('SF-PINNACLE-2026', 'sha256'), 'hex');
+      select count(*) into rows from public.sairnfreedom_employee_auth where license_hash = lh;
+      select count(*) into prov from public.sairnfreedom_employee_auth
+       where license_hash = lh and active = true
+         and role = any (array['post.govern','post.govern.deputy']);
+      if rows > 0 and prov = 0 then
+        raise exception
+          'ABORTED: SF-PINNACLE-2026 would be left with credential rows and ZERO active provisioners (% row(s)). '
+          'Delete EVERY row for this licence, or leave at least one active '
+          'provisioner. Never a subset of the provisioners.', rows;
+      end if;
+      raise notice 'SF-PINNACLE-2026: % row(s), % active provisioner(s).', rows, prov;
+      if not exists (
+        select 1 from public.sairnfreedom_employee_auth
+         where license_hash = lh and employee_id = 'sairn-demo-owner'
+           and role = 'post.govern' and active = true
+           and pin_salt = '31e985cf3708d5d90e874ed1b2ea7a82') then
+        raise exception
+          'ABORTED: the sairn-demo-owner row does not carry the PIN salt this file '
+          'wrote, so the PIN documented in docs/2026-09-03-demo-credentials.md '
+          'would not work. Nothing has been committed.';
+      end if;
+      raise notice 'Guard passed: the demo credential is present and is the one documented.';
+    end $$;
+
+    commit;
+
+THE SECOND GUARD CLAUSE IS BEYOND THE HOUSE PATTERN AND IS THERE ON PURPOSE: a
+pre-existing `sairn-demo-owner` row whose ON CONFLICT update silently did not
+apply would otherwise leave the documented PIN wrong and the guard green.
+
+THEN CONFIRM -- run these SEPARATELY, not appended to the above:
+
+    -- 1. Expect exactly one row: sairn-demo-owner | post.govern | t
+    select employee_id, role, active
+      from public.sairnfreedom_employee_auth
+     where license_hash = encode(digest('SF-PINNACLE-2026', 'sha256'), 'hex')
+       and employee_id = 'sairn-demo-owner';
+
+    -- 2. Expect 1 row, status active, app_id sairnfreedom.  ZERO ROWS means
+    --    sql/sairnfreedom_license_seed.sql has not been run, and the login
+    --    below will fail for THAT reason rather than for a bad PIN.
+    select key, status, app_id, plan from public.license_keys
+     where key = 'SF-PINNACLE-2026';
+
+    -- 3. THEN THROUGH THE DEPLOYED API, which is the only real proof:
+    curl -s -X POST https://sairn.vercel.app/api/sf-auth \
+      -H 'Content-Type: application/json' \
+      -H 'Authorization: Bearer SF-PINNACLE-2026' \
+      -d '{"action":"login","employee_id":"sairn-demo-owner","pin":"64927108"}'
+
+      200 with role "post.govern" and a token -> the file has been run
+      401 INVALID_CREDENTIALS                 -> it has not, or the PIN differs
+      an invalid-licence refusal              -> the LICENCE SEED has not run;
+                                                 query 2 tells you which
+
+    -- 4. AND DRIVE A GATED TABLE IN BOTH DIRECTIONS, because that is the half
+    --    source review cannot reach.  With the token from step 3, a read of
+    --    sf_officers must answer 200; the same request with NO token must answer
+    --    403.  Either alone proves nothing -- a gate that refuses everybody
+    --    passes every negative arm, and an absent gate passes every positive.
+
+THE PIN IS PUBLISHED ON PURPOSE AND THE PRECONDITION IS THE WHOLE BASIS.
+SF-PINNACLE-2026 is a demo licence (demo@pinnaclepost.example, plan `demo`) and
+holds no real post's data.  THE MOMENT IT IS GIVEN TO A REAL POST OR LOADED WITH
+REAL MEMBER, LEDGER OR ORC 2915 GAMING DATA, THIS ROW MUST BE DELETED AND THE PIN
+ROTATED.  A VFW post's ledger and disbursement records are exactly the material
+the sf_ locks exist to protect.
+
+UNVERIFIED AGAINST THE LIVE APP, recorded in the credentials table itself and not
+as a footnote: no clone has a database handle, so until this is run the PIN
+answers 401.
+
+--------------------------------------------------------------------------------
+4.  sf_officers AND THE REMAINING UNLOCKED sf_ TABLES -- LOCKED, 36 OF 36
+--------------------------------------------------------------------------------
+
+The instruction was "lock or write the design, whichever the role matrix already
+supports."  THE MATRIX SUPPORTS ALL NINE, SO THEY ARE LOCKED.
+
+THE b6 COMMENT SAID THIS WAS ALREADY DONE.  IT WAS NOT, AND THE WAY IT WAS WRONG
+IS THE FINDING.  api/sd-data.js carried:
+
+    "ALL 36 sf_ RESOURCES ARE NOW IN THIS MAP, which makes the 'which are still
+     ungated' question unaskable rather than merely answered"
+
+IT WAS 27.  Measured with a parser, not noticed by reading: 27 sf_ keys in
+SD_SESSION_GATED, 27 in SD_GATE_APP, 36 in SF_ROLE_MATRIX.  The SAME FILE said 27
+correctly 650 lines below, beside the role-matrix call site, with all nine
+ungated resources NAMED -- so the file contradicted itself, and the optimistic
+half sat where a reader arrives first.
+
+"THE QUESTION IS UNASKABLE" IS WORSE THAN AN UNDERCOUNT.  An undercount invites a
+recount.  A false all-clear RETIRES THE CHECK -- the same shape as a gate wrapped
+in `if tool_exists`, where the claim does not merely mislead, it suppresses the
+thing that would have caught it.  The corrected paragraph says the count is
+ASSERTED rather than written, and it is: api/sd-data-sf-session-gate.test.js
+holds the approved set as data and fails on any difference in either direction.
+
+GATED FOR A DIFFERENT REASON FROM EVERY WAVE BEFORE THEM, which is why no fresh
+product decision was needed.  Four earlier waves gated on the SENSITIVITY of the
+row -- minors' names, a felony flag, ORC 2915 payee records, a statutory prize
+cap -- and stopped when Tier A ran out.  These nine are the only sf_ resources
+that are B on integrity AND B on confidentiality.  What they clear is a different
+bar: api/_lib/sf-roles.js ALREADY HELD A REVIEWED POLICY FOR ALL NINE, written in
+b6 to cover all 36 deliberately so that "the day one of these is gated its policy
+is already written and reviewed rather than invented in the same hurried edit
+that gates it."  A role policy cannot run on a licence-key-only resource -- no
+session means no role -- so the policy existed and could not fire.  Gating them is
+what makes it fire.  NO MATRIX CELL WAS AUTHORED HERE, which is the only reason
+this is not a product decision being made by the session that benefits from it.
+
+THE NINE:  sf_bottle_fills  sf_ceremonial_items  sf_documents  sf_honor_details
+           sf_inventory_counts  sf_national_categories  sf_service_hours
+           sf_service_referrals  sf_vendors
+
+THREE OF THEM CLOSE A SPLIT PAIR, the sharpest argument in the set:
+  sf_documents was open while the SIGNATURES THAT BIND PEOPLE TO THEM were gated
+    on 2026-09-24
+  sf_service_referrals was open while sf_service_appointments was gated on
+    2026-09-22 for a VA-adjacent referral outcome
+  sf_vendors was open while sf_vendor_prices was gated on 2026-09-21
+Each time the half somebody deliberately protected was reachable through its
+unprotected twin.  Same shape as sf_vehicles / sf_vehicle_service, which sat
+split across the gate for two weeks.
+
+sf_national_categories IS THE WEAKEST AND IS LABELLED SO IT CAN BE REVERSED
+ALONE: it stores bare strings with no id, and both sfSyncCollection and
+sfServerWinsMerge skip id-less records, so client-side the gate is a no-op today.
+It is in for set completeness, not on evidence of exposure.
+
+WHAT CHANGES FOR A USER, MEASURED OFF decide() RATHER THAN DESCRIBED: every one
+of the nine now DENIES at least five of the ten roles on write, and five of them
+deny on read as well.  A chaplain is refused a write to the vendor list; a
+member-admissions officer is refused the bottle counts.  Those refusals are the
+reviewed policy arriving, not a side effect.
+
+SD_GATE_APP GREW IN THE SAME EDIT and was checked BEFORE the gate entries were
+written, not after: NONE of the nine was in it.  A resource gated with no entry
+there resolves expectedApp to 'stonedesk' and refuses every correctly signed-in
+officer with FORBIDDEN "sign in first" -- fails closed AND confusingly, which is
+how a security change gets reverted as broken rather than fixed.
+sf_trustee_audits broke exactly that way on main for a day.
+
+THE CLIENT HALF NEEDS NO CHANGE, and that was READ at this HEAD resource by
+resource rather than assumed: all nine are in SF_SYNCED (which holds all 36),
+every read goes through the one sfHydrateAll() loop, every write through the one
+st() -> sfSyncCollection -> sfData chain, and sfData attaches X-SD-Auth whenever
+a token is held with NO resource argument consulted and no per-call flag to
+forget.  There are exactly three fetch() sites in the whole file and one reaches
+sd-data.  The pre-login hydrate 403 is unchanged and still absorbed, and
+sfHydrateAfterSignIn() re-runs the full hydrate once a session exists.
+
+A NEGATIVE CONTROL DIED AND WAS MOVED, NOT DELETED, exactly as its own comment
+instructed ("if it is ever approved, this arm is the thing to move, not to
+delete").  api/sf-session-gate.test.js drove sf_bottle_fills and required
+"not 403"; THERE IS NO LONGER AN UNGATED sf_ RESOURCE to point it at.  Inverting
+the expectation would assert the opposite of the approved state -- which that arm
+already did once, for two days in September, when it named sf_members after
+sf_members was gated.  Re-aimed at `render_usage`: in the dispatch allow-list,
+absent from the gate table.
+
+AND THE FIRST REWRITE OF THAT ARM WAS VACUOUS, FOUND BY ABLATION RATHER THAN
+REVIEW.  It used an invented resource name, which the resource allow-list refuses
+400 BEFORE the gate is consulted, so the request never reached the thing under
+test -- and the prefix ablation passed it.  Both ablations were then run and the
+result is written INTO the arm:
+
+    gate table lookup -> `sf_` prefix test   fails the single-dispatch-check arm
+                                             in api/sd-data-sf-session-gate.test.js
+                                             and NOT this one
+    gate made to refuse everything           fails this one
+
+Two arms in two files, each catching what the other cannot.  The arm now also
+asserts it was NOT refused by the allow-list, which is the vacuity guard.
+
+THE FOURTH REBASE'S CONTENT CONFLICT, in docs/known-red-suites.json: another
+session had set that row's `owner` from `unassigned` to `hank` while leaving the
+`why` text that names ceremonial.manage.  Resolved by rebuilding the four lines
+WHOLE (never by splitting on a delimiter -- PR 2.1), keeping the corrected `why`,
+and widening the owner cell to "michael (the decision) / hank (the three code
+places, once it is made)".  Their assignment was right about who writes the code
+and wrong about who decides; both halves are now in the cell rather than one
+session's intent being discarded.
+
+--------------------------------------------------------------------------------
+    *** ROUTED TO CC -- docs/SAIRN-OPEN-WORK-INDEX.md ROW 221 ***
+--------------------------------------------------------------------------------
+
+NOT APPLIED HERE.  That file is in cc's LIVE b6 claim FILES, and PR 4.3 says a
+declared conflict is declared rather than overridden.
+
+DO NOT OPEN THE FILE TO FIND THE ROW -- it is 2.38 MB, roughly 640,000 tokens.
+Use `awk 'NR==221' docs/SAIRN-OPEN-WORK-INDEX.md`.
+
+The row is stale in BOTH halves.  Today it reads, in its title cell:
+
+    "... The ones still ungated are still a decision NOBODY HAS MADE"
+
+and in its owner cell:
+
+    "**Michael** (the SQL) / 24 ungated resources: **unassigned**"
+
+THERE ARE NOW ZERO UNGATED sf_ RESOURCES.  Replacement text:
+
+  TITLE CELL -- replace that trailing sentence with:
+    "ALL 36 ARE NOW GATED (hank b7, 2026-10-13) -- count them in
+     `SD_SESSION_GATED`, never here."
+
+  OWNER CELL -- replace whole:
+    "**Michael** (the SQL) / 0 ungated resources: **CLOSED hank b7 2026-10-13**"
+
+NEVER EDIT THE ROW BY SPLITTING ON `|`.  Rebuild it whole, or replace a unique
+substring inside one cell and check the pipe count on that line is IDENTICAL
+before and after.
+
+--------------------------------------------------------------------------------
+5.  METHODOLOGY -- docs/2026-10-13-context-budget-procedure.md
+--------------------------------------------------------------------------------
+
+Eight steps, each paid for by something that happened on this platform, and
+FOLLOWED BY THE BATCH THAT WROTE IT:
+
+  1. Read the two documents the brief names.  Not their neighbours.  The four
+     SAIRN-ACTIVE-WORK files total 3.8 MB and the open-work index is 2.38 MB.
+  2. `wc -c` everything you expect to need, in ONE call, before the first Read.
+  3. One targeted read per file, capped at ~150 lines, aimed at a symbol found by
+     grep rather than at a region.
+  4. MEASURE WITH A PROGRAM INSTEAD OF READING.  In this batch that was the
+     difference between discovering 27 of 36 and believing a comment that said
+     36.  A comment is a claim; `Object.keys(X).length` is a measurement.
+  5. Push the noisy work to a subagent and demand a VERDICT line with citations,
+     with COULD NOT TELL allowed.  Do not take it at face value.
+  6. Test output to a log file; read the tail; exit code from the program's own
+     output.
+  7. Write the handoff on a STATE -- everything committed, every suite run, no
+     file mid-edit -- not on a percentage.  Then the report, which is derivable
+     from the handoff and the logs.
+  8. Re-derive every number right before writing it.
+
+It deliberately does NOT restate the `sairn-context-budget` skill.  That skill is
+the how-to-not-lie half (a truncated read is indistinguishable from a complete
+one); this is the how-much-to-read half, and the failure modes differ -- one
+produces a wrong answer, the other produces a session that cannot finish and
+hands off mid-edit.
+
+TWO THINGS IT RECORDS THAT ONLY APPEAR IF YOU ACTUALLY DO IT: a subagent's
+finding was RE-MEASURED locally before being acted on (it was right, and the
+re-check cost six lines of output), and two dispatches to the `suite-driver` and
+`sweep-runner` agent types returned CANNOT RUN for every item because those agent
+types have no Bash.  Both reported that honestly rather than inventing exit
+codes -- correct behaviour, and still two wasted round trips.  Match the agent to
+the verbs the task needs.
+
+--------------------------------------------------------------------------------
+VERIFICATION -- WHAT WAS RUN, WHERE, AND WHAT IT SAID
+--------------------------------------------------------------------------------
+
+Every suite was run in an ISOLATED GIT WORKTREE at HEAD, one process each,
+because several tools/*.py write when run.  The worktree was `git status
+--porcelain` CLEAN after all of it and was then REMOVED.  Re-run again IN THE
+LIVE CLONE at the pushed HEAD, after the final rebase, because a pass measured
+before a rebase is a pass against a tree that no longer exists.  Exit codes are
+the programs' own.
+
+  api/audit-checkpoint.test.js                   0   50 passed, 0 failed
+  api/sf-auth.test.js                            1   39 passed, 1 FAILED
+  api/sd-data-session-gate.test.js               0   ALL 22 ASSERTIONS PASS
+  api/sd-data-sf-session-gate.test.js            0   6 assertions passed
+  api/sf-session-gate.test.js                    0   88 passed, 0 failed
+  api/sd-data-cross-tenant-dispatchers.test.js   0   419 passed, 0 failed
+  api/sd-data-sf-role-matrix.test.js             0   policy only; drives no session
+  api/hydrate-gate-coupling.test.js              0   4 passed, 0 failed
+
+  tools/audit_event_type_check.py                0   (was 1 at origin/main)
+  tools/employee_auth_guard_check.py             0   30 writers, 11 guarded, 0 unguarded
+  tools/criticality_tier_check.py                0
+  tools/md_table_check.py                        0
+  tools/truthy_sum_check.py                      0
+  tools/defect_register.py --check               0   539 records, every commit resolves
+  tools/idempotency_check.py                     1   PRE-EXISTING -- see below
+  tools/fabricated_kpi_check.py                  NOT PRESENT -- not substituted
+  tools/silent_failure_check.py                  NOT PRESENT -- not substituted
+
+ON THAT EXIT 1: idempotency_check.py is report-only and exits 1 on a standing
+population of 27 unguarded files.  It lists api/audit-checkpoint.js as UNGUARDED
+(1 write).  b7 DID NOT INTRODUCE IT -- the identical line appears in a run against
+origin/main, which is why this is a measurement and not a reassurance.  That
+write is in fact protected durably by the table's `unique (audit_table,
+window_end)` constraint, which the tool's own disclosed limit covers: "a real
+guard may be guarded under a name this list lacks."  Not fixed, not swept, not
+mine to re-triage.
+
+CHECK 0: 0a `node --check` clean on all eight changed .js files.  NO .html WAS
+TOUCHED this batch, so 0b (fabricated KPI) and 0d (dormant panel) have no subject
+here -- stated rather than silently skipped.  docs/known-red-suites.json and
+docs/scrutiny-flags.json re-parsed with json.load after editing.
+
+THE PUSH GATE REFUSED TWICE AND BOTH REFUSALS WERE RIGHT.  First: no defect
+register record cited the fix commit -- "a recording tool nobody feeds reports a
+vacuous number forever."  Fed, not overridden: one PLATFORM/product/high record
+cited to PR 1.11 WITH A NOTE SAYING WHICH VARIANT it is (1.11 is written about an
+ABSENT dependency; here the dependency was present and the job filtered out the
+thirteen tables it would reject, then answered ok -- same shape, different missing
+thing), an injection commit of 106d4037 stamped, five contributing factors one of
+which is deliberately not-actionable, and a recurrence-open saying the SHAPE is
+not closed: SD_SESSION_GATED and SD_GATE_APP are another pair kept in agreement
+only by a test somebody remembered to write.  Second refusal: the gate saw no
+refs and DENIED rather than passing -- "not knowing what is in a change is not the
+same as knowing it is clean."  Re-issued directly and it passed.
+
+SAIRN_SEED_GATE=off WAS NOT USED AT ANY POINT.  No --force at any point.
+
+NOT DRIVEN LIVE, and that is the honest state rather than a caveat: no HTTP call
+was made to the deployed app in b7.  Every change is in api/, sql/ and docs/; the
+one credential that would make SAIRNfreedom drivable is in a SQL file that has
+not been run; and inventing a live-verification claim from a source read is the
+exact failure this platform keeps recording.
+
+--------------------------------------------------------------------------------
+WHAT b7 FOUND THAT NOBODY ASKED FOR
+--------------------------------------------------------------------------------
+
+1. A b6 comment claimed all 36 sf_ resources were gated and said the question was
+   "unaskable".  IT WAS 27, and the same file said 27 correctly 650 lines below.
+   A false all-clear does not merely mislead -- it retires the check.
+
+2. A negative control arm was VACUOUS and ablation found it, not review.  The
+   rewritten arm's subject was refused by an earlier allow-list and never reached
+   the gate at all.  The first ablation passed it; that is what told me.
+
+3. api/sf-auth.test.js's single red arm HID TWO MORE CAUSES behind sequential
+   asserts -- a runtime-breaking comparison that had not run for sixteen days,
+   and a transcribed count stale since the same day.
+
+4. docs/known-red-suites.json's `why` for that suite named the WRONG CAPABILITY.
+   `ceremonial.manage` is in all three lists; the diff names `trustee.audit`.
+
+5. THE REPO'S OWN POST-REBASE HOOK RE-SEATED THE DEFECT RECORD'S SHA TWICE AND
+   LEFT IT UNSTAGED BOTH TIMES.  The correction was right; the state was one
+   `git commit` away from publishing a record citing an unfetchable sha.
+
+--------------------------------------------------------------------------------
+OPEN, WITH THE NEXT STEP EACH
+--------------------------------------------------------------------------------
+
+MICHAEL   the two SQL files above, run whole, then their verify queries.  And
+          confirm whether the checkpoint table ever existed -- running SQL 1
+          answers it either way.
+MICHAEL   the trustee sign-in question.  ONE decision clears the single remaining
+          red; both ROLES_BY_APP and the employee_auth CHECK lack the role.
+CC        docs/SAIRN-OPEN-WORK-INDEX.md row 221, replacement text above.
+CODY      the DRIVEN role matrix -- 10 roles x 36 resources x 2 verbs with real
+          sessions.  b7 removed the blocker that made it impossible for anybody;
+          it stays blocked on SQL 2 being run.
+NOBODY    the client half of the role matrix: sairnfreedom.html does no per-panel
+          role gating and a refused backup warns to the console only, so a denied
+          role's local save succeeds while its server copy silently does not.
+          PRE-EXISTING, newly reachable for nine more resources.  Refusing is the
+          server's job and hiding is the page's; the page half is a client change
+          nobody has been asked for.
+
+HANDOFF:  docs/SAIRN-handoff-hank-b7.md, written BEFORE this report at a point
+          where nothing was half-finished, then re-seated four times as
+          origin/main moved.
+
+TRANSCRIPT:
+C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\7ec24d5b-8a65-4021-a50f-4294e97bb0ed\
+
+CLEANED UP: both verification worktrees removed (`wt-b7`, `wt-b7b`); the other
+entries in `git worktree list` belong to other sessions and were not touched.  No
+file of another session and no live data was deleted.  The one artefact this
+report cites by path was copied out of %TEMP% into
+docs/hank-evidence/b7_sf_demo_credential_roundtrip.js and .out, because a cited
+file in a directory that is cleared without warning is a dangling citation.
+
+--------------------------------------------------------------------------------
+SHA256 of the body is on the second-to-last line.  The BODY is every line of this
+file AFTER line 1 ("REPORT hank b7") and BEFORE the SHA256 line, inclusive of
+this paragraph and the line of dashes above it, with LF line endings.
+SHA256(body)=ce477855bf6c77b246c2093669e39713058597a810096278e9bd15aac763f4f1
+END-OF-REPORT
