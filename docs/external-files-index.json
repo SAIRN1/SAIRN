@@ -2155,6 +2155,15 @@
      "declared_on": "2026-10-13",
      "note_on_this_declaration": "DECLARED EVEN THOUGH THE CHECK NO LONGER BLOCKS ON IT, and that is the point of the row. cc's b5 change made handoff names warn-only, so tools/external_file_index_check.py now exits 0 with 8 UNINDEXED handoffs REPORTED rather than refusing -- which is the right call for a backlog nobody can clear on somebody else's behalf, and is also exactly how a warn becomes permanent. This row keeps my own file out of that count. THE OTHER 7 ARE NOT MINE and are not declared here: a build agent declaring another session's artefact is what produced the five hand-declared rows above, and cody's own note on them says declaring them one at a time cannot converge.",
      "renamed_from": "G:/My Drive/SAIRN-status/handoff-fourth-2026-10-13b.md"
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/SAIRN-handoff-fourth-b10.md",
+     "purpose": "fourth's b10 handoff, Drive DELIVERY copy, uploaded with the report and digest as the batch brief requires. Checkable the same way as the two rows above: `git ls-files --error-unmatch docs/SAIRN-handoff-fourth-b10.md` exits 0, so the authoritative copy is committed in this clone as CLAUDE.md requires, and `belongs_in_git` is false for THE DRIVE PATH rather than for the file. Byte-identity to the committed copy was verified at upload, sha256 2de945bdcda28abdfeaf841072cf9af9467300a743bb49bcb87361e97f7abf03.",
+     "belongs_in_git": false,
+     "authoritative_copy": "docs/SAIRN-handoff-fourth-b10.md",
+     "declared_by": "fourth",
+     "declared_on": "2026-10-13",
+     "note_on_this_declaration": "THE NAME IS THE POINT OF THIS ROW AS MUCH AS THE DECLARATION. b10 renamed both b9 handoffs off their date suffixes -- handoff-fourth-2026-10-16.md was dated three days into the future and CLAUDE.md says to find the latest handoff BY THE DATE IN THE FILENAME, so a date-sort put the stale document first. The rows above carry `renamed_from` for the two old Drive paths. Convention from here: SAIRN-handoff-<session>-b<n>.md, with -2 when one batch writes a second. DECLARED EVEN THOUGH THE CHECK IS WARN-ONLY on handoff names since 2026-10-13: it reports 9 UNINDEXED handoffs and refuses nothing, which is the right call for a backlog no session can clear on another's behalf and is also how a warn becomes permanent. None of those 9 is mine and none is declared here -- a build agent declaring another session's artefact is what produced the five hand-declared rows further up."
     }
    ]
   },

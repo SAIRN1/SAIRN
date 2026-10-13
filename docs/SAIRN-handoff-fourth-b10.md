@@ -39,6 +39,14 @@ and from b9 and still cited: `drive_red86.jsonl` (the red-suite authority),
 | `.claude/settings.json` | **not committed**; hooks still **0 groups, 0 entries** |
 | files under `tools/` edited | **0** — item 1 was route-only, by instruction |
 
+**`a149769d` IS THE STATE AT THE MOMENT THIS HANDOFF WAS FINALISED, and it is
+one commit stale by the time you read it.** A handoff written *before* the
+report cannot include the commit that carries the report, so HEAD advances
+past it by design. The ranges that followed are in
+`SAIRN-report-fourth-b10.txt` §6 and §0, which names the same limit about
+itself. **Re-derive HEAD rather than quoting either document** — three
+rebases in b9 rewrote every local sha, which is what RULE E exists for.
+
 The push was **not forced**. It lost one race to another clone
 (non-fast-forward), was rebased, and landed on the second attempt. Both are in
 the report.
