@@ -469,7 +469,39 @@ function mapNames(blob) {
     assert.match(m[0], /'sf_shifts':\s*\['read', 'write'\]/);
     assert.match(m[0], /'sf_tickets':\s*\['read', 'write'\]/);
     assert.match(m[0], /'sf_rentals':\s*\['read', 'write'\]/);
-    assert.strictEqual(pairs, 94,
+    // 94 -> 104 on 2026-10-13: FIVE SAIRNfreedom resources, TEN pairs --
+    // sf_district_imports, sf_events, sf_permit_flags, sf_products,
+    // sf_vehicles, read and write each. MEASURED at 104 after the edit, not
+    // predicted, and the comment beside them in api/sd-data.js quotes no
+    // two-verb array literal, which is the only way a comment moves this
+    // number.
+    //
+    // WHY THEY ARE GATED, which is what this tripwire exists to make somebody
+    // justify: MICHAEL DECIDED IT. All five are Tier A by
+    // docs/CRITICALITY-TIERS.md's own letters and all five were NAMED by b4 as
+    // the remainder of a nine-resource derivation it deliberately did not act
+    // on -- "widening the gate is a PRODUCT DECISION", in this file's sibling's
+    // words. The decision arrived; the five were the whole of it.
+    //
+    //   sf_district_imports  :353  district records the post cannot re-request
+    //   sf_events            :358  the calendar everything else hangs off
+    //   sf_permit_flags      :367  gaming permit state, ORC Chapter 2915
+    //   sf_products          :368  the priced catalogue sf_tickets snapshots
+    //   sf_vehicles          :380  reads the odometer sf_vehicle_service
+    //                              advances -- and that WRITER was gated on
+    //                              2026-09-29 while this READER stayed open
+    //
+    // THIS RETIRES A STOPPING RULE RATHER THAN APPLYING IT. Four waves of this
+    // app stopped at Tier A; there is no Tier A sf_ resource left ungated, so
+    // the next widening is a different question (nine B/B resources) and needs
+    // its own decision.
+    //
+    // NOT PROVEN LIVE FOR THESE FIVE. The eleven gated before them WERE proven
+    // live on 2026-10-13 -- bare key 403 on both verbs, valid session 200, see
+    // docs/hank-evidence/b6_live_session_control_probe.py -- but that probe ran
+    // against SAIRNscape and SF-PINNACLE-2026 has no employee PIN in this repo,
+    // so the SAIRNfreedom half of that control could not be driven at all.
+    assert.strictEqual(pairs, 104,
       'the gate table changed size to ' + pairs + ' pairs -- add the new resource to this test and say why it is gated');
   });
 

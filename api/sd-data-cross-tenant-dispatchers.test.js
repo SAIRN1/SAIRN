@@ -787,7 +787,34 @@ const UNITS = [
     // one line each and the filter they share is already proven; what each
     // arm adds is the guarantee that THIS resource is still IN that map.
     ['sf_disbursements', 'disbursement_id'], ['sf_donations', 'donation_id'],
-    ['sf_gaming_expenses', 'gaming_expense_id'], ['sf_officers', 'officer_id'],
+    ['sf_gaming_expenses', 'gaming_expense_id'],
+    // ── sf_officers NEEDS A PAYLOAD NOW, AND THAT IS A GUARD WORKING ───────
+    // It was `['sf_officers', 'officer_id']` with no payload until 2026-10-13,
+    // and then this arm went UNREACHED:
+    //
+    //   UNREACHED: no upsert was sent; the handler answered 409
+    //   {"code":"LAST_PROVISIONER"}
+    //
+    // The sf_officers write branch now enforces SPEC 1c SERVER-SIDE -- a write
+    // that would leave the post with officers but NO ACTIVE PROVISIONER is
+    // refused 409 before any upsert, because that state is unrecoverable
+    // through the API and RF-PINNACLE-2026 is the live instance of it. An
+    // id-only payload describes exactly that state, so the guard correctly
+    // refused and this arm correctly reported that it had proven nothing.
+    //
+    // THE ARM IS RE-POINTED, NOT SILENCED, and the distinction is the whole
+    // lesson of b5's GRD tripwire: an arm that reports UNREACHED is doing its
+    // job, and leaving it red is how six Tier A resources lost their isolation
+    // coverage for a fortnight. The payload now carries an ACTIVE PROVISIONING
+    // OFFICER, which is a legal roster, so the write reaches the conflict key
+    // and this arm tests the tenant filter again -- which is this suite's
+    // actual subject.
+    //
+    // `capability` AND `active` ARE BOTH LOAD-BEARING: the guard counts rows
+    // that are active AND hold a capability in SF_PROVISIONING_CAPS. Dropping
+    // either field puts this arm straight back to UNREACHED.
+    ['sf_officers', 'officer_id',
+      { name: 'Tenant Officer', capability: 'post.govern', active: true }],
     ['sf_operators', 'operator_id'], ['sf_permit_flags', 'permit_flag_id'],
     ['sf_products', 'product_id'], ['sf_rentals', 'rental_id'],
     ['sf_sessions', 'session_id'], ['sf_shifts', 'shift_id'],

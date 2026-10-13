@@ -90,6 +90,22 @@ const mechRedact = require('./_lib/mech-redact');
 // at one call site and not the others, which is indistinguishable from no
 // policy at all when read one branch at a time.
 const lawRoles = require('./_lib/law-roles');
+// ONE table and ONE function for all 36 sf_ resources, in api/_lib/sf-roles.js,
+// the same shape and for the same reason as law-roles directly above.
+const sfRoles = require('./_lib/sf-roles');
+// ── MIRRORED FROM THE CLIENT, AND THE MIRROR IS THE POINT ─────────────────
+// sairnfreedom.html's CAPABILITIES at :2300 carries `provisioning:true` on two
+// entries and `sole:true` on one. The server-side sf_officers guards below need
+// both facts, and the browser is not a source of truth for a server refusal.
+// Declared here rather than imported because the page is not a module.
+//
+// A DRIFT BETWEEN THESE AND THE PAGE IS A REAL DEFECT, so it is checked rather
+// than hoped: api/sd-data-sf-role-matrix.test.js reads CAPABILITIES out of
+// sairnfreedom.html and asserts both lists match. That is the same treatment
+// the b5 sf_officers design document said a mirrored capability list must have
+// before it is worth having.
+const SF_PROVISIONING_CAPS = ['post.govern', 'post.govern.deputy'];
+const SF_SOLE_CAPS = ['post.govern'];
 // ── ONE DECLARED MAP FOR EVERY RESOURCE THAT PERSISTS RAW MODEL OUTPUT ────
 // MECH_SCANNED_TEXT below was the same idea scoped to one app and inlined in
 // one branch. The shape it fixed -- a gate keyed on a resource NAME rather
@@ -1167,6 +1183,54 @@ module.exports = async (req, res) => {
       'sf_shifts':              ['read', 'write'],
       'sf_tickets':             ['read', 'write'],
       'sf_rentals':             ['read', 'write'],
+      // ── THE LAST FIVE. SAIRNfreedom IS NOW GATED WHOLESALE, 2026-10-13 ───
+      // MICHAEL'S DECISION (b6 instruction a), and it closes the asymmetry b4
+      // created deliberately and named: nine SAIRNfreedom resources were Tier A
+      // by docs/CRITICALITY-TIERS.md's own letters, b4 gated the four carrying
+      // a money or statutory figure, and left these five with the derivation
+      // written down because widening the gate is a product decision and b4
+      // was not asked to make it. It has now been made.
+      //
+      //   sf_district_imports  register:353  A/B  records arriving from the
+      //                        district -- the post does not author them and
+      //                        cannot re-request them.
+      //   sf_events            register:358  A/B  the post calendar; every
+      //                        programme, ceremony and gaming session hangs
+      //                        off it.
+      //   sf_permit_flags      register:367  A/B  gaming permit state. A wrong
+      //                        flag is a post running gaming it is not
+      //                        permitted to run.
+      //   sf_products          register:368  A/B  the priced catalogue every
+      //                        sf_tickets row snapshots unitPrice from, so a
+      //                        wrong price is wrong takings for every sale
+      //                        after it.
+      //   sf_vehicles          register:380  A/B  computes its own
+      //                        service-due flag from the odometer
+      //                        sf_vehicle_service advances -- and that sibling
+      //                        has been gated since 2026-09-29, so this pair
+      //                        was split across the gate for two weeks.
+      //
+      // ALL 36 sf_ RESOURCES ARE NOW IN THIS MAP, which makes the "which are
+      // still ungated" question unaskable rather than merely answered -- and
+      // retires the stopping rule that has governed four waves of this app.
+      //
+      // THE CLIENT HALF NEEDS NO CHANGE and that is READ, not assumed: all five
+      // go through the SF_SYNCED loop and sfData() at sairnfreedom.html:1986
+      // attaches X-SD-Auth whenever a token is held, for every resource. The
+      // pre-login hydrate hole that would have swallowed their 403s was fixed
+      // in b4 (sfHydrateAfterSignIn) and is held by
+      // api/hydrate-gate-coupling.test.js.
+      //
+      // NO TWO-VERB ARRAY LITERAL IS QUOTED IN THIS COMMENT: the pair-count
+      // tripwire in api/sd-data-session-gate.test.js counts quoted words over
+      // this block's RAW text without blanking comments, so a quoted verb list
+      // here would add phantom pairs. Measured on b4: a first draft that quoted
+      // one reported 82 for an edit that added 2.
+      'sf_district_imports':    ['read', 'write'],
+      'sf_events':              ['read', 'write'],
+      'sf_permit_flags':        ['read', 'write'],
+      'sf_products':            ['read', 'write'],
+      'sf_vehicles':            ['read', 'write'],
       'slabs':   ['read', 'write', 'reserve', 'release'],
       'profile': ['read', 'write'],
       'memory':  ['read', 'write'],
@@ -1549,6 +1613,18 @@ module.exports = async (req, res) => {
       'sf_shifts': 'sairnfreedom',
       'sf_tickets': 'sairnfreedom',
       'sf_rentals': 'sairnfreedom',
+      // The last five, 2026-10-13, added in the SAME EDIT as their
+      // SD_SESSION_GATED entries. This pair of lists is never grown one half at
+      // a time and sf_trustee_audits is why: gated above with no entry here,
+      // expectedApp falls back to 'stonedesk' and every correctly signed-in
+      // SAIRNfreedom officer is refused FORBIDDEN "sign in first" -- it fails
+      // CLOSED and CONFUSINGLY, which is the failure that gets a security
+      // change reverted as broken rather than fixed.
+      'sf_district_imports': 'sairnfreedom',
+      'sf_events': 'sairnfreedom',
+      'sf_permit_flags': 'sairnfreedom',
+      'sf_products': 'sairnfreedom',
+      'sf_vehicles': 'sairnfreedom',
       // SAIRNscape's two, 2026-09-25, added in the SAME edit as their gate
       // entries -- this pair of lists is never grown one half at a time, and
       // the reason is at the top of this table: a resource gated above with no
@@ -1785,6 +1861,153 @@ module.exports = async (req, res) => {
       if (lawRoles.decide(resource, gateSession.role, action) === lawRoles.DENY) {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: lawRoles.denyMessage(resource, gateSession.role) } });
         return;
+      }
+      // ── AND THE SAME THING FOR ALL 36 SAIRNfreedom RESOURCES (2026-10-13) ─
+      // MICHAEL'S DECISION (b6 instruction b), built on the SAIRNlaw precedent
+      // directly above rather than by analogy: ONE table in api/_lib/sf-roles.js
+      // read by ONE function, wired at the gate that already exists.
+      //
+      // WHY ONE CALL SITE AND NOT 36. This app had NO role distinction at all
+      // until today -- every resource was authorised by a session of ANY role,
+      // so a chaplain's sign-in could rewrite the general ledger and a service
+      // officer could edit the officer roster. The failure shape to avoid is
+      // the one SAIRNlaw already had and whose fix is three lines above: a role
+      // check written at one branch and not the other thirty-five, which reads
+      // as no policy at all one branch at a time.
+      //
+      // ── WHAT THIS CALL SITE DOES AND DOES NOT COVER. MEASURED, 27 OF 36 ──
+      // SD_SESSION_GATED now holds 27 of SAIRNfreedom's 36 resources, so this
+      // one call site role-checks 27 of them. NINE ARE STILL LICENCE-KEY-ONLY
+      // and a role check is not merely absent for them, IT IS IMPOSSIBLE:
+      // there is no session, so there is no role to decide against. Naming them
+      // rather than letting the arithmetic imply them:
+      //
+      //   sf_bottle_fills  sf_ceremonial_items  sf_documents
+      //   sf_honor_details  sf_inventory_counts  sf_national_categories
+      //   sf_service_hours  sf_service_referrals  sf_vendors
+      //
+      // All nine are B/B in docs/CRITICALITY-TIERS.md. Michael's b6 decision
+      // named the FIVE TIER A resources that were still open, and those are
+      // gated in this same edit; the nine Tier B ones were not in that decision
+      // and are not swept in on my own authority -- the same stopping rule that
+      // governed the four prior waves of this app, applied one last time.
+      //
+      // THE TABLE IN api/_lib/sf-roles.js COVERS ALL 36 ANYWAY, deliberately.
+      // A row for an ungated resource costs nothing and means the day one of
+      // those nine is gated, its policy is already written and reviewed rather
+      // than invented in the same hurried edit that gates it. The matrix test
+      // asserts 36 rows against the registry, so the table cannot fall behind
+      // the app.
+      //
+      // AND THERE IS NO SECOND CALL SITE, unlike SAIRNlaw's two. SAIRNlaw needs
+      // one in the LAW_RESOURCES prelude because fifteen of its nineteen are
+      // gated there instead of here. SAIRNfreedom's nine are gated NOWHERE, so
+      // a second call site would have nothing to check -- adding one that reads
+      // a session that cannot exist would be a check that can never fire, which
+      // is worse than an absent one because it looks like coverage.
+      //
+      // NOT_SF IS WHY THIS IS SAFE IN A BLOCK EVERY APP PASSES THROUGH, exactly
+      // as NOT_LAW is above: `decide` returns a THIRD verdict for anything that
+      // is not one of the 36, so a StoneDesk resource is neither allowed nor
+      // denied by a SAIRNfreedom table. Only an explicit DENY stops a request.
+      if (sfRoles.decide(resource, gateSession.role, action) === sfRoles.DENY) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: sfRoles.denyMessage(resource, gateSession.role) } });
+        return;
+      }
+      // ── THE THREE sf_officers TRAPDOOR GUARDS, NOW SERVER-SIDE ───────────
+      // MICHAEL'S DECISION (b6 instruction b, "with sf_officers guards done
+      // server-side"). Until today all three ran ENTIRELY IN THE BROWSER:
+      //   sairnfreedom.html:2916  activeProvisioners()
+      //   sairnfreedom.html:2927  SPEC 1c -- refuses deactivating the LAST
+      //                           active provisioner
+      //   sairnfreedom.html:2942  refuses a second holder of a sole-holder
+      //                           capability
+      // A write that does not come from that page -- curl with a stolen
+      // session, a second tab with a modified script, a future integration --
+      // was a write past all three, and could leave a post at ZERO ACTIVE
+      // PROVISIONERS, which is unrecoverable through the API.
+      // RF-PINNACLE-2026 is the live instance of that state.
+      //
+      // THE DESIGN THIS IMPLEMENTS IS b5's, and it is followed rather than
+      // re-derived: docs/2026-10-13-hank-sf-officers-server-guard-design.md
+      // concluded that SPEC 1c is a WHOLE-TABLE INVARIANT and therefore belongs
+      // in the handler where the table can be read, while the sole-holder rule
+      // is a UNIQUENESS CONSTRAINT that wants a partial unique index. THE INDEX
+      // IS SQL AND IS NOT MINE, so BOTH are enforced here for now and the index
+      // remains the better long-term home for the second one -- stated so the
+      // next reader finds a decision rather than an omission.
+      //
+      // THE THREE THINGS THE DESIGN WARNED WOULD GO WRONG, and how each is
+      // handled, because that document said a careless implementation would hit
+      // all three:
+      //   1. THE WRITE IS AN UPSERT, so the invariant is computed against the
+      //      roster AS IT WOULD BE -- stored rows merged with this payload by
+      //      id -- never against the payload alone. A payload that deactivates
+      //      the last provisioner without mentioning `capability` is the case
+      //      that defeats a payload-only check.
+      //   2. FAILS CLOSED on an unreadable roster: 502 and nothing written,
+      //      never a write that proceeds without the check (PR 1.11).
+      //   3. ZERO OFFICERS IS A SAFE END STATE and stays writable. A naive
+      //      "always require one active provisioner" bricks a post trying to
+      //      start over -- the opposite of the trapdoor this guard prevents.
+      if (resource === 'sf_officers' && action === 'write') {
+        const sfoRows = await fetch(rest('sf_officers?license_hash=eq.' + enc(licHash) +
+          '&select=officer_id,data'), { headers });
+        if (sfoRows.status === 404 || sfoRows.status === 400) {
+          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNfreedom data tables are not set up yet — run sql/sairnfreedom_data_schema.sql in Supabase first.' } });
+          return;
+        }
+        let sfoList = null;
+        try { sfoList = await sfoRows.json(); } catch (e) { sfoList = null; }
+        if (!sfoRows.ok || !Array.isArray(sfoList)) {
+          res.status(502).json({ error: { code: 'ROSTER_UNREADABLE', message: 'The officer roster could not be read, so this change was REFUSED rather than saved without its safety checks. Nothing was changed — try again.' } });
+          return;
+        }
+        // The roster AS IT WOULD BE: every stored row, with this payload
+        // replacing the one it shares an id with, or appended if it is new.
+        const sfoAfter = [];
+        let sfoReplaced = false;
+        for (const row of sfoList) {
+          const rid = String(row.officer_id);
+          if (payload && payload.id !== undefined && payload.id !== null
+              && String(payload.id) === rid) {
+            sfoAfter.push(Object.assign({ id: rid }, payload));
+            sfoReplaced = true;
+          } else {
+            sfoAfter.push(Object.assign({ id: rid }, row.data));
+          }
+        }
+        if (!sfoReplaced && payload && payload.id !== undefined && payload.id !== null) {
+          sfoAfter.push(Object.assign({}, payload, { id: String(payload.id) }));
+        }
+        const sfoActiveProv = sfoAfter.filter((o) =>
+          o && o.active && SF_PROVISIONING_CAPS.indexOf(o.capability) !== -1);
+        // SPEC 1c. Zero officers is safe; officers with no active provisioner
+        // is the trapdoor.
+        if (sfoAfter.length && !sfoActiveProv.length) {
+          res.status(409).json({
+            error: {
+              code: 'LAST_PROVISIONER',
+              message: 'Refused: this would leave the post with no active officer who can provision credentials, and that state cannot be undone through the app. Assign another governing officer first, or remove all officers to start over.'
+            }
+          });
+          return;
+        }
+        // The sole-holder rule. SF_SOLE_CAPS mirrors `sole:true` in
+        // sairnfreedom.html's CAPABILITIES; a partial unique index is the
+        // better long-term home and is routed, not built here.
+        for (const cap of SF_SOLE_CAPS) {
+          const holders = sfoAfter.filter((o) => o && o.active && o.capability === cap);
+          if (holders.length > 1) {
+            res.status(409).json({
+              error: {
+                code: 'SOLE_HOLDER',
+                message: 'Refused: that office can only be held by one active officer at a time. Deactivate the current holder first.'
+              }
+            });
+            return;
+          }
+        }
       }
       // ── THE CREDENTIAL RE-CHECK USED TO SIT HERE AND HAS MOVED UP ────────
       // It is NOT gone: it is the pre-gate above, which covers all 132 gates in
@@ -10417,24 +10640,45 @@ module.exports = async (req, res) => {
       // (`status_changed_by`) is the clean answer and is a MIGRATION, which
       // this round deliberately excludes.
       //
-      // So: READ-THEN-MERGE, onto the row this branch ALREADY read for the
-      // canSeeSchedule gate. `entry.data` is spread FIRST so the stamp wins on
-      // its own two keys and nothing else is touched.
+      // ── THE READ-THEN-MERGE IS GONE. THE COLUMNS EXIST NOW (2026-10-13) ──
+      // Everything above is the record of WHY this had to be a blob merge, and
+      // it is kept rather than deleted because the paragraph that follows only
+      // makes sense against it. The last sentence of it named its own exit: "a
+      // `status_changed_by` column removes the trade and is named in the
+      // handoff as the follow-up."
       //
-      // THE RACE IS STATED RATHER THAN HIDDEN: a concurrent writer that
-      // changes `data` between the select above and this PATCH has its blob
-      // change overwritten. The window is the two awaits in between, the only
-      // other writer of this blob is `rf_schedule/write` (management only),
-      // and `wroteRow()` below still detects a PATCH that matched nothing.
-      // This trades a narrow lost-update window for an attribution that was
-      // previously absent entirely; a `status_changed_by` column removes the
-      // trade and is named in the handoff as the follow-up.
-      const schedBlob = Object.assign({}, entry.data || {},
-        { updatedBy: session.employee_id, updatedByRole: session.role });
+      // MICHAEL RAN THE MIGRATION ON 2026-10-13 -- STEP 14 of
+      // docs/2026-10-07-hank-migration-sql-for-michael.md -- which adds
+      // `status_changed_by`, `status_changed_by_role` and `status_changed_at`
+      // to rf_schedule. So:
+      //
+      //   * THE LOST-UPDATE WINDOW IS CLOSED. This PATCH no longer sends `data`
+      //     at all, so a concurrent `rf_schedule/write` changing the window or
+      //     the notes between the select above and this call can no longer have
+      //     its change overwritten. That window was narrow and real and is now
+      //     not there.
+      //   * THE ATTRIBUTION IS A COLUMN, not two keys inside a jsonb blob, so
+      //     it can be indexed, queried and constrained -- and a future blob
+      //     rewrite cannot silently drop it.
+      //   * `created_by` IS STILL NOT TOUCHED. It means who CREATED the day and
+      //     overwriting it to record a later edit was the thing the note above
+      //     refused to do. Three separate columns are the clean answer and are
+      //     what landed.
+      //
+      // `entry.data` IS NO LONGER READ, and `data` is deliberately LEFT in the
+      // select at the top of this branch rather than removed: that select feeds
+      // canSeeSchedule(), the column costs nothing on a round trip that already
+      // happens, and narrowing it is an unrelated change to a gate's input.
       const r = await fetch(rest('rf_schedule?license_hash=eq.' + enc(licHash) + '&schedule_id=eq.' + enc(schedId)), {
         method: 'PATCH',
         headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
-        body: JSON.stringify({ status: status, data: schedBlob, updated_at: nowISO() })
+        body: JSON.stringify({
+          status: status,
+          status_changed_by: session.employee_id,
+          status_changed_by_role: session.role,
+          status_changed_at: nowISO(),
+          updated_at: nowISO()
+        })
       });
       // ── IT ECHOED BACK THE STATUS THE CALLER ASKED FOR (2026-09-21) ──────
       // `saved ? saved.status : status` is the worst spelling of this defect in
@@ -13300,6 +13544,75 @@ module.exports = async (req, res) => {
       const dSession = verifySessionToken(tokenFromRequest(req), licHash, 'sairnbuild');
       if (!dSession) {
         res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first — a draw request is progress billing, and it is recorded against the person who changed it' } });
+        return;
+      }
+      // ══ THE ROLE GATE MICHAEL ASKED FOR, 2026-10-13 (b6 instruction c) ════
+      // "bld_draws is upper management/owner only, not supervisors, access
+      // assigned by ownership."
+      //
+      // THE OPEN QUESTION cc REPORTED RATHER THAN SHIPPED IS NOW ANSWERED.
+      // cc's seq664 fix (518a0a90) session-gated this resource and said so in
+      // its own words: "NOT restricted to owner or office on purpose: the Draw
+      // Requests panel is not role-gated client-side, so management-only would
+      // 403 every field role save of a draw it can still open, and that product
+      // question is reported rather than shipped inside a security fix." I
+      // reviewed and discharged that obligation in b5 and left the same line
+      // standing: "ANY sairnbuild session can still author or inflate a draw
+      // AMOUNT -- the carry-over protects the release fields only." This closes
+      // it.
+      //
+      // ── THE MAPPING FROM MICHAEL'S WORDS TO THIS APP'S THREE ROLES ───────
+      // ROLES_BY_APP.sairnbuild is EXACTLY ['owner', 'pm', 'office']. There is
+      // no role literally called "supervisor", so the instruction has to be
+      // mapped, and the mapping is stated here so it can be corrected in one
+      // place rather than re-derived from behaviour:
+      //
+      //   owner   -> ALLOW.  "access assigned by ownership" names it directly,
+      //                      and api/bld-auth.js:72 already has
+      //                      PROVISIONING_ROLES = ['owner'] alone, so owner is
+      //                      this app's sole existing authority role.
+      //   office  -> ALLOW.  Back-office administration. A draw request IS
+      //                      PROGRESS BILLING -- this branch's own 401 message
+      //                      says so -- and billing is the office function.
+      //                      This is the same shape as every other money
+      //                      resource on the platform: governance plus the
+      //                      bonded/office finance role, never the field role.
+      //                      api/_lib/sf-roles.js's SF_MONEY_LOCKED is the
+      //                      nearest precedent, written this same batch.
+      //   pm      -> DENY.   THE SUPERVISOR. On a construction job the project
+      //                      manager is the field supervisor who REQUESTS a
+      //                      draw; "not supervisors" is the half of the
+      //                      instruction that has to bite somewhere, and `pm`
+      //                      is the only role it can bite. cc's own comment
+      //                      identified the same role as "every field role".
+      //
+      // IF THAT MAPPING IS WRONG IT IS WRONG IN ONE LINE. BLD_DRAW_ROLES below
+      // is the whole policy; nothing else in this branch reads a role.
+      //
+      // READ **AND** WRITE, NOT WRITE ONLY, and that is deliberate. Retainage
+      // figures and a draw schedule are what a competitor or a disgruntled sub
+      // would want, and a supervisor who cannot author a draw has no reason to
+      // read the release log either. The 401 above already refuses a signed-out
+      // caller on both verbs; this refuses the wrong office on both.
+      //
+      // IT FAILS CLOSED ON AN UNKNOWN ROLE: a fourth role added to
+      // ROLES_BY_APP.sairnbuild without a line here gets nothing rather than
+      // inheriting owner's access -- the same direction api/_lib/law-roles.js
+      // and api/_lib/sf-roles.js both chose.
+      //
+      // WHAT THIS DOES NOT DO, said so the refusal is not overread: the client
+      // panel is STILL not role-gated. A pm can open Draw Requests and will now
+      // see a 403 rather than a hidden tab. That is the correct trade for a
+      // security change -- refusing is the server's job and hiding is the
+      // page's -- and the panel-visibility half is routed, not shipped here.
+      const BLD_DRAW_ROLES = ['owner', 'office'];
+      if (BLD_DRAW_ROLES.indexOf(dSession.role) === -1) {
+        res.status(403).json({
+          error: {
+            code: 'FORBIDDEN',
+            message: 'Draw requests are progress billing and are available to the owner and the office only. Ask the owner if you need access.'
+          }
+        });
         return;
       }
       if (action === 'write') {

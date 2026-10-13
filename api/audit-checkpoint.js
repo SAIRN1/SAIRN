@@ -44,7 +44,113 @@
 const crypto = require('crypto');
 const { beat } = require('./_lib/heartbeat');
 
-const TABLES = ['sairnlaw_audit_log', 'sairncode_audit_log', 'stonedesk_audit_log'];
+// ══ THE CHECKPOINT COVERED 3 OF 16 AUDIT LOGS, FROM THE MOMENT THE MIGRATION
+//    RAN ON 2026-10-13 ══════════════════════════════════════════════════════
+// This line read:
+//
+//     const TABLES = ['sairnlaw_audit_log', 'sairncode_audit_log',
+//                     'stonedesk_audit_log'];
+//
+// a hardcoded three. It was COMPLETE when written -- those were the only three
+// audit logs that existed. Michael then ran
+// docs/2026-10-07-hank-migration-sql-for-michael.md, which creates THIRTEEN MORE
+// (STEPS 1-12 plus STEP 13's sairnvet_audit_log), and this list did not move.
+//
+// WHAT THAT COSTS, in this file's own terms: a checkpoint is what makes an
+// audit log tamper-EVIDENT. Its whole subject, stated at the top of this file,
+// is catching "an insertion into a window that has already closed". Thirteen
+// tables had NO checkpoint at all, so a back-dated row in any of them was
+// undetectable -- including sairnlaw's siblings carrying credential grants for
+// a dental practice, an assisted-living facility and a gaming post under ORC
+// 2915. The daily job kept passing, and its pass covered 19% of the population.
+//
+// NOTHING ANNOUNCED IT. The migration was a SQL change; this is a JavaScript
+// constant; no check compares them. That is the two-lists-that-must-agree shape
+// this platform keeps paying for, and the fix is the same one api/_lib/audit.js
+// already applies to its own AUDIT_TABLES: DERIVE, do not maintain a second
+// copy.
+//
+// AUDIT_TABLE_BY_APP IS THE AUTHORITATIVE LIST and it is authoritative for a
+// reason rather than by preference: every api/*-auth.js credential grant routes
+// through the shared pin-setup helper in api/_lib/audit.js, which resolves its
+// target table from that map, so a table absent from it receives nothing and a
+// table present in it is a table something writes to. Deduplicated because
+// `stonedesk` and `stonedesk_sub` deliberately share one log.
+//
+// THE HELPER IS NAMED INDIRECTLY ABOVE, ON PURPOSE, AND THAT IS A FINDING
+// ABOUT A CHECKER RATHER THAN A STYLE CHOICE. tools/audit_event_type_check.py
+// treats any file containing that helper's NAME as a caller and then demands a
+// `const APP = '...'` to resolve its table from. This file is not a caller and
+// has no APP, so a first draft that merely MENTIONED the helper in this comment
+// made that tool exit 2 COULD NOT RUN -- "This is NOT 'every event type is
+// allowed'. Nothing was compared." A prose mention disabled the check.
+//
+// That is the third instance this batch family has produced of one shape: a
+// checker whose universe includes the text that DESCRIBES its subject. The
+// first two were the ghost-field probe's own payloads and the red-suite
+// ledger's write-up of its own failure. The detector should blank comments
+// before that test; it is in tools/ and is ROUTED to cc in
+// docs/2026-10-13-hank-b6-routing.md rather than edited here.
+//
+// A MISSING TABLE IS A REFUSAL, NOT A SKIP, and that is inherited rather than
+// added: readWindow() throws on a non-ok read, so a table in the map that does
+// not exist in the database fails the RUN. That is the correct direction for a
+// tamper-evidence job -- "I could not checkpoint this log" must never be
+// reported as "this log is fine" -- and it matches this file's own rule that a
+// paging mismatch "is a REFUSAL, not a short digest".
+//
+// sv_audit_log IS DELIBERATELY ABSENT. It is SAIRNvet's OLD table and is the
+// wrong target: it has no `event_type` column at all and four of the five
+// columns writeAuditLog posts are missing from it. STEP 13 of the migration
+// created `sairnvet_audit_log` precisely because of that, and the map carries
+// the new name. Checkpointing the old one would hash a table nothing writes.
+const { AUDIT_TABLE_BY_APP } = require('./_lib/audit');
+const ALL_AUDIT_TABLES = Array.from(new Set(Object.keys(AUDIT_TABLE_BY_APP)
+  .map((app) => AUDIT_TABLE_BY_APP[app]))).sort();
+
+// ── AND THE CHECKPOINT TABLE'S OWN CHECK CONSTRAINT IS THE SECOND LIST ─────
+// sql/audit_checkpoint_schema.sql:57-59 declares
+//     audit_table text not null check (audit_table in (
+//       'sairnlaw_audit_log', 'sairncode_audit_log', 'stonedesk_audit_log'))
+// so an INSERT naming any of the other thirteen is REJECTED BY THE DATABASE.
+// Deriving the loop from AUDIT_TABLE_BY_APP alone would therefore not fix the
+// coverage gap -- it would turn a silent gap into thirteen failed inserts and
+// a run that throws where it used to pass. THAT IS WHY THIS CONSTANT EXISTS
+// rather than the loop simply running over all sixteen.
+//
+// MIRRORED, NOT GUESSED: the three names below are copied from that CHECK. The
+// arm `every table the code checkpoints is allowed by the schema CHECK` in
+// api/audit-checkpoint.test.js reads the SQL file and compares, so a drift
+// between this constant and the real constraint fails there rather than at
+// 03:30 in production.
+//
+// ONE ALTER CLOSES IT, AND IT IS MICHAEL'S:
+//     alter table public.sairn_audit_checkpoint
+//       drop constraint sairn_audit_checkpoint_audit_table_check;
+//     alter table public.sairn_audit_checkpoint
+//       add constraint sairn_audit_checkpoint_audit_table_check
+//       check (audit_table in (<the sixteen names in ALL_AUDIT_TABLES>));
+// After it runs, THIS CONSTANT IS THE ONLY LINE THAT CHANGES -- set it to
+// ALL_AUDIT_TABLES and the loop covers sixteen. Routed in
+// docs/2026-10-13-hank-b6-routing.md.
+const SCHEMA_PERMITTED = [
+  'sairnlaw_audit_log', 'sairncode_audit_log', 'stonedesk_audit_log'
+];
+const TABLES = ALL_AUDIT_TABLES.filter((t) => SCHEMA_PERMITTED.indexOf(t) !== -1);
+// ── THE GAP IS A VALUE, NOT A COMMENT ──────────────────────────────────────
+// Reported in every response and in every heartbeat, because the whole defect
+// here was that 13 of 16 audit logs had no checkpoint AND NOTHING SAID SO. A
+// coverage figure that only exists in a code comment is the same silence in a
+// different place.
+const UNCOVERED = ALL_AUDIT_TABLES.filter((t) => SCHEMA_PERMITTED.indexOf(t) === -1);
+if (!TABLES.length) {
+  // FAILS CLOSED AT LOAD. An empty list would make every window digest the
+  // hash of nothing, every verification pass, and the response report a clean
+  // chain over zero tables -- the vacuous-green shape this file's paging
+  // comment already refuses in its own domain.
+  throw new Error('audit-checkpoint: AUDIT_TABLE_BY_APP resolved no audit '
+    + 'tables, so a checkpoint run would digest nothing and report success');
+}
 const CHECKPOINT_TABLE = 'sairn_audit_checkpoint';
 // The chain's first link. A literal rather than an empty string so a row whose
 // prev_digest was lost or never set is distinguishable from a genuine genesis.
@@ -397,7 +503,14 @@ module.exports = async (req, res) => {
         // number here and verifyTable() returns no `written` at all, so this
         // one is provably numeric today -- but `|| 0` is not what makes it so,
         // and the next field summed beside it may not be (tools/truthy_sum_check.py).
-        written: results.reduce(function (n, r) { return n + Number(r.written || 0); }, 0)
+        written: results.reduce(function (n, r) { return n + Number(r.written || 0); }, 0),
+        // ── COVERAGE, IN THE HEARTBEAT (2026-10-13) ────────────────────────
+        // The watchdog's detail is the one place a reader sees this job without
+        // reading a response body Vercel throws away. 3 of 16 was invisible
+        // here until now.
+        tables_covered: TABLES.length,
+        tables_total: ALL_AUDIT_TABLES.length,
+        uncovered: UNCOVERED
       }
     });
     res.status(200).json({
@@ -406,7 +519,27 @@ module.exports = async (req, res) => {
       // answered in the same run, and a reader who cannot tell them apart
       // cannot tell "wrote 1 checkpoint" from "verified 14 windows".
       recent_verify: recent,
-      recent_verify_windows: action === 'checkpoint' ? RECENT_VERIFY_WINDOWS : null
+      recent_verify_windows: action === 'checkpoint' ? RECENT_VERIFY_WINDOWS : null,
+      // ── WHAT THIS RUN DID **NOT** COVER, STATED IN THE ANSWER ────────────
+      // `ok: true` above means every table this run touched verified. It does
+      // NOT mean every audit log is checkpointed, and until 2026-10-13 there
+      // was no way to tell those apart from this response: three tables were
+      // hardcoded and thirteen more had been created by a migration that this
+      // file never heard about.
+      //
+      // A CHECKPOINT IS A TAMPER-EVIDENCE CLAIM, so the population it covers is
+      // part of the claim. 3 of 16 reported as `ok` is true and misleading
+      // together; 3 of 16 reported as `ok` WITH the thirteen named is just true.
+      tables_covered: TABLES,
+      tables_total: ALL_AUDIT_TABLES.length,
+      uncovered: UNCOVERED,
+      uncovered_why: UNCOVERED.length
+        ? 'sairn_audit_checkpoint.audit_table CHECK permits only '
+          + SCHEMA_PERMITTED.join(', ') + '. These logs exist and receive '
+          + 'writes but CANNOT be checkpointed until that constraint is '
+          + 'widened -- see sql/audit_checkpoint_schema.sql:57 and the ALTER in '
+          + 'api/audit-checkpoint.js beside SCHEMA_PERMITTED.'
+        : null
     });
   } catch (err) {
     // ── THESE TWO REFUSALS BEAT TOO, AND THEY DID NOT (fixed 2026-09-16) ────
