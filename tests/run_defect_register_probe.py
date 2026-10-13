@@ -209,23 +209,102 @@ try:
     check('E8 and says why', 'more than one commit' in amb, True)
 
     # ── E9-E11. --reseat writes them back, and does not reorder the file ────
+    #
+    # E9 RAN ON A FIXTURE IT DID NOT CONTROL AND WAS RED FOR DAYS. The arm's
+    # claim held the whole time -- measured by reading what --reseat actually
+    # printed rather than inferred from the exit code:
+    #
+    #   aaaaaaaaaaaa -> 41b423b209c3   <- the arm's own subject. RE-SEATED.
+    #   ea0f36077430 COLLIDES ...      <- not the arm's subject
+    #   ea0f36077430 COLLIDES ...      <- not the arm's subject
+    #   re-seated 1 record(s).
+    #   2 record(s) LEFT ALONE on a destination collision. This run is a
+    #   partial repair and says so.
+    #
+    # The worktree is created from HEAD, so it inherits every record four other
+    # clones have written; two of them cannot be re-seated, `--reseat` reports
+    # a PARTIAL repair, and exit 1 is the correct answer to a question E9 was
+    # never asking. So an unrelated session's rebase leftovers decided this
+    # arm's colour.
+    #
+    # THE FIX IS ISOLATION, NOT A WEAKER ASSERTION. E9 keeps `rc == 0`, E10
+    # keeps "the moved SHA was rewritten", E11 keeps the no-reorder check --
+    # all three now run on a register this section BUILT: the planted stale
+    # record plus four real ones whose commits resolve and whose summaries are
+    # unique, so there is nothing in it that could collide. The full
+    # population is restored immediately afterwards, because sections F onward
+    # compute a density denominator and per-app coverage from it and a
+    # five-record fixture would make those arms pass for free.
+    #
+    # FIVE RECORDS, NOT ONE, deliberately: E11 asserts the file was not
+    # REORDERED, and that assertion is vacuous on a single-record file.
+    _full = json.loads(json.dumps(doc))          # the population, kept intact
+    _resolvable = []
+    _NL = chr(10)
+    _cands = [r for r in doc['records']
+              if 'superseded_by' not in r and r.get('commit') != 'aaaaaaaaaaaa']
+    _batch = subprocess.run(['git', 'cat-file', '--batch-check'], cwd=wt,
+                            input=_NL.join(str(r.get('commit') or '')
+                                           for r in _cands) + _NL,
+                            capture_output=True, text=True, encoding='utf-8',
+                            errors='replace')
+    # PAIRED BY POSITION, not by string. --batch-check echoes the FULL 40-char
+    # sha for an abbreviated input, so matching the record's 12-char `commit`
+    # against column 1 never hit and the first version of this fixture came
+    # back EMPTY -- which E8a caught, which is what E8a is for.
+    _out_lines = [l for l in (_batch.stdout or '').split(_NL) if l.strip()]
+    _resolves = {}
+    for _r, _line in zip(_cands, _out_lines):
+        _parts = _line.split()
+        _resolves[id(_r)] = len(_parts) >= 2 and _parts[1] == 'commit'
+    _seen_sum = set()
+    for _r in _cands:
+        _s = _r.get('summary')
+        if _resolves.get(id(_r)) and _s not in _seen_sum:
+            _seen_sum.add(_s)
+            _resolvable.append(_r)
+        if len(_resolvable) == 4:
+            break
+    _planted = [r for r in doc['records'] if r.get('commit') == 'aaaaaaaaaaaa']
+    check('E8a the isolated fixture really was built -- one planted record and '
+          'four resolvable ones, so E9 is not passing over an empty repair',
+          (len(_planted), len(_resolvable)), (1, 4))
+    doc['records'] = _planted + _resolvable
     io.open(p, 'w', encoding='utf-8', newline='').write(json.dumps(doc, indent=2))
     order_before = [r['summary'] for r in
                     json.load(io.open(p, encoding='utf-8'))['records']]
     rc, out = run(wt, '--reseat')
+    io.open(os.path.join(tempfile.gettempdir(), 'e9_reseat.txt'), 'w',
+            encoding='utf-8', newline='').write(out)
     check('E9 --reseat succeeds', rc, 0)
+    check('E9a ...and it re-seated exactly the one record this section planted, '
+          'so the exit code is not green over a no-op',
+          're-seated 1 record(s)' in out, True)
     after_doc = json.load(io.open(p, encoding='utf-8'))
     check('E10 the moved SHA was rewritten',
           [r for r in after_doc['records'] if r['commit'] == 'aaaaaaaaaaaa'], [])
     check('E11 and the file was NOT reordered -- a 12-line repair must not '
           'produce a 157-line diff',
           [r['summary'] for r in after_doc['records']], order_before)
+
     check('E12 the rewritten record still names the same commit subject',
           after_doc['records'][0]['subject'], real_subject)
+
+
     rc, out = run(wt, '--check')
     check('E13 and --check is clean afterwards, with nothing re-seatable',
           rc == 0 and 'RE-SEATABLE' not in out, True)
 
+
+    # THE POPULATION GOES BACK. Sections F onward measure a density against a
+    # real denominator and per-app coverage across real apps; leaving the
+    # five-record fixture in place would make every one of those arms pass for
+    # free, which is a worse defect than the one just fixed.
+    doc = _full
+    io.open(p, 'w', encoding='utf-8', newline='').write(json.dumps(doc, indent=2))
+    check('E11b the full population was restored before the F arms, so they '
+          'are not measuring a five-record fixture',
+          len(json.load(io.open(p, encoding='utf-8'))['records']) > 100, True)
     # ── E14. THE VOCABULARY CHECKS RUN EVEN ON A RECORD WHOSE SHA IS STALE ──
     # They used to sit after a `continue`, so a stale SHA silently stopped the
     # rest of that record from being checked at all.
