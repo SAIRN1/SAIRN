@@ -1,10 +1,18 @@
 # HANDOFF — fourth / ted, batch b9 CONTINUATION, 2026-10-13
 
+> **RENAMED 2026-10-13 (b10) FROM `handoff-fourth-2026-10-13b.md`.** The
+> date suffix is gone on purpose: a batch number is a fact about the work,
+> a date is a fact about the keyboard, and the two came apart the moment
+> the b9 handoff was typed `2026-10-16`. Convention is now
+> `SAIRN-handoff-<session>-b<n>.md`, with `-2` appended when one batch
+> writes a second handoff -- which is this file. The b10 handoff is
+> `docs/SAIRN-handoff-fourth-b10.md`.
+
 **Written BEFORE the report**, at a point where nothing is half-finished: the
 push has landed, every queue item is closed with evidence or named as open with
 the exact next step, and no operation is in progress.
 
-**READ THIS ONE, NOT `docs/handoff-fourth-2026-10-16.md`.** That file is this
+**READ THIS ONE, NOT `docs/SAIRN-handoff-fourth-b9.md`.** That file is this
 batch's EARLIER handoff and **it is misdated three days into the future.**
 CLAUDE.md says to find the latest handoff **by the date in the filename**, so a
 date-sort puts the stale one first and the correct one second. The misnaming is
@@ -161,7 +169,7 @@ all three are **written by the gates themselves when they run**, and leaving
 them dirty is what refuses the next rebase.
 
 **`tools/register_feed_gate.py` was taken under a declared conflict, PR §4.3.**
-`docs/handoff-fourth-2026-10-16.md` routed `register_feed_gate.py:747` to cc as
+`docs/SAIRN-handoff-fourth-b9.md` routed `register_feed_gate.py:747` to cc as
 "one message for two causes, new". **No active claim names that file**, and it
 was the standing blocker on this clone's own push, so this session took it and
 **cc's routed item is discharged rather than left queued.**
