@@ -3717,8 +3717,8 @@
       "task": "cody -- batch b7. TESTS AND TOOLS ONLY. (1) the driven SAIRNfreedom per-role per-resource matrix and the bld_draws role arms hank routed to me in docs/2026-10-13-hank-b6-routing.md items 3 and 4, both NEW files under tests/, expectation derived from api/_lib/sf-roles.js and observation from the handler, never both from the table; (2) build tools/unproven_arm_check.py to the b6 spec in docs/2026-10-13-cody-b6-methodology-unproven.md, and re-derive then resolve the WEAKENING flag on tests/push_gate/check4_probe.py; (3) isolate the git-worktree probes so no probe can write the real .git/config, with a test that proves it; (4) the 19 disclosed seam pairs become a table with one named owner per pair plus a reusable closing procedure. CONFLICT DECLARED PER PR 4.3 AND NOT OVERRIDDEN: docs/tier-a-reviews.json is in cc's LIVE claim, so the three hank-authored Tier A records and the two orphaned-sha re-seats are ANALYSED AND ROUTED IN MY REPORT ONLY -- no write to that file is taken here, and the exact verified commands are handed over instead. NO api/ FILE IS EDITED and no auditor clone is entered. FILES: tests/api/sf_role_matrix_driven.test.js tests/api/bld_draws_role_arms.test.js tools/unproven_arm_check.py tests/run_unproven_arm_probe.py tools/git_config_isolation.py tests/run_worktree_isolation_probe.py docs/2026-10-13-cody-b7-seam-pair-owners.md docs/scrutiny-flags.json SAIRN-ACTIVE-WORK-cody.md",
       "claimed_at": "2026-10-13T10:48:10Z",
       "claimed_at_epoch": 1791888490.1395612,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-13T21:06:47Z",
       "files": [
         "SAIRN-ACTIVE-WORK-cody.md",
         "docs/2026-10-13-cody-b7-seam-pair-owners.md",
