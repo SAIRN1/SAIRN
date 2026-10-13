@@ -27139,6 +27139,64 @@
         }
       ],
       "recurrence_open": "OPEN. The skip list is a hand-maintained list of what a path IS, and nothing re-derives it when a new artefact convention appears -- the next root-level prose deliverable in a new extension lands in scope the same way. A coverage control exists for tracked path CLASSES but it cannot know about a convention that has not been invented yet."
+    },
+    {
+      "commit": "10f74e2e4484",
+      "date": "2026-10-12",
+      "subject": "feat(sairnlaw): role granularity for all 19 resources -- ONE table, ONE function, and the trust lock is a second structure",
+      "files": [
+        "api/_lib/law-roles.js",
+        "api/sd-data-law-role-matrix.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 722,
+      "lines_removed": 0,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "hover-audit",
+      "summary": "SAIRNlaw had exactly ONE role check across its whole data surface -- LAW_RECONCILE_ROLES, owner-only, on law_trust_reconcile -- and the other 19 law_ resources were session-gated with no role distinction, so any signed-in role could read and write law_picases (settlement figures, Tier A/A), law_pimedical (health information held by a law firm, Tier A/A) and law_bankstatements (the bank side of an IOLTA three-way reconciliation) exactly as freely as a managing attorney. Fixed with ONE data table and ONE function in api/_lib/law-roles.js, called from the TWO gates that already existed rather than nineteen per-resource ifs -- the defect being that a role check at one call site and not the others is indistinguishable from no policy when read one branch at a time. Three verdicts, not two: NOT_LAW keeps the law table from approving or refusing another app's resource in a block 70 action-pairs pass through. Trust resources are hard-locked in a SEPARATE structure consulted after the table agrees, so the lock survives a table edit or an override layer. Fails closed on an unlisted law_ resource, an undeclared role, a missing role and any verb that is not read. THE POLICY IS MICHAEL'S AND IS TRANSCRIBED, NOT DERIVED: api/sd-data.js declined to invent it twice in writing and the auditor routed without prescribing a fix.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "requirement",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "unknown_reason": "the 19 resources were session-gated with no role distinction from the commit that first registered each; there is no transition from working to broken, and the decision not to add a role gate was recorded in the code rather than deferred by accident"
+      },
+      "citation_note": "not-citable: the process rules have no section about a product decision recorded as deliberately unmade and then left unmade. Attaching it to the nearest-sounding id would make the citation column look fuller and mean less.",
+      "factors_unknown_reason": "one policy gap across 19 resources, recorded as one defect with the full table in api/_lib/law-roles.js rather than modelled as structured factors"
+    },
+    {
+      "commit": "4756a0965344",
+      "date": "2026-10-13",
+      "subject": "feat(push-gate probes): verdicts without the network -- and a refusal by a DIFFERENT check is a fourth state",
+      "files": [
+        "tests/push_gate/_local_remote.py",
+        "tests/push_gate/check4_probe.py",
+        "tests/push_gate/check7_probe.py"
+      ],
+      "lines_added": 345,
+      "lines_removed": 41,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tests/push_gate/check4_probe.py and check7_probe.py could produce NO VERDICT, twice -- 2026-10-12 and 2026-10-13 -- because they read a refusal by a DIFFERENT check in the same hook as evidence about their own. The external-file-index check refused a CLEAN push over another session's handoff on a shared Google Drive, and both probes exited 3 COULD NOT RUN for a reason entirely outside the repository. Fixed by CLASSIFYING the clean-push refusal rather than counting it: carries the check's own marker means a real check failure and still exits 3; carries none means another check voted no, the affected ARM is UNPROVEN and the run continues, because a planted violation refused WITH the check's own marker is evidence no matter what else also refused. The hook is not stubbed and no override is set. Also adds an opt-in throwaway BARE REMOTE so a verdict stops depending on the network and on origin/main moving mid-run, seeded by a FETCH INTO the bare repo rather than a push out of the clone -- a push ran the clone's own pre-push hook against fixture setup, and the alternative was --no-verify, which would mean a probe for a push gate bypassing a push gate to start up. VERDICTS NOW: check4 exit 0 CHECK 4 VERIFIED True (arm 1 UNPROVEN), check7 exit 0 11 checks 0 failed (2 arms UNPROVEN), default mode re-run also 0 and 0. AND ONE LEAK OF MY OWN in the new helper, found by ls rather than review: when seeding failed, create() returned a reason and left the half-built bare repo in TEMP, and because it returned None the caller's handle stayed None so atexit had nothing to remove and never warned. Every failure path now cleans up, driven in both directions.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "both probes have read another check's refusal as their own since the clean-push precondition was added on 2026-09-16; the precondition was correct and incomplete from the start, so there is no commit that broke it"
+      },
+      "citation_note": "1.11 cited for the shape: could-not-run folded into a verdict about something else. The rule is about a check that depends on an absent tool reporting a pass it never performed; here a probe reported COULD NOT RUN about check 4 on evidence that said nothing about check 4, which is the same conflation in the other direction.",
+      "factors_unknown_reason": "one reasoning gap shared by two probes plus one cleanup leak in the new helper, recorded as one record naming all three"
     }
   ],
   "started": "2026-09-09",
