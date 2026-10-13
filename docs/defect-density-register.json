@@ -7302,7 +7302,7 @@
       "injection": {
         "commit": "286f945f661f",
         "date": "2026-07-23",
-        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) \u2014 tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
+        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) — tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
         "lag_days": 55
       },
       "citation_note": "The process rules are about checks, documents and coordination. None of them covers a cost control that was never wired, and inventing a citation to fill the field is the exact thing `not-citable` exists to prevent.",
@@ -13978,7 +13978,7 @@
       "injection": {
         "unknown_reason": "The tool was authored in a commit the rebase has since rewritten more than once; naming a sha that may not be reachable would be worse than saying so. It was injected when the tool was first written, 2026-09-24, in the same session."
       },
-      "citation_note": "PR \u00a71.11 is the closest standing rule and it is about a check that depends on an ABSENT TOOL, which is not this. This is a check whose subject is PRESENT and unmeasurable, reporting a pass. The family is the same -- \"could not run\" is a third state and is never folded into \"passed\" -- so it is cited rather than recorded as uncitable.",
+      "citation_note": "PR §1.11 is the closest standing rule and it is about a check that depends on an ABSENT TOOL, which is not this. This is a check whose subject is PRESENT and unmeasurable, reporting a pass. The family is the same -- \"could not run\" is a third state and is never folded into \"passed\" -- so it is cited rather than recorded as uncitable.",
       "phase_note": "The third state was implemented for the absent-plan shape and for a zero-item plan, and the items-present-none-checkable shape was simply not considered. The probe's arm for the neighbouring case shows the author was thinking about it and stopped one shape short.",
       "contributing_factors": [
         {
@@ -15195,7 +15195,7 @@
       "layer": "product",
       "severity": "critical",
       "detection_method": "code-review",
-      "summary": "sairnvet.html searchDrugs() rendered a green \"Verified\" badge from `d.needsReview ? 'Needs Review' : '\u2713 Verified'` -- the ABSENCE of a review flag read as the PRESENCE of a verification, on 284 of 485 VET_DRUGS rows, with no `reference` field on any row and no source recorded anywhere in the file for the badge to have checked. The same claim reached the clinician through nine further sites including the AI dosing system prompt (\"you may ONLY use the verified database record\") and the grounding context (\"Verified database record:\"). And one of the doses so badged was wrong: the Butorphanol HORSE row carried 0.2-0.4 mg/kg, the dog/cat figure propagated across all five species rows, against the FDA-approved equine 0.1 mg/kg IV (Torbugesic, NADA 135-780) -- 2-4x the label dose, shown to a vet under a tick.",
+      "summary": "sairnvet.html searchDrugs() rendered a green \"Verified\" badge from `d.needsReview ? 'Needs Review' : '✓ Verified'` -- the ABSENCE of a review flag read as the PRESENCE of a verification, on 284 of 485 VET_DRUGS rows, with no `reference` field on any row and no source recorded anywhere in the file for the badge to have checked. The same claim reached the clinician through nine further sites including the AI dosing system prompt (\"you may ONLY use the verified database record\") and the grounding context (\"Verified database record:\"). And one of the doses so badged was wrong: the Butorphanol HORSE row carried 0.2-0.4 mg/kg, the dog/cat figure propagated across all five species rows, against the FDA-approved equine 0.1 mg/kg IV (Torbugesic, NADA 135-780) -- 2-4x the label dose, shown to a vet under a tick.",
       "rules": [],
       "citation_confidence": "not-citable",
       "injection_phase": "design",
@@ -15211,7 +15211,7 @@
           "factor": "searchDrugs() chose the badge from needsReview alone, a two-state model over a three-state fact: flagged-for-review, cites-a-source, and neither. `needsReview:false` is the default for a row nobody has touched, so the green state was the state of NOT HAVING BEEN LOOKED AT.",
           "kind": "technical",
           "action_status": "done",
-          "action": "Badge now branches on d.reference and renders three states -- Needs Review / '\u2713 Referenced' / 'No source recorded' -- with the no-source chip deliberately not the green #D1FAE5."
+          "action": "Badge now branches on d.reference and renders three states -- Needs Review / '✓ Referenced' / 'No source recorded' -- with the no-source chip deliberately not the green #D1FAE5."
         },
         {
           "factor": "The formulary was largely built by propagating ONE numeric dose across a drug's species rows. The copy is faithful and the species is not; butorphanol/horse is the instance that was measured wrong at 2-4x the FDA-approved equine dose.",
@@ -28237,6 +28237,77 @@
         }
       ],
       "recurrence_open": "The live-tree SCREEN still cannot see a document that the COMMITS break while an uncommitted edit compensates -- that direction is unchanged by this fix and is stated in the code rather than left to be discovered. docs/TOOLING-INVENTORY.md also lists commit_tool_entry_check.py as UNWIRED while it is wired into .githooks/pre-commit: the generator derives wiring from .claude/settings.json hook entries and from the push gate and reads .githooks/ for neither, so every pre-commit-wired tool is under-reported the same way. Not fixed here -- it is a change to the inventory's source list in a file two sessions contest."
+    },
+    {
+      "commit": "f9a4e5a0032b",
+      "date": "2026-10-13",
+      "subject": "fix(audit-checkpoint,sql): sixteen-log coverage in one idempotent block, and three sql files that no longer described the database",
+      "files": [
+        "api/audit-checkpoint.js",
+        "api/audit-checkpoint.test.js",
+        "api/sf-auth.test.js",
+        "docs/known-red-suites.json",
+        "sql/audit_checkpoint_schema.sql",
+        "sql/sairncode_audit_log_schema.sql",
+        "sql/sairnlaw_audit_log_schema.sql",
+        "sql/stonedesk_audit_log_schema.sql"
+      ],
+      "lines_added": 453,
+      "lines_removed": 55,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "sql/audit_checkpoint_schema.sql CHECK-constrained audit_table to three names while api/_lib/audit.js carried sixteen audit logs, so 13 of 16 logs could never be checkpointed and the daily job reported ok over 19% of the population -- a pass it never performed on the other thirteen. And the file could not fix itself: `create table if not exists` skips an existing table constraint and all, so re-running it to widen coverage would have reported success and changed nothing. Fixed by making the file one idempotent block (create-with-sixteen PLUS a drop-constraint-if-exists/add-constraint pair that acts on an already-created table), deriving SCHEMA_PERMITTED from AUDIT_TABLE_BY_APP instead of a second hand-kept list, and adding a 503 CHECK_NOT_WIDENED refusal so an unrun migration is named rather than falling through to a generic 502 advising a retry that can never work.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "106d403717a4",
+        "date": "2026-09-14",
+        "subject": "feat(audit): item 35 -- daily checkpoints over closed windows, and the verifier that makes them mean something",
+        "lag_days": 29
+      },
+      "citation_note": "The PARTIAL-COVERAGE variant of 1.11 rather than the absent-tool variant it is written about. The rule's subject is a check that reports a pass it never performed when a dependency is missing; here the dependency present was the database CHECK, and the job filtered the thirteen tables that constraint would reject and then answered ok. Same shape, different missing thing: could-not-checkpoint-this-log was folded into a clean run, and a checkpoint is what makes an audit log tamper-evident, so thirteen logs -- including credential grants for a dental practice, an assisted-living facility and an ORC 2915 gaming post -- had no tamper-evidence at all.",
+      "phase_note": "Design. The defect is not a mistyped list; it is two lists that must agree with nothing comparing them, plus a schema file whose create-if-not-exists shape cannot amend the constraint it declares. Both are decisions about structure made before any of this code was written.",
+      "contributing_factors": [
+        {
+          "factor": "Two lists that must agree -- the audit_table CHECK in sql/audit_checkpoint_schema.sql and AUDIT_TABLE_BY_APP in api/_lib/audit.js -- with nothing comparing them. One is SQL and one is a JavaScript constant, so no single tool read both.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "SCHEMA_PERMITTED is now DERIVED from AUDIT_TABLE_BY_APP rather than hand-kept, and api/audit-checkpoint.test.js reads the SQL FILE and compares it to the derived list in both directions, so a drift fails a test rather than failing at 03:30 in production."
+        },
+        {
+          "factor": "The schema file could not widen an existing table. `create table if not exists` skips it, constraint and all, so re-running the file to fix the coverage would have reported success and changed nothing -- a silent no-op that reads exactly like a successful migration.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The file now carries a drop-constraint-if-exists / add-constraint pair after the create, and a test arm asserts that half is present AND that every table in the create-table CHECK is also in the ALTER. Ablated: removing the ALTER half fails that arm."
+        },
+        {
+          "factor": "The daily job answered ok while covering 3 of 16 logs. A coverage figure that exists only in a code comment is the same silence in a different place, and the one reader of this job -- the cron watchdog -- saw only an outcome.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tables_covered, tables_total and uncovered are reported in every response AND in every heartbeat detail; an unwidened database now answers 503 CHECK_NOT_WIDENED by name with retry_helps false, instead of a generic 502 advising a retry that cannot work."
+        },
+        {
+          "factor": "The migration that created thirteen of the sixteen audit logs ran without anything re-asking what else named a list of audit tables. The checkpoint table's constraint predated twelve of the tables it was supposed to cover.",
+          "kind": "process",
+          "action_status": "not-actionable",
+          "note": "No action is claimed here. A rule saying 'when you add a table, grep for every list that names tables' is the kind of standing instruction this platform has repeatedly found does not survive contact with a hurried migration. The derivation in factor 1 is the mechanical substitute, and it is what makes the process step unnecessary rather than merely advised."
+        },
+        {
+          "factor": "Whether sql/audit_checkpoint_schema.sql had EVER been run could not be told from any clone, and docs/AUDIT-CHECKPOINT-STATUS.md has read COULD NOT TELL since 2026-09-14. So the coverage gap sat underneath a bigger unknown that made it easy to defer.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Open item 1c of docs/SAIRN-handoff-hank-b7.md: Michael confirms the table's existence by running the file (it is idempotent) and reading verify queries 1b and 1c, which answer 16 and name the sixteen. CRON_SECRET is not set in any clone, so the status generator cannot ask."
+        }
+      ],
+      "recurrence_open": "The actions close the SPECIFIC pair and the specific file. They do NOT close the shape: this is at least the third two-lists-that-must-agree defect in this family, and the platform carries other pairs whose halves live in different languages -- SD_SESSION_GATED and SD_GATE_APP are one, and they are kept in agreement only by a test somebody remembered to write. Nothing systematically enumerates such pairs. They also do not prove the database was migrated: every action here is in the repo, and until the SQL is run the only thing that improved is that the failure is now named 503 CHECK_NOT_WIDENED instead of silently covering 19% of the population."
     }
   ],
   "started": "2026-09-09",

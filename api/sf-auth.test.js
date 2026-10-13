@@ -156,7 +156,23 @@ async function call(h, body, token) {
   // ════════════════════════════════════════════════════════════════════════
   section('THE ROLE VOCABULARY IS THE APP\'S OWN, NOT INVENTED HERE');
 
-  await test('ROLES_BY_APP, the schema check constraint and CAPABILITIES agree', async () => {
+  // ── THE LIST LIVES IN THREE PLACES, AND THIS WAS ONE ARM UNTIL 2026-10-13 ─
+  // A drift between them means either a capability the UI offers that the
+  // server refuses, or a role the server accepts that the database rejects with
+  // a check violation -- the second is a 400 nobody can read.
+  //
+  // SPLIT INTO FOUR ARMS, and the split is the finding rather than tidying.
+  // All three comparisons lived in one arm behind sequential asserts, so the
+  // FIRST failure masked the other two: with `trustee.audit` outstanding the
+  // arm reported "ROLES_BY_APP and CAPABILITIES disagree" and the schema-CHECK
+  // comparison NEVER RAN. A check that does not run is not a check that passed,
+  // and a single red arm hid both the state of the second comparison and a
+  // third, unrelated defect of its own -- see the non-vacuity arm.
+  //
+  // The arms are deliberately ordered extraction -> server-pair -> UI-pair so
+  // the suite's output distinguishes "the regexes stopped matching" from "two
+  // real lists differ", which the combined arm could not.
+  const threeLists = function () {
     const fs = require('fs');
     const root = path.join(__dirname, '..');
     const auth = fs.readFileSync(path.join(__dirname, '_lib', 'auth.js'), 'utf8');
@@ -170,15 +186,80 @@ async function call(h, body, token) {
     const cap = html.slice(html.indexOf('var CAPABILITIES = ['));
     const caps = new Set((cap.slice(0, cap.indexOf('];')).match(/id:'[a-z.]+'/g) || [])
       .map(function (s) { return s.replace(/id:'|'/g, ''); }));
-    // THE LIST LIVES IN THREE PLACES and nothing else checks that. A drift
-    // here means a capability the UI offers that the server refuses, or a
-    // role the server accepts that the database rejects with a check
-    // violation -- the second is a 400 nobody can read.
-    assert.deepStrictEqual(Array.from(roles).sort(), Array.from(caps).sort(),
+    return { roles: roles, cons: cons, caps: caps };
+  };
+
+  await test('ALL THREE ROLE LISTS WERE ACTUALLY FOUND -- no vacuous agreement', async () => {
+    // ── THE DEFECT THIS ARM REPLACES ────────────────────────────────────────
+    // The combined arm ended `assert.strictEqual(caps.size, 10)`. That literal
+    // 10 went stale on 2026-09-27, the day `trustee.audit` was added to
+    // sairnfreedom.html, and it has been a SECOND red cause inside the same arm
+    // ever since -- invisible, because the first assert failed before it ran.
+    //
+    // A transcribed count is the wrong instrument here anyway: whichever way
+    // the trustee question is decided the number moves (10 if the capability
+    // becomes display-only, 11 if it becomes assignable), so the next correct
+    // value would go stale on the same day the decision lands.
+    //
+    // WHAT THE COUNT WAS ACTUALLY FOR is non-vacuity: if all three extractions
+    // returned an empty set, every deepStrictEqual below passes and the suite
+    // reports three green arms over nothing. That is what is asserted instead,
+    // against a FLOOR and a named anchor rather than an exact figure.
+    const L = threeLists();
+    for (const [name, set] of [['ROLES_BY_APP.sairnfreedom', L.roles],
+                               ['the employee_auth role CHECK', L.cons],
+                               ['sairnfreedom.html CAPABILITIES', L.caps]]) {
+      assert.ok(set.size >= 10, name + ' yielded ' + set.size + ' roles, so the '
+        + 'comparisons below compared almost nothing -- the extraction broke, '
+        + 'the file moved, or a literal was reformatted past the regex');
+      assert.ok(set.has('post.govern'), name + ' does not contain post.govern, '
+        + 'which every one of the three must carry: it is the role bootstrap '
+        + 'mints and the only one that can provision');
+    }
+  });
+
+  await test('THE SERVER PAIR AGREES: ROLES_BY_APP and the employee_auth CHECK', async () => {
+    // THE PAIR THAT BREAKS AT RUNTIME, and the reason this is its own arm. If
+    // ROLES_BY_APP accepts a role the database CHECK rejects, api/sf-auth.js
+    // provisions happily and the INSERT fails -- a 400 with a Postgres check
+    // violation in it, raised at the one moment a post is trying to give
+    // somebody a sign-in. The UI pair below cannot cause that.
+    //
+    // This comparison was MASKED by the trustee failure and had not run since
+    // 2026-09-27. It passes: both lists carry the same ten, because
+    // `trustee.audit` is absent from BOTH -- one pending decision, not two.
+    const L = threeLists();
+    assert.deepStrictEqual(Array.from(L.roles).sort(), Array.from(L.cons).sort(),
+      'ROLES_BY_APP.sairnfreedom and the sairnfreedom_employee_auth role CHECK '
+      + 'disagree, so at least one role the server accepts cannot be stored');
+  });
+
+  await test('ROLES_BY_APP and sairnfreedom.html CAPABILITIES agree', async () => {
+    // ── LEFT RED ON PURPOSE. THIS IS THE ONE OPEN PRODUCT QUESTION. ─────────
+    // sairnfreedom.html declares `trustee.audit` in CAPABILITIES -- added
+    // 2026-09-27 for the VFW quarterly trustee audit, with a written
+    // justification citing the Manual of Procedure: trustees audit quarterly,
+    // are individually liable, the Quartermaster must not prepare the audit,
+    // and a missed audit can void the bond.
+    //
+    // It is NOT in ROLES_BY_APP.sairnfreedom, so api/sf-auth.js refuses to
+    // provision a credential with that role. A post can assign the Trustee
+    // office in the Access panel and then cannot give that trustee a sign-in.
+    //
+    // THE QUESTION IS MICHAEL'S AND IS OPEN: should a trustee be able to sign
+    // in? If yes, three places change together -- ROLES_BY_APP, the
+    // `sf_trustee_audits` row in api/_lib/sf-roles.js, and the employee_auth
+    // CHECK. If no, the capability is display-only and sairnfreedom.html should
+    // say so, because today it looks like an assignable office.
+    //
+    // THIS ARM IS NOT SILENCED AND NOT SKIPPED. A per-app role vocabulary is
+    // what CLAUDE.md names as needing an explicit judgment call, and the arm
+    // exists to force it; `assert.ok(true)` with a TODO would retire the only
+    // thing keeping the question visible. It is the SINGLE remaining red in
+    // this suite, by design, and the decision clears it in one line either way.
+    const L = threeLists();
+    assert.deepStrictEqual(Array.from(L.roles).sort(), Array.from(L.caps).sort(),
       'ROLES_BY_APP.sairnfreedom and sairnfreedom.html CAPABILITIES disagree');
-    assert.deepStrictEqual(Array.from(cons).sort(), Array.from(caps).sort(),
-      'the schema check constraint and CAPABILITIES disagree');
-    assert.strictEqual(caps.size, 10, 'expected ten capabilities, got ' + caps.size);
   });
 
   // ════════════════════════════════════════════════════════════════════════

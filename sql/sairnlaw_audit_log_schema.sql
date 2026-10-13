@@ -62,12 +62,29 @@ create table if not exists sairnlaw_audit_log (
   license_hash text not null,
   employee_id text,
   role text,
+  -- ── AMENDED 2026-10-13 TO MATCH THE DATABASE, not to change it ───────────
+  -- THE SOURCE IS STEP 0c of docs/2026-10-07-hank-migration-sql-for-michael.md,
+  -- copied value-for-value, which Michael ran live on 2026-10-13. This was the
+  -- biggest of the three stale files -- six values the code emits and this list
+  -- rejected -- and it was the one the first printing of that migration MISSED
+  -- entirely; it was found only when the sweep was run over the whole
+  -- population instead of by hand on two tables.
+  --
+  -- RE-RUNNING THIS FILE DOES NOT WIDEN AN EXISTING TABLE -- `create table if
+  -- not exists` skips it, constraint and all. The ALTER that acts on a live
+  -- table is STEP 0c in that document, and it is already applied.
   event_type text not null check (event_type in (
     'login_success', 'login_failed', 'lockout',
     'pin_bootstrap', 'pin_setup',
     'mfa_enrolled', 'mfa_verified', 'mfa_failed',
     'sso_login', 'sso_link',
-    'citator_lookup'
+    'citator_lookup',
+    'ai_interaction',
+    'ai_rejected',
+    'ai_reviewed',
+    'ai_used_in_filing',
+    'deadline_engine',
+    'legal_reference_lookup'
   )),
   detail jsonb,
   created_at timestamptz not null default now()

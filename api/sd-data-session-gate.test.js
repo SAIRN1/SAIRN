@@ -501,7 +501,50 @@ function mapNames(blob) {
     // docs/hank-evidence/b6_live_session_control_probe.py -- but that probe ran
     // against SAIRNscape and SF-PINNACLE-2026 has no employee PIN in this repo,
     // so the SAIRNfreedom half of that control could not be driven at all.
-    assert.strictEqual(pairs, 104,
+    // 104 -> 122 on 2026-10-13 (b7): THE LAST NINE SAIRNfreedom RESOURCES,
+    // eighteen pairs. SAIRNfreedom is now gated wholesale, 36 of 36.
+    //
+    // WHY THEY ARE GATED, which is what this tripwire exists to make somebody
+    // justify, AND IT IS NOT THE REASON ANY PREVIOUS WAVE GAVE. Every earlier
+    // wave gated on the SENSITIVITY of the row and stopped when Tier A ran out
+    // -- the paragraph directly above says so in its own words, that the next
+    // widening is "a different question (nine B/B resources) and needs its own
+    // decision". These nine are those nine, and they are the only sf_
+    // resources that are B on integrity AND B on confidentiality.
+    //
+    // THE DIFFERENT QUESTION WAS ANSWERED BY A DIFFERENT ARGUMENT: the role
+    // matrix in api/_lib/sf-roles.js already held a REVIEWED policy for all
+    // nine, written in b6 to cover all 36 deliberately, and a role policy
+    // cannot run on a licence-key-only resource because no session means no
+    // role. So the policy existed and could not fire. Gating them is what
+    // makes it fire. No matrix cell was authored to justify the gate -- the
+    // cells predate it, which is the only reason this is not a product
+    // decision being made by the session that benefits from it.
+    //
+    //   sf_bottle_fills  sf_ceremonial_items  sf_documents  sf_honor_details
+    //   sf_inventory_counts  sf_national_categories  sf_service_hours
+    //   sf_service_referrals  sf_vendors
+    //
+    // THREE OF THEM CLOSE A SPLIT PAIR, which is the sharpest part: documents
+    // were open while the SIGNATURES THAT BIND PEOPLE TO THEM were gated
+    // 2026-09-24; referrals were open while the service APPOINTMENTS were gated
+    // 2026-09-22 for a VA-adjacent outcome; vendors were open while
+    // sf_vendor_prices was gated 2026-09-21. Same shape as sf_vehicles and
+    // sf_vehicle_service, which sat split for two weeks.
+    //
+    // sf_national_categories IS THE WEAKEST AND IS LABELLED SO IT CAN BE
+    // REVERSED ALONE: it stores bare strings with no id, and both
+    // sfSyncCollection and sfServerWinsMerge skip id-less records, so
+    // client-side the gate is a no-op today. It is in for set completeness.
+    //
+    // NOT PROVEN LIVE, and the reason is now one SQL run away rather than
+    // structural: SF-PINNACLE-2026 had no employee PIN anywhere in the repo,
+    // which is why the b6 live control could only be driven against
+    // SAIRNscape. b7 wrote sql/sairnfreedom_demo_owner_credential_2026-10-13.sql
+    // (round-tripped through hashPin/verifyPin, then re-verified against the
+    // literals in the committed file) so that this half becomes drivable the
+    // moment Michael runs it. Source-level only until then.
+    assert.strictEqual(pairs, 122,
       'the gate table changed size to ' + pairs + ' pairs -- add the new resource to this test and say why it is gated');
   });
 

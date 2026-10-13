@@ -53,11 +53,33 @@ create table if not exists sairncode_audit_log (
   license_hash text not null,
   employee_id text,
   role text,
+  -- ── AMENDED 2026-10-13 TO MATCH THE DATABASE, not to change it ───────────
+  -- This list carried only the four `ai_*` values for weeks after the live
+  -- constraint had been widened. The file is the thing checkers read, so a
+  -- stale list here does not make a write fail -- it makes
+  -- `tools/audit_event_type_check.py` report a gap that NO LONGER EXISTS, and
+  -- the next reader chases a closed finding. It exited 1 on this table for
+  -- exactly that reason.
+  --
+  -- THE SOURCE IS STEP 0a of docs/2026-10-07-hank-migration-sql-for-michael.md,
+  -- copied value-for-value, which Michael ran live on 2026-10-13. It is NOT
+  -- what `sql/sairncode_audit_log_credential_events.sql` declares -- that was
+  -- the earlier printing and is SUPERSEDED: it has neither `pin_bootstrap` nor
+  -- `pin_setup`, both of which api/sc-auth.js emits.
+  --
+  -- RE-RUNNING THIS FILE DOES NOT WIDEN AN EXISTING TABLE. `create table if not
+  -- exists` skips it, constraint and all. The ALTER that acts on a live table
+  -- is STEP 0a in that document, and it is already applied.
   event_type text not null check (event_type in (
     'ai_call',
     'ai_call_blocked',
     'ai_injection_flagged',
-    'ai_call_failed'
+    'ai_call_failed',
+    'pin_bootstrap',
+    'pin_setup',
+    'credential_deactivated',
+    'credential_reactivated',
+    'credential_change_refused'
   )),
   detail jsonb,
   created_at timestamptz not null default now()

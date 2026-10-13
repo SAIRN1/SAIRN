@@ -1,0 +1,481 @@
+REPORT fourth b10
+
+BATCH b10 -- 2026-10-13
+Every figure below was RE-DERIVED at finalisation rather than carried from the
+draft (RULE E), and one figure this batch inherited turned out to be wrong when
+re-derived. That correction is item 3.
+
+
+0. STATE
+
+    HEAD                      c2735d3c
+    origin/main               c2735d3c
+    ahead / behind            0  /  0
+    working tree              clean (tracked), no untracked files
+    b10 pushes                a756ee4e..a149769d   1 commit   the work
+                              a149769d..c2735d3c   1 commit   the handoff
+    push forced?              NO. One attempt lost a race to another clone
+                              (non-fast-forward), was rebased, and landed on
+                              the next attempt. No --force, no
+                              --force-with-lease.
+    SAIRN_SEED_GATE=off       NOT USED, in any form
+    .claude/settings.json     NOT COMMITTED; hooks still 0 groups, 0 entries
+    files edited under tools/ 0 -- item 1 was route-only, by instruction
+
+The push carrying this report is a third range and is not predicted here.
+
+
+1. ITEM 2 -- THE b9 PUSH EVIDENCE, RECORDED PROPERLY
+
+THE DEFECT BEING CORRECTED IS MINE AND IT IS A REPORTING DEFECT, NOT A WORK
+ONE. The b9 digest's CHANGED field listed item 6 as the bare token "6 D." -- a
+done-marker with no text at all. Items 1 through 5 each carried a clause; item
+6, the push itself, carried nothing. So the one fact the whole batch existed to
+produce -- that five batches of work had landed, and where -- was the only item
+in the digest a reader could not check. A marker is not evidence.
+
+THE RANGES, WITH COUNTS, RE-DERIVED AT THIS HEAD:
+
+    push 1   c5af98dc..d30e9e42    48 commits
+             the whole b5-b9 backlog. Five batches of finished work that had
+             never reached origin/main.
+    push 2   ae3a5cfb..79a0b04f     3 commits
+             the methodology note and the b9 handoff, which could not exist
+             before the body of the work they describe.
+
+    c5af98dc..79a0b04f             54 commits total across the two ranges,
+                                   which is 48 + 3 + the 3 commits other clones
+                                   landed between them. The two ranges are NOT
+                                   contiguous and the difference is not mine.
+
+    two further single-commit pushes closed b9 after push 2:
+             5758e82f..e8c2c65a     1   the b9 report and digest
+             e8c2c65a..8e3f691b     1   the Drive delivery copy declared in
+                                        docs/external-files-index.json
+
+    FOUR PUSHES, NOT TWO, and the b9 digest named two. Stated here because a
+    report that quotes the two it remembers is the same defect as a bare D one
+    field along.
+
+WHAT EACH OF THE SIX b9 ITEMS CHANGED:
+
+  ITEM 1  THE PUSH. One refusal on screen was FOUR independent defects, each
+          measured before it was fixed and each carrying its own defect record:
+            f2f9953b  push-gate check 12 measured the TIP in the live working
+                      tree and the BASE in a clean worktree, so it compared the
+                      base commit against the base commit PLUS this clone's
+                      uncommitted files. It fired on .claude/settings.json,
+                      whose hooks are cleared on purpose. Its worse half: the
+                      refusal REPLACED the true finding rather than preceding
+                      it, because the inventory generator refuses on its FIRST
+                      empty derivation source and never reached the
+                      undescribed-tool list. The same commit carries the two
+                      PURPOSES entries that were that true finding --
+                      report_sha_check.py (b5) and temp_state_leak_check.py
+                      (b7), undescribed for five batches.
+            ac9d47d8  tools/register_feed_gate.py used the REMOTE's sha, read
+                      off pre-push stdin, as a local object. Refused this clone
+                      TWICE, EIGHT DAYS APART.
+            55777a74  tools/copy_exactly_gate.py, the same defect, found by it
+                      refusing the very next push attempt.
+            9c36aa7c  tools/sairn_push_gate_hook.py, the same value resolved
+                      ONCE where it enters, because the two per-gate fixes had
+                      only moved the refusal along. This one produced a FALSE
+                      FINDING rather than a refusal: NO OWNER over four
+                      pre-existing shared tools, with "add an # OWNER: line" as
+                      the printed remedy.
+          CHANGED, concretely: 4 source files, 2 PURPOSES entries,
+          docs/TOOLING-INVENTORY.md regenerated 335 -> 340 tools, and 4 defect
+          records.
+
+  ITEM 2  THE AUDIT-EVENT CHECK. tools/audit_event_type_check.py, EXIT 1,
+          unchanged after rebasing onto 27 upstream commits -- which was the
+          thing to check rather than assume. 16 tables carry an event_type
+          CHECK and 3 of them reject a value the code emits (11 distinct
+          values: sairncode 2, sairnlaw 6, stonedesk 4); sv_audit_log carries
+          no CHECK at all. CHANGED: nothing in code -- the result was recorded
+          and routed to hank, because the tool reads sql/*.sql and not
+          Supabase, so a failed migration and stale repo DDL are
+          indistinguishable from this clone.
+
+  ITEM 3  THE SALVAGE REFS. git bundle of refs/salvage/b6-defreg-probe and
+          b6-gate12, verified ("is okay", "records a complete history", both
+          refs listed), 55,143,234 bytes, then both refs deleted. CHECKED
+          BEFORE DELETING: neither sha is an ancestor of origin/main, and both
+          are PROBE FIXTURES rather than work -- "PROBE ambiguous-subject
+          fixture -- not a real commit" and "drop a generator". CHANGED:
+          refs/salvage/ went from 2 refs to 0.
+
+  ITEM 4  BACKUPS AND THROWAWAY. 3 .claude/settings.json.*.bak files moved out
+          of the repo; 2 untracked SQL files moved out (the demo-pins restore
+          script and a two-line probe fixture); 1,566 of 1,873 candidate
+          scratch files deleted, 307 locked by live processes, 288MB -> 75MB.
+          NOT A SWEEP: three keep rules ran first, and the load-bearing one is
+          that 2,582 distinct filenames are cited across docs/ and
+          SAIRN-ACTIVE-WORK-fourth.md, so a citation pointing at a deleted file
+          was never created. CHANGED: .claude/ holds no *.bak; sql/ holds
+          neither untracked file.
+
+  ITEM 5  THE METHODOLOGY ITEM. tools/commit_tool_entry_check.py BUILT and
+          WIRED into .githooks/pre-commit, scoped to --diff-filter=A over
+          tools/*.py. It reads the STAGED blobs rather than the working tree,
+          accepts PURPOSES or report_only_checks.REGISTRY, and judges a
+          historical range against the inventory AS IT WAS. 10/10 fixture arms
+          and validated against the real defect in both directions. CHANGED:
+          one new tool, one hook block, one PURPOSES entry, and the input-
+          validity rule written out in docs/METHODOLOGY.md and NOT numbered.
+
+  ITEM 6  PUSH AND CONFIRM. The four pushes above. CHANGED: origin/main
+          advanced from c5af98dc to 8e3f691b over the batch; 0 ahead 0 behind
+          at close; no force, no override.
+
+
+2. ITEM 1 -- THE 4th UNFETCHED-BASE INSTANCE, ROUTED AND NOT EDITED
+
+tools/ is cc's directory and NOTHING UNDER IT WAS TOUCHED BY THIS BATCH. The
+whole output is docs/2026-10-13-fourth-b10-routed-to-cc.md, which carries two
+things.
+
+THE FIX, at file:line, written out so it does not need re-deriving.
+tools/hover_auditor_scope_gate.py, inside changed_outgoing() declared at :351:
+
+    :402    rng = lsha if rsha == ZERO else '%s..%s' % (rsha, lsha)
+    :407    code, out, err = git('diff', '--name-only', rng)
+    :409    return None, 'could not read the outgoing range %s: %s' % (rng, ...)
+
+:402 builds the range from rsha -- the REMOTE's sha, off git's own stdin line --
+with no existence test, and :409 reports the failure as a property of the RANGE.
+The routed document gives a _have_commit() helper to sit beside the existing
+git() at :241, the full :402-:409 replacement, and three arms to drive it with
+(known base, unfetched base, new branch) -- none of which needs a push, because
+the gate reads ref lines on stdin.
+
+WHY IT HAS NEVER BEEN SEEN TO FAIL, which is also why it will stay unfixed
+unless somebody picks it up: it runs FIRST in .githooks/pre-push and in a build
+clone it exits before the range matters.
+
+AND THE FALLBACK IS NOT A WEAKENING, stated in the document rather than
+assumed: with a merely-unfetched remote tip, merge-base(origin/main, lsha) sits
+further back than rsha, so the diff covers a SUPERSET of the paths git asked
+about. A scope gate examining more paths can only refuse more, never less.
+
+THE SPEC, for a checker so a FIFTH gate cannot be written with this shape:
+  TAINT SOURCE  a sha bound from a pre-push stdin ref line BY FIELD POSITION
+                (parts[1], parts[3], parts[:4]). Name-based anchoring is
+                explicitly rejected as insufficient -- the three real instances
+                used rsha, base and base.
+  SINKS         git log/diff/rev-list over A..B; rev-parse whose result is used
+                rather than tested; git worktree add; and cat-file -e <sha>:<path>
+  GUARD         cat-file -e / cat-file -t / rev-parse --verify --quiet whose
+                result is BRANCHED ON, or an all-zero comparison with a
+                different code path
+  OUT OF SCOPE  the LOCAL sha (a hard refusal is correct there), a sha from
+                argv, a sha from a repo-maintained ledger -- each printed on
+                every run rather than silently skipped
+  EXITS         0 clean, 1 finding with source/sink/guard/fix per site, 2 COULD
+                NOT CHECK -- and a site whose flow cannot be followed is a 2,
+                never a pass
+  WIRING        REPORT-ONLY first, pre-commit scoped to a staged tools/*.py or
+                .githooks/* that actually contains pre-push. Its subject changes
+                a handful of times a month, so a push-time run would be the
+                always-passing checker NOT_PROMOTED has a name for.
+  LOCK          6 fixture arms, and ARM 3 IS THE LOAD-BEARING ONE:
+                cat-file -e <sha>:<path> LOOKS like an existence test and is a
+                question about a PATH. A checker that treats it as a guard
+                would pass the worst of the three real instances -- the one that
+                printed NO OWNER: 4.
+
+BUILT BY NOBODY. Recorded as a planned action on defect record 55777a74.
+
+
+3. ITEM 3 -- THE RED SUITES, AND MY OWN NUMBER WAS WRONG
+
+THE BRIEF SAID 65 AND SO DID MY b9 DIGEST AND HANDOFF. THE MEASURED FIGURE IS
+36. Re-derived rather than quoted, which is the only reason it surfaced:
+
+    docs/known-red-suites.json entries        84
+    files with a record in drive_red86.jsonl  50   43 RED, 5 COULD NOT RUN,
+                                                   2 GREEN
+      of those, still in the register         48   the 2 GREEN were moved out
+                                                   in b9
+    UNDRIVEN = 84 - 48                        36   ALL of them under tests/
+
+WHERE 65 CAME FROM, because the mechanism matters more than the digit. The
+register's own _b9_census_2026_10_13 marker says "20 of the 86 entries ... were
+driven ALONE", and 86 - 20 = 66; the digest carried 65. ITS OWN AUTHORITY LOG
+HAS 50 RECORDS, and the same marker says "THE SWEEP LOG IS THE AUTHORITY, not
+this sentence." It was right about where to look and wrong about the number:
+the sentence was drafted while the sweep was still running and nothing
+re-derived it. RULE E failing inside the paragraph that states RULE E's own
+principle.
+
+CORRECTED IN THE REGISTER with the old text LEFT VISIBLE rather than
+overwritten -- a published figure needs a correction, not a silent edit.
+
+THE ASSIGNMENT, by the directory rule applied to each suite's own path:
+
+    owner    directory   entries   undriven
+    hank     api/              5          0
+    cody     tests/           79         36
+    cc       tools/            0          0
+    fourth   docs/             0          0
+
+cc AND I GET NOTHING, and that is a measurement rather than an empty section --
+an assignment table with two owners silently absent reads as an oversight. It is
+also NOT a statement that tools/ or docs/ is healthy: it is a statement about
+what this register COVERS, and a suite nobody has ever driven cannot be red in
+it.
+
+WHAT WAS WRITTEN:
+  docs/2026-10-13-fourth-b10-red-suite-owners.tsv
+      84 rows, 11 columns, GENERATED by scratchpad/owner_map.py -- file, dir,
+      owner, b9_driven, b9_state, b9_exit, kind, since, diagnosed, cause_tag,
+      why. Every column is derived; none is typed.
+  docs/2026-10-13-fourth-b10-routed-red-suites.md
+      the correction above, the assignment, and each owner's list with the
+      exact next step -- including which exit codes may move an entry out of
+      `entries` (0 only) and which must not (2, 3, timeout), because b9 found 5
+      in that third state and left all 5 in place.
+  docs/known-red-suites.json
+      the `owner` field was "unassigned" on ALL 84 rows and is now set from the
+      directory rule, with the basis recorded IN the file: it is a PATH, not a
+      judgement about the failure's subject, and a tests/ suite whose real
+      defect is in api/ is still cody's ROW and hank's FIX. Diff confined to 84
+      owner lines plus 2 new marker keys, checked.
+
+ALSO MEASURED AND NOT ACTED ON: 21 of the 84 entries carry no `why` at all, and
+5 of the 48 driven came back COULD NOT RUN. The second group is the sharp end:
+a suite that cannot run has no verdict and reads as "still red" for ever
+without anybody noticing it never executed.
+
+
+4. ITEM 4 -- THE HANDOFF NAMING, AND b9's OWN REASONING REVERSED
+
+    docs/handoff-fourth-2026-10-16.md   -> docs/SAIRN-handoff-fourth-b9.md
+    docs/handoff-fourth-2026-10-13b.md  -> docs/SAIRN-handoff-fourth-b9-2.md
+
+Both with `git mv`, so the rename is visible as a rename in the history rather
+than as a delete and an add. The target form matches SAIRN-handoff-cc-b6.md,
+which was already on disk, so this is adopting an existing convention and not
+inventing one. Convention: SAIRN-handoff-<session>-b<n>.md, with -2 appended
+when one batch writes a second handoff -- which is exactly what b9 did.
+
+THE DEFECT WAS REAL AND MEASURABLE. CLAUDE.md says to find the latest handoff
+BY THE DATE IN THE FILENAME. The b9 handoff was written on 2026-10-13 and named
+2026-10-16, so a session following that rule sorted the STALE document above
+the current one -- and the stale one records the push as BLOCKED, which is
+precisely the fact that had changed.
+
+b9's OWN BANNER SAID "NOT renamed, deliberately", on the grounds that a row in
+docs/external-files-index.json and the Drive delivery copy both carried the old
+name. THAT WAS THE WRONG TRADE AND IT IS SAID PLAINLY RATHER THAN QUIETLY
+REVERSED: both pointers were simply updated in the same change. The index rows
+now carry a `renamed_from` field recording the old path, and the two Drive
+copies were renamed to match, so nothing was broken. Keeping a known-wrong
+filename to protect two references you can edit is paying for ever to avoid
+paying once.
+
+NINE FILES STILL POINT AT THE OLD NAMES AND WERE DELIBERATELY NOT EDITED, each
+listed with its reason in the renamed file's own banner so a grep for the old
+string finds the note rather than nothing:
+
+    docs/handoff-cody-2026-10-13b.md    cody's committed handoff -- another
+    docs/handoff-cody-2026-10-13c.md    session's artefact; a build agent does
+    SAIRN-handoff-cc-b6.md              not rewrite one
+    SAIRN-report-cody-b6.txt            SEALED reports. Editing one breaks the
+    SAIRN-addendum-hank-b5.txt          SHA line it carries about itself.
+    SAIRN-report-fourth-b9.txt          THE THIRD IS MINE and is still not
+                                        edited: report_sha_check.py --check
+                                        passes on it today, and a correct
+                                        record of what was true when it was
+                                        written beats a silently amended one.
+    .claude/claims/fourth.json          the claim LEDGER -- append-only by
+    .claude/claims/cody.json            design; a claim string records what was
+    .claude/claims/hover2.json          declared at the time
+
+Every one is a reference in prose or in an append-only record. No tool resolves
+any of them as a path, which is why leaving them is a decision rather than a
+backlog.
+
+
+5. ITEM 5 -- THE PROCEDURE, AND THE NUMBERING DISCIPLINE
+
+Written into docs/METHODOLOGY.md, 146 lines, two sections.
+
+THE PROCEDURE, six steps, for a refusal that hides several defects:
+  1  read the message as a SYMPTOM and grep for the line that printed it. b9's
+     "the outgoing range A..B could not be read" came from
+     register_feed_gate.py:747, not from the push gate everyone assumed.
+  2  drive the gate DIRECTLY before changing anything -- every pre-push gate
+     here reads ref lines on stdin, so none needs a push. A dry run costs
+     minutes; a push costs a race.
+  3  ESTABLISH THE COUNT BEFORE FIXING ANYTHING. This is the step b9 was
+     missing. Run every gate in the hook and record each exit code rather than
+     stopping where the hook stops, then ask what the refusal does NOT prove.
+     b9's generator refuses on its FIRST empty derivation source, so the
+     refusal REPLACED the finding. A refusal can MASK a finding, not merely
+     precede it.
+  4  for each cause, ask where the SUBJECT came from. Three of b9's four were
+     one value read by three programs; fixing it per-gate moved the refusal
+     along twice before anybody fixed it where it entered.
+  5  record each cause SEPARATELY with its own injection commit. One record
+     saying "the push was blocked" would have lost the fact that one of the
+     four was a false finding whose remedy instructed a land grab.
+  6  re-derive every figure at finalisation. Three rebases ran during b9.
+
+  THE TRAP, NAMED: when fixing gate N reveals gate N+1 the symptom is a SECOND
+  refusal, and the honest reading is progress rather than failure. b9 hit it
+  three times. What makes it readable is that all three fixed gates now PRINT
+  their own name and what they substituted.
+
+  THE COROLLARY: not every refusal is a defect. One b9 attempt was refused for
+  being issued inside a shell wrapper, and the gate's own message said "ISSUE
+  THE PUSH DIRECTLY -- there is nothing wrong with the change." It was right.
+  Step 1 includes believing the message when it says the change is fine.
+
+  WHAT IT DOES NOT DO, said in the document: it does not find the defects. It
+  stops a session reporting one cause when there were four. Nothing in it is
+  mechanised, and step 3 is a habit rather than a tool -- the first time
+  somebody skips it, the procedure buys nothing.
+
+NEXT FREE NUMBERING, four rules, so two sessions cannot route the same number:
+  1  never quote the number -- COUNT THE HEADINGS at the HEAD you are on, with
+     a snippet that reports GAPS AND DUPLICATES as well as the maximum, because
+     those are the two ways a count can be confidently wrong.
+  2  a routed rule carries NO NUMBER. It carries its text, its evidence, and
+     "NEXT FREE is N as of <sha>". The number is assigned by the intake at the
+     moment the heading is written, which is the only moment the count is true.
+     That is what makes a collision structurally impossible rather than
+     unlikely.
+  3  do not number a rule in a file you hold under claim. A session holding the
+     conventions document can always find a free number, so "it was free" stops
+     being evidence of anything.
+  4  when the intake assigns a number, record the COUNT in the commit, not the
+     number alone. "Added convention 35" is unfalsifiable a week later; "34
+     headings, 1->34, no gap, no dup, so 35" can be re-derived by anybody.
+
+  THE COLLISION IS NOT HYPOTHETICAL: on 2026-09-25 two sessions each added an
+  eleventh convention within the hour.
+
+  RE-COUNTED AT THIS HEAD by that method, not quoted: 34 headings, 1 -> 34, no
+  gap, no duplicate, NEXT FREE 35. NO RULE IN THIS BATCH WAS GIVEN A NUMBER,
+  and rule 3 is why.
+
+  OPEN AND STATED: nothing mechanises rule 1. No check counts those headings or
+  refuses a duplicate or a gap, so it holds only while sessions run the snippet
+  by hand -- which is the exact shape of the eighth discipline, about checks
+  that stop testing anything. Nobody owns the conventions file, so it is a
+  routed observation and not a plan.
+
+
+6. ITEM 6 -- PUSH, NOT FORCED, CONFIRMED
+
+    a756ee4e..a149769d    1 commit    the b10 work
+    a149769d..c2735d3c    1 commit    the b10 handoff
+
+    git rev-parse HEAD        c2735d3c
+    git rev-parse origin/main c2735d3c
+    git rev-list --left-right --count origin/main...HEAD   ->  0   0
+
+ONE RACE LOST AND IT IS REPORTED RATHER THAN SMOOTHED: the first attempt was
+rejected non-fast-forward because another clone landed during the gate run. The
+response was fetch, rebase, push again -- not --force and not
+--force-with-lease, either of which would have discarded that clone's work.
+Every gate passed on both attempts.
+
+
+7. CLAIMS, LOCKS AND HOLDS
+
+    repo claims held       1   b10, 11 declared FILES, committed AND PUSHED, so
+                               every other clone sees it without a fetch. Taken
+                               as the FIRST action of the batch; the b9 claim
+                               was RELEASED first, because the tool reported it
+                               already covered this work and its own
+                               instruction for moved wording is release and
+                               re-claim.
+    session locks held     1   fourth.lock. The release has now been DENIED by
+                               the permission layer in FOUR successive batches
+                               -- a standing fact about this clone, not an event
+    locks released by me   0   14 lock files exist; none of the dead ones is
+                               attributable to me
+    worktrees besides main 4   NONE OF THEM MINE: gate12-65340-3,
+                               invis-c0-75132, sairn-abl-q_gv10j5,
+                               sairn-gate-base-d78d62e71203. The last is the
+                               push gate's own throwaway, which it failed to
+                               remove and says so on stderr
+    git stash              0
+    refs/salvage/*         0   bundled, verified and deleted in b9
+
+NOTHING WAS EDITED OUTSIDE THE DECLARED FILES SET. The two Drive-side renames
+are not repo files and their index rows are in the declared set.
+
+
+8. UNVERIFIED, AND WHAT IS NOT CLOSED
+
+  * tools/hover_auditor_scope_gate.py:409 -- the 4th unfetched-base instance,
+    UNFIXED. cc's. The replacement is written out at file:line. It passes every
+    push because it exits early in a build clone, which is also why it will
+    stay unfixed unless somebody picks it up.
+  * THE CHECKER FOR THE SHAPE IS SPECIFIED AND BUILT BY NOBODY. A fifth gate
+    can still be authored with it. Planned action on defect record 55777a74.
+  * 36 red suites have NEVER been driven, so their state is the THIRD STATE and
+    not "red" -- not-run is not red and it is not green. cody's.
+  * 5 red suites under api/ -- hank's, confirmed red in b9 with a real exit
+    code, so not stale rows.
+  * 21 of 84 register entries carry no `why`; 5 of the 48 driven came back
+    COULD NOT RUN.
+  * The audit-log constraints -- 3 tables, 11 values, plus sv_audit_log with no
+    CHECK. hank's, and it needs a live read nobody in this clone can do.
+  * 4 pre-existing bad rows in docs/scrutiny-flags.json, already on
+    origin/main, cody's files. They make sairn_rebase_resolve.py REFUSE on
+    every scrutiny-flags conflict, which is a tax on every rebase in every
+    clone.
+  * docs/TOOLING-INVENTORY.md under-reports every pre-commit-wired tool as
+    UNWIRED. The generator reads .claude/settings.json hooks and the push gate
+    and reads .githooks/ for neither. Needs an eighth derivation source, in a
+    file two sessions contest.
+  * NOTHING MECHANISES THE NEXT FREE COUNT.
+  * 9 Drive-side handoffs are UNINDEXED -- none of them mine, and the check is
+    warn-only on handoff names, so it reports and does not refuse. Deliberately
+    not declared by me: declaring another session's artefact is what produced
+    the five hand-declared rows already there.
+  * THE OWNER COLUMN IS A PATH, NOT AN INVESTIGATION. It says whose ROW an
+    entry is, not whose defect. Said here because a generated map reads as more
+    authoritative than it is.
+  * NOT RE-RUN THIS BATCH, and named so it is not read as verified: no red
+    suite was driven, no gate was driven live, and the only tool outputs quoted
+    here are external_file_index_check (exit 0), the two JSON validations, and
+    the heading count. Everything else in sections 1 and 5 is b9's measurement,
+    cited as b9's.
+
+
+9. EVIDENCE
+
+All paths relative to
+C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\d1bef68d-f747-45a9-89b1-59dd99a42ae2\scratchpad\
+
+    owner_map.py owner_map.log      the 84-row map, generated
+    undriven.txt                    the 36, derived from the sweep log
+    hank_rows.md cody_undriven.md cody_driven.md
+                                    the per-owner blocks spliced into the
+                                    routing document
+    meth_b10.md                     the methodology section as appended
+    known-red-suites.before.json    the register before the owner field was set
+    stale_refs.txt                  the 9 files still naming the old handoffs
+    ext_b10.log                     external_file_index_check, exit 0
+    drive_red86.jsonl               b9's sweep log -- THE AUTHORITY for every
+                                    driven/undriven figure in section 3
+
+IN THE REPO:
+    docs/2026-10-13-fourth-b10-routed-to-cc.md
+    docs/2026-10-13-fourth-b10-routed-red-suites.md
+    docs/2026-10-13-fourth-b10-red-suite-owners.tsv
+    docs/known-red-suites.json          owners set, census corrected
+    docs/METHODOLOGY.md                 the procedure and the numbering rules
+    docs/SAIRN-handoff-fourth-b9.md     renamed, banner rewritten
+    docs/SAIRN-handoff-fourth-b9-2.md   renamed
+    docs/external-files-index.json      2 Drive paths renamed with renamed_from
+    docs/SAIRN-handoff-fourth-b10.md    written BEFORE this report
+
+SHA256 7c1661165f21847f32cf992518faabb55b60fab23f078b200c4caad723219257
+END-OF-REPORT

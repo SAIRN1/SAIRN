@@ -64,12 +64,12 @@
   {
    "file": "api/sf-auth.test.js",
    "kind": "node",
-   "tail": "37 passed, 1 failed",
+   "tail": "39 passed, 1 failed",
    "since": "2026-10-06",
-   "why": "ONE CAPABILITY EXISTS ON ONE SIDE OF A THREE-WAY AGREEMENT. The arm 'ROLES_BY_APP, the schema check constraint and CAPABILITIES agree' reports 'ROLES_BY_APP.sairnfreedom and sairnfreedom.html CAPABILITIES disagree', and the diff names `ceremonial.manage`. 37 of 38 arms pass. ROUTED, NOT FIXED: hank holds sairnfreedom.html under a live claim at the time of writing and is editing it, so a second session reconciling that list is the collision the claim system exists for.",
-   "owner": "hank",
-   "diagnosed": "2026-10-06",
-   "diagnosed_by": "fourth",
+   "why": "ONE CAPABILITY EXISTS ON ONE SIDE OF A THREE-WAY AGREEMENT, AND IT IS AN OPEN PRODUCT QUESTION RATHER THAN A DEFECT. `sairnfreedom.html` declares `trustee.audit` in CAPABILITIES (added 2026-09-27 for the VFW quarterly trustee audit); `ROLES_BY_APP.sairnfreedom` does not, so api/sf-auth.js refuses to provision that role. A post can assign the Trustee office and then cannot give that trustee a sign-in. THE DECISION IS MICHAEL'S: if a trustee may sign in, ROLES_BY_APP, the `sf_trustee_audits` row in api/_lib/sf-roles.js and the employee_auth CHECK change together; if not, the capability is display-only and the HTML should say so. RE-DIAGNOSED 2026-10-13 by hank (b7) and the earlier `why` on this row was WRONG IN ITS NAMED VALUE: it said the diff names `ceremonial.manage`, which is in all three lists. The diff names `trustee.audit`. ALSO RESTRUCTURED THAT DAY: the single arm was three sequential asserts, so the trustee failure MASKED the ROLES_BY_APP-vs-schema-CHECK comparison (which had not run since 2026-09-27, and passes) and hid a second cause of its own -- a transcribed `caps.size === 10` that went stale the day `trustee.audit` was added. It is now four arms; 39 of 40 pass and the one red is the trustee arm alone, which is left red deliberately to keep the question visible.",
+   "owner": "michael (the decision) / hank (the three code places, once it is made)",
+   "diagnosed": "2026-10-13",
+   "diagnosed_by": "hank",
    "environment": {
     "where": "live-clone",
     "pinned": false,

@@ -57,6 +57,38 @@ credential that cannot provision anything.
 | SAIRNbuild | `BLD-PINNACLE-2026` | `sairn-demo-owner` | `35810946` | owner | `/api/bld-auth` |
 | SAIRNcode | `SC-PINNACLE-2026` | `sairn-demo-owner` | `72694103` | **admin** | `/api/sc-auth` |
 | SAIRNvet | `SV-PINNACLE-2026` | `sairn-demo-owner` | ~~`38471260`~~ **DEAD 2026-09-25** | owner | `/api/sv-auth` |
+| SAIRNfreedom | `SF-PINNACLE-2026` | `sairn-demo-owner` | `64927108` | **`post.govern`** | `/api/sf-auth` |
+
+**The SAIRNfreedom row was added 2026-10-13 (hank b7) and is the only row in
+this table whose SQL is NOT in `sql/demo_owner_credentials_2026-09-03.sql`** —
+it is in **`sql/sairnfreedom_demo_owner_credential_2026-10-13.sql`**, a separate
+file, because amending a seventeen-insert transaction that has already been run
+to add an eighteenth would re-run every other insert's `on conflict do update`
+and reset sixteen PINs nobody asked to change.
+
+**Its role is `post.govern`, not `owner`.** SAIRNfreedom has no `owner` role at
+all — `PROVISIONING_ROLES` in `api/sf-auth.js` is `['post.govern',
+'post.govern.deputy']` and `post.govern` is the `SOLE_ROLE` the last-provisioner
+refusal keys on. This is the same trap this document already records for
+SAIRNcode (`admin`, not `owner`), in a second app.
+
+**UNVERIFIED AGAINST THE LIVE APP, and that is the honest state rather than a
+caveat.** The row's hashes were produced by the platform's own `hashPin()` and
+round-tripped through its own `verifyPin()` — *and then re-parsed out of the
+committed SQL file and round-tripped again*, so a transcription slip between
+generating and writing cannot survive. What that proves is that the SQL is
+correct. It does **not** prove the file has been run: no clone has a database
+handle. **Until Michael runs it, this PIN answers 401.** Step 3 of that file is
+the one-line `curl` that tells the two apart, and step 2 distinguishes a third
+state — `sql/sairnfreedom_license_seed.sql` never having been run, which fails
+the login for a reason that has nothing to do with the PIN.
+
+**Why it was missing matters more than that it was missing.** b6 locked five
+`sf_*` tables and built a 10-role × 36-resource policy matrix for this app, and
+every one of those claims is **source-verified only** — no session was ever
+driven, because there was no credential to drive one with. In the same batch
+SAIRNscape's gates *were* driven in both directions with `SCP-DEMO-2026`, and
+that found the half source review cannot reach.
 
 **The SAIRNvet row was added 2026-09-23 and did NOT come from the SQL file
 above.** Every other row was seeded; this one was minted through the app's own

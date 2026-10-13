@@ -243,15 +243,85 @@ const APPROVED = [
   //                        sat split across the gate for two weeks with the
   //                        WRITER protected and the READER open.
   //
-  // 27 OF 36 ARE NOW GATED and the nine that are not are all B/B. They are
-  // named in api/sd-data.js beside the role-matrix call site, because that is
-  // where their absence has a consequence: a resource with no session has no
-  // role, so the matrix cannot reach them.
+  // 27 OF 36 WERE GATED AT THIS POINT and the nine that were not are all B/B.
+  // They are named in api/sd-data.js beside the role-matrix call site, because
+  // that is where their absence had a consequence: a resource with no session
+  // has no role, so the matrix could not reach them.
   'sf_district_imports',
   'sf_events',
   'sf_permit_flags',
   'sf_products',
   'sf_vehicles',
+
+  // ── THE LAST NINE, 2026-10-13 (b7). 36 OF 36. ───────────────────────────
+  // GATED FOR A DIFFERENT REASON FROM EVERY WAVE BEFORE THEM, and the reason
+  // is why they could be taken without a fresh product decision. The earlier
+  // waves gated on the SENSITIVITY of the row -- minors' names, a felony flag,
+  // ORC 2915 payee records, a statutory prize cap -- and none of these nine
+  // clears that bar: they are the only sf_ resources that are B on integrity
+  // AND B on confidentiality, which is exactly why four previous waves stopped
+  // short of them and said so.
+  //
+  // What they clear is a different bar: THE ROLE MATRIX ALREADY HELD A
+  // REVIEWED POLICY FOR ALL NINE. api/_lib/sf-roles.js carries a row for every
+  // one of the 36 on purpose, so that the day one of these is gated its policy
+  // is already written and reviewed rather than invented in the same hurried
+  // edit that gates it. A role policy cannot run on a licence-key-only
+  // resource -- no session means no role -- so the policy existed and could
+  // not fire. Gating them is what makes it fire; the policy itself is b6's,
+  // reviewed there, and no cell was authored here.
+  //
+  // WHAT THAT MEANS IN PRACTICE, measured off decide() rather than described:
+  // every one of the nine now DENIES at least five of the ten roles on write,
+  // and five of them deny on read as well. Those refusals are the reviewed
+  // policy arriving. Two examples so this is not an abstraction -- a
+  // chaplain.pastoral session is now refused a write to the vendor list, and a
+  // member.admit session is refused the bottle counts.
+  //
+  //   sf_bottle_fills         the bar's product movement; feeds inventory
+  //                           reconciliation and therefore the takings a
+  //                           gaming post has to be able to defend.
+  //   sf_ceremonial_items     ritual equipment held by the post.
+  //   sf_documents            the post's governance documents -- the things
+  //                           sf_signatures (gated 2026-09-24) BINDS PEOPLE
+  //                           TO, so the signature was protected and the
+  //                           document it signs was not.
+  //   sf_honor_details        honours detail; attaches to named members.
+  //   sf_inventory_counts     the counted-stock record the bottle fills are
+  //                           reconciled against; the other half of a pair
+  //                           whose halves disagree is how a shortage hides.
+  //   sf_national_categories  national reporting categories. THE WEAKEST OF
+  //                           THE NINE AND LABELLED SO IT CAN BE REVERSED ON
+  //                           ITS OWN: it stores bare strings with no id, and
+  //                           both sfSyncCollection and sfServerWinsMerge skip
+  //                           id-less records, so client-side this gate is a
+  //                           no-op today. It is here for set completeness,
+  //                           not on evidence of exposure.
+  //   sf_service_hours        volunteer service hours, by named member.
+  //   sf_service_referrals    referral records -- the sibling of
+  //                           sf_service_appointments, which was gated on
+  //                           2026-09-22 for a VA-adjacent referral outcome.
+  //                           The appointment was protected and the referral
+  //                           was not.
+  //   sf_vendors              the supplier list sf_vendor_prices (gated
+  //                           2026-09-21) prices against. Same split pair
+  //                           shape as sf_vehicles/sf_vehicle_service, which
+  //                           sat across the gate for two weeks.
+  //
+  // THREE OF THE NINE CLOSE A SPLIT PAIR, and that is the strongest argument
+  // in this block: sf_documents/sf_signatures, sf_service_referrals/
+  // sf_service_appointments, sf_vendors/sf_vendor_prices. In each the half
+  // somebody deliberately protected was readable or rewritable through its
+  // unprotected twin.
+  'sf_bottle_fills',
+  'sf_ceremonial_items',
+  'sf_documents',
+  'sf_honor_details',
+  'sf_inventory_counts',
+  'sf_national_categories',
+  'sf_service_hours',
+  'sf_service_referrals',
+  'sf_vendors',
 ];
 
 function gatedSet() {

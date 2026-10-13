@@ -61,10 +61,27 @@ create table if not exists stonedesk_audit_log (
   license_hash text not null,
   employee_id text,
   role text,
+  -- ── AMENDED 2026-10-13 TO MATCH THE DATABASE, not to change it ───────────
+  -- THE SOURCE IS STEP 0b of docs/2026-10-07-hank-migration-sql-for-michael.md,
+  -- copied value-for-value, which Michael ran live on 2026-10-13. Until this
+  -- amendment `grep -c pin_setup` on this file was 0 while the live constraint
+  -- accepted it, so `tools/audit_event_type_check.py` exited 1 naming four
+  -- values this table had already been widened to allow. A checker reading a
+  -- stale file reports a gap that is closed, which costs the next reader the
+  -- same investigation twice.
+  --
+  -- RE-RUNNING THIS FILE DOES NOT WIDEN AN EXISTING TABLE -- `create table if
+  -- not exists` skips it, constraint and all. The ALTER that acts on a live
+  -- table is STEP 0b in that document, and it is already applied.
   event_type text not null check (event_type in (
     'credential_deactivated',
     'credential_reactivated',
-    'credential_change_refused'
+    'credential_change_refused',
+    'pin_bootstrap',
+    'pin_setup',
+    'sub_roster_write',
+    'order_link_created',
+    'order_link_revoked'
   )),
   detail jsonb,
   created_at timestamptz not null default now()
@@ -73,10 +90,13 @@ create table if not exists stonedesk_audit_log (
 create index if not exists idx_stonedesk_audit_log_license_time
   on stonedesk_audit_log (license_hash, created_at desc);
 
--- The event_type CHECK starts narrow ON PURPOSE -- only the credential
--- lifecycle events that exist today. Adding a value later is a deliberate,
--- reviewable migration; an open text column would let any future caller
--- invent an event name and quietly change what this log means.
+-- The event_type CHECK started narrow ON PURPOSE -- only the credential
+-- lifecycle events that existed when the table was created. Adding a value
+-- later is a deliberate, reviewable migration, and the five added on
+-- 2026-10-13 went through exactly that: a sweep found the code emitting them,
+-- STEP 0b printed the ALTER, and it was reviewed before it ran. An open text
+-- column would instead let any future caller invent an event name and quietly
+-- change what this log means.
 --
 -- DELIBERATELY NOT STORED: PIN hashes, PIN salts, lockout state, or any
 -- credential material. `detail` carries only non-secret metadata about the

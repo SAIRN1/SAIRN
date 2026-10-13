@@ -1,0 +1,16 @@
+DIGEST fourth b10
+SHA256 e2e60bf9eed43d7b833676de2cbdae18226f20abdc493b0e10d7d4c3878b70de
+
+STATUS: LANDED, not forced. a756ee4e..a149769d then a149769d..c2735d3c, 1 commit each. HEAD c2735d3c == origin/main, 0/0, clean. One race lost, rebased.
+
+DECISION-NEEDED: hover_auditor_scope_gate.py:409 and its checker are specified and owned by nobody; cc decides or records NOT_PROMOTED.
+
+CHANGED: 1 routed, no tools/ edit -- the fix at file:line plus a 6-arm spec. 2 b9 item 6 was a bare D; ranges, counts and all six items are in the report, and b9 had FOUR pushes not two. 3 my own 65 was wrong -- 36 undriven of 84, all tests/; hank 5, cody 79, cc 0, me 0. 4 both b9 handoffs renamed, Drive and index too. 5 a procedure and four NEXT FREE rules. 6 confirmed.
+
+EVIDENCE-path: scratchpad/owner_map.log, undriven.txt, drive_red86.jsonl
+
+UNVERIFIED: nothing re-driven; 36 suites third-state.
+
+NEXT: cody drives his 36 in a worktree; hank his 5.
+CONTEXT 0.5% of 15,000,000
+END-OF-DIGEST

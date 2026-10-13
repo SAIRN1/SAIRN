@@ -109,33 +109,36 @@ const ALL_AUDIT_TABLES = Array.from(new Set(Object.keys(AUDIT_TABLE_BY_APP)
   .map((app) => AUDIT_TABLE_BY_APP[app]))).sort();
 
 // ── AND THE CHECKPOINT TABLE'S OWN CHECK CONSTRAINT IS THE SECOND LIST ─────
-// sql/audit_checkpoint_schema.sql:57-59 declares
-//     audit_table text not null check (audit_table in (
-//       'sairnlaw_audit_log', 'sairncode_audit_log', 'stonedesk_audit_log'))
-// so an INSERT naming any of the other thirteen is REJECTED BY THE DATABASE.
-// Deriving the loop from AUDIT_TABLE_BY_APP alone would therefore not fix the
-// coverage gap -- it would turn a silent gap into thirteen failed inserts and
-// a run that throws where it used to pass. THAT IS WHY THIS CONSTANT EXISTS
-// rather than the loop simply running over all sixteen.
+// WIDENED TO SIXTEEN, 2026-10-13. `sql/audit_checkpoint_schema.sql` now
+// declares all sixteen names in its inline CHECK **and** carries the
+// `drop constraint if exists` / `add constraint` pair that widens a table which
+// already exists -- the half that matters, because `create table if not exists`
+// skips an existing table constraint and all, so a re-run of the old file would
+// have reported success and changed nothing.
 //
-// MIRRORED, NOT GUESSED: the three names below are copied from that CHECK. The
-// arm `every table the code checkpoints is allowed by the schema CHECK` in
-// api/audit-checkpoint.test.js reads the SQL file and compares, so a drift
-// between this constant and the real constraint fails there rather than at
-// 03:30 in production.
+// SO THIS CONSTANT IS NOW DERIVED RATHER THAN MIRRORED. It was a hand-kept copy
+// of three names for one batch, for one stated reason: deriving the loop from
+// AUDIT_TABLE_BY_APP while the database still rejected thirteen of them would
+// have turned a silent coverage gap into thirteen failed INSERTs. That reason is
+// gone the moment the schema file permits sixteen, and a second hand-kept list
+// is exactly the shape that produced the gap. The alias is kept rather than
+// deleted because the refusal message below and the test arms both read it, and
+// a name that says WHY a table may be rejected is worth more than one fewer
+// line.
 //
-// ONE ALTER CLOSES IT, AND IT IS MICHAEL'S:
-//     alter table public.sairn_audit_checkpoint
-//       drop constraint sairn_audit_checkpoint_audit_table_check;
-//     alter table public.sairn_audit_checkpoint
-//       add constraint sairn_audit_checkpoint_audit_table_check
-//       check (audit_table in (<the sixteen names in ALL_AUDIT_TABLES>));
-// After it runs, THIS CONSTANT IS THE ONLY LINE THAT CHANGES -- set it to
-// ALL_AUDIT_TABLES and the loop covers sixteen. Routed in
-// docs/2026-10-13-hank-b6-routing.md.
-const SCHEMA_PERMITTED = [
-  'sairnlaw_audit_log', 'sairncode_audit_log', 'stonedesk_audit_log'
-];
+// THE DRIFT IS STILL CHECKED, IN BOTH DIRECTIONS, and that is what makes this
+// derivation safe rather than optimistic: the arm `every table the code
+// checkpoints is allowed by the schema CHECK` in api/audit-checkpoint.test.js
+// reads the SQL FILE and compares it to this list, and the arm `the schema file
+// widens a table that already exists` proves the ALTER half is present. A drift
+// fails a test rather than failing at 03:30 in production.
+//
+// AND THE DATABASE IS NOT ASSUMED TO HAVE BEEN MIGRATED. A clone has no
+// database handle, so nothing here can prove the ALTER ran. If it has not, the
+// INSERT is rejected with SQLSTATE 23514 and the handler answers
+// 503 CHECK_NOT_WIDENED naming this file -- see isNarrowCheck(). "Could not
+// checkpoint this log" is a third state and is never folded into a clean run.
+const SCHEMA_PERMITTED = ALL_AUDIT_TABLES;
 const TABLES = ALL_AUDIT_TABLES.filter((t) => SCHEMA_PERMITTED.indexOf(t) !== -1);
 // ── THE GAP IS A VALUE, NOT A COMMENT ──────────────────────────────────────
 // Reported in every response and in every heartbeat, because the whole defect
@@ -176,6 +179,26 @@ function isMissingTable(detail) {
   const s = JSON.stringify(detail || '');
   return s.indexOf('PGRST205') !== -1 || s.indexOf('42P01') !== -1 ||
          s.indexOf('does not exist') !== -1;
+}
+// ── THE NARROW-CHECK REFUSAL (2026-10-13) ──────────────────────────────────
+// The coverage list above is now DERIVED from AUDIT_TABLE_BY_APP, so the code
+// asks to checkpoint sixteen logs. Nothing in a clone can prove the database's
+// CHECK was widened to accept them. If it was not, the INSERT comes back with
+// SQLSTATE 23514 -- a check_violation -- and WITHOUT this branch that would
+// fall through to the generic `502 Upstream error -- try again`, which is
+// actively wrong twice over: the retry it advises can never help, and the one
+// fact the operator needs (run sql/audit_checkpoint_schema.sql) is nowhere in
+// the answer.
+//
+// MATCHED ON THE CONSTRAINT NAME AS WELL AS THE CODE, because 23514 on this
+// INSERT could in principle come from a different constraint on the same table
+// and "the CHECK has not been widened" would then be a wrong diagnosis
+// confidently delivered. Either signal alone is enough to report it; the name
+// is what makes the message specific.
+function isNarrowCheck(detail) {
+  const s = JSON.stringify(detail || '');
+  return s.indexOf('23514') !== -1 ||
+         s.indexOf('sairn_audit_checkpoint_audit_table_check') !== -1;
 }
 // Midnight UTC of the day containing `ms`. UTC and not local, deliberately:
 // this runs on a server whose timezone nobody controls, and a window boundary
@@ -577,6 +600,39 @@ module.exports = async (req, res) => {
       });
       return;
     }
+    // ── THE MIGRATION IS HALF-APPLIED, WHICH IS ITS OWN STATE ───────────────
+    // The table exists but its audit_table CHECK still carries the original
+    // three names, so thirteen of the sixteen INSERTs are rejected by the
+    // database. `failed` rather than `partial`, for the same reason as the two
+    // branches around it: nothing was written for the rejected tables, so the
+    // job did not do its work, and a retry cannot change that until somebody
+    // runs the SQL. `retry_helps: false` says so to the watchdog.
+    if (isNarrowCheck(err && err.detail)) {
+      await beat({
+        job: '/api/audit-checkpoint', outcome: 'failed',
+        expected_interval_seconds: 86400,
+        detail: { refused: 'CHECK_NOT_WIDENED',
+                  why: 'sairn_audit_checkpoint.audit_table CHECK has not been '
+                       + 'widened to the sixteen audit logs -- re-run '
+                       + 'sql/audit_checkpoint_schema.sql',
+                  tables_requested: TABLES.length,
+                  retry_helps: false }
+      });
+      res.status(503).json({
+        error: {
+          code: 'CHECK_NOT_WIDENED',
+          message: 'The checkpoint table exists but its audit_table CHECK '
+                 + 'rejects at least one of the ' + TABLES.length + ' audit '
+                 + 'logs this job covers. Re-run sql/audit_checkpoint_schema.sql '
+                 + '-- it is idempotent and its second half is the ALTER that '
+                 + 'widens a table which already exists. Nothing was '
+                 + 'checkpointed for the rejected logs, and that is not the '
+                 + 'same as a clean run.',
+          detail: err.detail
+        }
+      });
+      return;
+    }
     if (err && err.incomplete) {
       // COULD NOT READ THE WHOLE WINDOW is a third state and must not be filed
       // as either a clean checkpoint or a tampering finding.
@@ -612,4 +668,9 @@ module.exports.canonical = canonical;
 module.exports.digestOf = digestOf;
 module.exports.dayStart = dayStart;
 module.exports.TABLES = TABLES;
+// EXPORTED SO THE COVERAGE IS ASSERTABLE RATHER THAN READ. `TABLES` alone says
+// what the job does cover; an arm that wants to prove nothing is UNCOVERED
+// needs the population and the gap as values.
+module.exports.ALL_AUDIT_TABLES = ALL_AUDIT_TABLES;
+module.exports.UNCOVERED = UNCOVERED;
 module.exports.GENESIS = GENESIS;
