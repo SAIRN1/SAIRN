@@ -1532,17 +1532,91 @@ check('THE EXEMPTION IS A KNOWN HOLE AND IS STATED AS ONE: any reviewer name '
 # "Extra data: line 1162". load_reviews() reads that as CouldNotTell, which the
 # push hook maps to NOT-A-PASS, so it failed closed and blocked every push on
 # the platform until somebody repaired the file by hand.
+#
+# ── THIS ARM WAS REPORTING "TWO CONCURRENT SAVES" WHEN ONE OF THEM HAD DIED
+#    (fixed 2026-10-13, b6 items 1 and 2; cause measured in b5) ─────────────
+# `_saver` called save_reviews() with NO try/except. On Windows one of the two
+# concurrent `os.replace` calls raises PermissionError -- `os.replace` is
+# MoveFileEx(MOVEFILE_REPLACE_EXISTING), which fails ERROR_ACCESS_DENIED when
+# the destination is held open, INCLUDING by another MoveFileEx in flight on
+# the same target. POSIX rename(2) has no such failure mode.
+#
+# THE EXCEPTION THEN WENT NOWHERE. It was raised inside a thread, so
+# `threading` printed the traceback to stderr and the thread died, and the
+# process exit code was untouched. Both assertions below still PASSED, because
+# the SURVIVING writer left a file that parses with no leftovers. So the arm
+# announced a two-writer race it had not run.
+#
+# MEASURED IN b5, NOT INFERRED: 305 of 400 driven iterations of this exact
+# two-thread race raise PermissionError, and 12 of 12 consecutive runs of THIS
+# SUITE contained the traceback in their output while all 12 exited 0. It is not
+# an intermittent flake -- it is the normal case on this platform, and it was
+# invisible for as long as the arm has existed.
+#
+# ── WHAT IS A TEST BUG HERE AND WHAT IS A PRODUCT BUG, KEPT APART ──────────
+# SAFETY held the whole time: a reader never sees half a file, which is the
+# property this arm exists to prove and the one that stopped the platform when
+# it was absent. What failed is LIVENESS -- one writer errors instead of
+# completing -- and that is a missing retry in `save_reviews`, in tools/, which
+# this batch does not own. ROUTED, not edited: see
+# docs/2026-10-13-cody-b6-routed-to-cc.md.
+#
+# So the fix in tests/ is to make the arm ACHIEVE what it claims and to make
+# the product defect VISIBLE AS DATA rather than as a swallowed traceback:
+# each writer retries its own save on PermissionError, every retry is COUNTED,
+# and the count is asserted on and printed. A retry that is needed is evidence;
+# a retry that is silent is the same defect one layer out.
 _ap = os.path.join(_tmp6, 'atomic.json')
 g.REVIEWS = _ap
 io.open(_ap, 'w', encoding='utf-8').write(json.dumps({'records': []}))
 _bar11 = threading.Barrier(2)
+# Bounded, and the bound is a decision: 20 attempts against a measured ~76%
+# per-attempt failure rate leaves a chance of exhaustion around 1e-11, so
+# exhaustion is a real signal rather than ordinary noise. UNBOUNDED would turn
+# a genuine deadlock into a hang, which PR 1.12 names as the arm shape that
+# must never exist.
+_RETRY_CAP = 20
+_r11 = {'done': [], 'retries': 0, 'other': []}
+_r11_lock = threading.Lock()
+
+
+def _save_with_retry(tag, payload, book):
+    """save_reviews, retrying ONLY the Windows concurrent-replace failure.
+
+    Returns True if the save completed. Records every retry and every
+    unrecognised exception, so neither can be lost the way the original one
+    was.
+    """
+    for _attempt in range(_RETRY_CAP):
+        try:
+            g.save_reviews(payload)
+            with _r11_lock:
+                book['done'].append(tag)
+            return True
+        except PermissionError:
+            # The one failure this retries, and it is named rather than caught
+            # broadly: a bare `except Exception` here would swallow the next
+            # real defect in save_reviews exactly as the no-except version
+            # swallowed this one.
+            with _r11_lock:
+                book['retries'] += 1
+            time.sleep(0.01)
+        except BaseException as _e:                          # noqa: BLE001
+            with _r11_lock:
+                book['other'].append('%s: %s: %s'
+                                     % (tag, type(_e).__name__, _e))
+            return False
+    with _r11_lock:
+        book['other'].append('%s: exhausted %d attempts on PermissionError'
+                             % (tag, _RETRY_CAP))
+    return False
 
 
 def _saver(n):
     d = {'records': [{'author_session': 'x%d' % n, 'status': 'open',
                       'pad': 'y' * (n * 4000)}]}
     _bar11.wait()
-    g.save_reviews(d)
+    _save_with_retry('x%d' % n, d, _r11)
 
 
 _th11 = [threading.Thread(target=_saver, args=(n,)) for n in (1, 9)]
@@ -1555,6 +1629,18 @@ try:
     _parsed = json.load(io.open(_ap, encoding='utf-8'))
 except ValueError as e:
     _parsed = e
+# THE ARM THE ORIGINAL ONE WAS SILENTLY FAILING, AND IT COMES FIRST. Without
+# it, every assertion below is about a race that may have had one participant.
+check('BOTH concurrent writers actually COMPLETED -- the arm below claims a '
+      'two-writer race and until 2026-10-13 it could report that with one '
+      'writer dead in a swallowed traceback',
+      sorted(_r11['done']) == ['x1', 'x9'],
+      'completed=%r  retries=%d  unrecognised=%r'
+      % (sorted(_r11['done']), _r11['retries'], _r11['other']))
+check('...and no writer failed for a reason this arm does not recognise -- a '
+      'bare except would swallow the next real defect in save_reviews the way '
+      'the missing one swallowed this',
+      not _r11['other'], _r11['other'])
 check('two concurrent saves leave a file that still PARSES -- os.replace is '
       'atomic, so a reader sees the old file or the new one and never half of '
       'each',
@@ -1564,21 +1650,44 @@ check('no .tmp- leftovers -- a temp file that outlived its write would be '
       'picked up by nothing and would sit in docs/ for ever',
       not [f for f in os.listdir(_tmp6) if '.tmp-' in f],
       os.listdir(_tmp6))
+# NOT AN ASSERTION, AND DELIBERATELY NOT ONE. A retry count of zero is correct
+# on POSIX and a nonzero count is correct on Windows, so failing on either
+# would make the suite red on one platform for a reason that is not a defect in
+# this repo. It is PRINTED, with the number, because the product defect it
+# measures -- save_reviews has no retry of its own -- is routed and still open,
+# and a routed finding with no running measurement is how a backlog becomes
+# invisible.
+print('         RETRY COUNT: save_reviews needed %d retry/retries to get BOTH '
+      'writers through' % _r11['retries'])
+print('         (nonzero here is the Windows MoveFileEx concurrent-replace '
+      'failure, measured at ~76%% per attempt in b5. The retry belongs in '
+      'save_reviews and is ROUTED, not added here.)')
 
 # ── 12. AND THE LIMIT THAT IS NOT FIXED, ASSERTED AS A LIMIT ───────────────
 # load_reviews / append / save_reviews is still a read-modify-write with no
 # lock, so two --open calls that both READ before either WRITES lose one
 # record. The atomic save makes the file valid; it does not make the sequence
 # safe. This arm exists so nobody reads the section above as closing it.
+#
+# ── AND THIS ARM HAD THE SAME HOLE WITH A WORSE FAILURE MODE (2026-10-13) ──
+# `_opener` also called save_reviews() unguarded, so the same Windows
+# PermissionError could kill one thread here too -- and this arm asserts
+# `len(_names12) == 1`, WHICH A DEAD WRITER ALSO SATISFIES. So the arm could
+# pass by the exact accident it exists to describe: it would report "two
+# concurrent --open calls lose one record because both read before either
+# writes" when what actually happened was that one of them never wrote at all.
+# A true conclusion reached from the wrong evidence is the hardest kind to
+# notice, because nothing looks wrong.
 io.open(_ap, 'w', encoding='utf-8').write(json.dumps({'records': []}))
 _bar12 = threading.Barrier(2)
+_r12 = {'done': [], 'retries': 0, 'other': []}
 
 
 def _opener(tag):
     d = g.load_reviews()
     _bar12.wait()
     d['records'].append({'author_session': tag, 'status': 'open'})
-    g.save_reviews(d)
+    _save_with_retry(tag, d, _r12)
 
 
 _th12 = [threading.Thread(target=_opener, args=(t,)) for t in ('a', 'b')]
@@ -1588,6 +1697,16 @@ for _t in _th12:
     _t.join()
 _names12 = [r['author_session'] for r in
             json.load(io.open(_ap, encoding='utf-8'))['records']]
+# BOTH WRITERS FIRST, FOR THE SAME REASON AS ARM 11 -- and here it carries more
+# weight, because the arm's own expected answer (one record) is what a dead
+# writer produces.
+check('BOTH --open writers completed, so the lost-record claim below rests on '
+      'a real read-modify-write race and not on a writer that died',
+      sorted(_r12['done']) == ['a', 'b'],
+      'completed=%r  retries=%d  unrecognised=%r'
+      % (sorted(_r12['done']), _r12['retries'], _r12['other']))
+check('...and no --open writer failed for an unrecognised reason',
+      not _r12['other'], _r12['other'])
 check('KNOWN AND NOT FIXED: two concurrent --open calls still lose one record, '
       'because both read before either writes. The atomic save fixed CORRUPTION, '
       'not the read-modify-write',

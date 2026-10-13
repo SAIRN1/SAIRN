@@ -310,6 +310,16 @@ R = {}
 # rather than inferred from the exit code, because "could not tell" and "no"
 # are different answers and this probe must not read one as the other.
 RANGE_UNREADABLE = 'could not be read'
+# ── A SECOND WAY THE GATE CANNOT READ THE PUSH (2026-10-13, b6 item 3) ────
+# Same addition and same reason as check4_probe.py's: register_feed_gate
+# denies with "stdin is not a terminal and carried NO ref lines", and its own
+# text says a nested `git push` inside a script cannot reproduce the ref list
+# git hands a hook -- "ISSUE THE PUSH DIRECTLY ... there is nothing wrong with
+# the change." A probe drives every push from Python, so it is permanently in
+# that case. That is the gate COULD NOT READ THE PUSH, not a verdict about
+# check 7, and without this marker the planted arms report FAILED on a run
+# where check 7 was never reached.
+NO_REF_LINES = 'carried NO ref lines'
 
 
 def dry_push():
@@ -336,13 +346,14 @@ def dry_push():
     # and the retry would have failed exactly as the first attempt did --
     # which reads as "check 7 did not fire" and is the silent-pass direction
     # the 2026-09-16 note above this one is already about.
-    if r.returncode != 0 and RANGE_UNREADABLE in err:
+    if r.returncode != 0 and (RANGE_UNREADABLE in err or NO_REF_LINES in err):
         subprocess.run(['git', '-C', REPO, 'fetch', '--quiet', 'origin', 'main'],
                        capture_output=True)
         r = run('git', 'push', '--dry-run', 'origin', 'HEAD:main')
         err = (r.stderr or '') + (r.stdout or '')
     return {
-        'could_not_run': r.returncode != 0 and RANGE_UNREADABLE in err,
+        'could_not_run': r.returncode != 0 and (RANGE_UNREADABLE in err
+                                        or NO_REF_LINES in err),
         'exit': r.returncode,
         # MATCHED ON A FRAGMENT THAT SURVIVES THE LINE WRAP. The first version
         # looked for 'BEFORE the caller is authenticated' and the deny message
@@ -497,15 +508,78 @@ if _unattributable or (a['exit'] != 0 and not _clean_foreign):
                                  else a['err']))
     sys.exit(3)
 if _clean_foreign:
-    print('NOTE: the clean push was refused by a DIFFERENT check in the hook, so')
-    print('the two arms below are UNPROVEN rather than failed. The planted arms')
-    print('are still attributable. The foreign refusal:')
+    print('NOTE: the clean push was refused by a DIFFERENT check in the hook.')
+    print('Arms 1 and 2 are therefore answered by running check 7\'s OWN')
+    print('checker directly rather than reported UNPROVEN. The foreign refusal:')
     print('  %s\n' % a['err'][-300:])
+
+# ── ARMS 1 AND 2 ARE NOW ANSWERED FIRST-HAND (2026-10-13, b6 item 3) ───────
+# b5 reported these two UNPROVEN whenever a foreign check refused the clean
+# push. That was honest and not good enough: UNPROVEN is an absence of
+# information and the information was available.
+#
+# CHECK 7 IS `tools/preauth_oracle_check.py`, and the gate does not shell out to
+# it -- it imports the module and calls `scan(path)` on the blob at the push tip
+# (tools/sairn_push_gate_hook.py's CHECK 7 block). So the probe calls THE SAME
+# FUNCTION on the clean fixture file and reads check 7's own answer, with no
+# other check able to speak over it.
+#
+# `scan()` RETURNS (rel, boundary, found) AND BOTH ARMS COME OUT OF IT:
+#   boundary is None   the file has NO auth boundary at all. That is what
+#                      "failing open" means here, and it is arm 2.
+#   found              every refusal answered ABOVE the boundary, each tagged
+#                      ORACLE or DISCLOSURE. Check 7 BLOCKS on the DISCLOSURE
+#                      tier, so a clean file must carry none. That is arm 1.
+#
+# ARM 2 IS THE SHARPER OF THE TWO AND IT IS WHY `boundary` IS CHECKED RATHER
+# THAN ONLY THE FINDING LIST. An empty `found` is produced BOTH by a clean file
+# and by a file whose boundary could not be located -- `scan` returns early with
+# no findings in that case. Reading an empty list as a pass would be a checker
+# that stays silent because it never looked, which is exactly the shape check 7
+# exists to refuse one level down.
+_pre_tool = os.path.join(REPO, 'tools', 'preauth_oracle_check.py')
+_pre = {'ok': False, 'why': '', 'boundary': None, 'found': None}
+if not os.path.isfile(_pre_tool):
+    _pre['why'] = ('tools/preauth_oracle_check.py is not in the fixture clone, '
+                   'so check 7 could not be asked directly')
 else:
+    try:
+        import importlib.util as _ilu7
+        _ps = _ilu7.spec_from_file_location('b6_preauth', _pre_tool)
+        _pm = _ilu7.module_from_spec(_ps)
+        _ps.loader.exec_module(_pm)
+        _rel7, _bnd7, _found7 = _pm.scan(os.path.join(REPO, EP))
+        _pre['boundary'] = _bnd7
+        _pre['found'] = _found7
+        _pre['ok'] = True
+    except BaseException as _e7:                             # noqa: BLE001
+        _pre['why'] = '%s: %s' % (type(_e7).__name__, _e7)
+
+if not _pre['ok']:
     check('a clean change to a touched endpoint is NOT blocked by check 7',
-          not a['blocked_by_preauth'], str(a))
+          False,
+          'FAILED -- check 7 could not be asked directly: ' + _pre['why'])
     check('...and check 7 did not silently fail open on it',
-          not a['unchecked'], str(a))
+          False,
+          'FAILED -- check 7 could not be asked directly: ' + _pre['why'])
+else:
+    _disc7 = [f for f in (_pre['found'] or []) if f[1] == 'DISCLOSURE']
+    _orac7 = [f for f in (_pre['found'] or []) if f[1] == 'ORACLE']
+    check('a clean change to a touched endpoint is NOT blocked by check 7 -- '
+          'preauth_oracle_check.scan() finds %d DISCLOSURE-tier refusal(s) '
+          'above the auth boundary in %s, and check 7 blocks on that tier'
+          % (len(_disc7), EP),
+          not _disc7,
+          'DISCLOSURE findings: %r  (ORACLE tier, which check 7 reports but '
+          'does not block on: %d)' % (_disc7[:4], len(_orac7)))
+    check('...and check 7 did not silently fail open on it -- scan() LOCATED '
+          'the auth boundary, so an empty finding list means "looked and found '
+          'nothing" rather than "never looked"',
+          _pre['boundary'] is not None,
+          'scan() returned boundary=None for %s, which is the fail-open shape: '
+          'no auth call was located, so every refusal in the file is above a '
+          'boundary that does not exist and the empty finding list means '
+          'nothing' % EP)
 
 b = R['planted_disclosure']
 check('the reorder put back IS blocked', b['blocked_by_preauth'], str(b))
@@ -571,14 +645,13 @@ check('...and no linked worktree was registered in the clone at all',
 # sweep went looking for, in the one line a reader uses to judge coverage.
 # Adding a check would have left it reporting 10 of 11.
 if _clean_foreign:
-    # SAID IN THE VERDICT LINE, not only in a note 60 lines up. A reader who
-    # scrolls to the bottom must not read "0 failed" as "every arm held" --
-    # two arms did not run at all.
-    print('\n  ARM 1 UNPROVEN: the clean push was refused by a DIFFERENT check')
-    print('  in the same hook, so "a clean change is not blocked by check 7"')
-    print('  and "check 7 did not fail open on it" were not demonstrated on')
-    print('  this run. The planted arms were.')
-print('\n%s  check7_probe: %d checks, %d failed%s'
-      % ('FAILED' if fails else 'ok', RAN[0], len(fails),
-         '  (2 ARMS UNPROVEN -- see above)' if _clean_foreign else ''))
+    # SAID IN THE VERDICT LINE, not only in a note 60 lines up -- but the
+    # sentence has changed: arms 1 and 2 are no longer unproven, they are
+    # answered by a different and better source than the gate's exit code.
+    print('\n  NOTE: the clean push was refused by a DIFFERENT check in the same')
+    print('  hook, so arms 1 and 2 were answered by calling check 7\'s own')
+    print('  preauth_oracle_check.scan() on the clean fixture directly. Both')
+    print('  are real results above -- neither is UNPROVEN.')
+print('\n%s  check7_probe: %d checks, %d failed'
+      % ('FAILED' if fails else 'ok', RAN[0], len(fails)))
 sys.exit(1 if fails else 0)

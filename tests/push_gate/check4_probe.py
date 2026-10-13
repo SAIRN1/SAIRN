@@ -351,6 +351,21 @@ R = {}
 # rather than inferred from the exit code, because "could not tell" and "no" are
 # different answers and this probe must not read one as the other.
 RANGE_UNREADABLE = 'could not be read'
+# ── A SECOND WAY THE GATE CANNOT READ THE PUSH, AND IT IS STRUCTURAL FOR A
+#    PROBE (2026-10-13, b6 item 3) ───────────────────────────────────────────
+# `register_feed_gate` denies with "stdin is not a terminal and carried NO ref
+# lines", and its own text says what that means: "the push was issued from
+# inside a SHELL SCRIPT, a pipe or any other wrapper. git hands the ref list to
+# the hook it runs; a nested `git push` inside a script does not reproduce it
+# ... ISSUE THE PUSH DIRECTLY -- that is the fix, and THERE IS NOTHING WRONG
+# WITH THE CHANGE."
+#
+# A probe drives every push from Python, so it is permanently in case 1. That
+# is the gate COULD NOT READ THE PUSH -- the same third state RANGE_UNREADABLE
+# already names -- and NOT a verdict about check 4. Without this marker the
+# planted arms report FAILED on a run where check 4 was never reached, which is
+# the misattribution this file exists to refuse, one gate over.
+NO_REF_LINES = 'carried NO ref lines'
 
 
 def dry_push():
@@ -373,14 +388,15 @@ def dry_push():
     # so the retry would have failed exactly as the first attempt did -- which
     # reads as "check 4 did not fire" and is the silent-pass direction the
     # 2026-09-16 note at the top of this file is already about.
-    if r.returncode != 0 and RANGE_UNREADABLE in err:
+    if r.returncode != 0 and (RANGE_UNREADABLE in err or NO_REF_LINES in err):
         subprocess.run(['git', '-C', REPO, 'fetch', '--quiet', 'origin', 'main'],
                        capture_output=True)
         r = run('git', 'push', '--dry-run', 'origin', 'HEAD:main')
         err = r.stderr or ''
     return {
         'exit': r.returncode,
-        'could_not_run': r.returncode != 0 and RANGE_UNREADABLE in err,
+        'could_not_run': r.returncode != 0 and (RANGE_UNREADABLE in err
+                                        or NO_REF_LINES in err),
         'blocked_by_seam': 'does not forward every input its engine reads' in err,
         'blocked_by_sql': 'no live schema snapshot' in err,
         'rejected_by_remote': 'fetch first' in err or 'rejected' in err,
@@ -443,11 +459,71 @@ if _clean['exit'] != 0 and not _clean_foreign:
     print('nothing below could be attributed to it. Nothing was verified.')
     print('  the refusal: %s' % _clean['err'])
     sys.exit(3)
+
+# ── ARM 1 IS NOW ANSWERED FIRST-HAND INSTEAD OF REPORTED UNPROVEN
+#    (2026-10-13, b6 item 3) ─────────────────────────────────────────────────
+# b5 made a foreign refusal a fourth state and called arm 1 UNPROVEN. That was
+# honest and it was not good enough: UNPROVEN is an absence of information, and
+# the information was available the whole time.
+#
+# CHECK 4 IS `tools/sairn_seam_check.py`. The gate shells out to exactly that
+# script (see tools/sairn_push_gate_hook.py's CHECK 4 block), so running it
+# against the clean fixture tree gives CHECK 4'S OWN VERDICT ON THIS CHANGE,
+# first-hand, with no other check able to speak over it. That is a positive
+# answer rather than an inference from the absence of a marker.
+#
+# WHY NOT INFER IT FROM THE GATE'S COLLECTED REFUSALS. The gate does collect
+# every refusal rather than stopping at the first, so "check 4's marker is
+# absent from the full list" is suggestive. But `_deny_now_if_any()` runs from
+# inside the crash handler, which means the collected list CAN be short if a
+# later continuation raised -- the hook's own docstring says so. An absence in a
+# list that may be truncated is not evidence, and the whole subject of this file
+# is not treating one for the other.
+#
+# AND THE CRITERION IS THE NOT-FORWARDED COUNT, NOT THE EXIT CODE. That
+# distinction was found by running it: `sairn_seam_check.py` exits 2 in this
+# repo on ANY tree, because 19 endpoint/engine pairs are genuinely unparseable
+# (`roleSet()` destructures its input, so the tool cannot see the reads) and it
+# refuses to call those a pass. The GATE treats exit 2 as ALLOW with a
+# disclosed note -- its own comment says "blocking on it would make an
+# unanalysable shape unshippable" -- and reserves denial for exit 1.
+#
+# So reading exit 2 as "arm 1 fails" would conflate a REPO-WIDE BACKLOG with
+# "check 4 refuses this clean change", and the arm would be red for ever for a
+# reason that has nothing to do with the fixture. The thing check 4 blocks on
+# is NOT-FORWARDED, and the checker prints it: "96 clean, 0 not-forwarded,
+# 19 could-not-tell". That number is the verdict.
+#
+# OUTCOMES, AND NONE OF THEM IS UNPROVEN:
+#   0 not-forwarded                -> arm 1 PASSES, with the could-not-tell
+#                                     count DISCLOSED rather than dropped
+#   >0 not-forwarded               -> arm 1 FAILS, named, with the count
+#   summary line unreadable        -> arm 1 FAILS, named: a criterion that
+#                                     cannot be parsed has not been met
+#   checker absent or crashed      -> arm 1 FAILS, named
+_seam_tool = os.path.join(REPO, 'tools', 'sairn_seam_check.py')
+_SEAM_SUMMARY = re.compile(
+    r'(\d+)\s+clean,\s*(\d+)\s+not-forwarded,\s*(\d+)\s+could-not-tell')
+if not os.path.isfile(_seam_tool):
+    _seam = {'rc': None, 'nf': None, 'cnt': None, 'cannot': None,
+             'out': 'tools/sairn_seam_check.py is not in the fixture clone, so '
+                    'check 4 could not be asked directly'}
+else:
+    _sp = subprocess.run([sys.executable, _seam_tool], cwd=REPO,
+                         capture_output=True, text=True, encoding='utf-8',
+                         errors='replace', env=PROBE_ENV)
+    _out = ((_sp.stdout or '') + (_sp.stderr or '')).strip()
+    _m = _SEAM_SUMMARY.search(_out)
+    _seam = {'rc': _sp.returncode, 'out': _out,
+             'cnt': int(_m.group(1)) if _m else None,
+             'nf': int(_m.group(2)) if _m else None,
+             'cannot': int(_m.group(3)) if _m else None}
+R['seam_direct'] = _seam
+
 if _clean_foreign:
-    print('NOTE: the clean push was refused by a DIFFERENT check in the hook, so')
-    print('arm 1 is UNPROVEN rather than failed. The planted arms below are still')
-    print('attributable -- they assert check 4\'s own marker, which no other')
-    print('check emits. The foreign refusal:')
+    print('NOTE: the clean push was refused by a DIFFERENT check in the hook.')
+    print('Arm 1 is therefore answered by running check 4\'s OWN checker')
+    print('directly rather than reported UNPROVEN. The foreign refusal:')
     print('  %s' % _clean['err'][-300:])
 
 # ---- ARM 2: PLANTED seam violation must block ----
@@ -557,11 +633,45 @@ ok = (R['planted_violation']['blocked_by_seam'] and R['planted_violation']['name
       # printed and left out of `ok` is a measurement nobody acts on, and the
       # config was the one thing this probe was actually damaging.
       and R['clone_config_unchanged'] and R['no_worktree_registered'])
+
+# ── ARM 1'S VERDICT, FIRST-HAND, AND IT IS PART OF `ok` ───────────────────
+# In the verdict, not only in the printout: a result printed and left out of
+# `ok` is a measurement nobody acts on, which is the same note the config arm
+# carries above.
+_arm1_pass = False
+if _seam['rc'] is None:
+    _arm1_why = ('FAILED -- check 4 could not be asked directly: %s'
+                 % _seam['out'][:200])
+elif _seam['nf'] is None:
+    _arm1_why = ('FAILED -- sairn_seam_check.py ran (exit %s) but its summary '
+                 'line could not be parsed, so the not-forwarded count is '
+                 'unknown. A criterion that cannot be read has not been met. '
+                 'tail: %s' % (_seam['rc'], _seam['out'][-300:]))
+elif _seam['nf'] == 0:
+    _arm1_pass = True
+    _arm1_why = ('PASSED -- sairn_seam_check.py reports %d clean, 0 '
+                 'NOT-FORWARDED on the clean fixture tree, so check 4 has '
+                 'nothing to block. (It also reports %d could-not-tell, which '
+                 'is a standing repo-wide backlog -- 19 pairs where roleSet() '
+                 'destructures its input -- and is DISCLOSED here rather than '
+                 'dropped. The gate allows exit 2 for exactly that reason and '
+                 'denies only on not-forwarded.)'
+                 % (_seam['cnt'], _seam['cannot']))
+else:
+    _arm1_why = ('FAILED -- check 4 BLOCKS a clean change: %d NOT-FORWARDED '
+                 'on the clean fixture tree (exit %s). tail: %s'
+                 % (_seam['nf'], _seam['rc'], _seam['out'][-300:]))
+print('arm 1 (a clean change is not blocked by check 4): %s' % _arm1_why)
+
+# CONSISTENCY, because two sources that disagree is a third failure and not a
+# pass on whichever one is convenient: if the direct run says the clean change
+# is fine, the gate's own output must not carry check 4's refusal marker for it.
+_arm1_consistent = not (_arm1_pass and _clean['blocked_by_seam'])
+if not _arm1_consistent:
+    print('arm 1 CONSISTENCY FAILED -- sairn_seam_check.py exits 0 on the clean '
+          'tree while the gate refused the same push WITH check 4\'s marker. '
+          'Two sources disagree and neither is taken on trust.')
+
+ok = ok and _arm1_pass and _arm1_consistent
 print('CHECK 4 VERIFIED (planted blocks by seam + names the field, clean not blocked by seam):', ok)
-if _clean_foreign:
-    # SAID IN THE VERDICT LINE, NOT ONLY IN A NOTE 150 LINES UP. A reader who
-    # scrolls to the bottom must not read a bare True as "all four arms held".
-    print('  ...WITH ARM 1 UNPROVEN: the clean push was refused by a different')
-    print('  check in the same hook, so "a clean change is not blocked by check')
-    print('  4" was not demonstrated on this run. The three planted arms were.')
 sys.exit(0 if ok else 1)
