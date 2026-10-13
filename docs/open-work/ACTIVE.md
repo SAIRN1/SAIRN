@@ -26,7 +26,7 @@ closed-ish word. Every row, open or not, is in its shard in full.
 
 | App | Item | Status | Owner | Where |
 |---|---|---|---|---|
-| ~~⚠ AWAITING IN~ | REVIEW DONE 2026-09-10 (Cody) in 4efc1dea; the finding FIXED the same h~ | Cody (reviewer and fixer) /~ | unassigned ~ | `open-work/awaiting-independent-verification-mdash-eb640ae8-the-four-vendor-supply-collections-now-reach-a-server-and-the-one-that-can-be-deleted-soft-deletes-mdash-reviewed-and-the-finding-is-already-fixed.md:9` |
+| ~~⚠ AWAITING IN~ | REVIEW DONE 2026-09-10 (Cody) in 4efc1dea; the finding FIXED the same h~ | Cody (reviewer and fixer) /~ | unassigned ~ | `open-work/awaiting-independent-verification-mdash-eb640ae8-02241601.md:9` |
 | Platform         | &#128993; A MONEY-FACING ROLE SITS INSIDE SEVEN ROLE SETS THAT GATE CLI~ | SWEPT 2026-10-06 (hank) acr~ | unassigned ~ | `open-work/platform.md:9` |
 | Platform         | &#128993; exec_context_cto_accounting_statement &mdash; the CTO stateme~ | ROUTED 2026-10-06 by hank f~ | fourth       | `open-work/platform.md:12` |
 | Platform         | &#9989; Six criticality cells carried a stated basis that reading the a~ | APPLIED 2026-10-05 (hank), ~ | &mdash;      | `open-work/platform.md:13` |

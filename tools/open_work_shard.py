@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# OWNER: cc
+# written 2026-10-13, batch b5, queue item 10
 """Shard docs/SAIRN-OPEN-WORK-INDEX.md into per-app files, and PROVE the shards
 still carry every row.
 
@@ -77,6 +79,7 @@ real file. Those variants are REPORTED rather than merged -- merging them is a
 content decision about whether two spellings are one app, and this tool does
 not make content decisions.
 """
+import hashlib
 import io
 import os
 import re
@@ -115,9 +118,28 @@ def app_of(line):
     return re.sub(r'[*`]', '', cells[1]).strip()
 
 
+# A filename has to be a filename. Measured rather than assumed: one row's App
+# cell is a struck-through section marker, not an app, and it produced a
+# 198-character slug -- which `git cat-file` could not even stat, so the
+# push-gate control-byte check exited 2 COULD NOT RUN on it. A check that
+# cannot read a file reports nothing, which is the worst of the three states.
+#
+# CAPPED AND MADE UNAMBIGUOUS: 48 characters of slug plus a short hash of the
+# FULL app string. Truncation alone would silently merge two long App values
+# that share a prefix into one shard, which is a data loss dressed as a
+# filename; the hash makes the mapping injective and is stable across runs
+# because it is taken from the text, not from a counter.
+SLUG_MAX = 48
+
+
 def slug(app):
     s = re.sub(r'[^a-z0-9]+', '-', (app or '').lower()).strip('-')
-    return s or 'unattributed'
+    if not s:
+        return 'unattributed'
+    if len(s) <= SLUG_MAX:
+        return s
+    h = hashlib.sha256((app or '').encode('utf-8')).hexdigest()[:8]
+    return '%s-%s' % (s[:SLUG_MAX].rstrip('-'), h)
 
 
 def read_index():

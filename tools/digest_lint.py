@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# OWNER: cc
+# written 2026-10-13, batch b5, queue item 6
 """A digest is 150 words or fewer and carries all six fields. Nothing else.
 
     python tools/digest_lint.py SAIRN-digest-cc-b5.txt
