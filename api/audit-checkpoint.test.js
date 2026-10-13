@@ -72,6 +72,7 @@ function makeDb(opts) {
     heartbeats: [],                   // every beat() that reached the wire
 
     missingCheckpointTable: !!opts.missingCheckpointTable,
+    narrowCheck: opts.narrowCheck || null,
     shortTotal: opts.shortTotal || 0, // force Content-Range to over-state
     countMode: opts.countMode || 'exact', // 'exact' | 'star' | 'none'
     writes: []
@@ -104,6 +105,17 @@ function makeDb(opts) {
         }
         if (method === 'POST') {
           const rec = JSON.parse(init.body);
+          // ── AN UNMIGRATED DATABASE IS MODELLED, NOT ASSUMED AWAY ──────────
+          // `narrowCheck` is the list of names the table's CHECK constraint
+          // still permits. Anything else comes back 23514 exactly as Postgres
+          // answers it, which is the state a clone CANNOT rule out: the code
+          // now asks for sixteen tables and nothing here can prove the ALTER
+          // in sql/audit_checkpoint_schema.sql was ever run.
+          if (db.narrowCheck && db.narrowCheck.indexOf(rec.audit_table) === -1) {
+            return json({ code: '23514', message: 'new row for relation '
+              + '"sairn_audit_checkpoint" violates check constraint '
+              + '"sairn_audit_checkpoint_audit_table_check"' }, 400);
+          }
           const dup = db.checkpoints.some((c) => c.audit_table === rec.audit_table &&
                                                  c.window_end === rec.window_end);
           if (dup) return json({ code: '23505', message: 'duplicate key' }, 409);
@@ -606,6 +618,75 @@ section('6. the schema and the code agree');
     for (const tbl of AC.TABLES) {
       assert.ok(SQL.indexOf("'" + tbl + "'") !== -1, tbl + ' is not in the schema CHECK');
     }
+  });
+  // ── THE COVERAGE ARMS (2026-10-13) ───────────────────────────────────────
+  // 3 of 16 audit logs were checkpointed for a month and the only record of it
+  // was a code comment. These three arms are what stop it happening again, and
+  // they check three DIFFERENT things -- the population, the migration's
+  // already-exists half, and the refusal when the migration has not run.
+  t('THE COVERAGE IS COMPLETE: nothing in AUDIT_TABLE_BY_APP is uncovered', () => {
+    // The whole defect, as an assertion. AC.UNCOVERED is what the handler
+    // reports in every response and heartbeat; empty is the only acceptable
+    // value now that the schema permits all sixteen.
+    assert.deepStrictEqual(AC.UNCOVERED, [],
+      'these audit logs have NO tamper-evidence: ' + AC.UNCOVERED.join(', '));
+    assert.strictEqual(AC.TABLES.length, AC.ALL_AUDIT_TABLES.length,
+      'the loop covers ' + AC.TABLES.length + ' of ' + AC.ALL_AUDIT_TABLES.length);
+    // NOT A TRANSCRIBED 16. The count is asserted against the derived list, and
+    // separately against a floor, so this arm cannot pass on an empty universe
+    // -- `[] === []` and `0 === 0` would otherwise both hold.
+    assert.ok(AC.ALL_AUDIT_TABLES.length >= 16,
+      'AUDIT_TABLE_BY_APP resolved only ' + AC.ALL_AUDIT_TABLES.length
+      + ' audit logs, so this arm compared almost nothing');
+  });
+  t('THE SCHEMA FILE WIDENS A TABLE THAT ALREADY EXISTS, not just a new one', () => {
+    // `create table if not exists` SKIPS an existing table, constraint and all.
+    // Without the ALTER half, re-running the file against the live database
+    // would report success and leave thirteen logs uncheckpointable -- a silent
+    // no-op that reads exactly like a successful migration.
+    assert.ok(/drop constraint if exists sairn_audit_checkpoint_audit_table_check/i.test(SQL),
+      'the file cannot widen an existing table: no drop-constraint-if-exists');
+    const add = SQL.slice(SQL.indexOf('add constraint sairn_audit_checkpoint_audit_table_check'));
+    assert.ok(add.length > 0, 'the drop is there and the re-add is not, which '
+      + 'would leave the column with NO check constraint at all');
+    const widened = add.slice(0, add.indexOf('));'));
+    for (const tbl of AC.TABLES) {
+      assert.ok(widened.indexOf("'" + tbl + "'") !== -1,
+        tbl + ' is in the create-table CHECK but NOT in the ALTER, so a '
+        + 'database created before today would still reject it');
+    }
+  });
+  t('AN UNWIDENED DATABASE IS REFUSED BY NAME, not reported as an upstream blip', async () => {
+    // The state a clone cannot rule out: the table exists, the ALTER never ran.
+    // Before this branch the 23514 fell through to `502 Upstream error -- try
+    // again`, which advised a retry that can never work and never named the
+    // file that fixes it.
+    const old3 = ['sairnlaw_audit_log', 'sairncode_audit_log', 'stonedesk_audit_log'];
+    const db = makeDb({ audit: { sairnfreedom_audit_log: [row('a', D0 + 1)] },
+                        narrowCheck: old3 });
+    const out = await call(db, 'checkpoint', D0 + 2 * DAY);
+    assert.strictEqual(out.code, 503, JSON.stringify(out.body));
+    assert.strictEqual(out.body.error.code, 'CHECK_NOT_WIDENED');
+    assert.ok(/sql\/audit_checkpoint_schema\.sql/.test(out.body.error.message),
+      'it refused without naming the file that fixes it');
+    assert.ok(/not the same as a clean run/.test(out.body.error.message));
+    // AND IT BEATS. A daily refusal with no heartbeat is indistinguishable from
+    // a job that never fires -- the same finding that put a beat on the other
+    // two refusal branches.
+    assert.strictEqual(db.heartbeats.length, 1, 'it refused without beating');
+    assert.strictEqual(db.heartbeats[0].detail.refused, 'CHECK_NOT_WIDENED');
+    assert.strictEqual(db.heartbeats[0].detail.retry_helps, false,
+      'a retry cannot help until the SQL is run, and the watchdog is told it can');
+  });
+  t('CONTROL: the same run on a WIDENED database writes -- the guard is not always shut', async () => {
+    // Without this, the arm above passes on a handler that refuses every
+    // checkpoint for any reason, which would be the same as having none.
+    const db = makeDb({ audit: { sairnfreedom_audit_log: [row('a', D0 + 1)] },
+                        narrowCheck: AC.TABLES });
+    const out = await call(db, 'checkpoint', D0 + 2 * DAY);
+    assert.strictEqual(out.code, 200, JSON.stringify(out.body));
+    assert.ok(db.checkpoints.some((c) => c.audit_table === 'sairnfreedom_audit_log'),
+      'the sixteen-name CHECK accepted the insert and nothing was written');
   });
   t('the verify block is one query per statement with its expected answer', () => {
     assert.ok((SQL.match(/^select /gim) || []).length >= 4);

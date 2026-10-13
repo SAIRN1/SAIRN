@@ -1,11 +1,28 @@
 -- sql/audit_checkpoint_schema.sql
 -- ---------------------------------------------------------------------------
--- DAILY CHECKPOINTS OVER THE THREE AUDIT LOGS. Item 35, Michael's decision
--- 2026-09-14: daily cadence, over CLOSED windows.
+-- DAILY CHECKPOINTS OVER ALL SIXTEEN AUDIT LOGS. Item 35, Michael's decision
+-- 2026-09-14: daily cadence, over CLOSED windows. Widened from three logs to
+-- sixteen on 2026-10-13 -- see the block headed THE COVERAGE WIDENING below,
+-- which is the half that makes this file safe to run against a database where
+-- the table ALREADY EXISTS carrying the original three-name CHECK.
+--
+-- THIS WHOLE FILE IS ONE IDEMPOTENT BLOCK. Run it top to bottom, as many times
+-- as you like, in either of the two states it can meet:
+--
+--   * THE TABLE DOES NOT EXIST -- `create table if not exists` builds it with
+--     the sixteen-name CHECK, and the widening block below is then a no-op that
+--     drops and re-adds the identical constraint.
+--   * THE TABLE EXISTS WITH THE OLD THREE-NAME CHECK -- `create table if not
+--     exists` is the no-op, and the widening block is what actually acts.
+--
+-- `create table if not exists` does NOT amend an existing table's constraint,
+-- and that is the trap this file used to contain: anyone who re-ran it to "fix
+-- the coverage" would have got a clean run, no error, and the same three names.
+-- The two halves are therefore BOTH required and neither is redundant.
 --
 -- WHAT THIS IS FOR, AND WHAT IT IS NOT.
--- `sairnlaw_audit_log`, `sairncode_audit_log` and `stonedesk_audit_log` all
--- carry `grant select, insert` and nothing else, so through the API a row
+-- The sixteen audit logs all carry `grant select, insert` and nothing else, so
+-- through the API a row
 -- CANNOT be altered in place and CANNOT be removed. Those two tamper modes are
 -- already closed by construction and this table does not re-buy them.
 --
@@ -44,9 +61,13 @@
 -- rather than assumed from the grant -- the sibling audit schema records a real
 -- live 42501 that proved Supabase's default privileges had not been applied.
 --
--- WRITTEN 2026-09-14. NOT RUN. Until it is, api/audit-checkpoint.js answers
--- 503 NOT_PROVISIONED naming this file rather than reporting an empty history
--- as a clean one.
+-- WRITTEN 2026-09-14. WHETHER IT HAS EVER RUN COULD NOT BE TOLD FROM A CLONE
+-- and `docs/AUDIT-CHECKPOINT-STATUS.md` has said so since that date -- there is
+-- no database handle here. Both unrun states are handled rather than assumed:
+-- if the table is absent api/audit-checkpoint.js answers 503 NOT_PROVISIONED
+-- naming this file, and if the table is present with the narrow CHECK it
+-- answers 503 CHECK_NOT_WIDENED naming this file. Neither reports an empty or
+-- partial history as a clean one.
 -- ---------------------------------------------------------------------------
 
 create table if not exists sairn_audit_checkpoint (
@@ -54,8 +75,33 @@ create table if not exists sairn_audit_checkpoint (
   -- WHICH LOG. Stored rather than implied by a separate table per log, because
   -- the verifier has to iterate them and a three-table shape would mean three
   -- of everything below.
+  -- ALL SIXTEEN, and the list is not a preference. It is every value in
+  -- AUDIT_TABLE_BY_APP in api/_lib/audit.js, deduplicated -- `stonedesk` and
+  -- `stonedesk_sub` deliberately share one log. api/audit-checkpoint.js derives
+  -- its loop from that same map, and api/audit-checkpoint.test.js reads THIS
+  -- FILE and compares, so a drift between the two fails a test rather than
+  -- failing at 03:30 in production.
+  --
+  -- `sv_audit_log` IS DELIBERATELY ABSENT. It is SAIRNvet's OLD table, has no
+  -- `event_type` column, and nothing writes to it; STEP 13 of the migration
+  -- created `sairnvet_audit_log` precisely because of that.
   audit_table text not null check (audit_table in (
-    'sairnlaw_audit_log', 'sairncode_audit_log', 'stonedesk_audit_log'
+    'sairnbiz_audit_log',
+    'sairnbuild_audit_log',
+    'sairncare_audit_log',
+    'sairncode_audit_log',
+    'sairndental_audit_log',
+    'sairndesign_audit_log',
+    'sairnfreedom_audit_log',
+    'sairngrounds_audit_log',
+    'sairnlaw_audit_log',
+    'sairnlegacy_audit_log',
+    'sairnmechanical_audit_log',
+    'sairnroofing_audit_log',
+    'sairnscape_audit_log',
+    'sairnsenior_audit_log',
+    'sairnvet_audit_log',
+    'stonedesk_audit_log'
   )),
   -- THE WINDOW IS HALF-OPEN: created_at >= window_start AND < window_end.
   -- Written out rather than left to the reader, because an inclusive upper
@@ -82,6 +128,55 @@ create table if not exists sairn_audit_checkpoint (
   constraint sairn_audit_checkpoint_one_per_window unique (audit_table, window_end)
 );
 
+-- ── THE COVERAGE WIDENING, 2026-10-13 ─────────────────────────────────────
+-- THE HALF THAT ACTS ON AN ALREADY-CREATED TABLE. `create table if not exists`
+-- above silently skips an existing table, constraint and all, so without these
+-- two statements a re-run of this file against the database as it stands would
+-- report success and leave thirteen audit logs uncheckpointable.
+--
+-- WHY THIRTEEN WERE UNCHECKPOINTABLE AND NOTHING SAID SO: a checkpoint is what
+-- makes an audit log tamper-EVIDENT, and the only tamper mode the grants leave
+-- open is INSERTION of a back-dated row. The daily job covered three logs and
+-- passed; the other thirteen -- including credential grants for a dental
+-- practice, an assisted-living facility and an ORC Chapter 2915 gaming post --
+-- had no tamper-evidence at all, and a back-dated row in any of them was
+-- undetectable. The migration was SQL, the covered list was a JavaScript
+-- constant, and no check compared them.
+--
+-- IDEMPOTENT BY CONSTRUCTION, not by convention: `drop constraint if exists`
+-- makes the `add` safe on a second run, and the name is the one Postgres
+-- generates for the inline CHECK above, so this acts on a table built by either
+-- printing of this file. The two statements are deliberately NOT wrapped in a
+-- DO block -- a constraint violation inside PL/pgSQL would be caught and
+-- reported as a NOTICE, and a widening that silently did nothing is the exact
+-- failure this block exists to end.
+--
+-- SAFE AGAINST EXISTING ROWS. The new list is a strict SUPERSET of the old
+-- three names, so every row already in the table satisfies the new constraint
+-- and the `add` cannot fail on a validation scan.
+alter table public.sairn_audit_checkpoint
+  drop constraint if exists sairn_audit_checkpoint_audit_table_check;
+alter table public.sairn_audit_checkpoint
+  add constraint sairn_audit_checkpoint_audit_table_check
+  check (audit_table in (
+    'sairnbiz_audit_log',
+    'sairnbuild_audit_log',
+    'sairncare_audit_log',
+    'sairncode_audit_log',
+    'sairndental_audit_log',
+    'sairndesign_audit_log',
+    'sairnfreedom_audit_log',
+    'sairngrounds_audit_log',
+    'sairnlaw_audit_log',
+    'sairnlegacy_audit_log',
+    'sairnmechanical_audit_log',
+    'sairnroofing_audit_log',
+    'sairnscape_audit_log',
+    'sairnsenior_audit_log',
+    'sairnvet_audit_log',
+    'stonedesk_audit_log'
+  ));
+
 create index if not exists idx_sairn_audit_checkpoint_table_time
   on sairn_audit_checkpoint (audit_table, window_end desc);
 
@@ -101,8 +196,29 @@ create policy sairn_audit_checkpoint_service_insert
 -- Run these after applying the file. A statement whose answer differs from the
 -- comment beside it means the migration did NOT do what this file says.
 
--- 1. The table exists and is empty. Expect: 0
+-- 1. The table exists. Expect: any number, INCLUDING 0.
+--    REWORDED 2026-10-13. This query used to say "Expect: 0" because the file
+--    had never been run. On a re-run that is wrong, and a reader following the
+--    old comment would have read a healthy history as a failed migration. What
+--    the query proves is that the relation RESOLVES -- an absent table errors
+--    rather than returning 0, and those are the two states worth telling apart.
 select count(*) from sairn_audit_checkpoint;
+
+-- 1b. THE WIDENING TOOK, and this is the one query that answers the thing this
+--     printing exists for. Expect: 16
+select count(*)
+  from pg_constraint c,
+       lateral regexp_matches(pg_get_constraintdef(c.oid), '''([a-z0-9_]+)''', 'g') m
+ where c.conname = 'sairn_audit_checkpoint_audit_table_check';
+
+-- 1c. And NAME the sixteen, because a count of 16 over the wrong names would
+--     pass 1b. Expect: the sixteen `*_audit_log` names from the CHECK above,
+--     one per row, and NO `sv_audit_log`.
+select m[1] as audit_table
+  from pg_constraint c,
+       lateral regexp_matches(pg_get_constraintdef(c.oid), '''([a-z0-9_]+)''', 'g') m
+ where c.conname = 'sairn_audit_checkpoint_audit_table_check'
+ order by 1;
 
 -- 2. service_role holds SELECT and INSERT and NOTHING ELSE.
 --    Expect exactly two rows: INSERT and SELECT. Any UPDATE or DELETE row here
