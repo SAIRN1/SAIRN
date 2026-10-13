@@ -1,0 +1,130 @@
+BARE-RUN WRITE SWEEP -- does running a tool with no arguments mutate the repo
+  scratch repo : C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\08b87893-ec2b-4bd5-99bb-70843fa2df93\scratchpad\brw-clone
+  tools swept  : 313
+  per-tool timeout: 25s (a tool that does not finish is COULD NOT RUN, never "did not write")
+
+  ALLOWLIST         : 21 tool(s) declared as intended writers in tools/bare_run_writers.py
+                      Each names the path it writes and why. They are listed as
+                      INTENDED below rather than omitted -- an exemption nobody can
+                      see is indistinguishable from a check that stopped running.
+
+  SHARED STATE      : WATCHED TOO, and never exempted by the allowlist.
+                      C:\Users\marsh\SAIRN-SESSION-LOCKS
+                      <repo>/.git/config  (a LINKED WORKTREE shares this, which is
+                      how core.bare=true reached a live clone -- `git status`
+                      never sees it)
+                      `git worktree list`  (registering one is a change with no
+                      file in the tree)
+                      bare_run_writers.py declares REPO paths only. Nothing in it
+                      says a tool may write OUTSIDE the clone, and reading that
+                      silence as permission is how this gap stayed open.
+
+  COULD NOT RUN accepted_risk_scan.py                          bare run did not finish in 25s
+  COULD NOT RUN assurance_case.py                              bare run did not finish in 25s
+  COULD NOT RUN comment_sensitivity_check.py                   bare run did not finish in 25s
+  WRITES(SHARED) condition_coverage.py                         exit=None  WORKTREES CHANGED
+  COULD NOT RUN condition_coverage.py                          bare run did not finish in 25s
+  COULD NOT RUN conflict_marker_check.py                       bare run did not finish in 25s
+  COULD NOT RUN cp1252_console_sweep.py                        bare run did not finish in 25s
+  COULD NOT RUN cross_tenant_isolation_scope.py                bare run did not finish in 25s
+  WRITES(SHARED) dead_rule_sweep.py                            exit=None  WORKTREES CHANGED
+  COULD NOT RUN dead_rule_sweep.py                             bare run did not finish in 25s
+  COULD NOT RUN first_article_check.py                         bare run did not finish in 25s
+  COULD NOT RUN first_article_inspection.py                    bare run did not finish in 25s
+  COULD NOT RUN gate1_verify.py                                bare run did not finish in 25s
+  WRITES(SHARED) guard_ablation.py                             exit=None  WORKTREES CHANGED
+  COULD NOT RUN guard_ablation.py                              bare run did not finish in 25s
+  WRITES(SHARED) guard_ablation.py --help                      exit=None  WORKTREES CHANGED
+  COULD NOT RUN idempotence_double_run.py                      bare run did not finish in 25s
+  WRITES(SHARED) idempotency_check.py                          exit=1  LOCKS:status/hover.json CHANGED
+  COULD NOT RUN index_duplicate_check.py                       bare run did not finish in 25s
+  WRITES(SHARED) install_git_hooks.py                          exit=None  GITCONFIG CHANGED; WORKTREES CHANGED
+  COULD NOT RUN install_git_hooks.py                           bare run did not finish in 25s
+  WRITES(SHARED) invisible_in_pattern_check.py --help          exit=0  WORKTREES CHANGED
+  COULD NOT RUN landing_verification.py                        bare run did not finish in 25s
+  INTENDED      master_plan.py                                 exit=0  docs/MASTER-PLAN.md
+  WRITES(bare)  mech_gate_live_probe.py                        exit=0  docs/live-residue/2026-10-13-mech_gate_live_probe.json
+  COULD NOT RUN metamorphic_check.py                           bare run did not finish in 25s
+  COULD NOT RUN numeric_default_coalesce_scan.py               bare run did not finish in 25s
+  COULD NOT RUN red_suite_register_check.py                    bare run did not finish in 25s
+  COULD NOT RUN register_freshness_check.py                    bare run did not finish in 25s
+  WRITES(SHARED) register_freshness_check.py --help            exit=1  LOCKS:status/fourth.json CHANGED
+  COULD NOT RUN report_only_checks.py                          bare run did not finish in 25s
+  COULD NOT RUN retry_backoff_check.py                         bare run did not finish in 25s
+  COULD NOT RUN review_ledger_reseat.py                        bare run did not finish in 25s
+  WRITES(SHARED) run_all_tests.py                              exit=None  WORKTREES CHANGED
+  COULD NOT RUN run_all_tests.py                               bare run did not finish in 25s
+  WRITES(SHARED) run_semgrep.py                                exit=1  WORKTREES CHANGED
+  COULD NOT RUN sairn_reachability_check.py                    bare run did not finish in 25s
+  WRITES(SHARED) shape_antipattern_check.py                    exit=1  LOCKS:status/hover2.json CHANGED
+  COULD NOT RUN stale_row_sweep.py                             bare run did not finish in 25s
+  COULD NOT RUN stonedesk_storefront_live_check.py             bare run did not finish in 25s
+  COULD NOT RUN suite_control_triage.py                        bare run did not finish in 25s
+  COULD NOT RUN tier_a_bypass_check.py                         bare run did not finish in 25s
+  COULD NOT RUN tier_sentence_gate.py                          bare run did not finish in 25s
+  WRITES(bare)  tool_owner_map.py                              exit=1  docs/tool-owner-map.json
+  INTENDED      traceability_matrix.py                         exit=0  docs/traceability-matrix.md
+  COULD NOT RUN trend_alarm.py                                 bare run did not finish in 25s
+  COULD NOT RUN write_without_readback_check.py                bare run did not finish in 25s
+
+  swept                     : 313 tool(s)
+  INTENDED writers          : 2 -- declared, with a reason, and their written paths
+                              checked against what they declared
+  WROTE on a bare run       : 2
+  WROTE on --help           : 0
+  CHANGED SHARED STATE      : 11 -- outside the working tree, so `git status`
+                              could not have seen any of them
+      condition_coverage.py                          WORKTREES CHANGED
+      dead_rule_sweep.py                             WORKTREES CHANGED
+      guard_ablation.py                              WORKTREES CHANGED
+      guard_ablation.py --help                       WORKTREES CHANGED
+      idempotency_check.py                           LOCKS:status/hover.json CHANGED
+      install_git_hooks.py                           GITCONFIG CHANGED; WORKTREES CHANGED
+      invisible_in_pattern_check.py --help           WORKTREES CHANGED
+      register_freshness_check.py --help             LOCKS:status/fourth.json CHANGED
+      run_all_tests.py                               WORKTREES CHANGED
+      run_semgrep.py                                 WORKTREES CHANGED
+      shape_antipattern_check.py                     LOCKS:status/hover2.json CHANGED
+  COULD NOT RUN (no verdict): 32 -- these are NOT reported as clean
+      accepted_risk_scan.py                          bare run did not finish in 25s
+      assurance_case.py                              bare run did not finish in 25s
+      comment_sensitivity_check.py                   bare run did not finish in 25s
+      condition_coverage.py                          bare run did not finish in 25s
+      conflict_marker_check.py                       bare run did not finish in 25s
+      cp1252_console_sweep.py                        bare run did not finish in 25s
+      cross_tenant_isolation_scope.py                bare run did not finish in 25s
+      dead_rule_sweep.py                             bare run did not finish in 25s
+      first_article_check.py                         bare run did not finish in 25s
+      first_article_inspection.py                    bare run did not finish in 25s
+      gate1_verify.py                                bare run did not finish in 25s
+      guard_ablation.py                              bare run did not finish in 25s
+      idempotence_double_run.py                      bare run did not finish in 25s
+      index_duplicate_check.py                       bare run did not finish in 25s
+      install_git_hooks.py                           bare run did not finish in 25s
+      landing_verification.py                        bare run did not finish in 25s
+      metamorphic_check.py                           bare run did not finish in 25s
+      numeric_default_coalesce_scan.py               bare run did not finish in 25s
+      red_suite_register_check.py                    bare run did not finish in 25s
+      register_freshness_check.py                    bare run did not finish in 25s
+      report_only_checks.py                          bare run did not finish in 25s
+      retry_backoff_check.py                         bare run did not finish in 25s
+      review_ledger_reseat.py                        bare run did not finish in 25s
+      run_all_tests.py                               bare run did not finish in 25s
+      sairn_reachability_check.py                    bare run did not finish in 25s
+      stale_row_sweep.py                             bare run did not finish in 25s
+      stonedesk_storefront_live_check.py             bare run did not finish in 25s
+      suite_control_triage.py                        bare run did not finish in 25s
+      tier_a_bypass_check.py                         bare run did not finish in 25s
+      tier_sentence_gate.py                          bare run did not finish in 25s
+      trend_alarm.py                                 bare run did not finish in 25s
+      write_without_readback_check.py                bare run did not finish in 25s
+
+A BARE RUN MUST NOT TOUCH SHARED STATE, AND NO ALLOWLIST COVERS THIS.
+tools/bare_run_writers.py declares paths INSIDE the repo. A write
+to the lock registry, to .git/config or to the worktree list
+reaches every other clone on this box, and the session that reads
+it next has no way to tell it came from a sweep.
+
+THIS IS THE CASE THIS TOOL USED TO MISS ENTIRELY. Before 2026-10-08 it
+compared only `git status`, so tools/session_lock_check.py taking a
+lock on a bare run was reported CLEAN.
