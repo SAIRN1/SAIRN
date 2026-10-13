@@ -349,6 +349,20 @@ def _merge_base(a, b):
     return out if r.returncode == 0 and out else None
 
 
+def _rev_parse_known(sha):
+    """Is `sha` an object this clone actually has?
+
+    `git cat-file -e <sha>^{commit}` and nothing cleverer: it answers exactly
+    the question and says nothing about reachability, which is not what is
+    being asked. A sha the remote has and this clone does not is the ordinary
+    state after another session pushes, not an anomaly.
+    """
+    r = subprocess.run(['git', 'cat-file', '-e', '%s^{commit}' % sha], cwd=REPO,
+                       capture_output=True, text=True, encoding='utf-8',
+                       errors='replace')
+    return r.returncode == 0
+
+
 def outgoing_range(stdin_text):
     """The range a pre-push hook is being asked about. (rng, problem).
 
@@ -436,7 +450,63 @@ def outgoing_range(stdin_text):
         if lsha == ZERO:
             continue
         if rsha != ZERO:
-            return '%s..%s' % (rsha, lsha), ''
+            # ── THE REMOTE SHA ON STDIN IS NOT ALWAYS AN OBJECT THIS CLONE
+            #    HAS, AND THAT WAS REPORTED AS AN UNREADABLE RANGE (2026-10-13)
+            # git hands the hook the sha the REMOTE currently has. Five
+            # sessions push this repo, so between a session's last fetch and
+            # its push the remote tip moves, and the hook is then asked about a
+            # range whose LEFT SIDE has never been fetched here. `git log`
+            # exits 128, commits_in() returns None, and the only thing printed
+            # was "Blocked: the outgoing range A..B could not be read" -- a
+            # symptom with no cause, pointing at the range as though the change
+            # were malformed.
+            #
+            # MEASURED TWICE, EIGHT DAYS APART, ON THE SAME CLONE. b8 was
+            # refused at 326f2894..94e608a4; `git cat-file -t 326f2894` exited
+            # 128, a fetch brought the object in, and the identical range then
+            # read clean with 20 records and 0 malformed. b9 was refused again
+            # at 14a771a4..79545180 -- another session pushed DURING this
+            # gate's own four-minute run, so the fetch that cleared b8 was
+            # already stale by the time the gate spoke. A one-off fetch cannot
+            # fix this; the race is structural at five pushers.
+            #
+            # THE FALLBACK IS NOT A WEAKENING, and it is the same answer this
+            # function already gives one branch below for a NEW branch:
+            # merge-base(origin/main, tip) is WHAT THIS PUSH ADDS since it
+            # diverged from the published trunk. When the remote tip is
+            # unfetched, that base is a SUPERSET of rsha..lsha -- it starts
+            # further back, so it judges more commits, never fewer. Refusing
+            # here would have been the fail-closed choice if the alternative
+            # were measuring less; it is not.
+            #
+            # IT SAYS SO ON EVERY USE. A gate that silently substitutes its
+            # subject is item 8 one step later, so the substitution is printed
+            # with both shas and the reason, and a base that cannot be resolved
+            # still refuses.
+            if _rev_parse_known(rsha):
+                return '%s..%s' % (rsha, lsha), ''
+            base = _merge_base('origin/main', lsha)
+            if not base:
+                return None, (
+                    'the remote tip %s is NOT an object in this clone -- the '
+                    'remote moved\n  since the last fetch, which is ordinary '
+                    'with five sessions pushing -- AND\n  merge-base('
+                    'origin/main, %s) could not be resolved either, so there '
+                    'is no\n  range this gate can read. FETCH AND PUSH AGAIN:\n'
+                    '      git fetch origin\n'
+                    '  This is a COULD-NOT-READ about the REMOTE, not a '
+                    'finding about your\n  commits.' % (rsha[:12], lsha[:12]))
+            print('NOTICE (register feed gate): the remote tip %s is not an '
+                  'object in this\n  clone, so the range git handed this hook '
+                  'cannot be read -- the remote moved\n  since the last fetch. '
+                  'Measuring merge-base(origin/main, %s)..%s instead,\n  which '
+                  'is what this push ADDS since it diverged from the published '
+                  'trunk\n  and is a SUPERSET of the range asked for. Not a '
+                  'finding about your commits.'
+                  % (rsha[:12], lsha[:12], lsha[:12]))
+            if base == lsha:
+                return None, ''
+            return '%s..%s' % (base, lsha), ''
         base = _merge_base('origin/main', lsha)
         if not base:
             return None, ('this is a NEW branch and its base could not be '
