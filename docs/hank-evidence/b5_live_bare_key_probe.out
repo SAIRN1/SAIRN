@@ -1,0 +1,32 @@
+LIVE BARE-KEY VERIFICATION -- no X-SD-Auth header on any call below
+endpoint https://sairn.vercel.app/api/sd-data
+
+licence            resource               gated  read                       write(id-less)            
+SF-PINNACLE-2026   sf_officers            YES    402                        402                       
+SF-PINNACLE-2026   sf_sessions            YES    402                        402                       
+SF-PINNACLE-2026   sf_shifts              YES    402                        402                       
+SF-PINNACLE-2026   sf_tickets             YES    402                        402                       
+SF-PINNACLE-2026   sf_rentals             YES    402                        402                       
+SF-PINNACLE-2026   sf_events              no     402                        402                       
+SF-PINNACLE-2026   sf_products            no     402                        402                       
+SCP-DEMO-2026      scp_designs            YES    402                        402                       
+SCP-DEMO-2026      scp_quotes             YES    402                        402                       
+SCP-DEMO-2026      invoices               YES    402                        402                       
+SCP-DEMO-2026      scp_vendors            YES    402                        402                       
+SCP-DEMO-2026      scp_progress_photos    YES    402                        402                       
+SCP-DEMO-2026      customers              YES    402                        402                       
+SCP-DEMO-2026      scp_jobs               no     402                        402                       
+SCP-DEMO-2026      scp_irr_zones          no     402                        402                       
+
+FINDINGS (11):
+  ! ('SF-PINNACLE-2026', 'sf_officers', '402 ', '402 ', 'GATED but not 403 on both')
+  ! ('SF-PINNACLE-2026', 'sf_sessions', '402 ', '402 ', 'GATED but not 403 on both')
+  ! ('SF-PINNACLE-2026', 'sf_shifts', '402 ', '402 ', 'GATED but not 403 on both')
+  ! ('SF-PINNACLE-2026', 'sf_tickets', '402 ', '402 ', 'GATED but not 403 on both')
+  ! ('SF-PINNACLE-2026', 'sf_rentals', '402 ', '402 ', 'GATED but not 403 on both')
+  ! ('SCP-DEMO-2026', 'scp_designs', '402 ', '402 ', 'GATED but not 403 on both')
+  ! ('SCP-DEMO-2026', 'scp_quotes', '402 ', '402 ', 'GATED but not 403 on both')
+  ! ('SCP-DEMO-2026', 'invoices', '402 ', '402 ', 'GATED but not 403 on both')
+  ! ('SCP-DEMO-2026', 'scp_vendors', '402 ', '402 ', 'GATED but not 403 on both')
+  ! ('SCP-DEMO-2026', 'scp_progress_photos', '402 ', '402 ', 'GATED but not 403 on both')
+  ! ('SCP-DEMO-2026', 'customers', '402 ', '402 ', 'GATED but not 403 on both')
