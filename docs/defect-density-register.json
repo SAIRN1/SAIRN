@@ -27264,6 +27264,62 @@
       "factors_unknown_reason": "one reasoning gap shared by two probes plus one cleanup leak in the new helper, recorded as one record naming all three"
     },
     {
+      "commit": "35deee61c340",
+      "date": "2026-10-13",
+      "subject": "fix(push gate): the unfetched remote base resolved ONCE, centrally -- it was producing a FALSE FINDING in the owner-header check, not a could-not-run",
+      "files": [
+        "tools/sairn_push_gate_hook.py"
+      ],
+      "lines_added": 59,
+      "lines_removed": 0,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/sairn_push_gate_hook.py read its range BASE from the pre-push stdin line -- the sha THE REMOTE currently has -- and passed it unverified to every check below. With five sessions pushing one branch that sha is routinely an object this clone has never fetched, and because every check reads the same variable, ONE unfetched sha produces a DIFFERENT wrong answer in each of them while none reports that the base could not be read. THE WORST CONSUMER PRODUCES A FALSE FINDING RATHER THAN A COULD-NOT-RUN: the owner-header check decides whether a file is ADDED by this push with , which fails for EVERY path when the base is absent, so every modified tools/*.py is classified as newly added. On the real push it printed NO OWNER: 4 over tools/copy_exactly_gate.py, tools/register_feed_gate.py, tools/sairn_push_gate_hook.py and tools/tooling_inventory.py -- all four pre-existing and all four grandfathered by that check's own stated scope, 'ADDED FILES ONLY. The 282 that already exist are grandfathered' -- and blocked the push. The remedy it instructed would have had one session write itself as OWNER of four shared tools, two of them contested, to get an unrelated push out. Fixed centrally where the base is established rather than per check, because the identical defect had already been fixed twice the same day in tools/register_feed_gate.py (774cf1d2) and tools/copy_exactly_gate.py (ee06c61c) and a check added later would repeat it a fourth time: the base is tested with git cat-file -e <sha>^{commit} and replaced with merge-base(origin/main, tip) when absent, which is a SUPERSET of the range asked for, with the substitution printed and both shas named.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "c86050b4b228",
+        "date": "2026-09-30",
+        "subject": "feat(methodology): the intended bare-run writers named and reasoned, and a new tool must say who owns it",
+        "lag_days": 13
+      },
+      "contributing_factors": [
+        {
+          "factor": "the remote sha was shared by every check in the gate with no existence test at the one place it is established",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "resolved once in main() with cat-file -e and a merge-base fallback, so later checks inherit a readable base"
+        },
+        {
+          "factor": "the failure mode was a FALSE FINDING with a plausible remedy, not a refusal -- the gate told one session to claim OWNER of four shared tools",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "with the base resolved the owner check no longer fires on pre-existing files; driven both directions against the real repo"
+        },
+        {
+          "factor": "the same shape was independently written in three gates, so fixing it per gate moved the refusal along instead of clearing it",
+          "kind": "process",
+          "action_status": "done",
+          "action": "this fix is central; the two earlier per-gate fixes stay because those files build their own ranges from stdin as well"
+        },
+        {
+          "factor": "five sessions pushing one branch makes a stale remote tip the ordinary case, and no gate modelled it as ordinary",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "the push rate is the platform; gates have to tolerate a moving remote rather than treat it as an anomaly"
+        }
+      ],
+      "recurrence_open": "No checker exists for the shape itself -- a sha read off pre-push stdin and then passed to rev-parse, cat-file or log with no existence test. tools/hover_auditor_scope_gate.py:409 is a fourth instance, still unfixed and routed rather than edited because it is the auditor separation gate and passed every push attempt this batch. Nothing stops a fifth being authored. Also unmeasured: how many of the gate's other checks were silently reading a wrong answer off the same absent base before this fix, since only the owner check happened to fail loudly."
+    },
+    {
       "commit": "3ed683657725",
       "date": "2026-10-13",
       "subject": "fix(tooling inventory): the hook leg is OPTIONAL in a clone whose hooks are off on purpose -- and the two new tools get their PURPOSES entries",
