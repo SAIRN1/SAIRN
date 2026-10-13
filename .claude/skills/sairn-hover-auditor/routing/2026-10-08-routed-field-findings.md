@@ -644,3 +644,43 @@ probe, not assumed.
 **Routed to hank** (owns SAIRNbuild and SAIRNfreedom) as specs +
 baselines for a future implementation decision -- no fix made, per
 explicit instruction.
+
+## Citation-drift findings re-verified against current HEAD -- H1 batch b18 item 3
+
+Re-read each of the 4 citation-drift findings above directly against
+origin/main HEAD (`618cbd9f`) rather than trusting the b15 table's "real
+location" column, which was itself already two batches old. All 4 are
+STILL OPEN -- none have been corrected -- and every one has drifted
+FURTHER since b15, confirming these are genuinely stale comments (not
+self-correcting) rather than a one-time miss:
+
+| Stale comment, still at | Still cites | b15's real (now stale too) | REAL as of this batch | Drift since b15 |
+|---|---|---|---|---|
+| `api/sd-data.js:5422` (+3 others, see below) | `api/sd-data.js:5231` | `:5314` | `api/sd-data.js:5422` | +108 |
+| `api/sd-data.js:13260` | `api/sd-data.js:8496` | `:8796` | `api/sd-data.js:8822` | +26 |
+| `api/sd-data.js:13283` | `sairnbuild.html:5726` | `:5743-5745` | `sairnbuild.html:5743-5745` | **0 -- unchanged** |
+| `api/sd-data.js:1145` (+3 others, see below) | `sairnfreedom.html:7684` | `:7721` | `sairnfreedom.html:7740` | +19 |
+
+The 6/7-citation block (`api/sd-data.js:1139-1140`, unchanged location)
+has drifted NON-uniformly this time -- b15's finding that it moved by a
+uniform +55 across all 7 numbers no longer holds:
+
+| Still cites | b16/b17's real (stale too) | REAL now | Drift since b16/b17 |
+|---|---|---|---|
+| `:3424` (sf_sessions write) | `:3479` | `sairnfreedom.html:3492` | +13 |
+| `:3523` (inside sfRecordResults, `:3509`) | `:3578` (fn at `:3564`) | `:3591` (fn at `sairnfreedom.html:3577`) | +13 |
+| `:4976` (sf_sessions write) | `:5031` | `sairnfreedom.html:5050` | +19 |
+| `:4628` (sf_tickets write) | `:4683` | `sairnfreedom.html:4702` | +19 |
+| `:4739` (sf_shifts write) | `:4794` | `sairnfreedom.html:4813` | +19 |
+| `:5168` (sf_rentals write) | `:5223` | `sairnfreedom.html:5242` | +19 |
+
+The split (+13 for the two sites inside/near `sfRecordResults`, +19 for
+the four later sites) means something was inserted between those two
+groups since b16/b17 -- the block is no longer drifting as one uniform
+unit the way it was at b15. Named as its own small observation, not
+chased further (out of this batch's scope to find what inserted those 6
+lines).
+
+Comment-only fix needed on all of the above; no code-behavior change.
+Still routed to hank, same as b15/b16/b17 -- unchanged ownership, now
+three batches open with no action taken.
