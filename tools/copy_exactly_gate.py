@@ -664,6 +664,59 @@ def main(argv):
     else:
         base, tip = 'origin/main', 'HEAD'
 
+    # ── A BASE THAT DOES NOT RESOLVE IS USUALLY THE REMOTE, NOT AN ANOMALY
+    #    (2026-10-13) ───────────────────────────────────────────────────────
+    # In --pre-push mode `base` is the sha THE REMOTE currently has, read off
+    # git's own stdin line. Five sessions push this repo, so between a clone's
+    # last fetch and its push the remote tip moves and this gate is handed a
+    # sha that was never fetched here. It then refused with "does not resolve
+    # in this clone ... nothing was checked (PR 1.11)" -- which is a true
+    # sentence about a condition that is ORDINARY, and the push it stops is
+    # unrelated to it. Measured on this clone the same day in three gates:
+    # register_feed_gate refused twice over it eight days apart, and this one
+    # refused the next attempt at bef3f6df.
+    #
+    # THE FALLBACK IS ALREADY THIS FILE'S OWN PATTERN, nine lines above: a
+    # brand-new branch with no remote base compares against origin/main and
+    # SAYS SO. This is the same situation one step along -- a base that exists
+    # somewhere but not here -- so it gets the same treatment, with
+    # merge-base(origin/main, tip) rather than origin/main itself, because that
+    # is what the push ADDS since it diverged and it is a SUPERSET of the range
+    # asked for when the remote tip is merely unfetched. More commits judged,
+    # never fewer.
+    #
+    # THE TIP IS STILL A HARD REFUSAL and the two are deliberately not folded
+    # together: the tip is a LOCAL sha this clone is pushing. If that does not
+    # resolve, something is genuinely wrong and there is nothing to fall back
+    # to.
+    if '--pre-push' in argv:
+        code, _o, _e = git('rev-parse', '--verify', str(base) + '^{commit}')
+        if code != 0:
+            code2, out2, _e2 = git('merge-base', 'origin/main', tip)
+            mb = (out2 or '').strip()
+            if code2 != 0 or not mb:
+                sys.stderr.write(
+                    'COULD NOT RUN: the remote base %s is not an object in '
+                    'this clone -- the\n  remote moved since the last fetch, '
+                    'which is ordinary with five sessions\n  pushing -- AND '
+                    'merge-base(origin/main, %s) could not be resolved either, '
+                    'so\n  there is no range to read. FETCH AND PUSH AGAIN:\n'
+                    '      git fetch origin\n'
+                    '  This is a COULD-NOT-READ about the REMOTE, not a '
+                    'finding about your commits.\n'
+                    % (str(base)[:12], str(tip)[:12]))
+                return EXIT_COULD_NOT_RUN
+            sys.stderr.write(
+                'copy-exactly NOTICE: the remote base %s is not an object in '
+                'this clone, so\n  the range git handed this hook cannot be '
+                'read -- the remote moved since the\n  last fetch. Comparing '
+                'merge-base(origin/main, %s) = %s instead, which is\n  what '
+                'this push ADDS since it diverged from the published trunk and '
+                'is a\n  SUPERSET of the range asked for. Not a finding about '
+                'your commits.\n'
+                % (str(base)[:12], str(tip)[:12], mb[:12]))
+            base = mb
+
     for ref in (base, tip):
         code, _o, _e = git('rev-parse', '--verify', ref + '^{commit}')
         if code != 0:
