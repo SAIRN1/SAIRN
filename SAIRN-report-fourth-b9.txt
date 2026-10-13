@@ -1,0 +1,509 @@
+REPORT fourth b9
+
+BATCH b9, CONTINUATION AFTER COMPACTION -- 2026-10-13
+Every figure below was RE-DERIVED at finalisation, not carried from the draft
+(RULE E). Three rebases ran during this batch and rewrote every local sha.
+
+
+0. THE HEADLINE
+
+THE PUSH LANDED. TWICE, and both ranges are quoted because the second carries
+the documents the first could not.
+
+    push 1   c5af98dc..d30e9e42     48 commits   batches b5 - b9
+    push 2   ae3a5cfb..79a0b04f      3 commits   methodology note + handoff
+
+    git rev-parse HEAD        79a0b04fb2f69da3e65788a7ddb98136bcbc24ba
+    git rev-parse origin/main 79a0b04fb2f69da3e65788a7ddb98136bcbc24ba
+    git rev-list --left-right --count origin/main...HEAD   ->  0   0
+    git status (tracked)      clean
+
+Five batches of finished work had been sitting unpushed. They are on
+origin/main.
+
+ONE FIGURE ABOVE WILL BE ONE COMMIT STALE BY THE TIME IT IS READ, AND THAT IS
+SAID RATHER THAN LEFT TO BE FOUND. This report and its digest are themselves a
+commit, which cannot exist before the report is written and sealed, so HEAD
+advances past 79a0b04f when they land. 79a0b04f is the state at FINALISATION of
+the body, which is the moment RULE E names; the push that carries this report
+is a third range and is quoted in the digest's successor, not predicted here.
+
+SAIRN_SEED_GATE=off WAS NOT USED. Not once, in any form. No row was added to
+docs/BYPASS-LOG.jsonl by this session.
+.claude/settings.json WAS NOT COMMITTED by this session, and the hooks are
+still cleared: 0 hook groups, 0 entries, in both the working tree and HEAD.
+
+
+1. ITEM 1 -- THE PUSH. ONE REFUSAL WAS FOUR DEFECTS WEARING ONE MESSAGE
+
+The b8 diagnosis was correct and INCOMPLETE. It found that the left side of the
+outgoing range was the remote's tip, handed to the hook on stdin, and absent
+from this clone's object store; a fetch cleared it. True -- and a one-off fetch
+cannot close a race that recurs, which is why the identical refusal arrived
+again today at 14a771a4..79545180.
+
+Re-diagnosed at HEAD, the single refusal on screen was FOUR distinct defects.
+Each was measured before it was fixed, each was driven in both directions, and
+each carries a defect record.
+
+  CAUSE 1  tools/report_sha_check.py (added by my b5, now d7accea0) and
+           tools/temp_state_leak_check.py (added by my b7, now 7db6bf03)
+           carried NO PURPOSES entry and NO REGISTRY entry. Michael's
+           2026-09-13 decision is that no tools/ file is mergeable without
+           one. MINE, and five batches old.
+           FIXED: two entries, each naming what the tool CATCHES rather than
+           what it does, plus a regenerate. Landed in f2f9953b.
+
+  CAUSE 2  push-gate check 12 measured the TIP in the live working tree and
+           the BASE in a clean throwaway worktree. So "clean there, dirty
+           here" compared the base commit against the base commit PLUS this
+           clone's uncommitted files. A push carries commits, not a working
+           tree.
+           It fired on .claude/settings.json, which is tracked and is
+           deliberately modified-not-committed here. tooling_inventory.py
+           derives one of seven sources from that file, so in the live tree
+           `hook entries` reads 0 and the generator REFUSES (exit 2,
+           correctly). In a worktree of the same tip it reads 19. Measured
+           both ways.
+           THE WORSE HALF: a wrong subject did not merely produce a false
+           refusal, IT REPLACED THE TRUE ONE. The live-tree refusal fires on
+           the empty derivation source BEFORE the generator reaches its
+           undescribed-tool list, so CAUSE 1 never appeared in the output
+           check 12b greps.
+           FIXED: check 12 re-derives its tip verdicts in a worktree of the
+           pushed commit, the same way the base side already does. The
+           live-tree run is kept as a SCREEN, so a push whose documents are
+           clean still builds no worktree at all. A tip that cannot be checked
+           out prints COULD NOT TELL and falls back to the prior behaviour
+           rather than inventing an allow. Landed in f2f9953b.
+
+  CAUSE 3  tools/register_feed_gate.py and tools/copy_exactly_gate.py each
+           took the REMOTE's sha off the pre-push stdin line and used it as a
+           local object with no existence test.
+             register_feed_gate  "Blocked: the outgoing range A..B could not
+                                 be read" -- a symptom with no cause, pointing
+                                 at the range as though the change were
+                                 malformed. Refused this clone TWICE, EIGHT
+                                 DAYS APART (b8 at 326f2894..94e608a4, b9 at
+                                 14a771a4..79545180).
+             copy_exactly_gate   "COULD NOT RUN: <sha> does not resolve in
+                                 this clone ... nothing was checked (PR 1.11)"
+                                 -- a true sentence about an ordinary
+                                 condition. Found by it refusing the VERY NEXT
+                                 push attempt after the first fix landed, at
+                                 remote tip bef3f6df.
+           FIXED: cat-file -e <sha>^{commit}, then merge-base(origin/main,
+           tip) when absent. Landed in ac9d47d8 and 55777a74.
+
+  CAUSE 4  the same unfetched base made the owner-header check classify every
+           MODIFIED tools/*.py as newly ADDED. That check decides "added" with
+           `git cat-file -e <base>:<path>`, which fails for EVERY path when
+           the base is absent.
+           THIS ONE DID NOT REFUSE TO ANSWER. IT ANSWERED WRONGLY, AND ITS
+           REMEDY INSTRUCTED A LAND GRAB. Verbatim from the push:
+
+               NO OWNER: 4
+                   tools/copy_exactly_gate.py
+                   tools/register_feed_gate.py
+                   tools/sairn_push_gate_hook.py
+                   tools/tooling_inventory.py
+
+           All four pre-existing. All four grandfathered by that check's own
+           written scope -- "ADDED FILES ONLY. The 282 that already exist are
+           grandfathered." The printed fix was to add an `# OWNER:` line, so
+           one session would have written itself as owner of four shared
+           tools, two of them contested, to get an unrelated push out.
+           FIXED CENTRALLY, not per check, because causes 3a and 3b were the
+           same defect fixed twice already and a check added later would
+           repeat it a fifth time: the base is resolved ONCE where it enters
+           main(), and the substitution is printed with both shas. Landed in
+           9c36aa7c.
+
+WHY THE FALLBACK IS NOT A WEAKENING, stated rather than assumed. With a merely
+unfetched remote tip, merge-base(origin/main, tip) sits FURTHER BACK than the
+range git asked about, so every check judges MORE commits than requested, never
+fewer. Fail-closed would be the right call if the alternative measured less. It
+does not.
+
+DRIVEN, NOT ASSUMED, in both directions for each fix:
+    register_feed_gate   4 arms, 4 pass -- a known remote sha still yields the
+                         literal range; an unfetched one falls back and prints
+                         the notice; a zero remote sha (new branch) still uses
+                         merge-base; malformed stdin still refuses as MALFORMED
+    copy_exactly_gate    3 arms, 3 pass -- known base exit 0 with no notice;
+                         unfetched base exit 0 with the notice; an
+                         unresolvable TIP still exits 2 with the original text
+    push gate (central)  2 arms against the real repo -- planted unfetched
+                         base: exit 0, notice printed, NO OWNER does NOT fire.
+                         Real origin/main as base: exit 0, no notice at all,
+                         so the fallback is reached only by the condition it
+                         names
+    check 12 symmetry    the live gate run itself. It now prints
+                         "docs/TOOLING-INVENTORY.md is not clean in this
+                         working tree (exit 2) and IS clean at the pushed tip"
+                         and does NOT block
+
+STILL OPEN, AND IT IS THE FOURTH INSTANCE OF THE SAME SHAPE:
+tools/hover_auditor_scope_gate.py:409 builds rsha..lsha and returns "could not
+read the outgoing range" on a non-zero git exit. NOT FIXED, by decision: it
+runs first in .githooks/pre-push, it passed every push attempt this batch, and
+it is the auditor separation gate, so a build agent routes it with the line
+rather than editing it.
+
+THE RACE IS REAL AND WAS PAID FOR. Four push attempts were refused by gates
+(all four causes above) and TWO MORE were refused by GitHub itself as
+non-fast-forward, with every gate clean, because another clone landed during
+the gate's own multi-minute run. The sequence is in scratchpad/push_b9c.log,
+push_b9d.log and push_b9e.log.
+
+ONE SELF-INFLICTED REFUSAL IS WORTH RECORDING BECAUSE THE GATE WAS RIGHT:
+register_feed_gate refused one attempt with "stdin is not a terminal and
+carried NO ref lines", which is its cause 1 -- a push issued from inside a
+shell wrapper. Its own message says "ISSUE THE PUSH DIRECTLY -- that is the
+fix, and there is nothing wrong with the change." Correct. Every later push was
+issued as its own direct command.
+
+
+2. ITEM 2 -- THE AUDIT-EVENT CHECK, RUN AND RECORDED
+
+    python tools/audit_event_type_check.py      ->  EXIT 1
+
+Re-run at the post-rebase HEAD, which was the thing to check rather than
+assume: UNCHANGED after rebasing onto 27 upstream commits.
+
+    tables WITH an event_type CHECK : 16
+    tables WITHOUT one              :  1   sv_audit_log
+    tables whose CHECK rejects an emitted value : 3 of 16
+    distinct rejected values : 11
+
+    sairncode_audit_log   credential_change_refused, pin_setup
+                          emitted by api/sc-ai.js, api/sc-auth.js
+    sairnlaw_audit_log    ai_interaction, ai_rejected, ai_reviewed,
+                          ai_used_in_filing, deadline_engine,
+                          legal_reference_lookup
+                          emitted by api/law-auth.js, api/legal-citator.js,
+                          api/legal-deadlines.js, api/legal-reference.js
+    stonedesk_audit_log   order_link_created, order_link_revoked, pin_setup,
+                          sub_roster_write
+                          emitted by api/sd-auth.js, api/sd-sub-auth.js,
+                          api/sd-sub-data.js, api/stonedesk-track.js
+
+Every one of these is a write that FAILS AT THE DATABASE. writeAuditLog is
+non-fatal and returns false, so the calling code carries on and the row is
+simply absent.
+
+AND IT IS NOT AN ANSWER ABOUT THE DATABASE, which the tool says itself: it
+reads the CHECK out of sql/*.sql, not out of Supabase. So "the migration did
+not take" and "the repo's DDL lags the database" are INDISTINGUISHABLE from
+here. It needs one pg_constraint read or one real insert with live credentials.
+hank's. Evidence: scratchpad/item2_audit.log, 60 lines.
+
+
+3. ITEM 3 -- THE SALVAGE REFS, BUNDLED THEN DELETED
+
+Conditional on a landed push, and the push landed, so it ran.
+
+    git bundle create refs-salvage-b6-2026-10-13.bundle \
+        refs/salvage/b6-defreg-probe refs/salvage/b6-gate12
+    git bundle verify ...   ->  exit 0, "is okay", "records a complete
+                                history", both refs listed, sha1
+    55,143,234 bytes
+    git update-ref -d  x2   ->  refs/salvage/ now holds 0 refs
+
+CHECKED BEFORE DELETING, not after: neither sha is an ancestor of origin/main
+(merge-base --is-ancestor, both NO), and both are PROBE FIXTURES rather than
+work -- "PROBE ambiguous-subject fixture -- not a real commit" (fdce1b4b) and
+"drop a generator" (549a372a), from b6's push-gate probes. NO REAL WORK WAS IN
+THEM. That is the only reason a bundle living in %TEMP%, which is declared HIGH
+volatility, is an acceptable last copy.
+
+
+4. ITEM 4 -- BACKUPS MOVED, THROWAWAY DROPPED, WITH THE DENOMINATOR
+
+    3 settings backups MOVED out of the repo, to
+      scratchpad/settings-backups-moved-2026-10-13/
+        settings.json.bak                        7,300 bytes
+        settings.json.hooks.bak                 12,224 bytes
+        settings.json.stripped-2026-10-11T2045.bak  1,700 bytes
+      .claude/ now holds no *.bak at all.
+
+    2 untracked SQL files MOVED out of the repo, to
+      scratchpad/dropped-sql-2026-10-13/
+        restore_demo_pins_2026-09-29.sql   the demo-pins SQL named in the
+                                           brief. It carries scrypt hashes
+                                           derived from a gitignored file and
+                                           no pin or fragment of one, which
+                                           its own header states.
+        zz_probe_override_arm.sql          two lines, "probe fixture, never
+                                           committed", `select 1;`
+
+    1,566 scratch files DELETED of 1,873 candidates; 307 COULD NOT BE DELETED,
+    locked by live processes. 288MB -> 75MB.
+
+THE COUNT IN THE BRIEF WAS ~350 AND THE MEASURED POPULATION IS NOT THAT, so
+the real numbers are given rather than the expected one. Measured, with the
+script: 2,123 files under 43 session directories of this clone, of which 88 are
+THIS session's and were kept. The deletion was NOT a sweep -- three keep rules
+were applied first, and the middle one is the load-bearing one:
+
+    KEPT  anything in this session's directory (live working files)
+    KEPT  any file whose BASENAME is cited in a committed document -- 2,582
+          distinct filenames are cited across docs/ and
+          SAIRN-ACTIVE-WORK-fourth.md. A citation pointing at a file somebody
+          deleted is worse than a large temp directory.
+    KEPT  any file named in docs/external-files-index.json -- 105 names
+    162 files were kept by those rules and are named in the manifest.
+
+Evidence: scratchpad/drop_scratch.py and
+scratchpad/dropped-scratch-manifest-2026-10-13.txt, which lists all 1,873
+candidates by full path. NEXT STEP for the remaining 307: re-run
+`python drop_scratch.py --apply` once the holding processes exit.
+
+
+5. ITEM 5 -- THE METHODOLOGY ITEM: ONE CHECK WIRED, ONE RULE ROUTED
+
+THE INVENTORY RULE WAS NEVER THE GAP. THE TIMING WAS. Three things already
+enforced "no tools/ file is mergeable without an entry" -- push-gate checks 12
+and 14, and the generator's own refusal -- and ALL THREE ASK AT PUSH TIME. So a
+one-line omission in b5 became a blocked queue in b9, and the session that had
+to clear it was whichever one pushed next rather than the one that wrote the
+tool.
+
+BUILT AND WIRED: tools/commit_tool_entry_check.py, in .githooks/pre-commit,
+scoped to `--diff-filter=A` over `tools/*.py` so an ordinary commit pays one
+`git diff --cached`. Three decisions in it are load-bearing and each is a
+measurement rather than a preference:
+
+  1  IT READS THE STAGED BLOBS, not the working tree. The case worth catching
+     is a tool staged with its entry written and NOT staged -- a working-tree
+     reader passes exactly that commit. Driven live: unstaging
+     tooling_inventory.py while the new tool stays staged exits 1; re-staging
+     returns it to 0.
+  2  IT ACCEPTS PURPOSES OR report_only_checks.REGISTRY, because
+     missing_purposes does. A PURPOSES-only reader looks correct, passes every
+     obvious fixture, and refuses every report-only tool on the platform. That
+     is the third arm of the criteria lock and it is the arm that would have
+     made the tool wrong.
+  3  A HISTORICAL RANGE IS JUDGED AGAINST THE INVENTORY AS IT WAS, read at the
+     range tip. Reading today's copy would have let the two entries written
+     this batch retroactively clean the commits that caused the stall --
+     convention 8 arriving inside the fix for it.
+
+  10/10 fixture arms (--fixtures, exit 0), and VALIDATED AGAINST THE REAL
+  DEFECT IN BOTH DIRECTIONS at the landed shas, re-driven after the re-seat
+  rather than carried over:
+      d7accea0~1..d7accea0   exit 1, names report_sha_check.py
+      7db6bf03~1..7db6bf03   exit 1, names temp_state_leak_check.py
+      ca81d59d~1..ca81d59d   exit 0, "all described: route_suite_failures.py"
+      8acd7896~1..8acd7896   exit 0, "all described:
+                             external_file_index_check.py"
+
+  IT DOES NOT REPLACE CHECKS 12 AND 14 and its header says so: a pre-commit
+  hook is per-clone state and a clone that never ran install_git_hooks.py has
+  none. The boundary stays the backstop; this moves the FIRST notice.
+
+ROUTED, NOT SELF-PROMOTED: the rule that a value a hook receives from its
+caller -- a sha on stdin, a path in argv, a ref name -- is INPUT, whose three
+states are PRESENT, ABSENT and UNREADABLE, and that an absent REMOTE object is
+a statement about the remote rather than about the change. The mechanism, so it
+is not advice: resolve the input ONCE where it enters, and have the resolution
+print what it substituted. Written out in full in docs/METHODOLOGY.md and NOT
+given a number by me, because I hold that file in this batch's claim and
+writing myself a number into a file I hold is the self-promotion cody, cc and
+hank have each declined this cycle.
+
+THE CONVENTION DENOMINATOR, re-counted at this HEAD by the stated method and
+not quoted from any page: 34 headings, 1 -> 34, no gap, no duplicate, NEXT FREE
+35. No other session added a 35 while this batch ran.
+
+
+6. ITEM 6 -- PUSH AND CONFIRM, WITH THE SHAS
+
+    before      HEAD 4b32e413, origin/main 618cbd9f, 29 ahead / 12 behind
+    push 1      c5af98dc..d30e9e42     48 commits
+    push 2      ae3a5cfb..79a0b04f      3 commits
+    after       HEAD 79a0b04f == origin/main 79a0b04f, 0 ahead / 0 behind
+
+Three rebases ran, with tools/sairn_rebase_resolve.py doing the resolving:
+docs/scrutiny-flags.json by UNION, docs/defect-density-register.json by
+semantic merge with its own validator, and docs/MASTER-PLAN.md plus
+docs/traceability-matrix.md by regeneration. Nothing was hand-merged.
+
+
+7. THE DEFECT REGISTER AND THE OTHER THINGS THIS BATCH WROTE
+
+    docs/defect-density-register.json   529 -> 535 records
+      ac9d47d8  tooling/high/code-review, rule 1.11, phase coding (stated),
+                injected 09b3ebb8 -- the unreadable outgoing range
+      f2f9953b  tooling/high/code-review, rule 1.1, injected 9cd9907a --
+                check 12's tip/base asymmetry, and the finding it masked
+      55777a74  tooling/high/code-review, rule 1.11, injected e2222a40 -- the
+                third gate
+      9c36aa7c  tooling/high/code-review, rule 1.1, injected c86050b4 -- the
+                central base resolution and the false NO OWNER finding
+    Every record carries three or four contributing factors with action status
+    and a --recurrence-open sentence naming what the fix does NOT close.
+    `python tools/defect_register.py --check` exits 0: every commit resolves,
+    every field is in vocabulary, every rule id checked against
+    docs/SAIRN-PROCESS-RULES.md.
+
+    docs/TOOLING-INVENTORY.md  335 -> 340 tools, regenerated by the tool
+    inside a detached worktree, because the live tree cannot run its own
+    generator. --check exits 0 in that worktree after the write.
+
+    docs/external-files-index.json  one additive row: the Drive delivery copy
+    of this batch's handoff, declared with belongs_in_git false FOR THE DRIVE
+    PATH and the authoritative committed copy named. It is deliberately not
+    the same finding as the five rows above it, and the difference is
+    checkable: `git ls-files --error-unmatch docs/handoff-fourth-2026-10-16.md`
+    exits 0. The same row DISCHARGES the two cody routed to this session on
+    2026-10-12 -- handoff-fourth-2026-10-11.md and -2026-10-12.md are both
+    tracked now, along with 10-13 through 10-16.
+    tools/external_file_index_check.py: 34 declared, 25 INDEXED, 0 UNINDEXED,
+    exit 0.
+
+    ONE REPAIR TO THE REGISTER, and the mechanism is worth passing on. A
+    backtick inside a long --summary argument was executed by the shell, and
+    the record landed reading "...decides whether a file is ADDED by this push
+    with , which fails..." -- a sentence that names no mechanism, in the field
+    a reader uses to re-derive the defect. IT VALIDATED CLEAN; --check exits 0
+    on it, because no check can know a sentence lost its subject. Repaired as
+    ONE substring with a count assertion on both sides. The first attempt
+    rebuilt the JSON with json.dumps and produced a 28,016-line diff for a
+    one-phrase repair in a ledger three sessions merge; that was reverted. USE
+    --summary-file / --factors-file for anything with shell metacharacters.
+
+
+8. A DEFECT IN THE PREVIOUS HANDOFF'S NAME, NOT ITS CONTENT
+
+docs/handoff-fourth-2026-10-16.md was written on 2026-10-13. CLAUDE.md says to
+find the latest handoff BY THE DATE IN THE FILENAME, so a session following
+that rule literally sorts the STALE document above the current one -- and the
+stale one records the push as blocked, which is precisely the fact that
+changed.
+
+A banner now sits at its top naming the misdating, pointing at
+docs/handoff-fourth-2026-10-13b.md, and saying which of its sections are
+overtaken. NOT RENAMED, deliberately: a row in docs/external-files-index.json
+and the Drive delivery copy both carry that name, so a rename would turn two
+correct pointers into dead ones in order to fix one misleading sort.
+
+
+9. CLAIMS, LOCKS AND EXTERNAL HOLDS
+
+    repo claims held      1   b9 continuation, 8 declared FILES, committed AND
+                              PUSHED -- so for the first time in five batches
+                              every other clone can see it without a fetch
+    session locks held    1   fourth.lock. The release has now been DENIED by
+                              the permission layer in three successive batches
+    locks released by me  0   none of the dead ones is attributable
+    worktrees besides main 4  NONE OF THEM MINE: gate12-65340-3,
+                              invis-c0-75132, sairn-abl-q_gv10j5, and
+                              sairn-gate-base-d78d62e71203 -- the last is the
+                              push gate's own throwaway that it failed to
+                              remove and says so on stderr. My two
+                              (sairn-origin-probe, sairn-tipwt-test) were
+                              removed and pruned
+    git stash             0   one existed and was DELIBERATELY DROPPED: it
+                              held a pre-cc copy of .claude/settings.json, so
+                              popping it would have reverted cc's committed
+                              permission rules while looking like a routine
+                              restore
+    refs/salvage/b6-*     0   bundled, verified, deleted
+
+FILES EDITED OUTSIDE THE DECLARED FILES SET, named rather than absorbed:
+docs/external-files-index.json and .githooks/pre-commit, neither named in any
+active claim. docs/defect-density-register.json, docs/scrutiny-flags.json and
+docs/tool-owner-map.json were also touched; all three are written BY THE GATES
+when they run, and leaving them dirty is what refuses the next rebase.
+
+ONE FILE TAKEN UNDER A DECLARED CONFLICT, PR 4.3:
+tools/register_feed_gate.py. docs/handoff-fourth-2026-10-16.md routed its line
+747 to cc as "one message for two causes, new". No ACTIVE claim names that
+file, and it was the standing blocker on this clone's own push, so this session
+took it -- and cc's routed item is DISCHARGED rather than left queued.
+
+THE CLAIM WAS RELEASED AND RE-TAKEN rather than left stale. sairn_claim.py
+reported the existing b9 claim already covered this work and told me not to
+re-claim; the wording HAD moved on, and the tool's own instruction for that
+case is to release and re-claim so the record says one thing. Done.
+
+
+10. UNVERIFIED, AND WHAT IS NOT CLOSED
+
+  * tools/hover_auditor_scope_gate.py:409 -- the fourth instance of the
+    unfetched-base shape. Unfixed by decision, routed with the line.
+  * NO CHECKER EXISTS FOR THE SHAPE ITSELF -- a sha read off pre-push stdin
+    and then passed to rev-parse, cat-file or log with no existence test. A
+    fifth gate can still be authored with it. Recorded as a PLANNED action on
+    defect record 55777a74; nothing has been built.
+  * UNMEASURED: how many of the push gate's OTHER checks were silently reading
+    a wrong answer off the same absent base. Only the owner-header check
+    happened to fail loudly, which is the only reason any of this was found.
+  * The live-tree SCREEN in check 12 still cannot see a document that the
+    COMMITS break while an uncommitted edit compensates. Unchanged by this fix
+    and stated in the code; it is the fail-open direction that check's own
+    scoping decision already accepts in writing.
+  * docs/TOOLING-INVENTORY.md lists commit_tool_entry_check.py as UNWIRED
+    while it IS wired into .githooks/pre-commit. The generator derives wiring
+    from .claude/settings.json hook entries and from the push gate and reads
+    .githooks/ for neither, so EVERY pre-commit-wired tool is under-reported
+    the same way. Not fixed: it is a change to the inventory's source list in
+    a file two sessions contest.
+  * 4 PRE-EXISTING BAD ROWS in docs/scrutiny-flags.json -- 2a3a95c2 and
+    3ead2e86 accused of changes their diffs do not contain, over
+    tools/tier_a_review_gate.py and tests/run_tier_a_review_gate_probe.py.
+    ALREADY ON origin/main and NOT added by this batch, measured rather than
+    assumed: tools/scrutiny_ledger_check.py exits 1 with exactly those 4 rows
+    against a clean worktree of origin/main, and the failure set after every
+    merge this batch made is byte-identical. cody's files. They make
+    sairn_rebase_resolve.py REFUSE on every scrutiny-flags conflict, which is
+    a standing tax on every rebase in every clone.
+  * The audit-log constraints -- 3 tables, 11 values, plus sv_audit_log with
+    no CHECK at all. hank's, and it needs a live read nobody in this clone can
+    do.
+  * 307 scratch files could not be deleted, locked by live processes. The
+    manifest lists all 1,873 candidates.
+  * THE GATE SAID SO ITSELF AND IT IS REPEATED HERE RATHER THAN BURIED:
+    "Gate-freshness (check 10) NOTICE: the push gate that just ran is NOT the
+    one on origin/main." Both landing pushes carried that notice. A stale gate
+    is a could-not-tell, not a bad push -- so DO NOT READ EITHER CLEAN PASS AS
+    A FULL ONE.
+  * Not attempted this batch, and named so it is not read as done: the 65
+    registered red suites the earlier b9 handoff left undriven. They were not
+    in this queue.
+
+
+11. EVIDENCE
+
+All paths relative to
+C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\d1bef68d-f747-45a9-89b1-59dd99a42ae2\scratchpad\
+
+    push_b9c.log push_b9d.log push_b9e.log   the refused attempts, in order
+    gate_dry.log                            the gate driven dry before any
+                                            push, where check 12's NOTICE
+                                            first replaced its block
+    gate_arm_unfetched.log gate_arm_known.log   the central fix, both
+                                            directions
+    rfg_probe.log                           register_feed_gate, 4 arms
+    cte_fix.log cte_real.log cte_ctrl.log cte_reseated.log
+                                            the new check: fixtures, the real
+                                            defect, the controls, and the
+                                            re-drive at the landed shas
+    item2_audit.log                         the audit-event check, 60 lines
+    reg_add1.log .. reg_add4.log            the four defect records
+    f_origin.txt f_m2.txt                   the scrutiny-flags failure sets,
+                                            origin vs merged, proving
+                                            byte-identity
+    drop_scratch.py
+    dropped-scratch-manifest-2026-10-13.txt
+    refs-salvage-b6-2026-10-13.bundle
+    settings-backups-moved-2026-10-13/
+    dropped-sql-2026-10-13/
+    declare_ext.py fix_summary2.py
+
+HANDOFF: docs/handoff-fourth-2026-10-13b.md, written BEFORE this report, with
+the push already landed and no operation in progress.
+
+SHA256 e35712536be7cd2b6037c51288dc241440b54cc48a797abcd591ea02a1876bcd
+END-OF-REPORT
