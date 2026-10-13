@@ -165,10 +165,21 @@ part of this work.
 
 ## 6. Cleanup
 
-Removed: nothing from the repo, and nothing of any other agent's. This session's
-own shell scratch (`/tmp/*.txt` in the Git Bash temp — gate output, merge logs,
-claim output) is deleted after the report is written; it is all reproduced in
-the report where it matters.
+Removed: nothing from the repo, and nothing of any other agent's.
+
+**Deleted — 41 files, this session's own shell scratch in
+`C:\Users\marsh\AppData\Local\Temp`**, every one a redirected log read once and
+reproduced in the report where it matters: `claims ck claim claim2 claim3 cl2
+rel rel2 rel3 rel4 merge mc m2 ti tic tic2 efi efi2 pf pf2 pf3 push loop_merge
+loop_ti loop_push lm lt lg lp lm2 lt2 lg2 lp2 gen gen2 dl dl2 st stset st2 g`
+(all `.txt`). **Note for anyone cleaning up after a Bash tool here:** `/tmp` in
+Git Bash is **not** a path Python can see — `glob('/tmp/*.txt')` returned 0 and
+would have reported a clean sweep that deleted nothing. `tempfile.gettempdir()`
+is what resolves it.
+
+**Kept on purpose, besides the evidence directory below:**
+`<scratch>/gen_b6_landing.py` — the generator the report's §9 names as its own
+source. Deleting it would leave that citation dangling.
 
 **Kept on purpose:** `…/b9e5be49-…/scratchpad/b6/` — 18 files including
 `REFUSAL-VERBATIM.txt`, `arm11.log` and the `c4*/c7*` run logs. That directory
