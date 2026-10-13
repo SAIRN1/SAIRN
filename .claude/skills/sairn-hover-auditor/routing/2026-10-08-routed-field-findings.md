@@ -96,7 +96,31 @@ different/older mechanism -- `sc-auth.js`/`sd-auth.js` via a direct
 `writeAuditLog` call dated to the original fix (commit `94becffb`,
 confirmed back in batch b7), `law-auth.js` via its own pre-existing
 local wrapper, deliberately left alone. True count: zero of 17 genuinely
-open. No routing needed.
+open **at the application-code layer**. No routing needed for the code.
+
+**seq958, batch b15 item 5 -- a DEEPER layer the b14 correction missed.**
+`python tools/audit_event_type_check.py` (exit 1, code-level only, no
+live writes) finds that 2 of those "fine" 17 map to a DATABASE table
+whose `CHECK` constraint REJECTS the `event_type` they actually emit --
+`writeAuditLog` is non-fatal and returns `false` on a CHECK violation,
+so the row is silently absent, the SAME end result (no recoverable
+grant record) as the original finding, at a different layer.
+
+| File | Emits | Table | CHECK rejects it? |
+|---|---|---|---|
+| `api/sc-auth.js` | `pin_setup` | `sairncode_audit_log` | **YES** -- CHECK allows only `ai_call`/`ai_call_blocked`/`ai_call_failed`/`ai_injection_flagged` |
+| `api/sd-auth.js` | `pin_setup` | `stonedesk_audit_log` | **YES** -- CHECK allows only `credential_change_refused`/`credential_deactivated`/`credential_reactivated` |
+| `api/law-auth.js` | `pin_setup` | `sairnlaw_audit_log` | no -- `pin_setup` IS in its allowed list; its 6 rejected values (`ai_interaction` etc.) are unrelated to setup attribution |
+| all 14 files using `auditPinSetup()` | (helper-resolved) | per-app, via `AUDIT_TABLE_BY_APP` | no -- not flagged by this run |
+
+**Fix spec:** widen `sairncode_audit_log`'s and `stonedesk_audit_log`'s
+`event_type` CHECK constraints (in their `sql/*.sql` DDL) to include
+`pin_setup`, matching the shape already used for the other 14 tables.
+A SQL DDL change, not a code change -- and per this tool's own stated
+limit, its "CHECK" is read from the file in `sql/`, not proven live in
+Supabase, so the fix also needs a live migration run, which this role
+cannot do. **Routed to hank** (owns both `sc-auth.js`/`sairncode` and
+`sd-auth.js`/stonedesk, the two affected apps).
 
 ## tools/sairn_status.py / tools/sairn_claim.py -- claim-liveness defect, added H1 batch b10 item 7
 
@@ -267,6 +291,15 @@ list`, no hover2 row). Each verified against CURRENT code at HEAD
 `f7e03133`, not against hover2's own log text, via a read-only Explore
 pass over `api/sd-data.js` / `api/sairncash/verify.js`.
 
+**RECONFIRMATION STAMP, applies to every row below unless the row
+itself says otherwise**: re-reproduced via the real repro scripts
+(`grd_session_gate_repro.py`, `scp_session_gate_repro.py`,
+`derive-charges.test.js`) in **H1 batch b14 item 9**, and the `681` row
+specifically flipped to FIXED in **H1 batch b15 item 8** (see that row's
+own text). Added per batch b15 item 9 (every status line gets a
+repro-date anchor, following the seq951 root cause) -- this single
+stamp covers the whole table instead of repeating it in all 8 rows.
+
 | Seq | Topic | Current file:line | Status | Owner |
 |---|---|---|---|---|
 | 630/634 | `grd_invasive_sightings`, `grd_cart_orders`, `grd_training_courses`, `grd_training_completions` -- originally "no session gate at all" | `api/sd-data.js:4343-4366` (shared `GRD_SESSION_RESOURCES` prelude) | **FIXED** -- a single shared gate now calls `verifySessionToken(..., 'sairngrounds')` ahead of all 20 `grd_*`/bare-name branches. Comment at `:4325-4329` ("ONE SHARED PRELUDE, NOT TWENTY-ONE COPIES") and `:4331-4338` log the remaining gap honestly: session-only, no role differentiation, as a stated open product decision, not an oversight | closed, no routing needed |
@@ -276,7 +309,7 @@ pass over `api/sd-data.js` / `api/sairncash/verify.js`.
 | 652 | `scp_irr_zones` | `api/sd-data.js:5293-5313` | **STILL UNGATED, but DELIBERATE** -- comment at `:1372-1375` names it the test suite's `UNGATED_WITNESS` negative control | not routed -- intentional fixture, not a live finding |
 | 652 | `scp_irr_schedules` | `api/sd-data.js:5314-5333` | **STILL UNGATED, genuinely open** -- no session/role check, not in `SD_SESSION_GATED` | **cody** (owns `tests/sairncode_gates.js` / sairnscape per prior batches) |
 | 652 | `scp_water_features` | `api/sd-data.js:5335-5354` | **STILL UNGATED, genuinely open** -- same shape as above | **cody** |
-| 681 | `sairncash_verify_token_mint` -- a bare, valid `subscriptionId` mints a Firebase auth token with no ownership check | `api/sairncash/verify.js:107-126` | **STILL OPEN**, confirmed live by running `.claude/skills/sairn-hover-auditor/tools-hover2/sairncash_verify_token_mint_repro.py` against current HEAD -- exits 1, "a bare, valid subscriptionId mints a Firebase auth token with no ownership check", violating `api/_lib/firebase-admin.js`'s own stated minting precondition | **hank** (payment/identity surface, highest-severity item in this rotation) |
+| 681 | ~~`sairncash_verify_token_mint` -- a bare, valid `subscriptionId` mints a Firebase auth token with no ownership check~~ **FIXED, H1 batch b15 item 8** | `api/sairncash/verify.js:107-137` | Commit `16245537`'s sairncash half: a caller must now present both `subscriptionId` and the real Stripe customer id, checked against what Stripe returns -- a leaked `subscriptionId` alone no longer mints anything. Repro script re-run, now reports "NO FINDING", confirmed by direct code read at `:118-137`. | **CLOSED** (was hank, highest-severity item in that rotation) |
 
 **seq701 explicitly NOT routed as open**: hover2's own log entry for it
 reads "NOW RESOLVED, not undetermined" -- it is a closed audit-trail
@@ -440,6 +473,23 @@ not a single-file fix, a behavioral metric: worth a direct question
 rather than another routing row, since re-measuring the same flat number
 every batch adds no new information.
 
+**Classified by owner, H1 batch b15 item 7.** Recounted again (origin
+moved mid-batch): raw now 94, scoped still exactly 13, unchanged. The
+13 split by the session that logged each (this file, `docs/`, is the
+only location these uses live in -- there is no separate `api/`/
+`tests/`/`tools/` file per bypass, so "owner" here is the session that
+ran the bypassed push, not a directory):
+
+| Owner | `docs/BYPASS-LOG.jsonl` line(s) | Count | Dates |
+|---|---|---|---|
+| **hank** | `:42` | 1 | 2026-09-26 |
+| **cc** | `:58-69` | 12 | 2026-10-07, one adoption burst |
+
+Routed: hank's 1 and cc's 12 are both already-landed historical pushes,
+not open code to fix -- nothing to route per-row. The open question
+remains the one stated above: zero NEW scoped uses from any session
+(hank, cc, or otherwise) since 2026-10-07T15:59:21Z.
+
 ## seq664 (bld_draws), hover2's own repro DISAGREED WITH -- H1 batch b14 item 8
 
 Ran `.claude/skills/sairn-hover-auditor/tools-hover2/bld_draws_bypass_repro.py`
@@ -458,3 +508,42 @@ and gives a false positive because it has no model of the new prepended
 branch. Not fixed here -- `tools-hover2/` is hover2's own tooling, not
 this role's to edit. Flagged so the next session does not trust the
 script's bare exit code over the code itself.
+
+**The exact false positive, for H2 -- H1 batch b15 item 3, not edited
+in the script itself.**
+
+`bld_draws_bypass_repro.py:53-55` (`GENERIC_READ` regex) inspects ONLY
+the body of `if (BLD_RESOURCES[resource] && action === 'read') { ... }`
+for `verifySessionToken`. `:56-59` (`BESPOKE_DRAWS` regex) looks for
+exactly ONE other shape: `if (resource === 'bld_draws' &&
+(action === 'wip' || action === 'release_retainage')) { ... }`. The
+script's own docstring (around `:40-44`) already names the general
+limitation -- "it cannot see a generic dict-keyed dispatch... or a
+compound action condition... at all" -- but that was written before the
+real fix landed in a THIRD shape neither regex matches.
+
+**The exact input that triggers it**: the real fix at
+`api/sd-data.js:13273-13278` --
+
+```
+if (resource === 'bld_draws' && (action === 'read' || action === 'write')) {
+  const dSession = verifySessionToken(tokenFromRequest(req), licHash, 'sairnbuild');
+  if (!dSession) { res.status(401).json(...); return; }
+  ...
+}
+```
+
+This is neither of the two shapes `GENERIC_READ`/`BESPOKE_DRAWS` were
+written to recognize (its action condition is `'read' || 'write'`, not
+`'wip' || 'release_retainage'`, and its resource test is
+`resource === 'bld_draws'`, not the dict-keyed `BLD_RESOURCES[resource]`
+the first regex requires). Neither regex matches this block, so
+`analyze()` never sees that a session check already ran before the
+generic blocks it DOES match -- and reports `BYPASS CONFIRMED` on code
+that is actually gated. **Suggested fix, for H2 to apply in their own
+script, not applied here**: add a third pattern matching
+`if (resource === 'bld_draws' && (action === 'read' || action === 'write'))`
+(or more generally, scan for ANY `if` block testing the same
+`resource`/`action` pair that appears textually BEFORE the generic
+block in the file, not just the two hardcoded shapes) before concluding
+`bypass = True`.
