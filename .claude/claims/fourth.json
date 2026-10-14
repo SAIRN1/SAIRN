@@ -3612,6 +3612,25 @@
         "docs/by-design-register.json",
         "docs/external-files-index.json"
       ]
+    },
+    {
+      "id": "fourth-1791971761",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "batch b12 -- (1) re-drive the two fail-open-first checkers scratchpad/ack_check.py and scratchpad/index_resolve.py on a DELIBERATELY BAD input each and record that each now fails CLOSED with command and output. (2) write the rule that every checker ships with a deliberately bad input fixture proving it fails closed into docs/METHODOLOGY.md and APPLY it to ack_check and index_resolve with real fixtures. (3) a docs spec for a by-design-register VALIDATOR -- required fields, file:line for flag and rebuttal, ruling recorded once, no duplicate rows -- routed to the tools/ owner cc, NO tools/ edit. (4) re-run the routed-findings ack check against current origin/main (was 6 of 9 UNACK, 4 cody 2 cc) and record the new counts by command. (5) regenerate the 36-undriven-suites doc after cody's latest push, counts named by command. (6) push without force and confirm HEAD == origin/main 0 ahead 0 behind. FINAL: handoff BEFORE the report, then report and digest, all three uploaded to Drive 14Xc5oT0xzSLa_rTSOSXWVK3Kko1Fbx09 and read back. NO HOOKS, settings.json never committed, no SAIRN_SEED_GATE=off, no tools/ file edited. FILES: docs/METHODOLOGY.md docs/2026-10-13-fourth-b12-routed-to-cc-bydesign-validator.md docs/2026-10-13-fourth-b10-undriven-suites.md docs/2026-10-13-fourth-b12-ack-recheck.md SAIRN-handoff-fourth-b12.md SAIRN-report-fourth-b12.txt SAIRN-digest-fourth-b12.txt",
+      "claimed_at": "2026-10-14T09:56:01Z",
+      "claimed_at_epoch": 1791971761.1085129,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b12.txt",
+        "SAIRN-handoff-fourth-b12.md",
+        "SAIRN-report-fourth-b12.txt",
+        "docs/2026-10-13-fourth-b10-undriven-suites.md",
+        "docs/2026-10-13-fourth-b12-ack-recheck.md",
+        "docs/2026-10-13-fourth-b12-routed-to-cc-bydesign-validator.md",
+        "docs/METHODOLOGY.md"
+      ]
     }
   ],
   "refusals": [
