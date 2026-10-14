@@ -28593,6 +28593,33 @@
       "factors_unknown_reason": "not investigated this batch -- the fix (compile() instead of ast.parse(), only add what is missing) is verified; root-cause factor analysis was not done"
     },
     {
+      "commit": "3b1dc5fe3174",
+      "date": "2026-10-14",
+      "subject": "fix(citation anchor): line-exact and code-only -- three substring routes, three directions",
+      "files": [
+        "tools/citation_line_drift_check.py"
+      ],
+      "lines_added": 199,
+      "lines_removed": 9,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "tools/citation_line_drift_check.py anchor_verdict reported access to a resource for three inputs that are not access: a // or /* */ comment naming it on the cited line (reported 'direct'), a storage constant named inside a STRING as prose (reported 'via'), and a function whose flat 60-line _body_lines window ran past its closing brace into the NEXT function, crediting it with a neighbour's write and naming the wrong accessor. The first two are prose saying the access was REMOVED read as proof it is present",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the 60-line window and the raw-substring test are both original to the tool; cody's sabotage probe found all three routes at once"
+      },
+      "factors_unknown_reason": "not investigated this batch -- the three fixes (comment stripping with block state, string-contents blanking for the identifier branch only, brace-matched body) are verified; root-cause factor analysis was not done"
+    },
+    {
       "commit": "540e0b162887",
       "date": "2026-10-14",
       "subject": "fix(tools): batch_manifest cp1252 console crash, --set's silent b6 default, claim commit subjects",
@@ -28778,6 +28805,37 @@
       },
       "citation_note": "No PR section describes two independently-maintained copies of one tool diverging into complementary-but-disjoint features; this is a process/tooling-hygiene defect in hover's own layout, not a platform process violation with a named section.",
       "factors_unknown_reason": "Immediate cause (two copies, each gaining a feature the other lacked, never reconciled) is understood and fixed this batch; no deeper RCA was done on why nothing noticed the fork for ~2 weeks."
+    },
+    {
+      "commit": "7788d3d1747f",
+      "date": "2026-10-14",
+      "subject": "fix(bare-run sweep): a concurrent writer's change is not the subject's, plus the 2 allowlist entries",
+      "files": [
+        "tools/bare_run_write_check.py",
+        "tools/bare_run_writers.py",
+        "tools/mech_gate_live_probe.py",
+        "tools/tool_owner_map.py"
+      ],
+      "lines_added": 173,
+      "lines_removed": 24,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "tools/bare_run_write_check.py attributed any change under ~/SAIRN-SESSION-LOCKS/ to the tool it was running, but status/<session>.json has five other live writers by design. hank's 2026-10-13 sweep therefore reported idempotency_check.py, register_freshness_check.py --help and shape_antipattern_check.py as each having written ANOTHER SESSION'S status row and called it the sharpest finding in the table. None of the three can: none of them nor checker_kit references the registry at all. A false finding whose implied remedy was to edit three correct tools",
+      "rules": [
+        "1.9"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "shared_snapshot has watched the whole SESSION-LOCKS tree since the shared-state half was added 2026-10-08; the status/ subdirectory gained other live writers independently"
+      },
+      "citation_note": "1.9 requires a checker to answer the same on identical input; this one answered differently depending on what OTHER live sessions did during the run, which is the same non-determinism arriving from concurrency rather than from iteration order",
+      "factors_unknown_reason": "not investigated this batch -- the fix (shared_diff returns attributable and unattributable separately, status/ reported but never a finding, with a control arm requiring lock files to stay attributable) is verified; root-cause factor analysis was not done"
     },
     {
       "commit": "811292cba3b8",
@@ -29094,6 +29152,34 @@
       "recurrence_open": "The other drafts in docs/fmea/ were not audited for age -- only these seven were touched. Nothing stops the same decay starting again tomorrow, because the staleness check is routed and not built, and re-saving a draft resets its age without improving its reasoning."
     },
     {
+      "commit": "b12a763103e9",
+      "date": "2026-10-14",
+      "subject": "fix(blob coverage): api_files() walks api/ recursively -- the universe was a third of it",
+      "files": [
+        "tools/blob_conversion_coverage.py"
+      ],
+      "lines_added": 152,
+      "lines_removed": 7,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "tools/blob_conversion_coverage.py api_files() used a flat os.listdir(api), so the coverage universe was 50 files where a recursive walk finds 179 -- 129 files outside the denominator a conversion percentage was reported over. It did not disclose the narrowing. Two live data: write sites were outside it (api/_lib/sd-store.js:166, api/sairndental/public-complaint-submit.js:136) and a third, api/_lib/sd-store.js:203, was invisible entirely and is RAW",
+      "rules": [
+        "1.7"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "api_files() has used a flat os.listdir since the tool was written; no single commit introduced the narrowing"
+      },
+      "citation_note": "1.7 names a sampling window that silently exempts what it does not reach, which is exactly this -- a flat listdir is a window over api/ -- though 1.7's examples are about read windows rather than a file-discovery universe",
+      "factors_unknown_reason": "not investigated this batch -- the fix (os.walk plus a universe lock with an ablation arm) is verified; root-cause factor analysis was not done"
+    },
+    {
       "commit": "b7aa45b22766",
       "date": "2026-10-14",
       "subject": "fix(tier a review gate): save_reviews stops losing a writer on Windows, with the failing-first probe that caught it",
@@ -29151,6 +29237,32 @@
       },
       "citation_note": "no standing process-rule names a hardcoded fallback window specifically; closest shapes (1.1, 1.10) are about a check or a computed answer going stale, not a display default guessed per-model",
       "factors_unknown_reason": "not investigated this batch -- the fix (named-model matching, unknown renders ctx ??%) is verified; root-cause factor analysis was not done"
+    },
+    {
+      "commit": "d1308719a16f",
+      "date": "2026-10-14",
+      "subject": "fix(drive verify): separate WRONG AGENT from NO AGENT NAMED -- the dangerous case was buried",
+      "files": [
+        "tools/drive_upload_verify.py"
+      ],
+      "lines_added": 38,
+      "lines_removed": 2,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "tools/drive_upload_verify.py reported a first line naming NO agent and a first line naming a DIFFERENT agent with the same DISAGREES label. Seven of eight live mismatches are the harmless convention gap; the eighth, SAIRN-handoff-cc-b6.md reading '# cody b6 handoff', is one agent's filename over another agent's content -- the exact failure the tool exists for -- and it was buried in a list of cosmetic ones. Routed by H1 b28 as 7 and re-measured at HEAD as 8, the new one being SAIRN-digest-hank-b9.txt, so the divergence is ongoing",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "names_agent_and_batch has returned one undifferentiated failure since the first-line check was written"
+      },
+      "citation_note": "no standing rule names a reporter that collapses two failure classes of different severity into one label; the closest, 1.1, is about a check that stopped checking, and this one never stopped -- it reported correctly and unreadably",
+      "factors_unknown_reason": "not investigated this batch -- the fix (WRONG AGENT vs NO AGENT NAMED, neither reclassified as passing) is verified; root-cause factor analysis was not done"
     },
     {
       "commit": "d99b47f9683e",
