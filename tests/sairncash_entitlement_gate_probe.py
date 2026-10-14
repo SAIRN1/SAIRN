@@ -71,9 +71,18 @@ MUTATIONS = [
      "happens, the request is in the network tab, and the answer is discarded "
      "-- call-and-ignore on the one call that decides whether the product is "
      "paid for",
+     # ── ARM A, RE-ANCHORED 2026-10-14 (cody b12) ───────────────────────────
+     # Also ANCHOR-0. The branch was a one-liner,
+     # `if (data.valid) { saveSub(data); return true; }`, and it is now a
+     # multi-line block carrying the firebaseTokenWithheld disclosure. The
+     # one-liner spelling still exists TWICE in sairncash.html -- the trial path
+     # and the post-checkout path -- so an anchor loose enough to match again
+     # would have planted in the wrong branch, which is worse than ANCHOR-0
+     # because it reports a verdict about a function nobody chose.
+     # Measured unique: the two-line opening of the REVERIFY branch only.
      APP,
-     "    if (data.valid) { saveSub(data); return true; }",
-     "    if (data) { saveSub(data); return true; }"),
+     "    if (data.valid) {\n      saveSub(data);\n",
+     "    if (data) {\n      saveSub(data);\n"),
 
     ("4. the NETWORK FALLBACK resurrects an EXPIRED record. Falling back to the "
      "last known real expiry is documented and deliberate -- a customer offline "
@@ -83,13 +92,32 @@ MUTATIONS = [
      "    return isSubscribed();\n  }\n}",
      "    return true;\n  }\n}"),
 
+    # ── ARM B, RE-ANCHORED 2026-10-14 (cody b12) ────────────────────────────
+    # IT REPORTED ANCHOR-0 AND THE HARNESS WAS RIGHT TO FAIL IT. The old anchor
+    # ended `body: JSON.stringify({subscriptionId: s.subscriptionId})});`, and
+    # the request has since gained `customerId: s.customerId` -- added when
+    # api/sairncash/verify.js stopped minting a Firebase token without an
+    # ownership precondition. So this mutation had matched NOTHING for as long
+    # as that change had been in, and the probe was reporting a mutation that
+    # never applied rather than a coverage gap.
+    #
+    # NOT A SUITE GAP, AND THAT DISTINCTION IS THE WHOLE POINT. The suite's arm
+    # `the fetch double is wired, so "no round-trip" is observable` asserts
+    # `__calls.length === 1`, which catches this mutation the moment it really
+    # applies -- proved by the re-run below. A stale anchor and a missing arm
+    # look identical in a summary line and have opposite fixes.
+    #
+    # ARM B FIRST, deliberately: it is the STRUCTURAL property -- does the gate
+    # still ask the server at all -- and arm A below only means anything once
+    # the round-trip is known to happen.
     ("5. the gate stops asking the server AT ALL and becomes the client-only "
      "check it was written to replace. The function still exists, still returns "
      "a boolean, and its comment still claims the round-trip",
      APP,
      "    const res = await fetch('/api/sairncash/verify', {method:'POST', "
      "headers:{'Content-Type':'application/json'}, body: "
-     "JSON.stringify({subscriptionId: s.subscriptionId})});",
+     "JSON.stringify({subscriptionId: s.subscriptionId, customerId: "
+     "s.customerId})});",
      "    const res = { json: async () => ({ valid: true, "
      "expiresAt: s.expiresAt, subscriptionId: s.subscriptionId }) };"),
 
