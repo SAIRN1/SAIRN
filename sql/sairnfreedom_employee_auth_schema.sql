@@ -35,11 +35,18 @@
 -- "hardcoding one vocabulary would be wrong for three of the five target
 -- orders". The capability id is the stable thing; the title is display.
 --
--- So the `role` column holds a CAPABILITY ID, and the ten values below are
+-- So the `role` column holds a CAPABILITY ID, and the ELEVEN values below are
 -- sairnfreedom.html's CAPABILITIES list verbatim. If that array ever changes,
 -- this check constraint and ROLES_BY_APP.sairnfreedom must change with it --
--- three copies of one list, which is a real drift risk and is named here rather
--- than left for somebody to discover.
+-- three copies of one list, which is a real drift risk.
+--
+-- NAMING THE RISK IS WHAT THIS PARAGRAPH USED TO DO, AND IT WAS NOT ENOUGH.
+-- `trustee.audit` was added to sairnfreedom.html on 2026-09-27 and reached
+-- neither of the other two copies for sixteen days, so a post could assign the
+-- Trustee office and then could not give that trustee a sign-in. As of
+-- 2026-10-13 the agreement is CHECKED: api/role-vocabulary-agreement.test.js
+-- parses this CHECK out of this file and compares it to ROLES_BY_APP in both
+-- directions, for every app with an employee_auth table, not just this one.
 --
 -- PROVISIONING: post.govern and post.govern.deputy, taken from the app's own
 -- PROVISIONING_CAPS. post.govern carries `sole:true`, which is what the
@@ -50,11 +57,25 @@ create table if not exists sairnfreedom_employee_auth (
   license_hash text not null,
   employee_id text not null,
   display_name text,
+  -- ── trustee.audit ADDED 2026-10-13 ON MICHAEL'S DECISION ────────────────
+  -- A VFW post trustee gets their own login, view-only on financial records.
+  -- Eleven capabilities now, and this list is one of THREE copies -- the others
+  -- are ROLES_BY_APP.sairnfreedom in api/_lib/auth.js and CAPABILITIES in
+  -- sairnfreedom.html. api/role-vocabulary-agreement.test.js compares this
+  -- CHECK against ROLES_BY_APP for EVERY app in both directions, so the drift
+  -- this file used to only warn about now fails a test.
+  --
+  -- RE-RUNNING THIS FILE DOES NOT WIDEN AN EXISTING TABLE. `create table if not
+  -- exists` skips it, constraint and all -- the same trap
+  -- sql/audit_checkpoint_schema.sql contained until 2026-10-13. The ALTER that
+  -- acts on a live table is the idempotent block at the FOOT OF THIS FILE, and
+  -- it must be run.
   role text not null check (role in (
     'post.govern',
     'post.govern.deputy',
     'records.write',
     'finance.write',
+    'trustee.audit',
     'member.admit',
     'services.refer',
     'legal.review',
@@ -109,3 +130,75 @@ revoke all on public.sairnfreedom_employee_auth from anon, authenticated;
 --   select privilege_type from information_schema.role_table_grants
 --    where table_name = 'sairnfreedom_employee_auth' and grantee = 'service_role';
 --   -- expect exactly SELECT, INSERT, UPDATE
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- THE trustee.audit WIDENING -- 2026-10-13, ONE IDEMPOTENT BLOCK, RUN IT
+-- ═══════════════════════════════════════════════════════════════════════════
+-- WHY THIS EXISTS SEPARATELY FROM THE `create table` ABOVE: `create table if
+-- not exists` SKIPS AN EXISTING TABLE, CONSTRAINT AND ALL. So on a database
+-- where this file has already been run, re-running it to pick up the eleventh
+-- capability reports success and changes NOTHING -- a silent no-op that reads
+-- exactly like a successful migration. That trap cost thirteen audit logs their
+-- tamper-evidence until 2026-10-13; this is the same shape, caught at the point
+-- of writing instead.
+--
+-- IDEMPOTENT BY CONSTRUCTION, not by convention: `drop constraint if exists`
+-- makes the `add` safe on a second run, and the name is the one Postgres
+-- generates for the inline CHECK above, so this acts on a table created by
+-- either printing of this file.
+--
+-- SAFE AGAINST EXISTING ROWS: the new list is a strict SUPERSET of the old ten,
+-- so every row already stored satisfies the new constraint and the validation
+-- scan cannot fail.
+--
+-- NOT WRAPPED IN A DO BLOCK, deliberately: a constraint failure inside
+-- PL/pgSQL can be caught and reported as a NOTICE, and a widening that silently
+-- did nothing is the exact failure this block exists to end.
+alter table public.sairnfreedom_employee_auth
+  drop constraint if exists sairnfreedom_employee_auth_role_check;
+alter table public.sairnfreedom_employee_auth
+  add constraint sairnfreedom_employee_auth_role_check
+  check (role in (
+    'post.govern',
+    'post.govern.deputy',
+    'records.write',
+    'finance.write',
+    'trustee.audit',
+    'member.admit',
+    'services.refer',
+    'legal.review',
+    'history.write',
+    'ceremonial.manage',
+    'chaplain.pastoral'
+  ));
+
+-- ── VERIFY, with the answer each must give ────────────────────────────────
+-- 1. ELEVEN capabilities are permitted. Expect: 11
+select count(*)
+  from pg_constraint c,
+       lateral regexp_matches(pg_get_constraintdef(c.oid), '''([a-z.]+)''', 'g') m
+ where c.conname = 'sairnfreedom_employee_auth_role_check';
+
+-- 2. And NAME them, because a count of 11 over the wrong names passes query 1.
+--    Expect the eleven above, one per row, INCLUDING trustee.audit.
+select m[1] as role
+  from pg_constraint c,
+       lateral regexp_matches(pg_get_constraintdef(c.oid), '''([a-z.]+)''', 'g') m
+ where c.conname = 'sairnfreedom_employee_auth_role_check'
+ order by 1;
+
+-- 3. THEN PROVISION A REAL TRUSTEE THROUGH THE API, which is the only thing
+--    that proves the whole chain. With a post.govern session token:
+--
+--      curl -s -X POST https://sairn.vercel.app/api/sf-auth \
+--        -H 'Content-Type: application/json' \
+--        -H 'Authorization: Bearer SF-PINNACLE-2026' \
+--        -H 'X-SD-Auth: <post.govern token>' \
+--        -d '{"action":"setup","employee_id":"trustee-1",
+--             "display_name":"Post Trustee","role":"trustee.audit","pin":"135790"}'
+--
+--    200                      -> both halves landed
+--    400 with a check         -> this block has NOT been run; the server
+--      constraint violation      accepted the role and the database rejected it,
+--                                which is the 400 nobody can read
+--    403 / UNKNOWN_ROLE       -> the api/_lib/auth.js half is missing instead

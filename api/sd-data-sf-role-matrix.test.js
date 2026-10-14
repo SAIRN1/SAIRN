@@ -1,7 +1,8 @@
 // api/sd-data-sf-role-matrix.test.js
 //
 // REQUIREMENT: every one of SAIRNfreedom's 36 resources has a rule for every
-//   one of its 10 roles; the two locks cannot be opened by anything; the
+//   one of the roles in ROLES_BY_APP.sairnfreedom (ten until 2026-10-13, ELEVEN
+//   since a trustee was given a login); the two locks cannot be opened by anything; the
 //   capability facts mirrored into api/sd-data.js match the page they were
 //   copied from; and the table is actually WIRED into the gate.
 //
@@ -12,7 +13,8 @@
 // resource was authorised by the licence key alone until the gate waves of
 // 2026-09-21 onward, and after those waves by A SESSION OF ANY ROLE -- so a
 // chaplain's sign-in could rewrite the general ledger and a service officer
-// could edit the officer roster. Ten distinct capability roles, treated as one.
+// could edit the officer roster. Ten distinct capability roles, treated as one;
+// eleven since 2026-10-13, when Michael gave a post trustee a view-only login.
 //
 // ── WHY THIS FILE IS FIVE DIFFERENT KINDS OF CHECK AND NOT ONE ────────────
 // Modelled on api/sd-data-law-role-matrix.test.js, which exists because a table
@@ -35,8 +37,9 @@
 //
 // ── WHAT THIS DOES NOT DO ─────────────────────────────────────────────────
 // It does not drive a session per role against the live handler. That is the
-// half routed to cody in docs/2026-10-13-hank-b6-routing.md: ten roles x 36
-// resources x 2 verbs is a driven-arm job, and this file is the policy's own
+// half routed to cody in docs/2026-10-13-hank-b6-routing.md: every role in
+// ROLES_BY_APP x 36 resources x 2 verbs is a driven-arm job, and this file is
+// the policy's own
 // shape rather than its behaviour. A green run here means the POLICY is
 // complete, locked, mirrored and wired. It does not mean a signed-in chaplain
 // was observed being refused.
@@ -60,17 +63,98 @@ function test(name, fn) {
 }
 
 function main() {
-  console.log('SAIRNfreedom role matrix -- 36 resources x 10 roles\n');
+  console.log('SAIRNfreedom role matrix -- 36 resources x every role in ROLES_BY_APP\n');
 
   // ── VACUITY FIRST. Every arm below iterates one of these. ───────────────
-  test('the three populations are real -- 36 resources, 10 roles, 36 rows. A '
-    + 'short list here would make every arm below pass over almost no data', () => {
-    assert.strictEqual(REGISTRY.length, 36,
-      'the registry has ' + REGISTRY.length + ' resources, not 36');
-    assert.strictEqual(ROLES.length, 10,
-      'ROLES_BY_APP.sairnfreedom has ' + ROLES.length + ' roles, not 10');
-    assert.strictEqual(sfRoles.resources().length, 36,
-      'the matrix has ' + sfRoles.resources().length + ' rows, not 36');
+  test('the three populations are real, and the two that have independent '
+    + 'sources are EQUAL. A short list here would make every arm below pass '
+    + 'over almost no data', () => {
+    // ── THE ROLE COUNT WAS HARDCODED AT 10 AND WENT STALE THE DAY A ROLE WAS
+    // ── ADDED (2026-10-13).  Michael decided a trustee gets a login,
+    // ROLES_BY_APP.sairnfreedom became eleven, and this arm failed for a reason
+    // that had nothing to do with what it exists to catch.  Writing 11 here
+    // just moves the expiry date.
+    //
+    // WHAT THIS ARM IS ACTUALLY FOR is non-vacuity: if REGISTRY, ROLES or the
+    // row list came back short or empty, every arm below would iterate almost
+    // nothing and pass.  So:
+    //   * the two populations WITH INDEPENDENT SOURCES are asserted EQUAL --
+    //     the registry comes from api/_resources/sairnfreedom.js and the rows
+    //     from api/_lib/sf-roles.js, so this is two sources agreeing rather
+    //     than one source agreeing with itself;
+    //   * the role count, which has only ONE source, gets a FLOOR and a NAMED
+    //     ANCHOR instead of an exact figure.
+    assert.strictEqual(sfRoles.resources().length, REGISTRY.length,
+      'the registry has ' + REGISTRY.length + ' resources and the matrix has '
+      + sfRoles.resources().length + ' rows');
+    assert.ok(REGISTRY.length >= 36,
+      'the registry yielded only ' + REGISTRY.length + ' resources, so the arms '
+      + 'below compared almost nothing -- the extraction broke');
+    assert.ok(ROLES.length >= 11,
+      'ROLES_BY_APP.sairnfreedom yielded only ' + ROLES.length + ' roles');
+    for (const anchor of ['post.govern', 'finance.write', 'trustee.audit']) {
+      assert.ok(ROLES.indexOf(anchor) !== -1,
+        'ROLES_BY_APP.sairnfreedom is missing ' + anchor + ', so either the '
+        + 'extraction broke or a capability was dropped');
+    }
+  });
+
+  // ── THE DERIVED COLUMN, RE-DERIVED INDEPENDENTLY (2026-10-13) ───────────
+  // api/_lib/sf-roles.js COMPUTES the trustee.audit column from the
+  // finance.write column rather than transcribing 36 cells.  That removes 36
+  // chances to disagree with Michael's one-sentence decision -- and it means
+  // the table can no longer be asserted against itself, because the rule and
+  // the table are the same artefact.
+  //
+  // SO THIS ARM RE-STATES THE RULE FROM THE DECISION, not from the code, and
+  // compares.  A hand-edit to any trustee cell fails here; so does a change to
+  // the derivation that nobody decided.
+  test('TRUSTEE: view-only on financial records -- every cell re-derived from '
+    + 'Michael\'s decision, not read back from the table', () => {
+    const wrong = [];
+    sfRoles.resources().forEach((r) => {
+      const row = sfRoles.SF_ROLE_MATRIX[r];
+      // THE DECISION, restated: read what the bonded finance office may write;
+      // rw on the trustee's own audit record; nothing else.
+      const expected = (r === 'sf_trustee_audits')
+        ? 'rw'
+        : (row['finance.write'] === 'rw' ? 'r' : '');
+      const got = String(row['trustee.audit'] === undefined ? 'MISSING' : row['trustee.audit']);
+      if (got !== expected) wrong.push(r + ': expected ' + JSON.stringify(expected) + ', got ' + JSON.stringify(got));
+    });
+    assert.deepStrictEqual(wrong, [],
+      wrong.length + ' trustee cell(s) disagree with the decision: ' + wrong.slice(0, 8).join('; '));
+  });
+
+  test('...and that policy is not vacuous in EITHER direction -- a trustee can '
+    + 'read the money and cannot read the people', () => {
+    // Without this, the arm above is satisfied by a column that is '' every
+    // cell (a login that can see nothing) or 'r' every cell (a login that can
+    // see the felony flags), because in both cases it would agree with a
+    // derivation that produced the same thing.
+    const canRead = sfRoles.resources()
+      .filter((r) => sfRoles.decide(r, 'trustee.audit', 'read') === sfRoles.ALLOW);
+    const canWrite = sfRoles.resources()
+      .filter((r) => sfRoles.decide(r, 'trustee.audit', 'write') === sfRoles.ALLOW);
+    assert.ok(canRead.length >= 10,
+      'a trustee can read only ' + canRead.length + ' records, which is not a '
+      + 'financial audit surface');
+    assert.ok(canRead.indexOf('sf_ledger') !== -1 && canRead.indexOf('sf_disbursements') !== -1,
+      'a trustee cannot read the general ledger or the disbursements, which is '
+      + 'the whole of what was decided');
+    // AND THE REFUSALS. These are the rows Michael's decision did NOT cover,
+    // and they carry the sharpest material in the app: the felony and gambling
+    // disqualification flags, minors, health and military status, and the
+    // VA-adjacent referrals.
+    for (const shut of ['sf_operators', 'sf_youth_participants', 'sf_waivers',
+                        'sf_members', 'sf_service_appointments']) {
+      assert.strictEqual(sfRoles.decide(shut, 'trustee.audit', 'read'), sfRoles.DENY,
+        'a trustee can read ' + shut + ', which the decision did not grant');
+    }
+    assert.deepStrictEqual(canWrite, ['sf_trustee_audits'],
+      'a trustee can write ' + JSON.stringify(canWrite) + ' -- the decision was '
+      + 'VIEW-ONLY on financial records, with the quarterly audit itself the '
+      + 'one exception');
   });
 
   // ── COMPLETENESS ────────────────────────────────────────────────────────
@@ -278,8 +362,10 @@ function main() {
 
   console.log('\n' + passed + ' passed, ' + failed + ' failed');
   console.log('\nWHAT A GREEN RUN DOES NOT SAY: that a signed-in chaplain was '
-    + 'observed being\nrefused. No session is driven here. The ten-roles x '
-    + '36-resources x 2-verbs\ndriven matrix is routed to cody in '
+    + 'observed being\nrefused. No session is driven here. The driven matrix -- '
+    + 'EVERY role in\nROLES_BY_APP x 36 resources x 2 verbs, so it grows with '
+    + 'the vocabulary rather\nthan with a number written here -- is routed to '
+    + 'cody in '
     + 'docs/2026-10-13-hank-b6-routing.md.');
   if (failed) process.exit(1);
 }

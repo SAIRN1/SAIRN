@@ -1551,6 +1551,64 @@ module.exports = async (req, res) => {
       'scp_designs': ['read', 'write'],
       'scp_vendors': ['read', 'write'],
       'scp_progress_photos': ['read', 'write'],
+      // ── THE LAST FIVE. SAIRNscape IS NOW GATED WHOLESALE, 2026-10-13 (b8) ─
+      // MICHAEL'S DECISION, and it closes the asymmetry the 2026-10-11 wave
+      // deliberately left and named. That wave took three of eight ungated
+      // resources and wrote the other five down in UNGATED_REST with their
+      // columns read out of sql/sairnscape_data_schema*.sql, because -- in that
+      // suite's own words -- gating them "is a defensible product decision
+      // about whether an unsigned-in crew may see an irrigation schedule; it is
+      // NOT a finding, and it is not made here". It has now been made.
+      //
+      // THESE FIVE ARE THE WEAKEST OF THE EIGHT BY CONTENT AND THAT IS STATED
+      // RATHER THAN GLOSSED: no person's name, no contact detail, no money and
+      // no regulated determination on any of the five rows. Each carries a
+      // customer_id FOREIGN KEY, with the identity on the `customers` row --
+      // which has been gated since 2026-10-05. So the argument for gating them
+      // is not disclosure of a person; it is that an irrigation schedule, a
+      // controller inventory and a job's scope are the post's operational
+      // record, and the licence key that authorised them is SHIPPED TO THE
+      // BROWSER and readable by anyone who can open the app.
+      //
+      // MEASURED BEFORE AND NOT ASSUMED. hover2's own artefact --
+      // .claude/skills/sairn-hover-auditor/tools-hover2/scp_session_gate_repro.py
+      // --all -- reported 10 of 22 resource/action pairs reachable by NEITHER
+      // mechanism at this HEAD, and the ten are exactly these five resources
+      // times two verbs. Run read-only from this clone; the auditor's clone was
+      // not entered. After this edit the same repro has nothing left to report.
+      //
+      // THE CLIENT HALF NEEDS NO CHANGE, and every claim here was READ at this
+      // HEAD rather than carried from the sibling wave. All five are in the
+      // shared sync list (sairnscape.html:2747-2749), every read goes through
+      // the one scpSyncFromServer loop (:2762) and every write through
+      // scpData() (:2089), whose only /api/sd-data fetch (:2127) attaches
+      // X-SD-Auth whenever the session token is held, with no per-resource
+      // branch and no per-call flag. Eleven fetch() sites exist in that file and
+      // exactly one reaches sd-data.
+      //
+      // AND SAIRNscape CANNOT HYDRATE BEFORE SIGN-IN, which is the hole the
+      // SAIRNfreedom waves had to fix separately: scpSyncFromServer has ONE
+      // caller, scpInit, which has ONE caller, scpApplyLoggedIn, which is only
+      // reached from scpDoLogin (:2319) and scpDoBootstrap (:2354) -- both of
+      // which write the token to sessionStorage BEFORE calling it. There is no
+      // parse-time or DOMContentLoaded hydrate to swallow a 403.
+      //
+      // A SECOND BEHAVIOUR CHANGE RIDES ALONG AND IS CHOSEN, NOT INHERITED:
+      // being in this map makes the deactivated-credential pre-check apply, so
+      // a deactivated employee hitting these five now gets a hard 403
+      // CREDENTIAL_INACTIVE instead of a logged pass-through. That is the
+      // correct direction and it is named here because it is not what the
+      // session gate itself does.
+      //
+      // NO TWO-VERB ARRAY LITERAL IS QUOTED IN THIS COMMENT and no resource
+      // name appears in quotes followed by a comma: the pair-count tripwire in
+      // api/sd-data-session-gate.test.js counts quoted words over this block's
+      // RAW text without blanking comments, so either would add phantom pairs.
+      'scp_jobs': ['read', 'write'],
+      'scp_irr_controllers': ['read', 'write'],
+      'scp_irr_zones': ['read', 'write'],
+      'scp_irr_schedules': ['read', 'write'],
+      'scp_water_features': ['read', 'write'],
       // ── SAIRNmechanical: mech_docs WRITE ONLY, 2026-09-29 ────────────────
       //    MECH_RECORDS at :14308 gates all four of mech_quotes, mech_checks,
       //    mech_docs and mech_takeoffs on the LICENCE KEY ALONE, and the
@@ -1755,6 +1813,24 @@ module.exports = async (req, res) => {
       'scp_designs': 'sairnscape',
       'scp_vendors': 'sairnscape',
       'scp_progress_photos': 'sairnscape',
+      // ── THE LAST FIVE, 2026-10-13 (b8), IN THE SAME EDIT AS THEIR GATE ────
+      // The rule this pair of lists carries, and it was CHECKED against this
+      // map before the gate entries above were written rather than after: none
+      // of the five was here. Gated above with no entry here and expectedApp
+      // falls back to 'stonedesk', so every correctly signed-in SAIRNscape crew
+      // lead is refused FORBIDDEN "sign in first" on all five -- fails closed
+      // AND confusingly, which is the failure that gets a security change
+      // reverted as broken rather than fixed. sf_trustee_audits broke exactly
+      // that way on main for a day.
+      //
+      // With these, every SAIRNscape resource in SD_SESSION_GATED has an
+      // expectedApp entry, and api/sd-data-scp-session-gate.test.js asserts the
+      // two lists agree rather than counting them.
+      'scp_jobs': 'sairnscape',
+      'scp_irr_controllers': 'sairnscape',
+      'scp_irr_zones': 'sairnscape',
+      'scp_irr_schedules': 'sairnscape',
+      'scp_water_features': 'sairnscape',
       // Added 2026-09-29 in the SAME edit as its gate entry above, which is the
       // rule this pair of lists has carried since 2026-09-24 and which
       // sf_trustee_audits broke on main earlier the same day: a resource gated
@@ -14830,6 +14906,97 @@ module.exports = async (req, res) => {
         }
         res.status(200).json({ ok: true, data: rows[0].data });
         return;
+      }
+      // ── THE FACILITY DOUBLE-BOOKING GATE (2026-10-13) ───────────────────
+      // THE DEFECT, found by the hover auditor (H1 seq1370) and not by review:
+      // bookingConflict() in sairnlegacy.html:2999 is a REAL interval-overlap
+      // test, it HARD BLOCKS with no override, and it reads `bookings()` --
+      // which is this device's localStorage. So the control that "prevents
+      // double-booking" was deciding on a cache. Two staff on two devices, each
+      // holding a copy taken before the other's booking synced, both pass their
+      // own check and both upsert; the second write is accepted because a new
+      // booking carries a new booking_id and nothing collides. A chapel, a
+      // removal van, or -- since leg_facilities row FC-3 is a NAMED MEMBER OF
+      // STAFF with a job title, not an asset -- a funeral director, promised to
+      // two grieving families for the same hour.
+      //
+      // THIS IS THE SAME SHAPE leg_merch_units' RESERVATION LOCK WAS BUILT TO
+      // CLOSE, 65 lines above, and it was never applied here. That one's own
+      // comment names the consequence in the same words.
+      //
+      // IT IS NOT THE SAME MECHANISM, AND SAYING SO IS THE POINT RATHER THAN A
+      // CAVEAT. The merch lock is ONE atomic conditional PATCH: Postgres
+      // decides, and tests/sairnlegacy_reservation_lock.js asserts the call
+      // count is exactly one precisely because "a read-then-write that happens
+      // to answer 409" is a weaker thing. This IS a read-then-write, because
+      // the atomic version is not reachable from here:
+      //
+      //   * a conditional PATCH needs an existing row in a known prior state.
+      //     A new booking has no row yet -- that is what makes it new.
+      //   * PostgREST has no INSERT ... WHERE NOT EXISTS, so the precondition
+      //     cannot ride on the write.
+      //   * the clean atomic close is a Postgres EXCLUDE constraint over
+      //     tstzrange, and it CANNOT be written against this table as it
+      //     stands: the window lives in `data` jsonb and `text::timestamptz`
+      //     is STABLE, not IMMUTABLE, so it is rejected in an index
+      //     expression. It needs either real start/end columns or an /rpc/
+      //     function doing the insert in one statement. Named in
+      //     docs/SAIRN-handoff-hank-b8.md as the follow-up, not attempted here
+      //     with no database to run it against.
+      //
+      // SO WHAT IS AND IS NOT CLOSED, measured as a window rather than
+      // asserted as a fix: the stale-cache race -- minutes to hours wide, the
+      // one the auditor found, the one that actually happens -- is closed,
+      // because both devices are now checked against the SERVER's rows instead
+      // of their own. What remains is two requests interleaving between this
+      // SELECT and the upsert below: milliseconds, and it needs two people to
+      // click Save in the same instant.
+      //
+      // CANCELLING IS EXEMPT BY DESIGN. cancelBooking() writes the same record
+      // with status 'Cancelled', and a gate that refused a cancellation because
+      // the booking it is cancelling overlaps something would be the fix
+      // causing the harm.
+      //
+      // A WINDOW THAT CANNOT BE READ IS A THIRD STATE AND IS NOT FOLDED INTO
+      // "no conflict". If an existing row's start_time or end_time does not
+      // parse, this cannot tell whether it clashes, so it REFUSES and names the
+      // booking_id -- PR 1.11 applied to data instead of to a tool. Unreachable
+      // from the app today (saveBooking only ever writes toISOString()), which
+      // is why it has to be deliberate: an unparseable row silently treated as
+      // non-overlapping is exactly how this control would stop working.
+      if (resource === 'leg_bookings' && payload.status !== 'Cancelled') {
+        const startMs = Date.parse(payload.start_time);
+        const endMs = Date.parse(payload.end_time);
+        if (!payload.facility_id || !Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) {
+          res.status(400).json({ error: { code: 'BOOKING_WINDOW_REQUIRED', message: 'This booking could not be saved to the server: it needs a facility and a start and end time, with the end after the start. Nothing was saved.' } });
+          return;
+        }
+        const q = await fetch(rest(
+          'leg_bookings?license_hash=eq.' + enc(licHash) +
+          '&data->>facility_id=eq.' + enc(String(payload.facility_id)) +
+          '&select=booking_id,data'
+        ), { headers });
+        if (q.status === 404 || q.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlegacy data tables are not set up yet — run sql/sairnlegacy_data_schema.sql in Supabase first.' } }); return; }
+        const held = await q.json();
+        if (!q.ok) return upstream(res, held);
+        const selfId = String(payload.id);
+        const unreadable = [];
+        const clash = (Array.isArray(held) ? held : []).find((row) => {
+          if (String(row.booking_id) === selfId) return false;
+          const d = row.data || {};
+          if (d.status === 'Cancelled') return false;
+          const s = Date.parse(d.start_time), e = Date.parse(d.end_time);
+          if (!Number.isFinite(s) || !Number.isFinite(e)) { unreadable.push(String(row.booking_id)); return false; }
+          return startMs < e && s < endMs; // the same interval test the client runs, on the server's rows
+        });
+        if (clash) {
+          res.status(409).json({ error: { code: 'BOOKING_CONFLICT', message: 'That facility is already booked ' + String((clash.data || {}).start_time) + ' to ' + String((clash.data || {}).end_time) + ' by booking ' + String(clash.booking_id) + ', made on another device. Nothing was saved -- pick a different time or facility.' } });
+          return;
+        }
+        if (unreadable.length) {
+          res.status(409).json({ error: { code: 'BOOKING_CHECK_INDETERMINATE', message: 'This booking was NOT saved, because the double-booking check could not be completed: booking ' + unreadable.join(', ') + ' on this facility has a start or end time the server cannot read, so it is not possible to tell whether your booking overlaps it. Report this -- it is a data problem, not something you did.' } });
+          return;
+        }
       }
       const r = await fetch(rest(resource + '?on_conflict=license_hash,' + idCol), {
         method: 'POST',
