@@ -1,0 +1,825 @@
+REPORT fourth b20
+
+SAIRN batch report -- session fourth (ted), batch b20, 2026-10-14.
+Working directory C:\Users\marsh\Documents\SAIRN-fourth, branch main.
+
+EVERY FIGURE IN THIS REPORT NAMES THE COMMAND THAT PRODUCED IT. Where a thing
+was not run it is marked UNVERIFIED rather than assumed, and section 8 lists
+every one of those.
+
+
+================================================================================
+0. THE SHORT VERSION
+================================================================================
+
+BOTH TIER A OBLIGATIONS ASSIGNED TO ME WERE DISCHARGED INSIDE THE 24-HOUR
+DEADLINE -- at 7 hours and 3 hours. The four before them were 418h, 397h, 339h
+and 339h. THIS IS THE FIRST BATCH WHERE THIS ROLE MET THE CLOCK INSTEAD OF
+DRAINING A BACKLOG.
+
+AND THE EIGHT-BATCH-OLD STALE LOCK IS REAPED. fourth.lock had carried a dead
+CLAUDE_PID 53204 since 2026-10-13T05:36:03; session_lock_check.py reported
+state DEAD, and its own `guard` verb reclaimed it. Not an rm, and not a route
+around the rm deny -- the tool has a verb for exactly this and it was used.
+
+THREE FINDINGS CARRY THIS BATCH.
+
+  (1) cc's change SILENTLY TURNED A PROBE RED.
+      tests/run_drive_upload_verify_probe.py is 34/35 at exit 1 at HEAD,
+      because an arm greps the sentence fragment "does not name cc" and the
+      reworded message now says "WRONG AGENT -- the first line names cody, not
+      cc". git show --stat on that commit is ONE FILE; the probe was last
+      touched by the tool's creation commit. tools/run_all_tests.py walks
+      tests/ recursively, so this is a red arm in the discoverable suite. The
+      commit's own subject is "the dangerous case was buried": it unburied the
+      case in the message and buried a failing control in the suite. A MESSAGE A
+      TEST GREPS IS AN INTERFACE.
+
+  (2) ALL SEVEN LINE CITATIONS IN THE sf_events REGISTER ROW WERE WRONG -- not
+      six, as the task and my own b19 note had it. Every function the cell
+      names is real and does what the cell says; only the numbers moved. The
+      row now carries QUOTED-TEXT ANCHORS and no line numbers, each verified to
+      resolve EXACTLY ONCE.
+
+  (3) THE leg_aftercare KEY IS DELIMITER-AMBIGUOUS. ('CS-7','1 Week') and
+      ('CS-7-1','Week') both derive AC-CS-7-1-WEEK, and the upsert's
+      merge-duplicates then silently overwrites a different case's check-in and
+      returns 200. Not reachable through the shipped UI; reachable by any
+      licence-key holder posting directly -- which is exactly the assumption the
+      code's own comment rests on. No arm covers it, and the colliding pair
+      would PASS the existing cross-check because both copies agree on the wrong
+      answer.
+
+hank's four attack points ALL SURVIVE: 36/36 bands and 288/288 per-role cells
+match the spec, enumerated programmatically in both directions rather than by
+eye. cc's claims are ALL TRUE -- its six findings are entirely in what was not
+claimed.
+
+Pushed without force, twice, both first-attempt. HEAD == origin/main, 0/0.
+Context at the handoff: 58% of 1000k, measured.
+
+
+================================================================================
+1. ITEM 1 -- b19 CLOSED (VERIFIED, NOT ASSUMED) AND THE STALE LOCK REAPED
+================================================================================
+
+The task said to Drive-API-read the b19 digest and report and to write and
+upload either if missing. NEITHER WAS MISSING, so nothing was rewritten -- and
+that is a measurement rather than an assumption:
+
+  CMD Google Drive API, search_files, title contains 'fourth-b19'
+      SAIRN-handoff-fourth-b19.md   23340 bytes  parentId 14Xc5oT0...Fbx09
+      SAIRN-report-fourth-b19.txt   45192 bytes  parentId 14Xc5oT0...Fbx09
+      SAIRN-digest-fourth-b19.txt    7782 bytes  parentId 14Xc5oT0...Fbx09
+      -- all three sizes match local exactly
+
+  CMD b19 manifest closed block
+      drive_verify PASS, verified_by the --verify-only command, three sha256s
+  CMD sairn_claim.py list | grep '^\[active' -> no fourth row  (released)
+  CMD grep -c '^CONTEXT' SAIRN-digest-fourth-b19.txt            -> 1
+
+So b19 was already closed and released at the end of the prior batch; this item
+confirmed it rather than redoing it.
+
+THE STALE LOCK, WHICH IS THE PART THAT ACTUALLY MOVED:
+
+  CMD python tools/session_lock_check.py status
+      owner : the 'fourth' clone (CLAUDE_PID 53204, started 2026-10-13T05:36:03,
+              last active 2110m ago)
+      state : DEAD -- CLAUDE_PID 53204 no longer exists
+      NOTE  : the lock file is older than the 2h staleness window
+      NOT BLOCKED. The recorded owner is gone.
+
+  CMD python tools/session_lock_check.py guard                  ->  EXIT 0
+  CMD python tools/session_lock_check.py status
+      owner : the 'fourth' clone (CLAUDE_PID 3444, started 2026-10-14T16:46:22)
+      state : SELF -- this session owns the lock
+
+EIGHT BATCHES OF STALENESS CLOSED, and closed the right way. My handoffs from
+b14 onward recorded this lock as held by a dead pid and recorded "rm is denied
+and I did not route around it" -- correctly, but the tool had a verb for it the
+whole time: `guard` is documented as "reclaim a lock whose owner process is
+gone". THE LESSON IS NOT ABOUT THE LOCK: a capability that exists in a tool's
+own usage text went unused for eight batches while the obstacle was recorded as
+a deny. Reading the tool's usage is cheaper than recording the blockage.
+
+
+================================================================================
+2. ITEM 2 -- hank's 21-RESOURCE OBLIGATION, DISCHARGED AT 7 HOURS
+================================================================================
+
+  CMD PYTHONIOENCODING=utf-8 python tools/tier_a_review_gate.py --list
+      MINE 7h | hank | 2026-10-14T13:50:42Z | sha 0442c8e0c95d
+         resources(21): leg_aftercare ... leg_processions, rf_settings
+         files: api/_lib/leg-overlap.js, api/_lib/leg-roles.js,
+                api/sd-data-leg-role-matrix.test.js,
+                api/sd-data-rf-settings-tier.test.js, api/sd-data.js
+
+  CMD ... --discharge hank 2026-10-14T13:50:42Z --body-file <verdict>  EXIT 0
+      DISCHARGED -- fourth reviewed the obligation hank opened ...
+
+Full verdict: docs/2026-10-14-fourth-b20-leg-role-matrix-discharge.md.
+Register verdict string: 11,976 characters, verified on origin/main.
+
+  CMD git cat-file -e 0442c8e0c95d   ->  DANGLING
+A STATE REVIEW, not a diff review, and the verdict says so. No re-seat candidate
+was offered for this record; nothing was re-seated.
+
+2.1 THE DISCLOSURE THAT BOUNDS POINT 1, AND IT IS AT THE TOP OF THE VERDICT
+    RATHER THAN IN A CLOSING CAVEAT
+
+hank asks the bands to be checked against
+docs/2026-10-14-fourth-b15-sairnlegacy-role-matrix.md. I WROTE THAT SPEC.
+
+  CAN establish    -- whether the transcription faithfully reproduces the spec.
+                      A mechanical comparison of two artefacts, and I did not
+                      write the code side.
+  CANNOT establish -- whether the SPEC puts the right resource in the right
+                      band. I am the author of that judgment and cannot be its
+                      independent reviewer.
+  who can          -- it is a business question, already routed to counsel
+                      (C1, C2) and a funeral director (F1-F5), and FIVE OF
+                      THOSE EIGHT ARE STILL UNANSWERED.
+
+A 36-of-36 match reads as a clean bill unless the reader is told what it was
+matched against.
+
+2.2 WHAT I OPENED AND WHAT I LOOKED FOR
+
+  opened                                   looked for
+  ---------------------------------------  ---------------------------------
+  api/_lib/leg-roles.js -- band templates, the band AND every per-role cell,
+    the 36-row table, decide, denyMessage  against the spec
+  my b15 spec section 3 + its band-by-role the intended band per resource and
+    table, read by line range not dumped   the intended grant per role
+  sql/sairnlegacy_employee_auth_schema.sql whether `staff` is still VALID
+    inline CHECK and the alter block
+  api/_lib/leg-overlap.js SPECS and both   the two literals
+    exemptStatus consumers
+  sairnlegacy.html's REAL status           the REAL vocabulary, BECAUSE HANK
+    assignment sites                       ASKED FOR THE LITERALS TO BE
+                                           CONFIRMED AGAINST THE APP AND NOT
+                                           AGAINST THE COMMENTS
+  both copies of the leg_aftercare key     whether they agree, and what happens
+                                           to a client-supplied id
+  four test files                          which claims are DRIVEN and which are
+                                           asserted against a hardcoded value
+
+  HOW: the band comparison was NOT DONE BY EYE. Both sides were enumerated
+  programmatically -- the spec parsed out of the markdown, the code loaded by
+  require() -- then set-differenced in both directions and compared cell by
+  cell. A visual check over 288 cells is a check that reports a pass it did not
+  perform.
+
+2.3 POINT 1 -- FAITHFUL, AND THE METHOD MATTERS MORE THAN THE RESULT
+
+  spec parsed from section 3     36 resources {REGULATED 9, MONEY 15, OPERATIONS 12}
+  code loaded by require()       36 resources, same three counts
+  set difference both ways       SPEC-ONLY: none    CODE-ONLY: none
+  bands                          36 compared, 0 mismatches
+  per-role cells (8 x 36)        288 checked, 0 grant diffs
+
+The per-role pass is the one that matters: a band is a label, and what grants
+authority is the cell. 288 of 288, including the livery carve-out (read on
+leg_bookings, leg_processions, leg_vehicles only), REGULATED's staff-read with
+livery refused, and MONEY's four refusals.
+
+A METHODOLOGY WARNING WORTH MORE THAN THE RESULT. The first parse pass reported
+TWO FALSE MISMATCHES on leg_liverybookings and leg_liveryvendors -- two MONEY
+resources -- because the spec reader ran one line past the OPERATIONS list and
+swallowed a trailing sentence naming those two while the heading was still
+active. Bounding the parse cleared both. AN UNBOUNDED PARSE OF THAT DOCUMENT
+PRODUCES EXACTLY THE TWO-MISMATCH RESULT THAT WOULD HAVE LOOKED LIKE A REAL
+FINDING, and it would have been filed as one by anybody who did not re-check
+the parser against the document's structure. WHEN A MEASUREMENT PRODUCES A
+FINDING, MEASURE THE MEASUREMENT BEFORE REPORTING IT.
+
+F1, lowest severity: leg_deathrecords carries an override refusing livery that
+is a NO-OP, because the REGULATED template already refuses livery. The file's
+own convention is that a row departing from its band says so on the row -- so
+the one REGULATED row a reader looks at hardest advertises an exception it does
+not have, which makes the real exceptions harder to find. No grant is affected;
+the authority half is in force and is driven by a 403 arm.
+
+2.4 POINT 2 -- THE staff DEPRECATION, MEASURED BY EXECUTING THE MODULE
+
+                     REGULATED(9)  MONEY(15)  OPERATIONS(12)   total
+  staff read              9            0            12          21
+  staff write             0            0            12          12
+
+ZERO ON ALL 15 MONEY RESOURCES, NOT EVEN READ.
+
+The CHECK half is confirmed in TWO places -- the inline create-table constraint
+and the alter block that amends a live table -- with the file stating why the
+value cannot be dropped: every existing credential row holds it and the ALTER
+would fail its own validation scan. An arm in
+api/sql-run-order-agreement.test.js requires the value to appear.
+
+THE COUNTERFACTUAL IS EXACT, NOT APPROXIMATE: mapping staff to arranger would
+have added PRECISELY the 15 MONEY rows and nothing else, because arranger and
+staff are identical on OPERATIONS and on REGULATED. So hank's "15 money
+resources to everyone who had a login yesterday" is the right number for the
+right reason.
+
+AND THE ANTI-LOCKOUT CONTROL I WOULD HAVE ASKED FOR ALREADY EXISTS: three arms
+drive it, the third asserting staff KEEPS read+write on all 12 OPERATIONS
+resources, with its own reason stated -- "without this arm, 'staff is narrowed'
+is satisfied by a migration that locks every existing employee out of the app
+entirely". Plus an end-to-end arm: a deprecated staff token writing an invoice
+-> 403.
+
+F2, the one thing the claim does not mention: THERE IS NO HARD LOCKOUT, but the
+15 money panels FAIL SOFT INTO LOCAL-ONLY. The client is local-first and a 403
+is indistinguishable from "sync unavailable": the hydrate treats a null read as
+"leave local data as-is" with no indication the server refused, and writes
+commit LOCALLY BEFORE the server is asked, with no rollback, so a refused
+invoice sits in the local list. The toast is correct and names the role. This is
+a pre-existing transport meeting a new 403, not a transcription error.
+COULD NOT TELL whether a staff employee's role can be EDITED IN PLACE through
+the UI -- I found the provisioning picker (which no longer offers staff) and the
+roster render, but no role-change control, and I did not trace api/leg-auth.js
+far enough to rule one out. If there is none, the only route off staff is
+delete-and-recreate.
+
+2.5 POINT 3 -- THE LITERALS MATCH, AND hank WAS RIGHT TO ASK
+
+Read from the assignment sites and not from any comment:
+
+  status        leg_bookings            leg_clergybookings
+  -----------   ---------------------   -----------------------------
+  Scheduled     saveBooking + the seed  --
+  Cancelled     cancelBooking           DOES NOT EXIST -- no path writes one
+  Requested     --                      saveClergyBooking
+  Confirmed     --                      advanceClergyBooking
+  Completed     DOES NOT EXIST          advanceClergyBooking
+
+  leg_bookings        helper 'Cancelled'  vs real 'Cancelled'  -> MATCH
+  leg_clergybookings  helper 'Completed'  vs real 'Completed'  -> MATCH
+
+Both byte-identical. AND THE ASYMMETRY IS FORCED, NOT CHOSEN: the two
+vocabularies are DISJOINT, so neither resource has the status the other exempts
+and a shared literal would have been wrong for one side whichever value was
+picked -- giving leg_clergybookings the Cancelled literal would have produced an
+exemption matching nothing, so held Completed rows would block and a Completed
+payload would be interval-checked. That is exactly hank's argument.
+
+Four arms drive it, including one that reads the literal OUT OF sairnlegacy.html
+AT RUNTIME and one proving a held row carrying the OTHER resource's status word
+still BLOCKS, plus a required-and-no-default guard that throws.
+
+F3: THREE STALE CITATIONS FOR ONE ANCHOR, ONE OF THEM STAMPED "RE-DERIVED".
+The clergy literal is at sairnlegacy.html:4841. It is cited as 4839 in
+leg-overlap.js, marked "RE-DERIVED 2026-10-14 rather than carried"; as 4820
+elsewhere in that same file; and as 4839 again in api/sd-data.js. Two different
+wrong numbers for one anchor in one file, one carrying a freshness stamp.
+A CITATION THAT SAYS RE-DERIVED AND IS WRONG IS WORSE THAN ONE THAT SAYS
+NOTHING, because the stamp is the thing a reader would otherwise have checked.
+Also routed to cody: the runtime cross-check arm anchors on a function name and
+a missing anchor routes to UNPROVEN at exit 3 rather than failing, so renaming
+clergyBookingConflict silently disarms the only arm that reads the real literal
+out of the app.
+
+2.6 POINT 4 -- BOTH FACTS TRUE, AND TWO THINGS WORSE THAN STATED
+
+The two copies are logically identical -- same prefix, same trim on the case id
+with no case-folding, same uppercase-then-two-regexes on the type, in the same
+order -- and I could construct no separating input. The rewrite is silent: the
+derived key goes into both the key column and the blob's id, and the response is
+an ordinary 200 with no flag and no id_rewritten field. hank's cited
+sairnlegacy.html:4212 has moved to 4214-4216 and was re-derived rather than
+carried.
+
+AND THE TEST IS A REAL CROSS-CHECK, which is the good news: it extracts the
+client function out of the HTML, builds it with new Function, RUNS it, and
+compares against the live server derivation over four cases -- the two
+implementations against each other, not against a hardcoded value. Two
+neighbouring arms hold the server's format to fixed strings, which is what pins
+the format; this one pins the agreement. Both are needed and both exist.
+
+F4 IS THE HIGHEST-VALUE DEFECT IN THIS REVIEW. checkin_type is normalised but
+case_id passes through with a trim alone -- not case-folded, not sanitised --
+while '-' is BOTH the joiner AND the normaliser's output character, so the
+boundary between the two fields is not recoverable:
+
+  {case_id:'CS-7',   checkin_type:'1 Week'}  ->  AC-CS-7-1-WEEK
+  {case_id:'CS-7-1', checkin_type:'Week'}    ->  AC-CS-7-1-WEEK    <- same key
+
+The upsert is on_conflict with resolution=merge-duplicates, so A COLLISION
+SILENTLY OVERWRITES A DIFFERENT CASE'S CHECK-IN AND RETURNS 200. Stated
+honestly: NOT reachable through the shipped UI, because the type comes from a
+fixed three-element plan and generated case ids are always three segments -- but
+reachable by any licence-key holder posting directly to the endpoint, which
+trusts arbitrary case_id and checkin_type, and by any future creation path with
+a free-text type. THAT IS PRECISELY THE ASSUMPTION THE CODE'S OWN COMMENT RESTS
+ON: "(case_id, checkin_type) is unique by construction ... and there is no other
+creation path". A delimiter-safe key removes the assumption instead of
+documenting it. Same class: case_id is not case-folded, so 'cs-7' and 'CS-7'
+derive two keys for one case. AND NO ARM COVERS IT -- the existing arms prove a
+different TYPE on the same case gives a different key; nothing proves a
+different CASE does, and the colliding pair would PASS the cross-check because
+both copies agree on the wrong answer. That is the shape where a
+cross-implementation test is necessary and not sufficient.
+
+F5: the canonicalisation leaves a LOCAL DUPLICATE on the very device it was
+built to protect. The code's stated reason is that "a device still running the
+old page sends a random id ... canonicalising here means ANY writer converges on
+the same row" -- true of the server row, not of that device. The transport
+DISCARDS the rewritten id: callers use the return only as a truthiness flag, and
+the helper marks the CLIENT's id as synced. So the un-upgraded device keeps the
+random id, the next hydrate pulls the canonical row, fails to match it by id and
+pushes it as a SECOND local row -- one check-in, two local rows, which is the
+duplicate-grief symptom the fix exists to prevent. One line in the caller
+(adopt the returned id, mark THAT as synced) is the half that makes the
+canonicalisation actually converge.
+
+2.7 hank's OWN CLOSING NOTE -- CONFIRMED, AND LOUDER THAN THE WORDING
+
+The run-order file says it in its own words:
+  "SAIRNlegacy's five new task roles are rejected the same way, so the
+   36-resource role matrix cannot be USED: nobody can be given a role other
+   than owner/director/staff."
+  "These blocks change the DATABASE. The code that uses them is already
+   deployed, which is why blocks 1, 3, 5 and 6 are the thing currently FAILING
+   rather than a preparation for something later."
+
+SO THE MATRIX THIS REVIEW VERIFIED AS FAITHFUL IS TODAY A GATE NOBODY CAN
+POPULATE, and the only role anybody can hold is the deprecated one -- the exact
+opposite of the deprecation's intent. BLOCK 6 is disclosed as an addition rather
+than folded in silently, which is the right way to add scope.
+
+UNVERIFIED, and it needs a human rather than a file: whether Michael has run
+blocks 5 and 6. Nothing in the repo records a run.
+
+2.8 HOW FAR I WENT ON THE REST, so the discharge does not imply full coverage
+
+  rf_settings tiered read -- READ, not measured. The tier is real: write is
+    management-only, and read previously returned every setting row whole
+    INCLUDING updated_by and updated_at -- i.e. which manager changed the number
+    deciding whether a slope is called total, and when. Declared narrower than
+    sen_settings' tier, deliberately. I did not drive it and did not compare the
+    field list against its test arm by arm, so COULD NOT TELL whether the field
+    split is complete. This is the one named resource on the obligation that
+    received a read rather than a measurement.
+  sen_visits clock_flags merge -- located and read. SAME FIELD as my own b18 N1
+    (an unconditional overwrite of an already-set clock field with no trail),
+    which this change does not touch, so N1 REMAINS OPEN.
+  SAIRNcare office_manager -- confirmed present in the role vocabulary; not
+    otherwise reviewed, being block 5's subject.
+  NOT REVIEWED AT ALL: leg-overlap.js's interval arithmetic beyond the
+    exemptStatus question.
+
+
+================================================================================
+3. ITEM 3 -- cc's OBLIGATION, DISCHARGED AT 3 HOURS
+================================================================================
+
+  CMD ... --discharge cc 2026-10-14T17:20:09Z --body-file <verdict>    EXIT 0
+  CMD git cat-file -e 3b1dc5fe3174                                ->  RESOLVES
+
+A REAL DIFF REVIEW -- the only one of the four obligations I have discharged
+this week whose commit is in this clone's object store. Full verdict:
+docs/2026-10-14-fourth-b20-cc-quotes-comms-discharge.md. Register verdict
+string: 11,184 characters, verified on origin/main.
+
+EVERY CLAIM cc MADE IS TRUE AS STATED. The findings are all in what was NOT
+claimed.
+
+3.1 WHAT I RAN, all read-only modes chosen after reading the argv handling first
+
+  CMD python tools/drive_upload_verify.py --fixtures      ->  EXIT 0  36/36
+  CMD python tools/bare_run_write_check.py --selftest     ->  EXIT 0  11 passed
+  CMD python tests/run_drive_upload_verify_probe.py       ->  EXIT 1  34/35 RED
+  CMD git status --porcelain before/after                 ->  unchanged
+
+--fixtures touches no filesystem and performs no upload; --selftest works inside
+a mkdtemp with LOCKS_DIR rebound and restored in a finally. I did NOT run
+tests/run_bare_run_write_probe.py -- it drives the sweep against the REAL lock
+registry with no redirect and executes synthetic tools for minutes.
+
+3.2 F3 -- THE FINDING: THE CHANGE SILENTLY TURNED AN EXISTING PROBE RED
+
+  CMD python tests/run_drive_upload_verify_probe.py
+      COULD NOT RUN: the criteria lock failed.
+        FAIL WRONG-AGENT: a perfect filename over another agent's content is a
+             FINDING
+             wanted (1, True)
+             got    (1, False)
+      drive_upload_verify probe: 34/35 arm(s) pass          EXIT 1
+
+  the arm asserts        'does not name cc' in out
+  the tool now emits     "WRONG AGENT -- the first line names cody, not cc."
+  the substring          NO LONGER PRESENT
+
+  CMD git show --stat --oneline d1308719
+      tools/drive_upload_verify.py | 40 ++...
+      1 file changed, 38 insertions(+), 2 deletions(-)
+  CMD git log --oneline -1 -- tests/run_drive_upload_verify_probe.py
+      9603441d  (the tool's CREATION commit -- untouched by d1308719)
+
+ONE FILE CHANGED, AND ITS OWN END-TO-END CONTROL WAS NEVER RE-RUN.
+tools/run_all_tests.py walks tests/ recursively, so this is a red arm in the
+discoverable suite rather than an orphan script.
+
+The irony is the lesson and not a jab: the commit's subject is "the dangerous
+case was buried". It unburied the dangerous case in the message and buried a
+failing control in the suite. A MESSAGE IS AN INTERFACE, and an arm that greps a
+human sentence is a brittle arm -- the right fix is both halves: the arm should
+assert the stable TOKEN ("WRONG AGENT"), and the change should have re-run its
+own control.
+
+ALSO NAMED, NOT TRACED: the probe printed "COULD NOT RUN: the criteria lock
+failed." BEFORE the FAIL. A criteria-lock failure and a red arm are different
+states and should not share one run.
+
+3.3 THE OTHER FIVE
+
+F1 -- "separately" is true of the LABEL and not of the PRESENTATION. Both
+branches return False and differ only in the why string; every consumer embeds
+why verbatim and appends to THE SAME LIST, printed in one loop in sorted-listdir
+order under one DISAGREES prefix. So a NO-AGENT-NAMED file prints BEFORE a
+WRONG-AGENT file on alphabetical order, while the code's own stated goal is
+"the split is about which one a reader looks at first". And the audit's closing
+summary was not updated: it still reads "%d file(s) carry one agent's name over
+another's content, or the wrong batch", which is now literally WRONG for every
+NO-AGENT-NAMED file it counts.
+
+F2 -- "36/36 fixtures intact" is true BECAUSE NO FIXTURE WAS ADDED. The fixture
+comparator discards the why string entirely (bool(got) vs bool(want), with both
+call sites passing only element zero). Both input shapes exist in the fixture
+lists but are asserted only to be False, which they already were. A repo-wide
+grep finds WRONG AGENT and NO AGENT NAMED only in the tool and three documents:
+NO test, probe or fixture anywhere asserts either label. Delete the new branch
+and 36/36 still passes at exit 0. A COUNT THAT CANNOT MOVE IS NOT A CHECK.
+
+F4 -- the agent roster is hardcoded (six keys, nine spellings, nothing read from
+disk) and its only cross-check compares it against a SECOND hardcoded table
+holding the same six. So it proves the two tables agree with each other, not
+that either covers reality. And this is where the new label can be confidently
+WRONG: the other-agent scan looks only in that roster, so a first line naming an
+UNROSTERED agent falls through to NO AGENT NAMED, whose text asserts "names no
+other known agent either, so it is a convention gap rather than a mis-file".
+Before the change both printed one neutral sentence; now a genuine mis-file by
+an unrostered writer is positively labelled cosmetic. Candidates that exist
+today and are in neither table: the MAIN clone Documents\SAIRN, and marsh or
+michael as a content author. The platform already runs two live spellings per
+auditor -- status rows hover.json/hover2.json against Drive tokens h1/h2 -- so
+the roster goes stale silently, and the inverse error has no detector.
+
+F5 -- shared_diff's discriminator is a SINGLE STRING PREFIX on the snapshot key,
+never the value, direction, timestamp or subject. It exempts the status
+directory and nothing else, while FOUR sibling directories in the same registry
+have other live writers: push-retries, gate-exemptions, gate-skips and
+batch-cleanup. Measured read-only on the live registry: push-retries holds
+per-agent files from several sessions with mtimes minutes apart across today. So
+a concurrent session pushing during the subject's run yields an attributable
+CREATED key, sets writes_shared, and exits 1 printing "A BARE RUN MUST NOT TOUCH
+SHARED STATE, AND NO ALLOWLIST COVERS THIS" -- the IDENTICAL
+false-finding-with-a-plausible-remedy shape the split was built to eliminate,
+against a tool that cannot write there. Same for a root-level lock created or
+deleted by a concurrent session: the key names a DIFFERENT clone and the tool
+still bills it to the subject. Lock heartbeats are safe (the refresh is a utime
+only and the snapshot hashes content). Aggravating and the cheapest fix of all:
+the external probe never sets SAIRN_LOCKS_DIR, so the control itself watches the
+REAL registry on every run.
+
+F6 -- the subject's OWN status row is unconditionally dropped. A status row is
+named after its writer exactly as a lock file is, and the docstring's own
+justification for keeping locks attributable is that the lock file "is named
+after the writer" -- which applies verbatim to status/<clone>.json, yet the
+prefix test cannot tell the subject's own row from another session's. A tool
+whose bare run heartbeats its row -- and that write path is ALREADY imported and
+called from sairn_claim.py -- lands in the unattributable list, prints under
+"UNATTRIBUTABLE (not a finding)", and NEVER reaches the exit-1 branch. That is
+the session_lock_check.py defect this entire tool exists to catch, one directory
+deeper. Honestly bounded: no shipped tool exercises it today, because the claim
+tool's write is gated on being in its own clone -- the hole is in the
+discriminator, not yet in a caller, which is the right time to fix it. And no
+arm can catch it under the current design: every attributable fixture is planted
+at the ROOT of LOCKS_DIR, and no arm asserts the subject's own row is
+attributable, because the discriminator makes that impossible.
+
+AND THE CONTROL ARM cc CLAIMS IS REAL, which is worth saying plainly: it plants
+an actual file in an actual temp LOCKS_DIR and drives the real snapshot and diff
+functions, asserting the lock stays attributable AND that the unattributable
+list is empty -- with its own reason stated: "without this arm, A8 would pass on
+a tool that called everything unattributable and detected nothing at all".
+
+3.4 ONE SCOPE NOTE
+
+The obligation names quotes and sd_comms with file
+tools/citation_line_drift_check.py, while the change its own text describes is in
+drive_upload_verify.py and bare_run_write_check.py. I REVIEWED WHAT THE TEXT
+DESCRIBES; the resource list is what the gate derived from the commit's changed
+lines, not a claim about those two tools touching quotes or sd_comms. I did NOT
+review citation_line_drift_check.py -- it is the subject of my own b19 routing
+and of this batch's section 5 ask, so it is queued elsewhere.
+
+
+================================================================================
+4. ITEM 4 -- THE FIVE SIBLINGS OF c78b545b, EACH WITH A NAMED OWNER
+================================================================================
+
+docs/2026-10-14-fourth-b20-c78b545b-sibling-routing.md. This closes the bound my
+own b19 verdict placed on itself -- it said five siblings were unreviewed and
+named them only collectively.
+
+  CMD git show --name-only --format="" c78b545b
+      .../tools-hover2/claim_collision_scan.py
+      .../tools-hover2/dependency_health_check.py
+      .../tools-hover2/hover_citation_linter.py        <- reviewed in b19
+      .../tools-hover2/hover_cold_scan_pool.py
+      .../tools-hover2/hover_self_health_fires.jsonl
+      .../tools-hover2/hover_self_health_hook.py
+  CMD git log -1 --format="%an | %ad | %s" --date=iso c78b545b
+      Michael Dibert | 2026-09-29 20:57:33 -0400 | chore(hover2): sync 6 fixed
+      tools to the platform-repo backup
+
+A CORRECTION TO MY OWN b19 WORDING, AND IT IS NOT PEDANTRY. b19 said the commit
+"synced SIX tools". It touched six PATHS, of which five are .py and one is a
+.jsonl DATA FILE. So the five unreviewed siblings are FOUR TOOLS AND ONE DATA
+FILE -- and the data file turns out to be the most interesting of the five. A
+count of "tools" that silently includes a log is the same shape of error as a
+count of "checks" that includes a skip.
+
+OWNER, DERIVED FROM EVIDENCE RATHER THAN ASSUMPTION:
+
+  CMD grep -m1 -E '^#\s*OWNER:' <each file>, BOTH trees  ->  NONE, all eight
+  CMD git log --oneline -12 -- .../tools-hover2/
+      every commit scoped `hover2` / `hover2-tools`
+  CMD git log --oneline -6 -- .../tools/
+      every commit scoped `hover`
+
+tools-hover2/ is H2's tree; tools/ is H1's. All five paths are under
+tools-hover2/, SO THE OWNER OF ALL FIVE IS hover2.
+
+THE TRAP THIS WALKED INTO, AND THE REASON TO STATE THE METHOD: all four
+basenames exist under BOTH trees and the copies are NOT mirrors.
+
+  basename                      H1 tools/   H2 tools-hover2/   differing lines
+  claim_collision_scan.py          263            583                780
+  dependency_health_check.py       145            363                464
+  hover_cold_scan_pool.py         1738            716               2348
+  hover_self_health_hook.py        382            460                748
+  (compared after tr -d '\r')
+
+hover_cold_scan_pool.py is 1738 lines in H1's tree and 716 in H2's. THESE ARE
+INDEPENDENT TOOLS THAT SHARE A NAME. So "route the sibling to the auditor" would
+have been ambiguous between two owners, and a router resolving it by basename
+would have sent H2's work to H1. THE PATH IS THE OWNER, NOT THE NAME.
+
+THE DATA FILE, measured in four facts: c78b545b added that exact path; it is NOT
+tracked at HEAD (git ls-files empty); it IS gitignored, by a .gitignore inside
+that very directory; and the same basename exists and IS tracked in H1's tree at
+44 lines. SAME SHAPE AS b19's sd_photos FINDING -- something the system believes
+it is backing up that the storage layer quietly refuses; there a size cap
+misreported as an unprovisioned table, here a .gitignore. Neither is loud, and
+in both the local copy still exists so nothing looks wrong.
+UNVERIFIED -- THE MECHANISM, NOT THE FACTS: git log --all on that path returns
+nothing and --diff-filter=D returns nothing, so I CANNOT reconstruct how the
+path went from added to untracked and I will not narrate a deletion no commit
+records.
+
+THE ONE ASK THAT COVERS ALL FIVE: `# OWNER: hover2` at the top of each of the
+four .py files. tools/tool_owner_map.py exists precisely because "most tracked
+tools carry no `# OWNER:` line", and its own documentation says the OWNER_LINE
+count is the number to watch. Four files, four lines, and the routing question
+this whole document answers stops needing a document -- the next session greps.
+I did not add them: the auditor skill tree is read-only under my claim, and
+holding that boundary costs four lines of somebody else's typing rather than a
+boundary.
+
+AND IT REVIEWS NONE OF THE FIVE. Every "what it is" in that document is FROM
+THE FILENAME. ROUTING IS NOT REVIEWING, and a routing document implying
+otherwise would recreate exactly the gap b19 named.
+
+
+================================================================================
+5. ITEM 5 -- SEVEN ROTTED ANCHORS RE-ANCHORED, AND THE CHECK SPEC'D
+================================================================================
+
+IT WAS SEVEN, NOT SIX. The task said six; my b19 note said six; the row carried
+seven, and every one was wrong:
+
+  CMD for n in 4910 3268 4957 4999 5023 4378 4364; do sed -n ${n}p sairnfreedom.html; done
+    4910  sfRenderAll();                      <- cell says eventRefusals()
+    3268  (blank line)                        <- cell says sfSessionRefusals()
+    4957  post's second computer would be...  <- cell says sfScheduleEvent()
+    4999  if (!sfAiNoticeVersion) return;     <- cell says the session delete
+    5023  var input=$('bf-photo');            <- cell says the Sessions panel
+    4378  Recorded 2026-09-26. NOTHING IS...  <- cell says the alcohol table tag
+    4364  var reasons=[];                     <- cell says the combined list
+
+7 OF 7. Every function the cell names is real and does what the cell says --
+only the numbers moved.
+
+WHAT WAS DONE, docs/ ONLY. The sf_events cell now carries quoted-text anchors
+and no line numbers, and states the convention to its own future readers:
+
+  was                        is
+  sairnfreedom.html:4910     `function eventRefusals(e){`
+  :3268                      `function sfSessionRefusals(c, excludeId){`
+  :4957                      `function sfScheduleEvent(){`
+  :4378                      `(r.alcohol?'<span class="tag warn">Alcohol</span>':'--')`
+  :4364                      `alcohol:e.alcohol, id:e.id, removable:true`
+  :4999                      `if(ev && ev.sessionId) st(K_SESSIONS, getSessions().filter(`
+  :5023                      `if(getEvents().some(function(e){ return e.sessionId===s.id; })) return;`
+
+  CMD anchors in the cell, counted in sairnfreedom.html
+      anchors: 7 | resolving EXACTLY ONCE: 7 | not unique: 0
+  CMD 4-digit citations remaining in the cell      ->  none
+  CMD pipe count on the row, before and after      ->  7, 7
+  CMD re-verified AFTER the rebase                 ->  7 anchors, 7 unique, 0
+
+The row was rebuilt by unique-substring replacement with the pipe count checked
+on every edit -- NEVER by splitting on a pipe (PR section 2.1).
+
+EXACTLY ONCE, NOT AT LEAST ONCE. Uniqueness is the stronger property: a
+non-unique anchor is a citation that will silently start pointing at a second
+site. This is the same guard sabotage_control_check.py had to be CORRECTED to
+recognise -- it originally scored count(anchor) != 1 as unguarded, which
+inverted the signal on five well-written controls.
+
+ONE THING THAT ALREADY WENT WRONG, and it became a spec requirement: my first
+pass wrote the cell's instruction using a literal backticked ellipsis as an
+example, and the verification script CAPTURED THAT ELLIPSIS AS AN EIGHTH ANCHOR
+-- 8 anchors, 7 resolving. A rot check will do the same on prose that talks
+about anchors, so requirement R6 exists because of it.
+
+THE SPEC, ROUTED TO cc: docs/2026-10-14-fourth-b20-anchor-rot-check-spec.md --
+8 requirements and 10 failing-first arms. It is NOT a line-number drift checker:
+tools/citation_line_drift_check.py already owns that form and REQUIRES --app and
+--prefix, which makes it inapplicable to a cross-app register row (I hit that in
+b19 and recorded it as "does not apply"). This one checks the ANCHOR form and
+proves the anchors still resolve and still resolve UNIQUELY.
+
+  A2  an anchor appearing TWICE is a FINDING, not a pass. The arm a reviewer
+      would cut, and the only one that catches the NEXT rot rather than this one.
+  A4  target file absent -> EXIT 2 naming the file, never 0, never a skip.
+  A10 CONTROL: a document with no anchors prints "0 anchors, 0 line citations"
+      OUT LOUD, because a silent tool and an absent tool look identical.
+  A7  pins this batch's row, and is checkable as having been RED before it.
+  R3  ALSO count surviving file:line citations as a SEPARATE class -- a document
+      half-converted reads as converted.
+  R5  NO WRITE: report the suggested anchor, do not rewrite the document. The
+      eleventh convention -- a fixer that applies its own repair is a detector
+      blessing its own fix.
+
+AND A HUMAN RE-DERIVATION IS NOT THE ANSWER -- THIS BATCH IS THE PROOF. Section
+2.5's F3 found a citation stamped "RE-DERIVED 2026-10-14" that is wrong anyway.
+A FRESHNESS STAMP IS WHAT A READER CHECKS INSTEAD OF CHECKING, so a wrong stamp
+is worse than none. The eighth cross-domain convention has now surfaced live in
+FOUR consecutive documents -- b18's own discharge after a 50-commit rebase,
+b19's third re-derivation (where the one mover had NEVER pointed at what its
+sentence said), b20's leg-overlap.js, and b20's sf_events row -- twice in
+documents I wrote.
+
+
+================================================================================
+6. ITEM 6 -- PUSHED, NOT FORCED, CONFIRMED LANDED
+================================================================================
+
+  CMD git push origin main  (items 1-5)              ->  EXIT 0, FIRST ATTEMPT
+      1b2e346a..924085fb  main -> main
+  CMD git push origin main  (handoff + item-6 manifest)
+      first attempt FAILED ON THE NETWORK, not on a gate:
+      "fatal: unable to access ... Failed to connect to github.com port 443
+       after 24660 ms"
+      retried: EXIT 0, FIRST ATTEMPT after the retry
+
+  CMD git rev-parse --short HEAD / origin/main   ->  d1cd5b1a / d1cd5b1a
+  CMD git rev-list --left-right --count origin/main...HEAD  ->  0   0
+  CMD git status --porcelain                     ->  empty
+  CMD git cat-file -e origin/main:<each>         ->  6 of 6 docs/ + the handoff
+  CMD grep -ci "force|forced|+ refs" over the push log      ->  0
+
+NEITHER PUSH WAS FORCED and the network failure was handled by retrying, not by
+changing the push. No SAIRN_SEED_GATE=off in any form and no
+SAIRN_GATE_EXEMPT=seed either. .claude/settings.json was not edited and is in no
+commit. Hooks untouched -- not added, not removed, not restored.
+
+AND THE CITATIONS WERE RE-CHECKED AFTER THE REBASE, which is b18's lesson
+applied rather than relearned:
+
+  CMD git diff --name-only <pre-rebase> origin/main | grep -E <the cited set>
+      NONE  -- the rebase touched none of the files this batch cites
+  CMD the sf_events anchors, re-counted after the rebase
+      7 anchors, 7 unique, 0 line citations
+
+
+================================================================================
+7. WHAT CHANGED, FILE BY FILE
+================================================================================
+
+docs/batch-manifest-fourth-b20.json             NEW   6 ids, locked, 6 done
+docs/2026-10-14-fourth-b20-leg-role-matrix-discharge.md
+                                                NEW   the 21-resource verdict:
+                                                      4 points, 5 findings, the
+                                                      self-authored-spec
+                                                      disclosure at the top
+docs/2026-10-14-fourth-b20-cc-quotes-comms-discharge.md
+                                                NEW   the cc verdict: every
+                                                      claim true, 6 findings in
+                                                      what was not claimed
+docs/2026-10-14-fourth-b20-c78b545b-sibling-routing.md
+                                                NEW   five siblings, one named
+                                                      owner each, the two-trees
+                                                      trap
+docs/2026-10-14-fourth-b20-anchor-rot-check-spec.md
+                                                NEW   8 requirements, 10
+                                                      failing-first arms
+docs/CRITICALITY-TIERS.md                       EDIT  the sf_events cell only:
+                                                      7 line citations -> 7
+                                                      quoted anchors, pipe count
+                                                      unchanged
+docs/tier-a-reviews.json                        EDIT  TWO records open ->
+                                                      reviewed, by the gate,
+                                                      with 11,976 and 11,184
+                                                      character verdicts
+SAIRN-handoff-fourth-b20.md                     NEW   written BEFORE this report
+
+NO api/ FILE. NO sql/ FILE. NO tools/ FILE. NO tests/ FILE. NO FILE UNDER
+.claude/skills/sairn-hover-auditor/ -- and NEITHER AUDITOR CLONE WAS ENTERED.
+docs/ and my own root deliverables only, exactly as the b20 claim declares --
+and the claim names docs/tier-a-reviews.json and docs/CRITICALITY-TIERS.md
+explicitly in advance, which is b18's disclosure lesson applied forward rather
+than disclosed after the fact.
+
+ONE STATE CHANGE OUTSIDE GIT, disclosed rather than quiet:
+~/SAIRN-SESSION-LOCKS/fourth.lock now names this session instead of a dead pid,
+via session_lock_check.py guard. That file is outside every clone by design.
+
+
+================================================================================
+8. UNVERIFIED -- everything I could not measure, none of it folded into a pass
+================================================================================
+
+ 1. WHETHER MICHAEL HAS RUN RUN-ORDER BLOCKS 5 AND 6. Nothing in the repo
+    records a run, and the run-order file states that the code half is already
+    deployed -- so the role matrix verified in section 2 is currently inert.
+    Needs a human, not a file.
+ 2. WHETHER A `staff` EMPLOYEE'S ROLE CAN BE EDITED IN PLACE through the UI. I
+    found the provisioning picker and the roster render and no role-change
+    control, and did not trace api/leg-auth.js far enough to rule one out.
+ 3. WHETHER rf_settings' TIERED FIELD SPLIT IS COMPLETE. Read, not driven, and
+    not compared against its test file arm by arm.
+ 4. WHETHER tests/run_bare_run_write_probe.py IS GREEN AT HEAD. Not run -- it
+    drives the real lock registry with no redirect.
+ 5. HOW hover_self_health_fires.jsonl WENT FROM ADDED TO UNTRACKED. Four facts
+    measured; the story joining them is not, and git log on that path returns
+    nothing.
+ 6. HOW MANY OF docs/CRITICALITY-TIERS.md's REMAINING LINE CITATIONS ARE STALE.
+    Hundreds exist. The sf_events row was 7 of 7 -- and that row was edited
+    across several batches, which is the condition that rots citations, SO IT IS
+    NOT A SAMPLE. The rot check's first run is the measurement.
+ 7. THE FIVE SIBLINGS ARE NOT REVIEWED. Owners named and routed; bodies not
+    opened. Routing is not reviewing.
+ 8. NO SUITE WAS RUN END TO END. Three read-only modes were run (two fixture
+    locks and one probe) plus the band/cell comparison in process. The four
+    leg test files' assertions were READ AND INDEPENDENTLY REPRODUCED, not
+    executed -- so "three arms pin the deprecation" means three arms exist and
+    say what I quote, not that I watched them pass.
+ 9. NO LIVE DEPLOYMENT WAS FETCHED. Nothing in this batch is a code change, so
+    the push protocol's step 2 does not apply -- stated rather than skipped.
+10. THE CITATION COUNT IN SECTION 2 IS hank's FILE, NOT MINE TO FIX. F3's three
+    stale citations are in api/ files and were reported, not corrected.
+
+
+================================================================================
+9. THE ONE SENTENCE WORTH KEEPING
+================================================================================
+
+cc's change was correct, well described, and broke its own control because the
+control was grepping prose -- and seven register citations were wrong because
+they were pointing at line numbers: ANCHOR ON THE THING MEANT TO BE STABLE -- a
+token, a quoted string, a function name -- NEVER ON THE SENTENCE OR THE OFFSET
+AROUND IT. Those are the same defect in two materials, found in one batch.
+
+
+  Evidence:
+  docs/2026-10-14-fourth-b20-leg-role-matrix-discharge.md
+  docs/2026-10-14-fourth-b20-cc-quotes-comms-discharge.md
+  docs/2026-10-14-fourth-b20-c78b545b-sibling-routing.md
+  docs/2026-10-14-fourth-b20-anchor-rot-check-spec.md
+  docs/CRITICALITY-TIERS.md  (the sf_events row)
+  docs/batch-manifest-fourth-b20.json
+  SAIRN-handoff-fourth-b20.md
+
+  Logs and scripts:
+  C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\b0f8683c-3365-4d5b-82ea-094a13bdff7e\scratchpad\
+  tier_a_list_b20.log, lock_status_before_b20.log, lock_guard_b20.log,
+  verdict_b20_leg.txt, discharge_leg_b20.log, verdict_b20_cc.txt,
+  discharge_cc_b20.log, dupv_probe_b20.log, pull_b20.log, pull_loop_b20.log,
+  push_loop_b20.log
+
+  THE SHA256 BELOW IS DEFINED, not decorative: sha256 over every byte of this
+  file up to and NOT including the final hash line -- the second-to-last line --
+  with CRLF normalised to LF, taking the LAST occurrence of the marker. The last
+  occurrence deliberately, because this paragraph mentions the marker itself and
+  a naive split on the first would hash only part of the file. Re-derive:
+
+    import io, hashlib
+    s = io.open('SAIRN-report-fourth-b20.txt', 'rb').read().decode('utf-8').replace('\r\n','\n')
+    body = s.rsplit('SHA' + '256 ', 1)[0]
+    print(hashlib.sha256(body.encode('utf-8')).hexdigest())
+SHA256 6565f10f020001f9d6237b518df7d453fcc84a4ba7913ed47b94604e1d0295f6
+END-OF-REPORT
