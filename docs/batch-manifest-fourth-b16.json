@@ -1,0 +1,44 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "fourth",
+  "batch": "b16",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/batch-manifest-fourth-b16.json written by --new BEFORE any other item, id_lock 906816e5cf0d24f9; closed with PYTHONIOENCODING=utf-8 (tools/batch_manifest.py:386 still crashes without it)"
+    },
+    {
+      "id": 2,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/2026-10-14-fourth-b16-row44-row50-probes.md -- both probes DRIVEN: row 44 exit 1 (37/38 arms, the live arm red: 4 resources with no removal path), row 50 exit 1 (baseline green, 2 of 8 mutations NOT caught). Both were b15 false positives; the arms they need are delivered as code because tests/ is cody's"
+    },
+    {
+      "id": 3,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/2026-10-14-fourth-b16-routed-to-cc.md -- four findings, two numbers corrected: by-design-register has 2 mentions and 0 readers (tools/batch_manifest.py:559, tools/report_only_checks.py:3553, both prose); locks over 160h is 8 of 14, not 7"
+    },
+    {
+      "id": 4,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/2026-10-14-fourth-b16-confirm-questions.md -- 3 for counsel (C1 embalmer licence tier, C2 two-person cremation, C3 paralegal preparing a trust disbursement), 5 for a funeral director, 2 for a vet practice, each naming app, role and the exact yes/no; one law-firm org question listed outside the ten"
+    },
+    {
+      "id": 5,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/2026-10-14-fourth-b16-citation-recheck.md -- scratchpad/cite_recheck_b16.py exit 0, 45 citations across 9 docs, 44 correct, 1 WRONG (api/_lib/auth.js:277 -> :276, the manager-not-a-clinician line) fixed visibly in the b15 vet matrix; --read-the-line mode requested of cc"
+    },
+    {
+      "id": 6,
+      "title": "",
+      "status": "open",
+      "evidence": ""
+    }
+  ]
+}
