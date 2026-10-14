@@ -37,7 +37,7 @@ tier + task roles in one `CHECK` list, gated per resource server-side.
 |---|---|---|---|
 | `owner` | **owner** | Owner/DVM. Principal and the only provisioning role. | app's own |
 | `dvm` | **licensed practitioner** | Associate DVM. | app's own |
-| `manager` | **upper management** | Practice Manager. Runs the office; **explicitly NOT a clinician** (`api/_lib/auth.js:277`). | app's own |
+| `manager` | **upper management** | Practice Manager. Runs the office; **explicitly NOT a clinician** (`api/_lib/auth.js:276` -- cited as :277 when this document was written on 2026-10-14 and corrected the same day by re-deriving it; :277 is the `frontdesk` line). | app's own |
 | `tech` | task | Veterinary Technician (CVT/RVT/LVT by state). | app's own |
 | `assistant` | task | Veterinary Assistant. | app's own |
 | `frontdesk` | task | Front desk / reception. | app's own |
@@ -52,7 +52,7 @@ a role that means nothing cannot be gated on.
 
 **TWO STRUCTURAL [CONFIRM]s, both about the real world rather than the code:**
 
-* **[CONFIRM] does `manager` read clinical records?** `auth.js:277` says a
+* **[CONFIRM] does `manager` read clinical records?** `auth.js:276` says a
   practice manager is not a clinician. A manager who cannot open
   `sv_soapnotes` also cannot answer a client's billing question about a visit.
   Spec'd below as **read yes, write no** — the least-surprising answer, and the
