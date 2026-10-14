@@ -28469,6 +28469,56 @@
       "recurrence_open": "The actions close the SPECIFIC pair and the specific file. They do NOT close the shape: this is at least the third two-lists-that-must-agree defect in this family, and the platform carries other pairs whose halves live in different languages -- SD_SESSION_GATED and SD_GATE_APP are one, and they are kept in agreement only by a test somebody remembered to write. Nothing systematically enumerates such pairs. They also do not prove the database was migrated: every action here is in the repo, and until the SQL is run the only thing that improved is that the failure is now named 503 CHECK_NOT_WIDENED instead of silently covering 19% of the population."
     },
     {
+      "commit": "650e02282573",
+      "date": "2026-10-14",
+      "subject": "fix(sairnlaw): every credential deactivation was writing NO audit row, silently",
+      "files": [
+        "api/lifecycle-audit-event-coverage.test.js",
+        "sql/sairnlaw_audit_log_schema.sql"
+      ],
+      "lines_added": 335,
+      "lines_removed": 3,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "hover-audit",
+      "summary": "sql/sairnlaw_audit_log_schema.sql's event_type CHECK rejected all three events the shared credential-lifecycle engine emits (credential_deactivated, credential_reactivated, credential_change_refused), so every SAIRNlaw credential deactivation wrote NO audit row. The INSERT failed with 23514, writeAuditLog is non-fatal and returned false, api/law-auth.js carried on and the caller got its 200 -- so the log's EMPTINESS read as \"nothing happened\", and an audit log is consulted precisely when somebody asks who removed an account. Measured across the population rather than fixed where it was reported: eleven api/*-auth.js files call lifecycle.setActive and SAIRNlaw was the only one whose CHECK rejected these three.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "The gap opened when eleven apps were migrated onto the shared api/_lib/employee-lifecycle.js engine while each app kept its own audit-log CHECK; ten CHECKs happened to already permit the three values and SAIRNlaw's did not. No single commit made working behaviour broken, and git log -S on either side would only find where the text came from, never when the two lists diverged (PR 2.6)."
+      },
+      "citation_note": "Section 1.5 is written about a tool printing a confident line after an error; this is the same shape in shipped server code -- the 200 was the confident line and the swallowed 23514 was the error. Cited as the nearest real rule with the difference stated, rather than claimed to be a literal instance.",
+      "phase_note": "Two correct artefacts that were never reconciled: a shared engine emitting three event names, and a per-app CHECK listing permitted ones. Neither is wrong in isolation, which is what makes this design rather than coding.",
+      "contributing_factors": [
+        {
+          "factor": "writeAuditLog is NON-FATAL by design, so a rejected audit INSERT cannot fail the operation it is recording -- and therefore cannot tell anyone it failed either.",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "Making it fatal would mean a schema drift takes credential administration offline for every app, which is a worse failure than a missing row. The decision stands; the mitigation is that the CHECK can no longer drift undetected."
+        },
+        {
+          "factor": "The event names are emitted by a shared engine with no APP of its own (eleven apps use it) and permitted by sixteen per-app CHECKs -- two populations with no single source and nothing comparing them.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "api/lifecycle-audit-event-coverage.test.js now walks every caller to resolve APP -> AUDIT_TABLE_BY_APP -> the sql/ CHECK and parses the event list out of the engine rather than transcribing it. Deriving the two from ONE source is still only done for role vocabularies, not for audit event types."
+        },
+        {
+          "factor": "tools/audit_event_type_check.py exited 0 with the gap live, by its own words: it follows ONE helper's call sites through each caller's `const APP` and the lifecycle engine is a second helper it does not follow.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "The walk exists as a test instead, deliberately narrow. Extending the general checker is ROUTED to cc, because tools/ is cc's."
+        }
+      ],
+      "recurrence_open": "The new test reads sql/ files, so a CHECK widened LIVE and never written back is still invisible -- the exact state three audit-log tables were in until 2026-10-13. Nothing yet compares any app's HTML, the third copy of these vocabularies, except SAIRNfreedom's."
+    },
+    {
       "commit": "8447c3695404",
       "date": "2026-10-14",
       "subject": "fix(sairnlegacy): a chapel could be promised to two families -- the double-booking check was reading the browser's own cache",
@@ -28522,6 +28572,148 @@
       "recurrence_open": "The fix is a read-then-write, not an atomic lock. Two requests interleaving between the SELECT and the upsert -- milliseconds, two people clicking Save in the same instant -- still both succeed; the EXCLUDE constraint that would close it cannot be indexed while the window lives in `data` jsonb. And nothing here surveys the other 34 SAIRNlegacy resources for the same client-side-authority shape."
     },
     {
+      "commit": "b17d081a2510",
+      "date": "2026-10-14",
+      "subject": "chore(methodology): the seam check's COULD NOT TELL is ONE seam with a test whose count had gone stale, and seven FMEA drafts were a month out of date",
+      "files": [
+        "api/_lib/auth-roleset-seam.test.js",
+        "docs/fmea/api_lifecycle-audit-event-coverage.test.js.json",
+        "docs/fmea/api_sd-data-leg-bookings-toctou.test.js.json",
+        "docs/fmea/api_sd-data-scp-session-gate.test.js.json",
+        "docs/fmea/api_sd-data-session-gate.test.js.json",
+        "docs/fmea/api_sd-data.js.json",
+        "docs/fmea/sql_sairnlaw_audit_log_schema.sql.json",
+        "docs/fmea/tests_sairnlegacy_write_failure_voice.js.json"
+      ],
+      "lines_added": 2288,
+      "lines_removed": 28,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "static-checker",
+      "summary": "api/_lib/auth-roleset-seam.test.js stated its own coverage population as EIGHTEEN callers, in four places, while tools/sairn_seam_check.py reported NINETEEN could-not-tell lines for the roleSet() seam and the source held TWENTY-ONE files in api/ calling roleSet(). The sweep in that file was never wrong -- it reads every file in api/, so the extra callers were covered the day they landed -- but the written figure was, and a stale number sitting next to a working check invites somebody to \"fix\" the check. Found by running the seam check to resolve its COULD NOT TELL report and comparing its count against the test's prose.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/sairn_seam_check.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The number was correct when written on 2026-10-05 and became wrong when the 19th and 21st roleSet callers were added, in commits that had no reason to touch this test and did nothing wrong. There is no commit at which working behaviour broke, which is the whole character of this defect class."
+      },
+      "citation_note": "Section 1.1 is about a check that stopped checking. This is the adjacent case: the CHECK still checks and its STATED SCOPE went stale. Cited as the nearest real section with the difference named, rather than claimed as a literal instance.",
+      "phase_note": "A count typed into prose next to a derived sweep. Nothing about the design was wrong -- the sweep was always general -- so this is the writing of the number, not the shape of the check.",
+      "contributing_factors": [
+        {
+          "factor": "A population count was written in prose beside a sweep that derives the same population, so the two could disagree and only one of them was executable.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The count is now DERIVED by a new arm and printed in the run summary, so the figure a reader quotes is the one that run measured."
+        },
+        {
+          "factor": "Nothing re-reads a written count against its source on any cadence. The seam check reports the real figure every run and nothing compares the two.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "The new arm asserts a FLOOR plus a named anchor (api/sd-data.js must be in the swept set), which catches a sweep that finds almost nothing. A true cross-check between the Python tool's count and the JS suite's count is not built and would couple a suite to another tool's stdout."
+        },
+        {
+          "factor": "b8's handoff recorded this as \"COULD NOT TELL for at least one endpoint/engine pair\", which is what the summary line looks like without reading the 19 lines under it. The wrong mental model -- a pair -- made the item look smaller than it was.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The commit message and the test header both state it is ONE seam with nineteen callers, so the next reader starts from the right shape."
+        }
+      ],
+      "recurrence_open": "Every other written count in the tree is untouched by this. The floor arm cannot catch the case this one actually was -- a count that is wrong by one or two -- only a count that has collapsed. Nothing yet compares tools/sairn_seam_check.py's reported figure to the suite that covers the seam it names."
+    },
+    {
+      "commit": "b17d081a2510",
+      "date": "2026-10-14",
+      "subject": "chore(methodology): the seam check's COULD NOT TELL is ONE seam with a test whose count had gone stale, and seven FMEA drafts were a month out of date",
+      "files": [
+        "api/_lib/auth-roleset-seam.test.js",
+        "docs/fmea/api_lifecycle-audit-event-coverage.test.js.json",
+        "docs/fmea/api_sd-data-leg-bookings-toctou.test.js.json",
+        "docs/fmea/api_sd-data-scp-session-gate.test.js.json",
+        "docs/fmea/api_sd-data-session-gate.test.js.json",
+        "docs/fmea/api_sd-data.js.json",
+        "docs/fmea/sql_sairnlaw_audit_log_schema.sql.json",
+        "docs/fmea/tests_sairnlegacy_write_failure_voice.js.json"
+      ],
+      "lines_added": 2288,
+      "lines_removed": 28,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "static-checker",
+      "summary": "docs/fmea/api_sd-data.js.json was a THIRTY-DAY-OLD prediction and the FMEA loop scored it MISSED twice without ever saying it was stale. Re-saved at this HEAD the same draft moves from defect_records 57 to 548, matched_this_file 1 to 90, detectors_fired [] to [1.3, 1.7], and app_matched from `sairnvet` to `sairnscape` -- so it was reasoning over a TENTH of the available evidence and had the wrong app attributed. \"This draft predicted the wrong thing\" and \"this draft is stale\" have opposite fixes, and the loop reports both as MISSED.",
+      "rules": [
+        "1.10"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/fmea_draft.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The draft was a reasonable prediction on 2026-09-14 and decayed as the register grew from 57 records to 548. No commit broke it; the passage of time did, which is the defect."
+      },
+      "citation_note": "Section 1.10 -- a computed answer is only as current as its oldest input -- is this exactly, with the register as the input and a saved JSON draft as the computed answer.",
+      "phase_note": "Saving a prediction to disk and scoring it later is the design; what is absent from that design is any notion of the draft's age or of the size of the evidence base it was drawn from.",
+      "contributing_factors": [
+        {
+          "factor": "A saved FMEA draft carries drafted_on and defect_records but nothing reads either when the loop scores it, so a stale draft and a wrong draft are reported identically as MISSED.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Re-saved all seven drafts so the baseline is current. Making the loop report staleness -- comparing a draft's defect_records against the register's current count, or its drafted_on against today -- is a tools/ change and tools/ belongs to cc, so it is ROUTED rather than made here."
+        },
+        {
+          "factor": "Six of the seven files had NO DRAFT at all, so the loop could say nothing about them in either direction. An absent prediction is not a failed one, and the loop's own output distinguishes them -- but only a reader who looks does.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "All six now have a baseline draft, saved at this HEAD, and the commit message states plainly that they predict nothing yet and cannot be scored until something goes wrong in those files."
+        },
+        {
+          "factor": "app_matched was `sairnvet` for a file whose largest resource families are StoneDesk, SAIRNscape, SAIRNsenior and SAIRNlaw -- an attribution nothing checked, in a document meant to be read as evidence.",
+          "kind": "technical",
+          "action_status": "planned",
+          "action": "Now `sairnscape`, which is a different guess from a bigger sample and is still a guess for a 19,000-line multi-app handler. Recorded so nobody quotes that field as a fact about this file."
+        }
+      ],
+      "recurrence_open": "The other drafts in docs/fmea/ were not audited for age -- only these seven were touched. Nothing stops the same decay starting again tomorrow, because the staleness check is routed and not built, and re-saving a draft resets its age without improving its reasoning."
+    },
+    {
+      "commit": "b7aa45b22766",
+      "date": "2026-10-14",
+      "subject": "fix(tier a review gate): save_reviews stops losing a writer on Windows, with the failing-first probe that caught it",
+      "files": [
+        "tests/run_save_reviews_retry_probe.py",
+        "tools/tier_a_review_gate.py"
+      ],
+      "lines_added": 289,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "fault-injection",
+      "summary": "tools/tier_a_review_gate.py save_reviews() called os.replace with no retry. On Windows that is MoveFileEx(MOVEFILE_REPLACE_EXISTING) and it fails ERROR_ACCESS_DENIED while the destination is held open, including by another MoveFileEx on the same target: 335 of 400 concurrent saves raised PermissionError. Safety held -- no reader ever saw a half-written file -- and LIVENESS did not: one of two concurrent writers errored instead of completing, and --open, --discharge and --reseat-shas all end in save_reviews, so a caller did its work and its Tier A record was never written. Arm 11 of the probe carried the traceback in 12 of 12 runs and exited 0 every time. Fixed with a bounded 20-attempt retry on PermissionError BY NAME that re-raises on exhaustion.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tests/run_tier_a_review_gate_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "a51047b398f0",
+        "date": "2026-09-21",
+        "subject": "feat(tier-a): an obligation is ASSIGNED when it is opened -- the duplicate-review race removed rather than detected",
+        "lag_days": 23
+      },
+      "citation_note": "no standing rule names a Windows-specific atomic-replace liveness failure; PR 1.11 covers could-not-run states and this is a lost write",
+      "factors_unknown_reason": "cody measured the behaviour and routed the fix; why MoveFileEx semantics were not considered when the atomic write was added has not been investigated by anybody and inventing a cause here would be a guess"
+    },
+    {
       "commit": "d99b47f9683e",
       "date": "2026-10-14",
       "subject": "fix(sairnscape): the last five licence-only resources are gated, and the repro that found them now reports 22 of 22 FIXED",
@@ -28569,86 +28761,6 @@
         }
       ],
       "recurrence_open": "`schedule` is still licence-only and that is a disclosure, not a fix: nobody has decided it, and it is the one SAIRNscape resource whose bare name is also a StoneDesk panel id. Nothing here closes the same shape in the other apps -- the derived-population arm is SAIRNscape's only; the other per-app gate suites still hand-type their resource lists."
-    },
-    {
-      "commit": "650e02282573",
-      "date": "2026-10-14",
-      "subject": "fix(sairnlaw): every credential deactivation was writing NO audit row, silently",
-      "files": [
-        "api/lifecycle-audit-event-coverage.test.js",
-        "sql/sairnlaw_audit_log_schema.sql"
-      ],
-      "lines_added": 335,
-      "lines_removed": 3,
-      "app": "sairnlaw",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "hover-audit",
-      "summary": "sql/sairnlaw_audit_log_schema.sql's event_type CHECK rejected all three events the shared credential-lifecycle engine emits (credential_deactivated, credential_reactivated, credential_change_refused), so every SAIRNlaw credential deactivation wrote NO audit row. The INSERT failed with 23514, writeAuditLog is non-fatal and returned false, api/law-auth.js carried on and the caller got its 200 -- so the log's EMPTINESS read as \"nothing happened\", and an audit log is consulted precisely when somebody asks who removed an account. Measured across the population rather than fixed where it was reported: eleven api/*-auth.js files call lifecycle.setActive and SAIRNlaw was the only one whose CHECK rejected these three.",
-      "rules": [
-        "1.5"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": "hover",
-      "injection": {
-        "unknown_reason": "The gap opened when eleven apps were migrated onto the shared api/_lib/employee-lifecycle.js engine while each app kept its own audit-log CHECK; ten CHECKs happened to already permit the three values and SAIRNlaw's did not. No single commit made working behaviour broken, and git log -S on either side would only find where the text came from, never when the two lists diverged (PR 2.6)."
-      },
-      "citation_note": "Section 1.5 is written about a tool printing a confident line after an error; this is the same shape in shipped server code -- the 200 was the confident line and the swallowed 23514 was the error. Cited as the nearest real rule with the difference stated, rather than claimed to be a literal instance.",
-      "phase_note": "Two correct artefacts that were never reconciled: a shared engine emitting three event names, and a per-app CHECK listing permitted ones. Neither is wrong in isolation, which is what makes this design rather than coding.",
-      "contributing_factors": [
-        {
-          "factor": "writeAuditLog is NON-FATAL by design, so a rejected audit INSERT cannot fail the operation it is recording -- and therefore cannot tell anyone it failed either.",
-          "kind": "latent-condition",
-          "action_status": "declined",
-          "note": "Making it fatal would mean a schema drift takes credential administration offline for every app, which is a worse failure than a missing row. The decision stands; the mitigation is that the CHECK can no longer drift undetected."
-        },
-        {
-          "factor": "The event names are emitted by a shared engine with no APP of its own (eleven apps use it) and permitted by sixteen per-app CHECKs -- two populations with no single source and nothing comparing them.",
-          "kind": "latent-condition",
-          "action_status": "planned",
-          "action": "api/lifecycle-audit-event-coverage.test.js now walks every caller to resolve APP -> AUDIT_TABLE_BY_APP -> the sql/ CHECK and parses the event list out of the engine rather than transcribing it. Deriving the two from ONE source is still only done for role vocabularies, not for audit event types."
-        },
-        {
-          "factor": "tools/audit_event_type_check.py exited 0 with the gap live, by its own words: it follows ONE helper's call sites through each caller's `const APP` and the lifecycle engine is a second helper it does not follow.",
-          "kind": "detection",
-          "action_status": "planned",
-          "action": "The walk exists as a test instead, deliberately narrow. Extending the general checker is ROUTED to cc, because tools/ is cc's."
-        }
-      ],
-      "recurrence_open": "The new test reads sql/ files, so a CHECK widened LIVE and never written back is still invisible -- the exact state three audit-log tables were in until 2026-10-13. Nothing yet compares any app's HTML, the third copy of these vocabularies, except SAIRNfreedom's."
-    },
-    {
-      "commit": "b7aa45b22766",
-      "date": "2026-10-14",
-      "subject": "fix(tier a review gate): save_reviews stops losing a writer on Windows, with the failing-first probe that caught it",
-      "files": [
-        "tests/run_save_reviews_retry_probe.py",
-        "tools/tier_a_review_gate.py"
-      ],
-      "lines_added": 289,
-      "lines_removed": 1,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "fault-injection",
-      "summary": "tools/tier_a_review_gate.py save_reviews() called os.replace with no retry. On Windows that is MoveFileEx(MOVEFILE_REPLACE_EXISTING) and it fails ERROR_ACCESS_DENIED while the destination is held open, including by another MoveFileEx on the same target: 335 of 400 concurrent saves raised PermissionError. Safety held -- no reader ever saw a half-written file -- and LIVENESS did not: one of two concurrent writers errored instead of completing, and --open, --discharge and --reseat-shas all end in save_reviews, so a caller did its work and its Tier A record was never written. Arm 11 of the probe carried the traceback in 12 of 12 runs and exited 0 every time. Fixed with a bounded 20-attempt retry on PermissionError BY NAME that re-raises on exhaustion.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": "tests/run_tier_a_review_gate_probe.py",
-      "found_by_session": null,
-      "injection": {
-        "commit": "a51047b398f0",
-        "date": "2026-09-21",
-        "subject": "feat(tier-a): an obligation is ASSIGNED when it is opened -- the duplicate-review race removed rather than detected",
-        "lag_days": 23
-      },
-      "citation_note": "no standing rule names a Windows-specific atomic-replace liveness failure; PR 1.11 covers could-not-run states and this is a lost write",
-      "factors_unknown_reason": "cody measured the behaviour and routed the fix; why MoveFileEx semantics were not considered when the atomic write was added has not been investigated by anybody and inventing a cause here would be a guess"
     },
     {
       "commit": "e89e0a778aba",
