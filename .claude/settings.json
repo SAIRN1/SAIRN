@@ -163,25 +163,11 @@
   "env": {
     "DISABLE_AUTOUPDATER": "1"
   },
-  "hooks": {
-    "SessionStart": [
-      {
-        "matcher": "compact",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/compaction_brief.py\"",
-            "timeout": 30,
-            "statusMessage": "Who am I, which batch, where is my handoff -- after a compaction..."
-          }
-        ]
-      }
-    ]
-  },
+  "hooks": {},
   "outputStyle": "silent",
   "enabledPlugins": {
     "superpowers@claude-plugins-official": true
   },
   "_permissions_note": "Mechanical permission rules, 2026-10-13, cc batch b5, on Michael's instruction: stop prompting him, and let nothing risky through. DENY WINS AT EVERY LEVEL and an allow can never carve an exception out of a deny -- which is what makes the broad git and python allows safe. TWO PARTS OF THE BRIEF ARE NOT EXPRESSIBLE AS RULES and are reported rather than faked: (1) 'network fetches except GitHub/Supabase/Vercel' -- an allow cannot except a deny, so the shell fetchers are denied outright and the exception is served by tools/sairn_http.py and by the WebFetch domain allows; (2) 'SAIRN_SEED_GATE=off' -- deny rules match PAST a leading env assignment, so the assignment itself can never be the thing matched. What does happen, and is testable: an ALLOW rule does NOT match past an unknown env assignment, so `SAIRN_SEED_GATE=off git push ...` falls out of the allow list and PROMPTS instead of running silently. ALSO A KNOWN HOLE: a deny rule does not reach a subprocess that opens files itself, so an allowed `python -c` can do what the shell is denied. See docs/2026-10-13-cc-routed-b5.md.",
-  "_hooks_note": "ONE hook, and it is NOT a restoration. The 23 hooks Michael cleared on 2026-10-11 because they were causing agent compaction stay cleared and are recorded verbatim in docs/hooks-disabled-2026-10-13.json; they are never to be re-added. This single SessionStart/compact entry was authorised separately, for the opposite problem: surviving a compaction. It runs ONLY on matcher `compact`, so it does not fire on a normal session start, it prints under 20 lines, and tools/compaction_brief.py always exits 0 because a SessionStart hook that exits non-zero is a session that will not start."
+  "_hooks_note": "NO HOOKS, AND THE EMPTY OBJECT IS COMMITTED ON PURPOSE -- an absent `hooks` key and `hooks: {}` are different facts, and only the second one survives a fresh clone, a reset and a rebase without putting anything back. The 23 hooks Michael cleared on 2026-10-11 because they were causing agent compaction stay cleared and are recorded verbatim in docs/hooks-disabled-2026-10-13.json. The ONE SessionStart/compact entry cc b6 added under a separate authorisation (eb53e267, tools/compaction_brief.py) was REMOVED by cc b8 on Michael's instruction: the tool still runs by hand, `python tools/compaction_brief.py`, and nothing in this repo wires it. hook_integrity_check --wiring-only reports INTENTIONALLY DISARMED for this state and still reports a half-wired or absent `hooks` key as drift."
 }
