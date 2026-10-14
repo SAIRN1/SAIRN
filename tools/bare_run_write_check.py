@@ -152,28 +152,76 @@ def shared_snapshot(repo):
     return snap
 
 
+# ── THE REGISTRY HAS OTHER WRITERS, AND A SNAPSHOT CANNOT SEE WHO WROTE ─────
+# `~/SAIRN-SESSION-LOCKS/status/<session>.json` is the LIVE shared status
+# registry. Five other sessions write their own row there continuously, by
+# design -- that is the whole point of the registry. A before/after snapshot
+# around a 25-second tool run therefore records those writes too, and has no
+# way to tell them from a write by the tool under test.
+#
+# IT PRODUCED THE SHARPEST-LOOKING FINDINGS IN hank's 2026-10-13 SWEEP AND ALL
+# THREE WERE FALSE. The sweep reported `idempotency_check.py`,
+# `register_freshness_check.py --help` and `shape_antipattern_check.py` as each
+# having written `status/hover.json`, `status/fourth.json` and
+# `status/hover2.json` -- "a checker that edits another session's row while
+# merely being run", named in that routing document as the sharpest item in the
+# table. NONE OF THE THREE CAN WRITE A STATUS ROW: measured at HEAD, none of
+# them -- nor `checker_kit`, which two of them import -- contains any reference
+# to SESSION-LOCKS, sairn_status or status/. What they have in common is only
+# that hover, fourth and hover2 were live sessions during the sweep.
+#
+# A DETECTOR THAT ATTRIBUTES A CONCURRENT WRITER'S CHANGE TO ITS SUBJECT IS
+# WORSE THAN ONE THAT MISSES IT. The false finding is specific, plausible and
+# names a real file, so it reads as evidence; and the remedy it implies is to
+# go edit three correct tools. Same shape as the push gate's own
+# `NO OWNER: 4` incident -- a false finding with a believable remedy.
+#
+# SO status/ CHANGES ARE A THIRD STATE, NOT A FINDING. They are still reported,
+# by name, on every run -- dropping them silently would be the other failure --
+# but as UNATTRIBUTABLE rather than as something the tool did. Lock FILES stay
+# attributable: a bare run acquires a lock named after the clone it ran in, and
+# that is the defect this tool was built for (`session_lock_check.py` creating
+# `~/SAIRN-SESSION-LOCKS/<clone>.lock` and reporting clean).
+def _unattributable(key):
+    """True for a shared-state key whose directory has OTHER live writers.
+
+    Narrow on purpose: only the status registry, only its per-session rows.
+    GITCONFIG and WORKTREES are per-clone and a concurrent session does not
+    touch this clone's; LOCKS:<clone>.lock is named after the writer.
+    """
+    return key.startswith('LOCKS:status/')
+
+
 def shared_diff(before, after):
-    """Human-readable changes between two snapshots, newest key order stable."""
+    """(attributable changes, unattributable changes) between two snapshots.
+
+    Returns TWO lists rather than one. The caller must not fold the second
+    into a finding -- see _unattributable above for the three false findings
+    that produced this split.
+    """
     keys = sorted(set(before) | set(after))
-    diffs = []
+    diffs, unattr = [], []
     for k in keys:
         b, a = before.get(k), after.get(k)
         if b == a:
             continue
         if b is None:
-            diffs.append('%s CREATED' % k)
+            what = '%s CREATED' % k
         elif a is None:
-            diffs.append('%s DELETED' % k)
+            what = '%s DELETED' % k
         else:
-            diffs.append('%s CHANGED' % k)
-    return diffs
+            what = '%s CHANGED' % k
+        (unattr if _unattributable(k) else diffs).append(what)
+    return diffs, unattr
 
 
 def run_tool(repo, rel, args, timeout):
-    """(exit_code_or_None, wrote, shared) -- None means it did not finish.
+    """(exit_code_or_None, wrote, shared, unattributable).
 
-    `shared` is the list of out-of-tree changes, which is why this returns three
-    values now instead of two.
+    None for the code means it did not finish. `shared` is the list of
+    out-of-tree changes this tool can be held responsible for;
+    `unattributable` is the live-status-registry half that has other writers
+    and must never become a finding against the tool (see _unattributable).
     """
     s_before = shared_snapshot(repo)
     # ── THE DETECTOR MUST NOT CAUSE WHAT IT DETECTS (RULE G, 2026-10-08) ────
@@ -199,8 +247,8 @@ def run_tool(repo, rel, args, timeout):
         out('    COULD NOT LAUNCH %s: %s' % (rel, e))
         code = None
     wrote = porcelain(repo)
-    shared = shared_diff(s_before, shared_snapshot(repo))
-    return code, wrote, shared
+    shared, unattr = shared_diff(s_before, shared_snapshot(repo))
+    return code, wrote, shared, unattr
 
 
 def opt(argv, name, default=None):
@@ -256,12 +304,12 @@ def selftest():
         s0 = shared_snapshot(repo)
         ck('A1. two snapshots of an untouched world are IDENTICAL -- without '
            'this every arm below would pass on noise',
-           shared_diff(s0, shared_snapshot(repo)) == [],
-           shared_diff(s0, shared_snapshot(repo)))
+           shared_diff(s0, shared_snapshot(repo))[0] == [],
+           shared_diff(s0, shared_snapshot(repo))[0])
 
         io.open(os.path.join(LOCKS_DIR, 'planted.lock'), 'w',
                 encoding='utf-8').write('{"pid": 1}\n')
-        d = shared_diff(s0, shared_snapshot(repo))
+        d, _unattr = shared_diff(s0, shared_snapshot(repo))
         ck('A2. a NEW lock file is reported CREATED. This is the exact shape '
            'session_lock_check.py produced on a bare run, which this tool used '
            'to report CLEAN',
@@ -270,14 +318,14 @@ def selftest():
         s1 = shared_snapshot(repo)
         io.open(os.path.join(LOCKS_DIR, 'planted.lock'), 'w',
                 encoding='utf-8').write('{"pid": 2}\n')
-        d = shared_diff(s1, shared_snapshot(repo))
+        d, _unattr = shared_diff(s1, shared_snapshot(repo))
         ck('A3. an EDITED lock is reported CHANGED, not missed -- a refreshed '
            'lock is still a write to a registry other sessions read',
            d == ['LOCKS:planted.lock CHANGED'], d)
 
         s2 = shared_snapshot(repo)
         os.remove(os.path.join(LOCKS_DIR, 'planted.lock'))
-        d = shared_diff(s2, shared_snapshot(repo))
+        d, _unattr = shared_diff(s2, shared_snapshot(repo))
         ck('A4. a DELETED lock is reported DELETED. Removing somebody else\'s '
            'lock is as much a change as taking one',
            d == ['LOCKS:planted.lock DELETED'], d)
@@ -285,7 +333,7 @@ def selftest():
         s3 = shared_snapshot(repo)
         git(repo, 'config', 'core.bare', 'false')
         git(repo, 'config', 'sairn.selftest', 'planted')
-        d = shared_diff(s3, shared_snapshot(repo))
+        d, _unattr = shared_diff(s3, shared_snapshot(repo))
         ck('A5. a `git config` write is reported GITCONFIG CHANGED. THIS IS THE '
            'ONE git status CANNOT SEE, and it is how core.bare=true reached a '
            'live clone from inside a linked worktree',
@@ -294,7 +342,7 @@ def selftest():
         s4 = shared_snapshot(repo)
         wt = os.path.join(base, 'wt')
         git(repo, 'worktree', 'add', '--detach', wt, 'HEAD')
-        d = shared_diff(s4, shared_snapshot(repo))
+        d, _unattr = shared_diff(s4, shared_snapshot(repo))
         ck('A6. registering a WORKTREE is reported WORKTREES CHANGED -- a '
            'change to shared state with no file in the tree, and every '
            'registration is another door to the shared config',
@@ -303,8 +351,41 @@ def selftest():
         s5 = shared_snapshot(repo)
         ck('A7. THE PAIRED NEGATIVE: with nothing planted, the detector reports '
            'NOTHING. An alarm that always fires is not a detector',
-           shared_diff(s5, shared_snapshot(repo)) == [],
-           shared_diff(s5, shared_snapshot(repo)))
+           shared_diff(s5, shared_snapshot(repo))[0] == [],
+           shared_diff(s5, shared_snapshot(repo))[0])
+
+        # ── THE ATTRIBUTION SPLIT (cc b10) ──────────────────────────────────
+        # hank's 2026-10-13 sweep reported three tools as having written
+        # ANOTHER SESSION'S status row. None of the three can: measured at
+        # HEAD, neither they nor checker_kit reference the registry at all.
+        # The registry has five other live writers and a before/after snapshot
+        # cannot tell their writes from the subject's. A8 requires that a
+        # status-row change is NOT a finding; A8b is the control that stops A8
+        # being satisfied by classifying everything as unattributable.
+        st_dir = os.path.join(LOCKS_DIR, 'status')
+        os.makedirs(st_dir, exist_ok=True)
+        s6 = shared_snapshot(repo)
+        io.open(os.path.join(st_dir, 'hover.json'), 'w',
+                encoding='utf-8', newline='\n').write('{"state": "working"}\n')
+        attr6, unattr6 = shared_diff(s6, shared_snapshot(repo))
+        ck('A8. a change to status/<another session>.json is UNATTRIBUTABLE, '
+           'not a finding -- five other sessions write that registry '
+           'continuously and a snapshot cannot see who wrote',
+           attr6 == [] and any('status/hover.json' in u for u in unattr6),
+           (attr6, unattr6))
+        ck('A8b. ...and it is still REPORTED rather than dropped -- a silent '
+           'exclusion is the other way to get this wrong',
+           len(unattr6) == 1, unattr6)
+
+        s7 = shared_snapshot(repo)
+        io.open(os.path.join(LOCKS_DIR, 'attribution-control.lock'), 'w',
+                encoding='utf-8', newline='\n').write('x\n')
+        attr7, unattr7 = shared_diff(s7, shared_snapshot(repo))
+        ck('A8c. CONTROL: a LOCK file is still ATTRIBUTABLE and still a '
+           'finding. Without this arm, A8 would pass on a tool that called '
+           'everything unattributable and detected nothing at all',
+           any('attribution-control.lock' in a for a in attr7) and unattr7 == [],
+           (attr7, unattr7))
 
         # ── END TO END: a planted tool that takes a lock must make the sweep
         # fail, through run_tool, not through shared_diff called by hand.
@@ -318,7 +399,7 @@ def selftest():
         git(repo, 'add', '-A')
         git(repo, 'commit', '-q', '-m', 'planted')
         os.environ['SAIRN_LOCKS_DIR'] = LOCKS_DIR
-        code, wrote, shared = run_tool(repo, os.path.join(
+        code, wrote, shared, _unattr = run_tool(repo, os.path.join(
             'tools', 'zz_planted_locker.py'), [], 25)
         ck('B1. END TO END -- a planted tool that writes a lock on a bare run is '
            'caught by run_tool, exit 0 and a clean `git status` '
@@ -442,9 +523,14 @@ def main(argv):
 
     writes_bare, writes_help, could_not, intended = [], [], [], []
     writes_shared = []
+    # The live-status-registry half. Collected and PRINTED, never a finding --
+    # see _unattributable for the three false findings that forced the split.
+    unattributable = []
     for n in names:
         rel = os.path.join('tools', n)
-        code, wrote, shared = run_tool(repo, rel, [], timeout)
+        code, wrote, shared, unattr = run_tool(repo, rel, [], timeout)
+        if unattr:
+            unattributable.append((n, unattr))
         if shared:
             writes_shared.append((n, shared))
             out('  WRITES(SHARED) %-45s exit=%s  %s' % (
@@ -454,9 +540,25 @@ def main(argv):
             # DECLARED. Reported, and the paths are CHECKED against what it said
             # it would write: a declared writer that starts writing something
             # ELSE is exactly the case an allowlist must not cover.
+            # A DECLARED PATH ENDING IN `/` IS A DIRECTORY CONTRACT (cc b10).
+            # Exact set matching cannot express a DATED residue file, and
+            # tools/mech_gate_live_probe.py writes
+            # `docs/live-residue/<today>-mech_gate_live_probe.json` -- a real
+            # recurring pattern, since a live probe records what it saw on the
+            # day it ran. Declaring the dated spelling would make this sweep
+            # fail on every date except the one the entry was written on, which
+            # is the stale-anchor shape rather than a check.
+            #
+            # IT IS A PREFIX, NOT A GLOB, and only where the entry asks for
+            # one: `docs/live-residue/` covers that directory and nothing else.
+            # A bare `docs/` would be an entry that permits everything, so the
+            # narrowness is the entry author's responsibility and is visible in
+            # the declaration itself.
             said = set(_allow.writes(n))
+            dirs = tuple(sorted(p for p in said if p.endswith('/')))
             got = set(w[3:].strip().strip('"') for w in wrote)
-            extra = sorted(got - said)
+            extra = sorted(g for g in got - said
+                           if not (dirs and g.startswith(dirs)))
             intended.append((n, sorted(got), extra))
             out('  INTENDED      %-46s exit=%s  %s%s' % (
                 n, code, ', '.join(sorted(got)[:3]),
@@ -480,7 +582,9 @@ def main(argv):
             out('')
             return 2
 
-        code, wrote, shared = run_tool(repo, rel, ['--help'], timeout)
+        code, wrote, shared, unattr = run_tool(repo, rel, ['--help'], timeout)
+        if unattr:
+            unattributable.append((n + ' --help', unattr))
         if shared:
             writes_shared.append((n + ' --help', shared))
             out('  WRITES(SHARED) %-45s exit=%s  %s'
@@ -516,6 +620,16 @@ def main(argv):
     out('                              could not have seen any of them')
     for n, sh in writes_shared:
         out('      %-46s %s' % (n, '; '.join(sh[:5])))
+    out('  UNATTRIBUTABLE (not a finding): %d -- the live status registry has '
+        'OTHER' % len(unattributable))
+    out('                              live writers, so a before/after '
+        'snapshot cannot')
+    out('                              tell their writes from the tool. '
+        'Printed so')
+    out('                              they are not silently dropped; NOT '
+        'counted above.')
+    for n, u in unattributable:
+        out('      %-46s %s' % (n, '; '.join(u[:5])))
     out('  COULD NOT RUN (no verdict): %d -- these are NOT reported as clean'
         % len(could_not))
     for n, why in could_not:

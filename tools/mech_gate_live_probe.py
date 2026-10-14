@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+# OWNER-INTENDED BARE-RUN WRITER -- docs/live-residue/ (a DATED file per run).
+# Declared in tools/bare_run_writers.py with its reason; the residue record is
+# what makes this probe's writes to the live audit licence recoverable.
 """LIVE verification of the SAIRNmechanical MECH_RECORDS gate boundary, with the
 residue it creates RECORDED AND PRINTED rather than discovered afterwards.
 
