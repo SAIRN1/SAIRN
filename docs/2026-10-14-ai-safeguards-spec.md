@@ -283,6 +283,15 @@ proving it fails closed is not finished — and these are the arms.
 **T15 and T9 are the over-refusal guards.** A safeguard suite that fails every
 non-AI screen gets switched off, and then none of T1–T14 runs either.
 
+**ARMS ADDED AFTER THIS TABLE WAS WRITTEN, listed here so the table is not
+mistaken for the whole set:**
+
+| # | subject | where it is specified |
+|---:|---|---|
+| **T16** | a **stale frontend** must render the label from the RESPONSE, not from itself | `docs/2026-10-14-fourth-b17-hank-b9-tier-a-review.md` §6 |
+| **T17** | the **`sd_photos` WRITE** carries `ai_source`, the resource is classified, and the render is labelled | §7.6.1 below |
+| **T18** | `fqSaveQuote`'s record carries `ai_source`, **plus the control arm that fails if the key is ever promoted to a synced resource** | §7.6.2 below |
+
 ---
 
 ## 6. WHAT THIS SPEC DOES NOT DO
@@ -389,6 +398,57 @@ here instead.
 
 ### 7.5 THE ACK STORE — DECIDED 2026-10-14, fourth b15: the employee login record wins, `api/ai-notice.js` is the loser
 
+> ## ⛔ CORRECTED 2026-10-14, fourth b18 — DO NOT ACT ON THE "LOSER" ROW BELOW
+>
+> **`api/ai-notice.js` DOES NOT CARRY A SECOND STORE, so the premise of the
+> ruling below is false and its routed instruction would delete working code
+> that implements this very section.** The correction is written *inside* §7.5
+> rather than only in the b17 review document, because a session that reads
+> §7.5 without the review beside it would act on the **WINNER / LOSER / state-of-the-loser table** below.
+>
+> **The measurement, not an opinion:**
+>
+> ```
+> CMD grep -n "AUTH_TABLE_BY_APP\|ai_notice_version\|table" api/ai-notice.js
+>     3:  // THE PER-EMPLOYEE, ONE-TIME AI-SUGGESTION NOTICE. Two actions, one table
+>     4:  // column pair, no new table.
+>    45:  const { verifySessionToken, tokenFromRequest, AUTH_TABLE_BY_APP } = require('./_lib/auth');
+>   126:  const table = app && AUTH_TABLE_BY_APP[app];
+>   229:  body: JSON.stringify({ ai_notice_version: CURRENT_NOTICE_VERSION, ai_notice_acked_at: at })
+>
+> CMD grep -nE "create table|alter table|add column" sql/2026-10-14-hank-b9-ai-safeguards.sql
+>    54:  'alter table public.%I
+>    55:     add column if not exists ai_notice_version text,
+>    56:     add column if not exists ai_notice_acked_at timestamptz',
+> ```
+>
+> `api/ai-notice.js` resolves `*_employee_auth` through `AUTH_TABLE_BY_APP` and
+> writes `ai_notice_version` / `ai_notice_acked_at` **onto the credential row** —
+> **the WINNER named in that table's first row**. There is no second table, no side row, and no
+> second shape of the ack anywhere. It is also driven: `api/ai-safeguards.test.js`
+> §5 (`section('5. api/ai-notice.js -- the endpoint, driven')`, `:231-235`)
+> `require`s the handler and exercises it.
+>
+> **RE-RULED:** the store is agreed; **hank's single endpoint STANDS.** One
+> endpoint beats the same `ack_ai_notice` action copied into 17 `*-auth.js`
+> files, which is the argument §3.1 of this document already makes.
+>
+> **NOBODY DELETES `api/ai-notice.js`.** The "ROUTED TO hank — delete the loser
+> and migrate" block that follows §7.5 is **WITHDRAWN IN FULL**, including its
+> item 4 arm *"`api/ai-notice.js` is gone and nothing imports it"* — that arm
+> would now fail against correct code, and an arm that enforces a withdrawn
+> ruling is worse than no arm.
+>
+> **What survives the withdrawal, because it was never about the endpoint:**
+> `CURRENT_NOTICE_VERSION` stays one constant in `api/_lib/ai-safeguards.js`
+> (§3.1, §7.3), and cody's T1–T6 are unchanged — they were written against the
+> credential-row store and that is still the only store there is.
+>
+> **Why the error happened, so the shape is recognisable:** the ruling reasoned
+> from the *existence of a second endpoint* to the *existence of a second store*.
+> Those are different facts in different files, and only the second one was load
+> bearing. One `grep` over the endpoint's own body disproved it.
+
 **DECIDED BY CHAT. This is a technical call, not a re-opening of Michael's
 decision — it is the direct consequence of it.** Michael's decision, recorded
 at §1(a) and §2.1 since this document was written, is that the acknowledgement
@@ -438,7 +498,18 @@ owner acceptance, which §2.2 puts on `license_keys` and §7.1 rules is not a
 runtime gate.** If a non-employee ack is ever needed, it is a new decision with
 a new store, not a resurrection of this one.
 
-### ROUTED TO hank — delete the loser and migrate
+### ROUTED TO hank — delete the loser and migrate — ⛔ WITHDRAWN 2026-10-14, fourth b18
+
+> **EVERY NUMBERED ITEM BELOW IS WITHDRAWN. DO NOT EXECUTE ANY OF IT.** The
+> premise — that `api/ai-notice.js` carries a second ack store — is false; see
+> the correction box at the head of §7.5 for the `grep` that disproves it.
+> **Items 1 and 2 would delete working code and migrate a table that does not
+> exist. Item 4's negative-control arm would fail against correct code.**
+> Item 3 (`CURRENT_NOTICE_VERSION` stays one constant) was never about the
+> endpoint and still holds. **The text is left in place rather than deleted so
+> that a later session finding it quoted elsewhere can see it was retracted
+> and why** — a silently removed instruction is indistinguishable from one that
+> was carried out.
 
 1. **Delete `api/ai-notice.js`** and its route registration. If it has already
    shipped a table, the migration is: copy any rows into
@@ -462,3 +533,164 @@ a new store, not a resurrection of this one.
 `ai_approved_at` **record-level approval columns**, which §7.4 already adopted
 and which are a different fact in a different place. **Only the notice ack is
 ruled on here.**
+
+### 7.6 THE WRITE SIDE IS UNGUARDED IN StoneDesk — SPEC, fourth b18, 2026-10-14
+
+**Everything in §1–§7.5 guards the moment AI text is PRODUCED (`api/claude.js`,
+§3.3) or the moment it is RENDERED (§1(c), §1(d), T16). Nothing guards the
+moment it is STORED.** StoneDesk is where that gap is load bearing, and the
+finding is hover2's — **H2 seq842** for the photo path, **H2 seq845** for the
+quote path. Both are re-derived here against HEAD rather than quoted.
+
+#### 7.6.1 `sd_photos` — raw model text is synced to the server with no provenance field
+
+**THE WRITE, `stonedesk.html:26071-26095`:**
+
+```
+CMD sed -n '26088,26092p' stonedesk.html
+  26088  }).then(function(r){return r.json();}).then(function(d){
+  26089    var txt=d.content&&d.content[0]&&d.content[0].text?d.content[0].text:'Analysis unavailable.';
+  26090    p.aiAnalysis=txt;
+  26091    saveSD3Data();
+```
+
+**The complete stored row is `{id, job, cat, name, size, data, date, aiAnalysis}`.**
+`aiAnalysis` is `d.content[0].text` **verbatim**. There is no `ai_source`, no
+`ai_approved_by`, no `ai_approved_at`, no model id and no analysis timestamp.
+
+| the claim | the command that settles it |
+|---|---|
+| no AI-provenance field exists anywhere in the app | `grep -c "ai_source" stonedesk.html` → **0** |
+| `aiAnalysis` is written in exactly one place and read in two | `grep -n "aiAnalysis" stonedesk.html` → `26060`, `26078`, `26090` |
+
+**AND IT IS NOT LOCAL — THIS IS THE PART A REFLEX GETS WRONG.** `sd_photos` is
+in `SD_SYNCED` (`stonedesk.html:2027`), so `st('sd_photos', …)`
+(`stonedesk.html:25117`) takes the synced branch at `stonedesk.html:1982-1983`,
+and `sdSyncCollection` pushes **the whole changed row** —
+`sdData('write', key, r)` at `stonedesk.html:2101` — to `/api/sd-data`, which
+accepts it because `sd_photos: 'photo_id'` is in `SD_LOCAL_RESOURCES`
+(`api/sd-data.js:14184`) and stores the payload verbatim at
+`api/sd-data.js:14261`. **Raw model prose about a customer's job reaches the
+database.**
+
+**WHY NO EXISTING SAFEGUARD FIRES, stated as the three registries it is absent
+from — this is the actual defect:**
+
+1. `enforceAiApproval` is wired (`api/sd-data.js:2088-2098`) but **returns
+   immediately** at `api/_lib/ai-safeguards.js:190` — `if
+   (!payload[AI_SOURCE_FIELD]) return null;`. The gate is opt-in **by the
+   writer**, and this writer does not opt in. §7.4 adopted that design
+   deliberately; §7.6 is where its cost lands.
+2. `sd_photos` is in neither `HIGH_RISK_AI` (`api/_lib/ai-safeguards.js:86-110`)
+   nor `NOT_HIGH_RISK_AI` (`:117-142`). **It is unclassified, which is a third
+   state, and the registries read as exhaustive.**
+3. `sd_photos` is not in `AI_SCANNED_TEXT` — **while its three siblings are**:
+   `bld_photo_analyses: ['full','summary']`
+   (`api/_lib/ai-scan-redaction.js:55`), `grd_progress_photos: ['ai_analysis']`
+   (`:61`) and `rf_photos: ['ai_analysis']` (`:78`).
+   `grep -n sd_photos api/_lib/ai-scan-redaction.js` → **no match**. Same shape of data, same kind of
+   surface, three registered and one not. **That asymmetry is the strongest
+   single piece of evidence that this is an omission and not a decision.**
+
+**AND THE RENDER IS UNLABELLED, which is §1(e) as well as §7.6.** The cached
+text is injected at `stonedesk.html:26078` into `#photo-ai-result`
+(`stonedesk.html:7936`), a bare `<div>`; the only AI wording on the surface is
+the spinner `'Analyzing with Claude...'` at `:26077`, **which the result
+overwrites**. At the moment the text is on screen, nothing says AI.
+
+**THE SPEC — hank (`api/`, `*.html`), smallest change that closes it:**
+
+1. **The client stamps `ai_source: 'claude:photo-qc'`** on the row at
+   `stonedesk.html:26090`, in the same assignment as `aiAnalysis`. The tag names
+   the SURFACE, matching the convention at `api/_lib/ai-safeguards.js:54-61` and
+   the one live adopter, `sairnfreedom.html:5078` (`ai_source:'claude:bottle-fill'`).
+2. **`sd_photos` is CLASSIFIED — explicitly, in one of the two registries.**
+   My reading is `NOT_HIGH_RISK_AI`: a QC note on a photo is not a person, a
+   price or a regulated determination, and §1(c) is deliberately narrow.
+   **But the classification is hank's to write and must be written either way —
+   leaving it unlisted is the finding, not the value chosen.**
+3. **`sd_photos: ['aiAnalysis']` is added to `AI_SCANNED_TEXT`**, for the same
+   reason its three siblings are there.
+4. **The render gets a label**, per §1(e): a static caption on
+   `#photo-ai-result` is enough — it must not be the spinner text, because the
+   spinner is overwritten by the thing it was labelling.
+5. **`ai_approved_by` / `ai_approved_at` are NOT stamped by the client.** They
+   are server-set from the verified session (`api/_lib/ai-safeguards.js:204-205`)
+   and a client that writes them is the thing the server overwrite exists to
+   defeat.
+
+**ONE THING THIS SPEC DOES NOT CLAIM, because it was not run:** the table
+carries `check (octet_length(data::text) <= 65536)`
+(`sql/stonedesk_data_schema.sql:343`) while the synced payload includes the full
+base64 image, accepted up to 10MB (`stonedesk.html:25988`) — and
+`api/sd-data.js:14263` maps the resulting 400 to **`503 NOT_PROVISIONED`**
+("tables are not set up yet"). **So it is possible that no `sd_photos` row has
+ever landed and that the failure has been reporting itself as an unprovisioned
+table.** That is a silent-failure finding in its own right, it is hank's, and it
+is stated as UNVERIFIED rather than folded into the one above: **if the row
+never lands, the provenance gap is latent rather than live, and the size failure
+is the more urgent half.**
+
+| **T17** | a `sd_photos` write whose row carries `aiAnalysis` **and no `ai_source`** | **THE FAILING-FIRST ARM, and it fails today.** The write must be refused — or, if hank classifies the resource as not-high-risk, must be accepted **only** with `ai_source` present, so that a row holding model prose and no provenance cannot be stored. **The arm that must NOT be written is one that asserts the current behaviour.** Three supporting arms, each a distinct failure mode: **(a)** `sd_photos` resolves in exactly one of `HIGH_RISK_AI` / `NOT_HIGH_RISK_AI` — **unclassified fails**; **(b)** `sd_photos`'s AI text field is in `AI_SCANNED_TEXT`, driven by the same loop that covers `rf_photos`, `bld_photo_analyses` and `grd_progress_photos`, so a fourth sibling cannot be forgotten the way this one was; **(c)** the render surface carries a label that is **not** the string `'Analyzing with Claude...'` — a page whose only AI wording is the spinner it overwrites must fail |
+
+#### 7.6.2 `fqSaveQuote` — local-only, and that is the finding, not the exemption
+
+**`stonedesk.html:38541-38546`, quoted whole because it is six lines:**
+
+```
+38541  function fqSaveQuote() {
+38542    var key='stonedesk_quotes';
+38543    var q=JSON.parse(localStorage.getItem(key)||'[]');
+38544    q.unshift({id:Date.now(),date:new Date().toLocaleDateString(),trade:fqTrade,text:fqQuoteTxt});
+38545    if(typeof showToast==='function') showToast(st(key,q) ? 'Quote saved' : 'Could not save -- storage may be full or unavailable');
+38546  }
+```
+
+**CONFIRMED LOCAL-ONLY, on three independent legs:**
+
+1. the key is `stonedesk_quotes`, and `SD_SYNCED`
+   (`stonedesk.html:2023-2029`) carries `stonedesk_quote_history` — **a
+   different key**. So `st()`'s `if(synced)` branch at `stonedesk.html:1982` is
+   not taken and `sdSyncCollection` is never called.
+2. the body makes no network call at all — `localStorage.getItem`, `JSON.parse`,
+   `st()`, `showToast()`.
+3. `grep -rn "stonedesk_quotes" api/ sql/ tests/ db/` → **zero matches**. It is
+   absent from `SD_LOCAL_RESOURCES` (`api/sd-data.js:14176-14186`) and from the
+   allowed list in `api/_resources/stonedesk.js:163-193`, so a `write` for that
+   resource would match no branch.
+
+**`text` IS the model's output verbatim** — `fqQuoteTxt=r` where
+`r = await callClaude(...)` (`stonedesk.html:38524-38525`) — and the deposit
+figure shown to the customer is **parsed out of that prose**:
+`r.match(/Mid[:\s]+\$?([\d,]+)/i)` → `Math.round(m*.33)`
+(`stonedesk.html:38529-38533`). `fqClose()` then saves it and toasts
+**`'Signed quote saved'`** (`:38548-38549`).
+
+**THE RULING: local-only is NOT an exemption from §1(d), and the reason is
+mechanical rather than a matter of taste.** A priced, signed, AI-written quote
+that never reaches `/api/sd-data` is invisible to `enforceAiApproval`
+(`api/sd-data.js:2088`) **by construction** — so the server-side safeguard can
+never be the one that covers it. It is also held in exactly one browser: not
+backed up, and outside the soft-delete/tombstone machinery every synced resource
+has. **The same shape exists in a sibling app** —
+`sairnmechanical.html:1442`'s `saveQuote()` writes `localStorage`
+`APP_ID+'_quotes'` while the *server* resource `mech_quotes` **is** classified
+high-risk (`api/_lib/ai-safeguards.js:87-91`), so the gated resource and the
+real store are two different places there too.
+
+**THE SPEC — hank:** the label and footer obligations of §1(d) and §1(e) attach
+to the **rendered and exported quote**, which is client-side, so they must be
+implemented client-side. `ai_source: 'claude:field-quote'` goes on the stored
+record for the same reason — **so that if this key is ever promoted into
+`SD_SYNCED`, the row arrives already carrying its provenance instead of
+back-filling it for records that no longer have an author.** **I am NOT
+specifying that it be synced**; that is a product decision with a data-retention
+half, and §6 already says this document does not specify retention.
+
+| **T18** | the quote record stored under `stonedesk_quotes` by `fqSaveQuote` | **THE FAILING-FIRST ARM, and it fails today:** the record carries `ai_source`, and the generated quote's rendered/exported form carries the §1(d) footer. **Plus the CONTROL arm that makes it honest:** assert `stonedesk_quotes` is **absent** from `SD_SYNCED`, `SD_LOCAL_RESOURCES` and `api/_resources/stonedesk.js` — so that the day somebody promotes this key to a synced resource, **T18's control fails loudly** and the promotion is forced to answer the retention question rather than inheriting an exemption that was only ever a side effect of where the data happened to sit. That control is the one arm here a reviewer would cut, and it is the one that stops this finding silently changing shape |
+
+**BOTH ARMS ARE cody's AND BOTH MUST FAIL ON TODAY'S CODE BEFORE ANY FIX
+LANDS.** An arm written after the fix proves the fix compiles; an arm written
+before it proves the fix was needed. If T17's or T18's first run passes,
+**the arm is wrong, not the code** — and that is the check on this spec, not on
+the implementation.
