@@ -71,8 +71,32 @@ SECRETS = {
     'SD_AUTH_SECRET': ('CREDENTIAL', 'signs and verifies employee session tokens for every app that has no key of its own. CORRECTED 2026-09-17: it is no longer also the encryption key for secrets at rest (see SD_ENCRYPTION_KEY), and a rotation no longer logs everyone out -- SD_AUTH_SECRET_PREVIOUS gives it an overlap window and SD_AUTH_SECRET_<APP> scopes it per app'),
     # -- ADDED 2026-09-17 WITH THE THREE-STAGE SPLIT --------------------------
     'SD_ENCRYPTION_KEY': ('CREDENTIAL', 'the AES-256-GCM key for secrets at rest -- attorney MFA/TOTP secrets and a stored Stedi API key. Until this existed that duty was carried by SD_AUTH_SECRET, so rotating the SIGNING secret silently made every stored ciphertext undecryptable with nothing erroring at deploy time. ABSENCE IS NOT A FAILURE: with no value, writes stay in the legacy format and old values keep reading, which is what let the code land before the environment did'),
-    'SD_AUTH_SECRET_PREVIOUS': ('CREDENTIAL', 'the OUTGOING session-signing key, accepted on verify and never used to sign. Set it to the current secret, change SD_AUTH_SECRET, wait one SESSION_TTL_MS (12h) for every old token to expire, then clear it -- that is the whole rotation and nobody is signed out. Leaving it set indefinitely is the real hazard: it keeps a retired key valid for ever'),
+    # ── STEP 4a RESTORED 2026-10-14 (cc b11), ROUTED BY fourth b18 ───────────
+    # This entry published a FOUR-step rotation ending "then clear it" and
+    # omitted the precondition on the only step that is irreversible. Step 4a
+    # exists in api/_lib/auth.js:442-445 and in sql/legacy_ciphertext_census.sql
+    # :63 and was missing from all three operator-facing runbooks -- this one,
+    # tools/nhi_register.py and docs/NHI-REGISTER.md:69. The precondition lived
+    # in a code comment while the runbook an operator would actually follow
+    # said "clear PREVIOUS" with nothing in front of it.
+    #
+    # THE TWO FAILURE DIRECTIONS ARE NOT SYMMETRIC, which is why this is the
+    # dangerous omission rather than an incomplete one: leaving PREVIOUS set
+    # keeps a retired key live, which is bad, visible and reversible. Clearing
+    # it while legacy ciphertext remains ends the ONLY route to those values
+    # for good, and decryptSecret() then returns null, which a caller reads as
+    # "no secret stored" -- so the loss is silent as well as permanent.
+    'SD_AUTH_SECRET_PREVIOUS': ('CREDENTIAL', 'the OUTGOING session-signing key, accepted on verify and never used to sign. ROTATION, AND STEP 4 IS THE ONLY IRREVERSIBLE ONE: (1) set this to the current secret; (2) change SD_AUTH_SECRET; (3) wait one SESSION_TTL_MS (12h) for every old token to expire; (4a) CONFIRM NO LEGACY CIPHERTEXT REMAINS -- run sql/legacy_ciphertext_census.sql and require legacy_rows = 0 on every table it reports, per api/_lib/auth.js:442-445; (4b) only then clear this value. Steps 1-3 are safe for both duties this key has carried; step 4 is not and cannot be, because clearing it ends the only route to a legacy ciphertext for good and decryptSecret() then returns null, which a caller reads as "no secret stored" -- silent as well as permanent. A count of zero is the only thing that makes step 4 safe; "probably backfilled" is what the v2. version prefix exists to replace. Leaving it set indefinitely is the OTHER hazard and it is the reversible one: it keeps a retired key valid for ever'),
     'OIDC_CLIENT_SECRET': ('CREDENTIAL', 'the OIDC client secret; the only one of the four OIDC values whose exposure is a security event rather than a misconfiguration'),
+    # ── CLASSIFIED 2026-10-14 (cc b11), DERIVED AT THE SWITCH ────────────────
+    # Both of these were blocking --check and --write with UNCLASSIFIED, which
+    # is this tool's designed fail-closed behaviour and is why they could not
+    # simply be left. Neither is guessed from its NAME: this file's own
+    # convention is that the classification comes from the author's
+    # documentation at the point the value is read, and both authors wrote it
+    # down. Quoted rather than paraphrased so a reader can check the premise.
+    'SAIRN_RESEND_TIMEOUT_MS': ('TUNING', 'the per-send timeout for the cron watchdog\'s Resend alert call, read at api/cron-watchdog.js:297 as `Number(process.env.SAIRN_RESEND_TIMEOUT_MS) > 0 ? ... : 8000`. A numeric limit with a documented 8000ms default, so ABSENCE IS NOT A FAILURE -- it falls back to that default rather than to zero, which is the distinction that makes this TUNING and not an ENDPOINT. It names nothing and grants nothing; disclosing it costs nothing'),
+    'SAIRNVET_TRANSCRIBE_URL': ('ENDPOINT', 'where a SAIRNvet transcription host would be. It names a location, not permission to use it. ABSENCE IS THE INTENDED STATE TODAY and the code says so in its own words -- api/sairnvet-transcribe.js:78 "SAIRNVET_TRANSCRIBE_URL IS DELIBERATELY NOT SET IN VERCEL, and that is not the drift this check hunts" -- and hostConfigured() at :86 makes the feature report "this platform has no transcription host configured" rather than 500ing or claiming a missing secret. So an empty value here is NOT an incident and NOT a misconfiguration; it becomes a two-place change on the day a host is chosen, the second place being the Vercel project'),
     # ── CLASSIFIED 2026-09-15, AND WHY THE ANSWER CHANGED ────────────────────
     # These two blocked this tool from generating for several hours, and I
     # declined to classify them on the grounds that judging somebody else's
@@ -303,12 +327,51 @@ def _guard_verdict(src, name):
     return bool(hit and refuses)
 
 
+# ── THE IRREVERSIBLE-STEP LOCK (cc b11) ─────────────────────────────────────
+# A runbook that omits the precondition on its only irreversible step is worse
+# than no runbook: it reads as complete. Step 4a was missing from all three
+# operator-facing copies for weeks while living in a code comment, and nothing
+# compared them. These arms run inside run_fixtures(), so they fire on EVERY
+# invocation of this tool rather than when somebody remembers a flag.
+#
+# ANCHORED ON THE CONSEQUENCE, NOT THE WORDING. Asserting the literal string
+# "4a" would pass on a runbook that said "4a" and then described something
+# else, so each arm names a thing the operator must be able to ACT on: the
+# census file to run, the threshold that makes clearing safe, and the fact
+# that the loss is silent.
+_IRREVERSIBLE = {
+    'SD_AUTH_SECRET_PREVIOUS': (
+        ('the census SQL an operator can actually run',
+         'legacy_ciphertext_census'),
+        ('the threshold that makes step 4 safe', 'legacy_rows = 0'),
+        ('where the precondition is published in code',
+         'api/_lib/auth.js:442-445'),
+        ('that clearing it is IRREVERSIBLE, not merely risky', 'irreversible'),
+        ('that the loss is SILENT -- decryptSecret returns null and a caller '
+         'reads that as "no secret stored"', 'null'),
+    ),
+}
+
+
 def run_fixtures():
     bad = []
     for label, src, name, want in FIXTURES:
         got = _guard_verdict(src, name)
         if got != want:
             bad.append((label, want, got))
+    # The runbook arms. A missing entry is itself a finding: the lock must not
+    # pass because the thing it guards was renamed out from under it.
+    for var, checks in sorted(_IRREVERSIBLE.items()):
+        entry = SECRETS.get(var)
+        if not entry:
+            bad.append(('%s has no SECRETS entry, so its irreversible-step '
+                        'runbook cannot be checked at all' % var, var, None))
+            continue
+        desc = (entry[1] or '').lower()
+        for label, needle in checks:
+            if needle.lower() not in desc:
+                bad.append(('%s rotation runbook omits %s' % (var, label),
+                            needle, 'absent'))
     return bad
 
 

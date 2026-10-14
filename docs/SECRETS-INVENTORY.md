@@ -17,11 +17,11 @@ It looks for a guard naming the variable, in the same file, alongside a refusal.
 
 | Kind | Count | What holding it lets somebody do |
 |---|---|---|
-| **CREDENTIAL** | 18 | Access to data or money. A leak is an incident; a rotation is a coordinated event |
-| **ENDPOINT** | 5 | Names WHERE something is, not permission to use it -- and nothing works without it |
+| **CREDENTIAL** | 20 | Access to data or money. A leak is an incident; a rotation is a coordinated event |
+| **ENDPOINT** | 6 | Names WHERE something is, not permission to use it -- and nothing works without it |
 | **ADDRESS** | 8 | A URL or address the platform sends to or redirects to |
-| **TUNING** | 18 | A threshold, a mode, a limit. Wrong values change behaviour and cost nothing to disclose |
-| | **49** | |
+| **TUNING** | 19 | A threshold, a mode, a limit. Wrong values change behaviour and cost nothing to disclose |
+| | **53** | |
 
 ## The inventory
 
@@ -29,25 +29,27 @@ Sorted by blast radius, because that is the order in which these matter.
 
 | Variable | Kind | Blast | Readers | Absence | What it unlocks |
 |---|---|---|---|---|---|
-| `SUPABASE_SERVICE_ROLE_KEY` | CREDENTIAL | 70 | 63 | guarded in 61 of 63 | the service-role key for the ONE Supabase project holding every app's data -- it bypasses RLS by design, so it is the single most consequential value on the platform |
-| `SUPABASE_URL` | ENDPOINT | 70 | 63 | guarded in 61 of 63 | the one Supabase project every app reads and writes; not permission, but nothing works without it |
-| `OIDC_CLIENT_ID` | TUNING | 34 | 1 | refuses | the OIDC client identifier -- public by design in the OIDC spec, listed because losing it breaks sign-in everywhere |
-| `OIDC_CLIENT_SECRET` | CREDENTIAL | 34 | 1 | refuses | the OIDC client secret; the only one of the four OIDC values whose exposure is a security event rather than a misconfiguration |
-| `OIDC_ISSUER_URL` | ENDPOINT | 34 | 1 | refuses | the OIDC provider |
-| `OIDC_REDIRECT_URI` | ADDRESS | 34 | 1 | refuses | where the OIDC provider sends the user back; a wrong value is a sign-in that dead-ends |
-| `SD_AUTH_SECRET` | CREDENTIAL | 34 | 23 | refuses | signs and verifies EVERY app's employee session token -- one secret, no per-app key and no overlap window, so a rotation logs everyone out of everything at once |
+| `SUPABASE_SERVICE_ROLE_KEY` | CREDENTIAL | 74 | 66 | guarded in 64 of 66 | the service-role key for the ONE Supabase project holding every app's data -- it bypasses RLS by design, so it is the single most consequential value on the platform |
+| `SUPABASE_URL` | ENDPOINT | 74 | 66 | guarded in 64 of 66 | the one Supabase project every app reads and writes; not permission, but nothing works without it |
+| `OIDC_CLIENT_ID` | TUNING | 39 | 1 | refuses | the OIDC client identifier -- public by design in the OIDC spec, listed because losing it breaks sign-in everywhere |
+| `OIDC_CLIENT_SECRET` | CREDENTIAL | 39 | 1 | refuses | the OIDC client secret; the only one of the four OIDC values whose exposure is a security event rather than a misconfiguration |
+| `OIDC_ISSUER_URL` | ENDPOINT | 39 | 1 | refuses | the OIDC provider |
+| `OIDC_REDIRECT_URI` | ADDRESS | 39 | 1 | refuses | where the OIDC provider sends the user back; a wrong value is a sign-in that dead-ends |
+| `SD_AUTH_SECRET` | CREDENTIAL | 39 | 26 | refuses | signs and verifies employee session tokens for every app that has no key of its own. CORRECTED 2026-09-17: it is no longer also the encryption key for secrets at rest (see SD_ENCRYPTION_KEY), and a rotation no longer logs everyone out -- SD_AUTH_SECRET_PREVIOUS gives it an overlap window and SD_AUTH_SECRET_<APP> scopes it per app |
+| `SD_AUTH_SECRET_PREVIOUS` | CREDENTIAL | 39 | 1 | refuses | the OUTGOING session-signing key, accepted on verify and never used to sign. ROTATION, AND STEP 4 IS THE ONLY IRREVERSIBLE ONE: (1) set this to the current secret; (2) change SD_AUTH_SECRET; (3) wait one SESSION_TTL_MS (12h) for every old token to expire; (4a) CONFIRM NO LEGACY CIPHERTEXT REMAINS -- run sql/legacy_ciphertext_census.sql and require legacy_rows = 0 on every table it reports, per api/_lib/auth.js:442-445; (4b) only then clear this value. Steps 1-3 are safe for both duties this key has carried; step 4 is not and cannot be, because clearing it ends the only route to a legacy ciphertext for good and decryptSecret() then returns null, which a caller reads as "no secret stored" -- silent as well as permanent. A count of zero is the only thing that makes step 4 safe; "probably backfilled" is what the v2. version prefix exists to replace. Leaving it set indefinitely is the OTHER hazard and it is the reversible one: it keeps a retired key valid for ever |
+| `SD_ENCRYPTION_KEY` | CREDENTIAL | 39 | 1 | refuses | the AES-256-GCM key for secrets at rest -- attorney MFA/TOTP secrets and a stored Stedi API key. Until this existed that duty was carried by SD_AUTH_SECRET, so rotating the SIGNING secret silently made every stored ciphertext undecryptable with nothing erroring at deploy time. ABSENCE IS NOT A FAILURE: with no value, writes stay in the legacy format and old values keep reading, which is what let the code land before the environment did |
 | `COURTLISTENER_API_TOKEN` | CREDENTIAL | 9 | 3 | refuses | CourtListener API access for the legal citator |
+| `ANTHROPIC_API_KEY` | CREDENTIAL | 8 | 3 | refuses | billed AI access for every app that calls Claude |
+| `SAIRN_AI_CONTENTION_FLOOR` | TUNING | 8 | 1 | **NO GUARD FOUND** | the app-level usage below which no tenant is capped at all -- the sub-budget binds only under contention. Optional; defaults to half the app limit. Ten of the fourteen apps with seeded licences have exactly ONE tenant, so a hard cap below this floor would take capacity from somebody contending with nobody |
+| `SAIRN_AI_DAILY_LIMIT` | TUNING | 8 | 1 | **NO GUARD FOUND** | per-licence daily AI call ceiling |
+| `SAIRN_AI_RATE_LIMIT_MODE` | TUNING | 8 | 1 | refuses | whether the AI rate limiter enforces or observes |
+| `SAIRN_AI_TENANT_SHARE` | TUNING | 8 | 1 | **NO GUARD FOUND** | the per-tenant sub-budget inside the per-app daily AI ceiling -- how much of the app limit any ONE licence may hold once contention starts. Optional; defaults to half the app limit. An unparseable value falls back to that default rather than to zero, deliberately, because a zero share would cap every tenant at nothing the moment the floor is crossed |
 | `DENTAL_RATE_LIMIT_SALT` | CREDENTIAL | 7 | 2 | refuses | salts the hashed identifiers the dental and StoneDesk public rate limiters key on -- leaking it makes the stored hashes reversible |
-| `ANTHROPIC_API_KEY` | CREDENTIAL | 6 | 3 | refuses | billed AI access for every app that calls Claude |
+| `SAIRN_CLAUDE_AUTH_MODE` | TUNING | 6 | 1 | refuses | which auth mode /api/claude requires |
 | `SAIRNCASH_FIREBASE_DATABASE_URL` | ENDPOINT | 5 | 2 | guarded in 1 of 2 | the SAIRNcash Firebase realtime database |
-| `SAIRN_AI_CONTENTION_FLOOR` | TUNING | 5 | 1 | **NO GUARD FOUND** | the app-level usage below which no tenant is capped at all -- the sub-budget binds only under contention. Optional; defaults to half the app limit. Ten of the fourteen apps with seeded licences have exactly ONE tenant, so a hard cap below this floor would take capacity from somebody contending with nobody |
-| `SAIRN_AI_DAILY_LIMIT` | TUNING | 5 | 1 | **NO GUARD FOUND** | per-licence daily AI call ceiling |
-| `SAIRN_AI_RATE_LIMIT_MODE` | TUNING | 5 | 1 | refuses | whether the AI rate limiter enforces or observes |
-| `SAIRN_AI_TENANT_SHARE` | TUNING | 5 | 1 | **NO GUARD FOUND** | the per-tenant sub-budget inside the per-app daily AI ceiling -- how much of the app limit any ONE licence may hold once contention starts. Optional; defaults to half the app limit. An unparseable value falls back to that default rather than to zero, deliberately, because a zero share would cap every tenant at nothing the moment the floor is crossed |
 | `STRIPE_SECRET_KEY` | CREDENTIAL | 5 | 5 | refuses (via stripe-config.js) | live charge and refund authority on the SAIRNcash Stripe account |
 | `CRON_SECRET` | CREDENTIAL | 4 | 4 | refuses | the bearer every scheduled job checks; possession lets anyone trigger a checkpoint, a sweep or a watchdog run |
 | `SAIRNCASH_FIREBASE_SERVICE_ACCOUNT` | CREDENTIAL | 4 | 1 | refuses | full Firebase admin authority for SAIRNcash |
-| `SAIRN_CLAUDE_AUTH_MODE` | TUNING | 4 | 1 | refuses | which auth mode /api/claude requires |
 | `RESEND_API_KEY` | CREDENTIAL | 3 | 3 | refuses | sends email as the platform |
 | `RESEND_FROM_EMAIL` | ADDRESS | 3 | 3 | refuses | the sender address; the RESEND_FROM_ADDRESS typo that never existed cost a previous session hours |
 | `SAIRN_CRON_JITTER_MS` | TUNING | 3 | 1 | refuses | the bounded random delay before a scheduled job's first backend read; 0 disables it |
@@ -70,10 +72,12 @@ Sorted by blast radius, because that is the order in which these matter.
 | `SAIRNCASH_FIREBASE_PROJECT_ID` | TUNING | 1 | 1 | **NO GUARD FOUND** | Firebase client config; public by design |
 | `SAIRNCASH_FIREBASE_STORAGE_BUCKET` | ENDPOINT | 1 | 1 | **NO GUARD FOUND** | Firebase storage bucket; public by design |
 | `SAIRNCASH_STRIPE_WEBHOOK_SECRET` | CREDENTIAL | 1 | 1 | refuses (via stripe-config.js) | the SAIRNcash-specific webhook signing secret. NOTE the near-collision with STRIPE_WEBHOOK_SECRET above: two variables, two endpoints, names one prefix apart |
+| `SAIRNVET_TRANSCRIBE_URL` | ENDPOINT | 1 | 1 | refuses | where a SAIRNvet transcription host would be. It names a location, not permission to use it. ABSENCE IS THE INTENDED STATE TODAY and the code says so in its own words -- api/sairnvet-transcribe.js:78 "SAIRNVET_TRANSCRIBE_URL IS DELIBERATELY NOT SET IN VERCEL, and that is not the drift this check hunts" -- and hostConfigured() at :86 makes the feature report "this platform has no transcription host configured" rather than 500ing or claiming a missing secret. So an empty value here is NOT an incident and NOT a misconfiguration; it becomes a two-place change on the day a host is chosen, the second place being the Vercel project |
 | `SAIRN_APP_BOUNDARY` | TUNING | 1 | 1 | refuses | whether /api/sd-data enforces the per-app resource boundary |
 | `SAIRN_BASE_URL` | ADDRESS | 1 | 1 | refuses | the address the watchdog retries a failed job against |
 | `SAIRN_ESCALATION_EMAIL` | ADDRESS | 1 | 1 | refuses | where the watchdog escalates a repeated failure |
 | `SAIRN_OPS_EMAIL` | ADDRESS | 1 | 1 | refuses | where the cron watchdog sends an alert. MEASURED UNSET IN PRODUCTION 2026-09-14: every watchdog alert reported "SAIRN_OPS_EMAIL is not configured, so nobody was told" |
+| `SAIRN_RESEND_TIMEOUT_MS` | TUNING | 1 | 1 | **NO GUARD FOUND** | the per-send timeout for the cron watchdog's Resend alert call, read at api/cron-watchdog.js:297 as `Number(process.env.SAIRN_RESEND_TIMEOUT_MS) > 0 ? ... : 8000`. A numeric limit with a documented 8000ms default, so ABSENCE IS NOT A FAILURE -- it falls back to that default rather than to zero, which is the distinction that makes this TUNING and not an ENDPOINT. It names nothing and grants nothing; disclosing it costs nothing |
 | `STABILITY_API_KEY` | CREDENTIAL | 1 | 1 | refuses | billed image generation for StoneDesk rendering |
 | `STRIPE_PRICE_ID` | TUNING | 1 | 1 | refuses (via stripe-config.js) | which Stripe price a checkout uses; its ABSENCE once made checkout.js answer "Stripe not configured" while the KEY was set the whole time, and four separate readers recorded that as evidence about the key -- see item 94 |
 | `STRIPE_WEBHOOK_SECRET` | CREDENTIAL | 1 | 1 | refuses | verifies that a webhook really came from Stripe -- without it a forged POST is indistinguishable from a real payment event |
