@@ -4206,9 +4206,11 @@ function aftercareCheckins(){return ld('leg_aftercare',[]);}
 // Must produce the SAME string as api/sd-data.js's leg_aftercare branch. Two
 // copies of a key derivation is exactly the drift cross-domain convention 7
 // warns about, and there is no way to share one function across a static page
-// and a serverless handler -- so api/sd-data-leg-aftercare-id.test.js asserts
-// the two agree by extracting this function and running it against the
-// handler's own result, rather than trusting this comment.
+// and a serverless handler -- so api/sd-data-leg-role-matrix.test.js arm E4
+// asserts the two agree by extracting this function and running it against the
+// handler's own result, rather than trusting this comment. (That filename was
+// WRONG on first write -- it named a file that has never existed, which is the
+// citation that reads as a guarantee and is a dead end.)
 function legAftercareId(caseId,type){
   return 'AC-'+String(caseId).trim()+'-'+String(type).trim().toUpperCase().replace(/[^A-Z0-9]+/g,'-').replace(/^-+|-+$/g,'');
 }

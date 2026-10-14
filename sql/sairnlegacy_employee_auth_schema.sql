@@ -105,12 +105,18 @@ revoke all on public.sairnlegacy_employee_auth from anon, authenticated;
 --
 -- IDEMPOTENT BY CONSTRUCTION, SAFE AGAINST EXISTING ROWS (strict superset),
 -- FULL LIST RESTATED because `add constraint` replaces the whole predicate.
+-- ONE TRANSACTION. Between the DROP and the ADD this table has NO role check
+-- at all, and a paste that applies only partway leaves it that way while the
+-- editor reports success for the statements it did run. Either both land or
+-- neither does.
+begin;
 alter table public.sairnlegacy_employee_auth
   drop constraint if exists sairnlegacy_employee_auth_role_check;
 alter table public.sairnlegacy_employee_auth
   add constraint sairnlegacy_employee_auth_role_check
   check (role in ('owner','director','arranger','prep','office',
                   'apprentice','livery','staff'));
+commit;
 
 -- VERIFY. Expect exactly 1 row, and the definition must contain all eight.
 select pg_get_constraintdef(c.oid) as role_check

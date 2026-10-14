@@ -173,6 +173,32 @@ console.log('SAIRNlegacy role matrix -- 36 resources, 8 roles, criteria '
    + 'makes an omission visible',
      JSON.stringify(uncovered));
 
+  // EVERY ROW CARRIES ITS REASON, AND SOMETHING READS IT. The `why` field is
+  // the only record of why a resource is in the band it is in, and a field
+  // nothing consumes is a field that can go empty without anyone noticing --
+  // 36 of them. This arm is the consumer.
+  const noWhy = inTable.filter(function (r) {
+    const w = legRoles.LEG_ROLE_MATRIX[r].why;
+    return typeof w !== 'string' || w.trim().length < 30;
+  });
+  is(noWhy.length === 0,
+     'A6. all 36 rows carry a `why` of at least 30 characters. The band is a judgement and the '
+   + 'reason is the only thing a reviewer can check it against; nothing else '
+   + 'reads this field, so without this arm it can empty out silently',
+     JSON.stringify(noWhy));
+
+  // THE APPEND-ONLY SET IS ASSERTED AS A SET, not inferred from the one arm
+  // that happens to exercise it. If a second resource is added to it, the
+  // handler's existence lookup costs that resource an extra round trip per
+  // write, which is a decision rather than a detail.
+  const ao = Object.keys(legRoles.LEG_APPEND_ONLY);
+  is(ao.length === 1 && ao[0] === 'leg_custodylog'
+     && legRoles.isAppendOnly('leg_custodylog')
+     && !legRoles.isAppendOnly('leg_cases'),
+     'A7. LEG_APPEND_ONLY is exactly { leg_custodylog }, and isAppendOnly '
+   + 'agrees with it in both directions',
+     JSON.stringify(ao));
+
   const bands = {};
   inTable.forEach((r) => {
     const b = legRoles.LEG_ROLE_MATRIX[r].band;

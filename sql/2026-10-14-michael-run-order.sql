@@ -12,7 +12,14 @@
 -- ── EVERY BLOCK IS INDEPENDENTLY RUNNABLE AND IDEMPOTENT ──────────────────
 -- No block depends on an earlier one. Running any of them twice is safe and
 -- changes nothing the second time. If a block fails, the ones after it are
--- still valid to run -- they do not share a transaction.
+-- still valid to run -- NO TRANSACTION SPANS TWO BLOCKS.
+--
+-- Three blocks carry their own `begin;`/`commit;` INTERNALLY (4, 5 and 6) and
+-- that is the opposite concern: block 4's insert and its recoverability guard
+-- must land together or not at all, and blocks 5 and 6 have NO role check on
+-- the table between their DROP and their ADD. Paste each of those three whole.
+-- A partial paste of 5 or 6 leaves an employee-auth table with no role
+-- constraint, and the editor reports success for the statements it did run.
 --
 -- ── WHY A VERIFY ON EVERY BLOCK, AND WHY ITS ANSWER IS PRINTED ────────────
 -- `create table if not exists` SKIPS an existing table, constraint and all,
@@ -32,10 +39,10 @@
 -- THE SOURCES, AND THEIR SHA256 AT ASSEMBLY (LF-normalised):
 --   c8c14e1ebe8b08328e0ec2eec3f8e981e1f64efc860e7107cc2a14e89c2f08a5  sql/2026-10-14-hank-b9-ai-safeguards.sql
 --   d98242cfd7ad98816f4970c2b01e93799ec66e381bfb9ba09f63223fb7786f25  sql/audit_checkpoint_schema.sql
---   83a86e3a8c2594308722d7411806630485abd83e4b70a92fb84eca41b97940eb  sql/sairncare_employee_auth_schema.sql
+--   68120f90be19dd5d2f2100ef27dba4d1217c1e5fafb871213669ff9fc9e6be68  sql/sairncare_employee_auth_schema.sql
 --   0f4d0571ce189c2f9d165624266b1899b9287d8d635b495cf1c07d260209e6bf  sql/sairnfreedom_demo_owner_credential_2026-10-13.sql
 --   24eb03f9481ad81d340b858b9d1c8716e3cb350ac5d93e3bc15fb3f9786a5a1b  sql/sairnlaw_audit_log_schema.sql
---   f1917c75af45c8919056cef36e7ddb7c2521d41cfee6112fc625a596b81b81c7  sql/sairnlegacy_employee_auth_schema.sql
+--   e89614226650f3e383b8f4377c80aa6089f4c3538cf99aa62d8317277b78a147  sql/sairnlegacy_employee_auth_schema.sql
 --
 -- ── WHAT IS BROKEN UNTIL EACH BLOCK RUNS ──────────────────────────────────
 --   1  api/ai-notice.js answers 503 AI_NOTICE_NOT_PROVISIONED and NO employee
@@ -550,12 +557,14 @@ select key, status, app_id, plan
 -- it once is enough whichever file built it -- it is deliberately not
 -- duplicated.
 
+begin;
 alter table public.sairncare_employee_auth
   drop constraint if exists sairncare_employee_auth_role_check;
 alter table public.sairncare_employee_auth
   add constraint sairncare_employee_auth_role_check
   check (role in ('owner','nursing','med_aide','caregiver','billing',
                   'activities','office_manager'));
+commit;
 
 -- ── VERIFY BLOCK 5 ─────────────────────────────────────────────────────────
 -- EXPECTED: exactly 1 row, and its text must contain 'office_manager'
@@ -584,12 +593,14 @@ select pg_get_constraintdef(c.oid) as role_check
 -- maps it to the narrowest band, and in sairnlegacy.html's provisioning
 -- picker, which no longer offers it.
 
+begin;
 alter table public.sairnlegacy_employee_auth
   drop constraint if exists sairnlegacy_employee_auth_role_check;
 alter table public.sairnlegacy_employee_auth
   add constraint sairnlegacy_employee_auth_role_check
   check (role in ('owner','director','arranger','prep','office',
                   'apprentice','livery','staff'));
+commit;
 
 -- ── VERIFY BLOCK 6 ─────────────────────────────────────────────────────────
 -- EXPECTED: exactly 1 row, and its text must contain all EIGHT roles --

@@ -20,7 +20,7 @@
 // Shape copied from api/_lib/law-roles.js, which solved the same problem on
 // the same handler two days earlier -- not a second spelling of it.
 //
-// ── SIX OF THE SEVEN ROLE NAMES ARE [CONFIRM] IN THE SPEC AND STILL ARE ───
+// ── FIVE OF THE EIGHT ROLE NAMES ARE [CONFIRM] IN THE SPEC AND STILL ARE ──
 // `owner` and `director` are the app's own words. `arranger`, `prep`,
 // `office`, `apprentice` and `livery` are the spec's names for job titles a
 // funeral home may call something else, and the spec says plainly that nobody
@@ -79,8 +79,8 @@ function row(band, bandName, over, why) {
 const LEG_ROLE_MATRIX = Object.freeze(Object.assign(Object.create(null), {
   // ── REGULATED (9) ───────────────────────────────────────────────────────
   leg_aftercare:     row(REGULATED, 'REGULATED', null, 'bereavement follow-up against a named family'),
-  leg_cases:         row(REGULATED, 'REGULATED', null, 'the death case itself'),
-  leg_certs:         row(REGULATED, 'REGULATED', null, 'death certificates'),
+  leg_cases:         row(REGULATED, 'REGULATED', null, 'the death case itself -- every other regulated record hangs off it'),
+  leg_certs:         row(REGULATED, 'REGULATED', null, 'death certificates -- a state-filed vital record, signed by a licensed director'),
   // RULE 2: a cremation authorisation is the sharpest irreversible act in this
   // app. The band already gives write to owner and director only; it is
   // restated here because a reader scanning for "who may authorise a
@@ -91,25 +91,25 @@ const LEG_ROLE_MATRIX = Object.freeze(Object.assign(Object.create(null), {
   leg_custodylog:    row(REGULATED, 'REGULATED', null, 'chain of custody -- APPEND-ONLY for every role including owner'),
   // RULE 4: the one REGULATED resource where even read is not broad.
   leg_deathrecords:  row(REGULATED, 'REGULATED', { livery: NO }, 'death records -- read is NOT broad; livery is refused outright'),
-  leg_dispatches:    row(REGULATED, 'REGULATED', null, 'removal dispatches'),
-  leg_documents:     row(REGULATED, 'REGULATED', null, 'regulated documents'),
+  leg_dispatches:    row(REGULATED, 'REGULATED', null, 'removal dispatches -- who was sent to collect a body, and when'),
+  leg_documents:     row(REGULATED, 'REGULATED', null, 'the regulated document set: authorisations, permits and filings'),
   leg_petcases:      row(REGULATED, 'REGULATED', null, 'pet cases -- tier B, banded REGULATED by shape rather than by tier'),
 
   // ── MONEY (15) ──────────────────────────────────────────────────────────
-  leg_catererorders: row(MONEY, 'MONEY', null, 'vendor orders'),
-  leg_caterers:      row(MONEY, 'MONEY', null, 'vendor records'),
-  leg_floristorders: row(MONEY, 'MONEY', null, 'vendor orders'),
-  leg_florists:      row(MONEY, 'MONEY', null, 'vendor records'),
+  leg_catererorders: row(MONEY, 'MONEY', null, 'a catering ORDER is a purchase the home is billed for and bills on'),
+  leg_caterers:      row(MONEY, 'MONEY', null, 'caterer records carry the pricing the invoice is built from'),
+  leg_floristorders: row(MONEY, 'MONEY', null, 'a florist ORDER is a purchase the home is billed for and bills on'),
+  leg_florists:      row(MONEY, 'MONEY', null, 'florist records carry the pricing the invoice is built from'),
   leg_gplservices:   row(MONEY, 'MONEY', null, 'the General Price List -- what the home charges'),
-  leg_insurance:     row(MONEY, 'MONEY', null, 'insurance assignment'),
-  leg_invoices:      row(MONEY, 'MONEY', null, 'invoices'),
-  leg_keepsakes:     row(MONEY, 'MONEY', null, 'merchandise'),
+  leg_insurance:     row(MONEY, 'MONEY', null, 'insurance assignment -- the policy proceeds that pay the invoice'),
+  leg_invoices:      row(MONEY, 'MONEY', null, 'the invoice to the family. The single clearest MONEY row in the app'),
+  leg_keepsakes:     row(MONEY, 'MONEY', null, 'keepsake merchandise, priced and sold on the General Price List'),
   leg_liverybookings: row(MONEY, 'MONEY', null, 'banded MONEY by the vendor-order pattern. [CONFIRM] whether livery is invoiced through the home or billed direct -- that decides whether the livery role needs any MONEY read at all'),
   leg_liveryvendors: row(MONEY, 'MONEY', null, 'vendor records -- same [CONFIRM] as leg_liverybookings'),
-  leg_merch_catalog: row(MONEY, 'MONEY', null, 'merchandise catalogue'),
+  leg_merch_catalog: row(MONEY, 'MONEY', null, 'the merchandise catalogue -- what is offered and at what price'),
   leg_merch_units:   row(MONEY, 'MONEY', null, 'merchandise units -- ALSO carries the b8 reservation lock, which is a transition gate and is unaffected by this table'),
-  leg_monuments:     row(MONEY, 'MONEY', null, 'monuments'),
-  leg_plots:         row(MONEY, 'MONEY', null, 'plots'),
+  leg_monuments:     row(MONEY, 'MONEY', null, 'monuments, sold and billed like any other merchandise line'),
+  leg_plots:         row(MONEY, 'MONEY', null, 'burial plots -- an interment right sold to a family, Tier A'),
   // RULE 3: money AND a long-dated obligation. Write is the MONEY band
   // (owner/director/arranger/office). Deletion should be owner-only and a
   // state change rather than a delete -- THERE IS NO DELETE ACTION ON THIS
@@ -119,16 +119,16 @@ const LEG_ROLE_MATRIX = Object.freeze(Object.assign(Object.create(null), {
 
   // ── OPERATIONS (12) ─────────────────────────────────────────────────────
   leg_bookings:      row(OPERATIONS_LIVERY, 'OPERATIONS', null, 'the schedule -- one of the three livery may read'),
-  leg_clergy:        row(OPERATIONS, 'OPERATIONS', null, 'clergy contacts'),
-  leg_clergybookings: row(OPERATIONS, 'OPERATIONS', null, 'clergy scheduling'),
+  leg_clergy:        row(OPERATIONS, 'OPERATIONS', null, 'the clergy contact list -- who can be booked, not a charge'),
+  leg_clergybookings: row(OPERATIONS, 'OPERATIONS', null, 'clergy scheduling. Carries the overlap gate, which is a separate control'),
   leg_facilities:    row(OPERATIONS, 'OPERATIONS', null, 'rooms, vehicles and -- per the seed data -- named staff treated as bookable'),
-  leg_guestbook:     row(OPERATIONS, 'OPERATIONS', null, 'guestbook'),
+  leg_guestbook:     row(OPERATIONS, 'OPERATIONS', null, 'the guestbook -- attendee entries, no money and no filing'),
   leg_keepsakeorders: row(OPERATIONS, 'OPERATIONS', null, 'banded OPERATIONS by the spec, despite the name: the ORDER of a keepsake is fulfilment, the keepsake catalogue is the money row'),
-  leg_maintenance:   row(OPERATIONS, 'OPERATIONS', null, 'facility maintenance'),
-  leg_memorials:     row(OPERATIONS, 'OPERATIONS', null, 'memorial pages'),
-  leg_obituaries:    row(OPERATIONS, 'OPERATIONS', null, 'obituaries'),
+  leg_maintenance:   row(OPERATIONS, 'OPERATIONS', null, 'facility maintenance tickets against rooms and vehicles'),
+  leg_memorials:     row(OPERATIONS, 'OPERATIONS', null, 'memorial pages -- public-facing presentation, not a record of filing'),
+  leg_obituaries:    row(OPERATIONS, 'OPERATIONS', null, 'obituary drafts and placements -- presentation, not a vital record'),
   leg_processions:   row(OPERATIONS_LIVERY, 'OPERATIONS', null, 'processions -- one of the three livery may read. Tier A, and banded OPERATIONS: it is the route and the running order, not a charge'),
-  leg_tributes:      row(OPERATIONS, 'OPERATIONS', null, 'tributes'),
+  leg_tributes:      row(OPERATIONS, 'OPERATIONS', null, 'tribute entries from the public, alongside the guestbook'),
   leg_vehicles:      row(OPERATIONS_LIVERY, 'OPERATIONS', null, 'vehicles -- one of the three livery may read')
 }));
 
@@ -186,16 +186,27 @@ function resources() { return Object.keys(LEG_ROLE_MATRIX); }
  * control L1 in the spec requires that, because "you cannot do this" with no
  * subject sends a person to the wrong place to get it fixed.
  */
-function denyMessage(resource, role) {
+// NO `resource` PARAMETER. api/_lib/law-roles.js's version takes one because
+// it has a second, trust-specific sentence to choose between; this one has a
+// single message, and a declared-and-unused argument is the shape that makes a
+// reader believe the resource is in the refusal when it is not.
+function denyMessage(role) {
   return 'Your role (' + String(role || 'unknown') + ') does not have access '
        + 'to this record';
 }
 
-/** The append-only refusal, separately, because it is not a role problem. */
+/**
+ * The append-only refusal, separately, because it is not a role problem. It
+ * takes the resource and USES it: LEG_APPEND_ONLY could carry a second table
+ * one day, and a message that names "the chain-of-custody log" for a resource
+ * that is not it would be a confident wrong answer.
+ */
+const APPEND_ONLY_NOUN = { leg_custodylog: 'The chain-of-custody log' };
 function appendOnlyMessage(resource) {
-  return 'The chain-of-custody log cannot be edited by anyone, including the '
-       + 'owner -- a custody record that can be changed is not a custody '
-       + 'record. Add a new entry instead. Nothing was saved.';
+  const noun = APPEND_ONLY_NOUN[resource] || 'This record';
+  return noun + ' cannot be edited by anyone, including the owner -- a '
+       + 'custody record that can be changed is not a custody record. Add a '
+       + 'new entry instead. Nothing was saved.';
 }
 
 module.exports = {

@@ -11,12 +11,13 @@
  * a different resource name.
  *
  * A fourth copy-paste was the obvious next move and it is the wrong one.
- * `api/sd-data.js:15154`'s own comment is the template, and the one thing a
+ * `api/sd-data.js`'s leg_bookings branch comment is the template, and the one thing a
  * copy would have got wrong is in the brief that commissioned this file:
  *
  *   ** THE STATUS LITERAL IS NOT THE SAME ON THE TWO RESOURCES. **
  *   leg_bookings exempts 'Cancelled'. leg_clergybookings skips 'Completed'
- *   (sairnlegacy.html:4820, `b.status==='Completed'`). A byte-identical
+ *   (sairnlegacy.html:4839, `b.status==='Completed'` -- RE-DERIVED
+ *   2026-10-14 rather than carried). A byte-identical
  *   propagation would have refused clergy bookings against rows that have
  *   already happened, and would have blocked a cancellation from being
  *   recorded. Cross-domain convention 7: byte-identical is not safe-in-context.
@@ -124,7 +125,16 @@ async function check(spec) {
   ), { headers: spec.headers });
   if (q.status === 404 || q.status === 400) return notProvisioned;
   const held = await q.json();
-  if (!q.ok) return { upstream: held };
+  // `upstream: held` ALONE WAS A DEFECT AND IT IS WORTH THE LINE. PostgREST
+  // can answer non-ok with a body that is null, '' or 0, and a caller written
+  // as `if (verdict.upstream)` then falls through to `res.status(undefined)` --
+  // ERR_HTTP_INVALID_STATUS_CODE, a hard 500 with no body, where the inline
+  // code it replaced always produced a clean 502. The flag is a separate,
+  // always-true key so the caller branches on the SHAPE of the verdict rather
+  // than on the truthiness of a payload it does not control. Found by an
+  // adversarial read of this refactor, not by a test -- there was no arm for a
+  // non-ok response with a falsy body, and there is one now.
+  if (!q.ok) return { isUpstream: true, upstream: held, status: 502 };
 
   const selfId = String(payload.id);
   const unreadable = [];

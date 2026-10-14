@@ -15150,7 +15150,7 @@ module.exports = async (req, res) => {
         return;
       }
       if (legRoles.decide(resource, legSess.role, action) === legRoles.DENY) {
-        res.status(403).json({ error: { code: 'FORBIDDEN', message: legRoles.denyMessage(resource, legSess.role) } });
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: legRoles.denyMessage(legSess.role) } });
         return;
       }
       // ── APPEND-ONLY, AND IT BINDS THE OWNER TOO ────────────────────────
@@ -15205,7 +15205,8 @@ module.exports = async (req, res) => {
       // ── leg_aftercare: THE KEY IS THE FIX, NOT A GATE (2026-10-14) ──────
       // b9's survey, finding 5. generateAftercareSchedule() reads the LOCAL
       // store to decide which of the three standard check-ins already exist
-      // (sairnlegacy.html:4235, :4240). Two devices that have not synced each
+      // (sairnlegacy.html:4244, inside generateAftercareSchedule at :4236 --
+      // RE-DERIVED 2026-10-14, not carried). Two devices that have not synced each
       // other's writes each believe none exist and each create a set, and a
       // grieving family gets duplicate grief-support follow-ups -- or worse,
       // duplicates compete for staff attention and some are skipped as
@@ -15330,7 +15331,7 @@ module.exports = async (req, res) => {
       // non-overlapping is exactly how this control would stop working.
       // ── AND THE THIRD INSTANCE, leg_clergybookings (2026-10-14) ─────────
       // b9's survey found the same shape on leg_clergybookings:
-      // clergyBookingConflict() (sairnlegacy.html:4817) is a real interval
+      // clergyBookingConflict() (sairnlegacy.html:4836) is a real interval
       // test against this device's localStorage, hard-blocking with no
       // override, and the server accepted whatever reached it.
       //
@@ -15338,7 +15339,7 @@ module.exports = async (req, res) => {
       // the block that used to live here, because the one thing a copy would
       // have got wrong is the STATUS LITERAL: leg_bookings exempts
       // 'Cancelled', leg_clergybookings skips 'Completed'
-      // (sairnlegacy.html:4820), and there is no Cancelled status on the
+      // (sairnlegacy.html:4839), and there is no Cancelled status on the
       // clergy resource at all. api/_lib/leg-overlap.js takes it as a
       // REQUIRED parameter with no default and throws without one -- a
       // default would be the copy-paste defect in a safer-looking costume.
@@ -15350,7 +15351,11 @@ module.exports = async (req, res) => {
             licHash: licHash, rest: rest, headers: headers, enc: enc,
             fetchImpl: fetch }));
         if (verdict) {
-          if (verdict.upstream) return upstream(res, verdict.upstream);
+          // `verdict.isUpstream`, NOT `verdict.upstream`: the payload can be
+          // null or '' on a non-ok reply, and branching on its truthiness
+          // falls through to res.status(undefined) -- a hard 500 with no body
+          // where this used to answer a clean 502.
+          if (verdict.isUpstream) return upstream(res, verdict.upstream);
           res.status(verdict.status).json({ error: verdict.error });
           return;
         }

@@ -208,6 +208,22 @@ console.log('SAIRNlegacy overlap -- ONE helper, TWO resources, ONE differing '
    + 'default would be the copy-paste defect in a safer-looking costume',
      threw ? threw.message : 'it returned instead of throwing');
 
+  // THE INTERVAL TEST ITSELF, DIRECTLY. It is exported as a named function so
+  // it can be pointed at, and a named export nothing drives is a claim rather
+  // than a control. Half-open in BOTH directions, which is what lets
+  // back-to-back bookings coexist and is the property C2 then checks end to
+  // end.
+  is(overlap.overlaps(10, 20, 15, 25) === true
+     && overlap.overlaps(10, 20, 20, 30) === false
+     && overlap.overlaps(20, 30, 10, 20) === false
+     && overlap.overlaps(10, 30, 15, 20) === true
+     && overlap.overlaps(15, 20, 10, 30) === true,
+     'A5. overlaps() is half-open and symmetric: strict containment both ways '
+   + 'is an overlap, touching ends in EITHER order are not',
+     [overlap.overlaps(10, 20, 15, 25), overlap.overlaps(10, 20, 20, 30),
+      overlap.overlaps(20, 30, 10, 20), overlap.overlaps(10, 30, 15, 20),
+      overlap.overlaps(15, 20, 10, 30)].join(','));
+
   // ── B. THE REFUSAL, ON BOTH RESOURCES ───────────────────────────────────
   console.log('\nB. an overlapping write is refused, on BOTH resources');
 
@@ -387,6 +403,23 @@ console.log('SAIRNlegacy overlap -- ONE helper, TWO resources, ONE differing '
        'E3[' + c.resource + ']. a 404 from the CHECK is NOT_PROVISIONED, not '
      + 'a conflict and not a pass -- the gate did not run and says so',
        notProv.code + ' ' + eCode(notProv));
+
+    // ** THE REGRESSION ARM FOR THE REFACTOR'S OWN DEFECT. ** The helper
+    // first returned `{ upstream: held }` with no status, and the call site
+    // branched on `if (verdict.upstream)` -- so a non-ok reply with a FALSY
+    // body (null, '', 0) fell through to res.status(undefined), which throws
+    // ERR_HTTP_INVALID_STATUS_CODE. The inline code this replaced always gave
+    // a clean 502. There was no arm for it; there is one now, and `rows: null`
+    // is exactly the shape that was missing.
+    const badUpstream = await call(h, { resource: c.resource,
+      payload: c.mine(), replies: [{ status: 500, rows: null }] });
+    is(typeof badUpstream.code === 'number' && badUpstream.code >= 400,
+       'E4[' + c.resource + ']. a NON-OK upstream reply with a FALSY body '
+     + 'still produces a real status code. Branching on the truthiness of a '
+     + 'payload the server does not control is how this answered '
+     + 'res.status(undefined)',
+       'status=' + JSON.stringify(badUpstream.code)
+     + ' body=' + JSON.stringify(badUpstream.body));
   }
 
   console.log('\n' + pass + ' passed, ' + fail + ' failed, '

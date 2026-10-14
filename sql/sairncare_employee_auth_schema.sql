@@ -84,12 +84,19 @@ revoke all on sairncare_employee_auth from anon, authenticated;
 -- carries the same widened inline list. This ALTER is NOT duplicated there: it
 -- acts on the table by name and running it once is enough whichever file built
 -- it.
+-- ONE TRANSACTION, and that is not decoration. Between the DROP and the ADD
+-- this table has NO role check at all, and a paste that applies only partway
+-- leaves it that way while the Supabase editor reports success for the
+-- statements it did run -- the failure the SAIRNroofing cleanup actually hit on
+-- 2026-08-26. Wrapped, either both land or neither does.
+begin;
 alter table public.sairncare_employee_auth
   drop constraint if exists sairncare_employee_auth_role_check;
 alter table public.sairncare_employee_auth
   add constraint sairncare_employee_auth_role_check
   check (role in ('owner','nursing','med_aide','caregiver','billing',
                   'activities','office_manager'));
+commit;
 
 -- VERIFY. Expect exactly 1 row, and the definition must contain
 -- 'office_manager'.
