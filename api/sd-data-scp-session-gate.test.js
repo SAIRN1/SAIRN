@@ -1,7 +1,10 @@
 // api/sd-data-scp-session-gate.test.js
 //
-// REQUIREMENT: the two Tier A SAIRNscape resources refuse a call that carries
-//   no employee session, AND every correctly signed-in crew still gets through.
+// REQUIREMENT: ELEVEN OF SAIRNscape'S TWELVE RESOURCES refuse a call that
+//   carries no employee session, AND every correctly signed-in crew still gets
+//   through. Was "the two Tier A SAIRNscape resources" until 2026-10-13 -- the
+//   scope has widened five times since and this line said two the whole way,
+//   which is the one place in this file a reader starts.
 //
 // CROSS-TENANT-ISOLATION: none (this file is about identity WITHIN a company,
 //   not about the tenant boundary; `invoices` and `scp_quotes` already have
@@ -153,8 +156,32 @@ const PAGE = fs.readFileSync(path.join(__dirname, '..', 'sairnscape.html'), 'utf
 //                          the SERVER's `captured_by`. The table entry makes a
 //                          session unconditional; that block still decides who
 //                          may approve.
+// ── AND THE LAST FIVE, 2026-10-13 (b8), ON MICHAEL'S DECISION ───────────────
+// The paragraph below used to end "it is NOT a finding, and it is not made
+// here". IT HAS NOW BEEN MADE, so the five move from UNGATED_REST into GATED
+// and every claim their old entry made about their columns stays true -- no
+// person's name, no contact detail, no money, no regulated determination on
+// any of the five rows, a customer_id FOREIGN KEY with the identity on the
+// `customers` row, which has been gated since 2026-10-05.
+//
+// SO THE GATE IS NOT JUSTIFIED BY DISCLOSURE OF A PERSON and that is stated
+// rather than glossed: it is justified by the licence key being SHIPPED TO THE
+// BROWSER, which makes an irrigation schedule, a controller inventory and a
+// job's scope readable by anyone who can open the app.
+//
+// THESE FIVE WERE THE WHOLE OF WHAT STILL REPRODUCED. hover2's artifact
+// .claude/skills/sairn-hover-auditor/tools-hover2/scp_session_gate_repro.py
+// --all last reported 10 of 22 resource/action pairs reachable by NEITHER
+// mechanism, and the ten are exactly these five times two verbs.
+//
+// MOVING THEM IN HERE WRITES NO ARM BY HAND: each name adds six, the same way
+// the 2026-10-11 three did -- refusal on read and on write, allow-with-a-real-
+// session on read and on write, a wrong-app token, and a deactivated
+// credential.
 const GATED = ['customers', 'invoices', 'scp_quotes',
-  'scp_designs', 'scp_vendors', 'scp_progress_photos'];
+  'scp_designs', 'scp_vendors', 'scp_progress_photos',
+  'scp_jobs', 'scp_irr_controllers', 'scp_irr_zones',
+  'scp_irr_schedules', 'scp_water_features'];
 
 // ── THE FIVE THAT STAY LICENCE-ONLY, NAMED, 2026-10-11 ──────────────────────
 // Was a single `UNGATED_WITNESS = 'scp_vendors'`, described as "one of the ten
@@ -189,8 +216,45 @@ const GATED = ['customers', 'invoices', 'scp_quotes',
 // customer row, which IS gated. Gating them anyway is a defensible product
 // decision about whether an unsigned-in crew may see an irrigation schedule --
 // it is NOT a finding, and it is not made here.
-const UNGATED_REST = ['scp_jobs', 'scp_irr_controllers', 'scp_irr_zones',
-  'scp_irr_schedules', 'scp_water_features'];
+// ── THE FIVE MOVED OUT 2026-10-13 (b8) AND THE CONTROL DID NOT VANISH ───────
+// All five of the above are now in GATED. A negative control that becomes an
+// empty loop is the vacuity this suite has already been burned by twice, so the
+// list is NOT emptied -- it is repopulated from a population that was never
+// measured.
+//
+// `schedule` IS THE TWELFTH SAIRNscape RESOURCE AND THE REPRO ONLY EVER SAW
+// ELEVEN. api/_resources/sairnscape.js owns twelve names; 22 pairs is 11 x 2,
+// and `schedule` -- served at api/sd-data.js:5607 (read) and :5615 (write) --
+// is the one it never counted. It is NOT in SD_SESSION_GATED at this HEAD.
+//
+// IT IS LEFT UNGATED DELIBERATELY AND THAT IS A DISCLOSURE, NOT AN
+// ENDORSEMENT. Michael's decision named the five that reproduced; nobody has
+// decided this one, and `schedule` is the only SAIRNscape resource whose bare
+// name is also a StoneDesk PANEL id (stonedesk.html:40366 and six other
+// mentions, every one of them navigation rather than an sd-data call -- read at
+// this HEAD, which is why that reading is written down instead of the gate
+// being widened on an assumption). Gating it needs that read confirmed by
+// somebody who is deciding it, not by this suite.
+//
+// THE ARM BELOW IS WHY THIS IS NOT JUST A COMMENT: `schedule` must still answer
+// on the licence key alone, so the day it is gated -- rightly or by accident --
+// this file goes red and says so.
+const UNGATED_REST = ['schedule'];
+
+// ── THE PER-RESOURCE WRITE PAYLOAD, 2026-10-13 (b8) ─────────────────────────
+// Only the fields a resource's own branch REQUIRES and that are not in the
+// {id, customer_id} base. Read out of api/sd-data.js at this HEAD, with the
+// line that enforces each one, so this is a citation and not a recollection:
+//
+//   scp_progress_photos  payload.schedule_id  api/sd-data.js:5826
+//   scp_irr_schedules    payload.zone_id      api/sd-data.js:5218
+//
+// Everything else in GATED requires payload.customer_id, which is in the base.
+// `invoices` and `scp_quotes` included -- checked, not assumed (:5637, :5595).
+const WRITE_EXTRA = {
+  scp_progress_photos: { schedule_id: 'S-1' },
+  scp_irr_schedules: { zone_id: 'Z-1' }
+};
 
 let pass = 0, fail = 0;
 function test(name, fn) {
@@ -255,7 +319,11 @@ function withToken(app, role) {
 }
 
 (async function () {
-  console.log('SAIRNscape -- the two Tier A resources demand an employee session\n');
+  // Derived rather than written, so the banner cannot be the stale line again.
+  console.log('SAIRNscape -- ' + GATED.length + ' of '
+    + (GATED.length + UNGATED_REST.length)
+    + ' resources demand an employee session; licence-only: '
+    + UNGATED_REST.join(', ') + '\n');
 
   section('THE TWO LISTS MUST AGREE -- the way this goes wrong quietly');
 
@@ -412,15 +480,23 @@ function withToken(app, role) {
         // (api/sd-data.js:5231) and this arm answered 400 for exactly that
         // reason the moment the resource was gated.
         //
-        // IT IS A SUPERSET, DELIBERATELY, AND THAT HAS A COST: a field one
-        // resource requires is sent to all of them, so a resource added later
-        // whose required field happens to already be here passes this arm
-        // without anybody noticing the requirement. The alternative is a
-        // per-resource payload map. Not worth it while the superset is three
-        // fields -- but the day a FOURTH is needed, write the map.
+        // THE SUPERSET IS GONE AND THE MAP IS WRITTEN, 2026-10-13 (b8). This
+        // arm used to send one three-field superset to every resource, with
+        // its own note saying "the day a FOURTH is needed, write the map".
+        // scp_irr_schedules is that day: api/sd-data.js:5218 requires
+        // payload.zone_id as well as payload.id, so the superset answered 400
+        // and the arm reported it as a payload problem -- correctly, and that
+        // is the whole reason the note existed.
+        //
+        // WHY A MAP IS BETTER THAN A FOURTH FIELD: a field one resource needs,
+        // sent to all of them, means a resource added later whose requirement
+        // is already in the superset passes this arm while nobody learns it has
+        // one. Per-resource, the new name gets a 400 until somebody reads the
+        // branch.
         const res = await callWith(withToken(APP),
           { action: 'write', resource: resource,
-            payload: { id: 'X-1', customer_id: 'C-1', schedule_id: 'S-1' } });
+            payload: Object.assign({ id: 'X-1', customer_id: 'C-1' },
+                                   WRITE_EXTRA[resource] || {}) });
         assert.strictEqual(res.statusCode, 200,
           'a correctly signed-in write was refused: ' + res.statusCode + ' '
           + JSON.stringify(res.body) + ' -- a 400 here is a PAYLOAD problem in '
@@ -465,8 +541,42 @@ function withToken(app, role) {
       });
   }
 
-  section('AND THE FIVE THAT ARE NOT GATED ARE STILL NOT GATED -- ALL FIVE, '
-    + 'DRIVEN, NOT ONE WITNESS');
+  section('THE TWO LISTS TOGETHER ARE THE WHOLE APP -- derived, so a '
+    + 'THIRTEENTH resource cannot be covered by neither');
+
+  // ADDED 2026-10-13 (b8), AND IT IS THE ARM THAT WOULD HAVE CAUGHT `schedule`
+  // A WEEK EARLIER. Every figure this suite has ever quoted about SAIRNscape
+  // came from the repro's 22 pairs, which is 11 resources x 2 verbs -- and the
+  // registry owns TWELVE. A resource in neither GATED nor UNGATED_REST is
+  // invisible to every other arm in this file: not gated, so no refusal arm;
+  // not disclosed, so no licence-only arm. That is the same shape as a gated
+  // resource driven by nothing, one level up.
+  //
+  // DERIVED FROM api/_resources/sairnscape.js RATHER THAN COUNTED, so adding a
+  // thirteenth resource to the registry turns this red on the same commit.
+  test('GATED + UNGATED_REST is exactly what the registry owns', function () {
+    const SCP = require('./_resources/sairnscape.js');
+    const owned = SCP.resources.slice().sort();
+    const covered = GATED.concat(UNGATED_REST).sort();
+    assert.deepStrictEqual(covered, owned,
+      'this suite\'s two lists and api/_resources/sairnscape.js disagree. '
+      + 'In the registry and in neither list: '
+      + owned.filter((r) => covered.indexOf(r) === -1).join(', ')
+      + ' -- in a list and not in the registry: '
+      + covered.filter((r) => owned.indexOf(r) === -1).join(', '));
+    assert.ok(GATED.length > UNGATED_REST.length,
+      'more SAIRNscape resources are disclosed as licence-only than are gated, '
+      + 'which inverts what this suite is for');
+    // A stale WRITE_EXTRA key is a payload sent to a resource that no longer
+    // exists or is no longer gated -- silent, because an extra field is simply
+    // ignored by every branch that does not read it.
+    const stale = Object.keys(WRITE_EXTRA).filter((r) => GATED.indexOf(r) === -1);
+    assert.deepStrictEqual(stale, [],
+      'WRITE_EXTRA carries a key that is not in GATED: ' + stale.join(', '));
+  });
+
+  section('AND WHAT IS NOT GATED IS STILL NOT GATED -- EVERY ONE DRIVEN, '
+    + 'NOT ONE WITNESS');
 
   // ONE ARM PER RESOURCE, 2026-10-11. This was a single witness on scp_vendors
   // and it had to move because scp_vendors got gated -- a control chosen for
@@ -476,10 +586,10 @@ function withToken(app, role) {
   // silently shrink to the one name that still happens to be open: the day the
   // scope widens again, the arm for THAT resource is the one that goes red.
   //
-  // NOT AN ENDORSEMENT -- a disclosure, same as before. Widening to these five
-  // is a product decision about whether an unsigned-in crew may see an
-  // irrigation schedule, and nobody has made it. Their columns are listed at
-  // UNGATED_REST above, read out of the schema rather than off a tier letter.
+  // NOT AN ENDORSEMENT -- a disclosure, same as before. The five that were here
+  // until 2026-10-13 are now GATED on Michael's decision; what is left is
+  // `schedule`, and the reason it is left is written at UNGATED_REST above
+  // rather than implied by its absence from the gate.
   for (const r of UNGATED_REST) {
     await atest(r + ' still answers without a session', async function () {
       const res = await callWith(BEARER, { action: 'read', resource: r });

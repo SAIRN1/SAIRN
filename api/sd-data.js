@@ -1551,6 +1551,64 @@ module.exports = async (req, res) => {
       'scp_designs': ['read', 'write'],
       'scp_vendors': ['read', 'write'],
       'scp_progress_photos': ['read', 'write'],
+      // ── THE LAST FIVE. SAIRNscape IS NOW GATED WHOLESALE, 2026-10-13 (b8) ─
+      // MICHAEL'S DECISION, and it closes the asymmetry the 2026-10-11 wave
+      // deliberately left and named. That wave took three of eight ungated
+      // resources and wrote the other five down in UNGATED_REST with their
+      // columns read out of sql/sairnscape_data_schema*.sql, because -- in that
+      // suite's own words -- gating them "is a defensible product decision
+      // about whether an unsigned-in crew may see an irrigation schedule; it is
+      // NOT a finding, and it is not made here". It has now been made.
+      //
+      // THESE FIVE ARE THE WEAKEST OF THE EIGHT BY CONTENT AND THAT IS STATED
+      // RATHER THAN GLOSSED: no person's name, no contact detail, no money and
+      // no regulated determination on any of the five rows. Each carries a
+      // customer_id FOREIGN KEY, with the identity on the `customers` row --
+      // which has been gated since 2026-10-05. So the argument for gating them
+      // is not disclosure of a person; it is that an irrigation schedule, a
+      // controller inventory and a job's scope are the post's operational
+      // record, and the licence key that authorised them is SHIPPED TO THE
+      // BROWSER and readable by anyone who can open the app.
+      //
+      // MEASURED BEFORE AND NOT ASSUMED. hover2's own artefact --
+      // .claude/skills/sairn-hover-auditor/tools-hover2/scp_session_gate_repro.py
+      // --all -- reported 10 of 22 resource/action pairs reachable by NEITHER
+      // mechanism at this HEAD, and the ten are exactly these five resources
+      // times two verbs. Run read-only from this clone; the auditor's clone was
+      // not entered. After this edit the same repro has nothing left to report.
+      //
+      // THE CLIENT HALF NEEDS NO CHANGE, and every claim here was READ at this
+      // HEAD rather than carried from the sibling wave. All five are in the
+      // shared sync list (sairnscape.html:2747-2749), every read goes through
+      // the one scpSyncFromServer loop (:2762) and every write through
+      // scpData() (:2089), whose only /api/sd-data fetch (:2127) attaches
+      // X-SD-Auth whenever the session token is held, with no per-resource
+      // branch and no per-call flag. Eleven fetch() sites exist in that file and
+      // exactly one reaches sd-data.
+      //
+      // AND SAIRNscape CANNOT HYDRATE BEFORE SIGN-IN, which is the hole the
+      // SAIRNfreedom waves had to fix separately: scpSyncFromServer has ONE
+      // caller, scpInit, which has ONE caller, scpApplyLoggedIn, which is only
+      // reached from scpDoLogin (:2319) and scpDoBootstrap (:2354) -- both of
+      // which write the token to sessionStorage BEFORE calling it. There is no
+      // parse-time or DOMContentLoaded hydrate to swallow a 403.
+      //
+      // A SECOND BEHAVIOUR CHANGE RIDES ALONG AND IS CHOSEN, NOT INHERITED:
+      // being in this map makes the deactivated-credential pre-check apply, so
+      // a deactivated employee hitting these five now gets a hard 403
+      // CREDENTIAL_INACTIVE instead of a logged pass-through. That is the
+      // correct direction and it is named here because it is not what the
+      // session gate itself does.
+      //
+      // NO TWO-VERB ARRAY LITERAL IS QUOTED IN THIS COMMENT and no resource
+      // name appears in quotes followed by a comma: the pair-count tripwire in
+      // api/sd-data-session-gate.test.js counts quoted words over this block's
+      // RAW text without blanking comments, so either would add phantom pairs.
+      'scp_jobs': ['read', 'write'],
+      'scp_irr_controllers': ['read', 'write'],
+      'scp_irr_zones': ['read', 'write'],
+      'scp_irr_schedules': ['read', 'write'],
+      'scp_water_features': ['read', 'write'],
       // ── SAIRNmechanical: mech_docs WRITE ONLY, 2026-09-29 ────────────────
       //    MECH_RECORDS at :14308 gates all four of mech_quotes, mech_checks,
       //    mech_docs and mech_takeoffs on the LICENCE KEY ALONE, and the
@@ -1755,6 +1813,24 @@ module.exports = async (req, res) => {
       'scp_designs': 'sairnscape',
       'scp_vendors': 'sairnscape',
       'scp_progress_photos': 'sairnscape',
+      // ── THE LAST FIVE, 2026-10-13 (b8), IN THE SAME EDIT AS THEIR GATE ────
+      // The rule this pair of lists carries, and it was CHECKED against this
+      // map before the gate entries above were written rather than after: none
+      // of the five was here. Gated above with no entry here and expectedApp
+      // falls back to 'stonedesk', so every correctly signed-in SAIRNscape crew
+      // lead is refused FORBIDDEN "sign in first" on all five -- fails closed
+      // AND confusingly, which is the failure that gets a security change
+      // reverted as broken rather than fixed. sf_trustee_audits broke exactly
+      // that way on main for a day.
+      //
+      // With these, every SAIRNscape resource in SD_SESSION_GATED has an
+      // expectedApp entry, and api/sd-data-scp-session-gate.test.js asserts the
+      // two lists agree rather than counting them.
+      'scp_jobs': 'sairnscape',
+      'scp_irr_controllers': 'sairnscape',
+      'scp_irr_zones': 'sairnscape',
+      'scp_irr_schedules': 'sairnscape',
+      'scp_water_features': 'sairnscape',
       // Added 2026-09-29 in the SAME edit as its gate entry above, which is the
       // rule this pair of lists has carried since 2026-09-24 and which
       // sf_trustee_audits broke on main earlier the same day: a resource gated

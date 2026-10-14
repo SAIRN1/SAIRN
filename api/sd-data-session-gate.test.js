@@ -544,7 +544,47 @@ function mapNames(blob) {
     // (round-tripped through hashPin/verifyPin, then re-verified against the
     // literals in the committed file) so that this half becomes drivable the
     // moment Michael runs it. Source-level only until then.
-    assert.strictEqual(pairs, 122,
+    // 122 -> 132 on 2026-10-13 (b8): SAIRNscape'S LAST FIVE, TEN PAIRS --
+    // scp_jobs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules,
+    // scp_water_features. Eleven of the app's twelve resources are now gated.
+    //
+    // WHY THEY ARE GATED, which is what this tripwire exists to make somebody
+    // justify, AND IT IS NOT THE ARGUMENT ANY SAIRNscape WAVE GAVE BEFORE.
+    // Every earlier wave gated on the SENSITIVITY of the row -- Tier A first,
+    // then three more whose COLUMNS were read instead of their tier letter
+    // (a contact's phone, a photo of a customer's property). These five do not
+    // qualify on that argument and it is stated plainly rather than stretched:
+    // no person's name, no contact detail, no money and no regulated
+    // determination on any of the five rows, and each one's customer_id is a
+    // FOREIGN KEY whose identity lives on `customers`, gated since 2026-10-05.
+    //
+    // THE ARGUMENT IS THE LICENCE KEY, AND IT IS MICHAEL'S DECISION. The key
+    // that authorised these reads is SHIPPED TO THE BROWSER and readable by
+    // anyone who can open the app, so "licence-only" means "public" for a row
+    // that is a landscaping company's operational record -- its job scopes, its
+    // controller inventory, its irrigation run times. The suite that disclosed
+    // them as ungated said in its own words that gating them "is a defensible
+    // product decision ... it is NOT a finding, and it is not made here". It
+    // has now been made.
+    //
+    // MEASURED BEFORE, NOT ASSUMED: hover2's artifact
+    // .claude/skills/sairn-hover-auditor/tools-hover2/scp_session_gate_repro.py
+    // --all last reported 10 of 22 resource/action pairs reachable by NEITHER
+    // mechanism, and the ten were exactly these five times two verbs. Read-only
+    // from this clone; the auditor's clone was not entered.
+    //
+    // A SECOND BEHAVIOUR CHANGE RIDES ALONG AND IS CHOSEN, NOT INHERITED: being
+    // in this table makes the deactivated-credential pre-check apply, so a
+    // deactivated employee hitting these five now gets a hard 403
+    // CREDENTIAL_INACTIVE instead of a logged pass-through.
+    //
+    // AND THE TWELFTH RESOURCE IS NOT GATED AND IS NOT AN OVERSIGHT.
+    // api/_resources/sairnscape.js owns twelve names; `schedule`
+    // (api/sd-data.js:5607/:5615) is outside the repro's 22 pairs and outside
+    // the decision. api/sd-data-scp-session-gate.test.js now DRIVES it as the
+    // licence-only control and derives its two lists from the registry, so a
+    // thirteenth resource cannot land covered by neither.
+    assert.strictEqual(pairs, 132,
       'the gate table changed size to ' + pairs + ' pairs -- add the new resource to this test and say why it is gated');
   });
 
@@ -722,6 +762,24 @@ function mapNames(blob) {
         scp_designs: 'api/sd-data-scp-session-gate.test.js',
         scp_vendors: 'api/sd-data-scp-session-gate.test.js',
         scp_progress_photos: 'api/sd-data-scp-session-gate.test.js',
+        // SAIRNscape's LAST FIVE, 2026-10-13 (b8). Same suite, same reason --
+        // it mints SAIRNscape sessions and this file mints StoneDesk ones.
+        // Adding the five names to its GATED list added THIRTY arms without one
+        // being written (46 passed became 73, with two of the difference being
+        // the new derived-completeness arm and the `schedule` control).
+        //
+        // THESE ARE THE FIRST ENTRIES HERE GATED ON A PRODUCT DECISION RATHER
+        // THAN ON THE ROW'S CONTENT, and the pair-count comment above carries
+        // the argument. What matters for THIS map is that the named suite no
+        // longer hand-types its SAIRNscape population: it derives GATED +
+        // UNGATED_REST against api/_resources/sairnscape.js, which is the
+        // check that would have caught `schedule` -- the twelfth resource,
+        // ungated, and invisible to every arm in that file until today.
+        scp_jobs: 'api/sd-data-scp-session-gate.test.js',
+        scp_irr_controllers: 'api/sd-data-scp-session-gate.test.js',
+        scp_irr_zones: 'api/sd-data-scp-session-gate.test.js',
+        scp_irr_schedules: 'api/sd-data-scp-session-gate.test.js',
+        scp_water_features: 'api/sd-data-scp-session-gate.test.js',
         // SAIRNmechanical's one, 2026-09-29. Driven in its own suite for the
         // same reason as every entry above: that one mints sairnmechanical
         // sessions and this file mints StoneDesk ones.
