@@ -674,6 +674,22 @@
         "SAIRN-handoff-h1-b30.md",
         "SAIRN-report-h1-b30.txt"
       ]
+    },
+    {
+      "id": "hover-1791984316",
+      "session": "hover",
+      "subject": "hover",
+      "task": "h1 b31 -- (1) load Drive tools, check landed status of cody b10/cc b9/hank b10/fourth b18 via Drive digest then source, skip unlanded. (2) adversarial verify fourth b17: hank b9 Tier A discharge verdict+2 conditions, section 7.5 sql/2026-10-14-hank-b9-ai-safeguards.sql:54-56 only alters *_employee_auth, write-map doc line citations api/sd-data.js~6721-6760/:8441/:8495 api/sen-auth.js:74, four removal-path specs vs tools/removal_path_check.py. (3) when cc b9 lands verify its claims (status line window, 3 hooks cleared, pulls into hank/cody/fourth, batch_manifest.py:386 encoding, shortened claim subjects); skip if not landed. (4) fix hover's own hover_log.py --add --source to accept 12-char sha or fail with a clear full-sha-required message. (5) recheck the two stashes + three stale root pairs routed to cc b30, note whether cc acted. (6) push no force confirm landed. I WRITE ONLY under .claude/skills/sairn-hover-auditor/ (incl. its own external hover-audit-log tooling) plus my own three root deliverables (handoff/report/digest b31); no tools/ api/ sql/ tests/ file in the platform repo edited, no hook added/restored, no settings.json commit, no SAIRN_SEED_GATE override. FILES: SAIRN-handoff-h1-b31.md SAIRN-report-h1-b31.txt SAIRN-digest-h1-b31.txt .claude/skills/sairn-hover-auditor/routing/2026-10-14-h1-b31-fourth-b17-verify.md",
+      "claimed_at": "2026-10-14T13:25:16Z",
+      "claimed_at_epoch": 1791984316.6730082,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        ".claude/skills/sairn-hover-auditor/routing/2026-10-14-h1-b31-fourth-b17-verify.md",
+        "SAIRN-digest-h1-b31.txt",
+        "SAIRN-handoff-h1-b31.md",
+        "SAIRN-report-h1-b31.txt"
+      ]
     }
   ],
   "refusals": [
