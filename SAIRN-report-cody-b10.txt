@@ -1,0 +1,644 @@
+REPORT cody b10
+
+================================================================================
+0. SHAPE
+================================================================================
+
+Batch b10, 2026-10-14, cody. Six items. ALL SIX DONE.
+
+LANDED on origin/main at e730b906 -- HEAD and origin/main identical, 0 ahead
+and 0 behind, tree clean, no --force at any point.
+
+THE HEADLINE: THE NEVER-DRIVEN BACKLOG IS CLOSED. `diagnosed` blank went
+13 -> 0. Every suite in docs/known-red-suites.json has now been driven and what
+happened is written down. entries 84 -> 76, recovered 14 -> 22.
+
+FOUR THINGS HERE ARE WORTH READING BEFORE THE ITEMS:
+
+  - EVERY ONE OF THE THREE FIXTURES I REPAIRED WAS STALE AGAINST CORRECT api/
+    CODE. Two api/ guards landed AFTER the fixtures that fail against them, and
+    the third case was a deliberate resource addition against a hardcoded count.
+    api/ was right three times out of three. Sections 2, 3, 4.
+  - A CRITERIA LOCK CAUGHT ME WRITING A FIXTURE THAT COULD NOT FAIL, within
+    minutes of writing the lock. Section 8.
+  - THE WORKTREE GUARD FOUND 17 SUITES WITH THE DEFECT, NOT 2. b9 knew about
+    two, and reported both of them red when they are green. Section 9.
+  - THREE REGISTER ROWS WENT GREEN WITHOUT BEING TOUCHED, and they were DRIVEN
+    to confirm it rather than assumed. Section 10.
+
+NO api/ FILE AND NO sql/ FILE WAS EDITED. No tools/ file was edited. No other
+docs/ file was authored -- the two GENERATED documents the gate demanded are
+the one declared exception, section 7. .claude/settings.json was never
+committed, no hook was restored or re-added, SAIRN_SEED_GATE was NEVER used,
+and no auditor clone was entered.
+
+HASH RULE, stated so the SHA line can be checked rather than trusted: line 1
+is the title, the LAST line is END-OF-REPORT, the SECOND-TO-LAST is the
+SHA256. The BODY is every byte from line 2 through the line immediately
+before the SHA line, LF, UTF-8. Recompute with:
+  python -c "import hashlib,io;L=io.open('SAIRN-report-cody-b10.txt',encoding='utf-8',newline='').read().split(chr(10));b=chr(10).join(L[1:-3]);print(hashlib.sha256(b.encode()).hexdigest())"
+
+EVERY FIGURE BELOW NAMES THE COMMAND THAT PRODUCED IT.
+
+================================================================================
+1. COMMITTED AND PUSHED
+================================================================================
+
+  git rev-parse HEAD origin/main          -> e730b906..., IDENTICAL
+  git rev-list --count origin/main..HEAD  -> 0    (ahead)
+  git rev-list --count HEAD..origin/main  -> 0    (behind)
+  git status --short                      -> clean
+  git worktree list                       -> the live clone only
+
+  git merge-base --is-ancestor <c> origin/main, per commit:
+    fcd8b188  items 1-5 and the register              ANCESTOR
+    0028a088  the two regenerated derived docs + the
+              gate's own scrutiny rows                 ANCESTOR
+    e730b906  the merge                                ANCESTOR
+
+THREE COMMITS WERE COLLAPSED INTO ONE AND IT IS SAID OUT LOUD. 86f6b0ca,
+c5ca2812 and acac88b8 were committed separately; the register-feed gate then
+refused the push, and ITS ESCAPE TRAILER IS READ FROM THE COMMIT'S OWN BODY
+(tools/register_feed_gate.py:267, `ESCAPE_RE.search(body)`), so the only honest
+routes were to rewrite that message or to write a defect record for a
+non-defect. They were re-committed as one with the trailer. NO PUBLISHED HISTORY
+WAS REWRITTEN -- none of the three had ever landed, and `git reset --soft
+origin/main` touched no file.
+
+================================================================================
+2. ITEM 1 -- FOURTEEN ARMS WERE ONE DEFECT, AND IT WAS NOT IN api/
+================================================================================
+
+  node tests/sairncare/test-op-audit.js
+    EXIT 0, 29 passed, 0 failed        (was 12 passed, 14 failed)
+
+FAILING-FIRST, AND THE RED WAS CAPTURED BEFORE ANYTHING WAS TOUCHED. Arms
+S1/S2/S3 were added and run first:
+
+    EXIT 1, 14 passed, 15 failed
+    FAIL S1. the stub TOLERATES a two-argument call ... -- bad app scope: undefined
+    PASS S2. CONTROL -- the stub STILL REFUSES an explicitly wrong app scope
+    PASS S3. ANCHOR -- api/sd-data.js still calls the pre-gate with TWO arguments
+
+THE STUB DEMANDED THREE ARGUMENTS. api/sd-data.js:1938 is
+`verifySessionToken(preToken, licHash)` -- TWO -- deliberately, because the
+credentialStillActive pre-gate runs ABOVE per-resource app scoping and its own
+comment says so. THE STUB WAS THE STALE HALF AND api/ IS CORRECT AS WRITTEN.
+
+It now allows an ABSENT expectedApp and STILL REFUSES a wrong one:
+
+  if expectedApp is not None and expectedApp != 'sairncare': throw
+
+S2 IS THE ARM THAT MAKES THAT A FIX RATHER THAN A DELETION. "Tolerate two
+arguments" could be satisfied by removing the app-scope check entirely, which
+would retire a real cross-tenant assertion -- so S2 asserts a THIRD argument
+naming another app still throws, and that it names the app it was given rather
+than a generic message. S3 anchors the two-argument call site, verified unique
+(`grep -c "verifySessionToken(preToken, licHash)"` -> 1), so this section cannot
+go on measuring a contract the handler no longer has.
+
+================================================================================
+3. ITEM 2a -- THE PRE-GATE BROKE ONE FIXTURE IN TWO WAYS AT ONCE
+================================================================================
+
+  node tests/sairnlegacy_reservation_lock.js
+    EXIT 0, ALL 59 ASSERTIONS PASS
+
+TWO INDEPENDENT BREAKAGES AND ONLY ONE WAS VISIBLE, which is why the first
+symptom was a confusing 403:
+
+  (a) the pre-gate CONSUMED the first `replies` entry, so every later reply was
+      shifted by one and the `active` lookup itself read undefined ->
+      CREDENTIAL_INACTIVE 403 on arm 1; and
+  (b) it would have been COUNTED in out.calls, so every `calls.length === N`
+      assertion -- THE ARMS THAT PROVE THE LOCK IS ONE ATOMIC CONDITIONAL WRITE
+      RATHER THAN A READ-THEN-WRITE -- would have been off by one.
+
+Fixing only (a) would have moved the failure rather than cleared it. IT IS NOW
+ANSWERED OUT OF BAND in the harness: the employee_auth `select=active` lookup
+consumes no reply and records no call, and is counted in out.activeLookups so a
+suite can still assert it happened. The fixture's accounting is exactly what its
+author wrote, AND A PRE-GATE THAT MOVES AGAIN DOES NOT NEED TWELVE EDITS -- the
+alternative was prepending a reply at twelve call sites.
+
+TWO MORE STALE SPOTS FELL OUT OF THAT, BOTH THE SAME SHAPE. A leg_bookings
+DOUBLE-BOOKING guard (api/sd-data.js:14967) refuses 400 BOOKING_WINDOW_REQUIRED
+BEFORE ANY UPSTREAM CALL when the facility or the window is missing:
+
+  - the leg_bookings CONTROL arm sent bare `{ id, status }`, so it asserted
+    `calls[0].method === 'POST'` against a call that never happened; and
+  - the 36-resource generic loop sent bare `{ id: 'X' }`, so it measured 35/36
+    AND THE ONE THAT "FAILED" HAD NOT BEEN TESTED AT ALL.
+
+A PRECONDITION FAILURE WEARING THE COSTUME OF A PROPERTY FAILURE. Both now
+satisfy the precondition, and the shared property is measured on ALL 36
+EQUALLY -- the guard's own overlap read receives the 404 and maps it to the SAME
+503 NOT_PROVISIONED, so the property under test is unchanged rather than
+relaxed, and leg_bookings is not exempted from it.
+
+================================================================================
+4. ITEM 2b -- THE DECISION WAS MADE FROM EVIDENCE, THEN THE NUMBER MOVED
+================================================================================
+
+  node tests/sairnfreedom_server_backup.js
+    EXIT 0, 17 passed, 0 failed
+
+The arm's own message said "if that is deliberate, change this number in the
+same commit". THE DECISION CAME FIRST AND IT CAME FROM git log, NOT FROM
+RECOLLECTION:
+
+  git log -1 e3446a48 -- api/_resources/sairnfreedom.js
+    "feat(sairnfreedom): sf_trustee_audits reached the server for the first
+     time -- and the registry's own reconciliation had been one short for weeks"
+    2026-09-29
+
+THE 36th IS sf_trustee_audits. sairnfreedom.html has FORTY-THREE `K_x = 'sf_...'`
+bindings and that one was on NONE of the lists -- not SF_SYNCED, not the
+registry, not the schema, not SF_RESOURCES, AND NOT THE DELIBERATE-EXCLUSION
+LIST EITHER, so nothing in the repo recorded a decision about it.
+tools/local_only_collection_check.py measured it as 1 of 36 collections with no
+route to a server. It carries the ORC 2915 controls attestation -- who attested
+to the post's financial controls and the fidelity bond covering the people who
+handle gaming receipts -- and it lived in one browser's cache. It was wired
+TEST-FIRST. IT IS DELIBERATE.
+
+  node -e "console.log(require('./api/_resources/sairnfreedom.js').resources.length)"
+    -> 36
+
+THE COUNT STAYS HARDCODED ON PURPOSE, and the comment says so: deriving it from
+REG.resources.length would make it UNFALSIFIABLE, and the thing it exists to
+catch is a resource being REMOVED, taking every per-resource assertion in the
+file with it. The file's own header line was corrected from 35 to 36 as well, so
+the prose and the arm cannot disagree.
+
+ONE CHANGE CLEARED THREE ROWS -- section 10.
+
+================================================================================
+5. ITEM 3 -- THE THIRD STATE REACHES AN EXIT CODE
+================================================================================
+
+  python -u tests/run_tool_selftest_probe.py
+    EXIT 3
+    129 passed, 0 failed, 1 could-not-run
+    EXIT 3: nothing failed, but 1 selftest(s) were NOT EVALUATED. That is not a
+    pass and it is not a failure -- exit 3 so a runner reading only the code can
+    tell.
+
+THIS FILE QUOTED PR 1.11 AT ITSELF AND THEN BROKE IT. Its output separates
+COULD NOT RUN from FAILING with care -- its own header cites the rule -- and its
+return was
+
+    return 1 if (fails or cnr or shrunk or unparsed) else 0
+
+so A COULD-NOT-RUN ALONE PRODUCED EXIT 1, at the only place a runner, a hook or
+a human actually reads.
+
+EXIT 3 IS NOT A NEW STATE. docs/2026-10-13-cody-b6-methodology-unproven.md
+section 3 already assigns it: "A suite with unproven arms exits 3, and its
+summary line states the unproven count beside the pass and fail counts." BOTH
+HALVES ARE IMPLEMENTED -- a state the summary arithmetic cannot see is a state
+the exit code cannot reflect.
+
+PRECEDENCE IS DELIBERATE AND IS WRITTEN DOWN IN THE FILE: a REAL FAILURE
+outranks a could-not-run, because "something is broken" is a stronger claim than
+"something was not measured" and must not be softened by it. SHRUNK and UNPARSED
+stay failures too -- a selftest that vanished and a file that could not be read
+are both losses of coverage this suite exists to refuse, and neither is an
+intermittent condition a third state would describe.
+
+THE REGISTER ROW STAYS IN `entries`, BECAUSE EXIT 3 IS NEITHER COLOUR. The one
+outstanding item is ooda_phases.py exit 2 on a stale `<10 records have an
+injection date` expectation against 249 real records -- a tools/ self-test and
+cc's. When that clears this suite exits 0 and the row moves to `recovered`.
+
+================================================================================
+6. ITEM 5a -- THE WORKTREE SENTINEL GUARD, AND IT CORRECTS MY OWN WORK
+================================================================================
+
+  python -u tests/worktree_sentinel_guard.py --selftest
+    EXIT 0, 17 passed, 0 failed
+
+IN b9 TWO SUITES WERE DRIVEN IN AN ISOLATED WORKTREE, CRASHED, AND WERE
+REPORTED RED. THEY ARE GREEN. Their sentinel is
+os.path.join(REPO, '.git', 'seam-delegation-probe.planting') and IN A WORKTREE
+`.git` IS A 64-BYTE FILE, NOT A DIRECTORY, so the sentinel can never be created
+and the suite dies with FileNotFoundError before asserting anything. Reporting
+that exit code as red declared working code broken, and it would have retired a
+working ablation -- that control's load-bearing arms are "the plant really did
+modify the file" and "the same exception WITHOUT the guard leaves the plant".
+
+THE RULE IS NOW MECHANICAL: a suite must not be classified RED or GREEN from a
+worktree unless every sentinel path it builds RESOLVES. Otherwise the only
+honest answer is exit 2 COULD NOT RUN, which is neither colour.
+
+DERIVED, NOT A HAND LIST. The sentinels are read out of each suite's own source
+every run, in three spellings -- os.path.join(V, '.git', 'x'),
+os.path.join(V, '.git/x'), and a bare '/.git/x' literal -- with comments and
+docstrings STRIPPED, because every file that discusses this defect names `.git`
+in prose, including the two suites it was written for and this guard itself. A
+hand-maintained list of "suites that need a real clone" is the thing that goes
+stale the day somebody adds the third one.
+
+IT INHERITS THROUGH IMPORTS, AND THAT WAS NOT OPTIONAL. The file that MOTIVATED
+the guard -- tests/seam_check/run_delegation_residue_control.py -- BUILDS NO
+SENTINEL OF ITS OWN. It reaches the probe by `CONTROLS_FOR` and by a path handed
+to importlib.util.spec_from_file_location, so a guard that understood only
+`import <name>` would have called it CLASSIFIABLE and therefore RED -- THE
+ORIGINAL DEFECT WEARING A NEW HAT. Three routes are read, ONE LEVEL ONLY, and
+the bound is declared rather than silent. Measured after the change:
+
+  python -u tests/worktree_sentinel_guard.py tests/seam_check/run_delegation_residue_control.py
+    ok  ... sentinel(s) resolve here (clone checkout): seam-delegation-probe.planting
+        (inherited: run_delegation_probe.py:seam-delegation-probe.planting)
+
+THE CONTROL PAIR RUNS BOTH WAYS, on synthetic trees with hand-known answers:
+a real clone is CLASSIFIABLE; a worktree is COULD-NOT-RUN; UNREADABLE SOURCE IS
+COULD-NOT-RUN, NEVER CLASSIFIABLE; and -- the arm that stops "always refuse in a
+worktree" from satisfying the guard -- A SUITE WITH NO SENTINEL IS CLASSIFIABLE
+EVEN IN A WORKTREE. Plus the three spellings and a CONTROL that prose mentioning
+.git trips nothing.
+
+ITS FIRST SELF-ARM WAS WRONG IN A USEFUL WAY. It asserted this file builds no
+sentinel and FAILED, listing seven -- because the arms hold fixture SOURCE in
+string literals, which no amount of stripping removes. It now asserts the
+property that actually matters: the guard does not block ITSELF from a real
+clone, the only checkout where its verdict is consumed. True, falsifiable, and
+not a pretence that the fixtures are not there.
+
+REAL TREE, REPORTED AND NOT ASSERTED, because asserting a clean tree turns every
+future real finding into a failure of the guard:
+
+  python -u tests/worktree_sentinel_guard.py --report
+    python suites scanned                 424
+    building a .git sentinel              17
+    NOT CLASSIFIABLE from this checkout   0
+
+b9 KNEW ABOUT TWO. The other fifteen -- including four push_gate probes, two
+claims probes and run_worktree_isolation_probe.py -- would have been
+misclassified from a worktree in exactly the same way.
+
+WHAT IT DOES NOT CATCH, said rather than implied: it detects the
+.git-is-a-file family. A suite that needs a provisioned session marker, or real
+sibling clones, is NOT caught -- and section 10's suite 14 is exactly that
+shape. Same class, different mechanism.
+
+================================================================================
+7. ITEM 6 -- TWO GATE REFUSALS, BOTH REPAIRED AT CAUSE
+================================================================================
+
+REFUSAL 1 -- THE REGISTER-FEED GATE: "this push closes a defect and does not
+feed the register." Correct to ask, and its reasoning is worth quoting: "A
+RECORDING TOOL NOBODY FEEDS REPORTS A VACUOUS NUMBER FOREVER."
+
+THE ANSWER WAS THE `no-defect-record:` TRAILER, NOT A REGISTER RECORD, and the
+reason is itself the finding: EVERY REPAIR IN THAT COMMIT IS TO A TEST FIXTURE
+THAT DRIFTED WHILE api/ STAYED CORRECT. The credentialStillActive pre-gate and
+the leg_bookings double-booking guard are both correct as written and BOTH
+LANDED AFTER the fixtures that now fail against them; the 36th resource is a
+deliberate addition. A REGISTER RECORD WOULD HAVE BEEN A FABRICATED ONE. The
+gate requires at least 30 characters of reason because "a bare refusal is what
+makes the field meaningless", and the trailer gives a paragraph.
+
+REFUSAL 2 -- THE GENERATED-DOCUMENT GATE: docs/MASTER-PLAN.md and
+docs/traceability-matrix.md stopped matching their sources, because this push
+adds a test file and changes register rows that both documents count.
+Regenerated with the two commands the gate itself printed:
+
+  python tools/master_plan.py          EXIT 0, "wrote docs\MASTER-PLAN.md (148 lines)"
+  python tools/traceability_matrix.py  EXIT 0, "wrote docs\traceability-matrix.md (981 lines)"
+
+both reporting "every leg closed", and the gate's own caveat is worth repeating:
+"a closed traverse is not a correct survey -- it means no source is MISSING, not
+that any source is RIGHT."
+
+THAT IS THE ONE DECLARED EXCEPTION TO b10's tests/-ONLY SCOPE: a generator the
+gate DEMANDED, not an authored docs/ edit. Said out loud here rather than left
+for somebody to find in a diff.
+
+Then one `fetch first` race. NO CONFLICTS AND NO --force AT ANY POINT.
+SAIRN_SEED_GATE WAS NEVER USED.
+
+================================================================================
+8. ITEM 4 -- THREE CRITERIA LOCKS, EACH SIZED TO WHAT THE FILE LACKED
+================================================================================
+
+ROW 39  tests/push_gate/missing_checker_probe.py
+THE FAIL-CLOSED RULE'S OWN PROBE, AND IT HAD NO LOCK. Its verdict lived in three
+inline conditions per arm -- a non-zero exit, the victim path in the output, a
+phrase in the output. THOSE ARE ITS CRITERIA AND NOTHING CHECKED THEM. They are
+now one named predicate, deny_for(), locked by SEVEN synthetic cases with
+hand-known answers BEFORE any real gate runs -- AND THE ARMS WERE REWIRED
+THROUGH IT, so the lock is load-bearing rather than decorative.
+
+  THE ARM THAT MATTERS IS L2: A REFUSAL FOR AN UNRELATED REASON IS NOT A DENY.
+  Without it, "any refusal counts" satisfies every arm in sections B through D,
+  and a gate that refused everything for one wrong reason would read as five
+  working fail-closed checks.
+
+AND THE LOCK CAUGHT ME WRITING A FIXTURE THAT COULD NOT FAIL, within minutes of
+writing the lock, which is the cheapest possible proof it is load-bearing:
+
+  FAIL  L4. the right path and the WRONG phrase is not a deny
+        got True want False
+
+L4 expected the phrase 'seam' while the victim path is .../sairn_seam_check.py,
+SO THE PATH ITSELF SATISFIED THE PHRASE TEST and the case could never fail. L4
+now uses a phrase that cannot appear incidentally, and L4b pins the lesson: A
+PHRASE THAT IS A SUBSTRING OF THE VICTIM PATH CANNOT DISCRIMINATE. The separator
+bug the header records -- backslashes against forward slashes once failing EVERY
+arm at once, which inside a mutation harness reads as every mutation biting --
+is locked as L6 instead of left in a comment.
+
+A FAILED LOCK IS EXIT 2 AND THE REAL GATE IS NOT RUN: a probe whose verdict
+function is broken cannot report anything about the push gate, and exit 1 there
+would be read as "the gate fails open".
+
+  MEASURED: lock 7/7, then 38 PASS with 2 failures -- "a push of a sql file
+  whose table the snapshot has is allowed" and "the throwaway worktree is
+  removed". BOTH ARE IN THE REAL-GATE SECTIONS, PRE-EXISTING, AND NOT TOUCHED.
+  It needs about ten minutes to run.
+
+ROW 46  tests/run_role_gate_negative_coverage_probe.py
+THE DOCSTRING STATES BOTH HALVES AND NOTHING LOCKED THE THING THAT READS THEM.
+Every arm decides through num(), which takes the FIRST DIGIT TOKEN off the first
+line starting with a key -- a text parse against a tool's prose, and the single
+point where this probe can silently answer about the wrong number:
+
+  'UNCOVERED 0 of 12'           -> 0   correct
+  'UNCOVERED: none (12 gates)'  -> 12  SILENTLY WRONG, and every arm comparing
+                                       against 0 or 1 then flips
+
+SIX CASES NOW LOCK IT IN BOTH DIRECTIONS. L3 is the one that matters: A LINE
+WITH NO COUNT MUST RETURN None RATHER THAN A DIGIT FROM ELSEWHERE ON IT. L4 pins
+that an absent key is None and NEVER 0, because "not reported" and "zero" are
+different answers and folding them is how this probe would lie. L6 pins that
+zero really parses as 0 -- the falsy value a bare `if num(...)` would drop.
+A failed lock is exit 2.
+
+  MEASURED: lock 6/6. The 4 remaining failures are the pin-file arms already
+  diagnosed in b9 and are unchanged.
+
+ROW 40  tests/role_gate_loop_rule_probe.py
+ALREADY LOCKED IN BOTH DIRECTIONS, AND SAYING SO MATTERS. Its P-arms and N-arms
+are exactly the pair the routing document asks for, and its closing lines
+already refuse to let the real repo be re-pinned on its output. TWO THINGS WERE
+MISSING AND NEITHER IS THE PAIR:
+
+  (1) NO VERSION STAMP, so an edited expectation and an unchanged one are the
+      same diff to anyone reading a pass.
+  (2) AN UNGUARDED SEAM, and it is the only way this file can lie. run() reaches
+      straight into rg.file_driven(src, ROLES). A rename, a changed signature or
+      a changed return shape does not report a changed rule -- it kills the
+      probe mid-arms with an AttributeError or TypeError, and a reader sees a
+      traceback and a nonzero exit that look exactly like "the rule broke". A
+      PROBE THAT CANNOT TELL "THE RULE IS WRONG" FROM "I COULD NOT REACH THE
+      RULE" IS THE THIRD-STATE DEFECT THIS PLATFORM KEEPS PAYING FOR.
+
+It now checks the seam against a minimal loop-form fixture whose answer is known
+by hand -- callable, accepts (src, roles), returns a dict, and returns the right
+answer -- and exits 2 COULD NOT RUN with the reason named.
+
+  MEASURED: EXIT 0, "the seam is reachable and answers in the shape the arms
+  read", 11/11 passed.
+
+================================================================================
+9. ITEM 5b -- THE 13 UNDRIVEN SUITES, DRIVEN IN THE LIVE CLONE
+================================================================================
+
+METHOD, and the choice of environment is the point: THE LIVE CLONE,
+DELIBERATELY, because b9 got two false RED verdicts from an isolated worktree.
+Driven only after everything was committed and pushed, so a half-finished plant
+was recoverable with git. One suite at a time, `python -u` / `node`, 300s cap,
+exit code from `echo "EXIT=$?"` on its own line. `git status --short` CHECKED
+BEFORE AND AFTER EVERY SINGLE SUITE.
+
+ONE SUITE DIRTIED THE TREE and it was restored before the next one ran:
+push_gate/refspec_and_override_probe.py left docs/scrutiny-flags.json modified,
+plus docs/BYPASS-LOG.jsonl from the direct hook reproduction. Both restored with
+`git checkout --`, clean confirmed, NOTHING ACCUMULATED. HEAD never moved during
+the sweep and no worktree was created.
+
+PHASE A -- the two .git-sentinel suites, with the new guard run first:
+
+  worktree_sentinel_guard  tests/seam_check/run_delegation_probe.py      EXIT 0
+  worktree_sentinel_guard  tests/seam_check/run_delegation_residue_control.py EXIT 0
+  tests/seam_check/run_delegation_probe.py               EXIT 0  all 4 arms True
+  tests/seam_check/run_delegation_residue_control.py     EXIT 0  10 passed 0 failed
+
+BOTH b9 FALSE REDS ARE CONFIRMED AS WORKTREE ARTEFACTS, NOT SUITE DEFECTS, and
+the guard's verdict agreed with the drive in both cases.
+
+PHASE B -- the 13, one exit-code line each, every line number re-read in the
+file rather than taken from the runner:
+
+   1 claims/run_registry_claim_probe.py       0  :355  0 failure(s)  GREEN
+   2 push_gate/refspec_and_override_probe.py  1  :541  1 failing arm
+   3 run_alf_read_order_sabotage_probe.py     1  :168  1 of 8 mutations SURVIVED
+   4 run_all_tests_floor_probe.py             1  :142  CRASHED -- could not run
+   5 run_all_tests_pinned_probe.py            1  :278  1 of ~35
+   6 run_blob_coverage_scope_sabotage.py      1  :170  3 passed 2 failed
+   7 run_citation_anchor_hop_sabotage.py      1  :227  2 passed 4 failed
+   8 run_committer_identity_probe.py          1  :200  1 of ~20
+   9 run_cron_liveness_probe.py               1  :527  56 passed 1 failed
+  10 run_graduated_exemption_probe.py         1  :198  2 of ~20
+  11 app_session_isolation.js                 1  :538  first posture mismatch
+  12 faults/transport_timeout_sweep.js        1  :488  77 passed 4 FAILED
+  13 api/sd-data-cross-tenant-dispatchers.test.js 0 :1072 419 passed 0 failed  GREEN
+
+REAL DEFECTS -- 4 SUITES, 11 ARMS:
+
+  #3  THE FAIL-OPEN SHAPE PR 1.11 EXISTS FOR. Surviving mutation: "the alf_mar
+      read is hoisted into a local, so the arm finds ZERO list reads for that
+      table", reported "SILENT -- the suite passed with this defect planted".
+      api/alf-append-only-read-order.test.js SCORES ZERO READS FOUND AS A PASS
+      instead of COULD NOT RUN. Mutations 1, 2, 3, 4, 6 and 7 all bit, so the
+      probe is not broadly broken.
+  #6  A COVERAGE FIGURE OVER TOO NARROW A UNIVERSE, and it does not say so:
+      "api_files() uses os.listdir(api) -- FLAT -- so 126 non-test .js files in
+      api/ subdirectories are outside the coverage universe. The reported figure
+      is a floor and does not say so." Two live write sites are in the unscanned
+      region: api/_lib/sd-store.js:166 and
+      api/sairndental/public-complaint-submit.js:136. THIS DOES NOT SHOW THE
+      ELEVEN CONVERSIONS WERE WRONG -- it shows the NUMBER is a floor.
+  #7  A CITATION CHECKER THAT IS A SUBSTRING TEST: "_body_lines() is a flat
+      60-line window, so a short function is credited with its NEIGHBOUR access
+      and the report names the wrong accessor", and "a COMMENT on the cited line
+      reads as 'direct', so a citation pointing at a comment about a moved write
+      is reported SOUND". Also a comment-only mention and a string literal both
+      credit reach. SO ITS ANCHORED-VIA ROWS ARE UNVERIFIED RATHER THAN SOUND.
+      Its arm "S3b. LIMIT, NOT A FINDING" PASSES, so it does discriminate.
+  #12 THREE APPS REJECT ON TIMEOUT INSTEAD OF RESOLVING -- sairncare.html,
+      sairnscape.html, stonedesk.html -- "every 'await' caller would throw out of
+      its handler and skip the toast -- the defect, relocated". And the more
+      serious fourth: "stonedesk.html: the signal really reached fetch, at 15s"
+      -> "fetch was called with no signal". sdData() HAS NO 15s ABORT AT ALL.
+      THE ARMS ARE CALIBRATED BY TWELVE APPS THAT PASS THEM: sairnbiz,
+      sairnbuild, sairncode, sairndental, sairndesign, sairnfreedom,
+      sairngrounds, sairnlaw, sairnlegacy, sairnmechanical, sairnsenior,
+      sairnvet.
+
+STALE EXPECTATIONS -- 5:
+
+  #2  The BLANKET SAIRN_SEED_GATE override was deliberately retired. Driven
+      directly, the hook answers "REFUSED: SAIRN_SEED_GATE=off is the BLANKET
+      form and it no longer works ... USE THE SCOPED FORM." The arm at :372
+      still asserts it is honoured. AND THE SAME STALENESS IS IN A STANDING
+      DOCUMENT: CLAUDE.md push-protocol section 3 still teaches the retired
+      form. Routed -- not the tests owner's file.
+  #5  A hardcoded anchor: the arm asserts "PINNED: running in a throwaway
+      worktree"; the subject prints "...throwaway CLONE at %s" since the
+      deliberate worktree->clone switch. Its SIBLING ARM PASSED, so --out really
+      carries both halves and only the word changed.
+  #9  AN UNRELATED COMMIT SLID A `git log -2` WINDOW. The arm uses _prev[-1];
+      that file now has three commits, so _prev[-1] is a9394d8e -- the commit
+      that ADDED the step the arm says was absent -- and
+      `git show a9394d8e:... | grep -c` is 1. THE EIGHTH DISCIPLINE EXACTLY, and
+      the suite names its own failure mode in its detail string: "the historical
+      anchor moved; this arm proves nothing as written".
+  #10 Consumption now follows AUTHORITY by design (2026-10-07):
+      `if consume is None: consume = (MODE == 'prepush')`. The probe never sets
+      MODE, so it stays at the module default `pretooluse`, which by design does
+      not consume. The settling, window-expiry and unresolvable-tip arms passed.
+  #11 THE SUITE MEASURED CORRECTLY AND ITS OWN BOOKKEEPING IS STALE:
+      "sairngrounds: measured SOME, recorded NONE". The recorded row is 7 days
+      old; the gate it says is absent was added 2026-10-07 by 6a2690be -- "the
+      LICENCE KEY ALONE reached every read and every write on 21 resources".
+      It is working as a drift detector.
+
+COULD NOT RUN -- 1:
+
+  #4  CRASHED after arm 1 on a STALE STUB SIGNATURE: "fake_run() takes from 2 to
+      3 positional arguments but 4 were given". The real function is now
+      `_run(js, py, quiet, excluded=None)` and the stub is
+      `fake_run(js, py, quiet=True)`. The exit code comes from an UNCAUGHT
+      EXCEPTION at :142, not from its designed sys.exit(1) at :299. Its arm 1 did
+      pass, with a standing housekeeping note: "the suite GREW: 792 files
+      discovered, MIN_TEST_FILES says 370 ... 422 test file(s) could be deleted
+      with the guard silent."
+
+ENVIRONMENT PRECONDITION -- 1, AND IT IS A DECISION RATHER THAN A DEFECT:
+
+  #8  "and no local override was left behind" reports fx@example.invalid. This
+      clone carries a PRE-EXISTING local user.email/user.name override. THE
+      EVIDENCE THAT THE PROBE DID NOT WRITE IT is the arm immediately before --
+      "the identity is unchanged in THIS clone" -- which PASSED and compares
+      before against after inside the same run; and the tree was clean before.
+      The arm asserts the local override is EMPTY, which is a property of the
+      checkout. NOT THE TESTS OWNER'S TO UNSET A COMMITTER IDENTITY.
+
+AND NOTE WHAT THE GUARD DOES NOT COVER, measured on this very sweep: #4's crash
+and #8's override are the SAME CLASS as the worktree problem -- an environment
+precondition misread as a colour -- with a DIFFERENT MECHANISM. The guard
+catches the .git family only, and section 6 says so.
+
+================================================================================
+10. THE REGISTER -- THE UNDRIVEN BACKLOG IS CLOSED
+================================================================================
+
+  python -c "import json;d=json.load(open('docs/known-red-suites.json'));
+             print(len(d['entries']), len(d['recovered']),
+                   len([e for e in d['entries'] if not (e.get('diagnosed') or '').strip()]))"
+    -> 76  22  0
+
+  entries     84 -> 76
+  recovered   14 -> 22
+  UNDRIVEN    13 -> 0
+
+EIGHT ROWS MOVED OUT OF `entries` INTO `recovered`:
+
+  tests/sairncare/test-op-audit.js                 29 passed 0 failed
+  tests/sairnlegacy_reservation_lock.js            ALL 59 ASSERTIONS PASS
+  tests/sairnfreedom_server_backup.js              17 passed 0 failed
+  tests/sairnlegacy_fault_probe.py                 ALL 23 ARMS PASS (18 mutations)
+  tests/sairnfreedom_fault_probe.py                0 failed
+  tests/sairnfreedom_server_backup_probe.py        ALL 9 ARMS PASS (4 mutations)
+  tests/claims/run_registry_claim_probe.py         0 failure(s)
+  api/sd-data-cross-tenant-dispatchers.test.js     419 passed 0 failed
+
+THREE OF THOSE EIGHT CLEARED WITHOUT BEING TOUCHED, AND THEY WERE DRIVEN TO
+CONFIRM IT RATHER THAN ASSUMED. The three fault/mutation probes are
+baseline-gated on the two fixtures repaired in sections 3 and 4, so one count
+change and one harness change gave them a baseline and 31 MUTATIONS THEN RAN.
+That is the difference between a record and a prediction, and it is the whole
+reason they were driven instead of reasoned about.
+
+AND tests/sairnfreedom_server_backup_probe.py IS WHY A LEFT-ALONE exit-2 ROW
+MATTERS. b9 correctly left it exactly as it was, because exit 2 is neither
+colour. HAD IT BEEN RECORDED RED, THE CAUSE WOULD HAVE BEEN ATTRIBUTED TO THE
+PROBE INSTEAD OF TO THE STALE 35-vs-36 COUNT THAT ACTUALLY HELD IT.
+
+ELEVEN ROWS GOT THEIR FIRST DIAGNOSIS, each stating its exit code, its failing
+arm names, its cause where established, and the file:line of its exit. 8 green
++ 11 diagnosed + 2 already-recovered Phase A = all 13 accounted for, with #13's
+owner being hank and driven here only because driving it is read-only.
+
+tests/run_tool_selftest_probe.py STAYS IN `entries` with
+`129 passed, 0 failed, 1 could-not-run (exit 3)`; the b9 tail is kept in
+`tail_b9` so a hand-moved count cannot be mistaken for a changed app.
+
+NO TEST FILE WAS EDITED TO MAKE ANY OF THIS PASS. Nothing in the 13-suite sweep
+was touched at all.
+
+================================================================================
+11. WHAT WAS WRITTEN, IN FULL
+================================================================================
+
+  tests/worktree_sentinel_guard.py              NEW, 17 arms
+  tests/sairncare/test-op-audit.js              S1/S2/S3 + the stub
+  tests/sairnlegacy_reservation_lock.js         the out-of-band active lookup,
+                                                the control arm's window, the
+                                                36-resource loop's precondition
+  tests/sairnfreedom_server_backup.js           35 -> 36, arm and header
+  tests/run_tool_selftest_probe.py              exit 3 + the printed count
+  tests/push_gate/missing_checker_probe.py      deny_for() + a 7-case lock,
+                                                arms rewired through it
+  tests/run_role_gate_negative_coverage_probe.py  a 6-case lock on num()
+  tests/role_gate_loop_rule_probe.py            CRITERIA_VERSION + a seam lock
+  docs/known-red-suites.json                    8 rows -> recovered, 11 first
+                                                diagnoses, 1 third-state note
+  docs/MASTER-PLAN.md, docs/traceability-matrix.md  REGENERATED by their own
+                                                generators at the gate's demand
+  docs/scrutiny-flags.json                      the rows THE GATE wrote
+  SAIRN-handoff-cody-b10.md, SAIRN-report-cody-b10.txt,
+  SAIRN-digest-cody-b10.txt                     this batch's three
+
+NOT WRITTEN, each for a stated reason:
+  - NO api/ FILE AND NO sql/ FILE. api/ was correct in all three fixture cases.
+  - NO tools/ FILE, though four tools/ defects were found and routed to cc.
+  - NO OTHER docs/ FILE AUTHORED.
+  - NO EDIT to any of the 13 swept suites.
+  - NO defect-register record, because there is no shipped defect to cite --
+    the `no-defect-record:` trailer says so in full.
+  - .claude/settings.json. NO HOOK RESTORED OR RE-ADDED.
+  - SAIRN-ACTIVE-WORK-cody.md -- not asked for.
+
+================================================================================
+12. UNVERIFIED, STATED AS SUCH
+================================================================================
+
+  - NO ENDPOINT WAS CALLED AND NO DATABASE WAS TOUCHED. Every api/ claim here
+    is a source-level reading or a mocked-handler drive.
+  - THE FOUR REAL-DEFECT SUITES ARE ROUTED, NOT FIXED. Three apps still reject
+    on timeout, stonedesk still has no abort signal, the coverage universe is
+    still flat, the citation checker is still a substring test, and
+    api/alf-append-only-read-order.test.js still scores zero reads as a pass.
+  - 11 ARMS ACROSS 4 SUITES ARE REAL DEFECTS; THE OTHER FAILING ARMS IN SECTION
+    9 ARE NOT. Section 9 must not be read as one count of bugs.
+  - tests/push_gate/missing_checker_probe.py still has 2 failures of its own and
+    tests/run_role_gate_negative_coverage_probe.py still has 4. The b10 locks do
+    not address either set and do not claim to.
+  - tests/run_tool_selftest_probe.py is at EXIT 3, which is NEITHER COLOUR.
+  - THE WORKTREE GUARD'S REAL-TREE ZERO IS A ZERO FROM A CLONE. In a worktree a
+    non-zero count is the guard working, not a finding, and the figure is
+    REPORTED rather than asserted for exactly that reason.
+  - THE GUARD CATCHES ONE FAMILY. #4's stale stub and #8's local git identity
+    are the same class -- an environment precondition read as a colour -- and
+    neither is detected by it.
+  - THE 13 WERE DRIVEN ONCE EACH, in one environment. Section 9 of the b9 report
+    is the standing demonstration that environment changes answers.
+  - #4's "422 test file(s) could be deleted with the guard silent" is that
+    suite's own standing note, NOT a b10 measurement, and nothing here acts on
+    it.
+
+SHA256 a8799f276f8136c3b1cd4ea83d678a884bd7d3f0524fa0cb43adea6f5848a4b3
+END-OF-REPORT

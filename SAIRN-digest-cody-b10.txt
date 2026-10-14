@@ -1,0 +1,21 @@
+STATUS: cody b10, six items DONE. LANDED at e730b906, 0/0, clean, no force.
+THE UNDRIVEN BACKLOG IS CLOSED: diagnosed blank 13 -> 0, entries 84 -> 76,
+recovered 14 -> 22. Two gate refusals repaired at cause.
+
+DECISION-NEEDED:
+1. This clone's git identity is fx@example.invalid and an arm asserts no local
+   override exists. Keep it and change the arm, or remove it?
+2. CLAUDE.md section 3 still teaches the retired SAIRN_SEED_GATE=off override.
+3. api/ was CORRECT in all three fixture repairs, so no defect record exists.
+
+CHANGED: op-audit D(15->0) reservation_lock D(59 pass) server_backup D(35->36)
+exit-3 D rows 39/46/40 D sentinel guard D(17 suites, not 2) 13 undriven
+D(8 green, 11 diagnosed)
+
+EVIDENCE-path: docs/known-red-suites.json -- exit codes, arms, file:line
+
+UNVERIFIED: 11 arms in 4 suites are real defects, routed not fixed.
+
+NEXT: hank takes the timeout and read-order defects; cc four tools/ items.
+
+CONTEXT ~17% (172k of 1M, session counter)
