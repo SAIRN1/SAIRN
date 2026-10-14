@@ -399,8 +399,8 @@
       "task": "hover2 batch b27 -- (1) pull platform, re-check hank b9 landed a6fa37a3, regrep 5 citations (2) adversarial check sql/2026-10-14-hank-b9-ai-safeguards.sql idempotency/table-list/row-count (3) --check-baseline then trace rest of stonedesk AI labeling beyond 2 closed sites (4) adversarial verify cody b9 0b7a7a0d two recovered verdicts and fourth b15 98-resource matrices sairnlegacy narrowest band (5) refresh RFC3161 token + mirror-branch anchor same batch (6) push external log repo no force confirm landed. FILES: hover-audit-log/ only, no platform docs/api/tools/tests/sql file. Own root deliverables SAIRN-handoff-h2-b27.md SAIRN-report-h2-b27.txt SAIRN-digest-h2-b27.txt written to Drive, not committed to platform repo.",
       "claimed_at": "2026-10-14T12:42:30Z",
       "claimed_at_epoch": 1791981750.054823,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-14T12:54:58Z",
       "files": [
         "SAIRN-digest-h2-b27.txt",
         "SAIRN-handoff-h2-b27.md",
