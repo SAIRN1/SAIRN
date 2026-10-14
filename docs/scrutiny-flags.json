@@ -1117,6 +1117,40 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/app_session_isolation.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "sairnscape:      { gate: 'ALL',  auth: true,  why: 'CORRECTED 2026-10-14 (Cody b"
+    }
+   ],
+   "sha": "3a0eab5454b340a0b0d848c6193ab0ebbf904169",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_cron_liveness_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "3a0eab5454b340a0b0d848c6193ab0ebbf904169",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_graduated_exemption_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "os.path.isfile(g._exempt_path('seed')))"
+    }
+   ],
+   "sha": "3a0eab5454b340a0b0d848c6193ab0ebbf904169",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_dup_dom_ids_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -1967,6 +2001,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/app_session_isolation_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "69e034151645aea90e24cd61e12361624d1f7107",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/ai-safeguards.test.js",
    "class": "test file",
    "level": "WEAKENING",
@@ -2574,6 +2616,35 @@
     }
    ],
    "sha": "8085a493a45bd35cba7488c23fced42e79c07b14",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/push_gate/refspec_and_override_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "from tools/gate_skip.py so it cannot drift from the tool that defines it."
+    }
+   ],
+   "sha": "80b43e3f2e955bfdd48f6a0c44e2a2cc38e723a2",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_all_tests_floor_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "80b43e3f2e955bfdd48f6a0c44e2a2cc38e723a2",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_all_tests_pinned_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "80b43e3f2e955bfdd48f6a0c44e2a2cc38e723a2",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -3355,6 +3426,14 @@
     }
    ],
    "sha": "a0cf0a417f0ed24296b15a5d0e12cce7d312e66e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_committer_identity_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a128f8e357503362a26cca0596039bb408c48318",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -5152,6 +5231,19 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "f82a177b67290cb5ffec87585636aa64bdc8bf25",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_role_gate_negative_coverage_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(d, ignore_errors=True)"
+    }
+   ],
+   "sha": "f870ab735b2c79cef78de6a5969166c89fdfc17e",
    "criteria_version": "2026-10-06.1"
   },
   {
