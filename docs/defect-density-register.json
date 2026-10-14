@@ -28904,6 +28904,38 @@
       },
       "citation_note": "the nearest standing rule is PR 1.11 (could-not-run is a third state) and this is its mirror image: the gate did not skip, it reported a could-not-read as a FINDING about the change. Cross-domain-disciplines item 8 covers the staleness half. Neither names this shape exactly, so not-citable rather than a stretched citation",
       "factors_unknown_reason": "fourth routed the defect twice and named the shape; the causal question -- why four separate gates each bound a remote sha from pre-push stdin with no existence test -- is a real analysis nobody has done, and a guess here would be worse than the gap"
+    },
+    {
+      "commit": "811292cba3b8",
+      "date": "2026-10-14",
+      "subject": "fix(red suite check + nhi self-test): the registered suites stop running in the live clone, and a self-test stops reporting the machine it ran on",
+      "files": [
+        "tools/nhi_register.py",
+        "tools/red_suite_register_check.py"
+      ],
+      "lines_added": 202,
+      "lines_removed": 9,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "TWO DEFECTS IN ONE COMMIT, both about a tool mistaking its environment for its subject. (1) tools/red_suite_register_check.py drive() ran every REGISTERED red suite with cwd=REPO -- thirteen write-when-run suites executed in the live clone of whichever session ran the check, every batch, by design. Now ONE isolated worktree at HEAD, removed in a finally, and exit 2 COULD NOT RUN with no fallback to the live clone if the worktree cannot be made. (2) tools/nhi_register.py --selftest was RED from any isolated worktree: sibling_clones() correctly refuses when the parent holds more repositories than its cap, and five arms that only needed a render were coupled to that ambient fact, so the self-test reported a defect in the register whenever it was not run from a real clone. Injected for that half at 2f4400ab. Fixed by driving the enumeration against a fixture parent of five real repositories, forwarding repo= through clone_scope(), and moving the machine-specific arms to a control that reports NOT CHECKED with its reason. Measured after: live clone exit 0 with 14 arms and 0 not-checked, temp worktree exit 0 with 3 named not-checked. It also recovered tests/run_selftest_independence_probe.py, which now reports ALL ARMS PASS.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "8f15f7c5fc57",
+        "date": "2026-10-06",
+        "subject": "fix(exec-context): the CTO advisor carried the SAME false clause as the CFO one -- \"NO accounting integration of any kind\" -- plus a count nobody could re-derive; and tools/red_suite_register_check.py",
+        "lag_days": 8
+      },
+      "citation_note": "the isolation half is PR 1.11's neighbour: the tool could not tell a clean run from one that had also edited the caller's tree, and the nhi half folded a fact about WHERE it ran into a verdict about WHAT it checked",
+      "factors_unknown_reason": "both were found by reading the dispatch's own description rather than by an investigation, and why neither was caught when the tools were written has not been examined by anybody; a guess in a CAPA field is worse than the gap"
     }
   ],
   "started": "2026-09-09",

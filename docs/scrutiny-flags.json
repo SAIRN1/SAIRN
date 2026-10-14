@@ -1009,6 +1009,14 @@
    "class": "CI / hook configuration",
    "level": "CHANGE",
    "shapes": [],
+   "sha": "39060d396826e55d44207d13dfe75710eeca569f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": ".claude/settings.json",
+   "class": "CI / hook configuration",
+   "level": "CHANGE",
+   "shapes": [],
    "sha": "39224920668936b8453f92f205c6aed6eafa2f34",
    "criteria_version": "2026-10-06.1"
   },
@@ -3504,6 +3512,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "ae872b6c5d3f235da1b76095ba8101d0cea8fe49",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": ".claude/settings.json",
+   "class": "CI / hook configuration",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "af344ae271525af573fa499f81ca08cf2a44c218",
    "criteria_version": "2026-10-06.1"
   },
   {

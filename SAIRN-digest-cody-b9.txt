@@ -1,0 +1,22 @@
+STATUS: cody b9, six items DONE. LANDED at 0b7a7a0d, 0/0, tree clean, no force.
+One gate refusal repaired at cause. No api/, sql/ or tools/ edit; hooks
+cleared; settings.json never committed.
+
+DECISION-NEEDED:
+1. I GOT TWO VERDICTS WRONG. Two suites I called red from a worktree are GREEN
+   live, now in `recovered`: their sentinel is REPO/.git/x and in a worktree
+   .git is a FILE.
+2. The 20 could-not-run arms need NO endpoint, database or credential. Four
+   other prerequisites; the expected taxonomy scores zero.
+3. Three WEAKENING rows unsigned -- I wrote the commits.
+
+CHANGED: 1D(246s, slow AND buffered) 2D(1 green, 22 exit 1, 1 exit 2) 3D
+4D(reproduced live) 5D 6D
+
+EVIDENCE-path: docs/known-red-suites.json -- results, arms, file:line
+
+UNVERIFIED: items 3 and 4 are tests, not fixes. 21 of 24 not re-driven live.
+
+NEXT: hank lands office_manager and clock_flags; cc takes four tools/ items.
+
+CONTEXT ~16% (161k of 1M)

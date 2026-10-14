@@ -54,6 +54,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
@@ -86,8 +87,57 @@ def load_registry(path=REGISTRY):
     return entries, None
 
 
+def isolated_worktree():
+    """An isolated worktree at HEAD. -> (path, '') or (None, why).
+
+    ── WHY NOT THE LIVE CLONE, WHICH IS WHAT THIS DID (fixed cc b8) ─────────
+    `drive()` ran every REGISTERED suite with `cwd=REPO`. Thirteen of them,
+    and this repo's suites are not read-only: they write ledgers, create and
+    delete fixtures, and several drive tools that write when run. So a check
+    whose whole job is to ask "is this suite still red" was MUTATING the
+    working clone of whichever session ran it, every batch, by design -- and
+    on this platform that is already a named rule: a write-when-run tool goes
+    in a worktree, never in the live clone.
+
+    IT FAILS CLOSED. If the worktree cannot be created there is NO FALLBACK to
+    `REPO`: the answer is COULD NOT RUN (exit 2). A fallback to the live clone
+    is exactly the shape PR 1.11 forbids -- it would report a pass over a run
+    that also edited the caller's tree.
+
+    AND THE SEMANTIC CHANGE IS STATED RATHER THAN SLIPPED IN: a worktree is at
+    HEAD, so UNCOMMITTED work is not in it. The register is a statement about
+    committed state, so HEAD is the right subject -- but a suite made red (or
+    green) by an uncommitted edit will now read the other way, and `report()`
+    prints the worktree's commit and names a dirty tree when it finds one.
+    """
+    code, out, _err = _git('rev-parse', 'HEAD')
+    head = (out or '').strip()
+    if code != 0 or not head:
+        return None, 'git rev-parse HEAD failed, so no worktree could be made'
+    path = tempfile.mkdtemp(prefix='red-suite-worktree-')
+    # mkdtemp made it; `git worktree add` wants to create it itself.
+    os.rmdir(path)
+    code, _out, err = _git('worktree', 'add', '--detach', path, head)
+    if code != 0:
+        return None, ('git worktree add failed (%s), so the suites were NOT '
+                      'driven -- this tool does not fall back to the live '
+                      'clone' % (err or '').strip()[:160])
+    return path, head
+
+
+def _git(*args):
+    r = subprocess.run(['git'] + list(args), cwd=REPO, capture_output=True,
+                       text=True, encoding='utf-8', errors='replace')
+    return r.returncode, r.stdout, r.stderr
+
+
 def drive(rel, kind, repo=REPO, timeout=TIMEOUT_S):
-    """Run one suite. -> (exit_code, note). exit_code None means COULD NOT RUN."""
+    """Run one suite. -> (exit_code, note). exit_code None means COULD NOT RUN.
+
+    `repo` is the directory the suite runs IN, and callers pass an isolated
+    worktree. It defaults to REPO only so the self-test's fake driver keeps
+    the same signature; nothing in `main()` passes the live clone.
+    """
     full = os.path.join(repo, rel.replace('/', os.sep))
     if not os.path.isfile(full):
         return None, 'the file does not exist'
@@ -312,7 +362,36 @@ def main(argv):
             sys.stderr.write('COULD NOT RUN -- no run log at %s\n' % p)
             return EXIT_COULD_NOT_RUN
         log = io.open(p, encoding='utf-8', errors='replace').read()
-    findings, could_not_run, driven = check(entries, run_log=log)
+
+    # ── THE SUITES RUN IN AN ISOLATED WORKTREE, NOT IN THIS CLONE (cc b8) ───
+    work, why = isolated_worktree()
+    if work is None:
+        sys.stderr.write('COULD NOT RUN -- %s\n' % why)
+        return EXIT_COULD_NOT_RUN
+    dirty = ''
+    code, out, _err = _git('status', '--porcelain')
+    if code == 0 and (out or '').strip():
+        dirty = (out or '').strip().splitlines()
+        dirty = '%d uncommitted path(s) in the live clone, NOT in the ' \
+                'worktree: %s' % (len(dirty), ', '.join(
+                    l[3:] for l in dirty[:4]))
+    try:
+        print('DRIVEN IN AN ISOLATED WORKTREE at HEAD %s' % why[:12])
+        print('  %s' % work)
+        if dirty:
+            print('  NOTICE: %s' % dirty)
+        print('  (these suites write when run; driving them in the live clone '
+              'is what this')
+        print('   tool used to do, and it edited the caller\'s tree every '
+              'batch.)')
+        findings, could_not_run, driven = check(entries, run_log=log,
+                                                repo=work)
+    finally:
+        rc, _o, err = _git('worktree', 'remove', '--force', work)
+        if rc != 0:
+            print('WARNING: the worktree at %s could not be removed (%s). It '
+                  'is litter and `git worktree prune` clears it.'
+                  % (work, (err or '').strip()[:120]))
     return report(findings, could_not_run, driven, as_json='--json' in argv)
 
 

@@ -1,0 +1,378 @@
+REPORT fourth b15
+
+SAIRN batch report -- session fourth (ted), batch b15, 2026-10-14.
+Every figure names the command that produced it. Six items, one work commit,
+98 resources specified, and one decision taken by chat.
+
+HEAD AND PUSH
+  CMD git -C <repo> rev-parse HEAD                         83b5a7e9...
+  CMD git -C <repo> rev-parse origin/main                  83b5a7e9...
+  CMD git rev-list --left-right --count origin/main...HEAD  0  0
+  CMD git status --porcelain                               (empty)
+  push range 0b7a7a0d..83b5a7e9, ONE rebase, NOT FORCED.
+  83b5a7e9 IS THE STATE AT WHICH THE SIX ITEMS LANDED. The commit carrying
+  this report, the digest and the handoff lands after it, and the b15 close
+  and claim release after that, so HEAD WILL NOT EQUAL 83b5a7e9 when you read
+  this. Re-derive it.
+  SAIRN_SEED_GATE=off was NOT used in any form.
+  NOTHING WAS WRITTEN OUTSIDE docs/ plus my three root deliverables. No file
+  under tools/, api/, sql/, tests/ or .claude/ was edited.
+  CMD git log --format=%h HEAD --not 2e3fe02f -- .claude/settings.json  (empty)
+
+THE ORDER I WORKED IN, AND WHY IT IS NOT 1->6
+  Item 3's own instruction is "start every future batch by writing its
+  manifest first", and a batch that writes its manifest at step 3 has not
+  followed the rule it is setting. So: claim -> --new fourth b15 -> --new
+  fourth b14 -> close b14 -> items 1, 2, 4, 5 -> push. The numbered order is
+  preserved in the manifest and below; only the manifest creation moved, and
+  it moved because item 3 says to.
+
+ITEM 3 -- BOTH MANIFESTS, AND --close CRASHES WITHOUT AN ENV VAR
+
+  CMD python tools/batch_manifest.py --new fourth b15 --items 6
+      wrote docs\batch-manifest-fourth-b15.json with ids 1-6,
+      id_lock=906816e5cf0d24f9
+  CMD python tools/batch_manifest.py --new fourth b14 --items 6
+      wrote docs\batch-manifest-fourth-b14.json with ids 1-6, same id_lock
+  THE TOOL WROTE THEM, NOT ME, DELIBERATELY. id_lock is a hash over the
+  ORDERED id list (tools/batch_manifest.py:122) and hand-writing it would be
+  me inventing the one value the file exists to make immutable. Both b14 and
+  b15 are six-item batches, so both locks are the same hash -- which is
+  correct and is worth saying before somebody reads it as a copy-paste error.
+
+  Then all six b14 items were set from the b14 report's own evidence, and:
+  CMD python tools/batch_manifest.py --close --agent fourth --batch b14
+      exit 1
+      Traceback ... UnicodeEncodeError: 'charmap' codec can't encode
+      character '\ufffd' at tools/batch_manifest.py:386  print('  | %s' % line)
+  CMD PYTHONIOENCODING=utf-8 python tools/batch_manifest.py --close --agent fourth --batch b14
+      exit 0
+      CLOSED: fourth b14. 3 deliverable(s) verified on the Drive:
+        SAIRN-handoff-fourth-b14.md sha256 7292b88756856501
+        SAIRN-report-fourth-b14.txt sha256 f57f188341a46231
+        SAIRN-digest-fourth-b14.txt sha256 f8eb4d3a73734df8
+
+  THE CRASH IS A REAL FINDING AND IT IS cc's. cmd_close echoes
+  drive_upload_verify's output with a bare print, and that output QUOTES EACH
+  DELIVERABLE'S FIRST LINE. My handoffs start "# HANDOFF - fourth" with an em
+  dash, which a cp1252 stdout cannot encode, so --close traceback-exits on any
+  batch whose handoff title is not pure ASCII. Routed in the b15 handoff 3.3.
+  FIX IS THE TOOL, NOT THE TITLES: telling six agents to keep handoff titles
+  ASCII is a rule nobody remembers, and the echo is one place.
+  WHAT I DID INSTEAD OF EDITING IT: set PYTHONIOENCODING=utf-8 on the command.
+  An environment variable is not a code change and not a route around a
+  denied permission rule. tools/ is cc's and I edited nothing in it.
+
+ITEM 1 -- THE ACK STORE, DECIDED BY CHAT
+
+  docs/2026-10-14-ai-safeguards-spec.md s7.5 (new).
+  THE RULING: the acknowledgment lives on the EMPLOYEE LOGIN RECORD -- the two
+  *_employee_auth columns, ai_notice_version and ai_notice_acked_at.
+  api/ai-notice.js IS THE LOSER and is to be DELETED, not left unwired.
+  THIS IS NOT A RE-OPENING OF MICHAEL'S DECISION, IT IS ITS CONSEQUENCE.
+  s1(a) and s2.1 have said since this document was written that the ack is
+  "stored under that employee's login", and the credential row IS the login.
+  Five reasons recorded; the first would be enough on its own:
+    1. the credential row IS the login. A side table keyed by (license_hash,
+       employee_id) is a COPY of that row's identity, and a copy can disagree.
+    2. one read on a path that already runs -- the login handler already
+       SELECTs that row for the PIN, active and role.
+    3. deactivation and deletion stay coherent for free. A separate ack table
+       outlives a deleted employee and becomes an orphan nobody reaps, and
+       this platform has 14 orphaned lock files to show what that looks like.
+    4. cross-tenant safety is already proven there: license_hash scopes the
+       row, and T5 (cross-tenant ack) is the highest-value bug in the feature.
+    5. two columns against an endpoint plus a table plus a migration.
+  WHAT THE LOSER WAS RIGHT ABOUT, recorded so the deletion does not throw it
+  away: a dedicated endpoint is the natural home if the notice ever has to be
+  acknowledged by somebody who is NOT an employee of a licence. That is s1(b)
+  owner acceptance, which s2.2 puts on license_keys and s7.1 rules is not a
+  runtime gate. A non-employee ack would be a NEW decision with a new store.
+  ROUTED TO hank: delete the endpoint and its route; if a table shipped, copy
+  rows on (license_hash, employee_id) and DROP IT IN A LATER COMMIT than the
+  copy -- a drop in the same commit leaves nothing to re-run the copy from; a
+  row matching no credential row is a FINDING, printed, not dropped;
+  CURRENT_NOTICE_VERSION stays one constant. cody's T1-T6 are unchanged and
+  gain one arm: api/ai-notice.js is gone and nothing imports it.
+
+ITEM 2 -- THREE ROLE-MATRIX SPECS, 98 RESOURCES, ROUTED TO hank
+
+  CMD python scratchpad/bands_b15.py       (bands assigned by name, reproducibly)
+      sairnlegacy : 36 resources (tier A 20)
+      sairnvet    : 42 resources (tier A 30)
+      sairnlaw    : 20 resources (tier A 20, tier B 0)
+  Resource lists and tiers are read from docs/CRITICALITY-TIERS.md, not typed.
+
+  WHAT IS GATED TODAY, measured:
+  CMD grep -nE "LEG_[A-Z_]*ROLES" api/sd-data.js            (no output)
+  CMD grep -rn "PRESCRIBER_ROLES" api/ --include=*.js | grep -v test
+      api/sv-auth.js:118  roleSet({ owner: true, dvm: true })
+      api/sv-auth.js:564  exported, so api/sv-witness.js imports it
+  CMD grep -nE "LAW_[A-Z_]*ROLES" api/sd-data.js
+      16882  const LAW_RECONCILE_ROLES = roleSet({ owner: true });
+  So: sairnlegacy has ZERO per-resource role checks, sairnvet has exactly ONE
+  (the DEA-relevant controlled register), sairnlaw has exactly ONE (owner-only
+  trust reconciliation). 41 of 42 and 19 of 20 are open, and sairnlegacy's 36
+  are all open.
+
+  THE SHARPEST FINDING: sairnlegacy has three roles -- owner, director, staff
+  (api/_lib/auth.js:177) -- so `staff` is every employee who is not the owner
+  or a director, and a staff token today reads and writes leg_deathrecords,
+  leg_cremations, leg_custodylog and leg_preneed exactly as the owner does.
+  THE MIGRATION MUST MAP `staff` TO THE NARROWEST BAND and keep it in the
+  CHECK list as deprecated: promoting it to `arranger` would grant 15 money
+  resources to everyone who had a login yesterday.
+
+  EACH DOC FOLLOWS THE sairncare AND sairnfreedom PRECEDENT -- owner, an upper
+  management tier, task roles in one CHECK list, gated per resource
+  server-side (api/_lib/auth.js:238 and
+  sql/sairnfreedom_employee_auth_schema.sql:73-85) -- and carries: the role
+  table with tiers, a per-band read/write matrix, every resource listed by
+  name with its band and register tier, the enforcement point beside the
+  existing session gate, and negative controls: 10 for sairnlegacy, 12 for
+  sairnvet, 12 for sairnlaw, of which four per app exist ONLY to stop the
+  matrix over-refusing (an owner locked out of its own app is how a gate gets
+  deleted).
+  ROLE NAMES: sairnvet's and sairnlaw's vocabularies are the apps' OWN, read
+  out of them (api/_lib/auth.js:259-290 and :133) and NOT marked [CONFIRM].
+  What is marked: six proposed sairnlegacy roles (arranger, prep, office,
+  apprentice, livery, and the deprecated staff), two structural questions in
+  sairnvet (does a practice manager read clinical records; may a technician
+  record a controlled-substance administration), and two missing jobs in
+  sairnlaw (bookkeeper and staff -- with three roles a firm either hands its
+  bookkeeper every matter file or hands a paralegal the trust ledger).
+  FOUR RULES ARE CALLED OUT AS NOT EXPRESSIBLE AS A ROLE SET: leg_custodylog,
+  sv_audit_log and law_trusttx are append-only for EVERY role including owner;
+  and law_timeentries needs a ROW-LEVEL author check, which is a different
+  mechanism and is named so it is not mistaken for a role.
+  THREE [CONFIRM]s ARE LAW, NOT PREFERENCE: whether an embalmer is a separate
+  licence tier, whether a cremation authorisation needs two named people, and
+  whether a paralegal may prepare a trust disbursement.
+
+ITEM 4 -- FIXTURE ROWS 26-50, PLUS THE ROW 11 BUILD SPEC
+
+  CMD python scratchpad/priority_26_50_b15.py        exit 0
+      candidates on a guarded path, not already in rows 1-25: 274
+      of those, GUARD-OF-A-GUARD: 180
+      BEYOND ROW 50: 249 more score >= 4; 155 still guard-of-a-guard
+  ROWS 1-25 EXHAUSTED THE tools/ POOL -- 21 scoring >= 4 and zero more -- so
+  rows 26-50 can only come from tests/. The rows-1-25 rule that the last slots
+  go to tests/ files whose SUBJECT IS A GUARD is now MECHANICAL rather than
+  eyeballed: under tests/push_gate/, or run_<x>_probe with a tools/<x>.py that
+  exists, or names a tools/ path in its source, or calls itself a control.
+  THE SHAPE OF WHAT IS MISSING HERE IS DIFFERENT, AND THAT IS THE FINDING.
+  Rows 1-25 were checkers with no refusal arm anywhere. Most of rows 26-50 are
+  the opposite: their own docstrings say "must REFUSE, not merely agree", "the
+  control for tools/schema_provisioning_check.py -- and it had none", "a
+  planted violation must BLOCK, a clean push must be allowed". They refuse
+  things; nothing locks their own criteria. So the fixture is a PAIR -- a
+  sabotage arm AND a control arm -- and one without the other passes for ever
+  once the probe degrades: sabotage-only survives "always refuse",
+  control-only survives "always pass".
+  OWNERS: cody 21, cc 2 (rows 42, 48), fourth 2 (rows 44, 50 -- mine, open,
+  not written: this batch writes under docs/ only).
+  ORDER RECOMMENDED: row 39 first (the missing-checker probe is the
+  fail-closed rule's own control), then 46 and 40 (the crediting rules that
+  decide whether other gates get credited), then 47 with row 1 (one subject,
+  two sides), then 28/29/30 (one shared helper, three apps, credentials in
+  exports).
+
+  ROW 11's BUILD SPEC, routed to cc:
+  docs/2026-10-14-fourth-b15-text-gate-fixture-spec-routed-to-cc.md.
+  CMD python tools/text_gate_literal_sweep.py        exit 1
+      215 tool(s) read text AND match patterns against it
+      MASKED 102, BY-DESIGN 2
+      REGRESSION -- unverified raw text gates rose from 82 to 111.
+  CMD python -c "json.load(open('docs/text-gate-literal-coverage.json'))"
+      text_gates 157, masked 73, by_design 2, raw_unverified 82
+  CMD git log -1 --format='%h %cI' -- docs/text-gate-literal-coverage.json
+      a7d76bdf 2026-09-27T22:40:37-04:00
+  THE PIN IS 17 DAYS OLD AGAINST A POPULATION THAT GREW 157 -> 215. The exit 1
+  is the tool working; the triage is separate work and must come AFTER the
+  fixture, because re-pinning an unlocked classifier pins whatever it
+  currently believes.
+  14 synthetic arms and 3 decoy arms, each naming the input it must refuse.
+  ARM 5 IS THE ONE THIS DOCUMENT EXISTS FOR: a tool whose only mention of
+  masking is INSIDE A COMMENT must still classify as RAW -- because MASKS at
+  tools/text_gate_literal_sweep.py:80 is a regex over raw source, so prose
+  about masking can credit a tool that does none. THAT IS MY OWN b13 A1
+  DEFECT, inside the tool whose subject IS that defect, and I expect the arm
+  to FAIL on first run. ARM 9 is the other silent one: a directory where
+  NOTHING matches read-text-and-match must be exit 2, because zero findings
+  and zero population are identical in a count.
+  ONE STRUCTURAL CHANGE THE FIXTURE NEEDS AND IT IS NAMED: tools() at :108
+  hard-codes REPO/tools, so the arms need a parameter or a path list.
+
+ITEM 5 -- THE WORDING PACKAGE FOR COUNSEL
+
+  docs/2026-10-14-ai-notice-wording-for-counsel.md. Plain language, four
+  pieces, each marked [DRAFT -- LAWYER]:
+    A the employee AI notice, shown ONCE at first login, acknowledged with
+      "I understand" rather than "I agree" -- it is a notice, not a consent
+      that can be withdrawn;
+    B the one-time owner acceptance clause for the service agreement, which
+      says the business reviews AI output and tells its own staff, and says
+      explicitly that the per-employee ack record does NOT transfer
+      responsibility for review to the provider;
+    C the document footer, in TWO forms -- "AI-assisted. Reviewed by [name]."
+      and "AI-assisted. Not reviewed." -- because an absent footer and an
+      unreviewed document must not look the same;
+    D the assistant label, always on screen, not dismissible.
+  Plus where each appears, the five high-risk categories that get the Reviewed
+  button and the list of surfaces that deliberately do NOT, and five specific
+  questions for counsel.
+  NO CONTACT DETAILS FOR ANYONE, by instruction -- no names, no email, no
+  phone, no firm. The Anthropic policy date 2026-11-12 appears EXACTLY ONCE.
+  It states plainly that it is not legal advice and not a compliance claim.
+
+ITEM 6 -- PUSH WITHOUT FORCE, CONFIRMED LANDED
+
+  CMD git -C <repo> pull --rebase origin main     rebased onto 0b7a7a0d
+  CMD git -C <repo> push origin main              0b7a7a0d..83b5a7e9 main->main
+  CMD git fetch -q origin; rev-parse HEAD; rev-parse origin/main
+      83b5a7e9 == 83b5a7e9
+  CMD git rev-list --left-right --count origin/main...HEAD      0  0
+  CMD git status --porcelain                                    (empty)
+  CMD git log origin/main --format=%h -1 -- docs/batch-manifest-fourth-b15.json
+      83b5a7e9
+
+THE FINAL STEPS, IN THE ORDER THEY HAPPENED
+  CMD PYTHONIOENCODING=utf-8 python tools/drive_upload_verify.py --agent fourth --batch b15
+      exit 1 -- PASS SAIRN-handoff-fourth-b15.md 11594 bytes sha256
+      3dc88fbfc9d35b91; 2 FINDINGS: report and digest DO NOT EXIST YET.
+      EXPECTED: the handoff is written BEFORE the report by instruction.
+  CMD PYTHONIOENCODING=utf-8 python tools/batch_manifest.py --close --agent fourth --batch b15
+      exit 1 -- NOT CLOSED: the Drive verify reported findings. "Fix the
+      upload, not this file."
+      THE TOOL IS RIGHT AND THE INSTRUCTION'S ORDER CANNOT BE SATISFIED AS
+      WRITTEN: a batch cannot be closed before its report and digest exist,
+      because closing is defined as all three deliverables verified. Run and
+      reported rather than worked around. The close that counts runs after the
+      report and digest are uploaded, and its result is in the digest.
+
+STARTUP CONTEXT -- WHAT WAS IN THE WINDOW BEFORE ANY WORK (handoff section 6)
+
+  /context IS NOT AVAILABLE TO ME. It is a CLI slash command the operator runs;
+  I have no tool that returns the harness's token accounting, and inventing a
+  figure from it would be the fabricated-KPI defect this platform keeps a
+  register for. So: MEASURED means a real byte count taken this session,
+  ESTIMATED means my own count of the text I was handed at ~4 bytes/token. If
+  the operator runs /context, its numbers win over mine.
+
+  MEASURED:
+    user CLAUDE.md                1,345 B   ~336 tok
+    project CLAUDE.md            20,006 B  ~5,001 tok
+    auto-memory MEMORY.md           644 B   ~161 tok
+    skills name+desc: user 30,287 B / project 23,247 B / plugin 33,948 B
+      over 62 + 34 + 111 = 207 SKILL.md files on disk
+    SKILL BODIES ARE NOT INJECTED: 3.25 MB (~814k tok) sits on disk and only
+    the name+description of the visible subset (~100 entries) reaches the
+    window, so the skills line is ~6-8k tok, not 22k.
+
+  ESTIMATED, descending:
+    loaded tool schemas (14 built-in + 3 Claude Docs MCP)  ~9,000-11,000 tok
+    skills listing (~100 names + descriptions)             ~6,000-8,000
+    CLAUDE.md x 2                                          ~5,300  (measured)
+    system prompt (identity, output style, harness rules)  ~2,500
+    SessionStart hook -- the using-superpowers skill, full  ~1,100
+    MCP server instructions (chrome + Claude Docs)         ~1,200
+    deferred tool NAMES (~100, schemas load on demand)     ~1,000
+    gitStatus block (branch, status, 5 commit subjects)    ~200-1,200
+    auto-memory MEMORY.md                                  ~160   (measured)
+    the batch brief itself                                 ~600
+    TOTAL BEFORE ANY WORK  ~28,000-32,000 tok  ~3% of a 1M window
+
+  THE LARGEST ITEMS AND WHAT COULD BE TRIMMED:
+    1. Tool schemas ~10k, the biggest single item. Workflow and Artifact are
+       the two heaviest and NEITHER HAS BEEN USED in b12, b13, b14 or b15 --
+       this role writes docs and drives checkers. Deferring them the way the
+       other ~100 tools are deferred is the cheapest ~6k available. Not mine
+       to change.
+    2. The skills listing ~7k. The plugin set (111 files) is the largest share
+       and includes skills this role has never invoked; pruning the installed
+       marketplace plugins cuts the listing proportionally.
+    3. project CLAUDE.md, 20,006 B. It earns its place -- its measured-size
+       warnings are what stop a session reading a 2.38 MB index -- but PR 1.11
+       is restated in it in full and the clone table and skills-precedence
+       notes could each be one line pointing at docs/SAIRN-PROCESS-RULES.md.
+       Realistic saving ~1.5k and it is a judgement call, not an obvious win.
+    4. THE gitStatus COMMIT SUBJECTS -- THE ONE CLEAR DEFECT, AND IT IS OURS:
+       CMD git log -40 --format=%s | awk '/chore\(claims\)/{...}'
+           claims: 12 msgs, mean 788 B
+           other : 28 msgs, mean 106 B
+       CMD git log -20 --format=%s | awk '{print length($0)}' | sort -rn | head -1
+           2383
+       A claim commit SUBJECT averages 788 bytes against 106 for every other
+       commit, and the longest is 2,383. Five of those in the startup gitStatus
+       is up to ~1.2k tokens of claim prose in every session in every clone,
+       six clones, every start.
+       ROUTED TO cc: tools/sairn_claim.py writes these. Put the claim detail in
+       the commit BODY and keep the subject to one line, e.g.
+       "chore(claims): fourth claims fourth -- b15, 6 items". NOT EDITED HERE:
+       tools/ is cc's and this batch wrote only under docs/.
+    5. SessionStart hook ~1.1k -- the using-superpowers skill injected in full
+       every start. One authorised hook; listed for completeness.
+    NOT WORTH TRIMMING: MEMORY.md (644 B), user CLAUDE.md (1,345 B) and the
+    deferred tool names -- under 1.5k together, each preventing a specific
+    repeated mistake.
+
+  AND THE NUMBER THAT MATTERS MORE THAN ALL OF THEM: startup is ~3%. The real
+  consumption in this role is READING REPO FILES --
+  docs/SAIRN-OPEN-WORK-INDEX.md 2,382,161 B (~595k tok), stonedesk.html
+  2,755,287 B (~689k), api/sd-data.js 1,160,184 B (~290k). Any one of them read
+  whole costs 20-200x the entire startup cost, which is why CLAUDE.md forbids
+  reading the first and why this batch touched api/sd-data.js only through grep
+  and line ranges.
+
+UNVERIFIED -- WHAT THIS BATCH DOES NOT PROVE
+  * I RAN NO SUITE AND NO APP. The three role matrices are read off resource
+    names, register tiers and the role vocabularies in api/_lib/auth.js.
+    Nobody here has arranged a funeral, treated an animal or run a trust
+    account, which is why 10 domain judgements are marked [CONFIRM] rather
+    than asserted.
+  * THE 98 GATES ARE SPECIFIED, NOT BUILT. No api/, sql/ or tests/ file was
+    touched. Until hank implements, every one of those resources is still open
+    to every role the app has.
+  * The ack-store ruling is a DECISION, not a migration. api/ai-notice.js is
+    still there as far as this batch knows.
+  * Rows 26-50 are NAMED, not written -- including rows 44 and 50, which are
+    mine.
+  * Row 11's fixture is SPECIFIED and I expect arm 5 to fail. The 82 -> 111
+    regression is reported and NOT triaged.
+  * The wording is DRAFT. Whether it satisfies Anthropic's policy, or any
+    regulation or professional rule, is counsel's reading, not a test result.
+  * b15 is NOT CLOSED at the time this line was written; see the digest.
+  * No live deployment was touched or verified.
+  * THE STARTUP FIGURES ARE PART MEASURED, PART ESTIMATED and are marked so
+    line by line. /context was not run because it is not available to me; the
+    tool-schema, system-prompt, MCP and hook numbers are my own count of the
+    text I received and could be wrong by a few thousand tokens in either
+    direction. The file sizes are not estimates.
+
+NEXT
+  hank: delete api/ai-notice.js and migrate the ack (drop in a later commit,
+  unmatched rows are a finding); then the three role matrices -- sairnlegacy
+  first, because it has zero gates and the widest exposure, and its `staff`
+  migration must go to the narrowest band.
+  cc: fix tools/batch_manifest.py:386 so --close does not crash on a non-ASCII
+  first line; shorten the claim commit SUBJECT in tools/sairn_claim.py and move
+  the detail to the body (mean 788 B vs 106 B, longest 2,383 B, injected into
+  every session's gitStatus in six clones); build row 11's fixture lock, then
+  triage 82 -> 111; and tools/fixture_lock_check.py from b13 is still built by
+  nobody.
+  cody: fixture rows 26-50, row 39 first; the one new arm for the deleted
+  ai-notice endpoint; and T9/T10/T4/T7/T8/T14 from b14 are still open.
+  counsel: the five questions in section 7 of the wording package.
+  chat: the ten [CONFIRM] role questions need a practitioner's answer, and
+  three of them are state law or bar rules.
+  fourth: fixture rows 11, 44 and 50 are mine and unwritten.
+
+EVIDENCE
+  Handoff: SAIRN-handoff-fourth-b15.md (written BEFORE this report; uploaded
+  and verified at 11594 bytes, sha256 3dc88fbfc9d35b91).
+  Manifests: docs/batch-manifest-fourth-b14.json (CLOSED),
+  docs/batch-manifest-fourth-b15.json (6 of 6 done).
+  Logs and scripts:
+  C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\240036a6-0d02-441d-a22d-73ed022c11a3\scratchpad\
+SHA256 b2b5155a17f73f82568a77cf77df5b860fd1cb3ba8fb3e8f8f0b232225aa07a0
+END-OF-REPORT
