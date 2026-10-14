@@ -1,0 +1,11 @@
+DIGEST fourth b16
+
+STATUS Landed. HEAD == origin/main 3a76b690, 0/0, clean, not forced. Manifest first; 6 of 6 done.
+DECISION-NEEDED Ten role questions: 3 counsel, 5 funeral, 2 vet. cc owns four unanswered rulings.
+CHANGED 6 docs: rows 44 and 50 were already locked and are struck; driving them found two holes -- the SAIRNcash suite misses 2 of 8 mutations, and 4 resources have no removal path, one a consent record. Also a cc routing note, the ten questions, and 45 citations re-derived with one fixed.
+EVIDENCE-path SAIRN-report-fourth-b16.txt; scratchpad row50_drive.log, cite_recheck_b16.log.
+UNVERIFIED Neither hole fixed; no tests/ or api/ edit; 23 fixture rows not re-driven; b12-b14 citations unchecked.
+NEXT cody two arms, ARM B first; hank four removal paths; cc line 386 plus four rulings; counsel three.
+CONTEXT ~54% measured floor: 2,170,532 B transcript payload, ~543k of 1M. /context is a CLI command I cannot run.
+SHA256 937f6908ed0ed14aac2e43866db2b314bd0551f71cee10d9a1ea08f0d7029657
+END-OF-REPORT

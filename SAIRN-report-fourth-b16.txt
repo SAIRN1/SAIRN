@@ -1,0 +1,302 @@
+REPORT fourth b16
+
+SAIRN batch report -- session fourth (ted), batch b16, 2026-10-14.
+Every figure names the command that produced it. Six items, one work commit,
+and three corrections against myself.
+
+HEAD AND PUSH
+  CMD git -C <repo> rev-parse HEAD                         3a76b690...
+  CMD git -C <repo> rev-parse origin/main                  3a76b690...
+  CMD git rev-list --left-right --count origin/main...HEAD  0  0
+  CMD git status --porcelain                               (empty)
+  push range 1c4e1466..3a76b690, ONE rebase, NOT FORCED.
+  3a76b690 IS THE STATE AT WHICH ITEMS 1-6 LANDED. The commit carrying this
+  report, the digest and the handoff lands after it, and the b16 close and the
+  claim release after that, so HEAD WILL NOT EQUAL 3a76b690 when you read this.
+  SAIRN_SEED_GATE=off was NOT used in any form.
+  NOTHING WAS WRITTEN OUTSIDE docs/ plus my three root deliverables. No file
+  under tools/, api/, sql/ or tests/ was edited.
+  .claude/settings.json NOT edited and NOT committed: both of my commits
+  contain zero settings.json lines, checked rather than asserted --
+  CMD git show --stat --format= 3a76b690 | grep -c settings.json   -> 0
+  CMD git show --stat --format= 83708e96 | grep -c settings.json   -> 0
+
+ITEM 1 -- THE MANIFEST, FIRST, BEFORE ANY OTHER ITEM
+
+  CMD python tools/batch_manifest.py --new fourth b16 --items 6
+      wrote docs\batch-manifest-fourth-b16.json with ids 1-6,
+      id_lock=906816e5cf0d24f9
+  Written before anything else, which is the rule b15 set for every future
+  batch. Every --close in this batch ran with PYTHONIOENCODING=utf-8 because
+  tools/batch_manifest.py:386 still traceback-exits on a non-ASCII first line
+  and my handoff titles contain an em dash. Routed to cc in b15 and again in
+  the b16 handoff; an environment variable on the command is not a code change
+  and tools/ is cc's.
+
+ITEM 2 -- BOTH PROBES WERE ALREADY LOCKED, AND DRIVING THEM FOUND TWO HOLES
+
+  docs/2026-10-14-fourth-b16-row44-row50-probes.md.
+
+  THE FIRST CORRECTION, AND IT IS AGAINST MY OWN LIST. Rows 44 and 50 of
+  docs/2026-10-14-fourth-b15-fixture-priority-26-50.md were FALSE POSITIVES.
+  CMD python tests/run_removal_path_probe.py            -> EXIT 1, 38 arms, 37 ok
+  CMD python tests/sairncash_entitlement_gate_probe.py  -> EXIT 1, 8 mutations
+  Row 44 builds throwaway fixture repos in a temp directory and asserts 37
+  classification outcomes. Row 50 plants 8 mutations into a staged copy and
+  asserts the suite goes red for each, WITH a baseline arm, a
+  byte-identical-restore arm and a left-nothing-dirty arm. Both are exactly the
+  sabotage-and-control pair my b15 list said they needed.
+  WHY THEY WERE LISTED: the b15 scorer's FIXTURE_ARM pattern looks for
+  --fixtures, --self-test, def fixtures(, CRITERIA_VERSION or the phrase
+  "criteria lock", and neither file uses those words. THIRD INSTANCE OF ONE
+  DEFECT -- digest_lint.py in b14 was the same shape -- A WORD-MATCHING
+  CLASSIFIER CREDITS A VOCABULARY, NOT A BEHAVIOUR. Both rows are struck.
+  Whether the other 23 rows contain more of the same is UNMEASURED, and the
+  pattern that would fix it is behavioural, not another word.
+
+  AND DRIVING THEM FOUND TWO THINGS NOBODY HAD REPORTED.
+
+  (a) ROW 50: TWO OF EIGHT MUTATIONS ARE NOT CAUGHT by
+      tests/sairncash_entitlement_gate.js.
+      ok   0. the suite is GREEN in the worktree before anything is planted
+      ok   1. THE FORGERY THE FUNCTION EXISTS FOR -- no subscriptionId
+      ok   2. the refused record is REFUSED BUT NOT REMOVED
+      FAIL 3. a server answer of INVALID is treated as valid
+      ok   4. the NETWORK FALLBACK resurrects an EXPIRED record
+      FAIL 5. the gate stops asking the server AT ALL
+      ok   6. THE GRACE PERIOD GOES
+      ok   7. the SKEW GUARD goes
+      ok   8. the SUCCESSFUL VERIFY STOPS STAMPING
+      ok   the worktree copy of sairncash.html is byte-identical again
+      ok   and the suite is GREEN again with everything restored (exit 0)
+      ok   this run left NOTHING newly dirty in this clone
+      A FAIL HERE IS THE PROBE WORKING: the suite did not go red when the gate
+      was sabotaged. Mutation 3 -- the round-trip happens and the answer is
+      ignored -- means a REVOKED OR REFUNDED SUBSCRIPTION KEEPS WORKING.
+      Mutation 5 means reverifySubscription() degenerates into the client-only
+      isSubscribed() check it was written to replace, WHICH THE SUITE ITSELF
+      ASSERTS BELIEVES A FORGED RECORD. Both fail in the direction where the
+      suite stays green while the paid product becomes free. Mutation 1, the
+      headline forgery, IS caught, which is why the two quieter paths around it
+      went unnoticed.
+      ROUTED TO cody with both arms written out as code. ARM B FIRST -- the
+      server must actually be ASKED -- and ARM A carries a calls.length >= 1
+      assertion so it cannot pass for ARM B's reason. The probe is the
+      acceptance test for the fix: it already exists and already fails. Require
+      8 of 8.
+
+  (b) ROW 44: the probe's last arm (tests/run_removal_path_probe.py:425-427)
+      runs the real tool against the real repo, and it is RED.
+      CMD python tools/removal_path_check.py    -> EXIT 1
+          keyed, no removal path, NOT in the baseline : 4
+            - alf_family_contacts     (sairncare)       upserts on (license_hash, id)
+            - mech_insurance_policies (sairnmechanical) upserts on (license_hash, id)
+            - sf_trustee_audits       (sairnfreedom)    id trustee_audit_id
+            - sv_scribe_consent       (sairnvet)        id scribe_consent_id
+          NO REMOVAL PATH (excl. single-row, append-only, derived) : 325
+            grandfathered in the baseline                          : 321
+          by criticality tier : A=221, B=98, UNTIERED=6
+      The tool's own words: a record written to one of these cannot be removed
+      through the product, only by hand in the SQL editor. All four arrived
+      AFTER the baseline was cut, which is what the baseline is for.
+      sv_scribe_consent IS THE SHARPEST -- a CONSENT RECORD that cannot be
+      withdrawn through the product -- and it is one of the 42 resources my b15
+      SAIRNvet role matrix gates. alf_family_contacts holds a named family
+      member's contact details in an assisted-living record.
+      ROUTED TO hank: a removal path per resource, or four baseline rows EACH
+      WITH A REASON. The tool already separates grandfathered from new, so
+      adding them silently is the one answer that destroys the information.
+      WHAT ROW 44 ITSELF NEEDS IS NOT A FIXTURE: a --live flag so the real-repo
+      arm is opt-in, plus a CRITERIA_VERSION stamp. Today one exit code means
+      either a regressed classifier or somebody else's missing removal path,
+      and folding those together means a red probe stops being read. Both
+      delivered as code.
+
+  NOTHING UNDER tests/ WAS EDITED. tests/ has one writer and it is not me, so
+  both arm sets are delivered as code to place.
+
+ITEM 3 -- ONE ROUTING NOTE TO cc, WITH TWO OF ITS FOUR NUMBERS CORRECTED
+
+  docs/2026-10-14-fourth-b16-routed-to-cc.md.
+
+  (1) tools/fixture_lock_check.py -- SPECIFIED IN b13, BUILT BY NOBODY.
+      CMD ls tools/fixture_lock_check.py            -> No such file
+      CMD git log --oneline --all -- tools/fixture_lock_check.py  -> (no output)
+      Never committed on ANY branch. And b16 is the argument for its spec's
+      section 3.2: a gate built on the b15 classifier would have inherited the
+      word-matching defect item 2 just found.
+
+  (2) THE SECOND CORRECTION. I was told docs/by-design-register.json has no
+      reader. The precise version:
+      CMD grep -rln "by-design-register" tools/ tests/ .githooks/
+          tools/batch_manifest.py
+          tools/report_only_checks.py
+      CMD grep -n "by-design-register" <those two>
+          batch_manifest.py:559      a fixture's evidence STRING
+          report_only_checks.py:3553 a COMMENT
+      Neither opens, parses or validates it. TWO MENTIONS, ZERO READERS -- the
+      same conclusion by a sharper route. 4 rulings, all four at
+      DECIDE_OR_NOT_PROMOTED, all four addressed to cc. The validator was
+      specified in b12 and is also built by nobody.
+
+  (3) THE THIRD CORRECTION. I was told 7 of 14 session locks are over 160h.
+      Measured: 8 of 14.
+          sairn_idem_rhbjx2yx 355.4h · sairn_idem_q5p4bqkx 347.7h
+          sairn_idem_o66nnvth 347.5h · repo 195.9h · b12wt2 169.1h
+          wt-tools 164.9h · tree 163.0h · sairn_idem_uw3ebld2 162.5h
+      sairn_idem_uw3ebld2.lock crossed the line since b14. THE COUNT MOVING ON
+      ITS OWN IS THE ARGUMENT for a threshold in a tool rather than a number in
+      a document. Three locks share two dead PIDs (58388, 82012). fourth.lock
+      still carries claude_pid 53204, which the claim tool has called gone for
+      five batches: one dead PID, two registries, both believing it.
+
+  (4) The scratchpad litter the rm-deny left: 58 files / 54M in b11's dead
+      session (54M of it one salvage bundle from a salvage that completed in
+      b9) and 101 files / 608K here. Nothing deleted since b13, because rm is
+      denied and I did not route around it. Ruling
+      2026-10-14-rm-deny-bypassed-by-python is the decision that unblocks it.
+
+  NO FIFTH REGISTER ROW WAS ADDED: three of the four are already rulings or
+  already-routed specs, and the lock-count correction is recorded against the
+  existing ruling. Re-recording them is the duplicate shape the b12 validator
+  spec exists to refuse.
+
+ITEM 4 -- THE TEN [CONFIRM] QUESTIONS AS ONE PLAIN-ENGLISH PAGE
+
+  docs/2026-10-14-fourth-b16-confirm-questions.md. Each names the app, the
+  role, the exact yes/no, and what changes on a yes and on a no.
+  FOR COUNSEL, 3:
+    C1 SAIRNlegacy prep -- is embalming a separate licence, so the software
+       must treat licensed embalmer as its own permission level?
+    C2 SAIRNlegacy leg_cremations -- does a cremation authorisation require
+       TWO named people recorded, or is one enough?
+    C3 SAIRNlaw paralegal -- may a paralegal PREPARE a trust disbursement for
+       an attorney to authorise, or must a lawyer do both?
+  FOR A FUNERAL DIRECTOR, 5: is there a non-director arranger; does the office
+  role need to read death and cremation records; do apprentices log in; are
+  livery staff employees with logins; is livery invoiced through the home.
+  FOR A VETERINARY PRACTICE, 2: does the practice manager need to open clinical
+  records; may a technician RECORD a controlled-substance administration a
+  veterinarian ordered, under your state board's rules.
+  ONE MORE, LISTED OUTSIDE THE TEN: whether law-firm bookkeeping is in-house or
+  outsourced -- an org-chart question, neither legal nor answerable by a
+  funeral home or a vet. Today a firm with three roles either gives its
+  bookkeeper an attorney login, handing a non-lawyer every client file, or
+  gives a paralegal the trust ledger.
+  NOTHING IS BLOCKED ON THE ANSWERS. Each sets one permission row; the
+  software's current default answer is "everyone can do everything".
+
+ITEM 5 -- EVERY b15 file:line RE-DERIVED AT THIS HEAD; ONE WAS WRONG
+
+  docs/2026-10-14-fourth-b16-citation-recheck.md.
+  CMD git -C <repo> pull --rebase origin main      (platform repo pulled FIRST)
+  CMD python scratchpad/cite_recheck_b16.py        -> exit 0
+      45 citation(s) across 9 document(s); 0 unresolvable
+
+  THE METHOD IS THE POINT: the script prints THE TEXT NOW AT THE CITED LINE. A
+  citation pointing at a line that exists is not a correct citation.
+
+  44 correct. ONE WRONG, and it is mine:
+  CMD awk 'NR>=274 && NR<=278 {printf "%d: %s\n", NR, $0}' api/_lib/auth.js
+      276:   //   manager    -- Practice Manager. Runs the office; NOT a clinician.
+      277:   //   frontdesk  -- Front Desk / reception.
+  The b15 SAIRNvet matrix cited api/_lib/auth.js:277 TWICE for the
+  manager-is-not-a-clinician claim, in a document whose whole subject is who
+  may read a clinical record. The claim is at :276.
+  FIXED IN PLACE AND THE CORRECTION LEFT VISIBLE in the sentence, because a
+  corrected citation that hides having been wrong teaches nobody anything.
+  IT DID NOT DRIFT -- IT WAS NEVER RIGHT, which is exactly what a
+  baseline-diffing drift checker would have called clean. What catches it is
+  reading the line.
+  The two sealed b15 artefacts carry 12 of the 45 and ALL 12 ARE CORRECT. Had
+  one been wrong, the correction would go in a new dated document and never
+  into a sealed report: a SHA256 over a body is a record of what was said, not
+  a living page.
+  TOOL REQUEST TO cc, one mode rather than a new tool: a --read-the-line mode
+  on tools/citation_line_drift_check.py -- extract path:line, print the text
+  now at that line, exit 1 on an absent file or an out-of-range line, exit 2
+  when NO citation parses (zero drift and zero coverage must not look alike),
+  report and never rewrite, --fixtures with a bad-input arm AND a control, and
+  a banner saying what it cannot do: an off-by-one needs a reader.
+
+ITEM 6 -- PUSH WITHOUT FORCE, CONFIRMED LANDED
+
+  CMD git -C <repo> pull --rebase origin main     rebased onto 1c4e1466
+  CMD git -C <repo> push origin main              1c4e1466..3a76b690 main->main
+  CMD git fetch -q origin; rev-parse HEAD; rev-parse origin/main
+      3a76b690 == 3a76b690
+  CMD git rev-list --left-right --count origin/main...HEAD      0  0
+  CMD git status --porcelain                                    (empty)
+  CMD git log origin/main --format=%h -1 -- docs/2026-10-14-fourth-b16-routed-to-cc.md
+      3a76b690
+
+HOOKS -- THE STATE CHANGED AGAIN, AND NOT BY ME
+  CMD python -c "json.load(.claude/settings.json)['hooks']"   groups 0, entries 0
+  CMD git log --format=%h HEAD --not 54d40b62 -- .claude/settings.json
+      3857890a
+  CMD git log -1 --format='%h %cI %s' 3857890a
+      3857890a 2026-10-14T08:15:47-04:00 Merge origin/main into hank b9 ...
+  b14 and b15 both recorded 1 group / 1 entry; it is now 0 / 0. The
+  SessionStart/compact group cc's b8 claim said it would remove has gone,
+  arriving here through hank's merge. I ADDED NOTHING, RESTORED NOTHING,
+  REMOVED NOTHING AND COMMITTED NOTHING to that file.
+  CONSEQUENCE FOR THE OPEN WORK: the `compact` matcher can never now be
+  observed firing, so b13's third hook finding closes BY DELETION rather than
+  by evidence. And hook_integrity_check's predicate accepts an empty hooks
+  object, so this is the state it was originally written for.
+
+ONE SUBAGENT WAS DISPATCHED AND COULD NOT RUN
+  A sweep-runner was sent to drive the SAIRNcash probe in an isolated worktree.
+  Bash is DISABLED inside subagents in this harness, so it returned COULD NOT
+  RUN rather than a fabricated exit code -- and read tests/sabotage_harness.py
+  instead, which is where the baseline arm at :328-330 came from. I then drove
+  the probe myself. Recorded because anybody else routing execution to a
+  subagent here will get the same answer.
+
+CLAIMS, LOCKS AND HOLDS
+  CMD python tools/sairn_claim.py list   b16 held, published on origin/main
+  CMD ls ~/SAIRN-SESSION-LOCKS/*.lock    14; fourth.lock 26.8h, claude_pid
+      53204 still dead; 8 over 160h
+  CMD git worktree list                  4 besides main, NONE MINE
+  CMD git stash list                     (empty)
+  .claude/worktrees/ appeared empty during a probe run; the probe's own arm
+  confirms it left nothing newly dirty in this clone.
+
+UNVERIFIED -- WHAT THIS BATCH DOES NOT PROVE
+  * I FIXED NEITHER HOLE. The two SAIRNcash arms and the four removal paths are
+    written out and routed; no api/, sql/ or tests/ file was touched, so both
+    holes are open exactly as found.
+  * The other 23 rows of the b15 fixture list were NOT re-driven. Two of two
+    checked were false positives; whether more are is unmeasured, and one in
+    one is not a rate.
+  * Citations in b12, b13 and b14 documents were NOT re-derived. Unmeasured,
+    not clean.
+  * The ten questions are ASKED, not answered. Until they are, the permission
+    matrices cannot be built.
+  * tools/removal_path_check.py's own 321 grandfathered rows were not
+    re-examined; I report its four new findings, not its baseline's quality.
+  * No suite other than the two probes was run, and no app was opened.
+  * No live deployment was touched or verified.
+
+NEXT
+  cody: two arms for tests/sairncash_entitlement_gate.js, ARM B first, then
+  re-run the probe and require 8 of 8; fixture rows 26-50 with row 39 first.
+  hank: four removal paths or four reasoned baseline rows, sv_scribe_consent
+  first; delete api/ai-notice.js and migrate the ack; the three role matrices,
+  SAIRNlegacy first.
+  cc: tools/batch_manifest.py:386; fixture_lock_check.py; the by-design
+  validator and the four rulings awaiting a decision; a lock reaper with a
+  stated threshold; the rm-deny decision; --read-the-line on
+  citation_line_drift_check.py.
+  counsel: three questions. a funeral director: five. a vet practice: two.
+  fourth: rows 44 and 50 are struck; my only open fixture row is 11, whose
+  code is cc's.
+
+EVIDENCE
+  Handoff: SAIRN-handoff-fourth-b16.md, written BEFORE this report and uploaded
+  and verified at 12884 bytes, sha256 af12c0e1573856ae.
+  Manifest: docs/batch-manifest-fourth-b16.json, 6 of 6 done.
+  Logs and scripts:
+  C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\240036a6-0d02-441d-a22d-73ed022c11a3\scratchpad\
+SHA256 ff7e6e941b74e8583a840917465402e047cadc22b54b2daee70ceb8824be566c
+END-OF-REPORT
