@@ -1,0 +1,531 @@
+REPORT hank b10
+================================================================================
+SAIRN -- hank, batch b10, 2026-10-14. Six items, all six DONE and pushed.
+HEAD == origin/main, 0/0, no --force, no SAIRN_SEED_GATE override, no hook
+added or restored, .claude/settings.json never committed.
+Post-push live probe against production: fail=0 couldnot=0.
+
+--------------------------------------------------------------------------------
+WHAT LANDED
+--------------------------------------------------------------------------------
+sha        item
+49780043   2  office_manager in all four SAIRNcare places
+9731d880   3  sen_visits clock_flags merged on field, not replaced
+85206564   4  one overlap helper for both booking resources + rf_settings tier
+fdd06d06   5  the SAIRNlegacy role matrix, 36 resources, from zero gates
+ad128e5c   1  sql/2026-10-14-michael-run-order.sql, six numbered blocks
+1b7f9bfa      the adversarial review's seven findings, fixed
+2d04cc07      the prototype leak the push gate caught in this batch's own code
+92612e5b      the post-push live probe and its output
+
+Plus three register feeds, two sha re-seats, two scrutiny-ledger rows, the
+Tier A obligation, the regenerated MASTER-PLAN and traceability matrix, and
+three merge commits.
+
+RE-VERIFY THESE SHAS rather than trusting this table. Five sessions push to
+this branch and they are current only as of this sentence:
+    git log --oneline origin/main
+
+--------------------------------------------------------------------------------
+ITEM 1 -- THE MICHAEL RUN ORDER
+--------------------------------------------------------------------------------
+sql/2026-10-14-michael-run-order.sql. SIX numbered blocks, each independently
+runnable, each idempotent, each with its verification query AND THE ANSWER IT
+MUST GIVE. No transaction spans two blocks.
+
+  1  the AI-notice columns on all 16 credential tables   (b9 ai-safeguards)
+  2  the audit checkpoint table, widened to all 16 logs  (audit_checkpoint)
+  3  sairnlaw_audit_log: the three credential events     (sairnlaw_audit_log)
+  4  the SAIRNfreedom demo sign-in                       (demo credential)
+  5  SAIRNcare: the office_manager role CHECK            (this batch)
+  6  SAIRNlegacy: the five task roles                    (this batch)
+
+THE BRIEF NAMED FIVE. The sixth is flagged in the file as an addition rather
+than folded in silently: without it the 36-resource gate that landed in this
+same batch cannot be populated at all, because nobody can be given a role
+other than owner/director/staff. Scaling the brief down is not mine to do;
+leaving the gate unpopulatable would have been doing exactly that.
+
+IT IS AN EXTRACTION, NOT A SECOND AUTHORING. Every statement was pulled
+verbatim from its source file by a scratch script, not retyped. A
+transcription error in a credential insert or a CHECK list is invisible in
+review and presents as a 23514 or a 401 with correct-looking SQL. The source
+SHA256s are in the header.
+
+api/sql-run-order-agreement.test.js re-reads every source and FAILS if a block
+is no longer a verbatim substring of it. 16 arms, 16 passed, 0 failed,
+0 unproven. Containment rather than a hash pin, deliberately: a hash goes red
+when somebody fixes a comment typo three hundred lines away, and a check that
+cries wolf is a check somebody deletes.
+
+TWO OF THE SIX BLOCKS DID NOT EXIST BEFORE THIS BATCH and were written into
+their own schema files FIRST, so the repo stays the source of truth -- the
+office_manager widening in sql/sairncare_employee_auth_schema.sql and the
+five-role widening in sql/sairnlegacy_employee_auth_schema.sql. Both follow
+the drop/add pattern sql/sairnlaw_audit_log_schema.sql has carried since
+2026-10-13. Both are wrapped in begin;/commit;: between the DROP and the ADD
+the table has NO role check at all, and a paste that applies partway leaves it
+that way while the Supabase editor reports success -- the failure the
+SAIRNroofing cleanup actually hit on 2026-08-26.
+
+ABLATED TWICE, and the second ablation found a real weakness:
+  * end anchor broken             -> B5 UNPROVEN, exit 3 (refuses, not passes)
+  * a constraint name changed MID-BLOCK -> B5 FAIL, exit 1, naming the line
+    that diverged and what each side holds.
+The second run exposed that section C was searching the WHOLE FILE, so
+'office_manager' matched block 5's PROSE and the arm reported the statement
+present on a broken block. C is now scoped to each block's own section.
+
+UPLOADED AND VERIFIED: SAIRN-sql-run-order-hank-b10.txt, plain text, in the
+shared Drive folder 14Xc5oT0xzSLa_rTSOSXWVK3Kko1Fbx09. 31,479 bytes, sha256
+2fe64b698b4d813a8a071bc5529619a68035e3dfae698be2c94b92e33b56312a, byte-for-byte
+identical to the local file -- AND READ BACK DRIVE-SIDE through the API
+(file id 1tYLENUSmCZyMtuEncXUWHKsDPFioZNG1, 31479 bytes), not merely written to
+the sync mount. A matching mount read proves the bytes are in the sync set; it
+does not prove Google has them. Both were checked.
+
+--------------------------------------------------------------------------------
+ITEM 2 -- office_manager IN SAIRNcare, ALL FOUR PLACES
+--------------------------------------------------------------------------------
+  ROLES_BY_APP.sairncare          api/_lib/auth.js
+  the authority                   api/alf-auth.js
+  the role CHECK                  sql/sairncare_employee_auth_schema.sql
+  the role CHECK, again           sql/sairncare_all_remaining_migrations.sql
+
+tests/sairncare_office_manager_role.test.js: 10 passed, 0 failed, 0 unproven,
+EXIT 0 -- from 5 failed.
+api/role-vocabulary-agreement.test.js: still exit 0, 16 apps compared.
+
+THE AUTHORITY IS EXACTLY ONE THING AND IS DECLARED AS ITS OWN NAMED SET.
+Michael's decision was "an office manager may grant billing access to a MAR",
+so ALF_MAR_GRANT_ROLES is a separate constant rather than an entry in
+PROVISIONING_ROLES or MANAGEMENT_ROLES. Both omissions are deliberate and
+stated in the code: credential creation stays owner-only, and the roster's
+full-resident view is unchanged.
+
+DECLARED, NOT ENFORCED, AND SAID OUT LOUD RATHER THAN IMPLIED. No handler
+reads that constant yet. The mar_access_grant action, the
+alf_mar_access_grants table and the expiry evaluation are NOT in this batch.
+tests/mar_billing_grant.test.js is the failing-first suite that specifies them;
+it still exits 1 with 16 failed arms, and its arm B1 looks for the constant in
+api/sd-data.js -- where the ACTION will live -- not in api/alf-auth.js where it
+currently sits. That is the right place for it when the action is built.
+
+SAIRNcare gates every resource in api/sd-data.js by explicit allowlist, so an
+office_manager session is refused 403 EVERYWHERE today. Fail-closed is why the
+name was safe to add before the action exists.
+
+NOT DONE AND NOT HIDDEN: sairncare.html still offers six roles in its two
+Position/Role selects (:651, :1018) and its label map (:1964), so the role
+cannot be provisioned from the SAIRNcare UI. Outside the brief's four places,
+and the role has no authority to exercise yet.
+
+--------------------------------------------------------------------------------
+ITEM 3 -- THE sen_visits clock_flags MERGE
+--------------------------------------------------------------------------------
+api/sd-data.js assigned `visitData.clock_flags = clockCheck.flags`, and a
+visit's two halves arrive as TWO SEPARATE WRITES. checkClockEvent only reports
+on the clock fields present in THIS payload, so the clock-out's write REPLACED
+the clock-in's flags: a LATE_REPLAY on the way in vanished with nothing saying
+it had existed. Found in cody's b8 Tier A review, not by any checker.
+
+It only showed when BOTH halves were flagged -- the audit case. With a clean
+clock-out the array is empty, the old guard never fired, and the first flag
+survived by luck.
+
+THE SUPERSEDED SET IS TAKEN FROM THE PAYLOAD, NOT FROM THE NEW FLAGS, and that
+is the whole correctness of the fix. A field this payload re-reported has been
+re-checked, so its stale flag must go EVEN IF the re-check produced none --
+otherwise a corrected clock-in keeps a LATE_REPLAY forever. A field the payload
+did not mention was not checked, so its flag is kept untouched.
+
+The key stays ABSENT when there is nothing to say: an empty array would be a
+visible change to every clean EVV write, and api/sd-data-sen-evv-clock.test.js
+:200 asserts the key is not present on a clean one.
+
+CLOCK_FIELDS hoisted out of checkClockEvent in api/_lib/sen-evv-clock.js and
+EXPORTED rather than re-listed in sd-data.js. Two copies would drift the day a
+third clock field is added, and the merge would then keep a stale flag on it
+forever -- cross-domain convention 7.
+
+tests/sd_data_clock_flags_merge.test.js: 8 passed, 0 failed, 0 unproven,
+EXIT 0 -- from 2 failed.
+api/sd-data-sen-evv-clock.test.js: 16 assertions, exit 0.
+api/sd-data-sen-role-asymmetry.test.js: exit 0.
+
+--------------------------------------------------------------------------------
+ITEM 4 -- ONE OVERLAP HELPER FOR TWO RESOURCES, AND rf_settings
+--------------------------------------------------------------------------------
+leg_clergybookings is the THIRD instance of one defect shape (b8 closed
+leg_merch_units, b9 closed leg_bookings). clergyBookingConflict()
+(sairnlegacy.html:4836) is a real interval-overlap test that hard-blocks with
+no override, over THIS DEVICE's localStorage, so two staff on two unsynced
+devices both pass their own check and both upsert. The thing double-booked is a
+named clergy contact against a specific death case and an hour.
+
+BOTH RESOURCES NOW GO THROUGH api/_lib/leg-overlap.js RATHER THAN A THIRD COPY,
+because the one thing a copy would have got wrong is the STATUS LITERAL:
+leg_bookings exempts 'Cancelled', leg_clergybookings skips 'Completed'
+(sairnlegacy.html:4839), and THERE IS NO CANCELLED STATUS ON THE CLERGY
+RESOURCE AT ALL. A byte-identical propagation would have refused clergy
+bookings against services that had already happened.
+
+So exemptStatus is a REQUIRED parameter with NO DEFAULT and check() throws
+without one. A default would be the same copy-paste defect in a safer-looking
+costume -- silently wrong for whichever resource did not supply the word.
+
+api/sd-data-leg-overlap.test.js: 36 passed, 0 failed, 0 unproven. Written as
+PAIRS over the two specs, because two separate suites each correct about its
+own resource would BOTH PASS while the clergy resource carried the wrong
+literal. Arm D3 is the one that catches the copy-paste; arm D4 READS both
+client functions' literals out of sairnlegacy.html at runtime instead of
+hardcoding them.
+
+ABLATION, RUN AND MEASURED: against the pre-fix handler
+(SD_DATA_HANDLER=.sd-data-prefix-control.js), 27 passed and 6 FAILED --
+B1/B2/B3/D3/E1/E2, all six on leg_clergybookings. The control file was removed
+afterwards.
+
+leg_bookings' three codes and three messages are unchanged byte for byte;
+api/sd-data-leg-bookings-toctou.test.js still 48 passed, 0 failed.
+
+WHAT IS NOT CLOSED, carried over rather than quietly dropped: this is a
+read-then-write, not an atomic lock. The stale-cache race -- minutes to hours,
+the one that actually happens -- is closed. Two requests interleaving between
+the SELECT and the upsert is not: milliseconds, two people clicking Save in the
+same instant. The atomic close is a Postgres EXCLUDE over tstzrange and CANNOT
+be written against these tables: the window lives in a jsonb column and
+text::timestamptz is STABLE, not IMMUTABLE, so it is rejected in an index
+expression. It needs real start/end columns or an /rpc/ function.
+
+rf_settings: b9's handoff named this UNVERIFIED. VERIFIED -- it is the
+identical open-read shape sen_settings had: write management-only, read any
+signed-in employee returning every row whole INCLUDING updated_by and
+updated_at. Tiered the same way but NARROWER ON PURPOSE: the whole
+damage_threshold value stays public including `source`, because the branch
+comment justifies the open read precisely on the number being unexplainable
+without it, and a threshold with no cited origin is indistinguishable from a
+guess. What a non-management reader loses is the provenance pair and any
+undecided key.
+
+--------------------------------------------------------------------------------
+ITEM 5 -- THE SAIRNlegacy ROLE MATRIX
+--------------------------------------------------------------------------------
+MEASURED BEFORE IT WAS BUILT, not asserted:
+
+    grep -n "sairnlegacy:" api/_lib/auth.js    -> ['owner','director','staff']
+    grep -nE "LEG_[A-Z_]*ROLES" api/sd-data.js -> (no output)
+
+So a `staff` token -- every employee who is not the owner or a director -- read
+and wrote all 36 leg_ resources exactly as an owner did, including
+leg_deathrecords, leg_cremations, leg_custodylog and leg_preneed. sairnlaw had
+one gate and sairnvet had one; this app had ZERO. The 2026-09-21 session gate
+closed "no session" and left "any session" wide open, and nothing between then
+and now asked what a session was allowed to DO.
+
+api/_lib/leg-roles.js: ONE table, 36 rows, ONE decide(), consulted ONCE before
+the read/write dispatch -- so neither branch can be reached without it. Shape
+copied from api/_lib/law-roles.js, which solved the same problem on the same
+handler two days earlier.
+
+Bands verified 9 REGULATED / 15 MONEY / 12 OPERATIONS against the handler's own
+LEG_RESOURCES dict READ OUT OF THE SOURCE, not a hand-written list.
+
+`staff` STAYS, DEPRECATED, MAPPED TO THE NARROWEST BAND. That is the arm that
+protects a live practice: promoting it to `arranger` would have granted 15
+money resources to everyone who had a login yesterday. It is removed from the
+provisioning picker so no NEW staff row can be made, and it stays in the CHECK
+so every existing row remains valid -- dropping the value would make all of
+them violate the constraint and the ALTER itself would fail on the validation
+scan.
+
+TWO RULES THAT CANNOT BE EXPRESSED AS ROLE GRANTS, because a rule expressed
+only as a role grant is a rule a role grant can erase:
+  * leg_custodylog is APPEND-ONLY for EVERY role INCLUDING THE OWNER. A
+    chain-of-custody log that can be edited is not a chain of custody. 409
+    APPEND_ONLY on an existing row; a new entry is still accepted. The
+    existence lookup REFUSES rather than passing when it cannot be performed.
+  * leg_aftercare gets a DETERMINISTIC id from (case_id, checkin_type), on
+    BOTH halves. b9's survey finding 5: two unsynced devices each create the
+    three standard check-ins and a grieving family gets duplicate
+    grief-support follow-ups. A conflict check is the wrong tool when the
+    collision can be made impossible by the key. Only when BOTH fields are
+    present -- a key built from a missing field would collide with every other
+    row missing it, which is worse than the bug being fixed.
+
+api/sd-data-leg-role-matrix.test.js: 32 passed, 0 failed, 0 unproven.
+Includes fourth's b15 spec section 5 negative controls L1-L10 driven end to
+end. The 403 arms assert the body NAMES THE ROLE and that NO DATA FETCH
+HAPPENED -- a 403 returned after the row was read is a leak with a tidy status
+code. L10 drives all 36 resources read AND write on an owner token, 72 calls:
+an owner locked out of their own app is the failure mode that gets a gate
+deleted.
+
+L8 CAME BACK STRONGER THAN THE SPEC PREDICTED and is recorded as what happens
+rather than reworded to match: the spec said a role outside the vocabulary
+would be "refused at the token, by verifySessionToken". It is refused one step
+EARLIER -- such a role cannot be SIGNED into a token at all, so no request
+carrying it can exist.
+
+NOT DONE, NAMED RATHER THAN IMPLIED: five of the eight role names are
+[CONFIRM] in the spec and still are. leg_preneed's owner-only DELETION rule is
+not implemented because this handler has no delete verb. Whether a cremation
+authorisation legally needs a second named person is a state-law question this
+code does not answer.
+
+--------------------------------------------------------------------------------
+ITEM 6 -- THE PUSH, AND THE FOUR REFUSALS IT TOOK
+--------------------------------------------------------------------------------
+1. REGISTER FEED GATE. Three records written (below).
+2. GENERATED-DOCUMENT GATE. MASTER-PLAN.md and traceability-matrix.md
+   regenerated with their own generators, not hand-edited (PR 2.5).
+3. TIER A REVIEW GATE. 21 resources. Obligation opened and ASSIGNED TO fourth,
+   naming the four things to review hardest in order. This session cannot
+   discharge its own -- the author shares the blind spot that produced the
+   code.
+4. tests/role_maps_have_no_prototype.js -- A REAL DEFECT IN THIS BATCH'S OWN
+   NEW CODE, caught by the gate and not by the suite I had just written:
+
+       api/sd-data.js:8897  const RF_SETTING_PUBLIC_KEYS = { damage_threshold: true };
+
+   A plain object literal inherits Object.prototype, so
+   RF_SETTING_PUBLIC_KEYS['constructor'] is TRUTHY. The rf_settings WRITE path
+   stores unknown keys as-is, so a row keyed `constructor` is creatable, and it
+   would have been disclosed to every non-management reader by exactly the
+   mechanism the tier was added to close. The same shape was reproduced live on
+   api/rf-auth.js on 2026-09-24, in the same app. Fixed with roleSet(); the
+   suite's fixture gained a `constructor` row and arm B6, because WITHOUT THAT
+   ROW THE SUITE WOULD HAVE STAYED GREEN ON THE BROKEN CODE.
+
+THREE PUSH REJECTIONS followed, all "fetch first": the gate takes minutes and
+other sessions push during it. The first retry was a pull --rebase, which MOVED
+EVERY REGISTER RECORD'S SHA and needed a re-seat; after that I switched to
+pull --no-rebase, which preserves them. Two sha re-seats and two
+scrutiny-ledger rows are in the history for that reason.
+
+--------------------------------------------------------------------------------
+THE ADVERSARIAL REVIEW, AND WHAT IT FOUND IN MY OWN WORK
+--------------------------------------------------------------------------------
+A full sairn-guardian-v2 pass was run over this batch's diff BEFORE the push,
+read-only and hostile. The check count was re-derived from the skill rather
+than quoted: the heading says 31 and there are 32 numbered entries spanning
+1-31, because 16 appears twice and 23 is retired.
+
+1. A REAL DEFECT INTRODUCED BY MY OWN REFACTOR. api/_lib/leg-overlap.js
+   returned { upstream: held } with NO status and the call site branched on
+   `if (verdict.upstream)`. PostgREST can answer non-ok with a body that is
+   null, '' or 0 -- so control fell through to res.status(undefined),
+   ERR_HTTP_INVALID_STATUS_CODE, a hard 500 with no body, where the inline code
+   it replaced always gave a clean 502. No arm covered it. Fixed; arm E4 now
+   sends rows: null on both resources.
+2. FOUR LINE CITATIONS HAD DRIFTED BY EXACTLY THE NUMBER OF LINES THE SAME
+   COMMIT INSERTED -- written before the insertion, never re-derived.
+   4817->4836, 4820->4839 (twice), 4235/4240->4244. PR 1.3.
+3. A COMMENT NAMED A TEST FILE THAT HAS NEVER EXISTED
+   (api/sd-data-leg-aftercare-id.test.js). The proof is real and is arm E4 of
+   api/sd-data-leg-role-matrix.test.js. A citation that reads as a guarantee
+   and resolves to nothing is worse than none.
+4. A NUMBER THAT DID NOT HOLD: "SIX OF THE SEVEN ROLE NAMES ARE [CONFIRM]",
+   naming five, of eight.
+5. rf_settings SHIPPED WITH ZERO ARMS -- a response-shape change on a live app.
+   api/sd-data-rf-settings-tier.test.js now, 12 arms, 12 passed.
+6. DORMANT CODE. The `why` field on all 36 matrix rows had no consumer. Arm A6
+   is now the consumer and IT FAILED ON FIRST RUN: leg_plots said "plots", a
+   noun restating the resource name rather than a reason. 21 values rewritten
+   to say why the BAND was chosen; floor raised to 30 characters.
+   LEG_APPEND_ONLY and overlaps() were exported with no consumer; arms A7 and
+   A5 drive them. denyMessage's unused `resource` parameter removed;
+   appendOnlyMessage's is now USED, because a second append-only table would
+   otherwise be told it is the chain-of-custody log.
+7. THE TWO CONSTRAINT SWAPS MADE TRANSACTIONAL (above).
+
+--------------------------------------------------------------------------------
+LIVE VERIFICATION -- PR 3.2, fail=0 couldnot=0
+--------------------------------------------------------------------------------
+docs/hank-evidence/b10_live_gate_probe.py, output in .out. Driven with
+tools/sairn_http.py, not bare curl.
+
+  leg_clergybookings write, no window -> 400 CLERGY_BOOKING_WINDOW_REQUIRED
+  leg_bookings       write, no window -> 400 BOOKING_WINDOW_REQUIRED
+  leg_custodylog APPEND ZZ-B10-...    -> 200 ok
+  leg_custodylog EDIT   ZZ-B10-...    -> 409 APPEND_ONLY
+  leg_deathrecords read, OWNER        -> 200 (over-refusal control)
+  rf_settings read, MANAGEMENT        -> 200 tiered=false
+
+CLERGY_BOOKING_WINDOW_REQUIRED is a code that DID NOT EXIST before this batch,
+so receiving it is proof the shared helper is deployed and reached.
+BOOKING_WINDOW_REQUIRED is unchanged code and is therefore the regression
+control on the refactor that moved it.
+
+THE APPEND-ONLY ARM IS BOTH HALVES AND IT HAD TO BE. One of them alone cannot
+tell "edits refused, appends work" from "the log is read-only and nothing can
+be recorded" -- and the second is the worse bug, because a custody log that
+cannot be appended to has stopped existing. The 409 is also the read-back: the
+refusal is raised BY the lookup finding the row.
+
+THE PROBE WRITES ONE ROW, AND IT IS ENUMERATED RATHER THAN MERELY POINTED AT.
+guard=yes residue=docs/live-residue/2026-10-14-hank-b10-live-gate-probe.json --
+one leg_custodylog row, id ZZ-B10-APPEND-PROBE, on the DEMO licence
+LEG-PINNACLE-2026, with table, id column, id, and
+select/blast-radius/delete/confirm SQL, licence hash DERIVED rather than
+pasted. service_role has no DELETE on that table and the handler now refuses
+every edit, so ONLY A HUMAN IN THE SQL EDITOR CAN REMOVE IT. That is the
+append-only rule working as designed and the price of proving it live.
+
+WHAT THE PROBE DID NOT DRIVE -- printed by the probe itself, so an absence
+cannot read as a pass:
+  * every role-matrix REFUSAL arm. Each needs a session holding a NON-owner
+    role, and the five new SAIRNlegacy roles are REJECTED BY THE DATABASE until
+    run-order block 6 is run. `staff` exists in the CHECK but no staff
+    credential exists on the demo licence, and minting one would be writing a
+    credential row from a probe. SOURCE AND SUITE VERIFIED ONLY.
+  * the rf_settings TIERED half -- no non-management SAIRNroofing demo
+    credential exists.
+  * the clock_flags merge -- two writes ten days apart against an assigned
+    visit is a fixture, not a probe.
+  * office_manager end to end -- the database rejects it until block 5 runs.
+
+--------------------------------------------------------------------------------
+SUITES, AT THE PUBLISHED HEAD
+--------------------------------------------------------------------------------
+api/sd-data-leg-overlap.test.js            36 passed 0 failed 0 unproven  exit 0
+api/sd-data-leg-role-matrix.test.js        32 passed 0 failed 0 unproven  exit 0
+api/sd-data-rf-settings-tier.test.js       12 passed 0 failed 0 unproven  exit 0
+api/sql-run-order-agreement.test.js        16 passed 0 failed 0 unproven  exit 0
+api/sd-data-leg-bookings-toctou.test.js    48 passed 0 failed             exit 0
+api/sd-data-law-role-matrix.test.js                                       exit 0
+api/role-vocabulary-agreement.test.js       7 passed 0 failed             exit 0
+api/sd-data-sen-evv-clock.test.js          16 assertions                  exit 0
+api/sd-data-sen-role-asymmetry.test.js                                    exit 0
+tests/sairncare_office_manager_role.test.js 10 passed 0 failed 0 unproven exit 0
+tests/sd_data_clock_flags_merge.test.js      8 passed 0 failed 0 unproven exit 0
+tests/sairnlegacy_write_failure_voice.js                                  exit 0
+api/_lib/roofing-damage-assessment-endpoint.test.js 18 passed             exit 0
+tests/role_maps_have_no_prototype.js       13 arms                        exit 0
+sairnlegacy.html -- 3 script blocks extracted with a parser, node --check
+clean on all three. A naive `grep -c '<script'` says 4, which is wrong, which
+is why Check 0a forbids it.
+
+ONE SUITE IS RED AND IT IS NOT MINE: tests/sairnlegacy_reservation_lock.js
+exits 1 with "a reservation that wins returns 200 -- 403". PRE-EXISTING and
+already a row in docs/known-red-suites.json with that exact text.
+leg_merch_units is MONEY and `director` has rw there, so the new gate does not
+refuse it. cody's b10 item 2 is the fix.
+
+tools/sairn_seam_check.py: 96 clean, 0 not-forwarded, 19 could-not-tell -- the
+same ONE seam (roleSet) across 19 callers b9 recorded. Not a regression and not
+progress. COULD NOT TELL IS NOT A PASS.
+
+--------------------------------------------------------------------------------
+REGISTER
+--------------------------------------------------------------------------------
+sha        app          severity  method               rule
+9731d880   sairnsenior  high      code-review          1.11
+85206564   sairnlegacy  high      independent-review   1.7
+fdd06d06   sairnlegacy  critical  independent-review   1.7
+
+Each carries four contributing factors and an explicit recurrence-open naming
+what the fix does NOT close.
+
+python tools/defect_register.py --check: OK, 564 records, every commit resolves
+and every field is in vocabulary.
+
+THE FMEA LOOP RETURNED PREDICTED FOR ALL THREE on api/sd-data.js -- rule 1.11
+once and rule 1.7 twice, from docs/fmea/api_sd-data.js.json, the draft b9
+re-saved. IT RETURNED MISSED for sairnlegacy.html on the third: one draft
+predates it and none cites 1.7. Both halves are recorded here; quoting only the
+PREDICTED would be the flattering number.
+
+Six files in these records have NO draft at all and the loop named them:
+api/_lib/sen-evv-clock.js, api/_lib/leg-overlap.js, api/_lib/leg-roles.js,
+api/_lib/auth.js, sql/sairnlegacy_employee_auth_schema.sql and the new suites.
+Not saved here -- fmea_draft.py is under tools/, which is cc's.
+
+--------------------------------------------------------------------------------
+OPEN, WITH THE EXACT NEXT STEP
+--------------------------------------------------------------------------------
+Full detail in docs/SAIRN-handoff-hank-b10.md, thirteen items. The four that
+need a human:
+
+1. THE CODE HALF OF BOTH ROLE WIDENINGS IS LIVE AND THE DATABASE HALF IS NOT.
+   This is the largest open item and it is an ORDERING risk, not a hidden one.
+   api/_lib/auth.js mints the new roles the moment Vercel deploys; the CHECKs
+   only widen when run-order blocks 5 and 6 are run. Until then every new-role
+   INSERT is refused 23514 at the last step -- and sairnlegacy.html:1316
+   ALREADY OFFERS the five new roles in the owner's provisioning picker, so the
+   failing path is reachable from the UI today. Guardian check 29 is COULD NOT
+   RUN, not passed. NEXT STEP: Michael runs blocks 5 and 6.
+
+2. NONE OF THE SIX RUN-ORDER BLOCKS HAS BEEN RUN. Block 1 carries b9's open
+   item forward verbatim: until it runs, api/ai-notice.js answers 503 and no
+   employee sees the AI notice. NEXT STEP: Michael runs them one at a time,
+   reading each verify's answer against the expected result beside it. A clean
+   Supabase run is not evidence.
+
+3. THE FIVE SAIRNlegacy ROLE NAMES BELOW `director` ARE [CONFIRM]. `prep` in
+   particular may need its own licensed tier the way SAIRNvet's
+   PRESCRIBER_ROLES does, because embalmer is a separate state licence in most
+   states. Related: `livery` is refused on both leg_dispatches and
+   leg_custodylog, so if the removal driver IS the custody-taker they can
+   neither see their own dispatch nor append to the chain of custody -- correct
+   for an external contractor, a functional hole otherwise. NEXT STEP: a
+   practitioner answers, before any real practice is provisioned.
+
+4. NOTHING INVOKES THE FOUR NEW SUITES. No file under tools/ references them,
+   so the critical-severity fix in this batch has 32 green arms that nothing
+   will ever re-run. tools/ is cc's. NEXT STEP: cc wires them in.
+
+Also open and routed, not blocking: the MAR grant action is unbuilt
+(tests/mar_billing_grant.test.js is the spec, 16 failing arms); four of b9's
+five survey findings remain, each needing a different fix; the register's six
+duplicate summaries are unchanged from b9; and the two failing-first suites
+this batch turns green now have stale "EXPECTED RED ... ROUTED TO hank"
+footers, which are cody's to update along with their known-red-suites rows.
+
+--------------------------------------------------------------------------------
+CLAIMS, CONFLICTS AND DEVIATIONS
+--------------------------------------------------------------------------------
+`sairn-api-sql` claimed at the start, released as the last action of the batch.
+
+THE sairnscape CLAIM THE BRIEF ASKED ME TO RELEASE LAST WAS ALREADY RELEASED,
+by b9, in commit a6bf4dad -- "chore(claims): hank releases sairnscape".
+sairn_claim.py list showed one active hank claim at the start of this batch,
+and it was this one. Stated rather than silently skipped.
+
+CONFLICTS DECLARED AND NOT OVERRIDDEN: cody's tests/ files were READ, NEVER
+EDITED -- including the two failing-first suites this batch turns green. No
+tools/ file was edited at all (cc's). No docs/ file of fourth's was edited. No
+auditor clone was entered.
+
+THREE DEVIATIONS FROM THE CLAIM'S FILES LIST, STATED RATHER THAN HIDDEN:
+  * sairnlegacy.html -- the deterministic legAftercareId, the provisioning
+    picker, and a corrected comment. The aftercare fix is not real without the
+    client half, and the picker is the only way to perform the migration the
+    role matrix requires.
+  * docs/defect-density-register.json -- three feeds and two re-seats, required
+    by the push gate.
+  * api/_lib/sen-evv-clock.js and the new api/ test files were not named
+    individually, though they are inside the declared api/ scope.
+
+HOOKS AND SETTINGS: no hook was restored or added, and .claude/settings.json
+was never committed. It was stashed at the start (b10-settings-park) because a
+rebase refuses outright with unstaged changes, and it is STILL PARKED -- it is
+stash@{0}, but stash@{1} is an older entry from a previous batch, so check the
+message before popping rather than taking the top of the stack.
+
+--------------------------------------------------------------------------------
+WHAT THIS REPORT DOES NOT SAY
+--------------------------------------------------------------------------------
+That any run-order block has been run. That the role matrix refuses anybody in
+production -- only that it does not refuse an owner, and that the suite refuses
+the right people against the real handler. That Google has acknowledged the
+uploads beyond the Drive-side read-back recorded above. That the clock_flags
+merge has been exercised by a real caregiver on a real visit.
+
+Each of those is a could-not-tell, and none of them is folded into a pass.
+
+Transcript:
+C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\a5dbf223-4471-4755-8b4b-46ec67d14478\
+
+SHA256 3769e971fbe1bba7e7fcbe6d0845977c6ed58d0415cff6a8953ddf7b8f6d7344
+END-OF-REPORT
