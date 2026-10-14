@@ -1,0 +1,44 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "fourth",
+  "batch": "b15",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/2026-10-14-ai-safeguards-spec.md s7.5 -- ack lives on *_employee_auth (notice version + acked_at); api/ai-notice.js is the loser, delete + migrate routed to hank with a no-match-is-a-finding rule"
+    },
+    {
+      "id": 2,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/2026-10-14-fourth-b15-{sairnlegacy,sairnvet,sairnlaw}-role-matrix.md -- 36 + 42 + 20 resources banded by scratchpad/bands_b15.py; leg has 0 gates, sv 1 (api/sv-auth.js:118), law 1 (api/sd-data.js:16882); 10/12/12 negative controls"
+    },
+    {
+      "id": 3,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/batch-manifest-fourth-b14.json and -b15.json written by tools/batch_manifest.py --new; b14 CLOSED exit 0 with PYTHONIOENCODING=utf-8 (the crash without it is routed as a finding)"
+    },
+    {
+      "id": 4,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/2026-10-14-fourth-b15-fixture-priority-26-50.md (scratchpad/priority_26_50_b15.py: 274 candidates, 180 guard-of-a-guard) + docs/2026-10-14-fourth-b15-text-gate-fixture-spec-routed-to-cc.md (14 arms + 3 decoy arms; live run exit 1, raw 82 -> 111)"
+    },
+    {
+      "id": 5,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/2026-10-14-ai-notice-wording-for-counsel.md -- four wording blocks all [DRAFT -- LAWYER], no contact details, 2026-11-12 stated once, five high-risk categories and where each piece appears"
+    },
+    {
+      "id": 6,
+      "title": "",
+      "status": "open",
+      "evidence": ""
+    }
+  ]
+}
