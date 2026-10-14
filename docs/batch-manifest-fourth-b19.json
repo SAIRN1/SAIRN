@@ -37,8 +37,8 @@
     {
       "id": 6,
       "title": "Push without --force and confirm landed (HEAD == origin/main, 0 ahead / 0 behind). Release the claim last.",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "Pushed WITHOUT force: e46ccfcd..a96efce0, first attempt, no rejection. Confirmed landed: git rev-parse --short HEAD and origin/main both a96efce0; git rev-list --left-right --count origin/main...HEAD -> 0 0; git status --porcelain empty; all five b19 docs/ files present via git cat-file -e origin/main:<path>; both discharges visible in origin/main:docs/tier-a-reviews.json with verdict lengths 7015 and 5752. grep -ci 'force' over the push log -> 0. Re-check: git log origin/main --oneline -3"
     }
   ]
 }
