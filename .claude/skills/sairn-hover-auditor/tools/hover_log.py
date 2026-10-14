@@ -149,28 +149,36 @@ def _default_log_path():
     return KNOWN_INSTANCE_LOGS.get(instance)
 
 
-def _refuse_if_duplicate_script_present(log_path):
+def _refuse_if_duplicate_script_present(log_path, script_file=__file__):
     """THE CHECK THAT FAILS LOUDLY IF A SECOND COPY EVER APPEARS. Looks in
     the real log data's own directory (never HERE) for a file named the
-    same as this script; if one exists and is not literally this file,
-    that is the exact shape that went unnoticed for weeks (h1 b30/b31) --
-    refuse rather than silently risk two copies drifting again. Returns an
-    error string, or None when clear. Never raises: an unreadable log_path
-    directory is reported as could-not-verify by the caller, not crashed
-    on here."""
+    same as `script_file` (default: this file); if one exists and is not
+    literally that file, that is the exact shape that went unnoticed for
+    weeks (h1 b30/b31) -- refuse rather than silently risk two copies
+    drifting again. Returns an error string, or None when clear. Never
+    raises: an unreadable log_path directory is reported as
+    could-not-verify by the caller, not crashed on here.
+
+    script_file MUST be passed explicitly by any OTHER tool importing this
+    function (e.g. hover_tip_beacon.py, h1 b33) -- `__file__` evaluated as
+    a default argument is bound to THIS module at def-time, not to the
+    caller's module, so an importer that failed to pass its own __file__
+    would silently check for a duplicate of hover_log.py instead of
+    itself. Caught and fixed before it shipped: the first draft of the
+    beacon tool's wiring called this with no second argument."""
     if not log_path:
         return None
     try:
         log_dir = os.path.dirname(os.path.abspath(log_path))
-        candidate = os.path.join(log_dir, os.path.basename(__file__))
-        this_file = os.path.abspath(__file__)
+        candidate = os.path.join(log_dir, os.path.basename(script_file))
+        this_file = os.path.abspath(script_file)
         if os.path.isfile(candidate) and os.path.abspath(candidate) != this_file:
             return ('a second copy of %s exists at %r, next to the real log '
                      'data at %r. This is the exact drift h1 b30/b31 found '
                      'and merged back from -- delete the duplicate (after '
                      'confirming its content, if any, is already in this '
                      'tracked copy) before continuing.'
-                     % (os.path.basename(__file__), candidate, log_dir))
+                     % (os.path.basename(script_file), candidate, log_dir))
     except Exception as ex:
         return 'could not check for a duplicate script: %s: %s' % (type(ex).__name__, ex)
     return None
