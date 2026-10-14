@@ -1,6 +1,24 @@
 # The Tier A obligation queue — triage by age, and the tool that stops it happening again
 
-**fourth, batch b18, 2026-10-14. Clone HEAD `ebd8f9bd`.**
+**fourth, batch b18, 2026-10-14. Measured at clone HEAD `ebd8f9bd`.**
+
+> **RE-MEASURED AFTER THE REBASE, AND THE NUMBER MOVED — read this before
+> quoting any count below.** Between taking these figures and pushing them,
+> `git pull --rebase origin main` brought in **50 commits**, and the register
+> went **18 → 19 open** again:
+>
+> | | |
+> |---|---|
+> | open obligations | **19** (`reviewer_owner`: cody 5, **cloud 4**, cc 4, **fourth 3**, hank 3) |
+> | what arrived | **one new obligation assigned to `fourth`**, `hank` 2026-10-14T13:50:42Z, `leg_*` — **3h old, inside the 24h deadline, not overdue** |
+> | what did NOT change | the four `cloud` rows, both of my overdue rows (now 397h and 338h), and every disposition in §2 |
+>
+> **The triage below is therefore correct and already one row out of date**, and
+> that is the honest state rather than a flaw to paper over: **a queue
+> measurement is a snapshot, which is the eighth cross-domain convention
+> restated** — re-run `--list` rather than quoting §0. The new row needs no
+> disposition yet; it needs one in 21 hours, which is exactly what §3's surface
+> is for.
 
 **WHY THIS DOCUMENT EXISTS AND NOT A LONGER QUEUE.** My own b17 handoff left a
 **418-hour** Tier A obligation open and said so in capitals. It was discharged

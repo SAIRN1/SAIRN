@@ -569,14 +569,14 @@ in `SD_SYNCED` (`stonedesk.html:2027`), so `st('sd_photos', …)`
 and `sdSyncCollection` pushes **the whole changed row** —
 `sdData('write', key, r)` at `stonedesk.html:2101` — to `/api/sd-data`, which
 accepts it because `sd_photos: 'photo_id'` is in `SD_LOCAL_RESOURCES`
-(`api/sd-data.js:14091`) and stores the payload verbatim at
-`api/sd-data.js:14168`. **Raw model prose about a customer's job reaches the
+(`api/sd-data.js:14184`) and stores the payload verbatim at
+`api/sd-data.js:14261`. **Raw model prose about a customer's job reaches the
 database.**
 
 **WHY NO EXISTING SAFEGUARD FIRES, stated as the three registries it is absent
 from — this is the actual defect:**
 
-1. `enforceAiApproval` is wired (`api/sd-data.js:2077-2088`) but **returns
+1. `enforceAiApproval` is wired (`api/sd-data.js:2088-2098`) but **returns
    immediately** at `api/_lib/ai-safeguards.js:190` — `if
    (!payload[AI_SOURCE_FIELD]) return null;`. The gate is opt-in **by the
    writer**, and this writer does not opt in. §7.4 adopted that design
@@ -623,7 +623,7 @@ overwrites**. At the moment the text is on screen, nothing says AI.
 carries `check (octet_length(data::text) <= 65536)`
 (`sql/stonedesk_data_schema.sql:343`) while the synced payload includes the full
 base64 image, accepted up to 10MB (`stonedesk.html:25988`) — and
-`api/sd-data.js:14170` maps the resulting 400 to **`503 NOT_PROVISIONED`**
+`api/sd-data.js:14263` maps the resulting 400 to **`503 NOT_PROVISIONED`**
 ("tables are not set up yet"). **So it is possible that no `sd_photos` row has
 ever landed and that the failure has been reporting itself as an unprovisioned
 table.** That is a silent-failure finding in its own right, it is hank's, and it
@@ -655,7 +655,7 @@ is the more urgent half.**
 2. the body makes no network call at all — `localStorage.getItem`, `JSON.parse`,
    `st()`, `showToast()`.
 3. `grep -rn "stonedesk_quotes" api/ sql/ tests/ db/` → **zero matches**. It is
-   absent from `SD_LOCAL_RESOURCES` (`api/sd-data.js:14083-14093`) and from the
+   absent from `SD_LOCAL_RESOURCES` (`api/sd-data.js:14176-14186`) and from the
    allowed list in `api/_resources/stonedesk.js:163-193`, so a `write` for that
    resource would match no branch.
 
@@ -669,7 +669,7 @@ figure shown to the customer is **parsed out of that prose**:
 **THE RULING: local-only is NOT an exemption from §1(d), and the reason is
 mechanical rather than a matter of taste.** A priced, signed, AI-written quote
 that never reaches `/api/sd-data` is invisible to `enforceAiApproval`
-(`api/sd-data.js:2077`) **by construction** — so the server-side safeguard can
+(`api/sd-data.js:2088`) **by construction** — so the server-side safeguard can
 never be the one that covers it. It is also held in exactly one browser: not
 backed up, and outside the soft-delete/tombstone machinery every synced resource
 has. **The same shape exists in a sibling app** —

@@ -7,6 +7,17 @@ opened; held 418 hours — 17 days — at the time of this discharge.**
 **Clone HEAD at review:** `ebd8f9bd` (`git rev-parse --short=10 HEAD` →
 `ebd8f9bda8`).
 
+> **EVERY `file:line` IN THIS DOCUMENT WAS RE-DERIVED TWICE, and the second
+> pass was not optional.** The review ran at `ebd8f9bd`; the rebase before
+> pushing brought in **50 commits, two of which touch the files this review is
+> about** (`api/sd-data.js`, `api/_lib/auth.js`). **Every citation into those
+> two files had moved** — `api/sd-data.js:7169` → `:7179`, `api/_lib/auth.js:482`
+> → `:510`, and so on — and each was re-anchored on the quoted text rather than
+> re-offset by a constant. **The findings are unchanged; only the line numbers
+> moved.** Said here because a document whose citations silently rot is the
+> eighth cross-domain convention's exact case, and this one rotted inside an
+> hour of being written.
+
 **THIS DISCHARGES THE OBLIGATION. It is the oldest one assigned to me and the
 single biggest thing my own b17 handoff left open, by my own words there: *"THE
 417-HOUR OBLIGATION IS THE BIGGEST THING I AM LEAVING OPEN, and it is mine."***
@@ -47,7 +58,7 @@ not two passes of the same one.
 | | hank's attack point | 2026-09-29 verdict | **RE-VERIFIED AT `ebd8f9bd`, 2026-10-14** |
 |---|---|---|---|
 | **(a)** | can a server stamp land on a clock field? | resolved in hank's favour | **STILL CLEAN, and tighter than hank asked** — but see **N1**, which is the same field by a different door |
-| **(b)** | the caregiver is excluded from `propose_clock_correction` | exclusion right; a ROLE-not-IDENTITY hole named | **THE 2026-09-29 FINDING IS FIXED** — `api/sd-data.js:7066-7072`. And **N1** is open |
+| **(b)** | the caregiver is excluded from `propose_clock_correction` | exclusion right; a ROLE-not-IDENTITY hole named | **THE 2026-09-29 FINDING IS FIXED** — `api/sd-data.js:7076-7081`. And **N1** is open |
 | **(c)** | can anything WRITE with the previous secret? | resolved, driven four ways | **STILL CLEAN, and now pinned by an arm** (`api/_lib/auth.test.js:560-581`) |
 | **(d)** | the hire-date anniversary boundary | boundary defensible, consequence not | **the consequence is now SOFTENED in code** — and **N4**: the comments claim driven arms that do not exist |
 | **(e)** | `activities` left out of "direct care staff" | answered by the seed's own structure | **PARTLY OVERTURNED — N3.** The mapping is defensible; **the silence about what it excluded is not** |
@@ -113,7 +124,7 @@ CMD sed -n '179,190p' api/sc-eligibility.js
 **WHY THAT IS THE DANGEROUS DIRECTION, in the file's own terms.** The census
 exists to gate step 4 of the `SD_AUTH_SECRET` rotation — *"Expect legacy_rows =
 0 before clearing SD_AUTH_SECRET_PREVIOUS"* (`:63`), the precondition published
-at `api/_lib/auth.js:414-417` as **4a**. The two failure directions are not
+at `api/_lib/auth.js:442-445` as **4a**. The two failure directions are not
 symmetric:
 
 * **over-count** → step 4 blocks for ever, `SD_AUTH_SECRET_PREVIOUS` stays set,
@@ -135,7 +146,7 @@ undecryptable row answers `503 CREDENTIAL_UNREADABLE` and blocks nothing else.
 confident zero it cannot have measured — and a gate that cannot fail is the
 defect whatever sits behind it. **The law surface's predicate is correct** (the
 `v2.` prefix test exactly matches `encryptSecret`'s output format at
-`api/_lib/auth.js:853-854`), which is what makes the broken half easy to miss:
+`api/_lib/auth.js:881-882`), which is what makes the broken half easy to miss:
 one `union all` arm works.
 
 **THE SAME ERROR IS IN A SECOND FILE**, which means it propagated rather than
@@ -176,13 +187,13 @@ federal EVV record. The ordinary `write` branch can overwrite the same field
 with none of it.**
 
 ```
-CMD sed -n '7169p' api/sd-data.js
-  7169  SEN_VISIT_EVV_FIELDS.forEach((f) => { if (payload[f] !== undefined) visitData[f] = payload[f]; });
+CMD sed -n '7179p' api/sd-data.js
+  7179  SEN_VISIT_EVV_FIELDS.forEach((f) => { if (payload[f] !== undefined) visitData[f] = payload[f]; });
 ```
 
-`SEN_VISIT_EVV_FIELDS` (`api/sd-data.js:6963`) includes `clock_in_at` and
+`SEN_VISIT_EVV_FIELDS` (`api/sd-data.js:6973`) includes `clock_in_at` and
 `clock_out_at`. **The copy is unconditional.** Between the assignment check at
-`:7131` and that line there is no test of whether `existingRow.data.clock_in_at`
+`:7142` and that line there is no test of whether `existingRow.data.clock_in_at`
 is already set, and `checkClockEvent` has none either — it refuses only
 `NO_SERVER_TIME`, `CLOCK_UNPARSEABLE`, `CLOCK_IN_FUTURE` and
 `CLOCK_OUT_BEFORE_IN` (`api/_lib/sen-evv-clock.js:104-188`).
@@ -312,7 +323,7 @@ failing-first arm is an `activities` staff member against `PA-TRAINING-ALR-2010`
 with exactly 2 recorded hours: today `meets: true` and nothing disclosed.
 
 **ONE THING THAT MASKS ALL OF THIS AT RUNTIME, and must not be read as a fix:**
-`hire_date` is never written (noted at `api/sd-data.js:13380-13386`), so every
+`hire_date` is never written (noted at `api/sd-data.js:13475-13486`), so every
 live finding currently returns `NO_HIRE_DATE` / `meets: null`. **The engine is
 being saved by a different defect.** When `hire_date` starts being written, N3
 becomes live on the same day — so it must be fixed *before* that, not after.
@@ -371,7 +382,7 @@ for. The stamp keys can only ever be the four
 `clock_{in,out}_{received_at,skew_ms}`, derived by `field.replace('_at', …)` over
 a **literal** array (`api/_lib/sen-evv-clock.js:120-131`) — a caller cannot
 inject a key — and none of them is in `SEN_VISIT_EVV_FIELDS`. So
-`Object.assign(visitData, clockCheck.stamps)` at `:7174` running after the field
+`Object.assign(visitData, clockCheck.stamps)` at `:7184` running after the field
 copy **cannot** overwrite a claimed time. **The claimed time is what persists on
 every path**, including the offline replay, which re-enters the same `write`
 branch (`sairnsenior.html:3058` → `senData('write','sen_visits',entry.payload,true)`) rather than
@@ -386,14 +397,14 @@ worry was right about the file and one line off about the arm.)*
 
 **(c) THE DUAL-KEY PATH IS DRAINABLE, verified on the half hank asked for.**
 `SD_AUTH_SECRET_PREVIOUS` is read in exactly two places in all of `api/` —
-`api/_lib/auth.js:482` (verify) and `:840` (decrypt). **There are exactly two
+`api/_lib/auth.js:510` (verify) and `:868` (decrypt). **There are exactly two
 `encryptSecret` call sites in the repo** (`api/law-auth.js:462`,
 `api/sc-credentials.js:200`), both landing on
-`dedicated || legacyEncryptionKey()` (`:846-854`), and `getSecret()` (`:372-379`)
+`dedicated || legacyEncryptionKey()` (`:874-882`), and `getSecret()` (`:400-408`)
 reads `SD_AUTH_SECRET` only. **No write path can produce ciphertext under the
 previous secret**, and there is no re-wrap/backfill script anywhere. A wrong key
 fails in `decipher.final()` and surfaces as `null`, never as wrong plaintext
-(`:894-909`), with the tag length pinned at 16. It is also now pinned by an arm
+(`:922-937`), with the tag length pinned at 16. It is also now pinned by an arm
 that did not exist at the earlier review: `api/_lib/auth.test.js:560-581` (B2),
 plus `:545-558`, `:610-615` and `:618-627`.
 
