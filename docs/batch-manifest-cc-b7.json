@@ -1,0 +1,44 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "cc",
+  "batch": "b7",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/2026-10-13-cc-routed-b7.md section 1 lists the 6 b6 commits from git log; cc b6 handoff/report/digest absent locally -- the local SAIRN-handoff-cc-b6.md is cody content, sha256 a2876991 identical to Drive"
+    },
+    {
+      "id": 2,
+      "title": "",
+      "status": "done",
+      "evidence": "tools/drive_upload_verify.py + tools/batch_manifest.py --close; tests/run_drive_upload_verify_probe.py 35/35 arms"
+    },
+    {
+      "id": 3,
+      "title": "",
+      "status": "done",
+      "evidence": "tools/tier_a_review_gate.py _REPLACE_RETRIES=20; tests/run_save_reviews_retry_probe.py 10/10 arms, failing-first 335 -> 0 PermissionError in 400 saves"
+    },
+    {
+      "id": 4,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/SAIRN-OPEN-WORK-INDEX.md row 221, 1 line changed, pipe count 8 unchanged; 36 of 36 sf_ keys re-derived from api/sd-data.js; open_work_shard.py --check CLEAN 812 rows"
+    },
+    {
+      "id": 5,
+      "title": "",
+      "status": "done",
+      "evidence": "tools/hover_auditor_scope_gate.py _have_commit + merge-base fallback; tests/run_scope_gate_unfetched_base_probe.py 12/12 arms; NOT_PROMOTED ruling in tools/report_only_checks.py; run_hover_separation_probe 148 passed"
+    },
+    {
+      "id": 6,
+      "title": "",
+      "status": "open",
+      "evidence": ""
+    }
+  ]
+}

@@ -5,6 +5,7 @@
 
     python tools/batch_manifest.py --new cc b6 --items 6   # chat's half
     python tools/batch_manifest.py --set 3 done --evidence "<path or sha>"
+    python tools/batch_manifest.py --close --agent cc --batch b7
     python tools/batch_manifest.py --check                 # the validator
     python tools/batch_manifest.py --fixtures              # the criteria lock
 
@@ -36,6 +37,33 @@ the ORDERED id list, so a swap is caught too.
 path, a sha, a command, or a test count. "verified" and "works" are refused by
 name. This cannot tell a true pointer from a false one and does not claim to;
 it refuses the shapes that cannot be checked at all.
+
+── A BATCH CANNOT BE CLOSED WITHOUT A PASSING DRIVE VERIFY ─────────────────
+`--close` is the only thing that writes the `closed` block, and it refuses
+unless `tools/drive_upload_verify.py --verify-only` passes for that agent and
+batch: the handoff, report and digest are on the shared Drive, under the right
+names, each first line naming that same agent and batch, bytes and sha256
+matching local. The failure this stops is not hypothetical -- cc's b6 report
+and digest were never uploaded, the batch was reported closed, and the next
+session found b5's files as the newest cc files on the Drive.
+
+Three properties of that gate, each paid for:
+
+  * IT VERIFIES, IT DOES NOT UPLOAD. `--verify-only`, so closing cannot be the
+    thing that performs the upload it is supposed to be checking. Run the
+    upload yourself first; `--close` then asserts it really happened.
+  * IT FAILS CLOSED WHEN THE VERIFIER IS ABSENT (PR 1.11). No
+    `if os.path.isfile(...)` skip: a missing `drive_upload_verify.py` is exit 2
+    COULD NOT RUN naming the tool, never a close. Same for an absent Drive
+    mount, which the verifier itself reports as 2.
+  * `closed` IS NOT A FIELD AN AGENT CAN TYPE. `validate()` refuses a `closed`
+    block that does not carry the verify PASS, and refuses one over any item
+    still `open` or `in-progress` -- so hand-writing `"closed": true` into the
+    JSON is a finding rather than a shortcut.
+
+NO HOOK. This is a command an agent runs and a validator that refuses, not a
+wiring change; `--check` over every manifest in docs/ is the sweep that finds a
+batch that stopped without closing.
 """
 import hashlib
 import io
@@ -57,6 +85,15 @@ NL = chr(10)
 DOCS = os.path.join(REPO, 'docs')
 
 STATUSES = ('open', 'in-progress', 'done', 'blocked', 'not-taken', 'dropped')
+
+# A batch may close over an item that will not happen -- `blocked`, `not-taken`
+# and `dropped` each carry a reason -- but NOT over one that is simply still
+# running. `open` and `in-progress` are the two that mean nobody decided.
+UNSETTLED = ('open', 'in-progress')
+
+# The verifier `--close` refuses without. Named once, so the absent-tool
+# message and the gate cannot disagree about which file is missing.
+DRIVE_VERIFY = os.path.join(TOOLS, 'drive_upload_verify.py')
 
 # A status that asserts the work is finished has to point at something.
 NEEDS_EVIDENCE = ('done',)
@@ -176,6 +213,45 @@ def validate(doc):
             bad.append('%s has evidence with nothing re-runnable in it (%r). '
                        'A path, a sha, a command, or a count.'
                        % (where, ev[:60]))
+
+    bad += validate_closed(doc, items)
+    return bad
+
+
+def validate_closed(doc, items):
+    """-> findings about the `closed` block. Empty means clean OR absent.
+
+    An open batch has no `closed` block and that is not a finding -- this is
+    about what a PRESENT one has to carry. `--close` is the only writer; these
+    are the shapes a hand-edit produces.
+    """
+    closed = doc.get('closed')
+    if closed is None:
+        return []
+    bad = []
+    if not isinstance(closed, dict):
+        return ['`closed` is %r rather than the block `--close` writes. '
+                '"closed": true is a typed assertion with nothing behind it; '
+                'the block carries the drive-verify evidence that makes it '
+                'checkable.' % (closed,)]
+    if closed.get('drive_verify') != 'PASS':
+        bad.append('the manifest is marked closed and `closed.drive_verify` is '
+                   '%r, not "PASS". A batch cannot be closed without a passing '
+                   '%s -- that is the check that catches a handoff, report or '
+                   'digest that was never uploaded.'
+                   % (closed.get('drive_verify'),
+                      os.path.basename(DRIVE_VERIFY)))
+    if not (closed.get('verified_by') or '').strip():
+        bad.append('the manifest is marked closed with no `closed.verified_by` '
+                   'command, so the verify CANNOT BE RE-RUN by a reader. A '
+                   'pass nobody can reproduce is a claim.')
+    unsettled = [str(it.get('id')) for it in items
+                 if it.get('status') in UNSETTLED]
+    if unsettled:
+        bad.append('the manifest is marked closed while item(s) %s are still '
+                   '%s. A closed batch may carry a blocked or dropped item -- '
+                   'each of those says why -- but not one that nobody decided.'
+                   % (', '.join(unsettled), ' / '.join(UNSETTLED)))
     return bad
 
 
@@ -252,13 +328,112 @@ def cmd_set(agent, batch, item_id, status, evidence):
     return EXIT_CLEAN
 
 
+# ── THE CLOSE GATE ──────────────────────────────────────────────────────────
+def drive_verify(agent, batch, runner=None):
+    """Run the Drive verify for this agent and batch. -> (rc, output).
+
+    FAILS CLOSED WHEN THE VERIFIER IS ABSENT, by name, with no isfile skip:
+    `COULD NOT RUN` is a third state and folding it into a pass is the single
+    most expensive defect shape on this platform (PR 1.11).
+    """
+    if not os.path.isfile(DRIVE_VERIFY):
+        return EXIT_COULD_NOT_RUN, (
+            'COULD NOT RUN: %s is absent, so whether this batch\'s handoff, '
+            'report and digest are on the Drive CANNOT BE CHECKED. The batch '
+            'is NOT closed. "Could not tell" is not "passed".'
+            % os.path.relpath(DRIVE_VERIFY, REPO))
+    cmd = [sys.executable, DRIVE_VERIFY, '--agent', agent, '--batch', batch,
+           '--verify-only']
+    if runner is not None:                    # the probe drives this
+        return runner(cmd)
+    import subprocess
+    p = subprocess.run(cmd, cwd=REPO, stdout=subprocess.PIPE,
+                       stderr=subprocess.STDOUT)
+    return p.returncode, p.stdout.decode('utf-8', 'replace')
+
+
+def cmd_close(agent, batch, runner=None):
+    doc, why = load(agent, batch)
+    if doc is None:
+        print('COULD NOT RUN: %s' % why)
+        return EXIT_COULD_NOT_RUN
+    print('BATCH MANIFEST CLOSE -- %s %s -- criteria %s'
+          % (agent, batch, CRITERIA_VERSION))
+
+    # 1. The manifest itself, before anything about the Drive.
+    findings = validate(doc)
+    if findings:
+        print('REFUSED -- the manifest does not validate, so the question of '
+              'whether it may close does not arise:')
+        for f in findings:
+            print('  ! %s' % f)
+        return EXIT_FINDING
+    unsettled = [str(it.get('id')) for it in doc['items']
+                 if it.get('status') in UNSETTLED]
+    if unsettled:
+        print('REFUSED -- item(s) %s are still %s. Give each one a terminal '
+              'status with its evidence or reason first; `--close` does not '
+              'decide them for you.'
+              % (', '.join(unsettled), ' / '.join(UNSETTLED)))
+        return EXIT_FINDING
+
+    # 2. THE GATE. The deliverables are on the Drive, or this is not a close.
+    rc, out = drive_verify(agent, batch, runner=runner)
+    print('')
+    print('  %s --agent %s --batch %s --verify-only  -> exit %d'
+          % (os.path.relpath(DRIVE_VERIFY, REPO), agent, batch, rc))
+    for line in (out or '').splitlines():
+        print('  | %s' % line)
+    print('')
+    if rc == EXIT_COULD_NOT_RUN:
+        print('NOT CLOSED: the Drive verify COULD NOT RUN (exit 2). That is '
+              'not a failure of this batch and it is not a pass either -- '
+              'nothing about the uploads was established.')
+        return EXIT_COULD_NOT_RUN
+    if rc != EXIT_CLEAN:
+        print('NOT CLOSED: the Drive verify reported findings (exit %d). The '
+              'handoff, report and digest are not all on the Drive under the '
+              'right name with matching bytes. Fix the upload, not this file.'
+              % rc)
+        return EXIT_FINDING
+
+    shas = re.findall(r'PASS\s+(SAIRN-\S+)\s+\d+ bytes\s+sha256 ([0-9a-f]+)',
+                      out or '')
+    doc['closed'] = {
+        'drive_verify': 'PASS',
+        'verified_by': 'python %s --agent %s --batch %s --verify-only'
+                       % (os.path.relpath(DRIVE_VERIFY, REPO).replace(
+                           os.sep, '/'), agent, batch),
+        'criteria': CRITERIA_VERSION,
+        'deliverables': ['%s sha256 %s' % (n, s) for n, s in shas],
+    }
+    findings = validate(doc)
+    if findings:                      # belt: the written state must validate
+        print('REFUSED -- the closed manifest would not validate:')
+        for f in findings:
+            print('  ! %s' % f)
+        print('Nothing was written.')
+        return EXIT_FINDING
+    save(doc)
+    print('CLOSED: %s %s. %d deliverable(s) verified on the Drive:'
+          % (agent, batch, len(shas)))
+    for d in doc['closed']['deliverables']:
+        print('  %s' % d)
+    return EXIT_CLEAN
+
+
 # ── THE CRITERIA LOCK ───────────────────────────────────────────────────────
 def run_fixtures():
     print('BATCH MANIFEST -- criteria lock %s' % CRITERIA_VERSION)
     bad = 0
+    total = 0
 
     def check(label, got, want):
-        nonlocal bad
+        # COUNTED, not hardcoded. This said `total = 21` and a count written
+        # beside the thing it counts goes stale the next time a fixture is
+        # added -- which is this change.
+        nonlocal bad, total
+        total += 1
         okk = (bool(got) == bool(want))
         if not okk:
             bad += 1
@@ -336,7 +511,72 @@ def run_fixtures():
     check('an EMPTY manifest is a finding -- it asserts nothing', validate(d),
           True)
 
-    total = 21
+    # ── THE CLOSE GATE, in both directions ─────────────────────────────────
+    def settled():
+        s = json.loads(json.dumps(base))
+        for n, it in enumerate(s['items']):
+            it['status'] = 'done'
+            it['evidence'] = 'tools/thing_%d.py, 3/3 arms' % n
+        return s
+
+    d = settled()
+    check('a settled manifest with NO closed block validates -- an open batch '
+          'is not a finding', validate(d), False)
+
+    d = settled()
+    d['closed'] = True
+    check('"closed": true, typed by hand, is a finding', validate(d), True)
+
+    d = settled()
+    d['closed'] = {'drive_verify': 'PASS', 'verified_by': 'python tools/x.py'}
+    check('a closed block carrying the verify PASS and a command validates',
+          validate(d), False)
+
+    d = settled()
+    d['closed'] = {'verified_by': 'python tools/x.py'}
+    check('closed with NO drive_verify is a finding', validate(d), True)
+
+    d = settled()
+    d['closed'] = {'drive_verify': 'SKIPPED', 'verified_by': 'python x.py'}
+    check('closed with drive_verify SKIPPED is a finding -- a skip is not a '
+          'pass', validate(d), True)
+
+    d = settled()
+    d['closed'] = {'drive_verify': 'PASS', 'verified_by': ''}
+    check('closed with no re-runnable verified_by command is a finding',
+          validate(d), True)
+
+    for st in UNSETTLED:
+        d = settled()
+        d['items'][1]['status'] = st
+        d['items'][1]['evidence'] = ''
+        d['closed'] = {'drive_verify': 'PASS', 'verified_by': 'python x.py'}
+        check('closed over an item still %r is a finding' % st, validate(d),
+              True)
+
+    d = settled()
+    d['items'][1]['status'] = 'blocked'
+    d['items'][1]['evidence'] = 'docs/by-design-register.json is in fourth b11'
+    d['closed'] = {'drive_verify': 'PASS', 'verified_by': 'python x.py'}
+    check('...but closed over a BLOCKED item that says why validates',
+          validate(d), False)
+
+    # The absent-verifier leg, by pointing the constant at nothing. This is
+    # the PR 1.11 shape and the only fixture here that can prove the gate
+    # does not quietly skip.
+    global DRIVE_VERIFY
+    keep = DRIVE_VERIFY
+    try:
+        DRIVE_VERIFY = os.path.join(TOOLS, 'no_such_verifier.py')
+        rc, out = drive_verify('cc', 'fix')
+        check('an ABSENT drive_upload_verify.py is exit 2 COULD NOT RUN, not '
+              'a skip', rc == EXIT_COULD_NOT_RUN and 'COULD NOT RUN' in out,
+              True)
+        check('...and the message names the file that is missing',
+              'no_such_verifier.py' in out, True)
+    finally:
+        DRIVE_VERIFY = keep
+
     print('  %d/%d fixtures classify correctly' % (total - bad, total))
     return EXIT_FINDING if bad else EXIT_CLEAN
 
@@ -371,6 +611,21 @@ def main(argv=None):
         i = argv.index('--set')
         return cmd_set(opt('--agent', 'cc'), opt('--batch', 'b6'),
                        argv[i + 1], argv[i + 2], opt('--evidence'))
+    if '--close' in argv:
+        # THE LOCK FIRST here too: closing a batch on broken criteria is the
+        # one verdict in this file nobody re-reads.
+        if run_fixtures() != EXIT_CLEAN:
+            print('')
+            print('COULD NOT RUN: the criteria lock failed, so no batch is '
+                  'closed by this run.')
+            return EXIT_COULD_NOT_RUN
+        print('')
+        agent, batch = opt('--agent'), opt('--batch')
+        if not agent or not batch:
+            print('COULD NOT RUN: --close needs --agent <name> and --batch '
+                  'b<n>. Neither is guessed from the folder name.')
+            return EXIT_COULD_NOT_RUN
+        return cmd_close(agent, batch)
     # THE LOCK FIRST, as everywhere else in this repo.
     if run_fixtures() != EXIT_CLEAN:
         print('')

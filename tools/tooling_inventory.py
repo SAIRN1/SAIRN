@@ -156,6 +156,27 @@ PURPOSES = {
         'authorisation and cc\'s b7 dispatch forbids adding hooks, so whether '
         'that entry stays is Michael\'s call; the tool runs by hand either '
         'way and `--all` resolves all six clones.'),
+    'drive_upload_verify.py': ('CHECKER',
+        'a batch deliverable that is NOT on the shared Drive the way it claims '
+        'to be -- absent entirely, present under the right name with another '
+        'agent\'s content, truncated, or stale from an earlier batch. All four '
+        'have happened: cc b6 never uploaded its report or digest and was '
+        'reported closed, and SAIRN-handoff-cc-b6.md is on the Drive with '
+        '"# cody b6 handoff" as its first line, which is WORSE than absent '
+        'because a coordinating session trusts the name and routes cody\'s '
+        'state as cc\'s. So the NAME, the FIRST LINE OF THE BYTES ON THE '
+        'DRIVE, bytes+sha256 against local, and a FRESH FOLDER LISTING are '
+        'four separate checks -- each one passes while another fails. --audit '
+        'reports every folder file whose name disagrees with its first line '
+        'and renames nothing, because a tool that renames somebody else\'s '
+        'upload is guessing which half is right; an upload onto a foreign '
+        'first line is REFUSED, and --overwrite-foreign without --why is '
+        'COULD NOT RUN. WHAT IT CANNOT TELL YOU, PRINTED EVERY RUN: the '
+        'destination is a Drive SYNC MOUNT, so a matching read-back proves '
+        'the bytes are in the sync set and NOT that Google acknowledged them '
+        '-- a could-not-tell, kept out of the pass. batch_manifest.py --close '
+        'refuses without it, and is exit 2 when this file is absent rather '
+        'than skipping the check.'),
     'open_work_shard.py': ('GENERATOR',
         'docs/open-work/, one shard per App value plus ACTIVE.md, from '
         'docs/SAIRN-OPEN-WORK-INDEX.md -- which is 2,380,170 bytes, roughly '
