@@ -3113,6 +3113,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_selftest_sweep_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d9d0e53bb688555c4cc71d63808202e62f130cd",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/claims/run_own_claim_state_probe.py",
    "class": "test file",
    "level": "WEAKENING",

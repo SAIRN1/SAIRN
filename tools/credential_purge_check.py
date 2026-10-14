@@ -101,7 +101,7 @@ def scan_clone(clone, wanted, max_size):
     """
     r = subprocess.run(['git', '-C', clone, 'cat-file', '--batch-all-objects',
                         '--batch-check=%(objectname) %(objecttype) %(objectsize)'],
-                       capture_output=True, text=True, encoding='utf-8', errors='replace', errors='replace')
+                       capture_output=True, text=True, encoding='utf-8', errors='replace')
     if r.returncode != 0:
         return None, None
     blobs = []

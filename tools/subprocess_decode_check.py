@@ -125,8 +125,8 @@ def is_subprocess_call(node, mods=('subprocess',), funcs=()):
 
 
 def findings_in(src):
-    """[(lineno, end_lineno, end_col_offset of the text kwarg)] for every
-    subprocess call in text mode with no encoding."""
+    """[(lineno, end_lineno, end_col_offset, has_errors_kw) of the text
+    kwarg)] for every subprocess call in text mode with no encoding."""
     out = []
     try:
         tree = ast.parse(src)
@@ -146,7 +146,18 @@ def findings_in(src):
             # `text=False` is not text mode and needs nothing.
             if isinstance(k.value, ast.Constant) and k.value.value is not True:
                 continue
-            out.append((node.lineno, k.value.end_lineno, k.value.end_col_offset))
+            # ── A CALL CAN HAVE `errors=` WITHOUT `encoding=` (2026-10-14) ──
+            # ADD always spliced in `, encoding='utf-8', errors='replace'`
+            # assuming neither existed. tools/credential_purge_check.py had
+            # `text=True, ..., errors='replace'` with no `encoding=`, and the
+            # fixer produced `errors='replace', errors='replace'` -- a
+            # DUPLICATE KEYWORD ARGUMENT, which `ast.parse()` does not catch
+            # (confirmed: it is a compile()-time error, not a grammar one),
+            # so fix_file()'s own "never write a file that stopped parsing"
+            # guarantee did not hold for this exact shape and the broken file
+            # reached a push before the push gate's stricter check caught it.
+            out.append((node.lineno, k.value.end_lineno, k.value.end_col_offset,
+                       'errors' in kw))
             break
     return out
 
@@ -167,7 +178,7 @@ def scan():
         rel = os.path.relpath(path, REPO).replace(os.sep, '/')
         src = io.open(path, encoding='utf-8', errors='replace').read()
         try:
-            for lineno, _, _ in findings_in(src):
+            for lineno, _, _, _ in findings_in(src):
                 rows.append({'file': rel, 'line': lineno})
         except ValueError as e:
             # A file that does not parse is NOT a clean file. Some probes ship
@@ -189,14 +200,26 @@ def fix_file(path):
     if not hits:
         return 0
     lines = src.split('\n')
-    for _, end_line, end_col in sorted(hits, key=lambda h: (-h[1], -h[2])):
+    for _, end_line, end_col, has_errors in sorted(
+            hits, key=lambda h: (-h[1], -h[2])):
+        # Only add what is genuinely missing -- `errors=` may already be
+        # there without `encoding=`, and adding it again is a DUPLICATE
+        # KEYWORD ARGUMENT, not a style issue.
+        add = ", encoding='utf-8'" if has_errors else ADD
         i = end_line - 1
-        lines[i] = lines[i][:end_col] + ADD + lines[i][end_col:]
+        lines[i] = lines[i][:end_col] + add + lines[i][end_col:]
     new = '\n'.join(lines)
     # NEVER WRITE A FILE THAT STOPPED PARSING. A mechanical sweep across 138
     # files is exactly where one bad insertion would be invisible.
+    # ── compile(), NOT ast.parse() (2026-10-14) ─────────────────────────────
+    # A duplicate keyword argument -- exactly the defect this guarantee is
+    # here to catch -- is NOT a SyntaxError under ast.parse(): confirmed,
+    # `ast.parse("f(x=1, x=1)")` raises nothing. It IS one under compile(),
+    # which is what actually runs the file. The written guarantee was never
+    # true for this error class; a real broken file reached a push before
+    # the push gate's own stricter check caught it.
     try:
-        ast.parse(new)
+        compile(new, path, 'exec')
     except SyntaxError as e:
         sys.stderr.write('REFUSED to write %s -- the edit broke the parse: %s\n'
                          % (path, e))
