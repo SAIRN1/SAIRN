@@ -40,5 +40,15 @@
       "status": "done",
       "evidence": "pushed without force; git rev-list --left-right --count origin/main...HEAD = 0 0, HEAD f0afdadc on origin/main. Two rebases during landing (one clean, one docs/defect-density-register.json conflict resolved via tools/sairn_rebase_resolve.py), defect register re-seated onto rewritten shas both times."
     }
-  ]
+  ],
+  "closed": {
+    "drive_verify": "PASS",
+    "verified_by": "python tools/drive_upload_verify.py --agent cc --batch b9 --verify-only",
+    "criteria": "2026-10-13.1",
+    "deliverables": [
+      "SAIRN-handoff-cc-b9.md sha256 d1ba17176c0d4530",
+      "SAIRN-report-cc-b9.txt sha256 0ba28dccd8846c6c",
+      "SAIRN-digest-cc-b9.txt sha256 1b86aee5146b9342"
+    ]
+  }
 }
