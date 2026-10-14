@@ -963,16 +963,16 @@
   {
    "file": "tests/run_tool_selftest_probe.py",
    "kind": "py",
-   "tail": "ooda_phases.py                         exit 2 (the tool could not tell):   ARMS FAILED",
+   "tail": "0 FAILING, 1 COULD NOT RUN (exit 1)",
    "since": "2026-09-16",
-   "why": "ooda_phases.py --selftest exits 2 (the tool could not tell), which this probe correctly refuses to fold into a pass. THE DEFECT IS IN ooda_phases.py, NOT IN THE PROBE, and tests/run_selftest_sweep_probe.py is red on the same underlying fact -- so these two entries are ONE defect seen from two places. Fixing ooda_phases.py should clear both, and if it clears only one that is itself a finding.  ||  DRIVEN 2026-10-14 (cody b9): EXIT 1, 1 failing arm and 2 correctly reported COULD-NOT-RUN. `why` WAS BLANK; this is the first diagnosis. THE ONE FAILING ARM IS A WORKTREE ARTIFACT AND NOT A VERDICT ON THE SUITE: `sairn_self_state.py --self-check exit 1`, and the cause was confirmed by running the subject directly -- `sairn_session_identity.NoIdentity: THIS CLONE IS NOT PROVISIONED. ...\\.git\\worktrees\\b9wt\\sairn-session does not exist`. A WORKTREE CARRIES NO SESSION MARKER, so this arm cannot pass anywhere but a provisioned clone. AND THE PROBE'S OWN THIRD-STATE BUCKET IS HALF-WORKING, WHICH IS THE FINDING WORTH KEEPING: it correctly put the two exit-2 tools in COULD NOT RUN (`nhi_register.py exit 2 (the tool could not tell)`, `ooda_phases.py exit 2`) and its own header says could-not-run is not ran-and-fine per PR 1.11 -- but it folded THIS exit-1 could-not-run into FAILING(1). The bucket is keyed on the subject's exit CODE rather than on what the subject said, so a tool that cannot run and says so with exit 1 is scored as a failure. EXIT CODE PRODUCED AT tests/run_tool_selftest_probe.py:334, `sys.exit(main(sys.argv[1:]))`. NEXT STEP: RE-DRIVE IN THE LIVE CLONE before calling this red -- see the b9 handoff. The third-state-bucket defect is in this file and is the tests owner's.",
+   "why": "ooda_phases.py --selftest exits 2 (the tool could not tell), which this probe correctly refuses to fold into a pass. THE DEFECT IS IN ooda_phases.py, NOT IN THE PROBE, and tests/run_selftest_sweep_probe.py is red on the same underlying fact -- so these two entries are ONE defect seen from two places. Fixing ooda_phases.py should clear both, and if it clears only one that is itself a finding.  ||  DRIVEN 2026-10-14 (cody b9): EXIT 1, 1 failing arm and 2 correctly reported COULD-NOT-RUN. `why` WAS BLANK; this is the first diagnosis. THE ONE FAILING ARM IS A WORKTREE ARTIFACT AND NOT A VERDICT ON THE SUITE: `sairn_self_state.py --self-check exit 1`, and the cause was confirmed by running the subject directly -- `sairn_session_identity.NoIdentity: THIS CLONE IS NOT PROVISIONED. ...\\.git\\worktrees\\b9wt\\sairn-session does not exist`. A WORKTREE CARRIES NO SESSION MARKER, so this arm cannot pass anywhere but a provisioned clone. AND THE PROBE'S OWN THIRD-STATE BUCKET IS HALF-WORKING, WHICH IS THE FINDING WORTH KEEPING: it correctly put the two exit-2 tools in COULD NOT RUN (`nhi_register.py exit 2 (the tool could not tell)`, `ooda_phases.py exit 2`) and its own header says could-not-run is not ran-and-fine per PR 1.11 -- but it folded THIS exit-1 could-not-run into FAILING(1). The bucket is keyed on the subject's exit CODE rather than on what the subject said, so a tool that cannot run and says so with exit 1 is scored as a failure. EXIT CODE PRODUCED AT tests/run_tool_selftest_probe.py:334, `sys.exit(main(sys.argv[1:]))`. NEXT STEP: RE-DRIVE IN THE LIVE CLONE before calling this red -- see the b9 handoff. The third-state-bucket defect is in this file and is the tests owner's.  ||  RE-DRIVEN IN THE LIVE CLONE 2026-10-14 (cody b9) AND THE WORKTREE READING WAS WRONG ON BOTH COUNTS -- this is the authoritative result. EXIT 1, and now **0 FAILING** with **1 COULD NOT RUN**. Both arms that looked red in the worktree are GREEN here, which confirms they were sandbox artifacts and not defects: `ok nhi_register.py --selftest` (it needs real sibling clones, and a worktree's siblings are a scratchpad directory) and `ok sairn_self_state.py --self-check` (it needs a provisioned session marker, which a worktree has not got). THE ONE OUTSTANDING ITEM IS A COULD-NOT-RUN, NOT A FAILURE: `ooda_phases.py exit 2 (the tool could not tell): ARMS FAILED`, which is the stale `<10 records have an injection date` expectation against 249 real records -- a tools/ self-test and cc's. AND THAT MAKES THE PROBE'S OWN DEFECT UNAMBIGUOUS, MEASURED WITH ZERO SANDBOX NOISE: tests/run_tool_selftest_probe.py:330 is `return 1 if (fails or cnr or shrunk or unparsed) else 0`, so A COULD-NOT-RUN ALONE PRODUCES EXIT 1. The suite separates the third state carefully in its OUTPUT -- its own header cites PR 1.11, 'could not run is not ran and was fine' -- and then collapses it into failure in the EXIT CODE, which is the only thing a runner reads. That is the b6 unproven-arm finding in the opposite direction and it is this file's own defect, so it is the tests owner's. NEXT STEP: exit 3 when the only outstanding state is could-not-run, and say the count beside the pass and fail counts.",
    "owner": "cody",
    "environment": {
-    "where": "isolated-worktree",
+    "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, invoked directly, one process, python -u for .py",
-    "sha": "bd5239ac",
-    "basis": "DRIVEN IN cody b9, one at a time, 180s cap, cwd inside a git worktree of bd5239ac, exit code read from `echo \"EXIT=$?\"` on its own line and never inferred from the text. Worktree removed and pruned afterwards; `git worktree list` confirmed back to the live clone alone."
+    "tool": "the suite itself, invoked directly with python -u, one process, 420s cap",
+    "sha": "feb669e7",
+    "basis": "RE-DRIVEN IN THE LIVE CLONE in cody b9 because the isolated-worktree run could not reach a verdict. Driven only after everything was committed and pushed, so a half-finished plant was recoverable with git; `git status --short` was EMPTY before and after each run and the .git sentinel was verified gone afterwards."
    },
    "diagnosed": "2026-10-14",
    "diagnosed_by": "cody"
@@ -1488,42 +1488,6 @@
    }
   },
   {
-   "file": "tests/seam_check/run_delegation_probe.py",
-   "kind": "py",
-   "tail": "  restored_baseline  False (94 clean, 0 not-forwarded, 21 could-not-tell)",
-   "since": "2026-10-12",
-   "why": "DRIVEN 2026-10-14 (cody b9): EXIT 1, AND THE EXIT CODE IS NOT A VERDICT ON THIS SUITE. `why` WAS BLANK; this is the first diagnosis and it is a COULD-NOT-RUN, which must not be recorded as red. THIS SUITE CANNOT RUN IN ANY GIT WORKTREE, BY CONSTRUCTION: `FileNotFoundError: [Errno 2] No such file or directory: '...\\b9wt\\.git\\seam-delegation-probe.planting'` from tests/seam_check/run_delegation_probe.py:105. Its SENTINEL (line 68) is os.path.join(REPO, '.git', 'seam-delegation-probe.planting') -- and IN A WORKTREE `.git` IS A 64-BYTE FILE, NOT A DIRECTORY (verified on disk), so the sentinel can never be created. WHAT IT DID GET TO SAY BEFORE DYING: `BASELINE exit 2 | 96 clean, 0 not-forwarded, 19 could-not-tell`. That baseline figure is corroborated independently by tests/seam_check/run_or_default_probe.py and run_ref_probe.py in the same sweep, so the 19 unresolved seams are a real repo condition rather than a worktree effect. EXIT CODE PRODUCED AT tests/seam_check/run_delegation_probe.py:329. NEXT STEP: RE-DRIVE IN THE LIVE CLONE -- it is the only place it can run -- or make the sentinel path worktree-aware. Until then its colour is UNKNOWN, not red. tests/ file, tests owner's.",
-   "owner": "cody",
-   "exit_code": 1,
-   "diagnosed": "2026-10-14",
-   "diagnosed_by": "cody",
-   "environment": {
-    "where": "isolated-worktree",
-    "pinned": false,
-    "tool": "the suite itself, invoked directly, one process, python -u for .py",
-    "sha": "bd5239ac",
-    "basis": "DRIVEN IN cody b9, one at a time, 180s cap, cwd inside a git worktree of bd5239ac, exit code read from `echo \"EXIT=$?\"` on its own line and never inferred from the text. Worktree removed and pruned afterwards; `git worktree list` confirmed back to the live clone alone."
-   }
-  },
-  {
-   "file": "tests/seam_check/run_delegation_residue_control.py",
-   "kind": "py",
-   "tail": "FAILED: 1a. the plant really did modify the file (the arm is not vacuous), 5. ABLATION: the same exception WITHOUT the guard leaves the plant",
-   "since": "2026-10-12",
-   "why": "DRIVEN 2026-10-14 (cody b9): EXIT 1, AND THE EXIT CODE IS NOT A VERDICT ON THIS SUITE. `why` WAS BLANK; this is the first diagnosis and it is a COULD-NOT-RUN. SAME CAUSE AS tests/seam_check/run_delegation_probe.py AND INHERITED FROM IT: this control imports and calls that module's `plant`, and dies at the identical line on the identical `.git`-is-a-file sentinel. IT CANNOT RUN IN A WORKTREE EITHER. ITS ARM 0 PASSED FIRST, which is worth keeping: `ok 0. --check-residue on a clean tree exits 0 and claims nothing else`. So the residue check itself works; only the planting half is unreachable here. EXIT CODE PRODUCED AT tests/seam_check/run_delegation_residue_control.py:163, `sys.exit(1 if failed else 0)`. NEXT STEP: RE-DRIVE IN THE LIVE CLONE together with run_delegation_probe.py -- a control whose subject could not run proves nothing, so these two move as a pair. tests/ file, tests owner's.",
-   "owner": "cody",
-   "exit_code": 1,
-   "diagnosed": "2026-10-14",
-   "diagnosed_by": "cody",
-   "environment": {
-    "where": "isolated-worktree",
-    "pinned": false,
-    "tool": "the suite itself, invoked directly, one process, python -u for .py",
-    "sha": "bd5239ac",
-    "basis": "DRIVEN IN cody b9, one at a time, 180s cap, cwd inside a git worktree of bd5239ac, exit code read from `echo \"EXIT=$?\"` on its own line and never inferred from the text. Worktree removed and pruned afterwards; `git worktree list` confirmed back to the live clone alone."
-   }
-  },
-  {
    "file": "tests/mar_billing_grant.test.js",
    "kind": "node",
    "tail": "7 passed, 17 failed, 4 unproven",
@@ -1777,6 +1741,38 @@
    "why": "VERIFIED GREEN in cody b9: driven alone, EXIT 0, ALL ARMS PASS, last line `ALL PASS -- a new uncoerced numeric fold cannot be added silently`. Exit-code line tests/run_truthy_sum_probe.py:292. MOVED OUT OF `entries` BECAUSE THE REGISTER'S OWN RULE REQUIRES IT: an entry whose suite has gone green swallows the next real failure of that file. IT IS THE ONLY ONE OF THE 24 SUITES DRIVEN IN b9 THAT PASSED -- 1 green, 22 exit 1, 1 exit 2. Its previous registered tail was '1 FAILED', so the fix landed between 2026-10-06 and now and nobody recorded it; this row is that record.",
    "previous_tail": "1 FAILED",
    "previously_diagnosed": "2026-10-06"
+  },
+  {
+   "file": "tests/seam_check/run_delegation_probe.py",
+   "exit_code": 0,
+   "recovered": "2026-10-14",
+   "recovered_by": "cody",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly with python -u, one process, 420s cap",
+    "sha": "feb669e7",
+    "basis": "RE-DRIVEN IN THE LIVE CLONE in cody b9 because the isolated-worktree run could not reach a verdict. Driven only after everything was committed and pushed, so a half-finished plant was recoverable with git; `git status --short` was EMPTY before and after each run and the .git sentinel was verified gone afterwards."
+   },
+   "why": "VERIFIED GREEN in cody b9, RE-DRIVEN IN THE LIVE CLONE: EXIT 0, all four arms True -- arm1_sees True, arm2_propagates True, arm3_stops True, arm4_no_residue True -- and `restored_baseline True (96 clean, 0 not-forwarded, 19 could-not-tell)`. The tree was EMPTY before and after and the .git sentinel was gone afterwards, so nothing it planted survived. THE WORKTREE RUN WAS NOT A VERDICT AND THIS ROW IS THE CORRECTION. In cody b9's first pass this suite was driven in an isolated git worktree -- the right default, and not free. It could not run there at all: its SENTINEL is os.path.join(REPO, '.git', 'seam-delegation-probe.planting') and IN A WORKTREE `.git` IS A 64-BYTE FILE, NOT A DIRECTORY, so the sentinel can never be created and it died with FileNotFoundError. Reporting that exit code as red would have declared a green suite broken. ONE THING IT REPORTS THAT IS NOT ITS OWN DEFECT: the 19 could-not-tell seams in its baseline line are a real repo condition, corroborated by the identical count under tests/seam_check/run_or_default_probe.py and run_ref_probe.py in the same sweep. Those two are still red BECAUSE of the 19; this one asserts the baseline is RESTORED rather than CLEAN, which is why it passes and they do not.",
+   "previous_tail": "  restored_baseline  False (94 clean, 0 not-forwarded, 21 could-not-tell)",
+   "previously_diagnosed": "2026-10-14"
+  },
+  {
+   "file": "tests/seam_check/run_delegation_residue_control.py",
+   "exit_code": 0,
+   "recovered": "2026-10-14",
+   "recovered_by": "cody",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly with python -u, one process, 420s cap",
+    "sha": "feb669e7",
+    "basis": "RE-DRIVEN IN THE LIVE CLONE in cody b9 because the isolated-worktree run could not reach a verdict. Driven only after everything was committed and pushed, so a half-finished plant was recoverable with git; `git status --short` was EMPTY before and after each run and the .git sentinel was verified gone afterwards."
+   },
+   "why": "VERIFIED GREEN in cody b9, RE-DRIVEN IN THE LIVE CLONE: EXIT 0, 10 passed 0 failed, including the two arms that make the rest mean anything -- `1a. the plant really did modify the file (the arm is not vacuous)` and `5. ABLATION: the same exception WITHOUT the guard leaves the plant`. THE WORKTREE RUN WAS NOT A VERDICT AND THIS ROW IS THE CORRECTION. In cody b9's first pass this suite was driven in an isolated git worktree -- the right default, and not free. It could not run there at all: its SENTINEL is os.path.join(REPO, '.git', 'seam-delegation-probe.planting') and IN A WORKTREE `.git` IS A 64-BYTE FILE, NOT A DIRECTORY, so the sentinel can never be created and it died with FileNotFoundError. Reporting that exit code as red would have declared a green suite broken. It inherits the cause exactly: this control imports and calls the other suite's `plant`, so it died at the identical line. The two move as a pair in both directions.",
+   "previous_tail": "FAILED: 1a. the plant really did modify the file (the arm is not vacuous), 5. ABLATION: the same exception WITHOUT the guard leaves the plant",
+   "previously_diagnosed": "2026-10-14"
   }
  ],
  "_b5_addition_2026_10_12": "ELEVEN entries added by fourth, batch b5 item 2, and the brief asked for THIRTY. The 30 is hank's 2026-10-08 figure (\"101 red, registry records 75, 30 RED AND NOT RECORDED\") and it was re-derived rather than carried: the gap against this register at HEAD 327e9e80 is 23, not 30, because the register has absorbed some of them since and cody's later run moved others. Of those 23, driving each ALONE returned 11 RED, 7 GREEN, 2 exit-2 COULD NOT RUN, 2 exit-3 SKIPPED and 1 TIMEOUT at 180s. ONLY THE 11 ARE RED. The 7 GREEN are the finding that matters: a run log named them red and they are not, so the stale half of a census is a wrong answer in both directions. The 12 non-red are listed by name with their measured state in docs/2026-10-12-fourth-b5-routing.md -- they are NOT in this file, because an entry here is an exemption and an exemption over a suite that is green or that never ran would swallow its next real failure.",
