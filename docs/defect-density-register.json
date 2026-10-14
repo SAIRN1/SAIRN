@@ -28519,6 +28519,58 @@
       "recurrence_open": "The new test reads sql/ files, so a CHECK widened LIVE and never written back is still invisible -- the exact state three audit-log tables were in until 2026-10-13. Nothing yet compares any app's HTML, the third copy of these vocabularies, except SAIRNfreedom's."
     },
     {
+      "commit": "705a16c9b60b",
+      "date": "2026-10-14",
+      "subject": "fix(sairnscape): the twelfth resource is gated, SAIRNscape is 12 of 12, and the suite loses a control it has to replace rather than drop",
+      "files": [
+        "api/sd-data-scp-session-gate.test.js",
+        "api/sd-data-session-gate.test.js",
+        "api/sd-data.js",
+        "docs/hank-evidence/b9_live_gate_probe.py"
+      ],
+      "lines_added": 312,
+      "lines_removed": 24,
+      "app": "sairnscape",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "api/sd-data.js: `schedule`, the TWELFTH SAIRNscape resource, was absent from SD_SESSION_GATED and from every branch-level session check, so read and write were authorised by the LICENCE KEY ALONE -- a key that is shipped to the browser. It is the same defect as the five closed in b8 and it survived that wave because the reproducing artifact only ever measured ELEVEN of the app's twelve resources (22 pairs = 11 x 2), and the SAIRNscape suite had it in neither its gated list nor its licence-only list -- so no arm could see it in either direction. No person, contact detail, money or regulated determination is on the row, which is why this is moderate.",
+      "rules": [
+        "1.7"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "unknown_reason": "No commit injected it. The resource was added before the session-gate mechanism existed at all, so there is no commit at which working behaviour became broken -- the same answer the five sibling resources got in b8, and for the same reason."
+      },
+      "citation_note": "Section 1.7 -- a sampling window silently exempts what it does not reach -- is the DISCOVERY defect here exactly: the repro's 22-pair universe was 11 of 12 resources and nothing said so. The authorisation gap itself has no section, so the citation is for why it was not found rather than for what it was.",
+      "phase_note": "The resource predates SD_SESSION_GATED (67c7e252, 2026-09-02) and every widening wave chose its scope by the row's content. This row has no sensitive content, so a wave correctly applying that rule correctly left it out -- the rule was the defect, not the application of it.",
+      "contributing_factors": [
+        {
+          "factor": "The reproducing artifact measured ELEVEN of the twelve resources the registry owns, and reported a count of pairs rather than a count of resources, so \"22 of 22 FIXED\" was true and complete-sounding while one resource had never been in the universe.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/sd-data-scp-session-gate.test.js derives its population from api/_resources/sairnscape.js and asserts GATED + UNGATED_REST equals it, so a resource in neither list fails the suite on the commit that adds it."
+        },
+        {
+          "factor": "Gating by the row's CONTENT was the stopping rule for five waves, and a row with no sensitive content can never qualify under it however many times it is applied.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The argument is changed rather than the rule reapplied: gated because the licence key is a browser-shipped bearer credential, written into the pair-count tripwire where somebody has to justify it."
+        },
+        {
+          "factor": "The b8 wave DISCLOSED this resource as ungated and left it, correctly, because nobody had decided it -- but a disclosure is only as good as the next person reading it, and it sat for a day.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Decided by Michael and closed. SAIRNscape is 12 of 12, and the suite's licence-only control was REPLACED rather than left as a zero-length loop."
+        }
+      ],
+      "recurrence_open": "The derived-population arm is SAIRNscape's only. Every other per-app gate suite still hand-types its resource list, so the same invisible-twelfth shape is available in each of them. And hover2's repro still measures 22 pairs -- it was not changed by this fix and will keep reporting 22 of 22 FIXED whatever happens to the twelfth resource."
+    },
+    {
       "commit": "8447c3695404",
       "date": "2026-10-14",
       "subject": "fix(sairnlegacy): a chapel could be promised to two families -- the double-booking check was reading the browser's own cache",
@@ -28761,6 +28813,65 @@
         }
       ],
       "recurrence_open": "`schedule` is still licence-only and that is a disclosure, not a fix: nobody has decided it, and it is the one SAIRNscape resource whose bare name is also a StoneDesk panel id. Nothing here closes the same shape in the other apps -- the derived-population arm is SAIRNscape's only; the other per-app gate suites still hand-type their resource lists."
+    },
+    {
+      "commit": "de2608c30ed5",
+      "date": "2026-10-14",
+      "subject": "fix(sairnsenior): three read/write asymmetries closed, and the SAIRNlegacy survey finds the same client-authority defect a third time",
+      "files": [
+        "api/_lib/sairnsenior-branches.test.js",
+        "api/sd-data-sen-role-asymmetry.test.js",
+        "api/sd-data.js",
+        "docs/2026-10-14-hank-b9-sairnlegacy-client-authority-survey.md"
+      ],
+      "lines_added": 629,
+      "lines_removed": 4,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "hover-audit",
+      "summary": "THREE read/write asymmetries in api/sd-data.js. (1) sen_branches and (2) sen_settings had management-only WRITES and reads open to ANY signed-in employee returning the WHOLE row -- including `updatedBy`/`updatedByRole` on a branch, and `updated_by`/`updated_at` on every setting, which say who changed the agency's federally-mandated EVV compliance declaration and when; plus any field or setting key added later, by default. (3) the five SEN_REFERRAL_RESOURCES had both verbs decided by a role set literally named SEN_CLIENT_BROAD_READ_ROLES, so a coordinator or a scheduler could WRITE sen_training_rules -- the rule that decides whether a caregiver is compliant to work -- and sen_applicants, employment data about somebody who is not yet staff.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "commit": "67c7e2526a08",
+        "date": "2026-09-02",
+        "subject": "fix(platform): the licence key alone no longer reads slabs, memory or writes profile -- and a refusal no longer renders as \"none\"",
+        "lag_days": 42
+      },
+      "citation_note": "No process-rules section describes a read that is broader than its own write. The sections are about checks that stop checking and counts that go stale; this is an authorisation surface that was never narrowed. Recorded as not-citable rather than stretched onto 1.1.",
+      "phase_note": "Each gate was written deliberately and the branch gate records its reasoning in full -- a caregiver's roster row names a branch and the name has to resolve. What was never designed is the middle option: the choice was read-everything or read-nothing, and the field-level tier that satisfies the stated need without the disclosure did not exist.",
+      "contributing_factors": [
+        {
+          "factor": "A role set named SEN_CLIENT_BROAD_READ_ROLES was deciding a WRITE for five resources. The name said what it was for and the call site ignored it.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The write is MANAGEMENT_ROLES now, imported from api/sen-auth.js rather than re-listed. Read is deliberately unchanged and still broad."
+        },
+        {
+          "factor": "The open reads were justified by a real user need written into the code, and the only alternatives anybody considered were open or refused -- so the justification kept winning, correctly, against the wrong question.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Both reads are minimum-necessary now, by ALLOWLIST rather than denylist, so the caregiver screen still resolves a branch name and an EVV state while a field added next month is withheld by default. The suite drives that with a field and a setting key that do not exist in today's app."
+        },
+        {
+          "factor": "sen_settings' write stores UNKNOWN keys as-is by design -- \"a settings store, not a schema registry\" -- and the read disclosed them on the same terms, so the next setting anybody added was published to every caregiver the day it was written.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Unknown keys are withheld entirely from the non-management tier, and the asymmetry between the two paths is stated in the code as deliberate."
+        },
+        {
+          "factor": "An existing suite asserted the OLD behaviour as correct -- \"read is open to any signed-in employee\" -- and proved it with a 1600-character proximity window, which is a measurement of comment length pretending to be a measurement of code.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Replaced by three independent facts that do not depend on how far apart they are written; api/_lib/sairnsenior-branches.test.js went from 30 arms to 32."
+        }
+      ],
+      "recurrence_open": "rf_settings (api/sd-data.js:8757) has the IDENTICAL open-read shape and was not touched -- noticed in passing, unverified, and recorded rather than fixed. Nothing surveys the other apps for read-broader-than-write. And whether a coordinator SHOULD be able to log a referral is now open: the write is management-only because that was the instruction, and if intake is a coordinator's job the fix is a per-resource write map rather than a return to the broad set."
     },
     {
       "commit": "e89e0a778aba",
