@@ -1,0 +1,109 @@
+DIGEST cody b11  2026-10-14
+
+STATUS
+  ALL SIX DISPATCHED ITEMS DONE. On origin/main at 1e45208b, 0 ahead / 0 behind.
+  All eight dispatched suites GREEN. Pushed WITHOUT --force; two gate refusals,
+  both repaired at cause, nothing overridden -- SAIRN_SEED_GATE never used in
+  either form, no hook added or restored, settings.json never committed, no
+  api/, sql/ or tools/ file edited, CLAUDE.md untouched, no auditor clone
+  entered.
+  EVERY ONE OF THE EIGHT FAILURES WAS A STALE EXPECTATION IN tests/. Not one
+  defect in any subject.
+  Committer identity on every b11 commit: fx <fx@example.invalid>, author AND
+  committer, from this clone's LOCAL config; --global is Michael Dibert
+  <mikied68@gmail.com>. Unchanged by this batch.
+
+DECISION-NEEDED
+  NOTHING FOR MICHAEL. And one thing is explicitly WITHDRAWN: b10 routed
+  tests/run_committer_identity_probe.py to Michael as "a DECISION, not a code
+  change -- either that local identity is intentional or the override should be
+  removed." IT WAS NEITHER. The arm was named "no local override was LEFT
+  BEHIND" and tested "none EXISTS", which is a property of whoever's clone it
+  is rather than of the run. Repaired as a before/after delta; NO IDENTITY WAS
+  UNSET OR CHANGED, because that was never the tests owner's call to make.
+
+CHANGED
+  tests/run_all_tests_floor_probe.py        stub signature + new arm 0 seam, exit 2 third state
+  tests/push_gate/refspec_and_override_probe.py  asserts the scoped-form refusal, text DERIVED from gate_skip
+  tests/run_all_tests_pinned_probe.py       banner anchor derived from the runner, fails closed
+  tests/run_cron_liveness_probe.py          anchored on CONTENT, not a git log position
+  tests/run_graduated_exemption_probe.py    both MODEs driven through the derived default
+  tests/app_session_isolation.js            all rows compared before any throws; THREE posture rows corrected
+  tests/app_session_isolation_probe.py      mutation-7 ANCHOR-3 repaired, measured unique
+  tests/run_committer_identity_probe.py     hermetic (GIT_CONFIG_GLOBAL/SYSTEM), section F is a delta now
+  tests/run_role_gate_negative_coverage_probe.py  pin fixtures carry the `exposed` shape; 3 legs + 1 control
+  docs/known-red-suites.json                entries 76->69, recovered 22->31, not_red 5->4
+  docs/TOOLING-INVENTORY.md                 regenerated with the gate's own command, ONE cell
+  docs/scrutiny-flags.json                  the gate's own ledger rows, committed per convention
+  SAIRN-handoff-cody-b11.md / -report- / -digest-
+
+  NOT EDITED, AND SAID OUT LOUD: no api/, no sql/, no tools/, no CLAUDE.md.
+  docs/TOOLING-INVENTORY.md is the ONE declared exception to tests/-only scope
+  -- a generator the push gate refused without, run with the exact command it
+  printed.
+
+EVIDENCE-path
+  docs/known-red-suites.json -- nine recovered rows, one updated not_red row and
+  one promoted entry, each carrying its exit code, its failing arm names and the
+  file:line that produced the exit. THE SCRATCHPAD IS EMPTY ON PURPOSE: 39 files
+  removed, because a digest pointing at a temp directory is a citation that
+  expires.
+  Commit messages a35a89e0, 076fb102, 0241b1b0, 241acc05, e253d410, cc618f18,
+  1e45208b -- every one tested as an ancestor of origin/main.
+  Transcript: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cody\ec3355ad-083b-4402-a518-3d4e79072c4c.jsonl
+
+UNVERIFIED
+  missing_checker_probe.py was driven at ebbf57c5, not re-driven at 1e45208b.
+  The three later commits touch files it does not read, but it costs ~25
+  minutes, so this is stated rather than folded into the green.
+  tools/red_suite_register_check.py was started and STOPPED after ~15 minutes
+  with no output. No verdict from it is claimed. Every register row written here
+  is an individual drive, which that file's own rule calls the authority.
+  No live deployed-URL check: this batch changed no api/, sql/ or app file, so
+  there is nothing deployed to verify.
+  The pre-fix counterfactual in tests/app_session_isolation_probe.py is EXIT 3
+  COULD NOT RUN -- the pre-PHASE_2_GATED suite is no longer green against
+  current api/sd-data.js, so "BLIND" would mean nothing. Neither colour, and a
+  loss of evidence rather than a failure.
+
+NEXT
+  1 CODY: tests/run_cross_tenant_dispatchers_sabotage_probe.py, RED exit 1,
+    DIAGNOSED NOT FIXED. Two `app: null` tripwires hardcoded at :406-416 measure
+    a property api/sd-data-cross-tenant-dispatchers.test.js:647-654 deliberately
+    gave up (its own comment at :633-646 states the trade). Replacement coverage
+    CHECKED: tests/sd_data_grd_session_gate.js exists and names both resources.
+    DERIVE the tripwire list from the suite's own `app: null` units and assert
+    the dedicated gate suite covers GRD. DO NOT just delete the two arms.
+  2 CODY: decide the fate of the pre-fix counterfactual above -- re-base it on a
+    later pre-repair commit, or retire it with its finding recorded.
+  3 CC (tools/): MIN_TEST_FILES is 370 against 796 discovered -- 426 test files
+    could be deleted with the guard silent. A stale pin, not a defect.
+  4 CC (tools/): sairn_push_gate_hook.py:988-991 says "THE BLANKET FORM STILL
+    WORKS"; :1377-1392 refuses it. And CLAUDE.md section 3, already largely
+    fixed by somebody, still says "SAIRN_SEED_GATE=off still works" -- the code
+    contradicts it. -> whoever owns CLAUDE.md.
+  5 ANYONE DRIVING tests/push_gate/missing_checker_probe.py: read
+    `git worktree list` FIRST. A stale worktree entry makes it report two
+    failures that have nothing to do with the fail-closed rule it tests. That is
+    what b10's two failures were.
+  6 EXPECTED, NOT DIRT: one docs/scrutiny-flags.json residue after the final
+    push -- the gate writes a ledger row for every commit it examines. Commit it
+    as chore(scrutiny ledger); do not `git checkout --` it without reading it.
+  7 UNCHANGED AND STILL ROUTED, none re-verified in b11:
+    tests/faults/transport_timeout_sweep.js (hank),
+    run_blob_coverage_scope_sabotage.py (cc),
+    run_citation_anchor_hop_sabotage.py (cc),
+    run_alf_read_order_sabotage_probe.py (hank), ooda_phases.py self-test (cc),
+    tests/push_gate/check4_probe.py and check7_probe.py (not_red, exit 3, not
+    examined here).
+
+CONTEXT 37% used of 1,000,000 (Opus 5 1M)
+  MEASURED, not estimated: 371,738 input tokens on the last request recorded in
+  this session's own transcript (2 input + 182 cache-creation + 371,554
+  cache-read). Taken at the point this digest was written, so the true figure at
+  release is slightly higher.
+  WHY IT IS NOT FROM THE TOOL: tools/sairn_status_line.py answers
+  `ctx ??% (no model in payload)` when run from inside a turn, and /context is a
+  user-side command an agent cannot invoke. The number above comes from the
+  transcript's own usage records, which is a different source from the tool and
+  is the reason it can be quoted at all.
