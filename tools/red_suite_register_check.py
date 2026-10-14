@@ -10,6 +10,27 @@ r"""Drive every REGISTERED red suite and fail if the register is lying.
 Exit 0 every registered suite really is red; 1 the register is wrong;
 2 COULD NOT RUN -- which is never folded into either of the other two.
 
+── THE ORDINARY RUN USED TO BE EXIT 2, ALWAYS (fixed cc b9) ────────────────
+This tool's whole premise is that it is cheap enough to run every batch
+WITHOUT `--from-run` -- that is the sentence two paragraphs up. But every
+such run unconditionally added "no --from-run log" to `could_not_run`, and
+`report()` makes ANY could_not_run entry win over a clean result, so the
+one invocation this tool is actually FOR could never report anything but
+exit 2. That is not PR 1.11's fail-closed (nothing here is absent or
+broken -- the whole-tree log is an OPTIONAL, EXPENSIVE second half, skipped
+on purpose, the same way `known_red_check.py`'s own header says "it does
+not gate"). Declining an optional, expensive input is not the same claim as
+being unable to answer the question this tool actually drove suites to
+answer, and folding the two into one exit code hid the honest half under
+the pessimistic one on every ordinary call.
+
+So "no --from-run" is now a NOTICE, not a could-not-run reason: it does not
+move the exit code, and it is still printed every time, unmissably, so a
+reader never mistakes an ordinary run for a whole-tree one. A `--from-run`
+log that WAS supplied and turned out truncated or unparsable is unchanged --
+that is a real failure of something actually asked for, and still forces
+exit 2.
+
 ── IT IS NOT tools/known_red_check.py AND THE DIFFERENCE IS THE COST ──────
 That tool answers the richer question (NEW / KNOWN / CHANGED / RECOVERED) and
 it is the one to reach for after a full run. But it needs a WHOLE-TREE run log
@@ -161,9 +182,17 @@ def kind_of(entry, rel):
 
 
 def check(entries, run_log=None, repo=REPO, driver=drive):
-    """-> (findings, could_not_run, driven). Pure except for `driver`."""
+    """-> (findings, could_not_run, driven, notices). Pure except for `driver`.
+
+    `notices` are true statements about reduced scope that are NOT failures --
+    today, exactly one: --from-run was not supplied. They never move the exit
+    code. `could_not_run` stays reserved for a real inability to answer:
+    an unreadable registry, a missing suite file, a timeout, a --from-run log
+    that WAS given and could not be used.
+    """
     findings = []
     could_not_run = []
+    notices = []
     driven = []
     registered = set()
 
@@ -185,9 +214,11 @@ def check(entries, run_log=None, repo=REPO, driver=drive):
                           'this file.'})
 
     if run_log is None:
-        could_not_run.append(
-            'no --from-run log, so UNREGISTERED red suites were not looked for. '
-            'This run says nothing about suites outside the register.')
+        notices.append(
+            'no --from-run log, so UNREGISTERED red suites were not looked '
+            'for -- SKIPPED BY DESIGN on an ordinary run, not a failure. '
+            'This run says nothing about suites outside the register; pair '
+            'with known_red_check.py over a whole-tree log for that question.')
     else:
         if not RAN_RE.search(run_log):
             could_not_run.append(
@@ -204,13 +235,14 @@ def check(entries, run_log=None, repo=REPO, driver=drive):
                                   'covers it. A new regression is '
                                   'indistinguishable from the existing set '
                                   'until it is recorded.'})
-    return findings, could_not_run, driven
+    return findings, could_not_run, driven, notices
 
 
-def report(findings, could_not_run, driven, as_json=False):
+def report(findings, could_not_run, driven, notices=(), as_json=False):
     if as_json:
         print(json.dumps({'findings': findings, 'could_not_run': could_not_run,
-                          'driven': driven}, indent=2, sort_keys=True))
+                          'notices': list(notices), 'driven': driven},
+                         indent=2, sort_keys=True))
     else:
         print('RED SUITE REGISTER CHECK -- is every registered entry still true?')
         print('  registered entries driven  %3d' % len(driven))
@@ -225,7 +257,16 @@ def report(findings, could_not_run, driven, as_json=False):
         for f in findings:
             print('  %-12s %s' % (f['kind'], f['file']))
             print('               %s' % f['detail'])
+        if notices:
+            print('')
+            print('NOTICE (%d) -- reduced scope, NOT a failure, does not '
+                  'change the exit code:' % len(notices))
+            for n in notices:
+                print('  %s' % n)
     # could_not_run wins over findings -- a partial run's findings are a floor.
+    # notices do NOT: declining an optional, expensive input is not the same
+    # claim as being unable to answer the question this run actually drove
+    # suites to answer.
     if could_not_run:
         if not as_json:
             print('\nCOULD NOT RUN (%d) -- this is NOT a pass:' % len(could_not_run))
@@ -255,20 +296,23 @@ def selftest():
             return v[1], ''
         return d
 
-    def case(name, entries, table, log, want_exit, want_kinds):
-        f, c, dr = check(entries, run_log=log, driver=fake_driver(table))
-        code = report(f, c, dr, as_json=True) if False else (
-            EXIT_COULD_NOT_RUN if c else (EXIT_FINDING if f else EXIT_CLEAN))
+    def case(name, entries, table, log, want_exit, want_kinds, want_notice=None):
+        # notices never move the exit code (b9) -- this derivation is
+        # independent proof report() agrees, not a copy of its logic.
+        f, c, dr, nt = check(entries, run_log=log, driver=fake_driver(table))
+        code = EXIT_COULD_NOT_RUN if c else (EXIT_FINDING if f else EXIT_CLEAN)
         kinds = sorted(set(x['kind'] for x in f))
         ok = (code == want_exit and kinds == sorted(want_kinds))
+        if want_notice is not None:
+            ok = ok and (bool(nt) == want_notice)
         cases.append((name, ok, code, kinds))
         return ok
 
     LOG_OK = 'RAN: 3 files\n  FAIL py    tests/a.py   boom\n  ok   py    tests/b.py\n'
 
-    case('1. every registered suite still red, log clean -> EXIT 0',
+    case('1. every registered suite still red, log clean -> EXIT 0, no notice',
          [{'file': 'tests/a.py', 'kind': 'py'}],
-         {'tests/a.py': ('ran', 1)}, LOG_OK, EXIT_CLEAN, [])
+         {'tests/a.py': ('ran', 1)}, LOG_OK, EXIT_CLEAN, [], want_notice=False)
 
     case('2. a registered suite that PASSES -> RECOVERED, EXIT 1',
          [{'file': 'tests/a.py', 'kind': 'py'}],
@@ -295,10 +339,17 @@ def selftest():
          [{'file': 'tests/gone.py', 'kind': 'py'}],
          {}, LOG_CLEAN, EXIT_COULD_NOT_RUN, [])
 
-    case('6. NO log -> COULD NOT RUN, because "no unregistered reds" would be '
-         'a claim from a population of zero',
+    case('6. NO log, every registered suite still red -> EXIT 0 WITH a '
+         'notice (b9: declining the optional whole-tree pass is not the '
+         'same claim as being unable to answer this run\'s real question)',
          [{'file': 'tests/a.py', 'kind': 'py'}],
-         {'tests/a.py': ('ran', 1)}, None, EXIT_COULD_NOT_RUN, [])
+         {'tests/a.py': ('ran', 1)}, None, EXIT_CLEAN, [], want_notice=True)
+
+    case('10. NO log AND a RECOVERED suite -> still EXIT 1 -- the notice '
+         'never hides a real finding',
+         [{'file': 'tests/a.py', 'kind': 'py'}],
+         {'tests/a.py': ('ran', 0)}, None, EXIT_FINDING, ['RECOVERED'],
+         want_notice=True)
 
     case('7. a TRUNCATED log -> COULD NOT RUN, never read as clean',
          [{'file': 'tests/a.py', 'kind': 'py'}],
@@ -384,15 +435,16 @@ def main(argv):
               'is what this')
         print('   tool used to do, and it edited the caller\'s tree every '
               'batch.)')
-        findings, could_not_run, driven = check(entries, run_log=log,
-                                                repo=work)
+        findings, could_not_run, driven, notices = check(entries, run_log=log,
+                                                         repo=work)
     finally:
         rc, _o, err = _git('worktree', 'remove', '--force', work)
         if rc != 0:
             print('WARNING: the worktree at %s could not be removed (%s). It '
                   'is litter and `git worktree prune` clears it.'
                   % (work, (err or '').strip()[:120]))
-    return report(findings, could_not_run, driven, as_json='--json' in argv)
+    return report(findings, could_not_run, driven, notices,
+                  as_json='--json' in argv)
 
 
 if __name__ == '__main__':
