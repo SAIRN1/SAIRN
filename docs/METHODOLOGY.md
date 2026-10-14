@@ -861,6 +861,13 @@ checker from one that agrees with you.**
         VERDICT: both ablations hold -- each fixture FAILS when its guard is
         removed
 
+**CORRECTED 2026-10-14 (b13):** the `v1` rows above are **reconstructions of
+the defective predicate, not executions of the code that shipped** — no copy of
+either checker as it first ran exists in git or on disk, so "v1 (as shipped)"
+in that script's header is an unprovable label. The ablation still holds; its
+evidence is about the guard, not about history.
+`docs/2026-10-14-fourth-b13-corrections.md` carries the three commands.
+
 ### A THIRD HALF, ADDED AFTER THE ABOVE WAS WRITTEN: THE EXIT CODE, DRIVEN END TO END
 
 **A fixture asserts on a predicate; only the PROCESS EXIT CODE is what another
