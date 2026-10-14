@@ -270,11 +270,41 @@ def capture_read_time_shas(repo, sources):
     return out
 
 
+_SHA_HEX_RE = re.compile(r'^[0-9a-f]+$')
+_SHA_MIN_LEN = 7  # git's own minimum for an unambiguous abbreviation
+
+
+def _sha_usable(read_sha):
+    """(ok, reason_if_not). A --source sha must be lowercase hex and at
+    least 7 characters -- git's own floor for an unambiguous abbreviation.
+    Anything shorter is a typo or a copy-paste of the wrong field, not a
+    legitimate short sha, so it is refused here rather than silently
+    compared."""
+    if not _SHA_HEX_RE.match(read_sha or ''):
+        return False, 'not lowercase hex: %r' % read_sha
+    if len(read_sha) < _SHA_MIN_LEN:
+        return False, '%d character(s), below the %d-character minimum' % (len(read_sha), _SHA_MIN_LEN)
+    return True, None
+
+
 def verify_freshness_at_write_time(repo, source_shas):
     """The LAST check before the log file is opened for writing. Mutates
     nothing; returns (verdict_per_path, stale_paths, could_not_verify_paths).
     stale_paths non-empty means the caller MUST refuse the write. Never
-    raises."""
+    raises.
+
+    A read-time sha SHORTER than the full 40 hex characters (a 12-char
+    display truncation is the common case -- git itself abbreviates to 7-12
+    by convention) is accepted as a PREFIX of the current full sha, not
+    rejected outright. Found and fixed 2026-10-14 (h1 b31): passing the
+    12-char form this tool's own error message prints used to fail every
+    time with 'read-time sha X != current origin/main sha X' where both
+    displayed values were identical, because the comparison was on full
+    strings while the DISPLAY was truncated to 12 chars on both sides --
+    a confusing false negative, not a real staleness. A sha too short to be
+    an unambiguous abbreviation (under 7 hex characters, or not hex at all)
+    is refused with a message naming the full-sha requirement explicitly,
+    rather than being compared at all."""
     verdict = {}
     stale, unresolved = [], []
     for path, info in source_shas.items():
@@ -282,6 +312,15 @@ def verify_freshness_at_write_time(repo, source_shas):
         if not read_sha:
             verdict[path] = {'status': 'could_not_verify',
                               'detail': info.get('capture_error') or 'no read-time sha captured'}
+            unresolved.append(path)
+            continue
+        usable, why_not = _sha_usable(read_sha)
+        if not usable:
+            verdict[path] = {'status': 'could_not_verify',
+                              'detail': ('--source sha %r is not usable (%s). Pass the FULL 40-character '
+                                         'git sha (safest), or an unambiguous abbreviation of at least %d '
+                                         'hex characters -- get it with `git rev-parse <ref>:<path>`.'
+                                         % (read_sha, why_not, _SHA_MIN_LEN))}
             unresolved.append(path)
             continue
         if not repo:
@@ -296,10 +335,10 @@ def verify_freshness_at_write_time(repo, source_shas):
             verdict[path] = {'status': 'stale',
                               'detail': 'no longer exists on origin/main: %s' % detail}
             stale.append(path)
-        elif current != read_sha:
+        elif not current.startswith(read_sha):
             verdict[path] = {'status': 'stale',
-                              'detail': 'read-time sha %s != current origin/main sha %s'
-                                        % (read_sha[:12], current[:12])}
+                              'detail': 'read-time sha %s is not a prefix of current origin/main sha %s'
+                                        % (read_sha, current[:12])}
             stale.append(path)
         else:
             verdict[path] = {'status': 'fresh', 'detail': None}
