@@ -29493,6 +29493,33 @@
         }
       ],
       "recurrence_open": "Five of the seven role names are [CONFIRM] in the spec and still are -- a funeral home's own titles win, and 'prep' may need its own licensed tier the way SAIRNvet's PRESCRIBER_ROLES does because embalmer is a separate state licence in most states. leg_preneed's owner-only DELETION rule is not implemented: this handler has no delete verb. Whether a cremation authorisation legally needs a second named person is a state-law question this code does not answer. And the existing staff rows are only narrowed, not re-assigned -- that is a human task per employee and nothing tracks whether it has been done."
+    },
+    {
+      "commit": "3cab9b114692",
+      "date": "2026-10-14",
+      "subject": "fix(hover): one tracked hover_tip_beacon.py -- same drift as hover_log.py, same fix",
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools/hover_log.py",
+        ".claude/skills/sairn-hover-auditor/tools/hover_tip_beacon.py"
+      ],
+      "lines_added": 141,
+      "lines_removed": 18,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "tools/hover_tip_beacon.py had the identical two-copy drift already found and fixed in hover_log.py this same batch cycle: a tracked copy inside the platform repo whose BEACON_PATH defaulted relative to its own directory (HERE), and an untracked, functionally-live copy next to the real beacon/log data that every recent hover batch was actually running. The untracked copy had also gained a --max-lag flag and a regression-test fixture the tracked copy never got. Fixed: diffed first, merged the untracked-only logic (--max-lag plus its 6 selftest fixtures, and a missing regression fixture for the pre-existing read-back guard) into the tracked copy; BEACON_PATH is now derived from hover_log's own corrected LOG_PATH (same directory in every known instance) rather than guessed; main() refuses loudly if hover_log's own default couldn't resolve, or if a second copy of this script reappears next to the real data. Generalized hover_log.py's duplicate-detection helper to take an explicit script_file argument, since its __file__ default would otherwise have silently checked for the wrong filename when imported by a second tool. --selftest 21/0 (was 15/0). --check with no PYTHONPATH and no override now resolves and reports clean. The untracked copy is renamed aside, not deleted (rm denied by permissions).",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "The untracked duplicate's fork point predates this batch by an unknown margin, same as the hover_log.py case; no single introducing commit identified."
+      },
+      "citation_note": "No PR section describes two independently-maintained copies of one tool diverging; same shape as the hover_log.py record this batch cites, just a second tool with the identical bug.",
+      "factors_unknown_reason": "Immediate cause (HERE-relative default + no duplicate-detection, same root cause as the already-registered hover_log.py defect) is understood and fixed; no deeper RCA on why the same bug shape existed in a second tool."
     }
   ],
   "started": "2026-09-09",
