@@ -3620,6 +3620,32 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairncare_office_manager_role.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "function exemptionArms(self, token) {"
+    }
+   ],
+   "sha": "cd65d82d66b32d8cd5b923ace8dc31b8d35b13c2",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_clock_flags_merge.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "console.log('\\nE. the exemption claims, measured');"
+    }
+   ],
+   "sha": "cd65d82d66b32d8cd5b923ace8dc31b8d35b13c2",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/alf-append-only-read-order.test.js",
    "class": "test file",
    "level": "CHANGE",
