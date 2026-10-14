@@ -715,8 +715,13 @@ def sibling_clones(repo=None):
     return found
 
 
-def clone_scope():
-    names = sibling_clones()
+def clone_scope(repo=None):
+    # `repo` is forwarded so a control can drive this against a fixture parent
+    # of real repositories instead of against whatever directory the tool is
+    # running in -- the same reason sibling_clones() already takes one, and the
+    # reason the self-test was red from any isolated worktree. Production
+    # passes nothing.
+    names = sibling_clones(repo)
     return ('%d working copies -- %s -- each a clone of the same remote and '
             'each able to push to origin/main, credentialed by the Windows '
             'credential manager rather than by anything in this repo. An agent '
@@ -910,14 +915,83 @@ def render():
     return '\n'.join(L)
 
 
+def _fixture_clone_parent(n=5):
+    """A throwaway parent holding `n` REAL mini-clones of one fake origin.
+
+    ── WHY THIS EXISTS: THE SELF-TEST WAS RED, AND NOT FOR ITS OWN REASON ───
+    Measured 2026-10-14 (cc b8) by running `--selftest` from an isolated
+    worktree under the system temp directory:
+
+        FAIL it renders with the real IDENTITIES   80 candidate repositories
+        FAIL the clone enumeration ran             in C:\\...\\Temp, above the
+        FAIL no row claims a rotation nobody ...   cap of 32
+
+    `sibling_clones()` was RIGHT to refuse -- a parent holding 80 repositories
+    is not a clone parent, and that cap exists because enumerating 1865 of
+    them took 180 seconds on 2026-09-30. What was wrong is that FIVE arms which
+    only ever needed a RENDER were coupled to the ambient directory the tool
+    happened to be run from, so the self-test reported a defect in the register
+    whenever it was not run from a real clone -- and every isolated-worktree
+    runner does exactly that.
+
+    AND THE RECORDED DIAGNOSIS WAS WRONG ABOUT WHICH ARM. The entry in
+    docs/known-red-suites.json blames "with an unreadable repo root it RAISES
+    rather than returning a list". That arm PASSES in both environments; it is
+    measured passing in the output above. Reported rather than quietly fixed.
+
+    So the arms that are about the CODE now run against this fixture, which is
+    the same shape everywhere, and the arms that are about THIS MACHINE are
+    kept as a separate control that reports NOT CHECKED with its reason rather
+    than failing. Deterministic where it can be, honest where it cannot.
+    """
+    import subprocess
+    import tempfile
+    parent = tempfile.mkdtemp(prefix='nhi-clone-parent-')
+    url = 'https://example.invalid/sairn-fixture.git'
+    for i in range(n):
+        path = os.path.join(parent, 'SAIRN-fixture-%d' % i)
+        os.makedirs(os.path.join(path, 'tools'))
+        os.makedirs(os.path.join(path, 'sql'))
+        for args in (('init', '-q', '-b', 'main'),
+                     ('config', 'remote.origin.url', url)):
+            subprocess.run(['git', '-C', path] + list(args),
+                           capture_output=True)
+    return parent, os.path.join(parent, 'SAIRN-fixture-0')
+
+
 def _selftest():
     ok = True
+    not_checked = []
 
     def check(name, cond, detail=''):
         nonlocal ok
         print(('  ok   ' if cond else '  FAIL ') + name + ('' if cond else '  ' + str(detail)))
         if not cond:
             ok = False
+
+    def unchecked(name, why):
+        """A third state, printed and counted -- never folded into a pass."""
+        not_checked.append(name)
+        print('  ----  NOT CHECKED HERE: %s' % name)
+        print('        %s' % why)
+
+    def env_refusal(e):
+        """Is this CouldNotTell about WHERE the tool ran, not about the register?
+
+        Exactly two messages qualify, both from the clone enumeration: the
+        candidate cap, and finding no sibling at all. Both are facts about the
+        parent directory -- a worktree under the system temp directory hits the
+        first every time -- and neither says anything about the identities.
+
+        THE NARROWNESS IS THE POINT, and the pairing is what keeps it honest:
+        if the enumeration itself ever breaks, section 3b fails on a FIXTURE
+        parent and no classifier here can hide it. This only decides whether an
+        unanswerable arm reads as NOT CHECKED or as a defect.
+        """
+        msg = str(e)
+        return ('above the cap of' in msg
+                or 'was found beside' in msg
+                or 'is not a clone parent' in msg)
 
     print('1. the refusal fires in both directions')
     saved = list(IDENTITIES)
@@ -947,7 +1021,12 @@ def _selftest():
         check('...and every identity appears',
               all(i['id'] in body for i in IDENTITIES))
     except CouldNotTell as e:
-        check('it renders with the real IDENTITIES', False, e)
+        if env_refusal(e):
+            unchecked('the real register renders',
+                      '%s -- the document cannot be rendered from here at all, '
+                      'so this arm has no answer rather than a bad one' % e)
+        else:
+            check('it renders with the real IDENTITIES', False, e)
 
     print('\n3. the derived halves really read the repo')
     try:
@@ -966,21 +1045,28 @@ def _selftest():
     # finds MORE THAN THE FOUR the old row named, and that it REFUSES rather
     # than guessing when it cannot read.
     print('\n3b. the clone population is counted from disk and fails closed')
+    print('     (against a FIXTURE parent of 5 real repositories, so this '
+          'section answers the')
+    print('      same way from a clone, a worktree or a temp directory)')
+    import shutil
+    fixture_parent, fixture_repo = _fixture_clone_parent()
     try:
-        names = sibling_clones()
-        me = os.path.basename(REPO)
+        names = sibling_clones(fixture_repo)
+        me = os.path.basename(fixture_repo)
         check('the enumeration finds THIS clone -- if it cannot find the one it '
               'is running in, nothing it says about the others is worth reading',
               me in names, (me, names))
         check('it finds the FIFTH clone the typed list was missing',
               len(names) >= 5, names)
-        body_scope = clone_scope()
+        body_scope = clone_scope(fixture_repo)
         check('...and the published scope names the count it actually measured',
               str(len(names)) + ' working copies' in body_scope, body_scope[:80])
         check('the old hardcoded four is not in the output',
               'FOUR working copies' not in body_scope)
     except CouldNotTell as e:
         check('the clone enumeration ran', False, e)
+    finally:
+        shutil.rmtree(fixture_parent, ignore_errors=True)
 
     # THE FAIL-CLOSED HALF, DRIVEN. A check that depends on another tool must
     # fail CLOSED when that tool is absent (PR 1.11), and the only way to know
@@ -1013,9 +1099,37 @@ def _selftest():
         # selftest CRASHED instead of reporting when the real register was
         # incomplete -- a selftest that dies on a real finding is a selftest
         # nobody can use to fix the finding.
-        check('no row claims a rotation nobody attested', False, e)
+        if env_refusal(e):
+            unchecked('a blank rotation date is not rendered as "never"',
+                      '%s -- same environmental refusal as section 2' % e)
+        else:
+            check('no row claims a rotation nobody attested', False, e)
+
+    # ── 3c. THE LIVE MACHINE, AS A CONTROL THAT CANNOT FAIL THE SUITE ───────
+    # The fixture arms above prove the enumeration works. THIS asks the
+    # question the fixture cannot: does it find the real sibling clones on this
+    # machine? It only has an answer when the tool is run FROM a real clone --
+    # from a worktree in the system temp directory the parent holds 80
+    # repositories and `sibling_clones()` refuses, correctly. So a refusal here
+    # is NOT CHECKED, printed with its reason, and counted separately: it is
+    # neither a pass nor a failure, and the summary line says so.
+    print('\n3c. CONTROL on the LIVE machine -- answerable only from a real clone')
+    try:
+        names = sibling_clones()
+        me = os.path.basename(REPO)
+        check('the real parent directory yields THIS clone and at least five '
+              'siblings', me in names and len(names) >= 5, (me, names))
+    except CouldNotTell as e:
+        unchecked('the real parent directory yields THIS clone and at least '
+                  'five siblings',
+                  '%s -- run this from a clone to answer it' % e)
 
     print('')
+    if not_checked:
+        print('  %d arm(s) NOT CHECKED in this environment: %s'
+              % (len(not_checked), '; '.join(not_checked)))
+        print('  NOT folded into the line below. "Could not tell" is a third '
+              'state.')
     print('  all arms pass' if ok else '  ARMS FAILED')
     return 0 if ok else 2
 
