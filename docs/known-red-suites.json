@@ -841,7 +841,7 @@
    "kind": "py",
    "tail": "TIMED OUT after 300s -- a hang is not a pass",
    "since": "2026-10-06",
-   "why": "COULD NOT RUN, NOT RED. It exceeded a 300s per-suite ceiling when driven alone. A hang is not a pass and it is not a failure either; the ceiling is the measurement, and whether this suite is slow or stuck has NOT been established.",
+   "why": "COULD NOT RUN, NOT RED. It exceeded a 300s per-suite ceiling when driven alone. A hang is not a pass and it is not a failure either; the ceiling is the measurement, and whether this suite is slow or stuck has NOT been established.  ||  RE-MEASURED 2026-10-14 (cody b8), isolated worktree at 433860be: IT NO LONGER TIMES OUT. Real exit 1 in roughly 130s -- '85 checks, 4 failed'. THE STORED `tail` ABOVE STILL SAYS 'TIMED OUT after 300s' AND IS THEREFORE STALE; it is left in place rather than overwritten, because a register whose rows are edited in place cannot be used to tell a changed reason from a new one. The four failing arms are now NAMED, which a timeout could never give: 'H2 and prints nothing', 'H4 a prose mention is not a push', 'J6 the hook entry declares a timeout at all', 'J7 and the sweep budget equals it rather than a hardcoded fallback'. J6/J7 are a pair about the hook's own declared timeout, which is plausibly the same subject as the original 300s hang. Exit code produced at tests/run_report_only_checks_probe.py:989, `sys.exit(1 if bad else 0)`. EVIDENCE: docs/2026-10-13-cody-b8-undriven-suite-results.md suite 6.",
    "owner": "cody",
    "diagnosed": "2026-10-06",
    "diagnosed_by": "fourth",
@@ -851,17 +851,18 @@
     "tool": "the suite itself, driven individually, one process per suite",
     "sha": "unknown",
     "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+   },
+   "tail_remeasured_2026_10_14": "85 checks, 4 failed (exit 1, ~130s, no timeout)"
   },
   {
    "file": "tests/run_rewrite_convergence_probe.py",
    "kind": "py",
    "tail": "  FAILED: E1 --derive: nothing is derived that is neither declared nor exempted",
    "since": "2026-10-06",
-   "why": "",
+   "why": "DRIVEN 2026-10-14 (cody b8), in an isolated worktree at 433860be: exit 1, 14 passed 4 failed. `why` WAS BLANK; this is the first diagnosis. THREE OF THE FOUR ARE THE TOOL EXITING 2 COULD NOT RUN, FOLDED INTO FAIL BY THE PROBE -- B1 'real-repo --verify: anchors resolve and coverage is complete', B1b 'the mirror verifies before it is damaged', and B4 'a hook on disk the map does not name is exit 1' all report exit=2. The tool's own words: \"COULD NOT RUN -- 1 anchor(s) unresolvable. This is NOT a pass: post_rewrite_hook .githooks/post-rewrite contains its anchor '--post-rewrite' 3 times -- an ambiguous anchor is not evidence\". THAT IS A REAL REPO-STATE FINDING AND NOT A SANDBOX ARTIFACT: the anchor '--post-rewrite' occurs three times in .githooks/post-rewrite, so the uniqueness guard refuses, which is the correct direction. FIX THE ANCHOR, NOT THE PROBE -- either the guard takes a more specific anchor or the hook stops repeating the string. THE FOURTH IS A GENUINE FAILURE: E1 '--derive: nothing is derived that is neither declared nor exempted' exits 1, which is the tool working. NOTE THE PROBE FOLDS COULD-NOT-RUN INTO FAIL, which is the exact third-state collapse this platform refuses elsewhere; the probe's summary arithmetic has no unproven counter. Exit code produced at tests/run_rewrite_convergence_probe.py:282, `sys.exit(1 if FAIL else 0)`. EVIDENCE: docs/2026-10-13-cody-b8-undriven-suite-results.md suite 7.",
    "owner": "cody",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-14",
+   "diagnosed_by": "cody",
    "environment": {
     "where": "live-clone",
     "pinned": false,
@@ -875,10 +876,10 @@
    "kind": "py",
    "tail": "FAILED  run_role_gate_negative_coverage_probe: 4 failed",
    "since": "2026-10-06",
-   "why": "",
+   "why": "DRIVEN 2026-10-14 (cody b8), in an isolated worktree at 433860be: exit 1, 19 ok 4 failed. `why` WAS BLANK; this is the first diagnosis. ALL FOUR FAILURES ARE PIN-FILE ARMS AND ALL FOUR REPORT exit=2, NOT A WRONG VERDICT -- 'at the pinned number it is OK and exits 0', '...and says a ratchet is not a pass on the same run', 'a NEW uncovered gate is a REGRESSION, exit 1', and 'an added negative arm reads as IMPROVED and asks to be re-pinned'. THE DISCRIMINATING FACT, AND IT IS WHY THIS IS A PIN PROBLEM AND NOT A TOOL PROBLEM: the probe's section 8 ('AND THE REAL REPO -- so the arms above are not a fixture dialect') passed ENTIRELY, including 'it runs against the shipping repo and exits 0 or 1, never 2', 'UNCOVERED and COVERED are BOTH non-zero -- if either is 0 the classifier has stopped discriminating' and 'IT WROTE NOTHING to api/ -- bytes AND mtime'. So the classifier works against real source and the four red arms are about the pin file the fixture arms construct. NEXT STEP: read why the tool returns 2 on the probe's constructed pin -- section 7 proves exit 2 is its correct answer for a missing/unparseable pin, so the likely cause is the fixture pin not being where the tool looks, which is a probe-side path problem. Exit code produced at tests/run_role_gate_negative_coverage_probe.py:283, `sys.exit(1 if fails else 0)`. EVIDENCE: docs/2026-10-13-cody-b8-undriven-suite-results.md suite 8.",
    "owner": "cody",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-14",
+   "diagnosed_by": "cody",
    "environment": {
     "where": "live-clone",
     "pinned": false,
@@ -1453,11 +1454,11 @@
    "kind": "py",
    "tail": "  - git status is still readable",
    "since": "2026-10-12",
-   "why": "",
+   "why": "DRIVEN 2026-10-14 (cody b8), in an isolated worktree at 433860be: exit 1, 33 ok 2 failed. `why` WAS BLANK; this is the first diagnosis. BOTH FAILURES ARE THE SAME ONE DEFECT IN A THIRD TOOL, NOT IN THIS PROBE -- 'nhi_register.py: the self-test passes UNMUTATED, or every arm below is meaningless' and 'nhi_register.py: the self-test passes again after restore, so the mutants left nothing behind'. The underlying red arm is nhi_register.py's OWN self-test: \"with an unreadable repo root it RAISES rather than returning a list\". So nhi_register.py's self-test is red at HEAD and this probe correctly refuses to treat its mutation arms as meaningful while the unmutated baseline is red -- THAT IS THE PROBE WORKING, and the first of the two arms is the baseline guard that makes the other 33 interpretable. WHAT DID PASS AND MATTERS: every mutation arm caught its mutant, and the tree was verified byte-for-byte unchanged after three tools were deliberately broken and restored ('the finally clause runs is the assumption this arm refuses to make'). NEXT STEP: fix nhi_register.py's unreadable-root arm -- it is the same fail-closed requirement as suites 2 and 3 in this group, which all three red suites share. Exit code produced at tests/run_selftest_independence_probe.py:209, `sys.exit(1 if fails else 0)`. EVIDENCE: docs/2026-10-13-cody-b8-undriven-suite-results.md suite 10.",
    "owner": "cody",
    "exit_code": 1,
-   "diagnosed": null,
-   "diagnosed_by": null,
+   "diagnosed": "2026-10-14",
+   "diagnosed_by": "cody",
    "environment": {
     "where": "live-clone",
     "pinned": false,
@@ -1518,6 +1519,25 @@
     "tool": "the suite itself, invoked directly, one process per suite",
     "sha": "327e9e80",
     "basis": "MEASURED 2026-10-12 (fourth) at HEAD 327e9e80, batch b5 item 2. Candidates were DERIVED, not typed: every suite named red by hank's 2026-10-08 whole-tree table (89 REAL, parsed per SECTION so its 8 CASCADE and 4 TIMEOUT rows were NOT read as failures) unioned with every rc!=0 row of cody's 2026-10-11 routing TSV (76), giving 93 red suites, of which 23 were absent from this register. ALL 23 WERE THEN DRIVEN ALONE, one process each, 180s ceiling, because this file's own _how_it_was_measured says the individual drive is the authority and a run log is not. RESULT: 11 RED (exit 1), 7 GREEN, 2 COULD NOT RUN (exit 2), 2 SKIPPED (exit 3), 1 TIMEOUT. Only the 11 are added. `git status --porcelain` was captured before and after every suite and for the run as a whole: the whole-run delta was EMPTY, so no suite left the tree dirty for the next one. EXIT CODE ONLY -- no `why` is written, because an exit code is not a diagnosis."
+   }
+  },
+  {
+   "file": "tests/mar_billing_grant.test.js",
+   "kind": "node",
+   "tail": "5 passed, 16 failed, 4 unproven",
+   "since": "2026-10-13",
+   "why": "DELIBERATELY RED, AND THAT IS NOT THE SAME AS BROKEN. This suite was written FAILING-FIRST to encode Michael's 2026-10-13 decision -- billing never reads the MAR by default; for coding work only an office manager may grant billing access to a named resident's MAR, time-limited, expiring on its own, and audit-logged. NONE of that exists at HEAD, so 16 arms fail and 4 cannot be evaluated at all. MEASURED exit 1 at e9d6d40c with `node tests/mar_billing_grant.test.js`: 5 passed, 16 failed, 4 unproven. The 5 passes are the regression pins and the controls -- A4/A5 (billing stays 403 on alf_mar read and write, ALF_MAR_ROLES = { owner, nursing, med_aide } at api/sd-data.js:11148, gated at :11191 and :11234), A6/A7 (nursing and the assigned narrow role still get 200, so a 'deny everything' fix cannot satisfy this file) and C4, WHICH IS VACUOUS WHILE A1 IS RED and says so in its own arm text. THE OPEN HOLE THIS FILE IS ABOUT: ALF_FAMILY_READ_ROLES = { owner, billing, nursing } at api/sd-data.js:12551 is inherited by action family_mar at :12654, so a billing clerk 403'd from alf_mar receives a named resident's full medication administration record through the sibling resource -- and because billing is in the BROAD half of that set the assignment scope is skipped (:12656), so it is every resident on the licence, not one. NOT A GATE: nothing in tools/sairn_push_gate_hook.py reads this path; its check list is a fixed tuple list and this file is not in it. tools/run_all_tests.py discovers it under tests/ and is report-only on the promotion path, which is exactly why this register row exists -- so the next session can tell this deliberate red from a new regression. WHEN IT GOES GREEN, REMOVE THIS ROW: a register entry whose suite has gone green swallows the next real failure of that file. ARM B2 IS A QUESTION, NOT A DEFECT: ROLES_BY_APP.sairncare is ['owner','nursing','med_aide','caregiver','billing','activities'] at api/_lib/auth.js:238 -- there is no office_manager role in SAIRNcare at all, so the grantor the decision names cannot currently hold a session. Both resolutions are legitimate and the api/ owner picks one: add the role across ROLES_BY_APP, api/alf-auth.js's provisioning set and the employee_auth CHECK together, or declare `owner` to BE the office manager for this purpose. FULL ROUTED NOTE: docs/2026-10-13-cody-b8-billing-mar-role-vocabulary.md",
+   "owner": "hank",
+   "owner_basis": "api/ owner. The feature is an api/sd-data.js change plus a grant table and three audit event types; cody wrote the suite and the routed note and may not land the api/ half.",
+   "diagnosed": "2026-10-13",
+   "diagnosed_by": "cody",
+   "deliberate": true,
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "node tests/mar_billing_grant.test.js, invoked directly, one process",
+    "sha": "e9d6d40c",
+    "basis": "MEASURED in cody b8, not carried from another document. The suite reads api/sd-data.js and sql/sairncare_audit_log_schema.sql from disk and drives the real api/sd-data.js handler with auth, licence and fetch mocked -- not a reimplementation, because a reimplementation would pass against the unfixed code."
    }
   }
  ],
