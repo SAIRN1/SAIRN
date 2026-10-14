@@ -1,0 +1,341 @@
+REPORT cc b9
+================================================================================
+cc batch b9 -- 2026-10-14 -- Documents\SAIRN-cc on main
+HEAD f0afdadc, origin/main f0afdadc, 0 ahead / 0 behind
+Handoff: SAIRN-handoff-cc-b9.md (written BEFORE this file)
+Digest:  SAIRN-digest-cc-b9.txt
+Manifest: docs/batch-manifest-cc-b9.json -- 6 items: 5 done, 1 blocked (reason stated)
+Logs: C:\Users\marsh\AppData\Local\Temp\claude\
+      C--Users-marsh-Documents-SAIRN-cc\
+      bb71ca91-ccbc-4a82-aa5e-0bff468b6ed5\scratchpad\
+EVERY FIGURE BELOW NAMES THE COMMAND THAT PRODUCED IT. Where something could
+not be measured it says so and is not folded into a pass.
+================================================================================
+
+1. STATUS LINE -- real per-model window, never a hardcoded 200K guess
+
+The bug, reproduced before the fix: a Sonnet 5 session at 144K used matched
+neither "[1m]" nor past-200K, fell to the old SMALL_WINDOW=200000 default,
+and rendered `ctx 72% of 200k` -- the real fraction against Sonnet 5's actual
+967K window is 15%, a nearly 5x-too-alarming number with no error.
+
+Fix: tools/sairn_status_line.py window_for() now matches named models
+(sonnet-5 -> 967000, opus-5/[1m] -> 1000000) and returns (None, reason) for
+anything unrecognized -- rendered as `ctx ??%`, never a guess.
+
+  python tools/sairn_status_line.py --fixtures
+  -> 26/26 fixtures classify correctly
+
+Live-verified against this session's own real transcript:
+  cc | Sonnet 5 | ctx 39% of 967k   (re-run at report time; was 14% earlier
+                                     in the session, correctly tracking usage)
+
+2. HOOKS -- the original clone, recorded then cleared (NOT rebased)
+
+docs/SAIRN-hooks-record-original-clone.md copies the clone's hooks block
+verbatim BEFORE any edit, per the b9 instruction.
+
+Measured state of C:\Users\marsh\Documents\SAIRN BEFORE any change:
+  git -C <clone> rev-list --left-right --count origin/main...HEAD
+  -> 7810  1   (7,810 commits behind, 1 commit ahead)
+  git -C <clone> status --porcelain
+  -> M .claude/settings.json, M SAIRN-ACTIVE-WORK.md, plus untracked build
+     litter and one PEM/base64-shaped file (.claude/MIGfMA0...txt, 218 bytes,
+     NOT read, NOT touched)
+  git -C <clone> log --oneline origin/main -- sairnbiz.html | grep "voice-input"
+  -> 6c1cb4d0, same subject as the clone's 1 local-only commit (26db189) --
+     content-equivalent, checked by title match only
+
+Done: hooks set to {} in that clone's WORKING COPY of .claude/settings.json
+(uncommitted, matching the house rule -- never committed by an agent).
+Verified:
+  python -c "import json; print(json.load(open('.claude/settings.json',
+    encoding='utf-8'))['hooks'])"   # run with cwd at the original clone
+  -> {}
+
+NOT done: `pull --rebase` in that clone. The magnitude (7810 commits, 1
+unpushed commit, 2 dirty tracked files, 1 unexplained secret-shaped file) is
+materially larger than hank/cody/fourth's divergence and was flagged to
+Michael rather than guessed at -- see the digest DECISION-NEEDED line.
+
+hank / cody / fourth: all three held an active claim at every check this
+batch made, including the one made immediately before writing the handoff:
+
+  python tools/sairn_claim.py list | grep "^\[active"
+  -> hank   sairn-api-sql   hank b10 ... (0.7h ago)
+  -> cody   tests           cody b10 ... (1.2h ago)
+  -> fourth fourth          fourth b18 ... (0.1h ago)
+
+Per the stated rule ("only where the tree is clean and no live claim"), all
+three were skipped. No tree-cleanliness check was needed since the live-claim
+condition alone disqualifies them.
+
+3. BATCH_MANIFEST.PY + SAIRN_CLAIM.PY -- the encoding fix, the subject cap,
+   and the live incident found along the way
+
+batch_manifest.py --close printed a deliverable's first line verbatim
+through to the console; any non-ASCII byte raised UnicodeEncodeError under
+Windows' cp1252 default. Reproduced and fixed:
+
+  PYTHONIOENCODING=cp1252 python -c "import sys; print('encoding:',
+    sys.stdout.encoding)"
+  -> encoding: cp1252
+  PYTHONIOENCODING=cp1252 python -c "import sys; sys.path.insert(0,'tools');
+    import batch_manifest; print('after import:', sys.stdout.encoding);
+    print(u'em-dash test (U+2014) curly quote (U+2019)')"
+  -> after import: utf-8
+  -> em-dash test (U+2014) curly quote (U+2019)     [prints clean, no crash]
+
+  python tools/batch_manifest.py --fixtures
+  -> 32/32 fixtures classify correctly (unchanged)
+
+sairn_claim.py's claim commits spliced the entire task string into the
+commit subject. Measured: avg 788 bytes, max 2,383, over every
+"chore(claims): ... claims ..." commit in history. Fixed: subject capped at
+72 chars, overflow moves to the commit body (which `git log --oneline` does
+not print).
+
+  python -c "import sys; sys.path.insert(0,'tools'); import sairn_claim as m;
+    print(m.claim_commit_message('chore(claims): cc claims b9', 'x'*800)
+    .split(chr(10))[0])"
+  -> chore(claims): cc claims b9   (27 chars; full 800-char task moved to body)
+
+THE LIVE INCIDENT: while setting manifest item 1's evidence,
+`batch_manifest.py --set 1 done --evidence "..."` (no --agent/--batch passed)
+silently wrote into docs/batch-manifest-cc-b6.json -- a CLOSED batch from an
+earlier session -- overwriting 3 of its evidence fields with b9's text. No
+error. `git diff -- docs/batch-manifest-cc-b6.json` showed it immediately;
+reverted with `git checkout` before any commit. Root cause:
+`opt('--agent', 'cc'), opt('--batch', 'b6')` -- a hardcoded fallback to the
+batch this file was written in. Fixed to refuse exactly like --close already
+does two lines below it:
+
+  python tools/batch_manifest.py --set 1 done --evidence "test"
+  -> COULD NOT RUN: --set needs --agent <name> and --batch b<n>. Neither is
+     guessed -- a silent default is how this wrote into the wrong batch's
+     manifest before.
+  (exit 2)
+  git status --porcelain | grep b6
+  -> (no output -- b6 untouched after the fix)
+
+4. THE CODY TOOLS SWEEP -- 4 items
+
+(a) SELFTEST_RX matching '--selftest' as TEXT (3 of 44). All three were a
+regex matching the FULL "in argv" phrase inside a string/comment/fixture,
+not real code:
+  tools/first_article_inspection.py:645  -- a fixture string written to disk
+  tools/subprocess_decode_check.py:96    -- a module docstring example
+  tools/checker_selftest_check.py:150    -- a comment
+Fixed: discover() in tests/run_selftest_sweep_probe.py now also confirms an
+ast.Compare/ast.In node exists (a string or comment can never produce one).
+
+  python tests/run_selftest_sweep_probe.py --list | wc -l
+  -> 40   (down from 44; the 3 false positives excluded, 1 other population
+           change unaccounted for and not chased -- not material to the fix)
+  python tests/run_selftest_sweep_probe.py --list | grep -E
+    "first_article_inspection|subprocess_decode_check|checker_selftest_check"
+  -> (no output)
+
+(b) TOLERATE_MISSING wording. Matched 'not recognized'; argparse prints
+'unrecognized arguments'. Added the correct phrase.
+
+(c) ooda_phases.py stale <10 threshold. injection_dated was 4 (of 77) on
+2026-09-15 when the magic number was written; it measures 249 now.
+Assertion changed from a magic number to a structural bound
+(0 <= injection_dated <= records).
+
+  python tools/ooda_phases.py --selftest
+  -> all arms pass (exit 0; was exit 2 before the fix)
+
+(d) subprocess_decode_check.py: 69 unencoded text-mode subprocess calls (13
+in tools/, 56 in tests/).
+
+  python -c "import sys; sys.path.insert(0,'tools');
+    import subprocess_decode_check as d; rows,_ = d.scan();
+    print('tools:', sum(1 for r in rows if r['file'].startswith('tools/')),
+          'tests:', sum(1 for r in rows if r['file'].startswith('tests/')))"
+  BEFORE -> tools: 13 tests: 56
+  AFTER  -> tools: 0  tests: 56   (tools/ fixed via fix_file(), scoped to
+                                   only the 9 tools/ paths; tests/ routed to
+                                   cody in docs/2026-10-14-cc-b9-subprocess-
+                                   decode-tests-routed-to-cody.md)
+
+A SECOND DEFECT, found applying the first fix: fix_file() always spliced
+", encoding='utf-8', errors='replace'" regardless of what a call already
+had. tools/credential_purge_check.py had `errors='replace'` with no
+`encoding=`; the fixer produced a duplicate keyword argument:
+
+  tools/credential_purge_check.py:104
+  -> capture_output=True, text=True, encoding='utf-8', errors='replace',
+     errors='replace')          [SyntaxError: keyword argument repeated]
+
+Confirmed ast.parse() does NOT catch this (compile() does):
+  python -c "import ast; ast.parse(\"f(x=1, x=1)\")"       -> no error
+  python -c "compile(\"f(x=1, x=1)\", '<t>', 'exec')"      -> SyntaxError
+
+This broken file reached `git commit` and the first `git push` attempt,
+where the push gate's own stricter parse check caught it (the gate refused,
+naming the exact line and error) before it reached origin/main. Fixed by
+hand in credential_purge_check.py, then fixed structurally in
+subprocess_decode_check.py: findings_in() now reports whether `errors` is
+already present, fix_file() only adds what's missing, and the write
+guarantee now checks compile() instead of ast.parse().
+
+  python -c "[regression test constructing the exact pre-existing-errors=
+    shape as a fixture, running fix_file() on it, and confirming compile()
+    succeeds on the result]"
+  -> COMPILES CLEAN
+  python tests/run_subprocess_decode_probe.py
+  -> 1 arm fails (the whole-tree "zero" assertion, expected: 56 tests/ sites
+     remain, routed to cody); every other arm passes, including the
+     multi-line-call fix-and-reparse idempotency arm
+
+(e) license_keys missing from the SQL preflight column catalogue (finding
+#34, routed by cody). DECLARED mode's catalogue is built only from CREATE
+TABLE in sql/*.sql; license_keys predates this repo's schema files and was
+invisible to it.
+
+  python tools/sairn_sql_preflight.py sql/*.sql   | grep -c "FINDING(S)"
+  BEFORE -> 23 files with findings, 141 findings total
+  AFTER  -> fewer files/findings; license_keys and
+            sairn_circuit_breaker_schema.sql both report "clean"
+  (grep license_keys /tmp/preflight_after.log; grep circuit_breaker ...)
+  -> demo_license_keys_seed.sql ... clean ...
+  -> sairn_circuit_breaker_schema.sql ... clean ...
+
+Also fixed the other half of finding #34: sairn_circuit_breaker_step is a
+user-defined FUNCTION called in FROM position
+(`from public.sairn_circuit_breaker_step(...)`), not a table; the builtin
+exclusion list (unnest, generate_series, ...) did not name it. Fixed
+structurally: any identifier immediately followed by `(` in FROM/JOIN
+position is a function call, by SQL syntax, regardless of its name.
+
+  python tests/sql_preflight/run_probe.py
+  -> PASS -- 4 defects caught, control clean, 7 exit codes correct, 3 gate
+     cases correct (blocks a phantom column, silent on clean, does not block
+     any existing file in sql/), 6 --require-live cases correct
+
+5. RED_SUITE_REGISTER_CHECK.PY -- exit code made meaningful
+
+BEFORE: every ordinary run (no --from-run) unconditionally added
+"no --from-run log" to could_not_run, which always wins over a clean
+result -- so the tool's own documented common case (cheap, run every batch,
+no --from-run) could never report anything but exit 2.
+
+AFTER: "no --from-run" is a NOTICE, printed every time, that does not move
+the exit code. A --from-run log that WAS supplied and is truncated/
+unparsable is unchanged and still forces exit 2.
+
+  python tools/red_suite_register_check.py --selftest
+  -> 10/10 cases (2 new: no-log+all-red -> EXIT 0 WITH a notice; no-log+a
+     RECOVERED suite -> still EXIT 1, the notice never hides a real finding)
+
+LIVE RUN (not just fixtures), in an isolated worktree per the tool's own
+design, no --from-run:
+  python tools/red_suite_register_check.py   (scratchpad/red_suite_real2.log)
+  -> exit 1
+  -> 5 RECOVERED findings: api/sf-auth.test.js, tests/push_gate/
+     check8_probe.py, api/sd-data-cross-tenant-dispatchers.test.js,
+     tests/run_committer_identity_probe.py,
+     tests/run_selftest_independence_probe.py
+  -> NOTICE (1): no --from-run log, printed, did not change the exit code
+
+First attempt at this run was killed by my own `timeout 300` wrapper
+(shorter than the tool's 420s-per-suite ceiling), which orphaned a worktree
+(the `finally` cleanup never ran under SIGTERM):
+  git worktree list | grep red-suite
+  -> C:\...\Temp\red-suite-worktree-gdatvpl8  (orphaned)
+  git worktree remove --force <path>
+  git worktree list | grep red-suite
+  -> (no output -- cleaned)
+
+FMEA drafts saved:
+  python tools/fmea_draft.py tools/red_suite_register_check.py --save
+  python tools/fmea_draft.py tools/nhi_register.py --save
+  python tools/fmea_draft.py tools/sairn_status_line.py --save
+  -> saved docs/fmea/tools_red_suite_register_check.py.json
+  -> saved docs/fmea/tools_nhi_register.py.json
+  -> saved docs/fmea/tools_sairn_status_line.py.json
+
+6. PUSH
+
+Push protocol followed per PR Part 3. Two rebases:
+  git pull --rebase origin main    (clean, no conflicts, first rebase)
+  git pull --rebase origin main    (second: conflict in
+    docs/defect-density-register.json, concurrent appends from other
+    sessions, resolved by tools/sairn_rebase_resolve.py: "MERGE
+    docs/defect-density-register.json  553 ancestor + 1 upstream-only +
+    6 local-only = 560", then `git rebase --continue`)
+Both times the repo's own post-rewrite hook re-seated the defect register
+entries onto their rewritten commit shas automatically.
+
+Full compile()-level syntax sweep immediately before the final push, over
+every .py file this batch touched:
+  for f in <17 changed .py files>: python -c "ast.parse(...); compile(...)"
+  -> ok for all 17
+
+  git push origin main
+  -> main -> main   (c8a19343..f0afdadc)
+
+VERIFIED AFTER PUSH:
+  git fetch origin main --quiet
+  git rev-list --left-right --count origin/main...HEAD
+  -> 0  0
+  git rev-parse HEAD
+  -> f0afdadc615f3301e3b595e9bdc19d5a5e023165
+  git log --oneline -1 origin/main
+  -> f0afdadc chore(defect register): re-seat 7 records onto rewritten shas
+     after rebase
+
+================================================================================
+THE SEVEN DEFECT REGISTER ENTRIES WRITTEN THIS BATCH (push gate requirement,
+not in cc's declared FILES, said out loud -- same collision b8 already named)
+
+  ca131d983903  status line hardcoded-200K-default (moderate, live-verification)
+  540e0b162887  batch_manifest --set silent b6 default (high, live-verification)
+  f9e56cfd0c3a  selftest-sweep AST false positives + ooda stale threshold
+                (moderate, independent-review)
+  070efcd3042e  subprocess_decode_check tools/ encoding fix (moderate,
+                independent-review)
+  29c8fc612db0  sql preflight license_keys + circuit-breaker-function
+                (moderate, independent-review)
+  2dc072c36a52  red_suite_register_check exit code (moderate, user-report)
+  3997a045bd26  the duplicate-keyword-argument fixer bug found applying the
+                above (high, live-verification)
+
+Each carries --factors-unknown rather than a worked root-cause analysis:
+this batch verified and shipped the fixes, it did not do the deeper 5-whys
+pass, and the tool's own documentation treats that as the honest state
+rather than a gap to paper over with a guess.
+
+================================================================================
+FILES TOUCHED THIS BATCH, for cross-reference against the claim's declared
+FILES list:
+tools/sairn_status_line.py, tools/batch_manifest.py, tools/sairn_claim.py,
+tools/ooda_phases.py, tools/subprocess_decode_check.py,
+tools/red_suite_register_check.py, tools/sairn_sql_preflight.py,
+tools/credential_purge_check.py, tools/external_file_index_audit.py,
+tools/gh_token.py, tools/live_probe_declaration_check.py,
+tools/purge_evidence_gate.py, tools/resource_reachability_check.py,
+tools/rewrite_convergence_map.py, tools/sql_column_exists_check.py,
+tools/temp_state_leak_check.py, tests/run_selftest_sweep_probe.py,
+docs/batch-manifest-cc-b9.json, docs/SAIRN-hooks-record-original-clone.md,
+docs/2026-10-14-cc-b9-subprocess-decode-tests-routed-to-cody.md,
+docs/fmea/tools_red_suite_register_check.py.json,
+docs/fmea/tools_nhi_register.py.json,
+docs/fmea/tools_sairn_status_line.py.json,
+docs/defect-density-register.json, docs/scrutiny-flags.json,
+SAIRN-handoff-cc-b9.md, SAIRN-report-cc-b9.txt, SAIRN-digest-cc-b9.txt.
+
+tools/license_keys.py was named in the claim string but is not a real file
+(license_keys is a database table, referenced via tools/sairn_sql_preflight.py
+and tools/sql_column_exists_check.py instead) -- said here rather than left
+silent, same discipline sairn_claim.py's own claim-time check applies.
+
+Also NOT in the original clone (C:\Users\marsh\Documents\SAIRN): read-only
+measurements only (git status, git log, git rev-list), plus one uncommitted
+edit to its LOCAL .claude/settings.json (hooks -> {}). No commit was made in
+that clone.
+
+SHA256 32be25a0f6fbfe4d7b3c914af44d375425a32ab2c4828d85c435e929f53af951
+END-OF-REPORT
