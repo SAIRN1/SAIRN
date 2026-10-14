@@ -91,6 +91,7 @@ const legOverlap = require('./_lib/leg-overlap');
 // ONCE before the read/write dispatch. Same shape and same reasoning as
 // api/_lib/law-roles.js two days earlier.
 const legRoles = require('./_lib/leg-roles');
+const svRoles = require('./_lib/sv-roles');
 // ── SAIRNLAW ROLE GRANULARITY (2026-10-12, hover2 seq 757) ────────────────
 // ONE table and ONE function for all 19 law_ resources, in api/_lib/law-roles.js
 // with the whole policy and its provenance. Called from exactly TWO places in
@@ -14634,6 +14635,61 @@ module.exports = async (req, res) => {
       if (!svSess) {
         res.status(401).json({ error: { code: 'NO_SESSION', message: 'Your sign-in could not be verified, so nothing was read or saved. Sign out and sign in again, then try once more.' } });
         return;
+      }
+      // ── AND A ROLE, NOT JUST A SESSION (2026-10-14, fourth b15 spec) ────
+      // The gate above closed "no session" and left "ANY session" open, which
+      // is the same two-step sairnlaw and sairnlegacy both paid for. MEASURED
+      // before this landed: `grep -nE "SV_[A-Z_]*ROLES" api/sd-data.js`
+      // returned nothing, so 41 of the 42 resources applied no role rule at
+      // all -- a `frontdesk` token wrote sv_soapnotes, sv_labresults,
+      // sv_surgery and sv_imaging exactly as the owner did. The 42nd is
+      // sv_controlled, which has had PRESCRIBER_ROLES and the witnessing lock
+      // since 2026-09-13 and is UNCHANGED by this: its row in the table is
+      // DERIVED from that same set rather than re-listed.
+      //
+      // ONE TABLE AND ONE FUNCTION, in api/_lib/sv-roles.js, for the same
+      // reason SAIRNlegacy's is: a role check written at one call site and not
+      // the other forty-one is indistinguishable from no policy when read one
+      // branch at a time. This is ONE call, before the dispatch, so neither
+      // the read branch nor the write branch can be reached without it.
+      if (svRoles.decide(resource, svSess.role, action) === svRoles.DENY) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: svRoles.denyMessage(svSess.role, resource) } });
+        return;
+      }
+      // ── APPEND-ONLY, AND IT BINDS THE OWNER TOO ────────────────────────
+      // Rule 2 of the spec. `sv_audit_log` is the dosing trail; a dosing
+      // record that can be EDITED is not a dosing record. Checked AFTER the
+      // role table agrees and independently of it -- no role grant can reach
+      // past it.
+      //
+      // It is a read-then-write with the same residual the custody log has:
+      // two requests for the same audit_log_id interleaving between this
+      // SELECT and the upsert. Milliseconds, and both would be creating the
+      // same id, which is the one case where the second overwriting the first
+      // is also the correct answer.
+      //
+      // A LOOKUP THAT CANNOT BE PERFORMED REFUSES. If the table is not
+      // provisioned, or the query fails, this cannot tell an append from an
+      // edit and says so rather than letting the write through -- PR §1.11.
+      if (action !== 'read' && svRoles.isAppendOnly(resource)
+          && payload && payload.id !== undefined && payload.id !== null
+          && payload.id !== '') {
+        const idColAO = SV_RESOURCES[resource];
+        const exq = await fetch(rest(
+          resource + '?license_hash=eq.' + enc(licHash) +
+          '&' + idColAO + '=eq.' + enc(String(payload.id)) +
+          '&select=' + idColAO + '&limit=1'
+        ), { headers });
+        if (exq.status === 404 || exq.status === 400) {
+          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNvet data tables are not set up yet — run sql/sairnvet_data_schema.sql in Supabase first.' } });
+          return;
+        }
+        const exRows = await exq.json();
+        if (!exq.ok) return upstream(res, exRows);
+        if (Array.isArray(exRows) && exRows.length) {
+          res.status(409).json({ error: { code: 'APPEND_ONLY', message: svRoles.appendOnlyMessage(resource) } });
+          return;
+        }
       }
     }
     if (SV_RESOURCES[resource] && action === 'read') {
