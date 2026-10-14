@@ -29,9 +29,22 @@
 #   api/sd-data-leg-bookings-toctou.test.js and ablated against the pre-fix
 #   handler; what live adds is "the code is there", not "the logic is right".
 #
-# NOTHING HERE CAN PERSIST A ROW. Every write attempt sends either an id-less
-# payload (refused by the handler's own id check before any store call) or a
-# window-less one (refused by the new branch before its SELECT).
+# ── THIS PROBE WRITES ONE ROW, AND b8's VERSION OF THIS HEADER SAID IT WROTE
+# ── NONE. CORRECTED RATHER THAN QUIETLY LEFT. ────────────────────────────────
+# guard=yes  residue=docs/live-residue/README.md -- ONE upserted mech_quotes
+# row, id ZZ-AI-PROBE-CONTROL, on the AUDIT LICENCE MECH-PINNACLE-2026 only.
+# The id is FIXED, not generated, so re-runs overwrite rather than accumulate.
+#
+# WHY IT HAS TO WRITE. The AI-approval arm asserts that a payload carrying
+# `ai_source` is REFUSED with no session. On its own that arm is satisfied by a
+# gate that refuses EVERY mech_quotes write -- which would break every existing
+# SAIRNmechanical user and is the over-refusal this change must not cause. The
+# only way to tell those apart live is to send the same request WITHOUT
+# `ai_source` and watch it succeed, and succeeding means a row.
+#
+# EVERY OTHER WRITE ATTEMPT HERE STILL PERSISTS NOTHING: the leg_bookings one
+# is window-less and refused before its SELECT, and the AI-sourced one is
+# refused before any upstream call at all.
 import sys, os, json
 sys.path.insert(0, os.path.join(os.getcwd(), 'tools'))
 from sairn_http import fetch_json, Challenged
@@ -83,7 +96,8 @@ def login(url, lic, emp, pin):
         return 'EXC', None, '%s %s' % (type(e).__name__, e)
 
 
-print('B9 LIVE GATE PROBE -- all twelve SAIRNscape resources and leg_bookings')
+print('B9 LIVE GATE PROBE -- twelve SAIRNscape resources, the AI safeguards '
+      'and leg_bookings')
 print('data %s' % DATA)
 print()
 
@@ -141,6 +155,66 @@ if 'sign in first' in emp_msg.lower():
 if emp.startswith('200'):
     print('    FAIL: `employees` answered a bare licence key -- its own gate '
           'is gone, which is a finding even though this batch did not cause it')
+    fail += 1
+
+# ── PART 1b: THE AI SAFEGUARDS, BOTH HALVES, b9 ──────────────────────────
+# WHAT THIS CAN AND CANNOT SHOW, said before the numbers. The approval gate
+# fires only on a payload carrying `ai_source`, so a live 403 here proves the
+# gate is DEPLOYED AND REACHED on a resource that is otherwise licence-only --
+# which is the half a unit test cannot give. It does not prove any production
+# client sends the field; none does yet, and that is in the handoff.
+#
+# IT WRITES NOTHING. The refusal happens before any upstream call, so no
+# mech_quotes row is created on the audit licence even if the gate were absent
+# -- in which case the handler's own payload check refuses the id-less write.
+MECH_LIC = 'MECH-PINNACLE-2026'
+print()
+ai_bare = call('sairnmechanical', 'mech_quotes', MECH_LIC, None, 'write',
+               {'id': 'ZZ-AI-PROBE', 'text': 'x', 'ai_source': 'claude:probe'})
+print('mech_quotes write {ai_source, no session} -> %-34s expected 403 '
+      'AI_APPROVAL_REQUIRED' % ai_bare)
+if 'AI_APPROVAL_REQUIRED' not in ai_bare:
+    print('    FAIL: the AI approval gate is not reached -- either not '
+          'deployed yet, or mech_quotes is no longer in the high-risk table')
+    fail += 1
+
+# THE PAIRED NEGATIVE: the SAME resource, the SAME absent session, WITHOUT the
+# ai_source field, must still save. Without this the arm above is satisfied by a
+# gate that refuses every mech_quotes write, which would break every existing
+# SAIRNmechanical user and is the over-refusal this fix must not cause.
+ai_none = call('sairnmechanical', 'mech_quotes', MECH_LIC, None, 'write',
+               {'id': 'ZZ-AI-PROBE-CONTROL', 'text': 'x'})
+print('mech_quotes write {no ai_source, no session} -> %-31s expected 200 '
+      '(THE OVER-REFUSAL CONTROL)' % ai_none)
+if not ai_none.startswith('200'):
+    print('    FAIL: an ordinary quote no longer saves -- the AI gate has '
+          'widened onto every write of this resource')
+    fail += 1
+else:
+    print('    NOTE: that control WROTE one mech_quotes row, id '
+          'ZZ-AI-PROBE-CONTROL, on the audit licence MECH-PINNACLE-2026. It is '
+          'an upsert on a fixed id, so re-runs overwrite rather than '
+          'accumulate. This is the one write in this probe and it is declared '
+          'rather than hidden.')
+
+# THE NOTICE ENDPOINT, deployed and correctly refusing. The SQL has not been
+# run, so 503 AI_NOTICE_NOT_PROVISIONED is the CORRECT answer and a 200 would
+# be the finding -- it would mean the endpoint answered a question it cannot
+# answer. 401 is also correct and means the same thing one step earlier.
+try:
+    r = fetch_json('https://sairn.vercel.app/api/ai-notice',
+                   payload={'action': 'state', 'app_id': 'sairnfreedom'},
+                   key='SF-PINNACLE-2026')
+    body = r.body if isinstance(r.body, dict) else {}
+    code = ((body.get('error') or {}).get('code')) or ('ok' if body.get('ok') else '')
+    notice = '%s %s' % (r.status, code)
+except Exception as e:
+    notice = 'ERR %s' % type(e).__name__
+print('ai-notice state {no session} -> %-42s expected 401 NO_SESSION or 503 '
+      'AI_NOTICE_NOT_PROVISIONED' % notice)
+if not (notice.startswith('401') or notice.startswith('503')):
+    print('    FAIL: api/ai-notice.js answered something other than a refusal '
+          'with no session -- %s' % notice)
     fail += 1
 
 # ── PART 2: SAIRNlegacy, the new branch is deployed and reached ───────────

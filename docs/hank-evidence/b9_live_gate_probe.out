@@ -1,0 +1,30 @@
+B9 LIVE GATE PROBE -- twelve SAIRNscape resources, the AI safeguards and leg_bookings
+data https://sairn.vercel.app/api/sd-data
+
+scp-auth login -> 200  token=YES
+
+resource               BARE KEY                   WITH SESSION               expected
+scp_jobs               403 FORBIDDEN              200 ok rows=2              bare 403 / session 200
+scp_irr_controllers    403 FORBIDDEN              200 ok rows=1              bare 403 / session 200
+scp_irr_zones          403 FORBIDDEN              200 ok rows=0              bare 403 / session 200
+scp_irr_schedules      403 FORBIDDEN              200 ok rows=0              bare 403 / session 200
+scp_water_features     403 FORBIDDEN              200 ok rows=1              bare 403 / session 200
+schedule               403 FORBIDDEN              200 ok rows=0              bare 403 / session 200
+customers              403 FORBIDDEN              200 ok rows=3              bare 403 / session 200
+invoices               403 FORBIDDEN              200 ok rows=1              bare 403 / session 200
+scp_quotes             403 FORBIDDEN              200 ok rows=1              bare 403 / session 200
+scp_designs            403 FORBIDDEN              200 ok rows=2              bare 403 / session 200
+scp_vendors            403 FORBIDDEN              200 ok rows=1              bare 403 / session 200
+scp_progress_photos    403 FORBIDDEN              200 ok rows=0              bare 403 / session 200
+employees              403 No valid session for employee reco --                         own gate, NOT ours
+
+mech_quotes write {ai_source, no session} -> 403 AI_APPROVAL_REQUIRED           expected 403 AI_APPROVAL_REQUIRED
+mech_quotes write {no ai_source, no session} -> 200 ok                          expected 200 (THE OVER-REFUSAL CONTROL)
+    NOTE: that control WROTE one mech_quotes row, id ZZ-AI-PROBE-CONTROL, on the audit licence MECH-PINNACLE-2026. It is an upsert on a fixed id, so re-runs overwrite rather than accumulate. This is the one write in this probe and it is declared rather than hidden.
+ai-notice state {no session} -> 401 NO_SESSION                             expected 401 NO_SESSION or 503 AI_NOTICE_NOT_PROVISIONED
+
+leg-auth login -> 200  token=YES
+write leg_bookings {id only} -> 400 BOOKING_WINDOW_REQUIRED   expected 400 BOOKING_WINDOW_REQUIRED
+    (the cancellation-exempt path is NOT driven live: proving it would mean writing a row)
+
+fail=0 could-not-run=0
