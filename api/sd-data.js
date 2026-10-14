@@ -1609,6 +1609,28 @@ module.exports = async (req, res) => {
       'scp_irr_zones': ['read', 'write'],
       'scp_irr_schedules': ['read', 'write'],
       'scp_water_features': ['read', 'write'],
+      // ── AND THE TWELFTH, 2026-10-14 (b9). SAIRNscape IS NOW 12 OF 12 ──────
+      // MICHAEL'S DECISION, and it closes the one gap b8 could only disclose.
+      // b8 gated the five that reproduced and found that hover2's repro had
+      // only ever measured ELEVEN of this app's twelve resources: 22 pairs is
+      // 11 x 2, and `schedule` was in neither the gate nor the suite's
+      // licence-only list, so it was invisible to every arm -- not gated, so no
+      // refusal arm; not disclosed, so no licence-only arm.
+      //
+      // IT WAS LEFT UNGATED THEN BECAUSE NOBODY HAD DECIDED IT, not because it
+      // was judged safe. It has now been decided, on the same argument as the
+      // five: the licence key is SHIPPED TO THE BROWSER, so licence-only means
+      // readable by anyone who can open the app.
+      //
+      // THE ONE THING THAT NEEDED CHECKING BEFORE THIS LINE, and it was read at
+      // this HEAD rather than carried from b8's note: `schedule` is the only
+      // SAIRNscape resource whose bare name is also a StoneDesk PANEL ID.
+      // stonedesk.html mentions it seven times and every one is navigation --
+      // sbNav('schedule'), a mode-index array, two alert `panel:` fields, a
+      // message-category default and two nav-registry rows. NONE is an
+      // sd-data call, so no StoneDesk path loses anything here. SAIRNscape's
+      // own calls go through scpData() like the other eleven.
+      'schedule': ['read', 'write'],
       // ── SAIRNmechanical: mech_docs WRITE ONLY, 2026-09-29 ────────────────
       //    MECH_RECORDS at :14308 gates all four of mech_quotes, mech_checks,
       //    mech_docs and mech_takeoffs on the LICENCE KEY ALONE, and the
@@ -1831,6 +1853,13 @@ module.exports = async (req, res) => {
       'scp_irr_zones': 'sairnscape',
       'scp_irr_schedules': 'sairnscape',
       'scp_water_features': 'sairnscape',
+      // The twelfth, 2026-10-14 (b9), IN THE SAME EDIT AS ITS GATE. Same rule
+      // this pair of lists has carried since 2026-09-24: gated above with no
+      // entry here and expectedApp falls back to 'stonedesk', so every
+      // correctly signed-in SAIRNscape crew lead would be refused FORBIDDEN
+      // "sign in first" -- fails closed AND confusingly, which is the failure
+      // that gets a security change reverted as broken rather than fixed.
+      'schedule': 'sairnscape',
       // Added 2026-09-29 in the SAME edit as its gate entry above, which is the
       // rule this pair of lists has carried since 2026-09-24 and which
       // sf_trustee_audits broke on main earlier the same day: a resource gated

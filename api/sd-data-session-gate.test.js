@@ -584,7 +584,26 @@ function mapNames(blob) {
     // the decision. api/sd-data-scp-session-gate.test.js now DRIVES it as the
     // licence-only control and derives its two lists from the registry, so a
     // thirteenth resource cannot land covered by neither.
-    assert.strictEqual(pairs, 132,
+    // 132 -> 134 on 2026-10-14 (b9): `schedule`, SAIRNscape's TWELFTH and last
+    // licence-only resource, two pairs. MICHAEL'S DECISION, on the same
+    // argument as the five in b8 -- the licence key is shipped to the browser.
+    //
+    // WHAT THIS CLOSES IS NOT A NEW FINDING, IT IS b8's DISCLOSURE. b8 gated
+    // the five that hover2's repro reported and discovered the repro had only
+    // ever measured ELEVEN of the app's twelve resources (22 pairs = 11 x 2).
+    // `schedule` was in neither the gate nor the SAIRNscape suite's
+    // licence-only list, so no arm in that file could see it in either
+    // direction. It was left open because nobody had decided it, and the one
+    // fact that needed reading first was recorded then: `schedule` is the only
+    // SAIRNscape resource whose bare name is also a StoneDesk PANEL ID, and
+    // all seven StoneDesk mentions are navigation rather than sd-data calls.
+    //
+    // AND IT COSTS THAT SUITE ITS LICENCE-ONLY CONTROL, which is handled there
+    // rather than hidden: the loop that drove "what is not gated is still not
+    // gated" now has nothing to drive, so it is replaced by an explicit
+    // empty-on-purpose arm, a registry-derived count, and a cross-app arm
+    // proving this table has not started swallowing resources it does not own.
+    assert.strictEqual(pairs, 134,
       'the gate table changed size to ' + pairs + ' pairs -- add the new resource to this test and say why it is gated');
   });
 
@@ -780,6 +799,17 @@ function mapNames(blob) {
         scp_irr_zones: 'api/sd-data-scp-session-gate.test.js',
         scp_irr_schedules: 'api/sd-data-scp-session-gate.test.js',
         scp_water_features: 'api/sd-data-scp-session-gate.test.js',
+        // The twelfth, 2026-10-14 (b9). Same suite, and it added six arms
+        // without one being written (73 passed became 80, the rest being the
+        // two arms that replaced the now-empty licence-only loop).
+        //
+        // `schedule` IS SPELLED BARE ON PURPOSE and is not a typo for
+        // scp_irr_schedules or sairngrounds' schedule. SAIRNscape claimed the
+        // bare name before the scp_ convention existed -- the same history as
+        // `invoices` and `customers` above -- and api/sd-data.js:4892 records
+        // that sairngrounds had to use a prefixed name BECAUSE this one was
+        // already taken.
+        schedule: 'api/sd-data-scp-session-gate.test.js',
         // SAIRNmechanical's one, 2026-09-29. Driven in its own suite for the
         // same reason as every entry above: that one mints sairnmechanical
         // sessions and this file mints StoneDesk ones.

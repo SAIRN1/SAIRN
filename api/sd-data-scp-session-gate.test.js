@@ -181,7 +181,14 @@ const PAGE = fs.readFileSync(path.join(__dirname, '..', 'sairnscape.html'), 'utf
 const GATED = ['customers', 'invoices', 'scp_quotes',
   'scp_designs', 'scp_vendors', 'scp_progress_photos',
   'scp_jobs', 'scp_irr_controllers', 'scp_irr_zones',
-  'scp_irr_schedules', 'scp_water_features'];
+  'scp_irr_schedules', 'scp_water_features',
+  // ── AND THE TWELFTH, 2026-10-14 (b9) -- MICHAEL DECIDED IT ────────────────
+  // b8 left `schedule` in UNGATED_REST below as a DISCLOSURE, with its own note
+  // saying nobody had decided it and that the one thing needing a read first
+  // was whether StoneDesk calls it. That read was done and recorded (all seven
+  // StoneDesk mentions are navigation, not sd-data calls); Michael has now
+  // decided to gate it on the same argument as the five. SAIRNscape is 12 of 12.
+  'schedule'];
 
 // ── THE FIVE THAT STAY LICENCE-ONLY, NAMED, 2026-10-11 ──────────────────────
 // Was a single `UNGATED_WITNESS = 'scp_vendors'`, described as "one of the ten
@@ -239,7 +246,34 @@ const GATED = ['customers', 'invoices', 'scp_quotes',
 // THE ARM BELOW IS WHY THIS IS NOT JUST A COMMENT: `schedule` must still answer
 // on the licence key alone, so the day it is gated -- rightly or by accident --
 // this file goes red and says so.
-const UNGATED_REST = ['schedule'];
+// ── THE LICENCE-ONLY LIST IS NOW EMPTY, AND THAT COSTS THIS FILE ITS OLD ────
+// ── NEGATIVE CONTROL, WHICH IS SAID OUT LOUD RATHER THAN LEFT TO BE NOTICED ─
+// 2026-10-14 (b9). Every SAIRNscape resource is gated, so the loop that drove
+// "and what is not gated is still not gated" now has NOTHING TO DRIVE. A
+// zero-length loop passes forever and prints nothing, which is exactly the
+// vacuity this file has been burned by twice and warned about in b8 in these
+// same words -- so it is NOT left as an empty loop.
+//
+// WHAT REPLACES IT, and why this is stronger rather than merely different:
+//
+//   * THE DERIVED-POPULATION ARM still runs and now says GATED == the whole
+//     registry. A thirteenth resource landing in api/_resources/sairnscape.js
+//     and not in the gate fails this suite on the same commit.
+//   * AN EXPLICIT ARM asserts the list is EMPTY ON PURPOSE. The day somebody
+//     re-opens a SAIRNscape resource to the bare licence key, that arm is where
+//     it has to be written down.
+//   * THE ANTI-VACUITY PROPERTY MOVES TO THE PAIRED POSITIVE ARMS. The reason a
+//     403 arm means anything is that the SAME harness answers 200 when a real
+//     session is attached -- twelve resources x read and write. A harness that
+//     403-ed everything would fail twenty-four arms, not pass them.
+//   * PLUS ONE CROSS-APP CONTROL, because all of the above is still inside this
+//     app: a bare-key call to `employees`, which has its OWN older gate, must
+//     NOT come back with this table's "sign in first". That is the arm that
+//     fails if SD_SESSION_GATED ever starts swallowing resources it was never
+//     asked about -- the shape api/sd-data-session-gate.test.js has driven
+//     since the table existed, kept here too because this is the file that
+//     touches that table most often.
+const UNGATED_REST = [];
 
 // ── THE PER-RESOURCE WRITE PAYLOAD, 2026-10-13 (b8) ─────────────────────────
 // Only the fields a resource's own branch REQUIRES and that are not in the
@@ -575,29 +609,46 @@ function withToken(app, role) {
       'WRITE_EXTRA carries a key that is not in GATED: ' + stale.join(', '));
   });
 
-  section('AND WHAT IS NOT GATED IS STILL NOT GATED -- EVERY ONE DRIVEN, '
-    + 'NOT ONE WITNESS');
+  section('THE LICENCE-ONLY LIST IS EMPTY ON PURPOSE -- and what replaces the '
+    + 'control it used to be');
 
-  // ONE ARM PER RESOURCE, 2026-10-11. This was a single witness on scp_vendors
-  // and it had to move because scp_vendors got gated -- a control chosen for
-  // being ungated is not evidence that being ungated is right, and when the
-  // reason it was ungated turned out to be an unread register cell, the control
-  // moved rather than the finding. Driving all five means the loop cannot
-  // silently shrink to the one name that still happens to be open: the day the
-  // scope widens again, the arm for THAT resource is the one that goes red.
-  //
-  // NOT AN ENDORSEMENT -- a disclosure, same as before. The five that were here
-  // until 2026-10-13 are now GATED on Michael's decision; what is left is
-  // `schedule`, and the reason it is left is written at UNGATED_REST above
-  // rather than implied by its absence from the gate.
-  for (const r of UNGATED_REST) {
-    await atest(r + ' still answers without a session', async function () {
-      const res = await callWith(BEARER, { action: 'read', resource: r });
-      assert.strictEqual(res.statusCode, 200,
-        r + ' is now gated too. That may well be right -- but it is a scope '
-        + 'change and this arm is where it gets noticed.');
+  // THE LOOP THAT WAS HERE IS GONE BECAUSE IT WOULD DRIVE NOTHING. From
+  // 2026-10-11 to 2026-10-14 this section ran one arm per licence-only
+  // resource, and the whole point was that a control chosen for being ungated
+  // is not evidence that being ungated is right. All twelve are gated now, so
+  // the loop would print nothing and pass -- and a zero-length loop that passes
+  // is indistinguishable from a control that works. Replaced, not deleted.
+  test('UNGATED_REST is EMPTY, and that is a statement rather than a leftover',
+    function () {
+      assert.deepStrictEqual(UNGATED_REST, [],
+        'a SAIRNscape resource has been re-opened to the bare licence key: '
+        + UNGATED_REST.join(', ') + '. That may be right -- but it is a scope '
+        + 'change and THIS is where it gets written down, with the reason.');
+      // Stated against the registry rather than as a number, so it cannot go
+      // stale the way "the two Tier A resources" did for five widenings.
+      const SCP = require('./_resources/sairnscape.js');
+      assert.strictEqual(GATED.length, SCP.resources.length,
+        'every resource the registry owns is gated, or this count disagrees: '
+        + GATED.length + ' gated vs ' + SCP.resources.length + ' owned');
     });
-  }
+
+  // ── THE CROSS-APP CONTROL, AND IT IS THE ONE THAT SURVIVES A FULL GATE ────
+  // Everything above this line is inside SAIRNscape, so none of it can see the
+  // failure where SD_SESSION_GATED starts refusing resources it was never
+  // asked about. `employees` has its OWN, older gate; what matters is that this
+  // table did not swallow it. Same shape api/sd-data-session-gate.test.js has
+  // driven since the table existed -- kept here as well because this is the
+  // file that edits that table most often, and the duplication is the point.
+  await atest('a resource with its OWN gate is not swallowed by this table',
+    async function () {
+      const res = await callWith(BEARER, { action: 'read', resource: 'employees' });
+      assert.ok(res.body && res.body.error,
+        'expected `employees` to keep its own refusal, got '
+        + res.statusCode + ' ' + JSON.stringify(res.body).slice(0, 120));
+      assert.ok(!/sign in first/i.test((res.body.error.message) || ''),
+        'SD_SESSION_GATED answered for a resource it does not own -- the gate '
+        + 'has widened past its table');
+    });
 
   console.log('\n' + pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);
