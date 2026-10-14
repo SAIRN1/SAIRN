@@ -3889,6 +3889,30 @@
         "sairnfreedom.html",
         "sql/2026-10-14-hank-b9-ai-safeguards.sql"
       ]
+    },
+    {
+      "id": "hank-1791982267",
+      "session": "hank",
+      "subject": "sairn-api-sql",
+      "task": "hank b10 -- (1) sql/2026-10-14-michael-run-order.sql: numbered idempotent blocks for Michael to run one at a time, each with its verification query and expected result. (2) office_manager in SAIRNcare in all four places. (3) clock_flags merge fix in api/sd-data.js. (4) leg_bookings + leg_clergybookings overlap helper, rf_settings read tiering. (5) sairnlegacy role matrix per fourth b15, leg_aftercare deterministic id. (6) push without force. I WRITE UNDER api/ and sql/ ONLY plus my own root b10 artifacts and docs/SAIRN-handoff-hank-b10.md. NO tools/ FILE (cc), NO tests/ FILE (cody), NO OTHER docs/ FILE (fourth). CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: cody's tests/ files are read-only here and cody's own claim declares my api/ and sql/ files read-only there, so the declared file sets are disjoint. FILES: sql/2026-10-14-michael-run-order.sql sql/sairncare_employee_auth_schema.sql sql/sairncare_all_remaining_migrations.sql sql/sairnlegacy_employee_auth_schema.sql api/_lib/auth.js api/alf-auth.js api/sd-data.js api/_lib/leg-overlap.js api/sd-data-leg-overlap.test.js docs/SAIRN-handoff-hank-b10.md SAIRN-report-hank-b10.txt SAIRN-digest-hank-b10.txt",
+      "claimed_at": "2026-10-14T12:51:07Z",
+      "claimed_at_epoch": 1791982267.0887988,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-hank-b10.txt",
+        "SAIRN-report-hank-b10.txt",
+        "api/_lib/auth.js",
+        "api/_lib/leg-overlap.js",
+        "api/alf-auth.js",
+        "api/sd-data-leg-overlap.test.js",
+        "api/sd-data.js",
+        "docs/SAIRN-handoff-hank-b10.md",
+        "sql/2026-10-14-michael-run-order.sql",
+        "sql/sairncare_all_remaining_migrations.sql",
+        "sql/sairncare_employee_auth_schema.sql",
+        "sql/sairnlegacy_employee_auth_schema.sql"
+      ]
     }
   ],
   "refusals": [
