@@ -171,13 +171,11 @@ handoff, the report and the digest.
 
 ## Current state
 
-HEAD at time of writing (pre-push-of-this-handoff's own commit):
-`55cf2087`, matching `origin/main` exactly -- 0 ahead / 0 behind. Chain
-tip now 1416 (the cc b10 spot-check added after this handoff's first
-commit), republished at seq1415 earlier this batch (was 17 behind the
-beacon, over the 15-entry threshold) -- fresh RFC3161 token minted and
-independently verified (`openssl ts -verify` -> `Verification: OK`);
-re-check the final report for the beacon's lag after seq1416.
+HEAD at time of writing: `eaca4608`, matching `origin/main` exactly --
+0 ahead / 0 behind, confirmed after push. Chain tip 1416, genesis-to-tip
+intact. Beacon checkpoint seq1415 (republished earlier this batch, was
+17 behind the 15-entry threshold) is 1 entry behind the current tip --
+within the threshold, not republished again.
 
 ## Transcript
 
