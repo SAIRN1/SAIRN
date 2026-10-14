@@ -350,14 +350,40 @@ function fieldsOf(flags) {
   if (reg === null || !Array.isArray(reg.entries)) {
     cannot('E1. docs/known-red-suites.json could not be read or has no entries '
          + 'array, so registration cannot be judged', 'at ' + REG);
-  } else if (reg.entries.some((e) => e && e.file === SELF)) {
-    ok('E1. this suite IS registered in docs/known-red-suites.json, so its '
-     + 'deliberate red can be told from a new regression. ' + reg.entries.length
-     + ' entries read');
   } else {
-    bad('E1. this suite must be registered in docs/known-red-suites.json while '
-      + 'it is deliberately red',
-        reg.entries.length + ' entries, none with file == ' + SELF);
+    // ── E1 IS CONDITIONAL ON BEING RED NOW (2026-10-14, cody b12) ─────────
+    // It asserted, unconditionally, that this suite IS in `entries` -- "while
+    // it is deliberately red". The routed api/ fix has landed and the suite is
+    // GREEN, so the row was correctly MOVED to `recovered`, and this arm then
+    // demanded an entries row for a suite that must not have one: the
+    // register's own rule is that a row whose suite has gone green swallows
+    // the next real failure of that file while it stands.
+    // THE SAME DEFECT AS THE FOOTER BELOW -- a standing assertion of a
+    // TEMPORARY state -- and it was found by fixing the footer and re-running.
+    // Now it is symmetric: red requires a row, green requires its absence, and
+    // either direction fails loudly. `fail` is read before E1 adds to it, and
+    // every substantive arm has already run by here.
+    const amRed = fail > 0;
+    const listed = reg.entries.some((e) => e && e.file === SELF);
+    const rec = Array.isArray(reg.recovered)
+      && reg.recovered.some((e) => e && e.file === SELF);
+    if (amRed && listed) {
+      ok('E1. this suite is RED and IS registered in docs/known-red-suites.json, '
+       + 'so its deliberate red can be told from a new regression. '
+       + reg.entries.length + ' entries read');
+    } else if (amRed && !listed) {
+      bad('E1. this suite is RED and must be registered in '
+        + 'docs/known-red-suites.json while it is deliberately red',
+          reg.entries.length + ' entries, none with file == ' + SELF);
+    } else if (!amRed && !listed) {
+      ok('E1. this suite is GREEN and is NOT in `entries`, which is what the '
+       + 'register requires -- a row over a green suite absorbs the next real '
+       + 'failure of this file' + (rec ? '. It is in `recovered`.' : ''));
+    } else {
+      bad('E1. this suite is GREEN but still has an `entries` row, which will '
+        + 'swallow the next real failure of this file',
+          'move it to `recovered` -- it passed every arm above');
+    }
   }
 
   const TOOLS = path.join(ROOT, 'tools');

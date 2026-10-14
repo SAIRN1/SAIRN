@@ -698,15 +698,41 @@ const CODE = SRC.split(/\r?\n/)
     cannot('E1. docs/known-red-suites.json could not be read or has no '
          + 'entries array, so registration cannot be judged',
            'at ' + REG);
-  } else if (reg.entries.some((e) => e && e.file === SELF)) {
-    ok('E1. this suite IS registered in docs/known-red-suites.json, so its '
-     + 'deliberate red can be told from a new regression. ' + reg.entries.length
-     + ' entries read');
   } else {
-    bad('E1. this suite must be registered in docs/known-red-suites.json while '
-      + 'it is deliberately red -- an unregistered red suite is '
-      + 'indistinguishable from a regression',
-        reg.entries.length + ' entries, none with file == ' + SELF);
+    // ── E1 IS CONDITIONAL ON BEING RED NOW (2026-10-14, cody b12) ─────────
+    // THE THIRD FILE WITH THIS DEFECT, and it was found by MEASURING rather
+    // than by being routed: the b12 dispatch named two stale EXPECTED RED
+    // footers, and driving every suite that carries one found FOUR -- this is
+    // the third, and the fourth turned out to be a per-mutation message rather
+    // than a standing footer, so it was left alone.
+    // The arm asserted, unconditionally, that this suite IS in `entries` --
+    // "while it is deliberately red". The api/ feature has landed, so the row
+    // must move to `recovered` and this arm must not demand it. A standing
+    // assertion of a TEMPORARY state, which is what the footer was too.
+    // Symmetric now: red requires a row, green requires its absence, and
+    // either direction fails loudly.
+    const amRed = fail > 0;
+    const listed = reg.entries.some((e) => e && e.file === SELF);
+    const rec = Array.isArray(reg.recovered)
+      && reg.recovered.some((e) => e && e.file === SELF);
+    if (amRed && listed) {
+      ok('E1. this suite is RED and IS registered in docs/known-red-suites.json, '
+       + 'so its deliberate red can be told from a new regression. '
+       + reg.entries.length + ' entries read');
+    } else if (amRed && !listed) {
+      bad('E1. this suite is RED and must be registered in '
+        + 'docs/known-red-suites.json while it is deliberately red -- an '
+        + 'unregistered red suite is indistinguishable from a regression',
+          reg.entries.length + ' entries, none with file == ' + SELF);
+    } else if (!amRed && !listed) {
+      ok('E1. this suite is GREEN and is NOT in `entries`, which is what the '
+       + 'register requires -- a row over a green suite absorbs the next real '
+       + 'failure of this file' + (rec ? '. It is in `recovered`.' : ''));
+    } else {
+      bad('E1. this suite is GREEN but still has an `entries` row, which will '
+        + 'swallow the next real failure of this file',
+          'move it to `recovered` -- it passed every arm above');
+    }
   }
 
   // NO GATE READS THIS -- MEASURED over tools/, which is where every gate and
@@ -743,8 +769,20 @@ const CODE = SRC.split(/\r?\n/)
   if (notProved.length) console.log(notProved.length + ' ARM(S) UNPROVEN: ' + notProved.join(', '));
   // THE VERDICT, NOT A CLAIM: registration and gate-freedom are arms E1 and E2
   // above, so this line reports what was measured instead of asserting it.
-  console.log('\nEXPECTED RED until the api/ owner lands the feature. '
-            + 'Registration and gate-freedom are ASSERTED by arms E1 and E2, '
-            + 'not claimed here.');
+  // DERIVED, NOT STANDING (2026-10-14, cody b12) -- same repair as
+  // tests/sd_data_clock_flags_merge.test.js and
+  // tests/sairncare_office_manager_role.test.js, same reason: this line was
+  // printing EXPECTED RED beside its own `0 failed`.
+  if (fail) {
+    console.log('\nEXPECTED RED until the api/ owner lands the feature. '
+              + 'Registration and gate-freedom are ASSERTED by arms E1 and E2, '
+              + 'not claimed here.');
+  } else {
+    console.log('\nTHE api/ FEATURE HAS LANDED, so this suite is a REGRESSION '
+              + 'GUARD now rather than an open finding. Registration and '
+              + 'gate-freedom are ASSERTED by arms E1 and E2, not claimed '
+              + 'here. It prints EXPECTED RED again by itself if an arm '
+              + 'fails.');
+  }
   process.exit(fail ? 1 : (unproven ? 3 : 0));
 })();
