@@ -2880,6 +2880,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "docs/hank-evidence/b10_live_gate_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "92612e5b6d3058e2049755835ba9742bda545512",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/greeting.test.js",
    "class": "test file",
    "level": "CHANGE",
