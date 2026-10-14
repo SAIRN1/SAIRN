@@ -647,6 +647,31 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_save_reviews_retry_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "number is disclosed with a ceiling rather than asserted to zero. One combined"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(tmp, ignore_errors=True)"
+    }
+   ],
+   "sha": "297274b531497fa9f7533ac5860b69c2d22422fa",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/tier_a_review_gate.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "297274b531497fa9f7533ac5860b69c2d22422fa",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_tier_a_review_gate_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -660,6 +685,31 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "2a3a95c20d55ae860c7554bbc0598329410591f6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_save_reviews_retry_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "number is disclosed with a ceiling rather than asserted to zero. One combined"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(tmp, ignore_errors=True)"
+    }
+   ],
+   "sha": "2e8e79714cf51c4ba8bdcbd98d2ecb392342f2c4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/tier_a_review_gate.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "2e8e79714cf51c4ba8bdcbd98d2ecb392342f2c4",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -941,6 +991,23 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "3ead2e8618e14e0d62a54200cdfdfee591183b85",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_drive_upload_verify_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "arms.append(('...and the sync-mount limit is PRINTED rather than folded '"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "FINDING ABOUT THE BATCH, not a crash and not a skip."
+    }
+   ],
+   "sha": "3fc3bcd6fa279629ea4b7cc3f95bc4732a5309fb",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -1323,6 +1390,23 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "539a0c00bb4d329c62ba77c7f95c0a25e1696908",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_drive_upload_verify_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "arms.append(('...and the sync-mount limit is PRINTED rather than folded '"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "FINDING ABOUT THE BATCH, not a crash and not a skip."
+    }
+   ],
+   "sha": "53ecefb5ba6ebe73a8197d2d96cf2a889aa5ee92",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -2519,6 +2603,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_scope_gate_unfetched_base_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(tmp, ignore_errors=True)"
+    }
+   ],
+   "sha": "9a1514fa278be8006d3855a1c872fa3ec8b97c47",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/report_only_checks.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9a1514fa278be8006d3855a1c872fa3ec8b97c47",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/claims/run_fileset_matcher_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -2961,6 +3066,27 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_scope_gate_unfetched_base_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(tmp, ignore_errors=True)"
+    }
+   ],
+   "sha": "ae872b6c5d3f235da1b76095ba8101d0cea8fe49",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/report_only_checks.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ae872b6c5d3f235da1b76095ba8101d0cea8fe49",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -4298,69 +4424,6 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "fe19dcd6306410ae8bb995e671142a9642810044",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/run_save_reviews_retry_probe.py",
-   "class": "test file",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a bound or threshold ADDED",
-     "detail": "number is disclosed with a ceiling rather than asserted to zero. One combined"
-    },
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "shutil.rmtree(tmp, ignore_errors=True)"
-    }
-   ],
-   "sha": "297274b531497fa9f7533ac5860b69c2d22422fa",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tools/tier_a_review_gate.py",
-   "class": "push-gate logic",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "297274b531497fa9f7533ac5860b69c2d22422fa",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/run_drive_upload_verify_probe.py",
-   "class": "test file",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a bound or threshold ADDED",
-     "detail": "arms.append(('...and the sync-mount limit is PRINTED rather than folded '"
-    },
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "FINDING ABOUT THE BATCH, not a crash and not a skip."
-    }
-   ],
-   "sha": "3fc3bcd6fa279629ea4b7cc3f95bc4732a5309fb",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/run_scope_gate_unfetched_base_probe.py",
-   "class": "test file",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "shutil.rmtree(tmp, ignore_errors=True)"
-    }
-   ],
-   "sha": "ae872b6c5d3f235da1b76095ba8101d0cea8fe49",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tools/report_only_checks.py",
-   "class": "push-gate logic",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "ae872b6c5d3f235da1b76095ba8101d0cea8fe49",
    "criteria_version": "2026-10-06.1"
   }
  ],
