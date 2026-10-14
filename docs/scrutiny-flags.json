@@ -5039,6 +5039,75 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/push_gate/missing_checker_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "fcd8b188d966cf5dc230a4aeb63a3c3e58d1b896",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/role_gate_loop_rule_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "fcd8b188d966cf5dc230a4aeb63a3c3e58d1b896",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_role_gate_negative_coverage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "fcd8b188d966cf5dc230a4aeb63a3c3e58d1b896",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_tool_selftest_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "fcd8b188d966cf5dc230a4aeb63a3c3e58d1b896",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairncare/test-op-audit.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "fcd8b188d966cf5dc230a4aeb63a3c3e58d1b896",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnfreedom_server_backup.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "fcd8b188d966cf5dc230a4aeb63a3c3e58d1b896",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlegacy_reservation_lock.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "fcd8b188d966cf5dc230a4aeb63a3c3e58d1b896",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/worktree_sentinel_guard.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(tmp, ignore_errors=True)"
+    }
+   ],
+   "sha": "fcd8b188d966cf5dc230a4aeb63a3c3e58d1b896",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/hook_integrity_check.py",
    "class": "push-gate logic",
    "level": "CHANGE",
