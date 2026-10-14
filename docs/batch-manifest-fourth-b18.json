@@ -37,8 +37,8 @@
     {
       "id": 6,
       "title": "Push without force and confirm it landed",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "Pushed WITHOUT force: 0c25a770..b5ea4d3b (two commits, 2050b423 and b5ea4d3b). Confirmed landed: git rev-parse HEAD origin/main -> both b5ea4d3b9a77; git rev-list --left-right --count origin/main...HEAD -> 0 0; git status --porcelain -> empty. One remote-rejected non-fast-forward first attempt, resolved by git pull --rebase (NOT by --force) and re-pushed. Re-check with: git log origin/main --oneline -3"
     }
   ]
 }
