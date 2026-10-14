@@ -153,6 +153,34 @@ def cmd_publish(argv):
     now = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
     text = render(tip['seq'], tip['ts'], tip['hash'], len(entries), now)
     io.open(BEACON_PATH, 'w', encoding='utf-8', newline='\n').write(text)
+    # ── READ-BACK CHECK, added H1 b28 ───────────────────────────────────
+    # 2026-10-13's incident: a batch reported "republished to seq1376,
+    # verified via openssl" and the RFC3161 token for 1376 WAS real -- but
+    # TIP-BEACON.md on disk stayed at seq1309 the whole time. Root cause:
+    # hover_timestamp.py --request takes seq/hash/date as PLAIN ARGUMENTS
+    # the caller already computed by hand; it never reads this beacon file
+    # and never confirms a publish actually happened first. A real token
+    # for a number that was never actually written to the beacon reads as
+    # a closed loop and is not one. This re-opens the file just written,
+    # by the same parser --check uses, and REFUSES before printing
+    # "published" if the seq on disk does not match the seq just computed
+    # -- so a write that silently landed somewhere else, got clobbered by
+    # a concurrent writer, or hit a filesystem that lied about success
+    # cannot report success here while the file disagrees.
+    try:
+        written = io.open(BEACON_PATH, encoding='utf-8').read()
+    except OSError as e:
+        print('COULD NOT RUN: wrote the beacon but could not read it back -- '
+              '%s. NOT reporting success.' % e)
+        return EXIT_COULD_NOT_RUN
+    readback = _parse_beacon(written)
+    if 'checkpoint_seq' not in readback or int(readback['checkpoint_seq']) != tip['seq']:
+        print('COULD NOT RUN: wrote seq=%d but reading %s back gives %s. '
+              'The file on disk does not match what this process just '
+              'wrote -- NOT reporting success, and nothing downstream '
+              '(including an RFC3161 token request) should trust this '
+              'publish.' % (tip['seq'], BEACON_PATH, readback.get('checkpoint_seq', '<missing>')))
+        return EXIT_COULD_NOT_RUN
     print('published: seq=%d hash=%s total=%d' % (tip['seq'], tip['hash'], len(entries)))
     if '--anchor' in argv:
         payload = anchor_payload(tip, len(entries), now)
