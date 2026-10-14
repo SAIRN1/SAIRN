@@ -28519,7 +28519,7 @@
       "recurrence_open": "The new test reads sql/ files, so a CHECK widened LIVE and never written back is still invisible -- the exact state three audit-log tables were in until 2026-10-13. Nothing yet compares any app's HTML, the third copy of these vocabularies, except SAIRNfreedom's."
     },
     {
-      "commit": "705a16c9b60b",
+      "commit": "8a2bfdbfe555",
       "date": "2026-10-14",
       "subject": "fix(sairnscape): the twelfth resource is gated, SAIRNscape is 12 of 12, and the suite loses a control it has to replace rather than drop",
       "files": [
@@ -28624,7 +28624,7 @@
       "recurrence_open": "The fix is a read-then-write, not an atomic lock. Two requests interleaving between the SELECT and the upsert -- milliseconds, two people clicking Save in the same instant -- still both succeed; the EXCLUDE constraint that would close it cannot be indexed while the window lives in `data` jsonb. And nothing here surveys the other 34 SAIRNlegacy resources for the same client-side-authority shape."
     },
     {
-      "commit": "93b60574ac92",
+      "commit": "1950e5ec017d",
       "date": "2026-10-14",
       "subject": "chore(methodology): the seam check's COULD NOT TELL is ONE seam with a test whose count had gone stale, and seven FMEA drafts were a month out of date",
       "files": [
@@ -28680,7 +28680,7 @@
       "recurrence_open": "Every other written count in the tree is untouched by this. The floor arm cannot catch the case this one actually was -- a count that is wrong by one or two -- only a count that has collapsed. Nothing yet compares tools/sairn_seam_check.py's reported figure to the suite that covers the seam it names."
     },
     {
-      "commit": "93b60574ac92",
+      "commit": "1950e5ec017d",
       "date": "2026-10-14",
       "subject": "chore(methodology): the seam check's COULD NOT TELL is ONE seam with a test whose count had gone stale, and seven FMEA drafts were a month out of date",
       "files": [
@@ -28815,7 +28815,7 @@
       "recurrence_open": "`schedule` is still licence-only and that is a disclosure, not a fix: nobody has decided it, and it is the one SAIRNscape resource whose bare name is also a StoneDesk panel id. Nothing here closes the same shape in the other apps -- the derived-population arm is SAIRNscape's only; the other per-app gate suites still hand-type their resource lists."
     },
     {
-      "commit": "de2608c30ed5",
+      "commit": "3a2fa87fde45",
       "date": "2026-10-14",
       "subject": "fix(sairnsenior): three read/write asymmetries closed, and the SAIRNlegacy survey finds the same client-authority defect a third time",
       "files": [
