@@ -2940,3 +2940,27 @@ high-risk resource, so that refusal is reachable but not reached.
 
 Claim released at the end of the batch. No hook restored, settings.json never
 committed by this session, SAIRN_SEED_GATE=off never used, no tools/ file edited.
+
+### b9 Drive upload -- CONFIRMED BY READ-BACK, not by the upload's own 200
+
+All three uploaded to folder 14Xc5oT0xzSLa_rTSOSXWVK3Kko1Fbx09 and read back,
+comparing title, FIRST LINE and BYTE SIZE against the local file:
+
+  SAIRN-handoff-hank-b9.md   16364 == 16364   16DSpY5a1ux2LuulEqYqs94NRdoWthmVU
+  SAIRN-report-hank-b9.txt   33390 == 33390   1wHLdHKyy3yropSRnZ1z0kf4EUWmIJcVP
+  SAIRN-digest-hank-b9.txt    1237 ==  1237   1186jdOKfRhIB2-RkGveaB66DPzdTjV6S
+
+Uploaded with disableConversionToGoogleType, deliberately: a conversion to a
+Google Doc makes the size comparison meaningless while still looking like a
+successful round trip.
+
+THE SNIPPET VERBOSITY MATTERS AND IT BIT AGAIN. The handoff's content snippet
+came back EMPTY at BRIEF *and* MEDIUM -- title and size matched, first line
+UNREAD, which is a could-not-check and not a pass. DETAILED returned it. Same
+thing happened to b8's report. A session that stopped at the empty snippet
+would record a confirmed read-back it never made; the rule is retry at
+DETAILED before believing an empty snippet.
+
+Appended here rather than added to the report, because the report and digest
+are sealed by report_sha_check and editing either after seating its SHA is the
+accident that tool exists to catch.
