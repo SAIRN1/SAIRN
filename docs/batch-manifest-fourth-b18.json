@@ -7,8 +7,8 @@
     {
       "id": 1,
       "title": "Write the b18 batch manifest first; close it with PYTHONIOENCODING=utf-8 until cc fixes tools/batch_manifest.py:386",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "docs/batch-manifest-fourth-b18.json written FIRST, before any other action: PYTHONIOENCODING=utf-8 python tools/batch_manifest.py --new fourth b18 --items 6 -> 'wrote docs\\batch-manifest-fourth-b18.json with ids 1-6, id_lock=906816e5cf0d24f9'. Closed with PYTHONIOENCODING=utf-8 python tools/batch_manifest.py --close --agent fourth --batch b18, per the standing workaround for tools/batch_manifest.py:386 which still crashes on cp1252 (cc's). Re-check with: PYTHONIOENCODING=utf-8 python tools/batch_manifest.py --check --agent fourth --batch b18"
     },
     {
       "id": 2,
@@ -40,5 +40,15 @@
       "status": "done",
       "evidence": "Pushed WITHOUT force: 0c25a770..b5ea4d3b (two commits, 2050b423 and b5ea4d3b). Confirmed landed: git rev-parse HEAD origin/main -> both b5ea4d3b9a77; git rev-list --left-right --count origin/main...HEAD -> 0 0; git status --porcelain -> empty. One remote-rejected non-fast-forward first attempt, resolved by git pull --rebase (NOT by --force) and re-pushed. Re-check with: git log origin/main --oneline -3"
     }
-  ]
+  ],
+  "closed": {
+    "drive_verify": "PASS",
+    "verified_by": "python tools/drive_upload_verify.py --agent fourth --batch b18 --verify-only",
+    "criteria": "2026-10-13.1",
+    "deliverables": [
+      "SAIRN-handoff-fourth-b18.md sha256 9cb3a44489d49c07",
+      "SAIRN-report-fourth-b18.txt sha256 e367564e7d5f91c9",
+      "SAIRN-digest-fourth-b18.txt sha256 731b5a0f2c675aed"
+    ]
+  }
 }
