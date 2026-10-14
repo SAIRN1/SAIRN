@@ -28963,6 +28963,185 @@
       },
       "citation_note": "the nearest standing rule is PR 1.11 (could-not-run is a third state) and this is its mirror image: the gate did not skip, it reported a could-not-read as a FINDING about the change. Cross-domain-disciplines item 8 covers the staleness half. Neither names this shape exactly, so not-citable rather than a stretched citation",
       "factors_unknown_reason": "fourth routed the defect twice and named the shape; the causal question -- why four separate gates each bound a remote sha from pre-push stdin with no existence test -- is a real analysis nobody has done, and a guess here would be worse than the gap"
+    },
+    {
+      "commit": "014399c19cea",
+      "date": "2026-10-14",
+      "subject": "fix(tools): batch_manifest cp1252 console crash, --set's silent b6 default, claim commit subjects",
+      "files": [
+        "tools/batch_manifest.py",
+        "tools/sairn_claim.py"
+      ],
+      "lines_added": 48,
+      "lines_removed": 3,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "live-verification",
+      "summary": "batch_manifest.py --set silently defaulted to --agent cc --batch b6 (a hardcoded leftover from the batch this file was written in) when neither flag was passed. Reproduced live: an unqualified --set call overwrote three of b6's CLOSED items with b9's evidence text, no error, a confident item-1-to-done line printed over a manifest it never named",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "7003b58c5a92",
+        "date": "2026-10-13",
+        "subject": "feat(batch manifest): chat writes the ids and they are immutable; plus the push gate scoped to the pushing agent and retries capped at 2",
+        "lag_days": 1
+      },
+      "factors_unknown_reason": "not investigated this batch -- the fix (refuse like --close already does) is verified; root-cause factor analysis was not done"
+    },
+    {
+      "commit": "670e101de5e0",
+      "date": "2026-10-14",
+      "subject": "fix(red suite register): ordinary run can now exit 0, not always 2",
+      "files": [
+        "tools/red_suite_register_check.py"
+      ],
+      "lines_added": 71,
+      "lines_removed": 19,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "user-report",
+      "summary": "red_suite_register_check.py's docstring sells it as cheap enough to run every batch WITHOUT --from-run, but every such run unconditionally added no-from-run to could_not_run, and could_not_run always wins -- so the one invocation it is actually for could never report anything but exit 2, regardless of whether every registered suite was confirmed still red. Flagged directly by Michael",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "8f15f7c5fc57",
+        "date": "2026-10-06",
+        "subject": "fix(exec-context): the CTO advisor carried the SAME false clause as the CFO one -- \"NO accounting integration of any kind\" -- plus a count nobody could re-derive; and tools/red_suite_register_check.py",
+        "lag_days": 8
+      },
+      "citation_note": "no standing process-rule names a tool whose documented cheap/common-case invocation always lands on the pessimistic exit code; closest (1.11) is about a dependency being absent, and nothing here was absent -- an optional expensive input was declined on purpose",
+      "factors_unknown_reason": "not investigated this batch -- the fix (no-from-run demoted to a non-gating notice) is verified; root-cause factor analysis was not done"
+    },
+    {
+      "commit": "9409a11abd02",
+      "date": "2026-10-14",
+      "subject": "fix(status line): real per-model window, never a hardcoded 200K guess",
+      "files": [
+        "tools/sairn_status_line.py"
+      ],
+      "lines_added": 101,
+      "lines_removed": 38,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "live-verification",
+      "summary": "sairn_status_line.py: an unrecognized model fell to a hardcoded SMALL_WINDOW=200000 default and rendered ctx 72% of 200k at 144K used against Sonnet 5's real 967K window (actual fraction 15%) -- a nearly 5x-too-alarming number with no error, no sign anything was wrong",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "54abe65f4cda",
+        "date": "2026-10-14",
+        "subject": "feat(status line) + fix(register feed gate): a context percentage in all six folders, and a push refusal that stops blaming a wrapper that was never there",
+        "lag_days": 0
+      },
+      "citation_note": "no standing process-rule names a hardcoded fallback window specifically; closest shapes (1.1, 1.10) are about a check or a computed answer going stale, not a display default guessed per-model",
+      "factors_unknown_reason": "not investigated this batch -- the fix (named-model matching, unknown renders ctx ??%) is verified; root-cause factor analysis was not done"
+    },
+    {
+      "commit": "9d9d0e53bb68",
+      "date": "2026-10-14",
+      "subject": "fix(cody-routed): AST-confirm self-test flags, ooda_phases stale threshold",
+      "files": [
+        "tests/run_selftest_sweep_probe.py",
+        "tools/ooda_phases.py"
+      ],
+      "lines_added": 71,
+      "lines_removed": 4,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "tests/run_selftest_sweep_probe.py's SELFTEST_RX matched the phrase as source TEXT, so 3 of 44 discovered self-tests were a fixture string, a docstring example and a comment quoting the same phrase, not real argv-parsing code; its TOLERATE_MISSING also missed argparse's actual unrecognized-arguments wording; ooda_phases.py's self-test asserted injection_dated < 10 from a 2026-09-15 snapshot (4 of 77), stale against the register's current 249",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "SELFTEST_RX's in-argv tightening is from 2026-09-24 per its own comment; the 3 new false positives and ooda_phases.py's stale threshold were not traced to a single introducing commit this batch"
+      },
+      "factors_unknown_reason": "not investigated this batch -- the fixes (AST-confirm, added wording, structural assertion) are verified; root-cause factor analysis was not done"
+    },
+    {
+      "commit": "d2d91d0f4ebb",
+      "date": "2026-10-14",
+      "subject": "fix(sql preflight): license_keys catalogue gap + function-as-table false positive",
+      "files": [
+        "tools/sairn_sql_preflight.py"
+      ],
+      "lines_added": 46,
+      "lines_removed": 0,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "sairn_sql_preflight.py DECLARED mode blocked 4 already-shipped, correct seed files with false MISSING_COLUMN on every real license_keys column (a table that predates this repo's schema files, invisible to a catalogue built only from CREATE TABLE in sql/*.sql) and false UNDECLARED_TABLE on sairn_circuit_breaker_step, a user-defined FUNCTION called in FROM position that the builtin-function exclusion list did not name. Finding #34, routed by cody",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the license_keys gap predates the repo's tracked schema files by the file's own prior comment; the circuit-breaker function false positive dates to whenever sql/sairn_circuit_breaker_schema.sql was added, not traced to one commit this batch"
+      },
+      "factors_unknown_reason": "not investigated this batch -- the fixes (supplemental catalogue from db/schema_snapshot.json, function-call-position structural exclusion) are verified; root-cause factor analysis was not done"
+    },
+    {
+      "commit": "fda7e0214883",
+      "date": "2026-10-14",
+      "subject": "fix(tools): encoding= on the 13 subprocess_decode_check findings in tools/",
+      "files": [
+        "docs/2026-10-14-cc-b9-subprocess-decode-tests-routed-to-cody.md",
+        "tools/credential_purge_check.py",
+        "tools/external_file_index_audit.py",
+        "tools/gh_token.py",
+        "tools/live_probe_declaration_check.py",
+        "tools/purge_evidence_gate.py",
+        "tools/resource_reachability_check.py",
+        "tools/rewrite_convergence_map.py",
+        "tools/sql_column_exists_check.py",
+        "tools/temp_state_leak_check.py"
+      ],
+      "lines_added": 96,
+      "lines_removed": 13,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "13 text-mode subprocess calls across 9 tools/*.py files had no explicit encoding=, decoding the child's output with cp1252 (this platform's locale default) -- mojibake or a raising reader thread on a stray UTF-8 byte. Routed by cody's subprocess_decode_check sweep (finding: 69 total, 13 in tools/)",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the 13 call sites accreted individually as each tools/*.py file was written; no single introducing commit"
+      },
+      "citation_note": "no standing process-rule names a text-mode subprocess call missing explicit encoding specifically; closest (1.11, fail-closed-when-absent) is about a dependency being absent, not a locale-default decode",
+      "factors_unknown_reason": "not investigated this batch -- the fix (subprocess_decode_check.fix_file(), AST-based, scoped to tools/) is verified; root-cause factor analysis was not done"
     }
   ],
   "started": "2026-09-09",
