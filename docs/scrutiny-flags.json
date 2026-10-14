@@ -1480,6 +1480,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/sd-data-rf-settings-tier.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'The allowlist was first written as a plain literal, so '"
+    }
+   ],
+   "sha": "51c9b48dcff6efcf64bdbe4d3ecf8919f7cf7559",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": ".githooks/pre-commit",
    "class": "CI / hook configuration",
    "level": "WEAKENING",
