@@ -102,6 +102,15 @@ sys.path.insert(0, os.path.join(REPO, 'tools'))
 import sairn_session_identity as _identity            # noqa: E402
 REGISTER = os.path.join(REPO, 'docs', 'CRITICALITY-TIERS.md')
 REVIEWS = os.path.join(REPO, 'docs', 'tier-a-reviews.json')
+
+# How many times save_reviews() retries os.replace against the Windows
+# concurrent-replace failure. THE CAP IS A DECISION, NOT A ROUND NUMBER: at the
+# ~76% per-attempt failure rate cody measured (305 of 400 iterations raising,
+# docs/2026-10-13-cody-b6-routed-to-cc.md PART 1), 20 attempts put exhaustion
+# near 1e-11, so an exhaustion is a signal rather than noise. UNBOUNDED IS
+# WRONG -- it turns a genuine deadlock into a hang, which PR 1.12 names as the
+# shape that must never exist.
+_REPLACE_RETRIES = 20
 RULE_REGISTRY = os.path.join(REPO, 'docs', 'coding-rule-registry.json')
 # Module-level rather than inlined in _register_records(), for the same reason
 # REVIEWS is: a path buried in a function body cannot be pointed at a fixture,
@@ -555,7 +564,29 @@ def save_reviews(data):
     try:
         with io.open(fd, 'w', encoding='utf-8', newline='\n') as fh:
             fh.write(json.dumps(data, indent=2, ensure_ascii=False) + '\n')
-        os.replace(tmp, REVIEWS)
+        for _attempt in range(_REPLACE_RETRIES):
+            try:
+                os.replace(tmp, REVIEWS)
+                break
+            except PermissionError:
+                # WINDOWS ONLY, AND NAMED RATHER THAN CAUGHT BROADLY.
+                # os.replace is MoveFileEx(MOVEFILE_REPLACE_EXISTING) here and
+                # fails ERROR_ACCESS_DENIED (WinError 5) while the destination
+                # is held open -- INCLUDING by another MoveFileEx in flight on
+                # the same target. POSIX rename(2) cannot reach this branch, so
+                # the retry costs nothing there.
+                #
+                # A bare `except OSError` would also swallow a full disk and a
+                # vanished directory, and retrying those _REPLACE_RETRIES times
+                # and THEN raising is strictly worse than raising once --
+                # tests/run_save_reviews_retry_probe.py arm 4 is that case.
+                #
+                # IT RE-RAISES ON EXHAUSTION. A retry that gives up quietly
+                # converts a lost record into a SILENT lost record, which is
+                # worse than the defect it was added for.
+                if _attempt == _REPLACE_RETRIES - 1:
+                    raise
+                time.sleep(0.01)
     except BaseException:
         # A temp file left behind is picked up by nothing and sits in docs/ for
         # ever, so it goes even when the write fails.
