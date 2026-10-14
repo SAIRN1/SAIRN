@@ -501,8 +501,8 @@
       "task": "hover2 b34 -- (1) log b33 to chain, confirm intact (2) adversarially verify hank newest batch (MAR grant, SAIRNvet role matrix, AI provenance six client sites, transport timeouts), HEAD disagreement ffb2463a vs 21dd38d9 resolved (3) adversarial SQL check sql/2026-10-14-hank-b11-mar-grant.sql block 2 DROP/ADD window + hover2 b33 routing doc two edits applied (4) independently run tests/sairnlegacy_reservation_lock.js, settle H1 seq1407 vs hover2 35/36 finding on leg_clergybookings, route fix to owner (5) deep-verify newest cc/cody/fourth claims via Drive then source, close or reopen (6) push external log repo no force confirm 0/0. AUDIT ROLE ONLY -- no platform api/ sql/ tools/ tests/ file edited or committed, only this role's own external hover-audit-log/ repo plus claim/release commits. FILES: hover-audit-log/ (external repo only)",
       "claimed_at": "2026-10-14T23:18:58Z",
       "claimed_at_epoch": 1792019938.291715,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-14T23:43:19Z",
       "files": null
     }
   ],
