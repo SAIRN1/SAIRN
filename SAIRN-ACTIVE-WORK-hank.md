@@ -2859,3 +2859,27 @@ docs/SAIRN-handoff-hank-b8.md:
 
 Claim released at the end of the batch. No hook restored, settings.json never
 committed, SAIRN_SEED_GATE=off never used.
+
+### b8 Drive upload -- CONFIRMED BY READ-BACK, not by the upload's own 200
+
+All three uploaded to Drive folder 14Xc5oT0xzSLa_rTSOSXWVK3Kko1Fbx09 and then
+READ BACK from Drive. Title, first line and byte size each compared against
+the local file rather than assumed from the create call:
+
+  SAIRN-handoff-hank-b8.md   20797 == 20797   1If-vIg1H5cVk-j7eF28dk-jfywdjR-FZ
+  SAIRN-report-hank-b8.txt   38132 == 38132   1jgUHW5i-vk_31HSmrrx67qQrhD5LE-VH
+  SAIRN-digest-hank-b8.txt    1112 ==  1112   1twHs3GCc3ZYdgKvt0hTse5WEgzhFP8OE
+
+Uploaded with disableConversionToGoogleType so the bytes are the bytes; a
+conversion to a Google Doc would have made the size comparison meaningless
+while still looking like a successful round trip.
+
+ONE READ-BACK NEEDED A SECOND ATTEMPT AND IT IS WORTH KNOWING: the report's
+content snippet came back EMPTY at BRIEF verbosity -- title and size matched,
+but the first line was unread, which is a COULD-NOT-CHECK and not a pass.
+DETAILED verbosity returned it ("REPORT hank b8"). A session that had stopped
+at the empty snippet would have recorded a confirmed read-back it never made.
+
+This note is appended here rather than added to the report, because the report
+and digest are sealed by report_sha_check and editing either after seating its
+SHA is the exact accident that tool exists to catch.
