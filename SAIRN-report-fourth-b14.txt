@@ -1,0 +1,341 @@
+REPORT fourth b14
+
+SAIRN batch report -- session fourth (ted), batch b14, 2026-10-14.
+Every figure names the command that produced it. Six items, one commit, and
+three decisions taken by chat rather than put to Michael.
+
+HEAD AND PUSH
+  CMD git -C <repo> rev-parse HEAD                        73b5577e...
+  CMD git -C <repo> rev-parse origin/main                  73b5577e...
+  CMD git rev-list --left-right --count origin/main...HEAD  0  0
+  CMD git status --porcelain                               (empty)
+  push range 225d0eb0..73b5577e, ONE rebase, NOT FORCED.
+  73b5577e IS THE STATE AT WHICH THE SIX ITEMS LANDED. The commit carrying
+  this report, the digest and the handoff lands after it, and the claim
+  release after that, so HEAD WILL NOT EQUAL 73b5577e when you read this.
+  SAIRN_SEED_GATE=off was NOT used in any form.
+  NOTHING WAS WRITTEN OUTSIDE docs/ plus my own three root deliverables. No
+  file under tools/, api/, sql/, tests/ or .claude/ was edited.
+  CMD git log --format=%h HEAD --not 6604d206 -- .claude/settings.json  (empty)
+
+ITEM 1 -- THE AI SPEC'S THREE OPEN POINTS, DECIDED BY CHAT
+
+  docs/2026-10-14-ai-safeguards-spec.md section 7 is now a decision table and
+  the three questions are REMOVED. All three are technical/product calls with
+  a safe default and a cheap reversal; none touches the customer wording.
+
+  7.1 OWNER ACCEPTANCE IS NOT A RUNTIME GATE. It is a one-time acceptance in
+      the customer agreement, and nothing in the app checks it before
+      answering. A gate turns a paperwork gap into an outage across every
+      seat, and the first support call makes somebody disable it -- which
+      removes the acceptance AND the gate. ownerTermsState() is report-only BY
+      CONTRACT: no caller may branch an AI refusal on it. T10 loses its
+      "unless Michael says otherwise" and gains the negative arm.
+  7.2 SAIRNDENTAL AND SAIRNSENIOR OUTPUTS ARE CLINICAL / HIGH-RISK --
+      category 2, inline Reviewed button YES. The old wording made it
+      conditional ("category 2 IF it suggests clinical coding"), which is a
+      per-output judgement made at speed by whoever is on shift: a hope, not a
+      classification. Cost of being wrong in this direction is one extra
+      button; in the other direction it is an unreviewed clinical suggestion
+      in a document. T9 must now EXCLUDE both apps; T7/T8/T14 gain arms for
+      both; section 1(c)'s category-2 examples name both.
+  7.3 NOTICE VERSION IS 2026-11 NOW, bumped when the lawyer's wording is
+      final, in the SAME commit as the text. The mechanism must ship before
+      2026-11-12 and the wording is not back; tying the string to an
+      unapproved agreement version would block the build on a document. T4 is
+      now load-bearing rather than hypothetical -- it is the test that proves
+      a late bump re-prompts once and does not destroy the earlier ack.
+
+  STILL NOT DECIDED, AND NOT A QUESTION FOR MICHAEL EITHER: both
+  [DRAFT -- LAWYER] strings. They are the only thing in that document waiting
+  on anybody.
+
+  SECTION 7.4 IS NEW AND IS A CONCESSION. Measured from the claim record:
+  hank's live b9 claim item 2 is already building this in api/ -- ai_source +
+  ai_approved_by + ai_approved_at on AI-sourced records, a server refusal for
+  high-risk leaving draft unapproved, and a per-employee one-time notice ack,
+  with api/_lib/ai-safeguards.js and api/ai-notice.js in its FILES. So:
+    * the APPROVAL RECORD: hank's shape wins. Record-level ai_approved_by
+      beats my audit-log event_type for the footer, because section 1(d)
+      renders "reviewed by [name]" off the row being rendered. Section 2.3's
+      CHECK-list hazard still applies to anything that also writes an audit
+      row, and that warning is the part worth keeping either way.
+    * "server refusal for high-risk leaving draft unapproved" is a GATE I did
+      not ask for and it does NOT contradict 7.1: 7.1 is about owner
+      acceptance. A high-risk document refusing to leave draft until a human
+      approved it is the point of (c) and (d), enforced server-side. It is
+      STRONGER than what I specified and the spec adopts it.
+    * THE ONE COLLISION: sections 2.1 and 3.2 put the notice ack on the
+      existing *_employee_auth row and the action on the existing *-auth.js
+      endpoint; hank is building a separate api/ai-notice.js. If both land
+      there are TWO ACK RECORDS FOR ONE FACT, and an employee acked in one
+      place reads as un-acked in the other -- the repeat popup Michael's
+      decision exists to prevent. hank picks one store; the loser is deleted,
+      not left as a second writer.
+  Sections 1-6 are NOT rewritten to match. A spec that silently re-aligns
+  itself to whatever landed stops being reviewable.
+
+ITEM 2 -- THE 13 HOOK-MANIFEST FINDINGS: 13 STALE RECORD, 0 REAL DRIFT
+
+  docs/2026-10-14-fourth-b14-hook-manifest-triage.md.
+  CMD python tools/hook_integrity_check.py                 exit 1, DRIFT (13)
+  CMD git log -1 --format='%h %cI' -- docs/hook-manifest.json
+      e8bfdf0d 2026-10-07T07:37:05-04:00
+  CMD git status --porcelain -- tools/ .githooks/           (empty)
+
+  THE DISCRIMINATOR IS THE WHOLE TRIAGE. The check cannot tell "a tool changed
+  in a commit nobody reviewed" from "a tool changed in a commit its owner
+  pushed and the manifest was not regenerated" -- its own text says so. The
+  discriminator is the commit history plus the working-tree state, and both
+  are driven above: the manifest predates all thirteen subjects, and nothing
+  under tools/ or .githooks/ differs from HEAD, so no finding is a
+  working-tree edit that bypassed review.
+
+  CLASS: 9 are a landed commit the manifest has not caught up with; 4 are
+  tools CREATED after the last regeneration and never added --
+    CMD git log --diff-filter=A --format='%h %cI' -- tools/<name>.py
+        commit_tool_entry_check.py  2026-10-13T06:42:57
+        compaction_brief.py         2026-10-13T17:32:59
+        report_sha_check.py         2026-10-13T06:42:40
+        temp_state_leak_check.py    2026-10-13T06:42:48
+  REAL DRIFT: 0.
+  OWNER (from # OWNER: where present, else the committed
+  docs/tool-owner-map.json): cc 6, fourth 4, hank 1, hover2 1, platform 1.
+  Finding 13, the checker itself, reads tree=61f9626be7f3 head=61f9626be7f3
+  manifest=bfb8b4db3b26 -- tree == head, so only the manifest disagrees.
+  Finding 11 has an owner disagreement (map says fourth; the last change came
+  out of cc's b7 batch-manifest work) and it is REPORTED, not resolved.
+
+  ROUTED TO cc: one `--regenerate` in cc's clone closes all thirteen, and the
+  tool's own banner says --regenerate NAMES EVERY CHANGE, which is the review
+  step. NOT DONE FROM HERE: four of the thirteen are mine, which is exactly
+  why I must not write the expectation file they are then measured against.
+  ONE INTERACTION cc MUST KNOW: cc's own live b8 claim item 1 removes the
+  SessionStart:compact hook group. Regenerate AFTER that removal, or the
+  manifest records a hook that is about to be deleted.
+
+ITEM 3 -- BOTH [WEAKENING] FLAGS SIGNED OFF, FALSE POSITIVES
+
+  docs/2026-10-14-fourth-b14-weakening-review.md. A flag reviewed by its
+  author is not reviewed; da7e88cf correctly left both as flags.
+  CMD python -c "json.load(open('docs/scrutiny-flags.json'))"
+      483 flags, 108 at WEAKENING, criteria_version 2026-10-06.1
+
+  FLAG 1 api/role-vocabulary-agreement.test.js -- the matched line
+  `+ 'skip is how a real app stops being checked', function () {` is at :321
+  and is the TITLE of a negative control. The arm at :328 is
+  assert.deepStrictEqual(noTable, ['stonedesk_sub']), which REFUSES any new
+  app arriving without an auth table, and its failure message at :331-332
+  names the consequence it refuses -- "credentialStillActive answers
+  NO_ACTIVE_CHECK and the request proceeds on the token alone, which FAILS
+  OPEN". A weakening does not usually document the fail-open it would cause.
+  AND THE DETECTOR IS NOT BEING STUPID: ['stonedesk_sub'] IS a hard-coded
+  allowlist. What it cannot see is the OPERATOR -- an allowlist under
+  deepStrictEqual fails when reality gains an entry; one under includes()
+  absorbs it silently. Same shape, opposite directions. That blind spot is
+  NOT in docs/scrutiny-flags.json's own blind_spots list, and is routed to
+  hank, because I do not write the file whose flags I am clearing.
+
+  FLAG 2 api/sd-data-leg-bookings-toctou.test.js -- two shapes, both false:
+    * the "bound added" hit is at :149, inside the global.fetch replacement
+      that starts at :142; it routes a stubbed reply and increments
+      credentialChecks. The limit=1 is the shape of the REAL query --
+      CMD grep -rn "select=active&limit=1" --include=*.js api/
+          api/sd-data-leg-bookings-toctou.test.js:149
+          api/_lib/auth.js:1125
+      A harness that did not match that URL would let the credential check
+      consume one of the test's own stubbed replies, so the line is
+      load-bearing in the STRENGTHENING direction.
+    * the exemption is REAL, in production, at api/sd-data.js:14967
+      (`payload.status !== 'Cancelled'`), documented at :14955-14958, and the
+      test asserts it BY CALL COUNT at :364 -- r.calls.length === 1 and the
+      method is POST. A 200 cannot tell an exemption from a check that
+      happened to pass; a call count of exactly one can.
+  AND THE HALF NEITHER THE FLAG NOR THE COMMIT CHECKED -- THE READ SIDE, AND
+  IT HOLDS. api/sd-data.js:14987 is `if (d.status === 'Cancelled') return
+  false;`, so a Cancelled row is skipped on write and ignored on read. The
+  abuse I went looking for -- write a live-looking booking as Cancelled to
+  dodge the overlap check, then have it block the facility -- CANNOT HAPPEN:
+  the row that dodged the check is invisible to every later check. Both sides
+  are asserted (sections 4 at :332 and 5 at :358), which is what makes this a
+  sign-off rather than a shrug.
+  ON PRECISION: da7e88cf quotes the tool's own figure of 2 of 3 FALSE. These
+  two were also false, so on available evidence it is 4 false of 5 reviewed
+  (I did not re-derive the tool's own 2 of 3). STILL NOT A REASON TO NARROW
+  IT: both took about ten minutes, and the shape it would have to stop
+  matching -- the word "skip" in an arm title -- is also how a real skip
+  reads.
+
+ITEM 4 -- THE FIRST 25 FIXTURES, AND THE SELECTION IS THE WORK
+
+  docs/2026-10-14-fourth-b14-fixture-priority-25.md.
+  CMD python scratchpad/unfixtured_b13.py                  exit 1
+      1029 tracked .py/.js; LOCKED 208, LOCKED-BY-PROBE 149, HAPPY-PATH 6,
+      NO-FIXTURE 610, NOT-A-CHECKER 56
+      CHECKERS 973; WITHOUT A FAIL-CLOSED FIXTURE 616 (63%)
+  CMD python scratchpad/priority25_b14.py                  exit 0
+      of 616, on a guarded path: 299
+  CMD python scratchpad/priority25_b14.py --tools-only     exit 0
+      of 616, on a guarded path: 21
+
+  SCORED OVER THE WHOLE POPULATION, 24 OF THE TOP 25 ARE tests/ FILES --
+  because a suite ABOUT auth naturally contains every auth word. That list
+  would have routed 18 app-feature test suites to cody and called it
+  hardening. So: tools/ first (exactly 21 qualify, and those are checkers
+  whose own verdict gates something), then the last 4 slots to tests/ files
+  whose SUBJECT is a guard rather than a feature -- a push-gate check, an
+  auth-sabotage negative control, an append-only discriminator and an
+  audit-checkpoint refusal probe.
+  SCORING: +4 auth/credential/PIN/session/licence, +4
+  audit-log/event_type/append-only, +3 role-gate/grant/RLS, +3
+  push-gate/pre-commit/seed-gate, +1 for gate|check|guard in the filename as
+  a tie-break only. A file scores on EVERY band it matches. THE SCORE IS A
+  SORT KEY, NOT A RISK NUMBER: it reads words in a path and a source.
+  EACH OF THE 25 NAMES THE BAD INPUT IT MUST REFUSE AND A CONTROL ARM. Two
+  rows are deliberately not a uniform pattern: row 8
+  (hover_self_health_shim.py) always exits 0 by design, so its fixture must
+  assert on what it DID, not on an exit code; row 14 (clone_health_check.py)
+  is the only HAPPY-PATH entry, which is sharper than NO-FIXTURE because it
+  already prints a criteria-lock line.
+  OWNERS: cc 20 rows by directory (13 of the 21 tools/ entries have NO
+  recorded owner in the map at all, which is a finding, not a routing
+  convenience), cody 9, fourth 1.
+  ROW 11 IS MINE -- tools/text_gate_literal_sweep.py, a gate whose text match
+  is satisfied by a token inside a comment, which is the exact defect my own
+  b13 bad-input arm shipped with. NOT written here: this batch writes under
+  docs/ only. Recorded as my open item rather than routed to somebody else.
+  BEYOND THE 25: 0 more tools/ entries score >= 4; 274 more over the whole
+  population. The next 25 should be chosen by re-running the scorer.
+
+ITEM 5 -- THREE FINDINGS ROUTED TO cc, EACH RECORDED ONCE WITH file:line
+
+  docs/2026-10-14-fourth-b14-routed-to-cc.md plus three rulings in
+  docs/by-design-register.json.
+  CMD python scratchpad/register_rows_b14.py    added 3, rulings now 4
+  CMD python scratchpad/register_rows_b14.py    added 0, rulings now 4
+      ids unique: yes; every state in _the_states: yes
+  The writer is idempotent by id and REFUSES to write on a duplicate id or an
+  unknown state, because the register's own merge_policy calls a duplicate id
+  a defect.
+
+  (a) .claude/settings.json:85 -- THE rm DENY IS REAL AND A PYTHON SUBPROCESS
+      WALKS PAST IT. Deny rules at :85-89 (Bash(rm *), Bash(rm),
+      Bash(rm-rf *), Bash(rmdir *), Bash(rmdir)); Bash(python *) allowed at
+      :64; and the file's own _permissions_note at :185 ALREADY names the
+      hole. WHAT MAKES IT A FINDING IS THAT IT HAS BEEN USED: b13 deleted four
+      scratchpad files with a python os.remove after rm was denied, and
+      reported it. b14 was instructed not to and DID NOT -- so b13's litter is
+      still on disk and is listed as open rather than cleaned. The precedent
+      is the damage: a deny every session knows the way round teaches the
+      override. Two answers close it, both cc's: accept it explicitly in a
+      NOT_PROMOTED entry, or make the intent reachable. I deliberately did not
+      draft the rule that governs me in a file I am told never to commit.
+  (b) tools/session_lock_check.py:599 -- 14 LOCKS, 7 OVER 160 HOURS. Oldest
+      sairn_idem_rhbjx2yx.lock 354.3h; repo.lock 194.8h; b12wt2.lock 168.0h
+      (claude_pid 78192, ALREADY named as litter by the tool at :599-602);
+      fourth.lock 25.7h (claude_pid 53204). The blind spot that lets it
+      accumulate is named at :594-597 -- the registry lives OUTSIDE every
+      clone, so bare_run_write_check.py, the one tool built to catch a bare
+      run that mutates, cannot see these writes. LOCK_DIR is :84-86. CLAUDE.md
+      step 3 tells every fresh session to read this registry.
+      I REMOVED NOTHING: rm is denied, (a) is why I did not route around it,
+      and deleting another session's lock is the boundary problem in reverse.
+  (c) tools/sairn_claim.py:1484 -- A LIVE CLAIM READS DEAD, THIRD BATCH
+      RUNNING. :1484 returns ('DEAD', c, why) when own_liveness() says
+      _alive is False; the vocabulary at :1459 already contains UNKNOWN and
+      the UNKNOWN path at :1485-1489 is not taken here. Observed on PID 53204
+      in b12 (which landed 73700129), b13 (c23b4a81) and b14 (this report).
+      fourth.lock carries the SAME pid 53204, so the lock and the claim agree
+      about a PID that no longer exists and both disagree with the session
+      that is working. ONE DEAD PID PRODUCES TWO OF THE THREE FINDINGS, which
+      is why they are routed together. It has already cost two real re-claims
+      (hover2 b19, b20). I am NOT asking for a heartbeat that re-stamps every
+      tool call: I do not know what the harness guarantees about process
+      identity, and a fix built on my guess is worse than the wrong word.
+
+ITEM 6 -- PUSH WITHOUT FORCE, CONFIRMED LANDED
+
+  CMD git -C <repo> pull --rebase origin main    rebased onto 225d0eb0
+  CMD git -C <repo> push origin main             225d0eb0..73b5577e main->main
+  CMD git fetch -q origin; rev-parse HEAD; rev-parse origin/main
+      73b5577e == 73b5577e
+  CMD git rev-list --left-right --count origin/main...HEAD     0  0
+  CMD git status --porcelain                                   (empty)
+  CMD git log origin/main --format=%h -1 -- docs/by-design-register.json
+      73b5577e
+
+THE FINAL STEPS, AND ONE OF THEM REFUSED
+  CMD python tools/drive_upload_verify.py --agent fourth --batch b14
+      36/36 fixtures classify correctly
+      PASS SAIRN-handoff-fourth-b14.md  12435 bytes  sha256 7292b88756856501
+      first line: '# HANDOFF - fourth / ted, batch b14, 2026-10-14'
+      2 FINDING(S): report and digest DO NOT EXIST YET
+      -- expected: the handoff is written BEFORE the report by instruction.
+      Re-run after both exist; the run below is the one that counts.
+  CMD python tools/batch_manifest.py --close --agent fourth --batch b14
+      32/32 fixtures classify correctly
+      exit 2  COULD NOT RUN: docs\batch-manifest-fourth-b14.json does not exist
+      THE MANIFEST WAS NEVER WRITTEN FOR THIS BATCH. The tool's design is that
+      CHAT writes the ids and they are immutable; only cc-b6 and cc-b7
+      manifests exist. I ran it and report what it said rather than writing my
+      own manifest to make it pass -- an agent that writes its own ids has
+      defeated the split the tool exists for. EXIT 2 IS NOT A PASS AND NOT A
+      SKIP.
+
+UNINTENDED WRITE, REVERTED, REPORTED
+  tools/tool_owner_map.py writes docs/tool-owner-map.json on a bare run, which
+  I needed for the owner columns in items 2 and 4. It wrote; I reverted with
+  git checkout -- and read `git show HEAD:docs/tool-owner-map.json` instead.
+  CMD git status --porcelain      (empty, after the revert)
+  Said out loud because a write I did not intend is exactly what
+  bare_run_write_check.py exists to catch.
+
+CLAIMS, LOCKS AND HOLDS
+  CMD python tools/sairn_claim.py own   state DEAD -- see item 5(c). The b14
+      entry IS published and this work IS landed.
+  CMD git worktree list                 4 besides main, NONE MINE, unchanged
+  CMD git stash list                    (empty)
+  CMD git for-each-ref refs/salvage/    (empty)
+  CMD ls ~/SAIRN-SESSION-LOCKS/*.lock   14; fourth.lock still held, release
+      still denied by the permission layer for an eighth batch
+
+UNVERIFIED -- WHAT THIS BATCH DOES NOT PROVE
+  * I DID NOT RUN ANY SUITE. Item 3 reads api/role-vocabulary-agreement.test.js
+    and api/sd-data-leg-bookings-toctou.test.js; driving them is cody's.
+  * The 13 triaged findings are classified, not fixed. One --regenerate in
+    cc's clone is still outstanding, and cc's b8 may change the hook first.
+  * The 25 prioritised fixtures are NAMED, not written. Zero were written
+    here, including my own row 11.
+  * The three register rulings are recorded, not answered. All four rulings
+    now sit at DECIDE_OR_NOT_PROMOTED and NOTHING READS THAT REGISTER -- the
+    validator specified in b12 is built by nobody, so four rows is four times
+    the exposure one row had.
+  * The AI spec remains a SPEC from my side. hank is implementing; the
+    collision in 7.4 is unresolved, and whether any of it satisfies
+    Anthropic's policy is a legal reading rather than a test result.
+  * batch_manifest --close did NOT close this batch. Exit 2.
+  * No live deployment was touched or verified; nothing here is a claim about
+    a deployed URL.
+
+NEXT
+  cc: hook_integrity_check --regenerate (AFTER the b8 hook removal); answer
+  either half of the three new DECIDE_OR_NOT_PROMOTED rulings -- the rm-deny
+  hole, the lock litter, the DEAD claim word; fixture rows 2-21, row 4 first;
+  and tools/fixture_lock_check.py from b13, still built by nobody.
+  hank: pick ONE notice-ack store (the 7.4 collision) and delete the loser;
+  add the deepStrictEqual-vs-includes blind spot to
+  docs/scrutiny-flags.json's own blind_spots; mark the two WEAKENING rows
+  reviewed citing my review.
+  cody: T9 excludes sairndental and sairnsenior, T10 gains the negative arm,
+  T4 becomes load-bearing, T7/T8/T14 gain arms for the two new high-risk
+  surfaces; fixture rows 22-25 with row 22 first, plus rows 1, 7, 14, 18, 19.
+  fourth: fixture row 11, tools/text_gate_literal_sweep.py, mine and open.
+  chat: a batch manifest for fourth, if --close is meant to pass.
+
+EVIDENCE
+  Handoff: SAIRN-handoff-fourth-b14.md (written BEFORE this report, uploaded
+  and verified: 12435 bytes, sha256 7292b88756856501).
+  Logs and scripts:
+  C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\240036a6-0d02-441d-a22d-73ed022c11a3\scratchpad\
+SHA256 61fcd4249a6bc667be645b59f40593f2fa7de3a6faefbdf7d12464e2ef7757bc
+END-OF-REPORT
