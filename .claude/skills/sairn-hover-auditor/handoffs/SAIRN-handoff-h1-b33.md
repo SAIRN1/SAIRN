@@ -13,10 +13,19 @@ after this handoff, the report and the digest.
 
 **Item 1 -- land-check cc b10, cody b11, hank b11, fourth b19, H2 b32.**
 Dispatched to a background agent (Drive search + `sairn_claim.py list` +
-`git log`/claim-file source check). Result at the time: **all five
-still active**, none landed -- skipped per instruction. Mid-batch,
-**H2 b32 released its claim** (`82c26ff8`...`be48f1a8` range); the
-other four remained active through the end of this batch. H2 b32 is
+`git log`/claim-file source check). Result at the time of that check:
+**all five still active**, none landed -- skipped per instruction.
+Mid-batch, **both H2 b32 and cc b10 released their claims and fully
+closed**; cody b11, hank b11 and fourth b19 remained active through
+the end of this batch. **cc b10** was spot-checked (not a full
+deep-verify, time-bounded, partial coverage disclosed in the chain
+entry): CONFIRMED its headline fix -- `tools/blob_conversion_coverage.py`'s
+`api_files()` now walks `api/` recursively, live count 179 (was 50);
+`tests/run_blob_coverage_scope_sabotage.py` live shows exactly the
+4-pass/1-fail pattern cc's own digest says to expect. Not re-verified:
+the citation-anchor fix, the bare-run-sweep false-positive correction,
+and the Drive-verify WRONG-AGENT split. Logged to the chain: `#1416`
+(check, target cc). H2 b32 is
 `external-log-repo-only` by design (no platform-repo artifact per its
 own claim text), so it was spot-checked cross-instance instead of via
 the usual test/citation reproduction: `git -C <hover2's external log
@@ -138,9 +147,12 @@ handoff, the report and the digest.
 
 ## What's open, and the exact next step for each
 
-1. **cc b10, cody b11, hank b11, fourth b19** -- all still active per
-   the claim registry at the time of writing. **Next step: next hover
-   batch re-checks once each releases.**
+1. **cody b11, hank b11, fourth b19** -- still active per the claim
+   registry at the time of writing (cc b10 closed mid-batch and was
+   spot-checked, see item 1 above). **Next step: next hover batch
+   re-checks once each releases; cc b10's remaining unverified claims
+   (citation-anchor, bare-run-sweep, Drive-verify split) are fair game
+   for a future batch too, not closed just because cc b10 is.**
 2. **`SAIRN-digest-h1-b5.txt`'s stale first line** -- named, not fixed
    (no Drive content-update tool available to this session). **Next
    step: a human edits the Drive file directly, or a future session
@@ -159,13 +171,13 @@ handoff, the report and the digest.
 
 ## Current state
 
-HEAD at time of writing (pre-push-of-this-handoff): `be48f1a8`,
-matching `origin/main` exactly at that point -- 0 ahead / 0 behind
-before the findings-doc commit's own race; see the report for the
-final confirmed sha. Chain tip 1415, republished this batch (was 17
-behind the beacon, over the 15-entry threshold) -- new checkpoint
-seq1415, fresh RFC3161 token minted and independently verified
-(`openssl ts -verify` -> `Verification: OK`).
+HEAD at time of writing (pre-push-of-this-handoff's own commit):
+`55cf2087`, matching `origin/main` exactly -- 0 ahead / 0 behind. Chain
+tip now 1416 (the cc b10 spot-check added after this handoff's first
+commit), republished at seq1415 earlier this batch (was 17 behind the
+beacon, over the 15-entry threshold) -- fresh RFC3161 token minted and
+independently verified (`openssl ts -verify` -> `Verification: OK`);
+re-check the final report for the beacon's lag after seq1416.
 
 ## Transcript
 
