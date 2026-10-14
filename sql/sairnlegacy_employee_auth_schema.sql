@@ -86,3 +86,33 @@ grant select, insert, update on public.sairnlegacy_employee_auth to service_role
 -- and is only ever reached through the server using the service-role key.
 -- Revoking explicitly rather than assuming.
 revoke all on public.sairnlegacy_employee_auth from anon, authenticated;
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- THE FIVE TASK ROLES -- 2026-10-14, ONE IDEMPOTENT BLOCK
+-- ═══════════════════════════════════════════════════════════════════════════
+-- RUN THIS. The `create table if not exists` above does NOT amend an existing
+-- table, so on the live database the five task roles are REJECTED until these
+-- two statements run, even though the inline list now carries them -- and the
+-- 36-resource role matrix in api/_lib/leg-roles.js cannot be USED, because
+-- nobody can be given a role other than owner/director/staff.
+--
+-- 'staff' IS IN THE LIST AND MUST STAY. It is deprecated, not removed: every
+-- existing credential row holds it, and dropping the value here would make
+-- every one of them violate the constraint and the ALTER itself would fail on
+-- the validation scan. The deprecation is enforced where it belongs -- in
+-- api/_lib/leg-roles.js, which maps it to the narrowest band, and in
+-- sairnlegacy.html's provisioning picker, which no longer offers it.
+--
+-- IDEMPOTENT BY CONSTRUCTION, SAFE AGAINST EXISTING ROWS (strict superset),
+-- FULL LIST RESTATED because `add constraint` replaces the whole predicate.
+alter table public.sairnlegacy_employee_auth
+  drop constraint if exists sairnlegacy_employee_auth_role_check;
+alter table public.sairnlegacy_employee_auth
+  add constraint sairnlegacy_employee_auth_role_check
+  check (role in ('owner','director','arranger','prep','office',
+                  'apprentice','livery','staff'));
+
+-- VERIFY. Expect exactly 1 row, and the definition must contain all eight.
+select pg_get_constraintdef(c.oid) as role_check
+  from pg_constraint c
+ where c.conname = 'sairnlegacy_employee_auth_role_check';
