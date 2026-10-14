@@ -655,7 +655,7 @@ ok('G9 the ref comparison matches on common prefix, not equal length',
 # out-of-scope commit as its own, and requires the violation to still come out.
 _oos = subprocess.run(['git', 'log', '-1', '--format=%H', '--',
                        'tools/hover_separation_audit.py'],
-                      cwd=REPO, capture_output=True, text=True).stdout.strip()
+                      cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 ok('G10 the fixture resolves to a real out-of-scope commit, so G11 is not '
    'passing on an empty set', len(_oos) == 40, _oos)
 

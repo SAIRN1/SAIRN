@@ -37,7 +37,7 @@ def line(label, value):
 
 
 def git(*args):
-    r = subprocess.run(['git'] + list(args), capture_output=True, text=True,
+    r = subprocess.run(['git'] + list(args), capture_output=True, text=True, encoding='utf-8', errors='replace',
                        timeout=180)
     if r.returncode != 0:
         return None

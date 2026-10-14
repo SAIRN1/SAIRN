@@ -201,7 +201,7 @@ def main():
         open(TARGET, 'w', encoding='utf-8', newline='').write(
             ORIG.replace(old, new, 1))
         chk = subprocess.run([NODE, '--check', TARGET], capture_output=True,
-                             text=True)
+                             text=True, encoding='utf-8', errors='replace')
         if chk.returncode != 0:
             print('REFUSED   %s -- mutant does not parse' % label)
             open(TARGET, 'w', encoding='utf-8', newline='').write(ORIG)
@@ -223,7 +223,7 @@ def main():
 
     open(TARGET, 'w', encoding='utf-8', newline='').write(ORIG)
     d = subprocess.run(['git', 'diff', '--stat', '--', 'api/sd-data.js'],
-                       cwd=REPO, capture_output=True, text=True)
+                       cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace')
     dirty = d.stdout.strip()
     print('api/sd-data.js restored; git diff: %s'
           % (repr(dirty) if dirty else 'clean'))

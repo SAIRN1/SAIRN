@@ -260,9 +260,9 @@ ok('...and is still told how to record it',
 # branches.
 ZERO = '0' * 40
 _head = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=REPO,
-                       capture_output=True, text=True).stdout.strip()
+                       capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 _base = subprocess.run(['git', 'merge-base', 'origin/main', 'HEAD'], cwd=REPO,
-                       capture_output=True, text=True).stdout.strip()
+                       capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 
 _rng, _prob = G.outgoing_range('refs/heads/x %s refs/heads/x %s\n' % (_head, ZERO))
 ok('a NEW branch resolves to a RANGE, never a bare tip -- a bare tip means '

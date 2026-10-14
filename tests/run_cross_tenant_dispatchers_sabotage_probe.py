@@ -237,7 +237,7 @@ def run_suite(sandbox):
     """Return (ok_names, failed_names, tail). A suite that will not start at all
     is a COULD-NOT-RUN, never a caught sabotage."""
     p = subprocess.run([NODE, os.path.join(sandbox, SUITE)],
-                       cwd=sandbox, capture_output=True, text=True)
+                       cwd=sandbox, capture_output=True, text=True, encoding='utf-8', errors='replace')
     out = p.stdout or ''
     if 'passed,' not in out:
         return None, None, (out + (p.stderr or ''))[-1200:]

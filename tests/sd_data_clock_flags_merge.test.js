@@ -388,8 +388,31 @@ function fieldsOf(flags) {
             + unproven + ' unproven');
   if (failed.length) console.log(failed.length + ' ARM(S) FAILED: ' + failed.join(', '));
   if (notProved.length) console.log(notProved.length + ' ARM(S) UNPROVEN: ' + notProved.join(', '));
-  console.log('\nEXPECTED RED until the api/ owner merges instead of assigning. '
-            + 'Registration and gate-freedom are ASSERTED by arms E1 and E2, '
-            + 'not claimed here. FIX ROUTED TO hank.');
+  // ── THE FOOTER IS DERIVED FROM THIS RUN NOW (2026-10-14, cody b12) ──────
+  // It was a STANDING SENTENCE: "EXPECTED RED until the api/ owner merges
+  // instead of assigning. FIX ROUTED TO hank." Hank has since landed the merge
+  // -- api/sd-data.js merges clock_flags on `field` rather than assigning, and
+  // its own comment records why -- so the suite has been printing EXPECTED RED
+  // directly beside `8 passed, 0 failed` for as long as the fix has been in.
+  //
+  // A FOOTER THAT CONTRADICTS THE COUNTS ABOVE IT IS WORSE THAN NO FOOTER: a
+  // reader cannot tell which half to believe, and the obvious resolution --
+  // "it says expected red, so the green must be the lie" -- is the wrong one.
+  // The eighth cross-domain discipline, in the one line of this file that was
+  // not derived from anything.
+  //
+  // So it reports the state it is IN. Deleting the sentence would have lost the
+  // routing history; deriving it keeps the sentence for the day a regression
+  // brings it back.
+  if (fail) {
+    console.log('\nEXPECTED RED until the api/ owner merges instead of '
+              + 'assigning. Registration and gate-freedom are ASSERTED by arms '
+              + 'E1 and E2, not claimed here. FIX ROUTED TO hank.');
+  } else {
+    console.log('\nTHE ROUTED FIX HAS LANDED: api/ merges clock_flags on '
+              + '`field` instead of assigning, so this suite is a REGRESSION '
+              + 'GUARD now rather than an open finding. It prints EXPECTED RED '
+              + 'again by itself if an arm fails.');
+  }
   process.exit(fail ? 1 : (unproven ? 3 : 0));
 })();

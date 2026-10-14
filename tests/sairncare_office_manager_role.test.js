@@ -359,8 +359,22 @@ function roleCheck(sql) {
             + unproven + ' unproven');
   if (failed.length) console.log(failed.length + ' ARM(S) FAILED: ' + failed.join(', '));
   if (notProved.length) console.log(notProved.length + ' ARM(S) UNPROVEN: ' + notProved.join(', '));
-  console.log('\nEXPECTED RED until the api/ owner lands the role in all four '
-            + 'places. Registration and gate-freedom are ASSERTED by arms E1 '
-            + 'and E2, not claimed here. CODE CHANGE ROUTED TO hank.');
+  // ── DERIVED, NOT STANDING (2026-10-14, cody b12) -- same repair as
+  //    tests/sd_data_clock_flags_merge.test.js, same reason.
+  // The footer read "EXPECTED RED until the api/ owner lands the role in all
+  // four places. CODE CHANGE ROUTED TO hank." Hank has landed office_manager,
+  // so this suite has been printing EXPECTED RED beside `10 passed, 0 failed`.
+  // A footer that contradicts its own counts leaves a reader choosing which
+  // half to distrust, and the natural choice is the wrong one.
+  if (fail) {
+    console.log('\nEXPECTED RED until the api/ owner lands the role in all four '
+              + 'places. Registration and gate-freedom are ASSERTED by arms E1 '
+              + 'and E2, not claimed here. CODE CHANGE ROUTED TO hank.');
+  } else {
+    console.log('\nTHE ROUTED CHANGE HAS LANDED: office_manager is in place, so '
+              + 'this suite is a REGRESSION GUARD now rather than an open '
+              + 'finding. It prints EXPECTED RED again by itself if an arm '
+              + 'fails.');
+  }
   process.exit(fail ? 1 : (unproven ? 3 : 0));
 })();

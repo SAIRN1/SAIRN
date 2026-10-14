@@ -438,12 +438,12 @@ elif wf:
 
         def _count(work):
             r = subprocess.run(['git', '-C', work, 'rev-list', '--count', 'HEAD'],
-                               capture_output=True, text=True)
+                               capture_output=True, text=True, encoding='utf-8', errors='replace')
             return int((r.stdout or '0').strip() or 0)
 
         def _head(path):
             return subprocess.run(['git', '-C', path, 'rev-parse', 'HEAD'],
-                                  capture_output=True, text=True).stdout.strip()
+                                  capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 
         def _drive(work, script):
             env = dict(os.environ, GITHUB_RUN_NUMBER='77',
@@ -465,12 +465,12 @@ elif wf:
                'commits %d -> %d %s' % (_before, _after, _r.stdout + _r.stderr))
             _origin_head = subprocess.run(
                 ['git', '-C', _bare, 'rev-parse', 'main'],
-                capture_output=True, text=True).stdout.strip()
+                capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
             ok('...and it reaches ORIGIN, not just the local branch',
                _origin_head == _head(_work), _r.stdout + _r.stderr)
             _author = subprocess.run(
                 ['git', '-C', _work, 'log', '-1', '--format=%an <%ae>'],
-                capture_output=True, text=True).stdout.strip()
+                capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
             ok('...under the bot identity, not a person',
                'github-actions[bot]' in _author, _author)
         finally:
@@ -525,7 +525,7 @@ elif wf:
     _revs = subprocess.run(
         ['git', '-C', REPO, 'log', '--format=%H', '--',
          '.github/workflows/cron-liveness.yml'],
-        capture_output=True, text=True).stdout.split()
+        capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.split()
 
     def _wf_at(sha):
         return subprocess.run(

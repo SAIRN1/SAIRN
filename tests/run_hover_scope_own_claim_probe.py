@@ -59,7 +59,7 @@ def _rm_ro(fn, path, _exc):
         pass
 
 REPO = subprocess.check_output(['git', 'rev-parse', '--show-toplevel'],
-                               text=True).strip()
+                               text=True, encoding='utf-8', errors='replace').strip()
 GATE = os.path.join(REPO, 'tools', 'hover_auditor_scope_gate.py')
 IDENT = os.path.join(REPO, 'tools', 'sairn_session_identity.py')
 SKILL = os.path.join(REPO, '.claude', 'skills', 'sairn-hover-auditor', 'SKILL.md')

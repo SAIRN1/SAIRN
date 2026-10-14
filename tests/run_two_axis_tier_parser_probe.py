@@ -63,7 +63,7 @@ def run(table_body, header):
     path = os.path.join(d, 'CRITICALITY-TIERS.md')
     io.open(path, 'w', encoding='utf-8', newline='\n').write(HEADER + header + table_body)
     env = dict(os.environ, SAIRN_TIER_REGISTER=path)
-    r = subprocess.run([sys.executable, TOOL], capture_output=True, text=True,
+    r = subprocess.run([sys.executable, TOOL], capture_output=True, text=True, encoding='utf-8', errors='replace',
                        cwd=REPO, env=env)
     return (r.stdout or '') + (r.stderr or '')
 

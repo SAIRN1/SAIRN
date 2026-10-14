@@ -45,7 +45,7 @@ def write(rel, text):
 
 
 def suite_passes():
-    p = subprocess.run([NODE, SUITE], cwd=ROOT, capture_output=True, text=True)
+    p = subprocess.run([NODE, SUITE], cwd=ROOT, capture_output=True, text=True, encoding='utf-8', errors='replace')
     return p.returncode == 0
 
 
@@ -161,7 +161,7 @@ def main():
             die('%s is not in this clone.' % rel)
 
     pre = subprocess.run(['git', 'status', '--porcelain', SUITE, ENDPOINT],
-                         cwd=ROOT, capture_output=True, text=True)
+                         cwd=ROOT, capture_output=True, text=True, encoding='utf-8', errors='replace')
     if pre.returncode != 0:
         die('could not read git status: %s' % (pre.stderr or '').strip())
     already_dirty = sorted(l[3:] for l in pre.stdout.splitlines() if l.strip())
@@ -204,7 +204,7 @@ def main():
     print('  ok   the suite is GREEN again with everything restored')
 
     post = subprocess.run(['git', 'status', '--porcelain', SUITE, ENDPOINT],
-                          cwd=ROOT, capture_output=True, text=True)
+                          cwd=ROOT, capture_output=True, text=True, encoding='utf-8', errors='replace')
     now_dirty = sorted(l[3:] for l in post.stdout.splitlines() if l.strip())
     if now_dirty != already_dirty:
         print('NEWLY DIRTY: %s' % ', '.join(set(now_dirty) - set(already_dirty)))

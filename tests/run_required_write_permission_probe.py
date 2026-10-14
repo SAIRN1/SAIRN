@@ -199,7 +199,7 @@ else:
               'SESSIONS_CHECKED:' not in o, o[-300:])
     finally:
         subprocess.run(['git', '-C', REPO, 'worktree', 'remove', '--force', wt],
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace')
         shutil.rmtree(wt, onerror=_rm_ro)
 
 print()

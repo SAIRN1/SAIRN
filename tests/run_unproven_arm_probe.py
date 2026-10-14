@@ -80,7 +80,7 @@ def run_tool(root=None, extra=None):
     if extra:
         cmd += extra
     p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                       universal_newlines=True)
+                       universal_newlines=True, encoding='utf-8', errors='replace')
     return p.returncode, p.stdout
 
 

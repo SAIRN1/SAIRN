@@ -357,7 +357,7 @@ throwaway worktree, leaving the same three resources on it, and run the control.
     shutil.rmtree(wt, ignore_errors=True)
     add = subprocess.run(['git', '-C', REPO, 'worktree', 'add', '-q',
                           '--detach', wt, 'HEAD'],
-                         capture_output=True, text=True)
+                         capture_output=True, text=True, encoding='utf-8', errors='replace')
     if add.returncode != 0:
         cannot(5, 'a worktree could not be created: %s' % add.stderr.strip()[:120])
         return

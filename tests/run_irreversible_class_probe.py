@@ -77,7 +77,7 @@ print('irreversible class: does it refuse, stay quiet, and fail closed?\n')
 
 print('1. THE MEASURED GAP -- the name-based half cannot see this change')
 sha = subprocess.run(['git', 'log', '--format=%H', '-1', '--since=2026-09-11',
-                      '--', AUTH], cwd=REPO, capture_output=True, text=True).stdout.strip()
+                      '--', AUTH], cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 if not sha:
     print('  SKIPPED: no recent commit touching ' + AUTH + ' in this clone')
     auth_diff = None

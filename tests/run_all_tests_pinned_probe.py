@@ -125,7 +125,7 @@ print('   and NOT in the clone')
 import run_all_tests as R                                          # noqa: E402
 
 head = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=REPO, capture_output=True,
-                      text=True).stdout.strip()
+                      text=True, encoding='utf-8', errors='replace').stdout.strip()
 landed = {}
 real_popen4 = subprocess.Popen
 
@@ -141,7 +141,7 @@ def spy(cmd, **kw):
         landed['cwd'] = kw.get('cwd')
         landed['sha'] = subprocess.run(
             ['git', 'rev-parse', 'HEAD'], cwd=kw.get('cwd'),
-            capture_output=True, text=True).stdout.strip()
+            capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
         landed['has_tests'] = os.path.isdir(os.path.join(kw.get('cwd'), 'tests'))
         landed['cmd'] = list(cmd)
         kw.pop('cwd', None)

@@ -78,7 +78,7 @@ def check(name, ok, detail=''):
 
 def scan(path):
     p = subprocess.run([sys.executable, TOOL, '--file', path],
-                       cwd=REPO, capture_output=True, text=True)
+                       cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace')
     return p.returncode, (p.stdout or '') + (p.stderr or '')
 
 

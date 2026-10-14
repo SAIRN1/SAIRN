@@ -42,7 +42,7 @@ import subprocess
 import sys
 
 REPO = subprocess.check_output(['git', 'rev-parse', '--show-toplevel'],
-                               text=True).strip()
+                               text=True, encoding='utf-8', errors='replace').strip()
 TOOL = os.path.join(REPO, 'tools', 'sairn_claim.py')
 
 # ── FAIL CLOSED ON AN ABSENT SUBJECT (PR §1.11) ─────────────────────────────

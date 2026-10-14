@@ -188,7 +188,7 @@ probe = subprocess.run(
      'import sys; sys.path.insert(0,"tools");'
      'import gh_token;'
      'sys.exit(0 if hasattr(gh_token,"TokenUnavailable") else 1)'],
-    cwd=REPO, capture_output=True, text=True, env=src_env)
+    cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace', env=src_env)
 ok(probe.returncode == 0, 'and it imports cleanly from a bare interpreter',
    (probe.stderr or '')[-300:])
 

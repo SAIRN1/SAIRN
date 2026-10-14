@@ -86,9 +86,9 @@ def make_clone(parent, name, origin):
     if origin is None:
         return path
     subprocess.run(['git', 'init', '-q', '-b', 'main'], cwd=path,
-                   capture_output=True, text=True)
+                   capture_output=True, text=True, encoding='utf-8', errors='replace')
     subprocess.run(['git', 'remote', 'add', 'origin', origin], cwd=path,
-                   capture_output=True, text=True)
+                   capture_output=True, text=True, encoding='utf-8', errors='replace')
     return path
 
 
@@ -149,7 +149,7 @@ try:
     me = make_clone(lonely, 'only-me', SAME)
     # Break the origin so the tool cannot learn what "the same remote" means.
     subprocess.run(['git', 'remote', 'remove', 'origin'], cwd=me,
-                   capture_output=True, text=True)
+                   capture_output=True, text=True, encoding='utf-8', errors='replace')
     try:
         nhi.sibling_clones(repo=me)
         ok(False, 'a clone with no origin must raise CouldNotTell')

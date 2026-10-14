@@ -55,7 +55,7 @@ def worktree():
     wt = tempfile.mkdtemp(prefix='cc-esc-')
     shutil.rmtree(wt, ignore_errors=True)
     r = subprocess.run(['git', '-C', REPO, 'worktree', 'add', '-q', '--detach',
-                        wt, 'HEAD'], capture_output=True, text=True)
+                        wt, 'HEAD'], capture_output=True, text=True, encoding='utf-8', errors='replace')
     return (wt if r.returncode == 0 else None), r.stderr
 
 
