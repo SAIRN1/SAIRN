@@ -34728,6 +34728,13 @@ document.addEventListener('DOMContentLoaded', function() {
     <input id="rev-email" placeholder="Email (for email)" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px">
   </div>
   <button class="q-btn primary" onclick="revGenerate()">✨ Generate Message</button>
+  <!-- THE WORDING IS A PLACEHOLDER AND THE MECHANISM IS NOT.
+       docs/2026-10-14-ai-safeguards-spec.md is explicit that the final text is
+       the lawyer's, and that shipping an AI-written legal notice is the exact
+       failure the policy is about. It is in ONE place for that reason. -->
+  <div id="rev-ai-label" style="display:none;margin-top:12px;border-left:4px solid #B45309;background:#FFFBEB;border-radius:6px;padding:10px;font-size:12px;color:#78350F">
+    <strong>Written by AI.</strong> An AI model (Claude) drafted this message from the customer name and material you entered. It goes out under your shop's name &mdash; read every word before you send it.
+  </div>
   <div id="rev-preview" style="display:none;margin-top:12px;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:12px">
     <div id="rev-message-text" style="font-size:13px;color:var(--text);margin-bottom:10px;white-space:pre-wrap"></div>
     <button class="q-btn" onclick="revRegenerateMessage()">🔄 Regenerate</button>
@@ -42182,9 +42189,33 @@ async function revGenerate(){
   if(!txt)return;
   revCurrentMsg=txt;
   var mt=document.getElementById('rev-message-text');if(mt)mt.textContent=txt;
+  // ── THIS TEXT IS AI AND THE SURFACE NOW SAYS SO (2026-10-14) ─────────────
+  // The message a model writes here is copied into an SMS and sent to a named
+  // customer UNDER THE SHOP'S NAME. The preview showed it with nothing
+  // indicating where the words came from, which is safeguard (e) of
+  // docs/2026-10-14-ai-safeguards-spec.md -- every surface that shows model
+  // output says it is AI -- unmet on the one stonedesk surface whose output
+  // leaves the building as the operator's own voice.
+  //
+  // ON THE SUCCESS RENDER ONLY, which is the convention sairnfreedom's
+  // sfAiLabel already follows: `if(!txt)return` above means an error path
+  // never reaches this line. A label on a "could not reach the service" box
+  // would make the label mean nothing, which is how a disclosure stops being
+  // read.
+  revAiLabel(true);
   var prev=document.getElementById('rev-preview');if(prev)prev.style.display='block';
 }
-async function revRegenerateMessage(){revCurrentMsg='';var prev=document.getElementById('rev-preview');if(prev)prev.style.display='none';await revGenerate();}
+// ONE HELPER, NOT A STYLE TOGGLE AT EACH CALL SITE. Two places show or hide
+// this label (generate, regenerate) and a third will exist the moment another
+// template is drafted here; a display string pasted at each is a string that
+// gets updated in some of them. The wording lives in the markup at
+// #rev-ai-label and is expected to change -- the spec is explicit that the
+// final text is the lawyer's.
+function revAiLabel(show){
+  var lbl=document.getElementById('rev-ai-label');
+  if(lbl)lbl.style.display=show?'block':'none';
+}
+async function revRegenerateMessage(){revCurrentMsg='';revAiLabel(false);var prev=document.getElementById('rev-preview');if(prev)prev.style.display='none';await revGenerate();}
 function revCopyMessage(){if(revCurrentMsg){if(navigator.clipboard)navigator.clipboard.writeText(revCurrentMsg).then(function(){showToast('Copied!');});}}
 function revSend(){
   var cust=((document.getElementById('rev-cust')||{}).value||'').trim();
@@ -42194,7 +42225,15 @@ function revSend(){
   if(!revCurrentMsg){showToast('Generate message first');return;}
   if((channel==='sms'||channel==='both')&&phone)window.location.href='sms:'+phone+'?body='+encodeURIComponent(revCurrentMsg);
   if((channel==='email'||channel==='both')&&email)window.location.href='mailto:'+email+'?subject='+encodeURIComponent('Thank you!')+'&body='+encodeURIComponent(revCurrentMsg);
-  revLog.unshift({id:'REV'+Date.now(),customer:cust,phone:phone,email:email,material:(document.getElementById('rev-mat')||{}).value||'',message:revCurrentMsg,channel:channel,ts:new Date().toISOString()});
+  // ── ai_source ON THE LOG ROW, 2026-10-14 ────────────────────────────────
+  // `message` is the model's words, now sent to a named customer. The log is
+  // the record of what was sent, so it has to carry who wrote it -- and this
+  // one the CLIENT must stamp, because sd_rev_log is local-only (sdStore, no
+  // server resource), so there is no write through api/sd-data.js for the
+  // shared gate to see. No ai_approved_by: the operator read it in the preview
+  // and pressed Send, but nothing records that as an approval and inventing
+  // one here would make "reviewed by" mean "clicked".
+  revLog.unshift({id:'REV'+Date.now(),customer:cust,phone:phone,email:email,material:(document.getElementById('rev-mat')||{}).value||'',message:revCurrentMsg,ai_source:'claude:review-request',channel:channel,ts:new Date().toISOString()});
   sdStore('sd_rev_log',revLog);revUpdateKPIs();revRenderLog();showToast('Review request sent!');
 }
 function revUpdateKPIs(){

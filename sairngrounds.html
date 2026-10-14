@@ -3486,8 +3486,22 @@ async function grdUploadProgressPhoto(){
   }
   $('schedphoto-result').textContent=analysisText;
   var photos=bldGrdProgressPhotos();
+  // ── ai_source, 2026-10-14: THE ANALYSIS IS THE MODEL'S, SO THE ROW SAYS SO
+  // `ai_analysis` is whatever came back at :3482 -- including the two FALLBACK
+  // strings above, which is why the tag is stamped unconditionally rather than
+  // only on a successful call: a row carrying "AI analysis unavailable" is
+  // still a row whose analysis field came from this AI surface, and a reader
+  // deciding whether to trust it needs to know that either way.
+  //
+  // DISCLOSURE ONLY. grd_progress_photos is in NOT_HIGH_RISK_AI because the
+  // QC DECISION on the photo is already role-gated and refuses self-QC against
+  // the server's captured_by -- that gate, not an approval field, is what
+  // makes this record safe. NO ai_approved_by IS SET HERE: this function saves
+  // the moment the model answers, so there is no approver, and `qc_by` below
+  // is deliberately null until a different person signs it off.
   var rec={id:'GRDPH-'+Date.now(),schedule_id:grdPhotoScheduleId,property_id:sched?sched.property_id:null,
-    photo_b64:grdPhotoB64,is_final:isFinal,ai_analysis:analysisText,qc_status:isFinal?'pending':'not_applicable',
+    photo_b64:grdPhotoB64,is_final:isFinal,ai_analysis:analysisText,ai_source:'claude:grd-progress-photo',
+    qc_status:isFinal?'pending':'not_applicable',
     captured_by:grdCurrentEmployeeLabel(),qc_by:null,qc_at:null,created_at:new Date().toISOString()};
   photos.push(rec);st('grd_progress_photos',photos);
   // Awaited and checked -- previously fire-and-forget, so a failed server
@@ -4776,7 +4790,24 @@ async function msbHandleScanResult(text){
       costNote=' Estimated '+ozUsed.toFixed(1)+' oz used since last scan ('+fdate(priorScan.date)+'), approx. cost of usage '+fmt(costOfUsage)+'.';
     }
   }
-  var rec={id:'MSBSCAN-'+Date.now(),product_id:match?match.id:null,brand_read:parsed.brand,fill_pct:parsed.fillPct,date:grdLocalToday(),note:costNote};
+  // ── ai_source, 2026-10-14: THE EXCLUSION-vs-FLAGGED DISCREPANCY, RESOLVED ─
+  // Both sides were right about different safeguards and that is the whole of
+  // it. api/_lib/ai-scan-redaction.js:100 excludes this resource from
+  // REDACTION, reason "NO MODEL PROSE IS STORED" -- true, and verifiable on
+  // the line below: `brand_read` and `fill_pct` are scalars out of
+  // msbParseScanResult() (:4754) and `note` is computed by this app at
+  // :4771-4777 from local cost data, so there is no free model text to redact.
+  // Meanwhile `brand_read` IS a string a model read off a label, and the row
+  // is synced to the server at the line after this one. An exclusion from
+  // redaction was being read as an exemption from DISCLOSURE; they are
+  // different safeguards and only one of them had nothing to do.
+  //
+  // IT STAYS OUT OF BOTH RISK MAPS and that is correct rather than an
+  // omission: HIGH_RISK_AI and NOT_HIGH_RISK_AI partition AI_SCANNED_TEXT, and
+  // this resource is deliberately outside that population -- an entry in
+  // either would fail api/ai-safeguards.test.js's phantom arm. Disclosure with
+  // no approval gate is exactly the right answer for a fill reading.
+  var rec={id:'MSBSCAN-'+Date.now(),product_id:match?match.id:null,brand_read:parsed.brand,fill_pct:parsed.fillPct,date:grdLocalToday(),note:costNote,ai_source:'claude:bottle-scan'};
   scans.push(rec);st('msb_bottle_scans',scans);
   var syncResult=await grdData('write','msb_bottle_scans',rec);
   var syncNote=syncResult?'':' (saved on this device only -- server sync failed)';

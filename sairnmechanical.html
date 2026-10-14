@@ -1799,7 +1799,26 @@ function saveDoc(){
   if(!txt){showToast('Nothing to save yet -- scan a document first');return;}
   var red=mechRedactLocal(txt);
   var arr=[];try{arr=JSON.parse(localStorage.getItem(APP_ID+'_docs')||'[]');}catch(e){arr=[];}
+  // ── ai_source, 2026-10-14: THE STORED TEXT IS THE MODEL'S, SO IT SAYS SO ──
+  // `txt` above is read straight out of #doc-out, which is where the model's
+  // reply over a photographed document is rendered. The row was synced to
+  // mech_docs with no indication of that at all -- traced by H2 (seq852) as
+  // one of four such sites across four apps.
+  //
+  // THE TAG NAMES THE SURFACE, not "true". api/_lib/ai-safeguards.js's
+  // AI_SOURCE_FIELD is a short machine tag for exactly this reason: a boolean
+  // makes "which surface produced this" unanswerable the moment a second one
+  // exists on the same resource.
+  //
+  // DISCLOSURE ONLY, AND THAT IS NOT AN OVERSIGHT. mech_docs is in
+  // NOT_HIGH_RISK_AI ("a stored document READ, not a document the app
+  // issues"), so no approval gate fires and aiFooter() will read "AI-assisted
+  // — not reviewed" until something approves it. That sentence is true: this
+  // function saves the moment the operator presses the button and there is no
+  // review step. NO ai_approved_by IS SET HERE -- the server writes that from
+  // a verified session or nobody does.
   arr.unshift({id:Date.now(),date:new Date().toLocaleString(),text:red.text,
+    ai_source:'claude:doc-scan',
     redaction:{local:true,redacted:red.redacted,complete:false,note:MECH_REDACT_NOTE}});
   try{localStorage.setItem(APP_ID+'_docs',JSON.stringify(arr.slice(0,50)));}
   catch(e){showToast('Could not save -- local storage may be full');return;}

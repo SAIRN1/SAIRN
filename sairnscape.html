@@ -3432,8 +3432,17 @@ async function scpUploadProgressPhoto(){
   }
   scp$('scp-schedphoto-result').textContent=analysisText;
   var photos=bldScpProgressPhotos();
+  // ── ai_source, 2026-10-14: the sibling of grd_progress_photos ────────────
+  // Same reasoning as sairngrounds.html's grdUploadProgressPhoto, and the TAG
+  // IS DIFFERENT ON PURPOSE: these are two apps writing two resources, and a
+  // shared tag would make "which app's panel produced this" unanswerable,
+  // which is the one question the field exists to answer. Disclosure only --
+  // scp_progress_photos is in NOT_HIGH_RISK_AI behind the same QC authority
+  // gate -- and no ai_approved_by is set here, because there is no approver
+  // between the model's reply and this write.
   var rec={id:'SCPPH-'+Date.now(),schedule_id:scpPhotoScheduleId,customer_id:sched?sched.customer_id:null,
-    photo_b64:scpPhotoB64,is_final:isFinal,ai_analysis:analysisText,qc_status:isFinal?'pending':'not_applicable',
+    photo_b64:scpPhotoB64,is_final:isFinal,ai_analysis:analysisText,ai_source:'claude:scp-progress-photo',
+    qc_status:isFinal?'pending':'not_applicable',
     captured_by:scpCurrentEmployeeLabel(),qc_by:null,qc_at:null,created_at:new Date().toISOString()};
   photos.push(rec);scpSt('scp_progress_photos',photos);
   // Awaited and checked -- see sairngrounds.html's grdUploadProgressPhoto

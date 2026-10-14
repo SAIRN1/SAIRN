@@ -5345,7 +5345,25 @@ function analyzeMeasurementPhoto(){
 function saveMeasurementReading(){
   var values=getQuantityFormValues('jm-quantities-form');
   var base=rfBaseFieldsPayload();
-  rfDataRaw('write','rf_photos',{job_id:currentEditingJob.id,photo_base64:pendingPhotoBase64,ai_analysis:pendingAiRawText,parsed_quantities:values}).then(function(pr){
+  // ── ai_source, 2026-10-14: AND THIS ONE SWITCHES A REAL GATE ON ──────────
+  // `ai_analysis` is the model's read of a measurement photograph and
+  // `parsed_quantities` are extracted from it -- a roofing supplement is a
+  // claim against an insurer, so api/_lib/ai-safeguards.js has rf_photos in
+  // HIGH_RISK_AI. Stamping the field here makes this the FIRST production
+  // client to fire that approval gate: the record has no `status`, an absent
+  // status is FINAL, so the server now refuses the write unless a signed-in
+  // employee is on the request and sets `ai_approved_by` ITSELF from the
+  // verified session. rfDataRaw already refuses to send without a session
+  // (:1846), so the refusal is not reachable from this button -- but it is the
+  // honest answer if the session expires mid-form.
+  //
+  // WHAT THE APPROVER IS ACTUALLY ATTESTING TO, said plainly because the
+  // footer will carry their name: the operator reviewed the QUANTITIES in the
+  // form before pressing save -- that is what the existing correction reason
+  // one line below has always said. They did not necessarily re-read the
+  // model's prose. "Reviewed by" on this record means the numbers were
+  // checked, which is the thing the estimate is built from.
+  rfDataRaw('write','rf_photos',{job_id:currentEditingJob.id,photo_base64:pendingPhotoBase64,ai_analysis:pendingAiRawText,parsed_quantities:values,ai_source:'claude:measurement-photo'}).then(function(pr){
     if(!pr.ok){toast(pr.msg||'Photo save failed');return;}
     return rfDataRaw('write','rf_jobs',Object.assign({},base,{measurement_correction:{quantities:values,reason:'Initial AI photo read, reviewed before saving',source:'ai'}})).then(function(jr){
       if(!jr.ok){toast(jr.msg||'Measurement save failed');return;}
