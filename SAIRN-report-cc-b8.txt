@@ -1,0 +1,486 @@
+REPORT cc b8
+================================================================================
+cc batch b8 -- 2026-10-14 -- Documents\SAIRN-cc on main
+HEAD 385606cb, origin/main 385606cb, 0 ahead / 0 behind
+Handoff: SAIRN-handoff-cc-b8.md (written BEFORE this file)
+Digest:  SAIRN-digest-cc-b8.txt
+Manifest: docs/batch-manifest-cc-b8.json -- 6 items, all `done` with evidence
+Logs: C:\Users\marsh\AppData\Local\Temp\claude\
+      C--Users-marsh-Documents-SAIRN-cc\
+      ac16263c-6d67-4305-aa08-5af5dd4be99b\scratchpad\
+EVERY FIGURE BELOW NAMES THE COMMAND THAT PRODUCED IT. Where something could
+not be measured it says so and is not folded into a pass.
+================================================================================
+
+0. THE DRIVE UPLOAD VERIFY, ON THIS BATCH'S OWN THREE FILES
+--------------------------------------------------------------------------------
+    python tools/drive_upload_verify.py --agent cc --batch b8
+
+  PASS SAIRN-handoff-cc-b8.md   12939 bytes  sha256 43d6f27e3030502f
+       first line: '# SAIRN handoff -- cc batch b8 -- 2026-10-14'
+  PASS SAIRN-report-cc-b8.txt   27014 bytes  sha256 db010ff648e6a082
+       first line: 'REPORT cc b8'
+  PASS SAIRN-digest-cc-b8.txt     985 bytes  sha256 9ecf3516be702f4b
+       first line: 'DIGEST cc b8'
+
+  PASS: all three deliverables for cc b8 are on the Drive under the right name,
+  with a first line naming cc and b8, and with bytes and sha256 matching local.
+  LIMIT, not folded into that pass: the destination is a Drive SYNC MOUNT. The
+  bytes are in the sync set; that is not proof Google acknowledged them. One
+  Drive-side read of folder 14Xc5oT0xzSLa_rTSOSXWVK3Kko1Fbx09 from a chat turn
+  closes it, because that goes through the API rather than the mount.
+
+The authoritative sizes and hashes are the ones in
+docs/batch-manifest-cc-b8.json under `closed.deliverables`, written by
+`batch_manifest.py --close`, which refuses to write that block at all unless
+the verify passes. Quoting a verify inside the file it verified cannot
+converge -- pasting the line changes this file's size -- so the line above is
+from the run before the paste and the manifest carries the final set. Re-derive
+either with:
+
+    python tools/drive_upload_verify.py --agent cc --batch b8 --verify-only
+
+
+1. THE TRACKED SessionStart:compact HOOK IS GONE
+--------------------------------------------------------------------------------
+    git show af71d006 --numstat -- .claude/settings.json   -> 2  16
+    python tools/hook_integrity_check.py --wiring-only     -> exit 0
+
+cc b6 added ONE SessionStart/compact entry in eb53e267 under a separate
+authorisation, calling tools/compaction_brief.py. It is removed. `hooks` is
+`{}` again, which is the state ab919080 committed deliberately: an ABSENT key
+and `{}` are different facts, and only the second survives a fresh clone, a
+reset and a rebase without putting anything back.
+
+  * THE TOOL IS NOT DELETED. `python tools/compaction_brief.py` still runs by
+    hand and still prints its four facts; only the wiring is gone. Its
+    inventory entry already said the wiring was a live question and Michael's
+    call -- that question is now answered.
+  * `hook_integrity_check --wiring-only` reports INTENTIONALLY DISARMED, exit
+    0, and STILL reports a half-wired or absent `hooks` key as drift. The
+    `_hooks_note` now states what the state IS rather than describing an entry
+    that no longer exists.
+  * THE DIFF TOUCHES NOTHING ELSE: 2 insertions, 16 deletions, all inside
+    `hooks` and `_hooks_note`. This is the ONLY commit in the batch that
+    touches .claude/settings.json, and it is the one item 1 ordered.
+
+NO NEW HOOKS ANYWHERE, MEASURED RATHER THAN ASSERTED. Every tracked
+*settings*.json / *hook*.json was parsed for a non-empty `hooks` key:
+
+    tracked files with a non-empty hooks key: 2
+      docs/hook-manifest.json         -- the four GIT hooks in .githooks/
+      docs/hooks-disabled-2026-10-13.json -- the 23 cleared hooks, verbatim
+
+Both are RECORDS. The first describes the pre-commit / pre-push / post-rewrite
+/ prepare-commit-msg hooks that ARE the push gate -- git hooks, not Claude Code
+hooks -- and removing them would disarm every gate on the platform. The second
+is the preserved record the b6 commit message itself says must never be
+re-added. Neither wires a Claude hook, and no other tracked file carries one.
+
+
+2. THE git -C ALLOW RULE, AND THE HOLE IT WOULD HAVE OPENED
+--------------------------------------------------------------------------------
+    python <installer> -> allow 91 -> 98, deny 85 -> 112,
+                          additionalDirectories 0 -> 7
+    git -C /c/Users/marsh/Documents/SAIRN-cody   rev-parse --short HEAD -> bd5239ac
+    git -C C:\Users\marsh\Documents\SAIRN-fourth rev-parse --short HEAD -> 2a8b13bf
+
+Installed in ~/.claude/settings.json, which cc owns and which is outside every
+clone. A copy of the file as it was before this batch is in the scratchpad
+(`user-settings-before-b8.json`) and the installer that wrote it is beside it.
+
+TWO HALVES, BECAUSE THE PROMPT HAS TWO CAUSES:
+  (a) THE COMMAND PATTERN. Seven allow rules, in four spellings -- the Bash
+      tool here is Git Bash and agents write both /c/Users/... and
+      C:\Users\..., quoted and unquoted. Scoped to Documents\SAIRN-* rather
+      than to `git -C *`, which is what Michael asked for and is also the only
+      version that is safe (see below).
+  (b) THE DIRECTORY. `permissions.additionalDirectories`, which is what the
+      harness asks about when a command targets a path outside the session
+      root. Enumerated FROM DISK rather than typed -- seven clones carrying a
+      .git: SAIRN, SAIRN-cc, SAIRN-cody, SAIRN-fourth, SAIRN-hank, SAIRN-hover,
+      SAIRN-hover2. The typed-list undercount is a defect this platform has
+      already paid for three times.
+
+AND THE HOLE IS CLOSED, WHICH MATTERS MORE THAN THE ALLOW. Every existing deny
+rule is spelled `Bash(git <words>)` and does NOT match `git -C <path> <words>`.
+So a broad -C allow would have walked straight past all of them: force-push in
+six spellings, `reset --hard`, `clean -f`, `checkout -f`, `restore .`,
+`push --mirror`, `push --delete`, `filter-repo`. 27 `-C` variants were DERIVED
+from the live deny list by transformation, not hand-picked, so a deny nobody
+thought of here is still covered. Deny wins at every level, which is what makes
+the allow safe at all.
+
+WHAT IS NOT MEASURED, AND WHY IT CANNOT BE FROM HERE: whether the harness
+treats a mid-argument `*` in a permission pattern as a glob. Proving it means
+triggering the prompt this item removes, which is exactly the thing I was told
+not to do. So the rules are belt-and-braces and the scoped spellings come
+first. What IS measured: `git -C` ran against two other clones in both path
+spellings during this batch with no prompt. IF A PROMPT STILL APPEARS, the next
+step is NOT another guess -- it is to read the prompt's own text, which names
+whether it is asking about the command or the directory, and to add the exact
+rule it reports.
+
+HOW EACH FOLDER PICKS IT UP: nothing to fetch -- ~/.claude/settings.json is in
+no repository and is already live for all six folders. Each folder must START A
+NEW SESSION, because Claude Code loads settings at session start. The repo half
+of this batch (item 1) is a pull, and the per-folder commands and their
+measured current state are in SAIRN-handoff-cc-b8.md.
+
+
+3. THE STATUS LINE: A PERCENTAGE, AND A ?? WHEN IT CANNOT TELL
+--------------------------------------------------------------------------------
+    python tools/sairn_status_line.py --fixtures   -> 21/21, exit 0
+    live render against this session's transcript:
+      cc | Opus 5 (1M) | ctx 33% of 1000k
+
+One USER-LEVEL `statusLine` entry in ~/.claude/settings.json covers ALL SIX
+agent folders. That is the whole reason it is there and not in six project
+settings files: nothing is written into another agent's clone, and the two
+hover clones in particular are a boundary a build agent must not cross.
+
+NOT A HOOK, and the difference is structural rather than a label: a status line
+cannot block a tool call, cannot edit a file and cannot refuse anything. It
+ALWAYS EXITS 0, because a non-zero status line prints a harness error over the
+figure it exists to show -- and that in turn means it must never be cited as a
+check, which is said in the file itself.
+
+THE NUMBER IS A FRACTION BECAUSE THE CEILING MOVES. 840,000 tokens is a
+catastrophe in a 200K window and 84% in a 1M one. 1M for a [1m] model id, or
+when `exceeds_200k_tokens` is true -- a session that has already passed 200K
+cannot be a 200K session, which is a measurement rather than an assumption.
+
+THERE IS NO CONTEXT FIELD IN THE PAYLOAD, so the figure is read from the LAST
+`message.usage` in the transcript: input + cache_read + cache_creation. Output
+tokens are NOT added -- they are already inside the next turn's input and
+adding both double-counts. The transcript is scanned from the END in a bounded
+window (256KB, then 4MB once), because reading a multi-megabyte append-only
+file to find its last line is how a status line becomes the slowest thing in
+the session.
+
+AND 0% WOULD BE THE WORST POSSIBLE OUTPUT, so it is not reachable: a fresh
+session with no usage line, an absent transcript, a line truncated mid-append
+and an all-zero usage block each print `ctx ??%` with the reason. Four of the
+21 fixtures are that path, and one asserts the ??-line carries no digit
+percentage anywhere.
+
+THE THRESHOLD IS LOCKED TO THE DISPLAY, which is the fixture worth copying:
+138,000 of 200,000 prints `ctx 69%` and is NOT red; 140,000 is exactly 70% and
+IS red (the boundary is >=, not >); and 139,000 -- 69.5% -- prints as `70%` and
+must therefore ALSO be red, because a line reading `70%` in plain text would be
+worse than either answer alone. The first draft of that fixture asserted the
+opposite and FAILED on the first run, which is how the rounding question got
+decided instead of assumed.
+
+ONE DEPENDENCY, STATED: the script lives in the cc clone, so if
+Documents\SAIRN-cc is moved the status line goes blank. Cosmetic; it fails no
+command.
+
+
+4. THE cody-ROUTED RECORD 2026-10-12T01:51:33Z, AND THE FOURTH SIGNAL
+--------------------------------------------------------------------------------
+4a. THE RECORD. docs/tier-a-reviews.json, the record keyed
+`opened_at: 2026-10-12T01:51:33Z`, author hank, reviewer_owner cc, status open,
+verdict null. Nine Tier A resources across two apps. It names three things it
+wants an outside reader for; cody's docs/2026-10-13-cody-b8-tier-a-review.md
+section 3 reports (1) MOOT at HEAD and (3) ADDRESSED at HEAD, leaving ONE:
+
+    (2) none of the SAIRNfreedom or SAIRNscape gates was PROVEN LIVE with a
+        bare-key call ... source-level only
+
+4b. RE-CHECKED AS FAR AS A SESSION WITHOUT CREDENTIALS CAN.
+
+    THE ENVIRONMENT, measured with os.environ and NOT by opening .env.local:
+      SUPABASE_URL                 ABSENT
+      SUPABASE_SERVICE_ROLE_KEY    ABSENT
+      SERVICE_ROLE_KEY             ABSENT
+      SUPABASE_ANON_KEY            ABSENT
+      SAIRN_LICENCE_KEY            ABSENT
+    Same wall cody hit in b7 and b8. Nothing has changed about it.
+
+    THE SOURCE HALF, re-derived at HEAD by parsing api/sd-data.js (READ ONLY --
+    hank holds that file in a live b9 claim), not by reading a comment:
+      SD_SESSION_GATED total keys: 65
+        invoices          gated=True   app=sairnscape
+        scp_designs       gated=True   app=sairnscape
+        scp_quotes        gated=True   app=sairnscape
+        sf_officers       gated=True   app=sairnfreedom
+        sf_rentals        gated=True   app=sairnfreedom
+        sf_sessions       gated=True   app=sairnfreedom
+        sf_shifts         gated=True   app=sairnfreedom
+        sf_tickets        gated=True   app=sairnfreedom
+        dnt_appointments  gated=False  app=None
+    EIGHT OF NINE, AND THE NINTH IS NOT A GAP -- it is a SECOND MECHANISM.
+    `dnt_appointments` is gated by `dntGate(res)` at api/sd-data.js:16302,
+    defined at :15045, which answers 401 NO_SESSION when
+    `verifySessionToken(...)` returns nothing. So all nine are gated at HEAD,
+    by two different mechanisms, and a reader who only grepped
+    SD_SESSION_GATED would have reported a hole that is not there.
+
+    THE LIVE HALF, attempted with NO credentials at all -- no licence key, no
+    session token, read actions only, via tools/sairn_http.py:
+      POST https://sairn.vercel.app/api/sd-data
+        sf_officers       -> 401 {"code":"NO_LICENSE","message":"Missing bearer license key"}
+        scp_designs       -> 401 NO_LICENSE
+        dnt_appointments  -> 401 NO_LICENSE
+    TWO THINGS THAT ARE WORTH SEPARATING. The platform IS UP -- this is a real
+    401 from the application, not the 402 the whole platform returned on
+    2026-10-13, and not a Vercel challenge. And the call is refused at the
+    LICENCE layer (api/sd-data.js:537) which runs BEFORE the session gate
+    (:2004). So NO CREDENTIAL-FREE CALL CAN EVER OBSERVE THIS GATE: the request
+    is rejected two layers early. That is a structural answer, not a failure to
+    try, and it is the reason this attack point cannot be closed from here.
+
+    WHAT IS MISSING, EXACTLY, AND IN WHAT ORDER IT IS NEEDED:
+      (i)   A TENANT LICENCE KEY for SAIRNfreedom and SAIRNscape (the earlier
+            control used SF-PINNACLE-2026). Without it every call stops at
+            :537 and the gate at :2004 is unreachable. This alone would prove
+            the REFUSAL half -- a 403 with a key and no session token.
+      (ii)  A SESSION TOKEN for a real employee of that tenant, to prove the
+            POSITIVE half: that a signed-in session PASSES. The b5 handoff
+            already recorded that this half "cannot be driven at all yet", and
+            it is still true.
+      (iii) A SERVICE-ROLE KEY to seed ONE row on the tenant. Without it a 200
+            and an empty table are indistinguishable, which is the exact trap
+            the 2026-10-05 customers control was built to avoid: an unmigrated
+            table answers an honest empty to everybody, and that is not a gate.
+    UNVERIFIED IS THE ANSWER AND IT IS A THIRD STATE. Not a pass, and not a
+    failure of the gate. The record's `verdict` field is still null and this
+    batch did not write it: docs/ is outside this batch's scope, so the
+    transcription is an open item in the handoff with the command.
+
+4c. THE FOURTH SIGNAL, tools/unproven_arm_check.py.
+    python tools/unproven_arm_check.py          -> exit 1
+      files scanned 407, with an unproven mechanism 3
+      A1 0, A2 0, A3 0, A4 1
+      A4  tests/mar_billing_grant.test.js:258
+    python tests/run_unproven_arm_probe.py      -> 15 passed, 0 failed, exit 0
+
+THE SPEC'S FOURTH RULE IS "an arm may be unproven AT MOST ONCE". The tool
+printed `A4 NOT CHECKED` on every run since it was built, correctly: the
+comparison spans two RUNS and a static reader cannot see a second run.
+
+WHAT IS STATIC IS THE PRECONDITION, and it is the rule's load-bearing half --
+you cannot detect "twice" unless the FIRST time was recorded somewhere a later
+run can read. A4 fires when a suite can report an arm UNPROVEN and persists
+NOTHING. The rule is not violated there; it is UNENFORCEABLE there, for ever.
+
+ONE-SIDED BY DESIGN: it fires only on definitive absence, because whether an
+existing write carries the unproven SET is not statically decidable. Every run
+still prints that the two-run comparison itself is unchecked and that a clean
+A4 is NOT a statement that any suite obeyed the rule.
+
+AND THE FIRST VERSION OF THE PATTERN WAS WRONG, WHICH DRIVING IT CAUGHT. With
+a leading `(?<![A-Za-z_0-9])` the dot-prefixed alternatives could never match,
+because the character before `.write(` in `fh.write(` is `h`. A4 fired on two
+probes that plainly write fixtures -- a FALSE FINDING, the one direction a
+fires-on-absence signal can produce one. Removing the lookbehind and searching
+`norm` instead of `bare` -- code_only() blanks string literals, so the mode
+argument in `open(p, 'w')` is spaces by the time it gets there -- took it from
+3 findings to 1. Over-matching only makes A4 quieter, which is the safe
+direction and is written into the code.
+
+CRITERIA_VERSION moved to 2026-10-14.1: a run stamped 2026-10-13.1 assessed
+three signals and one stamped this assesses four, and a verdict quoted without
+its stamp would be two different claims under one number.
+
+
+5. METHODOLOGY: REPRODUCE, THEN PATCH -- THREE TIMES
+--------------------------------------------------------------------------------
+5a. THE "NO ref lines" REFUSAL, REPRODUCED BEFORE ANYTHING WAS CHANGED.
+    python tools/prepush_refline_repro.py        -> 8 states, real repositories
+    python tools/prepush_refline_repro.py --message-arms -> 5/5, exit 0
+
+    git 2.54.0.windows.1, a recording pre-push hook, a bare origin and a clone
+    per state:
+
+      A  ahead only ..................... 1 ref line,  git exit 0
+      B  ahead AND behind (b7's state) .. 0 REF LINES,  git exit 1
+      C  behind only, nothing to push ... 0 REF LINES,  git exit 1
+      D  up to date, nothing to push .... 0 REF LINES,  git exit 0
+      E  ahead, through a pipe .......... 1 ref line,   git exit 0
+      F  ahead, stdin from /dev/null .... 1 ref line,   git exit 0
+      G  ahead, from inside a .sh FILE .. 1 ref line,   git exit 0
+      H  ahead, from a python subprocess  1 ref line,   git exit 0
+
+    SO THE MESSAGE'S OWN FIRST EXPLANATION IS MEASURED FALSE. It blamed "a
+    SHELL SCRIPT, a pipe or any other wrapper" and told the reader to "ISSUE
+    THE PUSH DIRECTLY". A pipe, a redirected stdin, a shell script and a python
+    subprocess ALL still receive the ref lines: git hands them to the hook it
+    runs, not to whoever asked. cc b7 was denied twice by that sentence, went
+    looking for the wrapper, and found none -- and that is in b7's own routing
+    doc as an unexplained observation. It is explained now.
+
+    THE REAL CONDITION, which nobody had named: GIT RUNS THE HOOK EVEN WHEN IT
+    IS NOT GOING TO SEND ANYTHING -- a non-fast-forward it will refuse itself,
+    or a push with nothing to update -- and then there are no refs to write.
+
+    THE PATCH IS A DIAGNOSIS, NOT A BEHAVIOUR CHANGE. register_feed_gate now
+    reads its own ahead/behind and prints which of three shapes it is in, plus
+    a fourth branch when the reading itself fails. All four still DENY. Turning
+    any of them into a pass would be a new way for a push to skip the gate, and
+    the measurement is about git's inputs rather than about the change being
+    clean -- in states B and C git fails the push by itself anyway, and in D
+    nothing is being pushed. Driven for real on this clone while 0 ahead and 1
+    behind, and it printed the "nothing to push" branch with the counts.
+
+    `--message-arms` locks all four branches AND the negative half -- that the
+    wrapper sentence is GONE from the source rather than merely unreached.
+    Without that fifth arm, three of the four could pass over a message that
+    still blamed a script.
+
+5b. tools/red_suite_register_check.py:96 -- THE REGISTERED SUITES RAN IN THE
+    LIVE CLONE.
+    python tools/red_suite_register_check.py   -> exit 2, 85 entries driven
+    python tools/red_suite_register_check.py --selftest -> 9 cases, 0 failed
+
+    `drive()` ran every registered suite with `cwd=REPO`. These suites write
+    when run -- ledgers, fixtures, tools that mutate on execution -- so a check
+    whose whole job is to ask "is this suite still red" was editing the working
+    clone of whichever session ran it, every batch, by design. This platform
+    already has the rule in writing: a write-when-run tool goes in a worktree.
+
+    ONE worktree at HEAD for the whole run, removed in a `finally`, and IT
+    FAILS CLOSED: if `git worktree add` fails the answer is exit 2 COULD NOT
+    RUN with the reason, and there is NO fallback to REPO. That fallback is
+    PR 1.11's shape exactly -- it would report a pass over a run that also
+    edited the caller's tree.
+
+    THE SEMANTIC CHANGE IS PRINTED RATHER THAN SLIPPED IN. A worktree is at
+    HEAD, so uncommitted work is not in it; the run prints the worktree's
+    commit and NAMES a dirty tree when it finds one. Its first real run did
+    exactly that:
+      DRIVEN IN AN ISOLATED WORKTREE at HEAD 4673965ea59d
+      NOTICE: 5 uncommitted path(s) in the live clone, NOT in the worktree
+    -- which is honest, and is also why the nhi recovery below is not in that
+    run's results: the fix was still uncommitted when it started.
+
+    AND THE RUN FOUND FIVE STALE EXEMPTIONS, which is the finding the tool
+    exists for. RECOVERED, i.e. registered as red and now exiting 0:
+      api/sf-auth.test.js
+      tests/push_gate/check8_probe.py
+      tests/run_truthy_sum_probe.py
+      api/sd-data-cross-tenant-dispatchers.test.js
+      tests/run_committer_identity_probe.py
+    A stale entry does not clutter the register -- it ABSORBS the next real
+    failure of the one file somebody already decided not to look at. Routed to
+    cody, who holds docs/known-red-suites.json in a live claim; NOT edited
+    here.
+
+    EXIT 2, NOT 0, and that is correct: without `--from-run` the tool cannot
+    look for UNREGISTERED red suites and refuses to let that read as clean.
+
+5c. THE RED SELF-TEST IN tools/nhi_register.py, REPRODUCED FIRST.
+    From a temp worktree, BEFORE any change:
+      FAIL it renders with the real IDENTITIES   80 candidate repositories in
+      FAIL the clone enumeration ran             C:\...\Temp, above the cap of
+      FAIL no row claims a rotation nobody ...   32
+      ok   with an unreadable repo root it RAISES rather than returning a list
+
+    THE RECORDED DIAGNOSIS IS WRONG, AND THE MEASUREMENT SAYS SO. The entry in
+    docs/known-red-suites.json for tests/run_selftest_independence_probe.py
+    blames nhi_register's "unreadable repo root" arm. That arm PASSES -- in the
+    live clone and in the worktree, before and after this fix. The real cause
+    is the clone-parent cap, and the cap is RIGHT: a parent holding 80
+    repositories is not a clone parent, and that ceiling exists because
+    enumerating 1865 of them took 180 seconds on 2026-09-30.
+
+    WHAT WAS WRONG IS THE COUPLING. Five arms that only ever needed a RENDER
+    depended on the ambient directory the tool happened to be launched from, so
+    the self-test reported a defect in the REGISTER whenever it was not run
+    from a real clone -- and every isolated-worktree runner does exactly that.
+
+    THE FIX, IN THREE PARTS:
+      * section 3b drives the enumeration against a FIXTURE parent of five real
+        repositories, so it answers the same way from a clone, a worktree or a
+        temp directory;
+      * `clone_scope()` takes the same optional `repo` the enumeration already
+        took -- one forwarded parameter, not a new seam;
+      * the arms that are about THIS MACHINE became section 3c, a CONTROL that
+        reports NOT CHECKED with its reason instead of failing, and the count
+        of not-checked arms is printed ABOVE the verdict line so it cannot be
+        read as a clean sweep.
+    The environmental classifier is deliberately narrow -- two enumeration
+    messages -- and the pairing is what keeps it honest: if the enumeration
+    itself ever breaks, 3b fails on a fixture parent and no classifier here can
+    hide it.
+
+    MEASURED AFTER, BOTH WAYS:
+      live clone     exit 0, 14 arms checked, 0 not-checked
+      temp worktree  exit 0, 3 arms NOT CHECKED and named
+    AND IT RECOVERED A REGISTERED RED SUITE:
+      python -u tests/run_selftest_independence_probe.py -> ALL ARMS PASS, exit 0
+    including the two arms whose only complaint was this self-test's unmutated
+    baseline. That entry is now a sixth stale exemption, routed with the rest.
+
+
+6. THE PUSH -- NO FORCE, TWO REBASES, EVERY REFUSAL CLEARED AT ITS CAUSE
+--------------------------------------------------------------------------------
+    git rev-list --left-right --count origin/main...HEAD  -> 0  0
+    git rev-parse --short HEAD        -> 385606cb
+    git rev-parse --short origin/main -> 385606cb
+
+No `--force` in any spelling. SAIRN_SEED_GATE NEVER USED. Refusals:
+
+  REFUSAL 1  register feed gate: a defect-closing commit with no register
+             record. Satisfied with ONE record for 811292cb naming BOTH
+             defects, rule 1.11, injection commit 8f15f7c5 for the isolation
+             half and 2f4400ab named in the summary for the nhi half, and
+             --factors-unknown with a reason, because nobody has investigated
+             why either was written that way and a guess in a CAPA field is
+             worse than the gap. --check: OK, 549 records.
+  REFUSAL 2  generated-document gate: docs/TOOLING-INVENTORY.md stopped
+             matching its sources, because this push adds two tools.
+             Regenerated by its own generator; numstat 13/11.
+  REJECTION 3-4  GitHub `fetch first`, twice: other clones landed mid-batch.
+             Rebase, re-seat the record sha with
+             tools/sairn_rebase_resolve.py, push again.
+
+AND THE CONFLICT I DID NOT GET TO HAVE BOTH WAYS, said out loud:
+docs/defect-density-register.json is in hank's live b9 FILES, and the push gate
+REQUIRES a record before it will accept a defect-closing push. Those two rules
+collide. I chose the gate, appended exactly one record, and wrote it here and
+in the handoff rather than leaving it to be discovered in a diff.
+
+
+7. WHAT THIS BATCH DID NOT DO
+--------------------------------------------------------------------------------
+  * NO hook added or restored. The only .claude/settings.json change is item 1,
+    and it REMOVES one.
+  * docs/known-red-suites.json was NOT edited -- six stale entries and one
+    wrong diagnosis are routed to cody, who holds it in a live claim.
+  * tests/mar_billing_grant.test.js was NOT edited -- same claim.
+  * api/sd-data.js was READ ONLY. hank holds it in a live b9 claim.
+  * docs/tier-a-reviews.json was NOT edited, so the record's `verdict` is still
+    null. The re-check above is the content for it; the transcription is an
+    open item with its command.
+  * The hover and hover2 clones were neither read nor written. They pull item
+    1 themselves.
+  * The three FMEA drafts the register asked for were not written. Three
+    unreviewed drafts filed by the session that caused the defects is the
+    detector-blesses-its-own-fix shape one step out.
+  * NOTHING was done about the 80 stale worktrees in the system temp directory
+    left by other sessions' probes. Mine were removed; those are not mine to
+    delete, and they are the reason section 5c's refusal fires at all.
+  * No deployed surface was changed, so there is no deploy to live-verify. The
+    one live call in this batch is the credential-free probe in section 4b.
+
+8. FILES
+--------------------------------------------------------------------------------
+Written, and in cc's declared FILES: .claude/settings.json,
+tools/sairn_status_line.py, tools/unproven_arm_check.py,
+tools/red_suite_register_check.py, tools/nhi_register.py,
+tools/tooling_inventory.py, docs/batch-manifest-cc-b8.json,
+SAIRN-handoff-cc-b8.md, SAIRN-report-cc-b8.txt, SAIRN-digest-cc-b8.txt,
+SAIRN-ACTIVE-WORK-cc.md.
+
+Written, and NOT in them, said out loud: tools/prepush_refline_repro.py (new,
+the reproduction item 5 required), tools/register_feed_gate.py (the patch that
+reproduction licensed), docs/defect-density-register.json,
+docs/scrutiny-flags.json, docs/TOOLING-INVENTORY.md, and
+~/.claude/settings.json, which is cc's own file and in no repository.
+tools/compaction_brief.py was in the claim and was NOT edited -- removing the
+wiring did not require touching the tool.
+
+SHA256 4ee8a5839a4425a73fa6a5ed70896f45ba9b172c3bc9f35d19feef2660fef245
+END-OF-REPORT

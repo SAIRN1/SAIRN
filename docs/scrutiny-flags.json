@@ -3523,6 +3523,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": ".claude/settings.json",
+   "class": "CI / hook configuration",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "af71d0068516c0d934be4ed6f823b2d9f38658f0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sf_role_matrix_driven.test.js",
    "class": "test file",
    "level": "CHANGE",

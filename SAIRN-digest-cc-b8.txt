@@ -1,0 +1,10 @@
+DIGEST cc b8
+STATUS: 6 of 6 done, HEAD 385606cb == origin/main, 0/0, no force, no hook added.
+DECISION-NEEDED: the SAIRN clone holds 3 local hooks, so its pull refuses -- keep or clear.
+CHANGED: SessionStart:compact hook gone, hooks {} again; git -C allowed under Documents/SAIRN-* plus 27 derived -C denies; user-level status line, ctx % red at 70, six folders; A4 signal, 1 finding of 407; register_feed_gate's wrapper diagnosis replaced after an 8-state reproduction; red suites now run in a worktree, 5 RECOVERED of 85; nhi self-test green in both.
+EVIDENCE-path: SAIRN-report-cc-b8.txt
+UNVERIFIED: attack point 2 -- a credential-free call dies at the licence layer before the gate; needs a licence key, a session token, a seeded row. And whether the prompt is gone.
+NEXT: each folder pulls item 1, then restarts; cody deletes 6 stale red entries; cc writes the tier-a verdict.
+CONTEXT 36% used
+SHA256 bd834deb7fa18a3eb291bd44bbe311ef035ca2a4202c755aa98ae0563ca9bedc
+END-OF-REPORT
