@@ -29175,6 +29175,185 @@
       },
       "citation_note": "no standing process-rule names a text-mode subprocess call missing explicit encoding specifically; closest (1.11, fail-closed-when-absent) is about a dependency being absent, not a locale-default decode",
       "factors_unknown_reason": "not investigated this batch -- the fix (subprocess_decode_check.fix_file(), AST-based, scoped to tools/) is verified; root-cause factor analysis was not done"
+    },
+    {
+      "commit": "521bfe8a8f5e",
+      "date": "2026-10-14",
+      "subject": "feat(sairnlegacy): the role matrix -- 36 resources, 8 roles, from zero gates",
+      "files": [
+        "api/_lib/auth.js",
+        "api/_lib/leg-roles.js",
+        "api/sd-data-leg-role-matrix.test.js",
+        "api/sd-data.js",
+        "sairnlegacy.html",
+        "sql/sairnlegacy_employee_auth_schema.sql"
+      ],
+      "lines_added": 791,
+      "lines_removed": 4,
+      "app": "sairnlegacy",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "independent-review",
+      "summary": "SAIRNlegacy had THREE roles and NO per-resource role check anywhere -- measured, not asserted: grep -nE \"LEG_[A-Z_]*ROLES\" over api/sd-data.js returned nothing, against one gate in sairnlaw and one in sairnvet. So a 'staff' token -- every employee who is not the owner or a director -- read and wrote all 36 leg_ resources exactly as an owner did, including leg_deathrecords, leg_cremations, leg_custodylog and leg_preneed. The 2026-09-21 session gate closed \"no session\" and left \"any session\" wide open, and nothing between then and now asked what a session was allowed to do. Found by fourth's b15 survey, which produced the band assignment this implements. Fixed with one table of 36 rows and one decide() in api/_lib/leg-roles.js, consulted once before the read/write dispatch, plus two rules that cannot be expressed as role grants: leg_custodylog is append-only for every role INCLUDING the owner, and leg_aftercare gets a deterministic id so duplicate grief-support check-ins are impossible by construction rather than caught by a check. staff stays in the vocabulary as a deprecated value mapped to the NARROWEST band, because promoting it would have granted 15 money resources to everyone who had a login yesterday. 30 arms, all passing, including the spec's negative controls L1-L10 driven end to end; the 403 arms assert no data fetch happened and L10 drives all 36 resources both ways on an owner token.",
+      "rules": [
+        "1.7"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "ea8c8b536e34",
+        "date": "2026-08-07",
+        "subject": "feat: SAIRNlegacy Phase 4 (final) -- 6 panels, Vendor & Add-On Marketplace",
+        "lag_days": 68
+      },
+      "citation_note": "PR 1.7 -- a sampling window silently exempts what it does not reach. The authorisation model's window was 'does this request carry a session', which exempted every question about WHICH session from being asked at all, for 36 resources, for three weeks after the session gate landed and looked like a fix.",
+      "contributing_factors": [
+        {
+          "factor": "The app shipped with three roles and the session gate was added later as an authentication fix. Nothing in that fix asked what a session is allowed to DO, so 'has a session' became the whole authorisation model for 36 resources.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "One table, 36 rows, one decide() consulted ONCE before the read/write dispatch -- so neither branch can be reached without it."
+        },
+        {
+          "factor": "No checker asks 'which resources have no role rule'. sairnlaw had one gate and sairnvet had one, and both looked like policy rather than like a 1-of-20 coverage figure.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/sd-data-leg-role-matrix.test.js generates its arms FROM the handler's own LEG_RESOURCES dict read out of the source, so a 37th resource with no row fails arm A2."
+        },
+        {
+          "factor": "The cheap migration -- rename staff to the nearest task role -- would have GRANTED 15 money resources to every existing login. The safe one requires a human per employee.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "staff stays as a deprecated value mapped to the narrowest band, is removed from the provisioning picker so no new one can be made, and arm B1 asserts it holds nothing on any MONEY resource."
+        },
+        {
+          "factor": "Two rules could not be expressed as role grants at all: an append-only custody log binds the owner, and an aftercare duplicate is prevented by the key rather than by a gate.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "LEG_APPEND_ONLY is a separate structure consulted independently of the table, and leg_aftercare derives a deterministic id from (case_id, checkin_type) on both halves."
+        }
+      ],
+      "recurrence_open": "Five of the seven role names are [CONFIRM] in the spec and still are -- a funeral home's own titles win, and 'prep' may need its own licensed tier the way SAIRNvet's PRESCRIBER_ROLES does because embalmer is a separate state licence in most states. leg_preneed's owner-only DELETION rule is not implemented: this handler has no delete verb. Whether a cremation authorisation legally needs a second named person is a state-law question this code does not answer. And the existing staff rows are only narrowed, not re-assigned -- that is a human task per employee and nothing tracks whether it has been done."
+    },
+    {
+      "commit": "a36e701851ca",
+      "date": "2026-10-14",
+      "subject": "fix(sairnlegacy,sairnroofing): one overlap helper for both booking resources, and rf_settings tiered",
+      "files": [
+        "api/_lib/leg-overlap.js",
+        "api/sd-data-leg-overlap.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 671,
+      "lines_removed": 32,
+      "app": "sairnlegacy",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "leg_clergybookings had no server-side double-booking check -- the THIRD instance of the shape b8 closed on leg_merch_units and b9 closed on leg_bookings. sairnlegacy.html:4817's clergyBookingConflict() is a correct interval-overlap test that hard-blocks with no override, over THIS DEVICE's localStorage, so two staff on two unsynced devices both pass their own check and both upsert; the second write is accepted because a new booking carries a new id and nothing collides. The thing double-booked is a named clergy contact against a specific death case and an hour. Fixed by routing BOTH booking resources through ONE helper, api/_lib/leg-overlap.js, rather than making a third copy -- because the one thing a copy would have got wrong is the STATUS LITERAL: leg_bookings exempts Cancelled, the clergy resource skips Completed and has no Cancelled status at all, so a byte-identical propagation would have refused clergy bookings against services that had already happened. exemptStatus is therefore a REQUIRED parameter with no default and check() throws without one. api/sd-data-leg-overlap.test.js, 33 arms written as PAIRS over the two specs, with D4 reading both client literals out of the HTML at runtime; ablated against the pre-fix handler at 27 passed 6 failed. The same commit tiers the rf_settings read, which b9's handoff named UNVERIFIED and which is confirmed to be the identical open-read shape sen_settings had: write management-only, read any signed-in employee returning every row whole including updated_by.",
+      "rules": [
+        "1.7"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "ea8c8b536e34",
+        "date": "2026-08-07",
+        "subject": "feat: SAIRNlegacy Phase 4 (final) -- 6 panels, Vendor & Add-On Marketplace",
+        "lag_days": 68
+      },
+      "citation_note": "PR 1.7 -- a sampling window silently exempts what it does not reach. The client's local store IS the sampling window here: the guard is correct over the rows it can see and says nothing about the rows it cannot, and an unsynced booking is exactly the row that matters. Cross-domain convention 7 is the second rule in play, on the FIX rather than on the defect: the obvious propagation would have carried the wrong status literal.",
+      "contributing_factors": [
+        {
+          "factor": "clergyBookingConflict() is a real interval-overlap test that HARD BLOCKS with no override -- and it reads clergyBookings(), which is THIS DEVICE's localStorage. The control looked complete from the client side.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Both booking resources now re-check against the SERVER's rows before the upsert, through api/_lib/leg-overlap.js."
+        },
+        {
+          "factor": "This is the THIRD instance of one shape (leg_merch_units b8, leg_bookings b9, leg_clergybookings now) and the first two were each closed in place, so nothing made the pattern visible as a pattern.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "One shared helper with a SPECS table, so a fourth resource is a row rather than a fourth copy."
+        },
+        {
+          "factor": "The obvious propagation -- copy the leg_bookings block -- would have carried the WRONG status literal. leg_bookings exempts Cancelled; leg_clergybookings skips Completed and has no Cancelled status at all.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "exemptStatus is a REQUIRED parameter with no default and check() throws without one. Arm D3 of the suite fails the moment the two specs share a literal, and D4 reads both literals out of sairnlegacy.html at runtime."
+        },
+        {
+          "factor": "b9's survey found this and four other client-authority gaps and recorded that ZERO of the 34 sairnlegacy resources had a server re-check. Nothing was scheduled off that count.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "The b10 handoff names each of the four remaining survey findings with the different fix the survey prescribes for it, and leg_aftercare's -- a deterministic id rather than a gate -- landed in this batch."
+        }
+      ],
+      "recurrence_open": "The read-then-write window remains: two requests interleaving between the SELECT and the upsert, milliseconds wide. The atomic close is a Postgres EXCLUDE over tstzrange and CANNOT be written against these tables -- the window lives in a data jsonb column and text::timestamptz is STABLE, not IMMUTABLE, so it is rejected in an index expression. It needs real start/end columns or an /rpc/ function doing the insert in one statement. And four of b9's five survey findings are still open, each needing a different fix."
+    },
+    {
+      "commit": "b14812fe8116",
+      "date": "2026-10-14",
+      "subject": "fix(sairnsenior): sen_visits clock_flags merged on field, not replaced",
+      "files": [
+        "api/_lib/sen-evv-clock.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 50,
+      "lines_removed": 3,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "sen_visits clock_flags were ASSIGNED, not merged. api/sd-data.js's EVV branch did visitData.clock_flags = clockCheck.flags, and a visit's two halves arrive as TWO separate writes -- checkClockEvent only reports on the clock fields present in THIS payload, so the clock-out's write REPLACED the clock-in's flags and a LATE_REPLAY on the way in vanished with nothing saying it had existed. The per-field SKEW STAMPS do not have the problem because they are KEYED; this was the one unkeyed array. Found in cody's b8 Tier A review of hank's api/ work, not by any checker. It only shows when BOTH halves are flagged, which is the case a state EVV audit asks about -- with a clean clock-out the array is empty, the guard never fires, and the first flag survives by luck. Fixed by merging on field, with the superseded set taken from the PAYLOAD rather than from the new flags: a field this payload re-reported has been re-checked so its stale flag must go EVEN IF the re-check produced none, and a field it did not mention was not checked so its flag is kept. The key stays ABSENT when there is nothing to say, because api/sd-data-sen-evv-clock.test.js:200 asserts that on a clean write. CLOCK_FIELDS hoisted out of api/_lib/sen-evv-clock.js and exported rather than re-listed.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "eac55ad1d3b7",
+        "date": "2026-09-27",
+        "subject": "feat(sairnsenior): the EVV clock module is wired -- all three exports, not one -- and the auth suite's forgery arm was false-failing 1 in 16 runs",
+        "lag_days": 17
+      },
+      "citation_note": "A merge that cannot tell a re-checked-and-clean field from an unmentioned one is the same could-not-tell folded into a pass, one layer down: the stale flag is kept or dropped on the wrong evidence.",
+      "contributing_factors": [
+        {
+          "factor": "checkClockEvent only reports on the clock fields present in THIS payload, and the write branch assigned its whole return over the stored array. The two facts are individually correct and only wrong together.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The superseded set is now taken from the PAYLOAD, not from the new flags, so a re-reported field's stale flag goes even when the re-check produced none, and an unmentioned field's flag is kept."
+        },
+        {
+          "factor": "A visit's two halves arrive as two separate writes, and every existing harness for this branch returned a FIXED row -- so no test could see a cross-write defect at all.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/sd_data_clock_flags_merge.test.js drives the real handler with a MUTABLE store: the POST of write 1 becomes the GET of write 2."
+        },
+        {
+          "factor": "The common case hides it. With a clean clock-out the flags array is empty, the `if` never fires, and the clock-in's flag survives by luck -- so only the audit case was broken.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Arm A4 pins that asymmetry explicitly, so the reason nobody noticed is now a named, passing arm rather than folklore."
+        },
+        {
+          "factor": "The clock FIELD LIST was an inline literal inside checkClockEvent, so a second place needing the same set would have had to copy it.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Hoisted to CLOCK_FIELDS and exported; sd-data.js imports it rather than re-listing."
+        }
+      ],
+      "recurrence_open": "Nothing checks, across the whole handler, for OTHER unkeyed arrays written by a multi-write resource. This fix closes one field on one resource; the shape is not swept."
     }
   ],
   "started": "2026-09-09",
