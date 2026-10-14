@@ -28469,7 +28469,7 @@
       "recurrence_open": "The actions close the SPECIFIC pair and the specific file. They do NOT close the shape: this is at least the third two-lists-that-must-agree defect in this family, and the platform carries other pairs whose halves live in different languages -- SD_SESSION_GATED and SD_GATE_APP are one, and they are kept in agreement only by a test somebody remembered to write. Nothing systematically enumerates such pairs. They also do not prove the database was migrated: every action here is in the repo, and until the SQL is run the only thing that improved is that the failure is now named 503 CHECK_NOT_WIDENED instead of silently covering 19% of the population."
     },
     {
-      "commit": "7da612f2e6d7",
+      "commit": "8447c3695404",
       "date": "2026-10-14",
       "subject": "fix(sairnlegacy): a chapel could be promised to two families -- the double-booking check was reading the browser's own cache",
       "files": [
@@ -28522,7 +28522,7 @@
       "recurrence_open": "The fix is a read-then-write, not an atomic lock. Two requests interleaving between the SELECT and the upsert -- milliseconds, two people clicking Save in the same instant -- still both succeed; the EXCLUDE constraint that would close it cannot be indexed while the window lives in `data` jsonb. And nothing here surveys the other 34 SAIRNlegacy resources for the same client-side-authority shape."
     },
     {
-      "commit": "9c71bb2a67d6",
+      "commit": "d99b47f9683e",
       "date": "2026-10-14",
       "subject": "fix(sairnscape): the last five licence-only resources are gated, and the repro that found them now reports 22 of 22 FIXED",
       "files": [
@@ -28571,7 +28571,7 @@
       "recurrence_open": "`schedule` is still licence-only and that is a disclosure, not a fix: nobody has decided it, and it is the one SAIRNscape resource whose bare name is also a StoneDesk panel id. Nothing here closes the same shape in the other apps -- the derived-population arm is SAIRNscape's only; the other per-app gate suites still hand-type their resource lists."
     },
     {
-      "commit": "3e8a65252954",
+      "commit": "650e02282573",
       "date": "2026-10-14",
       "subject": "fix(sairnlaw): every credential deactivation was writing NO audit row, silently",
       "files": [
