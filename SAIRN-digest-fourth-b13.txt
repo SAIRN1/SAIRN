@@ -1,0 +1,11 @@
+DIGEST fourth b13
+
+STATUS Landed. HEAD == origin/main c23b4a81, 0/0, clean, not forced. b12 claim already released; b13 held.
+DECISION-NEEDED Michael, three one-word answers (AI spec s7): owner acceptance a runtime gate (spec'd no)? SAIRNdental/SAIRNsenior outputs clinical? notice version 2026-11 or the lawyer's agreement version?
+CHANGED a1713909 + c23b4a81, 6 docs: hook audit routed to cc, two of my evidence lines corrected, 613-of-968 unfixtured-checker inventory plus gate spec, AI safeguards spec, undriven page 36 -> 20. No tools/api/sql/tests edit.
+EVIDENCE-path SAIRN-report-fourth-b13.txt; scratchpad corrections_b13.log, unfixtured_b13.log, gen_undriven_b13_run.log, hook_wiring_b13.log.
+UNVERIFIED compact matcher never seen firing; 613 checkers unproven, not wrong; the spec is a spec; 20 suites undriven; 13 manifest drifts untriaged.
+NEXT cc hook findings + fixture gate; hank api/sql; cody 15 tests + 20 drives; fourth release claim.
+CONTEXT ~20% used (1M window; estimated)
+SHA256 caba139217de91a3acaff710f23997a1728116d73afd784c9e65e97d0800bf04
+END-OF-REPORT
