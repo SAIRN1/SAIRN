@@ -28469,31 +28469,159 @@
       "recurrence_open": "The actions close the SPECIFIC pair and the specific file. They do NOT close the shape: this is at least the third two-lists-that-must-agree defect in this family, and the platform carries other pairs whose halves live in different languages -- SD_SESSION_GATED and SD_GATE_APP are one, and they are kept in agreement only by a test somebody remembered to write. Nothing systematically enumerates such pairs. They also do not prove the database was migrated: every action here is in the repo, and until the SQL is run the only thing that improved is that the failure is now named 503 CHECK_NOT_WIDENED instead of silently covering 19% of the population."
     },
     {
-      "commit": "65b48b0ffd5e",
+      "commit": "070efcd3042e",
       "date": "2026-10-14",
-      "subject": "fix(hover): hover_log.py --source accepts an unambiguous abbreviated sha (>=7 hex chars), refuses shorter with a clear message",
+      "subject": "fix(tools): encoding= on the 13 subprocess_decode_check findings in tools/",
       "files": [
-        ".claude/skills/sairn-hover-auditor/routing/2026-10-14-h1-b31-fourth-b17-verify.md",
-        ".claude/skills/sairn-hover-auditor/tools/hover_log.py"
+        "docs/2026-10-14-cc-b9-subprocess-decode-tests-routed-to-cody.md",
+        "tools/credential_purge_check.py",
+        "tools/external_file_index_audit.py",
+        "tools/gh_token.py",
+        "tools/live_probe_declaration_check.py",
+        "tools/purge_evidence_gate.py",
+        "tools/resource_reachability_check.py",
+        "tools/rewrite_convergence_map.py",
+        "tools/sql_column_exists_check.py",
+        "tools/temp_state_leak_check.py"
       ],
-      "lines_added": 130,
-      "lines_removed": 4,
+      "lines_added": 96,
+      "lines_removed": 13,
       "app": "tooling",
       "layer": "tooling",
       "severity": "moderate",
-      "detection_method": "hover-audit",
-      "summary": "hover_log.py's --add --source staleness check compared a read-time sha to the current origin/main sha as full strings, but its own error message displayed BOTH values truncated to 12 characters -- so passing the exact 12-char form the tool itself prints always failed with a confusing 'read-time sha X != current origin/main sha X' where X looked identical on both sides. Fixed to accept any unambiguous hex prefix (>=7 chars, git's own convention) via startswith, and to refuse anything shorter with a message naming the full-sha requirement explicitly. Discovered while using the tool during live auditing (h1 b30), not from reading someone else's diff.",
+      "detection_method": "independent-review",
+      "summary": "13 text-mode subprocess calls across 9 tools/*.py files had no explicit encoding=, decoding the child's output with cp1252 (this platform's locale default) -- mojibake or a raising reader thread on a stray UTF-8 byte. Routed by cody's subprocess_decode_check sweep (finding: 69 total, 13 in tools/)",
       "rules": [],
       "citation_confidence": "not-citable",
       "injection_phase": "coding",
       "phase_confidence": "inferred",
       "found_by_tool": null,
-      "found_by_session": "hover",
+      "found_by_session": null,
       "injection": {
-        "unknown_reason": "The comparison bug (full-string equality against a value the tool's own error message prints truncated to 12 chars) has been in verify_freshness_at_write_time since the staleness guard was first written; no specific introducing commit was identified, only that it predates this batch."
+        "unknown_reason": "the 13 call sites accreted individually as each tools/*.py file was written; no single introducing commit"
       },
-      "citation_note": "No PR section describes a logging tool's own staleness-guard comparing a truncated-for-display sha as if it were the full string; this is a code-level comparison bug in hover's own tooling, not a platform process violation.",
-      "factors_unknown_reason": "Found and fixed in one sitting (h1 b31) without a deeper five-whys pass; the immediate technical cause (display truncation vs full-string comparison) is understood and fixed, but no RCA was done on why the mismatch between display and comparison went unnoticed across multiple prior batches that hit it."
+      "citation_note": "no standing process-rule names a text-mode subprocess call missing explicit encoding specifically; closest (1.11, fail-closed-when-absent) is about a dependency being absent, not a locale-default decode",
+      "factors_unknown_reason": "not investigated this batch -- the fix (subprocess_decode_check.fix_file(), AST-based, scoped to tools/) is verified; root-cause factor analysis was not done"
+    },
+    {
+      "commit": "29c8fc612db0",
+      "date": "2026-10-14",
+      "subject": "fix(sql preflight): license_keys catalogue gap + function-as-table false positive",
+      "files": [
+        "tools/sairn_sql_preflight.py"
+      ],
+      "lines_added": 46,
+      "lines_removed": 0,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "sairn_sql_preflight.py DECLARED mode blocked 4 already-shipped, correct seed files with false MISSING_COLUMN on every real license_keys column (a table that predates this repo's schema files, invisible to a catalogue built only from CREATE TABLE in sql/*.sql) and false UNDECLARED_TABLE on sairn_circuit_breaker_step, a user-defined FUNCTION called in FROM position that the builtin-function exclusion list did not name. Finding #34, routed by cody",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the license_keys gap predates the repo's tracked schema files by the file's own prior comment; the circuit-breaker function false positive dates to whenever sql/sairn_circuit_breaker_schema.sql was added, not traced to one commit this batch"
+      },
+      "factors_unknown_reason": "not investigated this batch -- the fixes (supplemental catalogue from db/schema_snapshot.json, function-call-position structural exclusion) are verified; root-cause factor analysis was not done"
+    },
+    {
+      "commit": "2dc072c36a52",
+      "date": "2026-10-14",
+      "subject": "fix(red suite register): ordinary run can now exit 0, not always 2",
+      "files": [
+        "tools/red_suite_register_check.py"
+      ],
+      "lines_added": 71,
+      "lines_removed": 19,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "user-report",
+      "summary": "red_suite_register_check.py's docstring sells it as cheap enough to run every batch WITHOUT --from-run, but every such run unconditionally added no-from-run to could_not_run, and could_not_run always wins -- so the one invocation it is actually for could never report anything but exit 2, regardless of whether every registered suite was confirmed still red. Flagged directly by Michael",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "8f15f7c5fc57",
+        "date": "2026-10-06",
+        "subject": "fix(exec-context): the CTO advisor carried the SAME false clause as the CFO one -- \"NO accounting integration of any kind\" -- plus a count nobody could re-derive; and tools/red_suite_register_check.py",
+        "lag_days": 8
+      },
+      "citation_note": "no standing process-rule names a tool whose documented cheap/common-case invocation always lands on the pessimistic exit code; closest (1.11) is about a dependency being absent, and nothing here was absent -- an optional expensive input was declined on purpose",
+      "factors_unknown_reason": "not investigated this batch -- the fix (no-from-run demoted to a non-gating notice) is verified; root-cause factor analysis was not done"
+    },
+    {
+      "commit": "3997a045bd26",
+      "date": "2026-10-14",
+      "subject": "fix(subprocess decode check): fixer produced a duplicate keyword argument",
+      "files": [
+        "docs/scrutiny-flags.json",
+        "tools/credential_purge_check.py",
+        "tools/subprocess_decode_check.py"
+      ],
+      "lines_added": 39,
+      "lines_removed": 8,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "live-verification",
+      "summary": "subprocess_decode_check.py's fix_file() always spliced encoding='utf-8', errors='replace' regardless of what a call already had. tools/credential_purge_check.py had errors='replace' with no encoding=; the fixer produced a duplicate keyword argument, a real SyntaxError at compile() time that ast.parse() does not catch. The push gate's own stricter parse check caught the broken file before it reached origin/main",
+      "rules": [
+        "1.6"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "fda7e0214883",
+        "date": "2026-10-14",
+        "subject": "fix(tools): encoding= on the 13 subprocess_decode_check findings in tools/",
+        "lag_days": 0
+      },
+      "citation_note": "the broken file was produced and would have shipped from the agent's own invocation; it was caught by the push gate's separate, stricter check (compile-equivalent), not by the fixer's own verified-on-the-copy-it-wrote guarantee, which is the shape 1.6 names even though the two checks here are the same process rather than human-vs-automated",
+      "factors_unknown_reason": "not investigated this batch -- the fix (compile() instead of ast.parse(), only add what is missing) is verified; root-cause factor analysis was not done"
+    },
+    {
+      "commit": "540e0b162887",
+      "date": "2026-10-14",
+      "subject": "fix(tools): batch_manifest cp1252 console crash, --set's silent b6 default, claim commit subjects",
+      "files": [
+        "tools/batch_manifest.py",
+        "tools/sairn_claim.py"
+      ],
+      "lines_added": 48,
+      "lines_removed": 3,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "live-verification",
+      "summary": "batch_manifest.py --set silently defaulted to --agent cc --batch b6 (a hardcoded leftover from the batch this file was written in) when neither flag was passed. Reproduced live: an unqualified --set call overwrote three of b6's CLOSED items with b9's evidence text, no error, a confident item-1-to-done line printed over a manifest it never named",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "7003b58c5a92",
+        "date": "2026-10-13",
+        "subject": "feat(batch manifest): chat writes the ids and they are immutable; plus the push gate scoped to the pushing agent and retries capped at 2",
+        "lag_days": 1
+      },
+      "factors_unknown_reason": "not investigated this batch -- the fix (refuse like --close already does) is verified; root-cause factor analysis was not done"
     },
     {
       "commit": "5776ef196238",
@@ -28548,39 +28676,6 @@
       "recurrence_open": "The derived-population arm is SAIRNscape's only. Every other per-app gate suite still hand-types its resource list, so the same invisible-twelfth shape is available in each of them. And hover2's repro still measures 22 pairs -- it was not changed by this fix and will keep reporting 22 of 22 FIXED whatever happens to the twelfth resource."
     },
     {
-      "commit": "3997a045bd26",
-      "date": "2026-10-14",
-      "subject": "fix(subprocess decode check): fixer produced a duplicate keyword argument",
-      "files": [
-        "docs/scrutiny-flags.json",
-        "tools/credential_purge_check.py",
-        "tools/subprocess_decode_check.py"
-      ],
-      "lines_added": 39,
-      "lines_removed": 8,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "live-verification",
-      "summary": "subprocess_decode_check.py's fix_file() always spliced encoding='utf-8', errors='replace' regardless of what a call already had. tools/credential_purge_check.py had errors='replace' with no encoding=; the fixer produced a duplicate keyword argument, a real SyntaxError at compile() time that ast.parse() does not catch. The push gate's own stricter parse check caught the broken file before it reached origin/main",
-      "rules": [
-        "1.6"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "fda7e0214883",
-        "date": "2026-10-14",
-        "subject": "fix(tools): encoding= on the 13 subprocess_decode_check findings in tools/",
-        "lag_days": 0
-      },
-      "citation_note": "the broken file was produced and would have shipped from the agent's own invocation; it was caught by the push gate's separate, stricter check (compile-equivalent), not by the fixer's own verified-on-the-copy-it-wrote guarantee, which is the shape 1.6 names even though the two checks here are the same process rather than human-vs-automated",
-      "factors_unknown_reason": "not investigated this batch -- the fix (compile() instead of ast.parse(), only add what is missing) is verified; root-cause factor analysis was not done"
-    },
-    {
       "commit": "650e02282573",
       "date": "2026-10-14",
       "subject": "fix(sairnlaw): every credential deactivation was writing NO audit row, silently",
@@ -28629,6 +28724,60 @@
         }
       ],
       "recurrence_open": "The new test reads sql/ files, so a CHECK widened LIVE and never written back is still invisible -- the exact state three audit-log tables were in until 2026-10-13. Nothing yet compares any app's HTML, the third copy of these vocabularies, except SAIRNfreedom's."
+    },
+    {
+      "commit": "65b48b0ffd5e",
+      "date": "2026-10-14",
+      "subject": "fix(hover): hover_log.py --source accepts an unambiguous abbreviated sha (>=7 hex chars), refuses shorter with a clear message",
+      "files": [
+        ".claude/skills/sairn-hover-auditor/routing/2026-10-14-h1-b31-fourth-b17-verify.md",
+        ".claude/skills/sairn-hover-auditor/tools/hover_log.py"
+      ],
+      "lines_added": 130,
+      "lines_removed": 4,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "hover_log.py's --add --source staleness check compared a read-time sha to the current origin/main sha as full strings, but its own error message displayed BOTH values truncated to 12 characters -- so passing the exact 12-char form the tool itself prints always failed with a confusing 'read-time sha X != current origin/main sha X' where X looked identical on both sides. Fixed to accept any unambiguous hex prefix (>=7 chars, git's own convention) via startswith, and to refuse anything shorter with a message naming the full-sha requirement explicitly. Discovered while using the tool during live auditing (h1 b30), not from reading someone else's diff.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "The comparison bug (full-string equality against a value the tool's own error message prints truncated to 12 chars) has been in verify_freshness_at_write_time since the staleness guard was first written; no specific introducing commit was identified, only that it predates this batch."
+      },
+      "citation_note": "No PR section describes a logging tool's own staleness-guard comparing a truncated-for-display sha as if it were the full string; this is a code-level comparison bug in hover's own tooling, not a platform process violation.",
+      "factors_unknown_reason": "Found and fixed in one sitting (h1 b31) without a deeper five-whys pass; the immediate technical cause (display truncation vs full-string comparison) is understood and fixed, but no RCA was done on why the mismatch between display and comparison went unnoticed across multiple prior batches that hit it."
+    },
+    {
+      "commit": "73b4c0d03800",
+      "date": "2026-10-14",
+      "subject": "fix(hover): one tracked hover_log.py -- merged the untracked copy's citation gate, real default path, loud duplicate-script refusal",
+      "files": [
+        ".claude/skills/sairn-hover-auditor/routing/2026-10-14-h1-b32-cc-routing.md",
+        ".claude/skills/sairn-hover-auditor/tools/hover_log.py"
+      ],
+      "lines_added": 291,
+      "lines_removed": 14,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "Two copies of hover_log.py existed: the tracked one at .claude/skills/sairn-hover-auditor/tools/hover_log.py, and an untracked, functionally-live one next to the real log data at ~/.claude/projects/.../hover-audit-log/ (the one every recent hover batch was actually running, because LOG_PATH defaulted relative to the script's own directory). The two had diverged in OPPOSITE directions: the tracked copy gained a CITATION GUARD (tool-existence check) the untracked copy never got, and the untracked copy gained a CITATION CLASS GATE (line-content-accuracy check, citation_class_check.py) the tracked copy never got. Fixed per Michael's decision: merged both features into the single tracked copy, replaced the HERE-relative default with one derived from KNOWN_INSTANCE_LOGS (keyed by git toplevel, with HOVER_LOG_PATH_OVERRIDE still honored first), and added a loud refusal if a second copy of the script ever reappears next to the real log data. The untracked copy is renamed aside (not deleted -- rm denied by permissions) now that its logic is fully contained.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "The untracked duplicate's existence predates this batch by an unknown margin -- it already carried a 2026-09-30 feature the tracked copy never got, so the fork point is at least that old; no single introducing commit identified."
+      },
+      "citation_note": "No PR section describes two independently-maintained copies of one tool diverging into complementary-but-disjoint features; this is a process/tooling-hygiene defect in hover's own layout, not a platform process violation with a named section.",
+      "factors_unknown_reason": "Immediate cause (two copies, each gaining a feature the other lacked, never reconciled) is understood and fixed this batch; no deeper RCA was done on why nothing noticed the fork for ~2 weeks."
     },
     {
       "commit": "811292cba3b8",
@@ -28714,6 +28863,123 @@
         }
       ],
       "recurrence_open": "The fix is a read-then-write, not an atomic lock. Two requests interleaving between the SELECT and the upsert -- milliseconds, two people clicking Save in the same instant -- still both succeed; the EXCLUDE constraint that would close it cannot be indexed while the window lives in `data` jsonb. And nothing here surveys the other 34 SAIRNlegacy resources for the same client-side-authority shape."
+    },
+    {
+      "commit": "85206564d24f",
+      "date": "2026-10-14",
+      "subject": "fix(sairnlegacy,sairnroofing): one overlap helper for both booking resources, and rf_settings tiered",
+      "files": [
+        "api/_lib/leg-overlap.js",
+        "api/sd-data-leg-overlap.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 671,
+      "lines_removed": 32,
+      "app": "sairnlegacy",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "leg_clergybookings had no server-side double-booking check -- the THIRD instance of the shape b8 closed on leg_merch_units and b9 closed on leg_bookings. sairnlegacy.html:4817's clergyBookingConflict() is a correct interval-overlap test that hard-blocks with no override, over THIS DEVICE's localStorage, so two staff on two unsynced devices both pass their own check and both upsert; the second write is accepted because a new booking carries a new id and nothing collides. The thing double-booked is a named clergy contact against a specific death case and an hour. Fixed by routing BOTH booking resources through ONE helper, api/_lib/leg-overlap.js, rather than making a third copy -- because the one thing a copy would have got wrong is the STATUS LITERAL: leg_bookings exempts Cancelled, the clergy resource skips Completed and has no Cancelled status at all, so a byte-identical propagation would have refused clergy bookings against services that had already happened. exemptStatus is therefore a REQUIRED parameter with no default and check() throws without one. api/sd-data-leg-overlap.test.js, 33 arms written as PAIRS over the two specs, with D4 reading both client literals out of the HTML at runtime; ablated against the pre-fix handler at 27 passed 6 failed. The same commit tiers the rf_settings read, which b9's handoff named UNVERIFIED and which is confirmed to be the identical open-read shape sen_settings had: write management-only, read any signed-in employee returning every row whole including updated_by.",
+      "rules": [
+        "1.7"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "ea8c8b536e34",
+        "date": "2026-08-07",
+        "subject": "feat: SAIRNlegacy Phase 4 (final) -- 6 panels, Vendor & Add-On Marketplace",
+        "lag_days": 68
+      },
+      "citation_note": "PR 1.7 -- a sampling window silently exempts what it does not reach. The client's local store IS the sampling window here: the guard is correct over the rows it can see and says nothing about the rows it cannot, and an unsynced booking is exactly the row that matters. Cross-domain convention 7 is the second rule in play, on the FIX rather than on the defect: the obvious propagation would have carried the wrong status literal.",
+      "contributing_factors": [
+        {
+          "factor": "clergyBookingConflict() is a real interval-overlap test that HARD BLOCKS with no override -- and it reads clergyBookings(), which is THIS DEVICE's localStorage. The control looked complete from the client side.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Both booking resources now re-check against the SERVER's rows before the upsert, through api/_lib/leg-overlap.js."
+        },
+        {
+          "factor": "This is the THIRD instance of one shape (leg_merch_units b8, leg_bookings b9, leg_clergybookings now) and the first two were each closed in place, so nothing made the pattern visible as a pattern.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "One shared helper with a SPECS table, so a fourth resource is a row rather than a fourth copy."
+        },
+        {
+          "factor": "The obvious propagation -- copy the leg_bookings block -- would have carried the WRONG status literal. leg_bookings exempts Cancelled; leg_clergybookings skips Completed and has no Cancelled status at all.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "exemptStatus is a REQUIRED parameter with no default and check() throws without one. Arm D3 of the suite fails the moment the two specs share a literal, and D4 reads both literals out of sairnlegacy.html at runtime."
+        },
+        {
+          "factor": "b9's survey found this and four other client-authority gaps and recorded that ZERO of the 34 sairnlegacy resources had a server re-check. Nothing was scheduled off that count.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "The b10 handoff names each of the four remaining survey findings with the different fix the survey prescribes for it, and leg_aftercare's -- a deterministic id rather than a gate -- landed in this batch."
+        }
+      ],
+      "recurrence_open": "The read-then-write window remains: two requests interleaving between the SELECT and the upsert, milliseconds wide. The atomic close is a Postgres EXCLUDE over tstzrange and CANNOT be written against these tables -- the window lives in a data jsonb column and text::timestamptz is STABLE, not IMMUTABLE, so it is rejected in an index expression. It needs real start/end columns or an /rpc/ function doing the insert in one statement. And four of b9's five survey findings are still open, each needing a different fix."
+    },
+    {
+      "commit": "9731d8806982",
+      "date": "2026-10-14",
+      "subject": "fix(sairnsenior): sen_visits clock_flags merged on field, not replaced",
+      "files": [
+        "api/_lib/sen-evv-clock.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 50,
+      "lines_removed": 3,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "sen_visits clock_flags were ASSIGNED, not merged. api/sd-data.js's EVV branch did visitData.clock_flags = clockCheck.flags, and a visit's two halves arrive as TWO separate writes -- checkClockEvent only reports on the clock fields present in THIS payload, so the clock-out's write REPLACED the clock-in's flags and a LATE_REPLAY on the way in vanished with nothing saying it had existed. The per-field SKEW STAMPS do not have the problem because they are KEYED; this was the one unkeyed array. Found in cody's b8 Tier A review of hank's api/ work, not by any checker. It only shows when BOTH halves are flagged, which is the case a state EVV audit asks about -- with a clean clock-out the array is empty, the guard never fires, and the first flag survives by luck. Fixed by merging on field, with the superseded set taken from the PAYLOAD rather than from the new flags: a field this payload re-reported has been re-checked so its stale flag must go EVEN IF the re-check produced none, and a field it did not mention was not checked so its flag is kept. The key stays ABSENT when there is nothing to say, because api/sd-data-sen-evv-clock.test.js:200 asserts that on a clean write. CLOCK_FIELDS hoisted out of api/_lib/sen-evv-clock.js and exported rather than re-listed.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "eac55ad1d3b7",
+        "date": "2026-09-27",
+        "subject": "feat(sairnsenior): the EVV clock module is wired -- all three exports, not one -- and the auth suite's forgery arm was false-failing 1 in 16 runs",
+        "lag_days": 17
+      },
+      "citation_note": "A merge that cannot tell a re-checked-and-clean field from an unmentioned one is the same could-not-tell folded into a pass, one layer down: the stale flag is kept or dropped on the wrong evidence.",
+      "contributing_factors": [
+        {
+          "factor": "checkClockEvent only reports on the clock fields present in THIS payload, and the write branch assigned its whole return over the stored array. The two facts are individually correct and only wrong together.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The superseded set is now taken from the PAYLOAD, not from the new flags, so a re-reported field's stale flag goes even when the re-check produced none, and an unmentioned field's flag is kept."
+        },
+        {
+          "factor": "A visit's two halves arrive as two separate writes, and every existing harness for this branch returned a FIXED row -- so no test could see a cross-write defect at all.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/sd_data_clock_flags_merge.test.js drives the real handler with a MUTABLE store: the POST of write 1 becomes the GET of write 2."
+        },
+        {
+          "factor": "The common case hides it. With a clean clock-out the flags array is empty, the `if` never fires, and the clock-in's flag survives by luck -- so only the audit case was broken.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Arm A4 pins that asymmetry explicitly, so the reason nobody noticed is now a named, passing arm rather than folklore."
+        },
+        {
+          "factor": "The clock FIELD LIST was an inline literal inside checkClockEvent, so a second place needing the same set would have had to copy it.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Hoisted to CLOCK_FIELDS and exported; sd-data.js imports it rather than re-listing."
+        }
+      ],
+      "recurrence_open": "Nothing checks, across the whole handler, for OTHER unkeyed arrays written by a multi-write resource. This fix closes one field on one resource; the shape is not swept."
     },
     {
       "commit": "9733963d5468",
@@ -28858,6 +29124,35 @@
       "factors_unknown_reason": "cody measured the behaviour and routed the fix; why MoveFileEx semantics were not considered when the atomic write was added has not been investigated by anybody and inventing a cause here would be a guess"
     },
     {
+      "commit": "ca131d983903",
+      "date": "2026-10-14",
+      "subject": "fix(status line): real per-model window, never a hardcoded 200K guess",
+      "files": [
+        "tools/sairn_status_line.py"
+      ],
+      "lines_added": 101,
+      "lines_removed": 38,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "live-verification",
+      "summary": "sairn_status_line.py: an unrecognized model fell to a hardcoded SMALL_WINDOW=200000 default and rendered ctx 72% of 200k at 144K used against Sonnet 5's real 967K window (actual fraction 15%) -- a nearly 5x-too-alarming number with no error, no sign anything was wrong",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "54abe65f4cda",
+        "date": "2026-10-14",
+        "subject": "feat(status line) + fix(register feed gate): a context percentage in all six folders, and a push refusal that stops blaming a wrapper that was never there",
+        "lag_days": 0
+      },
+      "citation_note": "no standing process-rule names a hardcoded fallback window specifically; closest shapes (1.1, 1.10) are about a check or a computed answer going stale, not a display default guessed per-model",
+      "factors_unknown_reason": "not investigated this batch -- the fix (named-model matching, unknown renders ctx ??%) is verified; root-cause factor analysis was not done"
+    },
+    {
       "commit": "d99b47f9683e",
       "date": "2026-10-14",
       "subject": "fix(sairnscape): the last five licence-only resources are gated, and the repro that found them now reports 22 of 22 FIXED",
@@ -28998,95 +29293,6 @@
       "factors_unknown_reason": "fourth routed the defect twice and named the shape; the causal question -- why four separate gates each bound a remote sha from pre-push stdin with no existence test -- is a real analysis nobody has done, and a guess here would be worse than the gap"
     },
     {
-      "commit": "540e0b162887",
-      "date": "2026-10-14",
-      "subject": "fix(tools): batch_manifest cp1252 console crash, --set's silent b6 default, claim commit subjects",
-      "files": [
-        "tools/batch_manifest.py",
-        "tools/sairn_claim.py"
-      ],
-      "lines_added": 48,
-      "lines_removed": 3,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "live-verification",
-      "summary": "batch_manifest.py --set silently defaulted to --agent cc --batch b6 (a hardcoded leftover from the batch this file was written in) when neither flag was passed. Reproduced live: an unqualified --set call overwrote three of b6's CLOSED items with b9's evidence text, no error, a confident item-1-to-done line printed over a manifest it never named",
-      "rules": [
-        "1.5"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "7003b58c5a92",
-        "date": "2026-10-13",
-        "subject": "feat(batch manifest): chat writes the ids and they are immutable; plus the push gate scoped to the pushing agent and retries capped at 2",
-        "lag_days": 1
-      },
-      "factors_unknown_reason": "not investigated this batch -- the fix (refuse like --close already does) is verified; root-cause factor analysis was not done"
-    },
-    {
-      "commit": "2dc072c36a52",
-      "date": "2026-10-14",
-      "subject": "fix(red suite register): ordinary run can now exit 0, not always 2",
-      "files": [
-        "tools/red_suite_register_check.py"
-      ],
-      "lines_added": 71,
-      "lines_removed": 19,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "user-report",
-      "summary": "red_suite_register_check.py's docstring sells it as cheap enough to run every batch WITHOUT --from-run, but every such run unconditionally added no-from-run to could_not_run, and could_not_run always wins -- so the one invocation it is actually for could never report anything but exit 2, regardless of whether every registered suite was confirmed still red. Flagged directly by Michael",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "8f15f7c5fc57",
-        "date": "2026-10-06",
-        "subject": "fix(exec-context): the CTO advisor carried the SAME false clause as the CFO one -- \"NO accounting integration of any kind\" -- plus a count nobody could re-derive; and tools/red_suite_register_check.py",
-        "lag_days": 8
-      },
-      "citation_note": "no standing process-rule names a tool whose documented cheap/common-case invocation always lands on the pessimistic exit code; closest (1.11) is about a dependency being absent, and nothing here was absent -- an optional expensive input was declined on purpose",
-      "factors_unknown_reason": "not investigated this batch -- the fix (no-from-run demoted to a non-gating notice) is verified; root-cause factor analysis was not done"
-    },
-    {
-      "commit": "ca131d983903",
-      "date": "2026-10-14",
-      "subject": "fix(status line): real per-model window, never a hardcoded 200K guess",
-      "files": [
-        "tools/sairn_status_line.py"
-      ],
-      "lines_added": 101,
-      "lines_removed": 38,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "live-verification",
-      "summary": "sairn_status_line.py: an unrecognized model fell to a hardcoded SMALL_WINDOW=200000 default and rendered ctx 72% of 200k at 144K used against Sonnet 5's real 967K window (actual fraction 15%) -- a nearly 5x-too-alarming number with no error, no sign anything was wrong",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "54abe65f4cda",
-        "date": "2026-10-14",
-        "subject": "feat(status line) + fix(register feed gate): a context percentage in all six folders, and a push refusal that stops blaming a wrapper that was never there",
-        "lag_days": 0
-      },
-      "citation_note": "no standing process-rule names a hardcoded fallback window specifically; closest shapes (1.1, 1.10) are about a check or a computed answer going stale, not a display default guessed per-model",
-      "factors_unknown_reason": "not investigated this batch -- the fix (named-model matching, unknown renders ctx ??%) is verified; root-cause factor analysis was not done"
-    },
-    {
       "commit": "f9e56cfd0c3a",
       "date": "2026-10-14",
       "subject": "fix(cody-routed): AST-confirm self-test flags, ooda_phases stale threshold",
@@ -29113,68 +29319,6 @@
         "unknown_reason": "SELFTEST_RX's in-argv tightening is from 2026-09-24 per its own comment; the 3 new false positives and ooda_phases.py's stale threshold were not traced to a single introducing commit this batch"
       },
       "factors_unknown_reason": "not investigated this batch -- the fixes (AST-confirm, added wording, structural assertion) are verified; root-cause factor analysis was not done"
-    },
-    {
-      "commit": "29c8fc612db0",
-      "date": "2026-10-14",
-      "subject": "fix(sql preflight): license_keys catalogue gap + function-as-table false positive",
-      "files": [
-        "tools/sairn_sql_preflight.py"
-      ],
-      "lines_added": 46,
-      "lines_removed": 0,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "independent-review",
-      "summary": "sairn_sql_preflight.py DECLARED mode blocked 4 already-shipped, correct seed files with false MISSING_COLUMN on every real license_keys column (a table that predates this repo's schema files, invisible to a catalogue built only from CREATE TABLE in sql/*.sql) and false UNDECLARED_TABLE on sairn_circuit_breaker_step, a user-defined FUNCTION called in FROM position that the builtin-function exclusion list did not name. Finding #34, routed by cody",
-      "rules": [
-        "1.2"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "the license_keys gap predates the repo's tracked schema files by the file's own prior comment; the circuit-breaker function false positive dates to whenever sql/sairn_circuit_breaker_schema.sql was added, not traced to one commit this batch"
-      },
-      "factors_unknown_reason": "not investigated this batch -- the fixes (supplemental catalogue from db/schema_snapshot.json, function-call-position structural exclusion) are verified; root-cause factor analysis was not done"
-    },
-    {
-      "commit": "070efcd3042e",
-      "date": "2026-10-14",
-      "subject": "fix(tools): encoding= on the 13 subprocess_decode_check findings in tools/",
-      "files": [
-        "docs/2026-10-14-cc-b9-subprocess-decode-tests-routed-to-cody.md",
-        "tools/credential_purge_check.py",
-        "tools/external_file_index_audit.py",
-        "tools/gh_token.py",
-        "tools/live_probe_declaration_check.py",
-        "tools/purge_evidence_gate.py",
-        "tools/resource_reachability_check.py",
-        "tools/rewrite_convergence_map.py",
-        "tools/sql_column_exists_check.py",
-        "tools/temp_state_leak_check.py"
-      ],
-      "lines_added": 96,
-      "lines_removed": 13,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "independent-review",
-      "summary": "13 text-mode subprocess calls across 9 tools/*.py files had no explicit encoding=, decoding the child's output with cp1252 (this platform's locale default) -- mojibake or a raising reader thread on a stray UTF-8 byte. Routed by cody's subprocess_decode_check sweep (finding: 69 total, 13 in tools/)",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "the 13 call sites accreted individually as each tools/*.py file was written; no single introducing commit"
-      },
-      "citation_note": "no standing process-rule names a text-mode subprocess call missing explicit encoding specifically; closest (1.11, fail-closed-when-absent) is about a dependency being absent, not a locale-default decode",
-      "factors_unknown_reason": "not investigated this batch -- the fix (subprocess_decode_check.fix_file(), AST-based, scoped to tools/) is verified; root-cause factor analysis was not done"
     },
     {
       "commit": "fdd06d06b68c",
@@ -29237,123 +29381,6 @@
         }
       ],
       "recurrence_open": "Five of the seven role names are [CONFIRM] in the spec and still are -- a funeral home's own titles win, and 'prep' may need its own licensed tier the way SAIRNvet's PRESCRIBER_ROLES does because embalmer is a separate state licence in most states. leg_preneed's owner-only DELETION rule is not implemented: this handler has no delete verb. Whether a cremation authorisation legally needs a second named person is a state-law question this code does not answer. And the existing staff rows are only narrowed, not re-assigned -- that is a human task per employee and nothing tracks whether it has been done."
-    },
-    {
-      "commit": "85206564d24f",
-      "date": "2026-10-14",
-      "subject": "fix(sairnlegacy,sairnroofing): one overlap helper for both booking resources, and rf_settings tiered",
-      "files": [
-        "api/_lib/leg-overlap.js",
-        "api/sd-data-leg-overlap.test.js",
-        "api/sd-data.js"
-      ],
-      "lines_added": 671,
-      "lines_removed": 32,
-      "app": "sairnlegacy",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "summary": "leg_clergybookings had no server-side double-booking check -- the THIRD instance of the shape b8 closed on leg_merch_units and b9 closed on leg_bookings. sairnlegacy.html:4817's clergyBookingConflict() is a correct interval-overlap test that hard-blocks with no override, over THIS DEVICE's localStorage, so two staff on two unsynced devices both pass their own check and both upsert; the second write is accepted because a new booking carries a new id and nothing collides. The thing double-booked is a named clergy contact against a specific death case and an hour. Fixed by routing BOTH booking resources through ONE helper, api/_lib/leg-overlap.js, rather than making a third copy -- because the one thing a copy would have got wrong is the STATUS LITERAL: leg_bookings exempts Cancelled, the clergy resource skips Completed and has no Cancelled status at all, so a byte-identical propagation would have refused clergy bookings against services that had already happened. exemptStatus is therefore a REQUIRED parameter with no default and check() throws without one. api/sd-data-leg-overlap.test.js, 33 arms written as PAIRS over the two specs, with D4 reading both client literals out of the HTML at runtime; ablated against the pre-fix handler at 27 passed 6 failed. The same commit tiers the rf_settings read, which b9's handoff named UNVERIFIED and which is confirmed to be the identical open-read shape sen_settings had: write management-only, read any signed-in employee returning every row whole including updated_by.",
-      "rules": [
-        "1.7"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "ea8c8b536e34",
-        "date": "2026-08-07",
-        "subject": "feat: SAIRNlegacy Phase 4 (final) -- 6 panels, Vendor & Add-On Marketplace",
-        "lag_days": 68
-      },
-      "citation_note": "PR 1.7 -- a sampling window silently exempts what it does not reach. The client's local store IS the sampling window here: the guard is correct over the rows it can see and says nothing about the rows it cannot, and an unsynced booking is exactly the row that matters. Cross-domain convention 7 is the second rule in play, on the FIX rather than on the defect: the obvious propagation would have carried the wrong status literal.",
-      "contributing_factors": [
-        {
-          "factor": "clergyBookingConflict() is a real interval-overlap test that HARD BLOCKS with no override -- and it reads clergyBookings(), which is THIS DEVICE's localStorage. The control looked complete from the client side.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Both booking resources now re-check against the SERVER's rows before the upsert, through api/_lib/leg-overlap.js."
-        },
-        {
-          "factor": "This is the THIRD instance of one shape (leg_merch_units b8, leg_bookings b9, leg_clergybookings now) and the first two were each closed in place, so nothing made the pattern visible as a pattern.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "One shared helper with a SPECS table, so a fourth resource is a row rather than a fourth copy."
-        },
-        {
-          "factor": "The obvious propagation -- copy the leg_bookings block -- would have carried the WRONG status literal. leg_bookings exempts Cancelled; leg_clergybookings skips Completed and has no Cancelled status at all.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "exemptStatus is a REQUIRED parameter with no default and check() throws without one. Arm D3 of the suite fails the moment the two specs share a literal, and D4 reads both literals out of sairnlegacy.html at runtime."
-        },
-        {
-          "factor": "b9's survey found this and four other client-authority gaps and recorded that ZERO of the 34 sairnlegacy resources had a server re-check. Nothing was scheduled off that count.",
-          "kind": "detection",
-          "action_status": "planned",
-          "action": "The b10 handoff names each of the four remaining survey findings with the different fix the survey prescribes for it, and leg_aftercare's -- a deterministic id rather than a gate -- landed in this batch."
-        }
-      ],
-      "recurrence_open": "The read-then-write window remains: two requests interleaving between the SELECT and the upsert, milliseconds wide. The atomic close is a Postgres EXCLUDE over tstzrange and CANNOT be written against these tables -- the window lives in a data jsonb column and text::timestamptz is STABLE, not IMMUTABLE, so it is rejected in an index expression. It needs real start/end columns or an /rpc/ function doing the insert in one statement. And four of b9's five survey findings are still open, each needing a different fix."
-    },
-    {
-      "commit": "9731d8806982",
-      "date": "2026-10-14",
-      "subject": "fix(sairnsenior): sen_visits clock_flags merged on field, not replaced",
-      "files": [
-        "api/_lib/sen-evv-clock.js",
-        "api/sd-data.js"
-      ],
-      "lines_added": 50,
-      "lines_removed": 3,
-      "app": "sairnsenior",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "sen_visits clock_flags were ASSIGNED, not merged. api/sd-data.js's EVV branch did visitData.clock_flags = clockCheck.flags, and a visit's two halves arrive as TWO separate writes -- checkClockEvent only reports on the clock fields present in THIS payload, so the clock-out's write REPLACED the clock-in's flags and a LATE_REPLAY on the way in vanished with nothing saying it had existed. The per-field SKEW STAMPS do not have the problem because they are KEYED; this was the one unkeyed array. Found in cody's b8 Tier A review of hank's api/ work, not by any checker. It only shows when BOTH halves are flagged, which is the case a state EVV audit asks about -- with a clean clock-out the array is empty, the guard never fires, and the first flag survives by luck. Fixed by merging on field, with the superseded set taken from the PAYLOAD rather than from the new flags: a field this payload re-reported has been re-checked so its stale flag must go EVEN IF the re-check produced none, and a field it did not mention was not checked so its flag is kept. The key stays ABSENT when there is nothing to say, because api/sd-data-sen-evv-clock.test.js:200 asserts that on a clean write. CLOCK_FIELDS hoisted out of api/_lib/sen-evv-clock.js and exported rather than re-listed.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "eac55ad1d3b7",
-        "date": "2026-09-27",
-        "subject": "feat(sairnsenior): the EVV clock module is wired -- all three exports, not one -- and the auth suite's forgery arm was false-failing 1 in 16 runs",
-        "lag_days": 17
-      },
-      "citation_note": "A merge that cannot tell a re-checked-and-clean field from an unmentioned one is the same could-not-tell folded into a pass, one layer down: the stale flag is kept or dropped on the wrong evidence.",
-      "contributing_factors": [
-        {
-          "factor": "checkClockEvent only reports on the clock fields present in THIS payload, and the write branch assigned its whole return over the stored array. The two facts are individually correct and only wrong together.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The superseded set is now taken from the PAYLOAD, not from the new flags, so a re-reported field's stale flag goes even when the re-check produced none, and an unmentioned field's flag is kept."
-        },
-        {
-          "factor": "A visit's two halves arrive as two separate writes, and every existing harness for this branch returned a FIXED row -- so no test could see a cross-write defect at all.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "tests/sd_data_clock_flags_merge.test.js drives the real handler with a MUTABLE store: the POST of write 1 becomes the GET of write 2."
-        },
-        {
-          "factor": "The common case hides it. With a clean clock-out the flags array is empty, the `if` never fires, and the clock-in's flag survives by luck -- so only the audit case was broken.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "Arm A4 pins that asymmetry explicitly, so the reason nobody noticed is now a named, passing arm rather than folklore."
-        },
-        {
-          "factor": "The clock FIELD LIST was an inline literal inside checkClockEvent, so a second place needing the same set would have had to copy it.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Hoisted to CLOCK_FIELDS and exported; sd-data.js imports it rather than re-listing."
-        }
-      ],
-      "recurrence_open": "Nothing checks, across the whole handler, for OTHER unkeyed arrays written by a multi-write resource. This fix closes one field on one resource; the shape is not swept."
     }
   ],
   "started": "2026-09-09",
