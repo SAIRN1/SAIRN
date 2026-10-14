@@ -636,8 +636,8 @@
       "task": "h1 b28 -- (1) tip beacon discrepancy repro + read-back check + chain/token republish if >15 behind (2) adversarial verify hank b8 landed: sairnlaw_audit_log CHECK 3 credential types, leg_bookings server gate, 5 scp_ gated, rf_schedule DDL status, file:line (3) adversarial verify cody b8 18bf06eb failing-first test + 20 COULD-NOT-RUN classification (4) adversarial verify cc b7 6841af8f save_reviews retry + drive_upload_verify, reproduce one claim (5) methodology: digest CONTEXT percent or not-measurable, chain tip/token must match beacon exactly, add check to report generator (6) push without force confirm landed. FILES: .claude/skills/sairn-hover-auditor/handoffs/SAIRN-handoff-h1-b28.md SAIRN-report-h1-b28.txt SAIRN-digest-h1-b28.txt",
       "claimed_at": "2026-10-14T11:17:44Z",
       "claimed_at_epoch": 1791976664.2581081,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-14T12:05:19Z",
       "files": [
         ".claude/skills/sairn-hover-auditor/handoffs/SAIRN-handoff-h1-b28.md",
         "SAIRN-digest-h1-b28.txt",
