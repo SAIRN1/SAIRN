@@ -3841,6 +3841,28 @@
         "tests/run_graduated_exemption_probe.py",
         "tests/run_role_gate_negative_coverage_probe.py"
       ]
+    },
+    {
+      "id": "cody-1792000547",
+      "session": "cody",
+      "subject": "tests",
+      "task": "cody b12 -- (1) tests/run_cross_tenant_dispatchers_sabotage_probe.py: DERIVE the tripwire list from the suite's own app:null units and assert in the same arm that tests/sd_data_grd_session_gate.js covers GRD, do not delete the two arms; then decide the pre-fix counterfactual in tests/app_session_isolation_probe.py (re-base on a later pre-repair commit or retire with the finding recorded). (2) cc blob-coverage gaps: re-aim tests/run_blob_coverage_scope_sabotage.py arm S2 to assert the unscanned region is EMPTY, update the known-red row (universe 129), delete the recovered citation-anchor row, tighten tests/run_scope_gate_unfetched_base_probe.py arm 6 to guard-between-source-and-sink, re-pin docs/blob-conversion-coverage.json with the tool (64->58). (3) failing-first arms T16 T17 T18 and N1-N4, each RED against current source, ablation proven: set clock_in_at overwritten with no trail, sen-auth setup demoting the last owner, applies_to_positions silent drop, comments claiming driven coverage that is not driven -- api/ fixes are hank's, ROUTED not fixed. (4) SAIRNcash entitlement arms, ARM B first. (5) methodology: measure the population first -- the 56 subprocess-decode sites in tests/ per docs/2026-10-14-cc-b9-subprocess-decode-tests-routed-to-cody.md, count by tool, fix, re-run, report MEASURED counts; then the five stale docs/known-red-suites.json entries and the stale EXPECTED RED footers for the clock_flags and office_manager suites. (6) push without force, confirm landed. I WRITE UNDER tests/ ONLY plus docs/known-red-suites.json, docs/blob-conversion-coverage.json and my own root b12 artifacts. NO api/ FILE (hank), NO sql/ FILE (hank), NO tools/ FILE (cc), NO OTHER docs/ FILE (fourth), NO CLAUDE.md. CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: hank's api/ and sql/ and sairncare.html are READ-ONLY here and the T/N findings are routed to hank rather than fixed; cc's tools/ files including sairn_push_gate_hook.py are READ-ONLY here. No hook added or restored, settings.json never committed, no override of either form, no auditor clone entered. FILES: tests/run_cross_tenant_dispatchers_sabotage_probe.py tests/app_session_isolation_probe.py tests/run_blob_coverage_scope_sabotage.py tests/run_scope_gate_unfetched_base_probe.py docs/known-red-suites.json docs/blob-conversion-coverage.json SAIRN-handoff-cody-b12.md SAIRN-report-cody-b12.txt SAIRN-digest-cody-b12.txt SAIRN-latest-cody.md",
+      "claimed_at": "2026-10-14T17:55:47Z",
+      "claimed_at_epoch": 1792000547.2269962,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-cody-b12.txt",
+        "SAIRN-handoff-cody-b12.md",
+        "SAIRN-latest-cody.md",
+        "SAIRN-report-cody-b12.txt",
+        "docs/blob-conversion-coverage.json",
+        "docs/known-red-suites.json",
+        "tests/app_session_isolation_probe.py",
+        "tests/run_blob_coverage_scope_sabotage.py",
+        "tests/run_cross_tenant_dispatchers_sabotage_probe.py",
+        "tests/run_scope_gate_unfetched_base_probe.py"
+      ]
     }
   ],
   "refusals": [
