@@ -28469,54 +28469,31 @@
       "recurrence_open": "The actions close the SPECIFIC pair and the specific file. They do NOT close the shape: this is at least the third two-lists-that-must-agree defect in this family, and the platform carries other pairs whose halves live in different languages -- SD_SESSION_GATED and SD_GATE_APP are one, and they are kept in agreement only by a test somebody remembered to write. Nothing systematically enumerates such pairs. They also do not prove the database was migrated: every action here is in the repo, and until the SQL is run the only thing that improved is that the failure is now named 503 CHECK_NOT_WIDENED instead of silently covering 19% of the population."
     },
     {
-      "commit": "650e02282573",
+      "commit": "65b48b0ffd5e",
       "date": "2026-10-14",
-      "subject": "fix(sairnlaw): every credential deactivation was writing NO audit row, silently",
+      "subject": "fix(hover): hover_log.py --source accepts an unambiguous abbreviated sha (>=7 hex chars), refuses shorter with a clear message",
       "files": [
-        "api/lifecycle-audit-event-coverage.test.js",
-        "sql/sairnlaw_audit_log_schema.sql"
+        ".claude/skills/sairn-hover-auditor/routing/2026-10-14-h1-b31-fourth-b17-verify.md",
+        ".claude/skills/sairn-hover-auditor/tools/hover_log.py"
       ],
-      "lines_added": 335,
-      "lines_removed": 3,
-      "app": "sairnlaw",
-      "layer": "product",
-      "severity": "high",
+      "lines_added": 130,
+      "lines_removed": 4,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
       "detection_method": "hover-audit",
-      "summary": "sql/sairnlaw_audit_log_schema.sql's event_type CHECK rejected all three events the shared credential-lifecycle engine emits (credential_deactivated, credential_reactivated, credential_change_refused), so every SAIRNlaw credential deactivation wrote NO audit row. The INSERT failed with 23514, writeAuditLog is non-fatal and returned false, api/law-auth.js carried on and the caller got its 200 -- so the log's EMPTINESS read as \"nothing happened\", and an audit log is consulted precisely when somebody asks who removed an account. Measured across the population rather than fixed where it was reported: eleven api/*-auth.js files call lifecycle.setActive and SAIRNlaw was the only one whose CHECK rejected these three.",
-      "rules": [
-        "1.5"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
+      "summary": "hover_log.py's --add --source staleness check compared a read-time sha to the current origin/main sha as full strings, but its own error message displayed BOTH values truncated to 12 characters -- so passing the exact 12-char form the tool itself prints always failed with a confusing 'read-time sha X != current origin/main sha X' where X looked identical on both sides. Fixed to accept any unambiguous hex prefix (>=7 chars, git's own convention) via startswith, and to refuse anything shorter with a message naming the full-sha requirement explicitly. Discovered while using the tool during live auditing (h1 b30), not from reading someone else's diff.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
       "found_by_tool": null,
       "found_by_session": "hover",
       "injection": {
-        "unknown_reason": "The gap opened when eleven apps were migrated onto the shared api/_lib/employee-lifecycle.js engine while each app kept its own audit-log CHECK; ten CHECKs happened to already permit the three values and SAIRNlaw's did not. No single commit made working behaviour broken, and git log -S on either side would only find where the text came from, never when the two lists diverged (PR 2.6)."
+        "unknown_reason": "The comparison bug (full-string equality against a value the tool's own error message prints truncated to 12 chars) has been in verify_freshness_at_write_time since the staleness guard was first written; no specific introducing commit was identified, only that it predates this batch."
       },
-      "citation_note": "Section 1.5 is written about a tool printing a confident line after an error; this is the same shape in shipped server code -- the 200 was the confident line and the swallowed 23514 was the error. Cited as the nearest real rule with the difference stated, rather than claimed to be a literal instance.",
-      "phase_note": "Two correct artefacts that were never reconciled: a shared engine emitting three event names, and a per-app CHECK listing permitted ones. Neither is wrong in isolation, which is what makes this design rather than coding.",
-      "contributing_factors": [
-        {
-          "factor": "writeAuditLog is NON-FATAL by design, so a rejected audit INSERT cannot fail the operation it is recording -- and therefore cannot tell anyone it failed either.",
-          "kind": "latent-condition",
-          "action_status": "declined",
-          "note": "Making it fatal would mean a schema drift takes credential administration offline for every app, which is a worse failure than a missing row. The decision stands; the mitigation is that the CHECK can no longer drift undetected."
-        },
-        {
-          "factor": "The event names are emitted by a shared engine with no APP of its own (eleven apps use it) and permitted by sixteen per-app CHECKs -- two populations with no single source and nothing comparing them.",
-          "kind": "latent-condition",
-          "action_status": "planned",
-          "action": "api/lifecycle-audit-event-coverage.test.js now walks every caller to resolve APP -> AUDIT_TABLE_BY_APP -> the sql/ CHECK and parses the event list out of the engine rather than transcribing it. Deriving the two from ONE source is still only done for role vocabularies, not for audit event types."
-        },
-        {
-          "factor": "tools/audit_event_type_check.py exited 0 with the gap live, by its own words: it follows ONE helper's call sites through each caller's `const APP` and the lifecycle engine is a second helper it does not follow.",
-          "kind": "detection",
-          "action_status": "planned",
-          "action": "The walk exists as a test instead, deliberately narrow. Extending the general checker is ROUTED to cc, because tools/ is cc's."
-        }
-      ],
-      "recurrence_open": "The new test reads sql/ files, so a CHECK widened LIVE and never written back is still invisible -- the exact state three audit-log tables were in until 2026-10-13. Nothing yet compares any app's HTML, the third copy of these vocabularies, except SAIRNfreedom's."
+      "citation_note": "No PR section describes a logging tool's own staleness-guard comparing a truncated-for-display sha as if it were the full string; this is a code-level comparison bug in hover's own tooling, not a platform process violation.",
+      "factors_unknown_reason": "Found and fixed in one sitting (h1 b31) without a deeper five-whys pass; the immediate technical cause (display truncation vs full-string comparison) is understood and fixed, but no RCA was done on why the mismatch between display and comparison went unnoticed across multiple prior batches that hit it."
     },
     {
       "commit": "5776ef196238",
@@ -28569,6 +28546,88 @@
         }
       ],
       "recurrence_open": "The derived-population arm is SAIRNscape's only. Every other per-app gate suite still hand-types its resource list, so the same invisible-twelfth shape is available in each of them. And hover2's repro still measures 22 pairs -- it was not changed by this fix and will keep reporting 22 of 22 FIXED whatever happens to the twelfth resource."
+    },
+    {
+      "commit": "650e02282573",
+      "date": "2026-10-14",
+      "subject": "fix(sairnlaw): every credential deactivation was writing NO audit row, silently",
+      "files": [
+        "api/lifecycle-audit-event-coverage.test.js",
+        "sql/sairnlaw_audit_log_schema.sql"
+      ],
+      "lines_added": 335,
+      "lines_removed": 3,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "hover-audit",
+      "summary": "sql/sairnlaw_audit_log_schema.sql's event_type CHECK rejected all three events the shared credential-lifecycle engine emits (credential_deactivated, credential_reactivated, credential_change_refused), so every SAIRNlaw credential deactivation wrote NO audit row. The INSERT failed with 23514, writeAuditLog is non-fatal and returned false, api/law-auth.js carried on and the caller got its 200 -- so the log's EMPTINESS read as \"nothing happened\", and an audit log is consulted precisely when somebody asks who removed an account. Measured across the population rather than fixed where it was reported: eleven api/*-auth.js files call lifecycle.setActive and SAIRNlaw was the only one whose CHECK rejected these three.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "The gap opened when eleven apps were migrated onto the shared api/_lib/employee-lifecycle.js engine while each app kept its own audit-log CHECK; ten CHECKs happened to already permit the three values and SAIRNlaw's did not. No single commit made working behaviour broken, and git log -S on either side would only find where the text came from, never when the two lists diverged (PR 2.6)."
+      },
+      "citation_note": "Section 1.5 is written about a tool printing a confident line after an error; this is the same shape in shipped server code -- the 200 was the confident line and the swallowed 23514 was the error. Cited as the nearest real rule with the difference stated, rather than claimed to be a literal instance.",
+      "phase_note": "Two correct artefacts that were never reconciled: a shared engine emitting three event names, and a per-app CHECK listing permitted ones. Neither is wrong in isolation, which is what makes this design rather than coding.",
+      "contributing_factors": [
+        {
+          "factor": "writeAuditLog is NON-FATAL by design, so a rejected audit INSERT cannot fail the operation it is recording -- and therefore cannot tell anyone it failed either.",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "Making it fatal would mean a schema drift takes credential administration offline for every app, which is a worse failure than a missing row. The decision stands; the mitigation is that the CHECK can no longer drift undetected."
+        },
+        {
+          "factor": "The event names are emitted by a shared engine with no APP of its own (eleven apps use it) and permitted by sixteen per-app CHECKs -- two populations with no single source and nothing comparing them.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "api/lifecycle-audit-event-coverage.test.js now walks every caller to resolve APP -> AUDIT_TABLE_BY_APP -> the sql/ CHECK and parses the event list out of the engine rather than transcribing it. Deriving the two from ONE source is still only done for role vocabularies, not for audit event types."
+        },
+        {
+          "factor": "tools/audit_event_type_check.py exited 0 with the gap live, by its own words: it follows ONE helper's call sites through each caller's `const APP` and the lifecycle engine is a second helper it does not follow.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "The walk exists as a test instead, deliberately narrow. Extending the general checker is ROUTED to cc, because tools/ is cc's."
+        }
+      ],
+      "recurrence_open": "The new test reads sql/ files, so a CHECK widened LIVE and never written back is still invisible -- the exact state three audit-log tables were in until 2026-10-13. Nothing yet compares any app's HTML, the third copy of these vocabularies, except SAIRNfreedom's."
+    },
+    {
+      "commit": "811292cba3b8",
+      "date": "2026-10-14",
+      "subject": "fix(red suite check + nhi self-test): the registered suites stop running in the live clone, and a self-test stops reporting the machine it ran on",
+      "files": [
+        "tools/nhi_register.py",
+        "tools/red_suite_register_check.py"
+      ],
+      "lines_added": 202,
+      "lines_removed": 9,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "TWO DEFECTS IN ONE COMMIT, both about a tool mistaking its environment for its subject. (1) tools/red_suite_register_check.py drive() ran every REGISTERED red suite with cwd=REPO -- thirteen write-when-run suites executed in the live clone of whichever session ran the check, every batch, by design. Now ONE isolated worktree at HEAD, removed in a finally, and exit 2 COULD NOT RUN with no fallback to the live clone if the worktree cannot be made. (2) tools/nhi_register.py --selftest was RED from any isolated worktree: sibling_clones() correctly refuses when the parent holds more repositories than its cap, and five arms that only needed a render were coupled to that ambient fact, so the self-test reported a defect in the register whenever it was not run from a real clone. Injected for that half at 2f4400ab. Fixed by driving the enumeration against a fixture parent of five real repositories, forwarding repo= through clone_scope(), and moving the machine-specific arms to a control that reports NOT CHECKED with its reason. Measured after: live clone exit 0 with 14 arms and 0 not-checked, temp worktree exit 0 with 3 named not-checked. It also recovered tests/run_selftest_independence_probe.py, which now reports ALL ARMS PASS.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "8f15f7c5fc57",
+        "date": "2026-10-06",
+        "subject": "fix(exec-context): the CTO advisor carried the SAME false clause as the CFO one -- \"NO accounting integration of any kind\" -- plus a count nobody could re-derive; and tools/red_suite_register_check.py",
+        "lag_days": 8
+      },
+      "citation_note": "the isolation half is PR 1.11's neighbour: the tool could not tell a clean run from one that had also edited the caller's tree, and the nhi half folded a fact about WHERE it ran into a verdict about WHAT it checked",
+      "factors_unknown_reason": "both were found by reading the dispatch's own description rather than by an investigation, and why neither was caught when the tools were written has not been examined by anybody; a guess in a CAPA field is worse than the gap"
     },
     {
       "commit": "8447c3695404",
@@ -28904,38 +28963,6 @@
       },
       "citation_note": "the nearest standing rule is PR 1.11 (could-not-run is a third state) and this is its mirror image: the gate did not skip, it reported a could-not-read as a FINDING about the change. Cross-domain-disciplines item 8 covers the staleness half. Neither names this shape exactly, so not-citable rather than a stretched citation",
       "factors_unknown_reason": "fourth routed the defect twice and named the shape; the causal question -- why four separate gates each bound a remote sha from pre-push stdin with no existence test -- is a real analysis nobody has done, and a guess here would be worse than the gap"
-    },
-    {
-      "commit": "811292cba3b8",
-      "date": "2026-10-14",
-      "subject": "fix(red suite check + nhi self-test): the registered suites stop running in the live clone, and a self-test stops reporting the machine it ran on",
-      "files": [
-        "tools/nhi_register.py",
-        "tools/red_suite_register_check.py"
-      ],
-      "lines_added": 202,
-      "lines_removed": 9,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "TWO DEFECTS IN ONE COMMIT, both about a tool mistaking its environment for its subject. (1) tools/red_suite_register_check.py drive() ran every REGISTERED red suite with cwd=REPO -- thirteen write-when-run suites executed in the live clone of whichever session ran the check, every batch, by design. Now ONE isolated worktree at HEAD, removed in a finally, and exit 2 COULD NOT RUN with no fallback to the live clone if the worktree cannot be made. (2) tools/nhi_register.py --selftest was RED from any isolated worktree: sibling_clones() correctly refuses when the parent holds more repositories than its cap, and five arms that only needed a render were coupled to that ambient fact, so the self-test reported a defect in the register whenever it was not run from a real clone. Injected for that half at 2f4400ab. Fixed by driving the enumeration against a fixture parent of five real repositories, forwarding repo= through clone_scope(), and moving the machine-specific arms to a control that reports NOT CHECKED with its reason. Measured after: live clone exit 0 with 14 arms and 0 not-checked, temp worktree exit 0 with 3 named not-checked. It also recovered tests/run_selftest_independence_probe.py, which now reports ALL ARMS PASS.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "8f15f7c5fc57",
-        "date": "2026-10-06",
-        "subject": "fix(exec-context): the CTO advisor carried the SAME false clause as the CFO one -- \"NO accounting integration of any kind\" -- plus a count nobody could re-derive; and tools/red_suite_register_check.py",
-        "lag_days": 8
-      },
-      "citation_note": "the isolation half is PR 1.11's neighbour: the tool could not tell a clean run from one that had also edited the caller's tree, and the nhi half folded a fact about WHERE it ran into a verdict about WHAT it checked",
-      "factors_unknown_reason": "both were found by reading the dispatch's own description rather than by an investigation, and why neither was caught when the tools were written has not been examined by anybody; a guess in a CAPA field is worse than the gap"
     }
   ],
   "started": "2026-09-09",
