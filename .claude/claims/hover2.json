@@ -466,6 +466,17 @@
         "SAIRN-handoff-h2-b31.md",
         "SAIRN-report-h2-b31.txt"
       ]
+    },
+    {
+      "id": "hover2-1791996404",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "h2 b32 external-log-repo-only audit",
+      "claimed_at": "2026-10-14T16:46:44Z",
+      "claimed_at_epoch": 1791996404.997223,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
