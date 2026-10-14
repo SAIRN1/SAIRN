@@ -3927,8 +3927,8 @@
       "task": "b11 -- (1) sairn_push_gate_hook.py OVERRIDE_HINT names scoped SAIRN_GATE_EXEMPT=seed first per its own :990 comment, failing-first + ablation. (2) session-start surface for obligations open over 48h, A3 fail-closed A6 third state, failing-first + ablation. (3) secrets_inventory.py step 4a, failing-first; NHI-REGISTER.md:69 half routed to fourth. (4) tier_a_review_gate.py eligible_reviewers liveness so a dead session is not eligible, then takeover of the four obligations owned by dead session cloud. (5) wire hank four new api suites into the gate driver, fmea_draft --save for six hank files drafts only, msb_bottle_scans scanner false-positive note. (6) push no force confirm landed. I WRITE UNDER tools/ ONLY plus my own root b11 artifacts and the docs/ routing + fmea files named here. NO tests/ FILE (cody), NO api/ FILE (hank), NO sql/ FILE (hank), NO app html (hank). CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: cody b11 item 2 covers the TEST side of my item 1 (tests/push_gate/refspec_and_override_probe.py) and is READ-ONLY here; hank api/ sql/ html READ-ONLY; fourth docs/ and the Tier A obligations it is discharging READ-ONLY. No hook added or restored, settings.json never committed, no SAIRN_SEED_GATE or SAIRN_GATE_EXEMPT override used, no auditor clone entered. FILES: tools/sairn_push_gate_hook.py tools/tier_a_review_gate.py tools/secrets_inventory.py tools/obligation_surface.py tools/run_all_tests.py docs/2026-10-14-cc-b11-routed-to-fourth.md SAIRN-handoff-cc-b11.md SAIRN-report-cc-b11.txt SAIRN-digest-cc-b11.txt",
       "claimed_at": "2026-10-14T17:35:52Z",
       "claimed_at_epoch": 1791999352.8781962,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-14T23:13:34Z",
       "files": [
         "SAIRN-digest-cc-b11.txt",
         "SAIRN-handoff-cc-b11.md",
@@ -3939,6 +3939,30 @@
         "tools/sairn_push_gate_hook.py",
         "tools/secrets_inventory.py",
         "tools/tier_a_review_gate.py"
+      ]
+    },
+    {
+      "id": "cc-1792020141",
+      "session": "cc",
+      "subject": "cc",
+      "task": "b12 drive status bridge; runbook-constant guard; wire 2 hank suites; fmea drafts; cody b11 followups. FILES: tools/sairn_status.py tools/sairn_board_publish.py tools/sairn_claim.py tools/sairn_push_gate_hook.py tools/runbook_constant_agreement.py tools/drive_upload_verify.py docs/fmea/ docs/TOOLING-INVENTORY.md docs/2026-10-14-cc-b12-routed.md SAIRN-handoff-cc-b12.md SAIRN-report-cc-b12.txt SAIRN-digest-cc-b12.txt SAIRN-latest-cc.md",
+      "claimed_at": "2026-10-14T23:22:21Z",
+      "claimed_at_epoch": 1792020141.641851,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-cc-b12.txt",
+        "SAIRN-handoff-cc-b12.md",
+        "SAIRN-latest-cc.md",
+        "SAIRN-report-cc-b12.txt",
+        "docs/2026-10-14-cc-b12-routed.md",
+        "docs/TOOLING-INVENTORY.md",
+        "tools/drive_upload_verify.py",
+        "tools/runbook_constant_agreement.py",
+        "tools/sairn_board_publish.py",
+        "tools/sairn_claim.py",
+        "tools/sairn_push_gate_hook.py",
+        "tools/sairn_status.py"
       ]
     }
   ],

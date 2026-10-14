@@ -29924,6 +29924,123 @@
         }
       ],
       "recurrence_open": "Five of the seven role names are [CONFIRM] in the spec and still are -- a funeral home's own titles win, and 'prep' may need its own licensed tier the way SAIRNvet's PRESCRIBER_ROLES does because embalmer is a separate state licence in most states. leg_preneed's owner-only DELETION rule is not implemented: this handler has no delete verb. Whether a cremation authorisation legally needs a second named person is a state-law question this code does not answer. And the existing staff rows are only narrowed, not re-assigned -- that is a human task per employee and nothing tracks whether it has been done."
+    },
+    {
+      "commit": "2d7ddaf4ce0f",
+      "date": "2026-10-14",
+      "subject": "fix(register feed gate): import the override hint instead of keeping a second copy",
+      "files": [
+        "docs/SECRETS-INVENTORY.md",
+        "tools/register_feed_gate.py"
+      ],
+      "lines_added": 35,
+      "lines_removed": 12,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "live-verification",
+      "summary": "tools/register_feed_gate.py:816 kept a SECOND hardcoded copy of the push-override sentence. It is how the OVERRIDE_HINT fix was observed not to have worked: the constant was corrected, the very next push was refused by this gate, and the refusal printed the old text. The hook's own comment records that sentence being wrong in eight places at once in 2026-09, which is why it became one constant -- one copy lived in another file and outlived the consolidation",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "a surviving duplicate from the 2026-09-01..03 consolidation that moved the sentence into one constant; this copy was in another file and was not moved"
+      },
+      "citation_note": "the same anchor-no-longer-points-at-the-right-thing shape as the hint defect it was found by: a reader fixing the constant has every reason to believe the refusal text is now correct, and this copy makes that false",
+      "factors_unknown_reason": "not investigated this batch -- the fix (import the constant, with a fallback that points at it rather than restating it) is verified; root-cause factor analysis was not done"
+    },
+    {
+      "commit": "201b80d51b8b",
+      "date": "2026-10-14",
+      "subject": "fix(tier a): a claim file is not a pulse -- liveness on the reviewer roster, and 4 dead-owned obligations moved",
+      "files": [
+        "docs/tier-a-reviews.json",
+        "tools/tier_a_review_gate.py"
+      ],
+      "lines_added": 427,
+      "lines_removed": 17,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "tools/tier_a_review_gate.py eligible_reviewers() listed every *.json in .claude/claims/ with no liveness test, so the session 'cloud' -- newest claim 2026-09-27, seventeen days earlier -- stayed an eligible reviewer. assign_owner() is least-loaded and a dead session accrues no load, so it looked like the best candidate and was preferentially assigned. It owned 4 of 20 open obligations including the platform's oldest at 401h, and one had been assigned to it that same morning",
+      "rules": [
+        "1.10"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "eligible_reviewers has listed every claim file since it was written; cloud went silent 2026-09-27 and the roster never noticed"
+      },
+      "citation_note": "1.10 is about a computed answer being only as current as its oldest input; the roster's input was the mere EXISTENCE of a claim file, which never expires, so the answer could not go stale in a way anything would notice",
+      "factors_unknown_reason": "not investigated this batch -- the fix (liveness from the newest claim, A6 third state for unreadable files, A3 fail-closed below two live, and a reassign-dead path) is verified; root-cause factor analysis was not done"
+    },
+    {
+      "commit": "0e6607e0709e",
+      "date": "2026-10-14",
+      "subject": "fix(push gate): the refusal text names the scoped exemption first, as :990 already claimed",
+      "files": [
+        "tools/sairn_push_gate_hook.py"
+      ],
+      "lines_added": 160,
+      "lines_removed": 3,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "hover-audit",
+      "summary": "tools/sairn_push_gate_hook.py OVERRIDE_HINT -- the line all 42 deny sites end with -- advertised only the blanket SAIRN_SEED_GATE=off, which disables every check in the hook. The scoped SAIRN_GATE_EXEMPT=seed form landed 2026-09-25 and the design comment beside EXEMPTABLE claimed the refusal text 'now names the scoped form first'; measured before the fix SAIRN_GATE_EXEMPT appeared at index -1, absent entirely. For a month every refusal pointed the reader at the blunt instrument while a comment asserted otherwise",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "9c36aa7c09d2",
+        "date": "2026-10-13",
+        "subject": "fix(push gate): the unfetched remote base resolved ONCE, centrally -- it was producing a FALSE FINDING in the owner-header check, not a could-not-run",
+        "lag_days": 1
+      },
+      "citation_note": "1.3 is about an anchor that still matches but no longer points at the right thing; here the ANCHOR is a design comment asserting the refusal text had been updated, which still read true while the text it described had not changed",
+      "factors_unknown_reason": "not investigated this batch -- the fix (scoped form named first and with its scope, plus a 12-arm ablation-proven refusal-text lock) is verified; root-cause factor analysis was not done"
+    },
+    {
+      "commit": "836e36874969",
+      "date": "2026-10-14",
+      "subject": "fix(secrets): step 4a restored to both rotation runbooks -- the precondition on the only irreversible step",
+      "files": [
+        "docs/SECRETS-INVENTORY.md",
+        "tools/nhi_register.py",
+        "tools/secrets_inventory.py"
+      ],
+      "lines_added": 104,
+      "lines_removed": 24,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "critical",
+      "detection_method": "independent-review",
+      "summary": "the SD_AUTH_SECRET rotation runbook is published to an operator in three places -- tools/secrets_inventory.py, tools/nhi_register.py and docs/NHI-REGISTER.md:69 -- and all three ended 'then clear PREVIOUS' with no step 4a. The precondition (run sql/legacy_ciphertext_census.sql, require legacy_rows = 0) existed only in a code comment at api/_lib/auth.js:442-445. Clearing SD_AUTH_SECRET_PREVIOUS while legacy ciphertext remains ends the only route to those values permanently, and silently: decryptSecret() returns null and a caller reads null as 'no secret stored'. CRITICAL because the two failure directions are not symmetric and this is the unrecoverable one",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "requirement",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the runbook predates the 2026-09-17 three-stage split that created the irreversible step; no single commit removed 4a because it was never added to the operator-facing copies"
+      },
+      "citation_note": "no standing rule names a runbook omitting the precondition on its only irreversible step; 1.5 is the nearest (the confident line after the error) but this is a MISSING line rather than a wrong one, and the failure is an operator following a complete-looking procedure",
+      "factors_unknown_reason": "not investigated this batch -- the fix (both cc-owned copies carry 4a/4b, guarded by an ablation-proven run_fixtures arm on every invocation) is verified; root-cause factor analysis was not done"
     }
   ],
   "started": "2026-09-09",

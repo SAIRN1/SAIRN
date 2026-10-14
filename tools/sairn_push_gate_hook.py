@@ -292,6 +292,51 @@ GUARD_TESTS = [
      'held too: CLAUDE_PID unset or an unreadable process handle must fall back '
      'to the 2h staleness rule and block nothing, because failing CLOSED here '
      'would brick the session the lock exists to protect.'),
+    # ── TWO OF hank's FOUR NEW SUITES, WIRED 2026-10-14 (cc b11) ────────────
+    # Asked to wire four; TWO qualify and the other two are routed back with
+    # the reason, because this registry's own bar is stated two screens up --
+    # "EVERY ENTRY IS A RECORDED DEFECT, not a test somebody liked" and the
+    # class is the SEAM class, tests where two independently-maintained sides
+    # must still agree. Wiring a unit test here taxes every push on the
+    # platform and dilutes the one thing this list means.
+    #
+    # api/sd-data-rf-settings-tier.test.js is NOT wired: it asserts one
+    # handler's authorization behaviour -- a non-management employee reads the
+    # threshold and not who set it -- which is the author-runs-it class, and it
+    # has no recorded defect behind it. api/sql-run-order-agreement.test.js is
+    # the STRONGEST seam of the four and is also NOT wired YET, for the other
+    # half of the bar: it has no defect record. Both routed to hank in
+    # docs/2026-10-14-cc-b11-routed.md; the second needs only a register entry
+    # to qualify.
+    ('api/sd-data-leg-role-matrix.test.js',
+     'the role rule SAIRNlegacy\'s handler actually applies is the one the '
+     'matrix says it applies, for all 36 resources',
+     'A SEAM WITH A CRITICAL DEFECT ON RECORD (fdd06d06b68c, "the role matrix '
+     '-- 36 resources, 8 roles, from zero"). The matrix and the dispatch are '
+     'two independently-maintained sides: the table is a decision about who '
+     'may do what, and the handler is the code that enforces it, and ADDING A '
+     'RESOURCE touches one without the other. Thirty-six resources is well '
+     'past the count where a reader can hold the pairing in their head, so a '
+     'rule that is in the table and not in the dispatch reads as enforced to '
+     'everybody who checks the table -- which is the direction that matters, '
+     'because the table is what a reviewer consults. The suite also holds the '
+     'two rules deliberately NOT in the table (append-only custody, the '
+     'deterministic aftercare key) independently of it, so they cannot be lost '
+     'by a table edit that looks complete.'),
+    ('api/sd-data-leg-overlap.test.js',
+     'the ONE double-booking helper really does apply a DIFFERENT status '
+     'literal to each of its two resources, in running code rather than in a '
+     'comment',
+     'A SEAM WITH A HIGH DEFECT ON RECORD (85206564d24f, "one overlap helper '
+     'for both booking resources"). One helper serving two callers is the '
+     'shape where a change for caller A silently alters caller B, and the '
+     'single thing that must differ between them is a status literal -- the '
+     'cheapest kind of value to unify by accident while "removing '
+     'duplication". The suite\'s own requirement line names the failure '
+     'precisely: the difference must be real in the RUNNING CODE, "not just in '
+     'a comment", which is CLAUDE.md standing rule 1.2 applied to a '
+     'correctness property rather than to a scanner. A unified literal would '
+     'leave both resources\' own suites green and double-book one of them.'),
     ('api/sd-data-mech-assets.test.js',
      'the two federal refrigerant rules the engine computes are actually '
      'FETCHED and STORED by the endpoint that feeds it',
@@ -842,9 +887,41 @@ def prepush_base():
 # 2026-09-03: it told the reader to set an environment variable the PreToolUse
 # hook could not see, so the documented escape hatch did nothing and eight
 # copies of the instruction all had to be believed to find that out.
-OVERRIDE_HINT = ("Override by putting SAIRN_SEED_GATE=off at the FRONT of the push command "
-                 "itself (SAIRN_SEED_GATE=off git push ...), not in a separate export. "
-                 "Say so out loud if you do.")
+# ── IT NAMED ONLY THE BLANKET FLAG, WHILE :990 CLAIMED OTHERWISE ────────────
+# The scoped exemption landed 2026-09-25 and the design comment further down
+# this file states that the blanket flag "is no longer the only one, and its
+# refusal text now names the scoped form first." THIS CONSTANT NEVER CHANGED.
+# Measured before the fix: `SAIRN_GATE_EXEMPT` appeared at index -1 -- not
+# present at all -- in the one string that 42 deny sites end with. So every
+# refusal this gate printed, for a month, advertised the flag that disables
+# ALL FOURTEEN CHECKS and said nothing about the one that disables a single
+# named one. A reader following the gate's own instruction was pointed at the
+# blunt instrument, and the comment asserting otherwise made it look handled.
+#
+# WHY ONE CONSTANT STILL, AND WHY IT IS ACCURATE FOR EVERY CHECK: 42 sites
+# embed this text and only the SEED check is exemptable (`EXEMPTABLE` below).
+# A hint that simply said "use SAIRN_GATE_EXEMPT=seed" would be WRONG on the
+# other thirteen -- it would send a reader to a scoped form that cannot cover
+# the check that just denied them, which is a worse failure than the one being
+# fixed. So the scoped form is named FIRST and is named WITH ITS SCOPE, and
+# the reader is told to re-read EXEMPTABLE rather than trust this sentence for
+# the list. Both forms go at the FRONT of the push command for the same
+# reason: as a PreToolUse hook this runs inside Claude Code's process and
+# inherits ITS environment, not the environment of the command it inspects.
+OVERRIDE_HINT = (
+    "Override, SCOPED FORM FIRST: if it is the SEED check that denied you, "
+    "`SAIRN_GATE_EXEMPT=seed git push ...` skips ONLY that check and leaves "
+    "the other thirteen able to deny. It takes two pushes on purpose -- the "
+    "first is refused and pins a 15-minute exemption to that exact tip sha, "
+    "and that refusal is the thing you are meant to read. Only `seed` is "
+    "exemptable today; re-read EXEMPTABLE in tools/sairn_push_gate_hook.py "
+    "rather than trusting this line for the list. "
+    "BLANKET FORM, and it is the wrong first reach: `SAIRN_SEED_GATE=off git "
+    "push ...` disables EVERY check in this hook, not just the one that "
+    "denied you -- on 2026-09-25 that cost thirteen unintended exemptions "
+    "and a manual re-run to find out what had been skipped. "
+    "Either form goes at the FRONT of the push command itself, not in a "
+    "separate export. Say so out loud whichever you use.")
 
 OVERRIDE_RE = re.compile(
     r"""(?:^|[;&|\n]|\bexport\s+)\s*SAIRN_SEED_GATE\s*=\s*(['"]?)off\1(?=\s|$|[;&|])""",
@@ -3860,8 +3937,88 @@ def preflight():
     return 1
 
 
+# ── THE REFUSAL-TEXT LOCK (cc b11) ──────────────────────────────────────────
+# A gate's refusal text is the only part of it most readers ever see, and
+# nothing in this repo tested it. OVERRIDE_HINT advertised only the blanket
+# flag for a month while the comment at EXEMPTABLE asserted it named the
+# scoped form first; a one-line arm would have caught that the day it drifted.
+#
+# IT RUNS NOTHING AND PUSHES NOTHING. Pure string assertions over module
+# constants, so it is safe in a live clone -- which matters, because this file
+# is the push gate and must not be driven for real to be checked.
+def selftest():
+    bad = total = 0
+
+    def ck(label, got, want=True):
+        nonlocal bad, total
+        total += 1
+        if got != want:
+            bad += 1
+            print('  FAIL ' + label)
+            print('       wanted %r, got %r' % (want, got))
+        else:
+            print('  ok   ' + label)
+
+    print('PUSH GATE -- refusal-text lock')
+    h = OVERRIDE_HINT
+    si, bi = h.find('SAIRN_GATE_EXEMPT'), h.find('SAIRN_SEED_GATE')
+
+    ck('the SCOPED form is named at all -- it was absent entirely (index -1) '
+       'in every refusal this gate printed for a month', si != -1)
+    ck('...and it is named BEFORE the blanket form, which is what the '
+       'EXEMPTABLE design comment already claimed was true',
+       si != -1 and bi != -1 and si < bi)
+    ck('the blanket form is still named -- removing the only documented '
+       'escape hatch mid-incident is its own failure mode', bi != -1)
+    ck('the blanket form is marked as the WRONG first reach, so naming it is '
+       'not the same as recommending it',
+       'wrong first reach' in h.lower())
+    ck('the hint states the scoped form\'s SCOPE. Only `seed` is exemptable, '
+       'so a hint that sent every denied reader to SAIRN_GATE_EXEMPT would be '
+       'wrong on the other thirteen checks -- a worse failure than the one '
+       'being fixed', 'only' in h.lower() and 'seed' in h.lower())
+    ck('...and it tells the reader to re-read EXEMPTABLE rather than trust '
+       'the sentence for the list, because that list is what moves',
+       'EXEMPTABLE' in h)
+    ck('it says BOTH forms go at the FRONT of the command -- as a PreToolUse '
+       'hook this inherits Claude Code\'s environment, not the inspected '
+       'command\'s, which is the defect that made eight copies of the old '
+       'instruction useless', 'FRONT' in h)
+    ck('it still tells the operator to say so out loud', 'out loud' in h.lower())
+
+    # THE SCOPE CLAIM IS CHECKED AGAINST THE CODE, not just for being present.
+    ck('CROSS-CHECK: the hint names `seed` as exemptable and EXEMPTABLE '
+       'really does contain exactly that one key -- a hint naming a check the '
+       'code cannot exempt would be the same class of defect',
+       sorted(EXEMPTABLE) == ['seed'], True)
+
+    # ── THE ABLATION. Restore the pre-fix hint and require the arms to go
+    # red. Without this, an arm asserting `si != -1` would also pass on any
+    # string that happens to mention the variable anywhere.
+    old = ("Override by putting SAIRN_SEED_GATE=off at the FRONT of the push "
+           "command itself (SAIRN_SEED_GATE=off git push ...), not in a "
+           "separate export. Say so out loud if you do.")
+    o_si, o_bi = old.find('SAIRN_GATE_EXEMPT'), old.find('SAIRN_SEED_GATE')
+    ck('ABLATION: the PRE-FIX hint fails the scoped-form-present arm, so that '
+       'arm is about this change and not about any string', o_si != -1, False)
+    ck('ABLATION: ...and fails the scoped-form-first arm',
+       o_si != -1 and o_bi != -1 and o_si < o_bi, False)
+    ck('ABLATION CONTROL: the pre-fix hint PASSES the two arms that were '
+       'already true -- the blanket form is named and it says FRONT. An '
+       'ablation that fails everything proves nothing about which arm caught '
+       'the defect', (o_bi != -1, 'FRONT' in old), (True, True))
+
+    print('  %d/%d arm(s) pass' % (total - bad, total))
+    if bad:
+        print('  THE REFUSAL TEXT IS NOT WHAT THIS GATE CLAIMS IT IS.')
+        return 1
+    return 0
+
+
 if __name__ == '__main__':
     try:
+        if '--selftest' in sys.argv:
+            sys.exit(selftest())
         if '--preflight' in sys.argv:
             sys.exit(preflight())
         if '--pre-push' in sys.argv:

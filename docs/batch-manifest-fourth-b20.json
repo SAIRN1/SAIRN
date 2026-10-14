@@ -1,0 +1,54 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "fourth",
+  "batch": "b20",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "Close b19 first: Drive-API-read the b19 digest and report, write and upload either if missing (with a CONTEXT line) and verify; then batch_manifest --close, release the b19 claim, and REAP the stale fourth.lock.",
+      "status": "done",
+      "evidence": "b19 was already closed and released last batch; VERIFIED rather than assumed. Drive-API read (mcp Google Drive search_files, title contains fourth-b19) returned all three: SAIRN-handoff-fourth-b19.md 23340, SAIRN-report-fourth-b19.txt 45192, SAIRN-digest-fourth-b19.txt 7782, all under parentId 14Xc5oT0xzSLa_rTSOSXWVK3Kko1Fbx09, sizes matching local -- so NEITHER was missing and nothing had to be re-written. b19 manifest closed block present with drive_verify PASS and three sha256s; b19 claim absent from sairn_claim.py list; grep -c on the b19 digest CONTEXT line = 1. STALE LOCK REAPED: session_lock_check.py status showed 'DEAD -- CLAUDE_PID 53204 no longer exists' held since 2026-10-13T05:36:03 (eight batches); session_lock_check.py guard exit 0 replaced it with this live session (CLAUDE_PID 3444). Re-check: python tools/session_lock_check.py status"
+    },
+    {
+      "id": 2,
+      "title": "Discharge hank's Tier A obligation 2026-10-14T13:50:42Z -- 21 leg_* resources plus rf_settings, 5 files incl. api/_lib/leg-roles.js and api/sd-data.js. Run tier_a_review_gate.py --list first.",
+      "status": "done",
+      "evidence": "DISCHARGED exit 0: tier_a_review_gate.py --discharge hank 2026-10-14T13:50:42Z --body-file <verdict> (scratchpad discharge_leg_b20.log). INSIDE the 24h deadline at 7h. Verdict doc docs/2026-10-14-fourth-b20-leg-role-matrix-discharge.md. All four attack points survive: 36/36 bands and 288/288 per-role cells match my b15 spec, enumerated programmatically in both directions; staff grants 21 read/12 write/ZERO money and the counterfactual is exactly 15; both exemptStatus literals match byte-for-byte against sairnlegacy.html assignment sites and the asymmetry is forced; both aftercare copies agree. 5 findings (F1-F5), F4 the delimiter-ambiguous key collision. STATE review, sha 0442c8e0c95d dangling. Re-check: tier_a_review_gate.py --list"
+    },
+    {
+      "id": 3,
+      "title": "Discharge cc's Tier A obligation 2026-10-14T17:20:09Z -- quotes, sd_comms.",
+      "status": "done",
+      "evidence": "DISCHARGED exit 0: --discharge cc 2026-10-14T17:20:09Z --body-file <verdict> (scratchpad discharge_cc_b20.log). INSIDE the deadline at 3h. REAL DIFF review, sha 3b1dc5fe3174 RESOLVES. Verdict doc docs/2026-10-14-fourth-b20-cc-quotes-comms-discharge.md. Every claim cc made is TRUE; six findings in what was NOT claimed, headed by F3: the change silently turned tests/run_drive_upload_verify_probe.py RED -- measured 34/35 exit 1 at HEAD, because the arm greps the substring 'does not name cc' and the new WRONG AGENT message does not contain it; git show --stat d1308719 is one file and the probe was last touched by the tool's creation commit. Ran drive_upload_verify --fixtures (0, 36/36) and bare_run_write_check --selftest (0, 11/11). Re-check: python tests/run_drive_upload_verify_probe.py"
+    },
+    {
+      "id": 4,
+      "title": "Name the OWNER of each of the five unreviewed sibling tools in c78b545b and route each to that owner.",
+      "status": "done",
+      "evidence": "docs/2026-10-14-fourth-b20-c78b545b-sibling-routing.md names an owner for each of the five and routes each. OWNER OF ALL FIVE IS hover2, derived from evidence not assumption: none of the four .py files carries an '# OWNER:' line (grep), and every commit under .claude/skills/sairn-hover-auditor/tools-hover2/ is scoped hover2/hover2-tools while every commit under .../tools/ is scoped hover. THE TRAP: all four basenames exist in BOTH auditor trees and the copies are NOT mirrors -- hover_cold_scan_pool.py is 1738 lines in H1's tree vs 716 in H2's -- so routing by basename would have sent work to the wrong owner. Corrects my own b19 wording: six PATHS, five .py plus one .jsonl, so the five siblings are four tools and one DATA file, and that data file is gitignored at its tools-hover2 path. Re-check: git show --name-only --format= c78b545b"
+    },
+    {
+      "id": 5,
+      "title": "Methodology: re-anchor the six rotted sf_events register anchors on QUOTED TEXT rather than line numbers (docs/ only), and write the failing-first spec for a rot check, routed to cc (tools/).",
+      "status": "done",
+      "evidence": "docs/CRITICALITY-TIERS.md sf_events row re-anchored: all SEVEN line citations (4910, 3268, 4957, 4999, 5023, 4378, 4364) were rotted -- each verified wrong by sed -n Np -- and are replaced with quoted-text anchors. Verified: 7 anchors, all resolving EXACTLY ONCE in sairnfreedom.html, zero 4-digit citations left in the cell, pipe count 7 before and after every edit (row rebuilt by unique-substring replacement, never split on '|'). Spec routed to cc: docs/2026-10-14-fourth-b20-anchor-rot-check-spec.md, 8 requirements and 10 failing-first arms with A2/A4/A10 named as the three a reviewer would cut. Re-check: awk 'NR==358' docs/CRITICALITY-TIERS.md | grep -o ':[0-9]\\{4\\}'"
+    },
+    {
+      "id": 6,
+      "title": "Push without --force and confirm landed (HEAD == origin/main, 0 ahead / 0 behind).",
+      "status": "done",
+      "evidence": "Pushed WITHOUT force: 1b2e346a..924085fb, FIRST attempt, no rejection. Confirmed landed: git rev-parse --short HEAD and origin/main both 924085fb; git rev-list --left-right --count origin/main...HEAD -> 0 0; git status --porcelain empty; all six b20 docs/ paths present via git cat-file -e origin/main:<path>; both discharges on origin with verdict lengths 11976 and 11184; grep -ci force over the push log -> 0. The rebase touched NONE of the files this batch cites, re-checked by git diff --name-only against the cited set, and the sf_events anchors re-verified after it: 7 anchors, 7 unique, 0 line citations. Re-check: git log origin/main --oneline -3"
+    }
+  ],
+  "closed": {
+    "drive_verify": "PASS",
+    "verified_by": "python tools/drive_upload_verify.py --agent fourth --batch b20 --verify-only",
+    "criteria": "2026-10-13.1",
+    "deliverables": [
+      "SAIRN-handoff-fourth-b20.md sha256 0ee82da79bd94254",
+      "SAIRN-report-fourth-b20.txt sha256 b0a17458b8099bd2",
+      "SAIRN-digest-fourth-b20.txt sha256 1eff16a1facf6a70"
+    ]
+  }
+}

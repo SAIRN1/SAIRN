@@ -1,0 +1,419 @@
+REPORT cc b11
+================================================================================
+cc batch b11 -- 2026-10-14 -- Documents\SAIRN-cc on main
+HEAD 4cde4201, origin/main 4cde4201, 0 ahead / 0 behind
+Handoff: SAIRN-handoff-cc-b11.md (written BEFORE this file, uploaded, verified)
+Digest:  SAIRN-digest-cc-b11.txt
+Routing: docs/2026-10-14-cc-b11-routed.md
+Transcript: C:\Users\marsh\.claude\projects\
+            C--Users-marsh-Documents-SAIRN-cc\
+            bb71ca91-ccbc-4a82-aa5e-0bff468b6ed5.jsonl
+            (shared with b9 and b10 -- the /model switches continued the
+            session, so the context figure includes all three batches)
+Logs: C:\Users\marsh\AppData\Local\Temp\claude\
+      C--Users-marsh-Documents-SAIRN-cc\
+      bb71ca91-ccbc-4a82-aa5e-0bff468b6ed5\scratchpad\
+EVERY FIGURE BELOW NAMES THE COMMAND THAT PRODUCED IT. Where an item was
+already done, or is only partly done, it says so and is not folded into a pass.
+No override of either form was used. No hook added or restored.
+================================================================================
+
+1. THE REFUSAL TEXT -- AND THE SECOND COPY THAT FIXING IT EXPOSED
+
+FAILING-FIRST (scratchpad/hint_before.log), before any edit:
+
+  OVERRIDE_HINT as shipped:
+    "Override by putting SAIRN_SEED_GATE=off at the FRONT of the push command
+     itself (SAIRN_SEED_GATE=off git push ...), not in a separate export.
+     Say so out loud if you do."
+  index of SAIRN_GATE_EXEMPT (scoped)  : -1      <- ABSENT ENTIRELY
+  index of SAIRN_SEED_GATE   (blanket) : 20
+  ARM the scoped form is named at all  -> False
+  ARM the scoped form is named FIRST   -> False
+  ARM it says which checks it covers   -> False
+  EXEMPTABLE = {'seed': 'seed-gate'}
+  call sites embedding the constant: 42
+
+The design comment beside EXEMPTABLE has said since 2026-09-25 that the
+blanket flag "is no longer the only one, and its refusal text now names the
+scoped form first." It did not. For a month every refusal from 42 sites
+pointed the reader at the flag that disables all fourteen checks, and the
+comment asserting otherwise is why nobody re-read the constant.
+
+ONE CONSTANT STILL, AND ACCURATE FOR EVERY CHECK -- stated because it is a
+decision rather than laziness. Only `seed` is exemptable, so a hint that said
+"use SAIRN_GATE_EXEMPT=seed" would be WRONG on the other thirteen checks:
+sending a denied reader to a scoped form that cannot cover the check that
+denied them is a worse failure than the one being fixed. So the scoped form is
+named FIRST and WITH ITS SCOPE, the blanket form is named and marked the wrong
+first reach, and the reader is told to re-read EXEMPTABLE rather than trust
+the sentence for the list.
+
+  python tools/sairn_push_gate_hook.py --selftest   -> 12/12 arm(s) pass
+     (scratchpad/hint_selftest.log)
+
+Pure string assertions over module constants, so the lock is safe to run in a
+live clone -- this file IS the push gate and must not be driven for real to be
+checked. One arm CROSS-CHECKS the hint's scope claim against EXEMPTABLE
+itself, so a hint naming a check the code cannot exempt also fails.
+
+THE ABLATION, and it carries its own control:
+  ABLATION: the PRE-FIX hint fails the scoped-form-present arm   -> ok
+  ABLATION: ...and fails the scoped-form-FIRST arm               -> ok
+  ABLATION CONTROL: the pre-fix hint still PASSES the two arms that were
+     already true (blanket named, says FRONT)                    -> ok
+An ablation that fails everything proves nothing about which arm caught the
+defect, which is why the control is there.
+
+THEN THE FIX APPEARED NOT TO WORK, AND THAT WAS THE REAL FINDING. The next
+push was refused and printed the OLD text:
+
+  grep -rn "Override by putting" tools/ .githooks/
+  -> tools/register_feed_gate.py:816       <- A SECOND HARDCODED COPY
+  -> tools/sairn_push_gate_hook.py:3998    <- my own ablation fixture, correct
+
+The hook's own comment records that sentence being "WRONG in eight places at
+once" between 2026-09-01 and 2026-09-03, "so eight copies of the instruction
+all had to be believed to find that out" -- which is why it became one
+constant. ONE OF THOSE COPIES LIVED IN ANOTHER FILE AND OUTLIVED THE
+CONSOLIDATION. Now imported, with a fallback that POINTS AT the constant
+rather than restating it, because an inaccurate fallback would recreate
+exactly the thing being fixed.
+
+  python -c "<verify>"
+  -> no second hardcoded copy: True
+  -> hook hint names scoped first: True
+  python tools/register_feed_gate.py --self-check  -> 0 case(s) wrong
+
+NOT SWEPT, and said rather than implied: .githooks/, docs/ and the skills
+directory were NOT searched for a third copy. Routed to cc next batch.
+
+2. THE 48h OBLIGATION SURFACE -- tools/obligation_surface.py (NEW)
+
+fourth asked for this in b18 item 5 after triaging the queue by hand.
+
+  python tools/obligation_surface.py        (scratchpad/oblig_live.log) -> exit 1
+  -> open total: 20   overdue: 12   unknown age: 0
+  -> oldest:  404h owner=hank    author=fourth
+              401h owner=fourth  author=cody
+              343h owner=fourth  author=hover2
+              341h owner=cc      author=hover2
+              ... 8 more, down to 57h
+
+THE REGISTER ALREADY KNEW. tier_a_review_gate.py --list prints the queue and
+nothing runs it. An obligation is not forgotten because the data is missing,
+it is forgotten because the data is somewhere nobody looks on the way in.
+
+THE THRESHOLD IS IMPORTED, NEVER RE-TYPED:
+  OWNER_STALE_HOURS from tier_a_review_gate = 48, the point the gate itself
+  says anybody may --takeover. An obligation past it is one the platform has
+  ALREADY decided is late. A second number here would be a second opinion
+  about the same fact and the two would drift -- and one arm asserts the
+  import, so a local constant cannot creep back in.
+
+  python tools/obligation_surface.py --selftest  -> 20/20 arm(s) pass
+     (scratchpad/oblig_selftest.log)
+
+A3 FAIL-CLOSED -- an absent, unparseable or wrong-shaped register exits 2 and
+says which. It does NOT print "nothing overdue":
+  an ABSENT register is a reason, never an empty list                -> ok
+  ...and the reason says NOTHING was checked                         -> ok
+  an UNPARSEABLE register is a reason                                -> ok
+  a register with NO `records` list is a reason                      -> ok
+  A3 CONTROL: a readable register with an EMPTY records list loads
+     fine and is genuinely empty                                     -> ok
+A surface whose empty state and broken state look identical is worse than no
+surface, because it actively reassures.
+
+A6 THE THIRD STATE -- an obligation whose opened_at cannot be parsed:
+  is UNKNOWN AGE, not fresh                                          -> ok
+  is NOT silently counted as fresh                                   -> ok
+  is never counted as overdue either                                 -> ok
+  an unknown age ALONE makes the run non-zero                        -> ok
+  A6 CONTROL: a fresh-only queue really does exit 0                  -> ok
+The one record nobody can age is the one most likely to have been sitting
+longest.
+
+TWO ABLATIONS, over the mistakes a careless version makes in the REASSURING
+direction:
+  folding UNKNOWN into fresh via `age or 0` hides the unreadable record
+     entirely -- reports 1 where the truth is 1 overdue PLUS 1 unaccounted
+  returning [] on a failed load makes a BROKEN register indistinguishable
+     from an empty one
+Also locked: exactly AT 48h is NOT overdue, matching the gate's own
+`age <= OWNER_STALE_HOURS` refusal; and a verdict-carrying record is closed
+whatever its status string says.
+
+NOT A HOOK -- a command, exit-1 as a signal only. The 23 hooks cleared
+2026-10-11 stay cleared.
+
+3. secrets_inventory STEP 4a -- THE PRECONDITION ON THE ONLY IRREVERSIBLE STEP
+
+VERIFIED AT SOURCE FIRST, not taken from the routing doc:
+  sed -n '438,448p' api/_lib/auth.js
+  -> "STEP 4 IS NOT, AND CANNOT BE [safe]: clearing the previous secret ends
+      the only route to a legacy ciphertext for good. So step 4 has a
+      precondition the other three do not:
+        4a. confirm NO legacy ciphertext remains -- sql/legacy_ciphertext_
+            census.sql counts them, per table, by the `v2.` prefix
+        4b. then clear SD_AUTH_SECRET_PREVIOUS."
+  grep -n "legacy_rows" sql/legacy_ciphertext_census.sql
+  -> :63 "Expect legacy_rows = 0 before clearing SD_AUTH_SECRET_PREVIOUS."
+
+FAILING-FIRST (scratchpad/step4a_before.log) -- the shipped runbook ended
+"then clear it -- that is the whole rotation":
+  names the census SQL                 -> False
+  names step 4a                        -> False
+  names legacy_rows                    -> False
+  says confirm/verify before clearing  -> False
+  nhi_register.py mentions census?     -> False   | mentions 4a? -> False
+
+THE TWO FAILURE DIRECTIONS ARE NOT SYMMETRIC, which is why this is the
+dangerous omission and not merely an incomplete one:
+  leaving PREVIOUS set  -> a retired key stays live. Bad, VISIBLE, reversible.
+  clearing it early     -> the only route to those values is gone for good,
+                           AND the loss is SILENT: decryptSecret() returns
+                           null and a caller reads null as "no secret stored".
+
+Both cc-owned copies now carry the numbered form with 4a and 4b. The third,
+docs/NHI-REGISTER.md:69, is fourth's and is routed with the exact text.
+
+THE GUARD RUNS ON EVERY INVOCATION, not behind a flag -- _IRREVERSIBLE inside
+run_fixtures(), anchored on the CONSEQUENCE rather than the wording (asserting
+the literal "4a" would pass on a runbook that said "4a" and described
+something else):
+  python -c "<run_fixtures>"            -> 0 finding(s)
+  ABLATION, pre-fix text restored       -> 5 finding(s), all five firing:
+     omits the census SQL an operator can actually run
+     omits the threshold that makes step 4 safe
+     omits where the precondition is published in code
+     omits that clearing it is IRREVERSIBLE
+     omits that the loss is SILENT
+     (scratchpad/step4a_after.log)
+
+AND TWO SECRETS THAT WERE BLOCKING THE TOOL, classified rather than left:
+  python tools/secrets_inventory.py --check   BEFORE -> exit 2
+  -> UNCLASSIFIED SAIRNVET_TRANSCRIBE_URL, UNCLASSIFIED SAIRN_RESEND_TIMEOUT_MS
+This is the tool's designed fail-closed behaviour, so they could not be left;
+it also meant the step 4a fix could not reach the generated document. NEITHER
+IS GUESSED FROM ITS NAME -- this file's own convention is that the
+classification comes from the author's documentation where the value is read:
+  SAIRN_RESEND_TIMEOUT_MS -> TUNING. api/cron-watchdog.js:297,
+     `Number(...) > 0 ? ... : 8000` -- a numeric limit with a documented
+     default, so absence is not a failure.
+  SAIRNVET_TRANSCRIBE_URL -> ENDPOINT. api/sairnvet-transcribe.js:78 says it
+     "IS DELIBERATELY NOT SET IN VERCEL" and :86 hostConfigured() makes the
+     feature report "no transcription host configured" rather than 500ing.
+  python tools/secrets_inventory.py --write -> wrote docs/SECRETS-INVENTORY.md
+  python tools/secrets_inventory.py --check -> OK: matches the code
+
+4. REVIEWER-ROSTER LIVENESS, AND cloud's FOUR OBLIGATIONS
+
+FAILING-FIRST (scratchpad/liveness_before.log):
+  eligible_reviewers() -> ['cc', 'cloud', 'cody', 'fourth', 'hank']
+  per claim file, newest claim:
+     cc      2026-10-14   cody   2026-10-14   fourth 2026-10-14
+     hank    2026-10-14   cloud  2026-09-27   <- SEVENTEEN DAYS
+  cloud has 4 claims total and still one marked `active`.
+
+AND assign_owner() IS LEAST-LOADED, so a dead session -- which accrues no
+load -- looked like the BEST candidate and was preferentially picked. Measured
+(scratchpad/cloud_obligations.log): 20 open obligations, and cloud owned FOUR
+of them: 401h, 338h, 33h and 7h. THE 7h ONE WAS ASSIGNED THAT SAME MORNING,
+so this was accumulating, not historical. The 401h one was the oldest open
+obligation on the platform.
+
+AFTER (scratchpad/liveness_after.log):
+  eligible_reviewers() -> ['cc', 'cody', 'fourth', 'hank']
+  python tools/tier_a_review_gate.py --roster      (scratchpad/roster_live.log)
+  -> LIVE     cc      0.3h | cody 4.0h | fourth 1.0h | hank 1.2h
+  -> SILENT   cloud 422.1h   NOT eligible
+  -> margin: newest live 4.0h, oldest silent 422.1h
+
+SESSION_DEAD_HOURS = 7 days AND IT IS NOT A TUNED NUMBER. The separation is
+~100x, so anything between a day and two weeks classifies this data
+identically; --roster PRINTS the margin so a reader sees that rather than
+trusting the constant. Excluding a live session by mistake is the SAFE
+direction: the roster drops below two, returns None, and None is a LOUD
+refusal to assign. The unsafe direction is the one that was shipping.
+
+  python tools/tier_a_review_gate.py --selftest  -> 16/16 arm(s) pass
+     (scratchpad/roster_selftest3.log)
+  A6 THIRD STATE: an unparseable claim file is UNKNOWN, not dead and not
+     alive; a file with no dated claim likewise; and an UNKNOWN session is
+     not handed a review and does not count toward the quorum.
+  A3 FAIL-CLOSED: ONE live session -> None. One live PLUS ONE DEAD -> still
+     None, because the dead one must not make up the quorum -- which is
+     exactly what a count over claim FILES would have done. A second LIVE
+     session restores it, so that arm is about liveness and not about a small
+     directory.
+  ABLATION: the pre-fix rule (every claim file, no liveness test) DOES include
+     the dead session.
+  ABLATION CONTROL: ...and also includes the live ones, which is why the old
+     code looked like it worked.
+
+ONE FIXTURE BUG FOUND AND FIXED IN PASSING, recorded because the first
+instinct was to doubt the rule: my arms used `liveA`/`liveB`, and the
+claim-filename regex is lowercase-only, so the roster came back empty and four
+arms failed. THE FIXTURE WAS WRONG, NOT THE RULE.
+
+TAKING OVER THE FOUR -- BY REASSIGNMENT, AND HERE IS WHY NOT BY DISCHARGE.
+A dead owner is an ASSIGNMENT failure, not a review failure, and neither
+existing remedy fits:
+  * --takeover is coupled to --discharge and REFUSES below OWNER_STALE_HOURS
+    (`age <= OWNER_STALE_HOURS` -> "Taking it now is the race this stamp
+    removed, wearing a flag"), so it could not reach two of the four at 33h
+    and 7h -- and waiting 48h for a session last seen seventeen days ago is
+    waiting for nothing.
+  * one session discharging four unbudgeted Tier A reviews trades a stuck
+    queue for four RUSHED VERDICTS. An unreviewed obligation is visible; a bad
+    verdict is not.
+
+So --reassign-dead moves ownership and NOTHING else: no verdict, no
+discharged flag, the ordinary least-loaded assignment re-run over the LIVE
+roster, and the liveness evidence recorded on each handover.
+  python tools/tier_a_review_gate.py --reassign-dead   (DRY RUN first)
+  python tools/tier_a_review_gate.py --reassign-dead --apply
+  -> 2026-09-28T00:16:59Z  cloud -> hank    (owner silent 422h, author fourth)
+  -> 2026-09-30T15:53:29Z  cloud -> cc      (author hover2)
+  -> 2026-10-13T09:03:35Z  cloud -> fourth  (author hank)
+  -> 2026-10-14T10:31:40Z  cloud -> cc      (author hank)
+  VERIFIED AFTER: open by owner {cc: 6, cody: 5, fourth: 5, hank: 4};
+                  any open owned by cloud? False;
+                  reassignment records written: 4
+Three arms cover the reassign path's DANGEROUS direction: a LIVE owner's
+record must not be selected, and the new owner is never the record's own
+author. THE REVIEW IS STILL OWED ON ALL FOUR.
+
+  python tests/run_tier_a_review_gate_probe.py -> ALL ARMS PASS (cody's, unchanged)
+
+5. hank's FOUR SUITES -- TWO WIRED, AND THE BAR IS THE REGISTRY'S OWN
+
+tools/sairn_push_gate_hook.py states it two screens above GUARD_TESTS: "EVERY
+ENTRY IS A RECORDED DEFECT, not a test somebody liked", and the class is the
+SEAM class -- tests where two independently-maintained sides must still agree.
+Measured against both halves (scratchpad/hank_suite_defects.log):
+
+  suite                           seam?  recorded defect        wired
+  sd-data-leg-role-matrix         yes    fdd06d06b68c critical  YES
+  sd-data-leg-overlap             yes    85206564d24f high      YES
+  sql-run-order-agreement         YES*   none                   no
+  sd-data-rf-settings-tier        no     none                   no
+  * the strongest seam of the four: a derived file against five independently
+    maintained sources, which drift apart with no edit to either looking wrong
+
+  node api/sd-data-leg-role-matrix.test.js -> exit 0   (run BEFORE wiring)
+  node api/sd-data-leg-overlap.test.js     -> exit 0
+
+Wiring a unit test there taxes EVERY push on the platform and dilutes the one
+thing that list means. sql-run-order-agreement is one register row away and I
+said so; rf-settings-tier asserts one handler's authorization behaviour, which
+the registry calls the author-runs-it class. Both routed to hank with exactly
+what each needs.
+
+SIX FMEA DRAFTS SAVED, drafts only (fmea_draft.py --save):
+  api/_lib/sen-evv-clock.js, api/_lib/leg-overlap.js, api/_lib/leg-roles.js,
+  api/_lib/auth.js, sql/sairnlegacy_employee_auth_schema.sql,
+  api/sd-data-leg-role-matrix.test.js
+NONE FOR ANY TOOL OF MINE. The register's loop asked for five cc tools after
+my records landed and all five are left for another session: a detector
+drafting the FMEA for the fix it just made is detector-blesses-its-own-fix.
+
+THE msb_bottle_scans ITEM -- A DISCREPANCY STATED, NOT RESOLVED BY GUESSING.
+The brief asked for the "scanner false-positive note". Everything I can find
+and verify -- 8 tracked .md files naming the resource, plus
+docs/defect-density-register.json and the auditor's routing directory --
+describes a DATA-HONESTY DEFECT at sairngrounds.html:4771-4779:
+`(match.cost||0)/bottle_oz` means a product with no recorded cost yields
+"approx. cost of usage $0.00" rather than declining to estimate, so an absent
+cost and a genuinely free pour are indistinguishable in the stored string.
+NOTHING I CAN FIND DESCRIBES A SCANNER FALSE POSITIVE ON THAT RESOURCE. Either
+the brief mis-describes that note -- in which case the routing doc discharges
+it -- or there is a real one in H2's external hover-audit-log/, which is
+outside this repo and which a build agent does not enter. H2's own b31 claim
+names "resolve+route msb_bottle_scans discrepancy", likely this same thread
+from the other side. I DID NOT INVENT THE SECOND TO LOOK COMPLETE.
+
+6. PUSH
+
+Five gates refused in turn and EVERY ONE was satisfied rather than overridden:
+  1. non-fast-forward                  -> rebased (twice, both clean)
+  2. no defect record                  -> 4 records filed (section 7)
+  3. pre-commit tool-entry check       -> the new tool had no inventory
+       description; PURPOSES entry added, docs/TOOLING-INVENTORY.md regenerated
+  4. generated-document check          -> docs/traceability-matrix.md stopped
+       matching its sources because my two GUARD_TESTS entries ARE one of its
+       sources; regenerated, diff inspected (5 insertions / 3 deletions, the
+       two new rows plus a declared-citation count moving 338 -> 336)
+  5. docs/SECRETS-INVENTORY.md stale    -> regenerated twice; the second time
+       because a rebase brought in another session's new env reads
+
+  git push origin main  -> d375dcea..5b2d0b48, 5b2d0b48..a7db434b,
+                           a7db434b..4cde4201
+VERIFIED AFTER PUSH:
+  git fetch origin main --quiet
+  git rev-list --left-right --count origin/main...HEAD  -> 0  0
+  git rev-parse --short HEAD                            -> 4cde4201
+  git status --porcelain                                -> (clean)
+
+EVERY LOCK RE-RUN AFTER THE FINAL REBASE, before the handoff was written:
+  push gate --selftest        12/12
+  tier a --selftest           16/16
+  obligation surface --selftest 20/20
+  secrets --check             OK
+  register feed gate --self-check  0 case(s) wrong
+  nhi_register --selftest     all arms pass
+
+7. THE FOUR DEFECT RECORDS THIS BATCH FILED
+
+  0e6607e0  OVERRIDE_HINT named only the blanket flag while a comment claimed
+            otherwise (high, hover-audit, found-by-session hover, rule 1.3)
+  201b80d5  eligible_reviewers had no liveness test, so a 17-day-dead session
+            was preferentially assigned (high, independent-review, rule 1.10)
+  836e3687  the rotation runbook omitted step 4a in all three copies
+            (CRITICAL, independent-review, phase requirement, not-citable with
+            a note) -- critical because the two failure directions are not
+            symmetric and this is the unrecoverable, silent one
+  2d7ddaf4  a second hardcoded copy of the override sentence in
+            register_feed_gate.py (moderate, live-verification, rule 1.3)
+All four were re-seated onto their rewritten shas after the final rebase by
+the repo's post-rewrite hook, and that re-seat is its own commit.
+
+Each carries --factors-unknown rather than a worked root-cause pass: this
+batch verified and shipped the fixes and did not do the deeper analysis, and
+the tool's own documentation treats that as the honest state rather than a gap
+to fill with a guess. Each carries a --recurrence-open naming what the fix
+does NOT close.
+
+================================================================================
+FILES TOUCHED THIS BATCH
+
+tools/sairn_push_gate_hook.py, tools/tier_a_review_gate.py,
+tools/secrets_inventory.py, tools/nhi_register.py, tools/register_feed_gate.py,
+tools/obligation_surface.py (new), tools/tooling_inventory.py,
+docs/2026-10-14-cc-b11-routed.md, docs/tier-a-reviews.json,
+docs/SECRETS-INVENTORY.md, docs/TOOLING-INVENTORY.md,
+docs/traceability-matrix.md, docs/defect-density-register.json,
+docs/scrutiny-flags.json, six docs/fmea/*.json, SAIRN-handoff-cc-b11.md,
+SAIRN-report-cc-b11.txt, SAIRN-digest-cc-b11.txt.
+
+NOT IN cc's DECLARED b11 FILES, said out loud: tools/register_feed_gate.py
+(the second hint copy -- not a file this batch set out to touch, but it is why
+item 1 looked broken, and it is in tools/); tools/tooling_inventory.py and
+docs/TOOLING-INVENTORY.md (the pre-commit gate correctly refused the new tool
+for having no description); docs/traceability-matrix.md and
+docs/SECRETS-INVENTORY.md (derived, regenerated because this batch's changes
+are their sources); docs/2026-10-14-cc-b11-routed.md; the six FMEA drafts; and
+docs/defect-density-register.json / docs/scrutiny-flags.json, each required by
+a gate before it would accept the push -- the same collision b8, b9 and b10 all
+named and resolved the same way.
+
+NO tests/ FILE WAS EDITED. cody b11 item 2 is writing
+tests/push_gate/refspec_and_override_probe.py to assert the scoped form, which
+is the TEST side of my item 1, so that file was deliberately left alone. No
+api/, sql/ or app HTML file was edited. No auditor clone was entered or
+written. docs/NHI-REGISTER.md is fourth's and step 4a's third copy is ROUTED
+rather than fixed.
+
+SHA256 66beee02bb8641059f6fadc12d58b11f562e9e7395733b1bda4691fd33699a4a
+END-OF-REPORT

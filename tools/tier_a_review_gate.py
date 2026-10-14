@@ -88,6 +88,7 @@ prose would be wrong the third time.
     recording an obligation is itself a Tier A change requiring an obligation.
 """
 import calendar
+import datetime
 import io
 import json
 import os
@@ -1326,19 +1327,105 @@ class NotOwner(Exception):
     """The caller is not this obligation's assigned reviewer."""
 
 
-def eligible_reviewers():
-    """Sessions that may be assigned a review, from the claim files on disk.
+# ── A CLAIM FILE IS NOT A PULSE (cc b11) ────────────────────────────────────
+# How long a session may be silent before it stops being an eligible reviewer.
+#
+# THE DEFECT, MEASURED: eligible_reviewers() listed every *.json in
+# CLAIMS_DIR, so `cloud` -- whose newest claim is 2026-09-27, SEVENTEEN DAYS
+# before this was written -- was still eligible. Worse, assign_owner() is
+# LEAST-LOADED, and a dead session accrues no load, so the dead one looked
+# like the best candidate and was preferentially picked. It owned FOUR of the
+# twenty open obligations, including the oldest on the platform at 401 hours,
+# and one had been assigned to it THAT MORNING -- so this was accumulating,
+# not historical.
+#
+# WHY SEVEN DAYS AND WHY THAT IS NOT A TUNED NUMBER: the real separation is
+# enormous. At the time of writing every live session's newest claim was HOURS
+# old and the dead one's was 408 hours old, so any threshold between about one
+# day and two weeks classifies this data identically. Seven days is stated as
+# "has not participated in a week", and the margin is PRINTED by --roster so a
+# reader can see how far from the boundary each session actually is rather
+# than trusting the constant.
+#
+# EXCLUDING A LIVE SESSION BY MISTAKE IS THE SAFE DIRECTION, which is why the
+# threshold can be generous without being dangerous: a roster that shrinks
+# below two returns None, and None is a LOUD refusal to assign -- the caller
+# prints why and no obligation is created. The unsafe direction is the one
+# that was shipping: silently assigning to somebody who will never answer.
+SESSION_DEAD_HOURS = 7 * 24
 
-    Returns a sorted list, or None for COULD NOT TELL -- never a guess and never
-    a hardcoded roster.
+
+def session_last_activity(name):
+    """-> (hours since this session's newest claim, note) or (None, why).
+
+    None is the THIRD STATE and is never folded into alive or dead: an
+    unreadable or unparseable claim file means liveness was not established,
+    which is a different fact from "this session is gone".
+    """
+    p = os.path.join(CLAIMS_DIR, name + '.json')
+    try:
+        doc = json.loads(io.open(p, encoding='utf-8').read())
+    except OSError as e:
+        return None, 'claim file unreadable (%s)' % e.__class__.__name__
+    except ValueError as e:
+        return None, 'claim file will not parse (%s)' % e.__class__.__name__
+    stamps = [c.get('claimed_at') for c in (doc.get('claims') or [])
+              if c.get('claimed_at')]
+    if not stamps:
+        return None, 'the claim file holds no dated claim'
+    try:
+        newest = max(
+            datetime.datetime.fromisoformat(s.replace('Z', '+00:00'))
+            for s in stamps)
+    except (ValueError, TypeError):
+        return None, 'no claim timestamp could be parsed'
+    now = datetime.datetime.now(datetime.timezone.utc)
+    return (now - newest).total_seconds() / 3600.0, newest.isoformat()
+
+
+def reviewer_roster_detail():
+    """-> (eligible, excluded, unknown). The evidence behind eligible_reviewers.
+
+    Separated so the roster can be REPORTED rather than only acted on: a
+    session silently dropped from a roster is the same class of invisible as
+    the dead one silently kept in it.
     """
     try:
         names = sorted(
             f[:-5] for f in os.listdir(CLAIMS_DIR)
             if f.endswith('.json') and re.match(r'^[a-z][a-z0-9_-]{1,31}\.json$', f))
     except OSError:
-        return None
+        return None, [], []
     names = [n for n in names if not is_hover_session(n)]
+    eligible, excluded, unknown = [], [], []
+    for n in names:
+        hours, note = session_last_activity(n)
+        if hours is None:
+            unknown.append((n, note))
+        elif hours > SESSION_DEAD_HOURS:
+            excluded.append((n, hours, note))
+        else:
+            eligible.append((n, hours, note))
+    return eligible, excluded, unknown
+
+
+def eligible_reviewers():
+    """Sessions that may be assigned a review, from the claim files on disk.
+
+    LIVENESS IS REQUIRED, not just the existence of a claim file -- see
+    SESSION_DEAD_HOURS. Returns a sorted list, or None for COULD NOT TELL --
+    never a guess and never a hardcoded roster.
+
+    A session whose liveness could NOT be established is excluded from the
+    returned roster and is NOT counted toward the two-name minimum: an
+    obligation assigned on the strength of a file nobody could read is the
+    shape this whole change exists to stop.
+    """
+    detail = reviewer_roster_detail()
+    if detail[0] is None:
+        return None
+    eligible, _excluded, _unknown = detail
+    names = sorted(n for n, _h, _note in eligible)
     # One name cannot review anything: the only candidate would be the author.
     return names if len(names) >= 2 else None
 
@@ -2841,7 +2928,290 @@ def cmd_discharge(author, verdict, opened_at=None, takeover=False):
     return 0
 
 
+# ── THE LIVENESS LOCK (cc b11) ──────────────────────────────────────────────
+# Fixtures over a FAKE claims directory, so the arms are about the rule and
+# not about whichever sessions happen to be running today. Nothing here reads
+# or writes the real register.
+def selftest_roster():
+    import shutil
+    import tempfile
+    print('TIER A REVIEW GATE -- eligible-reviewer liveness lock')
+    bad = total = 0
+
+    def ck(label, got, want=True):
+        nonlocal bad, total
+        total += 1
+        if got != want:
+            bad += 1
+            print('  FAIL ' + label)
+            print('       wanted %r, got %r' % (want, got))
+        else:
+            print('  ok   ' + label)
+
+    global CLAIMS_DIR
+    real = CLAIMS_DIR
+    tmp = tempfile.mkdtemp(prefix='tier-a-roster-')
+    try:
+        now = datetime.datetime.now(datetime.timezone.utc)
+
+        def plant(name, hours_ago, claims=1):
+            stamp = (now - datetime.timedelta(hours=hours_ago)
+                     ).strftime('%Y-%m-%dT%H:%M:%SZ')
+            io.open(os.path.join(tmp, name + '.json'), 'w',
+                    encoding='utf-8', newline='\n').write(json.dumps(
+                        {'claims': [{'subject': name, 'claimed_at': stamp,
+                                     'status': 'released'}] * claims}))
+
+        def raw(name, body):
+            io.open(os.path.join(tmp, name + '.json'), 'w',
+                    encoding='utf-8', newline='\n').write(body)
+
+        CLAIMS_DIR = tmp
+        plant('alive1', 1)
+        plant('alive2', 4)
+        plant('dead', 422)              # the real `cloud` figure at fix time
+        ck('THE DEFECT: a session silent for 422h is NOT eligible. It owned 4 '
+           'of 20 open obligations including the oldest at 401h, and had been '
+           'assigned a new one that morning',
+           'dead' not in (eligible_reviewers() or []))
+        ck('...and the two live sessions ARE eligible, so the fix excludes the '
+           'dead one rather than emptying the roster',
+           eligible_reviewers(), ['alive1', 'alive2'])
+        el, ex, un = reviewer_roster_detail()
+        ck('...and the exclusion is REPORTED with its evidence, not silent -- '
+           'a session quietly dropped is the same class of invisible as the '
+           'dead one quietly kept',
+           [n for n, _h, _no in ex], ['dead'])
+
+        # A6 THE THIRD STATE. Liveness that cannot be established is neither
+        # alive nor dead and must not be folded into either.
+        raw('broken', '{not json')
+        el, ex, un = reviewer_roster_detail()
+        ck('A6 THIRD STATE: an unparseable claim file is UNKNOWN, not dead and '
+           'not alive', [n for n, _no in un], ['broken'])
+        ck('A6: ...and an UNKNOWN session is not handed a review -- an '
+           'obligation assigned on a file nobody could read is the shape this '
+           'change exists to stop', 'broken' not in (eligible_reviewers() or []))
+        raw('nostamp', json.dumps({'claims': [{'subject': 'x'}]}))
+        el, ex, un = reviewer_roster_detail()
+        ck('A6: a claim file with no dated claim is UNKNOWN too, by its own '
+           'named reason', 'nostamp' in [n for n, _no in un])
+
+        # A3 FAIL-CLOSED. Too few live reviewers must REFUSE, never pick one.
+        for f in os.listdir(tmp):
+            os.remove(os.path.join(tmp, f))
+        plant('onlyone', 1)
+        ck('A3 FAIL-CLOSED: ONE live session is None (could-not-tell), not a '
+           'roster of one -- the only candidate would be the author',
+           eligible_reviewers() is None)
+        plant('dead2', 500)
+        ck('A3 FAIL-CLOSED: one live plus one DEAD is still None. The dead one '
+           'does not make up the quorum, which is exactly what the old count '
+           'over claim FILES would have done',
+           eligible_reviewers() is None)
+        plant('alive3', 2)
+        ck('...and a second LIVE session restores the roster, so the arm above '
+           'is about liveness and not about the directory being small',
+           eligible_reviewers(), ['alive3', 'onlyone'])
+
+        # ABLATION: the pre-fix rule was "every claim file in the directory".
+        # It must classify the dead session as eligible, or the arms above are
+        # not about this change.
+        names = sorted(f[:-5] for f in os.listdir(tmp) if f.endswith('.json'))
+        prefix_rule = [n for n in names if not is_hover_session(n)]
+        ck('ABLATION: the PRE-FIX rule -- every claim file, no liveness test '
+           '-- DOES include the dead session, so the arms above are about this '
+           'fix and nothing else', 'dead2' in prefix_rule)
+        ck('ABLATION CONTROL: ...and it also includes the live ones, which is '
+           'why the old code looked like it worked',
+           'alive3' in prefix_rule and 'onlyone' in prefix_rule)
+
+        # ── THE REASSIGN PATH'S DANGEROUS DIRECTION ─────────────────────────
+        # Moving a DEAD owner's record is the point; moving a LIVE owner's is
+        # stealing their queue. Driven through the real selector rather than
+        # asserted, with a fake register.
+        for f in os.listdir(tmp):
+            os.remove(os.path.join(tmp, f))
+        plant('livea', 1)
+        plant('liveb', 2)
+        plant('goner', 500)
+        fake = {'records': [
+            {'status': 'open', 'opened_at': 'x', 'author_session': 'livea',
+             'reviewer_owner': 'liveb', 'owner_assigned_at': 'x'},
+            {'status': 'open', 'opened_at': 'y', 'author_session': 'livea',
+             'reviewer_owner': 'goner', 'owner_assigned_at': 'y'},
+        ]}
+        live_now = eligible_reviewers() or []
+        ck('the live roster for the reassign arms is the two live sessions',
+           sorted(live_now), ['livea', 'liveb'])
+        would_move = [r for r in fake['records']
+                      if r.get('status') == 'open'
+                      and r.get('reviewer_owner') not in live_now]
+        ck('REASSIGN: a record owned by a DEAD session is selected',
+           [r['opened_at'] for r in would_move], ['y'])
+        ck('REASSIGN, THE DANGEROUS DIRECTION: a record owned by a LIVE '
+           'session is NOT selected -- moving a live owner\'s record is '
+           'taking their queue, not fixing a dead one',
+           'x' not in [r['opened_at'] for r in would_move])
+        newo, _note = assign_owner('livea', fake, roster=live_now)
+        ck('REASSIGN: the new owner is never the record\'s own author -- an '
+           'author may not review its own obligation, and a reassignment '
+           'that forgot this would create exactly that',
+           newo != 'livea' and newo == 'liveb')
+
+        CLAIMS_DIR = tmp + '-does-not-exist'
+        ck('an UNREADABLE claims directory is None, never an empty roster '
+           'reported as "nobody is eligible"', eligible_reviewers() is None)
+    finally:
+        CLAIMS_DIR = real
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    print('  %d/%d arm(s) pass' % (total - bad, total))
+    if bad:
+        print('  THE ROSTER RULE IS BROKEN. Every assignment it makes is '
+              'suspect until these pass.')
+        return 1
+    return 0
+
+
+# ── REASSIGNING AWAY FROM A DEAD OWNER (cc b11) ─────────────────────────────
+# A DEAD OWNER IS AN ASSIGNMENT FAILURE, NOT A REVIEW FAILURE, and the two
+# need different remedies. `--takeover` is coupled to `--discharge`: it means
+# "I have done this review and I am recording it over the owner's head", and
+# it REFUSES below OWNER_STALE_HOURS because taking a live owner's work early
+# is the race the assignment stamp removed.
+#
+# Neither half fits a session that is simply gone. `cloud`'s four obligations
+# were 401h, 338h, 33h and 7h old when this was written: two were past the
+# takeover threshold and two were not, so takeover could not even reach them
+# all -- and waiting 48h for a session last seen seventeen days ago is waiting
+# for nothing. The alternative, one session discharging four reviews it had
+# not budgeted for, trades a stuck queue for four rushed Tier A verdicts,
+# which is the worse failure: an unreviewed obligation is visible and a bad
+# verdict is not.
+#
+# SO THIS MOVES OWNERSHIP AND NOTHING ELSE. It writes no verdict, does not
+# mark anything discharged, and re-runs the ordinary least-loaded assignment
+# over the LIVE roster -- so the obligation lands on somebody who can act and
+# the review still has to happen. The handover is recorded with the liveness
+# evidence that justified it, because an ownership change with no reason on it
+# is indistinguishable from somebody quietly dodging a queue.
+#
+# IT CANNOT TOUCH A LIVE OWNER'S RECORD. The only records it will move are
+# those whose owner is absent from the live roster, which is checked per
+# record rather than passed in.
+def cmd_reassign_dead(session, apply_changes=False):
+    detail = reviewer_roster_detail()
+    if detail[0] is None:
+        sys.stderr.write('COULD NOT RUN: the roster could not be read from '
+                         '%s, so no owner is known to be dead.\n' % CLAIMS_DIR)
+        return 2
+    el, ex, un = detail
+    live = sorted(n for n, _h, _no in el)
+    if not live:
+        sys.stderr.write('COULD NOT RUN: no session is live, so there is '
+                         'nobody to reassign to.\n')
+        return 2
+    dead = dict((n, h) for n, h, _no in ex)
+    unknown = dict(un)
+    data = load_reviews()
+    moved, blocked = [], []
+    for rec in data.get('records', []):
+        if rec.get('status') != 'open':
+            continue
+        owner = rec.get('reviewer_owner')
+        if owner in live or not owner:
+            continue
+        if owner in unknown:
+            # A6 THIRD STATE: liveness was not established, so this is NOT a
+            # dead owner and must not be moved on a guess.
+            blocked.append((rec, owner, 'owner liveness UNKNOWN (%s) -- not '
+                                        'moved on a guess' % unknown[owner]))
+            continue
+        if owner not in dead:
+            continue
+        new_owner, note = assign_owner(rec.get('author_session') or '',
+                                       data, roster=live)
+        if not new_owner:
+            blocked.append((rec, owner, note or 'no eligible live reviewer'))
+            continue
+        moved.append((rec, owner, new_owner, dead[owner]))
+        if apply_changes:
+            rec['reviewer_owner'] = new_owner
+            rec['owner_assigned_at'] = time.strftime(
+                '%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+            rec.setdefault('owner_reassignments', []).append({
+                'from': owner, 'to': new_owner, 'by': session,
+                'at': rec['owner_assigned_at'],
+                'from_silent_hours': round(dead[owner], 1),
+                'why': ('the assigned owner has been silent for %.0fh, past '
+                        'the %dh liveness threshold, so it was never going to '
+                        'discharge this. Ownership moved; NO verdict was '
+                        'written and the review still has to happen.'
+                        % (dead[owner], SESSION_DEAD_HOURS)),
+            })
+
+    print('REASSIGN AWAY FROM A DEAD OWNER%s'
+          % ('' if apply_changes else '  (DRY RUN -- nothing written)'))
+    print('  live roster : %s' % ', '.join(live))
+    for n, h in sorted(dead.items()):
+        print('  DEAD        %-12s silent %.0fh' % (n, h))
+    for n, why in sorted(unknown.items()):
+        print('  UNKNOWN     %-12s %s' % (n, why))
+    print('')
+    if not moved and not blocked:
+        print('  Nothing to do: every open obligation has a live owner.')
+        return 0
+    for rec, old, new, hours in moved:
+        print('  %s  %s -> %s   (owner silent %.0fh, author %s)'
+              % (rec.get('opened_at'), old, new, hours,
+                 rec.get('author_session')))
+    for rec, old, why in blocked:
+        print('  %s  owner %s NOT MOVED -- %s'
+              % (rec.get('opened_at'), old, why))
+    print('')
+    print('  NO VERDICT WAS WRITTEN. Ownership moved so a live session can '
+          'discharge it;')
+    print('  the review itself is still owed.')
+    if apply_changes:
+        save_reviews(data)
+        print('  WROTE %s -- commit it with the change it covers.'
+              % os.path.relpath(REVIEWS, REPO))
+    else:
+        print('  Re-run with --apply to write it.')
+    return 1 if blocked else 0
+
+
 def main(argv):
+    if '--selftest' in argv:
+        return selftest_roster()
+    if '--reassign-dead' in argv:
+        return cmd_reassign_dead(session_name(), apply_changes='--apply' in argv)
+    if '--roster' in argv:
+        detail = reviewer_roster_detail()
+        if detail[0] is None:
+            print('COULD NOT READ %s -- no roster was computed.' % CLAIMS_DIR)
+            return 2
+        el, ex, un = detail
+        print('ELIGIBLE REVIEWERS -- liveness from the newest claim per session')
+        print('  dead after: %dh (%d days)'
+              % (SESSION_DEAD_HOURS, SESSION_DEAD_HOURS // 24))
+        for n, h, note in el:
+            print('  LIVE     %-12s %8.1fh since %s' % (n, h, note))
+        for n, h, note in ex:
+            print('  SILENT   %-12s %8.1fh since %s   NOT eligible'
+                  % (n, h, note))
+        for n, why in un:
+            print('  UNKNOWN  %-12s %s   NOT eligible, and NOT counted as dead'
+                  % (n, why))
+        # THE MARGIN, PRINTED. The constant separates this data by ~100x, so a
+        # reader can see the threshold is not finely tuned rather than take it
+        # on faith.
+        if el and ex:
+            print('  margin: newest live %.1fh, oldest silent %.1fh'
+                  % (max(h for _n, h, _no in el),
+                     min(h for _n, h, _no in ex)))
+        return 0 if eligible_reviewers() else 1
     if '--open' in argv:
         i = argv.index('--open')
         why = argv[i + 1] if len(argv) > i + 1 else ''

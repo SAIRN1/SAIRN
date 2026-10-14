@@ -485,14 +485,25 @@
       "task": "h2 b33 scope: this role's own external off-platform log repo only. Re-check prior-batch citations, independently audit a landed tooling batch, add one read-only verify query plus a routing note about an SQL file, patch a local git-mirror helper's restore check, re-derive some comment line numbers. No platform api, sql, tools or tests file is written. FILES: SAIRN-handoff-h2-b33.md SAIRN-report-h2-b33.txt SAIRN-digest-h2-b33.txt SAIRN-latest-h2.md",
       "claimed_at": "2026-10-14T17:53:58Z",
       "claimed_at_epoch": 1792000438.298577,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-14T20:50:19Z",
       "files": [
         "SAIRN-digest-h2-b33.txt",
         "SAIRN-handoff-h2-b33.md",
         "SAIRN-latest-h2.md",
         "SAIRN-report-h2-b33.txt"
       ]
+    },
+    {
+      "id": "hover2-1792019938",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "hover2 b34 -- (1) log b33 to chain, confirm intact (2) adversarially verify hank newest batch (MAR grant, SAIRNvet role matrix, AI provenance six client sites, transport timeouts), HEAD disagreement ffb2463a vs 21dd38d9 resolved (3) adversarial SQL check sql/2026-10-14-hank-b11-mar-grant.sql block 2 DROP/ADD window + hover2 b33 routing doc two edits applied (4) independently run tests/sairnlegacy_reservation_lock.js, settle H1 seq1407 vs hover2 35/36 finding on leg_clergybookings, route fix to owner (5) deep-verify newest cc/cody/fourth claims via Drive then source, close or reopen (6) push external log repo no force confirm 0/0. AUDIT ROLE ONLY -- no platform api/ sql/ tools/ tests/ file edited or committed, only this role's own external hover-audit-log/ repo plus claim/release commits. FILES: hover-audit-log/ (external repo only)",
+      "claimed_at": "2026-10-14T23:18:58Z",
+      "claimed_at_epoch": 1792019938.291715,
+      "status": "released",
+      "released_at": "2026-10-14T23:43:19Z",
+      "files": null
     }
   ],
   "refusals": [

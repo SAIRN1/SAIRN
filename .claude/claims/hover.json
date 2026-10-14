@@ -732,6 +732,28 @@
       "task": "b34 deep-verify cody b11, land-checks, weakening flags, twin-script sweep, SQL removal check",
       "claimed_at": "2026-10-14T17:58:07Z",
       "claimed_at_epoch": 1792000687.1864903,
+      "status": "released",
+      "released_at": "2026-10-14T23:30:27Z",
+      "files": null
+    },
+    {
+      "id": "hover-1792021507",
+      "session": "hover",
+      "subject": "hover",
+      "task": "b35 deep-verify next closed batch, H2 b33 drive recheck, weakening-flags routing-doc check, stash/stale-file recheck, chain+token, push",
+      "claimed_at": "2026-10-14T23:45:07Z",
+      "claimed_at_epoch": 1792021507.9203382,
+      "status": "released",
+      "released_at": "2026-10-14T23:54:08Z",
+      "files": null
+    },
+    {
+      "id": "hover-1792022082",
+      "session": "hover",
+      "subject": "hover",
+      "task": "b36 land-check cody b12/hank b12/cc b12/fourth b20/H2 b34, weakening-flags routing-doc check, seq1407+HEAD correction, stash/stale-file recheck, claim-liveness repro, push",
+      "claimed_at": "2026-10-14T23:54:42Z",
+      "claimed_at_epoch": 1792022082.8813648,
       "status": "active",
       "released_at": null,
       "files": null

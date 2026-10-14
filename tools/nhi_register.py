@@ -332,12 +332,25 @@ IDENTITIES = [
                  'verify since 2026-09-17, so that has not been true for six days',
         'credentials': ['SD_AUTH_SECRET', 'SD_AUTH_SECRET_PREVIOUS'],
         'source': 'repo',
-        'rotation': 'overlap window, since 2026-09-17: set '
-                    'SD_AUTH_SECRET_PREVIOUS to the current secret, change '
-                    'SD_AUTH_SECRET, wait one SESSION_TTL_MS (12h) for every '
-                    'old token to expire, then clear PREVIOUS. NO universal '
-                    'logout. THE ENTRY BELOW STILL SAYS THERE IS ONE -- see '
-                    'the CORRECTED paragraph in compromise',
+        # STEP 4a RESTORED 2026-10-14 (cc b11), routed by fourth b18: this
+        # runbook ended "then clear PREVIOUS" and omitted the precondition on
+        # the one irreversible step. See api/_lib/auth.js:442-445. Clearing
+        # PREVIOUS while legacy ciphertext remains ends the only route to
+        # those values permanently AND silently -- decryptSecret() returns
+        # null and a caller reads that as "no secret stored".
+        'rotation': 'overlap window, since 2026-09-17: (1) set '
+                    'SD_AUTH_SECRET_PREVIOUS to the current secret, (2) change '
+                    'SD_AUTH_SECRET, (3) wait one SESSION_TTL_MS (12h) for every '
+                    'old token to expire, (4a) CONFIRM NO LEGACY CIPHERTEXT '
+                    'REMAINS -- run sql/legacy_ciphertext_census.sql and require '
+                    'legacy_rows = 0 on every table it reports, per '
+                    'api/_lib/auth.js:442-445 -- and (4b) only then clear '
+                    'PREVIOUS. STEPS 1-3 ARE SAFE AND STEP 4 IS NOT: clearing '
+                    'PREVIOUS ends the only route to a legacy ciphertext for '
+                    'good, and the loss is silent because decryptSecret() '
+                    'returns null, which reads as "no secret stored". NO '
+                    'universal logout. THE ENTRY BELOW STILL SAYS THERE IS ONE '
+                    '-- see the CORRECTED paragraph in compromise',
         'last_rotated': '',
         'compromise': (
             'REVOKE: set a new SD_AUTH_SECRET in Vercel and redeploy. THE '

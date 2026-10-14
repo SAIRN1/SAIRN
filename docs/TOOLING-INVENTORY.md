@@ -21,7 +21,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**349 files in `tools/`.** By what actually invokes them:
+**350 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -30,7 +30,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 0 | session-start or prompt hooks, informational |
 | **DECIDED** | 86 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 88 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 86 | nothing runs these at all |
+| **UNWIRED** | 87 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
@@ -45,6 +45,7 @@ By what they are, independent of wiring:
 | LIVE | 27 |
 | PUSH-GATE | 1 |
 | REPORT | 1 |
+| REPORT-ONLY | 1 |
 | REPORTER | 7 |
 | TOOL | 14 |
 | UNWIRED | 1 |
@@ -502,7 +503,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (86)
+## UNWIRED (87)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -560,6 +561,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `load_deadline_seed.py` | LIVE | loads a deadline seed into a live licence | &mdash; |
 | `mech_panels_live_check.py` | LIVE | a SAIRNmechanical panel that looks wired and does not reach its table, and -- with --static, needing no licence -- a dropdown offering a value the endpoint REFUSES. That second one is the reason it exists rather than being a one-off run: nothing else compares the Equipment panel's asset-type `<option>` list to api/_lib/mech-assets.js ASSET_TYPES, and a disagreement hands every user a 400 UNKNOWN_ASSET_TYPE from a form that offered the value. It asserts the ROUND TRIP rather than the columns: column metadata proves the DDL, and only a write-then-read proves the app preserves the three-state NULLs both tables are designed around (an unweighed charge must not come back 0, an unstated gwp_over_150 must not come back false, an unrecorded expiry must not read as current). Neither table grants DELETE by design, so the verification row is RETIRED or SUPERSEDED rather than removed and the run says so -- and the ids carry a per-run timestamp so a re-run cannot collide with the last one. --static is a COULD-NOT-TELL about the panels and prints that rather than a pass | &mdash; |
 | `negated_status_assertion_scan.py` | CHECKER | a READ-LIST of assertions that express "the caller got through" as the NEGATION of one status code. `!== 401` is satisfied by a 403, by a 500 and by the harness throwing -- and on 2026-09-16 exactly that arm, in tests/app_session_isolation.js, printed "law_trusttx is reachable with the LICENCE ALONE -- no session -- and answers 403" IN GREEN, over a gate that had just been put in front of attorney IOLTA trust money. DELIBERATELY NOT A VERDICT: `!== <code>` is CORRECT when the claim is "some OTHER lock answered first", and nothing mechanical can tell that from "it got through" -- so every row is printed with its assertion and its message for a human, and the tool says so in its own output. It does NOT classify by message text, because keyword-matching "reaches" would be wrong in both directions, which this platform has paid for twice. Reads comment-stripped source, since the repo now contains several comments DISCUSSING the defect. FOUND A SECOND INSTANCE ON ITS FIRST REAL RUN: api/sairndental/public-book.test.js asserted a three-way disjunction for "reaches the network stage" and was green while the request 502ed before reaching anything | &mdash; |
+| `obligation_surface.py` | REPORT-ONLY | a REVIEW OBLIGATION NOBODY IS REMINDED OF. It catches the queue ageing past the point the platform has already decided is late -- it imports OWNER_STALE_HOURS from tier_a_review_gate rather than keeping a threshold of its own, so the two cannot drift. Its first run found 12 of 20 open obligations overdue and the oldest at 404h, sixteen days, none of which was printed anywhere a session would see on the way in. The data was never missing: tier_a_review_gate --list prints the queue and nothing ran it. REFUSES rather than reassuring -- an absent, unparseable or wrong-shaped register exits 2 and says which, because a surface whose empty state and broken state read identically is worse than none. An obligation whose opened_at cannot be parsed is a THIRD STATE, printed separately and never folded into fresh, since the one record nobody can age is the one most likely to be oldest. NOT a hook and not a gate: it blocks nothing and is exit-1 as a signal only | &mdash; |
 | `open_work_shard.py` | GENERATOR | docs/open-work/, one shard per App value plus ACTIVE.md, from docs/SAIRN-OPEN-WORK-INDEX.md -- which is 2,380,170 bytes, roughly 640,000 tokens, and fits no session window. Rows are copied WHOLE and verbatim; PR 2.1 forbids editing a row by splitting on a pipe and 812 of them is not the place to start. PER-APP SHARDING WAS NOT ENOUGH, measured after the first run: platform.md is 838,657 bytes against a 400,000 ceiling, because these rows average about 2.9KB. So ACTIVE.md carries ONE SHORT LINE per open row with a pointer to the shard and line, and never the paragraph. The index is STILL CANONICAL -- fourteen tools parse those rows and doc_sha_reseat.py rewrites them on every rebase -- so `--check` exists to prove the two copies agree row for row, which is the only thing that makes two copies safe. | &mdash; |
 | `outline.py` | LIBRARY | a function/section outline of a large file | &mdash; |
 | `panel_depth.py` | CHECKER | a panel that looks built because its vocabulary is present. Nine signals per panel, four SHALLOW (a panel div, a nav route, a registered resource, a client write) and five DEEP (a real SQL table, the resource NAMED in executable endpoint code, a verb beyond generic CRUD, that verb actually SENT, a test file naming it). Built because two documents recorded the same debt and neither paid it: the 2026-09-23 internal SAIRNcode audit says "breadth of panel is not depth of function ... a direct depth check on those eight panels is owed before pitching a large hospital system", and the 2026-09-26 cloud audit deferred it again in its own words. FIRST RESULT: of SAIRNcode's eight enterprise RCM panels, claims scores 9/9 and the other seven score 6/9 missing the SAME three deep signals -- and every mention of sc_denial/sc_ar/sc_revenue in api/sd-data.js is inside a COMMENT, so all seven ride the generic handler with no per-resource rule. Reports PRESENT and COULD-NOT-TELL as TWO numbers that are never added, carries NO threshold on purpose because a threshold would manufacture a pass/fail out of a design question, and names what it cannot see: sufficiency at scale, whether a test that mentions a resource asserts anything about it, and a capability served by its own endpoint rather than by sd-data (sc_eligibility is the live example). Criteria are stamped and locked against 12 synthetic fixtures that run BEFORE any real judgement -- the lock refused version .1 for matching a commented-out panel id, and the first real run exposed a domain_verb that credited five sibling resource names as verbs off one list line. | &mdash; |
@@ -629,7 +631,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      349   git ls-files tools/
+  tools on disk                      350   git ls-files tools/
   hook entries                         0   .claude\settings.json  (zero, allowed: this clone's hooks are intentionally EMPTY -- Michael disabl)
   push-gate invocations               13   tools\sairn_push_gate_hook.py
   report-only registry                77   report_only_checks.REGISTRY
