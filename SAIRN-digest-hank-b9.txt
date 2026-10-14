@@ -1,0 +1,9 @@
+STATUS b9 closed. All 6 items landed; HEAD == origin/main, 0/0, no --force, no seed-gate override. Nothing red.
+DECISION-NEEDED Michael: (1) run sql/2026-10-14-hank-b9-ai-safeguards.sql -- until then no employee sees the AI notice; (2) confirm or reverse coordinators losing referral/training WRITE.
+CHANGED SAIRNscape 12 of 12 -- `schedule` gated, live-verified. AI safeguards: ai_source/ai_approved_by/ai_approved_at, server-stamped, 5 high-risk resources, one-time per-employee notice. SAIRNfreedom's 4 AI surfaces disclose. SAIRNsenior reads tiered, referral writes narrowed.
+EVIDENCE-path docs/SAIRN-handoff-hank-b9.md; docs/hank-evidence/b9_live_gate_probe.out
+UNVERIFIED SQL unrun. No client stamps ai_source on a high-risk resource, so that refusal is reachable, not reached. leg_clergybookings is the leg_bookings defect again -- found, not fixed.
+NEXT Michael runs the SQL and rules on coordinators; fourth discharges the Tier A obligation.
+CONTEXT <=33% of the 1,000,000-token window. AN UPPER BOUND, NOT A MEASUREMENT: 326k of a 15M session budget spent, no compaction; cumulative spend re-counts context each turn, so occupancy is lower.
+SHA256 c128baba3cbd0118e853813025cf5aaec7539e5b966f82be960c00638eb2b840
+END-OF-REPORT

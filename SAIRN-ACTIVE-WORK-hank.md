@@ -2883,3 +2883,60 @@ at the empty snippet would have recorded a confirmed read-back it never made.
 This note is appended here rather than added to the report, because the report
 and digest are sealed by report_sha_check and editing either after seating its
 SHA is the exact accident that tool exists to catch.
+
+---
+
+## 2026-10-14 -- batch b9
+
+Published shas: 5776ef19 (item 1) a6fa37a3 (item 2) a428abca (item 3)
+e444dc83 (item 4) 9733963d (item 5) 12627753 (the envelope fix) ecb674aa (the
+live probe). Read the published set with `git log --oneline origin/main`, not
+from this line.
+
+ITEM 1 `schedule` gated, SAIRNscape 12 of 12, live-verified. ITEM 2 the
+AI-safeguard fields and the one-time notice -- api/_lib/ai-safeguards.js,
+api/ai-notice.js, sql/2026-10-14-hank-b9-ai-safeguards.sql. ITEM 3
+SAIRNfreedom's four AI surfaces disclose and the one AI-written record carries
+ai_source. ITEM 4 three SAIRNsenior asymmetries closed, plus the 34-resource
+SAIRNlegacy survey (5 match the shape, 0 server re-checks, 29 no guard). ITEM 5
+the seam check's COULD NOT TELL resolved and seven FMEA drafts re-saved. ITEM 6
+pushed, 0/0.
+
+SIX THINGS WORTH CARRYING FORWARD, all written up in
+docs/SAIRN-handoff-hank-b9.md:
+
+1. DO NOT WRAP A PUSH. b8 learned not to REDIRECT one. `timeout 170 git push`
+   breaks the pre-push hook's stdin identically and the register feed gate
+   denies because it cannot see the ref lines. A pipe to tail is fine.
+
+2. A RE-SEAT LOOKS LIKE A DELETION to tools/sairn_rebase_resolve.py, and it
+   refuses -- correctly. Nine re-seat commits replayed one at a time ask it the
+   same unanswerable question nine times. A MERGE asks it once, with both final
+   states in hand, and the tool merges it cleanly.
+
+3. THE PUSH GATE READS THE ADDED LINES OF EVERY COMMIT A PUSH WOULD SEND. A
+   credential-shaped fixture value cannot be cleared by deleting the file in a
+   later commit; the blob still ships. It took amending the introducing commit
+   and replaying thirteen with `git rebase --onto`. And then the HANDOFF was
+   refused for QUOTING the line, because prose describing a credential-shaped
+   literal is one.
+
+4. A PROXIMITY WINDOW IS NOT A CHECK. api/_lib/sairnsenior-branches.test.js
+   proved a gate's shape with a 1600-character window between two strings; it
+   broke on a commit that only made a COMMENT longer. Replaced by independent
+   facts.
+
+5. A COUNT WRITTEN NEXT TO A DERIVED SWEEP WILL GO STALE and the sweep will be
+   blamed. The roleSet seam test said 18 while the tool said 19 and the source
+   held 21; the sweep had always been general. Derive and print the number.
+
+6. AN FMEA DRAFT DECAYS SILENTLY. The api/sd-data.js draft was 30 days old over
+   57 of 548 register records and scored MISSED twice; re-saved, it returned
+   PREDICTED for this batch's own item-1 defect within the hour.
+
+OPEN AND BLOCKING: sql/2026-10-14-hank-b9-ai-safeguards.sql is UNRUN, so no
+employee has seen the AI notice; and no production client stamps ai_source on a
+high-risk resource, so that refusal is reachable but not reached.
+
+Claim released at the end of the batch. No hook restored, settings.json never
+committed by this session, SAIRN_SEED_GATE=off never used, no tools/ file edited.

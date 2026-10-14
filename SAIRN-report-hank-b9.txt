@@ -1,0 +1,589 @@
+REPORT hank b9
+
+SAIRN -- hank, batch b9, 2026-10-14
+Clone: C:\Users\marsh\Documents\SAIRN-hank    Branch: main
+
+================================================================================
+1. PUSH STATE -- MEASURED, NOT ASSERTED
+================================================================================
+
+  git rev-list --left-right --count HEAD...origin/main   ->   0   0
+
+No --force at any point. SAIRN_SEED_GATE=off was NEVER used: every gate refusal
+was satisfied rather than overridden.
+
+  5776ef19  item 1 -- `schedule` gated, SAIRNscape 12 of 12
+  a6fa37a3  item 2 -- the AI-safeguard fields, the policy, the notice endpoint
+  a428abca  item 3 -- SAIRNfreedom's four AI disclosures and ai_source
+  e444dc83  item 4 -- the three SAIRNsenior asymmetries + the survey
+  9733963d  item 5 -- the seam count de-staled, seven FMEA drafts re-saved
+  12627753  the envelope-ordering fix the push gate caught
+  ecb674aa  the post-push live probe and its output
+
+Each verified with `git log --oneline origin/main --grep` AFTER the push rather
+than assumed from a clean exit. Plus nine register/scrutiny/generated-document
+commits, ONE history rewrite and ONE merge -- section 7.
+
+================================================================================
+2. ITEM 1 -- THE TWELFTH SAIRNscape RESOURCE
+================================================================================
+
+b8 gated five and then found hover2's repro had only ever measured ELEVEN of
+the app's TWELVE resources: 22 pairs is 11 x 2, and `schedule` was in neither
+SD_SESSION_GATED nor the suite's licence-only list -- not gated, so no refusal
+arm; not disclosed, so no licence-only arm. Invisible in both directions.
+
+MICHAEL DECIDED IT. THE ONE FACT THAT HAD TO BE READ FIRST was read at this
+HEAD rather than carried from b8's note: `schedule` is the only SAIRNscape
+resource whose bare name is also a StoneDesk PANEL ID, and all seven
+stonedesk.html mentions are navigation -- sbNav('schedule'), a mode-index
+array, two alert `panel:` fields, a message-category default, two nav rows --
+and NOT ONE is an sd-data call. api/sd-data.js:4892 records the same history
+from the other side: sairngrounds had to take a prefixed name BECAUSE
+SAIRNscape held the bare one.
+
+AND IT COST THE SUITE ITS LICENCE-ONLY CONTROL, which is the part worth
+reading. The loop that drove "what is not gated is still not gated" now has
+NOTHING to drive, and b8 wrote in that very loop that a control which becomes a
+zero-length loop passes forever and prints nothing. Replaced, not deleted:
+
+  * an explicit arm asserting UNGATED_REST is EMPTY ON PURPOSE, so re-opening a
+    resource has to be written down there with a reason;
+  * a registry-derived count, GATED.length == api/_resources/sairnscape.js;
+  * A CROSS-APP ARM, because everything else in that file is inside SAIRNscape
+    and none of it can see the opposite failure: a bare-key read of `employees`
+    must answer with its OWN gate's refusal, not this table's "sign in first";
+  * and the anti-vacuity property moves to the PAIRED POSITIVE arms -- a
+    harness that 403-ed everything would fail twenty-four arms, not pass them.
+
+73 passed became 80. api/sd-data-session-gate.test.js pair count 132 -> 134.
+
+hover2's repro STILL reports 22 of 22 FIXED and CANNOT MOVE for this change,
+because `schedule` was never among its 22. Stated so the unchanged number is
+not mistaken for evidence about the twelfth resource.
+
+================================================================================
+3. ITEM 2 -- THE AI SAFEGUARDS
+================================================================================
+
+The api/ half of docs/2026-10-14-ai-safeguards-spec.md, which is in FOURTH'S
+LIVE CLAIM and was READ, not edited.
+
+THE RULE: a record carrying `ai_source`, on a resource that becomes a DOCUMENT
+OR A DECISION, leaving draft, is refused 403 AI_APPROVAL_REQUIRED unless a
+session for the app that OWNS the resource is present -- and then the SERVER
+writes ai_approved_by and ai_approved_at from that session, OVERWRITING
+whatever the payload sent.
+
+THE PRECEDENT IS THIS FILE'S OWN HISTORY. api/sd-data.js's sc_auth_requests
+sign-off gate refuses a submission-ready transition without a real Compliance
+Admin session and then sets signedOffBy itself, because "a client-side
+'reviewed' checkbox is a UI convenience, never the real boundary". Generalised
+AS DATA in api/_lib/ai-safeguards.js: one table rather than one `if` per
+resource, because a check written at one call site and not the others is
+indistinguishable from no policy at all when read one branch at a time.
+
+A DRAFT IS EXEMPT AND AN ABSENT STATUS IS NOT A DRAFT. Treating a missing
+`status` as draft would silence the gate on every resource that has no status
+field, which is most of them.
+
+THE POLICY IS A TOTAL PARTITION, and that is the methodology part. Every
+resource in api/_lib/ai-scan-redaction.js's AI_SCANNED_TEXT -- the platform's
+existing, justified list of what stores model prose -- is EITHER high-risk (5)
+OR excluded with a real reason (6), and api/ai-safeguards.test.js fails if one
+is in neither or in both. A new AI surface added to that map with no risk
+decision breaks a test at the one moment somebody is looking.
+
+HIGH RISK: mech_quotes (a quote a customer signs), mech_takeoffs (the
+quantities a price is built from), grd_ecosystem_reports (a report that goes to
+a property owner), rf_photos (an insurance supplement is built on it),
+bld_photo_analyses (a site finding read as a 140-character summary nobody
+opens). EACH NAMES ITS OWNING APP and the suite CHECKS that name against
+api/_resources' OWNER_BY_RESOURCE rather than trusting it -- a wrong app would
+verify a token for an app with no business approving the record, which is
+Guardian Check 28.
+
+EXCLUDED: mech_docs, grd_progress_photos, scp_progress_photos (QC evidence with
+its own authority gate), msb_food_scans, `memory`, and sf_bottle_fills -- the
+last being the only ARGUMENT rather than an observation, and the one worth
+disagreeing with if anybody does. See section 4.
+
+THE FOOTER IS DERIVED AND NOTHING EXTRA IS STORED. aiFooter() returns
+"AI-assisted, reviewed by <name>", or "AI-assisted - not reviewed" for an
+AI-sourced record nobody approved -- NOT an empty string, because a missing
+footer and an unreviewed one look identical to a reader and only one is true.
+
+THE ONE-TIME NOTICE. sql/2026-10-14-hank-b9-ai-safeguards.sql adds
+ai_notice_version (TEXT, not boolean -- a boolean cannot express "acknowledged
+the OLD wording") and ai_notice_acked_at to every credential table, DERIVED
+FROM information_schema rather than listing sixteen names, and RAISES if the
+loop matches nothing because an empty match otherwise reads exactly like a
+successful run. No row is written, so PR 3.4's recoverability guard does not
+apply -- said explicitly, because "does not apply" and "was forgotten" look
+identical in a file that simply lacks it.
+
+api/ai-notice.js IS ONE SHARED ENDPOINT, A STATED DEVIATION. The spec's §3.2
+proposes the flag on each of seventeen login replies plus an ack action on
+each; that is seventeen edits and seventeen places to drift, which the same
+spec's §3.1 argues against for the helper. The employee comes from the SESSION,
+never the body, and the UPDATE is filtered on employee_id AND license_hash from
+the token -- a cross-tenant ack would mark somebody else as having read the
+notice, and there is no request shape that reaches another row.
+
+FOUR REFUSALS THAT ARE EASY TO GET WRONG, ALL DRIVEN: an arbitrary version
+string is refused rather than stored; a second ack of the same version writes
+nothing (acked_at is evidence of when the person read it); a failed write is a
+502 so the notice returns next login; and AN UNMIGRATED DATABASE IS A THIRD
+STATE -- 503 AI_NOTICE_NOT_PROVISIONED naming the sql file, on both the read
+and the write path.
+
+api/ai-safeguards.test.js 47 passed / 0 failed.
+api/sd-data-ai-approval.test.js 25 passed / 0 failed, with the OVER-REFUSAL arm
+FIRST on purpose: a gate that applied to every mech_quotes save would break
+every existing SAIRNmechanical user and every other arm would still pass.
+
+================================================================================
+4. ITEM 3 -- SAIRNfreedOM SAYS IT IS AI
+================================================================================
+
+FOUR AI features, and until today NOT ONE said so on its output. The system
+prompts already carry real refusals -- VA_CLAIM_REFUSAL goes into three of
+them, 38 U.S.C. 5901 is the reason -- but a refusal is about what the model
+will not answer and a disclosure is about the reader knowing what wrote the
+answer they did get. Two problems; one of them had been solved.
+
+  sfEstimateFill      a fill percentage read from a photograph -- THE ONLY ONE
+                      THAT BECOMES A RECORD
+  sfMarketSearch      a web-search summary of supplier prices, displayed
+  sfOutreachIdeas     suggestions filtered in code against permitted purposes
+  sfDraftNewsletter   a draft that GOES OUT UNDER THE POST'S NAME
+
+ONE CONSTANT AND ONE HELPER, not four copies of a sentence: the four sites are
+at four very different points in a 430,000-character file. ON THE SUCCESS
+RENDER ONLY -- an error box is not AI output and labelling it would make the
+label mean nothing. THE WORDING IS A PLACEHOLDER, deliberately: the spec is
+explicit that the final text is the lawyer's and that shipping an AI-written
+legal notice would be the exact failure the policy is about.
+
+ai_source ON THE ONE RECORD, AND WHY IT GETS NO APPROVAL GATE. The fill record
+carries ai_source: 'claude:bottle-fill' ALONGSIDE the existing `method` field
+rather than instead of it, because the two say different things and both are
+evidence. It is deliberately NOT high-risk and that is an argument:
+sairnfreedom.html records a BINDING product decision 14 lines above that
+function -- fill level is determined from a photograph or not at all, "no
+slider, no tap-to-set, no adjustable guess", for patent-avoidance reasons -- and
+an approve-before-save step IS a human adjusting the guess. The row carries a
+bottle id, a date and a percentage. So it gets the DISCLOSURE and not the
+approval gate, because they are different safeguards and only one of them
+contradicts a recorded decision.
+
+THE NOTICE, CLIENT HALF: a banner rather than a modal, because a modal that
+fails to render blocks the app and this notice must never be why a post cannot
+reach its own records. Hung off sfEnterApp -- the single sign-in landing point
+-- AFTER sfRenderAll() and inside a try. STATE LIVES ON THE SERVER: a
+localStorage flag is per-device, so the same person on the post's second
+computer would be asked again and clearing a browser would re-ask everybody.
+
+THE SUITE FOUND TWO DEFECTS IN ITSELF, which is the point of deriving rather
+than listing. tests/sairnfreedom_ai_disclosure.js, 32 passed / 0 failed:
+
+(1) ITS FIRST DRAFT FOUND FIVE CALL SITES AND CRASHED. The fifth is a sentence
+inside a block comment -- "most of them hardcode the URL rather than going
+through their app's own callClaude()". PR 1.2 exactly: grep cannot tell code
+from text that describes code. Had it not crashed it would have reported a
+naked AI surface that does not exist, and the usual fix for a false finding is
+to loosen the check, which is how a real one gets lost later. Comments are now
+blanked into a SAME-LENGTH copy so every offset still points at the real byte,
+and an arm asserts the raw file mentions callClaude( MORE times than the code
+does -- 6 raw versus 5 in code -- so the blanking cannot quietly stop working.
+The blanker had to test COMMENTS BEFORE QUOTES, which the first version did
+not: the apostrophe in "app's" opened a fake string and the comment survived.
+
+(2) ITS FUNCTION-NAME LIST SAID sfMerchSearch, WHICH HAS NEVER EXISTED. The
+market search is sfMarketSearch. Same propagation this app's own comments
+record for `sfBottleFill` -- a name in two comments and no function, cited by a
+docs/CRITICALITY-TIERS.md cell and a routed fix before anybody checked.
+
+================================================================================
+5. ITEM 4 -- THE SAIRNsenior ASYMMETRIES AND THE SAIRNlegacy SURVEY
+================================================================================
+
+THREE ASYMMETRIES. sen_branches and sen_settings had management-only WRITES and
+reads open to ANY signed-in employee returning THE WHOLE ROW -- including
+updatedBy/updatedByRole on a branch and updated_by/updated_at on every setting,
+which say who changed the agency's federally-mandated EVV compliance
+declaration and when. And the five SEN_REFERRAL_RESOURCES had BOTH verbs
+decided by a role set literally named SEN_CLIENT_BROAD_READ_ROLES, so a
+coordinator or a scheduler could WRITE sen_training_rules -- the rule that
+decides whether a caregiver is compliant to work -- and sen_applicants.
+
+A FLAT ROLE GATE WAS THE WRONG FIX AND IS NOT WHAT THIS IS. The code already
+records why those reads were open, in the caregiver's own terms: a caregiver's
+roster row NAMES a branch and if the name cannot resolve the screen shows a raw
+id; the EVV state and aggregator are what make the rules applied to their own
+visits explainable. Refusing those reads breaks a real screen, and a security
+change that breaks a screen gets reverted as broken rather than fixed.
+
+SO BOTH READS ARE MINIMUM-NECESSARY -- the pattern this file already uses for
+SAIRNdental's financial tier. Management reads the row; everybody else reads
+name/state/active on a branch, and evv_config{state, aggregator} plus
+agency_profile{name} on settings, with NO updated_by and NO updated_at.
+
+ALLOWLIST, NOT DENYLIST, is the load-bearing direction, and the arms drive it
+with a field and a setting key that DO NOT EXIST in today's app. THE
+UNKNOWN-KEY CASE IS THE SHARPEST: sen_settings' write stores unknown keys as-is
+on purpose -- "a settings store, not a schema registry" -- and the read
+disclosed them on the same terms, so the next setting anybody added was
+published to every caregiver the day it was written. Withheld entirely now.
+
+AND THE CONSEQUENCE OF THE WRITE NARROWING IS STATED RATHER THAN DISCOVERED: a
+coordinator can no longer LOG a referral or record a completed training. If
+intake is a coordinator's job -- and the comment above that map argues it is,
+for referrals specifically -- the fix is a per-resource write map in ONE place,
+not a return to the broad set. It is in the handoff to confirm.
+
+api/sd-data-sen-role-asymmetry.test.js, NEW -- 38 passed / 0 failed. Every
+narrowing has its paired positive: management still reads the whole row,
+management can still write, a coordinator can still READ the family, and a
+caregiver still cannot. Without those a gate refusing everybody would pass.
+
+AND ONE EXISTING ARM WAS WRONG IN TWO WAYS AT ONCE.
+api/_lib/sairnsenior-branches.test.js asserted "read is open to any signed-in
+employee and write is management-only" and proved it with a 1600-CHARACTER
+PROXIMITY WINDOW between the resource name and the write's refusal message. The
+sentence became FALSE the moment the read was tiered, and the window broke on
+this commit NOT because behaviour regressed but because the explanatory comment
+above the gate got longer. A proximity window is a measurement of comment
+length pretending to be a measurement of code. Replaced by three independent
+facts. 30 arms became 32.
+
+THE SURVEY -- docs/2026-10-14-hank-b9-sairnlegacy-client-authority-survey.md. A
+SURVEY, NOT A FIX; the instruction was to report with file:line.
+
+IT TURNS ON ONE GREP, and that is named as its weakness:
+
+  grep -n "resource === 'leg_" api/sd-data.js
+  -> exactly TWO bespoke branches, and they are the two already-fixed resources
+
+Every one of the other 34 falls through to the generic LEG_RESOURCES upsert -- a
+blind merge-duplicates POST with no business rule of any kind. So the "server
+check" column is the same answer 34 times and it is the absence of one.
+
+  MATCHES THE SHAPE         5
+  SERVER RE-CHECKS          0
+  NO BLOCKING GUARD        29   (required-field checks on the record itself)
+
+ZERO IS THE NUMBER WORTH READING. The only two SAIRNlegacy resources with a
+server-side business rule are the two that were first reported as defects.
+
+leg_clergybookings IS THE b8 DEFECT WITH A DIFFERENT RESOURCE NAME, verified by
+hand at this HEAD rather than taken from the subagent that found it:
+clergyBookingConflict() at sairnlegacy.html:4817 is the SAME algorithm -- the
+file says so itself at :4809 -- reads localStorage, hard-blocks at :4854,
+writes a fresh CB- id at :4858, and has NO server branch. Two devices
+double-book the same officiant for two funerals in the same hour, discovered
+when they do not arrive. b8's handoff said a third instance was worth looking
+for rather than waiting for. This is the third.
+
+The other four with their nuances KEPT rather than upgraded: leg_monuments (a
+headstone engraved with the wrong name from a stale cached case),
+leg_deathrecords (a permit marked Issued while the coroner's review is open),
+and -- labelled WEAKER because the race is against related data rather than the
+same row -- leg_invoices and leg_aftercare.
+
+EACH HAS A DIFFERENT NEXT STEP AND ONLY ONE IS THE b8 FIX. Copying it to
+leg_clergybookings must NOT copy its status literal: leg_bookings exempts
+'Cancelled', clergyBookingConflict skips 'Completed'. Cross-domain convention 7
+-- byte-identical is not safe-in-context. leg_aftercare's cheapest real fix is
+a DETERMINISTIC id, because a conflict check is the wrong tool when the
+collision can be made impossible by the key.
+
+NOTED IN PASSING, NOT SURVEYED: rf_settings (api/sd-data.js:8757) has the
+identical open-read shape sen_settings just had. Unverified; recorded so the
+next person has a starting point rather than a surprise.
+
+================================================================================
+6. ITEM 5 -- THE TWO TOOL RUNS, AND WHAT EACH ACTUALLY CAUGHT
+================================================================================
+
+tools/sairn_seam_check.py: 96 clean, 0 not-forwarded, 19 COULD NOT TELL, exit 0.
+
+IT IS NOT A PAIR. b8's handoff recorded "COULD NOT TELL for at least one
+endpoint/engine pair", which is what the summary line looks like from a
+distance. Read in full it is NINETEEN lines and every one is the SAME SEAM:
+roleSet() in api/_lib/auth.js, which copies keys in a loop and therefore has no
+`literal.field` read for a static tool to follow. One function, nineteen
+callers.
+
+THE HAND-WRITTEN TEST THE TOOL ASKS FOR ALREADY EXISTED --
+api/_lib/auth-roleset-seam.test.js, written 2026-10-05 quoting the tool's own
+words that could-not-tell is not a pass. WHAT WAS WRONG WAS THE NUMBER: that
+file said EIGHTEEN in four places, the tool reports NINETEEN, and the source
+holds TWENTY-ONE files calling roleSet(). Nobody changed the contract; the
+population grew and the figure did not. Convention 8.
+
+THE SWEEP WAS NEVER WRONG, ONLY THE PROSE -- section 5 of that file has always
+read every file in api/. This is the better outcome to find and the easier one
+to misread: a stale number beside a working check invites somebody to "fix" the
+check. The count is now DERIVED and PRINTED, with a FLOOR rather than an
+equality (an equality would be the same stale number one level down, red on
+every ordinary role map somebody adds) plus a named anchor requiring
+api/sd-data.js in the swept set. 17 arms became 19. The old figure is kept in
+the header: a corrected number with no record of the correction is how the same
+mistake gets made again.
+
+tools/fmea_draft.py --save, seven files, all exit 0. api/sd-data.js had a draft
+scored MISSED twice; six had NO DRAFT.
+
+WHAT THE RE-SAVE CAUGHT: the existing draft was dated 2026-09-14.
+
+  defect_records      57  ->  548      the register it reasons over
+  matched_this_file    1  ->   90      priors it could draw on
+  detectors_fired     []  ->  1.3, 1.7
+  app_matched   sairnvet  ->  sairnscape
+
+MISSED twice not because the prediction was bad but because it was a
+THIRTY-DAY-OLD prediction over a TENTH of the evidence with the wrong app
+attributed. "This draft predicted the wrong thing" and "this draft is stale"
+have opposite fixes and the loop reports both as MISSED.
+
+AND THEN IT PAID OFF WITHIN THE HOUR. Recording item 1's defect returned:
+
+  PREDICTED: api/sd-data.js -- rule 1.7, from docs/fmea/api_sd-data.js.json
+
+the first PREDICTED this loop has returned for a hank batch, and only true
+because the draft had been re-saved. 1.7 -- a sampling window silently
+exempting what it does not reach -- is exactly why the twelfth SAIRNscape
+resource survived b8. The stale draft would have scored MISSED and said nothing.
+
+WHAT THESE RUNS DID NOT CATCH, said plainly because seven green exits invite
+the opposite reading: NO NEW DEFECT IN SHIPPED BEHAVIOUR. An FMEA draft is a
+PREDICTION -- the tool says so on every save. The six new drafts predict
+nothing yet and cannot be right or wrong until something goes wrong in those
+files. Recording a baseline as a catch would be a fabricated one, so there is
+no register entry for it.
+
+TWO RECORDS WERE WRITTEN, both severity low and both layer-honest: one TEST
+(the stale count) and one TOOLING (the stale draft). Neither changed what any
+user can do; they are defects in things that CHECK the work, which is why they
+are recorded at all.
+
+================================================================================
+7. ITEM 6 -- THE PUSH: SIX REFUSALS, A HISTORY REWRITE AND A MERGE
+================================================================================
+
+In sequence, because the next session will meet these.
+
+REFUSAL 1 -- the register feed gate. Two fix() commits with no record citing
+them. Written, after the rebase, because a register record stamps a sha and is
+exactly the artefact a rebase invalidates.
+
+REFUSAL 2 -- the generated-document gate. docs/MASTER-PLAN.md and
+docs/traceability-matrix.md stopped matching their sources because four new
+suites moved the counts. Regenerated with their own generators (PR 2.5); the
+matrix grew 972 -> 980 lines.
+
+REFUSAL 3 -- the Tier A review gate. TEN resources, assigned to fourth. The
+obligation says which are SUBSTANTIVE and which are negative controls --
+mech_checks and sc_auth_requests appear only in the narrowness arms asserting
+the new gate did NOT widen onto them -- and names the four things to review
+hardest, in order.
+
+REFUSAL 4 -- A REAL DEFECT IN THIS BATCH'S OWN NEW ENDPOINT.
+api/preauth-envelope-ordering.test.js refused the push because api/ai-notice.js
+named its whole verb vocabulary, and an unknown app_id, BEFORE calling
+validateLicenseKey. tools/preauth_oracle_check.py reported it as the ONLY
+PREAUTH_DISCLOSURE on the platform across 71 handlers. A caller holding NO
+credential could tell a malformed envelope from a valid envelope with a bad
+action from a bad licence -- three distinguishable answers, one of which hands
+over the verb list for free. IT IS THE SAME DEFECT THE OTHER SEVENTEEN
+*-auth.js FILES WERE REORDERED TO FIX on 2026-09-08. Fixed; 0 disclosures. The
+reasoning is now in the file where the next person writing endpoint eighteen
+will meet it. That test's own text says it blocks because on 2026-09-10 a
+sibling seam test caught a live legal-deadline field being dropped and was
+POWERLESS TO STOP THE PUSH. It stopped this one.
+
+REFUSAL 5 -- tools/redaction_check.py. A test fixture assigned an
+eighteen-character string to a field named api_secret, matching
+generic_credential_assignment. The gate reads the ADDED LINES of every commit a
+push would send, so deleting it later does not clear it -- the blob still ships.
+The introducing commit was amended and the thirteen after it replayed with
+`git rebase --onto`; verified the string appears ZERO times in the outgoing
+range. NO CREDENTIAL WAS ROTATED and that is a judgement rather than an
+omission: the value was never a secret, it is a sentence written to be asserted
+ABSENT from a non-management response. The gate's advice to rotate regardless
+is right for a real secret and would be theatre here.
+
+AND THEN THE HANDOFF ITSELF WAS REFUSED FOR QUOTING THAT LINE. A document
+describing a credential-shaped literal IS a credential-shaped literal, and the
+pattern cannot tell prose from code. Rephrased, and the episode left in the
+handoff's own record rather than tidied away.
+
+REFUSAL 6 -- `timeout 170 git push`. A WRAPPER breaks the pre-push hook's stdin
+exactly as a redirect does: git hands the ref list to the hook, a wrapped push
+does not reproduce it, and the gate DENIES rather than guessing. b8 learned "do
+not redirect a push"; the rule is DO NOT WRAP ONE EITHER. A pipe to tail is
+fine.
+
+THE FIFTH REBASE THEN CONFLICTED ON THE REGISTER AT EVERY REGISTER COMMIT, and
+tools/sairn_rebase_resolve.py REFUSED -- correctly. From the ancestor's point
+of view a RE-SEAT (the same record pointed at a new sha) is indistinguishable
+from a delete plus an append, and that tool says so: "A union would put every
+one of them back, which is a different wrong answer, not a safer one."
+Replaying nine re-seat commits asks it the same unanswerable question nine
+times. A MERGE ASKS IT ONCE, with both final states in hand: 548 ancestor + 4
+upstream-only + 1 local-only = 553, merged by that tool and validated by
+`tools/defect_register.py --check` before staging. All four b9 records verified
+present by name afterwards.
+
+THREE REF-LOCK COLLISIONS followed -- "cannot lock ref 'refs/heads/main'" --
+because the gate takes a minute or more and other sessions push during it. The
+only remedy is a prompt re-merge and retry; it took three.
+
+.claude/settings.json IN THE MERGE IS UPSTREAM'S, BYTE FOR BYTE, checked with
+`git diff --quiet origin/main -- .claude/settings.json` rather than assumed.
+This session's own modification was stashed before the first rebase, backed up
+outside the repo, and is in no commit of this batch.
+
+================================================================================
+8. LIVE VERIFICATION -- PR 3.2, fail=0
+================================================================================
+
+docs/hank-evidence/b9_live_gate_probe.py, output in the matching .out, run
+AFTER the push landed against https://sairn.vercel.app/api/sd-data.
+
+  twelve SAIRNscape resources   bare key 403 FORBIDDEN / session 200, all 12
+  employees (cross-app)         403, and the arm asserts the message is NOT
+                                this table's "sign in first"
+  mech_quotes + ai_source       403 AI_APPROVAL_REQUIRED
+  mech_quotes, no ai_source     200  <- THE OVER-REFUSAL CONTROL
+  api/ai-notice.js state        401 NO_SESSION -- deployed, refusing in order
+  leg_bookings, no window       400 BOOKING_WINDOW_REQUIRED
+
+fail=0, could-not-run=0, exit 0.
+
+`schedule` answered 200 on the bare key when this probe was run BEFORE the push
+and 403 after, which is the whole of item 1 in two lines.
+
+THE OVER-REFUSAL CONTROL MATTERS MORE THAN THE 403 above it. A gate that
+refused every mech_quotes write would satisfy the AI arm and break every
+existing SAIRNmechanical user.
+
+THIS PROBE WRITES ONE ROW AND b8's HEADER SAID IT WROTE NONE. Corrected, in the
+shape the push gate's live-probe residue audit reads: guard=yes,
+residue=docs/live-residue/README.md, ONE upserted mech_quotes row, id
+ZZ-AI-PROBE-CONTROL, on the AUDIT LICENCE MECH-PINNACLE-2026 only, FIXED id so
+re-runs overwrite rather than accumulate. It has to write: the only way to tell
+"refuses AI-sourced writes" from "refuses all writes" live is to send the same
+request without the field and watch it succeed.
+
+WHAT IT DOES NOT PROVE: the leg_bookings 409 conflict path is not driven live
+(it needs a real overlapping booking in the demo tenant), the cancellation
+exemption likewise, and NO PRODUCTION CLIENT SENDS ai_source ON A HIGH-RISK
+RESOURCE -- so the live 403 proves the gate is reachable, not that anything
+reaches it.
+
+================================================================================
+9. REGRESSION
+================================================================================
+
+Run at the published HEAD, exit code read from each program:
+
+  api/sd-data-session-gate.test.js              0
+  api/sd-data-scp-session-gate.test.js          0   (80 passed / 0 failed)
+  api/sd-data-ai-approval.test.js               0   (25 / 0)
+  api/ai-safeguards.test.js                     0   (47 / 0)
+  api/sd-data-sen-role-asymmetry.test.js        0   (38 / 0)
+  api/_lib/auth-roleset-seam.test.js            0   (19 / 19)
+  api/_lib/sairnsenior-branches.test.js         0   (32 / 32)
+  api/preauth-envelope-ordering.test.js         0   (59 / 0)
+  tests/sairnfreedom_ai_disclosure.js           0   (32 / 0)
+  api/sd-data-leg-bookings-toctou.test.js       0
+  api/role-vocabulary-agreement.test.js         0
+  api/lifecycle-audit-event-coverage.test.js    0
+  api/sf-auth.test.js                           0
+  api/sd-data-sf-role-matrix.test.js            0
+  tests/sairnlegacy_write_failure_voice.js      0
+  api/sd-data-sen-settings-isolation.test.js    0
+  api/sd-data-sen-caregiver-pii-scope.test.js   0
+  api/sd-data-active-credential.test.js         0
+  api/sd-data-cross-tenant-isolation.test.js    0
+  api/_lib/auth.test.js                         0
+  plus the nine other api/*sen*.test.js and api/_lib/sairnsenior-*.test.js: 0
+
+NOTHING IS RED. That is a different statement from b8, which carried one
+registered red suite, and it is stated rather than implied.
+
+SYNTAX: node --check clean on every .js touched. Both inline <script> blocks of
+sairnfreedom.html extracted WITH AN HTML PARSER and checked individually -- 2
+blocks, 0 errors.
+
+================================================================================
+10. WHAT IS OPEN -- the ten items, each with its next step
+================================================================================
+
+The full list with next steps is in docs/SAIRN-handoff-hank-b9.md. The two that
+block real behaviour:
+
+1. sql/2026-10-14-hank-b9-ai-safeguards.sql HAS NOT BEEN RUN. Until it is,
+   api/ai-notice.js answers 503 and NO EMPLOYEE EVER SEES THE NOTICE.
+2. NO PRODUCTION CLIENT STAMPS ai_source ON A HIGH-RISK RESOURCE, so the
+   approval refusal is reachable and not reached. A bounded dormancy, named
+   rather than discovered, with 25 driven arms holding it honest meanwhile.
+
+And the one that is nobody's batch but corrupts a figure: THE REGISTER HAS SIX
+DUPLICATE SUMMARIES, FOUR WITH NO superseded_by POINTER, so four defects are
+double-counted in every figure that file produces. --reseat reported them and
+refused to resolve them because picking a survivor is a content decision. None
+is this batch's; all four are 2026-09-26 to 2026-10-13 from other sessions.
+
+================================================================================
+11. HOOKS, SETTINGS, CLAIMS
+================================================================================
+
+NO HOOK RESTORED OR ADDED. .claude/settings.json NEVER committed by this
+session -- stashed before the first rebase and backed up outside the repo. The
+merge carries UPSTREAM'S version, verified byte-identical to origin/main.
+SAIRN_SEED_GATE=off NEVER USED.
+
+NO tools/ FILE WAS EDITED BY THIS BATCH AT ALL. cc's three claimed tools were
+not touched; fourth's AI-safeguards spec was read and not edited; hover's files
+were not touched. No auditor clone entered -- hover2's repro was run read-only
+from this clone and writes only to a tempdir.
+
+TWO DEVIATIONS FROM THE CLAIM'S FILES LIST:
+api/sd-data-sen-session-gate.test.js was not created; the file is
+api/sd-data-sen-role-asymmetry.test.js, which is what it is about. And
+tests/sairnfreedom_ai_disclosure.js was added without being in the list.
+
+ONE BRANCH LEFT ON PURPOSE: b9-save-404dae85, the safety ref taken before the
+history rewrite. It still holds the commit carrying the credential-shaped
+fixture value and SHOULD BE DELETED once this batch is confirmed landed --
+`git branch -D b9-save-404dae85`. Not deleted here: destroying the only copy of
+the pre-surgery state while the surgery is still being verified is the wrong
+order.
+
+================================================================================
+12. EVIDENCE
+================================================================================
+
+  docs/SAIRN-handoff-hank-b9.md                     the handoff, written first
+  docs/hank-evidence/b9_live_gate_probe.py / .out   the live probe, fail=0
+  docs/2026-10-14-hank-b9-sairnlegacy-client-authority-survey.md
+  api/_lib/ai-safeguards.js                         the policy, as data
+  api/ai-notice.js                                  the notice endpoint
+  sql/2026-10-14-hank-b9-ai-safeguards.sql          NOT YET RUN
+  api/ai-safeguards.test.js                         47 / 0
+  api/sd-data-ai-approval.test.js                   25 / 0
+  api/sd-data-sen-role-asymmetry.test.js            38 / 0
+  tests/sairnfreedom_ai_disclosure.js               32 / 0
+  docs/defect-density-register.json                 4 b9 records, --check OK
+  docs/tier-a-reviews.json                          10 resources, to fourth
+  docs/fmea/                                        7 drafts re-saved
+
+  transcript and scratch:
+  C:\Users\marsh\AppData\Local\Temp\claude\
+    C--Users-marsh-Documents-SAIRN-hank\66861005-8bc6-4dc0-b30b-e56ad9ef0f85\
+
+SHA256 175e527848d57299dbf0992e62107b58afbf59d7378ba52afd2c2a6e1909a768
+END-OF-REPORT
