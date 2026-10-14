@@ -1917,6 +1917,25 @@ def freshness_lines(fetched, err, skipped):
     return lines
 
 
+# A commit SUBJECT capped at a conventional length; anything past it moves to
+# the BODY. Measured 2026-10-14: claim commits averaged 788 bytes and ran up
+# to 2,383, because the subject line was `head -- %s` with the full task
+# string spliced in whole. `git log --oneline` -- what every push-protocol
+# `gitStatus` read prints at the start of EVERY session, on EVERY clone -- was
+# paying that cost on every claim, forever, to render one line. The body still
+# carries the whole task; nothing written to the claim record changes.
+SUBJECT_CAP = 72
+
+
+def claim_commit_message(head, task=''):
+    if not task:
+        return head
+    one_line = '%s -- %s' % (head, task)
+    if len(one_line) <= SUBJECT_CAP:
+        return one_line
+    return '%s\n\n%s' % (head, task)
+
+
 def save_mine(doc, message, push):
     """Returns True only when the claim is PRESENT ON THE REMOTE.
 
@@ -2684,7 +2703,8 @@ def cmd_claim(args):
     # what another session needs to see in that moment, and cmd_release drops
     # it when the work closes.
     _reg_ok = publish_registry_claims(doc)
-    ok = save_mine(doc, 'chore(claims): %s claims %s -- %s' % (session_name(), subj, task),
+    ok = save_mine(doc, claim_commit_message(
+                       'chore(claims): %s claims %s' % (session_name(), subj), task),
                    push=not args.no_push)
     if not ok:
         # A claim nobody else can see is not a claim. Saying so, and exiting

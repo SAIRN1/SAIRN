@@ -80,6 +80,17 @@ try:
 except Exception:                                                # noqa: BLE001
     EXIT_CLEAN, EXIT_FINDING, EXIT_COULD_NOT_RUN = 0, 1, 2
 
+# `--close` prints a deliverable's first line verbatim (drive_verify output,
+# itself quoting a handoff/report first line) through to the console. Any
+# non-ASCII byte in that line -- an em-dash, a curly quote -- raises
+# UnicodeEncodeError under Windows' default cp1252 console and the close
+# never reaches the gate it is trying to report. Same fix as the rest of the
+# repo (see register_feed_gate.py): reconfigure the stream, not the content.
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8')
+
 CRITERIA_VERSION = '2026-10-13.1'
 NL = chr(10)
 DOCS = os.path.join(REPO, 'docs')
@@ -609,8 +620,22 @@ def main(argv=None):
         return EXIT_CLEAN
     if '--set' in argv:
         i = argv.index('--set')
-        return cmd_set(opt('--agent', 'cc'), opt('--batch', 'b6'),
-                       argv[i + 1], argv[i + 2], opt('--evidence'))
+        # NEITHER DEFAULT IS GUESSED. This used to default to ('cc', 'b6') --
+        # literally this file's own batch when it was written -- so any
+        # `--set` call made without an explicit --agent/--batch silently
+        # wrote into WHATEVER BATCH b6 HAPPENED TO BE, long after it closed.
+        # Reproduced live, 2026-10-14: b9's own `--set 1 done --evidence ...`
+        # overwrote three of b6's closed items with b9's evidence text, no
+        # error, a confident "item 1 -> done" printed over a manifest it
+        # never named. `--close` already refuses rather than guesses two
+        # lines below this one; `--set` is now the same rule, not a second one.
+        agent, batch = opt('--agent'), opt('--batch')
+        if not agent or not batch:
+            print('COULD NOT RUN: --set needs --agent <name> and --batch '
+                  'b<n>. Neither is guessed -- a silent default is how this '
+                  'wrote into the wrong batch\'s manifest before.')
+            return EXIT_COULD_NOT_RUN
+        return cmd_set(agent, batch, argv[i + 1], argv[i + 2], opt('--evidence'))
     if '--close' in argv:
         # THE LOCK FIRST here too: closing a batch on broken criteria is the
         # one verdict in this file nobody re-reads.
