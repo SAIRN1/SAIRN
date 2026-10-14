@@ -3868,8 +3868,8 @@
       "task": "hank batch b9 -- (1) SAIRNscape schedule gated per Michael, SD_SESSION_GATED + SD_GATE_APP + suite + live probe. (2) AI safeguards in api/: ai_source + ai_approved_by + ai_approved_at on AI-sourced records, server refusal for high-risk leaving draft unapproved, per-employee one-time AI notice ack. (3) SAIRNfreedom 4 AI features get a visible AI disclosure wired to item 2. (4) SAIRNsenior sen_branches + sen_settings read gate, SEN_REFERRAL_RESOURCES write asymmetry, then survey the other 34 sairnlegacy resources for the leg_bookings client-side-authority shape with file:line. (5) sairn_seam_check.py COULD NOT TELL pair + fmea_draft.py --save for api/sd-data.js and six NO DRAFT files, recorded in the defect register. (6) push without force, confirm landed. HOOKS STAY CLEARED, settings.json NEVER committed, no SAIRN_SEED_GATE override. CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: docs/2026-10-14-ai-safeguards-spec.md and fourth's other b13 docs are in FOURTH'S LIVE claim and are READ ONLY here; tools/tier_a_review_gate.py tools/batch_manifest.py tools/drive_upload_verify.py are in CC'S LIVE claim; hover's b27 files are in ITS claim. No tools/ file in cc's list is edited. No auditor clone is entered. FILES: api/sd-data.js api/_lib/ai-safeguards.js api/ai-notice.js api/ai-safeguards.test.js api/sd-data-ai-approval.test.js api/sd-data-scp-session-gate.test.js api/sd-data-session-gate.test.js api/sd-data-sen-session-gate.test.js sairnfreedom.html sql/2026-10-14-hank-b9-ai-safeguards.sql docs/2026-10-14-hank-b9-sairnlegacy-client-authority-survey.md docs/hank-evidence/b9_live_gate_probe.py docs/SAIRN-handoff-hank-b9.md SAIRN-report-hank-b9.txt SAIRN-digest-hank-b9.txt SAIRN-ACTIVE-WORK-hank.md docs/defect-density-register.json",
       "claimed_at": "2026-10-14T10:59:18Z",
       "claimed_at_epoch": 1791975558.1462307,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-14T12:39:37Z",
       "files": [
         "SAIRN-ACTIVE-WORK-hank.md",
         "SAIRN-digest-hank-b9.txt",
