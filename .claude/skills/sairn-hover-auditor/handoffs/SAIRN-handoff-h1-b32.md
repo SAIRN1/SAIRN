@@ -81,9 +81,8 @@ but the handoff never re-ran the probe to confirm. Logged to the chain:
 **Item 3 -- landed check, cc b9 / hank b10 / fourth b18 via Drive then
 source.** All three landed. **cc b9: FULLY CLOSED** (claim released,
 `55c11967`). **hank b10: FULLY CLOSED** (claim released, `88ea6cf7`).
-**fourth b18: code + handoff/report/digest all landed, claim NOT yet
-released** (`.claude/claims/fourth.json`'s last entry: `status: active,
-released_at: None`) -- one step short of fully closed.
+**fourth b18: FULLY CLOSED** (claim released, `a52a4edb`, confirmed
+after a mid-batch pull).
 
 **Item 4 -- routing doc to cc, three items, two corroborating cody's own
 open items rather than net-new discoveries.**
@@ -119,15 +118,16 @@ reported as *skipped*, not done -- all three held a live claim at check
 time, matching cc's own stated conditional ("only if clean no live
 claim"). Logged to the chain: `#1408` (check, target cc).
 
-**Item 6 -- push.** `origin/main` moved three times mid-batch (cc b9
-landing+closing, hank b10 landing+closing, fourth b18 landing). Two
-pulls, both fast-forward/rebase, clean, one post-rebase register
-re-seat (none of the moved shas were cited, nothing to do). Committed
-the `hover_log.py` fix + routing doc, then the register citation for
-it. First push attempt BLOCKED by the push gate's register-citation
-requirement (the gate doing its job, not a race) -- resolved by
-registering the defect, same pattern as b31. Second attempt landed
-clean, first try, no further race. No `--force` at any point.
+**Item 6 -- push.** `origin/main` moved several times mid-batch (cc b9
+landing+closing, hank b10 landing+closing, fourth b18 landing then
+closing). Pulls were fast-forward/rebase, clean, one post-rebase
+register re-seat (none of the moved shas were cited, nothing to do).
+Committed the `hover_log.py` fix + routing doc, then the register
+citation for it, then the handoff. First push attempt (of the fix)
+BLOCKED by the push gate's register-citation requirement (the gate
+doing its job, not a race) -- resolved by registering the defect, same
+pattern as b31. All other attempts landed clean, first try. No
+`--force` at any point.
 
 ## Clean-as-you-go
 
@@ -153,9 +153,9 @@ handoff, the report and the digest.
    same `KNOWN_INSTANCE_LOGS`-derived default + duplicate-refusal
    pattern to it, after diffing for any untracked-only logic first (the
    same mistake averted in item 1).
-2. **cc b10, cody b11, fourth b18** -- all still open per the claim
-   registry (fourth b18 nearly closed, see item 3). **Next step: next
-   hover batch re-checks once each releases.**
+2. **cc b10, cody b11, hank's newly-claimed batch** -- all open per the
+   claim registry. **Next step: next hover batch re-checks once each
+   releases.**
 3. **The routing doc's three items** -- all with cc or Michael as the
    decision-maker, none this role's to resolve. **Next step: cc's/
    Michael's call, per the doc.**
@@ -164,7 +164,7 @@ handoff, the report and the digest.
 
 ## Current state
 
-HEAD at time of writing (pre-push-of-this-handoff): `ccb66226`, matching
+HEAD at time of writing (pre-push-of-this-handoff): `248ec9f5`, matching
 `origin/main` exactly -- 0 ahead / 0 behind. Chain tip 1411, token
 (beacon) seq1398, 13 behind, within the 15-entry threshold -- not
 republished.
