@@ -81,6 +81,12 @@ const senPayroll = require('./_lib/sen-payroll');
 // BECAUSE THE CLIENT COPY IS A CONVENIENCE: sairnmechanical.html calls the same
 // function so the local row is redacted too, but this call is the boundary.
 const mechRedact = require('./_lib/mech-redact');
+// The SAIRNlegacy double-booking check, for leg_bookings AND
+// leg_clergybookings. One helper and not a third copy -- the status literal
+// differs between the two resources and a copy would have got exactly that
+// wrong. It does the fetch itself (the check IS a read-then-write) but never
+// touches `res`; it returns a verdict and the branch below owns the status.
+const legOverlap = require('./_lib/leg-overlap');
 // ── SAIRNLAW ROLE GRANULARITY (2026-10-12, hover2 seq 757) ────────────────
 // ONE table and ONE function for all 19 law_ resources, in api/_lib/law-roles.js
 // with the whole policy and its provenance. Called from exactly TWO places in
@@ -8858,9 +8864,48 @@ module.exports = async (req, res) => {
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
+      // ── TIERED, THE SAME WAY sen_settings WAS (2026-10-14, b10) ───────────
+      // b9's handoff named this branch as "the identical open-read shape
+      // sen_settings just had", UNVERIFIED. Verified now, and it is: write is
+      // management-only (two lines down) while read was any signed-in employee
+      // and returned every setting row whole, INCLUDING `updated_by` and
+      // `updated_at` -- which management of the company changed the number
+      // that decides whether a slope is called total, and when.
+      //
+      // IT IS NARROWER THAN sen_settings' TIER, AND DELIBERATELY SO. There the
+      // public fields were a subset of one key's blob; here the whole
+      // `damage_threshold` value IS what the open read exists for, and that
+      // includes `source` -- the branch comment above justifies the open read
+      // precisely because "the number on screen is unexplainable" without it,
+      // and a number with no cited origin is indistinguishable from a guess.
+      // sairnroofing.html's rfDmgShowThreshold() is the non-management screen
+      // that renders both fields; the management-only threshold EDITOR
+      // (rfDmgIsManagement()-gated, :2458) is the only other consumer and
+      // neither reads updated_by. So nothing on a foreman's screen loses a
+      // field it was using.
+      //
+      // WHAT CHANGES FOR A NON-MANAGEMENT READER is the provenance pair and
+      // unknown keys. UNKNOWN KEYS ARE WITHHELD, the opposite of how the write
+      // path treats them -- it stores unknown keys as-is, so a store that
+      // accepts anything must not also DISCLOSE anything, or the next setting
+      // somebody adds is published to every foreman by default.
+      const rfMgmt = !!rfAuth.MANAGEMENT_ROLES[session.role];
+      const RF_SETTING_PUBLIC_KEYS = { damage_threshold: true };
       res.status(200).json({
         ok: true, provisioned: true,
-        data: (rows || []).map((x) => ({ setting_key: x.setting_key, value: x.data, updated_by: x.updated_by, updated_at: x.updated_at }))
+        tiered: !rfMgmt,
+        data: (rows || []).reduce((acc, x) => {
+          if (rfMgmt) {
+            acc.push({ setting_key: x.setting_key, value: x.data,
+                       updated_by: x.updated_by, updated_at: x.updated_at });
+            return acc;
+          }
+          if (!RF_SETTING_PUBLIC_KEYS[x.setting_key]) return acc;
+          // NO updated_by AND NO updated_at on this tier. Their absence is the
+          // point rather than an oversight.
+          acc.push({ setting_key: x.setting_key, value: x.data });
+          return acc;
+        }, [])
       });
       return;
     }
@@ -15188,37 +15233,30 @@ module.exports = async (req, res) => {
       // from the app today (saveBooking only ever writes toISOString()), which
       // is why it has to be deliberate: an unparseable row silently treated as
       // non-overlapping is exactly how this control would stop working.
-      if (resource === 'leg_bookings' && payload.status !== 'Cancelled') {
-        const startMs = Date.parse(payload.start_time);
-        const endMs = Date.parse(payload.end_time);
-        if (!payload.facility_id || !Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) {
-          res.status(400).json({ error: { code: 'BOOKING_WINDOW_REQUIRED', message: 'This booking could not be saved to the server: it needs a facility and a start and end time, with the end after the start. Nothing was saved.' } });
-          return;
-        }
-        const q = await fetch(rest(
-          'leg_bookings?license_hash=eq.' + enc(licHash) +
-          '&data->>facility_id=eq.' + enc(String(payload.facility_id)) +
-          '&select=booking_id,data'
-        ), { headers });
-        if (q.status === 404 || q.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlegacy data tables are not set up yet — run sql/sairnlegacy_data_schema.sql in Supabase first.' } }); return; }
-        const held = await q.json();
-        if (!q.ok) return upstream(res, held);
-        const selfId = String(payload.id);
-        const unreadable = [];
-        const clash = (Array.isArray(held) ? held : []).find((row) => {
-          if (String(row.booking_id) === selfId) return false;
-          const d = row.data || {};
-          if (d.status === 'Cancelled') return false;
-          const s = Date.parse(d.start_time), e = Date.parse(d.end_time);
-          if (!Number.isFinite(s) || !Number.isFinite(e)) { unreadable.push(String(row.booking_id)); return false; }
-          return startMs < e && s < endMs; // the same interval test the client runs, on the server's rows
-        });
-        if (clash) {
-          res.status(409).json({ error: { code: 'BOOKING_CONFLICT', message: 'That facility is already booked ' + String((clash.data || {}).start_time) + ' to ' + String((clash.data || {}).end_time) + ' by booking ' + String(clash.booking_id) + ', made on another device. Nothing was saved -- pick a different time or facility.' } });
-          return;
-        }
-        if (unreadable.length) {
-          res.status(409).json({ error: { code: 'BOOKING_CHECK_INDETERMINATE', message: 'This booking was NOT saved, because the double-booking check could not be completed: booking ' + unreadable.join(', ') + ' on this facility has a start or end time the server cannot read, so it is not possible to tell whether your booking overlaps it. Report this -- it is a data problem, not something you did.' } });
+      // ── AND THE THIRD INSTANCE, leg_clergybookings (2026-10-14) ─────────
+      // b9's survey found the same shape on leg_clergybookings:
+      // clergyBookingConflict() (sairnlegacy.html:4817) is a real interval
+      // test against this device's localStorage, hard-blocking with no
+      // override, and the server accepted whatever reached it.
+      //
+      // BOTH RESOURCES NOW GO THROUGH ONE HELPER rather than a third copy of
+      // the block that used to live here, because the one thing a copy would
+      // have got wrong is the STATUS LITERAL: leg_bookings exempts
+      // 'Cancelled', leg_clergybookings skips 'Completed'
+      // (sairnlegacy.html:4820), and there is no Cancelled status on the
+      // clergy resource at all. api/_lib/leg-overlap.js takes it as a
+      // REQUIRED parameter with no default and throws without one -- a
+      // default would be the copy-paste defect in a safer-looking costume.
+      // Cross-domain convention 7: byte-identical is not safe-in-context.
+      if (legOverlap.SPECS[resource]) {
+        const verdict = await legOverlap.check(Object.assign(
+          {}, legOverlap.SPECS[resource],
+          { resource: resource, idCol: idCol, payload: payload,
+            licHash: licHash, rest: rest, headers: headers, enc: enc,
+            fetchImpl: fetch }));
+        if (verdict) {
+          if (verdict.upstream) return upstream(res, verdict.upstream);
+          res.status(verdict.status).json({ error: verdict.error });
           return;
         }
       }
