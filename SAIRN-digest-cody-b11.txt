@@ -1,7 +1,8 @@
 DIGEST cody b11  2026-10-14
 
 STATUS
-  ALL SIX DISPATCHED ITEMS DONE. On origin/main at 1e45208b, 0 ahead / 0 behind.
+  ALL SIX DISPATCHED ITEMS DONE. On origin/main at 35aa3796 after the handoff
+  commit, 0 ahead / 0 behind, TREE CLEAN. The work itself landed at 1e45208b.
   All eight dispatched suites GREEN. Pushed WITHOUT --force; two gate refusals,
   both repaired at cause, nothing overridden -- SAIRN_SEED_GATE never used in
   either form, no hook added or restored, settings.json never committed, no
@@ -86,9 +87,11 @@ NEXT
     `git worktree list` FIRST. A stale worktree entry makes it report two
     failures that have nothing to do with the fail-closed rule it tests. That is
     what b10's two failures were.
-  6 EXPECTED, NOT DIRT: one docs/scrutiny-flags.json residue after the final
-    push -- the gate writes a ledger row for every commit it examines. Commit it
-    as chore(scrutiny ledger); do not `git checkout --` it without reading it.
+  6 CHECK FOR, BUT IT DID NOT HAPPEN HERE: a docs/scrutiny-flags.json residue
+    after the final push. b11's final push left the tree CLEAN -- measured, not
+    assumed -- while b10's did leave one. The gate writes a ledger row for the
+    commits it examines, so if you find one it IS A RECORD, NOT DIRT: commit it
+    as chore(scrutiny ledger) rather than `git checkout --` it.
   7 UNCHANGED AND STILL ROUTED, none re-verified in b11:
     tests/faults/transport_timeout_sweep.js (hank),
     run_blob_coverage_scope_sabotage.py (cc),

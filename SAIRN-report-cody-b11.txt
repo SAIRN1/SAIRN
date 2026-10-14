@@ -5,8 +5,13 @@ CLONE C:\Users\marsh\Documents\SAIRN-cody
 BRANCH main
 HEAD 1e45208bbbe941e66f58e60716f2a433890f794d
 ORIGIN/MAIN 1e45208bbbe941e66f58e60716f2a433890f794d  (identical, 0 ahead / 0 behind)
-TREE one expected residue: docs/scrutiny-flags.json, the gate's own ledger row
-     for the handoff commit -- see OPEN item 7
+TREE CLEAN. `git status --short` is empty and `git worktree list` shows only
+     this clone. CORRECTED AFTER THE FINAL PUSH: the two lines above and OPEN
+     item 7 predicted one docs/scrutiny-flags.json residue, which is what b10
+     left. It did not happen -- the gate wrote no new ledger row for the
+     handoff commit, so there was nothing to leave. The prediction is kept in
+     OPEN item 7 because it is still the right thing to check for; this line
+     records what was MEASURED.
 COMMITTER IDENTITY on every b11 commit: fx <fx@example.invalid>, author AND
      committer, from this clone's LOCAL config. --global is
      Michael Dibert <mikied68@gmail.com>. Unchanged by this batch.
@@ -316,10 +321,13 @@ OPEN, WITH THE EXACT NEXT STEP
   `python tests/worktree_sentinel_guard.py --report` lists them; re-measured
   in b11 as 424 python suites scanned, 17 building a sentinel, 0
   unclassifiable from this clone.
-7 One docs/scrutiny-flags.json residue is EXPECTED after the final push: the
-  gate writes a ledger row for every commit it examines, so the commit that
-  lands this handoff produces one. b10 left the same residue and Michael
-  committed it as chore(scrutiny ledger). IT IS A RECORD, NOT DIRT.
+7 A docs/scrutiny-flags.json residue is POSSIBLE after any push and DID NOT
+  OCCUR here -- the final push left the tree clean, measured. The gate writes a
+  ledger row for the commits it examines, and b10's final push did leave one,
+  which Michael committed as chore(scrutiny ledger). So: check for it, and if
+  it is there, IT IS A RECORD, NOT DIRT -- commit it rather than
+  `git checkout --` it. b11's own rows for the five re-seated shas are
+  committed in the handoff commit.
 8 b10's items that are NOT mine and were not touched, all still routed and
   none re-verified here: tests/faults/transport_timeout_sweep.js (hank),
   run_blob_coverage_scope_sabotage.py (cc),
