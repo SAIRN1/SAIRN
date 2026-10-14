@@ -3772,6 +3772,25 @@
         "tests/run_unproven_arm_check_probe.py",
         "tools/unproven_arm_check.py"
       ]
+    },
+    {
+      "id": "cody-1791975689",
+      "session": "cody",
+      "subject": "tests",
+      "task": "cody b9 -- (1) re-drive tests/run_selftest_sweep_probe.py alone, larger cap, python -u. (2) drive fourth's named suites 13-36 one at a time in an isolated worktree, one exit-code line each, every red routed to its owner. (3) failing-first suite for a SAIRNcare office_manager role in all four places -- CODE CHANGE ROUTED TO hank, NOT made here. (4) failing-first suite for clock_flags assigned instead of merged at api/sd-data.js:6985-6987 -- FIX ROUTED TO hank. (5) turn the two mar_billing_grant WEAKENING flag lines :458 and :649 into real assertions and classify the 20 COULD-NOT-RUN arms by prerequisite. (6) push without force, confirm landed. I WRITE ONLY UNDER tests/, docs/known-red-suites.json (the register rows items 3+4 owe) AND MY OWN ROOT b9 ARTIFACTS. NO api/ FILE, NO sql/ FILE, NO tools/ FILE, NO OTHER docs/ FILE. Hooks stay cleared, settings.json never committed, no SAIRN_SEED_GATE override, no auditor clone entered. CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: hank's b9 api/ and sql/ files, fourth's b13 docs/ files and cc's tools/ files are READ-ONLY here. FILES: tests/sairncare_office_manager_role.test.js tests/sd_data_clock_flags_merge.test.js tests/mar_billing_grant.test.js docs/known-red-suites.json SAIRN-handoff-cody-b9.md SAIRN-report-cody-b9.txt SAIRN-digest-cody-b9.txt",
+      "claimed_at": "2026-10-14T11:01:29Z",
+      "claimed_at_epoch": 1791975689.9406757,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-cody-b9.txt",
+        "SAIRN-handoff-cody-b9.md",
+        "SAIRN-report-cody-b9.txt",
+        "docs/known-red-suites.json",
+        "tests/mar_billing_grant.test.js",
+        "tests/sairncare_office_manager_role.test.js",
+        "tests/sd_data_clock_flags_merge.test.js"
+      ]
     }
   ],
   "refusals": [
