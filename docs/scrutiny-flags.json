@@ -1304,6 +1304,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_b12_routed_findings_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(d, ignore_errors=True)"
+    }
+   ],
+   "sha": "3d206312698b304b1f9c9fa2940774e42740597b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_drive_upload_verify_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -3239,6 +3252,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairncash_entitlement_gate_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "930eca6b93c259c82ccb8ad742e7705785715cf5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/_lib/auth-roleset-seam.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -3472,6 +3493,291 @@
     }
    ],
    "sha": "9ca731695d251d87002bda604c8bd7c0d89ed928",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/criticality_rollup_list_review_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/cross_tenant_grader_declaration_review_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/grader_declaration_reconstruction_review_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/law_phase2_control_bucketing_review_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold CHANGED",
+     "detail": "was: out = subprocess.run(['node', SUITE], capture_output=True, t  now: out = subprocess.run(['node', SUITE], capture_output=True, t"
+    }
+   ],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/law_phase2_control_review_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/python_escape_hygiene_scope_review_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_ai_output_resource_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_alf_scope_mutation_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_all_tests_pinned_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_claim_bare_basename_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_cron_liveness_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_cross_tenant_dispatchers_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_hover_scope_own_claim_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_hover_separation_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_irreversible_class_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_last_admin_sole_role_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_nhi_clone_enumeration_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_numeric_coalesce_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_plugin_upgrade_token_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_provisioner_health_sole_role_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_purge_evidence_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_register_feed_gate_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_register_freshness_propose_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_required_write_permission_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_reseat_fixed_point_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_review_ledger_reseat_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_rewrite_convergence_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_sairnsenior_hydrate_delegation_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_sd_auth_last_admin_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_stored_data_criticality_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_two_axis_tier_parser_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_unproven_arm_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairncare_office_manager_role.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_clock_flags_merge.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/seam_check/run_delegation_residue_control.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9d38d84352ff9dcc60311540496e790f1240928d",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -3731,6 +4037,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_blob_coverage_scope_sabotage.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a8f9def18f0bca67cf46238ebf0030af6b62e329",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_scope_gate_unfetched_base_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a8f9def18f0bca67cf46238ebf0030af6b62e329",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_batch_manifest_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -3984,6 +4306,22 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "b0e1f146bb0f7cb5395f80dc271b95a5ac5612e1",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/app_session_isolation_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "b150f0f3fb5e7e9048ba304930a8bd917fe7209c",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_cross_tenant_dispatchers_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "b150f0f3fb5e7e9048ba304930a8bd917fe7209c",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -4361,6 +4699,30 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "c6a841cb9f235ac763992738ff019a47c3913718",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/mar_billing_grant.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c8a1a67e00cfe2e93ba670c4e885869fa66b8a61",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairncare_office_manager_role.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c8a1a67e00cfe2e93ba670c4e885869fa66b8a61",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_clock_flags_merge.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c8a1a67e00cfe2e93ba670c4e885869fa66b8a61",
    "criteria_version": "2026-10-06.1"
   },
   {
