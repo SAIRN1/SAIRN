@@ -908,17 +908,19 @@
   {
    "file": "tests/run_selftest_sweep_probe.py",
    "kind": "py",
-   "tail": "- ooda_phases.py --selftest exits 0",
+   "tail": "44 self-tests, 5 ARM(S) FAILED (exit 1, 246s)",
    "since": "2026-09-16",
-   "why": "The same ooda_phases.py --selftest exit 2 as tests/run_tool_selftest_probe.py. Recorded separately because they are two suites, cross-referenced because they are one defect.",
+   "why": "The same ooda_phases.py --selftest exit 2 as tests/run_tool_selftest_probe.py. Recorded separately because they are two suites, cross-referenced because they are one defect.  ||  DRIVEN ALONE 2026-10-14 (cody b9) with a 900s cap and `python -u`: EXIT 1 in 246 SECONDS, log 6235 bytes / 114 lines. `why` WAS BLANK; this is the first diagnosis. THE PREVIOUS RESULT WAS A 180s TIMEOUT WITH A ZERO-BYTE LOG AND BOTH HALVES OF THAT ARE NOW EXPLAINED -- it is SLOW *and* BLOCK-BUFFERED. It needs ~246s, so a 180s cap kills it mid-run; and without `-u` stdout to a file buffers in 8KB blocks, so a run killed at ~6KB flushes NOTHING. Two causes, one symptom, and either alone would have been misread: slow-but-flushing would have shown a partial log, buffered-but-fast would have finished. IT IS NOT A SILENT SUITE. With `-u` it streamed from the first second. WHAT IT FOUND: 44 self-tests discovered, 5 ARM(S) FAILED, 0 could-not-tell, and its tree-integrity arm PASSED (the working tree byte-for-byte as it was). THE HEADLINE IS A DEFECT IN THE SWEEP'S OWN DISCOVERY, NOT IN ITS SUBJECTS. THREE of the five failures are tools that have NO --selftest FLAG AT ALL: SELFTEST_RX matches the string '--selftest' as TEXT, and tools/first_article_inspection.py:391, tools/subprocess_decode_check.py:96 and tools/checker_selftest_check.py:150 each contain that exact string inside a regex literal or a comment. The sweep's own comment claims this class was fixed by comparing against argv rather than searching the file -- IT WAS NOT, and it is still 3 of 44. Evidence: checker_selftest_check.py answers `error: unrecognized arguments: --selftest`. AND ITS TOLERANCE IS SPELLED WRONG: TOLERATE_MISSING matches 'not recognized' while argparse prints 'unrecognized arguments', so a could-not-run lands in `fails`. THE TWO REAL DEFECTS IT DID FIND, both stale expectations in the SUBJECTS: ooda_phases.py's own self-test asserts '<10 records have an injection date' and 249 now do; subprocess_decode_check.py reports 69 text-mode subprocess calls with no explicit encoding=, named by file:line. ONE FAILURE IS A SANDBOX ARTIFACT AND MUST NOT BE CALLED RED: nhi_register.py --selftest fails `it finds the FIFTH clone the typed list was missing ['b9wt']` because sibling_clones() (tools/nhi_register.py:605) enumerates siblings of REPO, which in a worktree is the scratchpad directory. It would pass in the live clone. EXIT CODE PRODUCED AT tests/run_selftest_sweep_probe.py:196, `sys.exit(1 if fails else 0)`. NEXT STEP: the three no-flag tools are a tools/ fix and belong to cc -- match on argv, not on the file; and widen TOLERATE_MISSING to argparse's actual wording. The two stale expectations are tools/ self-tests and also cc's.",
    "owner": "cody",
    "environment": {
-    "where": "unknown",
-    "pinned": "unknown",
-    "tool": "unknown",
-    "sha": "unknown",
-    "basis": "nothing in this file records how the 2026-09-16 pass was driven. All four keys unknown rather than assumed to match the 2026-10-06 pass, which was a different pass by a different session."
-   }
+    "where": "isolated-worktree",
+    "pinned": false,
+    "tool": "python -u tests/run_selftest_sweep_probe.py, ALONE, 900s cap",
+    "sha": "bd5239ac",
+    "basis": "DRIVEN ALONE in cody b9 because a 180s cap had killed it. 246s wall clock, exit read from `echo \"EXIT=$?\"`, output UNBUFFERED so a killed run could not flush nothing. Worktree removed and pruned afterwards."
+   },
+   "diagnosed": "2026-10-14",
+   "diagnosed_by": "cody"
   },
   {
    "file": "tests/run_stored_data_criticality_probe.py",
@@ -944,7 +946,7 @@
    "kind": "py",
    "tail": "  - zero text-mode subprocess calls without an explicit encoding",
    "since": "2026-10-06",
-   "why": "REAL TREE STATE, NOT A PROBE DEFECT -- the final arm, 'zero text-mode subprocess calls without an explicit encoding'. `python tools/subprocess_decode_check.py` at HEAD 762b084b exits 1 naming 40 files with text-mode subprocess calls carrying no `encoding=`, across tests/ and tools/ -- tools/gh_token.py:73, tools/sql_column_exists_check.py:103,269, tools/purge_evidence_gate.py:380, tools/rewrite_convergence_map.py:320,329 among them. The probe's reproduction arms PASS and are not hypothetical: the locale default on this machine is cp1252 and .claude/skills/sairn-guardian-v2/SKILL.md cannot be decoded as cp1252 -- this probe's OWN run printed a raising reader thread (UnicodeDecodeError, byte 0x90) before its first arm. The tool ships `--fix`. ROUTED, NOT RUN: a 40-file mechanical sweep is not mine to land inside a diagnosis pass.",
+   "why": "REAL TREE STATE, NOT A PROBE DEFECT -- the final arm, 'zero text-mode subprocess calls without an explicit encoding'. `python tools/subprocess_decode_check.py` at HEAD 762b084b exits 1 naming 40 files with text-mode subprocess calls carrying no `encoding=`, across tests/ and tools/ -- tools/gh_token.py:73, tools/sql_column_exists_check.py:103,269, tools/purge_evidence_gate.py:380, tools/rewrite_convergence_map.py:320,329 among them. The probe's reproduction arms PASS and are not hypothetical: the locale default on this machine is cp1252 and .claude/skills/sairn-guardian-v2/SKILL.md cannot be decoded as cp1252 -- this probe's OWN run printed a raising reader thread (UnicodeDecodeError, byte 0x90) before its first arm. The tool ships `--fix`. ROUTED, NOT RUN: a 40-file mechanical sweep is not mine to land inside a diagnosis pass.  ||  RE-DRIVEN 2026-10-14 (cody b9), isolated worktree at bd5239ac: EXIT 1, 1 arm failed -- REAL DEFECT. `zero text-mode subprocess calls without an explicit encoding` names 6 sites: tools/credential_purge_check.py:102, tools/external_file_index_audit.py:59, tools/gh_token.py:73, tools/live_probe_declaration_check.py:98 and :106, tools/purge_evidence_gate.py:380. SAME CLASS as the 69 that tools/subprocess_decode_check.py reports under tests/run_selftest_sweep_probe.py, so the two agree. Its arm 1's UnicodeDecodeError is the defect being reproduced ON PURPOSE and that arm PASSES. Exit line :255. ROUTED TO cc (tools/).",
    "owner": "cody",
    "diagnosed": "2026-10-06",
    "diagnosed_by": "fourth",
@@ -955,47 +957,32 @@
     "sha": "762b084b",
     "basis": "re-run BY HAND by fourth, one process, in the live clone; exit code read from the program's own output"
    },
-   "exit_code": 1
+   "exit_code": 1,
+   "tail_remeasured_2026_10_14": "cody b9, see the b9 note appended to `why`"
   },
   {
    "file": "tests/run_tool_selftest_probe.py",
    "kind": "py",
    "tail": "ooda_phases.py                         exit 2 (the tool could not tell):   ARMS FAILED",
    "since": "2026-09-16",
-   "why": "ooda_phases.py --selftest exits 2 (the tool could not tell), which this probe correctly refuses to fold into a pass. THE DEFECT IS IN ooda_phases.py, NOT IN THE PROBE, and tests/run_selftest_sweep_probe.py is red on the same underlying fact -- so these two entries are ONE defect seen from two places. Fixing ooda_phases.py should clear both, and if it clears only one that is itself a finding.",
+   "why": "ooda_phases.py --selftest exits 2 (the tool could not tell), which this probe correctly refuses to fold into a pass. THE DEFECT IS IN ooda_phases.py, NOT IN THE PROBE, and tests/run_selftest_sweep_probe.py is red on the same underlying fact -- so these two entries are ONE defect seen from two places. Fixing ooda_phases.py should clear both, and if it clears only one that is itself a finding.  ||  DRIVEN 2026-10-14 (cody b9): EXIT 1, 1 failing arm and 2 correctly reported COULD-NOT-RUN. `why` WAS BLANK; this is the first diagnosis. THE ONE FAILING ARM IS A WORKTREE ARTIFACT AND NOT A VERDICT ON THE SUITE: `sairn_self_state.py --self-check exit 1`, and the cause was confirmed by running the subject directly -- `sairn_session_identity.NoIdentity: THIS CLONE IS NOT PROVISIONED. ...\\.git\\worktrees\\b9wt\\sairn-session does not exist`. A WORKTREE CARRIES NO SESSION MARKER, so this arm cannot pass anywhere but a provisioned clone. AND THE PROBE'S OWN THIRD-STATE BUCKET IS HALF-WORKING, WHICH IS THE FINDING WORTH KEEPING: it correctly put the two exit-2 tools in COULD NOT RUN (`nhi_register.py exit 2 (the tool could not tell)`, `ooda_phases.py exit 2`) and its own header says could-not-run is not ran-and-fine per PR 1.11 -- but it folded THIS exit-1 could-not-run into FAILING(1). The bucket is keyed on the subject's exit CODE rather than on what the subject said, so a tool that cannot run and says so with exit 1 is scored as a failure. EXIT CODE PRODUCED AT tests/run_tool_selftest_probe.py:334, `sys.exit(main(sys.argv[1:]))`. NEXT STEP: RE-DRIVE IN THE LIVE CLONE before calling this red -- see the b9 handoff. The third-state-bucket defect is in this file and is the tests owner's.",
    "owner": "cody",
    "environment": {
-    "where": "unknown",
-    "pinned": "unknown",
-    "tool": "unknown",
-    "sha": "unknown",
-    "basis": "nothing in this file records how the 2026-09-16 pass was driven. All four keys unknown rather than assumed to match the 2026-10-06 pass, which was a different pass by a different session."
-   }
-  },
-  {
-   "file": "tests/run_truthy_sum_probe.py",
-   "kind": "py",
-   "tail": "1 FAILED",
-   "since": "2026-10-06",
-   "why": "REAL TREE STATE, NOT A PROBE DEFECT -- arm 11 only. tests/run_truthy_sum_probe.py:173 asserts the SUBJECT TOOL'S EXIT CODE on the live repo: check('the real SAIRN tree currently has no UNBASELINED occurrence', r.returncode, 0). The reported \"actual 1\" is that exit code, not a count. `python tools/truthy_sum_check.py --full` at HEAD 762b084b exits 1 with 16 NEW unbaselined occurrences, every one in stonedesk.html between :25471 and :28942 -- `+ (c.quote || 0)`, `+ (o.total || 0)`, `+ (i.amount || 0)`, `+ (c.x || 0)` / `+ (c.y || 0)`, `+ (u.cost || 0)`. The probe's other 13 arms ALL PASS, so the detector itself is verified and this arm is a drift tripwire firing correctly. ROUTED, NOT FIXED: the 16 sites are StoneDesk app code and each needs a judgement -- baseline with a stated reason if the field is provably numeric, otherwise wrap in Number(). That is per-site, not a sweep.",
-   "owner": "cody",
-   "diagnosed": "2026-10-06",
-   "diagnosed_by": "fourth",
-   "environment": {
-    "where": "live-clone",
+    "where": "isolated-worktree",
     "pinned": false,
-    "tool": "the suite itself, invoked directly",
-    "sha": "762b084b",
-    "basis": "re-run BY HAND by fourth, one process, in the live clone; exit code read from the program's own output"
+    "tool": "the suite itself, invoked directly, one process, python -u for .py",
+    "sha": "bd5239ac",
+    "basis": "DRIVEN IN cody b9, one at a time, 180s cap, cwd inside a git worktree of bd5239ac, exit code read from `echo \"EXIT=$?\"` on its own line and never inferred from the text. Worktree removed and pruned afterwards; `git worktree list` confirmed back to the live clone alone."
    },
-   "exit_code": 1
+   "diagnosed": "2026-10-14",
+   "diagnosed_by": "cody"
   },
   {
    "file": "tests/run_two_axis_tier_parser_probe.py",
    "kind": "py",
    "tail": "  - 2. the NEW six-cell shape parses, raises no row-level problem, and counts as migrated",
    "since": "2026-10-06",
-   "why": "PROBE DEFECT -- a HEADLINE-level could-not-tell scored as a ROW-level problem. Arm 2's stated criterion is 'the NEW six-cell shape parses, raises no ROW-LEVEL problem, and counts as migrated' (tests/run_two_axis_tier_parser_probe.py:196-199). Its fixture parses correctly -- the run prints ROWS_MIGRATED_TWO_AXIS:2 of 2 and RESOURCE_ROWS:2, and arms 3 and 4 PASS on that same fixture -- but row_problems(out) returns ['HEADLINE'], because the subject refuses the fixture's MISSING SUMMARY SENTENCE ('N resources, A A, B B, C C' is NOT PRESENT, reported as a could-not-tell rather than a pass). The fixture is a two-row table and has no headline by construction. So the helper over-collects: a headline-scope third state is counted against an arm whose own words say row-level. The parser is not implicated. FIX BELONGS TO THE ARM -- exclude HEADLINE from row_problems() or give the fixture a headline. Not applied here: a control rewritten by somebody who did not write it is a control fitted to the behaviour it found.",
+   "why": "PROBE DEFECT -- a HEADLINE-level could-not-tell scored as a ROW-level problem. Arm 2's stated criterion is 'the NEW six-cell shape parses, raises no ROW-LEVEL problem, and counts as migrated' (tests/run_two_axis_tier_parser_probe.py:196-199). Its fixture parses correctly -- the run prints ROWS_MIGRATED_TWO_AXIS:2 of 2 and RESOURCE_ROWS:2, and arms 3 and 4 PASS on that same fixture -- but row_problems(out) returns ['HEADLINE'], because the subject refuses the fixture's MISSING SUMMARY SENTENCE ('N resources, A A, B B, C C' is NOT PRESENT, reported as a could-not-tell rather than a pass). The fixture is a two-row table and has no headline by construction. So the helper over-collects: a headline-scope third state is counted against an arm whose own words say row-level. The parser is not implicated. FIX BELONGS TO THE ARM -- exclude HEADLINE from row_problems() or give the fixture a headline. Not applied here: a control rewritten by somebody who did not write it is a control fitted to the behaviour it found.  ||  RE-DRIVEN 2026-10-14 (cody b9), isolated worktree at bd5239ac: EXIT 1, 1 of 14 failed -- REAL, and it is THE PROBE that went stale, not the parser. `2. the NEW six-cell shape parses, raises no row-level problem, and counts as migrated / row problems: ['HEADLINE']`. tools/criticality_tier_check.py:1008, added 2026-09-24, now raises a HEADLINE problem when the 'N resources, A A, B B, C C' sentence is absent -- and this probe's synthetic fixture register has no such sentence. Arms 1 and 3-14 pass, so parsing is fine. Exit line :342. The fixture is in tests/ and is the tests owner's.",
    "owner": "cody",
    "diagnosed": "2026-10-06",
    "diagnosed_by": "fourth",
@@ -1006,14 +993,15 @@
     "sha": "762b084b",
     "basis": "re-run BY HAND by fourth, one process, in the live clone; exit code read from the program's own output"
    },
-   "exit_code": 1
+   "exit_code": 1,
+   "tail_remeasured_2026_10_14": "cody b9, see the b9 note appended to `why`"
   },
   {
    "file": "tests/run_write_path_scan_probe.py",
    "kind": "py",
    "tail": "2 ARM(S) FAILED: the shipped baseline PASSES today -- a ratchet that fails on a clean tree is one somebody turns off, a count that FELL is not a regression",
    "since": "2026-10-06",
-   "why": "TWO ARMS, BOTH LIVE-TREE ASSERTIONS. (1) 'the shipped baseline PASSES today -- a ratchet that fails on a clean tree is one somebody turns off' now fails, so the ratchet no longer passes on the real tree. (2) 'a count that FELL is not a regression' also fails, so a baselined count has DROPPED. The probe's mechanism arm ('a NEW blind write site FAILS the ratchet -- it can fire') PASSES, so the detector works and both reds are about tree state. The dropped count is the one worth reading: by tools/run_all_tests.py's own floor reasoning a DROP means the scanner may have stopped seeing files, and that is the failure a ratchet cannot self-diagnose. NOT CLEARED -- the specific baselined key that fell is NOT yet named, and naming it is the next step rather than an assumption. || CORRECTED 2026-10-07 BY THE SESSION THAT WROTE THIS, AND THE FIRST READING WAS WRONG IN A WAY THAT MATTERS. I wrote that 'a baselined count FELL'. Measured at a7b6b58c: the shipped baseline records 25 sites (recorded 2026-09-15) and the tree measures 25 -- THE TOTAL AGREES -- and the shipped-baseline arm fails anyway. That can only mean one app ROSE while another FELL, leaving the total unchanged. A fall alone would not fail a ratchet that tolerates falls, which is the half I got backwards. The redistribution is INVISIBLE TO A TOTAL and is precisely what a per-app ratchet exists to catch, so this row is evidence FOR the tool's design. ALSO FIXED THIS BATCH, under convention 18: the sibling arm 'a count that FELL is not a regression' loosened ONLY the worst app, so its outcome depended on every OTHER app matching its baseline -- it asserted the ratchet's behaviour AND the repository's state in one arm, and it was failing for the second reason. Every app is now loosened. The probe went from 2 failing arms to 1, twice, and an ablation confirms the fixed arm still bites: making the ratchet intolerant of a fall makes it FAIL, with the subject restored byte-identical. STILL NOT CLEARED: WHICH app rose and which fell is not named. tools/write_path_fault_scan.py exposes apps(argv) and scan(path) rather than a per-app counter, so the comparison needs the ratchet's own code path rather than a re-implementation -- and a re-implementation is how a wrong denominator gets built.",
+   "why": "TWO ARMS, BOTH LIVE-TREE ASSERTIONS. (1) 'the shipped baseline PASSES today -- a ratchet that fails on a clean tree is one somebody turns off' now fails, so the ratchet no longer passes on the real tree. (2) 'a count that FELL is not a regression' also fails, so a baselined count has DROPPED. The probe's mechanism arm ('a NEW blind write site FAILS the ratchet -- it can fire') PASSES, so the detector works and both reds are about tree state. The dropped count is the one worth reading: by tools/run_all_tests.py's own floor reasoning a DROP means the scanner may have stopped seeing files, and that is the failure a ratchet cannot self-diagnose. NOT CLEARED -- the specific baselined key that fell is NOT yet named, and naming it is the next step rather than an assumption. || CORRECTED 2026-10-07 BY THE SESSION THAT WROTE THIS, AND THE FIRST READING WAS WRONG IN A WAY THAT MATTERS. I wrote that 'a baselined count FELL'. Measured at a7b6b58c: the shipped baseline records 25 sites (recorded 2026-09-15) and the tree measures 25 -- THE TOTAL AGREES -- and the shipped-baseline arm fails anyway. That can only mean one app ROSE while another FELL, leaving the total unchanged. A fall alone would not fail a ratchet that tolerates falls, which is the half I got backwards. The redistribution is INVISIBLE TO A TOTAL and is precisely what a per-app ratchet exists to catch, so this row is evidence FOR the tool's design. ALSO FIXED THIS BATCH, under convention 18: the sibling arm 'a count that FELL is not a regression' loosened ONLY the worst app, so its outcome depended on every OTHER app matching its baseline -- it asserted the ratchet's behaviour AND the repository's state in one arm, and it was failing for the second reason. Every app is now loosened. The probe went from 2 failing arms to 1, twice, and an ablation confirms the fixed arm still bites: making the ratchet intolerant of a fall makes it FAIL, with the subject restored byte-identical. STILL NOT CLEARED: WHICH app rose and which fell is not named. tools/write_path_fault_scan.py exposes apps(argv) and scan(path) rather than a per-app counter, so the comparison needs the ratchet's own code path rather than a re-implementation -- and a re-implementation is how a wrong denominator gets built.  ||  RE-DRIVEN 2026-10-14 (cody b9), isolated worktree at bd5239ac: EXIT 1, 1 arm failed -- REAL. `the shipped baseline PASSES today -- a ratchet that fails on a clean tree is one somebody turns off`, expected exit 0. Baseline 24 sites OPEN AND UNREAD, measured now 25, with `REGRESSION sairncare.html 0 -> 1` and `REGRESSION sairnmechanical.html 3 -> 4` and `IMPROVED sairndesign.html 2 -> 1`. NEW BLIND WRITE SITES LANDED. Independently corroborated by tests/write_readback_shape_probe.py in the same sweep, which measures the same two apps moving. Its own fail-closed control (`COULD NOT RUN: the baseline ... is missing`) passes. Exit line :337.",
    "owner": "cody",
    "diagnosed": "2026-10-06",
    "diagnosed_by": "fourth",
@@ -1024,14 +1012,15 @@
     "sha": "762b084b",
     "basis": "re-run BY HAND by fourth, one process, in the live clone; exit code read from the program's own output"
    },
-   "exit_code": 1
+   "exit_code": 1,
+   "tail_remeasured_2026_10_14": "cody b9, see the b9 note appended to `why`"
   },
   {
    "file": "tests/sairncare/test-compliance-rules.js",
    "kind": "node",
    "tail": "47 passed, 3 failed",
    "since": "2026-10-06",
-   "why": "THREE ARMS OF 50, AND TWO OF THEM ARE THE SAME PIN. 'coverage reports all four states complete across all three requirement types: expected 4 got 5' and 'every correction found during verification is recorded in the rule itself -- all four states had at least one correction: expected 4 got 5'. A FIFTH STATE was added to the compliance rules and both arms pin FOUR. That is convention 14 -- a count inferred from a sample used as evidence without stating n of N. The third, 'a PCH secured-unit worker owes 18 annual hours (12 + 6), computed not asserted -- mismatch: expected false got null', is a DIFFERENT failure: null is not false, so the computation returned nothing rather than returning the wrong number, which points at the new state's data being absent for the PCH path rather than at the arithmetic. 47 arms pass. FIX IS THE AUTHOR'S: the two cardinality arms should read the state list and say n of N; the PCH arm needs the fifth state's data before it can be judged.",
+   "why": "THREE ARMS OF 50, AND TWO OF THEM ARE THE SAME PIN. 'coverage reports all four states complete across all three requirement types: expected 4 got 5' and 'every correction found during verification is recorded in the rule itself -- all four states had at least one correction: expected 4 got 5'. A FIFTH STATE was added to the compliance rules and both arms pin FOUR. That is convention 14 -- a count inferred from a sample used as evidence without stating n of N. The third, 'a PCH secured-unit worker owes 18 annual hours (12 + 6), computed not asserted -- mismatch: expected false got null', is a DIFFERENT failure: null is not false, so the computation returned nothing rather than returning the wrong number, which points at the new state's data being absent for the PCH path rather than at the arithmetic. 47 arms pass. FIX IS THE AUTHOR'S: the two cardinality arms should read the state list and say n of N; the PCH arm needs the fifth state's data before it can be judged.  ||  RE-DRIVEN 2026-10-14 (cody b9), isolated worktree at bd5239ac: EXIT 1, 47 passed 3 failed -- REAL, STALE EXPECTATION: a FIFTH compliance state was seeded and the suite still hardcodes four. `coverage reports all four states complete across all three requirement types -- expected 4 got 5`; `every correction found during verification is recorded in the rule itself -- expected 4 got 5`; and `a PCH secured-unit worker owes 18 annual hours (12 + 6), computed not asserted -- expected false got null`. Exit line :503.",
    "owner": "cody",
    "diagnosed": "2026-10-07",
    "diagnosed_by": "fourth",
@@ -1043,14 +1032,15 @@
     "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, tree verified clean before and after the batch; exit code read from the program's own output"
    },
    "exit_code": 1,
-   "cause_tag": "test-design/oracle-selection/hardcoded-cardinality"
+   "cause_tag": "test-design/oracle-selection/hardcoded-cardinality",
+   "tail_remeasured_2026_10_14": "cody b9, see the b9 note appended to `why`"
   },
   {
    "file": "tests/sairncare/test-op-audit.js",
    "kind": "node",
    "tail": "12 passed, 14 failed",
    "since": "2026-10-06",
-   "why": "FOURTEEN ARMS FAIL AND EVERY ONE IS 'expected 200 got 502' OR 'expected 400 got 502'. NOT an absent network: the file MOCKS fetch at line 30 and throws 'Unmocked fetch: ' + method + ' ' + url for anything it does not recognise (line 50), with a fake SUPABASE_URL set at line 14. So the 502 is the handler answering after its upstream call hit the mock's unrecognised branch -- THE MOCK NO LONGER COVERS THE ROUTES THE HANDLER TAKES. The handler changed shape and the fixture did not follow. 12 arms still pass, so the harness itself works. This is the fixture-tidier-than-production class from hank's routed convention, in its other direction: the fixture is not tidier, it is STALE. FIX: re-derive the mock's route table from the handler rather than patching the fourteen expectations.",
+   "why": "FOURTEEN ARMS FAIL AND EVERY ONE IS 'expected 200 got 502' OR 'expected 400 got 502'. NOT an absent network: the file MOCKS fetch at line 30 and throws 'Unmocked fetch: ' + method + ' ' + url for anything it does not recognise (line 50), with a fake SUPABASE_URL set at line 14. So the 502 is the handler answering after its upstream call hit the mock's unrecognised branch -- THE MOCK NO LONGER COVERS THE ROUTES THE HANDLER TAKES. The handler changed shape and the fixture did not follow. 12 arms still pass, so the harness itself works. This is the fixture-tidier-than-production class from hank's routed convention, in its other direction: the fixture is not tidier, it is STALE. FIX: re-derive the mock's route table from the handler rather than patching the fourteen expectations.  ||  RE-DRIVEN 2026-10-14 (cody b9), isolated worktree at bd5239ac: EXIT 1, 12 passed 14 failed, AND ALL FOURTEEN ARE ONE ROOT CAUSE -- a contract drift, not an environment problem. Every failure is preceded by `api/sd-data error: Error: bad app scope: undefined` thrown by the suite's own verifySessionToken stub at tests/sairncare/test-op-audit.js:23, called from api/sd-data.js:1938. api/sd-data.js:1936-1938 calls verifySessionToken(preToken, licHash) with NO THIRD ARGUMENT, while the stub at :21-22 throws unless the third argument is 'sairncare'. sd-data.js's own comment says that pre-gate deliberately runs ABOVE per-resource app scoping, SO THE STUB IS THE STALE HALF. The first 12 arms -- pure threshold logic with no handler -- all pass. Exit line :273. FIX IS IN tests/ and is the tests owner's; the api/ side is correct as written.",
    "owner": "cody",
    "diagnosed": "2026-10-07",
    "diagnosed_by": "fourth",
@@ -1062,23 +1052,24 @@
     "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, tree verified clean before and after the batch; exit code read from the program's own output"
    },
    "exit_code": 1,
-   "cause_tag": "test-design/fixture/mock-drifted-from-handler"
+   "cause_tag": "test-design/fixture/mock-drifted-from-handler",
+   "tail_remeasured_2026_10_14": "cody b9, see the b9 note appended to `why`"
   },
   {
    "file": "tests/sairnfreedom_auth_review_probe.js",
    "kind": "node",
    "tail": "  ? 15:11 (2) -- the sf-auth setup guard anchor has moved -- this arm is not reporting agreement it did not check",
    "since": "2026-10-06",
-   "why": "",
+   "why": "DRIVEN 2026-10-14 (cody b9): EXIT 1, and the exit is BY DESIGN rather than a crash. `why` WAS BLANK; this is the first diagnosis. ANCHOR DRIFT, REPORTED IN THE CORRECT THIRD STATE: `? 15:11 (2) -- the sf-auth setup guard anchor has moved -- this arm is not reporting agreement it did not check`, summarised as `1 PRESS-ON(S) COULD NOT BE DRIVEN -- NOT a clean review:`. The suite then exits 1 at tests/sairnfreedom_auth_review_probe.js:311 on purpose. So the suite is behaving exactly as written: it refuses to report agreement it did not check. NOT A CREDENTIAL PROBLEM. The probe states separately that it holds no SAIRNfreedom credentials and handles that by judgement, not through this arm -- so this red is a stale ANCHOR in the probe against api/sf-auth, not a missing environment. EXIT CODE: tests/sairnfreedom_auth_review_probe.js:318 `process.exit(0)`, reached via :311 `process.exit(1)`. NEXT STEP: re-point the setup-guard anchor at its current site in api/sf-auth.js. The anchor lives in this tests/ file, so it is the tests owner's.",
    "owner": "cody",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-14",
+   "diagnosed_by": "cody",
    "environment": {
-    "where": "live-clone",
+    "where": "isolated-worktree",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
+    "tool": "the suite itself, invoked directly, one process, python -u for .py",
+    "sha": "bd5239ac",
+    "basis": "DRIVEN IN cody b9, one at a time, 180s cap, cwd inside a git worktree of bd5239ac, exit code read from `echo \"EXIT=$?\"` on its own line and never inferred from the text. Worktree removed and pruned afterwards; `git worktree list` confirmed back to the live clone alone."
    }
   },
   {
@@ -1086,7 +1077,7 @@
    "kind": "py",
    "tail": "FAILED  sairnfreedom_fault_probe: 1 failed",
    "since": "2026-10-06",
-   "why": "CHAINED off tests/sairnfreedom_server_backup.js, which is itself a row in this register. Its single failure is 'the shipped tree PASSES ... sairnfreedom_server_backup: 16 passed, 1 failed', and that suite's one red arm is the hardcoded 'registry still holds exactly 35 resources'. This probe's own restore discipline is intact -- 'all three files restored byte for byte after every arm' passes. So the row clears when the 35 becomes a floor. Nothing here is fixable from inside this file.",
+   "why": "CHAINED off tests/sairnfreedom_server_backup.js, which is itself a row in this register. Its single failure is 'the shipped tree PASSES ... sairnfreedom_server_backup: 16 passed, 1 failed', and that suite's one red arm is the hardcoded 'registry still holds exactly 35 resources'. This probe's own restore discipline is intact -- 'all three files restored byte for byte after every arm' passes. So the row clears when the 35 becomes a floor. Nothing here is fixable from inside this file.  ||  RE-DRIVEN 2026-10-14 (cody b9), isolated worktree at bd5239ac: EXIT 1, `the shipped tree PASSES` failed -- REAL BUT DERIVED. Its arm 0 drives tests/sairnfreedom_server_backup.js, which is red on a stale 35-vs-36 count, so the baseline gate correctly refuses. ALL 11 MUTATION ARMS PASS (`ok a registered resource the client no longer pushes is caught` ... `ok this clone's own files are untouched`), so the probe itself is sound. CHAINED: fix the 36th-resource count and this clears. Exit line :170.",
    "owner": "cody",
    "diagnosed": "2026-10-07",
    "diagnosed_by": "fourth",
@@ -1098,14 +1089,15 @@
     "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, git status captured before and after each run and unchanged throughout, node --check api/sd-data.js clean afterwards; exit code read from the program's own output"
    },
    "exit_code": 1,
-   "cause_tag": "test-design/dependency/chained-red-baseline"
+   "cause_tag": "test-design/dependency/chained-red-baseline",
+   "tail_remeasured_2026_10_14": "cody b9, see the b9 note appended to `why`"
   },
   {
    "file": "tests/sairnfreedom_segregation_of_duties.js",
    "kind": "node",
    "tail": "FAIL -- 25 passed, 1 failed",
    "since": "2026-10-06",
-   "why": "ONE ARM OF 26, AND IT IS A CLAIM MADE TO THE USER. 'FAIL D4. sf_trustee_audits is NOT in SF_SYNCED -- the panel TELLS the user this record is device-only, and a claim about a limitation has to be true.' 25 arms pass. sairnfreedom.html carries 'device only' wording at three places (1616, 2042, 2048) and 'not synced' at 7621, and sf_trustee_audits appears twice in the file. So either the resource gained sync and the panel's disclaimer is now false, or the disclaimer was always about a different resource. EITHER WAY THE DIRECTION IS THE BAD ONE: a panel telling a trustee their audit record is device-only, when it is synced, is a privacy statement that is wrong rather than a feature that is missing. NOT CLEARED -- which of the two it is needs the SF_SYNCED list read against the three disclaimer sites, and that is app-owner work.",
+   "why": "ONE ARM OF 26, AND IT IS A CLAIM MADE TO THE USER. 'FAIL D4. sf_trustee_audits is NOT in SF_SYNCED -- the panel TELLS the user this record is device-only, and a claim about a limitation has to be true.' 25 arms pass. sairnfreedom.html carries 'device only' wording at three places (1616, 2042, 2048) and 'not synced' at 7621, and sf_trustee_audits appears twice in the file. So either the resource gained sync and the panel's disclaimer is now false, or the disclaimer was always about a different resource. EITHER WAY THE DIRECTION IS THE BAD ONE: a panel telling a trustee their audit record is device-only, when it is synced, is a privacy statement that is wrong rather than a feature that is missing. NOT CLEARED -- which of the two it is needs the SF_SYNCED list read against the three disclaimer sites, and that is app-owner work.  ||  RE-DRIVEN 2026-10-14 (cody b9), isolated worktree at bd5239ac: EXIT 1, 25 passed 1 failed -- REAL, AND IT IS A FALSE CLAIM LIVE IN THE UI. `D4. sf_trustee_audits is NOT in SF_SYNCED -- the panel TELLS the user this record is device-only, and a claim about a limitation has to be true` / `it IS synced now. GOOD -- but the panel still says it is device-only, and that sentence and this arm must both be rewritten.` TWO HALVES, TWO OWNERS: the panel sentence is in sairnfreedom.html (hank), the arm is in tests/ (tests owner). Exit line :405.",
    "owner": "cody",
    "diagnosed": "2026-10-07",
    "diagnosed_by": "fourth",
@@ -1117,14 +1109,15 @@
     "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, tree verified clean before and after the batch; exit code read from the program's own output"
    },
    "exit_code": 1,
-   "cause_tag": "implementation/ui-claim/limitation-no-longer-true"
+   "cause_tag": "implementation/ui-claim/limitation-no-longer-true",
+   "tail_remeasured_2026_10_14": "cody b9, see the b9 note appended to `why`"
   },
   {
    "file": "tests/sairnfreedom_server_backup.js",
    "kind": "node",
    "tail": "FAILED  sairnfreedom_server_backup: 16 passed, 1 failed",
    "since": "2026-10-06",
-   "why": "16 passed, 1 failed, and the failing arm is a HARDCODED COUNT ON A LIVE REGISTRY: 'the registry still holds exactly 35 resources'. The registry grew past 35 and the arm pins an equality. Convention 14 -- a count inferred from a sample used as evidence without stating n of N -- and the floor-not-equality correction tools/run_all_tests.py's MIN_TEST_FILES already documents. THE SAME NUMBER 35 IS PINNED IN A SECOND SUITE: tests/schema_provisioning_probe.py fails arm1_reads_35_from_the_schema and arm2_registry_has_35, diagnosed in the previous batch. So one registry growing reddened two suites in two different places, which is what makes a hardcoded cardinality worse than a wrong one -- it is wrong in every copy at once. THIS ARM ALSO BLOCKS tests/sairnfreedom_fault_probe.py, which chains off this suite as its baseline. FIX: assert a FLOOR with n of N stated; a DROP is the thing worth failing on.",
+   "why": "16 passed, 1 failed, and the failing arm is a HARDCODED COUNT ON A LIVE REGISTRY: 'the registry still holds exactly 35 resources'. The registry grew past 35 and the arm pins an equality. Convention 14 -- a count inferred from a sample used as evidence without stating n of N -- and the floor-not-equality correction tools/run_all_tests.py's MIN_TEST_FILES already documents. THE SAME NUMBER 35 IS PINNED IN A SECOND SUITE: tests/schema_provisioning_probe.py fails arm1_reads_35_from_the_schema and arm2_registry_has_35, diagnosed in the previous batch. So one registry growing reddened two suites in two different places, which is what makes a hardcoded cardinality worse than a wrong one -- it is wrong in every copy at once. THIS ARM ALSO BLOCKS tests/sairnfreedom_fault_probe.py, which chains off this suite as its baseline. FIX: assert a FLOOR with n of N stated; a DROP is the thing worth failing on.  ||  RE-DRIVEN 2026-10-14 (cody b9), isolated worktree at bd5239ac: EXIT 1, 16 passed 1 failed -- REAL, AND IT IS THE ROOT CAUSE OF TWO OTHER REDS IN THIS SWEEP. `the registry still holds exactly 35 resources` / `the sairnfreedom registry has 36 resources, not 35 -- if that is deliberate, change this number in the same commit; if it is not, a resource has been removed and every per-resource assertion in this file went with it` / `36 !== 35`. A STALE HARDCODED COUNT. It chains into tests/sairnfreedom_server_backup_probe.py (exit 2, no baseline) and tests/sairnfreedom_fault_probe.py, and is corroborated independently by tests/schema_provisioning_probe.py measuring 36 in the schema. Exit line :229. FIX THIS ONE FIRST -- it is one change that clears three rows.",
    "owner": "cody",
    "diagnosed": "2026-10-07",
    "diagnosed_by": "fourth",
@@ -1136,14 +1129,15 @@
     "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, git status captured before and after each run and unchanged throughout, node --check api/sd-data.js clean afterwards; exit code read from the program's own output"
    },
    "exit_code": 1,
-   "cause_tag": "test-design/oracle-selection/hardcoded-cardinality"
+   "cause_tag": "test-design/oracle-selection/hardcoded-cardinality",
+   "tail_remeasured_2026_10_14": "cody b9, see the b9 note appended to `why`"
   },
   {
    "file": "tests/sairnfreedom_server_backup_probe.py",
    "kind": "py",
    "tail": "  The baseline is red, so no mutation below would mean anything. Stopping.",
    "since": "2026-10-06",
-   "why": "COULD NOT RUN, exit 2. Same shape as tests/phi_cache_scope_probe.py and the same correct exit code. Arm 0: '0. the suite is GREEN in the worktree before anything is planted (exit 1)'; the baseline subject tests/sairnfreedom_server_backup.js is at 'FAILED  sairnfreedom_server_backup: 16 passed, 1 failed' and the named failing arm is '5. hydration cannot leave the backup suppressed for the session'. The probe stops and plants nothing. tests/sairnfreedom_server_backup.js is ALSO a row in this register, so this is a CHAINED red: fix the .js arm 5 first and this probe becomes testable again. Not fixable from inside the probe.",
+   "why": "COULD NOT RUN, exit 2. Same shape as tests/phi_cache_scope_probe.py and the same correct exit code. Arm 0: '0. the suite is GREEN in the worktree before anything is planted (exit 1)'; the baseline subject tests/sairnfreedom_server_backup.js is at 'FAILED  sairnfreedom_server_backup: 16 passed, 1 failed' and the named failing arm is '5. hydration cannot leave the backup suppressed for the session'. The probe stops and plants nothing. tests/sairnfreedom_server_backup.js is ALSO a row in this register, so this is a CHAINED red: fix the .js arm 5 first and this probe becomes testable again. Not fixable from inside the probe.  ||  RE-DRIVEN 2026-10-14 (cody b9), isolated worktree at bd5239ac: EXIT 2 -- COULD NOT RUN, which is neither a pass nor a failure, so THIS ENTRY IS LEFT IN PLACE EXACTLY AS IT WAS. Its own words: `FAIL 0. the suite is GREEN in the worktree before anything is planted (exit 1)` / `The baseline is red, so no mutation below would mean anything. Stopping.` IT IS A CONSEQUENCE OF tests/sairnfreedom_server_backup.js, whose stale 35-vs-36 resource count is the real defect -- fix that and this probe gets a baseline. Exit-code line tests/sairnfreedom_server_backup_probe.py:75, `sys.exit(run_probe(`.",
    "owner": "cody",
    "diagnosed": "2026-10-07",
    "diagnosed_by": "fourth",
@@ -1162,7 +1156,7 @@
    "kind": "py",
    "tail": "  The baseline is red, so no mutation below would mean anything. Stopping.",
    "since": "2026-10-06",
-   "why": "COULD NOT RUN BY ITS OWN TEXT, BUT EXITS 1 -- and that inconsistency is the finding. It prints the identical sentence its siblings print, 'The baseline is red, so no mutation below would mean anything. Stopping.', after arm 0 ('the suite is GREEN in the worktree before anything is planted (exit 1)') fails on tests/sairnlegacy_reservation_lock.js -- whose failure is 'a reservation that wins returns 200 -- 403'. tests/phi_cache_scope_probe.py and tests/sairnfreedom_server_backup_probe.py reach the same state and exit **2**. THREE SIBLINGS, ONE SENTENCE, TWO EXIT CODES: a reader chaining on the exit code counts this one as a failure and the other two as could-not-runs. Also a chained red -- sairnlegacy_reservation_lock.js is a row in this register.",
+   "why": "COULD NOT RUN BY ITS OWN TEXT, BUT EXITS 1 -- and that inconsistency is the finding. It prints the identical sentence its siblings print, 'The baseline is red, so no mutation below would mean anything. Stopping.', after arm 0 ('the suite is GREEN in the worktree before anything is planted (exit 1)') fails on tests/sairnlegacy_reservation_lock.js -- whose failure is 'a reservation that wins returns 200 -- 403'. tests/phi_cache_scope_probe.py and tests/sairnfreedom_server_backup_probe.py reach the same state and exit **2**. THREE SIBLINGS, ONE SENTENCE, TWO EXIT CODES: a reader chaining on the exit code counts this one as a failure and the other two as could-not-runs. Also a chained red -- sairnlegacy_reservation_lock.js is a row in this register.  ||  RE-DRIVEN 2026-10-14 (cody b9), isolated worktree at bd5239ac: EXIT 1, baseline red so it stopped -- CHAINED, not a defect in this probe. `0. the suite is GREEN in the worktree before anything is planted (exit 1)` / `FAILED: a reservation that wins returns 200 -- 403` / `The baseline is red, so no mutation below would mean anything. Stopping.` Its baseline is tests/sairnlegacy_reservation_lock.js; see that row for the real cause. Exit line :358.",
    "owner": "cody",
    "diagnosed": "2026-10-07",
    "diagnosed_by": "fourth",
@@ -1174,14 +1168,15 @@
     "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process, tree checked clean before and after; exit code read from the program's own output"
    },
    "exit_code": 1,
-   "cause_tag": "test-design/exit-code/could-not-run-as-failure"
+   "cause_tag": "test-design/exit-code/could-not-run-as-failure",
+   "tail_remeasured_2026_10_14": "cody b9, see the b9 note appended to `why`"
   },
   {
    "file": "tests/sairnlegacy_reservation_lock.js",
    "kind": "node",
    "tail": "1. reserving is an atomic conditional PATCH, not a read-then-write",
    "since": "2026-10-06",
-   "why": "THE FIRST BEHAVIOUR ARM FAILS AND EVERYTHING AFTER IT IS UNREACHED: 'a reservation that wins returns 200 -- 403'. The test is NOT missing a session -- it signs a real SAIRNlegacy employee token (lines 78-80, 124-130) with role 'director', and the mock supplies a 200 reply with the row. A 403 with a valid session is an AUTHORIZATION refusal reached BEFORE the upstream PATCH, so the atomicity arms below it (exactly one upstream call, method is PATCH) never run. api/sd-data.js:13592 is the leg_merch_units reserve branch. The shape matches a role gate having landed whose allow-list does not include 'director'. NOT CLEARED -- I did not read the allow-list, and whether the right fix is widening the gate or changing the test's role is a product decision about who may reserve a unit, not a test repair. THIS IS ALSO THE BASELINE that tests/sairnlegacy_fault_probe.py stops on, so fixing it unblocks two rows.",
+   "why": "THE FIRST BEHAVIOUR ARM FAILS AND EVERYTHING AFTER IT IS UNREACHED: 'a reservation that wins returns 200 -- 403'. The test is NOT missing a session -- it signs a real SAIRNlegacy employee token (lines 78-80, 124-130) with role 'director', and the mock supplies a 200 reply with the row. A 403 with a valid session is an AUTHORIZATION refusal reached BEFORE the upstream PATCH, so the atomicity arms below it (exactly one upstream call, method is PATCH) never run. api/sd-data.js:13592 is the leg_merch_units reserve branch. The shape matches a role gate having landed whose allow-list does not include 'director'. NOT CLEARED -- I did not read the allow-list, and whether the right fix is widening the gate or changing the test's role is a product decision about who may reserve a unit, not a test repair. THIS IS ALSO THE BASELINE that tests/sairnlegacy_fault_probe.py stops on, so fixing it unblocks two rows.  ||  RE-DRIVEN 2026-10-14 (cody b9), isolated worktree at bd5239ac: EXIT 1, threw at arm 1 -- REAL FIXTURE/SUBJECT DRIFT, DIAGNOSED BY REPRODUCING THE HANDLER CALL STANDALONE. `FAILED: a reservation that wins returns 200 -- 403`, and the body is `{\"error\":{\"code\":\"CREDENTIAL_INACTIVE\",...}}` with the one upstream call being `.../sairnlegacy_employee_auth?...&select=active&limit=1`. THE credentialStillActive PRE-GATE AT api/sd-data.js:1936-1941 LANDED AFTER THIS SUITE'S FIXTURE WAS WRITTEN (the fixture's own comment is dated 2026-09-21) and now CONSUMES THE FIXTURE'S FIRST `replies` ENTRY, so the `active` lookup reads undefined -> 403 and every downstream reply is shifted by one. NOT SANDBOX: no network and no env credential is involved. Arm 0 (the 36-resource registry) passes here. Exit line :657. FIX IS IN tests/ -- add the active-lookup reply to the fixture.",
    "owner": "cody",
    "diagnosed": "2026-10-07",
    "diagnosed_by": "fourth",
@@ -1193,14 +1188,15 @@
     "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, tree verified clean before and after the batch; exit code read from the program's own output"
    },
    "exit_code": 1,
-   "cause_tag": "implementation/role-gate/allow-list-excludes-the-caller"
+   "cause_tag": "implementation/role-gate/allow-list-excludes-the-caller",
+   "tail_remeasured_2026_10_14": "cody b9, see the b9 note appended to `why`"
   },
   {
    "file": "tests/schema_provisioning_probe.py",
    "kind": "py",
    "tail": "3 ARM(S) FAILED",
    "since": "2026-10-06",
-   "why": "THREE ARMS FALSE, ALL THREE A HARDCODED COUNT: arm1_reads_35_from_the_schema False, arm1_reads_41_for_sairnvet False, arm2_registry_has_35 False. The two shape arms PASS -- arm1_names_are_tables_not_prose True, arm2_no_prose_words True -- so the parser works and only the NUMBERS are wrong. 35 and 41 are pinned in the arm NAMES, which is the worst place for a number that moves: the schema and the registry grew and the arm's own label is now a false statement about the platform. Convention 14 exactly. FIX: the arms must read the count and assert a FLOOR with n of N stated, never an equality -- the same correction tools/run_all_tests.py's MIN_TEST_FILES already documents, and a DROP is the thing worth failing on.",
+   "why": "THREE ARMS FALSE, ALL THREE A HARDCODED COUNT: arm1_reads_35_from_the_schema False, arm1_reads_41_for_sairnvet False, arm2_registry_has_35 False. The two shape arms PASS -- arm1_names_are_tables_not_prose True, arm2_no_prose_words True -- so the parser works and only the NUMBERS are wrong. 35 and 41 are pinned in the arm NAMES, which is the worst place for a number that moves: the schema and the registry grew and the arm's own label is now a false statement about the platform. Convention 14 exactly. FIX: the arms must read the count and assert a FLOOR with n of N stated, never an equality -- the same correction tools/run_all_tests.py's MIN_TEST_FILES already documents, and a DROP is the thing worth failing on.  ||  RE-DRIVEN 2026-10-14 (cody b9), isolated worktree at bd5239ac: EXIT 1, 3 of 17 failed -- REAL, STALE COUNTS, and MEASURED DIRECTLY against tools/schema_provisioning_check.py rather than inferred: sairnfreedom schema 36 tables (probe wants 35), sairnvet schema 42 (wants 41), sairnfreedom registry 36 (wants 35). `arm1_reads_35_from_the_schema False`, `arm1_reads_41_for_sairnvet False`, `arm2_registry_has_35 False`. CORROBORATES tests/sairnfreedom_server_backup.js independently. The 14 behavioural arms all pass, including arm5_no_key_exits_2 and arm6_missing_schema_exits_3. Exit line :137.",
    "owner": "cody",
    "diagnosed": "2026-10-07",
    "diagnosed_by": "fourth",
@@ -1212,23 +1208,24 @@
     "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, tree verified clean before and after the batch; exit code read from the program's own output"
    },
    "exit_code": 1,
-   "cause_tag": "test-design/oracle-selection/hardcoded-count-on-live-schema"
+   "cause_tag": "test-design/oracle-selection/hardcoded-count-on-live-schema",
+   "tail_remeasured_2026_10_14": "cody b9, see the b9 note appended to `why`"
   },
   {
    "file": "tests/scp_quotes_review_probe.js",
    "kind": "node",
    "tail": "  NOT REPRODUCED -- this finding appears to be closed.",
    "since": "2026-10-06",
-   "why": "",
+   "why": "DRIVEN 2026-10-14 (cody b9): EXIT 1, AND THAT MEANS IT CRASHED RATHER THAN THAT IT FOUND SOMETHING. `why` WAS BLANK; this is the first diagnosis, and the distinction is the whole entry: this file is REPORT-ONLY BY DESIGN -- tests/scp_quotes_review_probe.js:348 is `process.exit(0)` with the comment 'Report-only: exit 0 by design'. So a nonzero exit from this file is never a finding; it is the file dying before it can report. THE CRASH: `ReferenceError: scpSetSendBtn is not defined / at Object.scpOpenDesignModal (evalmachine.<anonymous>:277:8) / at finding2 (tests/scp_quotes_review_probe.js:215:7)`. STALE EXTRACTION: the vm sandbox's slice of sairnscape.html no longer contains a function the extracted code calls. Finding 1 completed first and reported `NOT REPRODUCED -- this finding appears to be closed.` NEXT STEP: widen the extracted slice, or stub scpSetSendBtn in the sandbox. tests/ file, tests owner's. A report-only probe that crashes is strictly worse than one that reports nothing, because the exit code now carries a meaning its author explicitly disclaimed.",
    "owner": "cody",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-14",
+   "diagnosed_by": "cody",
    "environment": {
-    "where": "live-clone",
+    "where": "isolated-worktree",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
+    "tool": "the suite itself, invoked directly, one process, python -u for .py",
+    "sha": "bd5239ac",
+    "basis": "DRIVEN IN cody b9, one at a time, 180s cap, cwd inside a git worktree of bd5239ac, exit code read from `echo \"EXIT=$?\"` on its own line and never inferred from the text. Worktree removed and pruned afterwards; `git worktree list` confirmed back to the live clone alone."
    }
   },
   {
@@ -1236,7 +1233,7 @@
    "kind": "py",
    "tail": "2 ARM(S) FAILED  [re-driven on a restored tree]",
    "since": "2026-10-06",
-   "why": "TWO ARMS: arm1_no_could_not_tell False and arm3_exit_zero False. The probe's own restore discipline is intact -- arm3_restored_clean True and sources_restored True -- so this is not residue and the tree was verified clean before and after (and node --check api/sd-data.js PARSES). The subject emits a COULD-NOT-TELL and does not exit 0 where the arms require a clean answer. THE DIRECTION IS THE SAFE ONE: a seam checker refusing rather than reporting clean is PR 1.11 working, so the question is WHETHER THE COULD-NOT-TELL IS JUSTIFIED and not whether refusing is allowed. NOT CLEARED -- the reason text behind the could-not-tell is not captured, and that is the next step: one run with the subject's own output kept rather than the probe's summary.",
+   "why": "TWO ARMS: arm1_no_could_not_tell False and arm3_exit_zero False. The probe's own restore discipline is intact -- arm3_restored_clean True and sources_restored True -- so this is not residue and the tree was verified clean before and after (and node --check api/sd-data.js PARSES). The subject emits a COULD-NOT-TELL and does not exit 0 where the arms require a clean answer. THE DIRECTION IS THE SAFE ONE: a seam checker refusing rather than reporting clean is PR 1.11 working, so the question is WHETHER THE COULD-NOT-TELL IS JUSTIFIED and not whether refusing is allowed. NOT CLEARED -- the reason text behind the could-not-tell is not captured, and that is the next step: one run with the subject's own output kept rather than the probe's summary.  ||  RE-DRIVEN 2026-10-14 (cody b9), isolated worktree at bd5239ac: EXIT 1, 2 arms failed -- THE SUBJECT TOOL EXITING NON-ZERO, SCORED AS FAILED ARMS. `arm1_no_could_not_tell False`, `arm3_exit_zero False`, with `arm3_counts 96 clean, 0 not-forwarded, 19 could-not-tell`. Both arms require the seam gate to report ZERO could-not-tell and exit 0; it reports 19 and exits 2. THE 19 ARE A REAL REPO CONDITION, not a worktree effect -- the identical count appears under run_delegation_probe.py and run_ref_probe.py in the same sweep. All mutation and control arms pass (arm2_planted_is_caught True, sources_restored True). Exit line :148. The 19 unresolved seams are the work; they are not this probe's defect.",
    "owner": "cody",
    "diagnosed": "2026-10-07",
    "diagnosed_by": "fourth",
@@ -1248,14 +1245,15 @@
     "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, git status captured before and after each run and unchanged throughout, node --check api/sd-data.js clean afterwards; exit code read from the program's own output"
    },
    "exit_code": 1,
-   "cause_tag": "tooling/third-state/could-not-tell-where-clean-expected"
+   "cause_tag": "tooling/third-state/could-not-tell-where-clean-expected",
+   "tail_remeasured_2026_10_14": "cody b9, see the b9 note appended to `why`"
   },
   {
    "file": "tests/seam_check/run_ref_probe.py",
    "kind": "py",
    "tail": "3 ARM(S) FAILED  [re-driven on a restored tree]",
    "since": "2026-10-06",
-   "why": "THREE ARMS FALSE AND THE FIRST ONE EXPLAINS THE OTHER TWO: baseline_clean False, then arm2_ref_is_blind False and arm3_default_is_worktree False. The baseline is dirty, so arms 2 and 3 are judging something other than what they name -- the same ambiguity that made my own write-path arm fail for the wrong reason this batch (convention 18). source_restored True, and the tree was verified unchanged before and after, so this is not residue. NOT CLEARED -- WHY baseline_clean is False is not established, and until it is, the two arms below it carry no information in either direction. Fix order is forced: the baseline first.",
+   "why": "THREE ARMS FALSE AND THE FIRST ONE EXPLAINS THE OTHER TWO: baseline_clean False, then arm2_ref_is_blind False and arm3_default_is_worktree False. The baseline is dirty, so arms 2 and 3 are judging something other than what they name -- the same ambiguity that made my own write-path arm fail for the wrong reason this batch (convention 18). source_restored True, and the tree was verified unchanged before and after, so this is not residue. NOT CLEARED -- WHY baseline_clean is False is not established, and until it is, the two arms below it carry no information in either direction. Fix order is forced: the baseline first.  ||  RE-DRIVEN 2026-10-14 (cody b9), isolated worktree at bd5239ac: EXIT 1, 3 arms failed -- ALL THREE DOWNSTREAM OF THE SAME 19 COULD-NOT-TELL SEAMS. `arm2_ref_is_blind False`, `arm3_default_is_worktree False`, `baseline_clean False`, with `baseline_counts 96 clean, 0 not-forwarded, 19 could-not-tell`; each is `(code == 0 and ...)` and the gate cannot exit 0 while 19 seams are unresolved. THE --ref MACHINERY ITSELF IS PROVEN WORKING: arm1_worktree_denies True, arm2_matches_baseline True, arm4_bad_ref_exits_4 True, arm4b_gate_denies_unknown_code True, fixture_matches_head True. Exit line :165.",
    "owner": "cody",
    "diagnosed": "2026-10-07",
    "diagnosed_by": "fourth",
@@ -1267,14 +1265,15 @@
     "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, git status captured before and after each run and unchanged throughout, node --check api/sd-data.js clean afterwards; exit code read from the program's own output"
    },
    "exit_code": 1,
-   "cause_tag": "test-design/dependency/chained-red-baseline"
+   "cause_tag": "test-design/dependency/chained-red-baseline",
+   "tail_remeasured_2026_10_14": "cody b9, see the b9 note appended to `why`"
   },
   {
    "file": "tests/sql_preflight/run_probe.py",
    "kind": "py",
    "tail": "dead_bare_tables_evidence_2026-09-05.sql: UNDECLARED_TABLE webhook_events",
    "since": "2026-09-16",
-   "why": "UNDECLARED_TABLE webhook_events in dead_bare_tables_evidence_2026-09-05.sql. The preflight refuses a table that no schema file declares. Either webhook_events needs declaring or that evidence file is stale -- and the second is likely, given its name carries a 2026-09-05 date.",
+   "why": "UNDECLARED_TABLE webhook_events in dead_bare_tables_evidence_2026-09-05.sql. The preflight refuses a table that no schema file declares. Either webhook_events needs declaring or that evidence file is stale -- and the second is likely, given its name carries a 2026-09-05 date.  ||  RE-DRIVEN 2026-10-14 (cody b9), isolated worktree at bd5239ac: EXIT 1, 1 arm failed -- REAL, AND THE GATE IS BLOCKING SHIPPED SQL. `gate over all of sql/ exit 1, expected 0 -- the gate must not block existing correct files`. Named rows: `alf_sen_demo_license_seed_2026-09-17.sql: MISSING_COLUMN license_keys.app_id` and likewise .customer_email, .key, .plan, .status, .stripe_subscription_id, repeated across audit_license_seed_2026-09-28.sql, audit_license_seed_mech_law_2026-09-28.sql and demo_license_keys_seed.sql, plus UNDECLARED_TABLE rows ending `sairn_circuit_breaker_schema.sql: UNDECLARED_TABLE sairn_circuit_breaker_step`. THE GATE'S COLUMN CATALOGUE HAS NO license_keys DEFINITION. Exit line :184. ROUTED TO cc (tools/) for the catalogue.",
    "owner": "cody",
    "diagnosed": "2026-09-16",
    "diagnosed_by": "cody",
@@ -1284,14 +1283,15 @@
     "tool": "unknown",
     "sha": "unknown",
     "basis": "nothing in this file records how the 2026-09-16 pass was driven. All four keys unknown rather than assumed to match the 2026-10-06 pass, which was a different pass by a different session."
-   }
+   },
+   "tail_remeasured_2026_10_14": "cody b9, see the b9 note appended to `why`"
   },
   {
    "file": "tests/suite_control_backfill_probe.py",
    "kind": "py",
    "tail": "CONTROLS THAT DID NOT BITE: ['0. green on the unmodified file']",
    "since": "2026-09-16",
-   "why": "CONTROLS THAT DID NOT BITE: [\"0. green on the unmodified file\"]. The BASELINE arm is the one failing -- the subject is already red before any sabotage is planted -- so every verdict after it would be about two things at once. The probe is correctly refusing to report on a red baseline.",
+   "why": "CONTROLS THAT DID NOT BITE: [\"0. green on the unmodified file\"]. The BASELINE arm is the one failing -- the subject is already red before any sabotage is planted -- so every verdict after it would be about two things at once. The probe is correctly refusing to report on a red baseline.  ||  RE-DRIVEN 2026-10-14 (cody b9), isolated worktree at bd5239ac: EXIT 1, 4 controls did not bite -- REAL, STALE MUTATION ANCHORS, and the suite says so in the designed way. `CONTROLS THAT DID NOT BITE: ['2. a failed read is treated as an empty one', '3. the server copy clobbers local records instead of merging', '4. a no-op boot writes anyway', '1. hydrate runs with no licence key']`, printed as ANCHOR-0 (built at tests/suite_control_backfill_probe.py:183; line 23 states that an anchor which stops matching is reported as ANCHOR-n and FAILS the run). Three anchors are in tests/sairnlaw_hydrate.js and one in tests/sairnsenior_org_hydrate.js. THE MUTATION COULD NOT BE PLANTED, SO THE CONTROL PROVED NOTHING -- this is the eighth-discipline case, a check that stopped testing anything and said so. All five files restored byte-identical. Exit line :216.",
    "owner": "cody",
    "diagnosed": "2026-09-16",
    "diagnosed_by": "cody",
@@ -1302,14 +1302,15 @@
     "sha": "eb430f25",
     "basis": "re-run BY HAND by fourth, one process, in the live clone; exit code read from the program's own output"
    },
-   "exit_code": 1
+   "exit_code": 1,
+   "tail_remeasured_2026_10_14": "cody b9, see the b9 note appended to `why`"
   },
   {
    "file": "tests/write_readback_shape_probe.py",
    "kind": "py",
    "tail": "2 ARM(S) FAILED  [re-driven on a restored tree]",
    "since": "2026-10-06",
-   "why": "TWO ARMS: arm2_writes_33_not_81 False and arm5_other_apps_unchanged False. The first pins TWO hardcoded counts in a single arm name -- 33 and 81 -- on a live write-site population, which is convention 14 and also convention 18: one arm asserting two numbers cannot say which moved. arm6_planted_write_is_caught True and arm6_source_restored True, so the detector fires and the restore holds; the tree was verified unchanged and node --check passes. THIRD SUITE IN THIS SLICE WITH A PINNED CARDINALITY, after the 35 in sairnfreedom_server_backup and the 35/41 in schema_provisioning. FIX: split the arm, then assert floors with n of N stated. NOT CLEARED -- which of 33 and 81 moved is not named, and the arm as written cannot tell you.",
+   "why": "TWO ARMS: arm2_writes_33_not_81 False and arm5_other_apps_unchanged False. The first pins TWO hardcoded counts in a single arm name -- 33 and 81 -- on a live write-site population, which is convention 14 and also convention 18: one arm asserting two numbers cannot say which moved. arm6_planted_write_is_caught True and arm6_source_restored True, so the detector fires and the restore holds; the tree was verified unchanged and node --check passes. THIRD SUITE IN THIS SLICE WITH A PINNED CARDINALITY, after the 35 in sairnfreedom_server_backup and the 35/41 in schema_provisioning. FIX: split the arm, then assert floors with n of N stated. NOT CLEARED -- which of 33 and 81 moved is not named, and the arm as written cannot tell you.  ||  RE-DRIVEN 2026-10-14 (cody b9), isolated worktree at bd5239ac: EXIT 1, 2 of 19 failed -- REAL, STALE COUNTS, MEASURED DIRECTLY with tools/write_without_readback_check.py: stonedesk.html 32/32, sairncare.html 10/10, sairnmechanical.html 3/3 against hardcoded 33 / 9 / 2. `arm2_writes_33_not_81 False`, `arm5_other_apps_unchanged False` / `arm5_drift sairncare.html want 9/9 got ['10','10']; sairnmechanical.html want 2/2 got ['3','3']`. INDEPENDENTLY CORROBORATES tests/run_write_path_scan_probe.py's `REGRESSION sairncare.html 0 -> 1` and `REGRESSION sairnmechanical.html 3 -> 4` -- two suites, two methods, the same two apps. Exit line :249.",
    "owner": "cody",
    "diagnosed": "2026-10-07",
    "diagnosed_by": "fourth",
@@ -1321,7 +1322,8 @@
     "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, git status captured before and after each run and unchanged throughout, node --check api/sd-data.js clean afterwards; exit code read from the program's own output"
    },
    "exit_code": 1,
-   "cause_tag": "test-design/oracle-selection/hardcoded-cardinality"
+   "cause_tag": "test-design/oracle-selection/hardcoded-cardinality",
+   "tail_remeasured_2026_10_14": "cody b9, see the b9 note appended to `why`"
   },
   {
    "file": "api/sd-data-cross-tenant-dispatchers.test.js",
@@ -1472,17 +1474,17 @@
    "kind": "node",
    "tail": "12 passed, 1 failed",
    "since": "2026-10-12",
-   "why": "",
+   "why": "DRIVEN 2026-10-14 (cody b9): EXIT 1, 12 passed 1 failed. `why` WAS BLANK; this is the first diagnosis. A STALE HARDCODED COUNT, not a coercion defect: `...and no OTHER grandfathered entry was removed in passing / grandfathered count is 47, expected 46 (48 - 2) / 47 !== 46`. THE TWELVE PASSING ARMS INCLUDE THE CONTROL THAT MATTERS -- `ok the PRE-FIX expressions are refused by the arms above` -- so the coercion logic the suite exists for is intact and only the bookkeeping arm is wrong. EXIT CODE PRODUCED AT tests/sd_tax_money_coercion.js:259, `process.exit(fail ? 1 : 0);`. NEXT STEP: establish whether the 47th grandfathered entry is deliberate; if it is, change the number IN THE SAME COMMIT as whatever added it. tests/ file, tests owner's.",
    "owner": "cody",
    "exit_code": 1,
-   "diagnosed": null,
-   "diagnosed_by": null,
+   "diagnosed": "2026-10-14",
+   "diagnosed_by": "cody",
    "environment": {
-    "where": "live-clone",
+    "where": "isolated-worktree",
     "pinned": false,
-    "tool": "the suite itself, invoked directly, one process per suite",
-    "sha": "327e9e80",
-    "basis": "MEASURED 2026-10-12 (fourth) at HEAD 327e9e80, batch b5 item 2. Candidates were DERIVED, not typed: every suite named red by hank's 2026-10-08 whole-tree table (89 REAL, parsed per SECTION so its 8 CASCADE and 4 TIMEOUT rows were NOT read as failures) unioned with every rc!=0 row of cody's 2026-10-11 routing TSV (76), giving 93 red suites, of which 23 were absent from this register. ALL 23 WERE THEN DRIVEN ALONE, one process each, 180s ceiling, because this file's own _how_it_was_measured says the individual drive is the authority and a run log is not. RESULT: 11 RED (exit 1), 7 GREEN, 2 COULD NOT RUN (exit 2), 2 SKIPPED (exit 3), 1 TIMEOUT. Only the 11 are added. `git status --porcelain` was captured before and after every suite and for the run as a whole: the whole-run delta was EMPTY, so no suite left the tree dirty for the next one. EXIT CODE ONLY -- no `why` is written, because an exit code is not a diagnosis."
+    "tool": "the suite itself, invoked directly, one process, python -u for .py",
+    "sha": "bd5239ac",
+    "basis": "DRIVEN IN cody b9, one at a time, 180s cap, cwd inside a git worktree of bd5239ac, exit code read from `echo \"EXIT=$?\"` on its own line and never inferred from the text. Worktree removed and pruned afterwards; `git worktree list` confirmed back to the live clone alone."
    }
   },
   {
@@ -1490,17 +1492,17 @@
    "kind": "py",
    "tail": "  restored_baseline  False (94 clean, 0 not-forwarded, 21 could-not-tell)",
    "since": "2026-10-12",
-   "why": "",
+   "why": "DRIVEN 2026-10-14 (cody b9): EXIT 1, AND THE EXIT CODE IS NOT A VERDICT ON THIS SUITE. `why` WAS BLANK; this is the first diagnosis and it is a COULD-NOT-RUN, which must not be recorded as red. THIS SUITE CANNOT RUN IN ANY GIT WORKTREE, BY CONSTRUCTION: `FileNotFoundError: [Errno 2] No such file or directory: '...\\b9wt\\.git\\seam-delegation-probe.planting'` from tests/seam_check/run_delegation_probe.py:105. Its SENTINEL (line 68) is os.path.join(REPO, '.git', 'seam-delegation-probe.planting') -- and IN A WORKTREE `.git` IS A 64-BYTE FILE, NOT A DIRECTORY (verified on disk), so the sentinel can never be created. WHAT IT DID GET TO SAY BEFORE DYING: `BASELINE exit 2 | 96 clean, 0 not-forwarded, 19 could-not-tell`. That baseline figure is corroborated independently by tests/seam_check/run_or_default_probe.py and run_ref_probe.py in the same sweep, so the 19 unresolved seams are a real repo condition rather than a worktree effect. EXIT CODE PRODUCED AT tests/seam_check/run_delegation_probe.py:329. NEXT STEP: RE-DRIVE IN THE LIVE CLONE -- it is the only place it can run -- or make the sentinel path worktree-aware. Until then its colour is UNKNOWN, not red. tests/ file, tests owner's.",
    "owner": "cody",
    "exit_code": 1,
-   "diagnosed": null,
-   "diagnosed_by": null,
+   "diagnosed": "2026-10-14",
+   "diagnosed_by": "cody",
    "environment": {
-    "where": "live-clone",
+    "where": "isolated-worktree",
     "pinned": false,
-    "tool": "the suite itself, invoked directly, one process per suite",
-    "sha": "327e9e80",
-    "basis": "MEASURED 2026-10-12 (fourth) at HEAD 327e9e80, batch b5 item 2. Candidates were DERIVED, not typed: every suite named red by hank's 2026-10-08 whole-tree table (89 REAL, parsed per SECTION so its 8 CASCADE and 4 TIMEOUT rows were NOT read as failures) unioned with every rc!=0 row of cody's 2026-10-11 routing TSV (76), giving 93 red suites, of which 23 were absent from this register. ALL 23 WERE THEN DRIVEN ALONE, one process each, 180s ceiling, because this file's own _how_it_was_measured says the individual drive is the authority and a run log is not. RESULT: 11 RED (exit 1), 7 GREEN, 2 COULD NOT RUN (exit 2), 2 SKIPPED (exit 3), 1 TIMEOUT. Only the 11 are added. `git status --porcelain` was captured before and after every suite and for the run as a whole: the whole-run delta was EMPTY, so no suite left the tree dirty for the next one. EXIT CODE ONLY -- no `why` is written, because an exit code is not a diagnosis."
+    "tool": "the suite itself, invoked directly, one process, python -u for .py",
+    "sha": "bd5239ac",
+    "basis": "DRIVEN IN cody b9, one at a time, 180s cap, cwd inside a git worktree of bd5239ac, exit code read from `echo \"EXIT=$?\"` on its own line and never inferred from the text. Worktree removed and pruned afterwards; `git worktree list` confirmed back to the live clone alone."
    }
   },
   {
@@ -1508,25 +1510,25 @@
    "kind": "py",
    "tail": "FAILED: 1a. the plant really did modify the file (the arm is not vacuous), 5. ABLATION: the same exception WITHOUT the guard leaves the plant",
    "since": "2026-10-12",
-   "why": "",
+   "why": "DRIVEN 2026-10-14 (cody b9): EXIT 1, AND THE EXIT CODE IS NOT A VERDICT ON THIS SUITE. `why` WAS BLANK; this is the first diagnosis and it is a COULD-NOT-RUN. SAME CAUSE AS tests/seam_check/run_delegation_probe.py AND INHERITED FROM IT: this control imports and calls that module's `plant`, and dies at the identical line on the identical `.git`-is-a-file sentinel. IT CANNOT RUN IN A WORKTREE EITHER. ITS ARM 0 PASSED FIRST, which is worth keeping: `ok 0. --check-residue on a clean tree exits 0 and claims nothing else`. So the residue check itself works; only the planting half is unreachable here. EXIT CODE PRODUCED AT tests/seam_check/run_delegation_residue_control.py:163, `sys.exit(1 if failed else 0)`. NEXT STEP: RE-DRIVE IN THE LIVE CLONE together with run_delegation_probe.py -- a control whose subject could not run proves nothing, so these two move as a pair. tests/ file, tests owner's.",
    "owner": "cody",
    "exit_code": 1,
-   "diagnosed": null,
-   "diagnosed_by": null,
+   "diagnosed": "2026-10-14",
+   "diagnosed_by": "cody",
    "environment": {
-    "where": "live-clone",
+    "where": "isolated-worktree",
     "pinned": false,
-    "tool": "the suite itself, invoked directly, one process per suite",
-    "sha": "327e9e80",
-    "basis": "MEASURED 2026-10-12 (fourth) at HEAD 327e9e80, batch b5 item 2. Candidates were DERIVED, not typed: every suite named red by hank's 2026-10-08 whole-tree table (89 REAL, parsed per SECTION so its 8 CASCADE and 4 TIMEOUT rows were NOT read as failures) unioned with every rc!=0 row of cody's 2026-10-11 routing TSV (76), giving 93 red suites, of which 23 were absent from this register. ALL 23 WERE THEN DRIVEN ALONE, one process each, 180s ceiling, because this file's own _how_it_was_measured says the individual drive is the authority and a run log is not. RESULT: 11 RED (exit 1), 7 GREEN, 2 COULD NOT RUN (exit 2), 2 SKIPPED (exit 3), 1 TIMEOUT. Only the 11 are added. `git status --porcelain` was captured before and after every suite and for the run as a whole: the whole-run delta was EMPTY, so no suite left the tree dirty for the next one. EXIT CODE ONLY -- no `why` is written, because an exit code is not a diagnosis."
+    "tool": "the suite itself, invoked directly, one process, python -u for .py",
+    "sha": "bd5239ac",
+    "basis": "DRIVEN IN cody b9, one at a time, 180s cap, cwd inside a git worktree of bd5239ac, exit code read from `echo \"EXIT=$?\"` on its own line and never inferred from the text. Worktree removed and pruned afterwards; `git worktree list` confirmed back to the live clone alone."
    }
   },
   {
    "file": "tests/mar_billing_grant.test.js",
    "kind": "node",
-   "tail": "5 passed, 16 failed, 4 unproven",
+   "tail": "7 passed, 17 failed, 4 unproven",
    "since": "2026-10-13",
-   "why": "DELIBERATELY RED, AND THAT IS NOT THE SAME AS BROKEN. This suite was written FAILING-FIRST to encode Michael's 2026-10-13 decision -- billing never reads the MAR by default; for coding work only an office manager may grant billing access to a named resident's MAR, time-limited, expiring on its own, and audit-logged. NONE of that exists at HEAD, so 16 arms fail and 4 cannot be evaluated at all. MEASURED exit 1 at e9d6d40c with `node tests/mar_billing_grant.test.js`: 5 passed, 16 failed, 4 unproven. The 5 passes are the regression pins and the controls -- A4/A5 (billing stays 403 on alf_mar read and write, ALF_MAR_ROLES = { owner, nursing, med_aide } at api/sd-data.js:11148, gated at :11191 and :11234), A6/A7 (nursing and the assigned narrow role still get 200, so a 'deny everything' fix cannot satisfy this file) and C4, WHICH IS VACUOUS WHILE A1 IS RED and says so in its own arm text. THE OPEN HOLE THIS FILE IS ABOUT: ALF_FAMILY_READ_ROLES = { owner, billing, nursing } at api/sd-data.js:12551 is inherited by action family_mar at :12654, so a billing clerk 403'd from alf_mar receives a named resident's full medication administration record through the sibling resource -- and because billing is in the BROAD half of that set the assignment scope is skipped (:12656), so it is every resident on the licence, not one. NOT A GATE: nothing in tools/sairn_push_gate_hook.py reads this path; its check list is a fixed tuple list and this file is not in it. tools/run_all_tests.py discovers it under tests/ and is report-only on the promotion path, which is exactly why this register row exists -- so the next session can tell this deliberate red from a new regression. WHEN IT GOES GREEN, REMOVE THIS ROW: a register entry whose suite has gone green swallows the next real failure of that file. ARM B2 IS A QUESTION, NOT A DEFECT: ROLES_BY_APP.sairncare is ['owner','nursing','med_aide','caregiver','billing','activities'] at api/_lib/auth.js:238 -- there is no office_manager role in SAIRNcare at all, so the grantor the decision names cannot currently hold a session. Both resolutions are legitimate and the api/ owner picks one: add the role across ROLES_BY_APP, api/alf-auth.js's provisioning set and the employee_auth CHECK together, or declare `owner` to BE the office manager for this purpose. FULL ROUTED NOTE: docs/2026-10-13-cody-b8-billing-mar-role-vocabulary.md",
+   "why": "DELIBERATELY RED, AND THAT IS NOT THE SAME AS BROKEN. This suite was written FAILING-FIRST to encode Michael's 2026-10-13 decision -- billing never reads the MAR by default; for coding work only an office manager may grant billing access to a named resident's MAR, time-limited, expiring on its own, and audit-logged. NONE of that exists at HEAD, so 16 arms fail and 4 cannot be evaluated at all. MEASURED exit 1 at e9d6d40c with `node tests/mar_billing_grant.test.js`: 5 passed, 16 failed, 4 unproven. The 5 passes are the regression pins and the controls -- A4/A5 (billing stays 403 on alf_mar read and write, ALF_MAR_ROLES = { owner, nursing, med_aide } at api/sd-data.js:11148, gated at :11191 and :11234), A6/A7 (nursing and the assigned narrow role still get 200, so a 'deny everything' fix cannot satisfy this file) and C4, WHICH IS VACUOUS WHILE A1 IS RED and says so in its own arm text. THE OPEN HOLE THIS FILE IS ABOUT: ALF_FAMILY_READ_ROLES = { owner, billing, nursing } at api/sd-data.js:12551 is inherited by action family_mar at :12654, so a billing clerk 403'd from alf_mar receives a named resident's full medication administration record through the sibling resource -- and because billing is in the BROAD half of that set the assignment scope is skipped (:12656), so it is every resident on the licence, not one. NOT A GATE: nothing in tools/sairn_push_gate_hook.py reads this path; its check list is a fixed tuple list and this file is not in it. tools/run_all_tests.py discovers it under tests/ and is report-only on the promotion path, which is exactly why this register row exists -- so the next session can tell this deliberate red from a new regression. WHEN IT GOES GREEN, REMOVE THIS ROW: a register entry whose suite has gone green swallows the next real failure of that file. ARM B2 IS A QUESTION, NOT A DEFECT: ROLES_BY_APP.sairncare is ['owner','nursing','med_aide','caregiver','billing','activities'] at api/_lib/auth.js:238 -- there is no office_manager role in SAIRNcare at all, so the grantor the decision names cannot currently hold a session. Both resolutions are legitimate and the api/ owner picks one: add the role across ROLES_BY_APP, api/alf-auth.js's provisioning set and the employee_auth CHECK together, or declare `owner` to BE the office manager for this purpose. FULL ROUTED NOTE: docs/2026-10-13-cody-b8-billing-mar-role-vocabulary.md  ||  RESTRUCTURED 2026-10-14 (cody b9), and the tail MOVED BY MY OWN HAND rather than by a change in the app: 5/16/4 -> 7/17/4, with the b8 value kept in `tail_b8` so the two can be told apart. WHAT CHANGED AND WHY: the push gate's scrutiny ledger flagged this file WEAKENING on two details and BOTH WERE PROSE -- an arm label at :458 and the closing console.log at :649. b9's answer was not to argue the flag down but to make those lines carry assertions, because a requirement stated only in an arm's name is a requirement nothing checks. (1) C1 WAS SPLIT, because two different propositions were tangled in one arm. C1 now asserts AT SOURCE that the handler REQUIRES an expiry (the action, expires_at and ALF_MAR_GRANT_MAX_HOURS all named) -- answerable now, and it FAILS. C1b keeps the behavioural question -- whether a missing expiry is REFUSED -- and stays UNPROVEN, which is still correct: a 400 from an action that does not exist is the dispatcher talking, not the handler. (2) TWO NEW ARMS E1 AND E2 replace the closing line's claims. E1 asserts this suite IS in docs/known-red-suites.json; E2 MEASURES that no file under tools/ names mar_billing_grant, so 'no gate reads this' is an arm's result instead of a sentence. Both PASS. A suite that tells you it is harmless is not evidence that it is. THE FLAG ROW ITSELF IS STILL UNSIGNED and still routed to any session except cody -- I wrote the commit it accuses, so resolving it is the self-review the Tier A gate refuses at write time.",
    "owner": "hank",
    "owner_basis": "api/ owner. The feature is an api/sd-data.js change plus a grant table and three audit event types; cody wrote the suite and the routed note and may not land the api/ half.",
    "diagnosed": "2026-10-13",
@@ -1538,6 +1540,45 @@
     "tool": "node tests/mar_billing_grant.test.js, invoked directly, one process",
     "sha": "e9d6d40c",
     "basis": "MEASURED in cody b8, not carried from another document. The suite reads api/sd-data.js and sql/sairncare_audit_log_schema.sql from disk and drives the real api/sd-data.js handler with auth, licence and fetch mocked -- not a reimplementation, because a reimplementation would pass against the unfixed code."
+   },
+   "tail_b8": "5 passed, 16 failed, 4 unproven"
+  },
+  {
+   "file": "tests/sairncare_office_manager_role.test.js",
+   "kind": "node",
+   "tail": "3 passed, 5 failed, 0 unproven",
+   "since": "2026-10-14",
+   "why": "DELIBERATELY RED, AND THAT IS NOT THE SAME AS BROKEN. Written FAILING-FIRST in cody b9 to encode Michael's 2026-10-14 decision: SAIRNcare GETS AN office_manager ROLE -- `owner`-as-office-manager was considered and REJECTED. It discharges arm B2 of tests/mar_billing_grant.test.js, which had left both resolutions open. MEASURED exit 1 with `node tests/sairncare_office_manager_role.test.js`: 3 passed, 5 failed, 0 unproven. FAILED: A1 B1 B2 C1 C2. A ROLE IS FOUR DECLARATIONS, NOT ONE, and all four are red: A1 ROLES_BY_APP.sairncare in api/_lib/auth.js is still the six values ['owner','nursing','med_aide','caregiver','billing','activities']; B1 api/alf-auth.js still DERIVES ALF_ROLES from ROLES_BY_APP[APP] (the derivation is FINE and the arm says so -- it is red only because place 1 is); B2 api/alf-auth.js names office_manager in no code line, and PROVISIONING_ROLES is ['owner'] with MANAGEMENT_ROLES = { owner, billing }, so the role would exist with NO AUTHORITY AT ALL; C1 and C2 the role CHECK in sql/sairncare_employee_auth_schema.sql and again in sql/sairncare_all_remaining_migrations.sql both permit only those six. THE PASSES ARE THE CONTROLS AND THEY ARE WHY C1/C2 ARE EVIDENCE: A2 asserts all six existing roles are still present, so 'add the role' cannot be satisfied by replacing the vocabulary; C3 asserts both CHECKs parsed to real six-value lists, so C1/C2 are measuring a constraint rather than a failed regex. DELIBERATELY NOT DUPLICATED: set-equality between ROLES_BY_APP and every sql/ role CHECK is already pinned in BOTH directions by api/role-vocabulary-agreement.test.js (hank), across both of SAIRNcare's two declarations. SO IF THE ROLE IS ADDED TO THE SERVER AND NOT TO BOTH CHECKS, HANK'S OWN SUITE GOES RED BEFORE THIS ONE. Arm D1 asserts that net is still in place instead, so its deletion would be visible. B2 ACCEPTS EITHER RESOLUTION and asserting one would dictate the implementation: add office_manager to PROVISIONING_ROLES, or declare a new named grantor constant. NOT A GATE: nothing under tools/ names this path. WHEN IT GOES GREEN, REMOVE THIS ROW -- an entry whose suite has gone green swallows the next real failure of that file. OWNER: hank. api/ and sql/ are not the tests owner's to edit; cody wrote the suite and routed the code change.",
+   "owner": "hank",
+   "owner_basis": "api/ and sql/ owner. The change is ROLES_BY_APP in api/_lib/auth.js, a capability decision in api/alf-auth.js, and the role CHECK in two sql/ files. cody wrote the suite only.",
+   "diagnosed": "2026-10-14",
+   "diagnosed_by": "cody",
+   "deliberate": true,
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "node tests/sairncare_office_manager_role.test.js, invoked directly, one process",
+    "sha": "bd5239ac",
+    "basis": "MEASURED in cody b9. Place 1 is read by REQUIRING api/_lib/auth.js and inspecting the real ROLES_BY_APP object rather than regexing its source; places 3 and 4 are parsed out of the CHECK constraint with a uniqueness guard that reports a non-unique match as UNPROVEN, never as absent."
+   }
+  },
+  {
+   "file": "tests/sd_data_clock_flags_merge.test.js",
+   "kind": "node",
+   "tail": "4 passed, 2 failed, 0 unproven",
+   "since": "2026-10-14",
+   "why": "DELIBERATELY RED. Written FAILING-FIRST in cody b9 for a defect cody FOUND in b8's independent Tier A review and which appears in NO Tier A record. THE DEFECT, REPRODUCED LIVE AGAINST THE REAL HANDLER, NOT INFERRED: api/sd-data.js's sen_visits write branch does `visitData.clock_flags = clockCheck.flags;` -- an ASSIGNMENT. checkClockEvent only reports on the clock fields present in THIS payload, and a visit's two halves arrive as TWO writes, so the second write's flags REPLACE the first's. MEASURED: clock_flags after write 1 = ['clock_in_at'], after write 2 = ['clock_out_at']. The clock-in's LATE_REPLAY is gone and nothing says it ever existed. MEASURED exit 1 with `node tests/sd_data_clock_flags_merge.test.js`: 4 passed, 2 failed, 0 unproven. FAILED: A1 (the behaviour) and B1 (the source line). IT ONLY SHOWS WHEN BOTH HALVES ARE FLAGGED, WHICH IS THE AUDIT CASE -- arm A4 PASSES and pins that asymmetry: with a CLEAN clock-out `flags` is empty, the `if` never fires, and the clock-in's flag survives by luck. That is why nothing has noticed. THE THREE PASSING ARMS ARE WHAT MAKE THE FINDING PRECISE: A2 proves write 1 really DID store a clock_in_at flag, so A1 is a LOSS and not an absence; A3 proves the SKEW STAMPS for both halves coexist on the same row (clock_in_skew_ms and clock_out_skew_ms, both received_at present), so PER-FIELD KEYING ALREADY WORKS HERE and the defect is in the unkeyed ARRAY specifically rather than in the handler's merging; A5 pins that both claimed times survive two writes unchanged, so a fix must not start re-stamping. WHY IT IS A DEFECT AND NOT A PREFERENCE: the comment two lines above the assignment says 'FLAGS ARE STORED, NOT ONLY RETURNED. A LATE_REPLAY that appears in one response and nowhere else is a finding nobody can audit later.' And the sibling self-correction marker in the same file is deliberately STICKY -- 'a later ordinary correction must NOT clear a flag whose entry is still sitting in the trail.' Same requirement, opposite implementation, one screen apart. THE CITATION IS RE-DERIVED EVERY RUN, NOT CARRIED: b8 cited :6985-6987 and arm B1 measured :7062 at this HEAD. api/sd-data.js is ~14k lines and moves daily, so B1 locates the line itself and reports a non-unique match as UNPROVEN. B1 ACCEPTS EITHER FIX: merge on `field`, or key per field as the stamps already are. A FIXED-ROW HARNESS CANNOT SEE THIS BUG -- api/sd-data-sen-evv-clock.test.js returns one immutable row, and this defect exists only ACROSS two writes, so this suite's mock store is mutable and the POST of write 1 becomes the GET of write 2. That is probably why nothing caught it. NOT A GATE: nothing under tools/ names this path. WHEN IT GOES GREEN, REMOVE THIS ROW. OWNER: hank.",
+   "owner": "hank",
+   "owner_basis": "api/ owner. The fix is one line in api/sd-data.js's sen_visits write branch; cody wrote the suite and routed the fix.",
+   "diagnosed": "2026-10-14",
+   "diagnosed_by": "cody",
+   "deliberate": true,
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "node tests/sd_data_clock_flags_merge.test.js, invoked directly, one process",
+    "sha": "bd5239ac",
+    "basis": "MEASURED in cody b9 against the REAL api/sd-data.js handler with auth, licence and fetch mocked and a STATEFUL store, driven as a CAREGIVER on purpose because SEN_VISIT_SCHEDULER_ROLES excludes one and a scheduler-tier caller cannot reach the clock fields at all. PAST_FLAG_MS is read off api/_lib/sen-evv-clock.js rather than hardcoded."
    }
   }
  ],
@@ -1718,6 +1759,22 @@
     "sha": "988a1d8f",
     "basis": "MEASURED 2026-10-13 (fourth, b9 item 10) by driving every suite this register lists as red, ALONE, one process each, 180s ceiling. Moved on EXIT 0 only: exit 2, exit 3 and a timeout are the third state and were left in `entries` rather than declared fixed. The sweep was INCOMPLETE when this row was written and the count driven is in _b9_census_2026_10_13."
    }
+  },
+  {
+   "file": "tests/run_truthy_sum_probe.py",
+   "exit_code": 0,
+   "recovered": "2026-10-14",
+   "recovered_by": "cody",
+   "environment": {
+    "where": "isolated-worktree",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process, python -u for .py",
+    "sha": "bd5239ac",
+    "basis": "DRIVEN IN cody b9, one at a time, 180s cap, cwd inside a git worktree of bd5239ac, exit code read from `echo \"EXIT=$?\"` on its own line and never inferred from the text. Worktree removed and pruned afterwards; `git worktree list` confirmed back to the live clone alone."
+   },
+   "why": "VERIFIED GREEN in cody b9: driven alone, EXIT 0, ALL ARMS PASS, last line `ALL PASS -- a new uncoerced numeric fold cannot be added silently`. Exit-code line tests/run_truthy_sum_probe.py:292. MOVED OUT OF `entries` BECAUSE THE REGISTER'S OWN RULE REQUIRES IT: an entry whose suite has gone green swallows the next real failure of that file. IT IS THE ONLY ONE OF THE 24 SUITES DRIVEN IN b9 THAT PASSED -- 1 green, 22 exit 1, 1 exit 2. Its previous registered tail was '1 FAILED', so the fix landed between 2026-10-06 and now and nobody recorded it; this row is that record.",
+   "previous_tail": "1 FAILED",
+   "previously_diagnosed": "2026-10-06"
   }
  ],
  "_b5_addition_2026_10_12": "ELEVEN entries added by fourth, batch b5 item 2, and the brief asked for THIRTY. The 30 is hank's 2026-10-08 figure (\"101 red, registry records 75, 30 RED AND NOT RECORDED\") and it was re-derived rather than carried: the gap against this register at HEAD 327e9e80 is 23, not 30, because the register has absorbed some of them since and cody's later run moved others. Of those 23, driving each ALONE returned 11 RED, 7 GREEN, 2 exit-2 COULD NOT RUN, 2 exit-3 SKIPPED and 1 TIMEOUT at 180s. ONLY THE 11 ARE RED. The 7 GREEN are the finding that matters: a run log named them red and they are not, so the stale half of a census is a wrong answer in both directions. The 12 non-red are listed by name with their measured state in docs/2026-10-12-fourth-b5-routing.md -- they are NOT in this file, because an entry here is an exemption and an exemption over a suite that is green or that never ran would swallow its next real failure.",

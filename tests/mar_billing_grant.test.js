@@ -448,18 +448,57 @@ const CODE = SRC.split(/\r?\n/)
   // ── C. THE GRANT EXPIRES ON ITS OWN ─────────────────────────────────────
   console.log('\nC. the grant EXPIRES ON ITS OWN, evaluated at read time');
 
+  // ── C1 IS NOW TWO ARMS, AND THAT CHANGE IS THE METHODOLOGY POINT (b9) ────
+  // The push gate's scrutiny ledger flagged this file WEAKENING and named this
+  // line. Both flagged details were PROSE -- an arm label and a console.log --
+  // and b9's answer is not to argue the flag down but to make the lines carry
+  // assertions, because a requirement stated only in an arm's label is a
+  // requirement nothing checks.
+  //
+  // TWO DIFFERENT PROPOSITIONS WERE TANGLED IN ONE ARM:
+  //   C1  "the handler REQUIRES an expiry"        -- answerable NOW, at source
+  //   C1b "the handler REFUSES a missing expiry"  -- NOT answerable until the
+  //        action exists, because a 400 from an absent action is the dispatcher
+  //        talking, not the handler
+  // C1 is a real assertion with a real verdict. C1b stays UNPROVEN, which is
+  // still correct. Splitting them is what turns the label into a test.
+  if (anchorCount !== 1) {
+    cannot('C1. the mandatory-expiry requirement cannot be measured at source '
+         + 'while the family_mar anchor is not unique', 'see A8');
+  } else {
+    const grantBlock = CODE.indexOf(GRANT_ACTION) === -1 ? '' : CODE;
+    const requiresExpiry = grantBlock !== ''
+      && new RegExp('expires_at').test(grantBlock)
+      && new RegExp(CEILING_CONST).test(grantBlock);
+    if (requiresExpiry) {
+      ok('C1. the handler REQUIRES an expiry: api/sd-data.js names both '
+       + 'expires_at and ' + CEILING_CONST + ' in the ' + GRANT_ACTION
+       + ' path. "Time-limited" is not a default somebody omits -- an '
+       + 'unbounded grant is the thing being prevented, so the requirement '
+       + 'must be in the code and not only in this arm\'s name');
+    } else {
+      bad('C1. api/sd-data.js must make an expiry MANDATORY on ' + GRANT_ACTION
+        + ' -- the action, the expires_at field and the ' + CEILING_CONST
+        + ' ceiling all named in the handler',
+          GRANT_ACTION + ' present: ' + (CODE.indexOf(GRANT_ACTION) !== -1)
+        + ', expires_at present: ' + /expires_at/.test(CODE)
+        + ', ' + CEILING_CONST + ' present: '
+        + (CODE.indexOf(CEILING_CONST) !== -1));
+    }
+  }
+
   resetFixture();
   r = await grant(GRANT_ROLE, 'E3', { contact_id: 'C1', grantee_employee_id: 'E7' });
   if (unknownAction(r)) {
-    cannot('C1. a grant with no expires_at CANNOT BE JUDGED while ' + GRANT_ACTION
-         + ' does not exist -- the 400 is the dispatcher rejecting the action, '
-         + 'not the handler rejecting a missing expiry', r.body.error.message);
+    cannot('C1b. whether a grant with no expires_at is REFUSED cannot be judged '
+         + 'while ' + GRANT_ACTION + ' does not exist -- the 400 is the '
+         + 'dispatcher rejecting the action, not the handler rejecting a '
+         + 'missing expiry', r.body.error.message);
   } else if (r.statusCode === 400) {
-    ok('C1. a grant with NO expires_at is 400. "Time-limited" cannot be a '
-     + 'default somebody omits -- an unbounded grant is the thing being '
-     + 'prevented, so absence must be a refusal and not a fallback');
+    ok('C1b. a grant with NO expires_at is refused 400 by the handler itself, '
+     + 'so absence is a refusal and not a fallback');
   } else {
-    bad('C1. a grant without expires_at must be refused 400',
+    bad('C1b. a grant without expires_at must be refused 400',
         'status=' + r.statusCode);
   }
 
@@ -641,11 +680,71 @@ const CODE = SRC.split(/\r?\n/)
     }
   }
 
+  // ── E. THE TWO CLAIMS THIS FILE USED TO MERELY PRINT (b9) ───────────────
+  // The closing console.log asserted two facts in prose: that this suite is
+  // REGISTERED, and that NO GATE READS IT. The push gate's scrutiny ledger
+  // read that line as "a skip / exemption / allowlist entry ADDED" -- and it
+  // was right that the line was making a claim about exemption. It was wrong
+  // only in that nothing checked the claim. These two arms check it.
+  //
+  // A SUITE THAT TELLS YOU IT IS HARMLESS IS NOT EVIDENCE THAT IT IS.
+  console.log('\nE. the exemption claims, asserted rather than printed');
+
+  const SELF = 'tests/mar_billing_grant.test.js';
+  const REG = path.join(ROOT, 'docs/known-red-suites.json');
+  let reg = null;
+  try { reg = JSON.parse(fs.readFileSync(REG, 'utf8')); } catch (e) { reg = null; }
+  if (reg === null || !Array.isArray(reg.entries)) {
+    cannot('E1. docs/known-red-suites.json could not be read or has no '
+         + 'entries array, so registration cannot be judged',
+           'at ' + REG);
+  } else if (reg.entries.some((e) => e && e.file === SELF)) {
+    ok('E1. this suite IS registered in docs/known-red-suites.json, so its '
+     + 'deliberate red can be told from a new regression. ' + reg.entries.length
+     + ' entries read');
+  } else {
+    bad('E1. this suite must be registered in docs/known-red-suites.json while '
+      + 'it is deliberately red -- an unregistered red suite is '
+      + 'indistinguishable from a regression',
+        reg.entries.length + ' entries, none with file == ' + SELF);
+  }
+
+  // NO GATE READS THIS -- MEASURED over tools/, which is where every gate and
+  // every push check lives. A gate that grew a reference to this path would
+  // make a deliberately-red suite block pushes, which is the one thing this
+  // file must never do.
+  const TOOLS = path.join(ROOT, 'tools');
+  let readers = null;
+  try {
+    readers = fs.readdirSync(TOOLS)
+      .filter((f) => /\.(py|js|json)$/.test(f))
+      .filter(function (f) {
+        let t;
+        try { t = fs.readFileSync(path.join(TOOLS, f), 'utf8'); }
+        catch (e) { return false; }
+        return t.indexOf('mar_billing_grant') !== -1;
+      });
+  } catch (e) { readers = null; }
+  if (readers === null) {
+    cannot('E2. tools/ could not be enumerated, so "no gate reads this" was '
+         + 'not measured', 'at ' + TOOLS);
+  } else if (readers.length === 0) {
+    ok('E2. NO GATE READS THIS -- measured: 0 of the files under tools/ name '
+     + 'mar_billing_grant. The claim this suite used to print is now the '
+     + 'result of an arm');
+  } else {
+    bad('E2. a tool now references this deliberately-red suite, so it can '
+      + 'block a push', readers.join(', '));
+  }
+
   console.log('\n' + pass + ' passed, ' + fail + ' failed, '
             + unproven + ' unproven');
   if (failed.length) console.log(failed.length + ' ARM(S) FAILED: ' + failed.join(', '));
   if (notProved.length) console.log(notProved.length + ' ARM(S) UNPROVEN: ' + notProved.join(', '));
+  // THE VERDICT, NOT A CLAIM: registration and gate-freedom are arms E1 and E2
+  // above, so this line reports what was measured instead of asserting it.
   console.log('\nEXPECTED RED until the api/ owner lands the feature. '
-            + 'Registered in docs/known-red-suites.json; no gate reads this.');
+            + 'Registration and gate-freedom are ASSERTED by arms E1 and E2, '
+            + 'not claimed here.');
   process.exit(fail ? 1 : (unproven ? 3 : 0));
 })();
