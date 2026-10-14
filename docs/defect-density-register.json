@@ -29177,7 +29177,7 @@
       "factors_unknown_reason": "not investigated this batch -- the fix (subprocess_decode_check.fix_file(), AST-based, scoped to tools/) is verified; root-cause factor analysis was not done"
     },
     {
-      "commit": "6e106f344b44",
+      "commit": "fdd06d06b68c",
       "date": "2026-10-14",
       "subject": "feat(sairnlegacy): the role matrix -- 36 resources, 8 roles, from zero gates",
       "files": [
@@ -29239,7 +29239,7 @@
       "recurrence_open": "Five of the seven role names are [CONFIRM] in the spec and still are -- a funeral home's own titles win, and 'prep' may need its own licensed tier the way SAIRNvet's PRESCRIBER_ROLES does because embalmer is a separate state licence in most states. leg_preneed's owner-only DELETION rule is not implemented: this handler has no delete verb. Whether a cremation authorisation legally needs a second named person is a state-law question this code does not answer. And the existing staff rows are only narrowed, not re-assigned -- that is a human task per employee and nothing tracks whether it has been done."
     },
     {
-      "commit": "0a230a153b2c",
+      "commit": "85206564d24f",
       "date": "2026-10-14",
       "subject": "fix(sairnlegacy,sairnroofing): one overlap helper for both booking resources, and rf_settings tiered",
       "files": [
@@ -29298,7 +29298,7 @@
       "recurrence_open": "The read-then-write window remains: two requests interleaving between the SELECT and the upsert, milliseconds wide. The atomic close is a Postgres EXCLUDE over tstzrange and CANNOT be written against these tables -- the window lives in a data jsonb column and text::timestamptz is STABLE, not IMMUTABLE, so it is rejected in an index expression. It needs real start/end columns or an /rpc/ function doing the insert in one statement. And four of b9's five survey findings are still open, each needing a different fix."
     },
     {
-      "commit": "d3f62440f749",
+      "commit": "9731d8806982",
       "date": "2026-10-14",
       "subject": "fix(sairnsenior): sen_visits clock_flags merged on field, not replaced",
       "files": [
