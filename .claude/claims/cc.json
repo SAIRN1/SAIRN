@@ -3771,8 +3771,8 @@
       "task": "cc batch b6 -- (1) implement the APPROVED per-gate scoped skip with gate/agent/reason/expiry, wire it into the push gate, make the blanket SAIRN_SEED_GATE=off fail loudly pointing at the scoped form, log every use in BYPASS-LOG; (2) a compaction-survival SessionStart hook with matcher compact for all six clones -- THE ONE AUTHORISED settings.json commit, and NOT a restoration of the 23 cleared hooks, which stay cleared -- plus driving the permission rules in the other four clones read-only; (3) tools/batch_cleanup.py, per-agent created-file lists, deletes only its own agent's scratch after that agent's push landed, never another agent's files and never live rows; (4) batch manifest JSON plus a validator that fails on renumbered or duplicate ids, push-gate scoped to the pushing agent's own files, retries capped at 2 then escalate with the error text; (5) migrate the 14 open-work row parsers onto docs/open-work shards, then close the highest-weight overdue Tier A obligations and re-date the rest with reasons; (6) push and confirm landed. CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: tests/run_tier_a_review_gate_probe.py, tests/push_gate/check4_probe.py, tests/push_gate/check7_probe.py and tests/push_gate/_local_remote.py are in CODY'S live b6 FILES and are NOT taken here -- item 4's tests go in new files instead. No auditor clone is entered and no other clone's working tree is written. FILES: tools/sairn_push_gate_hook.py tools/gate_skip.py tests/run_gate_skip_probe.py tools/batch_cleanup.py tests/run_batch_cleanup_probe.py tools/batch_manifest.py tests/run_batch_manifest_probe.py docs/batch-manifest-cc-b6.json docs/BYPASS-LOG.jsonl .claude/settings.json tools/dispatch_state.py tools/stale_row_sweep.py tools/index_duplicate_check.py tools/independence_check.py tools/orphan_register_check.py tools/traceability_matrix.py tools/accepted_risk_expiry_audit.py tools/md_table_check.py tools/open_work_shard.py docs/tier-a-reviews.json docs/2026-10-13-cc-routed-b6.md docs/handoff-cc-2026-10-13b.md SAIRN-report-cc-b6.txt SAIRN-digest-cc-b6.txt SAIRN-ACTIVE-WORK-cc.md",
       "claimed_at": "2026-10-13T10:05:01Z",
       "claimed_at_epoch": 1791885901.7799003,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-14T10:58:51Z",
       "files": [
         ".claude/settings.json",
         "SAIRN-ACTIVE-WORK-cc.md",
@@ -3808,8 +3808,8 @@
       "task": "cc batch b7 -- (1) b6 report/digest/handoff do NOT exist locally so say so in the digest and list what b6 pushed from git log; (2) build tools/drive_upload_verify.py, one tool every agent runs for handoff+report+digest, uploads to Drive folder 14Xc5oT0xzSLa_rTSOSXWVK3Kko1Fbx09, lists the folder, reads each file back, exits nonzero unless title is SAIRN-<kind>-<agent>-b<n>, first line names the same agent and batch, and bytes+sha256 match local; --audit mode reports any folder file whose name disagrees with its first line; wired into the batch manifest so a batch cannot close without a passing verify; failing-first tests for wrong-agent, missing and truncated; (3) save_reviews() retry patch per docs/2026-10-13-cody-b6-routed-to-cc.md section 1 with a failing-first test; (4) open-work row 221 fix; (5) scope_gate.py:409 DECIDE_OR_NOT_PROMOTED routed from fourth b10; (6) push without force and confirm landed. NO HOOKS ADDED OR RESTORED and .claude/settings.json is NOT committed. CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: docs/by-design-register.json, docs/METHODOLOGY.md, docs/external-files-index.json and docs/2026-10-13-fourth-b11-routed-to-cc.md are in FOURTH'S live b11 FILES and are NOT written here -- item 5's ruling is recorded in my own routing doc instead. FILES: tools/drive_upload_verify.py tests/run_drive_upload_verify_probe.py tools/batch_manifest.py docs/batch-manifest-cc-b7.json tools/review_store.py tests/run_save_reviews_retry_probe.py docs/2026-10-13-cc-routed-b7.md SAIRN-handoff-cc-b7.md SAIRN-report-cc-b7.txt SAIRN-digest-cc-b7.txt SAIRN-ACTIVE-WORK-cc.md",
       "claimed_at": "2026-10-13T21:25:22Z",
       "claimed_at_epoch": 1791926722.620686,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-14T10:58:51Z",
       "files": [
         "SAIRN-ACTIVE-WORK-cc.md",
         "SAIRN-digest-cc-b7.txt",
@@ -3831,8 +3831,8 @@
       "task": "cc b7 resume -- drive_upload_verify + batch_manifest --close + probe, save_reviews retry in tools/tier_a_review_gate.py with failing-first test, open-work row 221, scope_gate.py:409 DECIDE_OR_NOT_PROMOTED ruling, push. CONFLICTS DECLARED NOT OVERRIDDEN: docs/by-design-register.json docs/METHODOLOGY.md docs/external-files-index.json docs/2026-10-13-fourth-b11-routed-to-cc.md are in fourth live b12 FILES. FILES: tools/drive_upload_verify.py tests/run_drive_upload_verify_probe.py tools/batch_manifest.py docs/batch-manifest-cc-b7.json tools/tier_a_review_gate.py tests/run_save_reviews_retry_probe.py docs/2026-10-13-cc-routed-b7.md SAIRN-handoff-cc-b7.md SAIRN-report-cc-b7.txt SAIRN-digest-cc-b7.txt SAIRN-ACTIVE-WORK-cc.md",
       "claimed_at": "2026-10-14T10:01:01Z",
       "claimed_at_epoch": 1791972061.3876398,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-14T10:58:51Z",
       "files": [
         "SAIRN-ACTIVE-WORK-cc.md",
         "SAIRN-digest-cc-b7.txt",
