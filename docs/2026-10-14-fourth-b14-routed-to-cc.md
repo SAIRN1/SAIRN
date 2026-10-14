@@ -38,7 +38,7 @@ CMD python scratchpad/register_rows_b14.py        -> added 0, rulings now 4
 64:      "Bash(python *)",
 ```
 
-**And the file's own author already knew — `.claude/settings.json:185`**, inside
+**And the file's own author already knew — `.claude/settings.json:171`**, inside
 `_permissions_note`: *"ALSO A KNOWN HOLE: a deny rule does not reach a
 subprocess that opens files itself, so an allowed `python -c` can do what the
 shell is denied."*

@@ -1,0 +1,44 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "fourth",
+  "batch": "b17",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/batch-manifest-fourth-b17.json written by --new BEFORE any other item, id_lock 906816e5cf0d24f9; every close in this batch used PYTHONIOENCODING=utf-8 because tools/batch_manifest.py:386 still crashes without it"
+    },
+    {
+      "id": 2,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/2026-10-14-fourth-b17-hank-b9-tier-a-review.md; obligation hank 2026-10-14T11:55:18Z DISCHARGED by fourth via tier_a_review_gate.py --discharge --body-file (exit 0). ACCEPT with one correction that is MINE: spec s7.5 called api/ai-notice.js the loser on a FALSE premise -- sql/2026-10-14-hank-b9-ai-safeguards.sql:54-56 ALTERs each *_employee_auth table and adds no new table, so the ack already lives where my spec says. Cross-tenant ack CLOSED (api/ai-notice.js:117,:136,:145-146). T16 render-the-label test spec'd for cody, 4 arms, ARM 2 load-bearing"
+    },
+    {
+      "id": 3,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/2026-10-14-fourth-b17-sen-rf-write-map.md -- Option A coordinators-allowed vs Option B management-only (landed), 7 resources across sen_* and rf_*, one map constant to switch, 9 table cases plus 4 arms M1-M4; rf has been management-only since 2026-08-24 (api/sd-data.js:8441,:8495) so b9 aligned sen with rf"
+    },
+    {
+      "id": 4,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/2026-10-14-fourth-b17-removal-path-specs.md -- soft_delete per the sd_customers reference (api/sd-data.js:4297-4330) and the 403 SOFT_DELETE_ONLY stance (:17701); sv_scribe_consent first with a withdrawal reason, an sv_audit_log row and the CHECK-list arm S6; then alf_family_contacts (A3 proves the row is kept), sf_trustee_audits (owner-only, never destroyed, F4 passes forever), mech_insurance_policies"
+    },
+    {
+      "id": 5,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/2026-10-14-fourth-b17-citation-recheck-b12-b14.md -- 79 citations across 15 docs, 75 correct, 2 correctly-absent illustrative names, 2 MOVED and fixed differently on purpose (b14 renumbered 185->171 because the claim is live; b13 ANNOTATED because the hook block was deleted). REGISTER PREMISE DOES NOT REPRODUCE: defect_register --check exits 0, the 4 are the ones WITH superseded_by, and the single real duplicate is a MOJIBAKE twin on commit 7bc26782e533 that --supersede cannot express; routed to cc, nothing edited"
+    },
+    {
+      "id": 6,
+      "title": "",
+      "status": "open",
+      "evidence": ""
+    }
+  ]
+}

@@ -1,5 +1,20 @@
 # ROUTED TO cc — the ONE hook `.claude/settings.json` carries: who, when, and what actually authorises it — 2026-10-14, fourth b13
 
+**SUPERSEDED IN PART, 2026-10-14 (fourth b17): THE HOOK THIS DOCUMENT AUDITS
+NO LONGER EXISTS.** `.claude/settings.json` now reads `"hooks": {}` at `:166`
+and the file is 174 lines, not 187 — the `SessionStart`/`compact` group was
+removed and arrived here through hank's merge `3857890a`. **Every
+`.claude/settings.json:166-180`, `:167`, `:169`, `:173`, `:174` and `:186`
+citation below therefore describes the file AS IT STOOD when this was written
+and resolves to different text today.** They are kept rather than renumbered:
+a citation to a block that has been deleted cannot be pointed at a line, and
+rewriting it would erase the state the audit was about. `_hooks_note` is now at
+`:172` and says *"NO HOOKS, AND THE EMPTY OBJECT IS COMMITTED ON PURPOSE"*.
+**Consequence for §4.3: the `compact` matcher can never now be observed firing,
+so that finding closes by deletion rather than by evidence.** Re-derived by
+`scratchpad/cite_recheck_b16.py`; recorded in
+`docs/2026-10-14-fourth-b17-citation-recheck-b12-b14.md`.
+
 **READ-ONLY. Nothing was edited.** No hook was added, restored, re-worded or
 removed; `.claude/settings.json` is not in this batch's `FILES` and was not
 written. `git status --porcelain` was empty before and after every command
