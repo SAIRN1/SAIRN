@@ -28815,7 +28815,7 @@
       "recurrence_open": "`schedule` is still licence-only and that is a disclosure, not a fix: nobody has decided it, and it is the one SAIRNscape resource whose bare name is also a StoneDesk panel id. Nothing here closes the same shape in the other apps -- the derived-population arm is SAIRNscape's only; the other per-app gate suites still hand-type their resource lists."
     },
     {
-      "commit": "7eae3077467f",
+      "commit": "e444dc83ba08",
       "date": "2026-10-14",
       "subject": "fix(sairnsenior): three read/write asymmetries closed, and the SAIRNlegacy survey finds the same client-authority defect a third time",
       "files": [
