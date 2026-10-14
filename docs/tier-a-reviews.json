@@ -6374,6 +6374,28 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-10-14T17:20:09Z",
+      "opened_at_sha": "3b1dc5fe31747978e23176ee96b0ddc46a89e819",
+      "opened_at_sha_basis": "file-set",
+      "resources": [
+        "quotes",
+        "sd_comms"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tools/citation_line_drift_check.py"
+      ],
+      "what": "cc b10: tools/drive_upload_verify.py names_agent_and_batch now reports WRONG AGENT (first line names a different known agent -- one agent's filename over another's content) separately from NO AGENT NAMED (a convention gap). Neither is reclassified as passing and the exit code is unchanged; 36/36 fixtures intact. Also tools/bare_run_write_check.py: shared_diff returns attributable and unattributable changes separately so a concurrent session's status-registry write is no longer attributed to the tool under test, with a control arm requiring lock files to stay attributable. Needs a reviewer other than cc.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-10-14T17:20:09Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
