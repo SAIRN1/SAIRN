@@ -110,7 +110,19 @@ end $$;
 commit;
 
 -- ── THE OTHER CIPHERTEXT IS NOT HERE, DELIBERATELY ───────────────────────
--- The stored Stedi API key lives in `sc_credentials.data->>'enc'` and needs no
+-- CORRECTED 2026-10-14 (hank b12, fourth's F1): this said
+-- `sc_credentials.data->>'enc'`. The real path is
+-- `data->'<service>'->>'enc'` -- one object per service, keyed by the service
+-- name (api/sc-credentials.js:200-205 writes it, :76-77 reads it). The wrong
+-- path returns NULL rather than erroring, which is why
+-- sql/legacy_ciphertext_census.sql reported legacy_rows = 0 and why that zero
+-- was dangerous: it is the precondition STEP 4 BELOW waits for before clearing
+-- SD_AUTH_SECRET_PREVIOUS. Nothing in THIS file queries that column, so this
+-- is a comment correction and not a behaviour change -- but it is the comment
+-- a reader uses to decide whether step 4 is safe.
+--
+-- The stored Stedi API key lives in `sc_credentials.data->'<service>'->>'enc'`
+-- and needs no
 -- SQL: it is rotated AT STEDI and re-entered through
 -- api/sc-credentials.js, which encrypts it with whatever key is current. A row
 -- holding an undecryptable `enc` answers 503 CREDENTIAL_UNREADABLE and blocks

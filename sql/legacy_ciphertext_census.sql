@@ -37,8 +37,13 @@
 -- ── THE TWO SURFACES, read out of the code rather than remembered ──────────
 --   sairnlaw_employee_auth.mfa_secret_encrypted  attorney TOTP secrets
 --                                            (api/law-auth.js, loadEmployee)
---   sc_credentials.data->>'enc'              the Stedi API key
---                                            (api/sc-eligibility.js)
+--   sc_credentials.data->'<service>'->>'enc' the Stedi API key -- NESTED under
+--                                            the service name, not a top-level
+--                                            key. api/sc-credentials.js:200-205
+--                                            writes it, :76-77 reads it back.
+--                                            Corrected 2026-10-14; see the note
+--                                            above part 0 for what the wrong
+--                                            path would have authorised.
 -- If a third surface is ever added, it belongs here -- and NOTHING ENFORCES
 -- THAT, which is stated rather than hidden: this file is a hand-kept list of
 -- encrypted columns and will go stale the day somebody adds one without reading
@@ -59,6 +64,49 @@
 -- number that gates step 4 and make the precondition impossible to satisfy,
 -- which is how a safety check gets skipped.
 
+-- ── THE sc_credentials PATH WAS WRONG AND THE ANSWER WAS ALWAYS ZERO ───────
+-- CORRECTED 2026-10-14 (hank b12, from fourth's F1 finding). Every query below
+-- read `data->>'enc'`, which assumes the ciphertext is a TOP-LEVEL key on the
+-- row. It is not. api/sc-credentials.js:200-205 writes
+--
+--     next[service] = { enc: encryptSecret(value), last4: ..., updated_at: ... }
+--
+-- so the real path is `data->'stedi'->>'enc'` -- one object PER SERVICE, keyed
+-- by the service name. api/sc-credentials.js:76-77 reads it back the same way
+-- (`data[svc].enc`), and api/sc-credentials.test.js's fixtures are
+-- `{ data: { stedi: { enc: 'enc(x)' } } }`.
+--
+-- WHY THIS WAS THE WORST POSSIBLE WAY TO BE WRONG: `data->>'enc'` on a row
+-- whose shape is nested returns NULL, not an error. So every count came back
+-- legacy_rows = 0, v2_rows = 0, never_set_rows = total_rows -- "nobody has a
+-- credential" -- and legacy_rows = 0 is EXACTLY the precondition step 4 of
+-- sql/sd_encryption_key_revoke_2026-09-24.sql waits for before clearing
+-- SD_AUTH_SECRET_PREVIOUS. A wrong path would have cleared the old key while
+-- legacy ciphertext was still in the table, and the census would have been the
+-- document that authorised it.
+--
+-- IT NO LONGER NAMES A SERVICE. The service key is `stedi` today because
+-- ALLOWED_SERVICES in api/sc-credentials.js is `{ stedi: true }`, and
+-- hardcoding that is how this file goes stale the day a second one is added.
+-- Every query below walks `jsonb_each(data)` instead, so a second service is
+-- counted the day it is written rather than the day somebody re-reads this
+-- file. PART 0 is the guard that would have caught the original defect.
+
+-- ── 0. THE SHAPE GUARD. RUN THIS FIRST AND READ IT BEFORE PART 1 ───────────
+-- EXPECTED: `nested_enc_rows` > 0 if any credential has ever been saved, and
+-- `flat_enc_rows` = 0. If BOTH are 0, part 1's legacy_rows = 0 means "no
+-- credential exists", which is a different fact from "no LEGACY credential
+-- exists" and must not be read as the step-4 precondition being met. If
+-- `flat_enc_rows` is NOT 0, the table holds a shape this file does not know
+-- about and the census is incomplete -- stop and read the writer.
+select
+  count(*) filter (where data ? 'enc')                               as flat_enc_rows,
+  count(*) filter (where exists (
+    select 1 from jsonb_each(coalesce(data, '{}'::jsonb)) as e(k, v)
+     where jsonb_typeof(v) = 'object' and v ? 'enc'))                as nested_enc_rows,
+  count(*)                                                            as total_rows
+from public.sc_credentials;
+
 -- ── 1. THE ONE NUMBER STEP 4 DEPENDS ON ────────────────────────────────────
 -- Expect legacy_rows = 0 before clearing SD_AUTH_SECRET_PREVIOUS.
 select
@@ -71,13 +119,24 @@ select
 from public.sairnlaw_employee_auth
 union all
 select
-  'sc_credentials.data->>enc' as surface,
-  count(*) filter (where data->>'enc' is not null
-                     and data->>'enc' not like 'v2.%')                as legacy_rows,
-  count(*) filter (where data->>'enc' like 'v2.%')                    as v2_rows,
-  count(*) filter (where data->>'enc' is null)                        as never_set_rows,
+  'sc_credentials.data-><service>->>enc' as surface,
+  -- A ROW IS LEGACY IF ANY SERVICE ON IT IS LEGACY, because a backfill has to
+  -- touch the row either way. v2_rows counts rows that are ENTIRELY v2, so the
+  -- two columns do not double-count a row holding one of each -- and a row
+  -- like that reports as legacy, which is the safe direction.
+  count(*) filter (where s.has_legacy)                                as legacy_rows,
+  count(*) filter (where s.has_v2 and not s.has_legacy)               as v2_rows,
+  count(*) filter (where not s.has_legacy and not s.has_v2)           as never_set_rows,
   count(*)                                                            as total_rows
-from public.sc_credentials;
+from public.sc_credentials c
+left join lateral (
+  select
+    coalesce(bool_or(v->>'enc' is not null
+                       and v->>'enc' not like 'v2.%'), false)         as has_legacy,
+    coalesce(bool_or(v->>'enc' like 'v2.%'), false)                   as has_v2
+  from jsonb_each(coalesce(c.data, '{}'::jsonb)) as e(k, v)
+   where jsonb_typeof(v) = 'object'
+) s on true;
 
 -- ── 2. WHICH LICENCES ARE AFFECTED, so a backfill can be scoped ────────────
 -- No plaintext, no ciphertext, and no employee identity beyond the id the app
@@ -88,11 +147,16 @@ select license_hash, employee_id, 'legacy' as format
    and mfa_secret_encrypted not like 'v2.%'
  order by license_hash, employee_id;
 
-select license_hash, credential_id, 'legacy' as format
-  from public.sc_credentials
- where data->>'enc' is not null
-   and data->>'enc' not like 'v2.%'
- order by license_hash, credential_id;
+-- THE SERVICE NAME IS RETURNED, because a backfill needs to know WHICH key on
+-- the row is legacy, not only that the row has one. No ciphertext and no
+-- plaintext: a census does not need the secret to count it.
+select c.license_hash, c.credential_id, e.k as service, 'legacy' as format
+  from public.sc_credentials c
+ cross join lateral jsonb_each(coalesce(c.data, '{}'::jsonb)) as e(k, v)
+ where jsonb_typeof(e.v) = 'object'
+   and e.v->>'enc' is not null
+   and e.v->>'enc' not like 'v2.%'
+ order by c.license_hash, c.credential_id, e.k;
 
 -- ── 3. AND THE ONE THAT WOULD MEAN THE SPLIT NEVER REACHED PRODUCTION ─────
 -- If v2_rows is 0 across BOTH surfaces while SD_ENCRYPTION_KEY is set, then
@@ -102,7 +166,11 @@ select license_hash, credential_id, 'legacy' as format
 -- than a verdict:
 select
   (select count(*) from public.sairnlaw_employee_auth where mfa_secret_encrypted like 'v2.%')
-  + (select count(*) from public.sc_credentials where data->>'enc' like 'v2.%')
+  + (select count(*) from public.sc_credentials c
+      where exists (select 1
+                      from jsonb_each(coalesce(c.data, '{}'::jsonb)) as e(k, v)
+                     where jsonb_typeof(v) = 'object'
+                       and v->>'enc' like 'v2.%'))
   as v2_rows_total;
 -- v2_rows_total = 0 with the key set is NOT proof of a fault. Enrol one test MFA
 -- secret and re-run part 1; if it is still 0, the key is not reaching the
