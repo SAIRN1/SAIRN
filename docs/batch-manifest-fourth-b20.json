@@ -37,8 +37,8 @@
     {
       "id": 6,
       "title": "Push without --force and confirm landed (HEAD == origin/main, 0 ahead / 0 behind).",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "Pushed WITHOUT force: 1b2e346a..924085fb, FIRST attempt, no rejection. Confirmed landed: git rev-parse --short HEAD and origin/main both 924085fb; git rev-list --left-right --count origin/main...HEAD -> 0 0; git status --porcelain empty; all six b20 docs/ paths present via git cat-file -e origin/main:<path>; both discharges on origin with verdict lengths 11976 and 11184; grep -ci force over the push log -> 0. The rebase touched NONE of the files this batch cites, re-checked by git diff --name-only against the cited set, and the sf_events anchors re-verified after it: 7 anchors, 7 unique, 0 line citations. Re-check: git log origin/main --oneline -3"
     }
   ]
 }
