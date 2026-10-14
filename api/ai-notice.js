@@ -77,21 +77,29 @@ module.exports = async (req, res) => {
   }
   body = body || {};
   const action = body.action;
-  if (ACTIONS.indexOf(action) === -1) {
-    res.status(400).json({ error: { message: 'action must be one of: ' + ACTIONS.join(', ') } });
-    return;
-  }
-
   const app = body.app_id;
-  const table = app && AUTH_TABLE_BY_APP[app];
-  if (!table) {
-    // NAMED REFUSAL RATHER THAN A FALLBACK. An app with no employee table has
-    // nobody to ack on behalf of, and guessing a table from a prefix is how a
-    // typo writes to the wrong tenant's credentials.
-    res.status(400).json({ error: { code: 'UNKNOWN_APP', message: 'app_id is not an app with employee credentials' } });
-    return;
-  }
 
+  // ── THE ENVELOPE GATE SITS BELOW LICENCE VALIDATION (and this file got it
+  // ── WRONG FIRST, which is why the ordering is written out here) ──────────
+  // The first draft refused an unknown `action` -- naming the whole verb
+  // vocabulary -- and an unknown `app_id` BEFORE validating the licence key.
+  // tools/preauth_oracle_check.py reported it as the only PREAUTH_DISCLOSURE
+  // on the platform and api/preauth-envelope-ordering.test.js blocked the
+  // push, which is exactly what that pair exists to do: a caller holding no
+  // credential could otherwise tell a malformed envelope from a valid envelope
+  // with a bad action from a bad licence -- three distinguishable answers, one
+  // of which hands over this endpoint's verb list for free.
+  //
+  // It is the SAME defect the other seventeen *-auth.js files were reordered
+  // to fix on 2026-09-08, and api/sf-auth.js's header records it in the same
+  // words. Written here rather than silently moved, because a new endpoint
+  // reproducing a two-month-old platform-wide fix is worth one paragraph.
+  //
+  // THE BODY IS STILL PARSED ABOVE THIS LINE and that is deliberate: the app
+  // id is what selects which licence scope to validate against, so it cannot
+  // be read after validation. An invalid-JSON refusal is an ORACLE rather than
+  // a DISCLOSURE -- it names no vocabulary of this endpoint's -- and the
+  // checker classifies the two differently for that reason.
   let lic;
   try {
     lic = await validateLicenseKey(licenseKey, app);
@@ -107,6 +115,20 @@ module.exports = async (req, res) => {
   if (!lic.active) { res.status(403).json({ error: { code: 'LICENSE_INACTIVE', message: 'This license is not active' } }); return; }
   if (lic.app_scope === 'mismatch') {
     res.status(403).json({ error: { code: 'LICENSE_WRONG_APP', message: 'This license key is not for this app' } });
+    return;
+  }
+
+  // NOW the envelope, with a credential already proven.
+  if (ACTIONS.indexOf(action) === -1) {
+    res.status(400).json({ error: { message: 'action must be one of: ' + ACTIONS.join(', ') } });
+    return;
+  }
+  const table = app && AUTH_TABLE_BY_APP[app];
+  if (!table) {
+    // NAMED REFUSAL RATHER THAN A FALLBACK. An app with no employee table has
+    // nobody to ack on behalf of, and guessing a table from a prefix is how a
+    // typo writes to the wrong tenant's credentials.
+    res.status(400).json({ error: { code: 'UNKNOWN_APP', message: 'app_id is not an app with employee credentials' } });
     return;
   }
 
