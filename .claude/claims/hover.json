@@ -658,6 +658,22 @@
         "SAIRN-digest-h1-b29.txt",
         "SAIRN-report-h1-b29.txt"
       ]
+    },
+    {
+      "id": "hover-1791982450",
+      "session": "hover",
+      "subject": "hover",
+      "task": "h1 b30 -- (1) pull platform, adversarially verify hank b9 landed a6fa37a3/5776ef19/a428abca/e444dc83/9733963d/ecb674aa: SAIRNscape 12/12 gated, ai_source/ai_approved_by partition over AI_SCANNED_TEXT, ai-notice.js reorder 0 PREAUTH_DISCLOSURE, sairnsenior tiered allowlist, sairnfreedom 4 disclosures, re-run docs/hank-evidence/b9_live_gate_probe.py read-only. (2) verify history rewrite/merge: credential fixture string 0 occurrences in pushed range, register 553 records (548+4+1) all 4 b9 records present, defect_register.py --check clean, settings.json byte-identical to origin/main. (3) reproduce fourth b16 holes: tests/sairncash_entitlement_gate.js 2/8 mutations missed exit 1, tools/removal_path_check.py 4 no-removal-path resources. (4) verify landed-by-now of cody b10/cc b9/hank b10/fourth b17/h2 b27 via Drive digests, skip unlanded. (5) one routing doc to cc: stashed docs/scrutiny-flags.json change + stale untracked SAIRN-report-h1-b27.txt/SAIRN-digest-h1-b27.txt. (6) push no force confirm landed. I WRITE ONLY under .claude/skills/sairn-hover-auditor/ plus my own three root deliverables (handoff/report/digest b30); no tools/ api/ sql/ tests/ file edited, no hook added/restored, no settings.json commit, no SAIRN_SEED_GATE override. FILES: SAIRN-handoff-h1-b30.md SAIRN-report-h1-b30.txt SAIRN-digest-h1-b30.txt .claude/skills/sairn-hover-auditor/routing/2026-10-14-h1-b30-scrutiny-flags-stale-files-for-cc.md",
+      "claimed_at": "2026-10-14T12:54:10Z",
+      "claimed_at_epoch": 1791982450.3355894,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        ".claude/skills/sairn-hover-auditor/routing/2026-10-14-h1-b30-scrutiny-flags-stale-files-for-cc.md",
+        "SAIRN-digest-h1-b30.txt",
+        "SAIRN-handoff-h1-b30.md",
+        "SAIRN-report-h1-b30.txt"
+      ]
     }
   ],
   "refusals": [
