@@ -813,9 +813,32 @@ def deny(owed, escaped):
         for sha, _d, subject, why in escaped:
             print('    %s %s -- %s' % (sha, subject[:44], why[:70]))
     print('')
-    print('Override by putting SAIRN_SEED_GATE=off at the FRONT of the push '
-          'command itself (SAIRN_SEED_GATE=off git push ...), not in a separate '
-          'export. Say so out loud if you do.')
+    # ── THE SECOND COPY, FOUND BY FIXING THE FIRST (cc b11) ─────────────────
+    # This was the same override sentence, hardcoded again, and it is how the
+    # fix to sairn_push_gate_hook.OVERRIDE_HINT was observed NOT to have
+    # worked: that constant was corrected to name the scoped
+    # SAIRN_GATE_EXEMPT=seed form first, the very next push was refused by
+    # THIS gate, and the refusal printed the old text. The correction was
+    # real and this copy had never heard of it.
+    #
+    # That is precisely the history the hook's own constant was created for --
+    # its comment records the sentence being "WRONG in eight places at once"
+    # between 2026-09-01 and 2026-09-03, "so eight copies of the instruction
+    # all had to be believed to find that out". One of those copies was in
+    # another file and outlived the consolidation.
+    #
+    # IMPORTED, NOT RE-TYPED. Falling back to a short pointer rather than a
+    # second wording if the import fails: a stale duplicate is what this is
+    # fixing, and an inaccurate fallback would recreate it.
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from sairn_push_gate_hook import OVERRIDE_HINT as _HINT
+    except Exception:                                            # noqa: BLE001
+        _HINT = ('Override: see OVERRIDE_HINT in '
+                 'tools/sairn_push_gate_hook.py for the current forms -- this '
+                 'gate does not keep its own copy, because a second copy is '
+                 'how the old one went stale. Say so out loud if you use one.')
+    print(_HINT)
     return EXIT_DENY
 
 
