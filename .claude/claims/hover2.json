@@ -358,8 +358,8 @@
       "task": "b22 close-out: sairncare alf_/MAR rotation sweep (item1, seq821 finding -- office_manager billing-grant mechanism absent, cross-refs cody's expired b8 claim on the same gap which never landed), sairnvet role-granularity recount only (item2, seq822, 41/42 unchanged), item3 (scp_*/sairnlaw_audit_log/rf_schedule/sairnfreedom re-check) DEFERRED per user decision -- overlapped h1 b27's live claim, logged seq823, h1 b27 has since landed confirming still-not-landed, item4 drive_upload_verify.py NOT on origin/main so --audit not run (seq824), item5 chain/tip-beacon republish (seq825, 824->now entries, beacon was 16 behind the 15 bound, republished at seq824), item6 push/sync confirm. FILES: .claude/projects path self-log only (no platform repo file written by this session except .claude/claims/hover2.json via this claim command).",
       "claimed_at": "2026-10-14T10:18:14Z",
       "claimed_at_epoch": 1791973094.790235,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-14T10:19:16Z",
       "files": [
         ".claude/claims/hover2.json"
       ]
