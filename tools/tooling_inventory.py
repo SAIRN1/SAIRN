@@ -1128,6 +1128,22 @@ PURPOSES = {
         'send-reminder.js returning 500 hourly FOR MONTHS. A negative duration '
         'is reported as an ANOMALY rather than averaged away. Needs the same '
         'injection-date field item 66 is blocked on; the two are one field apart'),
+    'obligation_surface.py': ('REPORT-ONLY',
+        'a REVIEW OBLIGATION NOBODY IS REMINDED OF. It catches the queue '
+        'ageing past the point the platform has already decided is late -- it '
+        'imports OWNER_STALE_HOURS from tier_a_review_gate rather than keeping '
+        'a threshold of its own, so the two cannot drift. Its first run found '
+        '12 of 20 open obligations overdue and the oldest at 404h, sixteen '
+        'days, none of which was printed anywhere a session would see on the '
+        'way in. The data was never missing: tier_a_review_gate --list prints '
+        'the queue and nothing ran it. REFUSES rather than reassuring -- an '
+        'absent, unparseable or wrong-shaped register exits 2 and says which, '
+        'because a surface whose empty state and broken state read identically '
+        'is worse than none. An obligation whose opened_at cannot be parsed is '
+        'a THIRD STATE, printed separately and never folded into fresh, since '
+        'the one record nobody can age is the one most likely to be oldest. '
+        'NOT a hook and not a gate: it blocks nothing and is exit-1 as a '
+        'signal only'),
     'nhi_register.py': ('GENERATOR',
         'every NON-HUMAN IDENTITY with a named OWNER and a real SCOPE, because '
         'an env-var scan structurally cannot answer that -- a GitHub PAT, a '

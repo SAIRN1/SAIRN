@@ -1,0 +1,129 @@
+{
+ "app_matched": "sairnlegacy",
+ "considered": {
+  "defect_records": 570,
+  "detectors_fired": [],
+  "detectors_run": 12,
+  "matched_this_file": 6
+ },
+ "drafted_on": "2026-10-14",
+ "exists": true,
+ "no_detector_yet": [
+  "1.6",
+  "2.2",
+  "3.1",
+  "3.2",
+  "3.3",
+  "4.1",
+  "4.2",
+  "4.3",
+  "5"
+ ],
+ "risks": [
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "bfa3fff4c5fc",
+   "date": "2026-09-16",
+   "detected_by": "code-review",
+   "prior_severity": "critical",
+   "risk": "api/sd-data.js verified a session token's signature and expiry and never re-checked whether the credential behind it was still active, so a DEACTIVATED employee kept gated read and write access to thirteen apps' resources for the remaining life of a 12h token. 9fef0f35 closed this for api/sc-auth.js's own roster and set_active on 2026-08-23; the data path was never covered. CRITICAL under the defined vocabulary: after deactivation the caller is unauthorised, the access reaches real tenant data, and it was reachable on the real deployment by a real caller rather than in principle",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "dadfedf48ac9",
+   "date": "2026-09-24",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "api/_lib/auth.js built every role membership set as a plain object literal, and so did 48 sites across 19 files that follow the same convention: MANAGEMENT_ROLES, BROAD_READ_ROLES, AUTHENTICATED_ROLES, ALERT_ROLES, PRESCRIBER_ROLES, AI_COC_REVIEW_ROLES, FINANCIAL_ROLES, 25 function-local maps in api/sd-data.js, plus ROLES_BY_APP and AUTH_TABLE_BY_APP. A plain literal inherits Object.prototype, so MAP['constructor'] indexes truthy and an inherited name reads as a role at every `MAP[session.role]` gate on the platform -- money (accounting, ledger, trust reconciliation), clinical (MAR, incidents, credentials, veterinary prescribing), patient and employee PII, and statutory governance. ALL 48 WERE INERT FOR ONE DISTANT REASON, not for 48 local ones: verifySessionToken() re-validates payload.role against ROLES_BY_APP on every verification, so no session carrying an inherited name reached any gate. That is a single function 48 authorisation gates silently depended on, with nothing at either end saying so; narrowing its vocabulary or adding one caller that mints a session another way would open all 48 at once. Separately, ROLES_BY_APP is itself indexed by payload.app inside that function, where the plain literal made ROLES_BY_APP['constructor'] a truthy function that then threw on .indexOf -- a 500 where a null session was intended.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "c8b5e5b123c4",
+   "date": "2026-09-26",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "api/sd-data.js carried 132 verifySessionToken gates and ONE credentialStillActive, placed inside the SD_SESSION_GATED conditional so it covered 34 resources and 70 action-pairs. A credential DEACTIVATED after its token was issued kept read and write on the other 131 gates for up to the 12h token life, across thirteen apps' resources -- and deactivation is the one control an owner has over somebody who has just left. The comment beside the single call site read NOTHING CLOSED IT FOR THE DATA PATH, which reads as closed-for-all, and its eight-arm control was green because every arm was true of that one call site",
+   "rules": [
+    "1.11"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "686a323c79f1",
+   "date": "2026-09-27",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "api/_lib/auth.js published a four-step SD_AUTH_SECRET rotation in its own comments, ending \"Nobody is signed out; the window drains itself.\" That was true of SESSIONS only, because signingKeys() tries SD_AUTH_SECRET_PREVIOUS. It was never true of secrets at rest: legacyEncryptionKey() derived from getSecret() -- the CURRENT secret only -- so step 2 of that documented procedure made every pre-split legacy ciphertext undecryptable and step 4 removed the last key that could read it. An operator following all four steps in the order the file gave them destroyed data the file said nothing about, and the failure is SILENT: decryptSecret() returns null and every caller reads null as \"no secret stored\", which for SAIRNlaw MFA renders as \"MFA is not set up\". NOT TRIGGERED, and that is measured rather than assumed: SD_AUTH_SECRET was created 2026-08-02 with updatedBy null (never rotated) and SD_AUTH_SECRET_PREVIOUS is absent in the live Vercel env, so no ciphertext was actually lost. Fixed by legacyDecryptionKeys(), which gives legacy DECRYPTION the same dual-key path signing already had -- current secret then previous. Encryption still uses only the current key, because a previous key that could write would keep the old key alive indefinitely. A v2 value still gets exactly one key and no fallback. Step 4 now carries a precondition the other three do not: 4a count remaining legacy ciphertexts (sql/legacy_ciphertext_census.sql, new, read-only), 4b then clear PREVIOUS.",
+   "rules": [
+    "1.5"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "d1fe316a9ae2",
+   "date": "2026-09-28",
+   "detected_by": "code-review",
+   "prior_severity": "low",
+   "risk": "hasRole(MAP, role) requires === true while the bracket form MAP[role] that 48 gates use grants on any truthy value, so a role map written { owner: 1 } is granted by one spelling and refused by the other",
+   "rules": [
+    "1.3"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "fdd06d06b68c",
+   "date": "2026-10-14",
+   "detected_by": "independent-review",
+   "prior_severity": "critical",
+   "risk": "SAIRNlegacy had THREE roles and NO per-resource role check anywhere -- measured, not asserted: grep -nE \"LEG_[A-Z_]*ROLES\" over api/sd-data.js returned nothing, against one gate in sairnlaw and one in sairnvet. So a 'staff' token -- every employee who is not the owner or a director -- read and wrote all 36 leg_ resources exactly as an owner did, including leg_deathrecords, leg_cremations, leg_custodylog and leg_preneed. The 2026-09-21 session gate closed \"no session\" and left \"any session\" wide open, and nothing between then and now asked what a session was allowed to do. Found by fourth's b15 survey, which produced the band assignment this implements. Fixed with one table of 36 rows and one decide() in api/_lib/leg-roles.js, consulted once before the read/write dispatch, plus two rules that cannot be expressed as role grants: leg_custodylog is append-only for every role INCLUDING the owner, and leg_aftercare gets a deterministic id so duplicate grief-support check-ins are impossible by construction rather than caught by a check. staff stays in the vocabulary as a deprecated value mapped to the NARROWEST band, because promoting it would have granted 15 money resources to everyone who had a login yesterday. 30 arms, all passing, including the spec's negative controls L1-L10 driven end to end; the 403 arms assert no data fetch happened and L10 drives all 36 resources both ways on an owner token.",
+   "rules": [
+    "1.7"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlegacy) has this defect on record",
+   "cite": "4b5260f5e3a5",
+   "date": "2026-09-21",
+   "detected_by": "independent-review",
+   "prior_severity": "critical",
+   "risk": "sairnlegacy.html confirmReserve() writes leg_merch_units through a direct fetch rather than sdnData(), deliberately, because it needs the real 409 ALREADY_RESERVED status that sdnData() collapses to null. The LEG_RESOURCES session gate shipped its client half by attaching X-SD-Auth inside sdnData(), so this one call site never got it and posted the licence key alone to a resource that now requires a session: 401 NO_SESSION for every user since the gate landed, i.e. merchandise reservation was broken in production. Reproduced against the DEPLOYED page and endpoint, and in the suite before the fix existed. SECOND HALF: on failure the function left its optimistic local write in place, so the device showed Reserved with nothing on the server -- the two-devices-one-casket state the reservation lock exists to prevent, reached by being refused and ignoring it. Fixed by sending the token at that call site and by rolling back on an explicit 4xx refusal while deliberately NOT rolling back on 5xx or a thrown request, which mean we could not tell.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlegacy) has this defect on record",
+   "cite": "760a34a9b014",
+   "date": "2026-09-21",
+   "detected_by": "code-review",
+   "prior_severity": "critical",
+   "risk": "api/sd-data.js: both LEG_RESOURCES branches went from the derived licence hash straight to the PostgREST query with no verifySessionToken anywhere, so all 36 SAIRNlegacy tables -- including leg_deathrecords and leg_custodylog, the chain-of-custody record for human remains -- were readable AND writable by anything holding the licence key. The licence key is a BEARER credential handed to the browser, so the caller needed no employee session at all. Reproduced against the shipped file with a valid key and NO X-SD-Auth header: leg_deathrecords read 200 with rows, leg_custodylog write 200 having upserted. Fixed as one gate BEFORE the read/write dispatch so neither branch is reachable without it, scoped to 'sairnlegacy' via verifySessionToken's third argument (Check 28). The client half shipped in the same commit because 56 of sairnlegacy.html's 58 sdnData() call sites sent no token and the gate alone would have been an app-wide outage.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlegacy) has this defect on record",
+   "cite": "8447c3695404",
+   "date": "2026-10-14",
+   "detected_by": "hover-audit",
+   "prior_severity": "high",
+   "risk": "sairnlegacy.html bookingConflict(): the only control preventing a facility double-booking read THIS DEVICE'S localStorage, and api/sd-data.js's leg_bookings write branch did no overlap check at all. Two staff on two devices, each holding a calendar copy taken before the other's booking synced, both pass their own check and both writes are ACCEPTED, because a new booking carries a new booking_id and nothing collides. What is double-booked is a chapel, a removal van, or -- because leg_facilities seeds a Staff row with a named funeral director and saveBooking() books Staff rows exactly like rooms -- a named employee, against a specific death case and a time window. The same race leg_merch_units' reservation lock was built to close in August and which was never applied here.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlegacy) has this defect on record",
+   "cite": "85206564d24f",
+   "date": "2026-10-14",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "leg_clergybookings had no server-side double-booking check -- the THIRD instance of the shape b8 closed on leg_merch_units and b9 closed on leg_bookings. sairnlegacy.html:4817's clergyBookingConflict() is a correct interval-overlap test that hard-blocks with no override, over THIS DEVICE's localStorage, so two staff on two unsynced devices both pass their own check and both upsert; the second write is accepted because a new booking carries a new id and nothing collides. The thing double-booked is a named clergy contact against a specific death case and an hour. Fixed by routing BOTH booking resources through ONE helper, api/_lib/leg-overlap.js, rather than making a third copy -- because the one thing a copy would have got wrong is the STATUS LITERAL: leg_bookings exempts Cancelled, the clergy resource skips Completed and has no Cancelled status at all, so a byte-identical propagation would have refused clergy bookings against services that had already happened. exemptStatus is therefore a REQUIRED parameter with no default and check() throws without one. api/sd-data-leg-overlap.test.js, 33 arms written as PAIRS over the two specs, with D4 reading both client literals out of the HTML at runtime; ablated against the pre-fix handler at 27 passed 6 failed. The same commit tiers the rf_settings read, which b9's handoff named UNVERIFIED and which is confirmed to be the identical open-read shape sen_settings had: write management-only, read any signed-in employee returning every row whole including updated_by.",
+   "source": "defect-register"
+  }
+ ],
+ "target": "api/_lib/auth.js"
+}
