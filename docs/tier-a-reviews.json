@@ -6239,6 +6239,39 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-14T10:31:40Z",
+      "opened_at_sha": "7da612f2e6d7254d77aea77fd53a82bee48128f6",
+      "opened_at_sha_basis": "file-set",
+      "resources": [
+        "leg_cases",
+        "scp_designs",
+        "sf_disbursements",
+        "sf_ledger",
+        "sf_members",
+        "sf_operators",
+        "sf_service_appointments",
+        "sf_trustee_audits",
+        "sf_waivers",
+        "sf_youth_participants"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/_lib/sf-roles.js",
+        "api/sd-data-leg-bookings-toctou.test.js",
+        "api/sd-data-scp-session-gate.test.js",
+        "api/sd-data-sf-role-matrix.test.js"
+      ],
+      "what": "hank b8 item 4: api/sd-data.js gained a server-side double-booking gate on leg_bookings (SELECT the server's rows for the same facility, 409 BOOKING_CONFLICT before any upsert, cancellation exempt, an unreadable existing window refused as BOOKING_CHECK_INDETERMINATE rather than treated as non-overlapping), plus the client-side rollback in sairnlegacy.html saveBooking() and the new suite api/sd-data-leg-bookings-toctou.test.js (48 arms, both halves ablated). leg_cases is Tier A and is touched by this change only as a NEGATIVE CONTROL in the new suite -- the narrowness arm asserts leg_cases, leg_facilities and leg_obituaries still take a single blind upsert, so the reviewer's question is whether that arm really proves the gate did not widen, and whether a leg_cases write can reach the new branch at all. What to review hardest: the gate is a READ-THEN-WRITE and is not atomic, so judge whether the residual millisecond-wide interleave is correctly described rather than minimised, and whether refusing a write because another row's timestamp is unparseable is the right trade against wedging a funeral home's calendar.",
+      "status": "open",
+      "reviewer_owner": "cloud",
+      "owner_assigned_at": "2026-10-14T10:31:40Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

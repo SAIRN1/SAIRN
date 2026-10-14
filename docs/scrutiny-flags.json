@@ -844,6 +844,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/lifecycle-audit-event-coverage.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "3e8a65252954ead8eef94fedaf4af8e114e29e76",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_tier_a_review_gate_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -1749,6 +1757,31 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/sd-data-leg-bookings-toctou.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "if (/_employee_auth\\?.*&select=active&limit=1/.test(String(url))) {"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "section('5. cancelling a booking is exempt -- no check at all');"
+    }
+   ],
+   "sha": "7da612f2e6d7254d77aea77fd53a82bee48128f6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlegacy_write_failure_voice.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "7da612f2e6d7254d77aea77fd53a82bee48128f6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/greeting.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -2009,6 +2042,27 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "876932ae8c44e89c3cfed0eadbfe924f6f2c8be2",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/role-vocabulary-agreement.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'skip is how a real app stops being checked', function () {"
+    }
+   ],
+   "sha": "8775f6161635a9379a0ef6e32e12751d79ef6dcb",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-sf-role-matrix.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "8775f6161635a9379a0ef6e32e12751d79ef6dcb",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -2385,6 +2439,22 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "9c36aa7c09d270f0f5c3a90b3a3ddd67e25fa2e0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-scp-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9c71bb2a67d632e74df7a93e22cf502f4135502f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9c71bb2a67d632e74df7a93e22cf502f4135502f",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -3381,6 +3451,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "d95612bc63597e202d39353be57ecf4030a785fc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/role-vocabulary-agreement.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "dae04429e5eb35d6eaf751eb20e0a6081cb0b996",
    "criteria_version": "2026-10-06.1"
   },
   {
