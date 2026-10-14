@@ -133,6 +133,21 @@ select count(*) as grant_rows from public.alf_mar_access_grants;
 -- WRAPPED IN begin;/commit; AND PASTED WHOLE: between the DROP and the ADD the
 -- table accepts any event_type at all.
 --
+-- ── THE TABLE MAY NOT EXIST YET, AND THAT IS WHY THIS BLOCK CREATES IT ────
+-- `python tools/sairn_sql_preflight.py --live db/schema_snapshot.json` refused
+-- an earlier draft of this block with MISSING_TABLE sairncare_audit_log, and it
+-- was right: sql/sairncare_audit_log_schema.sql's own header has said "NOT RUN"
+-- since it was extracted on 2026-10-11, so `alter table` alone would have
+-- failed outright on a clean database. So the block does BOTH, in order, and is
+-- correct in both worlds:
+--   the create is verbatim from sql/sairncare_audit_log_schema.sql and already
+--   carries the eight values inline, so on a clean database the ALTER that
+--   follows is a no-op replacement of an identical predicate;
+--   the ALTER is what widens the constraint on a database where the table
+--   ALREADY EXISTS with the old five, which `create table if not exists`
+--   silently skips.
+-- Neither half is sufficient alone and running both twice changes nothing.
+--
 -- THE CONSTRAINT NAME. `create table` names an inline column CHECK
 -- `<table>_<column>_check`, so sairncare_audit_log_event_type_check is the
 -- name Postgres will have given it. `drop constraint if exists` makes a wrong
@@ -145,6 +160,37 @@ select count(*) as grant_rows from public.alf_mar_access_grants;
 -- and re-run with the real name.
 
 begin;
+
+create table if not exists public.sairncare_audit_log (
+  id uuid primary key default gen_random_uuid(),
+  license_hash text not null,
+  employee_id text,
+  role text,
+  event_type text not null check (event_type in (
+    'pin_bootstrap',
+    'pin_setup',
+    'credential_deactivated',
+    'credential_reactivated',
+    'credential_change_refused',
+    'mar_access_granted',
+    'mar_access_grant_refused',
+    'mar_access_read'
+  )),
+  detail jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_sairncare_audit_log_license_time
+  on public.sairncare_audit_log (license_hash, created_at desc);
+
+alter table public.sairncare_audit_log enable row level security;
+drop policy if exists "svc insert only sairncare_audit_log" on public.sairncare_audit_log;
+create policy "svc insert only sairncare_audit_log" on public.sairncare_audit_log for insert with check (true);
+
+revoke all on public.sairncare_audit_log from anon, authenticated;
+revoke all on public.sairncare_audit_log from service_role;
+grant select, insert on public.sairncare_audit_log to service_role;
+
 alter table public.sairncare_audit_log
   drop constraint if exists sairncare_audit_log_event_type_check;
 alter table public.sairncare_audit_log
@@ -169,6 +215,19 @@ commit;
 select pg_get_constraintdef(c.oid) as event_type_check
   from pg_constraint c
  where c.conname = 'sairncare_audit_log_event_type_check';
+
+-- ── THIRD VERIFY FOR BLOCK 2 ───────────────────────────────────────────────
+-- EXPECTED: exactly 2 rows -- 'SELECT' and 'INSERT' -- and NOTHING ELSE. The
+-- audit log is insert-only and that is the whole of its immutability: a
+-- 'DELETE' or 'UPDATE' row here means an audit row can be rewritten. This
+-- differs from block 1 on purpose: a grant may be REVOKED (an update), an
+-- audit row may not.
+select privilege_type
+  from information_schema.role_table_grants
+ where table_schema = 'public'
+   and table_name = 'sairncare_audit_log'
+   and grantee = 'service_role'
+ order by privilege_type;
 
 -- ── SECOND VERIFY FOR BLOCK 2 ──────────────────────────────────────────────
 -- EXPECTED: exactly 1 row, with ok = true. This asks the same question as a
