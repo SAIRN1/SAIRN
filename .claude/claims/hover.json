@@ -732,8 +732,8 @@
       "task": "b34 deep-verify cody b11, land-checks, weakening flags, twin-script sweep, SQL removal check",
       "claimed_at": "2026-10-14T17:58:07Z",
       "claimed_at_epoch": 1792000687.1864903,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-14T23:30:27Z",
       "files": null
     }
   ],
