@@ -174,7 +174,26 @@ const ROLES_BY_APP = roleSet({
   // management tier (confirmed with Michael) -- 'staff' needs an explicit
   // per-employee grant for shared-knowledge access specifically, tracked
   // on the employee row itself, not a 4th role.
-  sairnlegacy: ['owner', 'director', 'staff'],
+  //
+  // ── FIVE TASK ROLES ADDED (2026-10-14, fourth b15 spec) ───────────────
+  // The sentence above was true and the consequence was not stated: with
+  // three roles and NO per-resource role check anywhere (measured -- `grep
+  // -nE "LEG_[A-Z_]*ROLES" api/sd-data.js` returned nothing), `staff` read
+  // and wrote all 36 leg_ resources exactly as an owner did, including
+  // death records, cremation authority and the chain-of-custody log. The
+  // policy now lives in api/_lib/leg-roles.js, one table, 36 rows.
+  //
+  // `staff` STAYS, DEPRECATED, AND MAPS TO THE NARROWEST BAND. Every
+  // existing row has to land somewhere, and a migration that silently
+  // promoted `staff` to `arranger` would grant 15 money resources to
+  // everyone who had a login yesterday. A human re-assigns each person.
+  //
+  // FIVE OF THESE NAMES ARE [CONFIRM] IN THE SPEC AND STILL ARE: a funeral
+  // home's own titles win over these, and `prep` in particular may need its
+  // own licensed tier the way SAIRNvet's PRESCRIBER_ROLES does, because
+  // embalmer is a separate state licence in most states.
+  sairnlegacy: ['owner', 'director', 'arranger', 'prep', 'office',
+                'apprentice', 'livery', 'staff'],
   // SAIRNdesign (2026-08-20, real employee auth for the client/lead
   // privacy gate -- Task 2 of the platform sales-lead-privacy rule):
   // matches sairndesign.html's existing role vocabulary exactly

@@ -1313,7 +1313,7 @@ label.chk input{width:auto;}
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Owner only. Creates or updates one person's own credentials &mdash; there are no shared role PINs.</div>
     <div class="fg"><label>Employee ID or email</label><input id="sec-new-eid"></div>
     <div class="fg"><label>Display name</label><input id="sec-new-name"></div>
-    <div class="fg"><label>Role</label><select id="sec-new-role"><option value="director">Director</option><option value="staff">Staff</option><option value="owner">Owner</option></select></div>
+    <div class="fg"><label>Role</label><select id="sec-new-role"><option value="director">Director</option><option value="arranger">Arranger</option><option value="prep">Preparation</option><option value="office">Office</option><option value="apprentice">Apprentice</option><option value="livery">Livery</option><option value="owner">Owner</option></select></div>
     <div class="fg"><label>PIN (6-8 digits)</label><input id="sec-new-pin" type="password" inputmode="numeric"></div>
     <button class="btn bp" onclick="secProvision()">Save Employee</button>
     <div id="sec-admin-msg" style="font-size:12px;margin-top:10px"></div>
@@ -4203,6 +4203,15 @@ function rMemorial(){
 
 // ── DATA ACCESSORS (Phase 3) ──────────────────────────────────────────────
 function aftercareCheckins(){return ld('leg_aftercare',[]);}
+// Must produce the SAME string as api/sd-data.js's leg_aftercare branch. Two
+// copies of a key derivation is exactly the drift cross-domain convention 7
+// warns about, and there is no way to share one function across a static page
+// and a serverless handler -- so api/sd-data-leg-aftercare-id.test.js asserts
+// the two agree by extracting this function and running it against the
+// handler's own result, rather than trusting this comment.
+function legAftercareId(caseId,type){
+  return 'AC-'+String(caseId).trim()+'-'+String(type).trim().toUpperCase().replace(/[^A-Z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+}
 function processions(){return ld('leg_processions',[]);}
 function vehicles(){return ld('leg_vehicles',[]);}
 function maintenanceRecords(){return ld('leg_maintenance',[]);}
@@ -4233,7 +4242,17 @@ async function generateAftercareSchedule(){
   var created=[];
   plan.forEach(function(p){
     if(existing.some(function(a){return a.checkin_type===p.type;}))return;
-    var rec={id:newId('AC'),case_id:caseId,checkin_type:p.type,due_date:daysFromNow(p.days),status:'Pending',completed_date:'',notes:'',created_at:legLocalToday()};
+    // DETERMINISTIC ID, NOT newId('AC') (2026-10-14). The check above reads
+    // THIS DEVICE'S store, so two devices that have not synced each other's
+    // writes each believe none exist and each create a set -- duplicate
+    // grief-support follow-ups to a bereaved family. (case_id, checkin_type)
+    // is unique by construction here: three fixed types, one creation path.
+    // Making the id that pair makes the server upsert de-duplicate by
+    // construction, which is the right tool when the collision can be made
+    // impossible by the key rather than caught by a check. api/sd-data.js
+    // derives the SAME key server-side, so a device still on the old page
+    // converges on the same row instead of creating a second one.
+    var rec={id:legAftercareId(caseId,p.type),case_id:caseId,checkin_type:p.type,due_date:daysFromNow(p.days),status:'Pending',completed_date:'',notes:'',created_at:legLocalToday()};
     list.push(rec);
     created.push(rec);
   });

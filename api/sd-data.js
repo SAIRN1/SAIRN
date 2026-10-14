@@ -87,6 +87,10 @@ const mechRedact = require('./_lib/mech-redact');
 // wrong. It does the fetch itself (the check IS a read-then-write) but never
 // touches `res`; it returns a verdict and the branch below owns the status.
 const legOverlap = require('./_lib/leg-overlap');
+// The SAIRNlegacy per-resource role matrix: 36 rows, one function, consulted
+// ONCE before the read/write dispatch. Same shape and same reasoning as
+// api/_lib/law-roles.js two days earlier.
+const legRoles = require('./_lib/leg-roles');
 // ── SAIRNLAW ROLE GRANULARITY (2026-10-12, hover2 seq 757) ────────────────
 // ONE table and ONE function for all 19 law_ resources, in api/_lib/law-roles.js
 // with the whole policy and its provenance. Called from exactly TWO places in
@@ -15125,11 +15129,63 @@ module.exports = async (req, res) => {
     // ALREADY OPEN on the old page, or a cached copy, starts getting 401 until
     // they reload. For an authentication hole on chain-of-custody records that
     // is the right trade, and the refusal below tells them exactly what to do.
+    //
+    // ── AND A ROLE, NOT ONLY A SESSION (2026-10-14, fourth b15 spec) ──────
+    // The gate above closed "no session". It did NOT close "any session": a
+    // `staff` token -- every employee who is not the owner or a director --
+    // read and wrote all 36 of these resources exactly as an owner did.
+    // MEASURED before it was fixed: `grep -nE "LEG_[A-Z_]*ROLES"` over this
+    // file returned nothing at all, against one gate in sairnlaw and one in
+    // sairnvet.
+    //
+    // ONE TABLE AND ONE FUNCTION, in api/_lib/leg-roles.js, for the same
+    // reason SAIRNlaw's is: a role check written at one call site and not the
+    // other thirty-five is indistinguishable from no policy when read one
+    // branch at a time. This is ONE call, before the dispatch, so neither the
+    // read branch nor the write branch can be reached without it.
     if (LEG_RESOURCES[resource]) {
       const legSess = verifySessionToken(tokenFromRequest(req), licHash, 'sairnlegacy');
       if (!legSess) {
         res.status(401).json({ error: { code: 'NO_SESSION', message: 'Your sign-in could not be verified, so nothing was read or saved. Sign out and sign in again, then try once more.' } });
         return;
+      }
+      if (legRoles.decide(resource, legSess.role, action) === legRoles.DENY) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: legRoles.denyMessage(resource, legSess.role) } });
+        return;
+      }
+      // ── APPEND-ONLY, AND IT BINDS THE OWNER TOO ────────────────────────
+      // Rule 1 of the spec. A chain-of-custody log that can be EDITED is not
+      // a chain of custody, so this is checked AFTER the role table agrees
+      // and independently of it -- no role grant can reach past it.
+      //
+      // It is a read-then-write and it has the same residual the booking
+      // gates do: two requests for the same custodylog_id interleaving
+      // between this SELECT and the upsert. Milliseconds, and both would be
+      // creating the same id, which is the one case where the second
+      // overwriting the first is also the correct answer.
+      //
+      // A LOOKUP THAT CANNOT BE PERFORMED REFUSES. If the table is not
+      // provisioned, or the query fails, this cannot tell an append from an
+      // edit and says so rather than letting the write through -- PR §1.11.
+      if (action !== 'read' && legRoles.isAppendOnly(resource)
+          && payload && payload.id !== undefined && payload.id !== null
+          && payload.id !== '') {
+        const idColAO = LEG_RESOURCES[resource];
+        const exq = await fetch(rest(
+          resource + '?license_hash=eq.' + enc(licHash) +
+          '&' + idColAO + '=eq.' + enc(String(payload.id)) +
+          '&select=' + idColAO + '&limit=1'
+        ), { headers });
+        if (exq.status === 404 || exq.status === 400) {
+          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlegacy data tables are not set up yet — run sql/sairnlegacy_data_schema.sql in Supabase first.' } });
+          return;
+        }
+        const exRows = await exq.json();
+        if (!exq.ok) return upstream(res, exRows);
+        if (Array.isArray(exRows) && exRows.length) {
+          res.status(409).json({ error: { code: 'APPEND_ONLY', message: legRoles.appendOnlyMessage(resource) } });
+          return;
+        }
       }
     }
     if (LEG_RESOURCES[resource] && action === 'read') {
@@ -15145,6 +15201,45 @@ module.exports = async (req, res) => {
       if (!payload || payload.id === undefined || payload.id === null || payload.id === '') {
         res.status(400).json({ error: { message: resource + ' payload.id is required' } });
         return;
+      }
+      // ── leg_aftercare: THE KEY IS THE FIX, NOT A GATE (2026-10-14) ──────
+      // b9's survey, finding 5. generateAftercareSchedule() reads the LOCAL
+      // store to decide which of the three standard check-ins already exist
+      // (sairnlegacy.html:4235, :4240). Two devices that have not synced each
+      // other's writes each believe none exist and each create a set, and a
+      // grieving family gets duplicate grief-support follow-ups -- or worse,
+      // duplicates compete for staff attention and some are skipped as
+      // already handled.
+      //
+      // A CONFLICT CHECK IS THE WRONG TOOL WHEN THE COLLISION CAN BE MADE
+      // IMPOSSIBLE BY THE KEY, which is what the survey said and why this is
+      // not a fourth read-then-write. (case_id, checkin_type) is unique by
+      // construction -- the generator writes exactly three fixed types per
+      // case and there is no other creation path -- so deriving the id from
+      // the pair makes the upsert de-duplicate itself. The second device's
+      // write lands on the first device's row instead of beside it.
+      //
+      // IT IS DONE ON THE SERVER AS WELL AS IN THE CLIENT, and that is the
+      // half that matters: a device still running the old page sends a random
+      // id, and if only the client were changed that device would keep
+      // creating duplicates. Canonicalising here means ANY writer converges on
+      // the same row. The client half ships in the same commit because Vercel
+      // deploys the page and the endpoint together.
+      //
+      // ONLY WHEN BOTH FIELDS ARE PRESENT. A payload missing either is left
+      // exactly as it was rather than being given a half-derived key, because
+      // a key built from a missing field collides with every other row missing
+      // the same field -- which would be a worse bug than the one being fixed.
+      if (resource === 'leg_aftercare' && payload
+          && payload.case_id && payload.checkin_type) {
+        const acKey = 'AC-' + String(payload.case_id).trim() + '-'
+          + String(payload.checkin_type).trim().toUpperCase()
+              .replace(/[^A-Z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        // The blob's own `id` is rewritten too, not just the column. A client
+        // that re-renders from the response would otherwise show the id it
+        // sent while the server holds another -- the seam that makes the next
+        // write look like a different record.
+        payload.id = acKey;
       }
       // Reservation-lock hard gate (2026-08-10): the one transition on this
       // resource that can't be a blind merge -- two staff on two devices,

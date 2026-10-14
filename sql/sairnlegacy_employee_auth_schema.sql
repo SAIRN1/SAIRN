@@ -39,7 +39,13 @@ create table if not exists sairnlegacy_employee_auth (
   license_hash text not null,
   employee_id text not null,
   display_name text,
-  role text not null check (role in ('owner','director','staff')),
+  -- 'staff' is DEPRECATED (2026-10-14) and stays in this list on purpose:
+  -- every existing row has to remain valid while a human re-assigns each
+  -- person to a task role. api/_lib/leg-roles.js maps it to the NARROWEST
+  -- band -- operations read/write, no money, no regulated write -- because a
+  -- migration that promoted it to 'arranger' would grant 15 money resources
+  -- to everyone who had a login yesterday.
+  role text not null check (role in ('owner','director','arranger','prep','office','apprentice','livery','staff')),
   pin_hash text not null,
   pin_salt text not null,
   active boolean not null default true,
