@@ -40,13 +40,19 @@ EVERY ARM IS MUTATION-PROVED. An arm that asserts a guard fires is worth
 nothing unless the matching arm shows it stays quiet when it should -- a
 `return 1` on every path would pass half of this file.
 
-Exit 0 pass, 1 fail.
+Exit 0 pass, 1 fail, **2 COULD NOT RUN** -- the third state belongs to arm 0,
+the seam between this file's stand-in for `_run()` and the real one. When they
+disagree, no arm below it is evidence about the floor in either direction, and
+calling that red would send a reader hunting a shrinking-suite bug that does
+not exist. Added 2026-10-14, when exactly that disagreement made every arm from
+2 down die on a `TypeError` before its first assertion.
 """
 import io
 import json
 import os
 import sys
 import contextlib
+import inspect
 import tempfile
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -79,13 +85,98 @@ def check(cond, label):
 _GREEN = R._run([], [], quiet=True)
 
 
-def fake_run(js, py, quiet=True):
+def fake_run(*a, **k):
     """Every discovered file passes, none skips, none was retried -- green.
 
     The floor has to be the ONLY thing that can speak in these arms, otherwise
     a fired guard cannot be told apart from an ordinary failure.
+
+    THE PARAMETER LIST IS NOT RETYPED HERE, AND THAT IS THE 2026-10-14 REPAIR.
+    It was `fake_run(js, py, quiet=True)` -- a THIRD copy of `_run`'s signature,
+    beside the one the header already records dying on `ValueError` when a third
+    return value appeared. `_run` then gained a fourth PARAMETER, `excluded`, for
+    the pinning exclusion set, and `_main_body()` passes it POSITIONALLY. Every
+    arm from 2 down died on `TypeError: fake_run() takes from 2 to 3 positional
+    arguments but 4 were given` before reaching a single assertion, so the floor
+    arms could not be judged at all -- the suite was COULD NOT RUN, not red.
+
+    `*a, **k` accepts whatever the runner passes, so a FIFTH parameter costs
+    nothing here. The price of accepting anything is that a RENAMED or
+    restructured seam would be swallowed in silence instead of crashing, which
+    is why arm 0 below binds this stub against the real signature and refuses to
+    classify anything when they disagree.
     """
     return _GREEN
+
+
+def fake_run_result(result):
+    """The same stub as `fake_run`, for a caller that chooses green or red.
+
+    SAME REPAIR, AND THIS ONE IS WHY "FIX THE STUB" IS PLURAL: arms 8-10 ran
+    through a SECOND retyped `lambda js, py, quiet=True`, so fixing only
+    `fake_run` would have moved the crash three arms later instead of removing
+    it. Both stubs are shape-blind and arm 0 locks BOTH against the real
+    signature.
+    """
+    return lambda *a, **k: result
+
+
+# ── ARM 0: THE SEAM, AND IT IS NEITHER COLOUR WHEN IT BREAKS ────────────────
+# WHY A SEAM CHECK AND NOT JUST THE FIX (2026-10-14). `*a, **k` removes the
+# crash by accepting ANYTHING, and that is a real cost: a renamed or
+# restructured `_run` would be absorbed in silence and arms 2-10 would go on
+# reporting green about a floor they were no longer reaching. So the stubs are
+# bound against the REAL signature before any arm runs.
+#
+# IT IS A COULD-NOT-RUN, NOT A FAILURE, per PR 1.11. "The stub no longer fits
+# the function" is not evidence about the floor in either direction, and
+# folding it into exit 1 would have a reader looking for a shrinking-suite bug
+# that does not exist. The reason is named and the floor arms do NOT run.
+#
+# THE SHAPE LIST IS LOCKED AGAINST THE SOURCE, in both directions. Each shape
+# is bound to the real `_run` too, so a shape the runner stopped using fails
+# here rather than rotting; and the call-site count is pinned, so a THIRD call
+# shape -- the one thing this list cannot derive -- is made visible instead of
+# being stubbed-over by `**k`.
+_CALL_SHAPES = [
+    # tools/run_all_tests.py:435 -- _hook_body(), the unattended copy
+    (('js', 'py'), {'quiet': True}),
+    # tools/run_all_tests.py:1278 -- _main_body(), four POSITIONAL args
+    (('js', 'py', True, None), {}),
+]
+_runner_src = open(os.path.join(REPO, 'tools', 'run_all_tests.py'),
+                   encoding='utf-8').read()
+_seam = []
+_real_sig = inspect.signature(R._run)
+for _args, _kw in _CALL_SHAPES:
+    try:
+        _real_sig.bind(*_args, **_kw)
+    except TypeError as e:
+        _seam.append('the REAL _run no longer accepts %d positional + %r: %s'
+                     % (len(_args), sorted(_kw), e))
+    for _name, _stub in (('fake_run', fake_run),
+                         ('fake_run_result', fake_run_result(None))):
+        try:
+            inspect.signature(_stub).bind(*_args, **_kw)
+        except TypeError as e:
+            _seam.append('%s cannot take %d positional + %r: %s'
+                         % (_name, len(_args), sorted(_kw), e))
+_sites = _runner_src.count('= _run(')
+if _sites != len(_CALL_SHAPES):
+    _seam.append('tools/run_all_tests.py has %d `_run(` call site(s), this file '
+                 'declares %d shape(s) -- a new call shape is unlocked'
+                 % (_sites, len(_CALL_SHAPES)))
+print('0. THE STUBS STILL FIT THE REAL `_run` -- SEAM')
+if _seam:
+    print('COULD NOT RUN: the stand-in and tools/run_all_tests.py:519 disagree,')
+    print('so nothing below is evidence about the floor in either direction.')
+    for _l in _seam:
+        print('    %s' % _l)
+    print('EXIT 2 -- COULD NOT RUN, not a pass and not a failure')
+    sys.exit(2)
+print('  ok   both stubs accept all %d real call shape(s); %d call site(s) '
+      'declared' % (len(_CALL_SHAPES), _sites))
+print('')
 
 
 @contextlib.contextmanager
@@ -237,7 +328,7 @@ def patched_result(count, result):
     """Same as patched(), but the caller chooses green or red."""
     real_discover, real_run = R.discover, R._run
     R.discover = lambda: (['tests/fake_%d.js' % i for i in range(count)], [], [])
-    R._run = lambda js, py, quiet=True: result
+    R._run = fake_run_result(result)
     try:
         yield
     finally:
