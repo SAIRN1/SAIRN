@@ -3631,6 +3631,26 @@
         "docs/2026-10-13-fourth-b12-routed-to-cc-bydesign-validator.md",
         "docs/METHODOLOGY.md"
       ]
+    },
+    {
+      "id": "fourth-1791973821",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "batch b13 -- (1) b12 claim ALREADY RELEASED in b4b80004, verified not re-released; then READ-ONLY audit of the 1 hook group .claude/settings.json carries from eb53e267 -- who, when, and whether it matches the approved SessionStart:compact design in docs/2026-10-13-per-gate-skip-design.md -- finding routed to cc with file:line, NO EDIT to settings.json and no hook added or restored. (2) a new dated CORRECTION doc fixing the two false evidence lines in my b12 report (the A1 fixture that was itself fail-open; the scratchpad .v1.py files cited as as-shipped) each with the command proving the correction. (3) inventory BY COMMAND every checker in the repo with no bad-input fixture proving it fails closed, plus a spec for a mechanical check that FAILS on any such checker, routed to cc, NO tools/ edit. (4) docs/2026-10-14-ai-safeguards-spec.md routed to hank (api/) and cody (tests/) -- one-time AI notice per user at first face-login, one-time owner acceptance in the agreement, inline Reviewed button on high-risk AI outputs only, AI-assisted reviewed-by footer on outgoing documents, every assistant surface declares it is AI; data model, per-app surface list, acceptance tests, SPEC ONLY. (5) re-run the routed-findings ack check and regenerate the 36-undriven-suites doc against current origin/main, counts named by command. (6) push without force, confirm HEAD == origin/main 0 ahead 0 behind. FINAL: handoff BEFORE the report, then report and digest, all three uploaded to Drive 14Xc5oT0xzSLa_rTSOSXWVK3Kko1Fbx09 and read back. FILES: docs/2026-10-14-fourth-b13-hook-audit-routed-to-cc.md docs/2026-10-14-fourth-b13-corrections.md docs/2026-10-14-fourth-b13-unfixtured-checkers-routed-to-cc.md docs/2026-10-14-ai-safeguards-spec.md docs/2026-10-13-fourth-b10-undriven-suites.md SAIRN-handoff-fourth-b13.md SAIRN-report-fourth-b13.txt SAIRN-digest-fourth-b13.txt",
+      "claimed_at": "2026-10-14T10:30:21Z",
+      "claimed_at_epoch": 1791973821.1731062,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b13.txt",
+        "SAIRN-handoff-fourth-b13.md",
+        "SAIRN-report-fourth-b13.txt",
+        "docs/2026-10-13-fourth-b10-undriven-suites.md",
+        "docs/2026-10-14-ai-safeguards-spec.md",
+        "docs/2026-10-14-fourth-b13-corrections.md",
+        "docs/2026-10-14-fourth-b13-hook-audit-routed-to-cc.md",
+        "docs/2026-10-14-fourth-b13-unfixtured-checkers-routed-to-cc.md"
+      ]
     }
   ],
   "refusals": [
