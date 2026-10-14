@@ -52,13 +52,29 @@ import sys
 TOOLS = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, TOOLS)
 
-CRITERIA_VERSION = '2026-10-14.1'
+CRITERIA_VERSION = '2026-10-14.2'
 
-RED_AT = 70                 # Michael's threshold, batch b8
-BIG_WINDOW = 1000000        # the [1m] models
-SMALL_WINDOW = 200000       # everything else
-TAIL_BYTES = 262144         # first look: the last 256KB of the transcript
-TAIL_BYTES_WIDE = 4194304   # second look, once: 4MB
+RED_AT = 70                  # Michael's threshold, batch b8
+BIG_WINDOW = 1000000         # Opus 5 / any explicit [1m]
+SONNET_WINDOW = 967000       # Sonnet 5's REAL window -- not 200K and not 1M
+TAIL_BYTES = 262144          # first look: the last 256KB of the transcript
+TAIL_BYTES_WIDE = 4194304    # second look, once: 4MB
+
+# ── NAMED WINDOWS, NOT A GUESS (batch b9) ───────────────────────────────────
+# b8 shipped a two-way split -- "[1m]" in the id/display_name means 1,000,000,
+# anything else means 200,000 -- and that second half was never measured, it
+# was carried over from the pre-[1m] world where 200K was the only window
+# that existed. Sonnet 5's real window is 967,000 (confirmed against this
+# session's own /context), which is neither branch: not "[1m]", and at
+# 144K used it had not crossed 200K either, so it fell into the untested
+# default and rendered `ctx 72% of 200k` -- a number nearly 5x too alarming,
+# computed from a denominator the session was never actually bounded by.
+# The fix is not a bigger default, it is NO default: a model this table does
+# not name renders `ctx ??%`, same as a transcript it cannot read.
+KNOWN_WINDOWS = (
+    (('sonnet-5', 'sonnet 5'), SONNET_WINDOW),
+    (('opus-5', 'opus 5', '[1m]'), BIG_WINDOW),
+)
 
 RESET = '\033[0m'
 RED = '\033[1;31m'
@@ -81,16 +97,24 @@ def agent_name(start):
 
 
 def window_for(payload):
-    """-> (tokens, why). The context ceiling for the model in play."""
+    """-> (tokens, why) or (None, why). The context ceiling for the model in
+    play, FROM THE REAL WINDOW -- never a hardcoded 200K for a model this
+    does not recognize. See KNOWN_WINDOWS above for why 200K stopped being a
+    safe default the day a 967K model existed."""
     model = payload.get('model') or {}
-    ident = '%s %s' % (model.get('id') or '', model.get('display_name') or '')
-    if '1m' in ident.lower():
-        return BIG_WINDOW, '1m in the model id'
+    ident = ('%s %s' % (model.get('id') or '', model.get('display_name') or '')
+              ).lower().strip()
+    for needles, window in KNOWN_WINDOWS:
+        if any(n in ident for n in needles):
+            return window, 'matched %r' % needles[0]
+    if not ident:
+        return None, 'no model in payload'
     if payload.get('exceeds_200k_tokens'):
-        # A session that has already passed 200K cannot be a 200K session, so
-        # this is a measurement and not an assumption.
-        return BIG_WINDOW, 'exceeds_200k_tokens is true'
-    return SMALL_WINDOW, 'default'
+        # It has already passed 200K, so it is NOT a 200K model -- but which
+        # real ceiling it has is exactly the thing not known here. Guessing
+        # BIG_WINDOW was the old bug's mirror image; say unknown instead.
+        return None, 'unrecognized model %r, already past 200k' % ident
+    return None, 'unrecognized model %r' % ident
 
 
 def _tail_lines(path, nbytes):
@@ -160,10 +184,14 @@ def render(payload, colour=True):
     if model:
         bits.append(model)
 
-    window, _why = window_for(payload)
-    used, why = used_tokens(payload.get('transcript_path'))
-    if used is None:
-        bits.append('ctx ??%% (%s)' % why)
+    window, win_why = window_for(payload)
+    used, used_why = used_tokens(payload.get('transcript_path'))
+    if window is None:
+        bits.append('ctx ??%% (%s)' % win_why)
+        used = None     # the window is the thing unknown; do not also print a
+                         # percentage that would need it
+    elif used is None:
+        bits.append('ctx ??%% (%s)' % used_why)
     else:
         pct = int(round(100.0 * used / window))
         txt = 'ctx %d%% of %dk' % (pct, window // 1000)
@@ -251,36 +279,65 @@ def run_fixtures():
         check('a usage line of all zeros is NOT a 0% answer', used_tokens(p)[0],
               None)
 
-        # THE WINDOW.
+        # THE WINDOW -- NAMED MODELS, NEVER A 200K GUESS (batch b9).
         check('[1m] in the model id means a 1M window',
               window_for({'model': {'id': 'claude-opus-5[1m]'}})[0], BIG_WINDOW)
-        check('a plain id means 200K',
-              window_for({'model': {'id': 'claude-opus-5'}})[0], SMALL_WINDOW)
-        check('exceeds_200k_tokens alone is enough -- a session past 200K '
-              'cannot be a 200K session',
-              window_for({'model': {'id': 'claude-sonnet-5'},
-                          'exceeds_200k_tokens': True})[0], BIG_WINDOW)
-        check('no model block at all does not raise',
-              window_for({})[0], SMALL_WINDOW)
+        check('"opus-5" in a plain id means the 1M window',
+              window_for({'model': {'id': 'claude-opus-5',
+                                     'display_name': 'Opus 5'}})[0], BIG_WINDOW)
+        check('"sonnet-5" means its REAL window, 967K -- not 200K and not 1M',
+              window_for({'model': {'id': 'claude-sonnet-5',
+                                     'display_name': 'Sonnet 5'}})[0],
+              SONNET_WINDOW)
+        check('an unrecognized model is UNKNOWN, not a 200K guess -- this is '
+              'the exact bug: Sonnet 5 fell through to a 200K default and '
+              'rendered a number nearly 5x too alarming',
+              window_for({'model': {'id': 'claude-haiku-4-5-20251001',
+                                     'display_name': 'Haiku 4.5'}}),
+              (None, "unrecognized model 'claude-haiku-4-5-20251001 "
+                     "haiku 4.5'"))
+        check('exceeds_200k_tokens on an unrecognized model is STILL unknown '
+              '-- it rules out 200K but does not tell you which window it '
+              'really is, so guessing 1M would just be the same bug in the '
+              'other direction',
+              window_for({'model': {'id': 'claude-haiku-4-5-20251001'},
+                          'exceeds_200k_tokens': True}),
+              (None, "unrecognized model 'claude-haiku-4-5-20251001', "
+                     "already past 200k"))
+        check('no model block at all does not raise, and is unknown rather '
+              'than a 200K guess',
+              window_for({}), (None, 'no model in payload'))
+
+        # THE REGRESSION LOCK: the exact numbers from the real incident.
+        # 144,000 used, Sonnet 5, previously rendered `ctx 72% of 200k`
+        # (144000/200000) -- nearly 5x too alarming, computed from a window
+        # the session was never actually bounded by. The real fraction is
+        # 144000/967000 = 15%.
+        p = transcript('t5b.jsonl', [usage(144000)])
+        line = render(pay(p, model='claude-sonnet-5'))
+        check('the b8 incident, locked: Sonnet 5 at 144K renders 967k, not '
+              '200k', 'ctx 15% of 967k' in line, True)
+        check('...and 15% carries no red', RED in line, False)
 
         # THE THRESHOLD, IN BOTH DIRECTIONS, ON THE RENDERED STRING.
-        p = transcript('t6.jsonl', [usage(138000)])         # 69.0% of 200K
+        # pay() defaults to model='claude-opus-5', a 1,000,000 window.
+        p = transcript('t6.jsonl', [usage(690000)])         # 69.0% of 1M
         line = render(pay(p))
         check('69% carries no red', RED in line, False)
         check('...and still shows the exact percentage',
-              'ctx 69% of 200k' in line, True)
-        p = transcript('t7.jsonl', [usage(140000)])         # exactly 70%
+              'ctx 69% of 1000k' in line, True)
+        p = transcript('t7.jsonl', [usage(700000)])         # exactly 70%
         check('EXACTLY 70%% is red -- the boundary is >=, not >',
               RED in render(pay(p)), True)
         # THE DISPLAYED NUMBER AND THE COLOUR AGREE, which a floor-vs-round
-        # mismatch would break: 139,000 is 69.5%, prints as 70%, and must
+        # mismatch would break: 695,000 is 69.5%, prints as 70%, and must
         # therefore be red. A line reading `70%` in plain text would be worse
         # than either answer alone.
-        p = transcript('t7b.jsonl', [usage(139000)])
+        p = transcript('t7b.jsonl', [usage(695000)])
         line = render(pay(p))
         check('69.5% prints as 70% AND is red -- display and threshold cannot '
               'disagree', ('ctx 70%' in line, RED in line), (True, True))
-        p = transcript('t8.jsonl', [usage(190000)])
+        p = transcript('t8.jsonl', [usage(950000)])
         check('95% is red', RED in render(pay(p)), True)
         check('...and colour can be turned off for a non-tty reader',
               RED in render(pay(p), colour=False), False)
@@ -288,11 +345,17 @@ def run_fixtures():
         # THE SAME TOKEN COUNT IS A DIFFERENT ANSWER PER WINDOW, which is the
         # whole reason this prints a percentage.
         p = transcript('t9.jsonl', [usage(700000)])
-        check('700K of a 1M window is 70% and red',
-              'ctx 70% of 1000k' in render(pay(p, model='claude-opus-5[1m]')),
+        check('700K of a 1M window (Opus 5) is 70% and red',
+              'ctx 70% of 1000k' in render(pay(p, model='claude-opus-5')),
               True)
-        check('...and the same count in a 200K session is not reported as 70%',
-              'ctx 70% of 200k' in render(pay(p)), False)
+        check('...and the SAME 700K in a 967K window (Sonnet 5) is a '
+              'different percentage, not silently reported as 70% too',
+              'ctx 72% of 967k' in render(pay(p, model='claude-sonnet-5')),
+              True)
+        check('...and an unrecognized model at the same count renders '
+              'unknown rather than picking either window',
+              'ctx ??%' in render(pay(p, model='claude-haiku-4-5-20251001')),
+              True)
 
         # THE COULD-NOT-TELL PATH RENDERS A LINE RATHER THAN NOTHING.
         line = render(pay(os.path.join(tmp, 'gone.jsonl')), colour=False)
