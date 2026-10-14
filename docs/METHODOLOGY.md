@@ -777,3 +777,181 @@ counting the wrong population, or counting a population the document then
 describes differently. The rule makes the figure **checkable**, and checkable is
 the most a document can offer. Catching a wrong command still needs a reader,
 and that is not mechanised anywhere.
+
+---
+
+## 2026-10-13 (fourth, b12): EVERY CHECKER SHIPS WITH A DELIBERATELY BAD INPUT FIXTURE PROVING IT FAILS CLOSED
+
+**THE RULE.** A checker is not finished when it passes on real data. It is
+finished when it carries, in its own file, a **`--fixtures` arm built from an
+input it is supposed to refuse**, and that arm **fails when the guard is
+removed**.
+
+Three parts, and the second and third are the ones usually skipped:
+
+1. **A BAD-INPUT ARM.** Not a synthetic shape invented to be obviously wrong —
+   where a real defect exists, **the fixture is the exact input that fooled the
+   checker**. A fixture written from imagination locks the author's model of the
+   defect; a fixture written from the defect locks the defect.
+2. **AN ABLATION.** Remove the single guard and show the arm **fails**. A
+   fixture that has never been seen to fail is a fixture that may be asserting
+   something the code does anyway.
+3. **THE EXIT CODE, DRIVEN AS A PROGRAM** on a tree that holds only the bad
+   input. Added after the first two were written, because an in-process arm
+   cannot see the one thing every caller sees — and a checker can hold a
+   correct predicate and still exit 0, which is exactly what `index_resolve.py`
+   shipped doing. See the subsection below for what driving it found.
+
+### Why, and the first two parts are paid for by checkers I shipped in b11
+
+Two checkers were written in b11, both passed on real data, and **both were
+wrong in the direction that matters** — found by reading their own passes, not
+by their own output:
+
+* **`ack_check.py`** decided `ACK_DECIDED` on `base in not_promoted_text` — a
+  bare basename substring test over a large prose block. It reported **two false
+  acknowledgements**: the `hover_auditor_scope_gate.py` hit was inside *another*
+  entry's prose about a two-layer control, and the `session_lock_check.py` entry
+  was about why that check is SessionStart-only. **Neither mentioned the routed
+  line.** A checker that reports a finding as handled when nobody handled it
+  **closes the question**, and this one would have closed 2 of its own 6
+  findings.
+* **`index_resolve.py`** printed unresolved `docs/`-index tokens and then
+  **exited 0** — its exit line read `1 if (dead_drive or rename_hit) else 0`,
+  so an unresolved token had no effect on the verdict at all. It reported and
+  allowed.
+
+**NEITHER WAS CAUGHT BY A CLEAN RUN, AND THAT IS THE ENTIRE ARGUMENT.** Both ran
+green against the real repo. RULE E (re-derive at finalisation) does not help —
+re-deriving a wrong answer gets the same wrong answer. Naming the command
+(b11's own rule) does not help either — the command was named and it was the
+wrong command. **Only an input the checker must refuse can tell a working
+checker from one that agrees with you.**
+
+### APPLIED, with the commands and the outputs
+
+    CMD python scratchpad/ack_check.py --fixtures
+        ack_check --fixtures: 8 arm(s), 0 failing
+        ok  BAD INPUT: basename in UNRELATED prose is NOT an ack
+        ok  the same prose does not ack some OTHER line either
+        ok  a decision naming the FILE and the LINE does ack
+        ok  the `:409` spelling is accepted as well as `line 409`
+        ok  a basename ABSENT from the block yields no signal
+        ok  an EMPTY block yields no signal, not an ack
+        ok  an ABSENT source is empty, not unreadable
+        ok  a source with NO NOT_PROMOTED block is COULD NOT CHECK
+
+    CMD python scratchpad/index_resolve.py --fixtures
+        index_resolve --fixtures: 8 arm(s), 0 failing
+        ok  BAD INPUT: one unexplained dead token is a FINDING
+        ok  and it is named rather than counted
+        ok  CONTROL: the 3 explained tokens alone still PASS
+        ok  and nothing is named in that case
+        ok  a dead DRIVE entry is a finding on its own
+        ok  a b10-rename casualty is a finding on its own
+        ok  an empty token set passes
+        ok  the tokenizer returns the FULL filename, not a suffix
+
+    CMD python scratchpad/ablation_b12.py           ->  exit 0
+        1. ack_check   v1 -> 'ACK_DECIDED'   WRONG: reports the finding handled
+                       v2 -> 'MENTION_ONLY'  CORRECT
+        2. index_resolve  v1 exit -> 0   WRONG: prints the dead row and ALLOWS
+                          v2 exit -> 1   CORRECT
+                          v2 on explained-only -> 0  CORRECT: no over-refusal
+        VERDICT: both ablations hold -- each fixture FAILS when its guard is
+        removed
+
+### A THIRD HALF, ADDED AFTER THE ABOVE WAS WRITTEN: THE EXIT CODE, DRIVEN END TO END
+
+**A fixture asserts on a predicate; only the PROCESS EXIT CODE is what another
+session, a gate or a push hook ever sees.** Both arms above are in-process, and
+a checker can hold a correct predicate and still exit 0 — which is precisely
+what `index_resolve.py` did on its first run. So each checker is now also
+driven **as a program, in a throwaway tree whose only content is a deliberately
+bad input**, and the assertion is on its exit code:
+
+    CMD python scratchpad/bad_drive_b12.py          ->  exit 0
+        ok  A1  no NOT_PROMOTED block in the ACK source        want 2  got 2
+        ok  A2  a routing document it reads is absent          want 2  got 2
+        ok  A3  v2 on a MENTION-ONLY block                     want 1  got 1
+        ok  A3  ABLATED (guard removed) is FAIL-OPEN           want 0  got 0
+        ok  I1  a declared DRIVE path that does not resolve    want 1  got 1
+        ok  I2  the Drive index is absent                      want 2  got 2
+        ok  I2b the Drive index is not valid JSON              want 2  got 2
+        ok  I3  v2 on one UNEXPLAINED dead docs/ token         want 1  got 1
+        ok  I3  ABLATED (guard removed) prints it and ALLOWS   want 0  got 0
+        ok  I4  CONTROL: the 3 EXPLAINED tokens alone PASS     want 0  got 0
+        10 arm(s), 0 failing
+        VERDICT: both checkers FAIL CLOSED on a deliberately bad input
+        (exit 1 for a finding, exit 2 for COULD NOT CHECK), and each one with
+        its single guard ABLATED exits 0 on the SAME tree.
+
+**TWO THINGS THAT RUN FOUND, AND NEITHER WAS VISIBLE FROM THE IN-PROCESS ARMS:**
+
+1. **MY OWN FIRST BAD-INPUT FILE TESTED THE OPPOSITE OF WHAT IT CLAIMED.** Arm
+   A1 writes a `report_only_checks.py` carrying *no* `NOT_PROMOTED` block — and
+   my first version said so **in a comment**, in those words. The reader is a
+   substring search, it found the token in the comment, and the arm came back
+   **exit 0 where it must be exit 2**. A bad-input fixture can itself be a
+   fail-open, and the only reason this one was caught is that the arm declares
+   the exit code it demands instead of printing what it got.
+2. **`ack_check.v1.py` AND `index_resolve.v1.py` IN THE SCRATCHPAD ARE NOT THE
+   AS-SHIPPED VERSIONS.** They are mid-patch snapshots: driven on the same bad
+   trees, both already produce the *corrected* verdict (`MENTION_ONLY`, exit 1).
+   **So "driven against v1" would have been a false evidence line**, and the
+   b11 checkers were never committed, so no as-shipped copy survives in git
+   either. The ablation is therefore done by **removing the one guard from the
+   real current file by exact text substitution**, refusing if the substitution
+   does not apply exactly once — an ablation that silently ablates nothing
+   reports the fixture as locking a guard it never touched, which is this rule's
+   own failure mode one level up.
+
+**THE CONTROL ARMS MATTER AS MUCH AS THE BAD ONES.** `ack_check` arm 3 proves
+the fix did not simply disable the signal; `index_resolve`'s explained-only arm
+proves it does not now refuse the file it was written for. A fix that turns a
+fail-open checker into an always-refusing one has moved the defect, not closed
+it — and an always-refusing checker is switched off within the hour.
+
+### THE ABLATION CAUGHT A FALSE CLAIM IN MY OWN b11 REPORT, which is the rule earning itself on its first use
+
+b11 reported that `index_resolve.py`'s first version produced a **false dead
+entry** by matching a **suffix** of
+`docs/backup-reader-verification.template.json`, and that anchoring the regex's
+left edge fixed it. **Driven side by side, that is not what happened.** The
+unanchored regex is greedy and returns the full filename on that line, so it
+**never produced the phantom token**:
+
+    CMD python scratchpad/ablation_b12.py
+        v1 tokens -> ['docs/backup-reader-verification.template.json']
+        v2 tokens -> ['docs/backup-reader-verification.template.json']
+        v1 invents 0 phantom token(s)
+
+The index genuinely cites **both** spellings on that line, and the shorter one
+is a real citation to a deliberately absent runtime input. **The anchoring fixed
+nothing observed** — it is kept as hardening and is no longer credited with a
+fix; what actually resolved that token was classifying it as EXPLAINED. The
+comment at the site has been corrected to say so.
+
+**I would not have found that by re-reading the report.** The first ablation run
+exited 1 with `ABLATION FAILED: the fixture does not lock this guard`, which is
+the fixture refusing to certify a story about a defect that did not happen.
+
+### WHAT THE RULE DOES NOT DO
+
+It does not prove a checker is **right about its subject** — only that the one
+guard under test holds. A checker with ten guards and one fixture is locked at
+one point. And an ablation is **per guard**: removing a different line may
+produce a different wrong answer that every arm still passes. **Nothing
+mechanises this rule** — no gate greps `tools/` for a `--fixtures` arm and
+refuses a checker without one, which would be the obvious next step and is not
+built.
+
+### WHERE IT APPLIES
+
+Any program whose output is a **verdict** — a gate, a probe, a resolver, a
+register validator. Not a generator: a generator's correctness lock is that
+**it refuses to write when its inputs disagree**, which is the stronger form and
+is already how `scratchpad/gen_undriven_doc.py` is built. The spec routed in
+`docs/2026-10-13-fourth-b12-routed-to-cc-bydesign-validator.md` carries a
+15-arm lock of this shape, including four arms whose whole job is to stop the
+validator over-refusing.
