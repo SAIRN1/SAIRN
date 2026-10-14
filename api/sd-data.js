@@ -12851,7 +12851,8 @@ module.exports = async (req, res) => {
     // read that quietly answered it would put the consent decision inside a
     // list endpoint where nobody looks for it.
     if (resource === 'alf_family_contacts' &&
-        (action === 'read' || action === 'write' || action === 'family_mar')) {
+        (action === 'read' || action === 'write' || action === 'family_mar'
+         || action === 'mar_access_grant')) {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       const famCols = 'contact_id,resident_id,name,relationship,email,phone,'
@@ -12908,6 +12909,81 @@ module.exports = async (req, res) => {
       // The consent trail and free-text notes, stripped for the narrow tier.
       const ALF_FAMILY_NARROW_COLS = 'contact_id,resident_id,name,relationship,'
         + 'email,phone,active,created_at,updated_at';
+
+      // ── THE MAR IS NO LONGER THE CONTACT LIST'S ROLE SET (2026-10-14) ────
+      // `family_mar` inherited ALF_FAMILY_READ_ROLES = { owner, billing,
+      // nursing } and the comment at the gate said why: a gate disagreeing
+      // with its sibling was the defect being repaired, and narrowing billing
+      // in passing was not that author's call. Michael has now made it:
+      //
+      //   "Billing never reads the MAR by default. For coding work only, an
+      //    office manager may grant billing access to a MAR, time-limited,
+      //    expiring on its own, and audit-logged."   (2026-10-13)
+      //
+      // So `family_mar` STOPS INHERITING the list's set and gets its own.
+      // Dropping `billing` from ALF_FAMILY_READ_ROLES itself would have been
+      // the smaller diff and the wrong change: that set also guards the
+      // CONTACT LIST -- name, phone, email, consent trail -- and a business
+      // office that may not see medication status still has to be able to ring
+      // a resident's daughter about an invoice. The decision was about the
+      // MAR, so the narrowing is on the MAR path only.
+      //
+      // THIS CLOSES THE THIRD DOOR TO THE SAME DATA FOR THE SAME ROLE:
+      //   2026-10-05  `family_mar` had no caller gate at all (H1 #877) and was
+      //               fixed by inheriting `read`'s set -- which is how billing
+      //               arrived here in the first place.
+      //   2026-10-07  `derive_charges` handed billing the medication NAME for
+      //               every dose for a month (7ed27c5e). Redacted.
+      //   today       `family_mar` itself.
+      // `alf_mar` -- the resource that OWNS the table -- has refused billing on
+      // both read and write since it was written (ALF_MAR_ROLES, :11504). This
+      // set is that answer, arriving at the sibling.
+      const ALF_FAMILY_MAR_ROLES = roleSet({ owner: true, nursing: true });
+
+      // IMPORTED, NOT RE-LISTED. api/alf-auth.js declares the grantor set and
+      // exports it for exactly this call site, and its own comment says so:
+      // SAIRNsenior paid for a re-listed copy of a role set that then drifted
+      // (cross-domain convention 7). It is `office_manager` and nothing else --
+      // not PROVISIONING_ROLES, which would make `owner` a grantor too, and
+      // not MANAGEMENT_ROLES, which contains `billing` and would let the
+      // grantee grant itself.
+      const ALF_MAR_GRANT_ROLES = require('./alf-auth').ALF_MAR_GRANT_ROLES;
+      // WHO MAY BE GRANTED TO, which is a SECOND bound and not the same one.
+      // The decision names the business office -- "an office manager may grant
+      // BILLING access to a MAR" -- so a grant row written for a caregiver or
+      // a med_aide admits nobody: the read path does not even look for a grant
+      // unless the caller's role is in this set. Fail-closed, and it keeps the
+      // narrow-tier read path free of a grants query for the roles that could
+      // never have one, which is every role but this.
+      const ALF_MAR_GRANT_GRANTEE_ROLES = roleSet({ billing: true });
+      // THE CEILING, AS A DECLARED NUMBER WITH AN OWNER. "Time-limited" with
+      // no bound is whatever the caller sent, so a grant may run at most this
+      // long from the moment it is made. 72 hours is three working days, which
+      // is the length of the coding task the grant exists for; it is a product
+      // number and it is here, once, rather than inline at the comparison.
+      const ALF_MAR_GRANT_MAX_HOURS = 72;
+      const ALF_MAR_GRANT_TABLE = 'alf_mar_access_grants';
+      const ALF_MAR_GRANT_COLS = 'grant_id,contact_id,resident_id,'
+        + 'grantee_employee_id,granted_by,expires_at,revoked_at,created_at';
+      // THE AUDIT TABLE NAME IS DERIVED FROM THE APP ID, NOT TYPED. audit.js
+      // keeps one app -> table map and derives its own allowlist from it, for
+      // the stated reason that a mistyped table name does not fail loudly --
+      // it lands in that allowlist's refusal and becomes a server-log line
+      // nobody reads. This is the first caller in api/sd-data.js.
+      const alfAuditLib = require('./_lib/audit');
+      const alfAuditTable = alfAuditLib.AUDIT_TABLE_BY_APP.sairncare;
+      // Best-effort BY DESIGN and that posture is audit.js's, not a shortcut
+      // taken here: a logging outage must never block a legitimate grant or a
+      // legitimate refusal. The return value is deliberately not checked --
+      // there is no honest thing to do with it at these three call sites,
+      // because the action's outcome is already decided when it is written.
+      const alfAudit = function (session, event_type, detail) {
+        return alfAuditLib.writeAuditLog(SUPABASE_URL, SERVICE_KEY, {
+          license_hash: licHash,
+          employee_id: session && session.employee_id,
+          role: session && session.role,
+          event_type: event_type, detail: detail, table: alfAuditTable });
+      };
 
       if (action === 'read') {
         const famBroad = !!ALF_FAMILY_READ_ROLES[session.role];
@@ -13002,14 +13078,52 @@ module.exports = async (req, res) => {
         // scope FIRST and is refused on an empty scope before any contact
         // query runs.
         //
-        // THE ROLE SET IS INHERITED, NOT CHOSEN BY ME: ALF_FAMILY_READ_ROLES
-        // is {owner, billing, nursing}, the set `read` already uses for this
-        // resource. `billing` on a clinical record is arguable and it is NOT
-        // my call to narrow it here -- a gate that disagrees with its sibling
-        // is the defect being fixed. Flagged in the batch inventory instead.
-        const marBroad = !!ALF_FAMILY_READ_ROLES[session.role];
+        // THE ROLE SET IS THIS ACTION'S OWN AS OF 2026-10-14 and no longer the
+        // contact list's -- see ALF_FAMILY_MAR_ROLES above for the decision and
+        // for why the list's set was left alone. `billing` is OUT by default
+        // and gets in only through a live, named, time-limited grant.
+        const marBroad = !!ALF_FAMILY_MAR_ROLES[session.role];
+        // ── THE GRANT IS EVALUATED HERE, ON EVERY READ, AND THAT IS THE POINT
+        // "Expiring on its own" is implemented as a comparison at READ TIME
+        // against the row's own expires_at. A grant that only stops working
+        // when a sweeper deletes the row is live for as long as the sweeper is
+        // down, and nothing anywhere would say so.
+        //
+        // IT IS ASKED FOR BY CONTACT AND BY GRANTEE, and then re-checked in
+        // memory on both. The server-side filter is the cheap half; the
+        // in-memory half is what holds if a filter is ever dropped from the
+        // query string -- the same belt-and-braces the `read` tier above uses,
+        // and for the same reason: one half of this resource asked and the
+        // other did not, which is how it needed a gate in the first place.
+        //
+        // A MISSING TABLE IS NOT AN OPEN DOOR. 404/400 from PostgREST means
+        // sql/2026-10-14-hank-b11-mar-grant.sql has not been run; the grant is
+        // then absent, the caller falls through to the assignment tier, and a
+        // billing session is refused. Fail-closed, and the only cost of the
+        // unrun migration is that no grant can be exercised yet.
+        let marGrant = null;
+        if (!marBroad && ALF_MAR_GRANT_GRANTEE_ROLES[session.role]
+            && famP.contact_id) {
+          const gr = await fetch(rest(ALF_MAR_GRANT_TABLE
+            + '?license_hash=eq.' + enc(licHash)
+            + '&contact_id=eq.' + enc(String(famP.contact_id))
+            + '&grantee_employee_id=eq.' + enc(String(session.employee_id))
+            + '&select=' + ALF_MAR_GRANT_COLS), { headers });
+          if (gr.status !== 404 && gr.status !== 400) {
+            const grows = await gr.json();
+            if (!gr.ok) return upstream(res, grows);
+            const nowMs = Date.now();
+            marGrant = (Array.isArray(grows) ? grows : []).filter(function (g) {
+              return g
+                && String(g.contact_id) === String(famP.contact_id)
+                && String(g.grantee_employee_id) === String(session.employee_id)
+                && !g.revoked_at
+                && g.expires_at && Date.parse(g.expires_at) > nowMs;
+            })[0] || null;
+          }
+        }
         let marScope = null;
-        if (!marBroad) {
+        if (!marBroad && !marGrant) {
           const mar_ar = await fetch(rest('alf_clients?license_hash=eq.' + enc(licHash)
             + '&assigned_employee_id=eq.' + enc(String(session.employee_id))
             + '&select=client_id'), { headers });
@@ -13050,10 +13164,22 @@ module.exports = async (req, res) => {
         // 403 and not 404: "that resident is not yours" is the same answer
         // `read` gives, and it is deliberately distinct from NO_SUCH_CONTACT
         // so the two are never collapsed into one oracle.
-        if (!marBroad
+        if (!marBroad && !marGrant
             && marScope.indexOf(String(contact.resident_id)) === -1) {
           res.status(403).json({ error: { code: 'FORBIDDEN', message:
             'That resident is not assigned to you.' } });
+          return;
+        }
+        // THE GRANT'S SECOND HALF, AND IT IS NOT REDUNDANT. The grant was
+        // matched on contact_id, which is the caller's parameter; this compares
+        // the resident on the GRANT ROW to the resident on the STORED CONTACT
+        // ROW. If a contact is ever re-pointed at a different resident after a
+        // grant is written, the grant does not follow it. "Access to a MAR",
+        // singular, is what was decided.
+        if (marGrant
+            && String(marGrant.resident_id) !== String(contact.resident_id)) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message:
+            'That grant is not for this resident.' } });
           return;
         }
         const famLib = require('./_lib/alf-family-mar');
@@ -13134,7 +13260,156 @@ module.exports = async (req, res) => {
         const view = famLib.familyMarView({
           contact: contact, entries: mrows || [], resident_id: contact.resident_id });
         if (!view.ok) { res.status(403).json({ error: view.error }); return; }
-        res.status(200).json({ ok: true, provisioned: true, family_mar: view });
+        // ── EACH GRANTED READ IS LOGGED, NOT JUST THE GRANT ─────────────────
+        // One row per grant tells you access was POSSIBLE; one row per read
+        // tells you what was actually LOOKED AT, and only the second is an
+        // access log. The grant_id is on the row so a reviewer can tie the read
+        // back to the authorisation and to the window it ran in.
+        //
+        // ONLY THE GRANTED READS. A nursing or owner read is this app's normal
+        // clinical traffic and logging it here would bury the handful of rows
+        // this control exists to surface -- an audit trail nobody can read is
+        // the same as none.
+        if (marGrant) {
+          await alfAudit(session, 'mar_access_read', {
+            grant_id: marGrant.grant_id,
+            contact_id: String(famP.contact_id),
+            resident_id: contact.resident_id,
+            granted_by: marGrant.granted_by,
+            expires_at: marGrant.expires_at });
+        }
+        res.status(200).json({ ok: true, provisioned: true, family_mar: view,
+                               via_grant: marGrant ? marGrant.grant_id : null });
+        return;
+      }
+
+      // ── mar_access_grant: AN OFFICE MANAGER OPENS ONE MAR, FOR A WHILE ────
+      // Michael, 2026-10-13: "Billing never reads the MAR by default. For
+      // coding work only, an office manager may grant billing access to a MAR,
+      // time-limited, expiring on its own, and audit-logged."
+      //
+      // FOUR THINGS ARE NARROW AND ALL FOUR ARE ENFORCED HERE:
+      //   WHO MAY GRANT   ALF_MAR_GRANT_ROLES, imported from api/alf-auth.js.
+      //   TO WHOM         one named employee, not a role. A grant to a ROLE is
+      //                   not time-limited access, it is a role change with a
+      //                   timer on it.
+      //   FOR WHAT        one contact, and through it the ONE resident on that
+      //                   contact's stored row. The resident is never taken
+      //                   from the caller.
+      //   FOR HOW LONG    expires_at is REQUIRED, must be in the future, and
+      //                   may not exceed ALF_MAR_GRANT_MAX_HOURS from now.
+      //
+      // THE REFUSAL IS AUDITED TOO. api/*-auth.js audits every outcome of
+      // set_active including its refusals, and an attempt to grant oneself
+      // sight of a medication record is the single most worth-recording event
+      // this feature has.
+      if (action === 'mar_access_grant') {
+        if (!ALF_MAR_GRANT_ROLES[session.role]) {
+          await alfAudit(session, 'mar_access_grant_refused', {
+            reason: 'ROLE_MAY_NOT_GRANT',
+            contact_id: famP.contact_id || null,
+            grantee_employee_id: famP.grantee_employee_id || null,
+            expires_at: famP.expires_at || null });
+          res.status(403).json({ error: { code: 'FORBIDDEN', message:
+            'Granting sight of a medication record is the office manager\'s '
+            + 'decision. Ask them to grant it for the resident you need.' } });
+          return;
+        }
+        if (!famP.contact_id || !famP.grantee_employee_id) {
+          res.status(400).json({ error: { code: 'MISSING_FIELDS', message:
+            'contact_id and grantee_employee_id are required' } });
+          return;
+        }
+        // AN ABSENT EXPIRY IS A REFUSAL AND NOT A DEFAULT. A default would be
+        // the one behaviour the decision forbids -- an unbounded grant -- and
+        // it would be invisible, because nothing in the response would say the
+        // caller had not chosen it.
+        if (!famP.expires_at) {
+          res.status(400).json({ error: { code: 'EXPIRY_REQUIRED', message:
+            'expires_at is required - a grant with no expiry is the thing this '
+            + 'is for preventing. At most ' + ALF_MAR_GRANT_MAX_HOURS
+            + ' hours from now.' } });
+          return;
+        }
+        const grantEnds = Date.parse(String(famP.expires_at));
+        if (!isFinite(grantEnds)) {
+          res.status(400).json({ error: { code: 'BAD_EXPIRY', message:
+            'expires_at must be an ISO timestamp' } });
+          return;
+        }
+        const grantNow = Date.now();
+        if (grantEnds <= grantNow) {
+          res.status(400).json({ error: { code: 'EXPIRY_IN_PAST', message:
+            'expires_at is already past, so the grant would admit nobody' } });
+          return;
+        }
+        if (grantEnds - grantNow > ALF_MAR_GRANT_MAX_HOURS * 3600 * 1000) {
+          res.status(400).json({ error: { code: 'EXPIRY_TOO_FAR', message:
+            'A MAR access grant may run at most ' + ALF_MAR_GRANT_MAX_HOURS
+            + ' hours. Grant it again if the coding work is not finished.' } });
+          return;
+        }
+        // THE RESIDENT COMES OFF THE STORED CONTACT ROW, which is the same
+        // property family_mar has and for the same reason: a resident_id
+        // parameter is a parameter somebody edits.
+        const gcr = await fetch(rest('alf_family_contacts?license_hash=eq.'
+          + enc(licHash) + '&contact_id=eq.' + enc(String(famP.contact_id))
+          + '&select=' + famCols), { headers });
+        if (gcr.status === 404 || gcr.status === 400) {
+          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message:
+            'Family contacts are not set up - run sql/sairncare_family_contacts_schema.sql' } });
+          return;
+        }
+        const gcrows = await gcr.json();
+        if (!gcr.ok) return upstream(res, gcrows);
+        const gcontact = Array.isArray(gcrows) && gcrows[0];
+        if (!gcontact) {
+          res.status(404).json({ error: { code: 'NO_SUCH_CONTACT', message:
+            'no such family contact on this licence' } });
+          return;
+        }
+        const grantId = 'G-' + String(famP.contact_id) + '-'
+          + String(famP.grantee_employee_id) + '-' + String(grantEnds);
+        const grantRow = {
+          license_hash: licHash,
+          grant_id: grantId,
+          contact_id: String(famP.contact_id),
+          resident_id: gcontact.resident_id,
+          grantee_employee_id: String(famP.grantee_employee_id),
+          granted_by: session.employee_id,
+          reason: famP.reason ? String(famP.reason).slice(0, 500) : null,
+          expires_at: new Date(grantEnds).toISOString(),
+          revoked_at: null
+        };
+        const gw = await fetch(rest(ALF_MAR_GRANT_TABLE
+          + '?on_conflict=license_hash,grant_id'), {
+          method: 'POST',
+          headers: Object.assign({}, headers, {
+            Prefer: 'resolution=merge-duplicates,return=representation' }),
+          body: JSON.stringify([grantRow])
+        });
+        if (gw.status === 404 || gw.status === 400) {
+          // NOT a silent success. Until the migration is run this is the honest
+          // answer, and it names the file -- a 200 here would report a grant
+          // that no read path can ever find.
+          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message:
+            'MAR access grants are not set up - run '
+            + 'sql/2026-10-14-hank-b11-mar-grant.sql' } });
+          return;
+        }
+        const gwrows = await gw.json().catch(function () { return null; });
+        if (!gw.ok) return upstream(res, gwrows);
+        await alfAudit(session, 'mar_access_granted', {
+          grant_id: grantId,
+          contact_id: String(famP.contact_id),
+          grantee_employee_id: String(famP.grantee_employee_id),
+          resident_id: gcontact.resident_id,
+          expires_at: grantRow.expires_at,
+          max_hours: ALF_MAR_GRANT_MAX_HOURS });
+        res.status(200).json({ ok: true, granted: true, grant_id: grantId,
+          grantee_employee_id: grantRow.grantee_employee_id,
+          resident_id: grantRow.resident_id,
+          expires_at: grantRow.expires_at });
         return;
       }
 

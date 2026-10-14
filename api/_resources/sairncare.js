@@ -120,7 +120,18 @@ module.exports = {
     // never returns medication names, PRN reasoning or controlled counts.
     // Declared here because the dispatcher's allowlist runs BEFORE the
     // resource branch: an undeclared verb answers 400 and is unreachable.
-    alf_family_contacts: ['family_mar'],
+    //
+    // 'mar_access_grant' is the OTHER verb on this resource and it is a WRITE
+    // of a permission, not a read of anything: an office manager names one
+    // billing employee, one family contact (and through it one resident), and
+    // an expiry, and the handler records a row in alf_mar_access_grants. It is
+    // declared on alf_family_contacts rather than on alf_mar because the grant
+    // is keyed on the CONTACT -- the resident is taken from the stored contact
+    // row, never from the caller -- and because `alf_mar` itself must keep
+    // refusing billing outright (ALF_MAR_ROLES), which is the answer this
+    // sibling resource now agrees with. Every other role is refused and the
+    // refusal is audited; the grant expires on its own, evaluated on each read.
+    alf_family_contacts: ['family_mar', 'mar_access_grant'],
     alf_payer_rules: ['route'],
     alf_compliance_rules: ['evaluate'],
     alf_billing: ['derive_charges'],

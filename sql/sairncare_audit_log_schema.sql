@@ -28,12 +28,29 @@ create table if not exists public.sairncare_audit_log (
   license_hash text not null,
   employee_id text,
   role text,
+  -- ── THREE MAR-GRANT EVENTS ADDED 2026-10-14 (hank b11) ──────────────────
+  -- An event_type outside this list does not fail loudly: writeAuditLog's POST
+  -- is rejected by the constraint, the function returns false and logs
+  -- server-side only (api/_lib/audit.js:131-134), so the grant succeeds and
+  -- the audit row silently does not exist. The three names below are emitted
+  -- by the `mar_access_grant` action and by the granted-read path in
+  -- api/sd-data.js, and tests/mar_billing_grant.test.js arm D5 compares the
+  -- emitters against this list.
+  --
+  -- IF THE TABLE ALREADY EXISTS, THIS FILE DOES NOT WIDEN IT. `create table if
+  -- not exists` is a no-op on an existing table, constraint and all. Block 2
+  -- of sql/2026-10-14-hank-b11-mar-grant.sql is the drop/add that does, and it
+  -- is wrapped in begin/commit because between the DROP and the ADD the table
+  -- accepts ANY event_type.
   event_type text not null check (event_type in (
     'pin_bootstrap',
     'pin_setup',
     'credential_deactivated',
     'credential_reactivated',
-    'credential_change_refused'
+    'credential_change_refused',
+    'mar_access_granted',
+    'mar_access_grant_refused',
+    'mar_access_read'
   )),
   detail jsonb,
   created_at timestamptz not null default now()

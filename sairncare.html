@@ -648,7 +648,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   <div class="mbox">
     <div class="mtitle">Add / Edit Staff</div>
     <div class="fr"><div class="fg"><label>Name</label><input id="st-name"></div><div class="fg"><label>Phone</label><input id="st-phone"></div></div>
-    <div class="fg"><label>Position</label><select id="st-position"><option value="nursing">Resident Care Director (Nursing)</option><option value="med_aide">Med Aide</option><option value="caregiver">Caregiver</option><option value="billing">Business Office / Billing</option><option value="activities">Activities Coordinator</option><option value="owner">Owner / Administrator</option></select></div>
+    <div class="fg"><label>Position</label><select id="st-position"><option value="nursing">Resident Care Director (Nursing)</option><option value="med_aide">Med Aide</option><option value="caregiver">Caregiver</option><option value="billing">Business Office / Billing</option><option value="office_manager">Office Manager</option><option value="activities">Activities Coordinator</option><option value="owner">Owner / Administrator</option></select></div>
     <div class="fr"><div class="fg"><label>Certification Expires</label><input id="st-cert" type="date"></div><div class="fg"><label>Background Check Date</label><input id="st-bgcheck" type="date"></div></div>
     <div class="fg"><label>Status</label><select id="st-status"><option value="active">Active</option><option value="onboarding">Onboarding</option><option value="inactive">Inactive</option></select></div>
     <div class="fg"><label>Notes</label><textarea id="st-notes" rows="2"></textarea></div>
@@ -1015,7 +1015,14 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Owner only. Creates or updates one person's own credentials &mdash; there are no shared role PINs. To change someone's role or PIN, enter their existing Employee ID exactly as listed above.</div>
     <div class="fg"><label>Employee ID or email</label><input id="sec-new-eid"></div>
     <div class="fg"><label>Display name</label><input id="sec-new-name"></div>
-    <div class="fg"><label>Role</label><select id="sec-new-role"><option value="nursing">Resident Care Director (Nursing)</option><option value="med_aide">Med Aide</option><option value="caregiver">Caregiver</option><option value="billing">Business Office / Billing</option><option value="activities">Activities Coordinator</option><option value="owner">Owner / Administrator</option></select></div>
+    <div class="fg"><label>Role</label><select id="sec-new-role"><option value="nursing">Resident Care Director (Nursing)</option><option value="med_aide">Med Aide</option><option value="caregiver">Caregiver</option><option value="billing">Business Office / Billing</option><option value="office_manager">Office Manager</option><option value="activities">Activities Coordinator</option><option value="owner">Owner / Administrator</option></select></div>
+    <!-- `office_manager` IS OFFERED HERE AND THE DATABASE MAY STILL REFUSE IT.
+         The role is in ROLES_BY_APP.sairncare and in api/alf-auth.js's
+         provisioning set, so the server mints it -- but the Postgres CHECK on
+         sairncare_employee_auth.role only widens when block 5 of
+         sql/2026-10-14-michael-run-order.sql is run. Until then this option
+         produces a 23514 at the INSERT, which surfaces as a failed save rather
+         than a validation message. Said here rather than left to be found. -->
     <div class="fg"><label>PIN (6-8 digits)</label><input id="sec-new-pin" type="password" inputmode="numeric"></div>
     <button class="btn bp" onclick="secProvision()">Save Employee</button>
     <div id="sec-admin-msg" style="font-size:12px;margin-top:10px"></div>
@@ -1961,7 +1968,7 @@ function alfEnterApp(d){
 }
 
 function alfRoleLabel(r){
-  var m={owner:'Owner',nursing:'Nursing',med_aide:'Med Aide',caregiver:'Caregiver',billing:'Billing',activities:'Activities'};
+  var m={owner:'Owner',nursing:'Nursing',med_aide:'Med Aide',caregiver:'Caregiver',billing:'Billing',office_manager:'Office Manager',activities:'Activities'};
   return m[r]||r;
 }
 
