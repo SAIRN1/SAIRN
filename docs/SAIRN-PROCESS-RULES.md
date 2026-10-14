@@ -768,16 +768,52 @@ Load-then-push and push-then-load both end with live == repo; the hook only
 cares that they agree by the time you push. Load first anyway — a denied push
 costs nothing, a shipped-but-unloaded correction costs a wrong legal date.
 
-**The override is `SAIRN_SEED_GATE=off`, and it goes at the FRONT of the push
-command itself** — `SAIRN_SEED_GATE=off git push ...`, not a separate `export`
+**The override to reach for is `SAIRN_GATE_EXEMPT=seed`, which skips ONLY the
+seed check.** It goes at the FRONT of the push command itself, and it takes
+**two pushes on purpose**:
+
+    SAIRN_GATE_EXEMPT=seed git push origin main   # 1st: REFUSED, by design
+    SAIRN_GATE_EXEMPT=seed git push origin main   # 2nd: same sha -> seed only
+
+The first push is refused and writes a pending exemption **pinned to that exact
+tip sha**; that refusal is the thing you are meant to read, because it names
+what will be skipped and what was verified. The second push — same sha, same
+named check, within **15 minutes** (`EXEMPT_TTL_SECONDS`) — skips the seed check
+alone, consumes the exemption (single use), and is logged as SCOPED rather than
+blanket. Amend, rebase or add a commit and the exemption no longer applies: the
+push has to stop moving before it is let through. **Every other check still runs
+and can still deny.**
+
+The exemption store **fails CLOSED**, which runs the other way from the rest of
+this hook deliberately: if the store cannot be read or written the exemption
+does *not* apply and the check denies as normal. A broken store must produce
+more checking, never less.
+
+Only `seed` is exemptable today — a decision per check, not a limitation to
+route around, since a wildcard would be the blanket flag wearing a better name.
+**Re-read `EXEMPTABLE` in `tools/sairn_push_gate_hook.py` for the list** rather
+than trusting this paragraph, which is the kind of sentence that goes stale.
+
+**`SAIRN_SEED_GATE=off` still works and is deliberately not removed — and it is
+the WRONG first reach.** It is one flag, read before any check runs, and it
+disables *every* check in the hook. It bit the session that later built the
+scoped form: on 2026-09-25 hank needed the seed check skipped — three WV rules
+that cannot load until they are in the repo — the blanket flag was the only
+route, so the other thirteen checks went with it and had to be re-run **by hand
+afterwards** to discover whether any of them would have denied. One intended
+exemption, thirteen unintended, and a manual reconstruction to find out what
+was skipped. Keep it for a real incident in which the scoped form is itself
+broken.
+
+Either form goes at the FRONT of the push command, not in a separate `export`
 line. The hook reads the assignment out of the command text, because as a
 PreToolUse hook it runs inside Claude Code's process and inherits Claude Code's
 environment, not the environment of the command it inspects. A mention inside a
 quoted string — a commit message quoting the flag, which this repo's messages
 really do — deliberately does **not** count.
 
-**Say out loud when you use the override.** An override nobody mentions is how a
-gate gets hollowed out.
+**Say out loud when you use either override.** An override nobody mentions is
+how a gate gets hollowed out.
 
 The hook **fails OPEN** on any internal error, the same standard as the other
 hooks, because one that crashes closed gets disabled and then protects nothing.

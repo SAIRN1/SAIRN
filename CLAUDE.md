@@ -226,8 +226,38 @@ Full detail in **PR §3**. The short form:
    **UNVERIFIED**, not verified-good (PR §3.2).
 3. **Seed files** must already match the live licence — the push gate enforces
    this mechanically and DENIES on drift. "Could not tell" is not a pass.
-   Override is `SAIRN_SEED_GATE=off` at the **front of the push command itself**,
-   and **say so out loud when you use it** (PR §3.3).
+
+   **The override is `SAIRN_GATE_EXEMPT=seed`, which skips ONLY the seed check.
+   Reach for that, not the blanket flag.** It takes two pushes on purpose:
+
+       SAIRN_GATE_EXEMPT=seed git push origin main   # 1st: REFUSED, by design
+       SAIRN_GATE_EXEMPT=seed git push origin main   # 2nd: same sha -> skips seed only
+
+   The first push is **refused** and writes a pending exemption pinned to that
+   exact tip sha; **that refusal is the thing you are meant to read** — it
+   names what will be skipped and what was verified. The second push, same
+   sha, same named check, within **15 minutes**, skips the seed check alone,
+   consumes the exemption (single use) and is logged as SCOPED. Amend, rebase
+   or add a commit and the exemption no longer applies: the push has to stop
+   moving before it is let through. **Every other check still runs and can
+   still deny.** The exemption store fails CLOSED — if it cannot be read or
+   written the exemption does not apply and the check denies as normal, because
+   a broken store must produce more checking, never less.
+
+   **`SAIRN_SEED_GATE=off` still works and is still the WRONG first reach.**
+   It is one flag read before any check runs and it disables *every* check in
+   the hook, not just the seed gate. It bit the session that built the scoped
+   form: on 2026-09-25 hank needed the seed check skipped, the blanket flag was
+   the only route, and the other thirteen checks went with it and had to be
+   re-run by hand afterwards to find out whether any of them would have denied.
+   One intended exemption, thirteen unintended. Keep it for a real incident
+   where the scoped form itself is broken — and **say so out loud whichever one
+   you use** (PR §3.3).
+
+   Only `seed` is exemptable today. That is a decision per check, not a
+   limitation to route around: a wildcard would be the blanket flag wearing a
+   better name. Re-read `EXEMPTABLE` in `tools/sairn_push_gate_hook.py` rather
+   than trusting this paragraph for the list.
 4. **SQL that writes credential rows** must carry the recoverability guard — two
    end states are safe and only two. Read the app's own `PROVISIONING_ROLES`;
    SAIRNcode's is `admin`, not `owner` (PR §3.4).
