@@ -1,0 +1,18 @@
+B8 LIVE GATE PROBE -- the five SAIRNscape resources and leg_bookings
+data https://sairn.vercel.app/api/sd-data
+
+scp-auth login -> 200  token=YES
+
+resource               BARE KEY                   WITH SESSION               expected
+scp_jobs               403 FORBIDDEN              200 ok rows=2              bare 403 / session 200
+scp_irr_controllers    403 FORBIDDEN              200 ok rows=1              bare 403 / session 200
+scp_irr_zones          403 FORBIDDEN              200 ok rows=0              bare 403 / session 200
+scp_irr_schedules      403 FORBIDDEN              200 ok rows=0              bare 403 / session 200
+scp_water_features     403 FORBIDDEN              200 ok rows=1              bare 403 / session 200
+schedule               200 ok rows=0              --                         bare 200 (CONTROL)
+
+leg-auth login -> 200  token=YES
+write leg_bookings {id only} -> 400 BOOKING_WINDOW_REQUIRED   expected 400 BOOKING_WINDOW_REQUIRED
+    (the cancellation-exempt path is NOT driven live: proving it would mean writing a row)
+
+fail=0 could-not-run=0
