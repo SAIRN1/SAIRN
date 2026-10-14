@@ -421,6 +421,21 @@
         "SAIRN-handoff-h2-b28.md",
         "SAIRN-report-h2-b28.txt"
       ]
+    },
+    {
+      "id": "hover2-1791984254",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "hover2 batch b29 -- (1) check landed work from Drive digest then source: hank b10/cody b10/cc b9/fourth b18, skip unlanded (2) adversarial check sql/2026-10-14-michael-run-order.sql once it exists, skip until file exists (3) verify fourth b17 four removal-path specs + write-map doc (seven resources) against current source (4) re-check hank sairnlegacy role matrix when landed: staff narrowest band, leg_clergybookings shares overlap helper not copying leg_bookings status literal (5) verify hank b10 office_manager in all four places + clock_flags merge fix when landed (6) push external log repo no force confirm landed. FILES: hover-audit-log/ only, no platform docs/api/tools/tests/sql file. Own root deliverables SAIRN-handoff-h2-b29.md SAIRN-report-h2-b29.txt SAIRN-digest-h2-b29.txt written to Drive, not committed to platform repo.",
+      "claimed_at": "2026-10-14T13:24:14Z",
+      "claimed_at_epoch": 1791984254.7699273,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-h2-b29.txt",
+        "SAIRN-handoff-h2-b29.md",
+        "SAIRN-report-h2-b29.txt"
+      ]
     }
   ],
   "refusals": [
