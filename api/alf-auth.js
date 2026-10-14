@@ -55,6 +55,29 @@ const PROVISIONING_LABEL = 'an Owner';
 // 'owner' has for private-pay/HCBS billing across the whole roster --
 // same reasoning as every other app's MANAGEMENT_ROLES split this session.
 const MANAGEMENT_ROLES = roleSet({ owner: true, billing: true });
+// ── office_manager, AND WHAT IT MAY ACTUALLY DO (2026-10-14) ───────────────
+// Michael's decision, which b8 routed and left open: "an office manager may
+// grant billing access to a MAR." That is the WHOLE authority the role
+// carries, so it is declared here as its own named set rather than folded
+// into one of the two above -- an office manager is NOT a provisioner and is
+// NOT management. Both of those omissions are deliberate: PROVISIONING_ROLES
+// stays ['owner'] so credential creation is unchanged, and MANAGEMENT_ROLES
+// stays { owner, billing } so the roster's full-resident view is unchanged.
+//
+// A ROLE IN THE VOCABULARY WITH NO RULE WOULD BE WORSE THAN NO ROLE: SAIRNcare
+// gates every resource in api/sd-data.js by explicit allowlist, so an
+// office_manager session is refused 403 everywhere today -- fail-closed, which
+// is the right default and is why the role name was safe to add before the
+// action exists.
+//
+// ** DECLARED, NOT YET ENFORCED, AND SAID OUT LOUD RATHER THAN IMPLIED. **
+// No handler reads this constant yet, because the `mar_access_grant` action,
+// the alf_mar_access_grants table and the expiry evaluation are NOT built in
+// this batch. tests/mar_billing_grant.test.js is the failing-first suite that
+// specifies them and names this exact constant. Until that lands, this is the
+// one place that records WHO the grantor is, so the action cannot be built
+// against an inline literal somebody has to keep in step.
+const ALF_MAR_GRANT_ROLES = roleSet({ 'office_manager': true });
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -379,3 +402,7 @@ function upstream(res, detail) {
 // rule it is checking -- the same reason api/sd-auth.js gives.
 module.exports.PROVISIONING_ROLES = PROVISIONING_ROLES;
 module.exports.EMPLOYEE_TABLE = TABLE;
+// Exported for the same reason: when the mar_access_grant action is built it
+// must IMPORT this set, not re-list the role. SAIRNsenior paid for the
+// re-listed copy (cross-domain convention 7).
+module.exports.ALF_MAR_GRANT_ROLES = ALF_MAR_GRANT_ROLES;

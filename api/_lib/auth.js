@@ -234,8 +234,17 @@ const ROLES_BY_APP = roleSet({
   // Manager, full resident-billing visibility, no clinical write access --
   // same split as sairnsenior's billing role. 'activities' = Activities
   // Coordinator, lighter read-only roster access, no clinical or billing
-  // write access at all.
-  sairncare: ['owner', 'nursing', 'med_aide', 'caregiver', 'billing', 'activities'],
+  // write access at all. 'office_manager' = the front-office administrator
+  // (2026-10-14, Michael's decision on b8's open question). b8 left two
+  // resolutions open -- add the role, or declare `owner` to BE the office
+  // manager -- and the second is off the table. The authority the decision
+  // actually grants is narrow and named in api/alf-auth.js
+  // (ALF_MAR_GRANT_ROLES): an office manager may grant billing a
+  // time-limited, coding-only read of a resident's MAR. It is deliberately
+  // NOT in PROVISIONING_ROLES -- credential creation stays owner-only -- and
+  // deliberately NOT in MANAGEMENT_ROLES, because broad resident-billing
+  // visibility is a separate grant nobody decided.
+  sairncare: ['owner', 'nursing', 'med_aide', 'caregiver', 'billing', 'activities', 'office_manager'],
   // SAIRNroofing (2026-08-24). Mid-market roofing contractor, 20-100 employees,
   // single- and multi-location. Confirmed by Michael before Phase 1 rather than
   // invented and discovered wrong later -- SAIRNcare cost a scope correction for

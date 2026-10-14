@@ -26,7 +26,7 @@ create table if not exists sairncare_employee_auth (
   license_hash text not null,
   employee_id text not null,
   display_name text,
-  role text not null check (role in ('owner','nursing','med_aide','caregiver','billing','activities')),
+  role text not null check (role in ('owner','nursing','med_aide','caregiver','billing','activities','office_manager')),
   pin_hash text not null,
   pin_salt text not null,
   active boolean not null default true,
