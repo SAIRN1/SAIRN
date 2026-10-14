@@ -363,6 +363,108 @@ def _rev_parse_known(sha):
     return r.returncode == 0
 
 
+def ahead_behind():
+    """-> (ahead, behind, upstream) or (None, None, why). This clone vs its upstream.
+
+    Asked ONLY to explain an empty ref list. Nothing downstream branches on
+    it, so a failure here degrades the MESSAGE and never the verdict.
+    """
+    code, out, _err = git('rev-parse', '--abbrev-ref', '--symbolic-full-name',
+                          '@{upstream}')
+    up = (out or '').strip()
+    if code != 0 or not up:
+        return None, None, 'this branch has no upstream'
+    code, out, _err = git('rev-list', '--left-right', '--count',
+                          '%s...HEAD' % up)
+    parts = (out or '').split()
+    if code != 0 or len(parts) != 2:
+        return None, None, 'git rev-list --left-right --count %s...HEAD failed' % up
+    try:
+        return int(parts[1]), int(parts[0]), up
+    except ValueError:
+        return None, None, 'unreadable ahead/behind counts %r' % (parts,)
+
+
+def no_reflines_reason():
+    """Why stdin was empty, MEASURED rather than guessed. -> the message.
+
+    ── THIS REPLACED A DIAGNOSIS THAT WAS WRONG IN BOTH HALVES (cc b8) ───────
+    The old message named two causes -- "a SHELL SCRIPT, a pipe or any other
+    wrapper", or "a real anomaly" -- and cc b7 was denied twice by it while
+    nine commits behind, went looking for the wrapper it names, and found
+    none. Worse, later in the SAME batch this clone was behind again and the
+    ref lines arrived normally, so the message could not even be used to
+    recognise the state it had just described.
+
+    NO PATCH WITHOUT A REPRODUCTION. tools/prepush_refline_repro.py builds
+    real repositories with a recording pre-push hook and measures git itself
+    across eight states (git 2.54.0.windows.1, 2026-10-14):
+
+        A  ahead only ...................... 1 ref line,  git exit 0
+        B  ahead AND behind (b7's state) ... 0 REF LINES,  git exit 1
+        C  behind only, nothing to push .... 0 REF LINES,  git exit 1
+        D  up to date, nothing to push ..... 0 REF LINES,  git exit 0
+        E  ahead, through a pipe ........... 1 ref line,   git exit 0
+        F  ahead, stdin from /dev/null ..... 1 ref line,   git exit 0
+        G  ahead, from inside a .sh FILE ... 1 ref line,   git exit 0
+        H  ahead, from a python subprocess . 1 ref line,   git exit 0
+
+    SO THE WRAPPER EXPLANATION IS MEASURED FALSE. A pipe, a redirected stdin,
+    a shell script and a python subprocess all still receive the ref lines;
+    git hands them to the hook it runs, not to the process that asked. And the
+    real condition is the one nobody had named: GIT RUNS THE HOOK EVEN WHEN IT
+    IS NOT GOING TO SEND ANYTHING -- a non-fast-forward it will refuse itself,
+    or a push with nothing to update -- and then there are no refs to write.
+
+    WHAT DID NOT CHANGE: it still DENIES. Every branch below is a refusal,
+    because turning any of them into a pass would be a new way for a push to
+    skip this gate, and the measurement above is about git's inputs rather
+    than about the change being clean. In states B and C git fails the push by
+    itself; in state D nothing is being pushed, so a refusal costs nothing.
+    """
+    ahead, behind, why = ahead_behind()
+    head = 'register_feed_gate: git handed this hook NO ref lines.'
+    measured = (
+        '  MEASURED, NOT GUESSED (tools/prepush_refline_repro.py, 8 states, '
+        'git 2.54.0):\n'
+        '    git RUNS a pre-push hook even when it will not send anything, and '
+        'then there\n    are no refs to write. A pipe, a /dev/null stdin, a '
+        '.sh file and a python\n    subprocess ALL still receive the ref lines '
+        '-- the wrapper explanation this\n    message used to carry is false.\n')
+    if ahead is None:
+        return ('%s\n%s  AND THE STATE COULD NOT BE MEASURED HERE: %s. So which '
+                'of the three\n  shapes this is -- non-fast-forward, nothing to '
+                'push, or a real anomaly --\n  is a COULD-NOT-TELL, and this '
+                'gate DENIES rather than guess.' % (head, measured, why))
+    if ahead > 0 and behind > 0:
+        return ('%s\n%s  THIS CLONE IS %d AHEAD AND %d BEHIND %s, so the push '
+                'is a NON-FAST-FORWARD\n  and git is about to refuse it ITSELF '
+                '-- state B above. Nothing was checked,\n  and nothing was '
+                'going to be pushed either. This is NOT a finding about your\n'
+                '  commits.\n      git pull --rebase origin main   # then push '
+                'again\n  (and if a ledger conflicts: python '
+                'tools/sairn_rebase_resolve.py)'
+                % (head, measured, ahead, behind, up_label(behind)))
+    if ahead == 0:
+        return ('%s\n%s  THERE IS NOTHING TO PUSH: 0 ahead, %d behind. git runs '
+                'the hook anyway with\n  an empty ref list -- states C and D '
+                'above. Nothing is being pushed, so\n  nothing can be judged, '
+                'and nothing will land either.' % (head, measured, behind))
+    return ('%s\n%s  AND THIS ONE IS THE REAL ANOMALY: this clone is %d ahead '
+            'and 0 behind, which\n  is exactly the state that DOES produce ref '
+            'lines (state A). git supplied none\n  anyway, so the refusal is '
+            'earned -- not knowing what is in a change is not the\n  same as '
+            'knowing it is clean.' % (head, measured, ahead))
+
+
+def up_label(_behind):
+    """The upstream's name for a message, or a neutral word. Never raises."""
+    code, out, _err = git('rev-parse', '--abbrev-ref',
+                          '--symbolic-full-name', '@{upstream}')
+    return (out or '').strip() if code == 0 and (out or '').strip() \
+        else 'its upstream'
+
+
 def outgoing_range(stdin_text):
     """The range a pre-push hook is being asked about. (rng, problem).
 
@@ -427,21 +529,7 @@ def outgoing_range(stdin_text):
                 'nothing to judge -- this is a COULD-NOT-RUN,\n  not a finding '
                 'about a push. To see what the register is owed right now:\n'
                 '      python tools/register_feed_gate.py --report')
-        return None, (
-            'register_feed_gate: stdin is not a terminal and carried NO ref '
-            'lines.\n  TWO THINGS LOOK LIKE THIS AND ONLY ONE IS A PROBLEM:\n'
-            '    1. the push was issued from inside a SHELL SCRIPT, a pipe or '
-            'any other\n       wrapper. git hands the ref list to the hook it '
-            'runs; a nested `git push`\n       inside a script does not '
-            'reproduce it, so this gate sees nothing and\n       refuses an '
-            'ordinary push. ISSUE THE PUSH DIRECTLY -- that is the fix, and\n'
-            '       there is nothing wrong with the change.\n'
-            '    2. git really did invoke this as a pre-push hook and supplied '
-            'no refs.\n       git always writes one line per ref, so that is a '
-            'real anomaly and the\n       refusal is earned.\n'
-            '  This gate cannot tell the two apart from here, so it DENIES -- '
-            'not knowing\n  what is in a change is not the same as knowing it '
-            'is clean.')
+        return None, no_reflines_reason()
     for line in lines:
         parts = line.split()
         if len(parts) < 4:

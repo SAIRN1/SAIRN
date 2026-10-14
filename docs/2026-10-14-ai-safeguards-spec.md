@@ -376,14 +376,89 @@ per-employee one-time AI notice ack"*, with declared files including
    to leave draft until a human approved it is the opposite case: that is the
    whole point of (c) and (d), enforced server-side rather than in the UI. **It
    is stronger than what I specified** and the spec adopts it.
-3. **The notice ack is the one place to check for a collision.** hank is
-   building a per-employee one-time ack **and** `api/ai-notice.js`; §2.1 and
-   §3.2 put the ack columns on the existing `*_employee_auth` row and the
-   action on the existing `*-auth.js` endpoint. **If hank's lands as a separate
-   endpoint plus a separate table, that is two ack records for one fact** —
-   which is the thing to resolve before both ship, and it is hank's call, not a
-   defect in either.
+3. **The notice ack was the one collision, and it is now DECIDED — see §7.5.**
+   hank is building a per-employee one-time ack **and** `api/ai-notice.js`;
+   §2.1 and §3.2 put the ack columns on the existing `*_employee_auth` row and
+   the action on the existing `*-auth.js` endpoint. Two stores for one fact is
+   the repeat popup Michael's decision exists to prevent, so it is resolved
+   rather than left for whoever ships second.
 
 **Nothing in §1–§6 is rewritten to match.** A spec that silently re-aligns
 itself to whatever landed stops being reviewable; the differences are named
 here instead.
+
+### 7.5 THE ACK STORE — DECIDED 2026-10-14, fourth b15: the employee login record wins, `api/ai-notice.js` is the loser
+
+**DECIDED BY CHAT. This is a technical call, not a re-opening of Michael's
+decision — it is the direct consequence of it.** Michael's decision, recorded
+at §1(a) and §2.1 since this document was written, is that the acknowledgement
+is *"stored **under that employee's login**: the notice **version** and the
+**date**"*. There is exactly one record that **is** an employee's login:
+
+```sql
+alter table <prefix>_employee_auth
+  add column if not exists ai_notice_version text,
+  add column if not exists ai_notice_acked_at timestamptz;
+```
+
+**THE RULING, in one line each:**
+
+| | |
+|---|---|
+| **WINNER** | the two columns on `<prefix>_employee_auth` (§2.1), read and written through the app's existing `api/<prefix>-auth.js` login payload and one `ack_ai_notice` action (§3.2) |
+| **LOSER** | **`api/ai-notice.js`** — a separate endpoint, and whatever separate table or row shape it stores the ack in |
+| **state of the loser** | **delete it**, do not leave it unwired. An unwired second writer is the thing that comes back |
+
+**FIVE REASONS, and the first is the only one that would be enough on its own:**
+
+1. **Michael said "under that employee's login".** The credential row *is* the
+   login. A side table keyed by `(license_hash, employee_id)` is a copy of that
+   row's identity, and a copy is a thing that can disagree.
+2. **One read, on a path that already runs.** The login handler already
+   `SELECT`s the credential row to check the PIN, `active` and `role`; the two
+   columns ride along in that read. A separate store is a second query on every
+   login, on the one path that must stay fast.
+3. **Deactivation and deletion stay coherent for free.** `set_active`, the
+   last-admin refusal and the credential-deactivation lifecycle all act on that
+   row. A separate ack table outlives a deleted employee and becomes an orphan
+   nobody reaps — and this platform has 14 orphaned lock files to show what
+   happens to records nothing reaps.
+4. **Cross-tenant safety is already proven there.** `license_hash` scopes the
+   credential row, and T5 (cross-tenant ack) is the highest-value bug in this
+   feature. Reusing the row reuses a scoping that `api/_lib/auth.js` already
+   enforces and that every `*-auth.js` suite already exercises.
+5. **It is two columns against an endpoint plus a table plus a migration.**
+   The smaller change is the one that can be reviewed.
+
+**WHAT THE LOSER WAS RIGHT ABOUT, said plainly so the deletion does not throw
+it away:** a dedicated `api/ai-notice.js` is the natural home if the notice ever
+has to be acknowledged by somebody who is **not** an employee of a licence — an
+owner at signature time, or a customer-facing portal user. **That is §1(b),
+owner acceptance, which §2.2 puts on `license_keys` and §7.1 rules is not a
+runtime gate.** If a non-employee ack is ever needed, it is a new decision with
+a new store, not a resurrection of this one.
+
+### ROUTED TO hank — delete the loser and migrate
+
+1. **Delete `api/ai-notice.js`** and its route registration. If it has already
+   shipped a table, the migration is: copy any rows into
+   `<prefix>_employee_auth.ai_notice_version` / `.ai_notice_acked_at` matched on
+   `(license_hash, employee_id)`, **then drop the table in a later commit, not
+   the same one** — a drop in the same commit as the copy leaves no state to
+   re-run the copy from if it was wrong.
+2. **Rows that do not match an existing credential row are a finding, not a
+   loss.** Print them and stop; an ack for an employee who no longer exists is
+   evidence about the ack store, and silently dropping it is how a migration
+   reports success over data it destroyed.
+3. **`CURRENT_NOTICE_VERSION` stays one constant in `api/_lib/ai-safeguards.js`**
+   (§3.1, §7.3) — the delete must not leave a second copy of the version string
+   behind in the removed endpoint's place.
+4. **cody's T1–T6 do not change.** They were written against the credential-row
+   store from the start; after the deletion they test the only store there is.
+   **Add one arm:** `api/ai-notice.js` is gone and nothing imports it — the
+   negative control that stops it coming back.
+
+**WHAT THIS RULING DOES NOT DECIDE:** hank's `ai_source` / `ai_approved_by` /
+`ai_approved_at` **record-level approval columns**, which §7.4 already adopted
+and which are a different fact in a different place. **Only the notice ack is
+ruled on here.**

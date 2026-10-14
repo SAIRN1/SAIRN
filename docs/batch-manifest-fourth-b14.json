@@ -1,0 +1,54 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "fourth",
+  "batch": "b14",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/2026-10-14-ai-safeguards-spec.md s7: 7.1 no runtime gate, 7.2 SAIRNdental+SAIRNsenior category 2, 7.3 notice 2026-11; three questions removed; s7.4 records where the spec yields to hank's live b9 build"
+    },
+    {
+      "id": 2,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/2026-10-14-fourth-b14-hook-manifest-triage.md -- 13 stale record, 0 real drift; manifest last regenerated e8bfdf0d 2026-10-07T07:37:05; git status --porcelain -- tools/ .githooks/ empty"
+    },
+    {
+      "id": 3,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/2026-10-14-fourth-b14-weakening-review.md -- both signed off false: role-vocabulary-agreement.test.js:320-333 and sd-data-leg-bookings-toctou.test.js:149 + :358-368, read side api/sd-data.js:14967 and :14987"
+    },
+    {
+      "id": 4,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/2026-10-14-fourth-b14-fixture-priority-25.md -- 21 tools/ + 4 tests/ from 616 unfixtured; python scratchpad/priority25_b14.py --tools-only -> 21"
+    },
+    {
+      "id": 5,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/2026-10-14-fourth-b14-routed-to-cc.md + 3 rulings in docs/by-design-register.json; register_rows_b14.py idempotent: added 3 then added 0, rulings now 4"
+    },
+    {
+      "id": 6,
+      "title": "",
+      "status": "done",
+      "evidence": "pushed 225d0eb0..73b5577e without force; HEAD == origin/main == 73b5577e, 0/0, tree clean"
+    }
+  ],
+  "closed": {
+    "drive_verify": "PASS",
+    "verified_by": "python tools/drive_upload_verify.py --agent fourth --batch b14 --verify-only",
+    "criteria": "2026-10-13.1",
+    "deliverables": [
+      "SAIRN-handoff-fourth-b14.md sha256 7292b88756856501",
+      "SAIRN-report-fourth-b14.txt sha256 f57f188341a46231",
+      "SAIRN-digest-fourth-b14.txt sha256 f8eb4d3a73734df8"
+    ]
+  }
+}

@@ -10,10 +10,11 @@ The disclosure was a print(). The exit code -- the only thing a runner, a hook
 or a session summary actually reads -- did not carry it. The gap between those
 two readings was one print() wide.
 
-THREE SIGNALS, and the discriminator is the SUMMARY/EXIT CONSTRUCT rather than
-the word, because the false-positive shape was named in advance: a file that
-merely MENTIONS unproven in prose must not trip this, and the spec document's
-own filename appears in any grep for the word.
+FOUR SIGNALS (A4 added by cc b8 on Michael's instruction; A1-A3 are cody's),
+and the discriminator is the SUMMARY/EXIT CONSTRUCT rather than the word,
+because the false-positive shape was named in advance: a file that merely
+MENTIONS unproven in prose must not trip this, and the spec document's own
+filename appears in any grep for the word.
 
   A1  the word without the count -- an unproven verdict is emitted but the
       summary print does not carry an unproven number. The exact b5 defect.
@@ -23,11 +24,20 @@ own filename appears in any grep for the word.
   A3  the inverse, and the one that keeps A1 honest -- the summary prints an
       unproven count the file never sets. A state it cannot reach.
 
-WHAT IS NOT CHECKED, said here rather than discovered later. The third
-sub-rule -- "an arm may be unproven at most once; twice is a FAILURE" -- is a
-property of two consecutive RUNS and is invisible to a static reader of source.
-It is NOT implemented and NOT reported as clean. A4 is listed as NOT-CHECKED in
-every run's output so the three signals cannot be quoted as the whole rule.
+  A4  the suite can report an arm UNPROVEN and PERSISTS NOTHING -- no durable
+      write anywhere in it. The rule is not broken here, it is UNENFORCEABLE
+      here: you cannot detect "twice" unless the first time was recorded.
+
+WHAT IS STILL NOT CHECKED, AND A4 DOES NOT CLOSE IT. The third sub-rule -- "an
+arm may be unproven at most once; twice is a FAILURE" -- compares two
+consecutive RUNS, and no static reader of source can see a second run. A4
+checks that rule's PRECONDITION and nothing more, which is the only half a
+static read can reach; the comparison itself remains unimplemented here and
+every run says so. A4 is ONE-SIDED BY DESIGN: it fires only when persistence
+is definitively absent, because whether an existing write carries the unproven
+SET is not statically decidable, and a signal that guessed would be the
+"reports itself clean" failure this header already warns about. So a clean A4
+is not a statement that any suite obeyed the rule.
 
 REPORT-ONLY, and that is a decision held in writing rather than an accident:
 exit 1 on a finding, and NOT wired into the push gate. A checker promoted to
@@ -50,7 +60,11 @@ import os
 import re
 import sys
 
-CRITERIA_VERSION = '2026-10-13.1'
+# 2026-10-14.1 -- A4 added (cc b8). The version moves because the CRITERIA
+# moved: a run stamped 2026-10-13.1 assessed three signals and a run stamped
+# this one assesses four, and a verdict quoted without its stamp would be
+# two different claims under one number.
+CRITERIA_VERSION = '2026-10-14.1'
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -233,6 +247,32 @@ _OUTCOME_ID = re.compile(
     r'|ok|all_ok|allOk|is_ok|isOk|any_bad|bad|clean|is_clean|green)'
     r'(?![A-Za-z_0-9])', re.I)
 
+# A DURABLE WRITE OF ANY KIND -- the precondition A4 tests for (cc b8).
+# DELIBERATELY WIDE, because A4 fires on the ABSENCE of a match: a pattern
+# that misses a real write would produce a FALSE FINDING, while one that
+# matches something harmless only makes A4 quieter. The asymmetry decides the
+# direction of every judgement call here, and it is the opposite of the
+# narrowing _UNPROVEN_SET needs.
+#
+# Matched against code_only(), so a path inside a docstring is not a write.
+# NO LEADING LOOKBEHIND, AND THAT WAS A REAL BUG CAUGHT BY DRIVING IT: with
+# `(?<![A-Za-z_0-9])` in front, the dot-prefixed alternatives could never
+# match, because the character before `.write(` in `fh.write(` is `h`. A4 then
+# fired on two probes that plainly write fixtures -- a FALSE FINDING in the one
+# direction this signal can produce one. Over-matching (e.g. `reopen(`) only
+# makes A4 quieter, so the pattern is deliberately loose.
+_PERSISTS = re.compile(
+    r'(?:'
+    r'open\s*\([^)]*[\'"][waxr]\+?[bt]?[\'"]'          # open(..., 'w'/'a'/'x')
+    r'|io\.open\s*\([^)]*[\'"][wax]'
+    r'|json\.dump\s*\('
+    r'|\.write\s*\('
+    r'|\.writelines\s*\('
+    r'|writeFileSync|appendFileSync|createWriteStream|promises\.writeFile'
+    r'|fs\.writeFile|fs\.appendFile'
+    r'|shutil\.copy|os\.replace|os\.rename'
+    r')')
+
 
 def _lines(norm):
     """LOGICAL lines, not physical ones, with the first physical line number.
@@ -395,6 +435,43 @@ def analyse(path, src):
             'ever sets one -- it reports a state it cannot reach, which is '
             'the inverse defect and the one that keeps A1 honest.'))
 
+    # ── A4: THE RULE'S PRECONDITION, WHICH *IS* STATIC (cc b8) ─────────────
+    # The fourth rule is "an arm may be unproven AT MOST ONCE -- twice means
+    # the evidence is not intermittently unavailable, it is unavailable"
+    # (docs/2026-10-13-cody-b6-methodology-unproven.md:124). The comparison it
+    # asks for spans two RUNS and a static reader cannot see a second run, so
+    # this tool has printed `A4 NOT CHECKED` on every line of every run since
+    # it was built -- correctly, and permanently.
+    #
+    # WHAT *IS* VISIBLE IS THE PRECONDITION, and it is the whole rule's load-
+    # bearing half: you cannot detect "twice" unless the FIRST time was
+    # recorded somewhere a later run can read. A suite that records an unproven
+    # arm and persists nothing has made the rule UNENFORCEABLE for itself, for
+    # ever, and no amount of running it will produce the comparison.
+    #
+    # IT IS ONE-SIDED ON PURPOSE. It fires only when persistence is
+    # DEFINITIVELY ABSENT -- no durable write of any kind in the file. When a
+    # write exists, whether the thing written is the unproven SET is not
+    # statically decidable, so A4 says nothing rather than guessing, and the
+    # run still prints that the two-run comparison itself is unchecked. A
+    # signal that claimed the stronger thing would be the "reports itself
+    # clean" failure this tool's own header warns about.
+    # SEARCHED IN `norm`, NOT `bare`: code_only() blanks string literals, so
+    # the mode argument in `open(p, 'w')` is spaces by the time it gets
+    # there and no quote-based alternative could ever match. A fixture
+    # string that merely CONTAINS a write counts as persistence here, which
+    # is the safe direction for a signal that fires on absence.
+    if (emits or setters) and not _PERSISTS.search(norm):
+        where = (emits[0] if emits else setters[0])[0]
+        findings.append((
+            'A4', where,
+            'this suite can report an arm UNPROVEN and persists nothing -- no '
+            'durable write anywhere in the file -- so "unproven at most once" '
+            'can never be enforced for it: the second consecutive unproven run '
+            'is indistinguishable from the first. The rule is not violated '
+            'here, it is UNENFORCEABLE here, which is the precondition the '
+            'rule needs and the only half of it a static read can see.'))
+
     return findings, {
         'summary_construct': bool(summaries),
         'unproven_mechanism': bool(emits or setters),
@@ -432,8 +509,13 @@ def main(argv):
 
     print('UNPROVEN ARM CHECK -- criteria %s' % CRITERIA_VERSION)
     print('  REPORT-ONLY. Not wired into the push gate; see this file\'s header.')
-    print('  A4 ("unproven at most once") is NOT CHECKED -- it is a property of')
-    print('  two consecutive RUNS and is invisible to a static read of source.')
+    print('  A4 IS CHECKED AS A PRECONDITION ONLY, and the distinction is the')
+    print('  honest part: the rule ("unproven at most once") compares two RUNS,')
+    print('  which no static read can see. A4 fires when a suite can report an')
+    print('  arm unproven and PERSISTS NOTHING -- so the comparison the rule')
+    print('  asks for could never happen for that file. THE TWO-RUN COMPARISON')
+    print('  ITSELF REMAINS UNCHECKED by this tool, and a clean A4 is not a')
+    print('  statement that any suite obeyed the rule.')
     print('')
 
     files = [only] if only else targets(root)
@@ -501,7 +583,7 @@ def main(argv):
         print('      assessed here and this file is NOT part of a clean A1')
         print('      verdict. A2 DID run on it: A2 needs only the mechanism and')
         print('      the exit expression, which is the correction ablation forced.')
-    for sig in ('A1', 'A2', 'A3'):
+    for sig in ('A1', 'A2', 'A3', 'A4'):
         print('  %s findings          %d' % (sig, len(by_sig.get(sig, []))))
     if unreadable:
         print('  UNREADABLE           %d  -- counted, never folded into clean'
@@ -509,7 +591,7 @@ def main(argv):
 
     if all_findings:
         print('')
-        for sig in ('A1', 'A2', 'A3'):
+        for sig in ('A1', 'A2', 'A3', 'A4'):
             for rel, line, detail in by_sig.get(sig, []):
                 print('%s  %s:%d' % (sig, rel, line))
                 print('    %s' % detail)
@@ -526,7 +608,9 @@ def main(argv):
         return 1
     print('NO FINDING over %d file(s) -- %d of them IN SCOPE for A1/A2, %d NOT '
           'ASSESSED.' % (len(files), n_scope, len(not_assessed)))
-    print('A4 remains NOT CHECKED. Neither number above may be quoted alone.')
+    print('A4 found no suite with an unproven mechanism and no durable write.')
+    print('THE TWO-RUN COMPARISON A4 IS NAMED FOR REMAINS UNCHECKED -- see the')
+    print('header. Neither number above may be quoted alone.')
     return 0
 
 
