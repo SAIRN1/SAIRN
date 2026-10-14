@@ -28621,7 +28621,7 @@
       "recurrence_open": "The new test reads sql/ files, so a CHECK widened LIVE and never written back is still invisible -- the exact state three audit-log tables were in until 2026-10-13. Nothing yet compares any app's HTML, the third copy of these vocabularies, except SAIRNfreedom's."
     },
     {
-      "commit": "028d7275cab7",
+      "commit": "297274b53149",
       "date": "2026-10-14",
       "subject": "fix(tier a review gate): save_reviews stops losing a writer on Windows, with the failing-first probe that caught it",
       "files": [
@@ -28651,7 +28651,7 @@
       "factors_unknown_reason": "cody measured the behaviour and routed the fix; why MoveFileEx semantics were not considered when the atomic write was added has not been investigated by anybody and inventing a cause here would be a guess"
     },
     {
-      "commit": "cb1849a77543",
+      "commit": "ae872b6c5d3f",
       "date": "2026-10-14",
       "subject": "fix(scope gate): an unfetched remote tip is a could-not-read about the REMOTE, not a range error about the change -- plus the ruling fourth asked for",
       "files": [
