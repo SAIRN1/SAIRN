@@ -478,6 +478,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_scope_gate_unfetched_base_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(tmp, ignore_errors=True)"
+    }
+   ],
+   "sha": "21dd8e697fb61a139c60f3837f62f9a7ff723b04",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/report_only_checks.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "21dd8e697fb61a139c60f3837f62f9a7ff723b04",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/_lib/courtlistener-rate-limit.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -1778,6 +1799,31 @@
     }
    ],
    "sha": "75108ef74ad200273466a7015063a67ddb973192",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_save_reviews_retry_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "number is disclosed with a ceiling rather than asserted to zero. One combined"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(tmp, ignore_errors=True)"
+    }
+   ],
+   "sha": "76ad4206c440552f020f9c1b3418337599e8bcf6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/tier_a_review_gate.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "76ad4206c440552f020f9c1b3418337599e8bcf6",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -3371,6 +3417,23 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "c465743b34b08d59d050ff5507e6d58f01d247dc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_drive_upload_verify_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "arms.append(('...and the sync-mount limit is PRINTED rather than folded '"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "FINDING ABOUT THE BATCH, not a crash and not a skip."
+    }
+   ],
+   "sha": "c51a7db8b86506ace2d3326a65581db8c92e5a67",
    "criteria_version": "2026-10-06.1"
   },
   {
