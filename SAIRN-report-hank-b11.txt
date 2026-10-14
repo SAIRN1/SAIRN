@@ -1,0 +1,572 @@
+REPORT hank b11
+
+SAIRN batch report -- session hank, batch b11, 2026-10-14.
+Working directory C:\Users\marsh\Documents\SAIRN-hank, branch main.
+
+PUSH STATE, MEASURED RATHER THAN ASSERTED
+    git fetch -q origin main
+    git rev-list --left-right --count HEAD...origin/main   ->  0 0
+    git rev-parse HEAD                                     ->  ffb2463a
+No --force at any point. NEITHER OVERRIDE FORM WAS USED -- not the blanket
+SAIRN_SEED_GATE=off and not the scoped SAIRN_GATE_EXEMPT=seed. Five gate
+refusals, five satisfied, zero overridden. Five merge commits, every retry a
+`pull --no-rebase` so no register record's sha moved.
+
+  e3858f19  item 1  the MAR access grant, billing out of family_mar by default
+  9841e14a  item 2  the SAIRNvet role matrix, 42 resources
+  44abebb3  item 3  AI provenance at six client save sites
+  d6e58c61  item 4  three transports that could reject, and the third state
+  fe8e6cb7          four register records
+  d1997189          the two regenerated documents, ledger rows, arm D1b
+  c3c38431          the Tier A obligation, 33 resources, assigned to fourth
+  45ab59d5          the SQL preflight fix
+  3c143e1b          the gate's own ledger row
+  a53650cd          the live probe and every captured red beside its green
+  ffb2463a          the handoff, written BEFORE this report
+
+Five sessions push to this branch. Re-derive with `git log --oneline origin/main`
+rather than quoting these shas indefinitely.
+
+
+ITEM 1 -- THE MAR ACCESS GRANT. DONE. 28/28. ONE HALF NEEDS MICHAEL.
+
+tests/mar_billing_grant.test.js is the spec and the brief named its 16 failing
+arms as such. RED CAPTURED FIRST: 8 passed / 16 failed / 4 unproven
+(docs/hank-evidence/b11/b11-item1-red.log). GREEN: 28 / 0 / 0.
+
+WHAT WAS ACTUALLY OPEN. `alf_mar` -- the resource that OWNS the medication
+table -- has refused billing on both read and write since it was written
+(ALF_MAR_ROLES = {owner, nursing, med_aide}). But the alf_family_contacts
+action `family_mar` gated on ALF_FAMILY_READ_ROLES = {owner, billing, nursing},
+so a billing clerk 403'd from the MAR directly received a named resident's
+whole medication administration record by asking for that resident's family
+contact -- and because `billing` sits in the BROAD half of that set, the
+assignment scope was skipped entirely, so it was every resident on the licence
+rather than one.
+
+THE THIRD DOOR THE SAME ROLE FOUND TO THE SAME DATA, which is why the answer is
+a vocabulary rule and not a third one-off patch:
+  2026-10-05  H1 #877 -- family_mar had NO caller gate at all, fixed by
+              inheriting `read`'s role set, which is how billing arrived.
+  2026-10-07  7ed27c5e -- derive_charges handed billing the medication NAME for
+              every dose for a named resident for a whole month. Redacted.
+  today       family_mar itself.
+The #877 author declared this and declined to narrow it in passing. That was
+the right call -- a gate disagreeing with its sibling was the defect being
+repaired -- and this batch is the decision arriving.
+
+THE FIX, AND THE SMALLER DIFF THAT WOULD HAVE BEEN WRONG. family_mar stops
+inheriting the contact list's set and gets its own
+ALF_FAMILY_MAR_ROLES = {owner, nursing}. Dropping `billing` from
+ALF_FAMILY_READ_ROLES itself was one word and the wrong change: that set also
+guards name, phone, email and the consent trail, and a business office that may
+not see medication status still has to be able to ring a resident's daughter
+about an invoice. Michael's decision was about the MAR.
+
+THE GRANT. `mar_access_grant` on alf_family_contacts, declared in
+api/_resources/sairncare.js with its reasoning on the same line as the verb
+(extra-actions.test.js requires that). Four things are narrow and all four are
+enforced in the handler:
+  WHO MAY GRANT   ALF_MAR_GRANT_ROLES, IMPORTED from api/alf-auth.js rather
+                  than re-listed -- that file's own comment asks for exactly
+                  this, and SAIRNsenior paid for the re-listed copy.
+                  `office_manager` and nothing else: not PROVISIONING_ROLES,
+                  which would make owner a grantor, and not MANAGEMENT_ROLES,
+                  which contains billing and would let the grantee self-grant.
+  TO WHOM         one named employee. A grant to a ROLE is not time-limited
+                  access, it is a role change with a timer on it.
+  FOR WHAT        one contact, and through it the ONE resident on that
+                  contact's STORED row. The resident is never taken from the
+                  caller, because a resident_id parameter is a parameter
+                  somebody edits.
+  FOR HOW LONG    expires_at is REQUIRED (absent is a refusal, not a default),
+                  must be in the future, and may not exceed
+                  ALF_MAR_GRANT_MAX_HOURS = 72 -- three working days, the
+                  length of the coding task the grant exists for, declared once
+                  rather than inline at the comparison.
+
+EXPIRY IS COMPARED TO now() ON EVERY READ and that is the whole correctness of
+"expiring on its own". A grant that stops working only when a sweeper deletes
+the row is live for as long as the sweeper is down and nothing anywhere would
+say so. The grant is matched server-side on licence + contact + grantee AND
+re-checked in memory on all three plus revoked_at and expires_at: the
+server-side filter is the cheap half, the in-memory half is what holds if a
+filter is ever dropped from the query string.
+
+A SECOND BOUND WAS ADDED BEYOND THE SPEC AND IT IS NARROWER, NOT WIDER.
+ALF_MAR_GRANT_GRANTEE_ROLES = {billing}: the decision names the business
+office, so a grant row written for a caregiver admits nobody, and the narrow
+read path issues no grants query at all for the roles that could never hold
+one. It also removed a regression -- without it the new lookup broke four
+behaviour arms of cody's tests/sd_data_family_mar_gate.js, whose fixture does
+not mock the grants table. Found by running that suite at HEAD in a detached
+worktree and comparing, not by assuming.
+
+A MISSING TABLE IS NOT AN OPEN DOOR. 404/400 from PostgREST on the grants table
+means the migration has not run; the grant is then absent, the caller falls
+through to the assignment tier and a billing session is refused. Fail-closed,
+and the only cost of the unrun migration is that no grant can be exercised.
+
+THE AUDIT. Three event types, written through api/_lib/audit.js with the table
+name DERIVED from the app id rather than typed -- that file keeps one app->table
+map and derives its own allowlist from it, for the stated reason that a
+mistyped name does not fail loudly, it lands in the allowlist refusal and
+becomes a server-log line nobody reads. This is the first caller in
+api/sd-data.js. mar_access_granted on a grant, mar_access_grant_refused on a
+refused attempt (api/*-auth.js audits every outcome of set_active including
+refusals, and an attempt to self-grant sight of a medication record is the
+single most worth-recording event this feature has), and mar_access_read on
+EACH granted read -- one row per grant tells you access was possible, one per
+read tells you what was actually looked at, and only the second is an access
+log. Only the granted reads are logged: a nursing read is this app's normal
+clinical traffic and logging it here would bury the handful of rows the control
+exists to surface.
+
+ABLATED FOUR WAYS, EACH LAYER ALONE (b11-item1-ablation.log):
+  the role narrowing removed       -> 6 FAIL (A1 A3 C5 C6 C7 D4)
+  the read-time expiry removed     -> 1 FAIL (C5)
+  the grantor role gate removed    -> 3 FAIL (B3 B4 D3)
+  the grantee scoping removed      -> 1 FAIL (C6)
+
+sairncare.html got `office_manager` at all three sites in the same change --
+:651 (the staff Position select), :1018 (the credential Role select) and :1964
+(the label map) -- with a comment at the second saying out loud that the server
+mints the role and THE DATABASE MAY STILL REFUSE IT 23514 until block 5 of the
+b10 run order is run.
+
+SQL, IN A NEW FILE, NOT THE b10 RUN ORDER. sql/2026-10-14-hank-b11-mar-grant.sql
+-- two numbered blocks, each independently runnable, each idempotent, each with
+its verification query and THE ANSWER IT MUST GIVE, and block 1 extracted
+verbatim from sql/sairncare_mar_access_grants_schema.sql with both source
+sha256s in the header. The repo stays the source of truth: both new tables are
+schema files first.
+  BLOCK 1  the grant table. UPDATE is granted and DELETE is not, deliberately
+           different from the audit log: revocation before expiry is an UPDATE
+           of revoked_at, while a deleted grant is an access decision nobody
+           can reconstruct and the reads it authorised would point at a
+           grant_id that no longer resolves. The verify asks
+           information_schema for exactly SELECT, INSERT, UPDATE and nothing
+           else -- a DELETE row means the revoke did not take.
+  BLOCK 2  the three audit event types. tools/sairn_sql_preflight.py REFUSED an
+           earlier draft with MISSING_TABLE sairncare_audit_log and it was
+           right: that schema file's header has said NOT RUN since 2026-10-11,
+           so `alter table` alone would have failed outright on a clean
+           database -- AFTER block 1, half way through a migration. The block
+           now creates the table (carrying the eight values inline) and then
+           performs the drop/add, correct in both worlds and idempotent in
+           both. Wrapped in begin/commit and must be pasted whole: between the
+           DROP and the ADD the table accepts ANY event_type.
+
+
+ITEM 2 -- THE SAIRNvet ROLE MATRIX. DONE. 31/31. NO SQL AT ALL.
+
+Per docs/2026-10-14-fourth-b15-sairnvet-role-matrix.md.
+
+MEASURED BEFORE IT WAS BUILT: `grep -nE "SV_[A-Z_]*ROLES" api/sd-data.js`
+returned nothing. So a `frontdesk` token read and wrote sv_soapnotes,
+sv_labresults, sv_surgery, sv_imaging and sv_invoicing exactly as the owner
+did. The 42nd resource is sv_controlled, the DEA-relevant register, gated since
+2026-09-13 -- and the existence of that one gate is part of why the other 41
+looked like policy rather than a 1-of-42 coverage figure. The 2026-09-21
+session gate (6fb6d696) closed "no session" and left "any session" open.
+
+api/_lib/sv-roles.js: one table, 42 rows, one decide(), consulted ONCE before
+the read/write dispatch so neither branch is reachable without it -- the same
+shape api/_lib/leg-roles.js has, not a third spelling of it. The band
+assignment is TRANSCRIBED from the spec, and the 42 names were reconciled
+against the handler's own SV_RESOURCES dict read out of the source, in BOTH
+directions, before a line of the table was written: 42 handler keys, 42 spec
+entries, zero in either and not the other.
+
+sv_controlled IS UNTOUCHED AND ITS ROW IS DERIVED, NOT RE-LISTED. Every role in
+that row starts at refused and is raised only by api/sv-auth.js's
+PRESCRIBER_ROLES, so a seventh role added to the vocabulary is refused by
+construction rather than by somebody remembering a column. Arm A5 compares the
+row to that set role by role; arm C4 asserts the new pre-dispatch block does
+not reference api/sv-witness.js at all, which the spec requires because that
+file carries a legal act.
+
+NO DEPRECATED ROLE EXISTS IN THIS APP, said rather than assumed. SAIRNlegacy
+needed `staff` kept as a deprecated row mapped to the narrowest band because
+promoting it would have granted 15 money resources to everybody who had a login
+yesterday. All six names in ROLES_BY_APP.sairnvet are current roster values, so
+there is no migration tier here and no row carries one. A byte-identical copy of
+the SAIRNlegacy table would have been wrong twice over.
+
+TWO RULES THAT CANNOT BE EXPRESSED AS ROLE GRANTS:
+  sv_audit_log is APPEND-ONLY for every role INCLUDING the owner. It is the
+  dosing trail; a dosing record that can be edited is not a dosing record.
+  Enforced by a separate structure consulted independently of the role table,
+  because a rule expressed only as a role grant is a rule a role grant can
+  erase. A lookup that cannot be performed REFUSES.
+  sv_scribe_consent write is owner/dvm only -- tech drops from the band's `rw`
+  to read, because a consent recorded by somebody who cannot take consent is
+  worse than no record.
+
+THE REFUSAL MESSAGE NAMES THE REQUIREMENT, NOT JUST THE ROLE, on the one
+resource where the distinction matters. The spec's V3 asks for it: a technician
+told only "forbidden" asks for their role to be widened, and the true answer is
+that a controlled-substance entry is a legal act by a licensed veterinarian and
+no amount of widening changes that.
+
+RED CAPTURED FIRST: 19 passed / 11 failed (b11-item2-red.log). GREEN: 31 / 0 / 0.
+  ARM D1 drives ALL 492 (resource, role, action) combinations against the table
+  in both directions. D2 is the control that the table holds both verdicts --
+  374 ALLOW / 130 DENY of 504 -- so D1 is comparing two real answers rather
+  than one constant. D3 pins that a non-sv resource answers NOT_SV and an
+  UNKNOWN sv_ resource answers DENY, so a 43rd resource with no row is refused
+  rather than defaulted open.
+  ARM A6 FAILED ON FIRST RUN AGAINST MY OWN WORK: sv_scheduling's `why` was
+  four words restating the resource name. That arm IS the consumer of that
+  field and is what keeps it from being dormant -- the same lesson b10 paid for
+  on leg_plots.
+  ARM V11 CAME BACK STRONGER THAN THE SPEC PREDICTED and is recorded as what
+  happens rather than reworded: a role from another app cannot be SIGNED into a
+  sairnvet session at all -- signSessionToken throws -- so there is no token to
+  present and nothing for the handler to refuse.
+  ARM V10 CANNOT ASSERT 200 and says so: sv_controlled's write path runs the
+  witnessing lock after the role gate, so the honest assertion is that the
+  refusal is the WITNESS lock's (WITNESS_REQUIRED) and not the role table's. A
+  200 there would mean the witnessing lock had stopped working.
+
+ABLATED THREE WAYS (b11-item2-ablation.log):
+  the role decision removed        -> 8 FAIL (V1 V2 V3 V4 V5 C2 C3 D1)
+  the append-only lock removed     -> 3 FAIL (V6a V6b C3)
+  the sv_controlled message        -> 1 FAIL (V3)
+
+ENTIRELY LIVE ON DEPLOY. The role vocabulary and the Postgres CHECK already
+agree and api/role-vocabulary-agreement.test.js already compares them, so this
+item needs no SQL and no migration.
+
+
+ITEM 3 -- AI PROVENANCE AT THE CLIENT. DONE. 18/18. NO SQL.
+
+The server half landed in b9 and stated its own limit out loud: `ai_source` is
+a CLAIM BY THE WRITER, so "a client that does not stamp it gets no gate". No
+production client stamped it on a high-risk resource, so the approval gate was
+REACHABLE AND NEVER REACHED -- and no server test can find that, which is why
+this suite reads the real HTML files.
+
+SIX SITES:
+  sairnmechanical saveDoc                -> mech_docs            claude:doc-scan
+  sairnroofing    saveMeasurementReading -> rf_photos            claude:measurement-photo
+  sairngrounds    grdUploadProgressPhoto -> grd_progress_photos  claude:grd-progress-photo
+  sairnscape      scpUploadProgressPhoto -> scp_progress_photos  claude:scp-progress-photo
+  stonedesk       revSend + the preview  -> sd_rev_log (local)   claude:review-request
+  sairngrounds    msbHandleScanResult    -> msb_bottle_scans     claude:bottle-scan
+
+THE TAGS ARE DISTINCT AND ARM A5 FAILS IF TWO ARE THE SAME. That is the whole
+reason the field is a tag and not a boolean: a boolean makes "which surface
+produced this" unanswerable the moment two surfaces write one resource.
+
+rf_photos IS THE ONE THAT CHANGES BEHAVIOUR RATHER THAN ADDING A LABEL. It is
+in HIGH_RISK_AI because an insurance supplement is built on the model's read of
+a measurement photograph, and the record carries no `status` -- an absent status
+is FINAL -- so the server now refuses the write unless a signed-in employee is
+on the request, and sets ai_approved_by ITSELF from the verified session,
+overwriting whatever the client sent. rfDataRaw already refuses to send without
+a session, so the refusal is not reachable from that button; it is the honest
+answer if a session expires mid-form. WHAT THE APPROVER IS ATTESTING TO is
+written at the site, because their name goes on the footer: the operator
+reviewed the QUANTITIES in the form, which is what the existing correction
+reason has always said, not necessarily the model's prose.
+
+THE AUTO-SAVE SITES HAVE NO APPROVER AND DO NOT CLAIM ONE. All of these save the
+moment the model answers. aiFooter() therefore reads "AI-assisted - not
+reviewed", which is the TRUE sentence, and arm B2 pins that it is that string
+and not an empty one -- a missing footer and an unreviewed one read identically
+to a reader and only one of them is true. ARM B1 MEASURES, ACROSS SIX FILES,
+THAT NO CLIENT ASSIGNS ai_approved_by ANYWHERE. Filling it with whoever pressed
+the button would turn "nobody has checked this" into "checked by the person who
+took the photograph", which is worse than no field at all.
+
+STONEDESK'S REVIEW REQUEST GENERATOR. The drafted SMS goes to a named customer
+UNDER THE SHOP'S NAME and the preview showed it with nothing indicating where
+the words came from. Labelled on the SUCCESS RENDER ONLY -- the sairnfreedom
+convention, because a label on a "could not reach the service" box makes the
+label mean nothing, which is how a disclosure stops being read. The wording
+lives in ONE place and is a placeholder: the spec is explicit that the final
+text is the lawyer's and that shipping an AI-written legal notice is the exact
+failure the policy is about. sd_rev_log now carries ai_source, and that row the
+CLIENT must stamp because the log is local-only -- there is no server write for
+the shared gate to see.
+
+msb_bottle_scans -- THE EXCLUSION-vs-FLAGGED DISCREPANCY, RESOLVED BY READING
+BOTH SIDES AT file:line RATHER THAN RECONCILING FROM MEMORY.
+  EXCLUDED  api/_lib/ai-scan-redaction.js:100 lists it in DELIBERATELY_EXCLUDED,
+            reason "NO MODEL PROSE IS STORED". TRUE, and verified at
+            sairngrounds.html:4779: the row is
+            {id, product_id, brand_read, fill_pct, date, note} -- two scalars
+            out of msbParseScanResult() (:4754) plus a `note` this app computes
+            at :4771-4777 from local cost data. There is no free model text to
+            redact.
+  FLAGGED   the same row IS a model's output. `brand_read` is the string the
+            model read off a label and the row is synced to the server at
+            :4781 with no provenance field at all.
+  THEY ARE NOT IN CONFLICT AND THAT IS THE RESOLUTION. Redaction and disclosure
+  are two different safeguards; an exclusion from one was being read as an
+  exemption from the other. Redaction has nothing to do; disclosure has
+  everything to do. It now carries ai_source and STAYS OUT OF BOTH RISK MAPS --
+  HIGH_RISK_AI and NOT_HIGH_RISK_AI partition AI_SCANNED_TEXT and this resource
+  is deliberately outside that population, so an entry in either would fail
+  api/ai-safeguards.test.js's phantom arm. Arms E1, E2 and E3 assert all three
+  facts.
+
+SAIRNFREEDOM WAS ALREADY DONE IN b9 and is RE-MEASURED rather than redone or
+silently skipped: four callClaude sites, four sfAiLabel renders, ai_source on
+sf_bottle_fills. Arm D1 is what will notice a fifth surface added without a
+label. Said out loud because "already done" and "not done" must never look the
+same in a report.
+
+RED CAPTURED FIRST: 10 passed / 7 failed / 1 unproven. GREEN: 18 / 0 / 0.
+Section F drives the server gate on the resource a real client now stamps,
+because "the gate works" and "the gate works for the surface that just switched
+it on" are different claims: F1 the refusal, F2 the forged-approver overwrite,
+F3 the draft exemption, F4 the control that the three not-high-risk sites get
+disclosure and no gate.
+
+ABLATED FOUR WAYS (b11-item3-ablation.log):
+  the stonedesk label removed      -> 1 FAIL (C1)
+  the rf_photos stamp removed      -> 1 FAIL (A2) + 1 UNPROVEN (A5)
+  the bottle-scan stamp removed    -> 1 FAIL (E3)
+  two tags made identical          -> 1 FAIL (A5)
+
+
+ITEM 4 -- CODY-ROUTED. DONE. 81/81. AND HALF THE FINDING IS REFUTED.
+
+REFUTED, WITH file:line. "stonedesk sdData() has no 15s abort" is wrong. It has
+carried `signal: sdFetchTimeoutSignal()` since 2026-09-11 --
+stonedesk.html:30084, with SD_FETCH_TIMEOUT_MS = 15000 at :30065. The sweep
+reported "fetch was called with no signal" because
+`_sdWriteOk[resource] = false` on sdData's FIRST LINE, outside its own try,
+threw before fetch was ever reached. THAT ARM WAS A SYMPTOM, NOT A SECOND
+FINDING. Taking the routed claim at face value would have produced a change to
+a transport that already had the thing it was said to be missing.
+
+CONFIRMED, AND THE REJECTIONS WERE PRINTED RATHER THAN INFERRED. A read-only
+reproduction drove the three real transports against a fetch that never answers
+and printed what came back:
+  sairncare   ReferenceError: alfNote is not defined      (in the catch)
+  sairnscape  ReferenceError: scpLastErr is not defined   (in the catch)
+  stonedesk   ReferenceError: _sdWriteOk is not defined   (first line)
+
+THE FIX IS THE RULE THIS CODEBASE HAD ALREADY WRITTEN DOWN AND NOT APPLIED TO
+ITSELF. sdData's own catch says it: "a rejecting transport is the defect
+relocated, not fixed: every `await` caller would throw out of its own handler
+and skip the toast it exists to show. A failure path that can itself fail is the
+shape this session has spent two days on, so it is not left to the reporter
+being present." It guarded its REPORTER for exactly that reason and left its
+bookkeeping line outside the guard. All three failure paths can no longer throw,
+and IN EVERY CASE THE `return null` IS OUTSIDE THE GUARD, so the vocabulary each
+caller is written for is delivered whatever the reporter does -- a guard that
+wrapped the return too would be the same bug one level in.
+
+CALIBRATED AGAINST THE TWELVE THAT PASSED: their equivalents are either globals
+the harness pre-stubs or reporters already wrapped. The property the arm names
+is "cannot reject", and these three were the three that could.
+
+77 passed / 4 FAILED -> ALL 81 TRANSPORT TIMEOUT ARMS PASS (15 apps).
+ABLATED, EACH GUARD ALONE (b11-item4-ablation.log):
+  sairncare's reporter guard removed  -> 3 FAIL
+  sairnscape's recorder guard removed -> 1 FAIL
+  stonedesk's first-line guard removed -> 2 FAIL
+
+api/alf-append-only-read-order.test.js NOW HAS THREE OUTCOMES. Its FILE-level
+guards already exited 2 COULD NOT RUN when a file it does not own was missing.
+Its PER-ARM guards did not: an arm that could no longer FIND its read threw an
+assertion, printed FAIL and exited 1 -- the same answer as "this read has no
+order= clause". THOSE TWO ANSWERS SEND A READER TO DIFFERENT FILES. Proven both
+directions on this commit by ablation:
+  a pure refactor of the alf_op_audits read literal
+      before: FAIL - alf_op_audits list read carries an explicit order= clause
+              exit 1   (a false accusation against correct code)
+      after:  COULD NOT RUN, exit 2
+  the order= clause genuinely deleted from that same read
+      before: FAIL, exit 1      after: FAIL, exit 1
+More than one match is the same third state from the other side: with two
+candidates the arm cannot say which it graded, so hits[0] would be an arbitrary
+choice presented as a verdict. The summary line carries all three counts
+because the exit code can only carry the worst, and a run with both a failure
+and a could-not-run exits 1 -- that line is the only place the second is not
+lost.
+
+
+ITEM 5 -- METHODOLOGY
+
+FAILING-FIRST, WITH THE RED CAPTURED. docs/hank-evidence/b11/ holds the real
+stdout of every red run beside its green, for all four items, because a green
+suite proves nothing about what it would have caught. 16 failed, 11 failed, 7
+failed, 4 FAILED -- the four reds this batch turned.
+
+ABLATED AGAINST THE PRE-FIX HANDLER, ONE NAMED LAYER AT A TIME, fifteen
+ablations across the four items, each reported by the ARMS it alone catches
+rather than by an exit code. Three of the fifteen are worth reading: removing
+item 1's read-time expiry kills exactly one arm (C5), which is the arm the whole
+section exists for; removing item 2's sv_controlled-specific message kills
+exactly one (V3), which is the spec's own requirement that a refusal name the
+licensed-practitioner rule; making two of item 3's tags identical kills exactly
+one (A5), the arm that exists because a boolean would have been the smaller
+change.
+
+A CONTROL ARM FOR OVER-REFUSAL EVERYWHERE. Item 1 arms A6/A7 (a broad clinical
+role and an assigned narrow role both still pass) and C4 (the grant is a real
+capability, labelled VACUOUS WHILE A1 IS RED so it cannot be read alone). Item
+2 arms V7-V12, with V12 driving all 42 resources on an owner token and naming
+every resource that failed rather than the first. Item 3 arms F3/F4. Item 4 the
+twelve-app calibration. Live probe arms 2, 3, 6 and 7.
+
+THE LIVE PROBE PRINTS WHAT IT DID NOT DRIVE. docs/hank-evidence/b11_live_gate_probe.py,
+output in .out, fail=0 couldnot=0:
+  mar_access_grant, OWNER session         403 FORBIDDEN
+  family_mar, OWNER, unknown contact      404 NO_SUCH_CONTACT
+  alf_mar read, OWNER                     200, 2 rows
+  family_mar, NO session                   401 NO_SESSION
+  rf_photos write, ai_source, no session   403 AI_APPROVAL_REQUIRED
+  rf_photos write, ai_source + draft       401 NO_SESSION (the AI gate let it past)
+  rf_photos write, NO ai_source            401 NO_SESSION
+ARM 1 IS A DISCRIMINATION, NOT MERELY A REFUSAL: a 400 "action must be ..."
+would mean the dispatcher has never heard of mar_access_grant and NOTHING of
+item 1 is deployed. 403 FORBIDDEN means the action exists, is registered, is
+reached, AND that the grantor set is office_manager and not owner. One request,
+two different answers. ARM 5 IS THE FIRST TIME THE HIGH-RISK AI APPROVAL GATE
+HAS FIRED IN PRODUCTION.
+NOT DRIVEN, printed by the probe itself: the entire SAIRNvet matrix and the
+sv_audit_log lock (the SAIRNvet demo credential is DEAD --
+docs/2026-09-03-demo-credentials.md:59 and :250 -- so there is no session to be
+had and a probe does not mint credentials; SUITE VERIFIED ONLY, 31 arms, 492
+combinations); the billing refusal on family_mar and the grant-then-read flow
+(need `billing` and `office_manager` credentials that do not exist on
+ALF-TEST-2026; 28 arms); the three transport guards (client-side JS, no HTTP
+request can reach them; 81 arms over 15 apps); the COULD NOT RUN third state (a
+property of a checker, proven by ablation in both directions); and both SQL
+blocks.
+
+THE PROBE WRITES NOTHING AND THAT IS MEASURED, NOT HOPED.
+class=VERIFICATION-READONLY guard=n/a residue=none. Every arm is a read or a
+request refused before its insert, and the three rf_photos arms carry no `id`
+so even the two that pass the AI gate stop at the handler's own validation. The
+one arm that would have needed a write -- the sv_audit_log append-only lock,
+whose two halves cannot both be proven by a refusal -- is unreachable for the
+credential reason above. So there is no residue and no removal SQL to
+enumerate, and the probe's header says that a future writing arm must enumerate
+the row and its delete.
+
+WHICH HALF OF EVERY CHANGE IS LIVE, AND WHICH NEEDS MICHAEL'S SQL:
+  item 1, billing refused on family_mar    LIVE, the whole security half
+  item 1, the mar_access_grant action      the action, its gate and its
+                                           refusals are LIVE and proven live;
+                                           NEEDS blocks 1 and 2 of
+                                           sql/2026-10-14-hank-b11-mar-grant.sql
+                                           before any grant can be written,
+                                           found or audited
+  item 1, office_manager in the UI         the option is LIVE; NEEDS block 5 of
+                                           the b10 run order or the INSERT is
+                                           refused 23514
+  item 2, the SAIRNvet matrix              LIVE, entirely. No SQL
+  item 3, all six provenance sites         LIVE, entirely. No SQL
+  item 4, the guards and the third state   LIVE, entirely. No SQL
+
+
+ITEM 6 -- PUSH, AFTER FIVE REFUSALS AND FIVE MERGES
+
+1. REGISTER FEED GATE -- four records written, each with four contributing
+   factors and an explicit recurrence-open. The FMEA loop is recorded in BOTH
+   directions rather than only the flattering half: PREDICTED on api/sd-data.js
+   for both role records (rule 1.7), MISSED on sairncare.html, sairngrounds.html,
+   sairnmechanical.html, sairnscape.html and stonedesk.html for the other two.
+   `--check`: OK, 574 records, every commit resolves, every field in vocabulary.
+2. GENERATED-DOCUMENT GATE -- docs/MASTER-PLAN.md and docs/traceability-matrix.md
+   regenerated with their own generators (PR 2.5).
+3. TIER A REVIEW GATE -- 33 resources, obligation opened and assigned to fourth,
+   naming WHAT TO REVIEW HARDEST on each of the three surfaces rather than
+   listing the diff: the grant-lookup ORDERING in family_mar (the refusal must
+   precede the contact fetch, so no existence oracle), the DERIVATION of
+   sv_controlled's row, and whether "reviewed by" on an rf_photos record is an
+   honest claim.
+4. tools/sairn_sql_preflight.py -- MISSING_TABLE sairncare_audit_log, and it was
+   right. Fixed as described under item 1.
+5. A `no-defect-record:` sentence was required twice and given twice with a real
+   reason. The register gate refuses a bare one, correctly.
+6. FIVE REF-LOCK / FETCH-FIRST REJECTIONS. The gate takes minutes and four other
+   sessions push during it. EVERY retry was `pull --no-rebase`, which preserves
+   the register records' shas -- b10 used `--rebase` and had to re-seat twice.
+   Two ledger conflicts (defect-density-register.json, tier-a-reviews.json) were
+   resolved with `python tools/sairn_rebase_resolve.py`, which 3-way merges by
+   the identity each ledger declares in its own merge_policy and stages nothing
+   unless that ledger's validator passes.
+
+TWO WEAKENING LEDGER ROWS, ANSWERED DIFFERENTLY BECAUSE THEY ARE NOT THE SAME
+FINDING. api/sd-data-sv-role-matrix.test.js: the flag was RIGHT that D1's label
+made a claim about an exemption and nothing checked the claim -- answered the
+way b9 answered the same flag, not by arguing it down but by making the line
+carry an assertion. NEW ARM D1b drives the WRITE half of both excluded
+resources for all six roles and asserts the ROLE TABLE still governs them. The
+exclusion is from the SWEEP, whose comparison a second control would spoil, and
+was never an exclusion from the policy. 30 arms -> 31.
+api/ai-provenance-client-sites.test.js: REBUTTED rather than changed. The quoted
+detail is a comment sentence; nothing in that file skips, exempts or allowlists
+anything, and arms E1/E2/E3 assert both sides of msb_bottle_scans at file:line.
+The flag fired on prose describing a conflation this batch RESOLVED.
+
+
+WHAT IS OPEN -- twelve items, each with its exact next step, in
+SAIRN-handoff-hank-b11.md. The four that need somebody other than me:
+  MICHAEL   run sql/2026-10-14-hank-b11-mar-grant.sql blocks 1 and 2, reading
+            each verify's answer against the expected result printed beside it;
+            and block 5 of the b10 run order, which is now reachable from the
+            SAIRNcare UI and fails 23514 until it runs.
+  MICHAEL
+  OR A VET  the SAIRNvet spec's two structural [CONFIRM]s -- whether `manager`
+            reads clinical records, and whether a `tech` may record a
+            controlled-substance administration. The second is a state
+            licensing question this code cannot answer.
+  CODY      tests/sd_data_family_mar_gate.js arm C1, a source pin that cannot
+            hold alongside arm A9 of the b11 spec; and the transport sweep's
+            rotted scaffolding list.
+  CC        wire the two new api/ suites into whatever drives suites at the
+            gate, and `fmea_draft --save` for the seven undrafted files.
+
+
+UNVERIFIED, STATED RATHER THAN IMPLIED
+  No SQL was run. Both blocks of sql/2026-10-14-hank-b11-mar-grant.sql are
+  UNRUN, so alf_mar_access_grants does not exist, no grant row can be written
+  or found, the three audit event types are rejected by the audit table's CHECK
+  and writeAuditLog returns false. Guardian's migration check is COULD NOT RUN,
+  not passed.
+  THE WHOLE 42-RESOURCE SAIRNvet MATRIX IS SUITE-VERIFIED AND NOT LIVE-DRIVEN,
+  because the demo credential is dead. 31 arms including 492 driven
+  combinations is strong evidence about the handler and no evidence about the
+  deployment.
+  THE BILLING REFUSAL ON family_mar IS SUITE-VERIFIED ONLY. The live probe
+  proves an OWNER is not over-refused; it does not prove billing is refused,
+  because no billing credential exists on ALF-TEST-2026.
+  THE GRANT-THEN-READ FLOW HAS NEVER RUN END TO END ANYWHERE, in a suite or
+  live, because it needs a grants table that does not exist. The 28 arms drive
+  the grant action and the read path against a mocked grants table.
+  THE rf_photos APPROVAL IS AN ATTESTATION ABOUT QUANTITIES, not about the
+  model's prose, and the footer will carry a person's name either way. Flagged
+  in the Tier A obligation as the thing to review hardest.
+  THE SWEEP'S TWELVE PASSING APPS pass partly by its hand-written stub list's
+  grace. I did not re-audit the other twelve transports for reporters that
+  could throw with their globals present; the three fixed are the three the
+  sweep could see.
+  THE SEAM CHECK said COULD NOT TELL for at least one endpoint/engine pair and
+  the push was allowed on that basis. Nothing was verified about that seam.
+  sairnvet.html WAS NOT EDITED, so no client-side change accompanies the role
+  matrix. A non-owner session will now receive 403s on panels that previously
+  worked, which is the intended behaviour and has not been looked at in the
+  rendered app.
+  NO SCREENSHOT, NO RENDERED CHECK of the new stonedesk AI label beyond
+  asserting the element exists and is not among that file's 132 pre-existing
+  missing-DOM targets (132 -> 132, unchanged from HEAD).
+
+DEFINITION the hash below is sha256 over every byte of this file up to and NOT
+including the final hash line, CRLF normalised to LF, taking the LAST
+occurrence of the marker. Re-derive it with the four lines below:
+
+    import io, hashlib
+    s = io.open('SAIRN-report-hank-b11.txt', 'rb').read().decode('utf-8').replace('\r\n','\n')
+    body = s.rsplit('SHA' + '256 ', 1)[0]
+    print(hashlib.sha256(body.encode('utf-8')).hexdigest())
+SHA256 30be5665e40f24171d5d034cdd9410eac51dd8e829db9445af84df0765de9236
+END-OF-REPORT
