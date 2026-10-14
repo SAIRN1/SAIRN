@@ -318,7 +318,7 @@ def _hooks_dir(root):
     """The directory core.hooksPath REALLY names -- not .githooks by faith."""
     try:
         p = subprocess.run(['git', 'config', '--get', 'core.hooksPath'],
-                           cwd=root, capture_output=True, text=True)
+                           cwd=root, capture_output=True, text=True, encoding='utf-8', errors='replace')
         return (p.stdout or '').strip() or None
     except OSError:
         return None
@@ -327,7 +327,7 @@ def _hooks_dir(root):
 def _tracked(root):
     try:
         p = subprocess.run(['git', 'ls-files'], cwd=root,
-                           capture_output=True, text=True)
+                           capture_output=True, text=True, encoding='utf-8', errors='replace')
         return set(x.strip() for x in (p.stdout or '').split('\n') if x.strip())
     except OSError:
         return set()

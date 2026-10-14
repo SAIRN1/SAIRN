@@ -72,7 +72,7 @@ def _from_credential_manager():
     try:
         r = subprocess.run(['git', 'credential', 'fill'],
                            input='protocol=https\nhost=github.com\n\n',
-                           capture_output=True, text=True, timeout=20)
+                           capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=20)
     except Exception as exc:                                     # noqa: BLE001
         return None, 'git credential fill raised (%s)' % type(exc).__name__
     if r.returncode != 0:

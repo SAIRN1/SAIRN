@@ -378,7 +378,7 @@ def record_evidence(record_dir, repo=None):
         return EXIT_COULD_NOT_RUN, '%s is not a git repository or bare git dir' % target
     try:
         p = subprocess.run([git_bin(), 'fsck', '--unreachable', '--no-progress'],
-                           cwd=target, capture_output=True, text=True)
+                           cwd=target, capture_output=True, text=True, encoding='utf-8', errors='replace')
     except (OSError, ValueError) as e:
         return EXIT_COULD_NOT_RUN, 'git could not be invoked (%s)' % e
     if p.returncode != 0 and not p.stdout.strip():

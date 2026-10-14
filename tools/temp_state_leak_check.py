@@ -70,7 +70,7 @@ BAD_EMAIL_MARKERS = ('probe@local', 'probe@', 'test@local', 'fixture@')
 
 def git(args, repo=None):
     cmd = ['git'] + (['-C', repo] if repo else []) + list(args)
-    r = subprocess.run(cmd, capture_output=True, text=True)
+    r = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace')
     return r.returncode, (r.stdout or '').strip(), (r.stderr or '').strip()
 
 
@@ -264,7 +264,7 @@ def main(argv):
         before = snapshot()
         cmd = ['python', suite] if suite.endswith('.py') else ['node', suite]
         try:
-            p = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+            p = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=300)
             rc = p.returncode
         except subprocess.TimeoutExpired:
             rc = None

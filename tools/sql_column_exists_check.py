@@ -101,7 +101,7 @@ def declared_columns():
     """{table: {column}} from every `create table` block under sql/."""
     out = {}
     files = subprocess.run(['git', '-C', REPO, 'ls-files', 'sql'],
-                           capture_output=True, text=True).stdout.split()
+                           capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.split()
     for rel in files:
         if not rel.endswith('.sql'):
             continue
@@ -267,7 +267,7 @@ def main(argv=None):
         return EXIT_COULD_NOT_RUN
 
     files = [f for f in subprocess.run(['git', '-C', REPO, 'ls-files', 'sql'],
-                                       capture_output=True, text=True).stdout.split()
+                                       capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.split()
              if f.endswith('.sql')]
     findings, disagree, skipped = [], [], []
     for rel in files:

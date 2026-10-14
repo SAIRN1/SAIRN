@@ -152,7 +152,7 @@ def load_registries():
         "process.stdout.write(JSON.stringify(out));"
     )
     r = subprocess.run(['node', '-e', script, RESOURCES_DIR],
-                       capture_output=True, text=True, cwd=REPO)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
     if r.returncode != 0:
         raise SystemExit('could not read the registries through node: '
                          + (r.stderr or '').strip())

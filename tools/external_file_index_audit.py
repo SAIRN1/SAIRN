@@ -57,7 +57,7 @@ def _tracked(repo='.'):
     class of wrong answer as a silent pass.
     """
     out = subprocess.run(['git', '-C', repo, 'ls-files'],
-                         capture_output=True, text=True)
+                         capture_output=True, text=True, encoding='utf-8', errors='replace')
     if out.returncode != 0:
         raise RuntimeError('git ls-files exited %d: %s'
                            % (out.returncode, out.stderr.strip()[:200]))

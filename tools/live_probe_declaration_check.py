@@ -96,7 +96,7 @@ def read_staged(rel):
 
 def staged_paths():
     r = subprocess.run(['git', '-C', REPO, 'diff', '--cached', '--name-only',
-                        '--diff-filter=ACMR'], capture_output=True, text=True)
+                        '--diff-filter=ACMR'], capture_output=True, text=True, encoding='utf-8', errors='replace')
     return [p for p in r.stdout.split()
             if p.endswith(('.py', '.js'))
             and p.split('/')[0] in ('tools', 'tests', 'scripts')]
@@ -104,7 +104,7 @@ def staged_paths():
 
 def tracked_paths():
     r = subprocess.run(['git', '-C', REPO, 'ls-files', 'tools', 'tests',
-                        'scripts'], capture_output=True, text=True)
+                        'scripts'], capture_output=True, text=True, encoding='utf-8', errors='replace')
     return [p for p in r.stdout.split() if p.endswith(('.py', '.js'))]
 
 
