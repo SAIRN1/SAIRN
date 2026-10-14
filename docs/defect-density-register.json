@@ -28469,7 +28469,7 @@
       "recurrence_open": "The actions close the SPECIFIC pair and the specific file. They do NOT close the shape: this is at least the third two-lists-that-must-agree defect in this family, and the platform carries other pairs whose halves live in different languages -- SD_SESSION_GATED and SD_GATE_APP are one, and they are kept in agreement only by a test somebody remembered to write. Nothing systematically enumerates such pairs. They also do not prove the database was migrated: every action here is in the repo, and until the SQL is run the only thing that improved is that the failure is now named 503 CHECK_NOT_WIDENED instead of silently covering 19% of the population."
     },
     {
-      "commit": "b2023d8cb68c",
+      "commit": "811292cba3b8",
       "date": "2026-10-14",
       "subject": "fix(red suite check + nhi self-test): the registered suites stop running in the live clone, and a self-test stops reporting the machine it ran on",
       "files": [
