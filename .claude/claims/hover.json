@@ -724,6 +724,17 @@
         "SAIRN-handoff-h1-b33.md",
         "SAIRN-report-h1-b33.txt"
       ]
+    },
+    {
+      "id": "hover-1792000687",
+      "session": "hover",
+      "subject": "hover",
+      "task": "b34 deep-verify cody b11, land-checks, weakening flags, twin-script sweep, SQL removal check",
+      "claimed_at": "2026-10-14T17:58:07Z",
+      "claimed_at_epoch": 1792000687.1864903,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
