@@ -1,0 +1,354 @@
+REPORT fourth b17
+
+SAIRN batch report -- session fourth (ted), batch b17, 2026-10-14.
+Every figure names the command that produced it. Six items, one work commit,
+and the two sharpest findings are both against myself: a ruling of mine was
+wrong, and a premise I was handed does not reproduce.
+
+HEAD AND PUSH
+  CMD git -C <repo> rev-parse HEAD                         a3457d65...
+  CMD git -C <repo> rev-parse origin/main                  a3457d65...
+  CMD git rev-list --left-right --count origin/main...HEAD  0  0
+  CMD git status --porcelain                               (empty)
+  push range 031f91c3..a3457d65, ONE rebase, NOT FORCED.
+  a3457d65 IS THE STATE AT WHICH ITEMS 1-6 LANDED. The commit carrying this
+  report, the digest and the handoff lands after it, and the b17 close and the
+  claim release after that, so HEAD WILL NOT EQUAL a3457d65 when you read this.
+  SAIRN_SEED_GATE=off was NOT used in any form.
+  NOTHING WAS WRITTEN OUTSIDE docs/ plus my three root deliverables. No file
+  under tools/, api/, sql/ or tests/ was edited.
+  CMD git log --format=%h HEAD --not 1c86243e -- .claude/settings.json  (empty)
+
+ITEM 1 -- THE MANIFEST, FIRST
+  CMD python tools/batch_manifest.py --new fourth b17 --items 6
+      wrote docs\batch-manifest-fourth-b17.json, ids 1-6,
+      id_lock=906816e5cf0d24f9
+  Every --close in this batch used PYTHONIOENCODING=utf-8, because
+  tools/batch_manifest.py:386 still traceback-exits on a non-ASCII first line
+  and my handoff titles carry an em dash. Routed to cc in b15 and b16; tools/
+  is cc's and an environment variable on the command is not a code change.
+
+ITEM 2 -- THE TIER A OBLIGATION FOR hank b9 (a6fa37a3) IS DISCHARGED
+
+  CMD python tools/tier_a_review_gate.py --discharge hank 2026-10-14T11:55:18Z --body-file <verdict>
+      EXIT 0
+      DISCHARGED -- fourth reviewed the obligation hank opened 2026-10-14T11:55:18Z
+  The obligation covered 10 Tier A resources and 5 files. hank is the author and
+  fourth the reviewer, which is the rule: recording an obligation is the
+  author's job and discharging it cannot be faked by the author.
+  Full review: docs/2026-10-14-fourth-b17-hank-b9-tier-a-review.md.
+  VERDICT: ACCEPT, with one correction that is MINE, two conditions, and one
+  missing test routed to cody.
+
+  THE CORRECTION IS MINE, AND IT IS THE MOST IMPORTANT LINE IN THIS REPORT.
+  My own docs/2026-10-14-ai-safeguards-spec.md s7.5 called api/ai-notice.js
+  "the LOSER" and told hank to delete it and migrate, on the premise that it
+  carried a SECOND ack store.
+  CMD grep -nE "create table|alter table|add column" sql/2026-10-14-hank-b9-ai-safeguards.sql
+      54:      'alter table public.%I
+      55:         add column if not exists ai_notice_version text,
+      56:         add column if not exists ai_notice_acked_at timestamptz',
+  THERE IS NO SECOND STORE AND NO NEW TABLE. The ack lives on *_employee_auth,
+  which is exactly where s2.1 and s7.5 say it must. ACTING ON MY OWN RULING
+  WOULD HAVE DELETED WORKING CODE THAT IMPLEMENTS IT.
+  RE-RULED: the store is agreed and unchanged; hank's single endpoint STANDS,
+  because one endpoint beats the same action copied into seventeen *-auth.js
+  files -- the argument my own s3.1 makes. a6fa37a3 landed at 08:02 and s7.5 was
+  written around 12:00 the same day, so hank could not have read it, and it was
+  wrong anyway. CURRENT_NOTICE_VERSION = 2026-11 at
+  api/_lib/ai-safeguards.js:52 matches s7.3 exactly.
+  STILL OPEN AND IT IS MINE: s7.5 does not yet carry this correction inline, so
+  a session reading it without the review beside it could still delete the
+  endpoint.
+
+  (d) THE CROSS-TENANT ACK -- the one hank asked to be reviewed hardest -- IS
+  CLOSED. api/ai-notice.js:80 takes app_id from the body and uses it for ONE
+  thing, picking which *_employee_auth table to touch (:126). It is then the
+  third argument to verifySessionToken (:136), which refuses a token minted for
+  a different app, and a mismatched licence is refused first with
+  LICENSE_WRONG_APP (:117). The row is selected by license_hash from the
+  verified licence and employee_id from the verified token (:145-146) -- neither
+  identity field is ever read from the body. Three defences in series.
+  AND THE UNMIGRATED CASE FAILS CLOSED, which I did not expect to find:
+  looksUnmigrated (:163) turns a missing column into 503 NOT_MIGRATED (:170,
+  :211) rather than an empty ack state. PR 1.11 applied to a column that does
+  not exist yet.
+
+  (b) THE sen_settings ASYMMETRY IS THE RIGHT DIRECTION, not merely safe.
+  api/sd-data.js:7818 onward withholds unknown keys from non-management while
+  the write path stores them as-is, and the reason in the code is correct: a
+  store that accepts anything must not also disclose anything, or the next
+  setting added is published to every caregiver by default. CONDITION: the
+  SEN_SETTING_PUBLIC_FIELDS map needs a line saying "add here when a new setting
+  must be visible to caregivers" -- the cost of this asymmetry is a support
+  call, which is the cheap direction to fail in, but only if somebody knows
+  where to look.
+
+  (c) THE AI APPROVAL GATE'S DORMANCY IS ACCEPTED. enforceAiApproval
+  (api/_lib/ai-safeguards.js:188) fires only on a client-supplied ai_source
+  (:62), so no production client reaches it. A gate bypassable by omitting a
+  field is not a gate -- but a server cannot look at prose and know a model
+  wrote it (api/sd-data.js:2063 says so), so the alternative is impossible and
+  25 driven arms is the right proof. CONDITION: the moment any client writes one
+  of the five HIGH_RISK_AI resources (:86), ai_source becomes REQUIRED on that
+  surface. NOT_HIGH_RISK_AI (:117) is what keeps the dormancy from widening.
+  mech_checks and sc_auth_requests appearing only as narrowness controls is the
+  correct shape and the half most changes omit.
+
+  (a) THE SEN_REFERRAL WRITE NARROWING IS NOT RULED ON HERE. It is Michael's,
+  and it is item 3.
+
+  THE MISSING ACCEPTANCE TEST, ROUTED TO cody. T12 of the AI spec asserts the
+  PROXY response carries ai:true and a non-empty ai_label. NOTHING asserts that
+  a surface RENDERS it. A user with yesterday's cached HTML and today's proxy
+  sees NO LABEL and every T12 arm passes. T16 is four arms against the render
+  function extracted from the shipped page, in the style of
+  tests/sairncash_entitlement_gate.js:
+    ARM 1  the label is drawn from the response field
+    ARM 2  a DIFFERENT label must appear VERBATIM -- the load-bearing arm, and
+           the one a reviewer would cut. It catches a page that hardcodes the
+           current wording, and the wording is [DRAFT -- LAWYER] and WILL change
+    ARM 3  ai:true with NO ai_label must fail closed, visibly
+    ARM 4  CONTROL: a non-AI response must NOT gain a label
+  T12 stays. T16 is additional. Neither replaces the other, and that is the
+  finding.
+
+ITEM 3 -- THE sen_*/rf_* WRITE MAP, BOTH OPTIONS, FOR MICHAEL
+
+  docs/2026-10-14-fourth-b17-sen-rf-write-map.md. SPEC ONLY.
+  MEASURED FIRST:
+  CMD sed -n '6721,6760p' api/sd-data.js
+      SEN_REFERRAL_RESOURCES = sen_referral_sources, sen_referrals,
+        sen_training_rules, sen_training_records, sen_applicants
+      "THE WRITE IS MANAGEMENT-ONLY NOW (2026-10-14, b9)"
+  CMD grep -n "SEN_CLIENT_BROAD_READ_ROLES = |MANAGEMENT_ROLES = " api/sd-data.js api/sen-auth.js
+      api/sd-data.js:6608  owner, billing, coordinator, scheduler
+      api/sen-auth.js:74   owner, billing
+  CMD grep -n "sairnsenior:|sairnroofing:" api/_lib/auth.js
+      222  owner, scheduler, coordinator, billing, caregiver
+      253  owner, admin, estimator, foreman, crew
+  CMD api/sd-data.js:8441 and :8495
+      rf_cert_rules and rf_certifications writes -> rfAuth.MANAGEMENT_ROLES
+      (owner, admin) -- since 2026-08-24
+  SO THE TWO APPS ALREADY AGREE, and b9 aligned sen with rf. The question is
+  whether the agreement is right or merely tidy: a home-care agency's
+  coordinators ARE the intake desk; a roofing company's estimators are not the
+  certification clerk.
+  THE DISTINCTION THE OPTIONS TURN ON: a RULE is not a RECORD. Two of the seven
+  decide what compliant MEANS (sen_training_rules, rf_cert_rules); five record
+  that something happened. Nobody proposes coordinators write the rules.
+    OPTION A -- coordinators allowed on the five operational records, rules
+      still management-only. The case for it: the person who takes the phone
+      call is the coordinator, and under B a referral lives in a notebook until
+      a manager is free, which is how a referral is lost. The case against:
+      sen_training_records is one hop from compliance. PRECONDITION, not
+      optional: updated_by from the verified session on all five, or A is not
+      ready.
+    OPTION B -- management-only everywhere. Already true, so choosing it costs
+      nothing. The case against: it makes the intake desk ask permission to do
+      its job, and the predictable workaround is a shared manager login, which
+      destroys the attribution the narrowing was for.
+  ONE PLACE IN CODE: a per-resource map (SEN_REFERRAL_WRITE_ROLES) beside
+  SEN_REFERRAL_RESOURCES, switched by ONE constant. A resource with no row in
+  the map is a 500 WRITE_MAP_MISSING refusal, not a pass -- the same reason
+  hank's own SEN_REFERRAL_SETUP_FILE map replaced a ternary: a map goes stale
+  loudly.
+  ONE TEST: nine table cases plus four arms -- M1 a resource absent from the map
+  is 500 and writes nothing; M2 the two RULE resources are 403 for every
+  non-management role IN BOTH OPTIONS; M3 a 403 wrote NOTHING, asserted by
+  upstream call count rather than by status; M4 CONTROL, owner writes everything
+  in both options.
+  THE FACT THAT WOULD SETTLE THIS WITHOUT ANYBODY'S OPINION: whether
+  coordinators are currently asking managers to log referrals. Nobody has
+  measured it.
+
+ITEM 4 -- REMOVAL PATHS FOR THE FOUR RESOURCES WITH NONE
+
+  docs/2026-10-14-fourth-b17-removal-path-specs.md. SPEC ONLY.
+  THE PATTERN IS NOT NEW: REMOVAL_VERBS = ('delete','soft_delete') at
+  tools/removal_path_check.py:89; the reference implementation is sd_customers
+  at api/sd-data.js:4297-4330; and the Tier A stance is already written at
+  :17701 -- 403 SOFT_DELETE_ONLY, "two verbs that destroy different amounts of
+  data must not share a name". sd_customers already encodes the four things
+  that make a removal path honest: read first, 404 rather than a silent
+  success, already_deleted with a 200, and _deleted_at/_deleted_by stamped from
+  the VERIFIED session.
+  1. sv_scribe_consent FIRST, because it is a CONSENT record. Withdrawal
+     recorded, audit trail KEPT: a withdrawn consent is not an absent consent,
+     and destroying the row destroys the defence. REQUIRED withdrawal reason
+     (400 with the field named, never a default of ''), owner/dvm only -- the
+     same pair that may write it (api/sv-auth.js:118) -- and an sv_audit_log row
+     whose event_type must be added to the CHECK list IN THE SAME MIGRATION.
+     ARM S6 IS THE ONE TO INSIST ON: with the value absent from the CHECK list
+     the withdrawal must FAIL LOUDLY and the consent must NOT be marked
+     withdrawn. A withdrawal whose audit row was rejected must not report
+     success. Eight arms, S1 failing-first.
+  2. alf_family_contacts -- a named family member's details, the one case where
+     the data subject may be the one asking. Soft, not hard, because the MAR and
+     incident records reference WHO WAS NOTIFIED: a hard delete turns "we called
+     her daughter at 02:10" into "we called somebody". ARM A3 proves the kept
+     row still resolves in a notification lookup, which is the argument rather
+     than an assertion of it. A true erasure, if ever required, is a separate
+     authority and a separate verb.
+  3. sf_trustee_audits -- an ORC 2915 controls record. soft_delete ONLY,
+     owner-only, REQUIRED superseded_reason, and hard delete never granted.
+     This is the one where the removal path is not for removing anything: a
+     statutory attestation is CORRECTED, and both the original and the reason
+     stay visible. ARM F4 must pass FOREVER, and F6 inverts the usual rule --
+     the owner must still SEE superseded rows.
+  4. mech_insurance_policies -- the ordinary one, spec'd last on purpose,
+     because a spec that treated all four identically would have missed the
+     audit coupling in 1 and the never-delete stance in 3.
+  AND THE FINDING IS NOT CLOSED BY A BASELINE ROW. Four rows would make
+  tools/removal_path_check.py exit 0 tomorrow and would be the wrong answer for
+  all four: a consent, a named person's contact details, a statutory
+  attestation and an insurance certificate are not the kind of record you
+  grandfather.
+
+ITEM 5 -- b12-b14 CITATIONS RE-DERIVED, AND THE REGISTER PREMISE MEASURED
+
+  docs/2026-10-14-fourth-b17-citation-recheck-b12-b14.md.
+  CMD git -C <repo> pull --rebase origin main            (platform repo first)
+  CMD python scratchpad/cite_recheck_b16.py <15 docs>    -> exit 1
+      79 citation(s) across 15 document(s); 4 unresolvable
+  75 correct, checked by READING THE TEXT NOW AT EACH LINE rather than by
+  confirming the line exists.
+  TWO ARE CORRECTLY ABSENT: tools/foo_gate.py:88 and tools/bar_gate.py:140 are
+  illustrative names quoted from the ack checker's own block headed "EXCLUDED,
+  not on disk (illustrative or proposed)". A checker that printed a real path
+  there would be the defect. Nothing to fix -- but the recheck script cannot
+  tell, which is the first addition in the tool request below.
+  TWO MOVED, because .claude/settings.json lost 13 lines when the hook group was
+  deleted (174 lines now; "hooks": {} at :166, _permissions_note at :171,
+  _hooks_note at :172). AND THE TWO FIXES ARE DELIBERATELY DIFFERENT:
+    * the b14 routing note's :185 is RENUMBERED to :171, because the rm-deny
+      claim is still live and _permissions_note still says what it quotes;
+    * the b13 hook audit is ANNOTATED, NOT renumbered, because its SUBJECT no
+      longer exists. Pointing it at :166 would make it appear to audit an empty
+      hooks object it never saw. It now opens with a SUPERSEDED IN PART note
+      naming hank's merge 3857890a, the new line numbers, and the consequence
+      that its own finding -- nobody has ever seen the compact matcher fire --
+      closes BY DELETION rather than by evidence.
+  THE RULE THIS ESTABLISHES, and b16 had only half of it: when a citation
+  breaks, FIRST ASK WHETHER THE SUBJECT STILL EXISTS. If it does, renumber. If
+  it does not, annotate.
+  SIDE EFFECT, REPORTED: tools/hook_integrity_check.py:366's docstring is
+  accurate again now the hook is gone, so that b13 finding has closed itself.
+
+  THE REGISTER PREMISE DOES NOT REPRODUCE, AND I DID NOT FORCE IT TO.
+  I was told: 6 duplicate register summaries, 4 of them without superseded_by,
+  pick survivors and run --supersede if I own the register.
+  CMD grep -m1 "^# OWNER:" tools/defect_register.py ; owner map
+      tools/defect_register.py -> cc
+  CMD python tools/defect_register.py --check             -> EXIT 0
+      SUPERSEDED (4): retired from the duplicate test, each with a survivor that
+        EXISTS and is an ancestor of origin/main
+      OK: 553 record(s), every commit resolves and every field is in vocabulary
+  THE 4 ARE THE RECORDS *WITH* superseded_by, NOT WITHOUT, and the validator
+  reports no duplicate finding at all. So I did not run --supersede: the
+  register is cc's, and retiring four correctly-live records to match a number
+  would shrink a defect denominator other figures are divided by.
+  WHAT IS REALLY THERE IS EXACTLY ONE LIVE DUPLICATE, and its cause is an
+  encoding bug. Two records on commit 7bc26782e533, same app, layer, severity
+  (critical), method (code-review), phase (design), files and line counts.
+  Diffed field by field, TWO fields differ and the difference is a MOJIBAKE: one
+  record's summary and contributing_factors carry U+2713, the other carries its
+  three-byte cp1252 misreading of the same character.
+  WHY THAT MATTERS MORE THAN A COUNT:
+    * one critical defect is counted TWICE in a register whose stated purpose is
+      a real denominator;
+    * the dedup test cannot see it, and that is not an oversight -- the two
+      summaries genuinely differ AS TEXT, so a string comparison is defeated by
+      a mojibake round trip and reports OK;
+    * it is the same encoding fault class as tools/batch_manifest.py:386, which
+      every batch of mine works around with PYTHONIOENCODING=utf-8 -- except
+      that one CRASHES and this one CORRUPTS DATA, which is the worse mode;
+    * --supersede CANNOT EXPRESS THE FIX: superseded_by names a survivor SHA and
+      both records carry the SAME commit, so there is no sha that distinguishes
+      the twin from the survivor. A structural limit, not a missing keystroke.
+  ROUTED TO cc, three ordered asks: retire the corrupted twin (needing a
+  per-record id or a superseded_by that can name a record); make the dedup test
+  encoding-blind or report near-duplicates; and find where the mojibake entered,
+  because --add is the only writer and 1 of 553 is only what an exact-twin test
+  can see.
+  NOTHING IN THE REGISTER WAS EDITED. No --supersede, no --reseat.
+
+  THE TOOL REQUEST TO cc, extending b16's --read-the-line ask with two
+  additions learned here: an EXPECTED-ABSENT declaration, so two illustrative
+  names do not report as findings for ever; and a SUBJECT-EXISTS test before any
+  renumber, because a tool that renumbers a citation onto whatever now occupies
+  the line is worse than one that only reports.
+
+ITEM 6 -- PUSH WITHOUT FORCE, CONFIRMED LANDED
+
+  CMD git -C <repo> pull --rebase origin main     rebased onto 031f91c3
+  CMD git -C <repo> push origin main              031f91c3..a3457d65 main->main
+  CMD git fetch -q origin; rev-parse HEAD; rev-parse origin/main
+      a3457d65 == a3457d65
+  CMD git rev-list --left-right --count origin/main...HEAD      0  0
+  CMD git status --porcelain                                    (empty)
+  CMD git log origin/main --format=%h -1 -- docs/tier-a-reviews.json
+      a3457d65
+
+THE BIGGEST THING I AM LEAVING OPEN, AND IT IS MINE
+  CMD PYTHONIOENCODING=utf-8 python tools/tier_a_review_gate.py --list
+      19 open Tier A review obligation(s):
+        hank  2026-09-27T03:42:29Z  alf_staff, sen_visits  ** OVERDUE 417h **
+              ASSIGNED TO fourth (held 417h -- past 48h, anybody may --takeover)
+  An obligation assigned to me has been held for 17 days. It was not in this
+  batch's six items and I did not quietly add it, but it should be item 1 of
+  b18: discharge it, or hand it back with --takeover.
+
+CLAIMS, LOCKS AND HOLDS
+  CMD python tools/sairn_claim.py list    b17 held, published on origin/main
+  CMD ls ~/SAIRN-SESSION-LOCKS/*.lock     fourth.lock still carries the dead
+      claude_pid 53204 -- six batches running
+  CMD git worktree list                   4 besides main, NONE MINE
+  CMD git stash list                      (empty)
+  Nothing was deleted and no lock was reaped: rm is denied and I did not route
+  around it.
+
+UNVERIFIED -- WHAT THIS BATCH DOES NOT PROVE
+  * I RAN NO SUITE AND NO APP. The Tier A review is a read of a6fa37a3 against
+    its own obligation, every claim cited at file:line. hank's 426-line suite
+    and 25 arms are NOT re-run here, and a green suite I did not drive is not
+    evidence I may quote.
+  * ITEMS 3 AND 4 ARE SPECS. No api/, sql/ or tests/ file was touched, so the
+    seven write-map resources and the four removal paths are exactly as they
+    were found: the write map is Option B and the four resources still cannot
+    be removed through the product.
+  * s7.5 DOES NOT YET CARRY ITS OWN CORRECTION inline. The review document
+    holds it; the spec does not.
+  * The register's other 552 records were not audited for mojibake. One
+    exact-twin test found one twin; that is a floor.
+  * b15's citations were not re-checked here (b16 did that); b16's own
+    documents were not re-checked by anybody.
+  * The 19 open Tier A obligations other than the one discharged are untouched.
+  * No live deployment was touched or verified.
+
+NEXT
+  MICHAEL: Option A or Option B for the seven sen_*/rf_* resources. Nothing is
+  blocked while he decides; B is running and its failure direction is a
+  coordinator asking a manager.
+  hank: the two review conditions (the allowlist comment; ai_source required per
+  surface when a client first writes one); the four removal paths,
+  sv_scribe_consent first; the three role matrices, SAIRNlegacy first; and
+  NOBODY DELETES api/ai-notice.js.
+  cody: T16's four arms with ARM 2 first; the four removal-path arm sets with S6
+  the one to insist on; the two SAIRNcash entitlement arms from b16, ARM B
+  first.
+  cc: tools/batch_manifest.py:386; the register's three ordered asks; the
+  citation tool's two additions; fixture_lock_check.py; the by-design validator
+  and four rulings still at DECIDE_OR_NOT_PROMOTED.
+  fourth: the 417h obligation, then inline the s7.5 correction, then fixture
+  row 11.
+
+EVIDENCE
+  Handoff: SAIRN-handoff-fourth-b17.md, written BEFORE this report and uploaded
+  and verified at 11950 bytes, sha256 dc66178e2897372f.
+  Manifest: docs/batch-manifest-fourth-b17.json, 6 of 6 done.
+  Tier A verdict body: scratchpad/tier_a_verdict_b17.txt, 4636 bytes.
+  Logs and scripts:
+  C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\240036a6-0d02-441d-a22d-73ed022c11a3\scratchpad\
+SHA256 486ed676769cd06a78fcd199fb0f55830e886c913aaebbeb29669af1284e6de2
+END-OF-REPORT

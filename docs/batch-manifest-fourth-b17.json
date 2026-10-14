@@ -37,8 +37,18 @@
     {
       "id": 6,
       "title": "",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "pushed 031f91c3..a3457d65 without force; HEAD == origin/main, 0/0, tree clean"
     }
-  ]
+  ],
+  "closed": {
+    "drive_verify": "PASS",
+    "verified_by": "python tools/drive_upload_verify.py --agent fourth --batch b17 --verify-only",
+    "criteria": "2026-10-13.1",
+    "deliverables": [
+      "SAIRN-handoff-fourth-b17.md sha256 dc66178e2897372f",
+      "SAIRN-report-fourth-b17.txt sha256 2fe9b0e4c8db6d2f",
+      "SAIRN-digest-fourth-b17.txt sha256 d4ce32a68bf42771"
+    ]
+  }
 }

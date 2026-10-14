@@ -1,0 +1,11 @@
+DIGEST fourth b17
+
+STATUS Landed. HEAD == origin/main a3457d65, 0/0, clean, not forced. Manifest first; 6 of 6 done. hank b9's Tier A obligation discharged.
+DECISION-NEEDED Michael: Option A coordinators-allowed or Option B management-only, seven sen_*/rf_* resources. B runs; nothing blocked.
+CHANGED 8 docs: hank b9 reviewed and my own b15 s7.5 was WRONG -- api/ai-notice.js has no second store, so nobody deletes it; cross-tenant ack closed; T16 label-render test; both write-map options; four removal-path specs; 79 citations re-derived.
+EVIDENCE-path SAIRN-report-fourth-b17.txt; scratchpad tier_a_discharge.log, cite_b12_b14.log.
+UNVERIFIED No suite run; items 3 and 4 are specs; s7.5 lacks the correction inline; an obligation of mine is 417h overdue. Register premise did not reproduce: --check exits 0.
+NEXT fourth the 417h obligation; hank removal paths; cody T16 ARM 2; cc line 386 and the register.
+CONTEXT ~64% measured floor: 2,574,433 B transcript payload, ~643k of 1M; /context unavailable to me.
+SHA256 3cbbc73fee02002a8a58465e3d12b394e39b7307ad415cc120bc65edd8246b19
+END-OF-REPORT
