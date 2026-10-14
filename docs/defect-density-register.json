@@ -28548,6 +28548,39 @@
       "recurrence_open": "The derived-population arm is SAIRNscape's only. Every other per-app gate suite still hand-types its resource list, so the same invisible-twelfth shape is available in each of them. And hover2's repro still measures 22 pairs -- it was not changed by this fix and will keep reporting 22 of 22 FIXED whatever happens to the twelfth resource."
     },
     {
+      "commit": "583571e7a0ad",
+      "date": "2026-10-14",
+      "subject": "fix(subprocess decode check): fixer produced a duplicate keyword argument",
+      "files": [
+        "docs/scrutiny-flags.json",
+        "tools/credential_purge_check.py",
+        "tools/subprocess_decode_check.py"
+      ],
+      "lines_added": 39,
+      "lines_removed": 8,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "live-verification",
+      "summary": "subprocess_decode_check.py's fix_file() always spliced encoding='utf-8', errors='replace' regardless of what a call already had. tools/credential_purge_check.py had errors='replace' with no encoding=; the fixer produced a duplicate keyword argument, a real SyntaxError at compile() time that ast.parse() does not catch. The push gate's own stricter parse check caught the broken file before it reached origin/main",
+      "rules": [
+        "1.6"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "fda7e0214883",
+        "date": "2026-10-14",
+        "subject": "fix(tools): encoding= on the 13 subprocess_decode_check findings in tools/",
+        "lag_days": 0
+      },
+      "citation_note": "the broken file was produced and would have shipped from the agent's own invocation; it was caught by the push gate's separate, stricter check (compile-equivalent), not by the fixer's own verified-on-the-copy-it-wrote guarantee, which is the shape 1.6 names even though the two checks here are the same process rather than human-vs-automated",
+      "factors_unknown_reason": "not investigated this batch -- the fix (compile() instead of ast.parse(), only add what is missing) is verified; root-cause factor analysis was not done"
+    },
+    {
       "commit": "650e02282573",
       "date": "2026-10-14",
       "subject": "fix(sairnlaw): every credential deactivation was writing NO audit row, silently",
