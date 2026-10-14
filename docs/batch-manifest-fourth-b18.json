@@ -1,0 +1,44 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "fourth",
+  "batch": "b18",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "Write the b18 batch manifest first; close it with PYTHONIOENCODING=utf-8 until cc fixes tools/batch_manifest.py:386",
+      "status": "open",
+      "evidence": ""
+    },
+    {
+      "id": 2,
+      "title": "The 417h-overdue Tier A obligation assigned to me (hank 2026-09-27T03:42:29Z, alf_staff and sen_visits): discharge it or hand it back with --takeover",
+      "status": "done",
+      "evidence": "DISCHARGED, exit 0: PYTHONIOENCODING=utf-8 python tools/tier_a_review_gate.py --discharge hank 2026-09-27T03:42:29Z --body-file <verdict> -> 'DISCHARGED -- fourth reviewed the obligation hank opened 2026-09-27T03:42:29Z, on alf_staff, sen_visits'. Discharged as the ASSIGNED OWNER, not --takeover. Verdict document: docs/2026-10-14-fourth-b18-tier-a-queue14-discharge.md. Re-check with: PYTHONIOENCODING=utf-8 python tools/tier_a_review_gate.py --list (19 open before, 18 after)."
+    },
+    {
+      "id": 3,
+      "title": "docs/2026-10-14-ai-safeguards-spec.md: add the section 7.5 correction INLINE; spec the write side of stonedesk photoAnalyze (stonedesk.html:26071-26095, sd_photos syncs raw Claude text with no ai_source or ai_approved_by, H2 seq842) and note fqSaveQuote is local-only (H2 seq845), each with a failing-first test arm for cody",
+      "status": "done",
+      "evidence": "docs/2026-10-14-ai-safeguards-spec.md: the 7.5 correction is inline as a quoted box at the head of section 7.5 plus a WITHDRAWN banner on the ROUTED block; new section 7.6 specs the sd_photos write side (7.6.1, arm T17) and fqSaveQuote local-only (7.6.2, arm T18). Re-check with: grep -n 'CORRECTED 2026-10-14, fourth b18\\|7.6 THE WRITE SIDE IS UNGUARDED\\|T17\\|T18' docs/2026-10-14-ai-safeguards-spec.md"
+    },
+    {
+      "id": 4,
+      "title": "docs/2026-10-14-fourth-b16-confirm-questions.md: one question for a home-care practitioner -- do coordinators currently ask managers to log referrals and training records",
+      "status": "done",
+      "evidence": "docs/2026-10-14-fourth-b16-confirm-questions.md gains H8, a home-care practitioner question on whether coordinators currently ask managers to log referrals and training records; heading count corrected from TEN to ELEVEN in three places. Re-check with: grep -n 'H8 --\\|ELEVEN' docs/2026-10-14-fourth-b16-confirm-questions.md"
+    },
+    {
+      "id": 5,
+      "title": "Methodology: triage the 19 open Tier A obligations by age (assign, discharge or takeover) and request a tool from cc that surfaces any obligation over 48h at session start",
+      "status": "done",
+      "evidence": "docs/2026-10-14-fourth-b18-tier-a-triage.md: all 18 open obligations triaged by age with one disposition each, plus the finding that 4 are owned by 'cloud' whose last commit is 2026-09-27 (git log -1 -- .claude/claims/cloud.json) because tools/tier_a_review_gate.py:1329 eligible_reviewers() has no liveness test; plus the requested cc tool spec with six failing-first arms A1-A6. Re-derive the counts with: PYTHONIOENCODING=utf-8 python tools/tier_a_review_gate.py --list and --reseat-shas"
+    },
+    {
+      "id": 6,
+      "title": "Push without force and confirm it landed",
+      "status": "open",
+      "evidence": ""
+    }
+  ]
+}

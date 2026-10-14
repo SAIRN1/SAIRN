@@ -1,15 +1,21 @@
-# THE TEN QUESTIONS — plain English, one page, each a yes or no — 2026-10-14
+# THE ELEVEN QUESTIONS — plain English, one page, each a yes or no — 2026-10-14
 
-**WHAT THIS IS.** Ten questions the software cannot answer about itself. They
+**Was "THE TEN QUESTIONS" until 2026-10-14 (fourth b18), when H8 was added for
+a home-care practitioner. The count is in the heading because a sheet that says
+ten and carries eleven is the kind of document people stop trusting.**
+
+**WHAT THIS IS.** Eleven questions the software cannot answer about itself. Ten
 came out of three access-control specs written on 2026-10-14 for SAIRNlegacy
-(funeral homes), SAIRNvet (veterinary practices) and SAIRNlaw (law firms).
+(funeral homes), SAIRNvet (veterinary practices) and SAIRNlaw (law firms); the
+eleventh (**H8**) comes from the SAIRNcare write map of the same date.
 **Each one decides who can read or change something in the app, so each one is
 answered yes or no, not discussed.**
 
-**WHO ANSWERS WHAT.** Three are legal questions and go to counsel. Seven are
-"how does your business actually work" questions and go to a funeral director
-or a veterinary practice manager. **Nobody here can answer any of the ten by
-reading the code**, which is why they are marked rather than guessed.
+**WHO ANSWERS WHAT.** Three are legal questions and go to counsel. Eight are
+"how does your business actually work" questions and go to a funeral director,
+a veterinary practice manager or a home-care agency owner. **Nobody here can
+answer any of the eleven by reading the code**, which is why they are marked
+rather than guessed.
 
 **WHAT HAPPENS WITH THE ANSWERS.** Each answer sets one row in a permission
 table. A `yes` and a `no` both produce working software; **an unanswered
@@ -147,7 +153,46 @@ technician is the person who actually gives the dose and writes it down.
 
 ---
 
-## ONE MORE, NOT COUNTED IN THE TEN — for a law-firm administrator
+## FOR A HOME-CARE AGENCY OWNER OR COORDINATOR — one question
+
+### H8 — SAIRNcare · referrals and training records · YES or NO
+
+**Right now, today, in your agency: when a referral comes in by phone, or a
+caregiver finishes a training, does the coordinator who took that call have to
+ask an owner or a billing manager to type it in?**
+
+* **If YES — they have to ask:** coordinators get to log referrals, referral
+  sources, applicants and training records themselves (**Option A**), and every
+  entry records which coordinator made it.
+* **If NO — a coordinator already enters it:** the software is already right
+  and nothing changes (**Option B**, which is what is running).
+
+*Why we are asking:* **this is the only question on this sheet that a
+measurement could answer instead of an opinion, and nobody has measured it.**
+The software today is management-only on all four of those records
+(`sen_referrals`, `sen_referral_sources`, `sen_applicants`,
+`sen_training_records` — plus `rf_certifications` in SAIRNroofing, which the
+same switch controls). **Nothing is at risk either way**: the wrong answer
+costs a coordinator a phone call to a manager, not a lost record and not a
+compliance failure — so this one can be answered slowly, or left unanswered,
+without holding anything up.
+
+**Please answer from what happens now, not from what should happen.** "A
+coordinator ought to be able to" is the answer we can already guess; "mine
+calls me four times a day about it" is the one that decides it.
+
+**Two things we are NOT asking, because they are already settled:** nobody is
+proposing coordinators write the **rules** about what training is required
+(`sen_training_rules`, `rf_cert_rules` stay management-only in both answers),
+and a YES does not loosen who can see client records — only who can type in a
+new referral or a finished training.
+
+*Full detail, for engineers:*
+`docs/2026-10-14-fourth-b17-sen-rf-write-map.md`.
+
+---
+
+## ONE MORE, NOT COUNTED IN THE ELEVEN — for a law-firm administrator
 
 **SAIRNlaw · the proposed `bookkeeper` role · YES or NO: is your bookkeeping
 done by an employee, or by an outside firm?**
@@ -158,8 +203,8 @@ done by an employee, or by an outside firm?**
   record, which is a different piece of work.
 
 *It is listed separately because it is an org-chart question rather than one of
-the ten access decisions, and because it is neither a legal question nor one a
-funeral home or veterinary practice can answer.* **Today a firm with three
+the eleven access decisions, and because it is neither a legal question nor one
+a funeral home, veterinary practice or home-care agency can answer.* **Today a firm with three
 roles either gives its bookkeeper an attorney login — handing a non-lawyer
 every client file — or gives a paralegal the trust ledger. The software offers
 no third answer.**
