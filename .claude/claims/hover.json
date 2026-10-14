@@ -743,8 +743,8 @@
       "task": "b35 deep-verify next closed batch, H2 b33 drive recheck, weakening-flags routing-doc check, stash/stale-file recheck, chain+token, push",
       "claimed_at": "2026-10-14T23:45:07Z",
       "claimed_at_epoch": 1792021507.9203382,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-14T23:54:08Z",
       "files": null
     }
   ],
