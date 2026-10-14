@@ -550,6 +550,35 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/sd-data-leg-overlap.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "1b7f9bfa517840695a91577e497ab16795b8d4f1",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-leg-role-matrix.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "1b7f9bfa517840695a91577e497ab16795b8d4f1",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-rf-settings-tier.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "{ setting_key: 'damage_threshold',"
+    }
+   ],
+   "sha": "1b7f9bfa517840695a91577e497ab16795b8d4f1",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": ".claude/settings.json",
    "class": "CI / hook configuration",
    "level": "WEAKENING",
@@ -846,6 +875,19 @@
     }
    ],
    "sha": "2a964aa413328265230c990e50629fe4f16b00da",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-rf-settings-tier.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'The allowlist was first written as a plain literal, so '"
+    }
+   ],
+   "sha": "2d04cc072c982ec842da6dfee3673a155b822f33",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -2597,6 +2639,23 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/sd-data-leg-overlap.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "if (/_employee_auth\\?.*&select=active&limit=1/.test(String(url))) {"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "exempt: 'Cancelled', prefix: 'BOOKING',"
+    }
+   ],
+   "sha": "85206564d24ff52acfa6a8fac363c06d559ea808",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_scrutiny_flag_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -3574,6 +3633,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "acd683fd0dc2197df02c730852bf976ba35942e6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sql-run-order-agreement.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ad128e5c1ee41ae24a66d8483637576d3ba68b06",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -5196,6 +5263,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "fdb80dbe15e23ce8552d47c0a46ff39fa46fb120",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-leg-role-matrix.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "fdd06d06b68c1a4e67ca4d4f117a02a54421c9c3",
    "criteria_version": "2026-10-06.1"
   },
   {
