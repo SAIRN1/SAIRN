@@ -28928,7 +28928,7 @@
       "factors_unknown_reason": "both were found by reading the dispatch's own description rather than by an investigation, and why neither was caught when the tools were written has not been examined by anybody; a guess in a CAPA field is worse than the gap"
     },
     {
-      "commit": "813e022208a3",
+      "commit": "2d7ddaf4ce0f",
       "date": "2026-10-14",
       "subject": "fix(register feed gate): import the override hint instead of keeping a second copy",
       "files": [
@@ -28957,7 +28957,7 @@
       "factors_unknown_reason": "not investigated this batch -- the fix (import the constant, with a fallback that points at it rather than restating it) is verified; root-cause factor analysis was not done"
     },
     {
-      "commit": "832a180edcf2",
+      "commit": "201b80d51b8b",
       "date": "2026-10-14",
       "subject": "fix(tier a): a claim file is not a pulse -- liveness on the reviewer roster, and 4 dead-owned obligations moved",
       "files": [
@@ -29098,7 +29098,7 @@
       "recurrence_open": "The read-then-write window remains: two requests interleaving between the SELECT and the upsert, milliseconds wide. The atomic close is a Postgres EXCLUDE over tstzrange and CANNOT be written against these tables -- the window lives in a data jsonb column and text::timestamptz is STABLE, not IMMUTABLE, so it is rejected in an index expression. It needs real start/end columns or an /rpc/ function doing the insert in one statement. And four of b9's five survey findings are still open, each needing a different fix."
     },
     {
-      "commit": "8d3db65ff594",
+      "commit": "0e6607e0709e",
       "date": "2026-10-14",
       "subject": "fix(push gate): the refusal text names the scoped exemption first, as :990 already claimed",
       "files": [
@@ -29415,7 +29415,7 @@
       "factors_unknown_reason": "cody measured the behaviour and routed the fix; why MoveFileEx semantics were not considered when the atomic write was added has not been investigated by anybody and inventing a cause here would be a guess"
     },
     {
-      "commit": "ba641dffe242",
+      "commit": "836e36874969",
       "date": "2026-10-14",
       "subject": "fix(secrets): step 4a restored to both rotation runbooks -- the precondition on the only irreversible step",
       "files": [
