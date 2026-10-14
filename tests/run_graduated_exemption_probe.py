@@ -17,6 +17,12 @@ fails OPEN -- a gate that crashes closed gets disabled and then protects
 nothing. The exemption store must fail CLOSED, because a store that cannot be
 read granting an exemption would be a gate that disables itself by breaking.
 
+CONSUMPTION IS MODE-DEPENDENT AND SECTION 2 DRIVES BOTH MODES. One `git push`
+runs this hook twice -- PreToolUse then pre-push -- over one store file, so only
+`prepush`, the mode git will not push without, spends the token. `pretooluse`
+grants on a match and leaves it. Asserting consumption without setting a mode
+measured a contract retired on 2026-10-07 and reported the fix as a failure.
+
 NOTHING HERE PUSHES ANYTHING. The graduated logic is pure enough to drive
 directly: exempt_requested() takes a command string, graduated_exempt() takes a
 check name and a sha. The store is redirected at a temporary directory for the
@@ -98,11 +104,56 @@ try:
     second = g.graduated_exempt('seed', TIP)
     check('HARD CAPTURE: the SECOND push, same sha, is granted',
           second is True)
-    check('...and the exemption is CONSUMED -- single use, so a third push '
-          'starts the cycle over rather than riding the same grant',
-          not os.path.isfile(g._exempt_path('seed')))
+
+    # ── CONSUMPTION FOLLOWS `MODE`, BY DESIGN (re-asserted 2026-10-14) ──────
+    # These two arms asserted that the second call CONSUMED the record and that
+    # a third was refused, with no mode set. That was the contract until
+    # 2026-10-07, when using the feature showed it made the scoped exemption
+    # UNGRANTABLE in the ordinary case: ONE `git push` from a Bash tool call
+    # runs this hook TWICE -- PreToolUse on the command text, then the real
+    # pre-push hook -- and both modes read one store file. The PreToolUse half
+    # ate the token, the prepush half then found an empty store and soft-captured
+    # again, and the message said SOFT CAPTURE forever.
+    #
+    # So `graduated_exempt` now defaults `consume` to `MODE == 'prepush'`:
+    # consumption follows AUTHORITY, because prepush is the mode git will not
+    # push without. The probe imports the module, where MODE is 'pretooluse'
+    # (tools/sairn_push_gate_hook.py:194), so the unconsumed record is CORRECT
+    # here -- the old arms were measuring a retired contract and reporting a
+    # deliberate fix as two failures.
+    #
+    # BOTH MODES ARE DRIVEN, AND THAT PAIR IS THE CONTROL. The default is taken
+    # from MODE rather than passed, so these arms test the DERIVATION, not a
+    # parameter. `consume` hardcoded to False fails the prepush arms; hardcoded
+    # to True fails the pretooluse arms. Neither direction can be satisfied by
+    # deleting the other, and "always consume" -- the 2026-10-07 defect -- is
+    # exactly what the pretooluse arm now refuses.
+    check('MODE is pretooluse here, which is what makes the arms below mean '
+          'what they say', g.MODE == 'pretooluse', g.MODE)
+    check('PRETOOLUSE DOES NOT CONSUME: the grant is left for prepush to spend, '
+          'because a pretooluse grant on its own pushes nothing',
+          os.path.isfile(g._exempt_path('seed')))
     third = g.graduated_exempt('seed', TIP)
-    check('...proven: the third push is refused again', third is False)
+    check('...so a repeat pretooluse read is granted again rather than '
+          'restarting the cycle -- the 2026-10-07 defect was this half eating '
+          'the token', third is True)
+
+    real_mode = g.MODE
+    try:
+        g.MODE = 'prepush'
+        fourth = g.graduated_exempt('seed', TIP)
+        check('PREPUSH IS THE MODE THAT SPENDS IT: the same record is granted',
+              fourth is True)
+        check('...and CONSUMED -- single use, by the one mode git will not push '
+              'without', not os.path.isfile(g._exempt_path('seed')))
+        fifth = g.graduated_exempt('seed', TIP)
+        check('...proven: the next prepush starts the cycle over, refused',
+              fifth is False)
+    finally:
+        g.MODE = real_mode
+    check('CONTROL: restoring MODE really restored it, so every arm after this '
+          'point is still measuring pretooluse',
+          g.MODE == 'pretooluse', g.MODE)
 
     # ── THE ARM THAT DECIDES WHETHER SETTLING MEANS ANYTHING ────────────────
     os.remove(g._exempt_path('seed'))

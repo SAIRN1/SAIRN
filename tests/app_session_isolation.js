@@ -190,7 +190,13 @@ const POSTURE = {
   // sf_ resources were gated across 2026-09-21/22/24 and every one answers
   // 403, so the gate column read NONE while more than a third of the app was
   // behind a session.
-  sairnfreedom:    { gate: 'SOME', auth: true,  why: 'CORRECTED 2026-09-25, RE-COUNTED 2026-09-29. 16 of 36 gate, all via SD_SESSION_GATED (403 FORBIDDEN) -- sf_trustee_audits joined both denominator and numerator on the day it first reached the server -- the Tier A three armed 2026-09-21, eight more after the hover audit 2026-09-22, sf_signatures and the rest 2026-09-24. Per-employee auth DOES exist (api/sf-auth.js, ten capability roles, sairnfreedom_employee_auth); the old row denied both facts' },
+  // ── FINISHED 2026-10-13, ROW MOVED 2026-10-14 (Cody b11) ─────────────────
+  // 46d74678 gated the last nine: "36 of 36, and the b6 comment that said so
+  // was wrong". The COUNT in this row is what went stale -- the same reason the
+  // sairncode row above deliberately carries no number. Kept here anyway,
+  // because the sequence is the record of how long twenty of a gaming post's
+  // thirty-six resources stood on a browser-shipped licence key.
+  sairnfreedom:    { gate: 'ALL',  auth: true,  why: 'CORRECTED 2026-09-25, RE-COUNTED 2026-09-29, COMPLETED 2026-10-13 in 46d74678 ("the last nine resources gated -- 36 of 36"), ROW MOVED 2026-10-14 (Cody b11). 36 of 36 gate, all via SD_SESSION_GATED (403 FORBIDDEN) -- the Tier A three armed 2026-09-21, eight more after the hover audit 2026-09-22, sf_signatures and the rest 2026-09-24, sf_trustee_audits joined both denominator and numerator on the day it first reached the server, and the final nine on 2026-10-13. Per-employee auth DOES exist (api/sf-auth.js, ten capability roles, sairnfreedom_employee_auth); the pre-2026-09-25 row denied both facts' },
   // READS are still licence-only on all 28 and that is what this column
   // measures. The WRITE posture is no longer NONE: on 2026-09-14 Michael
   // decided the six Tier A billing resources -- sc_ar, sc_claims, sc_revenue,
@@ -209,7 +215,29 @@ const POSTURE = {
   // mechanism instead of the size, because a size written here is a fifth copy
   // and would have gone stale the same way.
   sairncode:       { gate: 'NONE', auth: true,  why: 'DECIDED 2026-09-14: READS stay licence-only on all 28, deliberately; WRITES on every Tier A resource require admin or biller (SC_TIER_A_WRITE_GATED, derived from the pinned list in api/_resources/sairncode.js and driven by tests/sairncode_gates.js -- the count deliberately lives there and not here). This column measures READS only, which is why it still says NONE' },
-  sairngrounds:    { gate: 'NONE', auth: true,  why: 'NOT DOCUMENTED -- api/grd-auth.js exists; grd_invoices and msb_licenses are Tier A' },
+  // ── THE GAP THIS ROW RECORDED WAS CLOSED SEVEN DAYS BEFORE THE ROW MOVED
+  //    (corrected 2026-10-14, Cody b11) ──────────────────────────────────────
+  // It read NONE / NOT DOCUMENTED, which was true when written and stopped
+  // being true on 2026-10-07 in 6a2690be: "the LICENCE KEY ALONE reached every
+  // read and every write on 21 resources -- 16 of 17 grd_* had no session gate
+  // at all". That commit gated 21 of the 30, including grd_invoices, so this
+  // row spent a week reporting NO gate on an app that had one over two thirds
+  // of its surface.
+  //
+  // WORTH KEEPING RATHER THAN OVERWRITING: the old row was doing its job. It
+  // said NOT DOCUMENTED for exactly as long as nobody had decided the posture,
+  // and that is the signal that sent somebody to look. What failed was the
+  // RE-READ -- nothing re-compared the row against the measurement until this
+  // suite was driven, and when it was, the drift had been sitting there a week.
+  // The eighth cross-domain discipline, in the one place in this file that is
+  // hand-written.
+  //
+  // THE REMAINING NINE ARE NOT DOCUMENTED and that is said in the row rather
+  // than rounded off: SOME is the measurement, not an all-clear. DRIVEN, not
+  // inferred from the source -- the nine that do not refuse are exactly the
+  // msb_* set, and msb_licenses, named in the old row as Tier A, is one of
+  // them. The split is clean: all 21 grd_* gate, all 9 msb_* do not.
+  sairngrounds:    { gate: 'SOME', auth: true,  why: 'CORRECTED 2026-10-14 (Cody b11), GATE LANDED 2026-10-07 in 6a2690be -- "the LICENCE KEY ALONE reached every read and every write on 21 resources; 16 of 17 grd_* had no session gate at all". 21 of 30 now gate, and the split is clean: every grd_* refuses, every msb_* does not. The row read NONE / NOT DOCUMENTED for seven days after the fix landed because nothing re-compared it. THE NINE msb_* ARE STILL NOT DOCUMENTED -- msb_products, msb_sales, msb_licenses (Tier A), msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours. SOME is the measurement, not an all-clear' },
   // DOCUMENTED 2026-09-24 (Cody, from H2 seq 206): the licence-key-alone
   // class rows existed for sdn, sf and sc and this app had none, so a reader
   // sweeping that class by index rows would conclude SAIRNscape was clean.
@@ -232,7 +260,16 @@ const POSTURE = {
   // giving the wrong answer. The comparison is fixed above, this row now
   // measures SOME, and the same fix moved three other rows that had been
   // wrong for longer -- sairnlaw, sairnfreedom and shared.
-  sairnscape:      { gate: 'SOME', auth: true,  why: 'GAP CLOSED 2026-09-25 (Cody): the TWO Tier A resources (invoices, scp_quotes) require a sairnscape session on read AND write via SD_SESSION_GATED + SD_GATE_APP, 403 FORBIDDEN, driven by api/sd-data-scp-session-gate.test.js and live-verified by tools/scp_session_gate_live_probe.py. 2 of 12 gate; the other ten stay licence-only, deliberately, and scp_vendors is driven as the disclosure. This row read NONE until the 401-only comparison was fixed later the same day' },
+  // ── AND THEN THE OTHER TEN WERE GATED TOO (corrected 2026-10-14, Cody b11)
+  // The row said "2 of 12 gate; the other ten stay licence-only, DELIBERATELY".
+  // That sentence stopped being true across three commits -- 0442646c
+  // (2026-10-11, three of eight), d99b47f9 (2026-10-14, the last five) and
+  // 5776ef19 (2026-10-14, "the twelfth resource is gated, SAIRNscape is 12 of
+  // 12") -- and it is the most misleading shape a row in this table can take:
+  // not "we have not decided", but a positive claim that the gap was a
+  // DECISION. A reader sweeping for licence-only resources would have skipped
+  // the app on the strength of it.
+  sairnscape:      { gate: 'ALL',  auth: true,  why: 'CORRECTED 2026-10-14 (Cody b11). 12 of 12 gate. Started 2026-09-25 with the two Tier A resources (invoices, scp_quotes) via SD_SESSION_GATED + SD_GATE_APP, 403 FORBIDDEN, driven by api/sd-data-scp-session-gate.test.js and live-verified by tools/scp_session_gate_live_probe.py; completed by 0442646c (three of the remaining eight, 2026-10-11), d99b47f9 (the last five, 2026-10-14) and 5776ef19 (the twelfth, 2026-10-14). The old row said the other ten stayed licence-only DELIBERATELY, which is worse than an undecided posture -- it claimed the gap was a decision, and a reader sweeping for licence-only resources would have skipped the app' },
   // MEASURED MOVED, SO THIS ROW MOVED WITH IT (2026-09-21). CC's gate landed in
   // 760a34a9 and was live-verified in 30a9f179, taking sairnlegacy from measured
   // NONE to measured ALL -- and this suite FAILED until this row was updated,
@@ -384,10 +421,17 @@ section('0. the fixture really is a token, and really is app-bound');
   // required". That sentence was the blindness written down as a finding.
   const SESSION_REFUSALS = { 401: 'NO_SESSION', 403: 'FORBIDDEN' };
   const measured = {};
+  // THE COUNTS ARE PRINTED NOW, AND THAT IS A REPORTING FIX (2026-10-14).
+  // The rows' own prose carries numbers -- "16 of 36 gate", "2 of 12", "5 of 7"
+  // -- and nothing in this file ever printed the measured pair, so correcting a
+  // drifted row meant rebuilding this harness by hand in a scratch file to find
+  // out what the new number was. The loop already computes it; it just threw it
+  // away.
+  const counts = {};
   const oddRefusals = [];
   for (const app of reg.APP_NAMES) {
     const names = reg.RESOURCE_NAMES_BY_APP[app] || [];
-    if (!names.length) { measured[app] = 'NONE'; continue; }
+    if (!names.length) { measured[app] = 'NONE'; counts[app] = [0, 0]; continue; }
     let gated = 0;
     for (const r of names) {
       // `call` returns {code, body} -- comparing the OBJECT to 401 made every
@@ -407,17 +451,43 @@ section('0. the fixture really is a token, and really is app-bound');
                        + ' (expected ' + want + ')');
     }
     measured[app] = gated === 0 ? 'NONE' : (gated === names.length ? 'ALL' : 'SOME');
+    counts[app] = [gated, names.length];
   }
   ok(oddRefusals.length === 0,
      'every 401/403 on a no-session read is one of the two SESSION refusals '
      + '(401 NO_SESSION, 403 FORBIDDEN) -- anything else would be counted as a '
      + 'gate it is not: ' + (oddRefusals.join('; ') || 'none'));
+  // ── EVERY ROW IS COMPARED BEFORE ANY OF THEM THROWS (2026-10-14) ──────────
+  // This was one `ok()` per app, and `ok` is `assert.ok` -- so the FIRST
+  // mismatch aborted the loop and the remaining apps were never compared. The
+  // cost was paid on 2026-10-13: the run reported sairnscape and nothing else,
+  // a handoff recorded "its own recorded posture row is 7 days stale" in the
+  // singular, and driving all 17 the next day found THREE drifted rows. A
+  // drift detector that stops at the first drift under-reports by design, and
+  // the under-report is invisible because the output looks complete.
+  //
+  // So every row is measured and PRINTED, then one assertion carries all the
+  // mismatches at once. The measured/recorded pair and the counts are on the
+  // line either way, which is what makes a correction a lookup instead of a
+  // rebuild of this harness in a scratch file.
+  const drift = [];
   for (const app of Object.keys(measured)) {
-    ok(POSTURE[app] && POSTURE[app].gate === measured[app],
-       app + ': measured ' + measured[app] + ', recorded '
-       + ((POSTURE[app] && POSTURE[app].gate) || 'NOTHING')
-       + (POSTURE[app] ? ' -- ' + POSTURE[app].why.slice(0, 90) : ' -- ADD A ROW WITH A REASON'));
+    const rec = POSTURE[app] ? POSTURE[app].gate : 'NOTHING';
+    const [g, t] = counts[app] || [0, 0];
+    const same = POSTURE[app] && rec === measured[app];
+    console.log('  ' + (same ? 'ok  ' : 'DRIFT') + ' ' + app
+                + ': measured ' + measured[app] + ' (' + g + ' of ' + t
+                + ' gate), recorded ' + rec
+                + (POSTURE[app] ? '' : ' -- ADD A ROW WITH A REASON'));
+    if (!same) {
+      drift.push(app + ': measured ' + measured[app] + ' (' + g + ' of ' + t
+                 + '), recorded ' + rec);
+    } else { n++; }
   }
+  ok(drift.length === 0,
+     'every app\'s MEASURED posture matches its RECORDED row -- all '
+     + Object.keys(measured).length + ' driven, not stopped at the first: '
+     + (drift.join(' | ') || 'no drift'));
   const undocumented = Object.keys(POSTURE).filter((a) => /NOT DOCUMENTED/.test(POSTURE[a].why));
   ok(undocumented.length > 0,
      'CONTROL: the table really does distinguish documented from undocumented postures '
