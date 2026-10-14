@@ -3639,8 +3639,8 @@
       "task": "batch b13 -- (1) b12 claim ALREADY RELEASED in b4b80004, verified not re-released; then READ-ONLY audit of the 1 hook group .claude/settings.json carries from eb53e267 -- who, when, and whether it matches the approved SessionStart:compact design in docs/2026-10-13-per-gate-skip-design.md -- finding routed to cc with file:line, NO EDIT to settings.json and no hook added or restored. (2) a new dated CORRECTION doc fixing the two false evidence lines in my b12 report (the A1 fixture that was itself fail-open; the scratchpad .v1.py files cited as as-shipped) each with the command proving the correction. (3) inventory BY COMMAND every checker in the repo with no bad-input fixture proving it fails closed, plus a spec for a mechanical check that FAILS on any such checker, routed to cc, NO tools/ edit. (4) docs/2026-10-14-ai-safeguards-spec.md routed to hank (api/) and cody (tests/) -- one-time AI notice per user at first face-login, one-time owner acceptance in the agreement, inline Reviewed button on high-risk AI outputs only, AI-assisted reviewed-by footer on outgoing documents, every assistant surface declares it is AI; data model, per-app surface list, acceptance tests, SPEC ONLY. (5) re-run the routed-findings ack check and regenerate the 36-undriven-suites doc against current origin/main, counts named by command. (6) push without force, confirm HEAD == origin/main 0 ahead 0 behind. FINAL: handoff BEFORE the report, then report and digest, all three uploaded to Drive 14Xc5oT0xzSLa_rTSOSXWVK3Kko1Fbx09 and read back. FILES: docs/2026-10-14-fourth-b13-hook-audit-routed-to-cc.md docs/2026-10-14-fourth-b13-corrections.md docs/2026-10-14-fourth-b13-unfixtured-checkers-routed-to-cc.md docs/2026-10-14-ai-safeguards-spec.md docs/2026-10-13-fourth-b10-undriven-suites.md SAIRN-handoff-fourth-b13.md SAIRN-report-fourth-b13.txt SAIRN-digest-fourth-b13.txt",
       "claimed_at": "2026-10-14T10:30:21Z",
       "claimed_at_epoch": 1791973821.1731062,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-14T11:03:55Z",
       "files": [
         "SAIRN-digest-fourth-b13.txt",
         "SAIRN-handoff-fourth-b13.md",
@@ -3650,6 +3650,27 @@
         "docs/2026-10-14-fourth-b13-corrections.md",
         "docs/2026-10-14-fourth-b13-hook-audit-routed-to-cc.md",
         "docs/2026-10-14-fourth-b13-unfixtured-checkers-routed-to-cc.md"
+      ]
+    },
+    {
+      "id": "fourth-1791976021",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "batch b14 -- (1) AI safeguards spec section 7 DECIDED BY CHAT and recorded: owner acceptance is NOT a runtime gate, SAIRNdental and SAIRNsenior are clinical/high-risk so the inline Reviewed button applies, notice version is 2026-11 until the lawyer's wording is final; the three open questions removed, customer wording still [DRAFT -- LAWYER], spec changes routed to hank and cody. (2) the 13 untriaged hook-manifest drift findings triaged -- real drift vs stale record vs owner -- and cc's routed to cc. (3) the two open [WEAKENING] flags in docs/scrutiny-flags.json from hank b8 (da7e88cf) signed off or rebutted with file:line evidence. (4) methodology: of the 613 unfixtured checkers the 25 guarding auth, audit-log, role-gate or push paths listed in priority order with owner and the fixture each needs, routed to cc and cody. (5) routed to cc and recorded ONCE each in docs/by-design-register.json with file:line: the python -c os.remove bypass of the rm deny rule, the orphaned fourth.lock and b12wt2.lock, and the DEAD claim state from a stale PID heartbeat. (6) push without force and confirm HEAD == origin/main 0/0. FINAL: handoff BEFORE the report, uploaded with tools/drive_upload_verify.py, then batch_manifest --close, then report and digest uploaded and verified. I WRITE ONLY UNDER docs/ plus my own three deliverables; nothing under tools/, api/, sql/ or tests/ is edited. NO HOOKS ADDED OR RESTORED, .claude/settings.json never committed, no SAIRN_SEED_GATE=off, and no python -c os.remove or any other route around a denied permission rule. FILES: docs/2026-10-14-ai-safeguards-spec.md docs/2026-10-14-fourth-b14-hook-manifest-triage.md docs/2026-10-14-fourth-b14-weakening-review.md docs/2026-10-14-fourth-b14-fixture-priority-25.md docs/2026-10-14-fourth-b14-routed-to-cc.md docs/by-design-register.json SAIRN-handoff-fourth-b14.md SAIRN-report-fourth-b14.txt SAIRN-digest-fourth-b14.txt",
+      "claimed_at": "2026-10-14T11:07:01Z",
+      "claimed_at_epoch": 1791976021.932105,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b14.txt",
+        "SAIRN-handoff-fourth-b14.md",
+        "SAIRN-report-fourth-b14.txt",
+        "docs/2026-10-14-ai-safeguards-spec.md",
+        "docs/2026-10-14-fourth-b14-fixture-priority-25.md",
+        "docs/2026-10-14-fourth-b14-hook-manifest-triage.md",
+        "docs/2026-10-14-fourth-b14-routed-to-cc.md",
+        "docs/2026-10-14-fourth-b14-weakening-review.md",
+        "docs/by-design-register.json"
       ]
     }
   ],

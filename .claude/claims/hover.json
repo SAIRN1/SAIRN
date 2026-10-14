@@ -621,12 +621,27 @@
       "task": "h1 b27 -- (1) verify sf_ gate claim 36/36 at 5e4c7d02 file:line (2) verify sql/audit_checkpoint_schema.sql covers 16 logs idempotent CHECK derived not hand-listed, source-only (3) re-check sairnlaw_audit_log CHECK credential values / leg_bookings TOCTOU / rf_schedule DDL landed, file:line, no re-route if routed (4) spot-check 3 b7 test suites re-run exit0 0 unproven (5) chain tip + RFC3161 token check, republish only if >15 behind (6) push without force confirm landed. FILES: .claude/skills/sairn-hover-auditor/handoffs/SAIRN-handoff-h1-b27.md SAIRN-report-h1-b27.txt SAIRN-digest-h1-b27.txt",
       "claimed_at": "2026-10-14T09:57:39Z",
       "claimed_at_epoch": 1791971859.9396229,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-14T11:12:21Z",
       "files": [
         ".claude/skills/sairn-hover-auditor/handoffs/SAIRN-handoff-h1-b27.md",
         "SAIRN-digest-h1-b27.txt",
         "SAIRN-report-h1-b27.txt"
+      ]
+    },
+    {
+      "id": "hover-1791976664",
+      "session": "hover",
+      "subject": "hover",
+      "task": "h1 b28 -- (1) tip beacon discrepancy repro + read-back check + chain/token republish if >15 behind (2) adversarial verify hank b8 landed: sairnlaw_audit_log CHECK 3 credential types, leg_bookings server gate, 5 scp_ gated, rf_schedule DDL status, file:line (3) adversarial verify cody b8 18bf06eb failing-first test + 20 COULD-NOT-RUN classification (4) adversarial verify cc b7 6841af8f save_reviews retry + drive_upload_verify, reproduce one claim (5) methodology: digest CONTEXT percent or not-measurable, chain tip/token must match beacon exactly, add check to report generator (6) push without force confirm landed. FILES: .claude/skills/sairn-hover-auditor/handoffs/SAIRN-handoff-h1-b28.md SAIRN-report-h1-b28.txt SAIRN-digest-h1-b28.txt",
+      "claimed_at": "2026-10-14T11:17:44Z",
+      "claimed_at_epoch": 1791976664.2581081,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        ".claude/skills/sairn-hover-auditor/handoffs/SAIRN-handoff-h1-b28.md",
+        "SAIRN-digest-h1-b28.txt",
+        "SAIRN-report-h1-b28.txt"
       ]
     }
   ],

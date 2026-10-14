@@ -63,7 +63,7 @@ categories and no others:
 | # | category | examples on this platform |
 |---|---|---|
 | 1 | **legal documents** | SAIRNlaw drafts and citations, SAIRNlegacy estate documents |
-| 2 | **medication or clinical suggestions** | SAIRNcare MAR/med suggestions, SAIRNvet treatment notes |
+| 2 | **medication or clinical suggestions** | SAIRNcare MAR/med suggestions, SAIRNvet treatment notes, **SAIRNdental coding/chart suggestions, SAIRNsenior care answers** (both decided §7.2) |
 | 3 | **hiring, pay or discipline** | StoneDesk HR, SAIRNhr |
 | 4 | **claim outcomes** | SAIRNroofing / insurance claim determinations |
 | 5 | **investment or tax** | SAIRNcash, SAIRNacc |
@@ -244,15 +244,15 @@ no Reviewed button.
 | sairnscape | `sairnscape.html` | `api/claude.js` | — | no |
 | sairngrounds | `sairngrounds.html` | `api/claude.js` | — | no |
 | sairnmechanical | `sairnmechanical.html` | `api/claude.js` | — | no |
-| sairndental | `sairndental.html` + book/complaint | insurance-card capture | **2** if it suggests clinical coding | decide, then yes or a NOT_PROMOTED row |
-| sairnsenior | `sairnsenior.html` | AI Assistant panel | **2** if care suggestions | same |
+| sairndental | `sairndental.html` + book/complaint | insurance-card capture, coding suggestions | **2** (decided §7.2) | **yes** |
+| sairnsenior | `sairnsenior.html` | AI Assistant panel | **2** (decided §7.2) | **yes** |
 | sairnfuneral | — | `api/claude.js` | — | no |
 | sairnfreedom | `sairnfreedom.html` | `api/claude.js` | — | no |
 
 **Every row in the "no" column still needs (a), (b) and (e).** Only (c) and (d)
-are scoped by risk. **The two "decide" rows are the only judgment calls in this
-table** and they belong to whoever owns those apps' panels — not to me, and not
-to a default.
+are scoped by risk. **The two rows that read "decide" until 2026-10-14 are now
+category 2** — see §7.2 for the decision and its reasoning. No row in this table
+is open.
 
 ---
 
@@ -273,7 +273,7 @@ proving it fails closed is not finished — and these are the arms.
 | **T7** | `recordReview` inserts `event_type='ai_output_reviewed'` into an app whose CHECK list does not include it | **the call throws and the UI shows the review did not save.** Must NOT return success, must NOT render a reviewer footer |
 | **T8** | a high-risk output rendered with no review row | footer reads **"AI-assisted — not reviewed"**; the document still generates |
 | **T9** | a **non**-high-risk surface | **no Reviewed button at all** — a test that fails if one appears, because scope creep here is what makes the button meaningless |
-| **T10** | owner acceptance absent for a licence | app still works; **acceptance is an agreement artefact, not a runtime gate** (unless Michael says otherwise — see §7) |
+| **T10** | owner acceptance absent for a licence | app still works; **acceptance is an agreement artefact, not a runtime gate** (decided §7.1). Add the negative arm: **no code path refuses an AI call for an unaccepted licence** |
 | **T11** | owner acceptance recorded twice | one row, second is a no-op |
 | **T12** | any `api/claude.js` success response | carries `ai: true` and a non-empty `ai_label` — asserted at the proxy, so a new surface cannot forget it |
 | **T13** | all 20 app ids from `KNOWN_APP_IDS`, de-duplicated | each resolves to exactly one entry in the §4 table. **Catches the `sairnsenior` duplicate** |
@@ -295,20 +295,95 @@ non-AI screen gets switched off, and then none of T1–T14 runs either.
   legal reading, not a test result.
 * **It does not touch `api/`, `sql/` or `tests/`.** No file in those
   directories is written by this batch.
-* **It does not decide the two "decide" rows in §4**, and it does not decide
-  whether (b) is a runtime gate.
+* **It does not settle anything in §7 beyond what §7 states.** All three of
+  that section's open points are now decided; the two `[DRAFT — LAWYER]` strings
+  are the only thing in this document still waiting on somebody.
 * **It does not specify retention.** How long an ack or a review row lives is a
   data-retention question the DPA answers, not this document.
 
 ---
 
-## 7. THE THREE QUESTIONS FOR MICHAEL, each answerable in one word
+## 7. THE THREE OPEN POINTS — DECIDED 2026-10-14, fourth b14
 
-1. **Is (b) a runtime gate?** If an owner has not accepted, does the app's AI
-   still answer? Spec'd as **no gate** (T10) because a gate turns a paperwork
-   gap into an outage. One word changes it.
-2. **SAIRNdental and SAIRNsenior** — are their AI outputs clinical (category 2,
-   Reviewed button) or not? Two one-word answers.
-3. **Notice version string** — `2026-11` as spec'd, or tie it to the agreement
-   version the lawyer approves? If the lawyer changes the wording after launch,
-   the version string is what re-prompts every user exactly once.
+**Decided by chat, not by Michael, and deliberately so:** all three are
+technical/product calls with a safe default and a cheap reversal. Michael's
+decision stands where it was already made — simple design, no repeat popups, and
+the customer-facing wording belongs to the lawyer. **None of these three touches
+the wording.**
+
+| # | decision | why | what it changes |
+|---:|---|---|---|
+| **7.1** | **Owner acceptance is NOT a runtime gate.** It is a **one-time acceptance in the customer agreement**, and nothing in the app checks it before answering. | A gate turns a paperwork gap into an outage: an owner who has not signed loses AI across every seat, and the first support call makes somebody disable the gate — which removes the acceptance *and* the gate. §1(b) already assigns telling staff to the owner, and that duty does not run through the runtime. | **T10 stands as written** and loses its "unless Michael says otherwise". `ownerTermsState()` stays **report-only**: it returns state and **no caller may branch an AI refusal on it**. |
+| **7.2** | **SAIRNdental and SAIRNsenior outputs ARE treated as clinical / high-risk — category 2 — so the inline Reviewed button applies.** | Classification errs toward review for anything that can reach a patient or a resident. SAIRNdental's capture flow feeds coding that lands on a claim and in a chart; SAIRNsenior's AI Assistant answers care questions about a named resident. "Only if it suggests clinical coding" is a judgment made per output, at speed, by whoever is on shift — and that is not a classification, it is a hope. **The cost of being wrong in this direction is one extra button; in the other direction it is an unreviewed clinical suggestion in a document.** | §4's two "decide" rows become **category 2, Reviewed button = yes**. §1(c)'s category-2 example list gains both apps. T9 (no button on a non-high-risk surface) **must not** assert against these two. |
+| **7.3** | **Notice version is `2026-11` now, and is bumped when the lawyer's wording is final.** | The mechanism must ship before 2026-11-12 and the wording is not back yet; tying the string to an unapproved agreement version would block the build on a document. The bump is the re-prompt mechanism working as designed (T4): one extra acknowledgement per employee, exactly once. | `CURRENT_NOTICE_VERSION = '2026-11'` ships. **When the lawyer's text lands, bump the constant in the same commit as the text** — and T4 is the test that proves the bump re-prompts without destroying the earlier ack. |
+
+**WHAT IS STILL NOT DECIDED HERE, and is not a question for Michael either:**
+the two `[DRAFT — LAWYER]` strings. They stay placeholders until the lawyer
+returns them. **Shipping the mechanism with placeholder wording is the correct
+order** — the version bump exists precisely so the final text can arrive after
+the plumbing.
+
+### ROUTED: what changed for the two implementers
+
+**hank (`api/`, `sql/`)**
+
+* `ownerTermsState(license_hash)` (§3.1) is **report-only by contract**. No
+  branch in `api/claude.js` or any `*-auth.js` may refuse an AI call because
+  acceptance is absent. If a future batch wants that gate, it needs a decision
+  that is not in this document.
+* `CURRENT_NOTICE_VERSION = '2026-11'`. **One constant, one place.** When the
+  wording lands, the constant and the text move in one commit.
+* `isHighRisk(app, surface)` returns **true** for `sairndental` and
+  `sairnsenior` — no "if it suggests clinical coding" branch, because that is a
+  per-output judgment a function cannot make.
+
+**cody (`tests/`)**
+
+* **T10** loses its parenthetical: acceptance absent → the app still answers,
+  and that is now the asserted behaviour rather than a provisional one. **Add
+  the negative arm:** no code path refuses an AI call for a licence with no
+  acceptance row.
+* **T9 must exclude `sairndental` and `sairnsenior`.** A T9 that treats either
+  as non-high-risk now fails for the wrong reason, and that failure would read
+  as scope creep rather than as a stale fixture.
+* **T4 is now load-bearing** rather than hypothetical: it is the test that the
+  lawyer's wording can land after launch. Drive it with `2026-11` → `2026-12`.
+* **Two new high-risk surfaces** need the T7/T8/T14 arms (review row,
+  "not reviewed" footer, document footer) for `sairndental` and `sairnsenior`.
+
+### 7.4 hank's b9 IS ALREADY BUILDING THIS, AND THE SPEC YIELDS WHERE THEY DIFFER
+
+Measured from the claim record, not assumed — hank's live b9 claim item 2 is
+*"AI safeguards in api/: `ai_source` + `ai_approved_by` + `ai_approved_at` on
+AI-sourced records, server refusal for high-risk leaving draft unapproved,
+per-employee one-time AI notice ack"*, with declared files including
+`api/_lib/ai-safeguards.js`, `api/ai-notice.js`,
+`api/sd-data-ai-approval.test.js`.
+
+**Three things follow, and two of them are concessions:**
+
+1. **The approval record: hank's shape wins.** This spec put the review in the
+   app's `<app>_audit_log` as `event_type='ai_output_reviewed'` (§2.3). hank is
+   putting `ai_approved_by` / `ai_approved_at` **on the record itself**. **The
+   record-level columns are better for the footer** — §1(d) renders
+   "reviewed by [name]" at document-generation time, and reading it off the row
+   being rendered beats a second query into an audit log. **§2.3's CHECK-list
+   hazard still applies to anything that also writes an audit row**, and that
+   warning is the part of §2.3 worth keeping either way.
+2. **"Server refusal for high-risk leaving draft unapproved" is a GATE this
+   spec did not ask for, and it does not contradict §7.1.** §7.1 is about
+   *owner acceptance*, which must never gate. A high-risk **document** refusing
+   to leave draft until a human approved it is the opposite case: that is the
+   whole point of (c) and (d), enforced server-side rather than in the UI. **It
+   is stronger than what I specified** and the spec adopts it.
+3. **The notice ack is the one place to check for a collision.** hank is
+   building a per-employee one-time ack **and** `api/ai-notice.js`; §2.1 and
+   §3.2 put the ack columns on the existing `*_employee_auth` row and the
+   action on the existing `*-auth.js` endpoint. **If hank's lands as a separate
+   endpoint plus a separate table, that is two ack records for one fact** —
+   which is the thing to resolve before both ship, and it is hank's call, not a
+   defect in either.
+
+**Nothing in §1–§6 is rewritten to match.** A spec that silently re-aligns
+itself to whatever landed stops being reviewable; the differences are named
+here instead.
