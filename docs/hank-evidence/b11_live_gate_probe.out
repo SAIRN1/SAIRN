@@ -1,0 +1,31 @@
+B11 LIVE GATE PROBE -- the MAR access grant action, the family_mar narrowing, and the first production firing of the AI approval gate
+data https://sairn.vercel.app/api/sd-data
+class=VERIFICATION-READONLY  guard=n/a  residue=none
+
+alf-auth login -> 200  token=YES
+  mar_access_grant, OWNER session -> 403 FORBIDDEN | Granting sight of a medication record is the office manager's decision   PASS (the action is deployed AND owner is not a grantor)
+  family_mar, OWNER session, unknown contact -> 404 NO_SUCH_CONTACT | no such family contact on this licence   PASS (the owner passed the role gate -- the narrowing did not catch them)
+  alf_mar read, OWNER session -> 200 ok rows=2   PASS
+  family_mar, NO session -> 401 NO_SESSION | Sign in first   PASS
+
+  rf_photos write, ai_source, NO session -> 403 AI_APPROVAL_REQUIRED | This record was written by AI and is leaving draft, so it has to be ap   PASS (the high-risk AI approval gate fired in production for the first time)
+  rf_photos write, ai_source + status draft -> 401 NO_SESSION | Sign in first   PASS (the draft exemption is live -- a working copy may be unapproved) -- and note the answer is the SESSION gate one layer later, which is the discrimination: the AI gate let it past
+  rf_photos write, NO ai_source -> 401 NO_SESSION | Sign in first   PASS (an ordinary write is untouched -- the gate is not refusing everything) -- again answered by the session gate, which is what arm 5 proves the AI gate runs BEFORE
+
+-- NOT DRIVEN BY THIS PROBE, so an absence is not read as a pass --
+  * the ENTIRE SAIRNvet role matrix (42 resources, 6 roles) and the
+    sv_audit_log append-only lock: the SAIRNvet demo credential is DEAD
+    (docs/2026-09-03-demo-credentials.md:59 and :250). No session can
+    be had and a probe does not mint credentials. SUITE VERIFIED ONLY:
+    api/sd-data-sv-role-matrix.test.js, 31 arms, 492 combinations.
+  * the BILLING refusal on family_mar and the grant-then-read flow:
+    need `billing` and `office_manager` credentials that do not exist
+    on ALF-TEST-2026. tests/mar_billing_grant.test.js, 28 arms.
+  * the three transport guards: client-side JS, unreachable over HTTP.
+    tests/faults/transport_timeout_sweep.js, 81 arms over 15 apps.
+  * the COULD NOT RUN third state: a property of a checker, proven by
+    ablation in both directions, not by a deployment.
+  * BOTH SQL BLOCKS -- NOT RUN, so no grant row can exist and the three
+    audit event types are still rejected by the table.
+
+fail=0 couldnot=0

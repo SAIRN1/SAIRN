@@ -1,0 +1,6 @@
+matcher can no longer see the alf_op_audits list read
+  exit=1
+    ok - KNOWN-BAD: a VARIABLE-built read with NO order clause FAILS
+    ok - KNOWN-BAD: an order clause that exists ONLY IN A TRAILING COMMENT FAILS
+  14 assertions passed
+    FAIL - alf_op_audits list read carries an explicit order= clause

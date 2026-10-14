@@ -1,0 +1,59 @@
+SAIRNvet role matrix -- 42 resources, 6 roles, criteria 2026-10-14.1
+
+A. coverage: the table, the handler and the vocabulary agree
+  ok       A1. the table carries exactly 42 rows, which is the measured resource count in fourth's b15 spec
+  ok       A2. the table and api/sd-data.js's own SV_RESOURCES dict name the SAME 42 resources, compared in BOTH directions -- a resource in the handler with no row would be ungated, and a row with no resource is a rule for nothing
+  ok       A3. every row carries one of the four spec bands, so a reviewer can check the band against the resource name
+  ok       A4. all 6 roles in ROLES_BY_APP.sairnvet have a column on all 42 rows -- a role with no column is DENIED by decide(), which is right, but silently
+  ok       A5. sv_controlled's row is DERIVED from api/sv-auth.js's PRESCRIBER_ROLES and agrees with it role by role, so the DEA register's pair is named in exactly one place
+  FAIL     A6. every row's `why` is a reason rather than the resource name restated -- this arm IS the consumer of that field, which is what keeps it from being dormant
+           sv_scheduling
+  ok       A7. the bands count 23 REGULATED / 4 MONEY / 13 OPERATIONS / 2 REFERENCE, which is the spec's own split -- a drifted band is a policy change wearing a typo
+
+B. fourth's b15 spec §5 negative controls V1-V12
+  FAIL     V1. a frontdesk token writing the SOAP note must be 403 FORBIDDEN with no data query
+           status=200 code= dataCalls=1 body={"ok":true,"data":{"id":"X1"}}
+  FAIL     V2. an assistant token writing a lab result must be 403 FORBIDDEN with no data query
+           status=200 code= dataCalls=1 body={"ok":true,"data":{"id":"X1"}}
+  FAIL     V3. the sv_controlled refusal must name the licensed-practitioner requirement
+           status=403 code=WITNESS_REQUIRED msg=This is the controlled-substance register. Confirm the record first — the write cannot proceed without it.
+  FAIL     V4. a manager token writing a surgical record must be 403 FORBIDDEN with no data query
+           status=200 code= dataCalls=1 body={"ok":true,"data":{"id":"X1"}}
+  FAIL     V5. a dvm token writing practice financials -- the clinician/money separation must be 403 FORBIDDEN with no data query
+           status=200 code= dataCalls=1 body={"ok":true,"data":{"id":"X1"}}
+  FAIL     V6a. owner editing an EXISTING sv_audit_log row is refused 409 APPEND_ONLY -- the dosing trail binds the owner exactly as it binds anybody else
+           status=200 code=
+  FAIL     V6b. dvm editing an EXISTING sv_audit_log row is refused 409 APPEND_ONLY -- the dosing trail binds the owner exactly as it binds anybody else
+           status=200 code=
+  ok       V6c. CONTROL -- a NEW sv_audit_log entry is accepted, so the lock refuses EDITS and not appends. The trail would be worthless if nothing could be recorded
+  ok       V7. CONTROL -- a frontdesk token READS sv_clients, 200. This is the phone-answering control: without it the fix could be "refuse front desk everything" and V1 would still pass
+  ok       V8a. CONTROL -- a tech token WRITES sv_vitals, 200. A technician doing clinical work is the normal case in a veterinary practice, and the matrix must not break it
+  ok       V8b. CONTROL -- a tech token WRITES sv_soapnotes, 200. A technician doing clinical work is the normal case in a veterinary practice, and the matrix must not break it
+  ok       V9. CONTROL -- a manager token WRITES sv_invoicing, 200. The practice manager is the money role; V5 is only meaningful beside this
+  ok       V10a. owner is NOT refused by the role table on sv_controlled -- the answer comes from the witnessing lock (WITNESS_REQUIRED), which is the gate that existed before these 41 and must still be the one speaking
+  ok       V10b. dvm is NOT refused by the role table on sv_controlled -- the answer comes from the witnessing lock (WITNESS_REQUIRED), which is the gate that existed before these 41 and must still be the one speaking
+  ok       V11. a role from another app (caregiver) cannot be MINTED for sairnvet at all -- signSessionToken throws "signSessionToken: invalid role "caregiver" for app "sairnvet"", so the refusal is one layer earlier than the spec expected and there is no token to present
+  ok       V12. CONTROL -- an owner token reads all 42 resources, 200 each. The whole risk of adding 41 gates is refusing somebody who should be allowed, and this is the arm that would catch it at full width
+
+C. one call, before the dispatch, pinned at source
+  ok       C1. the source anchor matches exactly once, so C2 and C3 are measuring the pre-dispatch block and not some other region
+  FAIL     C2. svRoles.decide() is called exactly ONCE in api/sd-data.js. A role check written at one call site and not the other forty-one is indistinguishable from no policy when read one branch at a time
+           calls=0
+  FAIL     C3. both the role decision and the append-only lock are inside that pre-dispatch block, so NEITHER the read branch nor the write branch can be reached without them
+           decide in block: false appendOnly in block: false
+  ok       C4. the pre-dispatch block does NOT touch api/sv-witness.js -- the spec requires the witnessing lock to stay exactly where it was, on the write branch, because it carries a legal act
+
+D. the full sweep: 42 resources x 6 roles x 2 actions
+  FAIL     D1. all 492 driven (resource, role, action) combinations answer exactly what the table says, in both directions. Excluded from the WRITE half and named rather than silently skipped: sv_controlled (witnessing lock), sv_audit_log (append-only lock)
+           sv_audit_log/frontdesk/read table=DENY handler=200/
+           sv_billing/dvm/write table=DENY handler=200/
+           sv_billing/tech/read table=DENY handler=200/
+           sv_billing/tech/write table=DENY handler=200/
+           sv_billing/assistant/read table=DENY handler=200/
+           sv_billing/assistant/write table=DENY handler=200/
+           sv_billing/frontdesk/read table=DENY handler=
+  ok       D2. CONTROL -- the table itself contains both verdicts (374 ALLOW, 130 DENY of 504), so D1 is comparing two real answers rather than one constant
+  ok       D3. a non-sv resource answers NOT_SV and an UNKNOWN sv_ resource answers DENY -- a 43rd resource added to the handler without a row here is refused, not defaulted open
+
+19 passed, 11 failed, 0 unproven
+11 ARM(S) FAILED: A6, V1, V2, V3, V4, V5, V6a, V6b, C2, C3, D1

@@ -1,0 +1,76 @@
+BILLING / MAR GRANT -- criteria 2026-10-13.1 (FAILING-FIRST)
+
+A. billing is DENIED by default
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/family_mar. The request was allowed on the token alone.
+  FAIL     A1. billing with no grant must be 403 FORBIDDEN on family_mar
+           status=200 body={"ok":true,"provisioned":true,"family_mar":{"ok":true,"resident_id":"R1","consent":{"granted":true,"granted_at":null,"granted_by":null},"events":[],"adherence":{"counts":{"given":0,"refused":0,"held":0,"missed":0,"unknown":0},"scored_events":0,"percent_given":null,"held_excluded":0,"
+  UNPROVEN A2. whether the refusal leaks a row cannot be judged until A1 refuses at all
+           A1 returned 200
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/family_mar. The request was allowed on the token alone.
+  FAIL     A3. the refusal must precede the contact lookup
+           status=200
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_mar/read. The request was allowed on the token alone.
+  ok       A4. billing is 403 on alf_mar/read -- REGRESSION PIN, green at HEAD. ALF_MAR_ROLES = { owner, nursing, med_aide } (api/sd-data.js:11148, gated :11191). This is the answer the sibling resource must agree with
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_mar/write. The request was allowed on the token alone.
+  ok       A5. billing is 403 on alf_mar/write too -- REGRESSION PIN, green at HEAD (api/sd-data.js:11234). A grant is a READ grant and must never become a write one
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/family_mar. The request was allowed on the token alone.
+  ok       A6. CONTROL -- nursing, with no assignment and no grant, still gets 200. WITHOUT THIS ARM the fix could be "deny everything" and A1-A5 would all pass
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/family_mar. The request was allowed on the token alone.
+  ok       A7. CONTROL -- the assigned narrow role still passes, so the change is to the ROLE SET and not to the assignment logic tests/sd_data_family_mar_gate.js:161 pins
+  FAIL     A9. family_mar must not admit billing through ALF_FAMILY_READ_ROLES
+           const ALF_FAMILY_READ_ROLES = roleSet({ owner: true, billing: true, nursing: true });
+
+B. the grant requires the OFFICE MANAGER and nobody else
+  FAIL     B1. the grantor set must be a named constant ALF_MAR_GRANT_ROLES
+           absent from api/sd-data.js
+  ok       B2. office_manager is in ROLES_BY_APP.sairncare, so a session can actually hold it
+  FAIL     B3. every non-grantor role must be 403 on mar_access_grant
+           owner -> 400
+  FAIL     B4. billing must not be able to self-grant
+           status=400
+  FAIL     B5. the grantor role must be able to grant
+           status=400 body={"error":{"message":"action must be 'read' or 'write' or 'family_mar'"}}
+
+C. the grant EXPIRES ON ITS OWN, evaluated at read time
+  FAIL     C1. api/sd-data.js must make an expiry MANDATORY on mar_access_grant -- the action, the expires_at field and the ALF_MAR_GRANT_MAX_HOURS ceiling all named in the handler
+           mar_access_grant present: false, expires_at present: false, ALF_MAR_GRANT_MAX_HOURS present: false
+  UNPROVEN C1b. whether a grant with no expires_at is REFUSED cannot be judged while mar_access_grant does not exist -- the 400 is the dispatcher rejecting the action, not the handler rejecting a missing expiry
+           action must be 'read' or 'write' or 'family_mar'
+  FAIL     C2. a named ceiling ALF_MAR_GRANT_MAX_HOURS must bound the grant window
+           absent from api/sd-data.js
+  UNPROVEN C3. whether the ceiling is ENFORCED cannot be judged while mar_access_grant does not exist -- same dispatcher 400 as C1
+           action must be 'read' or 'write' or 'family_mar'
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/family_mar. The request was allowed on the token alone.
+  ok       C4. CONTROL -- with an UNEXPIRED grant, billing/E7 gets 200. The grant is a real capability; A1 is a default and not a wall. ** THIS PASS IS VACUOUS WHILE A1 IS RED: at HEAD billing gets 200 on family_mar with or without a grant row, so C4 is only load-bearing once A1 refuses. Read it with A1, never alone **
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/family_mar. The request was allowed on the token alone.
+  FAIL     C5. an expired grant must be refused at read time
+           status=200 body={"ok":true,"provisioned":true,"family_mar":{"ok":true,"resident_id":"R1","consent":{"granted":true,"granted_at":null,"granted_by":null},"events":[],"adherence":{"counts":{"given":0,"refused":0,"held":0,"missed":0,"unknown":0},"scored_events":0,"percent_given":null,"held_excluded":0,"
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/family_mar. The request was allowed on the token alone.
+  FAIL     C6. a grant must not admit a different billing employee
+           status=200
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/family_mar. The request was allowed on the token alone.
+  FAIL     C7. a grant must not generalise to another resident
+           status=200
+
+D. the grant, its refusals, and each granted read are LOGGED
+  FAIL     D1. the grant must write one mar_access_granted audit row
+           found 0 of 0 audit row(s)
+  UNPROVEN D2. the row's shape cannot be judged when D1 found 0 rows
+           depends on D1
+  FAIL     D3. a refused grant attempt must write mar_access_grant_refused
+           audit rows: []
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/family_mar. The request was allowed on the token alone.
+  FAIL     D4. a granted MAR read must write mar_access_read
+           audit rows: []
+  FAIL     D5. these event types are not in the CHECK constraint and would be rejected by the table: mar_access_granted, mar_access_grant_refused, mar_access_read
+           sql/sairncare_audit_log_schema.sql:31-36 lists five values
+
+E. the exemption claims, asserted rather than printed
+  ok       E1. this suite IS registered in docs/known-red-suites.json, so its deliberate red can be told from a new regression. 76 entries read
+  ok       E2. NO GATE READS THIS -- measured: 0 of the files under tools/ name mar_billing_grant. The claim this suite used to print is now the result of an arm
+
+8 passed, 16 failed, 4 unproven
+16 ARM(S) FAILED: A1, A3, A9, B1, B3, B4, B5, C1, C2, C5, C6, C7, D1, D3, D4, D5
+4 ARM(S) UNPROVEN: A2, C1b, C3, D2
+
+EXPECTED RED until the api/ owner lands the feature. Registration and gate-freedom are ASSERTED by arms E1 and E2, not claimed here.

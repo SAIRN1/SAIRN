@@ -1,0 +1,66 @@
+BILLING / MAR GRANT -- criteria 2026-10-13.1 (FAILING-FIRST)
+
+A. billing is DENIED by default
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/family_mar. The request was allowed on the token alone.
+  ok       A1. billing with NO grant is 403 FORBIDDEN on family_mar. THIS IS THE OPEN HOLE: at HEAD it is 200 and returns R1's full MAR, because ALF_FAMILY_READ_ROLES (api/sd-data.js:12551) includes billing and family_mar inherits it (:12654)
+  ok       A2. ...and no MAR row reached the caller with the refusal. A 403 carrying data is not a refusal
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/family_mar. The request was allowed on the token alone.
+  ok       A3. and billing is refused BEFORE the contact row is read, so it is not told whether C1 exists -- the existence oracle api/sd-data.js:12645-12647 already refuses for the narrow tier
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_mar/read. The request was allowed on the token alone.
+  ok       A4. billing is 403 on alf_mar/read -- REGRESSION PIN, green at HEAD. ALF_MAR_ROLES = { owner, nursing, med_aide } (api/sd-data.js:11148, gated :11191). This is the answer the sibling resource must agree with
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_mar/write. The request was allowed on the token alone.
+  ok       A5. billing is 403 on alf_mar/write too -- REGRESSION PIN, green at HEAD (api/sd-data.js:11234). A grant is a READ grant and must never become a write one
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/family_mar. The request was allowed on the token alone.
+  ok       A6. CONTROL -- nursing, with no assignment and no grant, still gets 200. WITHOUT THIS ARM the fix could be "deny everything" and A1-A5 would all pass
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/family_mar. The request was allowed on the token alone.
+  ok       A7. CONTROL -- the assigned narrow role still passes, so the change is to the ROLE SET and not to the assignment logic tests/sd_data_family_mar_gate.js:161 pins
+  ok       A9. family_mar's gate no longer admits billing -- either ALF_FAMILY_READ_ROLES dropped it (false) or family_mar stopped inheriting that set (true)
+
+B. the grant requires the OFFICE MANAGER and nobody else
+  ok       B1. ALF_MAR_GRANT_ROLES exists as a named constant, so the grantor set is one declared thing and not an inline literal somebody widens
+  ok       B2. office_manager is in ROLES_BY_APP.sairncare, so a session can actually hold it
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/mar_access_grant. The request was allowed on the token alone.
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/mar_access_grant. The request was allowed on the token alone.
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/mar_access_grant. The request was allowed on the token alone.
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/mar_access_grant. The request was allowed on the token alone.
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/mar_access_grant. The request was allowed on the token alone.
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/mar_access_grant. The request was allowed on the token alone.
+  ok       B3. every one of the 6 non-grantor SAIRNcare roles is 403 on mar_access_grant (owner, nursing, med_aide, caregiver, billing, activities) -- driven per role, not asserted from the table
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/mar_access_grant. The request was allowed on the token alone.
+  ok       B4. billing cannot grant ITSELF access. B3 covers it as one of many; this arm names it, because self-grant is the whole point of the control and a future widening would hit it first
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/mar_access_grant. The request was allowed on the token alone.
+  ok       B5. CONTROL -- the grantor role succeeds. Without this arm the feature could be "refuse everybody" and B3/B4 would still pass
+
+C. the grant EXPIRES ON ITS OWN, evaluated at read time
+  ok       C1. the handler REQUIRES an expiry: api/sd-data.js names both expires_at and ALF_MAR_GRANT_MAX_HOURS in the mar_access_grant path. "Time-limited" is not a default somebody omits -- an unbounded grant is the thing being prevented, so the requirement must be in the code and not only in this arm's name
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/mar_access_grant. The request was allowed on the token alone.
+  ok       C1b. a grant with NO expires_at is refused 400 by the handler itself, so absence is a refusal and not a fallback
+  ok       C2. ALF_MAR_GRANT_MAX_HOURS exists, so how long a grant may run is a declared number in the handler rather than whatever the caller sent
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/mar_access_grant. The request was allowed on the token alone.
+  ok       C3. a grant a year out is 400 -- the ceiling is ENFORCED, not merely declared. C2 proves the constant exists; this proves it is read
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/family_mar. The request was allowed on the token alone.
+  ok       C4. CONTROL -- with an UNEXPIRED grant, billing/E7 gets 200. The grant is a real capability; A1 is a default and not a wall. ** THIS PASS IS VACUOUS WHILE A1 IS RED: at HEAD billing gets 200 on family_mar with or without a grant row, so C4 is only load-bearing once A1 refuses. Read it with A1, never alone **
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/family_mar. The request was allowed on the token alone.
+  ok       C5. THE ARM THE WHOLE SECTION IS FOR -- an EXPIRED grant row is still in the table and billing is 403 anyway. "Expiring on its own" means the READ PATH compares expires_at to now; a grant that only expires when a sweeper deletes the row is live for as long as the sweeper is down, and nothing would say so
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/family_mar. The request was allowed on the token alone.
+  ok       C6. the grant is to ONE employee -- billing/E8 is 403 while billing/E7 is admitted by the same row. A grant to a ROLE is not time-limited access, it is a role change with a timer on it
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/family_mar. The request was allowed on the token alone.
+  ok       C7. and the grant is to ONE resident -- a live grant on R2 does not open R1. "Access to a MAR", singular, is what was decided
+
+D. the grant, its refusals, and each granted read are LOGGED
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/mar_access_grant. The request was allowed on the token alone.
+  ok       D1. the grant writes exactly one mar_access_granted row to sairncare_audit_log
+  ok       D2. and the row names WHO granted (employee_id/role), to WHOM, for WHICH resident, and UNTIL WHEN. A grant log missing the expiry cannot answer "was this read inside its window", which is the only question anyone asks it
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/mar_access_grant. The request was allowed on the token alone.
+  ok       D3. a REFUSED grant is logged too. api/*-auth.js audits every outcome of set_active including its refusals, and an attempt to self-grant access to a medication record is the single most worth-recording event this feature has
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/family_mar. The request was allowed on the token alone.
+  ok       D4. EACH granted read is logged, not just the grant. One audit row per grant tells you access was possible; one per read tells you what was actually looked at, and only the second is an access log
+  ok       D5. all three event types are in the sairncare_audit_log CHECK constraint, so the writes are accepted rather than silently dropped
+
+E. the exemption claims, asserted rather than printed
+  ok       E1. this suite IS registered in docs/known-red-suites.json, so its deliberate red can be told from a new regression. 76 entries read
+  ok       E2. NO GATE READS THIS -- measured: 0 of the files under tools/ name mar_billing_grant. The claim this suite used to print is now the result of an arm
+
+28 passed, 0 failed, 0 unproven
+
+EXPECTED RED until the api/ owner lands the feature. Registration and gate-freedom are ASSERTED by arms E1 and E2, not claimed here.

@@ -1,0 +1,86 @@
+--- every transport arms a timeout -- the structural half, all 15 ---
+  ok   sairnbiz.html: sbData() arms AbortSignal.timeout
+  ok   sairnbuild.html: bldDataRaw() arms AbortSignal.timeout
+  ok   sairncare.html: alfData() arms AbortSignal.timeout
+  ok   sairncode.html: scData() arms AbortSignal.timeout
+  ok   sairndental.html: sdnData() arms AbortSignal.timeout
+  ok   sairndesign.html: sdnData() arms AbortSignal.timeout
+  ok   sairnfreedom.html: sfData() arms AbortSignal.timeout
+  ok   sairngrounds.html: grdData() arms AbortSignal.timeout
+  ok   sairnlaw.html: sdnData() arms AbortSignal.timeout
+  ok   sairnlegacy.html: sdnData() arms AbortSignal.timeout
+  ok   sairnmechanical.html: mechData() arms AbortSignal.timeout
+  ok   sairnscape.html: scpData() arms AbortSignal.timeout
+  ok   sairnsenior.html: senData() arms AbortSignal.timeout
+  ok   sairnvet.html: svData() arms AbortSignal.timeout
+  ok   stonedesk.html: sdData() arms AbortSignal.timeout
+  ok   every NAMED transport is the function that actually calls fetch
+  ok   sairnbuild.html: bldData() collapses the raw failure to null and never rejects
+  ok   all 15 use the SAME 15s, or the platform has no single number
+  ok   every one is FEATURE-DETECTED, not assumed
+--- and every transport SAYS something when the world fails ---
+  ok   sairnbiz.html: sbData() reports a failure rather than swallowing it
+  ok   sairnbuild.html: bldDataRaw() reports a failure rather than swallowing it
+  ok   sairncare.html: alfData() reports a failure rather than swallowing it
+  ok   sairncode.html: scData() reports a failure rather than swallowing it
+  ok   sairndental.html: sdnData() reports a failure rather than swallowing it
+  ok   sairndesign.html: sdnData() reports a failure rather than swallowing it
+  ok   sairnfreedom.html: sfData() reports a failure rather than swallowing it
+  ok   sairngrounds.html: grdData() reports a failure rather than swallowing it
+  ok   sairnlaw.html: sdnData() reports a failure rather than swallowing it
+  ok   sairnlegacy.html: sdnData() reports a failure rather than swallowing it
+  ok   sairnmechanical.html: mechData() reports a failure rather than swallowing it
+  ok   sairnscape.html: scpData() reports a failure rather than swallowing it
+  ok   sairnsenior.html: senData() reports a failure rather than swallowing it
+  ok   sairnvet.html: svData() reports a failure rather than swallowing it
+  ok   stonedesk.html: sdData() reports a failure rather than swallowing it
+  ok   a STATE FLAG alone does not satisfy the arm above
+  ok   the two transports that DID swallow it now name the timeout
+--- driven for real: a hang becomes the refusal each caller expects ---
+  ok   sairnbiz.html: a TIMEOUT resolves to the failure value, never a rejection
+  ok   sairnbiz.html: ...and the timeout is REPORTED
+  ok   sairnbiz.html: the signal really reached fetch, at 15s
+  ok   sairnbuild.html: a TIMEOUT resolves to the failure value, never a rejection
+  ok   sairnbuild.html: ...and the timeout is REPORTED
+  ok   sairnbuild.html: the signal really reached fetch, at 15s
+  ok   sairncare.html: a TIMEOUT resolves to the failure value, never a rejection
+  ok   sairncare.html: ...and the timeout is REPORTED
+  ok   sairncare.html: the signal really reached fetch, at 15s
+  ok   sairncode.html: a TIMEOUT resolves to the failure value, never a rejection
+  ok   sairncode.html: ...and the timeout is REPORTED
+  ok   sairncode.html: the signal really reached fetch, at 15s
+  ok   sairndental.html: a TIMEOUT resolves to the failure value, never a rejection
+  ok   sairndental.html: ...and the timeout is REPORTED
+  ok   sairndental.html: the signal really reached fetch, at 15s
+  ok   sairndesign.html: a TIMEOUT resolves to the failure value, never a rejection
+  ok   sairndesign.html: ...and the timeout is REPORTED
+  ok   sairndesign.html: the signal really reached fetch, at 15s
+  ok   sairnfreedom.html: a TIMEOUT resolves to the failure value, never a rejection
+  ok   sairnfreedom.html: ...and the timeout is REPORTED
+  ok   sairnfreedom.html: the signal really reached fetch, at 15s
+  ok   sairngrounds.html: a TIMEOUT resolves to the failure value, never a rejection
+  ok   sairngrounds.html: ...and the timeout is REPORTED
+  ok   sairngrounds.html: the signal really reached fetch, at 15s
+  ok   sairnlaw.html: a TIMEOUT resolves to the failure value, never a rejection
+  ok   sairnlaw.html: ...and the timeout is REPORTED
+  ok   sairnlaw.html: the signal really reached fetch, at 15s
+  ok   sairnlegacy.html: a TIMEOUT resolves to the failure value, never a rejection
+  ok   sairnlegacy.html: ...and the timeout is REPORTED
+  ok   sairnlegacy.html: the signal really reached fetch, at 15s
+  ok   sairnmechanical.html: a TIMEOUT resolves to the failure value, never a rejection
+  ok   sairnmechanical.html: ...and the timeout is REPORTED
+  ok   sairnmechanical.html: the signal really reached fetch, at 15s
+  ok   sairnscape.html: a TIMEOUT resolves to the failure value, never a rejection
+  ok   sairnscape.html: ...and the timeout is REPORTED
+  ok   sairnscape.html: the signal really reached fetch, at 15s
+  ok   sairnsenior.html: a TIMEOUT resolves to the failure value, never a rejection
+  ok   sairnsenior.html: ...and the timeout is REPORTED
+  ok   sairnsenior.html: the signal really reached fetch, at 15s
+  ok   sairnvet.html: a TIMEOUT resolves to the failure value, never a rejection
+  ok   sairnvet.html: ...and the timeout is REPORTED
+  ok   sairnvet.html: the signal really reached fetch, at 15s
+  ok   stonedesk.html: a TIMEOUT resolves to the failure value, never a rejection
+  ok   stonedesk.html: ...and the timeout is REPORTED
+  ok   stonedesk.html: the signal really reached fetch, at 15s
+
+ALL 81 TRANSPORT TIMEOUT ARMS PASS (15 apps)

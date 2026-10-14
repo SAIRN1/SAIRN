@@ -1,0 +1,10 @@
+E1 the matcher can no longer see the alf_op_audits list read
+  exit=2
+    ok - KNOWN-BAD: a VARIABLE-built read with NO order clause FAILS
+    ok - KNOWN-BAD: an order clause that exists ONLY IN A TRAILING COMMENT FAILS
+  14 assertions passed, 1 COULD NOT RUN
+  A COULD NOT RUN arm checked NOTHING. It is not a pass and it is not a finding against api/sd-data.js -- the matcher in THIS file lost its subject. Exit 2 unless something also FAILED, in which case exit 1 and this line is the record.
+E2 the order= clause genuinely removed from that same read
+  exit=1
+  14 assertions passed, 0 COULD NOT RUN
+    FAIL - alf_op_audits list read carries an explicit order= clause

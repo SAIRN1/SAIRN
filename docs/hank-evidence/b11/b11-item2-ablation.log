@@ -1,0 +1,12 @@
+B1 the role decision removed (session gate only, i.e. pre-fix HEAD)
+  exit=1
+  22 passed, 8 failed, 0 unproven
+  8 ARM(S) FAILED: V1, V2, V3, V4, V5, C2, C3, D1
+B2 the append-only lock removed
+  exit=1
+  27 passed, 3 failed, 0 unproven
+  3 ARM(S) FAILED: V6a, V6b, C3
+B3 the sv_controlled-specific refusal message removed (generic denyMessage)
+  exit=1
+  29 passed, 1 failed, 0 unproven
+  1 ARM(S) FAILED: V3

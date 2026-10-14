@@ -1,0 +1,33 @@
+AI PROVENANCE AT THE CLIENT -- criteria 2026-10-14.1
+
+A. the four save sites that stored model output unflagged
+  ok       A1. sairnmechanical.html function saveDoc() stamps ai_source on its mech_docs record -- the stored text IS the model's read of a scanned work order
+  ok       A2. sairnroofing.html function saveMeasurementReading() stamps ai_source on its rf_photos record -- ai_analysis is the model's read of a measurement photograph and an insurance supplement is built on it. HIGH-RISK: this stamp switches the server approval gate on for the first time in production
+  ok       A3. sairngrounds.html async function grdUploadProgressPhoto() stamps ai_source on its grd_progress_photos record -- ai_analysis is the model's description of a job-site photograph
+  ok       A4. sairnscape.html async function scpUploadProgressPhoto() stamps ai_source on its scp_progress_photos record -- the sibling of grd_progress_photos, same panel shape
+  ok       A5. the four tags are DISTINCT (claude:doc-scan, claude:measurement-photo, claude:grd-progress-photo, claude:scp-progress-photo) -- a tag that is the same on two surfaces makes "which surface wrote this" unanswerable, which is the whole reason the field is not a boolean
+
+B. the approver is the server's to write, never the client's
+  ok       B1. no client file ASSIGNS ai_approved_by anywhere -- the server sets it from the verified session and overwrites whatever arrives, which is the control that keeps a forged reviewer name out of a record
+  ok       B2. an ai-sourced record with no approver renders "AI-assisted — not reviewed" rather than an EMPTY footer -- a missing footer and an unreviewed one read identically to a reader and only one of them is true
+
+C. stonedesk: the Review Request Generator said nothing
+  ok       C1. revGenerate() labels the drafted message as AI on the surface that shows it. The operator sends this text to a customer under the shop's name, so "who wrote this" has to be visible at the moment they read it, not in a policy document
+  ok       C2. and the sd_rev_log row carries ai_source, so the record of what was sent says the words were a model's. The log is local-only, which is why the server gate cannot supply this and the client must
+
+D. sairnfreedom: four AI surfaces, four labels (re-measured)
+  ok       D1. all 4 callClaude sites are matched by 4 sfAiLabel renders (5 occurrences less the helper's own definition) -- every surface that shows model output says so
+  ok       D2. sf_bottle_fills still carries its ai_source tag -- the one record this app stores that a model wrote
+
+E. msb_bottle_scans: the exclusion-vs-flagged discrepancy
+  ok       E1. side one -- msb_bottle_scans IS in ai-scan-redaction's DELIBERATELY_EXCLUDED, and the reason holds: the row carries two scalars and an app-computed note, so there is no model prose to redact
+  ok       E2. ...and it is in NEITHER risk map, which is correct rather than an omission: those maps partition AI_SCANNED_TEXT, and this resource is deliberately outside that population. An entry here would fail api/ai-safeguards.test.js's phantom arm
+  ok       E3. side two -- the record IS stamped, because brand_read is what a model read off a label and the row is synced to the server. The exclusion from REDACTION was never an exemption from DISCLOSURE, and that conflation is the whole discrepancy
+
+F. the server gate, driven on the resource now stamped
+  ok       F1. an ai-sourced rf_photos record with NOBODY signed in is refused 403 AI_APPROVAL_REQUIRED -- this is the refusal that was reachable and never reached in production until this batch stamped the field
+  ok       F2. with a signed-in session the record is allowed AND the approver is OVERWRITTEN from the session -- a forged "forged" in the payload does not survive, which is the control, not a side effect
+  ok       F3. CONTROL -- a DRAFT is exempt with nobody signed in, so F1 is the gate firing on a final record rather than the gate refusing everything
+  ok       F4. CONTROL -- the three NOT-high-risk sites get disclosure and no approval gate, so A1/A3/A4 cannot have switched a refusal on by accident. grd_progress_photos has its own QC authority gate and that is the one that decides
+
+18 passed, 0 failed, 0 unproven

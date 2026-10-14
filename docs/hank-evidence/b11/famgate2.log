@@ -1,0 +1,24 @@
+FAMILY_MAR CALLER GATE -- criteria 2026-10-05.1
+
+A. DENIED: a narrow role with NO assignment, and with the WRONG one
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/family_mar. The request was allowed on the token alone.
+  ok   A1. med_aide with NO resident assigned is 403 -- and refused BEFORE the contact is looked up, so it is not told whether C1 exists
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/family_mar. The request was allowed on the token alone.
+  ok   A2. activities assigned to R2 asking about R1's contact is 403. THIS IS THE ONE THAT MATTERS: a legitimate employee with a real assignment reaching a resident who is not theirs
+  ok   A3. ...and it is FORBIDDEN, distinct from NO_SUCH_CONTACT -- "you may not see that resident" and "that contact does not exist" are different answers and collapsing them is an oracle
+
+B. ALLOWED: the authorised paths still work
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/family_mar. The request was allowed on the token alone.
+  ok   B1. activities ASSIGNED to R1 passes. WITHOUT THIS ARM the fix could be "deny everything" and every arm in A would still pass
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/family_mar. The request was allowed on the token alone.
+  ok   B2. nursing, with NO assignment, passes -- ALF_FAMILY_READ_ROLES is the same broad set `read` uses, and a broad role is scoped by the licence rather than by assignment
+sd-data: active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK) on alf_family_contacts/family_mar. The request was allowed on the token alone.
+  ok   B3. owner passes too, so B2 is not passing on one lucky role
+
+C. THE GATE IS IN THE HANDLER, pinned at source
+  ok   C0. the source anchor matches exactly once, so C1-C3 are measuring the family_mar branch and not some other region that happens to contain the same words
+  FAIL C1. the role gate must precede the consent check
+  ok   C2. and the assignment scope is resolved from alf_clients, by the same query `read` uses
+  ok   C3. and the resident is checked against that scope using the id off the STORED contact row -- never a caller-supplied resident_id, which is a parameter somebody edits
+
+9 passed, 1 failed

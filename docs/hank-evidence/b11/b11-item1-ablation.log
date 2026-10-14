@@ -1,0 +1,17 @@
+A1 role narrowing removed (billing back in ALF_FAMILY_MAR_ROLES)
+  exit=1
+  21 passed, 6 failed, 1 unproven
+  6 ARM(S) FAILED: A1, A3, C5, C6, C7, D4
+  1 ARM(S) UNPROVEN: A2
+A2 read-time expiry comparison removed
+  exit=1
+  27 passed, 1 failed, 0 unproven
+  1 ARM(S) FAILED: C5
+A3 grantor role gate removed
+  exit=1
+  25 passed, 3 failed, 0 unproven
+  3 ARM(S) FAILED: B3, B4, D3
+A4 grant scoped to grantee removed (role-wide grant)
+  exit=1
+  27 passed, 1 failed, 0 unproven
+  1 ARM(S) FAILED: C6

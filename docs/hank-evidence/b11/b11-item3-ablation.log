@@ -1,0 +1,17 @@
+C1 the stonedesk AI label removed (revGenerate no longer labels)
+  exit=1
+  17 passed, 1 failed, 0 unproven
+  1 ARM(S) FAILED: C1
+C2 the rf_photos stamp removed (high-risk site unflagged again)
+  exit=1
+  16 passed, 1 failed, 1 unproven
+  1 ARM(S) FAILED: A2
+  1 ARM(S) UNPROVEN: A5
+C3 the bottle-scan stamp removed (the discrepancy reopened)
+  exit=1
+  17 passed, 1 failed, 0 unproven
+  1 ARM(S) FAILED: E3
+C4 two tags made identical (grd and scp share one)
+  exit=1
+  17 passed, 1 failed, 0 unproven
+  1 ARM(S) FAILED: A5

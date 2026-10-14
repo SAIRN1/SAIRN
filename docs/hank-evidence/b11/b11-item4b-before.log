@@ -1,0 +1,18 @@
+SAIRNcare append-only read order: an unordered trail read is not insertion order
+  ok - the table list was actually parsed out of the sibling, not defaulted
+  ok - every trail in the sibling list has an ordering column declared here
+  ok - alf_mar list read carries an explicit order= clause
+  ok - alf_incidents list read carries an explicit order= clause
+  ok - alf_signals list read carries an explicit order= clause
+  ok - alf_claim_routes list read carries an explicit order= clause
+  ok - alf_staff_credentials list read carries an explicit order= clause
+  ok - alf_op_audits list read carries an explicit order= clause
+  ok - CONTROL: the matcher still sees the INLINE shape and its order clause
+  ok - THE REFACTOR THIS ARM WENT RED ON: a VARIABLE-built read with an order clause is seen
+  ok - KNOWN-BAD: a VARIABLE-built read with NO order clause FAILS
+  ok - KNOWN-BAD: an order clause that exists ONLY IN A TRAILING COMMENT FAILS
+  ok - KNOWN-BAD: a query variable never handed to rest() is NOT a read
+  ok - CONTROL: the matcher does not attribute another table's query here
+  ok - the entry_id existence probes were NOT given an order= clause
+
+15 assertions passed

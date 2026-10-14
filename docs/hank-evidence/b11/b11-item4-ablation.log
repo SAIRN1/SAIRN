@@ -1,0 +1,15 @@
+D1 sairncare's reporter guard removed
+  exit=1
+    FAIL sairncare.html: a TIMEOUT resolves to the failure value, never a rejection
+    FAIL sairncare.html: ...and the timeout is REPORTED
+    FAIL sairncare.html: the signal really reached fetch, at 15s
+  78 passed, 3 FAILED
+D2 sairnscape's recorder guard removed
+  exit=1
+    FAIL sairnscape.html: a TIMEOUT resolves to the failure value, never a rejection
+  80 passed, 1 FAILED
+D3 stonedesk's first-line guard removed
+  exit=1
+    FAIL stonedesk.html: a TIMEOUT resolves to the failure value, never a rejection
+    FAIL stonedesk.html: the signal really reached fetch, at 15s
+  79 passed, 2 FAILED
