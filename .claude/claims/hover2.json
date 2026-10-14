@@ -451,6 +451,21 @@
         "SAIRN-handoff-h2-b30.md",
         "SAIRN-report-h2-b30.txt"
       ]
+    },
+    {
+      "id": "hover2-1791994973",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "hover2 batch b31 -- (1) check landed hank b10/fourth b18 via Drive then source; re-check cc b9/cody b10 unspot-checked claims (hook removal eb53e267, status line real window, batch manifest fix line, claim subject handling), falsifiable file:line only (2) route to hank: rf_settings seq850, four AI-save sites seq852 bundled with photoAnalyze, resolve+route msb_bottle_scans discrepancy -- register-only external log repo records (3) adversarially verify cody b10's four routed findings (timeout/sdData abort, alf-append-only zero-match, os.listdir universe, citation checker 60-line window) CONFIRMED/REFUTED/UNVERIFIED (4) verify sairnlaw role matrix ENFORCED in dispatch for all 19+trust_reconcile, table resource/enforced/file:line (5) chain tip+RFC3161+mirror anchor check, republish only if >15 behind; adversarial check sql/2026-10-14-michael-run-order.sql if hank pushed it, else skip (6) push external log repo no force confirm landed. FILES: hover-audit-log/ only, no platform docs/api/tools/tests/sql file. Own root deliverables SAIRN-handoff-h2-b31.md SAIRN-report-h2-b31.txt SAIRN-digest-h2-b31.txt written to Drive, not committed to platform repo.",
+      "claimed_at": "2026-10-14T16:22:53Z",
+      "claimed_at_epoch": 1791994973.200379,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-h2-b31.txt",
+        "SAIRN-handoff-h2-b31.md",
+        "SAIRN-report-h2-b31.txt"
+      ]
     }
   ],
   "refusals": [
