@@ -414,8 +414,8 @@
       "task": "hover2 batch b28 -- (1) fqSaveQuote individual-citation trace, --check-baseline first (2) adversarial check sql/2026-10-14-michael-run-order.sql once hank b10 lands, skip until file exists (3) verify hank b10/cody b10/cc b9/fourth b17/H1 b30 via Drive digests then source, skip unlanded (4) check fourth b17 AI-safeguards acceptance test spec covers stale-frontend ai_label case and photoAnalyze stonedesk.html:26071-26095 (5) re-check sairnlegacy role-matrix staff-narrowest-band once hank implements (6) push external log repo no force confirm landed. FILES: hover-audit-log/ only, no platform docs/api/tools/tests/sql file. Own root deliverables SAIRN-handoff-h2-b28.md SAIRN-report-h2-b28.txt SAIRN-digest-h2-b28.txt written to Drive, not committed to platform repo.",
       "claimed_at": "2026-10-14T13:04:37Z",
       "claimed_at_epoch": 1791983077.959292,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-14T13:11:16Z",
       "files": [
         "SAIRN-digest-h2-b28.txt",
         "SAIRN-handoff-h2-b28.md",
