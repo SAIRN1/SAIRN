@@ -302,12 +302,147 @@ _DEF_RE = r'(?:function\s+%s\s*\(|(?:var|let|const)\s+%s\s*=\s*function|%s\s*[:=
 _CALL_RE = re.compile(r'\b([A-Za-z_$][A-Za-z0-9_$]*)\s*\(')
 
 
+def _strip_comments(line, in_block=False):
+    """(code-only text, still-in-block) for ONE line of JS.
+
+    ── A COMMENT MENTIONING THE RESOURCE IS NOT ACCESS TO IT ─────────────────
+    Routed by cody, 2026-10-14. `_direct_line` tested the RAW line, so all
+    three of these were reported as the cited line accessing `sd_slabs`:
+
+        // historical: used to call getItem('sd_slabs') here
+        /* getItem('sd_slabs') */
+        const x = 1;  // see 'sd_slabs'
+
+    The first is the dangerous one: a comment saying the access was REMOVED
+    was read as proof the access is present. That is CLAUDE.md standing rule
+    1.2 -- grep cannot tell code from text that describes code -- in a tool
+    whose whole output is a claim about what a line of code does.
+
+    STRING LITERALS ARE PRESERVED, and that is the constraint that makes this
+    non-trivial: the resource test looks for `'sd_slabs'`, a quoted string, so
+    a stripper that flattened strings would destroy the signal it is meant to
+    protect. Only comment text is removed; `const u = "http://x"` keeps its
+    `//` because it is inside a string.
+    """
+    out = []
+    i, n = 0, len(line)
+    quote = None
+    while i < n:
+        ch = line[i]
+        nxt = line[i + 1] if i + 1 < n else ''
+        if in_block:
+            if ch == '*' and nxt == '/':
+                in_block = False
+                i += 2
+                continue
+            i += 1
+            continue
+        if quote:
+            out.append(ch)
+            if ch == '\\':
+                if nxt:
+                    out.append(nxt)
+                    i += 2
+                    continue
+            elif ch == quote:
+                quote = None
+            i += 1
+            continue
+        if ch in '\'"`':
+            quote = ch
+            out.append(ch)
+            i += 1
+            continue
+        if ch == '/' and nxt == '/':
+            break                      # line comment: nothing after it is code
+        if ch == '/' and nxt == '*':
+            in_block = True
+            i += 2
+            continue
+        out.append(ch)
+        i += 1
+    return ''.join(out), in_block
+
+
+def _code_lines(lines):
+    """`lines` with comment text removed, string literals intact.
+
+    Block state is carried ACROSS lines, so a multi-line /* ... */ does not
+    leak its middle rows back in as code.
+    """
+    out, in_block = [], False
+    for l in lines:
+        code, in_block = _strip_comments(l, in_block)
+        out.append(code)
+    return out
+
+
+def _blank_strings(line):
+    """`line` with the CONTENTS of every string literal replaced by spaces.
+
+    Quotes and length are preserved so a caller comparing offsets is not
+    surprised. Used ONLY for the constant-identifier test below.
+    """
+    out = []
+    i, n = 0, len(line)
+    quote = None
+    while i < n:
+        ch = line[i]
+        if quote:
+            if ch == '\\' and i + 1 < n:
+                out.append('  ')
+                i += 2
+                continue
+            if ch == quote:
+                quote = None
+                out.append(ch)
+            else:
+                out.append(' ')
+            i += 1
+            continue
+        if ch in '\'"`':
+            quote = ch
+            out.append(ch)
+            i += 1
+            continue
+        out.append(ch)
+        i += 1
+    return ''.join(out)
+
+
 def _direct_line(line, resource, consts):
-    """True when this line names the resource outright."""
+    """True when this line names the resource outright, IN CODE.
+
+    ── THE TWO BRANCHES HAVE OPPOSITE REQUIREMENTS, AND THAT IS THE POINT ────
+    Both tests below ask "does this line access the resource", and a bare
+    substring search answers wrongly for each in a DIFFERENT direction. Cody's
+    sabotage probe found both routes; comments are only the first.
+
+      RESOURCE KEY -- `'sd_comms'` -- is a STRING, and real access spells it
+      as one: `getItem('sd_comms')`. So the quotes are required and string
+      literals must be LEFT INTACT. A stripper that flattened strings would
+      destroy the only signal this branch has.
+
+      STORAGE CONSTANT -- `K_COMMS` -- is an IDENTIFIER, and real access
+      spells it bare: `st(K_COMMS, rows)`. Inside a string it is prose about
+      the resource, not access to it. The probe's fixture is exactly that:
+
+          log('K_COMMS was migrated away from this path');
+
+      which a word-boundary search credited as a write. A sentence saying the
+      access was MIGRATED AWAY was read as proof it is present -- the same
+      inversion as the comment case, arriving by the other route.
+
+    So strings are preserved for the key test and blanked for the identifier
+    test. Comments are stripped before either, because a comment is not code
+    under any spelling.
+    """
+    line, _ = _strip_comments(line)
     if resource and ("'%s'" % resource) in line:
         return True
+    bare = _blank_strings(line)
     for c in consts:
-        if re.search(r'\b%s\b' % re.escape(c), line):
+        if re.search(r'\b%s\b' % re.escape(c), bare):
             return True
     return False
 
@@ -323,14 +458,69 @@ def _nearest_def(lines, name, before):
 
 
 def _body_lines(lines, start, limit=60):
-    """The `limit` lines from a definition -- a bounded read, not a parse.
+    """The definition's OWN body, brace-matched, capped at `limit` lines.
 
-    A brace-matched body would be better and is not worth it here: the
-    question is only whether the resource is reachable, and a definition whose
-    reference is more than 60 lines in is not one a reader would call an
-    accessor either.
+    ── THE FIXED WINDOW CREDITED A NEIGHBOUR'S ACCESS ────────────────────────
+    Routed by cody, 2026-10-14. This used to return a flat 60 lines from the
+    definition, and the previous docstring argued that a brace-matched body
+    "is not worth it here". The measurement says otherwise, and the failure is
+    not a near-miss -- it is a confident false attribution:
+
+        function targetFn() {        // :1   body is :1-:3
+          return 1;                  // :2
+        }                            // :3
+        ... 16 lines of anything ...
+        function neighbourFn() {     // :20
+          return getItem('sd_slabs') // :21  <- the NEIGHBOUR's access
+        }
+
+    A cited line calling only `targetFn()` was reported
+    `('via', 'targetFn() at :1 reaches it in 1 hop(s)')`. targetFn touches
+    nothing. The window simply ran past `}` into the next function and
+    credited whatever it found there.
+
+    SHORT FUNCTIONS ARE THE COMMON CASE, so this was not a rare spill: any
+    definition shorter than 60 lines absorbed its successors, and the shorter
+    the function the more neighbours it absorbed. The old rule's own stated
+    justification -- "a reference more than 60 lines in is not one a reader
+    would call an accessor" -- was answering the wrong question: the problem
+    was never references too DEEP, it was references in a DIFFERENT function.
+
+    Braces are counted over comment-stripped text with string literals left
+    intact, so a `}` inside a comment or a string does not close the body.
+    `limit` SURVIVES as a backstop for a definition whose braces never balance
+    (a parse this is not), and when it is the thing that stopped the read the
+    body is still returned -- bounded, same as before -- because a truncated
+    body can only make this report FEWER reaches, never a false one.
     """
-    return lines[start - 1:min(start - 1 + limit, len(lines))]
+    code = _code_lines(lines)
+    i = start - 1
+    if not (0 <= i < len(code)):
+        return []
+    hard_stop = min(len(code), i + limit)
+    # Find the `{` that opens the body. It is usually on the definition line;
+    # an allman-brace style puts it on the next one.
+    depth = 0
+    opened = False
+    end = hard_stop
+    for j in range(i, hard_stop):
+        for ch in code[j]:
+            if ch == '{':
+                depth += 1
+                opened = True
+            elif ch == '}':
+                depth -= 1
+                if opened and depth <= 0:
+                    break
+        if opened and depth <= 0:
+            end = j + 1
+            break
+    else:
+        # Braces never balanced inside the cap -- fall back to the bounded
+        # window rather than guessing, and the caller's verdict is unchanged
+        # in kind. A one-line arrow body with no braces lands here too.
+        end = hard_stop
+    return lines[start - 1:end]
 
 
 def anchor_verdict(lines, n, resource, consts, hops=2):
