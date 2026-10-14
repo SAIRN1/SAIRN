@@ -2949,6 +2949,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/_lib/auth-roleset-seam.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9733963d54685bf6f160bc85138c451911726379",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/role-vocabulary-agreement.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -4447,6 +4455,32 @@
     }
    ],
    "sha": "e2d8e77c61b593880c1998f8bf5b7afd505055b5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/sairnsenior-branches.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "check('...and that allowlist does not leak who changed the office',"
+    }
+   ],
+   "sha": "e444dc83ba08f7fad32b3a19be6e1584bbe0ddc9",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-sen-role-asymmetry.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "if (/_employee_auth\\?.*&select=active&limit=1/.test(String(url))) {"
+    }
+   ],
+   "sha": "e444dc83ba08f7fad32b3a19be6e1584bbe0ddc9",
    "criteria_version": "2026-10-06.1"
   },
   {
