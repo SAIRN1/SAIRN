@@ -1,0 +1,733 @@
+REPORT fourth b18
+
+SAIRN batch report -- session fourth (ted), batch b18, 2026-10-14.
+Working directory C:\Users\marsh\Documents\SAIRN-fourth, branch main.
+
+EVERY FIGURE IN THIS REPORT NAMES THE COMMAND THAT PRODUCED IT. Where a thing
+was not run, it is marked UNVERIFIED rather than assumed, and the two places
+that happened are named in section 8.
+
+
+================================================================================
+0. THE SHORT VERSION
+================================================================================
+
+The 418-hour Tier A obligation that my own b17 handoff called "THE BIGGEST
+THING I AM LEAVING OPEN" is DISCHARGED -- by me, as its assigned owner, not by
+--takeover. Four of hank's six attack points survive re-verification at HEAD,
+and one of them has since been FIXED in code. The sixth point, (f), HAD NEVER
+BEEN REVIEWED AT ALL -- absent from the 2026-09-29 verdict's summary table,
+body and exclusions, with no line saying it was left out -- and it is the one
+carrying a finding:
+
+  sql/legacy_ciphertext_census.sql counts legacy ciphertext at data->>'enc'
+  while the real Stedi ciphertext is stored at data->'stedi'->>'enc'. On that
+  shape data->>'enc' is NULL, so the surface reports legacy_rows = 0 FOR EVERY
+  POSSIBLE DATABASE STATE -- and that count is step 4a, the precondition for
+  clearing SD_AUTH_SECRET_PREVIOUS. A structural false zero in the direction
+  that destroys the last key able to read those values.
+
+Four further findings at HEAD (N1-N4), including an unaudited second door onto
+the EVV clock field the same change built an audit trail for, and a one-request
+path that leaves a licence with nobody able to provision.
+
+My own b15 section 7.5 ruling is now CORRECTED INLINE in the spec that carries
+it, so a session reading 7.5 without the b17 review beside it can no longer act
+on it. The withdrawn instruction is marked withdrawn in place rather than
+deleted.
+
+The StoneDesk AI write side is spec'd for the first time: sd_photos syncs raw
+model prose to the database with no provenance field and is in NONE of the
+three AI registries, while its three siblings are in all the right ones.
+
+19 open obligations triaged by age, one disposition each, and the triage
+produced its own finding: four are owned by a session that has not run in 17
+days, two of them created this week.
+
+Pushed without force. HEAD == origin/main. Nothing is half-finished.
+
+
+================================================================================
+1. ITEM 1 -- THE MANIFEST, WRITTEN FIRST
+================================================================================
+
+  CMD PYTHONIOENCODING=utf-8 python tools/batch_manifest.py --new fourth b18 --items 6
+      wrote docs\batch-manifest-fourth-b18.json with ids 1-6,
+      id_lock=906816e5cf0d24f9
+
+Written BEFORE any other action in the batch, which is the point of it. The six
+titles were then filled in and each item moved to `done` with a re-runnable
+evidence pointer as it closed.
+
+  CMD PYTHONIOENCODING=utf-8 python tools/batch_manifest.py --check --agent fourth --batch b18
+      32/32 fixtures classify correctly
+      docs\batch-manifest-fourth-b18.json -- 6 item(s): done 6
+
+PYTHONIOENCODING=utf-8 WAS REQUIRED ON EVERY SINGLE CALL. tools/batch_manifest
+.py:386 still crashes on cp1252 without it. That is cc's and it is still open;
+one call in this batch (a python -c writing the titles) crashed mid-script for
+exactly this reason and had to be re-run with the env var, which is how I know
+the workaround is not cosmetic.
+
+
+================================================================================
+2. ITEM 2 -- THE 418-HOUR OBLIGATION IS DISCHARGED
+================================================================================
+
+  CMD PYTHONIOENCODING=utf-8 python tools/tier_a_review_gate.py --list
+      hank  2026-09-27T03:42:29Z  alf_staff, sen_visits  ** OVERDUE 418h **
+            ASSIGNED TO fourth (held 418h -- past 48h, anybody may --takeover)
+            ** COULD-NOT-TELL ** the recorded sha 54e4835ac96e does not resolve
+
+  CMD PYTHONIOENCODING=utf-8 python tools/tier_a_review_gate.py --discharge hank
+        2026-09-27T03:42:29Z --body-file <scratchpad>/verdict_b18.txt
+      DISCHARGED -- fourth reviewed the obligation hank opened
+      2026-09-27T03:42:29Z, on alf_staff, sen_visits                   EXIT 0
+
+DISCHARGED, NOT TAKEN OVER, AND THE DIFFERENCE IS NOT A FORMALITY. The b18
+instruction offered both. --takeover exists for the case where the ASSIGNMENT
+ITSELF has failed -- a non-owner closing an obligation whose owner never ran
+again. I am the owner and I am running. A takeover would have recorded a
+handover that did not happen, on the one record whose entire job is to say who
+looked.
+
+Full verdict: docs/2026-10-14-fourth-b18-tier-a-queue14-discharge.md.
+The verdict string in the register is 3,898 characters and names its own limit.
+
+WHAT THIS REVIEW COULD NOT READ, FIRST, BECAUSE IT BOUNDS EVERYTHING ELSE
+
+  CMD git fetch origin
+  CMD git cat-file -e 54e4835ac96ea02dec8301b9a3252d228b186b0f    ->  DANGLING
+
+Fetched FIRST, so this is not a stale-clone artefact: the commit the obligation
+was opened at is gone from the graph. So this is a review of the code as it
+stands at HEAD, not of the recorded diff -- a state review, not a diff review.
+A defect introduced and then removed between 54e4835a and HEAD is invisible to
+it. That limit is recorded in the verdict string itself, not only in the
+document, because a limit that lives only in a document nobody opens is not a
+limit.
+
+All nine named files are PRESENT at HEAD.
+
+METHOD INDEPENDENCE, not just reviewer independence. I wrote none of the code
+under review. Every claim was re-derived from source by a reader that was NOT
+given the earlier verdict's conclusions, and the load-bearing claims were then
+re-checked by hand against the same lines. That is the "structurally different
+method" convention rather than two passes of the same one.
+
+2.1 WHAT SURVIVED, SAID FIRST, BECAUSE A REVIEW THAT ONLY LISTS FINDINGS IS NOT
+    A REVIEW
+
+(a) THE EVV CLOCK WIRING IS CLEAN, and structurally so rather than by
+    assertion, which is what hank asked for. The stamp keys can only ever be
+    the four clock_{in,out}_{received_at,skew_ms}, derived by
+    field.replace('_at', ...) over a LITERAL array -- a caller cannot inject a
+    key -- and none of them appears in SEN_VISIT_EVV_FIELDS. So
+    Object.assign(visitData, clockCheck.stamps) at api/sd-data.js:7184,
+    running AFTER the field copy, cannot overwrite a caregiver's claimed time.
+    The claimed time persists on every path, including the offline replay,
+    which re-enters the same write branch (sairnsenior.html:3058) rather than
+    bypassing the module; the scheduler branch does not copy clock fields at
+    all.
+
+    And arm H2 does do the thing hank did not want to rely on:
+    api/_lib/sen-evv-clock.test.js:145-151 takes Object.keys() from the LIVE
+    return value and pins the cardinality at 4, so a fifth stamp key fails it.
+    The arm immediately above it, H1 at :140-144, IS the weak hardcoded-list
+    shape -- it passes vacuously if an export is removed. hank's worry was
+    right about the file and one line off about the arm.
+
+(b) THE CAREGIVER EXCLUSION IS RIGHT, AND THE 2026-09-29 FINDING IS FIXED.
+    That review said: the gate is a ROLE check, not an IDENTITY check, so a
+    one-person agency's owner-who-is-also-the-caregiver gets an UNFLAGGED
+    self-correction; and it recommended flag, not refuse. At HEAD,
+    api/sd-data.js:7076-7081 sets self_correction on the entry and
+    has_self_correction on the row, sticky, with the lockout argument spelled
+    out in the comment. A closed loop, and worth saying out loud in a batch
+    that is otherwise reporting defects.
+
+(c) THE DUAL-KEY PATH IS DRAINABLE, verified on the half hank asked for
+    independently. SD_AUTH_SECRET_PREVIOUS is read in exactly two places in all
+    of api/ -- api/_lib/auth.js:510 (verify) and :868 (decrypt). There are
+    exactly two encryptSecret call sites in the repo (api/law-auth.js:462,
+    api/sc-credentials.js:200), both landing on dedicated || legacy
+    (api/_lib/auth.js:874-882), and getSecret() (:400-408) reads SD_AUTH_SECRET
+    only. No write path can produce ciphertext under the previous secret, and
+    there is no re-wrap or backfill script anywhere. A wrong key fails in
+    decipher.final() and surfaces as null, never as wrong plaintext (:922-937),
+    with the tag length pinned at 16. Now also pinned by an arm that did not
+    exist at the earlier review: api/_lib/auth.test.js:560-581 (B2).
+
+(d) THE ANNIVERSARY BOUNDARY IS CORRECT, re-derived by hand: mmdd = '-11-03',
+    on.slice(4) < mmdd is '-11-03' < '-11-03' -> FALSE, so the year is not
+    decremented and from = '2026-11-03'. Hire + 2 years lands on day ZERO of
+    the new window, inclusive at the lower bound. And the earlier review's
+    complaint about the CONSEQUENCE has been answered in code: a day-zero
+    shortfall now yields meets:null with a stated reason rather than
+    meets:false.
+
+2.2 F1 -- THE FINDING, AND IT IS ON THE POINT NOBODY HAD REVIEWED
+
+hank's own attack point (f) asked for exactly this check -- "if its legacy/v2
+discriminator is wrong in either direction, step 4 either gets blocked for ever
+or gets cleared while..." -- and nobody had run it.
+
+  CMD sed -n '73,81p' sql/legacy_ciphertext_census.sql
+        'sc_credentials.data->>enc' as surface,
+        count(*) filter (where data->>'enc' is not null
+                           and data->>'enc' not like 'v2.%')  as legacy_rows,
+
+  CMD api/sc-credentials.js:205   next[service] = nextEntry;
+      (with ALLOWED_SERVICES = { stedi: true } at api/sc-credentials.js:58)
+  CMD api/sc-eligibility.js:180   const rec = stored.stedi;
+      ... api/sc-eligibility.js:190   stediKey = decryptSecret(rec.enc);
+
+THE WRITER AND THE READER AGREE WITH EACH OTHER AND BOTH DISAGREE WITH THE
+CENSUS. The real path is data->'stedi'->>'enc'. On a jsonb object with no
+top-level 'enc' key, data->>'enc' is NULL, so that surface reports
+legacy_rows = 0, v2_rows = 0 and every provisioned row as never_set_rows,
+regardless of what is actually stored. It cannot be right for any row, ever --
+not "might be wrong for some rows".
+
+WHY THAT IS THE DANGEROUS DIRECTION, in the file's own terms. The census gates
+step 4 of the SD_AUTH_SECRET rotation -- "Expect legacy_rows = 0 before
+clearing SD_AUTH_SECRET_PREVIOUS" -- published as step 4a at
+api/_lib/auth.js:442-445. The two directions are not symmetric:
+
+  over-count   -> step 4 blocks for ever, a retired key stays live.
+                  Bad, visible, reversible.
+  under-count  -> the gate reads zero while legacy ciphertext exists, the
+                  operator clears PREVIOUS, and the last key able to read those
+                  values is gone. decryptSecret() returns null and callers read
+                  null as "no secret stored".
+
+SEVERITY STATED HONESTLY RATHER THAN MAXIMALLY: the affected value is a Stedi
+API key, and sql/sd_encryption_key_revoke_2026-09-24.sql:113-118 is right that
+it is recoverable -- rotated at Stedi and re-entered, with an undecryptable row
+answering 503 CREDENTIAL_UNREADABLE and blocking nothing else. So this is not
+unrecoverable data loss. IT IS A SAFETY CHECK THAT RETURNS A CONFIDENT ZERO IT
+CANNOT HAVE MEASURED, and a gate that cannot fail is the defect whatever sits
+behind it.
+
+The law surface's predicate is CORRECT -- the v2. prefix test exactly matches
+encryptSecret's output format at api/_lib/auth.js:881-882 -- which is what
+makes the broken half easy to miss: one union all arm works.
+
+AND THE SAME ERROR IS IN A SECOND FILE, so it propagated rather than being a
+typo: sql/sd_encryption_key_revoke_2026-09-24.sql:113 and the census's own
+header at :40.
+
+2.3 FOUR MORE FINDINGS AT HEAD
+
+N1  THE CORRECTION TRAIL HAS A DOOR BESIDE IT, and this is the sharpest of the
+    four. api/sd-data.js:7179 is an UNCONDITIONAL copy of the EVV fields, with
+    no test anywhere between the assignment check at :7142 and that line of
+    whether the stored clock field is already set. checkClockEvent refuses only
+    the impossible. So a caregiver POSTing a second clock_in_at to a visit
+    assigned to them passes every gate and REPLACES a stored EVV clock-in with
+    no clock_corrections entry, no proposed_by, no self_correction flag. The
+    only guard is render-time: sairnsenior.html:2975, var
+    canClockIn=!v.clock_in_at. A client-side-only restriction on a regulated
+    write is the stale-frontend shape, and the API is the boundary that
+    matters. The branch (b) blocked is audited; the branch it did not is not,
+    and it has LESS trail than the one that was refused.
+
+N2  setup CAN DEMOTE THE LAST OWNER. api/sen-auth.js:263-288: the only gate is
+    caller.role !== 'owner', and the upsert sets role to whatever was passed,
+    with no self-target check and no remaining-owner count. A sole owner calls
+    setup on their own employee_id with role:'caregiver'; bootstrap then
+    answers 409 ALREADY_PROVISIONED and setup itself answers 403. Nobody holds
+    PROVISIONING_ROLES, nobody holds SEN_VISIT_SCHEDULER_ROLES, and there is no
+    in-app route back. set_active ALREADY does this check over
+    provisioningRoles -- the same reasoning was never applied to a role change,
+    which is the same capability by a different verb. This is the
+    credential-deactivation lifecycle requirement sairn-app-scaffold makes
+    mandatory in v1, met for one verb and not the other.
+
+N3  (e) IS PARTLY OVERTURNED. hank's mapping of "direct care staff" to
+    caregiver + med_aide + nursing is a defensible reading of 55 Pa. Code
+    2800.4 and I would not change it. matchAudience is properly three-valued,
+    and the EMPTY-set case is handled better than most of this platform:
+    meets:null with prose distinguishing "we could not read who it applies to"
+    from "this person has no obligation". THE HOLE IS THE NON-EMPTY SET. Rows
+    that returned a clean false are dropped with no disclosure anywhere on the
+    response; unmapped_requirements is built only from STRUCTURALLY unmappable
+    rows, so a row WITH a position list never appears there no matter who it
+    excluded. grep for excluded_by_position: no match -- there is no field to
+    look at. Concretely: an `activities` staff member at a PA ALR matches only
+    the all-staff dementia row (2 hours), so two recorded hours reads
+    meets:true, while the 18-hour unsupervised-work gate and the 16-hour
+    direct-care annual were silently dropped. If that Activities Coordinator
+    does assist with ADLs -- which is what makes somebody direct care staff
+    under the very definition the seed's own basis cites -- the engine reports
+    compliant against 2 when 36 is owed. AND IT IS CHAPTER-DEPENDENT, which is
+    why it hides: under PCH there is no all-staff row, so the same person falls
+    into the empty-set branch and CORRECTLY comes back null. Right in one
+    chapter, silent in the other, for the same person. Masked at runtime today
+    only because hire_date is never written -- the engine is being saved by a
+    different defect, so this must be fixed BEFORE that field starts being
+    written, not after. The ask is disclosure, not a widened mapping: the claim
+    that must stop being made silently is "compliant", when what was measured
+    is "compliant against the subset that mentioned your job title".
+
+N4  THREE COMMENTS CLAIM DRIVEN COVERAGE THAT NO ARM EXERCISES --
+    api/_lib/compliance-rules.js at the anniversary case, the leap-day
+    normalisation and the day-zero behaviour. Stated fairly: "driven" most
+    likely means driven BY HAND during development, which is a real activity
+    and not an invention. The defect is that a hand-drive leaves no artefact:
+    six weeks on, the comment is the only evidence the case was ever exercised,
+    it reads exactly like a reference to a committed arm, and nothing fails
+    when the behaviour changes. Same shape as Guardian Check 0b one layer up --
+    a claim about EVIDENCE rather than about a number, believed the same way.
+    Either the arms land, or the comments say "driven by hand on 2026-09-29, no
+    committed arm", which is true and cheap.
+
+2.4 ROUTING
+
+  hank  F1 (fix the JSON path, both files, and do not hardcode `stedi`
+        silently), N1, N2, N3's disclosure field, N4's comments.
+  cody  four failing-first arms: a second clock_in_at on a set field; a sole
+        owner calling setup on themselves; an `activities` staff member against
+        PA-TRAINING-ALR-2010 with exactly 2 hours; and three date arms (exact
+        anniversary, 2024-02-29 hire, day-zero shortfall asserting null).
+  cc    the four-step rotation is published to an OPERATOR in
+        docs/NHI-REGISTER.md:69 and tools/secrets_inventory.py:74 /
+        tools/nhi_register.py:331-336 WITH STEP 4a MISSING ENTIRELY. The
+        precondition exists in a code comment and two review documents; the
+        runbook somebody would actually follow says "clear PREVIOUS" with no
+        census. The generator is cc's.
+
+
+================================================================================
+3. ITEM 3 -- THE 7.5 CORRECTION, INLINE, AND THE WRITE SIDE NOTHING GUARDS
+================================================================================
+
+3.1 THE CORRECTION IS NOW IN THE DOCUMENT IT CORRECTS
+
+My own b15 ruling in docs/2026-10-14-ai-safeguards-spec.md section 7.5 told
+hank to DELETE api/ai-notice.js because it "carried a second ack store".
+
+  CMD grep -n "AUTH_TABLE_BY_APP|ai_notice_version|table" api/ai-notice.js
+      3:  // ... Two actions, one table column pair, no new table.
+     45:  const { ..., AUTH_TABLE_BY_APP } = require('./_lib/auth');
+    126:  const table = app && AUTH_TABLE_BY_APP[app];
+    229:  body: JSON.stringify({ ai_notice_version: CURRENT_NOTICE_VERSION,
+                                 ai_notice_acked_at: at })
+
+THERE IS NO SECOND STORE. api/ai-notice.js resolves *_employee_auth through
+AUTH_TABLE_BY_APP and writes the two columns onto the credential row -- the
+WINNER my own ruling named. It is also driven: api/ai-safeguards.test.js
+section 5 requires the handler and exercises it.
+
+Two changes, both inline, because the b17 review document alone was not enough
+-- a session reading 7.5 without it beside them would still act:
+
+  1. A correction box at the HEAD of section 7.5, carrying the two greps that
+     disprove the premise and the words NOBODY DELETES api/ai-notice.js.
+  2. The "ROUTED TO hank -- delete the loser and migrate" block is retitled
+     WITHDRAWN and carries a banner saying every numbered item is withdrawn,
+     naming which two would delete working code and which arm would now fail
+     against correct code.
+
+THE WITHDRAWN TEXT IS LEFT IN PLACE RATHER THAN DELETED, deliberately: a
+silently removed instruction is indistinguishable from one that was carried
+out, and somebody may have quoted it elsewhere.
+
+What survives the withdrawal because it was never about the endpoint:
+CURRENT_NOTICE_VERSION stays one constant, and cody's T1-T6 are unchanged.
+
+WHY THE ERROR HAPPENED, so the shape is recognisable: the ruling reasoned from
+the EXISTENCE OF A SECOND ENDPOINT to the EXISTENCE OF A SECOND STORE. Those
+are different facts in different files and only the second was load bearing.
+One grep over the endpoint's own body disproved it.
+
+3.2 SECTION 7.6, NEW -- sd_photos
+
+Everything in sections 1-7.5 guards the moment AI text is PRODUCED
+(api/claude.js) or RENDERED. Nothing guarded the moment it is STORED.
+
+  CMD sed -n '26088,26092p' stonedesk.html
+    26089  var txt=d.content&&d.content[0]&&d.content[0].text?...:'Analysis unavailable.';
+    26090  p.aiAnalysis=txt;
+    26091  saveSD3Data();
+
+  CMD grep -c "ai_source" stonedesk.html            ->  0
+  CMD grep -n "aiAnalysis" stonedesk.html           ->  26060, 26078, 26090
+
+The complete stored row is {id, job, cat, name, size, data, date, aiAnalysis},
+and aiAnalysis is d.content[0].text VERBATIM. No ai_source, no ai_approved_by,
+no ai_approved_at, no model id, no analysis timestamp.
+
+AND IT IS NOT LOCAL, WHICH IS THE PART A REFLEX GETS WRONG. sd_photos is in
+SD_SYNCED (stonedesk.html:2027), so st() takes the synced branch
+(stonedesk.html:1982-1983), sdSyncCollection pushes the WHOLE changed row
+(stonedesk.html:2101), and api/sd-data.js accepts it because sd_photos:
+'photo_id' is in SD_LOCAL_RESOURCES (api/sd-data.js:14184), storing the payload
+verbatim at :14261. Raw model prose about a customer's job reaches the database.
+
+WHY NO EXISTING SAFEGUARD FIRES -- three registries, and it is absent from all
+three:
+
+  1. enforceAiApproval is wired (api/sd-data.js:2088-2098) but returns
+     immediately at api/_lib/ai-safeguards.js:190 on a missing ai_source. The
+     gate is opt-in BY THE WRITER and this writer does not opt in.
+  2. sd_photos is in neither HIGH_RISK_AI nor NOT_HIGH_RISK_AI. It is
+     UNCLASSIFIED, which is a third state, and the registries read as
+     exhaustive.
+  3. sd_photos is not in AI_SCANNED_TEXT -- WHILE ITS THREE SIBLINGS ARE:
+     bld_photo_analyses (api/_lib/ai-scan-redaction.js:55),
+     grd_progress_photos (:61), rf_photos (:78). Same shape of data, same kind
+     of surface, three registered and one not. THAT ASYMMETRY IS THE STRONGEST
+     SINGLE PIECE OF EVIDENCE THAT THIS IS AN OMISSION AND NOT A DECISION.
+
+The render is unlabelled too: the cached text goes into a bare div
+(stonedesk.html:26078 into :7936) and the only AI wording on the surface is the
+spinner "Analyzing with Claude..." at :26077, WHICH THE RESULT OVERWRITES.
+
+Spec'd for hank in five points, the first being that the client stamps
+ai_source:'claude:photo-qc' in the same assignment as aiAnalysis, matching the
+one live adopter (sairnfreedom.html:5078). ai_approved_by / ai_approved_at are
+explicitly NOT client-stamped -- they are server-set from the verified session,
+and a client that writes them is what the server overwrite exists to defeat.
+
+3.3 SECTION 7.6 -- fqSaveQuote IS LOCAL-ONLY, AND THAT IS THE FINDING
+
+  CMD stonedesk.html:38541-38546   (six lines, quoted whole in the spec)
+      var key='stonedesk_quotes';
+      q.unshift({id:...,date:...,trade:fqTrade,text:fqQuoteTxt});
+
+CONFIRMED LOCAL-ONLY on three independent legs: the key is stonedesk_quotes
+while SD_SYNCED carries stonedesk_quote_history (a DIFFERENT key), so st()'s
+synced branch is not taken; the body makes no network call at all; and
+grep -rn "stonedesk_quotes" api/ sql/ tests/ db/ returns ZERO matches.
+
+text IS the model's output verbatim (fqQuoteTxt=r from callClaude at
+stonedesk.html:38524-38525) and THE DEPOSIT FIGURE SHOWN TO THE CUSTOMER IS
+PARSED OUT OF THAT PROSE (:38529-38533). fqClose() saves it and toasts "Signed
+quote saved".
+
+THE RULING: local-only is NOT an exemption from the section 1(d) footer, and
+the reason is mechanical rather than a matter of taste. A priced, signed,
+AI-written quote that never reaches /api/sd-data is invisible to
+enforceAiApproval BY CONSTRUCTION, so the server-side safeguard can never be
+the one that covers it; and it lives in exactly one browser, outside the
+soft-delete machinery every synced resource has. The sibling app has the same
+shape -- sairnmechanical.html:1442 writes localStorage while the SERVER
+resource mech_quotes IS classified high-risk.
+
+I am NOT specifying that it be synced. That is a product decision with a
+retention half, and the spec already says it does not specify retention.
+
+3.4 THE TWO ARMS, AND THE TWO A REVIEWER WOULD CUT
+
+T17  a sd_photos write carrying aiAnalysis and NO ai_source must be refused or
+     accepted only with ai_source present. Three supporting arms: sd_photos
+     resolves in exactly one of the two risk registries (UNCLASSIFIED FAILS);
+     its AI text field is in AI_SCANNED_TEXT, driven by the same loop that
+     covers the three siblings so a fourth cannot be forgotten the way this one
+     was; and the render carries a label that is NOT the spinner string.
+
+T18  the stonedesk_quotes record carries ai_source and the exported quote
+     carries the footer -- PLUS THE CONTROL ARM, which is the one a reviewer
+     would cut and the one that matters: assert stonedesk_quotes is ABSENT from
+     SD_SYNCED, SD_LOCAL_RESOURCES and api/_resources/stonedesk.js, so the day
+     somebody promotes the key, the arm fails loudly and the retention question
+     has to be answered rather than inherited as a side effect of where the
+     data happened to sit.
+
+BOTH MUST FAIL ON TODAY'S CODE BEFORE ANY FIX LANDS. If the first run passes,
+the arm is wrong, not the code -- and that is the check on this spec, not on
+the implementation.
+
+Section 5's acceptance-test table now carries a short pointer block listing
+T16, T17 and T18 with where each is specified, so the table is not mistaken for
+the whole set.
+
+
+================================================================================
+4. ITEM 4 -- H8, FOR A HOME-CARE PRACTITIONER
+================================================================================
+
+docs/2026-10-14-fourth-b16-confirm-questions.md gains H8:
+
+  "Right now, today, in your agency: when a referral comes in by phone, or a
+   caregiver finishes a training, does the coordinator who took that call have
+   to ask an owner or a billing manager to type it in?"
+
+  YES  -> coordinators log referrals, referral sources, applicants and training
+          records themselves (Option A), each entry attributed.
+  NO   -> the software is already right and nothing changes (Option B, running).
+
+It is written as the one question on that sheet A MEASUREMENT COULD ANSWER
+INSTEAD OF AN OPINION, and it says so to the reader, along with the fact that
+nobody has measured it. It also says plainly that nothing is at risk either
+way -- the wrong answer costs a coordinator a phone call, not a lost record --
+so it can be answered slowly or not at all without holding anything up. And it
+asks the practitioner to answer FROM WHAT HAPPENS NOW, not from what should
+happen, because "a coordinator ought to be able to" is the answer we can
+already guess.
+
+Two things are named as already settled so the question cannot drift: nobody is
+proposing coordinators write the RULES (sen_training_rules, rf_cert_rules stay
+management-only in both answers), and a YES does not loosen who can SEE client
+records.
+
+THE SHEET'S OWN HEADING WAS WRONG THE MOMENT H8 LANDED AND IS CORRECTED IN
+THREE PLACES -- "THE TEN QUESTIONS" is now "THE ELEVEN QUESTIONS", with a line
+recording what it used to say and why it changed. A sheet that says ten and
+carries eleven is a document people stop trusting, and it is going to a
+customer.
+
+Option B stands until a practitioner answers, per this batch's standing
+decision. docs/2026-10-14-fourth-b17-sen-rf-write-map.md:162 records that
+switching is one constant (SEN_INTAKE_WRITE_ROLES).
+
+
+================================================================================
+5. ITEM 5 -- THE TRIAGE, AND THE FINDING IT PRODUCED
+================================================================================
+
+docs/2026-10-14-fourth-b18-tier-a-triage.md.
+
+  CMD --list              19 open before this batch, 18 after the discharge
+                          17 of the 19 past the 24h deadline
+                          6 STALE BY CODE, 7 could not be compared at all
+  CMD --reseat-shas       examined 18: reachable 12, reseatable 1,
+                          reseatable WEAK 1, REFUSED 4 [NO_OBJECT_IN_CLONE]
+                          REVIEWED records carrying a sha: 88, of which 34 ALSO
+                          DANGLE and are NOT examined in this mode
+  owners of the open 18   cody 5, cloud 4, cc 4, hank 3, fourth 2
+
+THE FINDING: FOUR OPEN OBLIGATIONS ARE ASSIGNED TO A SESSION THAT HAS NOT RUN
+IN 17 DAYS.
+
+  CMD git log -1 --date=iso -- .claude/claims/cloud.json
+      e3b8b0cd 2026-09-27 03:52:51 +0000 claim(cloud): sairngrounds ...
+  CMD mtime of .claude/claims/cloud.json     ->  2026-09-27T11:05:14Z
+  CMD git log --oneline -500 | grep -ci "cloud claims"   ->  0
+
+And the cause is one function:
+
+  CMD tools/tier_a_review_gate.py:1329  def eligible_reviewers():
+      names = sorted(f[:-5] for f in os.listdir(CLAIMS_DIR) if f.endswith('.json'))
+
+ELIGIBILITY IS "A CLAIM FILE EXISTS ON DISK". There is no liveness test of any
+kind, so a session that stopped running three weeks ago is still a candidate
+every time assign_owner runs. The docstring is RIGHT that the roster must not be
+hardcoded -- "never a guess and never a hardcoded roster" -- so the remedy is
+not a roster, it is a liveness FACT, which the repo already has in the claim
+file's mtime and last commit and in ~/SAIRN-SESSION-LOCKS/status.
+
+CONSEQUENCE, EXACTLY: an obligation assigned to a session that never runs again
+CAN ONLY be closed by --takeover, and nothing surfaces that it needs one. Those
+four are not slow, they are STUCK -- and TWO OF THEM WERE CREATED THIS WEEK,
+one of them four hours before the triage was written. That is the clearest
+single proof this is a live defect rather than a historical one.
+
+ALL 18 TRIAGED, one disposition each, under four stated rules (DISCHARGE
+(mine) / TAKEOVER NEEDED / STAYS WITH ITS LIVE OWNER / FIX THE SHA FIRST),
+because a triage that does not state its rule is a list of opinions.
+
+WHAT I DID NOT DO, AND WHY, SO EACH IS A DECISION RATHER THAN AN OMISSION:
+
+  * I did not hand-edit reviewer_owner on any record. That stamp exists
+    BECAUSE four obligations were double-reviewed on 2026-09-21. Re-pointing it
+    by hand from one build clone is the exact collision it was added to
+    prevent. --takeover is the only instrument that RECORDS a handover.
+  * I did not --takeover the four cloud obligations. A takeover is not a filing
+    action -- it makes me the reviewer, and four Tier A reviews in one batch
+    produces four thin verdicts. A takeover I cannot then discharge is WORSE
+    than leaving it visible: the queue would look owned and moving. (And the
+    oldest of the four is fourth-authored, so the gate correctly refuses me on
+    it regardless.)
+  * I did not run --reseat-shas --write. One record is strong-basis reseatable
+    and one is weak; the tool splits them across two flags deliberately because
+    containment is a different claim from equality. Reseating somebody else's
+    record from my clone is a register-wide write on a measurement I did not
+    take.
+  * I did not discharge my other two overdue obligations in this batch, though
+    both are mine. They are named as b19 items 1 and 2 IN AGE ORDER -- the same
+    rule that produced this batch's item 2.
+
+THE ASK TO cc -- A SESSION-START SURFACE. This is a REQUEST, not a build:
+tools/ is cc's and my b18 claim declares docs/ only. No file under tools/ was
+written by me.
+
+Why a surface and not "remember to run --list": --list already produces every
+fact needed, AND IT PRODUCED THEM ON 2026-09-27 AND EVERY DAY SINCE, and the
+obligation still sat 418 hours, because the output only exists when somebody
+types the command. The failure is not missing information; it is information
+that has to be requested. This platform already solved that exact shape once --
+the shared status registry is handed over automatically at session start for
+precisely this reason.
+
+Six requirements and six failing-first arms are specified. A3 and A6 are the
+load-bearing two: A3 -- an absent register is EXIT 2 COULD NOT RUN, naming the
+file, never a silent 0; A6 -- an unreadable owner_assigned_at is a THIRD STATE,
+never coerced to 0 and never read as fresh. Requirement 6 is that the surface
+must not WRITE anything: a tool that surfaces work and also disposes of it is a
+detector blessing its own fix.
+
+And the figure nobody has looked at: 34 of 88 REVIEWED records carry a sha that
+no longer resolves. --reseat-shas says so itself, and says its default run
+proves nothing about them. Not urgent, not mine, larger than the open queue in
+front of it.
+
+
+================================================================================
+6. ITEM 6 -- PUSHED, NOT FORCED, CONFIRMED LANDED
+================================================================================
+
+  CMD git push origin main                          ->  EXIT 1 on the first try
+      ! [remote rejected]  main -> main (cannot lock ref 'refs/heads/main':
+        is at 820b89b7 but expected 19e84ac1)
+  CMD git pull --rebase origin main                  ->  EXIT 0
+  CMD git push origin main                           ->  EXIT 0
+      0c25a770..b5ea4d3b  main -> main
+
+  CMD git rev-parse HEAD origin/main   ->  b5ea4d3b9a77... / b5ea4d3b9a77...
+  CMD git rev-list --left-right --count origin/main...HEAD   ->  0   0
+  CMD git status --porcelain                                 ->  empty
+  CMD git cat-file -e origin/main:<each of 6 files>           ->  6 of 6 present
+
+THE NON-FAST-FORWARD WAS RESOLVED BY A REBASE AND NOT BY --force, which is the
+whole point of the instruction. No SAIRN_SEED_GATE override in any form.
+.claude/settings.json was not edited and is not in either commit. Hooks were
+not touched -- not added, not removed, not restored.
+
+AND THE REBASE PRODUCED THE BATCH'S METHODOLOGY FINDING. The first rebase
+brought in 50 commits, TWO OF WHICH TOUCH api/sd-data.js AND api/_lib/auth.js --
+the files the Tier A discharge is about. Every citation into those two files had
+moved:
+
+  api/sd-data.js:7169   ->  :7179
+  api/sd-data.js:7066   ->  :7076
+  api/_lib/auth.js:482  ->  :510
+  api/_lib/auth.js:853  ->  :881          (and twelve more)
+
+Each was RE-ANCHORED ON THE QUOTED TEXT, not re-offset by a constant, and the
+re-derivation is its own commit (b5ea4d3b) with a note in both documents saying
+what happened. A VERDICT DOCUMENT ROTTED INSIDE AN HOUR OF BEING WRITTEN. That
+is the eighth cross-domain convention happening live rather than in a
+retrospective, and the only reason it was caught is that the citation sweep was
+re-run AFTER the rebase rather than before it.
+
+Before that sweep, a first pass over 124 citations had already found 5 drifted
+(two off-by-one line labels, one self-referential pair the correction box's own
+insertion had pushed down, one anchor one line off). Those were fixed by
+re-anchoring on content rather than on a number, which is why the second rebase
+needed no further correction: the second incoming batch touched none of the
+cited files.
+
+
+================================================================================
+7. WHAT CHANGED, FILE BY FILE
+================================================================================
+
+docs/batch-manifest-fourth-b18.json          NEW   6 ids, locked, 6 done
+docs/2026-10-14-fourth-b18-tier-a-queue14-discharge.md
+                                             NEW   the verdict: 1 finding on the
+                                                   unreviewed point, 4 more at
+                                                   HEAD, 3 points re-verified
+                                                   clean, routing per finding
+docs/2026-10-14-fourth-b18-tier-a-triage.md  NEW   18 obligations, one
+                                                   disposition each; the cloud
+                                                   liveness finding; the cc tool
+                                                   spec with 6 arms
+docs/2026-10-14-ai-safeguards-spec.md        EDIT  7.5 correction box inline;
+                                                   ROUTED block marked WITHDRAWN
+                                                   in place; new 7.6.1 (sd_photos,
+                                                   T17) and 7.6.2 (fqSaveQuote,
+                                                   T18); section 5 pointer block
+docs/2026-10-14-fourth-b16-confirm-questions.md
+                                             EDIT  H8 added; heading corrected
+                                                   TEN -> ELEVEN in three places
+docs/tier-a-reviews.json                     EDIT  one record moved open ->
+                                                   reviewed, by the gate, with a
+                                                   3,898-character verdict
+SAIRN-handoff-fourth-b18.md                  NEW   written BEFORE this report
+
+NO api/ FILE. NO sql/ FILE. NO tools/ FILE. NO tests/ FILE. docs/ and my own
+root deliverables only, exactly as the b18 claim declares.
+
+ONE FILE OUTSIDE MY DECLARED SET WAS WRITTEN, AND IT IS DISCLOSED RATHER THAN
+QUIET: docs/tier-a-reviews.json, written by tools/tier_a_review_gate.py
+--discharge. It is inside docs/ and the gate is its designated writer, but it
+was not in my claim's FILES list and no other session holds a live claim on it.
+Said here because an undeclared write found later reads as a conflict.
+
+
+================================================================================
+8. UNVERIFIED -- the two things I did not run, and they are not folded into a pass
+================================================================================
+
+1. THE CENSUS COUNT ITSELF (F1). No SQL was executed in this batch. F1 is a
+   reading of the predicate against the writer and the reader, not a measured
+   row count -- and until somebody RUNS the corrected census, the number of
+   legacy ciphertexts remaining is unknown rather than zero. Step 4a is still
+   "enforced by nothing": grep -rn legacy_ciphertext_census tests/ tools/ is
+   empty at HEAD, unchanged after 15 days.
+
+2. THE sd_photos SIZE CONSTRAINT, and it may matter more than the provenance
+   gap it sits beside. sql/stonedesk_data_schema.sql:343 caps the row at 64KB
+   while the synced payload carries a base64 image accepted up to 10MB
+   (stonedesk.html:25988), and api/sd-data.js:14263 maps the resulting 400 to
+   503 NOT_PROVISIONED -- "tables are not set up yet". SO IT IS POSSIBLE THAT
+   NO sd_photos ROW HAS EVER LANDED AND THE FAILURE HAS BEEN REPORTING ITSELF
+   AS AN UNPROVISIONED TABLE. I did not drive it. If the row never lands, the
+   provenance gap is LATENT and the size failure is the more urgent half. It is
+   stated as its own finding in the spec rather than mixed into T17.
+
+ALSO NOT DONE, and named rather than left implicit:
+  * No test suite was run. Nothing in this batch is a code change.
+  * No live deployment was fetched. Nothing shipped to an endpoint.
+  * tools/citation_line_drift_check.py requires --app and --prefix and does not
+    apply to these documents; the citation sweep was done by re-derivation
+    against source instead, twice, and the second pass was the one that
+    mattered.
+  * The 34 dangling REVIEWED shas were not examined. --reseat-shas says its
+    default run says nothing about them, and that is quoted rather than
+    softened.
+
+
+================================================================================
+9. THE ONE SENTENCE WORTH KEEPING
+================================================================================
+
+The 418 hours were not caused by anybody forgetting. Three mechanisms each
+worked exactly as designed -- the gate assigned an owner, the owner reviewed
+the code and wrote it up on disk, and the register waited to be told -- and the
+obligation still aged 17 days, because A REVIEW THAT IS NOT IN THE REGISTER IS
+NOT A REVIEW, and the one attack point that silently vanished from that
+write-up was the only one with a defect in it.
+
+
+  Evidence:
+  docs/2026-10-14-fourth-b18-tier-a-queue14-discharge.md
+  docs/2026-10-14-fourth-b18-tier-a-triage.md
+  docs/2026-10-14-ai-safeguards-spec.md  (sections 5, 7.5, 7.6)
+  docs/2026-10-14-fourth-b16-confirm-questions.md  (H8)
+  docs/batch-manifest-fourth-b18.json
+  SAIRN-handoff-fourth-b18.md
+
+  Logs and scripts:
+  C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\b0f8683c-3365-4d5b-82ea-094a13bdff7e\scratchpad\
+  tier_a_list_b18.log, verdict_b18.txt, tier_a_discharge_b18.log,
+  reseat_b18.log, pull_b18.log, pull2_b18.log, push_b18.log, push_b18b.log,
+  incoming_files.log, statusline_payload.json
+
+  THE SHA256 BELOW IS DEFINED, not decorative: it is sha256 over every byte of
+  this file up to and NOT including the final hash line -- which is the
+  second-to-last line -- with CRLF normalised to LF. The definition uses the
+  LAST occurrence deliberately: this paragraph mentions the marker itself, and
+  a naive split on the first occurrence would hash only half the file. Re-derive
+  it with the four lines below; it must print the value on the next line.
+
+    import io, hashlib
+    s = io.open('SAIRN-report-fourth-b18.txt', encoding='utf-8').read().replace('
+','
+')
+    body = s.rsplit(chr(83)+chr(72)+chr(65)+chr(50)+chr(53)+chr(54)+chr(32), 1)[0]
+    print(hashlib.sha256(body.encode('utf-8')).hexdigest())
+SHA256 2e3f8a8aaabc99a850dd75e8e8a223042d36ad65d75b4c714cf08d5bc56e1f23
+END-OF-REPORT
