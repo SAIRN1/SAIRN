@@ -88,20 +88,6 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # entirely (or one of its own fixture/test runs importing hover_log in
 # isolation) does not fail to import hover_log at all -- it fails the
 # SPECIFIC --add call instead, with a clear reason.
-# HOVER_LOG_PATH_OVERRIDE, added 2026-09-23. Real incident: a DIFFERENT
-# tool's selftest shelled out to `python hover_log.py --add` as a real
-# subprocess to test end-to-end, monkey-patching its OWN in-process LOG_PATH
-# first -- which does nothing to a separate interpreter that re-imports this
-# module fresh and reads the hardcoded default below. The fixture's write
-# landed for real in the production log (entry #464), a test artifact
-# permanently in a hash-chained history that cannot be edited out. Opt-in
-# only, and empty-by-default: unset, this resolves to the exact same path
-# as before for every normal invocation -- nothing about ordinary --add/
-# --verify/--tail usage changes. A subprocess-based test sets this env var
-# on ITS OWN call to redirect the child process's write, the only way to
-# actually isolate a real subprocess round-trip.
-LOG_PATH = os.environ.get('HOVER_LOG_PATH_OVERRIDE') or os.path.join(HERE, 'hover-audit-log.jsonl')
-GENESIS = 'genesis:hover-auditor-self-log:v1'
 # KNOWN_INSTANCE_LOGS, added 2026-09-28 for --contradicts-external. Same
 # literal-list convention hover_cold_scan_pool.py's _KNOWN_CLONES and
 # hover_coverage_ledger.py's own copy already use for finding OTHER
@@ -113,10 +99,109 @@ GENESIS = 'genesis:hover-auditor-self-log:v1'
 # use in this file's own --selftest) -- no subprocess round-trip is needed,
 # so there is no HOVER_LOG_PATH_OVERRIDE-style real-write risk to guard
 # against here.
+#
+# MOVED ABOVE LOG_PATH, 2026-10-14 (h1 b32): this map is now also the
+# SOURCE for LOG_PATH's own default (see _default_log_path() below), not
+# just for --contradicts-external, so it has to exist before LOG_PATH is
+# computed.
 KNOWN_INSTANCE_LOGS = {
     'hover': r'C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-hover\hover-audit-log\hover-audit-log.jsonl',
     'hover2': r'C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-hover2\hover-audit-log\hover-audit-log.jsonl',
 }
+
+# ── ONE TRACKED hover_log.py, 2026-10-14 (h1 b32) -- Michael's decision ────
+# after h1 b30/b31 found a SECOND, untracked, already-stale copy of this
+# exact file living next to the real log data at
+# ~/.claude/projects/.../hover-audit-log/, silently running in place of
+# this tracked one for weeks because LOG_PATH used to default relative to
+# HERE (this file's own directory, inside the platform repo -- nowhere near
+# where the real data lives). That stale copy had drifted a real feature
+# out of sync (the citation-class gate below, merged back in this same
+# batch). The fix has two halves: find the real log through ONE constant
+# derived from KNOWN_INSTANCE_LOGS above (never guess, never default to
+# HERE), and refuse loudly if a second copy of this script ever reappears
+# next to that data (see _refuse_if_duplicate_script_present(), called
+# from main()).
+def _default_log_path():
+    """The real log data for THIS clone, found through KNOWN_INSTANCE_LOGS
+    -- the one source of truth this file already has to keep correct for
+    --contradicts-external -- rather than guessed from HERE. Derived from
+    the git toplevel's own directory name ('SAIRN-hover' -> 'hover',
+    'SAIRN-hover2' -> 'hover2'), which is stable regardless of where in
+    the repo this script itself lives. Returns None -- never a guess --
+    if git is unreachable or the clone name does not match a known
+    instance; the caller treats None as 'refuse loudly unless
+    HOVER_LOG_PATH_OVERRIDE is set', never as licence to fall back to a
+    same-directory path again."""
+    try:
+        r = subprocess.run(['git', 'rev-parse', '--show-toplevel'], cwd=HERE,
+                           capture_output=True, text=True, encoding='utf-8',
+                           timeout=10)
+        if r.returncode != 0:
+            return None
+        toplevel = r.stdout.strip()
+    except Exception:
+        return None
+    clone_name = os.path.basename(os.path.normpath(toplevel)).lower()
+    if not clone_name.startswith('sairn-hover'):
+        return None
+    instance = clone_name[len('sairn-'):]
+    return KNOWN_INSTANCE_LOGS.get(instance)
+
+
+def _refuse_if_duplicate_script_present(log_path):
+    """THE CHECK THAT FAILS LOUDLY IF A SECOND COPY EVER APPEARS. Looks in
+    the real log data's own directory (never HERE) for a file named the
+    same as this script; if one exists and is not literally this file,
+    that is the exact shape that went unnoticed for weeks (h1 b30/b31) --
+    refuse rather than silently risk two copies drifting again. Returns an
+    error string, or None when clear. Never raises: an unreadable log_path
+    directory is reported as could-not-verify by the caller, not crashed
+    on here."""
+    if not log_path:
+        return None
+    try:
+        log_dir = os.path.dirname(os.path.abspath(log_path))
+        candidate = os.path.join(log_dir, os.path.basename(__file__))
+        this_file = os.path.abspath(__file__)
+        if os.path.isfile(candidate) and os.path.abspath(candidate) != this_file:
+            return ('a second copy of %s exists at %r, next to the real log '
+                     'data at %r. This is the exact drift h1 b30/b31 found '
+                     'and merged back from -- delete the duplicate (after '
+                     'confirming its content, if any, is already in this '
+                     'tracked copy) before continuing.'
+                     % (os.path.basename(__file__), candidate, log_dir))
+    except Exception as ex:
+        return 'could not check for a duplicate script: %s: %s' % (type(ex).__name__, ex)
+    return None
+
+
+# HOVER_LOG_PATH_OVERRIDE, added 2026-09-23. Real incident: a DIFFERENT
+# tool's selftest shelled out to `python hover_log.py --add` as a real
+# subprocess to test end-to-end, monkey-patching its OWN in-process LOG_PATH
+# first -- which does nothing to a separate interpreter that re-imports this
+# module fresh and reads the default below. The fixture's write
+# landed for real in the production log (entry #464), a test artifact
+# permanently in a hash-chained history that cannot be edited out. Opt-in
+# only, and empty-by-default: unset, this resolves to the real clone's own
+# log via _default_log_path() for every normal invocation -- nothing about
+# ordinary --add/--verify/--tail usage changes. A subprocess-based test
+# sets this env var on ITS OWN call to redirect the child process's write,
+# the only way to actually isolate a real subprocess round-trip.
+#
+# _LOG_PATH_IS_UNSAFE_FALLBACK, added 2026-10-14 (h1 b32): True only when
+# neither the override nor the real-clone lookup resolved anything, and
+# this fell back to the OLD HERE-relative guess -- the exact default that
+# let a stale duplicate run unnoticed. main() refuses loudly on this
+# before dispatching to any subcommand except --selftest, which
+# monkeypatches LOG_PATH itself and never relies on the module-level
+# default.
+_LOG_PATH_IS_UNSAFE_FALLBACK = False
+LOG_PATH = os.environ.get('HOVER_LOG_PATH_OVERRIDE') or _default_log_path()
+if not LOG_PATH:
+    LOG_PATH = os.path.join(HERE, 'hover-audit-log.jsonl')
+    _LOG_PATH_IS_UNSAFE_FALLBACK = True
+GENESIS = 'genesis:hover-auditor-self-log:v1'
 TYPES = ('check', 'finding', 'no-report', 'note')
 SEVERITIES = ('critical', 'high', 'moderate', 'low', '')
 
@@ -913,6 +998,50 @@ def cmd_add(argv):
               'actually run against a real, verifiable copy.')
         return EXIT_COULD_NOT_RUN
 
+    # ── CITATION CLASS GATE, ADDED 2026-09-30 (directed item 6) -- MERGED
+    # IN 2026-10-14 (h1 b32) FROM A SECOND, UNTRACKED COPY OF THIS FILE.
+    # This is a DIFFERENT check than CITATION GUARD just above: the guard
+    # checks whether a named TOOL resolves on origin/main at all; this
+    # checks whether a path:line citation's CONTENT still matches at the
+    # sha this very entry is about to record. The two checks diverged into
+    # separate, never-reconciled copies of this script (the guard landed
+    # only in the tracked copy, this gate only in an untracked copy living
+    # next to the real log data) until both were found and merged here --
+    # see docs/defect-density-register.json for the h1 b31/b32 record of
+    # that drift. Run the citation classifier on THE ENTRY BEING WRITTEN
+    # against the source shas captured above: a path:line citation that
+    # fails even against the blob this very entry records is a defect
+    # being committed to an append-only log, caught at the one moment it
+    # is still cheap. Same fail-open discipline as the staleness guard:
+    # only a RESOLVED WRONG-AT-DERIVATION refuses; the classifier being
+    # unavailable warns out loud and never blocks (and is never the same
+    # as verified).
+    if source_shas:
+        cite_wrong = None
+        try:
+            sys.path.insert(0, HERE)
+            import citation_class_check as _ccc
+            probe = {'summary': summary,
+                     'source_shas': {p: {'sha': i['sha']}
+                                     for p, i in source_shas.items()}}
+            cite_wrong = [
+                (p, l) for p, l, cls in _ccc.classify(probe, repo=repo)
+                if cls == 'WRONG-AT-DERIVATION']
+        except Exception as ex:
+            print('CITATION GATE COULD NOT RUN (%s: %s) -- logging anyway; '
+                  'this is NOT the same as citations verified.'
+                  % (type(ex).__name__, ex))
+        if cite_wrong:
+            print('WRONG-AT-DERIVATION -- REDERIVE REQUIRED. '
+                  'Nothing was appended.')
+            for p, l in cite_wrong:
+                print('  %s:%d fails against the blob this entry itself '
+                      'just captured for it' % (p, l))
+            print('\nThe cited line does not carry the cited content even '
+                  'at the sha being recorded. Fix the citation (or pass '
+                  'the correct path:sha) and re-run --add.')
+            return EXIT_COULD_NOT_RUN
+
     prev_hash = prior[-1]['hash'] if prior else GENESIS
     seq = (prior[-1]['seq'] + 1) if prior else 1
     entry = {
@@ -1061,6 +1190,40 @@ def run_staleness_fixtures():
            rows and rows[0].get('staleness_check', {}).get(target_path) == 'fresh')
         ck('FRESH: the persisted entry stamps the real read-time sha, not a '
            'placeholder', rows and rows[0]['source_shas'][target_path]['sha'])
+
+        # ── CITATION CLASS GATE (2026-09-30, item 6, failing-first) --
+        # MERGED IN 2026-10-14 (h1 b32) from the untracked copy. A summary
+        # citing path:line WRONG against the sha this very entry just
+        # captured must refuse at append time, before the append-only log
+        # makes the defect permanent.
+        gate_path = 'gatefx.py'
+        with open(os.path.join(work_repo, gate_path), 'w', encoding='utf-8') as f:
+            f.write(chr(10).join(['# pad'] * 9 + ['def frobnicate():',
+                                                  '    return 1']
+                                 + ['# t'] * 5) + chr(10))
+        subprocess.run(['git', 'add', '.'], cwd=work_repo, check=True)
+        subprocess.run(['git', 'commit', '-q', '-m', 'gate fixture'], cwd=work_repo, check=True)
+        subprocess.run(['git', 'push', '-q', 'origin', 'main'], cwd=work_repo, check=True)
+        buf3 = io.StringIO()
+        with contextlib.redirect_stdout(buf3):
+            rc3 = cmd_add(['--add', '--type', 'finding', '--target', 'hank',
+                           '--summary', 'frobnicate() sits at gatefx.py:99 today.',
+                           '--source', gate_path, '--repo', work_repo,
+                           '--same-target-reason', 'citation-gate fixture'])
+        out3 = buf3.getvalue()
+        ck('CITATION GATE: a citation wrong against the just-captured sha '
+           'refuses at append time (nonzero rc)', rc3 == EXIT_COULD_NOT_RUN)
+        ck('CITATION GATE: the refusal names WRONG-AT-DERIVATION',
+           'WRONG-AT-DERIVATION' in out3)
+        ck('CITATION GATE: nothing was appended', len(read_all()) == 1)
+        buf4 = io.StringIO()
+        with contextlib.redirect_stdout(buf4):
+            rc4 = cmd_add(['--add', '--type', 'finding', '--target', 'hank',
+                           '--summary', 'frobnicate() sits at gatefx.py:10 today.',
+                           '--source', gate_path, '--repo', work_repo,
+                           '--same-target-reason', 'citation-gate fixture'])
+        ck('CITATION GATE CONTROL: the corrected citation logs cleanly',
+           rc4 == EXIT_FINDING_OR_BROKEN and len(read_all()) == 2)
 
         # --- explicit path:sha override form, unit-level (no CLI round-trip
         # needed -- already proven end-to-end above) ---
@@ -1414,6 +1577,22 @@ def main(argv):
     if '--selftest' in argv:
         ok = run_staleness_fixtures()
         return EXIT_CLEAN if ok else EXIT_FINDING_OR_BROKEN
+    # ── THE TWO h1 b32 GUARDS, BEFORE ANY REAL DISPATCH ────────────────────
+    # Skipped only for --selftest above, which monkeypatches LOG_PATH itself
+    # in an isolated tmpdir and never relies on either check.
+    if _LOG_PATH_IS_UNSAFE_FALLBACK:
+        print('REFUSED: could not determine this clone\'s real log path '
+              'through KNOWN_INSTANCE_LOGS (git unreachable, or this clone '
+              'name is not a known hover instance), and HOVER_LOG_PATH_'
+              'OVERRIDE is not set. Falling back to a HERE-relative default '
+              'is the exact failure that let a stale duplicate script run '
+              'unnoticed for weeks (h1 b30/b31) -- set '
+              'HOVER_LOG_PATH_OVERRIDE explicitly instead.')
+        return EXIT_COULD_NOT_RUN
+    dup_err = _refuse_if_duplicate_script_present(LOG_PATH)
+    if dup_err:
+        print('REFUSED: %s' % dup_err)
+        return EXIT_COULD_NOT_RUN
     if '--add' in argv:
         return cmd_add(argv)
     if '--verify' in argv:
