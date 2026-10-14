@@ -67,6 +67,15 @@ const ROWS = [
   // must not also DISCLOSE anything. This row is what arm B3 is for.
   { setting_key: 'payroll_rates',
     data: { foreman_hourly: 42 },
+    updated_by: 'emp-boss', updated_at: '2026-10-01T00:00:00.000Z' },
+  // A PROTOTYPE NAME AS A SETTING KEY. The write path accepts any key, so this
+  // row is creatable, and the allowlist was first written as a PLAIN OBJECT
+  // LITERAL -- which inherits Object.prototype, so ALLOW['constructor'] was
+  // TRUTHY and this row would have been disclosed to every foreman by exactly
+  // the mechanism the tier exists to close. tests/role_maps_have_no_prototype.js
+  // caught it at the push gate; arm B6 is what keeps it caught here.
+  { setting_key: 'constructor',
+    data: { anything: 'at all' },
     updated_by: 'emp-boss', updated_at: '2026-10-01T00:00:00.000Z' }
 ];
 
@@ -182,6 +191,14 @@ console.log('rf_settings -- the tiered read -- criteria 2026-10-14.1\n');
      + 'management last changed the number that decides whether a slope is '
      + 'called total is management information about management',
        JSON.stringify(dt && Object.keys(dt)));
+
+    is(!rowFor(r, 'constructor'),
+       'B6. a setting key that is an Object.prototype NAME is withheld too. '
+     + 'The allowlist was first written as a plain literal, so '
+     + 'ALLOW[\'constructor\'] was truthy and this row leaked -- the exact '
+     + 'shape tests/role_maps_have_no_prototype.js exists for, found at the '
+     + 'push gate on this very commit',
+       JSON.stringify(rowFor(r, 'constructor')));
 
     const blob = JSON.stringify(r.body);
     is(blob.indexOf('emp-boss') === -1,

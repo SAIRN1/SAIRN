@@ -8894,7 +8894,14 @@ module.exports = async (req, res) => {
       // accepts anything must not also DISCLOSE anything, or the next setting
       // somebody adds is published to every foreman by default.
       const rfMgmt = !!rfAuth.MANAGEMENT_ROLES[session.role];
-      const RF_SETTING_PUBLIC_KEYS = { damage_threshold: true };
+      // roleSet(), NOT a plain literal, and it is not a role map -- the rule is
+      // about the SHAPE. A plain `{ damage_threshold: true }` inherits
+      // Object.prototype, so RF_SETTING_PUBLIC_KEYS['constructor'] is TRUTHY
+      // and a stored setting named `constructor` would be disclosed to every
+      // foreman by exactly the mechanism this tier exists to close. The write
+      // path accepts any key, so that row is creatable. Caught by
+      // tests/role_maps_have_no_prototype.js, which reads the whole tree.
+      const RF_SETTING_PUBLIC_KEYS = roleSet({ damage_threshold: true });
       res.status(200).json({
         ok: true, provisioned: true,
         tiered: !rfMgmt,
