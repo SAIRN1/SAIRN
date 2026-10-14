@@ -28467,6 +28467,158 @@
         }
       ],
       "recurrence_open": "The actions close the SPECIFIC pair and the specific file. They do NOT close the shape: this is at least the third two-lists-that-must-agree defect in this family, and the platform carries other pairs whose halves live in different languages -- SD_SESSION_GATED and SD_GATE_APP are one, and they are kept in agreement only by a test somebody remembered to write. Nothing systematically enumerates such pairs. They also do not prove the database was migrated: every action here is in the repo, and until the SQL is run the only thing that improved is that the failure is now named 503 CHECK_NOT_WIDENED instead of silently covering 19% of the population."
+    },
+    {
+      "commit": "1190d99db81a",
+      "date": "2026-10-14",
+      "subject": "fix(sairnlegacy): a chapel could be promised to two families -- the double-booking check was reading the browser's own cache",
+      "files": [
+        "api/sd-data-leg-bookings-toctou.test.js",
+        "api/sd-data.js",
+        "sairnlegacy.html",
+        "tests/sairnlegacy_write_failure_voice.js"
+      ],
+      "lines_added": 763,
+      "lines_removed": 3,
+      "app": "sairnlegacy",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "hover-audit",
+      "summary": "sairnlegacy.html bookingConflict(): the only control preventing a facility double-booking read THIS DEVICE'S localStorage, and api/sd-data.js's leg_bookings write branch did no overlap check at all. Two staff on two devices, each holding a calendar copy taken before the other's booking synced, both pass their own check and both writes are ACCEPTED, because a new booking carries a new booking_id and nothing collides. What is double-booked is a chapel, a removal van, or -- because leg_facilities seeds a Staff row with a named funeral director and saveBooking() books Staff rows exactly like rooms -- a named employee, against a specific death case and a time window. The same race leg_merch_units' reservation lock was built to close in August and which was never applied here.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "f18dae8d3ab3",
+        "date": "2026-08-07",
+        "subject": "feat: SAIRNlegacy Phase 2 -- 7 panels, scheduling/cemetery/cremation/pre-need/accounting/obituary/memorial",
+        "lag_days": 68
+      },
+      "citation_note": "The closest section, 1.1, is about a check that STOPPED checking. This one never checked the right population: it was correct code reading an authoritative-looking cache. Recorded as not-citable rather than filed under a section it does not match.",
+      "phase_note": "bookingConflict() is a correct interval-overlap test. The defect is WHERE it runs, which was settled when the scheduling panel was written -- and the app has had the server-side pattern that fixes it, on another resource, since 2026-08-10.",
+      "contributing_factors": [
+        {
+          "factor": "The optimistic client write and the authority to refuse it lived in different places: saveBooking() wrote to localStorage before the await, and nothing on the server could say no.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "api/sd-data.js checks the SERVER's rows for the same facility and answers 409 BOOKING_CONFLICT before any upsert, and saveBooking() rolls the local write back on that code -- re-reading rather than writing back its pre-await snapshot, and only if the record is still ours."
+        },
+        {
+          "factor": "The pattern that fixes it already existed in the same file for leg_merch_units and was documented as a deliberately NARROW, resource-and-transition specific gate -- so nothing prompted anybody to ask which OTHER resource had the same shape.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "The handoff names the remaining atomic close (real start/end columns or an /rpc/ insert) and records that leg_bookings is the second instance of this shape found in one app, so the third is worth looking for rather than waiting for."
+        },
+        {
+          "factor": "No suite drove leg_bookings at all. The app owns 36 resources and its only concurrency test was the merchandise lock.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/sd-data-leg-bookings-toctou.test.js, 48 arms, both halves ablated against the pre-fix handler (30 passed / 18 failed) and the pre-fix client (45 passed / 3 failed)."
+        }
+      ],
+      "recurrence_open": "The fix is a read-then-write, not an atomic lock. Two requests interleaving between the SELECT and the upsert -- milliseconds, two people clicking Save in the same instant -- still both succeed; the EXCLUDE constraint that would close it cannot be indexed while the window lives in `data` jsonb. And nothing here surveys the other 34 SAIRNlegacy resources for the same client-side-authority shape."
+    },
+    {
+      "commit": "5be80ff30cb7",
+      "date": "2026-10-14",
+      "subject": "fix(sairnscape): the last five licence-only resources are gated, and the repro that found them now reports 22 of 22 FIXED",
+      "files": [
+        "api/sd-data-scp-session-gate.test.js",
+        "api/sd-data-session-gate.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 264,
+      "lines_removed": 20,
+      "app": "sairnscape",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "api/sd-data.js: five SAIRNscape resources -- scp_jobs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features -- were absent from SD_SESSION_GATED and from every branch-level session check, so read and write on all ten resource/action pairs were authorised by the LICENCE KEY ALONE. The key is shipped to the browser, so \"licence-only\" means readable by anyone who can open the app: a landscaping company's job scopes, controller inventory and irrigation run times. No name, contact detail, money or regulated determination is on the five rows, which is why this is moderate and not high; each customer_id is a foreign key whose identity lives on `customers`, gated since 2026-10-05.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "unknown_reason": "No single commit injected this. The five resources were added across several Phase 1/Phase 2 SAIRNscape commits, all of them BEFORE the session-gate mechanism existed at all (67c7e252, 2026-09-02), so there is no commit at which working behaviour became broken -- which would make any sha here a guess with a hash on it."
+      },
+      "citation_note": "No process-rules section describes an absent authorisation gate; the sections are about checks that stop checking, not about controls that were never fitted. Recorded as not-citable rather than stretched onto 1.1.",
+      "phase_note": "The resources predate SD_SESSION_GATED (introduced 67c7e252, 2026-09-02) and every widening wave since chose its scope by the row's SENSITIVITY. These five did not qualify on that argument, so the omission was a design decision that was deferred and then left -- the suite that disclosed them said in its own words that gating them \"is NOT a finding, and it is not made here\".",
+      "contributing_factors": [
+        {
+          "factor": "The gate's stopping rule was the row's tier letter and column content, and these five rows have neither PII nor money -- so a wave that correctly applied that rule correctly left them out, every time.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The argument is changed, not the rule: gated on the licence key being a browser-shipped bearer credential rather than on the row's content, and written into the pair-count tripwire in api/sd-data-session-gate.test.js where somebody has to justify it."
+        },
+        {
+          "factor": "The reproducing artifact measured ELEVEN of the app's TWELVE resources. 22 pairs is 11 x 2, and `schedule` (api/sd-data.js read/write branches) was never in its universe, so no count of \"what is left\" could ever have included it.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/sd-data-scp-session-gate.test.js now DERIVES its population: GATED + UNGATED_REST is asserted equal to api/_resources/sairnscape.js, so a resource in neither list fails the suite. `schedule` is named in UNGATED_REST and driven as the licence-only control."
+        },
+        {
+          "factor": "The suite's negative control was a loop over the ungated list, which this fix empties -- a control that becomes a zero-length loop passes forever.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The list is repopulated with `schedule` rather than emptied, and the printed banner is derived from the two lists instead of being the hand-written \"the two Tier A resources\" line that survived five widenings."
+        }
+      ],
+      "recurrence_open": "`schedule` is still licence-only and that is a disclosure, not a fix: nobody has decided it, and it is the one SAIRNscape resource whose bare name is also a StoneDesk panel id. Nothing here closes the same shape in the other apps -- the derived-population arm is SAIRNscape's only; the other per-app gate suites still hand-type their resource lists."
+    },
+    {
+      "commit": "cab199ada5dd",
+      "date": "2026-10-14",
+      "subject": "fix(sairnlaw): every credential deactivation was writing NO audit row, silently",
+      "files": [
+        "api/lifecycle-audit-event-coverage.test.js",
+        "sql/sairnlaw_audit_log_schema.sql"
+      ],
+      "lines_added": 335,
+      "lines_removed": 3,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "hover-audit",
+      "summary": "sql/sairnlaw_audit_log_schema.sql's event_type CHECK rejected all three events the shared credential-lifecycle engine emits (credential_deactivated, credential_reactivated, credential_change_refused), so every SAIRNlaw credential deactivation wrote NO audit row. The INSERT failed with 23514, writeAuditLog is non-fatal and returned false, api/law-auth.js carried on and the caller got its 200 -- so the log's EMPTINESS read as \"nothing happened\", and an audit log is consulted precisely when somebody asks who removed an account. Measured across the population rather than fixed where it was reported: eleven api/*-auth.js files call lifecycle.setActive and SAIRNlaw was the only one whose CHECK rejected these three.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "The gap opened when eleven apps were migrated onto the shared api/_lib/employee-lifecycle.js engine while each app kept its own audit-log CHECK; ten CHECKs happened to already permit the three values and SAIRNlaw's did not. No single commit made working behaviour broken, and git log -S on either side would only find where the text came from, never when the two lists diverged (PR 2.6)."
+      },
+      "citation_note": "Section 1.5 is written about a tool printing a confident line after an error; this is the same shape in shipped server code -- the 200 was the confident line and the swallowed 23514 was the error. Cited as the nearest real rule with the difference stated, rather than claimed to be a literal instance.",
+      "phase_note": "Two correct artefacts that were never reconciled: a shared engine emitting three event names, and a per-app CHECK listing permitted ones. Neither is wrong in isolation, which is what makes this design rather than coding.",
+      "contributing_factors": [
+        {
+          "factor": "writeAuditLog is NON-FATAL by design, so a rejected audit INSERT cannot fail the operation it is recording -- and therefore cannot tell anyone it failed either.",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "Making it fatal would mean a schema drift takes credential administration offline for every app, which is a worse failure than a missing row. The decision stands; the mitigation is that the CHECK can no longer drift undetected."
+        },
+        {
+          "factor": "The event names are emitted by a shared engine with no APP of its own (eleven apps use it) and permitted by sixteen per-app CHECKs -- two populations with no single source and nothing comparing them.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "api/lifecycle-audit-event-coverage.test.js now walks every caller to resolve APP -> AUDIT_TABLE_BY_APP -> the sql/ CHECK and parses the event list out of the engine rather than transcribing it. Deriving the two from ONE source is still only done for role vocabularies, not for audit event types."
+        },
+        {
+          "factor": "tools/audit_event_type_check.py exited 0 with the gap live, by its own words: it follows ONE helper's call sites through each caller's `const APP` and the lifecycle engine is a second helper it does not follow.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "The walk exists as a test instead, deliberately narrow. Extending the general checker is ROUTED to cc, because tools/ is cc's."
+        }
+      ],
+      "recurrence_open": "The new test reads sql/ files, so a CHECK widened LIVE and never written back is still invisible -- the exact state three audit-log tables were in until 2026-10-13. Nothing yet compares any app's HTML, the third copy of these vocabularies, except SAIRNfreedom's."
     }
   ],
   "started": "2026-09-09",
