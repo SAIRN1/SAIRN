@@ -363,6 +363,19 @@
       "files": [
         ".claude/claims/hover2.json"
       ]
+    },
+    {
+      "id": "hover2-1791973506",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "b23: AI-output-safeguards audit across sairnlaw/sairncare/sairnsenior/sairndental/sairnbiz/sairncash/sairncode (human-approval-before-save/send/act gate + AI-notice-to-affected-person, file:line per app) -- topical mention of sairnlaw/sairncode is THIS NEW check, not h1 b27's sairnlaw_audit_log/rf_schedule re-check (different artifacts, h1 b27 already landed that work per dispatch, just hasn't released its claim yet); sairnsenior ss_ rotation sweep; scp_* gate + ROLES_BY_APP.sairnfreedom trustee re-check (sairnfreedom, not sairnlaw); drive_upload_verify.py confirmed NOT on origin/main so --audit not run; chain/RFC3161 check; push. FILES: self-log only under .claude/projects, plus .claude/claims/hover2.json via this claim command -- no platform application file written.",
+      "claimed_at": "2026-10-14T10:25:06Z",
+      "claimed_at_epoch": 1791973506.5690012,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        ".claude/claims/hover2.json"
+      ]
     }
   ],
   "refusals": [
