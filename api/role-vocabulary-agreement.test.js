@@ -119,6 +119,38 @@ function sqlRoleChecks() {
   return out;
 }
 
+// -- ONE COMPARISON, TWO CALLERS ---------------------------------------------
+// The load-bearing arm and its negative control MUST drive the same code. A
+// control over a second copy of the logic only proves the copy fires, which is
+// what cross-domain convention 6 is about: independence has to come from the
+// INPUT being different, not from a reimplementation being different.
+//
+// EVERY DECLARATION IS COMPARED, not the first one found. A table declared in
+// two files gets both of its CHECKs checked against ROLES_BY_APP, so a stale
+// copy in a migration bundle cannot hide behind a current one.
+function divergences(apps, rolesByApp, checks) {
+  const diverged = [];
+  apps.forEach(function (app) {
+    (checks[AUTH_TABLE_BY_APP[app]] || []).forEach(function (d) {
+      if (!d.roles) return;          // refused by the parseability arm, not here
+      const code = Array.from(new Set(rolesByApp[app])).sort();
+      const sql = d.roles;
+      const serverOnly = code.filter(function (r) { return sql.indexOf(r) === -1; });
+      const dbOnly = sql.filter(function (r) { return code.indexOf(r) === -1; });
+      if (serverOnly.length || dbOnly.length) {
+        diverged.push(app + ' (' + d.file + '): the server accepts '
+          + (serverOnly.length ? JSON.stringify(serverOnly) + ' which the CHECK '
+             + 'REJECTS -- provisioning one is a 400 carrying a Postgres check '
+             + 'violation' : 'nothing the CHECK rejects')
+          + '; the CHECK permits '
+          + (dbOnly.length ? JSON.stringify(dbOnly) + ' which the server will '
+             + 'not mint' : 'nothing the server cannot mint'));
+      }
+    });
+  });
+  return diverged;
+}
+
 function main() {
   console.log('ROLE VOCABULARY AGREEMENT -- ROLES_BY_APP vs every sql/ role CHECK\n');
 
@@ -195,30 +227,74 @@ function main() {
   // ── THE LOAD-BEARING ARM ────────────────────────────────────────────────
   test('THE LOAD-BEARING ONE: for every app, ROLES_BY_APP and the sql/ role '
     + 'CHECK are the SAME SET, in both directions', function () {
-    // EVERY DECLARATION IS COMPARED, not the first one found. A table declared
-    // in two files gets both of its CHECKs checked against ROLES_BY_APP, so a
-    // stale copy in a migration bundle cannot hide behind a current one.
-    const diverged = [];
-    withTable.forEach(function (app) {
-      (checks[AUTH_TABLE_BY_APP[app]] || []).forEach(function (d) {
-        if (!d.roles) return;              // refused by the arm above, not here
-        const code = Array.from(new Set(ROLES_BY_APP[app])).sort();
-        const sql = d.roles;
-        const serverOnly = code.filter(function (r) { return sql.indexOf(r) === -1; });
-        const dbOnly = sql.filter(function (r) { return code.indexOf(r) === -1; });
-        if (serverOnly.length || dbOnly.length) {
-          diverged.push(app + ' (' + d.file + '): the server accepts '
-            + (serverOnly.length ? JSON.stringify(serverOnly) + ' which the CHECK '
-               + 'REJECTS -- provisioning one is a 400 carrying a Postgres check '
-               + 'violation' : 'nothing the CHECK rejects')
-            + '; the CHECK permits '
-            + (dbOnly.length ? JSON.stringify(dbOnly) + ' which the server will '
-               + 'not mint' : 'nothing the server cannot mint'));
-        }
-      });
-    });
+    const diverged = divergences(withTable, ROLES_BY_APP, checks);
     assert.deepStrictEqual(diverged, [],
       diverged.length + ' app(s) disagree:\n       ' + diverged.join('\n       '));
+  });
+
+  // -- THE NEGATIVE CONTROL, AND IT IS NOT OPTIONAL --------------------------
+  // ADDED 2026-10-13 (b8). The arm above was GREEN on the day it was written
+  // and had never once been seen to fail. A comparison that has only ever
+  // agreed is indistinguishable from a comparison that CANNOT disagree -- and
+  // this file exists because three other files WARNED about this exact drift in
+  // prose while it happened anyway. A warning that has become an assertion
+  // which has never fired is the same artefact one layer down.
+  //
+  // THE CONTROL IS PER APP, NOT ONE WITNESS, because item 5 asks for a test
+  // that fails when ROLES_BY_APP and any sql/ CHECK diverge FOR EVERY APP. A
+  // single planted divergence proves the detector fires once; it says nothing
+  // about the other fifteen, and an app whose CHECK this suite silently cannot
+  // parse would pass a one-witness control forever. That case is reported as a
+  // MISSED CONTROL rather than skipped.
+  //
+  // BOTH DIRECTIONS, because they are different defects with different
+  // symptoms: a role the server will mint and the CHECK rejects is a 400
+  // carrying a Postgres check violation at provisioning time -- what
+  // trustee.audit did for sixteen days -- while a role the CHECK permits and
+  // the server will not mint is dead vocabulary that reads as a working feature.
+  //
+  // PLANTED IN A COPY. Nothing in sql/ and nothing in api/_lib/auth.js is
+  // touched; the fixtures are copies, which is what makes this safe to run in
+  // the live clone rather than in a worktree.
+  test('NEGATIVE CONTROL: the comparison CATCHES a planted divergence, in '
+    + 'BOTH directions, for EVERY app', function () {
+    const PLANT = ['fx', 'planted', 'role'].join('.');
+    const missed = [];
+    withTable.forEach(function (app) {
+      const table = AUTH_TABLE_BY_APP[app];
+      // (a) the server accepts a role the CHECK rejects.
+      const codePlus = Object.assign({}, ROLES_BY_APP);
+      codePlus[app] = ROLES_BY_APP[app].concat([PLANT]);
+      const a = divergences([app], codePlus, checks);
+      if (!a.length || a.join(' ').indexOf(PLANT) === -1) {
+        missed.push(app + ': a role in ROLES_BY_APP and NOT in the CHECK was '
+          + 'not reported');
+      }
+      // (b) the CHECK permits a role the server will not mint.
+      const sqlPlus = {};
+      Object.keys(checks).forEach(function (t) {
+        sqlPlus[t] = checks[t].map(function (d) {
+          return { file: d.file, roles: d.roles ? d.roles.slice() : d.roles };
+        });
+      });
+      let planted = false;
+      (sqlPlus[table] || []).forEach(function (d) {
+        if (d.roles) { d.roles = d.roles.concat([PLANT]).sort(); planted = true; }
+      });
+      if (!planted) {
+        missed.push(app + ': no parseable CHECK declaration to plant into, so '
+          + 'this app is NOT actually being compared by the arm above');
+        return;
+      }
+      const b = divergences([app], ROLES_BY_APP, sqlPlus);
+      if (!b.length || b.join(' ').indexOf(PLANT) === -1) {
+        missed.push(app + ': a role in the CHECK and NOT in ROLES_BY_APP was '
+          + 'not reported');
+      }
+    });
+    assert.deepStrictEqual(missed, [],
+      missed.length + ' control(s) did not fire:\n       '
+      + missed.join('\n       '));
   });
 
   test('...and the comparison is not vacuous: at least one app has a NON-TRIVIAL '
