@@ -23,9 +23,23 @@ everything the push gate then required.
 
 ## Push state — verified, not assumed
 
-    HEAD   = 18ed4b0d45d596375203ac785a085742006943e0
-    origin = 18ed4b0d45d596375203ac785a085742006943e0
     git rev-list --left-right --count HEAD...origin/main  ->  0   0
+
+**Two printings, and the first one is left visible rather than overwritten.**
+When this file was first written the batch tip was
+`18ed4b0d45d596375203ac785a085742006943e0` and `HEAD == origin/main`. Committing
+this handoff moved the tip, and `origin/main` had moved six commits underneath
+in the meantime, so the handoff commit rebased on top:
+
+    batch tip at first printing  18ed4b0d  (the register re-seat)
+    tip after the handoff        3752dcb3  (this file + the live probe)
+
+**The eight item shas in the table below did NOT move** — they were already
+published, so the rebase replayed only the handoff commit on top of them. Each
+one was re-checked with `git merge-base --is-ancestor <sha> origin/main` after
+the push, not assumed. The report and digest commit will move the tip once
+more, which is why **the only trustworthy answer is
+`git log --oneline origin/main`** and not any sha printed in any document.
 
 No `--force` at any point. **Re-verify with `git log --oneline origin/main`
 rather than trusting this block** — four other sessions are pushing to this
@@ -47,6 +61,7 @@ resolves in any clone but this one's reflog.**
 | `979a0841` | **item 5** — the per-app, both-directions NEGATIVE CONTROL the agreement check did not have |
 | `e3ac84e3`, `f3d2a871`, `18ed4b0d` | the three defect-register records, and twice re-seating them after a rebase |
 | `da7e88cf` | the two generated documents regenerated, the Tier A obligation opened, the gate's own scrutiny rows |
+| `3752dcb3` | **this handoff** and `docs/hank-evidence/b8_live_gate_probe.py` + `.out` |
 
 ---
 

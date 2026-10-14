@@ -2814,3 +2814,48 @@ cleared; cc owns that file's merges and holds it in a live claim.
 **Open:** the trustee sign-in question (Michael), four SQL runs (Michael), and
 `docs/SAIRN-OPEN-WORK-INDEX.md` row 221, routed to cc with replacement text.
 Full detail: `docs/SAIRN-handoff-hank-b7.md`.
+
+
+---
+
+## 2026-10-14 -- batch b8 (RESUMED a prior b8 session)
+
+Published shas: 28f7744e (item 1) 650e0228 (item 2) d99b47f9 (item 3)
+8447c369 (item 4) 979a0841 (item 5); register records e3ac84e3 f3d2a871
+18ed4b0d; gate artefacts da7e88cf; handoff + live probe 3752dcb3. Read the
+published set with `git log --oneline origin/main`, not from this line -- the
+shas were rewritten three times during the push loop.
+
+A prior b8 session had committed items 1, 2 and half of 5 LOCALLY AND NEVER
+PUSHED THEM, and left item 3's api/sd-data.js edit uncommitted. Found by the
+`git log` that the brief required first. Items 1 and 2 were verified green and
+pushed, not re-done.
+
+ADDED HERE: item 3's commit and its two suite updates (73/0, was 40/6; pair
+count 122 -> 132; hover2's repro 10/22 -> 22 of 22 FIXED, run read-only);
+item 4 entire -- the leg_bookings double-booking gate, server and client, with
+api/sd-data-leg-bookings-toctou.test.js at 48/0 and ABLATED both ways (pre-fix
+handler 30/18, pre-fix client 45/3); item 5's per-app both-directions negative
+control (6 -> 7 arms); three defect-register records; and a post-push live
+probe against production, exit 0, both halves of the SAIRNscape gate driven.
+
+THE THREE THINGS WORTH CARRYING FORWARD, each written up in
+docs/SAIRN-handoff-hank-b8.md:
+
+1. `schedule` is SAIRNscape's TWELFTH resource and the repro only ever
+   measured eleven. It was in neither the gate nor the disclosure list, so it
+   was invisible to every arm in that suite. Left licence-only deliberately;
+   it is now the suite's negative control, and the suite derives its two lists
+   from api/_resources/sairnscape.js so a thirteenth cannot hide the same way.
+
+2. The leg_bookings gate is a READ-THEN-WRITE and is not the merch lock. The
+   atomic version needs real start/end columns or an /rpc/ insert, because
+   text::timestamptz is STABLE and cannot be indexed. The residual window is
+   milliseconds and is named in the branch comment rather than glossed.
+
+3. DO NOT REDIRECT A PUSH. `git push origin main > log 2>&1` breaks the
+   pre-push hook's stdin, so the register feed gate saw no ref lines and
+   denied. That cost one of four refusals.
+
+Claim released at the end of the batch. No hook restored, settings.json never
+committed, SAIRN_SEED_GATE=off never used.
