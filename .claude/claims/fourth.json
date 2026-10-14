@@ -3756,6 +3756,27 @@
         "docs/2026-10-14-fourth-b18-tier-a-triage.md",
         "docs/batch-manifest-fourth-b18.json"
       ]
+    },
+    {
+      "id": "fourth-1791996793",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "fourth b19 -- (1) discharge the 397h Tier A obligation (cody 2026-09-28T03:34:57Z dnt_ar/dnt_revenue, five claims, tests/reachability/resource_demand_probe.py, sha f88105a88287 NO_OBJECT_IN_CLONE so a STATE review, said in the verdict) (2) discharge the 338h one (hover2 2026-09-30T13:59:56Z leg_insurance/mech_checks) by a READ-ONLY drive of hover_citation_linter.py against THIS clone's mirror only -- the auditor clone is NOT entered (3) re-derive every line number in the two b18 docs against HEAD, quoted-text anchors (4) classify the 34 of 88 REVIEWED records with a dangling sha, table in docs/, tool work routed to cc by file:line (5) measure the sd_photos premise from source only -- row-size cap vs base64 payload, 400->503 mapping -- and say which half is urgent, routed to hank (6) push without force, confirm landed, release last. I WRITE UNDER docs/ ONLY plus my own root b19 artifacts. NO api/ FILE (hank), NO sql/ FILE (hank), NO tools/ FILE (cc), NO tests/ FILE (cody), NO FILE UNDER .claude/skills/sairn-hover-auditor/ (hover -- read-only here). CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: hank's api/ and sql/, cody's tests/, cc's tools/ and the auditor skill tree are READ-ONLY here; items 4 and 5 are ROUTED, not built. docs/tier-a-reviews.json IS written, by tools/tier_a_review_gate.py --discharge, which is its designated writer. Hooks untouched, settings.json never committed, no SAIRN_SEED_GATE override. FILES: docs/batch-manifest-fourth-b19.json docs/2026-10-14-fourth-b19-tier-a-queue16-discharge.md docs/2026-10-14-fourth-b19-hover2-citation-linter-discharge.md docs/2026-10-14-fourth-b19-dangling-sha-census.md docs/2026-10-14-fourth-b19-sd-photos-premise.md docs/tier-a-reviews.json SAIRN-handoff-fourth-b19.md SAIRN-report-fourth-b19.txt SAIRN-digest-fourth-b19.txt",
+      "claimed_at": "2026-10-14T16:53:13Z",
+      "claimed_at_epoch": 1791996793.2621815,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b19.txt",
+        "SAIRN-handoff-fourth-b19.md",
+        "SAIRN-report-fourth-b19.txt",
+        "docs/2026-10-14-fourth-b19-dangling-sha-census.md",
+        "docs/2026-10-14-fourth-b19-hover2-citation-linter-discharge.md",
+        "docs/2026-10-14-fourth-b19-sd-photos-premise.md",
+        "docs/2026-10-14-fourth-b19-tier-a-queue16-discharge.md",
+        "docs/batch-manifest-fourth-b19.json",
+        "docs/tier-a-reviews.json"
+      ]
     }
   ],
   "refusals": [
