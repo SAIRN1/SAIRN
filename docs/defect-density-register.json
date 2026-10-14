@@ -28560,6 +28560,63 @@
       "factors_unknown_reason": "not investigated this batch -- the fix (no-from-run demoted to a non-gating notice) is verified; root-cause factor analysis was not done"
     },
     {
+      "commit": "31406a87e010",
+      "date": "2026-10-14",
+      "subject": "fix(N1-N4,F6): a clock time that could be overwritten, a last owner that could be demoted, an exclusion nobody could see, and a delete that lied",
+      "files": [
+        "api/_lib/compliance-rules.js",
+        "api/n1-n4-and-sf-delete.test.js",
+        "api/sd-data.js",
+        "api/sen-auth.js",
+        "sairnfreedom.html"
+      ],
+      "lines_added": 772,
+      "lines_removed": 5,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "FOUR FINDINGS LEFT OPEN AT HEAD BY fourth's b18 TIER A DISCHARGE, PLUS TWO SAIRNfreedom DELETE DEFECTS NOBODY HAD DRIVEN. N1: the sen_visits EVV write copied every payload field over the row, so a second clock-in silently REPLACED a recorded one -- on a path any caregiver reaches on their own visit, while propose_clock_correction beside it was built append-only for exactly that reason. Now 409 CLOCK_ALREADY_RECORDED on a different value with nothing written, and an identical re-send still accepted because the offline replay path depends on it. N2: sen-auth `setup` could demote the last active Owner, reaching by ROLE the end state set_active has been guarded against by the active flag since the lifecycle module was written -- after which bootstrap 409s and nothing can provision. Six sibling endpoints already call soleRoleDemotionRefusal(); SAIRNsenior did not. N3: a requirement that returned a clean false for a person's position vanished from the response, because unmapped_requirements is built only from STRUCTURALLY unmappable rows -- under-inclusion that nobody can see is indistinguishable from the requirement not existing, which was the author's own self-flag. N4: three comments claimed driven arms that do not exist, and the hire-date check is shape-only -- DRIVEN here, which found the reported '2024-02-30' -> window_from '2026-02-30' AND an impossible MONTH the report did not reach, '2024-13-01' -> '2025-13-01', printed on a regulated compliance finding. F6: sfDeleteEvent announced 'Event and its bingo session removed' having removed nothing, because the toast was chosen on the pointer being truthy and never on whether the filter matched, and sfDeleteSession was what created those stale pointers. 21 arms green from 10 passed / 10 failed; ablated six ways.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Four separate findings in three apps with four different origins; a single injection commit would be wrong for at least three of them."
+      },
+      "contributing_factors": [
+        {
+          "factor": "A module can state its own rule in a comment and leave a door beside it. sen-evv-clock's header argues that an overwritten clock time destroys the evidence, and the write path forty lines below overwrote it.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The two clock fields are immutable once recorded, per-field, with an identical re-send still accepted."
+        },
+        {
+          "factor": "Two endpoints can reach one end state by two different fields. set_active was guarded by `active`; setup reached the same trapdoor through `role`, and nothing compared them.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "soleRoleDemotionRefusal() is CALLED, not reimplemented -- who counts and whether an inactive holder is cover are what drift dangerously."
+        },
+        {
+          "factor": "\"Driven\" in a comment almost certainly meant driven BY HAND, which is a real activity that leaves no artefact. Six weeks on the comment is the only evidence and reads exactly like a reference to a committed arm.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The comments now say 'driven by hand on 2026-09-29, NO COMMITTED ARM' and name the arms routed to cody."
+        },
+        {
+          "factor": "A shape-only date regex accepts dates that are not dates, and the downstream normalisation decrements the DAY -- so it rescues 02-30 in some years and cannot touch a bad MONTH at all.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The hire date is validated with isRealDate and REFUSED with its own window_error, not repaired: normalising would be the code choosing which date somebody was hired on."
+        }
+      ],
+      "recurrence_open": "yes"
+    },
+    {
       "commit": "3997a045bd26",
       "date": "2026-10-14",
       "subject": "fix(subprocess decode check): fixer produced a duplicate keyword argument",
@@ -28591,6 +28648,33 @@
       },
       "citation_note": "the broken file was produced and would have shipped from the agent's own invocation; it was caught by the push gate's separate, stricter check (compile-equivalent), not by the fixer's own verified-on-the-copy-it-wrote guarantee, which is the shape 1.6 names even though the two checks here are the same process rather than human-vs-automated",
       "factors_unknown_reason": "not investigated this batch -- the fix (compile() instead of ast.parse(), only add what is missing) is verified; root-cause factor analysis was not done"
+    },
+    {
+      "commit": "3b1dc5fe3174",
+      "date": "2026-10-14",
+      "subject": "fix(citation anchor): line-exact and code-only -- three substring routes, three directions",
+      "files": [
+        "tools/citation_line_drift_check.py"
+      ],
+      "lines_added": 199,
+      "lines_removed": 9,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "tools/citation_line_drift_check.py anchor_verdict reported access to a resource for three inputs that are not access: a // or /* */ comment naming it on the cited line (reported 'direct'), a storage constant named inside a STRING as prose (reported 'via'), and a function whose flat 60-line _body_lines window ran past its closing brace into the NEXT function, crediting it with a neighbour's write and naming the wrong accessor. The first two are prose saying the access was REMOVED read as proof it is present",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the 60-line window and the raw-substring test are both original to the tool; cody's sabotage probe found all three routes at once"
+      },
+      "factors_unknown_reason": "not investigated this batch -- the three fixes (comment stripping with block state, string-contents blanking for the identifier branch only, brace-matched body) are verified; root-cause factor analysis was not done"
     },
     {
       "commit": "44abebb30bf5",
@@ -28646,6 +28730,60 @@
           "kind": "technical",
           "action_status": "done",
           "action": "Each site carries a distinct machine tag and arm A5 fails if two are the same."
+        }
+      ],
+      "recurrence_open": "yes"
+    },
+    {
+      "commit": "4f69facd93b3",
+      "date": "2026-10-14",
+      "subject": "fix(sql): the ciphertext census read a path that is always NULL",
+      "files": [
+        "sql/legacy_ciphertext_census.sql",
+        "sql/sd_encryption_key_revoke_2026-09-24.sql"
+      ],
+      "lines_added": 95,
+      "lines_removed": 15,
+      "app": "sairncode",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "THE CIPHERTEXT CENSUS READ A JSON PATH THAT IS ALWAYS NULL, AND ITS ZERO GATES A DESTRUCTIVE STEP. sql/legacy_ciphertext_census.sql and sql/sd_encryption_key_revoke_2026-09-24.sql:113 both read `sc_credentials.data->>'enc'`, which assumes the ciphertext is a top-level key. api/sc-credentials.js:200-205 writes `next[service] = { enc, last4, updated_at }`, so the real path is `data->'stedi'->>'enc'`. A wrong jsonb path returns NULL rather than erroring, so every count came back legacy_rows = 0, v2_rows = 0, never_set_rows = total_rows -- and legacy_rows = 0 IS the precondition step 4 of the revoke file waits for before clearing SD_AUTH_SECRET_PREVIOUS. The wrong path would have authorised clearing the old key while legacy ciphertext was still in the table, and the census is the document that would have authorised it. Found by fourth's b19 discharge as F1, on the one attack point of six that the 2026-09-29 review never examined. Fixed to walk jsonb_each(data) so a second service is counted the day it is written rather than the day somebody re-reads the file, and a new PART 0 counts the flat and nested shapes separately so both-zero reads as 'no credential exists' rather than as the step-4 precondition.",
+      "rules": [
+        "1.7"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The census file was authored with the wrong path from the start, so the injection is the file itself; naming its own commit as the injection would make the lag zero and say nothing."
+      },
+      "contributing_factors": [
+        {
+          "factor": "A wrong jsonb path is SILENT. `data->>'enc'` on a nested row returns NULL, so the query ran, returned a number, and the number was the one that unblocks a destructive step.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Part 0 is a shape guard that counts flat and nested `enc` separately and states what each combination means."
+        },
+        {
+          "factor": "The 2026-09-29 Tier A review covered five of six attack points and the sixth -- this one -- was not in the summary table, not in the body and NOT IN THE EXCLUSIONS. A gap that is declared can be picked up; a silent one is indistinguishable from a clean verdict.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "Recorded by fourth's b19 discharge; whether a review template should force an explicit per-point verdict is a process decision for whoever owns the gate."
+        },
+        {
+          "factor": "The file hardcoded the service name `stedi` because ALLOWED_SERVICES holds exactly one entry, so it would have gone stale silently the day a second was added.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Every query walks jsonb_each(data) and part 2 returns WHICH service key is legacy, because a backfill needs that and not only the row."
+        },
+        {
+          "factor": "Two files carried the same wrong path and only one of them queries it. The comment in the other is what a reader uses to decide whether step 4 is safe.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Both corrected; the comment-only one says plainly that it is a comment fix and names what the wrong path would have authorised."
         }
       ],
       "recurrence_open": "yes"
@@ -28836,6 +28974,37 @@
       },
       "citation_note": "No PR section describes two independently-maintained copies of one tool diverging into complementary-but-disjoint features; this is a process/tooling-hygiene defect in hover's own layout, not a platform process violation with a named section.",
       "factors_unknown_reason": "Immediate cause (two copies, each gaining a feature the other lacked, never reconciled) is understood and fixed this batch; no deeper RCA was done on why nothing noticed the fork for ~2 weeks."
+    },
+    {
+      "commit": "7788d3d1747f",
+      "date": "2026-10-14",
+      "subject": "fix(bare-run sweep): a concurrent writer's change is not the subject's, plus the 2 allowlist entries",
+      "files": [
+        "tools/bare_run_write_check.py",
+        "tools/bare_run_writers.py",
+        "tools/mech_gate_live_probe.py",
+        "tools/tool_owner_map.py"
+      ],
+      "lines_added": 173,
+      "lines_removed": 24,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "tools/bare_run_write_check.py attributed any change under ~/SAIRN-SESSION-LOCKS/ to the tool it was running, but status/<session>.json has five other live writers by design. hank's 2026-10-13 sweep therefore reported idempotency_check.py, register_freshness_check.py --help and shape_antipattern_check.py as each having written ANOTHER SESSION'S status row and called it the sharpest finding in the table. None of the three can: none of them nor checker_kit references the registry at all. A false finding whose implied remedy was to edit three correct tools",
+      "rules": [
+        "1.9"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "shared_snapshot has watched the whole SESSION-LOCKS tree since the shared-state half was added 2026-10-08; the status/ subdirectory gained other live writers independently"
+      },
+      "citation_note": "1.9 requires a checker to answer the same on identical input; this one answered differently depending on what OTHER live sessions did during the run, which is the same non-determinism arriving from concurrency rather than from iteration order",
+      "factors_unknown_reason": "not investigated this batch -- the fix (shared_diff returns attributable and unattributable separately, status/ reported but never a finding, with a control arm requiring lock files to stay attributable) is verified; root-cause factor analysis was not done"
     },
     {
       "commit": "811292cba3b8",
@@ -29210,6 +29379,34 @@
       "recurrence_open": "yes"
     },
     {
+      "commit": "b12a763103e9",
+      "date": "2026-10-14",
+      "subject": "fix(blob coverage): api_files() walks api/ recursively -- the universe was a third of it",
+      "files": [
+        "tools/blob_conversion_coverage.py"
+      ],
+      "lines_added": 152,
+      "lines_removed": 7,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "tools/blob_conversion_coverage.py api_files() used a flat os.listdir(api), so the coverage universe was 50 files where a recursive walk finds 179 -- 129 files outside the denominator a conversion percentage was reported over. It did not disclose the narrowing. Two live data: write sites were outside it (api/_lib/sd-store.js:166, api/sairndental/public-complaint-submit.js:136) and a third, api/_lib/sd-store.js:203, was invisible entirely and is RAW",
+      "rules": [
+        "1.7"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "api_files() has used a flat os.listdir since the tool was written; no single commit introduced the narrowing"
+      },
+      "citation_note": "1.7 names a sampling window that silently exempts what it does not reach, which is exactly this -- a flat listdir is a window over api/ -- though 1.7's examples are about read windows rather than a file-discovery universe",
+      "factors_unknown_reason": "not investigated this batch -- the fix (os.walk plus a universe lock with an ablation arm) is verified; root-cause factor analysis was not done"
+    },
+    {
       "commit": "b7aa45b22766",
       "date": "2026-10-14",
       "subject": "fix(tier a review gate): save_reviews stops losing a writer on Windows, with the failing-first probe that caught it",
@@ -29267,6 +29464,32 @@
       },
       "citation_note": "no standing process-rule names a hardcoded fallback window specifically; closest shapes (1.1, 1.10) are about a check or a computed answer going stale, not a display default guessed per-model",
       "factors_unknown_reason": "not investigated this batch -- the fix (named-model matching, unknown renders ctx ??%) is verified; root-cause factor analysis was not done"
+    },
+    {
+      "commit": "d1308719a16f",
+      "date": "2026-10-14",
+      "subject": "fix(drive verify): separate WRONG AGENT from NO AGENT NAMED -- the dangerous case was buried",
+      "files": [
+        "tools/drive_upload_verify.py"
+      ],
+      "lines_added": 38,
+      "lines_removed": 2,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "tools/drive_upload_verify.py reported a first line naming NO agent and a first line naming a DIFFERENT agent with the same DISAGREES label. Seven of eight live mismatches are the harmless convention gap; the eighth, SAIRN-handoff-cc-b6.md reading '# cody b6 handoff', is one agent's filename over another agent's content -- the exact failure the tool exists for -- and it was buried in a list of cosmetic ones. Routed by H1 b28 as 7 and re-measured at HEAD as 8, the new one being SAIRN-digest-hank-b9.txt, so the divergence is ongoing",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "names_agent_and_batch has returned one undifferentiated failure since the first-line check was written"
+      },
+      "citation_note": "no standing rule names a reporter that collapses two failure classes of different severity into one label; the closest, 1.1, is about a check that stopped checking, and this one never stopped -- it reported correctly and unreadably",
+      "factors_unknown_reason": "not investigated this batch -- the fix (WRONG AGENT vs NO AGENT NAMED, neither reclassified as passing) is verified; root-cause factor analysis was not done"
     },
     {
       "commit": "d6e58c61766a",
@@ -29529,6 +29752,90 @@
       "factors_unknown_reason": "fourth routed the defect twice and named the shape; the causal question -- why four separate gates each bound a remote sha from pre-push stdin with no existence test -- is a real analysis nobody has done, and a guess here would be worse than the gap"
     },
     {
+      "commit": "e9d9c8192620",
+      "date": "2026-10-14",
+      "subject": "fix(sd_photos): every real photograph missed the row cap, and the server blamed a migration",
+      "files": [
+        "api/_lib/ai-safeguards.js",
+        "api/_lib/ai-scan-redaction.js",
+        "api/sd-data.js",
+        "api/sd-photos-size-and-provenance.test.js",
+        "stonedesk.html"
+      ],
+      "lines_added": 938,
+      "lines_removed": 92,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "independent-review",
+      "summary": "EVERY REAL PHOTOGRAPH FAILED TO BACK UP AND THE SERVER BLAMED A MIGRATION. sd_photos carries the house constraint `octet_length(data::text) <= 65536` and handlePhotoFiles put the WHOLE FileReader data URL on the row while accepting files up to 10 MB. Base64 is a 4/3 expansion, so ~48.9 KB of image was the most that could ever land and a phone photo is 2-5 MB -- a factor of ~40. The row was refused 400 by Postgres, the handler folded 400 in with 404 and answered 503 'StoneDesk data tables are not set up yet', and the only trace was a console.warn. The user saw the photo in the panel with its Done badge because the LOCAL write had succeeded. Measured from source by fourth's b19 premise document before anything acted on it. Fixed three ways: an 11-rung client downscale whose resulting LENGTH is checked against a 44,000-char budget at each rung (the budget is not the cap -- the same row carries aiAnalysis, ai_source and JSON quoting); ONE notProvisioned() helper with four answers replacing 89 branches that decided blind; and sdDataFailed reporting to a human instead of only the console. THE COUNT WAS RE-DERIVED, NOT QUOTED: fourth's document said twelve branches, the real figure is 89 of 98. T17 landed in the same commit because until the row lands the provenance gap is latent behind the size failure. 26 arms green from 6 passed / 13 failed / 4 unproven; ablated eight ways.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The cap and the data-URL write were both correct in isolation and landed in different commits weeks apart; the defect is their combination, so naming either as the injection would misattribute it."
+      },
+      "contributing_factors": [
+        {
+          "factor": "The 65,536-byte cap is a HOUSE CONVENTION applied uniformly across a dozen StoneDesk tables and is correct for every one of them except the one whose rows carry an image. A convention that is right eleven times reads as right the twelfth.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The image is downscaled to fit the convention rather than the convention being raised for one table. Separating the blob from the row is named as the direction of travel and not done here."
+        },
+        {
+          "factor": "The failure was reported as a DIFFERENT failure. 89 branches folded a 400 in with a 404 and answered 'the tables are not set up yet', which sends the reader to re-run a migration they have already run -- so the diagnosis actively prevented the diagnosis.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "notProvisioned() reads the body once and answers four ways, including a third state for a 400 it cannot classify that explicitly does not say 'run the migration'."
+        },
+        {
+          "factor": "Both reports on the client were console.warn. The platform's own comment in sdSyncCollection already stated the argument -- 'silence would make a backup that is not happening look like one that is' -- and the code did not follow it.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "sdDataFailed toasts the first failure in a burst, names the row-too-large case, and summarises the rest; every branch guarded so the failure path cannot itself fail."
+        },
+        {
+          "factor": "The mechanical rewrite of 89 sites broke five of them: those sites read the body into `rows` BEFORE the guard, and a Response body can be consumed once. The script checked a property INSIDE the branch and the hazard was in what came before it.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The five pass their pre-read body in; arm A8 drives one of them end to end, because the source arm proves the argument is passed and an ablation showed it does not prove it is read."
+        }
+      ],
+      "recurrence_open": "yes"
+    },
+    {
+      "commit": "f4f998e43bb4",
+      "date": "2026-10-14",
+      "subject": "fix(hover): one tracked hover_tip_beacon.py -- same drift as hover_log.py, same fix",
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools/hover_log.py",
+        ".claude/skills/sairn-hover-auditor/tools/hover_tip_beacon.py"
+      ],
+      "lines_added": 141,
+      "lines_removed": 18,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "tools/hover_tip_beacon.py had the identical two-copy drift already found and fixed in hover_log.py this same batch cycle: a tracked copy inside the platform repo whose BEACON_PATH defaulted relative to its own directory (HERE), and an untracked, functionally-live copy next to the real beacon/log data that every recent hover batch was actually running. The untracked copy had also gained a --max-lag flag and a regression-test fixture the tracked copy never got. Fixed: diffed first, merged the untracked-only logic (--max-lag plus its 6 selftest fixtures, and a missing regression fixture for the pre-existing read-back guard) into the tracked copy; BEACON_PATH is now derived from hover_log's own corrected LOG_PATH (same directory in every known instance) rather than guessed; main() refuses loudly if hover_log's own default couldn't resolve, or if a second copy of this script reappears next to the real data. Generalized hover_log.py's duplicate-detection helper to take an explicit script_file argument, since its __file__ default would otherwise have silently checked for the wrong filename when imported by a second tool. --selftest 21/0 (was 15/0). --check with no PYTHONPATH and no override now resolves and reports clean. The untracked copy is renamed aside, not deleted (rm denied by permissions).",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "The untracked duplicate's fork point predates this batch by an unknown margin, same as the hover_log.py case; no single introducing commit identified."
+      },
+      "citation_note": "No PR section describes two independently-maintained copies of one tool diverging; same shape as the hover_log.py record this batch cites, just a second tool with the identical bug.",
+      "factors_unknown_reason": "Immediate cause (HERE-relative default + no duplicate-detection, same root cause as the already-registered hover_log.py defect) is understood and fixed; no deeper RCA on why the same bug shape existed in a second tool."
+    },
+    {
       "commit": "f9e56cfd0c3a",
       "date": "2026-10-14",
       "subject": "fix(cody-routed): AST-confirm self-test flags, ooda_phases stale threshold",
@@ -29617,145 +29924,6 @@
         }
       ],
       "recurrence_open": "Five of the seven role names are [CONFIRM] in the spec and still are -- a funeral home's own titles win, and 'prep' may need its own licensed tier the way SAIRNvet's PRESCRIBER_ROLES does because embalmer is a separate state licence in most states. leg_preneed's owner-only DELETION rule is not implemented: this handler has no delete verb. Whether a cremation authorisation legally needs a second named person is a state-law question this code does not answer. And the existing staff rows are only narrowed, not re-assigned -- that is a human task per employee and nothing tracks whether it has been done."
-    },
-    {
-      "commit": "3b1dc5fe3174",
-      "date": "2026-10-14",
-      "subject": "fix(citation anchor): line-exact and code-only -- three substring routes, three directions",
-      "files": [
-        "tools/citation_line_drift_check.py"
-      ],
-      "lines_added": 199,
-      "lines_removed": 9,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "summary": "tools/citation_line_drift_check.py anchor_verdict reported access to a resource for three inputs that are not access: a // or /* */ comment naming it on the cited line (reported 'direct'), a storage constant named inside a STRING as prose (reported 'via'), and a function whose flat 60-line _body_lines window ran past its closing brace into the NEXT function, crediting it with a neighbour's write and naming the wrong accessor. The first two are prose saying the access was REMOVED read as proof it is present",
-      "rules": [
-        "1.2"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "the 60-line window and the raw-substring test are both original to the tool; cody's sabotage probe found all three routes at once"
-      },
-      "factors_unknown_reason": "not investigated this batch -- the three fixes (comment stripping with block state, string-contents blanking for the identifier branch only, brace-matched body) are verified; root-cause factor analysis was not done"
-    },
-    {
-      "commit": "7788d3d1747f",
-      "date": "2026-10-14",
-      "subject": "fix(bare-run sweep): a concurrent writer's change is not the subject's, plus the 2 allowlist entries",
-      "files": [
-        "tools/bare_run_write_check.py",
-        "tools/bare_run_writers.py",
-        "tools/mech_gate_live_probe.py",
-        "tools/tool_owner_map.py"
-      ],
-      "lines_added": 173,
-      "lines_removed": 24,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "summary": "tools/bare_run_write_check.py attributed any change under ~/SAIRN-SESSION-LOCKS/ to the tool it was running, but status/<session>.json has five other live writers by design. hank's 2026-10-13 sweep therefore reported idempotency_check.py, register_freshness_check.py --help and shape_antipattern_check.py as each having written ANOTHER SESSION'S status row and called it the sharpest finding in the table. None of the three can: none of them nor checker_kit references the registry at all. A false finding whose implied remedy was to edit three correct tools",
-      "rules": [
-        "1.9"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "shared_snapshot has watched the whole SESSION-LOCKS tree since the shared-state half was added 2026-10-08; the status/ subdirectory gained other live writers independently"
-      },
-      "citation_note": "1.9 requires a checker to answer the same on identical input; this one answered differently depending on what OTHER live sessions did during the run, which is the same non-determinism arriving from concurrency rather than from iteration order",
-      "factors_unknown_reason": "not investigated this batch -- the fix (shared_diff returns attributable and unattributable separately, status/ reported but never a finding, with a control arm requiring lock files to stay attributable) is verified; root-cause factor analysis was not done"
-    },
-    {
-      "commit": "b12a763103e9",
-      "date": "2026-10-14",
-      "subject": "fix(blob coverage): api_files() walks api/ recursively -- the universe was a third of it",
-      "files": [
-        "tools/blob_conversion_coverage.py"
-      ],
-      "lines_added": 152,
-      "lines_removed": 7,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "summary": "tools/blob_conversion_coverage.py api_files() used a flat os.listdir(api), so the coverage universe was 50 files where a recursive walk finds 179 -- 129 files outside the denominator a conversion percentage was reported over. It did not disclose the narrowing. Two live data: write sites were outside it (api/_lib/sd-store.js:166, api/sairndental/public-complaint-submit.js:136) and a third, api/_lib/sd-store.js:203, was invisible entirely and is RAW",
-      "rules": [
-        "1.7"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "api_files() has used a flat os.listdir since the tool was written; no single commit introduced the narrowing"
-      },
-      "citation_note": "1.7 names a sampling window that silently exempts what it does not reach, which is exactly this -- a flat listdir is a window over api/ -- though 1.7's examples are about read windows rather than a file-discovery universe",
-      "factors_unknown_reason": "not investigated this batch -- the fix (os.walk plus a universe lock with an ablation arm) is verified; root-cause factor analysis was not done"
-    },
-    {
-      "commit": "d1308719a16f",
-      "date": "2026-10-14",
-      "subject": "fix(drive verify): separate WRONG AGENT from NO AGENT NAMED -- the dangerous case was buried",
-      "files": [
-        "tools/drive_upload_verify.py"
-      ],
-      "lines_added": 38,
-      "lines_removed": 2,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "hover-audit",
-      "summary": "tools/drive_upload_verify.py reported a first line naming NO agent and a first line naming a DIFFERENT agent with the same DISAGREES label. Seven of eight live mismatches are the harmless convention gap; the eighth, SAIRN-handoff-cc-b6.md reading '# cody b6 handoff', is one agent's filename over another agent's content -- the exact failure the tool exists for -- and it was buried in a list of cosmetic ones. Routed by H1 b28 as 7 and re-measured at HEAD as 8, the new one being SAIRN-digest-hank-b9.txt, so the divergence is ongoing",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover",
-      "injection": {
-        "unknown_reason": "names_agent_and_batch has returned one undifferentiated failure since the first-line check was written"
-      },
-      "citation_note": "no standing rule names a reporter that collapses two failure classes of different severity into one label; the closest, 1.1, is about a check that stopped checking, and this one never stopped -- it reported correctly and unreadably",
-      "factors_unknown_reason": "not investigated this batch -- the fix (WRONG AGENT vs NO AGENT NAMED, neither reclassified as passing) is verified; root-cause factor analysis was not done"
-    },
-    {
-      "commit": "f4f998e43bb4",
-      "date": "2026-10-14",
-      "subject": "fix(hover): one tracked hover_tip_beacon.py -- same drift as hover_log.py, same fix",
-      "files": [
-        ".claude/skills/sairn-hover-auditor/tools/hover_log.py",
-        ".claude/skills/sairn-hover-auditor/tools/hover_tip_beacon.py"
-      ],
-      "lines_added": 141,
-      "lines_removed": 18,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "hover-audit",
-      "summary": "tools/hover_tip_beacon.py had the identical two-copy drift already found and fixed in hover_log.py this same batch cycle: a tracked copy inside the platform repo whose BEACON_PATH defaulted relative to its own directory (HERE), and an untracked, functionally-live copy next to the real beacon/log data that every recent hover batch was actually running. The untracked copy had also gained a --max-lag flag and a regression-test fixture the tracked copy never got. Fixed: diffed first, merged the untracked-only logic (--max-lag plus its 6 selftest fixtures, and a missing regression fixture for the pre-existing read-back guard) into the tracked copy; BEACON_PATH is now derived from hover_log's own corrected LOG_PATH (same directory in every known instance) rather than guessed; main() refuses loudly if hover_log's own default couldn't resolve, or if a second copy of this script reappears next to the real data. Generalized hover_log.py's duplicate-detection helper to take an explicit script_file argument, since its __file__ default would otherwise have silently checked for the wrong filename when imported by a second tool. --selftest 21/0 (was 15/0). --check with no PYTHONPATH and no override now resolves and reports clean. The untracked copy is renamed aside, not deleted (rm denied by permissions).",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover",
-      "injection": {
-        "unknown_reason": "The untracked duplicate's fork point predates this batch by an unknown margin, same as the hover_log.py case; no single introducing commit identified."
-      },
-      "citation_note": "No PR section describes two independently-maintained copies of one tool diverging; same shape as the hover_log.py record this batch cites, just a second tool with the identical bug.",
-      "factors_unknown_reason": "Immediate cause (HERE-relative default + no duplicate-detection, same root cause as the already-registered hover_log.py defect) is understood and fixed; no deeper RCA on why the same bug shape existed in a second tool."
     }
   ],
   "started": "2026-09-09",
