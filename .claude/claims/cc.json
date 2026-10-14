@@ -3854,8 +3854,8 @@
       "task": "cc b8 -- (1) remove the tracked SessionStart:compact hook group from eb53e267, no new hooks; (2) standing allow rule for git -C under Documents/SAIRN-* in ~/.claude/settings.json, cc sole owner; (3) status line with context percent used, red at 70, for all six agent folders, no hooks; (4) cody-routed record 2026-10-12T01:51:33Z re-checked without credentials plus the fourth signal for tools/unproven_arm_check.py; (5) reproduce the register_feed_gate NO-ref-lines refusal BEFORE any patch, fix tools/red_suite_register_check.py:96 live-clone isolation, fix the red self-test in tools/nhi_register.py; (6) push without force and confirm landed. FILES: .claude/settings.json tools/sairn_status_line.py tools/unproven_arm_check.py tools/red_suite_register_check.py tools/nhi_register.py tools/compaction_brief.py tools/tooling_inventory.py docs/batch-manifest-cc-b8.json SAIRN-handoff-cc-b8.md SAIRN-report-cc-b8.txt SAIRN-digest-cc-b8.txt SAIRN-ACTIVE-WORK-cc.md",
       "claimed_at": "2026-10-14T11:04:07Z",
       "claimed_at_epoch": 1791975847.4451046,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-14T12:17:04Z",
       "files": [
         ".claude/settings.json",
         "SAIRN-ACTIVE-WORK-cc.md",
