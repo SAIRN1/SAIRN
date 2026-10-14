@@ -979,6 +979,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/n1-n4-and-sf-delete.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "31406a87e01060d93e2eacf34730be73f6ad8306",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/push_gate/_local_remote.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -2879,6 +2887,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "8775f6161635a9379a0ef6e32e12751d79ef6dcb",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/role-picker-vs-check-constraint.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "88e0e47b88a5dd83b5564f450e0792d1fbb0ac2f",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -4996,6 +5012,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "e906bb3c3a00172a82b832488ea39544cb501f3f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-photos-size-and-provenance.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "e9d9c8192620b3b3fe017507ca9a1069b2d1ca0f",
    "criteria_version": "2026-10-06.1"
   },
   {
