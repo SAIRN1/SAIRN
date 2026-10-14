@@ -3816,6 +3816,31 @@
         "tests/sairnlegacy_reservation_lock.js",
         "tests/worktree_sentinel_guard.js"
       ]
+    },
+    {
+      "id": "cody-1791986000",
+      "session": "cody",
+      "subject": "tests",
+      "task": "cody b11 -- (1) tests/run_all_tests_floor_probe.py fake_run fourth param excluded, failing-first, floor arms judge. (2) tests/push_gate/refspec_and_override_probe.py assert scoped-form refusal not blanket SAIRN_SEED_GATE=off; tests/run_all_tests_pinned_probe.py worktree anchor -> clone. (3) tests/run_cron_liveness_probe.py anchor on SHA or content not git log -2 position; tests/run_graduated_exemption_probe.py assert consumption follows MODE by design; tests/app_session_isolation.js sairngrounds posture row -> SOME citing 6a2690be. (4) tests/run_committer_identity_probe.py hermetic git config isolation, no identity unset. (5) methodology failing-first + control arms; diagnose+fix tests/push_gate/missing_checker_probe.py 2 arms and tests/run_role_gate_negative_coverage_probe.py 4 pin-file arms; real api/ or tools/ defects ROUTED with file:line not edited; docs/known-red-suites.json rows updated. (6) push without force confirm landed. I WRITE UNDER tests/ ONLY plus docs/known-red-suites.json and my own root b11 artifacts. NO api/ FILE (hank), NO sql/ FILE (hank), NO tools/ FILE (cc), NO OTHER docs/ FILE (fourth), NO CLAUDE.md. No hook added or restored, settings.json never committed, no SAIRN_SEED_GATE override, no auditor clone entered. FILES: tests/run_all_tests_floor_probe.py tests/push_gate/refspec_and_override_probe.py tests/run_all_tests_pinned_probe.py tests/run_cron_liveness_probe.py tests/run_graduated_exemption_probe.py tests/app_session_isolation.js tests/run_committer_identity_probe.py tests/push_gate/missing_checker_probe.py tests/run_role_gate_negative_coverage_probe.py docs/known-red-suites.json SAIRN-handoff-cody-b11.md SAIRN-report-cody-b11.txt SAIRN-digest-cody-b11.txt",
+      "claimed_at": "2026-10-14T13:53:20Z",
+      "claimed_at_epoch": 1791986000.7698653,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-cody-b11.txt",
+        "SAIRN-handoff-cody-b11.md",
+        "SAIRN-report-cody-b11.txt",
+        "docs/known-red-suites.json",
+        "tests/app_session_isolation.js",
+        "tests/push_gate/missing_checker_probe.py",
+        "tests/push_gate/refspec_and_override_probe.py",
+        "tests/run_all_tests_floor_probe.py",
+        "tests/run_all_tests_pinned_probe.py",
+        "tests/run_committer_identity_probe.py",
+        "tests/run_cron_liveness_probe.py",
+        "tests/run_graduated_exemption_probe.py",
+        "tests/run_role_gate_negative_coverage_probe.py"
+      ]
     }
   ],
   "refusals": [
