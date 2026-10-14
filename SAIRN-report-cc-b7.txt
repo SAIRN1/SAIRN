@@ -1,0 +1,419 @@
+REPORT cc b7
+================================================================================
+cc batch b7 -- 2026-10-14 -- Documents\SAIRN-cc on main
+HEAD 6841af8f, origin/main 6841af8f, 0 ahead / 0 behind
+Handoff: SAIRN-handoff-cc-b7.md (written BEFORE this file)
+Digest:  SAIRN-digest-cc-b7.txt
+Manifest: docs/batch-manifest-cc-b7.json -- 6 items, all `done` with evidence
+Routing: docs/2026-10-13-cc-routed-b7.md
+Transcript/logs:
+  C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-cc\
+  ac16263c-6d67-4305-aa08-5af5dd4be99b\scratchpad\
+EVERY FIGURE BELOW NAMES THE COMMAND THAT PRODUCED IT. Where a figure could not
+be produced, it says COULD NOT TELL and is not folded into a pass.
+================================================================================
+
+0. THE DRIVE UPLOAD VERIFY, RUN ON THIS BATCH'S OWN THREE FILES
+--------------------------------------------------------------------------------
+    python tools/drive_upload_verify.py --agent cc --batch b7
+
+  PASS SAIRN-handoff-cc-b7.md    9943 bytes  sha256 f359546106dac51f
+       first line: '# SAIRN handoff -- cc batch b7 -- 2026-10-14'
+  PASS SAIRN-report-cc-b7.txt   23447 bytes  sha256 fa540eb35b3cfe8a
+       first line: 'REPORT cc b7'
+  PASS SAIRN-digest-cc-b7.txt    1149 bytes  sha256 66fe22f1dab104b1
+       first line: 'DIGEST cc b7'
+
+  PASS: all three deliverables for cc b7 are on the Drive under the right name,
+  with a first line naming cc and b7, and with bytes and sha256 matching local.
+  LIMIT, and it is not folded into that pass: the destination is a Drive SYNC
+  MOUNT. This proves the bytes are in the sync set; it does NOT prove Google
+  acknowledged them. Close that with a Drive-side read of folder
+  14Xc5oT0xzSLa_rTSOSXWVK3Kko1Fbx09 from the chat turn, which goes through the
+  API rather than the mount.
+
+That is the tool built as item 2, run on its author's own deliverables, which is
+the only use of it that cannot be a demonstration.
+
+ONE HONEST WRINKLE, because quoting a verify INSIDE the file it verified cannot
+be made to converge: the report line above is from the run BEFORE this block was
+pasted, so this file's size and sha necessarily differ from it now. The run after
+the paste is the authoritative one, and its three sizes and sha256 values are
+recorded in docs/batch-manifest-cc-b7.json under `closed.deliverables` -- written
+by `batch_manifest.py --close`, which refuses to write that block at all unless
+the verify passes. Anybody can re-derive it:
+
+    python tools/drive_upload_verify.py --agent cc --batch b7 --verify-only
+
+
+1. cc's b6 REPORT, DIGEST AND HANDOFF DO NOT EXIST -- A FINDING ABOUT cc
+--------------------------------------------------------------------------------
+    ls -la "G:/My Drive/SAIRN-status" | grep -i -- "-cc-"
+    sha256sum SAIRN-handoff-cc-b6.md "G:/My Drive/SAIRN-status/SAIRN-handoff-cc-b6.md"
+
+The newest cc files on the shared Drive are b5's: SAIRN-digest-cc-b5.txt (1,078
+bytes) and SAIRN-report-cc-b5.txt (33,185). There is one b6-named cc file:
+
+    SAIRN-handoff-cc-b6.md   2,162 bytes
+    first line:  # cody b6 handoff (filename as requested) - 2026-10-13
+
+The local file of the same name is BYTE-IDENTICAL -- both sha256
+a28769914bf7379486ee8df95a50300aa16b6676b24575d25236262326bfbb18. So there was
+no cc b6 handoff to upload under the corrected name SAIRN-handoff-cc-b6-real.md,
+and NOTHING WAS UPLOADED AS THAT NAME. An empty file under a corrected name
+would be worse than the absence; that is the argument of section 2.
+
+WHAT b6 DID PUSH, from `git log c0eb14d7..` (c0eb14d7 = cc's b6 claim), by
+subject, pre-rebase SHAs as b6 wrote them:
+
+    c2fec449  feat(gate skip): the approved scoped exemption
+    eb53e267  feat(compaction survival): ONE SessionStart hook on matcher compact
+    e2d8e77c  feat(batch cleanup): delete an agent's OWN litter
+    7003b58c  feat(batch manifest): chat writes the ids and they are immutable
+    d9dfae73  chore(scrutiny ledger): the b6 rows the push gate wrote
+    059fadd2  chore(derived docs): PURPOSES entries for b6's four tools
+
+Four tools, then a close with no report, no digest and no handoff. That is the
+exact failure item 2 was built to stop and it was ours, not another session's.
+
+AND ONE THING THE SUMMARY MUST NOT SWALLOW: eb53e267 ADDED a SessionStart hook
+and COMMITTED .claude/settings.json. b7's dispatch forbids both. b7 did neither
+-- `git status` shows that file untouched for this entire batch -- but it is
+TRACKED AT HEAD with that hook in it. "This clone has no hooks" would be false.
+A reader who needs them off has to decide about b6's commit, not b7's diff.
+
+
+2. tools/drive_upload_verify.py -- ONE TOOL, FOUR SEPARATE CHECKS
+--------------------------------------------------------------------------------
+    python tools/drive_upload_verify.py --fixtures      -> 36/36, exit 0
+    python tests/run_drive_upload_verify_probe.py       -> 35/35 arms, exit 0
+    python tools/drive_upload_verify.py --audit         -> exit 1, 6 findings
+    python tools/batch_manifest.py --fixtures           -> 32/32, exit 0
+
+THE FOUR CHECKS ARE SEPARATE BECAUSE EACH PASSES WHILE ANOTHER FAILS:
+  1. the NAME is SAIRN-<kind>-<agent>-b<n> with that kind's extension. A name is
+     all a coordinating session sees in a folder listing.
+  2. THE FIRST LINE OF THE BYTES ON THE DRIVE names that same agent and batch.
+     This is the check that catches the b6 handoff. A name is metadata anybody
+     can write; the first line is the content asserting its own identity.
+  3. BYTES AND SHA256 against the local file. A short write, a half-synced file
+     and a stale copy from an earlier batch all pass 1 and 2. Length alone would
+     miss a same-length corruption; sha alone reads badly in a report. Both.
+  4. THE FOLDER LISTING, read fresh after the copy. os.path.isfile on the path
+     you just wrote is close to a tautology.
+
+WHAT IT CANNOT TELL YOU, PRINTED ON EVERY RUN RATHER THAN IN A DOCUMENT: the
+destination is a Google Drive SYNC MOUNT, not an API endpoint. A matching
+read-back proves the bytes are in the sync set under the right name with the
+right content. IT DOES NOT PROVE GOOGLE ACKNOWLEDGED THE UPLOAD. That is a
+could-not-tell, kept out of the pass, and the tool names the one thing that
+closes it: a Drive-side read of folder 14Xc5oT0xzSLa_rTSOSXWVK3Kko1Fbx09 from a
+chat turn, which goes through the API instead of the mount.
+
+IT REFUSES TO OVERWRITE ANOTHER AGENT'S CONTENT. If the destination exists and
+its first line names a different agent, the copy is REFUSED -- that is the b6
+handoff exactly, and overwriting it would destroy the only surviving copy of
+cody's state. --overwrite-foreign exists, REQUIRES --why, and is COULD NOT RUN
+without it.
+
+--audit, ON THE REAL FOLDER: CHECKED / LISTING = 151 / 194 entries, and the two
+numbers are printed so an unchecked entry cannot read as a passing one. SIX
+DISAGREE:
+
+    SAIRN-handoff-cc-b6.md     first line names cody, not cc
+    SAIRN-digest-cody-b5.txt   first line names no agent at all
+    SAIRN-digest-cody-b6.txt   same
+    SAIRN-digest-cody-b7.txt   same
+    SAIRN-digest-hank-b7.txt   same
+    SAIRN-digest-h1-b5.txt     names h1 but batch U, not b5
+
+REPORTED, NOT RENAMED. A tool that renames somebody else's upload is guessing
+which half is right.
+
+THE MANIFEST WIRING, AND IT IS NOT A HOOK. `batch_manifest.py --close` refuses
+unless the verify passes, and three properties of that are deliberate:
+  * IT VERIFIES, IT DOES NOT UPLOAD -- --verify-only, so closing cannot perform
+    the upload it is supposed to be checking.
+  * IT FAILS CLOSED WHEN THE VERIFIER IS ABSENT (PR 1.11). No isfile skip: a
+    missing drive_upload_verify.py is exit 2 naming the file, never a close.
+    Driven as a fixture by pointing the constant at a non-existent path.
+  * `closed` IS NOT A FIELD AN AGENT CAN TYPE. validate() refuses a hand-written
+    "closed": true, a closed block with no PASS, one with no re-runnable
+    verified_by command, and one over any item still open or in-progress -- but
+    ACCEPTS one over a `blocked` item that says why. All eleven are fixtures.
+
+Also fixed while there: run_fixtures() had `total = 21` hardcoded beside the
+checks it counted. It counts now.
+
+FAILING-FIRST, ON THE THREE SHAPES THE DISPATCH NAMED, AND THE ABLATIONS ARE THE
+POINT. A probe that reports exit 1 on bad input cannot distinguish "the check
+caught it" from "something else in the run caught it". So each shape carries an
+ablation that stubs out the one criterion meant to catch it and re-drives the
+SAME input:
+
+    WRONG-AGENT  cody's content under cc's filename -> exit 1, "does not name cc"
+                 ABLATION: first-line check stubbed to pass -> ACCEPTED
+    MISSING      no digest at all -> exit 1, "THE DELIVERABLE DOES NOT EXIST",
+                 named as a finding about the BATCH and not about the tool; the
+                 other two still verify (2 PASS lines) and the absent one is NOT
+                 quietly created
+                 ABLATION: local read stubbed to always succeed -> ACCEPTED
+    TRUNCATED    clean upload, then the Drive copy cut to 8 bytes, re-verified
+                 with --verify-only -> exit 1, byte difference stated as a
+                 number, and --verify-only did NOT repair what it measured
+                 ABLATION: read-back stubbed to return the local bytes -> ACCEPTED
+
+Plus: the foreign-overwrite refusal leaves cody's bytes unmodified; an ABSENT
+MOUNT is exit 2 COULD NOT RUN and says NOTHING WAS UPLOADED AND NOTHING WAS
+CHECKED in those words; a broken criteria lock makes the whole run exit 2; and
+--agent is required rather than inferred from the folder name, because a clone
+renamed SAIRN-cody would answer "cody" and file cc's state under cody.
+
+
+3. save_reviews() LOSES A WRITER, AND THE PROBE WAS RUN BEFORE THE FIX
+--------------------------------------------------------------------------------
+    python tests/run_save_reviews_retry_probe.py     (unpatched)  -> exit 1
+    python tests/run_save_reviews_retry_probe.py     (patched)    -> exit 0
+    python tests/run_tier_a_review_gate_probe.py                  -> exit 0
+
+Routed by cody, docs/2026-10-13-cody-b6-routed-to-cc.md PART 1.
+
+MEASURED IN THE ORDER THAT MAKES A GREEN ARM MEAN ANYTHING. The race is
+probabilistic, so an arm written after a fix can be passing because the race
+never fired. Driven against the UNPATCHED function first:
+
+    unpatched  2 writers + 1 tight reader, 400 saves : 335 PermissionError
+               -> ARM 1 FAILED, and ARM 3b FAILED (no retry existed at all)
+    patched    2 writers, 400 saves                  : 0, 0, 0 over three runs
+    patched    2 writers + 1 tight reader, 400 saves : 4, 12, 4 over three runs
+
+BOTH PATCHED NUMBERS ARE REPORTED AND THAT IS NOT HEDGING. The reader in phase B
+reopens the destination in a tight loop and holds it open far more of the time
+than any real caller, and it CAN starve a bounded retry. Phase A is the routed
+scenario -- two sessions calling --open or --discharge -- and it is zero. Phase B
+is disclosed under a stated 5% ceiling (<=20 of 400) with the unpatched 335
+beside it. One combined figure here would be the fabricated half of a two-number
+result, which is the second cross-domain discipline.
+
+THE SHAPE OF THE FIX, and each property was separately earned:
+  * PermissionError BY NAME. `except OSError` would also catch a full disk and a
+    vanished directory, and retrying those 20 times then raising is strictly
+    worse than raising once. ARM 4 drives OSError(ENOSPC) and asserts it escapes
+    on the FIRST attempt -- measured (1, True, False).
+  * IT RE-RAISES ON EXHAUSTION. A retry that gives up quietly converts a lost
+    record into a SILENT lost record. ARM 3 stubs os.replace to fail forever and
+    asserts PermissionError is raised; ARM 3d asserts the temp file is still
+    cleaned up, so docs/ does not fill with orphans.
+  * THE CAP IS A DECISION. 20 attempts at the measured ~76% per-attempt failure
+    rate puts exhaustion near 1e-11, so an exhaustion is a signal. UNBOUNDED IS
+    WRONG -- it turns a deadlock into a hang, which PR 1.12 names as the shape
+    that must never exist. ARM 3c asserts the retry count is bounded.
+  * SAFETY WAS ALREADY FINE AND MUST STAY FINE. ARM 2 runs a reader racing both
+    writers and asserts it NEVER sees an unparseable file -- 0 across every run.
+    A retry that fixed liveness by widening the write window would pass ARM 1
+    and break the property the atomic write exists for.
+
+THE ROUTED DOC'S OWN PREDICTION HELD, AND IT IS THE INDEPENDENT CHECK:
+tests/run_tier_a_review_gate_probe.py now prints "RETRY COUNT: save_reviews
+needed 0 retry/retries to get BOTH writers through" and ALL ARMS PASS. Arm 12's
+expected answer is still 1 -- only the write is retried; the read-modify-write
+race where two --open calls lose a record is untouched and still disclosed.
+
+WHAT IS NOT COVERED: POSIX. The retry branch is unreachable there, so this
+platform cannot demonstrate no-behaviour-change on another. Stated, not assumed.
+AND SIX OTHER TOOLS HAVE THE SAME CONSTRUCT: `grep -l "os.replace" tools/*.py`
+returns seven, and only tier_a_review_gate.py was fixed, because it is the one
+cody measured. The other six are UNEXAMINED, not cleared.
+
+
+4. OPEN-WORK ROW 221 -- AND THE COUNT WAS RE-DERIVED, NOT TAKEN
+--------------------------------------------------------------------------------
+    awk 'NR==221' docs/SAIRN-OPEN-WORK-INDEX.md | tr -cd '|' | wc -c   -> 8, then 8
+    git diff --numstat docs/SAIRN-OPEN-WORK-INDEX.md                   -> 1  1
+    node -e "<SD_SESSION_GATED key count>"                             -> 60 keys, 36 sf_
+    python tools/open_work_shard.py --check                            -> exit 0, CLEAN
+
+Routed by hank in SAIRN-report-hank-b7.txt, not applied there because the index
+was in cc's live b6 FILES (PR 4.3). Stale in both halves: the title cell ended
+"The ones still ungated are still a decision NOBODY HAS MADE" and the owner cell
+read "24 ungated resources: unassigned".
+
+THE CLAIM WAS VERIFIED BEFORE IT WAS COPIED. SD_SESSION_GATED in api/sd-data.js
+holds 60 keys, 36 of them sf_. Every sf_ token in that file was then compared
+against the gate list: exactly two fall outside it, sf_employee_auth (the auth
+table itself, not a data resource) and sf_officers_provisioning_bypass_repro (a
+repro-tool filename in a comment). So 36 of 36 resources are gated, and the
+derivation is written INTO the cell so the next reader need not trust hank or me.
+
+EDITED PER PR 2.1 -- never by splitting on a pipe. A script replaced two unique
+substrings inside their own cells and REFUSED unless each occurred exactly once
+and the pipe count on the line was identical before and after. 8 and 8.
+--numstat says 1 insertion, 1 deletion: one row, nothing else.
+
+open_work_shard.py --check then reported DRIFT in sairnfreedom -- 14 rows either
+side, 1 only in the index and 1 only in the shard, which is precisely a row
+edited in the index and not propagated. Regenerated: CLEAN, all 812 index rows
+present in their shard byte for byte. The index is still canonical.
+
+
+5. scope_gate.py:409 -- THE FIX APPLIED, THE CHECKER DECLINED, BOTH RECORDED
+--------------------------------------------------------------------------------
+    python tests/run_scope_gate_unfetched_base_probe.py  -> 12/12 arms, exit 0
+    python tests/run_hover_separation_probe.py           -> 148 passed, 0 failed
+    python tests/run_hover_scope_own_claim_probe.py      -> ALL ARMS PASS
+    python tools/report_only_checks.py --list            -> exit 1 BEFORE and AFTER
+
+fourth routed this in b10 in full and again in b11 as a register row, because
+b10 was still MENTION_ONLY. The register row is owned by cc with state
+DECIDE_OR_NOT_PROMOTED, and fourth was explicit that silence is the one answer
+the state refuses.
+
+THE DEFECT. changed_outgoing() built its range from rsha -- the REMOTE's sha,
+read off git's pre-push stdin BY FIELD POSITION -- with no existence test, then
+reported the failure as a property of the RANGE. With five sessions pushing one
+branch that sha is routinely an object this clone has never fetched: the ordinary
+case reported as an anomaly about the change being pushed. FOURTH INSTANCE of a
+shape fixed three times already (register_feed_gate ac9d47d8, copy_exactly_gate
+55777a74, sairn_push_gate_hook 9c36aa7c, the last printing a FALSE FINDING --
+NO OWNER: 4 -- over four pre-existing shared tools).
+
+THE FIX. _have_commit() beside git(); rng assigned inside BOTH branches so the
+error text cannot quote a range the log path never used; an unfetched tip falls
+back to merge-base(origin/main, lsha) with the substitution stated in the notes;
+and a could-not-read naming `git fetch origin` when neither end resolves. The
+:409 message is NOT deleted -- it is still right for a diff failing on a range
+whose both ends resolve.
+
+RE-QUALIFIED FOR THIS TARGET RATHER THAN COPIED (cross-domain discipline 7, the
+Ariane 5 one): the merge-base sits FURTHER BACK than the range git asked about,
+so MORE paths are examined, never fewer -- and for a gate whose job is to REFUSE
+an out-of-scope path, a superset can only refuse more. That is what makes the
+substitution safe HERE. It is not a property of the pattern, and the identical
+code in a gate that must PASS something would need the opposite argument.
+
+ARM 5 IS AN ABLATION: stub _have_commit to always answer yes -- which is the
+pre-fix code exactly -- and the same input returns the old opaque "could not read
+the outgoing range" refusal. Without it, ARM 2 could be passing for some other
+reason. THE AUDITOR'S CLONE IS NEVER READ OR WRITTEN: every arm builds its own
+throwaway repository, and a build agent must not reach into Documents\SAIRN-hover.
+
+THE CHECKER HALF IS DECLINED, WITH A MEASUREMENT RATHER THAN A PREFERENCE.
+Population of the proposed 6-arm static taint checker -- tools/*.py that parse a
+pre-push ref line and bind a sha by field position:
+
+    hover_auditor_scope_gate.py    guard present: True
+    register_feed_gate.py          guard present: True
+    sairn_push_gate_hook.py        guard present: True
+
+THREE files, all guarded. A tool with its own criteria lock, fixtures and six
+arms, maintained indefinitely over three already-clean files, buys only the
+fourth author of the shape -- and fourth named the expensive part itself: arm 3
+(cat-file -e <sha>:<path>, which LOOKS like an existence test and is a question
+about a path) needs flow-level analysis, and a checker that gets it wrong passes
+the worst real instance WHILE REPORTING ITSELF CLEAN.
+
+THE SUBSTITUTE RUNS INSTEAD OF BEING REMEMBERED: arm 6 of the same probe
+re-measures that population every run and FAILS if any member loses its guard;
+arm 6b fails if the population ever reads as empty, which is how an arm like this
+dies quietly. ITS LIMIT IS STATED IN BOTH PLACES: the guard is detected PER FILE,
+not along the flow -- it catches "no guard anywhere in the file", the shape all
+four real instances had, and NOT "guarded on one path and not another". That
+residue is what was declined; it is not claimed as covered.
+
+RECORDED WHERE IT CAN BE FOUND: a NOT_PROMOTED entry in
+tools/report_only_checks.py (the mechanism fourth's routing named) and
+docs/2026-10-13-cc-routed-b7.md section 2. NOT in docs/by-design-register.json,
+which is in fourth's LIVE b12 FILES -- declared and not overridden (PR 4.3).
+report_only_checks.py --list exits 1 both before and after the entry, measured
+against a stash of the file, so that exit code is pre-existing and not mine.
+
+
+6. THE PUSH -- NO FORCE, FOUR REBASES, TWO MID-PUSH REF COLLISIONS
+--------------------------------------------------------------------------------
+    git rev-list --left-right --count origin/main...HEAD   -> 0  0
+    git rev-parse HEAD origin/main                          -> both 6841af8f
+
+No --force in any spelling. SAIRN_SEED_GATE NEVER USED. Every gate refusal was
+cleared at its cause:
+
+  REFUSAL 1  pre-commit: a tools/*.py with no inventory entry. Satisfied by
+             writing the drive_upload_verify.py PURPOSES entry -- what it
+             CATCHES, not what it does -- in tools/tooling_inventory.py.
+  REFUSAL 2  register feed gate: two commits closing a defect with no register
+             record. Satisfied with two real records (tooling/high/
+             fault-injection, tooling/moderate/independent-review), each naming
+             its injection commit (a51047b3 and 792117dd, both found with
+             `git log -S`), and each carrying --factors-unknown with a reason,
+             because nobody has investigated the causes and a guess in a CAPA
+             field is worse than the gap. --check: OK, 548 records.
+  REFUSAL 3  generated-document gate: MASTER-PLAN, TOOLING-INVENTORY and
+             traceability-matrix all stopped matching their sources, because
+             adding a tool changes all three. Regenerated by their own
+             generators; numstat 5/5, 13/11, 12/8.
+  REJECTION 4-5  GitHub `cannot lock ref`, twice, MID-PUSH: another clone landed
+             between the gate passing and the ref update. Not a gate refusal and
+             not something to override -- rebase and push again.
+
+THE LANDING LOOP THAT WORKS, four times: commit the scrutiny rows the gate just
+wrote -> git pull --rebase origin main -> tools/sairn_rebase_resolve.py (it
+merged docs/defect-density-register.json and docs/scrutiny-flags.json by
+ancestor+upstream+local counts, and REGENERATED MASTER-PLAN and
+traceability-matrix rather than merging them) -> git rebase --continue -> commit
+the re-seated register -> push.
+
+AND A REFUSAL I CANNOT EXPLAIN, REPORTED AS AN OBSERVATION. The first two push
+attempts of this sitting were denied with:
+
+    register_feed_gate: stdin is not a terminal and carried NO ref lines.
+
+This clone was 9 behind; `git pull --rebase origin main` cleared it and the
+identical command then pushed. THE OBVIOUS EXPLANATION IS WRONG: later in the
+same batch this clone was behind AGAIN -- remote tip 18ed4b0d45d5 not an object
+here -- and the ref lines arrived normally, with register_feed_gate printing its
+merge-base notice and every check running. So "behind the remote" is NOT
+sufficient to produce that state, and this batch did not establish what is. It is
+routed to whoever next claims that file with BOTH observations, and the next step
+is a REPRODUCTION, not a patch: nobody should change a push gate on two
+observations and no mechanism. Those later notices are also independent
+confirmation that the section-5 fix pattern works where it has been applied.
+
+
+7. WHAT THIS BATCH DID NOT DO
+--------------------------------------------------------------------------------
+  * NO HOOK added, restored or removed. .claude/settings.json untouched -- and
+    tracked at HEAD with b6's SessionStart hook in it, which section 1 states
+    rather than leaving to be discovered.
+  * The four conflicted files were not written: docs/by-design-register.json,
+    docs/METHODOLOGY.md, docs/external-files-index.json,
+    docs/2026-10-13-fourth-b11-routed-to-cc.md. All in fourth's live b12 FILES.
+  * The six other os.replace users were not examined.
+  * The four FMEA drafts the register asked for were not written -- four
+    unreviewed drafts filed by the session that caused the defects is the
+    detector-blesses-its-own-fix shape one step out.
+  * Tier A obligations held by cc were NOT discharged and NOT re-measured. That
+    is an UNVERIFIED line, not a zero.
+  * The five Drive files other agents own were not renamed. Each owner's.
+  * No live deployment was verified: nothing in this batch touches a deployed
+    surface, so there is no URL to read. Said rather than left as a gap.
+
+8. FILES, AND THE CLAIM STRING'S ONE ERROR
+--------------------------------------------------------------------------------
+Written and in cc's declared FILES: tools/drive_upload_verify.py,
+tests/run_drive_upload_verify_probe.py, tools/batch_manifest.py,
+docs/batch-manifest-cc-b7.json, tests/run_save_reviews_retry_probe.py,
+docs/2026-10-13-cc-routed-b7.md, SAIRN-handoff-cc-b7.md, SAIRN-report-cc-b7.txt,
+SAIRN-digest-cc-b7.txt.
+
+Written and NOT in them, said out loud: tools/tier_a_review_gate.py (the claim
+named tools/review_store.py, WHICH DOES NOT EXIST -- save_reviews lives in the
+review gate), tools/hover_auditor_scope_gate.py,
+tests/run_scope_gate_unfetched_base_probe.py, tools/report_only_checks.py,
+tools/tooling_inventory.py, docs/SAIRN-OPEN-WORK-INDEX.md,
+docs/open-work/sairnfreedom.md, docs/defect-density-register.json,
+docs/scrutiny-flags.json, docs/MASTER-PLAN.md, docs/TOOLING-INVENTORY.md,
+docs/traceability-matrix.md, SAIRN-ACTIVE-WORK-cc.md. No session held an active
+claim on any of them, checked with `python tools/sairn_claim.py list`. No task
+string was reworded to slip the matcher.
+
+SHA256 ad1ee622c1d32b61f685f9cb4c3501d1045e8e3af0f248f46ddaf70db06dea95
+END-OF-REPORT

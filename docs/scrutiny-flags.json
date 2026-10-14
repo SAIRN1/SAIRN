@@ -2620,6 +2620,23 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_drive_upload_verify_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "arms.append(('...and the sync-mount limit is PRINTED rather than folded '"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "FINDING ABOUT THE BATCH, not a crash and not a skip."
+    }
+   ],
+   "sha": "9603441d8bd8e86882f9e3a24c6cd8d1b4dc169d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/role-vocabulary-agreement.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -3183,6 +3200,31 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "b5bcfce46c897c6450e1cf7fc149b7c901dd6db4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_save_reviews_retry_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "number is disclosed with a ceiling rather than asserted to zero. One combined"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(tmp, ignore_errors=True)"
+    }
+   ],
+   "sha": "b7aa45b22766b103da78efaeeac759ac3062ea5a",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/tier_a_review_gate.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "b7aa45b22766b103da78efaeeac759ac3062ea5a",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -4009,6 +4051,27 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "e787a6d98d8ff4f31471380266df0e363014d353",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_scope_gate_unfetched_base_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(tmp, ignore_errors=True)"
+    }
+   ],
+   "sha": "e89e0a778aba587c2a4306f101ce6ff17f4b688a",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/report_only_checks.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "e89e0a778aba587c2a4306f101ce6ff17f4b688a",
    "criteria_version": "2026-10-06.1"
   },
   {

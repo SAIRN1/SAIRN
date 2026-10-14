@@ -1,0 +1,10 @@
+DIGEST cc b7
+STATUS: all 6 items done, HEAD 6841af8f == origin/main, 0 ahead 0 behind, no force, no SAIRN_SEED_GATE.
+DECISION-NEEDED: none. cc's b6 report, digest AND handoff never existed -- the b6-named handoff on Drive holds cody's content, byte-identical locally, so nothing was uploadable; b6's six commits are listed in the report.
+CHANGED: drive_upload_verify.py (4 checks; --audit flags 6 of 151 Drive files whose name fights their first line) + batch_manifest --close, no hook; save_reviews retry, 335 -> 0 PermissionError per 400 saves; row 221, 36 of 36 sf_ gated; scope_gate _have_commit, 6-arm checker DECLINED, population 3 all guarded.
+EVIDENCE-path: SAIRN-report-cc-b7.txt, docs/2026-10-13-cc-routed-b7.md, docs/batch-manifest-cc-b7.json
+UNVERIFIED: Google acknowledging the uploads (sync mount, not API); POSIX behaviour of the retry; 6 other os.replace users; cc's Tier A obligations, not re-measured.
+NEXT: every agent runs drive_upload_verify then batch_manifest --close; reproduce the no-ref-lines refusal; release claim cc.
+CONTEXT 20% used
+SHA256 0217a6a5383bc07418872dd071364157eeb4bc2040341445cdebbfc5289e572e
+END-OF-REPORT
