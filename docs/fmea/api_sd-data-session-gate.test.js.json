@@ -1,0 +1,220 @@
+{
+ "app_matched": "sairnscape",
+ "considered": {
+  "defect_records": 548,
+  "detectors_fired": [
+   "1.3"
+  ],
+  "detectors_run": 12,
+  "matched_this_file": 13
+ },
+ "drafted_on": "2026-10-14",
+ "exists": true,
+ "no_detector_yet": [
+  "1.6",
+  "2.2",
+  "3.1",
+  "3.2",
+  "3.3",
+  "4.1",
+  "4.2",
+  "4.3",
+  "5"
+ ],
+ "risks": [
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "c9680a83b6de",
+   "date": "2026-09-16",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "api/sd-data-session-gate.test.js was FAILING on origin/main: its pair-count arm said 9 and SD_SESSION_GATED held 11 after law_trusttx was gated on 2026-09-16. The arm was correct and its own message asks for the new resource to be named and justified; that was never done, so the suite guarding the licence-key-is-not-enough gate sat red. Separately, the count proves the table's SIZE and nothing exercises the entries -- GATED drove 7 of the 11 pairs and no arm said where the other 4 were driven",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "ce835a7e57b3",
+   "date": "2026-09-22",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "api/sd-data.js authorised law_clients, law_matters and law_deadlines on the LICENCE KEY ALONE -- no employee session at all. A licence key is shipped to the browser and readable by anyone who can open the app, so the effective authorisation was 'opened the app'. law_matters names the client and the matter; law_clients is the client list. MEASURED BEFORE THE FIX rather than inferred: all SIX pairs (three resources by read and write) answered 200 with no token, against a control where law_invoices/read answered 401 -- so 'open' was established against a gated sibling rather than assumed. THIS WAS A KNOWN, DOCUMENTED RESIDUAL, NOT A DISCOVERY, and that is the honest framing: the rollout comment beside the LAW_RESOURCES table named these three as deliberately deferred because Vercel ships the page and the endpoint together, so flipping them mid-day would fail a staff member with the app already open. The fifteen extended resources were the canary and the written trigger was 'quiet for a full working day'. What made it actionable now is that the canary has been quiet six days AND the client half was confirmed rather than assumed -- sairnlaw.html:1509 sdnData() sets X-SD-Auth on every data call whenever a token exists, not conditionally per resource. FIXED with the same mechanism law_trusttx was flipped with on 2026-09-16: three entries in SD_SESSION_GATED plus three in SD_GATE_APP, six lines. All six pairs now answer 403 FORBIDDEN. A SESSION gate and not a ROLE gate, deliberately -- owner, attorney and paralegal all legitimately work clients, matters and deadlines and all three are driven green. DISCLOSED RATHER THAN TIDIED: the endpoint now answers two codes for one condition, 401 NO_SESSION from the inline gate for the fifteen and 403 FORBIDDEN from the shared gate for these four, widening a pre-existing split from one resource to four; unifying is a client-visible contract change and is recorded rather than decided.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "426b29a2a25a",
+   "date": "2026-09-24",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "sf_signatures reached api/sd-data.js with no session gate: the SF_RESOURCES read and write branches dispatched on the licence hash alone, and the licence key is shipped to the browser and readable by anyone who can open the app. The row is {docId, docTitle, version, hash, signer, typed, signed} -- a named person, their typed signature, and the governance document it binds them to, with a hash of the text they signed. It is not a fact ABOUT a person but a reusable instrument that can be lifted off one document and re-applied to another, which is why it is sharper than the identity rows gated beside it. Named alongside sf_members in the 2026-09-22 finding; sf_members was closed that day and this one was left with the words 'the open-work row stays open'. Reachability was demonstrated live on 2026-09-22 -- 200 provisioned:true with no session token, against a control where sf_ledger answered 403 -- and exfiltration was NOT: every probe returned zero rows on that tenant.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "58303cc59aaa",
+   "date": "2026-09-24",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "Four SAIRNdesign resources sat at Tier A on a licence key alone for a day: sdn_projects, sdn_proposals, sdn_specitems and sdn_timeentries were individually read and promoted B->A on 2026-09-23, hours AFTER the SAIRNdesign session gate was armed for \"the five at Tier A\" -- and nothing connected a tier promotion to the gate whose scope was defined BY tier. The gate's comment said \"only the five at Tier A\" and named five names; the tier table moved; the comment and the gate stayed. A studio's client budgets (steering the AI adviser), priced accept/decline proposals (whose Approved path reserves one-of-a-kind inventory), the cost/retail catalogue both totals derive from, and billable hours were all writable and readable by anyone holding the browser-shipped licence key, which is the exact finding that armed the first five.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "094aed1fa42f",
+   "date": "2026-09-25",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "All twelve SAIRNscape resources in api/sd-data.js dispatched on the licence hash alone with NO session check of any kind, and the licence key is shipped to the browser and readable by anyone who can open sairnscape.html -- so the key WAS the authorisation. Two of the twelve are Tier A on integrity: `invoices` (SAIRNscape's money row; its write branch already refuses a non-numeric amount because a string one reached a fold and printed -99450 on a tax report) and `scp_quotes` (the priced quote every invoice descends from). Identical shape to law_trusttx (gated 2026-09-16), SF_RESOURCES and SDN_RESOURCES; SAIRNscape was swept with none of the three. Fixed by adding both to SD_SESSION_GATED for read AND write with SD_GATE_APP entries pinning each to 'sairnscape' -- 403 FORBIDDEN without a session, plus the shared active-credential re-check, so a deactivated employee is refused on a token that still verifies. THE NAME IS THE PART THAT MAKES THIS FIX FAILABLE IN SILENCE: SAIRNscape claimed the bare name `invoices` before the scp_ convention existed, so the storage table is scp_invoices and the RESOURCE the dispatch tests for is `invoices`. A gate written against the table name gates nothing at all and every refusal arm anywhere still passes -- the new suite carries an arm whose only job is that distinction. NO CLIENT CHANGE WAS NEEDED AND THAT WAS MEASURED RATHER THAN ASSUMED, which is the half that has broken apps three times here: scpData() attaches X-SD-Auth on every call whenever a token exists (sairnscape.html:2107) with no per-call withSession flag to forget -- the thing that had to be repaired in sairndesign.html, where 18 of 19 call sites never passed it -- every call site for both resources goes through that one helper, and both login paths store the token before scpApplyLoggedIn -> scpInit -> scpSyncFromServer. Arms assert all three against the shipped page rather than against the commit message. DRIVEN TO FAIL BEFORE IT WAS BELIEVED: removing the SD_SESSION_GATED entries takes the new suite to 9/18, removing the SD_GATE_APP pins to 11/18, and renaming the entry to the storage-table name to 16/18. LIVE-VERIFIED against https://sairn.vercel.app/api/sd-data by tools/scp_session_gate_live_probe.py: both resources, both verbs, 403 FORBIDDEN on a licence key alone, against a control (scp_vendors) still answering 200 so the result is a split and not a lockout, plus the DEPLOYED page read back for the X-SD-Auth header. The probe is adapted from the SAIRNlegacy one and the adaptation is the part worth noting: SAIRNlegacy's bespoke gate answers 401 NO_SESSION while this shared one answers 403 FORBIDDEN, so a byte-copy would have reported a working gate as FAILED -- bug class 22.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "c66a32854e5a",
+   "date": "2026-09-29",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "mech_docs WRITE was authorised by the licence key alone -- a key shipped to the browser and readable by anyone who can open sairnmechanical.html. It is the one of the four MECH_RECORDS tables whose own server-side redactor carries patterns for SSN, EIN and card-length digit runs, because scanDoc() asks a model to extract every field off work orders, contracts, permits and invoices and the answer is stored on the row. api/_lib/mech-redact.js reduces that text and never refuses a write, deliberately, so it was not the gate and there was no other one. Fixed as one registry entry in each of SD_SESSION_GATED and SD_GATE_APP.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "5e33157ee606",
+   "date": "2026-10-05",
+   "detected_by": "live-verification",
+   "prior_severity": "high",
+   "risk": "SAIRNscape's 'customers' resource dispatched on the licence hash alone, with no session check of any kind, for READ and WRITE -- and the row carries a customer's NAME, PHONE, EMAIL and STREET ADDRESS. The licence key is shipped to the browser and readable by anyone who can open sairnscape.html, so it was the whole authorisation. PROVEN LIVE WITH A CONTROL before the fix: on SCP-DEMO-2026 with no session token, read customers answered 200 and returned a row with all four fields, and write customers with an id-less payload answered 400 from the handler body -- so the gate did not fire, and nothing was stored because api/sd-data.js:4769 refuses before any store call. The controls are what make it a finding rather than a guess: invoices and scp_quotes on the SAME bare key answered 403 both, so the gate existed, worked, and did not cover this one. THE ROOT CAUSE IS NOT THE GATE, IT IS A CORRECTION THAT STOPPED AT THE PROSE. The 2026-10-05 sweep that armed SAIRNscape scoped itself to Tier A and was right to; 'customers' is carried B/B in docs/CRITICALITY-TIERS.md while its own confidentiality cell had already been corrected to read 'A CUSTOMER's NAME, PHONE, EMAIL AND STREET ADDRESS'. The basis was fixed and the LETTER was not, and the letter is what the sweep reads, so the resource was invisible to the mechanism that would have gated it. Fixed by adding the resource to SD_SESSION_GATED and SD_GATE_APP in one edit; the B->A retier that would have prevented it is owed and is held by another session. The client needed no change and that was checked rather than assumed: customers is read only inside scpSyncFromServer()'s resource loop at sairnscape.html:2734, reached only after login, and the two already-gated resources sit in the same loop.",
+   "rules": [
+    "3.4"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "0442646cb781",
+   "date": "2026-10-11",
+   "detected_by": "hover-audit",
+   "prior_severity": "high",
+   "risk": "Sixteen of twenty-two SAIRNscape resource/action pairs were gated by neither SD_SESSION_GATED nor an inline session check, so the browser-shipped licence key was the whole authorisation; three resources are gated here (scp_designs, Tier A since 2026-10-05; scp_vendors, whose data jsonb carries contact, phone and email; scp_progress_photos, whose photo_b64 of a customer's property was gated only INSIDE the qc_status branch at api/sd-data.js:5231, so an UPLOAD needed no session at all) -- and the reproducing artifact scored scp_progress_photos FIXED when it was not, because its check was a substring test for verifySessionToken that the qc-only gate satisfied, which is why the real figure was 16 of 22 and not the 15 first reported",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "56e040c3c6ac",
+   "date": "2026-10-11",
+   "detected_by": "hover-audit",
+   "prior_severity": "critical",
+   "risk": "sf_officers, SAIRNfreedom's officer roster and the post's governance record, was in neither SD_SESSION_GATED nor SD_GATE_APP, so the browser-shipped licence key was the whole authorisation on it -- and the generic SF_RESOURCES write branch stores data:payload verbatim with no role or capability check, so a write past the gate is a write past all three client-side trapdoor guards (activeProvisioners, the SPEC 1c last-active-provisioner refusal, the sole-holder refusal) and can leave a post at zero active provisioners, the state SPEC 1c exists to make unreachable",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "b7f6fb54116e",
+   "date": "2026-10-11",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "Four Tier A SAIRNfreedom resources -- sf_sessions (prizeCap, a statutory ORC Chapter 2915 limit, plus receipts and prizes), sf_shifts (a cash variance attributed to a named employee), sf_tickets (unitPrice and total at point of sale) and sf_rentals (charge, proceeds and the alcohol/notified compliance pair) -- were in neither SD_SESSION_GATED nor SD_GATE_APP, so the browser-shipped licence key was the whole authorisation on the gaming floor's money records; and in the same file sfHydrateAll() ran once from DOMContentLoaded BEFORE any interactive sign-in with sfEnterApp() never re-running it, so on a fresh browser every GATED sf_ resource's hydrate answered 403, the per-resource empty catch swallowed it, and signing in never went back for the server's copy -- already live for the 18 resources gated before this change",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "0442646cb781",
+   "date": "2026-10-12",
+   "detected_by": "hover-audit",
+   "prior_severity": "high",
+   "risk": "batch b16 re-derives the scp_* 5-resource 'BY DESIGN' classification and finds it UNSUPPORTED by the schema. hank's 2026-10-13 inventory (docs/2026-10-13-hank-sd-data-inventory.md:185-192) and this commit's own contributing_factors both call the 5 UNGATED_REST resources (scp_jobs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features) deliberately-left because their columns 'justify leaving each.' Read directly: sql/sairnscape_data_schema_phase2.sql:22-24 states outright 'TYPE A (customer-scoped list): scp_designs, scp_irr_controllers, scp_irr_zones, scp_water_features (customer_id parent) and scp_irr_schedules (zone_id parent)' -- and every one of the 5 tables' own column list confirms it: scp_jobs has customer_id (sql/sairnscape_data_schema.sql:52), scp_irr_controllers customer_id (phase2.sql:53), scp_irr_zones customer_id (phase2.sql:67), scp_water_features customer_id (phase2.sql:97), scp_irr_schedules zone_id (phase2.sql:83, one hop from customer_id via scp_irr_zones). The original test comment that named UNGATED_REST (api/sd-data-scp-session-gate.test.js:113-114) calls this 'a disclosure rather than an absence,' not a safety judgement. FINDING STAYS OPEN: no written evidence exists anywhere in the schema, the test, or the inventory doc that these 5 hold no tenant/customer data -- the schema says the opposite. Routed to hank: same fix pattern as the 3 already gated in this commit (SD_SESSION_GATED + SD_GATE_APP entries), exact file:line in docs/2026-10-07-hover2-scp-session-gate-routing.md.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "d7773533f371",
+   "date": "2026-10-13",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "batch b18: SQL-SYNC finding, not a security gap. Michael's live-DB query (relayed via chat, this role has no Supabase credential) confirms rf_schedule's 3 new columns (status_changed_at, status_changed_by, status_changed_by_role) exist in the LIVE database. Direct repo read, this batch: grep -rn 'status_changed_by|status_changed_role|status_changed_at|status_changed_by_role' sql/ returns ZERO hits anywhere in sql/ -- no committed DDL file declares any of the 3 columns. This settles a b17 H1/H2 disagreement: H1's routing doc said 'confirmed present in sql/', this role's grep found none; both were partially right about different layers -- the columns are real and live, the repo's own tracked schema just never got the matching migration committed back. Independently found by H1 the same batch (logged H1 seq1348, same shape as H1's seq1345/1347 sairncode/stonedesk DDL-sync findings). Risk: a fresh provision from the repo's own sql/ files would NOT create these columns -- a real repo-vs-production sync gap, separate from whether the live run itself succeeded. Routed to hank: add the 3-column migration to the appropriate rf_schedule DDL file in sql/.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "d99b47f9683e",
+   "date": "2026-10-14",
+   "detected_by": "hover-audit",
+   "prior_severity": "moderate",
+   "risk": "api/sd-data.js: five SAIRNscape resources -- scp_jobs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features -- were absent from SD_SESSION_GATED and from every branch-level session check, so read and write on all ten resource/action pairs were authorised by the LICENCE KEY ALONE. The key is shipped to the browser, so \"licence-only\" means readable by anyone who can open the app: a landscaping company's job scopes, controller inventory and irrigation run times. No name, contact detail, money or regulated determination is on the five rows, which is why this is moderate and not high; each customer_id is a foreign key whose identity lives on `customers`, gated since 2026-10-05.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnscape) has this defect on record",
+   "cite": "22270df7c3de",
+   "date": "2026-09-11",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "scpData's terminal catch was catch(e){return null;} -- it discarded the error entirely, so every network failure on the app's only server path was unreported",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnscape) has this defect on record",
+   "cite": "4f674484544d",
+   "date": "2026-09-18",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "scpSendDesignToQuote disabled the send button and relabelled it 'Sent to Quoting (Q-...)' UNCONDITIONALLY, three lines before the branch that decided whether either write had landed -- so a quote that never reached the server showed the same disabled button and the same 'Sent to Quoting' label as one that did, while the toast beside it said to try again with a connection. SAIRNscape also had no retry path at all, and scpData discarded the HTTP status so a 4xx refusal and an unreachable server were indistinguishable to every caller",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnscape) has this defect on record",
+   "cite": "9cfc8eec7bf3",
+   "date": "2026-09-18",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "the outbound queue's disclosure banner claimed coverage at RESOURCE level -- 'Queued writes cover scp_quotes, scp_designs only' -- while coverage is per CALL SITE: scp_quotes is written at four sites and exactly one is queued. Two of the three unqueued ones are the same user-facing action, 'send this to Quoting', reached from the irrigation and water-feature panels, so the sentence told a user those were protected when a failed save there leaves the quote on that device alone. The suite's guard for this asserted the banner contained the exact claim string, so it confirmed the sentence was present and never asked whether it was true",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnscape) has this defect on record",
+   "cite": "b09674f65e9d",
+   "date": "2026-09-21",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "sairnscape.html scpData: the no-licence guard at :2077 returned null WITHOUT touching scpLastErr, so after any real 4xx on the same resource a later call with no licence INHERITED that status and scpWriteRefused() answered true for a call the server never saw. scpSendDesignToQuote branches on exactly that predicate, so the row was NOT QUEUED -- the whole retry path skipped -- the toast quoted an unrelated earlier row's reason as a server judgement, and a row already in the queue was marked 'refused' and never retried again. Three triggers, none contrived: scpLicenceGuard()'s wipe clears scp_lic, localStorage.getItem can throw and scpLd returns the default null, and a corrupt scp_lic fails JSON.parse. The code's own comment above scpWriteRefused names 'no licence' as a case that must NOT be a refusal.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnscape) has this defect on record",
+   "cite": "b09674f65e9d",
+   "date": "2026-09-21",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "sairnscape.html: #scp-dw-send-quote-btn is ONE static element (:1530) with an inline onclick, shared by every design walk and never recreated, so assigning .onclick replaces that handler for the lifetime of the page. The failed-send branch rebound it to scpFlushAndReport and nothing ever put it back, while scpOpenDesignModal restored only .disabled and .textContent and scpApproveDesign re-enabled it with a bare .disabled=false. After ANY failed send, every later approved-and-unsent design therefore opened with the correct label 'Send Approved Design to Quoting', correctly enabled, and pressing it ran the QUEUE FLUSH: no quote minted for that design, no error shown, and a toast reporting on a different record entirely. Same control-contradicts-its-label class as the defect 4f674484 was written to remove, one call further out and SILENT rather than contradictory. Invisible to an inspector too -- after el.onclick=g the markup and getAttribute('onclick') both still read the original call.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnscape) has this defect on record",
+   "cite": "53168bb506f0",
+   "date": "2026-10-06",
+   "detected_by": "code-review",
+   "prior_severity": "low",
+   "risk": "sairnscape.html's pricing section heading read 'Simple. Honest. No per-user games.' over 'Flat monthly fee. Unlimited users. Cancel anytime.' -- a blanket claim about the pricing model -- while the Starter card thirteen lines below it reads 'Up to 3 users'. Professional and Business genuinely are unlimited; Starter is not, and Starter is the card a first-time reader prices against, so the claim has already influenced the decision by the time the contradiction arrives. Same class as the 'QuickBooks integration' line removed from this same file on 2026-09-02: a purchase-influencing claim the product withdraws. Fixed by saying what is true -- flat fee, never billed per user, unlimited users on Professional and Business, Starter covers 3 -- rather than by deleting the sentence, because the fee really is flat and there really is no per-seat billing.",
+   "source": "defect-register"
+  },
+  {
+   "action": "assert the anchor matches exactly once AND read what it matched before acting",
+   "basis": "section 1.3 applies -- An anchor that still matches is not an anchor that still points at the right thing",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 1.3",
+   "risk": "an exact-string anchor verifies UNIQUENESS, never that it still points at the right code",
+   "source": "process-rules"
+  }
+ ],
+ "target": "api/sd-data-session-gate.test.js"
+}

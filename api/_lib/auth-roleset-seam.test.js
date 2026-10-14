@@ -1,7 +1,21 @@
 // api/_lib/auth-roleset-seam.test.js
 // REQUIREMENT: roleSet() and hasRole() hold their contract for EVERY caller,
-//   because tools/sairn_seam_check.py cannot read this seam and 18 files depend
-//   on it.
+//   because tools/sairn_seam_check.py cannot read this seam and every file in
+//   api/ that builds a role map depends on it.
+//
+// ── THE COUNT USED TO BE WRITTEN HERE AND IT HAD GONE STALE (2026-10-14) ───
+// This line said EIGHTEEN, in four places in this file. Re-measured while
+// resolving the seam check's COULD NOT TELL report in b9:
+//
+//   tools/sairn_seam_check.py            19 CANNOT TELL lines, all roleSet()
+//   files in api/ that call roleSet()    21
+//
+// Nobody changed the contract; the population grew and the number did not.
+// Cross-domain convention 8 exactly -- nothing announces the day a written
+// count stops matching. The number is now DERIVED in section 5 and printed, so
+// there is nothing left to go stale. The old figure is kept in this paragraph
+// because a corrected number with no record of the correction is how the same
+// mistake gets made again.
 //
 // Run: node api/_lib/auth-roleset-seam.test.js
 //
@@ -196,7 +210,7 @@ test('BUT THE BRACKET FORM GRANTS ALL THREE -- the divergence, driven rather '
   + 'than assumed', () => {
     // This is not a defect today: every role map in the repo is written with
     // `: true`. It is recorded because the two forms are used interchangeably
-    // across 18 files, and a map written with `: 1` would be granted by one and
+    // across every caller in api/, and a map written with `: 1` would be granted by one and
     // refused by the other -- a difference no reader would expect from two
     // spellings of the same check.
     //
@@ -257,13 +271,16 @@ test('every ROLES_BY_APP value is an array with a working indexOf -- what '
       + 'and then .indexOf would throw a 500');
   });
 
-section('5. THE SEAM ACROSS ALL 18 CALLERS, READ FROM SOURCE');
+section('5. THE SEAM ACROSS EVERY CALLER, READ FROM SOURCE AND COUNTED');
 
 // The seam check cannot follow roleSet(). These arms check the property it
 // would have checked: that a role map indexed by request-derived data is built
 // through roleSet() rather than as a bare literal.
 
 const API = path.join(__dirname, '..');
+// Set by the counting arm below and printed in the closing summary, so the
+// figure a reader quotes is the one this run measured.
+let roleSetCallerCount = 0;
 
 function apiFiles() {
   const out = [];
@@ -276,6 +293,33 @@ function apiFiles() {
   });
   return out;
 }
+
+// ── THE POPULATION IS COUNTED, NOT WRITTEN (2026-10-14, b9) ───────────────
+// The arm below has always swept every file in api/, so the 19th caller was
+// covered by it the day it landed. What was NOT covered was the FIGURE: this
+// file said eighteen in four places while the seam check reported nineteen
+// could-not-tell lines and the source held twenty-one callers. A derived count
+// that is printed cannot drift from the sweep that produced it.
+test('the roleSet() caller population is COUNTED from source, and it is not '
+  + 'the number anybody wrote down', () => {
+    const callers = apiFiles().filter((f) =>
+      /\broleSet\(/.test(fs.readFileSync(f, 'utf8')));
+    roleSetCallerCount = callers.length;
+    // A FLOOR, NOT AN EQUALITY. An equality here would be the same stale
+    // number one level down -- it would go red every time somebody added a
+    // perfectly ordinary role map. The floor catches the failure that matters:
+    // a sweep that suddenly finds almost nothing, which is what a broken
+    // apiFiles() or a renamed helper looks like, and which would make every
+    // arm in this section pass over an empty list.
+    assert.ok(callers.length >= 15,
+      'only ' + callers.length + ' file(s) in api/ call roleSet(). That is far '
+      + 'below the twenty-one measured on 2026-10-14, so either the helper was '
+      + 'renamed or this sweep stopped finding files -- and in both cases every '
+      + 'arm in this section is now passing over nothing.');
+    assert.ok(callers.some((f) => /sd-data\.js$/.test(f)),
+      'api/sd-data.js is the largest caller and must be in the swept set; if '
+      + 'it is absent the sweep is not reading the directory it thinks it is');
+  });
 
 test('every ROLES map in api/ is built through roleSet(), with the exceptions '
   + 'NAMED rather than tolerated', () => {
@@ -330,7 +374,8 @@ console.log(passed + '/' + passed + ' passed.');
 console.log('');
 console.log('WHAT THIS DOES NOT PROVE: that any individual gate names the RIGHT');
 console.log('roles. It proves the seam -- that a role map built through roleSet()');
-console.log('behaves as all 18 callers assume, and that no map indexed by');
+console.log('behaves as every caller in api/ assumes -- ' + roleSetCallerCount
+  + ' file(s) call roleSet() at this HEAD, COUNTED by this run -- and that no map indexed by');
 console.log('request data is a bare literal without a stated guard. Whether');
 console.log('ALF_MANAGEMENT_ROLES should contain `caregiver` is a product');
 console.log('question and is not decidable here.');

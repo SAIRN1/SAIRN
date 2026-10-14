@@ -1,0 +1,62 @@
+{
+ "app_matched": "sairnlegacy",
+ "considered": {
+  "defect_records": 548,
+  "detectors_fired": [
+   "1.3"
+  ],
+  "detectors_run": 12,
+  "matched_this_file": 1
+ },
+ "drafted_on": "2026-10-14",
+ "exists": true,
+ "no_detector_yet": [
+  "1.6",
+  "2.2",
+  "3.1",
+  "3.2",
+  "3.3",
+  "4.1",
+  "4.2",
+  "4.3",
+  "5"
+ ],
+ "risks": [
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "8447c3695404",
+   "date": "2026-10-14",
+   "detected_by": "hover-audit",
+   "prior_severity": "high",
+   "risk": "sairnlegacy.html bookingConflict(): the only control preventing a facility double-booking read THIS DEVICE'S localStorage, and api/sd-data.js's leg_bookings write branch did no overlap check at all. Two staff on two devices, each holding a calendar copy taken before the other's booking synced, both pass their own check and both writes are ACCEPTED, because a new booking carries a new booking_id and nothing collides. What is double-booked is a chapel, a removal van, or -- because leg_facilities seeds a Staff row with a named funeral director and saveBooking() books Staff rows exactly like rooms -- a named employee, against a specific death case and a time window. The same race leg_merch_units' reservation lock was built to close in August and which was never applied here.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlegacy) has this defect on record",
+   "cite": "4b5260f5e3a5",
+   "date": "2026-09-21",
+   "detected_by": "independent-review",
+   "prior_severity": "critical",
+   "risk": "sairnlegacy.html confirmReserve() writes leg_merch_units through a direct fetch rather than sdnData(), deliberately, because it needs the real 409 ALREADY_RESERVED status that sdnData() collapses to null. The LEG_RESOURCES session gate shipped its client half by attaching X-SD-Auth inside sdnData(), so this one call site never got it and posted the licence key alone to a resource that now requires a session: 401 NO_SESSION for every user since the gate landed, i.e. merchandise reservation was broken in production. Reproduced against the DEPLOYED page and endpoint, and in the suite before the fix existed. SECOND HALF: on failure the function left its optimistic local write in place, so the device showed Reserved with nothing on the server -- the two-devices-one-casket state the reservation lock exists to prevent, reached by being refused and ignoring it. Fixed by sending the token at that call site and by rolling back on an explicit 4xx refusal while deliberately NOT rolling back on 5xx or a thrown request, which mean we could not tell.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlegacy) has this defect on record",
+   "cite": "760a34a9b014",
+   "date": "2026-09-21",
+   "detected_by": "code-review",
+   "prior_severity": "critical",
+   "risk": "api/sd-data.js: both LEG_RESOURCES branches went from the derived licence hash straight to the PostgREST query with no verifySessionToken anywhere, so all 36 SAIRNlegacy tables -- including leg_deathrecords and leg_custodylog, the chain-of-custody record for human remains -- were readable AND writable by anything holding the licence key. The licence key is a BEARER credential handed to the browser, so the caller needed no employee session at all. Reproduced against the shipped file with a valid key and NO X-SD-Auth header: leg_deathrecords read 200 with rows, leg_custodylog write 200 having upserted. Fixed as one gate BEFORE the read/write dispatch so neither branch is reachable without it, scoped to 'sairnlegacy' via verifySessionToken's third argument (Check 28). The client half shipped in the same commit because 56 of sairnlegacy.html's 58 sdnData() call sites sent no token and the gate alone would have been an app-wide outage.",
+   "source": "defect-register"
+  },
+  {
+   "action": "assert the anchor matches exactly once AND read what it matched before acting",
+   "basis": "section 1.3 applies -- An anchor that still matches is not an anchor that still points at the right thing",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 1.3",
+   "risk": "an exact-string anchor verifies UNIQUENESS, never that it still points at the right code",
+   "source": "process-rules"
+  }
+ ],
+ "target": "tests/sairnlegacy_write_failure_voice.js"
+}

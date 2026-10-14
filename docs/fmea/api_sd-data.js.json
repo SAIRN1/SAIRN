@@ -1,12 +1,15 @@
 {
- "app_matched": "sairnvet",
+ "app_matched": "sairnscape",
  "considered": {
-  "defect_records": 57,
-  "detectors_fired": [],
+  "defect_records": 548,
+  "detectors_fired": [
+   "1.3",
+   "1.7"
+  ],
   "detectors_run": 12,
-  "matched_this_file": 1
+  "matched_this_file": 90
  },
- "drafted_on": "2026-09-14",
+ "drafted_on": "2026-10-14",
  "exists": true,
  "no_detector_yet": [
   "1.6",
@@ -22,6 +25,38 @@
  "risks": [
   {
    "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "a7103a30fb94",
+   "date": "2026-08-26",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "sairnroofing's photo requirement did not actually refuse, record ids were minted client-side rather than server-verified, and material that was UNAVAILABLE still counted toward a met threshold -- so a claim could present as fully evidenced on photos that were never required, ids the server never issued, and stock that was not there. rf_claim_photos is Tier A.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "73629b2298af",
+   "date": "2026-09-04",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "dnt_coverage_rules could hold two rules matching one lookup and the read took a single row, so which of two legitimate coverage rules applied was decided by row order. Refused now and the client moved with it -- a quiet wrong answer from a benefits determination is worse than a refusal, and dnt_coverage_rules is Tier A.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "a8f74bc8332a",
+   "date": "2026-09-04",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "45 CFR 149.610(c)(1), the Good Faith Estimate requirement, was enforced only in sairndental.html's browser JavaScript. Any caller reaching the endpoint directly bypassed it entirely and the server had no opinion -- a federal billing-disclosure rule with no server-side enforcement on a Tier A dental resource.",
+   "rules": [
+    "1.11"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
    "cite": "ad588e6c5dc3",
    "date": "2026-09-10",
    "detected_by": "code-review",
@@ -31,40 +66,1026 @@
    "source": "defect-register"
   },
   {
-   "basis": "the same app (sairnvet) has this defect on record",
-   "cite": "1348466a2e73",
-   "date": "2026-09-10",
-   "detected_by": "code-review",
-   "prior_severity": "high",
-   "risk": "A throw mid-hydration left svSyncSuppressed true, silencing every later server write for the whole session, with the surrounding .catch swallowing the evidence",
-   "source": "defect-register"
-  },
-  {
-   "basis": "the same app (sairnvet) has this defect on record",
-   "cite": "6fde9cea7b84",
-   "date": "2026-09-10",
-   "detected_by": "fault-injection",
-   "prior_severity": "high",
-   "risk": "A hung server backup was completely silent: no timeout anywhere, so svData() never settled, the saved===null warning never printed, and the record stayed on one device with nothing saying so",
-   "source": "defect-register"
-  },
-  {
-   "basis": "the same app (sairnvet) has this defect on record",
-   "cite": "6fde9cea7b84",
-   "date": "2026-09-10",
-   "detected_by": "fault-injection",
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "20afb167",
+   "date": "2026-09-14",
+   "detected_by": "static-checker",
    "prior_severity": "moderate",
-   "risk": "recordSvSharedTopics() wrote shared_knowledge fire-and-forget with no timeout, so a hung AI-context write was unobservable at the call site",
+   "risk": "the same change that gave sb_po and sb_recv a server added two TIER A resources with no removal path, and the consequence is specific rather than theoretical: sbThreeWayMatch sums every receipt for a PO, so a receipt entered in error inflates the received total for ever and the bill is refused against a figure nobody can correct -- and after the sync a duplicate po_num refuses the match outright. A control a person cannot correct is one they route around",
+   "rules": [],
    "source": "defect-register"
   },
   {
-   "basis": "the same app (sairnvet) has this defect on record",
-   "cite": "a858cab7cb17",
-   "date": "2026-09-10",
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "7884c4a571ed",
+   "date": "2026-09-16",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "law_trust_reconcile's role allow-list named `admin`, a role ROLES_BY_APP.sairnlaw cannot issue, so the gate was owner-only in practice while the code, the 403 and the UI all said management",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "bfa3fff4c5fc",
+   "date": "2026-09-16",
    "detected_by": "code-review",
    "prior_severity": "critical",
-   "risk": "Lazy demo seeding reached the LIVE server on a fresh device: opening the controlled-substance panel wrote invented drug balances with invented vet names into the real DEA-relevant register, and hydration is additive-only with no delete path",
+   "risk": "api/sd-data.js verified a session token's signature and expiry and never re-checked whether the credential behind it was still active, so a DEACTIVATED employee kept gated read and write access to thirteen apps' resources for the remaining life of a 12h token. 9fef0f35 closed this for api/sc-auth.js's own roster and set_active on 2026-08-23; the data path was never covered. CRITICAL under the defined vocabulary: after deactivation the caller is unauthorised, the access reaches real tenant data, and it was reachable on the real deployment by a real caller rather than in principle",
+   "rules": [],
    "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "c98b5d674c76",
+   "date": "2026-09-16",
+   "detected_by": "independent-review",
+   "prior_severity": "critical",
+   "risk": "law_trusttx read and write in api/sd-data.js dispatched on licHash alone -- NO session verification on either branch, on an attorney IOLTA client trust ledger. The licence key is shipped to the browser, so it was the whole authorisation. Distinct from the deactivated-token gap closed the same day: that was session STATE going stale, this was no session check existing. Survived three hover-auditor escalations over ten days because law_trust_reconcile reads the same table forty lines below and DOES verify a session and a role.",
+   "rules": [
+    "1.11"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "92be209aadda",
+   "date": "2026-09-18",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "Both soft-delete paths in api/sd-data.js read the PATCH representation through .json().catch(() => null) and then checked only w.ok before answering {ok:true}. Under Prefer: return=representation a PATCH that MATCHED returns one row and a PATCH that matched ZERO returns [] with status 200, so neither w.ok nor a null from the catch could separate 'it landed' from 'it matched nothing' from 'the answer could not be read' -- all three reached the same success response and the caller was told a record was removed while it was still there. Driven on both paths with the stub row untouched: the generic path and the sd_quote_requests path each returned 200 {ok:true} over a delete that did not happen. The generic SD_LOCAL_RESOURCES path serves seven Tier A resources (sd_invoices, sd_fin_jobs, sd_pricing_rules, sd_negotiated_prices, sd_order_history, stonedesk_quote_history, sd_aiquotes)",
+   "rules": [
+    "1.11"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "c1443fd7eb69",
+   "date": "2026-09-18",
+   "detected_by": "independent-review",
+   "prior_severity": "low",
+   "risk": "api/sd-data.js checkEnvelope built its BAD_ACTION message as action must be read or write, plus the word delete whenever isSc(resource) was true. isSc covers all 28 sc_ resources, but item 97 had split them into seven Tier A records granted only soft_delete and 21 granted delete. So a caller sending a bad action on a Tier A medical-billing record such as sc_claims was told the allowed verb is delete -- the exact verb the registry no longer grants there and which now answers 403 SOFT_DELETE_ONLY. Item 97 own reasoning is that a caller copying a working delete call from sc_dme to sc_claims should get a refusal naming the right verb; this message named the wrong one, unprompted, on the seven records that must never be destroyed. A test arm was asserting that wrong message on sc_denial, which is why it survived review.",
+   "rules": [
+    "1.1"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "f090879a88bb",
+   "date": "2026-09-18",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "api/sd-data.js law_timeentries write branch: a time entry was upserted with whatever billing_code arrived, including an empty string or no field at all. sairnlaw.html's saveTime() writes the select value unchecked, and billing_code appeared in NO server validator -- zero hits across api/sd-data.js and api/_lib/*.js -- so the entire law_ write branch validated one thing for twenty-odd resources: that a payload has an id. A codeless billable hour renders as a normal billable hour with an empty column, on the record saveInvoice() computes an invoice total from. The app file described this defect in its own comment above LAW_BILLING_CODES; the 2026-09-09 fix made the code list a constant so the select cannot render empty, which closed the CAUSE and left the gate unbuilt. Fixed by api/_lib/law-timeentry.js, presence and shape only, wired into the write branch before the upsert.",
+   "rules": [
+    "1.1"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "0268ae985a27",
+   "date": "2026-09-21",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "Four representation-PATCH sites in api/sd-data.js reported writes that did not happen. Under Prefer: return=representation PostgREST answers a PATCH matching one row and one matching ZERO identically -- 200, with [row] or []. :2634 sd_quote_requests read the body into `wrows` and never consulted it; :7500 rf_invoices issue answered ok:true with invoice_number, invoice_seq and issue_date echoed AFTER the sequential allocator had already spent that number, leaving a gap in a billing series attached to no invoice; :7536 add_payment reported a payment the invoice did not take; :8064 rf_schedule set_status answered 200 with the status the CALLER sent. All four were invisible to the guard added three days earlier for exactly this shape, because its first condition matched the spelling of the read rather than the defect. Fixed to the wroteRow() vocabulary with 409 and a named race code, matching the slab reservation at :2181 which had already reached that conclusion in the same file.",
+   "rules": [
+    "1.1"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "0dd84d944306",
+   "date": "2026-09-21",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "api/sd-data.js: the 2026-09-18 json-catch-null pass described itself as a platform SWEEP and left FOUR sites of the identical shape in the same file -- a PATCH sent with Prefer: return=representation, its body read through .json().catch(() => null), only !ok consulted, then res.status(200).json({ok:true}). Under PostgREST a PATCH matching ZERO rows returns [] with status 200, so each reported a change that did not happen. :4135 bld_draws RETAINAGE RELEASE is money rather than a delete and handed the caller release_log describing a release that may never have been written; :12422 is the SAIRNcode soft-delete serving SEVEN TIER A resources (sc_ar, sc_claims, sc_compliance, sc_credential_scope, sc_denial, sc_denial_events, sc_revenue), gated to Compliance Admin whose own refusal says only they can remove records; :2404 sd_customers, whose READ half had been hardened on 2026-09-04 with the exact argument the WRITE half twelve lines below it ignored; :11257 dnt_supplies.",
+   "rules": [
+    "1.11"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "6b777f006d18",
+   "date": "2026-09-21",
+   "detected_by": "independent-review",
+   "prior_severity": "critical",
+   "risk": "sairnlaw.html lawSetClearance() reported Marked cleared over a write the database never performed, for every DISBURSEMENT. api/sd-data.js routes a non-voided Disbursement write to rpc/law_check_and_insert_disbursement; that RPC takes nine named parameters, none of them a clearance field, builds data with jsonb_build_object over ten fixed keys, and on an existing id takes its retry-idempotency branch and returns the stored row HAVING WRITTEN NOTHING. The handler answered 200 ok:true carrying that row, sdnData returned a truthy value, and the client toasted success. An uncleared CHEQUE is a Disbursement -- the commonest outstanding item in a trust reconciliation and the exact case the 2026-09-18 outstanding-item work was built for -- while DEPOSITS take the plain upsert and store the same field, so the feature appeared to work. With hydration now server-wins the local optimistic copy is erased at the next load, so the firm loses the record and the bank leg silently returns to disagreeing on correct books. Driven against the real handler before the change: the request carries no clearance parameter, and the caller is told it was saved. Fixed as a REFUSAL rather than a store -- the handler compares asked-for against came-back and answers 409 CLEARANCE_NOT_STORED -- which also retires itself if the RPC is ever taught to carry the fields. Making a cheque clearable needs an RPC signature change and a migration and is recorded as open.",
+   "rules": [
+    "1.5"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "760a34a9b014",
+   "date": "2026-09-21",
+   "detected_by": "code-review",
+   "prior_severity": "critical",
+   "risk": "api/sd-data.js: both LEG_RESOURCES branches went from the derived licence hash straight to the PostgREST query with no verifySessionToken anywhere, so all 36 SAIRNlegacy tables -- including leg_deathrecords and leg_custodylog, the chain-of-custody record for human remains -- were readable AND writable by anything holding the licence key. The licence key is a BEARER credential handed to the browser, so the caller needed no employee session at all. Reproduced against the shipped file with a valid key and NO X-SD-Auth header: leg_deathrecords read 200 with rows, leg_custodylog write 200 having upserted. Fixed as one gate BEFORE the read/write dispatch so neither branch is reachable without it, scoped to 'sairnlegacy' via verifySessionToken's third argument (Check 28). The client half shipped in the same commit because 56 of sairnlegacy.html's 58 sdnData() call sites sent no token and the gate alone would have been an app-wide outage.",
+   "rules": [
+    "1.11"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "8ed8b14d46c8",
+   "date": "2026-09-21",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "api/_lib/law-timeentry.js validated a time entry's UTBMS billing_code as billing_code.trim() while api/sd-data.js stored the UNTRIMMED string via data: payload, so the value judged and the value written were different values. '  L100  ' was accepted on the merits of 'L100' and stored with its padding, and the invoice column prints the stored one. IT IS NOT ONLY COSMETIC: MAX_BILLING_CODE_CHARS is checked against the trimmed value, so 30 spaces followed by 'L100' is 34 characters, judged as 4, accepted, and 34 characters then landed in a column whose gate refuses 33 -- the gate was answering a question about a value nobody stored. The handler's success echo had the same seam on its fallback branch (rows[0].data when PostgREST returns a representation, the request row otherwise), so a caller re-rendering from the response could show a code the record does not carry. Fixed by normalizedTimeEntry(), scoped to billing_code alone and returning the record unchanged when there is nothing to trim.",
+   "rules": [
+    "1.3"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "b5e20fe80b4e",
+   "date": "2026-09-21",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "alf_mar append-only TOCTOU: the handler SELECTed for an existing entry_id, answered 409 ALREADY_RECORDED if found, then POSTed with Prefer: resolution=merge-duplicates. Two callers racing the SAME entry_id could both pass the SELECT before either POST landed, and the second POST's merge-duplicates resolution silently OVERWROTE the first row instead of reaching the 409 -- a recorded medication administration of 'given' replaced by 'refused', unrecoverably, with no error anywhere. Fixed by routing through public.alf_check_and_insert_mar_entry(), which holds pg_advisory_xact_lock across the check and the write in one transaction.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "b5e20fe80b4e",
+   "date": "2026-09-21",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "bld_draws retainage release lost update: the branch read the draw's jsonb data, computed a new retainage_released and appended one audit entry to retainage_release_log client-side, then PATCHed the whole blob back with only license_hash and draw_id in the WHERE clause -- no version or CAS predicate. Two concurrent release_retainage calls on the same draw each read the same starting value and whichever PATCH landed second silently won, discarding the first release's figure AND its audit-trail entry with no error. Fixed by routing through public.bld_release_retainage_atomic(), an optimistic-CAS RPC that compares the row's current retainage_released against what the caller read under pg_advisory_xact_lock and raises RETAINAGE_RELEASE_CONFLICT rather than overwriting blind.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "e4fc9aaad205",
+   "date": "2026-09-21",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "sairnlaw.html saveTime() wrote rate:Number($('ttrate').value)||0, so a blank, unparseable or missing hourly rate became ZERO with no complaint at either end -- `rate` appeared in no validator anywhere in api/. saveInvoice() computes the invoice total as hours x rate, so a billable hour stored at rate 0 adds $0.00 to the bill while rendering in the billing table as an ordinary billable hour: the work is on the record and the fee is not, and nothing downstream reports it. Same shape as the codeless-hour defect one field over and arguably worse, since a codeless hour at least shows '--' in the code column. Fixed by refusing a BILLABLE entry whose rate is not a finite number above zero, in api/_lib/law-timeentry.js and in the browser path; a no-charge entry is left alone because rate 0 is what no-charge MEANS, and an absent `billable` field is read as no-charge exactly as every reader in the app reads it. THE SAME COMMIT also removed a second, non-behavioural defect recorded on its own open-work row: the module justified itself -- in its header, its REQUIREMENT line and the user-facing refusal NO_CODE_MESSAGE -- on a LEDES export that does not exist in this app. NOT closed: `hours` is still unchecked at the server and hours 0 produces the identical $0.00 line.",
+   "rules": [
+    "1.2"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "fcd622dfd47d",
+   "date": "2026-09-21",
+   "detected_by": "independent-review",
+   "prior_severity": "critical",
+   "risk": "api/sd-data.js served sd_exec_msgs -- StoneDesk's private CEO/CFO/CTO channel -- through SD_LOCAL_RESOURCES, a dispatcher that deliberately has NO session gate because its other twenty members are the shared shop record (quote history, inventory, drawings, remakes) that every role in a fabrication shop reads. That justification was never true of the executive channel. The licence key is a BEARER credential held by the whole shop, so any employee, or anyone who obtained the key, could read, write and soft_delete every private executive message. Reproduced with a valid key and NO X-SD-Auth header: 200 ok:true, the private message returned verbatim. stonedesk.html's own comment above the exec Delete button already recorded it in prose -- 'this is a UI courtesy, not an authorisation boundary' -- and sdExecRole came from localStorage, never checked against a session, so the courtesy was spoofable too. Fixed with a gate on all three verbs enforcing the boundary the client already had: a real stonedesk session with role owner or admin.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "20d822772dbc",
+   "date": "2026-09-22",
+   "detected_by": "hover-audit",
+   "prior_severity": "critical",
+   "risk": "Eight SAIRNfreedom resources in api/sd-data.js were readable and writable with a bare licence key and no session check: sf_operators (name + DOB + a FELONY flag and a GAMBLING disqualification flag on one row -- a criminal-history assertion about a named volunteer), sf_youth_participants (MINORS), sf_gaming_expenses and sf_disbursements (payee name + amount, the records ORC 2915.10(A)(2) and (C) require a charitable-gaming licensee to keep), sf_donations (donor name + amount), sf_staff (DOB, which the app age-gates off), sf_waivers (health and military-status disclosure) and sf_service_appointments (a member tied to a VA-adjacent referral outcome). The licence key is a bearer credential shipped to the browser. REPRODUCED LIVE WITH A CONTROL before the fix: on SF-PINNACLE-2026 with no session token all eight answered 200, while sf_ledger -- gated since 2026-09-21, same dispatcher, identical treatment -- answered 403 FORBIDDEN, so the difference is the gate and not an absent table. STATED RATHER THAN GLOSSED: every one returned ZERO ROWS on that tenant, so this shows nothing stops a caller REACHING the resource rather than that regulated data left. THE DISTINCTIVE PART IS NOT THE MISSING GATE, IT IS WHY IT STAYED MISSING: the dispatcher recorded the remaining 32 resources as a deliberate open product decision, and described them as a question about who may see -- quote -- a duty roster or a bottle count. That description does not cover minors, a felony flag or an ORC 2915 payee. The deferral was legitimate; it was taken against an understated description of the set, so anyone reading that line to decide was deciding about the wrong thing.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "6fb6d696489c",
+   "date": "2026-09-22",
+   "detected_by": "hover-audit",
+   "prior_severity": "critical",
+   "risk": "api/sd-data.js dispatched all 41 SV_RESOURCES entries -- including sv_controlled, the DEA-relevant controlled-substance register, plus sv_patients and sv_soapnotes -- with NO session check on either verb. The licence key is a BEARER CREDENTIAL shipped to the browser and readable by anyone who can open the app, so it was the entire boundary on the clinical record. REPRODUCED LIVE WITH A CONTROL before the fix was applied, because an unmigrated table answers an honest empty to everybody and that is not a gate: sairncare/alf_mar and sairncare/alf_claim_routes answered 401 NO_SESSION on a bare key, while sairnvet/sv_controlled, sv_patients, sv_soapnotes and sv_whiteboard all answered 200 with provisioned:true on identical treatment. STATED RATHER THAN GLOSSED: every open table returned ZERO ROWS on the tenant I drove (SV-PINNACLE-2026), so my run demonstrated that nothing stops a caller REACHING the resource rather than that regulated data left; hover2's reproduction on their tenant did return rows. THE INJECTION COMMIT IS 29b1f1d5 AND THAT NEEDS SAYING: the dispatcher's own comment -- 'SAIRNvet has no per-employee authentication at all ... a session gate here would gate on a session that does not exist' -- was TRUE when written. 29b1f1d5 shipped api/sv-auth.js, ROLES_BY_APP.sairnvet, AUTH_TABLE_BY_APP.sairnvet and the schema on 2026-09-13, under the subject line 'the last app without it held the DEA register', and nothing re-read the justification after the premise it rested on stopped holding. The absence became a defect at that moment, not when the dispatcher was written.",
+   "rules": [
+    "2.3"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "90c1a9c3ef94",
+   "date": "2026-09-22",
+   "detected_by": "independent-review",
+   "prior_severity": "low",
+   "risk": "api/sd-data.js derive_charges: two of its three event-source reads (alf_mar, alf_activities) carried no order= clause, and api/_lib/care-charges.js sorted the derived lines on DATE ALONE. Array.prototype.sort is stable, so same-day rows kept insertion order -- the concatenation order of the three sources, and within each source whatever order the server returned. Two identical regenerations of one month could therefore list the same day's doses in different sequences, on a table whose first column is Date. The unpriced list, rendered with dates under 'Documented but NOT billed', was not sorted at all. NO MONEY WAS WRONG: the total is a sum and reconcileAgainstInvoice keys on event_id, so both the invoice total and the regenerate-diff were order-independent throughout.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "ce835a7e57b3",
+   "date": "2026-09-22",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "api/sd-data.js authorised law_clients, law_matters and law_deadlines on the LICENCE KEY ALONE -- no employee session at all. A licence key is shipped to the browser and readable by anyone who can open the app, so the effective authorisation was 'opened the app'. law_matters names the client and the matter; law_clients is the client list. MEASURED BEFORE THE FIX rather than inferred: all SIX pairs (three resources by read and write) answered 200 with no token, against a control where law_invoices/read answered 401 -- so 'open' was established against a gated sibling rather than assumed. THIS WAS A KNOWN, DOCUMENTED RESIDUAL, NOT A DISCOVERY, and that is the honest framing: the rollout comment beside the LAW_RESOURCES table named these three as deliberately deferred because Vercel ships the page and the endpoint together, so flipping them mid-day would fail a staff member with the app already open. The fifteen extended resources were the canary and the written trigger was 'quiet for a full working day'. What made it actionable now is that the canary has been quiet six days AND the client half was confirmed rather than assumed -- sairnlaw.html:1509 sdnData() sets X-SD-Auth on every data call whenever a token exists, not conditionally per resource. FIXED with the same mechanism law_trusttx was flipped with on 2026-09-16: three entries in SD_SESSION_GATED plus three in SD_GATE_APP, six lines. All six pairs now answer 403 FORBIDDEN. A SESSION gate and not a ROLE gate, deliberately -- owner, attorney and paralegal all legitimately work clients, matters and deadlines and all three are driven green. DISCLOSED RATHER THAN TIDIED: the endpoint now answers two codes for one condition, 401 NO_SESSION from the inline gate for the fifteen and 403 FORBIDDEN from the shared gate for these four, widening a pre-existing split from one resource to four; unifying is a client-visible contract change and is recorded rather than decided.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "e312f2e8f1e3",
+   "date": "2026-09-22",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "sf_donor_awards and sf_members were reachable for read AND write on the SAIRNfreedom licence key alone, with no employee session. sf_donor_awards rows are {donorKey, tierId, state, updated} -- the donorKey identifies a donor and tierId resolves through sf_donor_tiers to a giving amount, so the row asserts THIS NAMED PERSON GAVE AT LEAST THIS MUCH. That is the same disclosure sf_donations was gated for on 2026-09-22, on the stated ground that donor identity is not public by default; gating donations and leaving awards open left the same fact reachable through a second door. sf_members carries member identity and the gate's own comment already named it an acknowledged gap rather than a decision. The licence key is a BEARER CREDENTIAL shipped to the browser, so it was the entire boundary on both.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "f4fc75a9884f",
+   "date": "2026-09-22",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "mech_docs stored and SERVER-SYNCED raw AI-extracted document text verbatim, with no redaction of any kind. sairnmechanical.html's scanDoc() asks the model, in its own words, to 'EXTRACT: Every field -- names, dates, amounts, codes, reference numbers' from photographed work orders, maintenance contracts, permits, inspection reports and INVOICES; saveDoc() then stored el.textContent unchanged as {id,date,text} and mechPushRecord pushed it to the mech_docs table. A customer's name, site address and phone number reached a server because a technician photographed a work order. SECOND HALF: the toast said 'Saved on this device' ONE LINE AFTER the push, and the comment above the function still asserted 'there is no server data layer for this app yet' -- true when written, false since mech_docs was registered in api/_resources/sairnmechanical.js.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "f9e9628f4762",
+   "date": "2026-09-22",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "api/sd-data.js read SIX SAIRNcare append-only trails with no order= clause -- alf_mar, alf_incidents, alf_signals, alf_claim_routes, alf_staff_credentials, alf_op_audits. Postgres promises nothing about the order of a SELECT that does not ask for one and PostgREST forwards that through, so rows came back in plan order. On a small table a seq scan usually returns heap order, which is why it looked like insertion order for the whole of development and would stop the first time the planner picked an index. WORST INSTANCE, and the one the severity is set by: prRenderRecorded maps alf_claim_routes rows straight into a table with NO client sort of any kind and renders created_at sliced to 10 characters, so the server order WAS the display order and there was none -- a billing determination trail in arbitrary order. alf_mar and alf_incidents do sort, but on a date-only jsonb field, so every same-day entry ties and falls back to server order under a stable sort. alf_staff_credentials and alf_op_audits already sorted by created_at desc client-side and were deterministic except on an exact tie. alf_signals has no consumer yet. THE INJECTION COMMIT NAMED IS f29e5f95, the claim_routes instance; the other five entered in separate commits and the lag here is that one instance's, not the class's.",
+   "rules": [
+    "1.1"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "4d588676aa46",
+   "date": "2026-09-23",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "StoneDesk's profit figure coerced one operand of a subtraction and not the other. de7b4838 wrapped the invoices half in Number() and left the bills half -- bills.reduce(s + (b.amt || 0)) -- untouched ON THE SAME LINE, at stonedesk.html:36531 and :36544. DRIVEN, NOT REASONED: bills of \"100\" and \"200\" fold to the STRING \"0100200\", so profit reports -99450 where 450 is right. A string sum inside a subtraction produces an arbitrary negative rather than merely appending, which is why this is worse than an uncoerced sum alone. BOTH CONSUMERS STATE THE NUMBER AS FACT RATHER THAN DISPLAYING IT: sdTaxCalc posts it to /api/claude as \"Actual tracked data: revenue minus expenses (profit) of $X\" and asks for estimated annual liability, quarterly schedule and 1099 obligations; sdTaxPrint prints it on a Tax Report where Math.max(0, profit*0.28) turns the negative into $0 rather than NaN, silently understating tax on a document a shop hands a CPA. The same function's salesTaxYTD was uncoerced too -- entries of \"50\" and \"25\" fold to \"05025\", which Math.round makes 5025, so $75 prints as \"$5,025\": not an error, a plausible wrong number two orders of magnitude out. FOUND BY INDEPENDENT REVIEW of the very commit that introduced it, while discharging that commit's Tier A obligation. Both fields were in truthy_sum_baseline.json's grandfathered map so truthy_sum_check.py exited 0 and printed CLEAN throughout; removing them immediately exposed a THIRD tax surface -- taxRender(), drawing panel-tax's KPI tiles -- with three more uncoerced folds, one of which the checker structurally cannot detect because it has no fallback at all. Six folds fixed, two baseline entries removed, and api/sd-data.js's invoices write branch now refuses a non-numeric amount with 400 INVALID_AMOUNT so the input cannot reach storage in the first place.",
+   "rules": [
+    "1.5"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "5c781b99094e",
+   "date": "2026-09-23",
+   "detected_by": "static-checker",
+   "prior_severity": "critical",
+   "risk": "SAIRNcode's Tier A write gate and soft-delete list both derive from one array in api/_resources/sairncode.js, and that array still held the seven names it was given on 2026-09-15 while docs/CRITICALITY-TIERS.md had grown to 23 Tier A sc_* rows. For eight days the sixteen in between accepted a write carrying the LICENCE KEY ALONE -- no employee session -- and could be hard-deleted: sc_anesthesia, sc_anesthesia_base_units, sc_auth, sc_auth_requests, sc_coded_items, sc_dme, sc_drg, sc_eligibility, sc_fraud, sc_hcc, sc_prebill, sc_providers, sc_query, sc_rac, sc_settings, sc_telehealth. Three of them are the reason this is critical rather than bookkeeping: sc_hcc is a named patient joined to a diagnosis grouping and its dollar value, sc_eligibility is a named patient joined to payer and plan, and sc_providers carries the QP status that selects between two CMS CY2026 conversion factors -- so a caller holding the licence string the app documents as NOT being auth could change what every unit billed under that provider is worth. The derivation was correct and the thing it derived from was stale, which is why every downstream gate was wrong at once.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "70192c7f64c7",
+   "date": "2026-09-23",
+   "detected_by": "live-verification",
+   "prior_severity": "low",
+   "risk": "api/sd-data.js: the alf_mar and alf_incidents list reads ordered by created_at and did not SELECT it, so the client received rows in a server-defined order with no way to verify or re-derive that order. Both client reads are hydrates that merge server rows into a persisted local array in arrival order, so the ordering became the order on disk while the column explaining it was dropped in transit.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "f89ef507871d",
+   "date": "2026-09-23",
+   "detected_by": "live-verification",
+   "prior_severity": "moderate",
+   "risk": "The new 'tombstones' action on api/sd-data.js shipped UNREACHABLE. Handlers were implemented and gated for sd_customers, sd_quote_requests and the seven soft-delete SAIRNcode resources, but the action was never declared in extraActions -- and the dispatcher checks that allowlist BEFORE any resource branch runs, so every call answered 400 'action must be read or write or soft_delete'. Seven source-level arms passed the whole time.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "0314dcd39463",
+   "date": "2026-09-24",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "api/rf-auth.js built MANAGEMENT_ROLES and BROAD_READ_ROLES as plain object literals, so every key on Object.prototype indexed truthy: seesAllRows({role:'constructor'}) returned true, reproduced live. A session carrying an inherited name passed the role half of every SAIRNroofing gate -- seesAllRows, ownsRow, and the ~40 sites in api/sd-data.js that index those maps directly -- granting cross-assignee read and write on rf_claims and rf_claim_photos, both Tier A. It was inert only because a SEPARATE array-based allowlist at provisioning (RF_ROLES.indexOf) refuses an unknown role, which is distant code the gate was silently depending on rather than a property of the check itself. Second defect in the same finding: the rf_claims write branch never stripped the caller's own assigned_employee_id from the stored data blob, inert only because the read branch's Object.assign happens to overlay the real column last.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "3c4c79e365c4",
+   "date": "2026-09-24",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "The tombstone feature's write branches carried a quiet last-write-wins that reversed deletions: sd_customers' write and the SAIRNcode generic write are merge-duplicates upserts replacing the stored jsonb wholesale with the caller's payload, so a device still holding a soft-deleted record that saved any ordinary edit cleared _deleted_at and un-deleted it -- on the customer table a live public tracking link resolves against, and on the seven soft-delete-only Tier A medical-billing resources. Every other device holds deleted records indefinitely because no client calls the tombstones action yet, which made the resurrection likely rather than theoretical. Michael's recorded decision was server-wins; the third branch of the same feature (sd_quote_requests) had the guard from day one, so the design intended it and two of three implementations lacked it. The tombstone branch's own comment additionally instructed the future client half to compare deleted_at against a local edit's timestamp and keep the newer -- LWW stated in prose, waiting to be implemented.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "426b29a2a25a",
+   "date": "2026-09-24",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "sf_signatures reached api/sd-data.js with no session gate: the SF_RESOURCES read and write branches dispatched on the licence hash alone, and the licence key is shipped to the browser and readable by anyone who can open the app. The row is {docId, docTitle, version, hash, signer, typed, signed} -- a named person, their typed signature, and the governance document it binds them to, with a hash of the text they signed. It is not a fact ABOUT a person but a reusable instrument that can be lifted off one document and re-applied to another, which is why it is sharper than the identity rows gated beside it. Named alongside sf_members in the 2026-09-22 finding; sf_members was closed that day and this one was left with the words 'the open-work row stays open'. Reachability was demonstrated live on 2026-09-22 -- 200 provisioned:true with no session token, against a control where sf_ledger answered 403 -- and exfiltration was NOT: every probe returned zero rows on that tenant.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "58303cc59aaa",
+   "date": "2026-09-24",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "Four SAIRNdesign resources sat at Tier A on a licence key alone for a day: sdn_projects, sdn_proposals, sdn_specitems and sdn_timeentries were individually read and promoted B->A on 2026-09-23, hours AFTER the SAIRNdesign session gate was armed for \"the five at Tier A\" -- and nothing connected a tier promotion to the gate whose scope was defined BY tier. The gate's comment said \"only the five at Tier A\" and named five names; the tier table moved; the comment and the gate stayed. A studio's client budgets (steering the AI adviser), priced accept/decline proposals (whose Approved path reserves one-of-a-kind inventory), the cost/retail catalogue both totals derive from, and billable hours were all writable and readable by anyone holding the browser-shipped licence key, which is the exact finding that armed the first five.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "5e7f9ebd6cb7",
+   "date": "2026-09-24",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "The comment block immediately above the law_clients branch in api/sd-data.js asserted three facts and all three had gone false, two of them about authentication: \"No verifySessionToken/role check on any of these three resources\" (law_clients, law_matters and law_deadlines entered SD_SESSION_GATED for read and write on 2026-09-22, with SD_GATE_APP pinning each to 'sairnlaw'), \"sdnData() never sends a session token to this endpoint\" (sairnlaw.html sets X-SD-Auth on every data call whenever a token exists), and \"these three read routes are live but currently unreachable from the client -- zero sdnData('read',...) calls anywhere\" (law_clients is a member of LAW_SYNC_RESOURCES and lawHydrateAll reads every member). The two security claims are stale in the direction that reads as an OPEN HOLE: the session check is absent from this branch because it runs centrally, so the branch genuinely looks ungated from here and the comment confirms the wrong reading rather than correcting it. It cost real work -- the cross-tenant review obligation opened 2026-09-23T09:54Z built its point (3) on claim (1) and asked a reviewer to confirm a phase-2 gap that had been closed two days earlier.",
+   "rules": [
+    "2.3"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "7cc29f6e4c5a",
+   "date": "2026-09-24",
+   "detected_by": "hover-audit",
+   "prior_severity": "high",
+   "risk": "sairnvet.html's dose-audit banner asserted \"The server copy is not capped\" on every successful read of the DEA dosing register, with no Content-Range verification anywhere in the read path -- the sv_ read branch in api/sd-data.js never asked PostgREST for a count, so a max-rows truncation would return a partial register byte-identical to a complete one, under a banner claiming completeness. The claim was manufactured at display time from a 200 status alone. Fixed with the pattern api/audit-checkpoint.js:137 already carries: Prefer count=exact, the after-the-slash total returned beside the rows, and the client claiming completeness only when received rows match it, with truncation said in bold and an unknown total said as unverified rather than assumed complete.",
+   "rules": [
+    "1.11"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "b2764261a088",
+   "date": "2026-09-24",
+   "detected_by": "hover-audit",
+   "prior_severity": "moderate",
+   "risk": "api/sd-data.js's rf_buildings write handler upserted EVERY optional column on EVERY write, deriving each from a payload field the caller may not have sent: location_id as trim-or-null, `active` as `payload.active !== false` (absent resolves TRUE), notes and data likewise. The one live caller -- saveBuilding() in sairnroofing.html:4650 -- sends only {building_id, name, customer, address}, so RENAMING A BUILDING from the app silently overwrote its server-side location_id with null, detaching it from the location -> entity chain the capital forecast attributes roof sections through -- and the same rename silently REACTIVATED a deactivated building. Found by H1 (log #536) while reading the register row, whose evidence cell asserted the opposite (\"the app cannot set it wrong\" -- true only of the UI form) and cited api/sd-data.js:7164, a line number that had drifted 216 lines to the rf_bonding write. Fixed by omitting absent payload keys from the upsert body -- PostgREST merge-duplicates only updates the columns present in the posted row, so absent means leave-alone while a present value, including an explicit empty string, still writes. Driven three ways: the shipped rename payload posts a body carrying neither location_id nor active nor notes; an explicit assignment writes LOC-9/false; an explicit empty writes null. The register cell is corrected in the same commit, citation re-anchored to the construct rather than a line number.",
+   "rules": [
+    "2.3"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "b2764261a088",
+   "date": "2026-09-24",
+   "detected_by": "hover-audit",
+   "prior_severity": "high",
+   "risk": "sb_perf -- a NAMED EMPLOYEE's performance review row: score, raise flag, PIP flag -- rode SAIRNbiz's generic dispatch, which requires a session and NO role, so any signed-in employee of any role (including `staff`) could read every coworker's review score and PIP status, and write one. Found by H1 (log #533) and corroborated independently by H2 (seq #217); the register had already recorded the sensitivity ON THE ADJACENT ROW -- sb_train's evidence cell cites sb_perf's data class -- while sb_perf's own cell still said \"no PII ... never individually read\", the register disagreeing with itself one row apart. Fixed with a bespoke role gate ahead of the generic dispatch: read AND write refused outside {owner, hr, manager} with 403 FORBIDDEN (the SAIRNsenior minimum-necessary pattern; accounting deliberately excluded -- its business is sb_ap, not personnel files), built on roleSet/hasRole like every role map since the constructor-role finding. Driven seven ways: owner/hr/manager 200, staff/accounting 403, no-session 401, and a control proving sb_incidents still answers 200 for staff. Verified non-breaking before gating: sbData() returns null on any non-ok and the panel falls back to local data. Tier updated B->A on confidentiality in the same commit.",
+   "rules": [
+    "2.3"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "dadfedf48ac9",
+   "date": "2026-09-24",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "api/_lib/auth.js built every role membership set as a plain object literal, and so did 48 sites across 19 files that follow the same convention: MANAGEMENT_ROLES, BROAD_READ_ROLES, AUTHENTICATED_ROLES, ALERT_ROLES, PRESCRIBER_ROLES, AI_COC_REVIEW_ROLES, FINANCIAL_ROLES, 25 function-local maps in api/sd-data.js, plus ROLES_BY_APP and AUTH_TABLE_BY_APP. A plain literal inherits Object.prototype, so MAP['constructor'] indexes truthy and an inherited name reads as a role at every `MAP[session.role]` gate on the platform -- money (accounting, ledger, trust reconciliation), clinical (MAR, incidents, credentials, veterinary prescribing), patient and employee PII, and statutory governance. ALL 48 WERE INERT FOR ONE DISTANT REASON, not for 48 local ones: verifySessionToken() re-validates payload.role against ROLES_BY_APP on every verification, so no session carrying an inherited name reached any gate. That is a single function 48 authorisation gates silently depended on, with nothing at either end saying so; narrowing its vocabulary or adding one caller that mints a session another way would open all 48 at once. Separately, ROLES_BY_APP is itself indexed by payload.app inside that function, where the plain literal made ROLES_BY_APP['constructor'] a truthy function that then threw on .indexOf -- a 500 where a null session was intended.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "035c1f72a668",
+   "date": "2026-09-25",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "tools/sc_tier_a_write_gate_live_probe.py -- the ONLY tool that checks SAIRNcode's Tier A write gate against the DEPLOYED function -- could not pass against a correct deployment, and one of its two broken arms would have failed by accusing the fix of being over-broad. Section 4 asserts a coder write is 403 FORBIDDEN on every name in `SIX`, which is DERIVED from api/_resources/sairncode.js -- so sc_coded_items joined that deny loop automatically when 5c781b99 re-tiered it A, while the same commit added `sc_coded_items: ['admin','biller','coder']` to SC_TIER_A_WRITE_ROLES_BY_RESOURCE precisely so coders kept their own panel. The probe's own CONTROL arm twelve lines later demands 200 on that identical call. Section 5b asserts `admin hard-delete on sc_coded_items still works -> 200` with failure text \"the refusal is blanket rather than Tier A only\", on a resource whose destroying `delete` verb the registry had just withdrawn. Both DRIVEN against the real handler in-process 2026-09-25: coder write -> 200 (probe expected 403), admin delete -> 400 (probe expected 200). A DERIVED LIST IS NOT AUTOMATICALLY A CORRECT LIST: the derivation was the right fix for the 2026-09-15 hand-written-six defect and is still right, but a derivation cannot know that a SECOND mechanism carves an exception out of the same population. Fixed by reading both sides from the handler -- a new write_role_overrides() parses the override map out of api/sd-data.js, the deny population is SIX minus the coder overrides, the coder-allowed names are driven as ALLOW, section 5's auditor loop (which excluded sc_compliance BY NAME, the same assumption one arm over) is derived the same way, and 5b's control moved onto RESOURCES-minus-Tier-A with UNVERIFIED rather than a pass if that population ever empties.",
+   "rules": [
+    "1.1"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "035c1f72a668",
+   "date": "2026-09-25",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "tests/sairncode_gates.js's WRITE_GATED table declares, one resource at a time, who may write each write-gated SAIRNcode resource -- and its own header says in capitals that it is THE CLAIM, the handler is THE FACT, and \"a disagreement is a finding\", spelled out by hand rather than generated precisely so it cannot agree with itself by construction. HALF OF IT WAS NEVER READ. The only consumer anywhere in the suite was `Object.keys(WRITE_GATED)`, so the resource-name half was compared against the handler and the ROLE half ('admin|biller' etc) was decoration. It had already drifted: `sc_coded_items: 'admin|biller'` while the handler granted ['admin','biller','coder'], from 5c781b99 on 2026-09-23 until 2026-09-25. Every OTHER role assertion in the suite goes through rolesFor(), which PARSES SC_TIER_A_WRITE_ROLES, SC_TIER_A_WRITE_ROLES_BY_RESOURCE and sc_settings' narrowing out of api/sd-data.js -- correct for catching a gate that disappears, and structurally incapable of catching one that is WIDENED, because it derives from the thing being widened. So the one independent hand-written statement of who may write what was the one thing nothing read. Fixed: the cell is corrected and a new arm compares the table's role half against rolesFor() for all 24 rows. DRIVEN NEGATIVE IN BOTH DIRECTIONS in a throwaway git worktree, never in the clone -- restoring the old 'admin|biller' cell fails the arm and names the disagreeing row, and ADDING 'auditor' to the handler's sc_coded_items override fails it too and fails it FIRST, i.e. it is the discriminating arm. Also corrected: the comment `// the one per-resource override`, which has described two overrides since 2026-09-23.",
+   "rules": [
+    "1.1"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "035c1f72a668",
+   "date": "2026-09-25",
+   "detected_by": "independent-review",
+   "prior_severity": "low",
+   "risk": "api/sd-data.js argued a live authorization decision from a premise that had stopped being true, in two places, one of them inside the override map's own header. The paragraph \"TWO THINGS TO DECIDE AGAINST REAL USE\" said \"the coder's own resource is sc_coded_items, which is NOT gated, so the split is coherent\", and the sc_claims entry in SC_TIER_A_WRITE_ROLES_BY_RESOURCE's header said \"sc_coded_items, is ungated and that is their real job\" -- both the stated GROUNDS for excluding `coder` from sc_claims. 5c781b99 re-tiered sc_coded_items A on 2026-09-23 because the row carries a verbatim quote from a clinical note, so it has required a real employee session since then. The CONCLUSION still holds and the REASON does not: what keeps coders on their own resource is now a named exception in that same map, which is a stronger footing than an absent gate but not the same one. The same \"UNGATED\" wording was in tools/sc_tier_a_write_gate_live_probe.py's docstring, where it sat directly above the two arms that had gone self-contradictory for exactly this reason. Not cosmetic: the next session asked to widen or narrow sc_claims reads that paragraph, and it argues from a fact about the codebase that is false. Corrected in all three places, with the old wording and its date kept rather than deleted, so a reader can see the argument moved rather than finding a clean comment that was never wrong.",
+   "rules": [
+    "2.3"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "094aed1fa42f",
+   "date": "2026-09-25",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "All twelve SAIRNscape resources in api/sd-data.js dispatched on the licence hash alone with NO session check of any kind, and the licence key is shipped to the browser and readable by anyone who can open sairnscape.html -- so the key WAS the authorisation. Two of the twelve are Tier A on integrity: `invoices` (SAIRNscape's money row; its write branch already refuses a non-numeric amount because a string one reached a fold and printed -99450 on a tax report) and `scp_quotes` (the priced quote every invoice descends from). Identical shape to law_trusttx (gated 2026-09-16), SF_RESOURCES and SDN_RESOURCES; SAIRNscape was swept with none of the three. Fixed by adding both to SD_SESSION_GATED for read AND write with SD_GATE_APP entries pinning each to 'sairnscape' -- 403 FORBIDDEN without a session, plus the shared active-credential re-check, so a deactivated employee is refused on a token that still verifies. THE NAME IS THE PART THAT MAKES THIS FIX FAILABLE IN SILENCE: SAIRNscape claimed the bare name `invoices` before the scp_ convention existed, so the storage table is scp_invoices and the RESOURCE the dispatch tests for is `invoices`. A gate written against the table name gates nothing at all and every refusal arm anywhere still passes -- the new suite carries an arm whose only job is that distinction. NO CLIENT CHANGE WAS NEEDED AND THAT WAS MEASURED RATHER THAN ASSUMED, which is the half that has broken apps three times here: scpData() attaches X-SD-Auth on every call whenever a token exists (sairnscape.html:2107) with no per-call withSession flag to forget -- the thing that had to be repaired in sairndesign.html, where 18 of 19 call sites never passed it -- every call site for both resources goes through that one helper, and both login paths store the token before scpApplyLoggedIn -> scpInit -> scpSyncFromServer. Arms assert all three against the shipped page rather than against the commit message. DRIVEN TO FAIL BEFORE IT WAS BELIEVED: removing the SD_SESSION_GATED entries takes the new suite to 9/18, removing the SD_GATE_APP pins to 11/18, and renaming the entry to the storage-table name to 16/18. LIVE-VERIFIED against https://sairn.vercel.app/api/sd-data by tools/scp_session_gate_live_probe.py: both resources, both verbs, 403 FORBIDDEN on a licence key alone, against a control (scp_vendors) still answering 200 so the result is a split and not a lockout, plus the DEPLOYED page read back for the X-SD-Auth header. The probe is adapted from the SAIRNlegacy one and the adaptation is the part worth noting: SAIRNlegacy's bespoke gate answers 401 NO_SESSION while this shared one answers 403 FORBIDDEN, so a byte-copy would have reported a working gate as FAILED -- bug class 22.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "84edca20af14",
+   "date": "2026-09-26",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "api/sd-data.js alf_family_contacts action read checked verifySessionToken and NO role, so any authenticated sairncare employee of any role -- med_aide, activities, anyone issued a PIN -- could list every family contact on the licence with phone, email, notes and the full medication-consent trail for every resident, while the WRITE half of the same branch has always required management and its refusal message calls this a disclosure decision. Separately the family MAR read was limit=500 with nothing said, and familyMarView computes an adherence PERCENTAGE over the rows it is handed, so a resident past 500 administrations -- under a year at routine dosing -- gave a family member a number and a history presented as complete but computed from part of the record",
+   "rules": [
+    "1.11"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "944a5faadae5",
+   "date": "2026-09-26",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "item 94's per-branch blob migration was declared COMPLETE with the proof: grep -c 'Object.assign({}, payload)' 12 -> 0. The dot is a WILDCARD in a grep pattern, so that pattern requires some character then a close-paren immediately after 'payload' -- and every remaining site is 'Object.assign({}, payload, {...})', a COMMA. The pattern could not match the sites left behind, so it was guaranteed to report 0 the moment the sites it COULD match were converted. Re-measured by shape: 77 unconverted stored-blob writes against 24 converted, so the migration was reported complete at under a quarter done. Every unconverted site lets a posted license_hash ride into the stored blob and be echoed back on read as a field the row's real tenant column contradicts, and api/sd-sub-data.js's progress-photo write additionally carried caller-supplied copies of four SERVER-SET qc_ columns on a record whose whole purpose is that a client cannot self-approve",
+   "rules": [
+    "1.8"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "be352a7d021a",
+   "date": "2026-09-26",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "stonedesk.html saveSD3Data() wrote the customer list one record at a time from 16 call sites including render paths, and the 2026-09-24 sd_customers resurrection guard made every one of those two PostgREST round trips -- 200 customers cost 400 trips on a single render, on a function whose own comment said it must not wait on a round trip",
+   "rules": [
+    "1.10"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "c8b5e5b123c4",
+   "date": "2026-09-26",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "api/sd-data.js carried 132 verifySessionToken gates and ONE credentialStillActive, placed inside the SD_SESSION_GATED conditional so it covered 34 resources and 70 action-pairs. A credential DEACTIVATED after its token was issued kept read and write on the other 131 gates for up to the 12h token life, across thirteen apps' resources -- and deactivation is the one control an owner has over somebody who has just left. The comment beside the single call site read NOTHING CLOSED IT FOR THE DATA PATH, which reads as closed-for-all, and its eight-arm control was green because every arm was true of that one call site",
+   "rules": [
+    "1.11"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "f0c0cb7ac160",
+   "date": "2026-09-26",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "api/sd-data.js, alf_claim_routes and alf_staff_credentials: a caller could choose who is recorded as having made the decision. Both reads spread the stored blob LAST over FIVE mapped columns -- Object.assign({ id, resident_id, service_month, decided_by, created_at }, x.data) at :10555 and Object.assign({ id, staff_id, record_type, recorded_by, created_at }, x.data) at :10922 -- while both write paths stripped only THREE keys from the payload before storing it. So a payload carrying `decided_by` (or `recorded_by`) was kept inside `data` and OVERRODE on read the column the server had set from session.employee_id. `created_at` shadowed the same way on both, so the displayed timestamp of the record could also be chosen by the caller. Each write's own echo has the identical spread-last shape, so the forged attribution came straight back in the 200 as well, making the response look like confirmation. WHY THIS IS WORSE THAN AN ORDINARY FIELD LEAK: both tables are APPEND-ONLY BY DESIGN and each branch's 409 message states the reason -- \"a completed-training assertion that could be quietly edited later is not evidence of anything\". The record could not be edited after the fact; its ATTRIBUTION could be chosen at the moment of writing. alf_staff_credentials is the staff credential and training-hours trail (a regulated attestation about a named person); alf_claim_routes records how a real claim was billed, so the forged field names who made a money determination. FIXED by routing both through api/_lib/blob.js's storedBlob() with the column list derived from each branch's own read -- five keys each, not three. THE PLATFORM ALREADY KNEW THIS SHAPE: alf_op_audits carries a comment saying its read spreads columns LAST precisely so a client-supplied `passed` cannot override the server's computation, and the 2026-09-24 ALF review fixed the `created_at` half on alf_mar and alf_incidents. These two branches were not swept then. alf_signals -- same read shape, four mapped columns, four stripped -- is the branch that got it right, so four ALF branches produced three different outcomes from one pattern.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "6977854db7c8",
+   "date": "2026-09-27",
+   "detected_by": "code-review",
+   "prior_severity": "critical",
+   "risk": "api/sd-data.js's alf_incidents write stored `reported_by` FROM THE CALLER'S PAYLOAD. sql/sairncare_incidents_schema.sql documents reported_by as a field inside the `data` blob, and that blob is storedBlob(payload, ['id','resident_id','created_at']) -- api/_lib/blob.js copies the caller's payload and deletes only the named keys, so every other field, including the reporter's identity, is whatever the request said it was. The write is DELIBERATELY open to any authenticated employee because gating it would discourage mandated reporting, and that decision is correct -- so the two together meant ANY EMPLOYEE COULD FILE AN INCIDENT ATTRIBUTED TO ANY OTHER PERSON. The category vocabulary on this resource includes abuse_neglect_allegation, elopement, fall-with-injury and behavioral incidents; in most US states the reporter's identity on an abuse or neglect allegation is the record a surveyor asks for, and it could be set to a colleague by anybody with a PIN. There was no server-recorded filer at all: the table had no recorded_by column, while four sibling SAIRNcare tables (compliance, family_contacts, op_audit, remaining-migrations) carry one.",
+   "rules": [
+    "1.11"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "ad97da6bce25",
+   "date": "2026-09-27",
+   "detected_by": "live-verification",
+   "prior_severity": "critical",
+   "risk": "The alf_incidents attribution fix did not close the attribution spoof. `recorded_by` was omitted from the write path's storedBlob strip list even though it is a real column on the table, so a caller-supplied recorded_by was stored INSIDE the data blob; and the read mapper built its response as Object.assign({id, resident_id, created_at, recorded_by: <column>}, r.data) -- spreading the blob LAST, so the blob's copy overwrote the authoritative column on every read. A live write against ALF-TEST-2026 on the deployed endpoint carrying reported_by and recorded_by both set to 'FORGED-SOMEONE-ELSE' read back recorded_by = 'FORGED-SOMEONE-ELSE' while the session's employee_id was 'sairn-demo-owner'. The same spread order applies to `id` and `resident_id`, which were safe only because they ARE in the strip list. Fixed by spreading the blob FIRST and overwriting with the columns, and by adding recorded_by to the strip list.",
+   "rules": [
+    "1.11"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "e987dfb266b6",
+   "date": "2026-09-27",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "api/_lib/compliance-rules.js hoursInWindow(): the `facility_training_year` window read `from = trainingYearStart || null` and fell through with no error. `trainingYearStart` is `opts.facility_training_year_start`, a name that is not written, keyed, quoted or declared anywhere in the repo and that api/sd-data.js's evaluate branch does not accept. The per-record filter below is `if (from && ...)`, so a null `from` SKIPPED THE DATE FILTER ENTIRELY and every training record in alf_staff_credentials counted toward the annual total regardless of age -- a 2019 certificate satisfying a 2026 annual requirement. THE OVER-COUNTING DIRECTION: it reports a staff member with a real training shortfall as compliant, on a regulated verdict. REACHABLE, NOT THEORETICAL: api/sd-data.js explicitly validates `annual_window` against complianceRules.ANNUAL_WINDOWS, which INCLUDES facility_training_year, so a caller asking for that window was accepted and silently given no window at all. The response carried hours_window_from: null and hours_window_error: null -- no error anywhere. Fixed to fail closed in the same shape NO_HIRE_DATE already had twenty lines up: window_error 'NO_TRAINING_YEAR_START', nothing counted, verdict null rather than true, and the module says in place that this window is unavailable until some surface supplies a facility training year. Five arms in section 4e of api/_lib/compliance-rules-staff-join.test.js including both control directions.",
+   "rules": [
+    "1.5"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "e987dfb266b6",
+   "date": "2026-09-27",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "sairnsenior.html rfDeliveredHoursFor(clientId) read `v.actual_start` and `v.actual_end`. A sen_visits row has no such fields -- the clock is `clock_in_at` / `clock_out_at`, which the authorisation burn-down (~:2540), the visit card (~:2964) and visitHours() (~:3925) all read correctly. So the guard `if(!v.actual_start||!v.actual_end)return;` was true for every visit ever recorded, the loop added nothing, and THE FUNCTION RETURNED 0 FOR EVERY CLIENT FOR AS LONG AS IT EXISTED. rfPerformance() hands that to the Referral Sources table. THE ZERO WAS WORSE THAN A BLANK because the renderer already distinguishes them: `p.linked ? p.hours.toFixed(1)+' h' : '--'`. An unlinked source correctly showed '--' meaning we cannot attribute hours; a LINKED source showed a confident '0.0 h', which reads as \"we looked, and this source's clients received no care\" -- against real clocked visits. Guardian's fabricated-KPI check could not see it: the figure is backed by a real function doing real arithmetic over a real array, and the fabrication arrives through a field NAME. The function's own comment was already the specification -- \"Reuses the same only-count-what-was-actually-clocked rule the authorisation burn-down uses\" -- and was true of the intent and false of the field names. Fixed by CALLING visitHours() rather than carrying a third copy of the clock arithmetic, which is what that function's own header asks for (\"so both compute delivered hours the same way -- a claim and an insufficient-hours finding must never silently diverge on this arithmetic\"). Reachability checked rather than assumed: both are inside the script block spanning ~1339-6052. 11 arms in tests/sairnsenior_referral_hours.js, driven in a vm sandbox against visit fixtures rather than grepped.",
+   "rules": [
+    "1.1"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "e987dfb266b6",
+   "date": "2026-09-27",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "api/sd-data.js alf_billing derive_charges: the reconciliation read `invRows[0].data.charge_lines` as the prior invoice's line detail. NO WRITE PATH ON THIS PLATFORM STORES THAT KEY -- sairncare.html's invoice record carries id, month, room_board_amount, care_amount, private_total, private_status, hcbs_claim_amount, hcbs_status, care_level_breakdown, revision_history and generated_by, and no per-event lines at all. So priorLines was ALWAYS [], and careCharges.reconcileAgainstInvoice(derived, []) answers: every derived line ADDED, nothing removed, nothing changed, unchanged_count 0, and net_change equal to the ENTIRE derived amount -- returned beside `invoice_exists: true`, which is what made the figure read as a comparison rather than as a first look. On the view this branch's own comment calls \"the audit trail that replaces the manual reconciliation\". THE ARGUMENT FOR THE FIX WAS ALREADY WRITTEN TWELVE LINES ABOVE IT, for the adjacent case: the 2026-09-04 hardening of the UNREADABLE prior invoice says \"this fell back to [], so the reconciliation reported EVERY derived line as new ... Somebody regenerates on the strength of that.\" The read below it then did exactly that for an invoice that was read perfectly well. Fixed as a named third state -- reconciliation_vs_invoice null, reconciliation_unavailable PRIOR_INVOICE_HAS_NO_CHARGE_LINES, and a sentence saying comparing against nothing would report every charge as new and the net change as the whole invoice. AND THE CLIENT HALF TOO: sairncare.html's renderer guards on `invoice_exists && rv`, so a bare null would have replaced a wrong figure with SILENCE and left the same person deciding with no more information than before; it now renders the reason. NO PRIOR INVOICE is deliberately left alone -- with nothing on file every derived line genuinely is new and invoice_exists:false says so.",
+   "rules": [
+    "1.5"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "e987dfb266b6",
+   "date": "2026-09-27",
+   "detected_by": "probe-control",
+   "prior_severity": "moderate",
+   "risk": "tools/ghost_field_read_scan.py built its spelled-field universe from RAW file text including comments, with *.md in the source list. The tool's rule is that a gate reading a field never spelled anywhere cannot be true -- so ANY PROSE MENTIONING A DEAD FIELD NAME MAKES IT \"SPELLED\" AND SILENCES THE DETECTOR FOR IT PERMANENTLY. Demonstrated by the fix committed in the same change: writing the regression arm \"rfDeliveredHoursFor must not read actual_start\" put the words actual_start in a comment, and the scan stopped reporting actual_start. Writing the test for a dead field disabled the standing detector for that field. This is PR 1.11's sibling in the other direction and PR 1.1 exactly -- a check that stopped checking -- committed inside a tool whose entire subject is a condition that cannot fire, by the author of the sweep document that named the class. CAUGHT BY THE CONTROL, NOT BY REVIEW: tests/run_ghost_field_read_probe.py MUTATION 1 restores the real shipped pre-fix rfDeliveredHoursFor body into the real sairnsenior.html and demands the scan NAME actual_start; it exited 1 FINDING (so a count-only arm would have passed) and did not name the field. Fixed: spellings now come from code and data and never from prose -- comments stripped from .js/.html/.cjs/.mjs and from .py with a quote-aware # scanner, strings KEPT because a string key is a real spelling, and .md excluded outright. The cost is stated in the tool header rather than left to be found: a field defined ONLY in a markdown spec now reads as a ghost, which is the false-positive direction a human dismisses in one read.",
+   "rules": [
+    "1.1"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "d84b1af6a15b",
+   "date": "2026-09-28",
+   "detected_by": "static-checker",
+   "prior_severity": "low",
+   "risk": "api/sd-data.js's alf_op_audits WRITE response echoed the created row as Object.assign({id, record_type, passed, recorded_by, reviewed_by}, body.data) -- the stored blob spread LAST, so a caller-supplied `reviewed_by` or `recorded_by` inside the blob overwrote the server-set value in the response. That branch's storedBlob strip list is deliberately just ['id', 'record_type'], so both identity keys DO remain in the blob. The stored row and every later READ were correct: the read path at :11009 uses the opposite, safe order (blob first, columns last). Only the echo returned to the writer was wrong, so a caller forging reviewed_by sees their own forged sign-off reflected back and no other reader ever does. alf_op_audits records fire drills, food temperatures and sanitation checks, and reviewed_by is the management sign-off on them.",
+   "rules": [
+    "1.11"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "0bfa86a8564d",
+   "date": "2026-09-29",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "mech_quotes.text is model output generated over a base64 IMAGE (sairnmechanical.html:1416-1417, :1435) and was excluded from the redaction gate on my own false premise that it was generated from typed form fields, with an arm pinning that exclusion",
+   "rules": [
+    "1.3"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "41c0cf783851",
+   "date": "2026-09-29",
+   "detected_by": "live-verification",
+   "prior_severity": "high",
+   "risk": "alf_family_contacts re-stamped consent_granted_at and consent_granted_by on EVERY write, so an unrelated edit rewrote the recorded moment a third party was authorised to see a resident medication administration record",
+   "rules": [
+    "1.3"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "50def018aa48",
+   "date": "2026-09-29",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "sf_vehicle_service was re-tiered Tier A on INTEGRITY on 2026-09-23 and stayed out of SD_SESSION_GATED, so it was readable and writable with the SAIRNfreedom licence key alone -- a key shipped to the browser -- for six days",
+   "rules": [
+    "1.3"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "7743faa963e0",
+   "date": "2026-09-29",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "alf_mar stored the employee who performed each entry from the request payload rather than the session, so any authenticated SAIRNcare employee could record a medication administration, controlled-substance count, reconciliation or assessment refusal against another employee name",
+   "rules": [
+    "1.2"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "7743faa963e0",
+   "date": "2026-09-29",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "SAIRNcare controlled-substance counts have NO server-side witness verification: witness_id is a caller-supplied string, so one employee alone can record a two-person count naming any colleague as the second signature",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "8230924f8a19",
+   "date": "2026-09-29",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "the SAIRNmechanical redaction gate was scoped to the literal resource name mech_docs, so mech_takeoffs stored and synced model-extracted text from photographed plans with no redaction pass at all",
+   "rules": [
+    "1.3"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "8230924f8a19",
+   "date": "2026-09-29",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "api/_lib/mech-redact.js does not match a seven-digit local phone number as a PHONE, and its ADDRESS pattern over-matches into the following text -- Phone: 555-0142  Unit: RTU-4 becomes Phone: 555-[ADDRESS REDACTED]: RTU-4, leaving the number half-present and destroying the Unit label",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "937bd6e858e3",
+   "date": "2026-09-29",
+   "detected_by": "code-review",
+   "prior_severity": "low",
+   "risk": "alf_billing derive_charges: a prior-invoice row that EXISTS with a null data blob made priorRow null, so the 2026-09-27 no-charge_lines guard was skipped entirely, the else branch reconciled against [] and the response reported EVERY derived charge as newly added with net_change equal to the whole invoice, beside invoice_exists true. That is the identical false reading the 2026-09-27 comment in that branch describes and claims to have closed -- the third door into one defect in one function, after the unreadable read (2026-09-04) and the absent charge_lines key (2026-09-27).",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "c66a32854e5a",
+   "date": "2026-09-29",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "mech_docs WRITE was authorised by the licence key alone -- a key shipped to the browser and readable by anyone who can open sairnmechanical.html. It is the one of the four MECH_RECORDS tables whose own server-side redactor carries patterns for SSN, EIN and card-length digit runs, because scanDoc() asks a model to extract every field off work orders, contracts, permits and invoices and the answer is stored on the row. api/_lib/mech-redact.js reduces that text and never refuses a write, deliberately, so it was not the gate and there was no other one. Fixed as one registry entry in each of SD_SESSION_GATED and SD_GATE_APP.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "eb2f92fac84f",
+   "date": "2026-09-29",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "sen_visits propose_clock_correction gates on role while its own refusal message argues identity, so an owner who is also the assigned caregiver could correct their own EVV clock time and nothing marked it",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "eb2f92fac84f",
+   "date": "2026-09-29",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "evaluateTraining reported meets:false on the FIRST DAY of a hire-anchored training year, so a person who completed a full year of training three weeks earlier read as non-compliant on their anniversary; and a leap-day hire published window_from 2026-02-29, a date that does not exist",
+   "rules": [
+    "1.3"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "2ea91d84b482",
+   "date": "2026-09-30",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "Raw model output was persisted unredacted on seven resources across six apps: the server-side redaction gate existed only inside the SAIRNmechanical branch as MECH_SCANNED_TEXT, so bld_photo_analyses (full, summary), grd_progress_photos, grd_ecosystem_reports, msb_food_scans, scp_progress_photos, rf_photos and memory stored whatever a model read off a photograph -- a name, a phone number, an SSN on a taped-up work order -- verbatim in the row. Now one declared map in api/_lib/ai-scan-redaction.js, gated per field on the server, with deliverables (parsed quantities, product names, quote lines) explicitly excluded because over-redaction is a different way to lose the record.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "5e33157ee606",
+   "date": "2026-10-05",
+   "detected_by": "live-verification",
+   "prior_severity": "high",
+   "risk": "SAIRNscape's 'customers' resource dispatched on the licence hash alone, with no session check of any kind, for READ and WRITE -- and the row carries a customer's NAME, PHONE, EMAIL and STREET ADDRESS. The licence key is shipped to the browser and readable by anyone who can open sairnscape.html, so it was the whole authorisation. PROVEN LIVE WITH A CONTROL before the fix: on SCP-DEMO-2026 with no session token, read customers answered 200 and returned a row with all four fields, and write customers with an id-less payload answered 400 from the handler body -- so the gate did not fire, and nothing was stored because api/sd-data.js:4769 refuses before any store call. The controls are what make it a finding rather than a guess: invoices and scp_quotes on the SAME bare key answered 403 both, so the gate existed, worked, and did not cover this one. THE ROOT CAUSE IS NOT THE GATE, IT IS A CORRECTION THAT STOPPED AT THE PROSE. The 2026-10-05 sweep that armed SAIRNscape scoped itself to Tier A and was right to; 'customers' is carried B/B in docs/CRITICALITY-TIERS.md while its own confidentiality cell had already been corrected to read 'A CUSTOMER's NAME, PHONE, EMAIL AND STREET ADDRESS'. The basis was fixed and the LETTER was not, and the letter is what the sweep reads, so the resource was invisible to the mechanism that would have gated it. Fixed by adding the resource to SD_SESSION_GATED and SD_GATE_APP in one edit; the B->A retier that would have prevented it is owed and is held by another session. The client needed no change and that was checked rather than assumed: customers is read only inside scpSyncFromServer()'s resource loop at sairnscape.html:2734, reached only after login, and the two already-gated resources sit in the same loop.",
+   "rules": [
+    "3.4"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "8246d8bab707",
+   "date": "2026-10-05",
+   "detected_by": "hover-audit",
+   "prior_severity": "high",
+   "risk": "api/sd-data.js resource alf_family_contacts: action 'family_mar' had NO caller gate at all. The sibling action 'read' on the same resource resolves ALF_FAMILY_READ_ROLES and then the caller's assigned residents from alf_clients and 403s a resident that is not theirs; 'family_mar', sixty lines below it in the same handler, did neither. It checked famLib.familyMarView(), which is the family CONTACT's consent, and then shipped the resident's medication administration record. Any authenticated session on the licence -- including a med_aide or activities employee with no resident assigned to them at all -- could pass any contact_id and receive that resident's full MAR. The consent check was standing in for an authorisation check: it answers a question about the contact, not about the session, and nothing asked the second question. Fixed in two halves because the resident is knowable only from the stored row: role and assignment scope resolved BEFORE the contact fetch (empty scope 403s, so a caller who may not ask anything is not told whether the contact exists), then the stored row's resident_id checked against that scope with a FORBIDDEN kept distinct from NO_SUCH_CONTACT.",
+   "rules": [
+    "1.3"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "16b2cc70a4e2",
+   "date": "2026-10-06",
+   "detected_by": "hover-audit",
+   "prior_severity": "high",
+   "risk": "api/sd-data.js, resource alf_compliance_rules, action 'evaluate': the branch gated on verifySessionToken ALONE (:11949) and, with payload.include_staff === true (:11994), fetched every alf_staff row (:12022) and every alf_staff_credentials training-hours record on the licence filtered by license_hash alone (:12033-12034), assembled per staff member a name, a position, a hire_date and the full training-hours array (:12052-12074), and returned all of it at :12077. Any authenticated sairncare employee -- including a med_aide or an activities role with no resident assigned to them at all -- could therefore read the employment and training record of every person on the licence. THE SIBLING THAT READS THE SAME TABLE ALREADY REFUSED THAT: alf_staff_credentials/read (:12088-:12098) resolves ALF_CRED_READ_ROLES and filters every other role to its own staff_id. Two code paths reached one table and only one carried its access rules. Fixed by applying the sibling's set and predicate to opts.staff BEFORE evaluateTraining() sees it -- filtering the engine's output would leave the roster assembled and one coding mistake from the response -- and by echoing scoped_to_self on every response from the action. Third disclosure of this shape in one week after #877 (family_mar) and the SDN raw-blob branch.",
+   "rules": [
+    "1.3"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "607f4f034662",
+   "date": "2026-10-06",
+   "detected_by": "hover-audit",
+   "prior_severity": "moderate",
+   "risk": "api/sd-data.js, the single generic SDN_RESOURCES write branch serving all 18 SAIRNdesign resources, built its upsert body as 'data: payload' -- the caller's entire object with no storedBlob() call. Any key the caller invented was persisted verbatim into the data jsonb column, INCLUDING a forged license_hash, app_id or p_license_hash, and was echoed back on read beside the real columns that contradict it. Twelve of the eighteen resources carry client identity or money (sdn_clients, sdn_contracts, sdn_referrals, sdn_projects, sdn_specitems, sdn_proposals, sdn_pos, sdn_invoices, sdn_timeentries, sdn_discounts, sdn_team, sdn_vendors). LATENT RATHER THAN LIVE: every read path resolves tenancy from the real license_hash COLUMN, which always wins, so no cross-tenant read was reachable -- what the defect produced was a stored falsehood waiting for the next reader that trusts a field inside data. Fixed with storedBlob(payload, []), an EMPTY column list unlike every sibling call site's ['id'], because those branches re-attach the id from its column on read and this one returns x.data verbatim; passing ['id'] here would have emptied the id off every record in all eighteen resources.",
+   "rules": [
+    "1.1"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "4ec0d5d51f56",
+   "date": "2026-10-07",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "The last 7 of 15 write branches in SAIRNcare, SAIRNsenior and SAIRNroofing that persisted a row recording no acting employee: five SAIRNsenior (sen_branches, sen_payer_contracts, sen_authorizations, sen_pay_rates, sen_franchise_agreements) and two SAIRNroofing (rf_claims/write, rf_schedule/set_status). AND THE SECOND DEFECT IS IN MY OWN EARLIER REFUSAL: the two roofing paths were left unattributed under ONE shared reason -- neither sends data, so stamping would REPLACE the stored blob and destroy carrier, claim_number and adjuster. That is true of ONE of them. rf_claims/write DOES send data: dataBlob at api/sd-data.js:7772, built from the whole payload through storedBlob, and took the same one-line stamp as the five. Only rf_schedule/set_status matched the stated reason and took a read-then-merge onto the row its own gate already reads. attr_scan.py re-run at this state: UNATTRIBUTED 0 of 49. None of the fifteen depended on the audit-table migration -- that migration is about AUDIT tables and all fifteen of these are DATA tables.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "56bbce5e83d5",
+   "date": "2026-10-07",
+   "detected_by": "hover-audit",
+   "prior_severity": "moderate",
+   "risk": "Fifteen of 49 write branches in SAIRNcare, SAIRNsenior and SAIRNroofing persisted a row recording no acting employee. Nothing was disclosed -- this is accountability, not confidentiality -- but the rows are the ones somebody reconstructs later: a resident activity and billing entries, a facility rate card, a fall-detection signal, staff and caregiver records, a home-care claim and a roofing location. H1 routed the gap as 10 resources; my own read with different criteria found 15, and H1 finding is NOT reclassified -- only the originating finder does that.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "6a2690bec035",
+   "date": "2026-10-07",
+   "detected_by": "hover-audit",
+   "prior_severity": "critical",
+   "risk": "Twenty-one SAIRNgrounds resources in api/sd-data.js required the licence key and NOTHING ELSE on both read and write -- no employee session at all, in an app that has had api/grd-auth.js, a grd_employee_auth table and a five-role vocabulary the whole time. Reachable and WRITABLE on the key alone: grd_invoices (money), grd_boq_rates (the rates every quote is priced from), grd_vendors, grd_quotes, grd_properties, grd_jobs and the rest. No personal data is on these rows; what was exposed is a golf operation commercial interior, and a former employee holding one key could rewrite the rate card. Measured by the auditor own artifact: 16 of 17 grd_* resources REPRODUCES on both actions, the seventeenth PARTIAL. CRITICAL on integrity rather than confidentiality: the write half is the severe half.",
+   "rules": [
+    "1.11"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "7ed27c5e78fa",
+   "date": "2026-10-07",
+   "detected_by": "hover-audit",
+   "prior_severity": "critical",
+   "risk": "alf_billing/derive_charges set description to d.medication_name on every medication_administration charge line. The gate on that action is ALF_MANAGEMENT_ROLES = { owner, billing }; the gate on alf_mar/read, which owns the table, is ALF_MAR_ROLES = { owner, nursing, med_aide }. The difference is exactly one role: billing. So a billing clerk, 403ed from the MAR directly, read which medications a NAMED resident is on by asking for that resident derived invoice. A medication regimen is diagnostic-revealing, which is what makes it PHI rather than an administrative detail. api/_lib/care-charges.js prices on e.type through CHARGEABLE[type].rate_key and never on description, so the redaction costs the billing answer nothing -- proven by an arm, not assumed.",
+   "rules": [
+    "1.11"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "8ae20da10239",
+   "date": "2026-10-07",
+   "detected_by": "hover-audit",
+   "prior_severity": "critical",
+   "risk": "Twenty-one SAIRNgrounds resources in api/sd-data.js required the licence key and NOTHING ELSE on both read and write -- no employee session at all, in an app that has had api/grd-auth.js, a grd_employee_auth table and a five-role vocabulary the whole time. Reachable and WRITABLE on the key alone: grd_invoices (money), grd_boq_rates (the rates every quote is priced from), grd_vendors, grd_quotes, grd_properties, grd_jobs and the rest. No personal data is on these rows; what was exposed is a golf operation commercial interior, and a former employee holding one key could rewrite the rate card. Measured by the auditor own artifact: 16 of 17 grd_* resources REPRODUCES on both actions, the seventeenth PARTIAL. CRITICAL on integrity rather than confidentiality: the write half is the severe half.",
+   "rules": [
+    "1.11"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "d051c89faa16",
+   "date": "2026-10-07",
+   "detected_by": "hover-audit",
+   "prior_severity": "critical",
+   "risk": "alf_staff/read verified the session and gated on NOTHING ELSE, then returned Object.assign({ id: r.staff_id }, r.data) -- the entire jsonb blob, spread. sairncare.html saveStaff() stores name, phone (a personal mobile), position, cert_expiry, bgcheck_date (an employment-screening date), status and free-text notes a manager typed about an employee; alf_compliance_rules/evaluate adds hire_date. The sairncare role vocabulary is six long, so caregiver, med_aide and activities -- none with any management function -- read every colleague PII field on the licence. docs/CRITICALITY-TIERS.md rates the resource A / A. CRITICAL because it is personal data of every employee, reachable by every employee, on a resource the register already rated A on both axes.",
+   "rules": [
+    "1.11"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "e90d8775c7b2",
+   "date": "2026-10-07",
+   "detected_by": "hover-audit",
+   "prior_severity": "critical",
+   "risk": "alf_staff/read verified the session and gated on NOTHING ELSE, then returned Object.assign({ id: r.staff_id }, r.data) -- the entire jsonb blob, spread. sairncare.html saveStaff() stores name, phone (a personal mobile), position, cert_expiry, bgcheck_date (an employment-screening date), status and free-text notes a manager typed about an employee; alf_compliance_rules/evaluate adds hire_date. The sairncare role vocabulary is six long, so caregiver, med_aide and activities -- none with any management function -- read every colleague PII field on the licence. docs/CRITICALITY-TIERS.md rates the resource A / A. CRITICAL because it is personal data of every employee, reachable by every employee, on a resource the register already rated A on both axes.",
+   "rules": [
+    "1.11"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "f13f4f4982d3",
+   "date": "2026-10-07",
+   "detected_by": "hover-audit",
+   "prior_severity": "critical",
+   "risk": "alf_billing/derive_charges set description to d.medication_name on every medication_administration charge line. The gate on that action is ALF_MANAGEMENT_ROLES = { owner, billing }; the gate on alf_mar/read, which owns the table, is ALF_MAR_ROLES = { owner, nursing, med_aide }. The difference is exactly one role: billing. So a billing clerk, 403ed from the MAR directly, read which medications a NAMED resident is on by asking for that resident derived invoice. A medication regimen is diagnostic-revealing, which is what makes it PHI rather than an administrative detail. api/_lib/care-charges.js prices on e.type through CHARGEABLE[type].rate_key and never on description, so the redaction costs the billing answer nothing -- proven by an arm, not assumed.",
+   "rules": [
+    "1.11"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "0442646cb781",
+   "date": "2026-10-11",
+   "detected_by": "hover-audit",
+   "prior_severity": "high",
+   "risk": "Sixteen of twenty-two SAIRNscape resource/action pairs were gated by neither SD_SESSION_GATED nor an inline session check, so the browser-shipped licence key was the whole authorisation; three resources are gated here (scp_designs, Tier A since 2026-10-05; scp_vendors, whose data jsonb carries contact, phone and email; scp_progress_photos, whose photo_b64 of a customer's property was gated only INSIDE the qc_status branch at api/sd-data.js:5231, so an UPLOAD needed no session at all) -- and the reproducing artifact scored scp_progress_photos FIXED when it was not, because its check was a substring test for verifySessionToken that the qc-only gate satisfied, which is why the real figure was 16 of 22 and not the 15 first reported",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "56e040c3c6ac",
+   "date": "2026-10-11",
+   "detected_by": "hover-audit",
+   "prior_severity": "critical",
+   "risk": "sf_officers, SAIRNfreedom's officer roster and the post's governance record, was in neither SD_SESSION_GATED nor SD_GATE_APP, so the browser-shipped licence key was the whole authorisation on it -- and the generic SF_RESOURCES write branch stores data:payload verbatim with no role or capability check, so a write past the gate is a write past all three client-side trapdoor guards (activeProvisioners, the SPEC 1c last-active-provisioner refusal, the sole-holder refusal) and can leave a post at zero active provisioners, the state SPEC 1c exists to make unreachable",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "b7f6fb54116e",
+   "date": "2026-10-11",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "Four Tier A SAIRNfreedom resources -- sf_sessions (prizeCap, a statutory ORC Chapter 2915 limit, plus receipts and prizes), sf_shifts (a cash variance attributed to a named employee), sf_tickets (unitPrice and total at point of sale) and sf_rentals (charge, proceeds and the alcohol/notified compliance pair) -- were in neither SD_SESSION_GATED nor SD_GATE_APP, so the browser-shipped licence key was the whole authorisation on the gaming floor's money records; and in the same file sfHydrateAll() ran once from DOMContentLoaded BEFORE any interactive sign-in with sfEnterApp() never re-running it, so on a fresh browser every GATED sf_ resource's hydrate answered 403, the per-resource empty catch swallowed it, and signing in never went back for the server's copy -- already live for the 18 resources gated before this change",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "0442646cb781",
+   "date": "2026-10-12",
+   "detected_by": "hover-audit",
+   "prior_severity": "high",
+   "risk": "batch b16 re-derives the scp_* 5-resource 'BY DESIGN' classification and finds it UNSUPPORTED by the schema. hank's 2026-10-13 inventory (docs/2026-10-13-hank-sd-data-inventory.md:185-192) and this commit's own contributing_factors both call the 5 UNGATED_REST resources (scp_jobs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features) deliberately-left because their columns 'justify leaving each.' Read directly: sql/sairnscape_data_schema_phase2.sql:22-24 states outright 'TYPE A (customer-scoped list): scp_designs, scp_irr_controllers, scp_irr_zones, scp_water_features (customer_id parent) and scp_irr_schedules (zone_id parent)' -- and every one of the 5 tables' own column list confirms it: scp_jobs has customer_id (sql/sairnscape_data_schema.sql:52), scp_irr_controllers customer_id (phase2.sql:53), scp_irr_zones customer_id (phase2.sql:67), scp_water_features customer_id (phase2.sql:97), scp_irr_schedules zone_id (phase2.sql:83, one hop from customer_id via scp_irr_zones). The original test comment that named UNGATED_REST (api/sd-data-scp-session-gate.test.js:113-114) calls this 'a disclosure rather than an absence,' not a safety judgement. FINDING STAYS OPEN: no written evidence exists anywhere in the schema, the test, or the inventory doc that these 5 hold no tenant/customer data -- the schema says the opposite. Routed to hank: same fix pattern as the 3 already gated in this commit (SD_SESSION_GATED + SD_GATE_APP entries), exact file:line in docs/2026-10-07-hover2-scp-session-gate-routing.md.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "86189e37d552",
+   "date": "2026-10-12",
+   "detected_by": "code-review",
+   "prior_severity": "critical",
+   "risk": "api/sd-data.js: bld_draws was gated on TWO of its four actions. `wip` and `release_retainage` required a sairnbuild session and owner/office; `read` and `write` ON THE SAME TABLE fell through to the generic BLD_RESOURCES loop and took the licence key alone. A caller with the key and no session could read every draw's retainage figures, and could POST action:'write' with a `data` blob of its own choosing -- a merge-duplicates upsert that REPLACES `data` entirely, so one request could author a release that never happened, inflate one, or set `retainage_released` back to zero. That defeated bld_release_retainage_atomic's CAS, the no-reduce rule in api/_lib/wip-accounting.js and the append-only audit trail at once, with no employee recorded against any of it. Routed to this session as hover finding seq664; the originating hover INSTANCE is not recorded in any source a build agent may read, so the method here is this session's own read of both branches at HEAD rather than an attribution it could not verify.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "b384a513f99e",
+   "date": "2026-10-12",
+   "detected_by": "hover-audit",
+   "prior_severity": "high",
+   "risk": "api/sd-data.js sen_caregivers/read returned the whole data blob, every row on the licence, to ANY authenticated sairnsenior role -- including each caregiver's background-check date, a state-issued caregiver ID and free-text HR notes about a colleague. The branch's stated justification was 'Employment/certification data, not client PHI -- lighter gate than sen_clients': true, and the wrong comparison. It is EMPLOYEE PII and three of its fields serve no scheduling purpose. Fixed at FIELD level rather than by a flat role refusal, which would have broken the roster the lighter gate exists to serve (senIsScheduler reads it agency-wide, certDaysUntil computes from cpr_expiry, visits join on employee_id). bgcheck_date/state_caregiver_id/notes now go to owner/billing only, under a NEW constant rather than a reused one, with the round-trip-wipe safety driven by an arm; sairnsenior.html renders an explicit Restricted badge so a redacted compliance column cannot read as 'no check on file'.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "fa6a390edbc3",
+   "date": "2026-10-12",
+   "detected_by": "hover-audit",
+   "prior_severity": "high",
+   "risk": "SAIRNlaw had exactly ONE role check across its whole data surface -- LAW_RECONCILE_ROLES, owner-only, on law_trust_reconcile -- and the other 19 law_ resources were session-gated with no role distinction, so any signed-in role could read and write law_picases (settlement figures, Tier A/A), law_pimedical (health information held by a law firm, Tier A/A) and law_bankstatements (the bank side of an IOLTA three-way reconciliation) exactly as freely as a managing attorney. Fixed with ONE data table and ONE function in api/_lib/law-roles.js, called from the TWO gates that already existed rather than nineteen per-resource ifs -- the defect being that a role check at one call site and not the others is indistinguishable from no policy when read one branch at a time. Three verdicts, not two: NOT_LAW keeps the law table from approving or refusing another app's resource in a block 70 action-pairs pass through. Trust resources are hard-locked in a SEPARATE structure consulted after the table agrees, so the lock survives a table edit or an override layer. Fails closed on an unlisted law_ resource, an undeclared role, a missing role and any verb that is not read. THE POLICY IS MICHAEL'S AND IS TRANSCRIBED, NOT DERIVED: api/sd-data.js declined to invent it twice in writing and the auditor routed without prescribing a fix.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "d7773533f371",
+   "date": "2026-10-13",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "batch b18: SQL-SYNC finding, not a security gap. Michael's live-DB query (relayed via chat, this role has no Supabase credential) confirms rf_schedule's 3 new columns (status_changed_at, status_changed_by, status_changed_by_role) exist in the LIVE database. Direct repo read, this batch: grep -rn 'status_changed_by|status_changed_role|status_changed_at|status_changed_by_role' sql/ returns ZERO hits anywhere in sql/ -- no committed DDL file declares any of the 3 columns. This settles a b17 H1/H2 disagreement: H1's routing doc said 'confirmed present in sql/', this role's grep found none; both were partially right about different layers -- the columns are real and live, the repo's own tracked schema just never got the matching migration committed back. Independently found by H1 the same batch (logged H1 seq1348, same shape as H1's seq1345/1347 sairncode/stonedesk DDL-sync findings). Risk: a fresh provision from the repo's own sql/ files would NOT create these columns -- a real repo-vs-production sync gap, separate from whether the live run itself succeeded. Routed to hank: add the 3-column migration to the appropriate rf_schedule DDL file in sql/.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "8447c3695404",
+   "date": "2026-10-14",
+   "detected_by": "hover-audit",
+   "prior_severity": "high",
+   "risk": "sairnlegacy.html bookingConflict(): the only control preventing a facility double-booking read THIS DEVICE'S localStorage, and api/sd-data.js's leg_bookings write branch did no overlap check at all. Two staff on two devices, each holding a calendar copy taken before the other's booking synced, both pass their own check and both writes are ACCEPTED, because a new booking carries a new booking_id and nothing collides. What is double-booked is a chapel, a removal van, or -- because leg_facilities seeds a Staff row with a named funeral director and saveBooking() books Staff rows exactly like rooms -- a named employee, against a specific death case and a time window. The same race leg_merch_units' reservation lock was built to close in August and which was never applied here.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "d99b47f9683e",
+   "date": "2026-10-14",
+   "detected_by": "hover-audit",
+   "prior_severity": "moderate",
+   "risk": "api/sd-data.js: five SAIRNscape resources -- scp_jobs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features -- were absent from SD_SESSION_GATED and from every branch-level session check, so read and write on all ten resource/action pairs were authorised by the LICENCE KEY ALONE. The key is shipped to the browser, so \"licence-only\" means readable by anyone who can open the app: a landscaping company's job scopes, controller inventory and irrigation run times. No name, contact detail, money or regulated determination is on the five rows, which is why this is moderate and not high; each customer_id is a foreign key whose identity lives on `customers`, gated since 2026-10-05.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnscape) has this defect on record",
+   "cite": "22270df7c3de",
+   "date": "2026-09-11",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "scpData's terminal catch was catch(e){return null;} -- it discarded the error entirely, so every network failure on the app's only server path was unreported",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnscape) has this defect on record",
+   "cite": "4f674484544d",
+   "date": "2026-09-18",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "scpSendDesignToQuote disabled the send button and relabelled it 'Sent to Quoting (Q-...)' UNCONDITIONALLY, three lines before the branch that decided whether either write had landed -- so a quote that never reached the server showed the same disabled button and the same 'Sent to Quoting' label as one that did, while the toast beside it said to try again with a connection. SAIRNscape also had no retry path at all, and scpData discarded the HTTP status so a 4xx refusal and an unreachable server were indistinguishable to every caller",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnscape) has this defect on record",
+   "cite": "9cfc8eec7bf3",
+   "date": "2026-09-18",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "the outbound queue's disclosure banner claimed coverage at RESOURCE level -- 'Queued writes cover scp_quotes, scp_designs only' -- while coverage is per CALL SITE: scp_quotes is written at four sites and exactly one is queued. Two of the three unqueued ones are the same user-facing action, 'send this to Quoting', reached from the irrigation and water-feature panels, so the sentence told a user those were protected when a failed save there leaves the quote on that device alone. The suite's guard for this asserted the banner contained the exact claim string, so it confirmed the sentence was present and never asked whether it was true",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnscape) has this defect on record",
+   "cite": "b09674f65e9d",
+   "date": "2026-09-21",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "sairnscape.html scpData: the no-licence guard at :2077 returned null WITHOUT touching scpLastErr, so after any real 4xx on the same resource a later call with no licence INHERITED that status and scpWriteRefused() answered true for a call the server never saw. scpSendDesignToQuote branches on exactly that predicate, so the row was NOT QUEUED -- the whole retry path skipped -- the toast quoted an unrelated earlier row's reason as a server judgement, and a row already in the queue was marked 'refused' and never retried again. Three triggers, none contrived: scpLicenceGuard()'s wipe clears scp_lic, localStorage.getItem can throw and scpLd returns the default null, and a corrupt scp_lic fails JSON.parse. The code's own comment above scpWriteRefused names 'no licence' as a case that must NOT be a refusal.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnscape) has this defect on record",
+   "cite": "b09674f65e9d",
+   "date": "2026-09-21",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "sairnscape.html: #scp-dw-send-quote-btn is ONE static element (:1530) with an inline onclick, shared by every design walk and never recreated, so assigning .onclick replaces that handler for the lifetime of the page. The failed-send branch rebound it to scpFlushAndReport and nothing ever put it back, while scpOpenDesignModal restored only .disabled and .textContent and scpApproveDesign re-enabled it with a bare .disabled=false. After ANY failed send, every later approved-and-unsent design therefore opened with the correct label 'Send Approved Design to Quoting', correctly enabled, and pressing it ran the QUEUE FLUSH: no quote minted for that design, no error shown, and a toast reporting on a different record entirely. Same control-contradicts-its-label class as the defect 4f674484 was written to remove, one call further out and SILENT rather than contradictory. Invisible to an inspector too -- after el.onclick=g the markup and getAttribute('onclick') both still read the original call.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnscape) has this defect on record",
+   "cite": "53168bb506f0",
+   "date": "2026-10-06",
+   "detected_by": "code-review",
+   "prior_severity": "low",
+   "risk": "sairnscape.html's pricing section heading read 'Simple. Honest. No per-user games.' over 'Flat monthly fee. Unlimited users. Cancel anytime.' -- a blanket claim about the pricing model -- while the Starter card thirteen lines below it reads 'Up to 3 users'. Professional and Business genuinely are unlimited; Starter is not, and Starter is the card a first-time reader prices against, so the claim has already influenced the decision by the time the contradiction arrives. Same class as the 'QuickBooks integration' line removed from this same file on 2026-09-02: a purchase-influencing claim the product withdraws. Fixed by saying what is true -- flat fee, never billed per user, unlimited users on Professional and Business, Starter covers 3 -- rather than by deleting the sentence, because the fee really is flat and there really is no per-seat billing.",
+   "source": "defect-register"
+  },
+  {
+   "action": "assert the anchor matches exactly once AND read what it matched before acting",
+   "basis": "section 1.3 applies -- An anchor that still matches is not an anchor that still points at the right thing",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 1.3",
+   "risk": "an exact-string anchor verifies UNIQUENESS, never that it still points at the right code",
+   "source": "process-rules"
+  },
+  {
+   "action": "report what was NOT looked at; a scan that covered 31% and says \"clean\" is a wrong answer",
+   "basis": "section 1.7 applies -- A sampling window silently exempts what it does not reach",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 1.7",
+   "risk": "a fixed window or limit silently exempts whatever it does not reach",
+   "source": "process-rules"
   }
  ],
  "target": "api/sd-data.js"

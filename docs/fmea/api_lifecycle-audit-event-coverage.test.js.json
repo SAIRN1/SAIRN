@@ -1,0 +1,334 @@
+{
+ "app_matched": "sairnlaw",
+ "considered": {
+  "defect_records": 548,
+  "detectors_fired": [
+   "1.3"
+  ],
+  "detectors_run": 12,
+  "matched_this_file": 1
+ },
+ "drafted_on": "2026-10-14",
+ "exists": true,
+ "no_detector_yet": [
+  "1.6",
+  "2.2",
+  "3.1",
+  "3.2",
+  "3.3",
+  "4.1",
+  "4.2",
+  "4.3",
+  "5"
+ ],
+ "risks": [
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "650e02282573",
+   "date": "2026-10-14",
+   "detected_by": "hover-audit",
+   "prior_severity": "high",
+   "risk": "sql/sairnlaw_audit_log_schema.sql's event_type CHECK rejected all three events the shared credential-lifecycle engine emits (credential_deactivated, credential_reactivated, credential_change_refused), so every SAIRNlaw credential deactivation wrote NO audit row. The INSERT failed with 23514, writeAuditLog is non-fatal and returned false, api/law-auth.js carried on and the caller got its 200 -- so the log's EMPTINESS read as \"nothing happened\", and an audit log is consulted precisely when somebody asks who removed an account. Measured across the population rather than fixed where it was reported: eleven api/*-auth.js files call lifecycle.setActive and SAIRNlaw was the only one whose CHECK rejected these three.",
+   "rules": [
+    "1.5"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "41b423b209c3",
+   "date": "2026-08-08",
+   "detected_by": "live-verification",
+   "prior_severity": "high",
+   "risk": "api/law-auth.js mfa_setup wrote mfa_enabled:false alongside a newly generated secret, which is correct for first-time enrolment and DISABLED MFA when called on an account that already had it on -- a security control turned off by a setup call, with nothing said. HIGH under the defined vocabulary: a control that does not refuse what it exists to refuse, silent, and recoverable once noticed",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "0e2bc432f578",
+   "date": "2026-09-14",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "sairnlaw trust-accounting reconciliation explainer (explainReconciliation) displayed raw model prose about CLIENT MONEY with no citation rule in its system prompt and no citation verification on its output, so a fabricated professional-conduct citation in citable-reference format could reach a bookkeeper unmarked. LAW_CITATION_RULE appended.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "0e2bc432f578",
+   "date": "2026-09-14",
+   "detected_by": "static-checker",
+   "prior_severity": "moderate",
+   "risk": "sairnlaw argument-decomposition step (mtDecompose) had NO citation rule and its renderer mtRenderPoints displayed the model's own claim text with no citation check, beside Anchored badges that cover source_span only -- so a citation-shaped string reached the screen unbadged on a card that looked verified. New MT_CITATION_RULE permits echoing only a citation verbatim in the user's own text, plus an on-screen ILLUSTRATIVE ONLY disclaimer naming each unverified citation.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "cac3edd5c19f",
+   "date": "2026-09-15",
+   "detected_by": "static-checker",
+   "prior_severity": "critical",
+   "risk": "law_check_and_insert_disbursement holds an advisory lock while summing the trust balance and then inserting, with nothing requiring READ COMMITTED. pg_advisory_xact_lock serialises ACQUISITION and not the SNAPSHOT, so under REPEATABLE READ two concurrent disbursements against one client each sum a balance from before the other committed, both pass the sufficiency check, and both insert -- an overdrawn IOLTA client trust ledger with the lock held correctly throughout. Not exploitable on the current deployment, which uses the default isolation; one ALTER ROLE statement away, and that statement reads as a hardening change.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "0c26bcd13eda",
+   "date": "2026-09-16",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "api/sd-data-sairnlaw-resources.test.js reported law_trust_reconcile as \"registered with no handler\" -- a FALSE FINDING about a resource with a real branch -- because its BESPOKE skip-list was a hardcoded four and a fifth bespoke branch shipped; and its PHASE 1 arm, which carries its own instruction to be INVERTED when a resource is gated, was not inverted when law_trusttx was, so the suite ran 18/20 on origin/main with both red arms being the suite's own fault",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "0dd8b2fc4d01",
+   "date": "2026-09-16",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "api/_lib/sairnlaw-trusttx-collision.test.js was RED on a clean tree, 35/36, on an arm asserting that the TRUSTTX_ID_COLLISION message does not name the other client. The SQL is correct -- sql/sairnlaw_trusttx_functions.sql:187 interpolates p_trusttx_id only. The arm read everything after the FIRST `raise exception` anywhere in the function and asserted v_other_client was absent from it; the function raises at line 149, before the collision branch, so the legitimate assignment `select client_id into v_other_client` at line 179 fell inside the slice. A Tier A arm alleging a client-confidentiality leak that does not exist, on client trust money. Found by running the suite while tracing it, not by reading it.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "479aba75430b",
+   "date": "2026-09-16",
+   "detected_by": "mutation-testing",
+   "prior_severity": "moderate",
+   "risk": "api/_lib/law-trust-reconcile.js's allocation_vs_ledger leg -- the one that reconciles every client's balance against the ledger-wide total on attorney IOLTA trust money -- CANNOT DISAGREE. Both traversals skip on identical predicates (isVoided, cents() returning null), so the two sums are the same arithmetic over the same survivors; driven with five input shapes it returns agrees:true every time, while its own comment claims it can genuinely fail. It also counted toward legs_compared, so a reconciliation could report comparing something when the only leg compared was arithmetic with itself",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "4f757c3fc5c2",
+   "date": "2026-09-16",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "the repair for the `!== 401` arm in tests/app_session_isolation.js SHIPPED WITH A FRESH INSTANCE OF THE SAME CLASS: the expectedApp arm added with the fix asserted `right.code !== 403` for \"a correctly signed-in SAIRNlaw session REACHES law_trusttx\" -- a negation of one refusal code, satisfied by a 401, a 500 or a harness fault, written 38 lines below the fix's own comment saying never to do it. Two older arms in the same file carried the shape as well",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "7884c4a571ed",
+   "date": "2026-09-16",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "law_trust_reconcile's role allow-list named `admin`, a role ROLES_BY_APP.sairnlaw cannot issue, so the gate was owner-only in practice while the code, the 403 and the UI all said management",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "798543873912",
+   "date": "2026-09-16",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "tests/app_session_isolation.js asserted `out.code !== 401` for \"reachable with the licence alone\". law_trusttx was gated on 2026-09-16 and SD_SESSION_GATED refuses with 403, so the arm stayed GREEN and printed \"law_trusttx is reachable with the LICENCE ALONE -- no session -- and answers 403\" -- the status code disproving the sentence it was asserting, inside that sentence. A control over attorney IOLTA trust money reported a gate it could no longer see. Separately the harness answered the employee-auth lookup with [], so credentialStillActive refused every correct caller and emptying SD_GATE_APP was silent too",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "93da0922b7d2",
+   "date": "2026-09-16",
+   "detected_by": "code-review",
+   "prior_severity": "low",
+   "risk": "tests/sairnlaw_billing_codes.js was RED on origin/main for roughly 26 hours -- from 4eaa3f05 on 2026-09-15 18:26 to the repair on 2026-09-16 20:19. The cause is not a defect in the app: that commit registered a TWENTIETH law_* resource, law_trust_reconcile, and the suite's exact-count arm fired as a count pin is supposed to. What failed is that nobody cleared it, and a suite that is red for a non-defect reason is one people learn to skip -- which this repo already has the receipt for. Found only because a negative control cannot be built on a red suite: the clean-copy control arm would fail and every mutation would 'fail' for the wrong reason.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "c98b5d674c76",
+   "date": "2026-09-16",
+   "detected_by": "independent-review",
+   "prior_severity": "critical",
+   "risk": "law_trusttx read and write in api/sd-data.js dispatched on licHash alone -- NO session verification on either branch, on an attorney IOLTA client trust ledger. The licence key is shipped to the browser, so it was the whole authorisation. Distinct from the deactivated-token gap closed the same day: that was session STATE going stale, this was no session check existing. Survived three hover-auditor escalations over ten days because law_trust_reconcile reads the same table forty lines below and DOES verify a session and a role.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "31574fceecdf",
+   "date": "2026-09-17",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "MT_CRITIQUE_CITATION_RULE told the model 'If you cite a case, give its real reporter citation' -- an instruction to GENERATE a citable-format string on a legal surface, licensed by a post-hoc badge rather than by the citation being retrieved; a string badged 'Not found -- do not rely on this' is a fabricated citation that reached a lawyer's screen",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "e93b91abf000",
+   "date": "2026-09-17",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "three SAIRNlaw work-product surfaces -- the assistant, the AI draft and the document review -- rendered model prose with no citation check, while the two mock-trial practice surfaces extracted and verified every citation; the AI draft is SAVED as a matter document, so a fabricated citation is persisted into the client file",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "5e0b531f2776",
+   "date": "2026-09-18",
+   "detected_by": "independent-review",
+   "prior_severity": "critical",
+   "risk": "api/_lib/law-trust-reconcile.js excluded an UNDATED transaction from both sides of the statement-date split, so asOf + afterStatement silently stopped equalling the ledger and the reconciliation returned status AGREES with client trust money in no comparison at all -- the only cue an undated_rows count nested inside a leg reporting agrees:true. Separately it had no cleared/outstanding concept, so an uncleared cheque dated before the statement reported DISAGREES while the books were correct. And dayOf() validated the SHAPE of a date rather than the date, accepting 2026-02-31 as a statement date or a clearance",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "f090879a88bb",
+   "date": "2026-09-18",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "api/sd-data.js law_timeentries write branch: a time entry was upserted with whatever billing_code arrived, including an empty string or no field at all. sairnlaw.html's saveTime() writes the select value unchecked, and billing_code appeared in NO server validator -- zero hits across api/sd-data.js and api/_lib/*.js -- so the entire law_ write branch validated one thing for twenty-odd resources: that a payload has an id. A codeless billable hour renders as a normal billable hour with an empty column, on the record saveInvoice() computes an invoice total from. The app file described this defect in its own comment above LAW_BILLING_CODES; the 2026-09-09 fix made the code list a constant so the select cannot render empty, which closed the CAUSE and left the gate unbuilt. Fixed by api/_lib/law-timeentry.js, presence and shape only, wired into the write branch before the upsert.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "2ee9c8191261",
+   "date": "2026-09-21",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "sairnlaw.html lawSetClearance() captured the trust ledger array and the record's previous clearance values BEFORE awaiting the server, then wrote both back if the write failed. trustTransactions() is ld(), which JSON.parses localStorage on every call, so the captured array was genuinely stale: a failed single-row write erased everything that landed during the round trip -- a hydration, another save -- not the row but the whole array. And the previous values were restored unconditionally, so a clearance another device recorded mid-flight was overwritten by this device's pre-action value, putting an item the bank HAS taken back into the outstanding set and moving the expected bank balance by its amount. law_trusttx is attorney client trust money. confirmVoid() thirty lines above does all three things this did not -- re-read after the await, stamp its own change, refuse an already-in-target-state press -- and says in its own comment that re-reading is necessary and not sufficient. Found in the independent Tier A review of the 2026-09-18 outstanding-item work; the author's own negative control was green because every fixture had one device in play.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "6b777f006d18",
+   "date": "2026-09-21",
+   "detected_by": "independent-review",
+   "prior_severity": "critical",
+   "risk": "sairnlaw.html lawSetClearance() reported Marked cleared over a write the database never performed, for every DISBURSEMENT. api/sd-data.js routes a non-voided Disbursement write to rpc/law_check_and_insert_disbursement; that RPC takes nine named parameters, none of them a clearance field, builds data with jsonb_build_object over ten fixed keys, and on an existing id takes its retry-idempotency branch and returns the stored row HAVING WRITTEN NOTHING. The handler answered 200 ok:true carrying that row, sdnData returned a truthy value, and the client toasted success. An uncleared CHEQUE is a Disbursement -- the commonest outstanding item in a trust reconciliation and the exact case the 2026-09-18 outstanding-item work was built for -- while DEPOSITS take the plain upsert and store the same field, so the feature appeared to work. With hydration now server-wins the local optimistic copy is erased at the next load, so the firm loses the record and the bank leg silently returns to disagreeing on correct books. Driven against the real handler before the change: the request carries no clearance parameter, and the caller is told it was saved. Fixed as a REFUSAL rather than a store -- the handler compares asked-for against came-back and answers 409 CLEARANCE_NOT_STORED -- which also retires itself if the RPC is ever taught to carry the fields. Making a cheque clearable needs an RPC signature change and a migration and is recorded as open.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "8ed8b14d46c8",
+   "date": "2026-09-21",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "api/_lib/law-timeentry.js validated a time entry's UTBMS billing_code as billing_code.trim() while api/sd-data.js stored the UNTRIMMED string via data: payload, so the value judged and the value written were different values. '  L100  ' was accepted on the merits of 'L100' and stored with its padding, and the invoice column prints the stored one. IT IS NOT ONLY COSMETIC: MAX_BILLING_CODE_CHARS is checked against the trimmed value, so 30 spaces followed by 'L100' is 34 characters, judged as 4, accepted, and 34 characters then landed in a column whose gate refuses 33 -- the gate was answering a question about a value nobody stored. The handler's success echo had the same seam on its fallback branch (rows[0].data when PostgREST returns a representation, the request row otherwise), so a caller re-rendering from the response could show a code the record does not carry. Fixed by normalizedTimeEntry(), scoped to billing_code alone and returning the record unchanged when there is nothing to trim.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "b73fb28af0dc",
+   "date": "2026-09-21",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "sairnlaw.html saveInvoice() marked every time entry on a new invoice invoiced=true and wrote the list back with st('law_timeentries', teList) -- localStorage -- while making exactly ONE network write, the invoice itself. The flag that says these hours have been billed never reached the server, so its copy of every billed row still read invoiced:false. Because lawHydrateAll() merges additively and never overwrites a locally-held id, a workstation with no copy yet hydrates those hours FRESH as unbilled, rInvoiceEntryPicker() filters on billable && !invoiced and offers them again, and nothing says they were already sent to the client: the same hours can be invoiced twice. Fixed by writing each touched entry back whole (sd-data.js upserts data:payload wholesale, so a patch would lose hours, rate and billing_code) and by NAMING a write that did not land -- a legacy row with no billing_code is refused by api/_lib/law-timeentry.js, so this can genuinely fail on real data. NOT closed: a device that already holds the entries keeps its stale invoiced:false.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "e4fc9aaad205",
+   "date": "2026-09-21",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "sairnlaw.html saveTime() wrote rate:Number($('ttrate').value)||0, so a blank, unparseable or missing hourly rate became ZERO with no complaint at either end -- `rate` appeared in no validator anywhere in api/. saveInvoice() computes the invoice total as hours x rate, so a billable hour stored at rate 0 adds $0.00 to the bill while rendering in the billing table as an ordinary billable hour: the work is on the record and the fee is not, and nothing downstream reports it. Same shape as the codeless-hour defect one field over and arguably worse, since a codeless hour at least shows '--' in the code column. Fixed by refusing a BILLABLE entry whose rate is not a finite number above zero, in api/_lib/law-timeentry.js and in the browser path; a no-charge entry is left alone because rate 0 is what no-charge MEANS, and an absent `billable` field is read as no-charge exactly as every reader in the app reads it. THE SAME COMMIT also removed a second, non-behavioural defect recorded on its own open-work row: the module justified itself -- in its header, its REQUIREMENT line and the user-facing refusal NO_CODE_MESSAGE -- on a LEDES export that does not exist in this app. NOT closed: `hours` is still unchecked at the server and hours 0 produces the identical $0.00 line.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "4be7aa8978ff",
+   "date": "2026-09-22",
+   "detected_by": "code-review",
+   "prior_severity": "critical",
+   "risk": "sairnlaw.html trust panel rendered 'Reconciled -- all three balances match' on IOLTA client trust money from a verdict that could not fail. reconcileTrust() computed ledgerVsClient by comparing a ledger total against a per-client sum that PARTITIONS THE SAME ARRAY -- including the rows with no client_id, which form their own group and are summed like any other -- so leg one was a tautology disturbed only by float summation order. ledgerVsBank was null until a bank statement was entered and matches read null as agreement, so a firm that had never entered a statement saw a green THREE-WAY verdict with no third leg and no falsifiable second one. The dashboard suppressed its Trust Alert on the same value, reporting 'Nothing needs attention' precisely when nothing had been checked. api/_lib/law-trust-reconcile.js -- the correct reconciler, written to replace exactly this function and naming it by line number -- existed and was never called: the only occurrence of 'law_trust_reconcile' in the app was a code comment.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "b3797733c152",
+   "date": "2026-09-22",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "api/_lib/deadline-engine.js read Number(x.count.value) at four sites with no check. That coercion maps a real zero, an empty string, null and an empty array all to 0, and zero is a LEGITIMATE count here (Md. Rule 2-311(b) has a zero-count limb), so an absent or malformed period count produced ok:true and a legal deadline ON THE TRIGGER DATE with a detail line reading 'counted 0 calendar days'. A non-numeric count gave NaN, addDays returned an Invalid Date, and that propagated as a date-shaped value nothing downstream questioned. NOT OBSERVED IN LIVE RULE DATA -- the reachability is through a malformed or incomplete rule definition, and no such rule is in the repo today.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "ce835a7e57b3",
+   "date": "2026-09-22",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "api/sd-data.js authorised law_clients, law_matters and law_deadlines on the LICENCE KEY ALONE -- no employee session at all. A licence key is shipped to the browser and readable by anyone who can open the app, so the effective authorisation was 'opened the app'. law_matters names the client and the matter; law_clients is the client list. MEASURED BEFORE THE FIX rather than inferred: all SIX pairs (three resources by read and write) answered 200 with no token, against a control where law_invoices/read answered 401 -- so 'open' was established against a gated sibling rather than assumed. THIS WAS A KNOWN, DOCUMENTED RESIDUAL, NOT A DISCOVERY, and that is the honest framing: the rollout comment beside the LAW_RESOURCES table named these three as deliberately deferred because Vercel ships the page and the endpoint together, so flipping them mid-day would fail a staff member with the app already open. The fifteen extended resources were the canary and the written trigger was 'quiet for a full working day'. What made it actionable now is that the canary has been quiet six days AND the client half was confirmed rather than assumed -- sairnlaw.html:1509 sdnData() sets X-SD-Auth on every data call whenever a token exists, not conditionally per resource. FIXED with the same mechanism law_trusttx was flipped with on 2026-09-16: three entries in SD_SESSION_GATED plus three in SD_GATE_APP, six lines. All six pairs now answer 403 FORBIDDEN. A SESSION gate and not a ROLE gate, deliberately -- owner, attorney and paralegal all legitimately work clients, matters and deadlines and all three are driven green. DISCLOSED RATHER THAN TIDIED: the endpoint now answers two codes for one condition, 401 NO_SESSION from the inline gate for the fifteen and 403 FORBIDDEN from the shared gate for these four, widening a pre-existing split from one resource to four; unifying is a client-visible contract change and is recorded rather than decided.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "25197855d190",
+   "date": "2026-09-23",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "SAIRNlaw dashboard was SILENT when the trust reconciliation returned 403, so for a non-owner an empty trust row could mean either 'the reconciliation ran and agreed' or 'this control is not yours' and nothing on the dashboard distinguished them. The Trust panel said the honest sentence; the dashboard is the surface people scan and the panel is the one opened deliberately, so a role that never opened the Trust tab never met it.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "5e7f9ebd6cb7",
+   "date": "2026-09-24",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "The comment block immediately above the law_clients branch in api/sd-data.js asserted three facts and all three had gone false, two of them about authentication: \"No verifySessionToken/role check on any of these three resources\" (law_clients, law_matters and law_deadlines entered SD_SESSION_GATED for read and write on 2026-09-22, with SD_GATE_APP pinning each to 'sairnlaw'), \"sdnData() never sends a session token to this endpoint\" (sairnlaw.html sets X-SD-Auth on every data call whenever a token exists), and \"these three read routes are live but currently unreachable from the client -- zero sdnData('read',...) calls anywhere\" (law_clients is a member of LAW_SYNC_RESOURCES and lawHydrateAll reads every member). The two security claims are stale in the direction that reads as an OPEN HOLE: the session check is absent from this branch because it runs centrally, so the branch genuinely looks ungated from here and the comment confirms the wrong reading rather than correcting it. It cost real work -- the cross-tenant review obligation opened 2026-09-23T09:54Z built its point (3) on claim (1) and asked a reviewer to confirm a phase-2 gap that had been closed two days earlier.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "0030d6b49804",
+   "date": "2026-09-27",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "api/legal-deadlines.js add_rule and add_holidays merged the caller's own object into the stored row with Object.assign({}, body.rule, { version, authority }) -- so every field the three-key override did not name was stored VERBATIM. authority.verified_by itself was safe, because it is overwritten last inside the nested assign, but any other identity-shaped key a caller invented was not: sending `recorded_by: \"E-SOMEBODY-ELSE\"` on a rule wrote that name into the provenance record of a rule that decides filing deadlines, and the same held for created_by, updated_by, author and authored_by. The stored row is what api/reference-fingerprint.js and the platform divergence query read, and what a reader would consult to find out who put a rule in. So a caller could attribute their own authoring to another employee on the one table where provenance is the point. Fixed by stripping an identity-key class from the caller's object at both levels the two call sites hand it -- the rule or calendar object and its nested authority object -- and re-deriving verified_by from the verified session afterwards. STRIPPED RATHER THAN VALIDATED because a validator would have to anticipate every identity spelling a caller might invent, while removing the class and re-deriving the one field the server owns cannot fail the same way. Found by writing arm E2 of api/legal-deadlines-auth.test.js, which failed on recorded_by before the fix.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "e7afcc877ee2",
+   "date": "2026-09-27",
+   "detected_by": "code-review",
+   "prior_severity": "critical",
+   "risk": "api/legal-deadlines.js `add_rule` and `add_holidays` upserted into law_deadline_rules and law_holidays with NO 401 and NO role check. The caller was resolved at :692 by verifySessionToken and used for exactly ONE purpose -- stamping authority.verified_by -- and the file states that plainly in its own comment: \"A bearer-key load stamps null here and a session load stamps an employee id.\" So any holder of a valid SAIRNlaw licence key, with no employee session at all, could author a deadline rule or a holiday calendar; and because both writes are UPSERTS keyed on rule_id and jurisdiction:year, the same request could OVERWRITE an existing one. The stored row is what every computed answer date for that jurisdiction reads from, for every user on that licence, so the blast radius is not one request but every future computation -- and api/_lib/deadline-engine.js's own header says \"a wrong deadline here is malpractice exposure, not a bug\". THE GAP WAS INVISIBLE FROM THE CODE THAT HAS THE CHECK: audit_read, the four AI chain-of-custody actions and every credential path gate on AI_COC_REVIEW_ROLES or PROVISIONING_ROLES, so reading the file top to bottom shows gate after gate and then two branches that resolve a caller and never test it. Fixed by gating both actions on a new purpose-named api/law-auth.js export RULE_AUTHORING_ROLES = {owner, attorney} -- deliberately NOT the existing AI_COC_REVIEW_ROLES, which has the same membership today and is named for a different decision. 401 for no session and 403 for a real session without authority are distinguished, and the 403 is audited. compute, rules_status and rules_fingerprint are untouched. tools/load_deadline_seed.py sent the bearer key ALONE, so the gate would have broken seeding on all 48 jurisdictions: it now signs in and refuses UP FRONT with COULD NOT RUN for a missing credential, a failed sign-in or a role that may not author, rather than emitting one 401 per rule.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "f11b03ed0cfc",
+   "date": "2026-09-27",
+   "detected_by": "static-checker",
+   "prior_severity": "critical",
+   "risk": "api/_lib/deadline-engine.js applyRetrigger(): one filter, `!toUTC(e.disposition_date)`, decided whether a qualifying post-judgment motion was still pending. toUTC returns null for anything that is not strictly YYYY-MM-DD, so a caller sending `12/31/2026`, `Dec 31 2026`, `2026-13-45` or a misspelled key was reported as having an UNDISPOSED motion -- and api/legal-deadlines.js maps that MOTION_PENDING refusal to 422, so the reply read as a considered legal answer rather than as a parse failure: \"the period runs from the disposition of the last such motion, so it has not started yet\". On a motion that had been disposed. THE DIRECTION THAT LOSES THE APPEAL: a litigator told the appeal clock has not begun, in a message specific enough to be believed, when it began at the disposition weeks earlier. FRAP 4(a)(4)(A) and its analogues are the rules in question and all three are SEEDED and live (two US federal rules, Ohio App.R. 4(B)(2), Massachusetts Rule 12(a)(2)). Fixed to three states keyed on WHAT THE CALLER SENT rather than on what it parsed to: absent, null or blank is genuinely PENDING and unchanged; a value present and unreadable is a new BAD_DISPOSITION_DATE naming the offending value and the one accepted format and saying in the message that it is not the same answer as pending; a readable date governs. A non-object element is also refused -- retrigger_events is caller-supplied, so `[\"rule_50b_motion\"]` previously read as a pending motion. BAD_DISPOSITION_DATE is deliberately NOT in the 422 list and is NAMED on the 400 side so the mapping is a recorded decision. SECOND DEFECT IN THE SAME FUNCTION, found by the suite written for the first: toUTC accepted `2026-02-30`, which passes the shape regex and which `new Date` does not reject -- it ROLLS OVER to 2026-03-02 and isNaN is false. Every date this engine takes (trigger dates, holiday rows, dispositions) accepted an impossible day and computed from a different one with no error. toUTC now calls api/_lib/calendar-date.js's isCalendarDate, which exists for exactly this, rather than growing an eighth hand-rolled date guard.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "16245537cc56",
+   "date": "2026-10-12",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "batch b18: Michael ran the live pg_get_constraintdef query this role could not run itself (no Supabase credential), relayed via chat. Result: sairnlaw_audit_log's live CHECK constraint LACKS credential_deactivated, credential_reactivated and credential_change_refused -- three values api/_lib/employee-lifecycle.js:202,214,267,301 emits via doAudit() for every app (including sairnlaw, through api/law-auth.js) using the shared credential-lifecycle module. tools/audit_event_type_check.py MISSED these 3 independently -- it only reported 6 other rejected values (ai_interaction, ai_rejected, ai_reviewed, ai_used_in_filing, deadline_engine, legal_reference_lookup) in b16/b17/b18 live re-runs, never these 3, because its app-to-table/helper resolution does not follow employee-lifecycle.js's doAudit() the way it follows auditPinSetup() -- the tool's own stated limit ('ONE HELPER IS FOLLOWED AND THE REST ARE NOT') materializing as a real miss, not a false accusation. Independently cross-confirmed by H1 (hover)'s own live-DB run the same batch, logged at H1 seq1344. Real total for sairnlaw_audit_log is now 9 rejected values, not 6. HIGH: a credential deactivation/reactivation/refusal for a SAIRNlaw employee silently fails to record (writeAuditLog is non-fatal), the exact seq958-shaped gap this whole audit-log saga traces back to, now confirmed for a third app.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "9bc99c05731b",
+   "date": "2026-10-12",
+   "detected_by": "hover-audit",
+   "prior_severity": "moderate",
+   "risk": "api/legal-citator.js feedback recorded no employee against a legal-citation treatment confirm or correction, at the application layer AND in sql/sairnlaw_citator_schema.sql, while that schema's own comment three lines above cl_feedback_log said 'individual feedback stays attributable'. logRec at :380 was built in the same function as auditLookup() at :185 from the same caller resolved at :184 and simply omitted it; the table had no employee column of any kind. Every row was attributable to a FIRM and to nobody, so an attorney confirming a classification other attorneys rely on was unrecoverable -- never captured rather than wrong. Fixed at both layers with NULLABLE columns on purpose, because the session token on this endpoint is optional by design and a row can legitimately have no person on it; inventing the owner or the licence would have read as evidence. The alter-table half is handled with a 503 NOT_PROVISIONED naming the SQL file, because create-table-if-not-exists does nothing to a live table and the old handler would have reported PGRST204 as 'try again'.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnlaw) has this defect on record",
+   "cite": "fa6a390edbc3",
+   "date": "2026-10-12",
+   "detected_by": "hover-audit",
+   "prior_severity": "high",
+   "risk": "SAIRNlaw had exactly ONE role check across its whole data surface -- LAW_RECONCILE_ROLES, owner-only, on law_trust_reconcile -- and the other 19 law_ resources were session-gated with no role distinction, so any signed-in role could read and write law_picases (settlement figures, Tier A/A), law_pimedical (health information held by a law firm, Tier A/A) and law_bankstatements (the bank side of an IOLTA three-way reconciliation) exactly as freely as a managing attorney. Fixed with ONE data table and ONE function in api/_lib/law-roles.js, called from the TWO gates that already existed rather than nineteen per-resource ifs -- the defect being that a role check at one call site and not the others is indistinguishable from no policy when read one branch at a time. Three verdicts, not two: NOT_LAW keeps the law table from approving or refusing another app's resource in a block 70 action-pairs pass through. Trust resources are hard-locked in a SEPARATE structure consulted after the table agrees, so the lock survives a table edit or an override layer. Fails closed on an unlisted law_ resource, an undeclared role, a missing role and any verb that is not read. THE POLICY IS MICHAEL'S AND IS TRANSCRIBED, NOT DERIVED: api/sd-data.js declined to invent it twice in writing and the auditor routed without prescribing a fix.",
+   "source": "defect-register"
+  },
+  {
+   "action": "assert the anchor matches exactly once AND read what it matched before acting",
+   "basis": "section 1.3 applies -- An anchor that still matches is not an anchor that still points at the right thing",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 1.3",
+   "risk": "an exact-string anchor verifies UNIQUENESS, never that it still points at the right code",
+   "source": "process-rules"
+  }
+ ],
+ "target": "api/lifecycle-audit-event-coverage.test.js"
+}
