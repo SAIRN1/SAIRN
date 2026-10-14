@@ -165,6 +165,114 @@ TOOLS = {
     'loadstate': 'tools/sairn_load_state_check.py',
 }
 
+# ── THE CRITERIA LOCK (cody b10, routed as row 39 of
+#    docs/2026-10-14-fourth-b15-fixture-priority-26-50.md) ──────────────────
+# THIS IS THE FAIL-CLOSED RULE'S OWN PROBE AND IT HAD NO LOCK. Every arm below
+# decides "the gate refused FOR THE RIGHT REASON" with inline conditions -- a
+# non-zero exit, the victim path appearing in the output, a phrase appearing in
+# the output. Those conditions ARE this probe's criteria, and nothing checked
+# them. A criteria set nobody locked is the ninth discipline's exact subject:
+# the day one of them stops discriminating, every arm goes on passing and the
+# probe's name and exit code go on saying the gate fails closed.
+#
+# SO THE VERDICT IS NOW A NAMED FUNCTION, LOCKED IN BOTH DIRECTIONS AGAINST
+# SYNTHETIC GATE OUTPUT WHOSE RIGHT ANSWER IS KNOWN BY HAND, before one real
+# gate is run. The arm that matters is not the positive one -- it is
+# L2: A REFUSAL FOR AN UNRELATED REASON MUST NOT COUNT. Without it, "any
+# refusal is a pass" satisfies every arm in sections B through D, and a gate
+# that refused everything for one wrong reason would read as five working
+# fail-closed checks.
+CRITERIA_VERSION = '2026-10-14.2'
+_TOTAL = 0
+
+
+def deny_for(rc, out, victim, phrases):
+    """Did the gate refuse, for THIS tool's absence, and say so?
+
+    Returns (verdict, why). verdict is True only when all three hold. Kept as
+    one function so the lock below can exercise the real criteria rather than
+    a restatement of them -- a lock against a copy of the rule proves nothing
+    about the rule.
+    """
+    if rc == 0:
+        return (False, 'the gate ALLOWED the push (exit 0)')
+    if norm(victim) not in norm(out):
+        return (False, 'it refused, but never named %s -- so this arm cannot '
+                       'tell WHICH check spoke' % norm(victim))
+    missing = [p for p in phrases if p not in out.lower()]
+    if missing:
+        return (False, 'it named the path but not %r' % missing)
+    if 'PROBE fixture commit' in out:
+        return (False, 'the PROBE-fixture check answered instead of the check '
+                       'under test')
+    return (True, 'refused, named %s, and said %r' % (norm(victim), phrases))
+
+
+def _lock():
+    """Both directions, synthetic, hand-known answers. Fail CLOSED."""
+    V = '/tmp/clone/tools/sairn_seam_check.py'
+    cases = [
+        # (name, rc, out, want, phrases)
+        ('L1. POSITIVE -- a refusal that names the path and the phrase is a deny',
+         1, 'Blocked: the seam check is missing at ' + V, True, ['seam']),
+        ('L2. THE ARM THAT MATTERS -- a refusal for an UNRELATED reason is NOT '
+         'a deny. Without this, "any refusal counts" passes every arm below',
+         1, 'Blocked: a GENERATED document stopped matching its sources.', False, ['seam']),
+        ('L3. an ALLOW is never a deny, however much it talks about the path',
+         0, 'Notice: ' + V + ' was not found; continuing.', False, ['seam']),
+        # L4's FIRST FIXTURE WAS WRONG AND THE LOCK CAUGHT IT, which is the
+        # cheapest possible demonstration that the lock is load-bearing. The
+        # original expected phrase was 'seam' -- and the victim path is
+        # .../sairn_seam_check.py, so the PATH ITSELF satisfied the phrase test
+        # and the case could never fail. A PHRASE THAT IS A SUBSTRING OF THE
+        # VICTIM PATH IS NOT A DISCRIMINATING PHRASE, and L4b pins exactly that.
+        ('L4. the right path and the WRONG phrase is not a deny -- the phrase '
+         'is what says which check answered',
+         1, 'Blocked: something is wrong with ' + V, False, ['reachability']),
+        ('L4b. ...and a phrase that is a SUBSTRING OF THE VICTIM PATH cannot '
+         'discriminate -- the badly-chosen fixture this lock caught in itself',
+         1, 'Blocked: something is wrong with ' + V, True, ['seam']),
+        ('L5. the PROBE-fixture check answering instead is not a deny, even '
+         'though it refuses and names the path',
+         1, 'Blocked: PROBE fixture commit found. ' + V + ' seam', False, ['seam']),
+        # SEPARATOR NORMALISATION. The header records that comparing
+        # os.path.join's backslashes against git's forward slashes failed EVERY
+        # arm -- which, inside a mutation harness that counts failing arms,
+        # reads as every mutation biting. That is a criteria defect, so it is
+        # locked here rather than left to a comment.
+        ('L6. a backslash path in the output matches a forward-slash victim -- '
+         'the separator bug that once failed every arm at once',
+         1, 'Blocked: missing ' + V.replace('/', chr(92)) + ' seam', True, ['seam']),
+    ]
+    global _TOTAL
+    _TOTAL = len(cases)
+    bad = []
+    for name, rc, out, want, phrases in cases:
+        got, why = deny_for(rc, out, V, phrases)
+        if got == want:
+            print('  PASS  %s' % name)
+        else:
+            bad.append(name)
+            print('  FAIL  %s\n        got %r (%s) want %r' % (name, got, why, want))
+    return bad
+
+
+print('\n0. THE CRITERIA LOCK -- criteria %s, both directions, synthetic'
+      % CRITERIA_VERSION)
+_bad = _lock()
+if _bad:
+    # FAIL CLOSED, and do not run the real gate at all. A probe whose own
+    # verdict function is broken cannot report anything about the gate, and an
+    # exit 1 here must not be mistaken for "the gate fails open".
+    print('\nTHE CRITERIA ARE NOT LOCKED (%d of %d). The real gate was NOT run '
+          'and nothing' % (len(_bad), _TOTAL))
+    print('below was measured -- this is COULD NOT RUN, not a finding about the '
+          'push gate.')
+    for b in _bad:
+        print('  - ' + b)
+    sys.exit(2)
+print('  ...locked. The real gate may now be believed.')
+
 print('\nA. the worktree and every tool this probe removes really exist first')
 wt = worktree()
 try:
@@ -189,14 +297,13 @@ try:
             rc, out = run_gate(wt, tip, base, SNAP)
         finally:
             git(wt, 'checkout', '-q', '--', rel_tool)
-        ok('%s -- the GATE refuses the push' % title, rc != 0,
-           'exit=%d\n%s' % (rc, out[-400:]))
-        ok('...and the refusal names the exact path it looked for',
-           norm(victim) in norm(out), 'looked for %s in\n%s' % (victim, out[-500:]))
-        for phrase in expect_in:
-            ok('...and the refusal says %r' % phrase, phrase in out.lower(), out[-400:])
-        ok('...and it is NOT the PROBE-fixture check answering instead',
-           'PROBE fixture commit' not in out, out[-300:])
+        # THROUGH THE LOCKED PREDICATE, not through three inline conditions.
+        # The lock in section 0 exercises THIS function, so the criteria these
+        # arms rely on are the criteria that were proved to discriminate.
+        verdict, why = deny_for(rc, out, victim, expect_in)
+        ok('%s -- the GATE refuses the push, names %s and says %r'
+           % (title, norm(victim), expect_in), verdict,
+           '%s\nexit=%d\n%s' % (why, rc, out[-400:]))
         ok('...and the tool is restored in the worktree', os.path.isfile(victim))
         # THE PER-ARM CONTROL, and it is stronger than a generic clean push.
         # Same commit, same gate, tool PRESENT: whatever happens now, it must not

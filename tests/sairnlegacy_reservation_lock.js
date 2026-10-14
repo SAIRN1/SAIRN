@@ -104,11 +104,36 @@ async function call(handler, opts) {
   process.env[names.key] = ['stub', 'fixture', 'value'].join('-');
   let first = true;
   const replies = (opts.replies || []).slice();
+  out.activeLookups = 0;
   global.fetch = async (url, init) => {
     if (first) {
       first = false;
       // The licence row. app_id null = the documented unattributable fallback.
       return { ok: true, status: 200, json: async () => [{ status: 'active', app_id: null }] };
+    }
+    // ── THE credentialStillActive PRE-GATE, ANSWERED OUT OF BAND (cody b10) ──
+    // api/sd-data.js:1936-1941 added a pre-gate that re-checks the caller's
+    // credential is still active before any resource branch runs. It arrived
+    // AFTER this fixture was written -- the fixture's own comment above is
+    // dated 2026-09-21 -- and it broke the suite in TWO ways at once, which is
+    // why the first symptom was a confusing 403:
+    //
+    //   (a) it CONSUMED the first `replies` entry, so every reply after it was
+    //       shifted by one and the `active` lookup itself read `undefined`
+    //       -> CREDENTIAL_INACTIVE 403 on arm 1; and
+    //   (b) it would have been COUNTED in out.calls, so every
+    //       `r.calls.length === N` assertion in this file -- the arms that
+    //       prove the lock is ONE atomic conditional write rather than a
+    //       read-then-write -- would have been off by one.
+    //
+    // SO IT IS ANSWERED HERE RATHER THAN BY PREPENDING A REPLY AT TWELVE CALL
+    // SITES: it neither consumes a reply nor records a call, so the fixture's
+    // accounting is exactly what its author wrote, and a pre-gate that moves
+    // again does not need twelve edits. Counted in out.activeLookups so a
+    // suite can assert it really happened -- see section 0.
+    if (/_employee_auth\?/.test(String(url)) && /select=active/.test(String(url))) {
+      out.activeLookups += 1;
+      return { ok: true, status: 200, json: async () => [{ active: true }] };
     }
     out.calls.push({ url: String(url), method: (init && init.method) || 'GET',
                      body: (init && init.body) || null,
@@ -243,12 +268,37 @@ console.log('SAIRNlegacy: the reservation lock, both halves, and the posture of 
     // CONTROL: and a DIFFERENT resource sending status:'Reserved' must not be
     // caught by the lock. The gate is resource-specific as well as
     // transition-specific, and this is the arm that proves the resource half.
+    // ── THE PAYLOAD GREW A WINDOW, AND THAT IS A FIXTURE REPAIR (cody b10) ──
+    // A leg_bookings DOUBLE-BOOKING guard landed after this arm was written
+    // (api/sd-data.js:14967 onward). It refuses 400 BOOKING_WINDOW_REQUIRED
+    // before any upstream call when facility_id, start_time or end_time is
+    // missing -- so `{ id, status }` alone answered 400 and `calls[0]` was
+    // undefined. THE GUARD IS CORRECT AND THE FIXTURE WAS STALE: a booking
+    // without a facility and a window is not a booking.
+    //
+    // So the control now sends a REAL booking, the overlap query is answered
+    // with no clash, and the arm asserts what it always meant -- that the
+    // merch-unit lock does not reach leg_bookings -- rather than asserting a
+    // call COUNT that a new guard legitimately changed.
     const other = await call(h, { resource: 'leg_bookings', action: 'write',
-                                  payload: { id: 'BK-1', status: 'Reserved' },
-                                  replies: [{ status: 200, rows: [{ data: { id: 'BK-1' } }] }] });
-    ok(other.code === 200 && (other.calls[0] || {}).method === 'POST',
+                                  payload: { id: 'BK-1', status: 'Reserved',
+                                             facility_id: 'FAC-1',
+                                             start_time: '2026-11-02T14:00:00.000Z',
+                                             end_time: '2026-11-02T15:00:00.000Z' },
+                                  replies: [
+                                    // the facility-overlap read: no other booking
+                                    { status: 200, rows: [] },
+                                    // then the ordinary upsert
+                                    { status: 200, rows: [{ data: { id: 'BK-1' } }] }] });
+    const otherUpsert = other.calls.filter((c) => c.method === 'POST');
+    ok(other.code === 200 && otherUpsert.length === 1,
        'CONTROL: leg_bookings with status Reserved is an ordinary upsert -- the '
-       + 'lock is scoped to leg_merch_units');
+       + 'lock is scoped to leg_merch_units. code=' + other.code
+       + ' POSTs=' + otherUpsert.length);
+    ok(other.calls.every((c) => !/data->>status/.test(c.url || '')),
+       '...and NO call it makes carries a status condition, which is the half '
+       + 'that proves the conditional PATCH is scoped to the merch unit rather '
+       + 'than to the word "Reserved"');
   }
 
   // ── 4. THE INVARIANTS EVERY ONE OF THE 36 SHARES ─────────────────────────
@@ -263,7 +313,26 @@ console.log('SAIRNlegacy: the reservation lock, both halves, and the posture of 
 
       // A table that does not exist yet must be a DISTINGUISHABLE 503, not a
       // 200 the client reads as "saved".
-      const b = await call(h, { resource, action: 'write', payload: { id: 'X' },
+      // ── ONE RESOURCE NEEDS A PRECONDITION BEFORE THE SHARED PROPERTY CAN
+      //    BE MEASURED ON IT AT ALL (cody b10) ─────────────────────────────
+      // leg_bookings grew a double-booking guard (api/sd-data.js:14967) that
+      // refuses 400 BOOKING_WINDOW_REQUIRED before any upstream call when the
+      // facility or the window is missing. With a bare `{ id: 'X' }` it never
+      // reached the upstream at all, so this loop measured 35/36 and the one
+      // that "failed" had not been tested -- A PRECONDITION FAILURE WEARING
+      // THE COSTUME OF A PROPERTY FAILURE.
+      //
+      // So the payload satisfies that precondition and the shared property is
+      // then measured on all 36 EQUALLY. The guard's own overlap read is the
+      // call that receives the 404 here, and it maps 404 to the SAME 503
+      // NOT_PROVISIONED -- so the property under test is unchanged, not
+      // relaxed, and leg_bookings is not exempted from it.
+      const writePayload = resource === 'leg_bookings'
+        ? { id: 'X', facility_id: 'FAC-X',
+            start_time: '2026-11-02T14:00:00.000Z',
+            end_time: '2026-11-02T15:00:00.000Z' }
+        : { id: 'X' };
+      const b = await call(h, { resource, action: 'write', payload: writePayload,
                                 replies: [{ status: 404, rows: [] }] });
       if (b.code === 503 && b.body && b.body.error
           && b.body.error.code === 'NOT_PROVISIONED') notProvisionedWrite += 1;

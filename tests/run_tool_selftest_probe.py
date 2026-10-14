@@ -327,7 +327,44 @@ def main(argv):
         print('  asserts nothing passes here. That is item 47\'s worksheet half and')
         print('  sabotage_control_check.py\'s job; this answers only the narrower')
         print('  question that was silently false for all of them -- does it RUN.')
-    return 1 if (fails or cnr or shrunk or unparsed) else 0
+
+    # ── THE SUMMARY LINE CARRIES ALL THREE COUNTS, AND THE EXIT CODE CARRIES
+    #    THE THIRD STATE (cody b10) ────────────────────────────────────────
+    # THIS FILE QUOTED PR 1.11 AT ITSELF AND THEN BROKE IT. The output above
+    # separates COULD NOT RUN from FAILING with care, and the old return was
+    #     return 1 if (fails or cnr or shrunk or unparsed) else 0
+    # so a could-not-run ALONE produced exit 1. Every runner, hook and human
+    # reads the exit code and nothing else, so the third state the output was
+    # at pains to preserve was collapsed into "failed" at the only place it is
+    # actually consumed. Measured in cody b9 in the live clone with zero
+    # sandbox noise: 0 FAILING, 1 COULD NOT RUN, exit 1.
+    #
+    # EXIT 3 IS NOT A NEW STATE -- docs/2026-10-13-cody-b6-methodology-unproven.md
+    # §3 already assigns it: "A suite with unproven arms exits 3, and its
+    # summary line states the unproven count beside the pass and fail counts."
+    # Both halves of that sentence are implemented here, because a state the
+    # summary arithmetic cannot see is a state the exit code cannot reflect.
+    #
+    # ORDER OF PRECEDENCE, and it is deliberate: a REAL FAILURE outranks a
+    # could-not-run. If anything actually failed the answer is 1, because
+    # "something is broken" is a stronger claim than "something was not
+    # measured" and must not be softened by it. SHRUNK and UNPARSED count as
+    # failures too: a selftest that vanished and a file that could not be read
+    # are both losses of coverage this suite exists to refuse, and neither is
+    # an intermittent condition that a third state would describe.
+    passed = len(found) - len(fails) - len(cnr)
+    print('')
+    print('  %d passed, %d failed, %d could-not-run'
+          % (passed, len(fails), len(cnr)))
+    if fails or shrunk or unparsed:
+        return 1
+    if cnr:
+        print('  EXIT 3: nothing failed, but %d selftest(s) were NOT EVALUATED. '
+              'That is not a pass' % len(cnr))
+        print('  and it is not a failure -- exit 3 so a runner reading only the '
+              'code can tell.')
+        return 3
+    return 0
 
 
 if __name__ == '__main__':

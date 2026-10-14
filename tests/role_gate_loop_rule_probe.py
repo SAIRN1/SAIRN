@@ -76,6 +76,78 @@ def run(src):
     return rg.file_driven(src, ROLES)
 
 
+# ── THE CRITERIA LOCK (cody b10, routed as row 40 of
+#    docs/2026-10-14-fourth-b15-fixture-priority-26-50.md) ──────────────────
+# THIS PROBE WAS ALREADY LOCKED IN BOTH DIRECTIONS -- the P-arms and the N-arms
+# are exactly the pair the routing document asks for, and its own closing lines
+# refuse to let the real repo be re-pinned on its output. TWO THINGS WERE
+# MISSING AND NEITHER IS THE PAIR.
+#
+# (1) NO VERSION STAMP. The ninth discipline wants criteria stamped so a change
+#     to them is visible rather than silent; without it, an edited expectation
+#     and an unchanged one are the same diff to anyone reading a pass.
+#
+# (2) THE SEAM WAS UNGUARDED AND IT IS THE ONLY WAY THIS FILE CAN LIE. run()
+#     reaches straight into rg.file_driven(src, ROLES). If that function is
+#     renamed, or its signature or return shape changes, this probe does not
+#     report a changed rule -- it dies with an AttributeError or a TypeError
+#     somewhere in the middle of the arms, and a reader sees a traceback and a
+#     nonzero exit that look exactly like "the rule broke". A probe that cannot
+#     tell "the rule is wrong" from "I could not reach the rule" is the
+#     third-state defect this platform keeps paying for, so it is now exit 2
+#     COULD NOT RUN with the reason named.
+CRITERIA_VERSION = '2026-10-14.1'
+
+
+def _seam_lock():
+    """Can the rule be reached, and does it answer in the shape the arms read?
+
+    Returns a list of reasons it cannot. Checked against a MINIMAL fixture
+    whose answer is known by hand -- not against a real file, because a real
+    file's answer is the thing the arms exist to establish.
+    """
+    bad = []
+    fn = getattr(rg, 'file_driven', None)
+    if not callable(fn):
+        bad.append('tools/role_gate_negative_coverage.py has no callable '
+                   '`file_driven` -- the rule this probe locks is not reachable '
+                   'under that name any more')
+        return bad
+
+    probe_src = """
+      const RS = ['nursing', 'caregiver'];
+      for (const role of RS) {
+        await test('zz_thing ' + role + ' cannot write', async () => {
+          const { res } = await call(H, 'e', role,
+            { action: 'write', resource: 'zz_thing', payload: { id: 'x' } }, []);
+          assert.strictEqual(res.statusCode, 403, role + ' got in');
+          assert.strictEqual(res.body.error.code, 'FORBIDDEN', 'wrong reason');
+        });
+      }
+    """
+    try:
+        got = fn(probe_src, ROLES)
+    except TypeError as exc:
+        bad.append('file_driven(src, roles) no longer accepts that call: %s'
+                   % exc)
+        return bad
+    except Exception as exc:  # noqa: BLE001 -- any failure here is could-not-run
+        bad.append('file_driven raised on a minimal fixture, so nothing below '
+                   'would be measuring the rule: %r' % exc)
+        return bad
+
+    if not isinstance(got, dict):
+        bad.append('file_driven returned %s, and every arm below compares '
+                   'against a dict of resource -> set(roles)' % type(got).__name__)
+        return bad
+    # THE SHAPE, not the content: the arms index by resource and compare sets.
+    if got.get('zz_thing') != {'nursing', 'caregiver'}:
+        bad.append('on a minimal loop-form fixture whose answer is known by '
+                   'hand it returned %r, so the return SHAPE the arms read has '
+                   'moved even if the rule has not' % (got,))
+    return bad
+
+
 # ── POSITIVE: the shapes that MUST be credited ──────────────────────────────
 
 P1 = """
@@ -235,6 +307,20 @@ N7 = """
 
 def main():
     print('ROLE-GATE LOOP-RULE PROBE -- synthetic fixtures, both directions')
+    print('criteria %s' % CRITERIA_VERSION)
+    print('')
+    seam = _seam_lock()
+    if seam:
+        print('0. THE SEAM IS NOT REACHABLE -- COULD NOT RUN, not a finding '
+              'about the rule:')
+        for s in seam:
+            print('   - %s' % s)
+        print('')
+        print('No arm below was evaluated. Do NOT read this as the loop rule '
+              'being wrong, and do')
+        print('not re-pin the ratchet on it.')
+        return 2
+    print('0. the seam is reachable and answers in the shape the arms read.')
     print('')
     print('POSITIVE -- a real loop-form arm must be credited:')
     expect('P1 declared list, for-of, 403 + FORBIDDEN inside the body',

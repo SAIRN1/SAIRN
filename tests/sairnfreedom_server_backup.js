@@ -4,7 +4,7 @@
 //
 // SAIRNFREEDOM'S FIRST DEDICATED SUITE. Until 2026-09-10 it had none --
 // docs/MASTER-PLAN.md measured three verticals with no file named for them at
-// all, and this app was the worst of the three: 35 registered resources
+// all, and this app was the worst of the three: 36 registered resources
 // reaching a server, and no fault probe either.
 //
 // WHAT IT GUARDS, and why these and not a broader sweep of the app: the three
@@ -83,9 +83,35 @@ section('1. the three sides agree, PAIRWISE');
 // genuinely added or removed. That edit is the point: it makes the change
 // visible in a diff instead of silently shrinking the test surface.
 
-test('the registry still holds exactly 35 resources', () => {
-  assert.strictEqual(REG.resources.length, 35,
-    'the sairnfreedom registry has ' + REG.resources.length + ' resources, not 35 -- if that is deliberate, change this number in the same commit; if it is not, a resource has been removed and every per-resource assertion in this file went with it');
+// ── 35 -> 36, AND THE DECISION THIS ARM ASKED FOR WAS MADE BEFORE THE NUMBER
+//    WAS CHANGED (cody b10) ──────────────────────────────────────────────────
+// The arm's own message said: "if that is deliberate, change this number in the
+// same commit". IT IS DELIBERATE, and the evidence is not a recollection:
+//
+//   git log -1 e3446a48 -- api/_resources/sairnfreedom.js
+//     "feat(sairnfreedom): sf_trustee_audits reached the server for the first
+//      time -- and the registry's own reconciliation had been one short for
+//      weeks"   (2026-09-29)
+//
+// THE 36th IS sf_trustee_audits. sairnfreedom.html has 43 `K_x = 'sf_...'`
+// bindings and that one was on NONE of the lists -- not SF_SYNCED, not the
+// registry, not the schema, not SF_RESOURCES, AND NOT the deliberate-exclusion
+// list either, so nothing in the repo recorded a decision about it.
+// tools/local_only_collection_check.py measured it as 1 of 36 collections with
+// no route to a server. It carries the ORC 2915 controls attestation -- who
+// attested to the post's financial controls and the fidelity bond covering the
+// people who handle gaming receipts -- and it lived in one browser's cache.
+//
+// So this is an ADDITION that was itself written test-first, not a resource
+// that drifted in. The stale number was here, not there.
+//
+// THE ARM IS KEPT AS A HARDCODED COUNT ON PURPOSE. Deriving it from
+// REG.resources.length would make it unfalsifiable -- the thing it exists to
+// catch is a resource being REMOVED, taking every per-resource assertion in
+// this file with it, and a self-derived count cannot see that.
+test('the registry still holds exactly 36 resources', () => {
+  assert.strictEqual(REG.resources.length, 36,
+    'the sairnfreedom registry has ' + REG.resources.length + ' resources, not 36 -- if that is deliberate, change this number in the same commit AND say which resource and why; if it is not, a resource has been removed and every per-resource assertion in this file went with it');
 });
 
 test('the registry is non-empty and every name is an sf_ key', () => {

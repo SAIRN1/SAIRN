@@ -71,6 +71,74 @@ def num(out, key):
     return None
 
 
+# ── THE CRITERIA LOCK (cody b10, routed as row 46 of
+#    docs/2026-10-14-fourth-b15-fixture-priority-26-50.md) ──────────────────
+# THE DOCSTRING STATES BOTH HALVES AND NOTHING LOCKED THE THING THAT READS
+# THEM. Every arm in this file decides its verdict through num(), which picks
+# the FIRST DIGIT TOKEN out of the first line starting with a key. That is a
+# text parse against a tool's prose, and it is the single point at which this
+# whole probe can silently start answering about the wrong number:
+#
+#   'UNCOVERED 0 of 12'          -> 0   correct
+#   'UNCOVERED: none (12 gates)' -> 12  SILENTLY WRONG, and every arm that
+#                                       compares against 0 or 1 then flips
+#
+# A reformat of one line in the tool is enough. So num() is locked here, in
+# both directions, against synthetic output whose right answer is known by
+# hand -- BEFORE the sandbox arms run the real tool. The arm that matters is
+# not the positive one; it is L3: A LINE THAT CARRIES NO COUNT MUST RETURN
+# None RATHER THAN A NUMBER FROM SOMEWHERE ELSE ON IT.
+CRITERIA_VERSION = '2026-10-14.1'
+
+
+def _lock():
+    cases = [
+        ('L1. POSITIVE -- the shipping shape parses',
+         'UNCOVERED 3\nCOVERED 9\n', 'UNCOVERED', 3),
+        ('L2. ...and a colon between key and value parses',
+         'UNCOVERED: 7\n', 'UNCOVERED', 7),
+        ('L3. THE ARM THAT MATTERS -- a line with NO count returns None, not a '
+         'digit from elsewhere on the line. "none (12 gates)" must not read 12',
+         'UNCOVERED: none\n', 'UNCOVERED', None),
+        ('L4. an absent key is None, never 0 -- "not reported" and "zero" are '
+         'different answers and folding them is how this probe would lie',
+         'COVERED 4\n', 'UNCOVERED', None),
+        ('L5. CONTROL -- a key that merely APPEARS mid-line is not a match; the '
+         'line must START with it, or a sentence about uncovered gates wins',
+         'gates that are UNCOVERED 99\nUNCOVERED 2\n', 'UNCOVERED', 2),
+        ('L6. zero really parses as 0 -- the falsy value a bare `if num(...)` '
+         'would drop',
+         'UNCOVERED 0\n', 'UNCOVERED', 0),
+    ]
+    bad = []
+    for name, out, key, want in cases:
+        got = num(out, key)
+        if got == want and type(got) is type(want):
+            print('  ok   ' + name)
+        else:
+            bad.append(name)
+            print('  FAIL ' + name + '  got %r want %r' % (got, want))
+    return bad
+
+
+print('0. THE CRITERIA LOCK -- criteria %s, both directions, synthetic'
+      % CRITERIA_VERSION)
+_bad = _lock()
+if _bad:
+    # FAIL CLOSED, and do not run the real tool. A probe whose own reader is
+    # broken cannot say anything about role-gate coverage, and exit 1 here
+    # would be read as "the tool is wrong" when the truth is "nothing was
+    # measured". Exit 2 is COULD NOT RUN.
+    print('\nTHE CRITERIA ARE NOT LOCKED (%d of %d). The real tool was NOT run '
+          'and no' % (len(_bad), 6))
+    print('coverage figure below was measured -- COULD NOT RUN, not a finding.')
+    for b in _bad:
+        print('  - ' + b)
+    sys.exit(2)
+print('  ...locked. num() discriminates, so the arms below mean what they say.')
+print('')
+
+
 SD = """
 const ZZ_MANAGEMENT_ROLES = roleSet({ owner: true, billing: true });
 const ZZ_CARE_ROLES = roleSet({ nursing: true, med_aide: true });

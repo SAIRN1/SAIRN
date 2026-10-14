@@ -18,9 +18,24 @@ const licenseMod = require(path.join(ROOT, 'api/_lib/license.js'));
 licenseMod.validateLicenseKey = async () => ({ valid: true, active: true, license_hash: 'HASH1' });
 const authMod = require(path.join(ROOT, 'api/_lib/auth.js'));
 authMod.tokenFromRequest = (req) => req.headers['x-test-token'] || null;
+// TWO CALL SHAPES REACH THIS STUB AND ONLY ONE OF THEM NAMES AN APP.
+// api/sd-data.js:1938's credentialStillActive pre-gate is
+// `verifySessionToken(preToken, licHash)` -- two arguments, deliberately,
+// because it runs ABOVE per-resource app scoping. The per-resource calls pass
+// a third. The original stub demanded three and threw `bad app scope:
+// undefined` on the pre-gate, which failed fourteen arms for a reason that was
+// never in api/.
+//
+// SO AN ABSENT expectedApp IS ALLOWED AND A WRONG ONE IS STILL REFUSED. The
+// refusal is the assertion worth keeping: it catches a resource reached under
+// another app's scope, which is a real cross-tenant shape. Arms S1 and S2
+// above pin both halves, because "tolerate two arguments" could otherwise be
+// satisfied by deleting the check.
 authMod.verifySessionToken = (token, licHash, expectedApp) => {
   if (!token) return null;
-  if (expectedApp !== 'sairncare') throw new Error('bad app scope: ' + expectedApp);
+  if (expectedApp !== undefined && expectedApp !== 'sairncare') {
+    throw new Error('bad app scope: ' + expectedApp);
+  }
   return JSON.parse(token);
 };
 
@@ -75,6 +90,50 @@ function assertEq(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw 
 function assertTrue(v, m) { if (!v) throw new Error(m || 'expected truthy'); }
 
 (async () => {
+  // ── S. THE STUB'S OWN CONTRACT, PINNED BEFORE ANYTHING ELSE RUNS ──────
+  // FAILING-FIRST, added cody b10. Fourteen arms below were failing for ONE
+  // reason and it was not in api/: the stub above threw `bad app scope:
+  // undefined` on every call, because api/sd-data.js's credentialStillActive
+  // PRE-GATE deliberately runs ABOVE per-resource app scoping and therefore
+  // calls verifySessionToken with TWO arguments. The stub demanded three.
+  //
+  // THE STUB WAS THE STALE HALF, NOT THE HANDLER. api/sd-data.js:1938 is
+  // `verifySessionToken(preToken, licHash)` and its own comment says the
+  // pre-gate sits above app scoping on purpose, so the two-argument call is
+  // the contract and not an oversight.
+  //
+  // THESE THREE ARMS ARE A PAIR PLUS ITS ANCHOR, and the pair is the point:
+  // "tolerate two arguments" could be satisfied by DELETING the app-scope
+  // check, which would retire a real assertion. S2 is what stops that.
+  const SESSION_TOKEN = JSON.stringify({ role: 'owner', employee_id: 'O1' });
+
+  await check('S1. the stub TOLERATES a two-argument call -- the pre-gate at '
+    + 'api/sd-data.js:1938 makes one, and a stub that throws on it fails every '
+    + 'arm below for a reason that is not in api/', () => {
+    const got = authMod.verifySessionToken(SESSION_TOKEN, 'HASH1');
+    assertEq(got.role, 'owner', 'a two-arg call must return the session');
+  });
+
+  await check('S2. CONTROL -- the stub STILL REFUSES an explicitly wrong app '
+    + 'scope. WITHOUT THIS ARM, S1 could be satisfied by deleting the check '
+    + 'and the suite would stop noticing a resource reached under the wrong '
+    + 'app', () => {
+    let threw = null;
+    try { authMod.verifySessionToken(SESSION_TOKEN, 'HASH1', 'sairnbiz'); }
+    catch (e) { threw = e; }
+    assertTrue(threw, 'a THIRD argument naming another app must still throw');
+    assertTrue(/bad app scope: sairnbiz/.test(threw.message),
+      'and it must name the app it was given, not a generic message');
+  });
+
+  await check('S3. ANCHOR -- api/sd-data.js still calls the pre-gate with TWO '
+    + 'arguments exactly once. If that call grows a third argument this whole '
+    + 'section is measuring a contract the handler no longer has', () => {
+    const src = require('fs').readFileSync(path.join(ROOT, 'api/sd-data.js'), 'utf8');
+    const n = src.split('verifySessionToken(preToken, licHash)').length - 1;
+    assertEq(n, 1, 'the two-argument pre-gate call must appear exactly once');
+  });
+
   // ── engine: food temperature ─────────────────────────────────────────
   await check('cold holding passes at 41F and fails at 42F -- the boundary is exact', () => {
     assertEq(o.evaluateFoodTemp({ holding_kind: 'cold', temperature_f: 41 }).passed, true);
