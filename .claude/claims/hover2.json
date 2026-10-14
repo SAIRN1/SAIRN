@@ -436,6 +436,21 @@
         "SAIRN-handoff-h2-b29.md",
         "SAIRN-report-h2-b29.txt"
       ]
+    },
+    {
+      "id": "hover2-1791984968",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "hover2 batch b30 -- (1) check landed work from Drive digest then source: hank b10/cody b10/cc b9/fourth b18, skip unlanded (2) read-only audit rf_settings api/sd-data.js:8757 for sen_settings-style disclosure, log finding or not-finding file:line (3) ai_output_sweep_scan.py over every AI_SCANNED_TEXT app not yet in baseline, trace new flagged sites individually file:line (4) snapshot sairnlegacy/sairnvet/sairnlaw role-by-resource behavior into a before-file in external log repo for future diff (5) adversarial check sql/2026-10-14-michael-run-order.sql once it exists, skip until file exists (6) push external log repo no force confirm landed. FILES: hover-audit-log/ only, no platform docs/api/tools/tests/sql file. Own root deliverables SAIRN-handoff-h2-b30.md SAIRN-report-h2-b30.txt SAIRN-digest-h2-b30.txt written to Drive, not committed to platform repo.",
+      "claimed_at": "2026-10-14T13:36:08Z",
+      "claimed_at_epoch": 1791984968.1226761,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-h2-b30.txt",
+        "SAIRN-handoff-h2-b30.md",
+        "SAIRN-report-h2-b30.txt"
+      ]
     }
   ],
   "refusals": [
