@@ -156,8 +156,44 @@ def names_agent_and_batch(line, agent, batch):
             hit = sp
             break
     if hit is None:
-        return False, ('the first line does not name %s (tried: %s). It reads: '
-                       '%r' % (agent, ', '.join(spellings), line[:90]))
+        # ── TWO FAILURES WERE PRINTING AS ONE, AND ONLY ONE IS DANGEROUS ────
+        # Routed by H1 b28 (7 mismatches) and re-measured here as EIGHT -- the
+        # extra one is SAIRN-digest-hank-b9.txt, which means this is an
+        # ONGOING convention divergence and not a closed backlog.
+        #
+        # Seven of the eight are a digest whose first line names NO agent at
+        # all -- `STATUS b9 closed. ...` -- which is a convention gap its
+        # author can close. The eighth is categorically different:
+        # SAIRN-handoff-cc-b6.md reads `# cody b6 handoff (filename as
+        # requested)`, i.e. one agent's name over ANOTHER AGENT'S CONTENT.
+        # That is the exact failure this whole tool was written for, and until
+        # now it printed with the same DISAGREES label as the seven cosmetic
+        # ones, so the one case that can mis-route a session's state was
+        # buried in a list of convention noise.
+        #
+        # NEITHER IS RECLASSIFIED AS PASSING. Both still fail. The split is
+        # about which one a reader looks at first.
+        other = None
+        for a, sps in sorted(ALIASES.items()):
+            if a == agent:
+                continue
+            for sp in sps:
+                if re.search(r'(?<![0-9a-z])%s(?![0-9a-z])'
+                             % re.escape(sp.lower()), low):
+                    other = a
+                    break
+            if other:
+                break
+        if other:
+            return False, ('WRONG AGENT -- the first line names %s, not %s. '
+                           'This is one agent\'s filename over another\'s '
+                           'CONTENT, which is what mis-routes a session\'s '
+                           'state. It reads: %r'
+                           % (other, agent, line[:90]))
+        return False, ('NO AGENT NAMED -- the first line does not name %s '
+                       '(tried: %s), and names no other known agent either, so '
+                       'it is a convention gap rather than a mis-file. It '
+                       'reads: %r' % (agent, ', '.join(spellings), line[:90]))
     if not re.search(r'(?<![0-9a-z])%s(?![0-9a-z])' % re.escape(batch.lower()),
                      low):
         return False, ('the first line names %s but NOT batch %s. It reads: '
