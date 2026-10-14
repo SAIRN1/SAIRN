@@ -3913,6 +3913,29 @@
         "sql/sairncare_employee_auth_schema.sql",
         "sql/sairnlegacy_employee_auth_schema.sql"
       ]
+    },
+    {
+      "id": "hank-1791996286",
+      "session": "hank",
+      "subject": "sairn-api-sql",
+      "task": "b11: MAR grant action + alf_mar_access_grants + office_manager in sairncare.html; SAIRNvet role matrix; AI safeguards ai_source/ai_approved_by; transport timeout routed to cody. FILES: api/ sql/ sairncare.html sairnvet.html sairnmechanical.html sairnroofing.html sairngrounds.html sairnscape.html stonedesk.html sairnfreedom.html SAIRN-handoff-hank-b11.md SAIRN-report-hank-b11.txt SAIRN-digest-hank-b11.txt",
+      "claimed_at": "2026-10-14T16:44:46Z",
+      "claimed_at_epoch": 1791996286.698776,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-hank-b11.txt",
+        "SAIRN-handoff-hank-b11.md",
+        "SAIRN-report-hank-b11.txt",
+        "sairncare.html",
+        "sairnfreedom.html",
+        "sairngrounds.html",
+        "sairnmechanical.html",
+        "sairnroofing.html",
+        "sairnscape.html",
+        "sairnvet.html",
+        "stonedesk.html"
+      ]
     }
   ],
   "refusals": [
