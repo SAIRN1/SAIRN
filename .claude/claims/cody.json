@@ -3799,8 +3799,8 @@
       "task": "cody b10 -- (1) tests/sairncare/test-op-audit.js verifySessionToken stub takes 2 args, failing-first, clears 14 arms. (2) tests/sairnlegacy_reservation_lock.js gains the active-lookup reply the credentialStillActive pre-gate consumes; tests/sairnfreedom_server_backup.js 35->36 after DECIDING whether the 36th resource is deliberate. (3) tests/run_tool_selftest_probe.py exit 3 when only could-not-run remains, with the count printed. (4) fixture pairs for fourth b15 rows 39, 46, 40 -- sabotage arm plus control arm, locked in-file. (5) a MECHANICAL worktree-sentinel check so no suite is classified red or green from a worktree unless its sentinel resolves, then the 13 undriven suites driven IN THE LIVE CLONE, the two .git-sentinel suites first. (6) push without force, confirm landed. I WRITE UNDER tests/ ONLY, plus docs/known-red-suites.json -- the register rows items 2 and 5 owe, which has been the tests owner's row set throughout -- and my own root b10 artifacts. NO api/ FILE, NO sql/ FILE, NO tools/ FILE, NO OTHER docs/ FILE. The item-5 check lives under tests/ because tools/ is cc's. Hooks stay cleared, settings.json never committed, no SAIRN_SEED_GATE override, no auditor clone entered. CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: hank's api/ and sql/ files, fourth's b15 docs/ files and cc's tools/ files are READ-ONLY here. FILES: tests/sairncare/test-op-audit.js tests/sairnlegacy_reservation_lock.js tests/sairnfreedom_server_backup.js tests/run_tool_selftest_probe.py tests/push_gate/missing_checker_probe.py tests/run_role_gate_negative_coverage_probe.py tests/role_gate_loop_rule_probe.py tests/worktree_sentinel_guard.js tests/run_worktree_sentinel_guard_probe.py docs/known-red-suites.json SAIRN-handoff-cody-b10.md SAIRN-report-cody-b10.txt SAIRN-digest-cody-b10.txt",
       "claimed_at": "2026-10-14T12:17:59Z",
       "claimed_at_epoch": 1791980279.6989498,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-14T13:47:30Z",
       "files": [
         "SAIRN-digest-cody-b10.txt",
         "SAIRN-handoff-cody-b10.md",
