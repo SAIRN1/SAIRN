@@ -3823,6 +3823,29 @@
         "tools/drive_upload_verify.py",
         "tools/review_store.py"
       ]
+    },
+    {
+      "id": "cc-1791972061",
+      "session": "cc",
+      "subject": "cc",
+      "task": "cc b7 resume -- drive_upload_verify + batch_manifest --close + probe, save_reviews retry in tools/tier_a_review_gate.py with failing-first test, open-work row 221, scope_gate.py:409 DECIDE_OR_NOT_PROMOTED ruling, push. CONFLICTS DECLARED NOT OVERRIDDEN: docs/by-design-register.json docs/METHODOLOGY.md docs/external-files-index.json docs/2026-10-13-fourth-b11-routed-to-cc.md are in fourth live b12 FILES. FILES: tools/drive_upload_verify.py tests/run_drive_upload_verify_probe.py tools/batch_manifest.py docs/batch-manifest-cc-b7.json tools/tier_a_review_gate.py tests/run_save_reviews_retry_probe.py docs/2026-10-13-cc-routed-b7.md SAIRN-handoff-cc-b7.md SAIRN-report-cc-b7.txt SAIRN-digest-cc-b7.txt SAIRN-ACTIVE-WORK-cc.md",
+      "claimed_at": "2026-10-14T10:01:01Z",
+      "claimed_at_epoch": 1791972061.3876398,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-cc.md",
+        "SAIRN-digest-cc-b7.txt",
+        "SAIRN-handoff-cc-b7.md",
+        "SAIRN-report-cc-b7.txt",
+        "docs/2026-10-13-cc-routed-b7.md",
+        "docs/batch-manifest-cc-b7.json",
+        "tests/run_drive_upload_verify_probe.py",
+        "tests/run_save_reviews_retry_probe.py",
+        "tools/batch_manifest.py",
+        "tools/drive_upload_verify.py",
+        "tools/tier_a_review_gate.py"
+      ]
     }
   ],
   "refusals": [
