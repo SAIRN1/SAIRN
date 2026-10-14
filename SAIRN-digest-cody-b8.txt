@@ -1,0 +1,22 @@
+STATUS: cody b8, all six items DONE. LANDED at 18bf06eb, 0 ahead / 0 behind,
+tree clean, no force. Three gate refusals, each repaired at cause, nothing
+overridden. No api/ edit, no hook, settings.json never committed.
+
+DECISION-NEEDED:
+1. There is NO office_manager role in SAIRNcare. Add it across four places, or
+   declare owner to BE it. Both legitimate; the note picks neither.
+2. billing still reads every resident's MAR via family_mar at HEAD. api/'s fix.
+3. My own WEAKENING flag is author-resolved and unsigned.
+
+CHANGED: 1D 2D 3D(11 exit 1, 1 timeout, ZERO green) 4VERIFIED-not-rebuilt
+5D(new finding: clock_flags assigned, not merged) 6D
+
+EVIDENCE-path: the five docs/2026-10-13-cody-b8-*.md, each naming its commands
+
+UNVERIFIED: no endpoint, no database. 20 of 42 failing arms are COULD-NOT-RUN,
+not defects. Record 2026-09-27 unreachable: CANNOT SIGN.
+
+NEXT: hank lands the MAR grant and clock_flags; cc takes 2026-10-12; cody
+drives suites 13-36.
+
+CONTEXT ~31% (315k of 1M)
