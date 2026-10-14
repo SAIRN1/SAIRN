@@ -1,0 +1,807 @@
+REPORT fourth b19
+
+SAIRN batch report -- session fourth (ted), batch b19, 2026-10-14.
+Working directory C:\Users\marsh\Documents\SAIRN-fourth, branch main.
+
+EVERY FIGURE IN THIS REPORT NAMES THE COMMAND THAT PRODUCED IT. Where a thing
+was not run, it is marked UNVERIFIED rather than assumed, and section 8 lists
+every one of those.
+
+
+================================================================================
+0. THE SHORT VERSION
+================================================================================
+
+BOTH OVERDUE TIER A OBLIGATIONS ASSIGNED TO ME ARE DISCHARGED -- 397 hours and
+339 hours -- each by me as its assigned owner, neither by --takeover. For the
+first time in at least three batches there is no overdue Tier A work owned by
+`fourth`. Two fresh obligations arrived and both are inside the 24h deadline.
+
+THE SHARPEST FINDING is a pattern across the 397h review rather than a single
+defect:
+
+  TWO of cody's five self-flagged claims have CORRECT CODE AND FALSE REASONING,
+  and in BOTH the real protection lives in a NEIGHBOURING arm that the author
+  credited to the arm under discussion. Measured, not argued: on a registry
+  shrunk to two rows BOTH 3b and 3c pass -- what actually dies is 3a and 3c0.
+  A correct arm kept for a false reason is an arm nobody can maintain, because
+  the next editor reads the comment, not the measurement.
+
+THE SECOND FINDING REVERSES MY OWN b18 ORDERING. The sd_photos premise,
+measured from source: a 65,536-byte row cap against an unmodified base64 data
+URL of a file accepted up to 10MB gives a ~48.9KB ceiling, so EVERY REAL
+PHOTOGRAPH FAILS; the rejection is answered as 503 NOT_PROVISIONED ("tables are
+not set up yet") in twelve branches; and the only client report is a
+console.warn. So the SIZE FAILURE is the live, total defect and b18's
+provenance gap is LATENT BEHIND IT -- which means T17 must land with or before
+the size fix, not after it.
+
+THE 339h DISCHARGE IS A REAL DRIVE, not a read: four invocations with exit
+codes 0 / 0 / 2 / 0, the subject's own sha256 unchanged before and after, and
+the auditor clone never entered.
+
+THE CENSUS CORRECTS ITS OWN FRAMING. All 34 dangling REVIEWED shas are listed
+and classified -- and the number b18 did not mention is 145 FURTHER reviewed
+records with NO SHA AT ALL. 179 reviews are unre-derivable; only 34 are a
+defect.
+
+Pushed without force, twice, both first-attempt. HEAD == origin/main, 0/0.
+Context at handoff: 42% of 1000k, measured.
+
+
+================================================================================
+1. ITEM 1 -- THE 397-HOUR OBLIGATION IS DISCHARGED
+================================================================================
+
+  CMD PYTHONIOENCODING=utf-8 python tools/tier_a_review_gate.py --list
+      MINE 397h  cody  2026-09-28T03:34:57Z  dnt_ar, dnt_revenue
+                 file: tests/reachability/resource_demand_probe.py
+
+  CMD ... --discharge cody 2026-09-28T03:34:57Z --body-file <verdict>
+      DISCHARGED -- fourth reviewed the obligation cody opened
+      2026-09-28T03:34:57Z, on dnt_ar, dnt_revenue                     EXIT 0
+
+Full verdict: docs/2026-10-14-fourth-b19-tier-a-queue16-discharge.md.
+Register verdict string: 7,015 characters, verified present on origin/main.
+
+1.1 WHAT I OPENED AND WHAT I LOOKED FOR -- stated because the obligation's own
+    instruction is that a verdict naming neither is not a review
+
+  opened                                        looked for
+  --------------------------------------------  --------------------------------
+  tests/push_gate/refspec_and_override_probe.py arm A3, PLUS the pre-change blob
+    git show bb840eec^:<same path>              whether the OLD arm ran backwards
+                                                AND separately whether it read
+                                                the working tree where it should
+                                                have read the commit -- two
+                                                halves checked APART, because if
+                                                the direction was already right
+                                                the author inverted a correct arm
+  tests/reachability/resource_demand_probe.py   whether 3c is the logical
+    arms 3a/3b/3c0/3c and the two functions     complement of 3b, and whether the
+    they call in tools/sairn_reachability_      STATED JUSTIFICATION is true --
+    check.py, EVALUATED IN PROCESS              the reasoning, not the outcome
+  tests/run_rotation_blast_radius_probe.py's    the off-by-one, and EVERY
+    version arm + tools/rotation_blast_         degenerate version string that
+    radius.py CRITERIA_VERSION                  could make the check vacuous
+  tools/entry_point_scope_check.py FAMILIES +   whether the grouping is too
+    its 21 fixtures + tests/run_entry_point_    permissive -- and the opposite
+    scope_probe.py, fixture lock RUN            question too, because a criterion
+    (21/21, exit 0) and one real run (exit 1)   can be both
+  docs/CRITICALITY-TIERS.md sf_events row vs    whether sessionId really is the
+    sairnfreedom.html and sql/sairnfreedom_     ONLY link -- five named candidate
+    data_schema.sql                             second paths, each disproved
+
+  HOW: each of the five was re-derived from source by a reader NOT given cody's
+  conclusions, then the load-bearing claims were re-checked by hand. Nothing was
+  written to the repo; tools/ and tests/ are not mine.
+
+1.2 THE BOUND -- A STATE REVIEW, AND THE VERDICT SAYS SO
+
+  CMD git cat-file -e f88105a88287d89b80d93cf2936066b198b90069   ->  DANGLING
+  CMD ... --reseat-shas --include-reviewed
+      cody 2026-09-28T03:34:57Z -> bb840eeccb3c  [FILE-SET SUBSET]  (WEAK)
+
+Unlike b18's dangling record this one HAS a candidate. I did not --write it: a
+containment claim is not an equality claim and the tool splits strong from weak
+across two flags on purpose. I DID read bb840eec to recover arm A3's pre-change
+text -- it is the commit that changed both A3 and 3c in one edit, consistent
+with the obligation's own description, WHICH MAKES THE WEAK BASIS PLAUSIBLE AND
+"PLAUSIBLE" IS NOT "RECORDED".
+
+1.3 CLAIM 1 -- BOTH HALVES TRUE, AND THE OLD ARM WAS WEAKER STILL
+
+  OLD (bb840eec^):  set(exported) <= set(on_disk)
+  NEW:              sorted(set(committed) - set(exported)) == []
+
+Both carry the same label -- "every committed seed json is present in the
+export" -- and that label is reference-subset-of-exported. THE OLD CODE
+ASSERTED THE OPPOSITE CONTAINMENT, and the consequence runs in exactly the
+dangerous direction: if export_sql_at() silently DROPPED a seed, `exported`
+shrinks and `exported <= on_disk` becomes MORE true. The old arm passed on the
+defect it was named after.
+
+HALF TWO likewise: OLD read os.listdir(REPO/sql) -- the working tree, no
+subprocess at all -- while the function under test reads `git ls-tree -r
+--name-only <tip> sql/`. A different population.
+
+AND IT WAS WEAKER THAN cody CLAIMED, which strengthens rather than weakens the
+case for the rewrite: note == '' is only true when every committed seed name
+exists on disk, so once the NEIGHBOURING arm passed, exported <= on_disk was
+AUTOMATICALLY true. The old arm's entire residual content was
+len(exported) > 0.
+
+F1, THE RESIDUAL: the new arm still cannot demonstrate half two's fix ON A
+CLEAN TREE, because the two populations coincide there. Its sensitivity is
+limited to states where the sql/ FILE SET diverges between HEAD and disk -- and
+the neighbouring arm already demands near-cleanliness. What actually proves the
+section header is a DIFFERENT arm, the one that varies the commit -- AND THAT
+ARM PRINTS "SKIP ... arm not run" RATHER THAN FAILING. A commit-reading claim
+whose only real proof can decline to run is the gap. Two latent fragilities
+beside it: the probe uses ls-tree WITHOUT -r while the implementation uses -r
+(agreeing only because sql/ is flat today), and both sides basename-flatten.
+
+1.4 CLAIM 2 -- THE JUSTIFICATION IS MEASURED FALSE IN BOTH HALVES
+
+cody asked for exactly this: "test that reasoning, it is the whole
+justification for keeping both."
+
+  THE LOGIC.  3b asserts  unrequested == K   (two facts)
+              3c asserts  unrequested <= K   (the first fact alone)
+  So 3b IMPLIES 3c unconditionally. 3c is a strict WEAKENING, not a complement.
+  As an assertion it adds ZERO detection power: name dnt_ar somewhere and 3b
+  goes red while 3c stays green.
+
+  THE JUSTIFICATION, EVALUATED IN PROCESS:
+      apps 16   total 392
+      unrequested  [('sairndental','dnt_ar'), ('sairndental','dnt_revenue')]
+      3b now: True      3c now: True
+      -- registry shrunk to those two rows --
+      SHRUNK 3b:  True     <- cody says this, and it is right
+      SHRUNK 3c:  True     <- cody says FALSE; IT IS TRUE
+      SHRUNK 3a:  False
+      SHRUNK 3c0: universe = 2 -> len(_universe) > 300 is False
+
+BOTH SURVIVE THE SHRINK. What actually dies is 3a and 3c0 -- the two
+floor-under-the-denominator arms, added in the same edit. cody attributed 3c0's
+protection to 3c.
+
+WHAT cody DID FIX, AND IT IS REAL: the previous len(unrequested) < 5 floor
+tolerated FOUR unnamed resources under a label saying "every". That is gone. One
+of the two defects named in the edit was genuinely closed; the second was not,
+and the comment claims both.
+
+Keeping 3c is still defensible -- it publishes the named/total denominator in
+its label and emits a named-offenders detail on failure, which 3b's bare list
+equality does not. THAT IS A REPORTING JUSTIFICATION AND A GOOD ONE. It is not
+the logical one claimed, and the comment is the reason a future edit will delete
+3a or 3c0 believing 3c covers them.
+
+1.5 CLAIM 3 -- ARITHMETIC RIGHT, ANTI-VACUITY CLAIM PARTLY WRONG
+
+Three states occupied -> two transitions; range(1, 3) yields exactly
+['.1 -> .2', '.2 -> .3']; both are genuinely explained with their direction in
+tools/rotation_blast_radius.py. No off-by-one.
+
+BUT THE ARM HAS NO GUARD OF ITS OWN. It rejects only an UNPARSEABLE version and
+accepts .0 and .1, for which the demanded set is empty and the unexplained list
+is trivially []. What saves the suite on those is a DIFFERENT, pre-existing arm
+(rev.isdigit() and int(rev) >= 2) -- the same shape as claim 2: the protection
+is one arm over.
+
+  THE CHEAPEST DEFEATING INPUT, named because cody asked for it:
+      CRITERIA_VERSION = '2026-10-14.2'
+  One token. A restarted counter stamping a 4th revision: both arms pass,
+  exactly ONE transition is demanded, and '.1 -> .2' already appears in the
+  file, so revisions 3 and 4 need no explanation.
+  (Runner-up, equally cheap: bump to .4 and add the bare comment `# .3 -> .4`.)
+
+TWO FURTHER OVERSTATEMENTS IN THE SAME CLAIM. The explanation check is a
+SUBSTRING TEST over the whole file, so the source's promise that bumping the
+version "REQUIRES adding the explanation" is false -- it requires adding the
+STRING. And the denominator is SELF-DECLARED, not observed: it is a hand-typed
+literal in the same file the explanations are searched in, and this repo has
+files BORN above .1 -- rotation_blast_radius.py itself was first committed at
+'2026-09-15.2'. N has never been an observable count of revisions.
+
+1.6 CLAIM 4 -- BOTH TOO PERMISSIVE AND TOO STRICT
+
+cody asked only about permissiveness. It is -- and it is also still
+false-positiving, which is the question that was not asked.
+
+TOO PERMISSIVE. FAMILIES is five hand-written tuples, but membership is tested
+against a MODULE-BLIND TAIL NAME (an attribute call flattens to f.attr). So:
+
+  * ast.walk is read as a file-tree population. 21 of 336 tools call ast.walk(,
+    and in four of them os.walk( does not appear AT ALL -- their entire
+    "population" signal is an AST-node iterator. THIS INCLUDES THE CHECKER'S OWN
+    SELF-VERDICT: run against itself it reports walk as both doors' population
+    and declares no divergence, while its real enumerator -- a
+    `git ls-files tools/*.py` subprocess -- is in no family and no vocabulary at
+    all. The spurious walk also lifts those tools out of the honest
+    no-population verdict into the stronger-sounding shared one.
+  * The file-tree family is three or four QUESTIONS, not one: directory
+    traversal, what-git-tracks, and what-is-the-test-corpus. By the file's own
+    definition -- "a family is ONE QUESTION with SEVERAL ACCESSORS" -- that is
+    too permissive, and it is the family the live false positive fires on.
+
+THE GENUINE DIVERGENCE IT MISSES, AND THE MISS IS PINNED AS CORRECT: the
+criterion compares accessor NAMES and NEVER ARGUMENTS, and a fixture locks
+tracked('*.py') + tracked('*.js') behind one door against tracked('*.py')
+behind another as CLEAN -- "the handlers agree with the other door". TWO DOORS
+READING PYTHON FILES AND JAVASCRIPT FILES ARE DECLARED TO AGREE. Real code of
+that shape exists in tools/assertion_label_shape_check.py and
+tools/entitlement_freshness_check.py.
+
+Two smaller holes in the same vocabulary: ls_files is in POPULATION_CALLS but in
+NO family, so a door calling it counts as enumerating yet can never diverge; and
+two families are 1-tuples, so the all-equal test can never be false for them --
+exclusions dressed as families.
+
+TOO STRICT -- a LIVE false positive at HEAD:
+
+  CMD python tools/entry_point_scope_check.py                     ->  EXIT 1
+      ! tools/purge_evidence_gate.py  doors (no flag -- the bare run) --audit
+        enumerate DIFFERENT populations: file-tree -> ...
+
+Reading the subject: audit() walks source directories for unguarded prune call
+sites; the two listdir calls list one pack directory and one evidence-record
+directory. Three different questions, correct code. Two compounding causes: a
+door that CANNOT EXIST (--record and --require-record are not real-data flags,
+so their reads are attributed to "shared", manufacturing a bare-run door --
+while the subject's argparse puts its three flags in a required mutually
+exclusive group, making a bare run an argparse error); and the two sets differ
+only by a strict SUPERSET, which the all-equal test calls disagreement. NO
+FIXTURE COVERS THE SUPERSET SHAPE -- the only real finding the tool prints has a
+shape its 21 fixtures never decided. Its printed detail is also wrong: it
+formats a {door: calls} dict where it means the calls.
+
+IS THE GROUPING PINNED? No. The only arm over FAMILIES is a SABOTAGE COUNTER
+that empties the map and checks the member count drops to zero -- which proves
+FAMILIES is load-bearing and nothing about whether any member is in the right
+family. No fixture mentions the two singleton families or the orphaned
+vocabulary member.
+
+1.7 CLAIM 5 -- TRUE, with two defects beside it
+
+Five candidate second paths between a hall event and its minted bingo session,
+each disproved:
+
+  (i)   reverse pointer on the session row -- the minted row carries
+        fromEvent: true, a boolean naming no event, and a repo-wide grep finds
+        EXACTLY ONE HIT: that write. Zero readers. Postgres agrees: both tables
+        are opaque data jsonb with no FK and no event column.
+  (ii)  date+title / date+kind join -- IMPOSSIBLE for title: the session row
+        carries no title and no kind. Date IS compared, but only inside a
+        refusal check, and that check EXPLICITLY RETURNS for the gaming case.
+  (iii) index / array position -- both stores are push-appended independently,
+        every lookup is by id, and the server-wins merge appends in arrival
+        order so positions are not stable across a hydrate.
+  (iv)  shared generated id -- two separate Date.now() calls with different
+        prefixes, and NOTHING anywhere derives one from the other (a grep for
+        prefix-stripping and numeric-suffix comparison finds only the mint
+        sites).
+  (v)   naming convention -- the only "Bingo session" string is a RENDERED
+        literal for sessions with no event, and the " + bingo session" suffix is
+        itself derived FROM the pointer. Neither is stored.
+
+AND THE HARM THE TIER ARGUMENT ASSERTS IS REAL: the three-in-seven-days
+statutory population is the whole sessions store minus one optional excluded id
+-- no fromEvent filter, no recorded filter, AND IT NEVER CONSULTS THE EVENTS
+STORE AT ALL. A stranded session WOULD still count toward the ORC
+2915.09(C)(4) limit. The B->A promotion on INTEGRITY rests on a correct code
+fact and its named trigger stands.
+
+F6, NEW, AND IT IS THE FINDING OF CLAIM 5: sfDeleteEvent removes the linked
+session BY STORED ID with no existence check before the filter and no count
+comparison after it.
+
+  stored id MISSING  -> guard false, NO session touched, toast says
+                        "Event removed". Silent no-op; the session survives and
+                        keeps counting.
+  stored id STALE    -> the filter matches nothing AND THE TOAST STILL SAYS
+                        "Event and its bingo session removed".
+                        AFFIRMATIVE FALSE SUCCESS, worse than a silent no-op.
+  stored id WRONG    -> that row is deleted with no verification and success is
+                        reported.
+
+And the dangling state is ONE CLICK AWAY by a path the register row does not
+mention: sfDeleteSession removes a session and NEVER clears the event's
+pointer, while the Sessions table offers Remove on every row. Plus: the sync
+never deletes a server row, the grant is select/insert/update with NO DELETE,
+and the merge re-adds any server row absent locally -- so a deleted session can
+COME BACK on a later hydrate, into the store the statutory count reads.
+
+F7: all six line citations in the sf_events register cell have ROTTED. Every
+function named is real and does what the cell says -- only the numbers moved.
+
+1.8 ROUTING
+
+  cody   4 arms: non-skippable older-commit arm; the 3c comment or a real
+         complement; the version arm asserting its OWN floor; three fixtures for
+         the scope checker (the POPULATION_CALLS-vs-FAMILIES one-liner FIRST --
+         one line, and it would have caught the orphaned ls_files).
+  cc     3 tools/ fixes: the ast.walk tail-name collision, the door that cannot
+         exist, the printed-detail formatting. The probe arms are cody's and the
+         tool is cc's; this review does not merge the two.
+  hank   verify sfDeleteEvent's delete (count before and after, report what
+         actually happened) and refuse-or-warn in sfDeleteSession.
+  shared the sf_events anchors -- cheapest closed by the already-open
+         --read-the-line ask on tools/citation_line_drift_check.py.
+
+
+================================================================================
+2. ITEM 2 -- THE 339-HOUR OBLIGATION, DISCHARGED AFTER A REAL DRIVE
+================================================================================
+
+  CMD ... --discharge hover2 2026-09-30T13:59:56Z --body-file <verdict>
+      DISCHARGED -- fourth reviewed the obligation hover2 opened
+      2026-09-30T13:59:56Z, on leg_insurance, mech_checks               EXIT 0
+
+Full verdict: docs/2026-10-14-fourth-b19-hover2-citation-linter-discharge.md.
+Register verdict string: 5,752 characters, verified on origin/main.
+
+2.1 THIS ONE IS A REAL DIFF REVIEW
+
+  CMD git cat-file -e 82b69588a125e9b730cfafeb5a95e29aee55f5a1  ->  RESOLVES
+  CMD git cat-file -e c78b545b                                  ->  RESOLVES
+
+Both the opened_at_sha and the change's own commit are in this clone's object
+store -- the opposite of my other two discharges this week.
+
+2.2 ELIGIBILITY AND THE BOUNDARY
+
+The obligation names its reviewer BY ROLE: any build session other than the
+change's author, holding no claim on .claude/skills/sairn-hover-auditor/, with
+BOTH hover instances explicitly excluded. I am a build session, I did not write
+the linter, and my b19 claim declares docs/ only and names the auditor skill
+tree READ-ONLY.
+
+C:\Users\marsh\Documents\SAIRN-hover WAS NEVER ENTERED -- not read, not listed,
+not cd-ed into. Everything is against THIS clone's tracked mirror at
+.claude/skills/sairn-hover-auditor/tools-hover2/, which is the artefact
+c78b545b actually created and therefore the right subject.
+
+2.3 THE FOUR DRIVES, WITH REAL EXIT CODES
+
+  D1  --lint --target "leg_insurance" --text "per seq 275 this still holds,
+      122 of 122 rows carry it"                                      EXIT 0
+      Real output: seq 275 flagged UNVERIFIED-CROSS-LOG (it is in the OTHER
+      auditor's log); '122 of 122' flagged STALE against a LIVE pool size of
+      116; the whole report labelled ADVISORY, "a heuristic, not a verdict";
+      LINT-TOKEN printed.
+  D2  --selftest                                    EXIT 0 -- 33 ok, 0 failed
+      including five arms labelled KNOWN-BAD CONTROL.
+  D3  --lint --target x --file <nonexistent>                          EXIT 2
+      "COULD NOT RUN: FileNotFoundError" -- FAIL-CLOSED VERIFIED IN EXECUTION,
+      not merely in reading.
+  D4  no arguments                                                    EXIT 0
+      prints the docstring and touches no file.
+
+  INTEGRITY ON THE DRIVE ITSELF:
+  CMD sha256 of hover_citation_linter.py BEFORE  ->  c226563783a8e56e
+  CMD sha256 of hover_citation_linter.py AFTER   ->  c226563783a8e56e
+  CMD git status --porcelain, before and after   ->  only my own untracked
+                                                     b19 manifest
+
+2.4 THE THREE THINGS THE OBLIGATION ASKS
+
+  AUDITOR TOOLING ONLY -- YES. Two named checks, three CLI forms, and
+  `grep -n '\bgit\b'` returns ZERO MATCHES, so there is no git-subcommand
+  question to answer at all. The header refuses to oversell itself ("WHAT THIS
+  ACTUALLY CATCHES, STATED NARROWLY, NOT OVERSOLD") and declares itself
+  advisory rather than a gate.
+
+  READ-ONLY TOWARD PLATFORM DATA -- YES, and the precise answer is that it is
+  not write-FREE, it is write-free TOWARD PLATFORM DATA. Every write construct
+  in all 701 lines is inside selftest() and all three go to %TEMP%:
+  tempfile.mkdtemp(), io.open(draft,'w') + write, tempfile.mkstemp() +
+  os.fdopen('w') + write, with os.remove in a finally. ABSENT BY GREP: shutil,
+  os.makedirs/mkdir, os.rename/replace, rmtree, pathlib, json.dump to a file,
+  ALL network (requests|urllib|http|socket), os.system/popen, chmod, chdir, and
+  any sys.stdout redirection -- every output is a bare print(). The three
+  subprocess calls are re-invocations of this same file on the --lint path. The
+  import of hover_log has no file side effect: its module level is constants and
+  regexes with its CLI behind __main__.
+  FOUR READ SITES ONLY: its own log (ABSENT in this clone -- the guard returns
+  [] rather than raising), the auditor's OWN CRITICALITY-TIERS.md in
+  SAIRN-hover2 (the source of D1's live 116), H1's log read-only by explicit
+  contract, and the operator's --file draft. A grep for
+  api/|sql/|.html|docs/|.sql|.js yields exactly two hits, both docstring
+  citations, neither a path. NOTHING platform-side is read.
+
+  NO WRITE TO leg_insurance OR mech_checks -- YES. Nine occurrences, and not one
+  is in a path, a read target, SQL or a write: 1 docstring prose, 2 synthetic
+  fixture literals, 3 as the current_target argument, 3 inside test NAME
+  strings. The obligation's own wording -- "short string tokens inside the
+  fixtures" -- is VERIFIED EXACTLY. And the fixture is frozen deliberately,
+  written to a temp file and read via load_rows(path=...) explicitly, "never the
+  default, never any real log, from any location".
+
+2.5 ONE FINDING, AND THE REAL BOUND
+
+F1, hover2's, lowest severity: --selftest LEAKS a temp directory and the
+draft.txt inside it on every run, because the finally: removes only the mkstemp
+fixture. Outside any repo, zero platform risk -- and still a residual write in a
+tool whose whole subject is self-discipline about evidence. Two lines of
+shutil.rmtree(..., ignore_errors=True) closes it.
+
+THE BOUND, AND IT IS b18's LESSON APPLIED TO MY OWN WORK RATHER THAN FOUND IN
+SOMEBODY ELSE'S: c78b545b synced SIX tools and this review opened ONE. THE
+OTHER FIVE ARE NOT REVIEWED AND ARE NOT BLESSED BY THIS VERDICT -- said in the
+verdict string itself, so the register carries it rather than a document nobody
+opens.
+
+CREDIT WHERE IT IS DUE, because a review that only lists findings is not a
+review: this tool already does three things this review would otherwise have
+existed to enforce. It names a THIRD STATE (UNVERIFIED-CROSS-LOG, "never passed
+as clean or failed as missing"), it FAILS CLOSED with exit 2 on a missing input
+instead of printing zero findings, and it counts a SKIPPED regression as a
+FAILURE on the stated ground that "an undriven regression proves nothing".
+
+
+================================================================================
+3. ITEM 3 -- 71 CITATIONS RE-DERIVED, AND THE ONE THAT MOVED
+================================================================================
+
+  71 checked -- 70 UNMOVED, 1 MOVED, 0 NOT FOUND, 0 CANNOT TELL
+
+THE MOVER IS THE INTERESTING ONE. api/_lib/sen-evv-clock.js:120-131 was cited
+for "a literal array" -- and at HEAD that range holds THE TAIL OF A REFUSAL
+MESSAGE, not the array. The real construct is the array at :79 and the
+field.replace loop at :129-140. AN OFFSET-SHIFT WOULD NOT HAVE CAUGHT THIS,
+because the range was not merely displaced -- it had never pointed at what the
+sentence said. It is now anchored on
+
+    const CLOCK_FIELDS = ['clock_in_at', 'clock_out_at'];          (:79)
+    stamps[field.replace('_at', '_received_at')] = serverNowISO;   (:139)
+
+so the next drift is visible rather than silent.
+
+TWO BARE :N CONTINUATIONS WERE CONFIRMED AS POINTING TWO PARAGRAPHS BACK rather
+than at the nearest preceding file (:20-24 -> the census SQL, :740 -> the
+compliance seed). Both were right, and BOTH ARE EXACTLY WHAT A MECHANICAL
+RE-OFFSET WOULD HAVE BROKEN.
+
+THE STANDING LESSON, now three batches old and re-earned each time: RE-DERIVE BY
+CONTENT, NEVER BY ARITHMETIC. This batch's two new discharge documents were
+written with that in mind -- they anchor on function names and quoted text in
+preference to line numbers wherever a sentence allowed it.
+
+
+================================================================================
+4. ITEM 4 -- ALL 34 DANGLING REVIEWED SHAS, CLASSIFIED
+================================================================================
+
+docs/2026-10-14-fourth-b19-dangling-sha-census.md.
+
+  CMD PYTHONIOENCODING=utf-8 python tools/tier_a_review_gate.py \
+        --reseat-shas --include-reviewed
+      distinct file sets indexed : 1584
+      population                 : open + reviewed
+      records examined           : 252
+      reachable already          :  66
+      reseatable                 :   1   (exact file set)
+      reseatable, WEAK           :  13   (file-set subset in a 6h window)
+      REFUSED                    : 172
+
+  DERIVATION:  252 records = 233 reviewed + 19 open
+               107 carry an opened_at_sha  = 88 reviewed + 19 open
+               34 = 88 - 54 reachable reviewed
+               7  = 19 - 12 reachable open
+               66 = 54 + 12  (checks out)
+
+THE b18 FIGURE OF "34 OF 88" REPRODUCES EXACTLY. That matters because b18 was
+QUOTING the tool and this is an independent derivation.
+
+THE FRAMING FINDING -- THE NUMBER b18 DID NOT MENTION:
+
+  REFUSED: NO_SHA_AT_ALL  ->  145 records, every one `reviewed`
+
+145 reviewed records have NO opened_at_sha in the first place. They predate the
+stamp. THAT IS A DIFFERENT FACT FROM "a sha that no longer resolves" AND MUST
+NOT BE FOLDED INTO IT: a record with no sha never made a claim; a record WITH a
+sha that dangles made one that is now unverifiable. 145 + 34 = 179 REVIEWS ARE
+UNRE-DERIVABLE FROM THE REGISTER, AND ONLY 34 OF THOSE ARE A DEFECT. Any fix
+aimed at the 34 leaves 80% of the population untouched, and "34 dangling" read
+alone overstates what a re-seat buys.
+
+THE 34, BY CLASS:
+
+  RESEATABLE-WEAK                        10   fixable with two flags
+  NO_OBJECT_IN_CLONE                      7   not fixable here
+  AMBIGUOUS_EXACT_SET                     6   refusing is RIGHT
+  NO_OBJECT_IN_CLONE+SUBSET_AMBIGUOUS     4   the worst class
+  EXACT_SET_OUT_OF_WINDOW                 3   the window is the judgment call
+  TWIN_SUBJECT_AMBIGUOUS                  2
+  SHA_WRONG_WHEN_WRITTEN                  2   <- THE ONLY WRITE-TIME DEFECT
+
+BY AUTHOR: hank 13, fourth 9, cody 7, cc 5 -- roughly proportional to who
+commits, which is the answer that means NOBODY'S WORKFLOW IS THE CAUSE.
+
+SHA_WRONG_WHEN_WRITTEN IS THE CLASS TO READ TWICE. The other six are "the graph
+moved under a correct record". These two are "the record was never right" -- a
+rebase CANNOT cause that, only the stamping path can. BOTH WERE AUTHORED BY
+fourth, which is why it is said out loud rather than routed quietly.
+
+THREE THINGS THE TABLE SHOWS AND A COUNT DOES NOT:
+  1. b18's own 418-hour obligation IS IN THIS LIST (NO_OBJECT_IN_CLONE) --
+     which is mechanically WHY that discharge had to be a state review.
+  2. THE NEWEST ENTRY IS THREE HOURS OLD (hank -> fourth, five files including
+     api/_lib/ai-safeguards.js). This is live, not a backlog, and that record
+     was REVIEWED with an already-dangling sha.
+  3. Six of the 34 name docs/CRITICALITY-TIERS.md as their ONLY file -- the
+     most-touched document on the platform, which is why their exact-set
+     matches come back AMBIGUOUS. The tool is not failing; the file set is not
+     discriminating.
+
+I RE-SEATED NOTHING. The one strong-basis record is OPEN, not one of the 34; the
+10 weak ones need --write --write-weak-basis, two flags on purpose because
+containment is a different claim from equality, and re-seating ten of somebody
+else's reviewed records from my clone on a containment basis is a register-wide
+write on a judgment I do not own.
+
+FOUR ASKS ROUTED TO cc, WITH A PRIORITY because four equal asks are no
+priority:
+  1 FIRST  separate NO_SHA_AT_ALL from the dangling population in every output,
+           so "REFUSED: 172" stops reading as 172 defects. A print change.
+  4 NEXT   stamp the sha in the SAME commit that writes the record -- THE ONLY
+           PREVENTIVE ONE, and observation 2 above says the current path can
+           produce an already-absent sha.
+  2 THEN   give SHA_WRONG_WHEN_WRITTEN its own exit path.
+  3 LAST   make the EXACT_SET_OUT_OF_WINDOW window a stated, overridable
+           number: an exact file-set match outside the window is BETTER evidence
+           than a subset match inside it, and today the first is refused while
+           the second is offered as WEAK. That ordering is backwards.
+
+
+================================================================================
+5. ITEM 5 -- THE sd_photos PREMISE, MEASURED FROM SOURCE ONLY
+================================================================================
+
+docs/2026-10-14-fourth-b19-sd-photos-premise.md. No SQL was run, no endpoint
+called, no browser opened.
+
+  CMD sed -n '343p' sql/stonedesk_data_schema.sql
+      constraint sd_photos_data_size check (octet_length(data::text) <= 65536)
+  CMD sed -n '25988p' stonedesk.html
+      const validFiles = files.filter(f => f.type.startsWith('image/')
+                                        && f.size <= 10*1024*1024);
+  CMD sed -n '25999p' stonedesk.html
+      data: e.target.result,
+
+  THE ARITHMETIC:
+      cap on data::text                                65,536
+      minus the 'data:image/jpeg;base64,' prefix          -23
+      minus the other seven fields' JSON overhead       ~-300
+      base64 characters available                     ~65,213
+      BINARY BYTES THAT FIT  (x 3/4)                  ~48,909
+
+~48.9 KB OF IMAGE. A phone photo is 2-5 MB. The client accepts up to 10 MB --
+roughly 214x the ceiling -- and there is NO downscale, NO re-encode and NO strip
+anywhere between the FileReader result and the sync; sdSyncCollection pushes the
+whole changed row. EVERY REAL PHOTOGRAPH FAILS THE CAP.
+
+  CMD sed -n '14263p' api/sd-data.js
+      if (r.status === 404 || r.status === 400) { res.status(503).json({ error:
+        { code: 'NOT_PROVISIONED', message: 'StoneDesk data tables are not set
+        up yet -- run sql/stonedesk_data_schema.sql in Supabase first.' } });
+        return; }
+
+A Postgres CHECK violation arrives as 400. That branch folds 400 in with 404 and
+answers 503 NOT_PROVISIONED. THE TABLE EXISTS AND IS CORRECTLY PROVISIONED; THE
+ROW IS TOO BIG. The diagnosis points the reader at a migration they have already
+run -- and `grep -n "status === 404 || r.status === 400" api/sd-data.js` returns
+TWELVE such branches, so this is a pattern and not a typo.
+
+AND THE ONLY CLIENT REPORT IS console.warn. sdData distinguishes three states
+deliberately -- its own comments say "401/403 is 'you may not have this', which
+is a different fact from 'there is none of this'" and "a 404, a 500 or a 502 is
+'we could not ask', which is a third fact again" -- and sdSyncCollection's
+comment states the principle exactly: "silence would make a backup that is not
+happening look like one that is." BUT sdDataFailed's entire body is one
+console.warn. NO TOAST, NO BANNER. The user sees the photo in the panel with its
+"Done" badge and nothing tells them the server copy does not exist.
+
+THE VERDICT: THE SIZE FAILURE IS THE URGENT HALF, AND THE MARGIN IS NOT CLOSE.
+
+                      size failure                 provenance gap
+  who it affects      every photo over ~48.9KB     only photos small enough to
+                      -- every real photograph     LAND, which today is nearly
+                                                   none
+  what is lost        THE BACKUP. The row does     a provenance field on a row
+                      not exist on the server      that does exist
+  how it presents     success in the UI and a      the text renders unlabelled
+                      console.warn nobody reads
+  what the error says "tables are not set up yet"  n/a
+  blast radius        the 400->503 misattribution  one resource
+                      is in TWELVE branches
+
+AND THE TWO ARE NOT INDEPENDENT, WHICH IS WHAT CHANGES THE ORDER OF WORK. The
+provenance gap is live ONLY for rows that land. THE MOMENT THE SIZE FAILURE IS
+FIXED BY ANY ROUTE, EVERY PHOTO BEGINS LANDING AND THE PROVENANCE GAP BECOMES
+UNIVERSAL ON THE SAME DAY. So T17 must land WITH or BEFORE the size fix. That
+sequencing is the actionable output and IT IS THE OPPOSITE OF WHAT MY OWN b18
+ORDERING IMPLIED.
+
+I will not overstate it: the provenance gap is NOT zero today -- a small enough
+image does land, with raw model text and no ai_source -- so T17 is a real arm
+against a real if rare row. It is live but low-volume; the size failure is live
+and total.
+
+WHAT THIS CORRECTS IN MY OWN b18 SPEC: §7.6.1 filed the size constraint as "ONE
+THING THIS SPEC DOES NOT CLAIM, because it was not run", beneath a provenance
+finding presented as the main event. Measured, the subordinate clause is the
+live defect. b18's caveat DID name the right conclusion in its last sentence --
+"if the row never lands, the provenance gap is latent rather than live, and the
+size failure is the more urgent half" -- AND THEN ORDERED THE DOCUMENT THE
+OTHER WAY ROUND. That is the error worth recording: a conditional stated
+honestly and then not resolved leaves the reader acting on the ordering rather
+than on the condition. §7.6.1's facts hold and no edit to it was needed.
+
+ROUTED TO hank, in order: (1) decide where the image lives -- I recommend
+CLIENT-SIDE DOWNSCALE as the smallest change that makes the backup real, with
+separating the blob from the row named as the direction of travel; raising the
+cap is a DESIGN CALL, not a constant bump, since 65,536 is a house convention
+that is correct on a dozen sibling tables. (2) Stop the 400->503
+misattribution -- worth doing independently and immediately, at no behavioural
+cost. (3) Make the failure visible to a human. (4) Then T17.
+ROUTED TO cody: one failing-first arm -- an oversized sd_photos write must NOT
+answer 503 NOT_PROVISIONED.
+
+
+================================================================================
+6. ITEM 6 -- PUSHED, NOT FORCED, CONFIRMED LANDED
+================================================================================
+
+  CMD git push origin main  (items 1-5)       ->  EXIT 0, FIRST ATTEMPT
+      e46ccfcd..a96efce0  main -> main
+  CMD git push origin main  (handoff + item-6 manifest)  ->  EXIT 0, FIRST
+      ATTEMPT
+
+  CMD git rev-parse --short HEAD / origin/main   ->  4abc01ec / 4abc01ec
+  CMD git rev-list --left-right --count origin/main...HEAD  ->  0   0
+  CMD git status --porcelain                     ->  empty
+  CMD git cat-file -e origin/main:<each file>    ->  5 of 5 docs/ + handoff
+  CMD grep -ci "force|forced|+ refs" over the push log  ->  0
+
+Both pushes landed on the first attempt -- no non-fast-forward this batch, in
+contrast to b18 which needed three rebase-and-retry cycles. No
+SAIRN_SEED_GATE=off in any form, and no SAIRN_GATE_EXEMPT=seed either --
+mentioned because CLAUDE.md's push protocol CHANGED UNDER ME mid-batch: the
+scoped exemption is now documented as the correct first reach and the blanket
+flag as the wrong one. I used NEITHER. .claude/settings.json was not edited and
+is in no commit. Hooks untouched -- not added, not removed, not restored. The
+pre-push gate ran and is working: an earlier b18 attempt was correctly refused
+by register_feed_gate with a measured explanation.
+
+
+================================================================================
+7. WHAT CHANGED, FILE BY FILE
+================================================================================
+
+docs/batch-manifest-fourth-b19.json                NEW   6 ids, locked, 6 done
+docs/2026-10-14-fourth-b19-tier-a-queue16-discharge.md
+                                                   NEW   the 397h verdict: 5
+                                                         claims, 7 findings,
+                                                         what-I-opened table
+docs/2026-10-14-fourth-b19-hover2-citation-linter-discharge.md
+                                                   NEW   the 339h verdict: four
+                                                         real drives, 1 finding,
+                                                         the five-sibling bound
+docs/2026-10-14-fourth-b19-dangling-sha-census.md  NEW   all 34, classified; the
+                                                         145-NO_SHA framing
+                                                         finding; 4 cc asks
+docs/2026-10-14-fourth-b19-sd-photos-premise.md    NEW   source-only
+                                                         measurement; the
+                                                         ordering reversal
+docs/2026-10-14-fourth-b18-tier-a-queue14-discharge.md
+                                                   EDIT  the one moved citation
+                                                         re-anchored on quoted
+                                                         text, plus a note
+                                                         recording the third
+                                                         re-derivation
+docs/tier-a-reviews.json                           EDIT  TWO records moved open
+                                                         -> reviewed, by the
+                                                         gate, with 7,015 and
+                                                         5,752-character
+                                                         verdicts
+SAIRN-handoff-fourth-b19.md                        NEW   written BEFORE this
+                                                         report
+
+NO api/ FILE. NO sql/ FILE. NO tools/ FILE. NO tests/ FILE. NO FILE UNDER
+.claude/skills/sairn-hover-auditor/ -- and the auditor clone was never entered.
+docs/ and my own root deliverables only, exactly as the b19 claim declares.
+
+ONE FILE OUTSIDE MY DECLARED SET, DISCLOSED RATHER THAN QUIET, as in b18:
+docs/tier-a-reviews.json, written by tools/tier_a_review_gate.py --discharge.
+It IS named in my b19 claim this time ("docs/tier-a-reviews.json IS written, by
+tools/tier_a_review_gate.py --discharge, which is its designated writer"), which
+is the b18 lesson applied forward rather than re-learned.
+
+
+================================================================================
+8. UNVERIFIED -- everything I could not measure, none of it folded into a pass
+================================================================================
+
+1. THE sd_photos DATABASE FACTS. Four of them, each settleable in one SQL line
+   and none assumed: whether public.sd_photos EXISTS in the live database at all
+   (if it is absent, the 404 leg is firing and NOT_PROVISIONED is the CORRECT
+   answer, which would make my routing item 2 a misdiagnosis of a
+   misdiagnosis -- I consider this unlikely, since the resource is wired end to
+   end, and I CANNOT RULE IT OUT FROM SOURCE); whether any sd_photos row has
+   EVER landed; the real distribution of octet_length(data::text) on rows that
+   did; and whether a user has ever seen that 503.
+2. THE ~300-BYTE JSON OVERHEAD in the §5 arithmetic is an ESTIMATE from the
+   row's field list, not a measurement of a real row. The ~48.9 KB threshold is
+   therefore +/- a few hundred bytes. It changes no conclusion -- a 2 MB photo
+   misses by a factor of 40 either way -- but it must not be quoted as exact.
+3. WHETHER ANY OF THE 10 WEAK RE-SEATS IS CORRECT. The tool says "file-set
+   subset within 6h". I did not open the 10 candidate commits and compare. A
+   plausible candidate is not a verified one, which is precisely why the second
+   flag exists.
+4. WHETHER THE 2 SHA_WRONG_WHEN_WRITTEN RECORDS were mis-stamped by the tool or
+   hand-edited afterwards. Deciding it needs the stamping path's history read
+   against those two commits, and I did not do it.
+5. WHETHER ANY OF THE 145 NO_SHA_AT_ALL RECORDS could be reconstructed at all.
+   --backfill-shas exists and I did not run it, even dry. Named as the obvious
+   next measurement, NOT as a recommendation -- a backfilled sha and a stamped
+   one must not become indistinguishable.
+6. WHETHER ANY EXISTING TEST PINS THE sfDeleteEvent PATH (claim 5's F6). I did
+   not sweep the suites for it. That is a gap in the review, not a clean bill.
+7. CLAIM 5 WAS VERIFIED BY READING AND GREP, NOT BY DRIVING THE APP. I did not
+   open SAIRNfreedom and delete an event; F6's three rows are read from the
+   code, not observed in a browser.
+8. THE FIVE SIBLING TOOLS in c78b545b are NOT REVIEWED. The 339h verdict covers
+   one file of six and says so in the register.
+9. NO TEST SUITE WAS RUN END TO END. Four things were driven: the hover linter
+   four ways, the scope checker's fixture lock (21/21) and one real run (exit
+   1), and the reachability functions evaluated in process. No suite file was
+   executed as a suite.
+10. NO LIVE DEPLOYMENT WAS FETCHED. Nothing in this batch is a code change, so
+    there is no deployed fix to verify -- stated rather than skipped, because
+    the push protocol's step 2 exists and this is the reason it does not apply.
+
+
+================================================================================
+9. THE ONE SENTENCE WORTH KEEPING
+================================================================================
+
+When an author flags their own work and says "check this reasoning, it is the
+whole justification", check the reasoning SEPARATELY from the outcome: two of
+cody's five claims had code worth keeping and a justification that was false,
+and in both the protection they described lived in the arm NEXT DOOR -- which is
+what happens when several arms are written in one edit and the comment is
+written last.
+
+
+  Evidence:
+  docs/2026-10-14-fourth-b19-tier-a-queue16-discharge.md
+  docs/2026-10-14-fourth-b19-hover2-citation-linter-discharge.md
+  docs/2026-10-14-fourth-b19-dangling-sha-census.md
+  docs/2026-10-14-fourth-b19-sd-photos-premise.md
+  docs/batch-manifest-fourth-b19.json
+  SAIRN-handoff-fourth-b19.md
+
+  Logs and scripts:
+  C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\b0f8683c-3365-4d5b-82ea-094a13bdff7e\scratchpad\
+  tier_a_list_b19.log, verdict_b19_queue16.txt, discharge_queue16_b19.log,
+  verdict_b19_hover2.txt, discharge_hover2_b19.log, hover_lint_drive1.log,
+  hover_lint_selftest.log, hover_lint_failclosed.log, hover_lint_noargs.log,
+  reseat_reviewed_b19.log, reseat_reviewed_b19.json, reseat_parsed_b19.json,
+  dangling_34_b19.txt, pull_b19.log, pull_loop_b19.log, push_loop_b19.log,
+  statusline_payload.json
+
+  THE SHA256 BELOW IS DEFINED, not decorative: it is sha256 over every byte of
+  this file up to and NOT including the final hash line -- which is the
+  second-to-last line -- with CRLF normalised to LF, taking the LAST occurrence
+  of the marker. The last occurrence is used deliberately, because this
+  paragraph mentions the marker itself and a naive split on the first would hash
+  only part of the file. Re-derive it with the four lines below:
+
+    import io, hashlib
+    s = io.open('SAIRN-report-fourth-b19.txt', 'rb').read().decode('utf-8').replace('\r\n','\n')
+    body = s.rsplit('SHA' + '256 ', 1)[0]
+    print(hashlib.sha256(body.encode('utf-8')).hexdigest())
+SHA256 247a9c00fb4d62afe830a1ce0254fd811495efbd291248fbfbfa87bd09d8d34f
+END-OF-REPORT
