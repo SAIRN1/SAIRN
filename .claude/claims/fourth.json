@@ -3785,8 +3785,8 @@
       "task": "fourth b20 -- (1) close b19: Drive-API-read the digest and report, verify, manifest --close, release the b19 claim, REAP the stale fourth.lock (2) discharge hank's 2026-10-14T13:50:42Z obligation, 21 leg_* resources + rf_settings, 5 files incl api/_lib/leg-roles.js and api/sd-data.js (3) discharge cc's 2026-10-14T17:20:09Z obligation, quotes and sd_comms (4) name the owner of each of the five unreviewed sibling tools in c78b545b and route each (5) re-anchor the six rotted sf_events register anchors on quoted text, docs/ only, and spec a failing-first rot check routed to cc (6) push without force, confirm landed. I WRITE UNDER docs/ ONLY plus my own root b20 artifacts. NO api/ FILE (hank), NO sql/ FILE (hank), NO tools/ FILE (cc), NO tests/ FILE (cody), NO FILE UNDER .claude/skills/sairn-hover-auditor/ (hover -- read-only here, and the auditor clones are NOT entered). CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: hank's api/ and sql/, cody's tests/, cc's tools/ and the auditor skill tree are READ-ONLY here; items 4 and 5's tool halves are ROUTED, not built. docs/tier-a-reviews.json IS written, by tools/tier_a_review_gate.py --discharge, which is its designated writer; docs/CRITICALITY-TIERS.md IS edited for item 5, cell text only, no row added or renumbered. Hooks untouched, settings.json never committed, no SAIRN_SEED_GATE and no SAIRN_GATE_EXEMPT override. FILES: docs/batch-manifest-fourth-b20.json docs/2026-10-14-fourth-b20-leg-role-matrix-discharge.md docs/2026-10-14-fourth-b20-cc-quotes-comms-discharge.md docs/2026-10-14-fourth-b20-c78b545b-sibling-routing.md docs/2026-10-14-fourth-b20-anchor-rot-check-spec.md docs/CRITICALITY-TIERS.md docs/tier-a-reviews.json SAIRN-handoff-fourth-b20.md SAIRN-report-fourth-b20.txt SAIRN-digest-fourth-b20.txt SAIRN-latest-fourth.md",
       "claimed_at": "2026-10-14T20:46:59Z",
       "claimed_at_epoch": 1792010819.6626427,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-14T23:50:56Z",
       "files": [
         "SAIRN-digest-fourth-b20.txt",
         "SAIRN-handoff-fourth-b20.md",
