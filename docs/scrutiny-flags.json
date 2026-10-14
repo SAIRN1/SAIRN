@@ -3182,6 +3182,49 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/mar_billing_grant.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold CHANGED",
+     "detail": "was: ok('C1. a grant with NO expires_at is 400. \"Time-limited\" ca  now: + ' path. \"Time-limited\" is not a default somebody omits -- "
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "console.log('\\nE. the exemption claims, asserted rather than printed');"
+    }
+   ],
+   "sha": "b2be3d27f908075c4ff383ee956d53ae7cf94abb",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairncare_office_manager_role.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'places. Registered in docs/known-red-suites.json; no gate '"
+    }
+   ],
+   "sha": "b2be3d27f908075c4ff383ee956d53ae7cf94abb",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_clock_flags_merge.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'Registered in docs/known-red-suites.json; no gate reads this. '"
+    }
+   ],
+   "sha": "b2be3d27f908075c4ff383ee956d53ae7cf94abb",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/sd-data-sen-caregiver-pii-scope.test.js",
    "class": "test file",
    "level": "WEAKENING",

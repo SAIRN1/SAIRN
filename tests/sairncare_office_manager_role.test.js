@@ -88,6 +88,52 @@ function read(p) {
   try { return fs.readFileSync(p, 'utf8'); } catch (e) { return null; }
 }
 
+// E1/E2 -- the two facts a deliberately-red suite otherwise only PRINTS.
+// `self` is this file's repo-relative path; `token` is the substring a gate
+// would have to contain to be able to read it.
+function exemptionArms(self, token) {
+  const regPath = path.join(ROOT, 'docs/known-red-suites.json');
+  let reg = null;
+  try { reg = JSON.parse(fs.readFileSync(regPath, 'utf8')); } catch (e) { reg = null; }
+  if (reg === null || !Array.isArray(reg.entries)) {
+    cannot('E1. docs/known-red-suites.json could not be read or has no entries '
+         + 'array, so registration cannot be judged', 'at ' + regPath);
+  } else if (reg.entries.some((e) => e && e.file === self)) {
+    ok('E1. this suite IS registered in docs/known-red-suites.json, so its '
+     + 'deliberate red can be told from a new regression. ' + reg.entries.length
+     + ' entries read');
+  } else {
+    bad('E1. this suite must be registered in docs/known-red-suites.json while '
+      + 'it is deliberately red -- an unregistered red suite is '
+      + 'indistinguishable from a regression',
+        reg.entries.length + ' entries, none with file == ' + self);
+  }
+
+  const toolsDir = path.join(ROOT, 'tools');
+  let readers = null;
+  try {
+    readers = fs.readdirSync(toolsDir)
+      .filter((f) => /\.(py|js|json)$/.test(f))
+      .filter(function (f) {
+        let t;
+        try { t = fs.readFileSync(path.join(toolsDir, f), 'utf8'); }
+        catch (e) { return false; }
+        return t.indexOf(token) !== -1;
+      });
+  } catch (e) { readers = null; }
+  if (readers === null) {
+    cannot('E2. tools/ could not be enumerated, so "no gate reads this" was '
+         + 'not measured', 'at ' + toolsDir);
+  } else if (readers.length === 0) {
+    ok('E2. NO GATE READS THIS -- measured: 0 of the files under tools/ name '
+     + token + '. A suite that TELLS you it is harmless is not evidence that '
+     + 'it is');
+  } else {
+    bad('E2. a tool now references this deliberately-red suite, so it can '
+      + 'block a push', readers.join(', '));
+  }
+}
+
 // COMMENTS ARE STRIPPED BEFORE ANY SOURCE ASSERTION. Both api/ files DOCUMENT
 // the role vocabulary in prose above the code -- and this very file's name will
 // be in anyone's grep output -- so a naive match reports a change that is only
@@ -299,12 +345,22 @@ function roleCheck(sql) {
         'ROLES_BY_APP present: ' + /ROLES_BY_APP/.test(agree));
   }
 
+  // ── E. THE EXEMPTION CLAIMS, ASSERTED RATHER THAN PRINTED ───────────────
+  // A deliberately-red suite normally ends by SAYING it is registered and that
+  // no gate reads it. The push gate's scrutiny ledger reads that sentence as an
+  // exemption being added -- and it is right that the sentence makes a claim.
+  // It was wrong only in that nothing checked it. These two arms check it, so
+  // the closing line can report a result instead of asserting one.
+  console.log('\nE. the exemption claims, measured');
+  exemptionArms('tests/sairncare_office_manager_role.test.js',
+                'sairncare_office_manager_role');
+
   console.log('\n' + pass + ' passed, ' + fail + ' failed, '
             + unproven + ' unproven');
   if (failed.length) console.log(failed.length + ' ARM(S) FAILED: ' + failed.join(', '));
   if (notProved.length) console.log(notProved.length + ' ARM(S) UNPROVEN: ' + notProved.join(', '));
   console.log('\nEXPECTED RED until the api/ owner lands the role in all four '
-            + 'places. Registered in docs/known-red-suites.json; no gate '
-            + 'reads this. CODE CHANGE ROUTED TO hank.');
+            + 'places. Registration and gate-freedom are ASSERTED by arms E1 '
+            + 'and E2, not claimed here. CODE CHANGE ROUTED TO hank.');
   process.exit(fail ? 1 : (unproven ? 3 : 0));
 })();

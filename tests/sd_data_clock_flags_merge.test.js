@@ -336,12 +336,60 @@ function fieldsOf(flags) {
     }
   }
 
+  // ── E. THE EXEMPTION CLAIMS, ASSERTED RATHER THAN PRINTED ───────────────
+  // Same reasoning as tests/mar_billing_grant.test.js section E: a closing line
+  // that SAYS the suite is registered and harmless is a claim nothing checks,
+  // and the push gate's scrutiny ledger correctly reads it as an exemption
+  // being added. Two arms, so the line can report instead of assert.
+  console.log('\nE. the exemption claims, measured');
+
+  const SELF = 'tests/sd_data_clock_flags_merge.test.js';
+  const REG = path.join(ROOT, 'docs/known-red-suites.json');
+  let reg = null;
+  try { reg = JSON.parse(fs.readFileSync(REG, 'utf8')); } catch (e) { reg = null; }
+  if (reg === null || !Array.isArray(reg.entries)) {
+    cannot('E1. docs/known-red-suites.json could not be read or has no entries '
+         + 'array, so registration cannot be judged', 'at ' + REG);
+  } else if (reg.entries.some((e) => e && e.file === SELF)) {
+    ok('E1. this suite IS registered in docs/known-red-suites.json, so its '
+     + 'deliberate red can be told from a new regression. ' + reg.entries.length
+     + ' entries read');
+  } else {
+    bad('E1. this suite must be registered in docs/known-red-suites.json while '
+      + 'it is deliberately red',
+        reg.entries.length + ' entries, none with file == ' + SELF);
+  }
+
+  const TOOLS = path.join(ROOT, 'tools');
+  let readers = null;
+  try {
+    readers = fs.readdirSync(TOOLS)
+      .filter((f) => /\.(py|js|json)$/.test(f))
+      .filter(function (f) {
+        let t;
+        try { t = fs.readFileSync(path.join(TOOLS, f), 'utf8'); }
+        catch (e) { return false; }
+        return t.indexOf('sd_data_clock_flags_merge') !== -1;
+      });
+  } catch (e) { readers = null; }
+  if (readers === null) {
+    cannot('E2. tools/ could not be enumerated, so "no gate reads this" was '
+         + 'not measured', 'at ' + TOOLS);
+  } else if (readers.length === 0) {
+    ok('E2. NO GATE READS THIS -- measured: 0 of the files under tools/ name '
+     + 'sd_data_clock_flags_merge. A suite that TELLS you it is harmless is '
+     + 'not evidence that it is');
+  } else {
+    bad('E2. a tool now references this deliberately-red suite, so it can '
+      + 'block a push', readers.join(', '));
+  }
+
   console.log('\n' + pass + ' passed, ' + fail + ' failed, '
             + unproven + ' unproven');
   if (failed.length) console.log(failed.length + ' ARM(S) FAILED: ' + failed.join(', '));
   if (notProved.length) console.log(notProved.length + ' ARM(S) UNPROVEN: ' + notProved.join(', '));
   console.log('\nEXPECTED RED until the api/ owner merges instead of assigning. '
-            + 'Registered in docs/known-red-suites.json; no gate reads this. '
-            + 'FIX ROUTED TO hank.');
+            + 'Registration and gate-freedom are ASSERTED by arms E1 and E2, '
+            + 'not claimed here. FIX ROUTED TO hank.');
   process.exit(fail ? 1 : (unproven ? 3 : 0));
 })();
