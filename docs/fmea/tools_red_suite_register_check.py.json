@@ -1,0 +1,1421 @@
+{
+ "app_matched": "tooling",
+ "considered": {
+  "defect_records": 553,
+  "detectors_fired": [
+   "1.1",
+   "1.2",
+   "1.3",
+   "1.4",
+   "1.5",
+   "1.9"
+  ],
+  "detectors_run": 12,
+  "matched_this_file": 2
+ },
+ "drafted_on": "2026-10-14",
+ "exists": true,
+ "no_detector_yet": [
+  "1.6",
+  "2.2",
+  "3.1",
+  "3.2",
+  "3.3",
+  "4.1",
+  "4.2",
+  "4.3",
+  "5"
+ ],
+ "risks": [
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "8f15f7c5fc57",
+   "date": "2026-10-06",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "The CTO exec-context statement asserted 'There is NO accounting integration of any kind' while api/accounting.js, api/_lib/accounting-connector.js and sql/accounting_connector_schema.sql exist at HEAD -- the same false-premise-true-conclusion shape as the CFO line in the same file, found by the sweep that followed it. It also claimed 'Supabase Postgres (78 API functions)'; counted at HEAD there are 70 serverless route files under api/ excluding tests, _lib and _resources, 60 of which touch Supabase, and the figure said nothing about what it counted so it could not be re-derived.",
+   "rules": [
+    "2.3"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "811292cba3b8",
+   "date": "2026-10-14",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "TWO DEFECTS IN ONE COMMIT, both about a tool mistaking its environment for its subject. (1) tools/red_suite_register_check.py drive() ran every REGISTERED red suite with cwd=REPO -- thirteen write-when-run suites executed in the live clone of whichever session ran the check, every batch, by design. Now ONE isolated worktree at HEAD, removed in a finally, and exit 2 COULD NOT RUN with no fallback to the live clone if the worktree cannot be made. (2) tools/nhi_register.py --selftest was RED from any isolated worktree: sibling_clones() correctly refuses when the parent holds more repositories than its cap, and five arms that only needed a render were coupled to that ambient fact, so the self-test reported a defect in the register whenever it was not run from a real clone. Injected for that half at 2f4400ab. Fixed by driving the enumeration against a fixture parent of five real repositories, forwarding repo= through clone_scope(), and moving the machine-specific arms to a control that reports NOT CHECKED with its reason. Measured after: live clone exit 0 with 14 arms and 0 not-checked, temp worktree exit 0 with 3 named not-checked. It also recovered tests/run_selftest_independence_probe.py, which now reports ALL ARMS PASS.",
+   "rules": [
+    "1.11"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "85464d4088f3",
+   "date": "2026-09-16",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/tier_a_review_gate.py: _discharge() documented itself as shared by both discharge paths so the self-review refusal could not be forgotten on one, and cmd_auto_discharge bypassed it entirely -- setting status, reviewer_session, reviewed_at and verdict inline. Two write points, a guard on one, a comment claiming otherwise. Fixed by making _discharge the only write point, taking status as an argument and refusing a self-signed write and an empty verdict against the record's own stored author_session.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "ea821a7e3b46",
+   "date": "2026-09-16",
+   "detected_by": "static-checker",
+   "prior_severity": "moderate",
+   "risk": "tests/claims/run_freshness_probe.py control 6 anchored its sabotage on a trailing backslash-n-backslash-n-backslash-n def main, which encoded the FACT THAT cmd_list WAS THE LAST FUNCTION in sairn_claim.py rather than anything about the code being mutated. cmd_audit was added after cmd_list, the anchor stopped matching, and the control applied no mutation and asserted nothing for as long as that was true. Re-anchored on three lines of function body, verified unique.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "1f25f8bf6613",
+   "date": "2026-09-17",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/sairn_claim.py could not see a session duplicating its OWN claim. Every collision check skips the caller's session, so the only guards against two claims for one piece of work were an exact subject+task byte-match and a same-subject-while-unpublished check. Both live recurrences (fourth 2026-09-16T14:53, cc 2026-09-17T02:32) were retyped and had a published earlier claim, so neither guard could fire, while  reported ZERO duplicates -- correctly, on a definition that counts only exact groups. Fixed by running the tool's own block_reason() over the caller's concurrently-active claims with the subject dropped: refuse on a shared identifier or phrase, report on a shared app only.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "2eea5198c797",
+   "date": "2026-09-17",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/sairn_claim.py returned CLEAR against a readable, active, overlapping claim. Fourth checked 'tier A rotation' while cody held 'invisible_in_pattern probe stale anchor, sairnlaw citation format rule convergence, tier A negative control rotation'; both share the significant tokens tier and rotation, which are adjacent in the short phrasing and four apart in the long one. Every rule in block_reason rests on adjacent word pairs, so two intervening words made the match vanish and the gate said CLEAR on work another session was actively doing. Fixed with a containment rule -- one task's significant words entirely inside the other's -- measured at ONE extra block over all 171,477 cross-session pairs in the record, against 294 for the windowed-pair alternative whose extra blocks read as generic engineering vocabulary.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "3785be046dc4",
+   "date": "2026-09-17",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "api/provisioner-health.js's rate_limit_health answered \"The limit is real under concurrency\" on the strength of a single 3-argument probe. That probe cannot distinguish the 3-arg function from the 6-arg tenant-aware one -- the migration DROPS and REPLACES rather than overloading, so a 3-arg call succeeds against both -- and the two refuse an empty app_id differently: the old one RETURNS an error object as HTTP 200, the new one RAISES. The existence test demanded the 200 shape only, so running sql/sairn_ai_tenant_subbudget_2026-09-15.sql would have flipped the endpoint from ATOMIC to UNKNOWN, a correct upgrade reading as a broken limiter on the one check that reports whether the atomicity fix is in force. Meanwhile the tenant sub-budget was never probed at all, so a fairness failure -- one licence exhausting the entire app ceiling with the ceiling itself perfectly atomic -- was invisible and the message implicitly denied it.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "b135eaa27620",
+   "date": "2026-09-17",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/idempotency_triage.json asserted 'EVERY file the checker flags is now judged' as a standing sentence. It was true when written on 2026-09-14 and false by 2026-09-17, when api/_lib/resilience.js had been unjudged for two days -- a denominator in prose is a measurement with no re-measurement. In the same tool, the stale-entry test asked only whether a judged file is still flagged, so the four entries whose fix had LANDED were reported as 'JUDGED BUT NO LONGER UNGUARDED -- re-read or drop' on every run, demanding an action already done and one the register's own vocabulary forbids (a FIXED entry must not be deleted). The block printed the same four lines indefinitely, which is how a list stops being read and a genuinely stale exemption goes quiet inside it.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "34fadf4bf861",
+   "date": "2026-09-22",
+   "detected_by": "code-review",
+   "prior_severity": "low",
+   "risk": "tools/cross_tenant_isolation_scope.py: after the untabled-declaration branch was downgraded from GENUINE to WEAK, a residue survived -- the hits loop's presence test is satisfied by the declaration line itself, so a resource named ONLY in the declaration still earns WEAK credit. unbacked_declarations() strips the declaration block, continuation lines included, and reports every declared name the file does not mention outside it. Reported rather than re-graded because a fourth grade would reach rank()'s closed lookup.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "548f487d707f",
+   "date": "2026-09-22",
+   "detected_by": "user-report",
+   "prior_severity": "moderate",
+   "risk": "tools/sairn_claim.py tokenised structured identifiers as prose, so two Tier A discharge claims opened ONE MINUTE apart were refused on `shared phrase \"2026 22t12\"`, a bigram of the ISO-8601 obligation id, while their work ran in opposite directions over disjoint file sets. Commit shas were not compared at all in either direction. Fixed by stripping identifiers before tokenising and comparing timestamps and shas WHOLE as their own signal; a bare date is dropped rather than promoted, because promoting it would collide every same-day claim.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "d8529ad5732d",
+   "date": "2026-09-22",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "tests/claims/run_claim_retype_mutation_control.py reported five sabotages as caught while its own baseline was red: run_push_verify_probe.py exited 1 against a CLEAN tool because its throwaway clone lacked both sairn_claim.py's new sibling module and the per-clone identity marker 527b31bf introduced. Every mutation arm asserted only 'the probe exited non-zero', which a probe that fails unconditionally satisfies, so 25 of 26 passes were vacuous. Fixed by resolving sibling imports from source, provisioning the clone, stopping the run on a red baseline, and asserting the failure is located in the section under test rather than anywhere at all.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "1fc1b5a88d78",
+   "date": "2026-09-24",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "tools/first_article_inspection.py counted four spellings of a declared exclusion as test coverage (set, list, tuple, dict VALUE -- the colon rule matched only a dict KEY), counted a bare comment mention ('widget.py' inside a # comment) as a suite, anchored its self-test body extraction on the literal 'def _selftest' while 2 of the 7 real self-tests spell theirs without the underscore (their arm counts were right only because nothing outside the self-test looked like an arm), and detected self-tests in Python only, so a JS tool with a working process.argv self-test would be reported UNVERIFIED rather than UNWIRED -- the exact conflation the UNWIRED state was created to end. All four were disclosed in cody's review of cc's change (obligation 69755622) and had no dedicated open-work row, so nothing owned them until this queue item.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "3182e1feebe3",
+   "date": "2026-09-24",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "tests/run_cross_tenant_dispatchers_sabotage_probe.py locates each branch by its opener and DERIVES the read line as \"the first tenant filter at or below it, within 90 lines\" -- deliberately, so a typed line number cannot rot. On 2026-09-23 a `tombstones` action with its own license_hash-filtered query was added to the SAIRNcode branch and landed BETWEEN `if (isScResource) {` (line 13341) and the generic list read (13444). The first filter below the opener became the tombstones query at +81, which no isolation arm drives, while the read the control exists for sits at +103 -- past the tombstones line AND past the 90-line window. So the SC_RESOURCES mutation removed a tenant filter nothing tested and the control reported `24 arm(s) the mutation should have turned red stayed green`, which reads as twenty-four broken cross-tenant arms on SAIRNcode's Tier A billing resources. The arms are correct -- removing license_hash from 13444 by hand turns exactly those 24 red. The control did not fail silently; it failed LOUDLY ABOUT THE WRONG THING, which this file's own header names as the worse outcome, and for a day the only sabotage control over 23 Tier A sc_ resources was verifying nothing.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "41f7ffc7a3b9",
+   "date": "2026-09-24",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/comment_quote_check.py's strip_comments() did not parse JS regex literals, and its own disclosure was BACKWARDS about which way that failed. It said the gap \"biases toward reporting MORE code as comment, which for a report-only checker is the safe direction\". Measured over 753 tracked js/html files: 2,178 characters over-stripped in 54 files (the disclosed direction) and 328,210 characters UNDER-stripped in 27 files (the denied one). A quote character inside a regex literal opened a bogus string span, so the scanner hunted a closing quote and walked past real // comments -- and a BACKTICK is not newline-bounded, so api/_lib/style-profile.js:71's markdown-detection regex caused every comment below it in that file to reach ~30 downstream checkers as CODE. The over-strip half is the replace(/\\//g,...) shape: two adjacent slashes inside a literal read as a comment opener, blanking the rest of the line, present in api/_lib/auth.js's base64url encoder and 53 other files.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "44ac2ed17a3a",
+   "date": "2026-09-24",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "tests/criticality_rollup_list_review_probe.py arm A8 dropped a name from the StoneDesk rollup cell with SD.replace('`name`, ', '', 1) -- name, comma, space -- which is how every name in that cell is written EXCEPT THE LAST ONE. `sd_crm` is the first exactly-once name today and it is the final element, so the replace planted nothing, drive()'s bytes-changed guard fired, and the probe died with an AssertionError partway through A8. Every arm after it never ran. Confirmed red at origin/main and unrelated to the session that found it. The probe's own subject is finding stale anchors in OTHER probes' arms, and it had the same defect in its own -- the fourth time this exact anchor shape has bitten on this register, after arm 9 of run_criticality_tier_probe.py was repaired for the same reason on the same name on 2026-09-23.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "44dc28cea046",
+   "date": "2026-09-24",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "tools/sabotage_control_check.py's sixth guard spelling -- the ALL-CAPS state-label tuple, added 2026-09-24 in criteria .1 -- compiled with re.I, and IGNORECASE silently defeated the narrowing the pattern's own comment describes: under the flag, [A-Z][A-Z -]{3,} matches 'did ' as happily as 'ANCHOR', so `append(('did not find it', name))` -- ordinary prose in an accumulator -- counted as a machine-readable verdict. The comment claimed \"THE MATCH IS STRUCTURAL, NOT A PHRASE LIST\" and one flag made it a match-anything list. The blind lock passed 30/30 because it held a POSITIVE fixture for the new spelling and no NEGATIVE: a comparison that cannot fire in one direction reports whatever that direction claims, which is the exact one-direction blindness the same file's uniqueness-shape note records for an earlier criterion. MEASURED BEFORE FIXING: zero real files diverge between the case-sensitive and case-insensitive spellings today -- the intended beneficiary's labels are genuine ALL-CAPS -- so no published UNGUARDED figure was wrong; this is the latent form. Fixed with (?-i:) on the label class alone, criteria bumped to 2026-09-24.2, and the lock gains the fixture pair in both directions, 32/32. Found by cc's own attack instruction on the obligation (\"check the negative fixture actually holds\"), which is the review channel doing precisely its job.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "874ac5ab4313",
+   "date": "2026-09-24",
+   "detected_by": "static-checker",
+   "prior_severity": "low",
+   "risk": "tools/truthy_sum_check.py exited 1 at HEAD on tests/sv_boarding_revenue_coercion.js lines 117 and 144, and the cause is structural rather than a stray fold: both lines are deliberate NEGATIVE CONTROLS holding the sv_boarding pre-fix expression on purpose -- one proves a bare fold concatenates (\"50\"+\"20\" -> \"05020\"), the other proves the pre-fix expression produced NaN. The checker was red on exactly the arms that make its own subject falsifiable, and every future coercion fix that ships a proper control trips it the same way -- a checker penalising the thing it should reward. Compounding it, the same test asserted the SIZE OF THE WHOLE BASELINE (assert.strictEqual(n, 45, 'expected 45 (46 - 1)')) -- a fact about somebody else's file typed beside it, claiming nobody would ever baseline anything again -- and it went red the same day, on the entry that exempted this file's own controls. Fixed by baselining the controls WITH the reason on the record, and rewriting the count arm to assert what it actually meant: this key gone, the baseline still populated above a stated floor, and no entry reasonless. Three mutations verified the new arms bite.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "9710c884acc9",
+   "date": "2026-09-24",
+   "detected_by": "user-report",
+   "prior_severity": "high",
+   "risk": "Push-gate check 9 ran its full guard-test registry on every push regardless of what the push contained, and tests/session_lock_liveness_probe.py -- Windows-only by its own admission, its arm (c2) manufactures pid-recycling state a Linux container cannot -- exits 2 COULD NOT SET UP on the Linux cloud runner. The check-9 loop read every nonzero exit as a FAILING seam and denied, so every cloud-session push, including docs-only pushes that cannot move any code seam, required an override the auto-mode classifier correctly refuses. Three commits were stranded local-only on claude/jolly-gauss-uropwz, including both competitive-gap audit documents. Fixed by skipping check 9 when the entire outgoing range is docs-only: a named predicate (docs_only_outgoing) with an empty range refusing to count as docs-only (could-not-tell must not read as safe-to-skip) and docs/tier-a-reviews.json disqualifying despite living in docs/.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "b3ae64ad07eb",
+   "date": "2026-09-24",
+   "detected_by": "hover-audit",
+   "prior_severity": "low",
+   "risk": "tier_a_review_gate.py's eligible_reviewers() excluded the hover auditor from the Tier A reviewer pool by the literal name 'hover' -- while the auditor already runs as more than one instance (the shared status registry lists hover AND hover2). The day hover2 created .claude/claims/hover2.json it would have silently entered the reviewer pool and started being ASSIGNED build-agent review obligations, crossing the audit/build separation from the side two gates exist to protect, with nothing anywhere saying so. The roster's own header records exactly why literal lists fail here (\"named four clones for weeks after a fifth existed\"); excluding one auditor by literal name was the same mistake one shelf over. Fixed with a role predicate (is_hover_session: hover, hover2, hover-3, hover_x -- deliberately not a bare startswith, so a build agent named hoverboard is not silently starved out of review duty), pinned in both directions plus a wiring arm that fails if the literal compare returns.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "bc22370a9ae5",
+   "date": "2026-09-24",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "docs/tier-a-reviews.json named tier_a_review_gate.py --list as its merge validator, and --list exits 1 whenever ANY obligation is past its 24h deadline. tools/sairn_rebase_resolve.py refuses any merge whose validator exits non-zero, so a correct union-by-identity merge of the review ledger was refused whenever the queue happened to hold overdue work -- which is most of the time, and is not a fact about the file being merged. Two unrelated questions shared one exit code: is this file sound, and does the queue hold overdue work.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "c0263b7c221a",
+   "date": "2026-09-24",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/verification_plan_staleness_check.py returned EXIT 0 when the plan it read had item lines and NOT ONE verify marker: nothing was measured, it printed \"drift found 0\", and main() returned 0. A caller reading the exit code -- a push gate, a cron, another tool -- could not distinguish \"checked ten items and they all agree\" from \"could check none of them\". The file's own header refuses exactly that shape one paragraph above the bug (\"a staleness checker that reports a clean plan it never opened is the defect it exists to prevent\"), and the probe already had an arm for the neighbouring case (a plan with zero item LINES is exit 2) which never reached this one. Found by running the tool against its real subject the day that subject was first committed; before that the tool had only ever been run against synthetic fixtures that all carried markers.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "d3d3625afa68",
+   "date": "2026-09-24",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "tools/dependency_graph.py's SPOF-register check printed its retirement disclosure (\"NOTHING HAS BEEN RETIRED YET\") only when net == 0 -- the live count exactly equalling the frozen baseline -- so the sentence went SILENT in every state except the one where nothing at all had happened. On 2026-09-23 the register stood at 32 components against a baseline of 11 with zero retirements in nine days, and the tool said nothing about retirement: the GROWTH suppressed the disclosure. A disclosure that disappears when the situation worsens is not a disclosure. And its control probe's arm 7e -- the ONE arm in the register section asserting rc == 0 -- has been red at HEAD, because its fixture carried no BASELINE sentence; so 7d's refusal was unverified and nothing proved the checker refuses an empty register for the stated reason rather than refusing everything. Fixed: the stall prints unconditionally with ELAPSED TIME read from the same frozen sentence as the count (an undated baseline is refused as its own problem line), and four probe arms pin the growth case, the elapsed-time text, the paired positive (a RETIRED row changes the line), and the undated refusal.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "eaefa8396567",
+   "date": "2026-09-24",
+   "detected_by": "static-checker",
+   "prior_severity": "low",
+   "risk": "tests/run_verification_plan_staleness_probe.py's arm-1 rewrite (same day, earlier session hours) created a throwaway directory tree per run with tempfile.mkdtemp and never removed it -- state meant to live for one probe invocation persisting indefinitely, the exact class tools/temporary_state_check.py (item 34) detects. Two leaked trees were found in the temp directory, alongside a 58-hour-old sabotage worktree from an unrelated run. Found while re-building item 34 under a stale queue entry that said it had no owner; the ten-days-built original detected its own would-be duplicate author's leak. The probe now removes its tree in line, and the leaked residue is cleaned.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "09b3ebb82015",
+   "date": "2026-09-25",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "tools/register_feed_gate.py's outgoing_range() returned the bare LOCAL sha when git supplied an all-zero REMOTE sha -- the signal that the branch being pushed does not exist on the remote yet. To `git log` a bare sha means every commit reachable from that tip, so a brand-new branch was measured as ALL OF HISTORY and every unrecorded defect closure ever made on origin/main was reported as something that push was adding. The effect is absolute rather than cosmetic: no new branch could be pushed from any clone by any session. It surfaced on 2026-09-25 when the register-freshness proposer needed to publish ten regfresh/* branches; the decision that auto-fix must open a PR rather than write a register was unimplementable against the gate, which looked strict while being unpassable.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "e6a4ad6b60fc",
+   "date": "2026-09-25",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "register_freshness_check._exists_anywhere() grepped tools/ as well as app sources, so the checker's own docstring naming saveTimeEntry() proved that dead function still existed -- the dead-function arm was blind on the exact case it was built for, for an hour",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "e8428d4de472",
+   "date": "2026-09-25",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/gh_push.py and tools/gh_verify.py each carried their own hardcoded read of GITHUB_TOKEN from the .env.local under Documents/SAIRN, and that file has been 0 BYTES SINCE 2026-08-08. Both tools therefore raised RuntimeError(\"GITHUB_TOKEN not found in .env.local\") on EVERY invocation for seven weeks, and nothing reported it because neither tool is wired into any hook, gate or suite -- the failure surfaces only when somebody reaches for one. gh_verify.py is the tool whose job is confirming a push really landed on the remote, so the dead half included a VERIFICATION path, not only a convenience one. Fixed by moving the decision into tools/gh_token.py, once, and importing it in both: environment GITHUB_TOKEN, then the git credential manager (which is what actually holds a working token on this machine), then .env.local last. Verified end to end rather than by import -- an import would have succeeded for the whole seven weeks too: gh_token.py --report answered from the credential manager (40 chars, value never printed); gh_verify.py made a real authenticated blob-API read and reported MATCH on 2,713,713 bytes; gh_push.py made a REAL REST push (commit 0ed66a54) exercising blob POST, tree POST, ref GET, commit POST and ref PATCH, deliberately with an UNCHANGED TREE -- stonedesk.html was byte-verified identical to the remote blob first, so the pushed commit's tree sha equals its parent's and the diff is empty.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "e87a6300f1b2",
+   "date": "2026-09-25",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "the plugin upgrade audit compared installed_plugins.json's gitCommitSha against the marketplace pin, and 'claude plugin update' does not refresh that field -- so immediately after upgrading superpowers 6.2.0->6.4.1 and vercel 0.45.1->0.50.0 the method reported both as STILL BEHIND, a confident false finding produced by the success of the thing it measured",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "944a5faadae5",
+   "date": "2026-09-26",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "item 94's per-branch blob migration was declared COMPLETE with the proof: grep -c 'Object.assign({}, payload)' 12 -> 0. The dot is a WILDCARD in a grep pattern, so that pattern requires some character then a close-paren immediately after 'payload' -- and every remaining site is 'Object.assign({}, payload, {...})', a COMMA. The pattern could not match the sites left behind, so it was guaranteed to report 0 the moment the sites it COULD match were converted. Re-measured by shape: 77 unconverted stored-blob writes against 24 converted, so the migration was reported complete at under a quarter done. Every unconverted site lets a posted license_hash ride into the stored blob and be echoed back on read as a field the row's real tenant column contradicts, and api/sd-sub-data.js's progress-photo write additionally carried caller-supplied copies of four SERVER-SET qc_ columns on a record whose whole purpose is that a client cannot self-approve",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "9d6358d19160",
+   "date": "2026-09-26",
+   "detected_by": "independent-review",
+   "prior_severity": "low",
+   "risk": "tools/sairn_push_gate_hook.py registered tests/sairncode_gates.js TWICE in GUARD_TESTS, and GUARD_TESTS is a LIST iterated in order -- so the suite was EXECUTED TWICE on every push that touched code, and the registry a reader consults carried TWO DIFFERENT ACCOUNTS of one seam. The doubled run is the cheap half of the cost (measured 0.40s per run, so 0.40s wasted per code push). The expensive half is the split account: two entries describing the same invariant in different words, written two days apart by sessions that could not see each other's work -- 2026-09-23 on Michael's call after the eight days of SAIRNcode exposure were measured, and 2026-09-25 while discharging the independent review of the fix -- so a reader consulting the registry to understand why this suite blocks pushes gets whichever of the two they scroll past first and has no signal that a second, fuller account exists. Neither entry was wrong; each named something the other did not. The earlier one carried the sharpest sentence either had, THE MECHANISM WORKED AND THE REQUIREMENT TO READ IT DID NOT EXIST, which is the whole reason this blocking registry exists; the later one carried the measured wall cost and a second seam (the hand-written WRITE_GATED role table compared against the roles parsed out of api/sd-data.js). Flagged by hank inside cc's active claim on the file. FIXED by merging the two entries into one that carries both accounts rather than deleting either, AND by making the consuming loop de-duplicate by filename and DISCLOSE when it does -- because fixing the list fixes today and fixing the loop fixes the next one. The de-duplication is deliberately NOT an assert: a module-level raise in this file reaches the shell hook as a non-zero exit and would block every push on this platform, which is the opposite of the gate's documented fail-open-on-internal-error standard, so a duplicate is reported as registry hygiene and costs nothing. MEASURED AFTER: 11 entries -> 10, distinct 10, duplicates none.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "b7ea436177dd",
+   "date": "2026-09-26",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/report_only_checks.py --list raised KeyError: 'evidence' and printed nothing usable. Four REGISTRY entries carry no `evidence` key -- register_freshness_check.py, log_cluster.py, allan_deviation_check.py, response_shape_check.py -- and the loop read e['evidence'] directly, so it died on the first one it reached. `--list` is the registry's ONLY human-readable surface: it is what prints, for each of the 62 registered checkers, what it catches, why that matters, and what it found on a real run. It has been unusable since a9394d8e on 2026-09-17 added the first entry without that key, and nothing noticed for nine days because nothing else in the file reads `evidence`. The same commit range also closed two WIRING gaps found by the sweep in docs/2026-09-26-invocation-path-sweep.md: index_duplicate_check.py only ever ran on `git push` although the document it checks is edited with Write/Edit (now tools/index_duplicate_hook.py), and dispatch_state.py answered \"what should I work on\" at push time, after the work (now --hook at SessionStart).",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "c0b7249ccd01",
+   "date": "2026-09-26",
+   "detected_by": "live-verification",
+   "prior_severity": "high",
+   "risk": "tools/load_compliance_seed.py verification_probe() sent payload.check where api/sd-data.js's alf_compliance_rules evaluate branch requires payload.requirement_type, so every probe answered 400 \"evaluate requires state and requirement_type\" -- BEFORE and AFTER the load. Two identical 400s compare equal, so answer_changed() was False on every run the tool has ever made and it printed \"*** UNCHANGED -- nothing this app can use was loaded ***\" and exited 1 every time, INCLUDING the run in this session where all three West Virginia rules loaded correctly and the engine served them. Two further defects behind it: the probe sent no facility_class, so even a well-formed probe earns NO_RULE_FOR_CLASS because the engine refuses to apply one class's figures to another; and \"the answer must have CHANGED\" conflated nothing-loaded with already-loaded, when the endpoint upserts on (license_hash, rule_id) so an idempotent re-run is identical BY DESIGN. Fixed: the key, a facility_class taken from the rule being verified, one probe per rule with the evidence being ok:true AND a matching rule_id, and three verdicts -- LOADED / ALREADY IN FORCE / NOT IN FORCE -- of which only the third fails. WV is now live on ALF-TEST-2026 and a read-only sweep confirms 19 of 19 seeded rules are in force and reachable.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "ead626ae90af",
+   "date": "2026-09-26",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "tools/gh_push.py pushes to origin/main through the GitHub REST API, so git is never invoked and .githooks/pre-push never fires. TWO HOLES, and the second is worse than the first. (1) NO GATE RAN AT ALL on that path: the seed gate, the Tier A independent-review gate, the generated-document check, the tool-inventory check, the conflict-marker check, the redaction and pre-auth-oracle checks -- all fourteen checks in tools/sairn_push_gate_hook.py, plus tools/register_feed_gate.py and tools/hover_auditor_scope_gate.py -- had no effect whatsoever. Audited 2026-09-26 and the premise that something else covered them is FALSE: gh_push.py imports os, sys, json, base64, urllib and gh_token and invokes nothing, so the git hook was never decorative and removing it would have disabled the gate for every ordinary git push. (2) A REST PUSH SENDS WORKING-TREE BYTES, so gh_push.py could publish content that existed in NO local commit, on no branch, in no reflog -- which means even a gate that had run would have had nothing to judge, and a later bisect or review could never see what was shipped. FIXED by INVOKING the hook rather than copying its checks: gh_push.py now runs .githooks/pre-push with exactly the stdin git would have supplied (local ref, local sha, remote ref, remote sha), after a pre-flight that requires every file to be tracked, committed and CLEAN and requires HEAD to descend from the remote tip -- which is what makes remote..HEAD a real range. Copying the checks would have been item 94 on the largest gate on the platform, and a fourth gate added to the hook later would silently not apply to this path. The soundness argument for gating remote..HEAD when the push sends less is written into the code: the pushed tree is the remote's with the named files overwritten by their working-tree bytes, those bytes ARE HEAD's bytes because clean is required, so the push publishes a SUBSET of the range -- over-blocking, never under-blocking. It fails CLOSED (missing hook, no sh on PATH, remote tip absent from the clone) which diverges from the hook's documented fail-open standard on purpose: the hook is the path used for every push and must not be rippable, this is a hand-run bypass where a could-not-tell costs one retry. Held by tests/run_gh_push_gate_probe.py, 9 arms against real throwaway repositories, including a CONTROL that a clean state is allowed and an arm that main() actually CALLS the gate before any GitHub write.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "fa0f2b90d3b8",
+   "date": "2026-09-26",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "the graduated push-gate exemption pinned its pending grant to the REFSPEC pushed_tip() returns in PreToolUse mode -- the literal string 'main' -- rather than to a resolved sha, so the settling phase was inert: the pin would have survived an amend, a rebase and any number of new commits, and the confirming push could have been a completely different change while the log recorded it as scoped and pinned",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "26e72a905b50",
+   "date": "2026-09-27",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "A live probe that WRITES had nothing preventing it from writing to a demo-facing licence, and the platform had already decided it should not. sql/stonedesk_recovery_admin_seed.sql states the rule -- \"THE FIX IS THE LICENCE, NOT THE PIN\" -- and SAIRNroofing applied it on 2026-09-02 by minting RF-AUDIT-2026; two roofing probes have used it correctly since. Nothing made the other writing probes follow, because the rule lived in a comment in a SQL file rather than anywhere a writing probe would meet it. The consequence became concrete on 2026-09-28: verifying that api/legal-deadlines.js add_rule strips forged identity fields REQUIRES a write, because what an endpoint STORES cannot be read back any other way, so one probe rule was written to LAW-TEST-2026 -- and DELETE was revoked platform-wide on law_deadline_rules on 2026-08-25, so that row cannot be removed by the API (no delete action exists), by service_role (no grant), or by the session that created it. It needs a human in the Supabase editor. Enumerated afterwards: 44 of 818 candidate files address the live host and SEVEN send a write action; tools/law_billing_code_trim_live_probe.py documented its own licence as \"demo row: LAW-PINNACLE-2026\" and generates a new id per run, so its residue ACCUMULATES rather than being overwritten, and tools/sc_tier_a_write_gate_live_probe.py drives write, setup, set_active AND delete against Tier A SAIRNcode resources with no audit licence in existence. Fixed by moving the rule into the code path: tools/audit_licence.py exits 2 COULD NOT RUN on a non-audit licence and also on NO licence, tools/live_probe_residue_audit.py requires every writing probe to declare its class and its residue path, and the two loaders that must write to real licences are declared LOADER rather than inferred, because gating them would break seeding on 48 jurisdictions.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "623aab6d878a",
+   "date": "2026-09-27",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "Two report-only tools read real state, got an empty result with a clean exit code, and printed it as an answer. ai_action_approval_audit.py: app_files() checked git ls-files' return code but ls-files exits 0 and prints nothing when it matches nothing -- driven with it forced to [], the tool printed 'AI call sites found : 0 across 0 app file(s)' with all four verdict counts at zero and exit 0, against a real answer of 73 sites across 17 files including 14 ungated writes. accepted_risk_expiry_audit.py: _rows() returned [] when the open-work index existed but no line parsed as a table row -- driven, it reported 'population : 1' and exit 0 against a real population of 19; and _paused_docs() did not check the return code at all, so a git that failed to launch and a repo with no paused documents were the same answer. Both now refuse, the two _paused_docs cases are separated because zero paused documents is a legitimate state and zero index rows is not, and both selftests now drive their own accessors with a control the fix itself can fail.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "79a34efd49d7",
+   "date": "2026-09-27",
+   "detected_by": "probe-control",
+   "prior_severity": "moderate",
+   "risk": "tools/role_gate_negative_coverage.py's driven() matched a role only as `role: 'x'` or `tokenFor('x')`, so a role check written as a loop over a declared list -- const ALF_NON_MGMT = ['nursing','med_aide','caregiver','activities']; for (const role of ALF_NON_MGMT) -- was INVISIBLE to it. Four real arms that drive exactly the roles alf_facility's gate excludes, green and ABLATION-CONFIRMED as catching the gate's deletion, left the resource reading driven-as=owner. A FALSE NEGATIVE, not a noisy false alarm: the ratchet could never register the work, so the tool went on demanding an arm that already existed, and any session trusting it would have written a second copy of arms already present.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "7a8b87c90471",
+   "date": "2026-09-27",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/conflict_marker_preflight.py delegates its marker check by passing paths as argv. On a clean working tree that is 2,655 paths, which exceeds the Windows 32,768-character command-line limit: WinError 206, the filename or extension is too long. The tool FAILED CLOSED and reported COULD NOT RUN rather than a pass, which is correct, and was therefore unusable for its actual job on any real tree. Invisible to its own 22-arm probe because EVERY ARM PASSED ONE PATH: the first case worked, the real case did not, and nothing in between tested the size.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "8435809a14c4",
+   "date": "2026-09-27",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "tools/alf_facility_role_gate_live_probe.py set the employee session as the header `X-Session-Token`. api/_lib/auth.js's tokenFromRequest() reads `req.headers['x-sd-auth']` and nothing else, so the token was never read: every request this probe has ever made against the deployed endpoint carried a licence key and NO session. Its entire subject is the alf_facility write ROLE GATE -- whether a caregiver can rewrite a facility profile including licensing_state, which selects the state rule set the facility's staffing and training compliance is measured against -- and with no session every role received the identical no-session refusal, so the role differentiation the file exists to demonstrate was never exercised. THE PROBE DID NOT PUBLISH A FALSE PASS, AND ITS OWN CONTROL IS THE REASON: it carries a `CONTROL -- management must still be ALLOWED` section, and with no session management earns 401 NO_SESSION rather than an allow, so the control could not pass and the probe reported UNVERIFIED -- the documented third state -- rather than a clean. The defect is therefore that a live role-gate probe has been non-functional since it was written, reporting UNVERIFIED for a reason nobody diagnosed, rather than that it certified a gate it never reached. Found by tools/gate_caller_impact.py, built in the same change to enumerate every caller of an action before its gate is narrowed. Fixed to `X-SD-Auth` with the account written at the line.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "84eb61ead156",
+   "date": "2026-09-27",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/conflict_marker_preflight.py shipped with its OWN marker scanner while tools/conflict_marker_check.py had existed since 2026-09-15 as a push gate doing that job BETTER -- four marker shapes including the diff3 style, which the new copy missed entirely, anchored at column zero, with a measured zero-false-positive baseline across 2,069 tracked files, plus --outgoing and --json. A weaker second implementation of a gate already in the pipeline, built because docs/TOOLING-INVENTORY.md was not read first, which is the one step this platform's rules put before building any checker.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "ab263fba5d47",
+   "date": "2026-09-27",
+   "detected_by": "probe-control",
+   "prior_severity": "high",
+   "risk": "tools/sairn_sql_preflight.py's strip_noise() removed comments and string literals in FOUR SEPARATE regex passes -- block comments, then line comments, then dollar-quoting, then single-quoted literals -- each run over the whole file with no knowledge of what the others had consumed. So a `--` INSIDE A STRING LITERAL was blanked as a line comment, TAKING THE STRING'S CLOSING QUOTE WITH IT, and the literal matcher was desynchronised for the remainder of the file. Two consequences, and the second is the serious one. LOUD: the gate refused a push with MISSING_TABLE `the`, a table that exists only inside an English sentence in a column comment. SILENT: text after the broken literal is parsed as code and real SQL can land inside what the scanner believes is a string. Measured across all 256 sql/ files under both the old and new stripper, exactly one file's extracted table set changed and it changed by GAINING a table: sql/sairn_circuit_breaker_schema.sql:54 is a comment string that BEGINS with `--`, and everything after it -- including the create-or-replace-function at :65 and its revoke/grant at :171-173, roughly 140 lines -- was invisible to the gate, which reported clean. This is a gate whose own stated argument is that a wrong column in a WHERE matches nothing and reports success.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "c680a4c1dbca",
+   "date": "2026-09-27",
+   "detected_by": "probe-control",
+   "prior_severity": "high",
+   "risk": "78 tools and probes derived their repository root FROM an unanchored git rev-parse --show-toplevel and then built paths on the result. C:/Users/marsh/.git EXISTS -- the machine's home directory is itself a git repository -- so git's upward discovery SUCCEEDS with exit 0 from any directory beneath it and returns C:/Users/marsh. The call never fails, so nothing ever fell back and nothing ever errored. And C:/Users/marsh/tools/ EXISTS too, holding session_lock_check.py: the orphaned pre-2026-09-11 copy CLAUDE.md explicitly warns not to revive. So a probe run from the wrong directory does not fail to find its subject -- for that one it finds a real, stale, KNOWN-BUGGY file and tests THAT, successfully and silently. Two further tools wrapped the call in a fallback documented as existing so a run from outside any repo still has an answer rather than crashing; there is no outside on this machine, so the fallback is unreachable and both returned a confident wrong root. One of the two is tools/hover_separation_ci.py, where the consequence is a SEPARATION tool reading the wrong repository's history and reporting a clean separation it never checked.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "d281325585aa",
+   "date": "2026-09-27",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "tests/sairnmechanical_fault_probe.py aborted at arm 6 and arms 6-11 had not run. Its anchor was a bare 'if (lb === null || lb < 0) {' which matched one place in api/_lib/mech-assets.js when written and three now, so once() raised rather than silently picking. THE REASON IT WENT TO THREE IS THE LARGER FINDING: two sibling refrigerant-scope guards were added after that arm -- aimScope for the AIM Act and carbScope for California -- each carrying its own copy of the identical unweighed-charge guard, and NEITHER WAS ARMED. With any of the three guards removed a unit nobody weighed reports as BELOW the leak threshold, which is the unknown-reported-as-cleared compliance claim the probe exists to prevent, under three different statutes. Now one arm per guard, each on text unique to its own function, all three caught by mech-assets.test.js, 13 arms green.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "d281325585aa",
+   "date": "2026-09-27",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/probe_anchor_freshness.py encoded ONE spelling of a correct anchor -- matches exactly once -- and reported four anchors in tests/sairndesign_sairngrounds_fault_probe.py as AMBIGUOUS. Those edits carry a fourth tuple element declaring the expected occurrence count, and the probe asserts that exact number before replacing every occurrence, which is STRICTLY STRONGER than uniqueness. So a probe that did the harder thing scored worse, the identical inversion tools/sabotage_control_check.py shipped when it did not recognise the count(anchor) != 1 guard and reported five guarded controls as unguarded. Criteria now stamped CRITERIA_VERSION 2026-09-27.2 and printed on every run; a declared count decides which rule applies; a disagreement with it is its own verdict rather than folded into AMBIGUOUS; and a non-literal count is UNRESOLVED rather than guessed.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "e987dfb266b6",
+   "date": "2026-09-27",
+   "detected_by": "probe-control",
+   "prior_severity": "moderate",
+   "risk": "tools/ghost_field_read_scan.py built its spelled-field universe from RAW file text including comments, with *.md in the source list. The tool's rule is that a gate reading a field never spelled anywhere cannot be true -- so ANY PROSE MENTIONING A DEAD FIELD NAME MAKES IT \"SPELLED\" AND SILENCES THE DETECTOR FOR IT PERMANENTLY. Demonstrated by the fix committed in the same change: writing the regression arm \"rfDeliveredHoursFor must not read actual_start\" put the words actual_start in a comment, and the scan stopped reporting actual_start. Writing the test for a dead field disabled the standing detector for that field. This is PR 1.11's sibling in the other direction and PR 1.1 exactly -- a check that stopped checking -- committed inside a tool whose entire subject is a condition that cannot fire, by the author of the sweep document that named the class. CAUGHT BY THE CONTROL, NOT BY REVIEW: tests/run_ghost_field_read_probe.py MUTATION 1 restores the real shipped pre-fix rfDeliveredHoursFor body into the real sairnsenior.html and demands the scan NAME actual_start; it exited 1 FINDING (so a count-only arm would have passed) and did not name the field. Fixed: spellings now come from code and data and never from prose -- comments stripped from .js/.html/.cjs/.mjs and from .py with a quote-aware # scanner, strings KEPT because a string key is a real spelling, and .md excluded outright. The cost is stated in the tool header rather than left to be found: a field defined ONLY in a markdown spec now reads as a ghost, which is the false-positive direction a human dismisses in one read.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "eea82bf1977e",
+   "date": "2026-09-27",
+   "detected_by": "code-review",
+   "prior_severity": "low",
+   "risk": "tools/git_discovery_anchoring_check.py raised TypeError and exited 1 on its own OK path: the pass message was split across two print() calls, the first carrying a percent-d with no argument and the second supplying two arguments to one percent-d. So the tool failed EXACTLY WHEN IT PASSED, and worked correctly on every other path -- REGRESSION, COULD-NOT-TELL and --baseline all behaved, which is why the bug survived being run and committed.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "efc9fb8095ad",
+   "date": "2026-09-27",
+   "detected_by": "user-report",
+   "prior_severity": "moderate",
+   "risk": "tools/session_lock_check.py cmd_start() emitted a SessionStart warning that another session was LIVE and that tool use would be REFUSED. The warned-about process was then ended. The PreToolUse guard did exactly the right thing -- re-checked the pid against its recorded start time, read DEAD, reclaimed the lock, allowed every call -- SILENTLY. So the only statement about the lock anywhere in the session's context was the SessionStart one, now false, and it went on reading as current fact: a block was reported to Michael twice that no longer existed. Nothing malfunctioned. A snapshot with no as-of, no re-validation and no retraction is a true statement that quietly stops being true with no event to mark it.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "00a3df270332",
+   "date": "2026-09-28",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "tools/fact_sheet_regenerates.py checked only the fact-sheet rows that carry their own command and exited 0 while the document contradicted itself. The commits row had been refreshed 6,890 -> 6,900 and the line directly beneath it still read '6,885 / 14.0'; the say-out-loud block still said 360 defects against a register of 362, and the bare-ls-files paragraph still said 282 and 267 against a table row of 269. Sixteen restated figures were wrong on a sheet due to be printed and read aloud, under a stamp saying the figures had just been refreshed.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "2e1ad2775558",
+   "date": "2026-09-28",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": ".githooks/prepare-commit-msg FAILED OPEN in two places and could only ever run one check. It read `ROOT=$(git rev-parse --show-toplevel) || exit 0` and `[ -f \"$ROOT/tools/staged_conflict_marker_check.py\" ] || exit 0`, and exit 0 from this hook ALLOWS THE COMMIT -- so a git-discovery failure allowed it and a MISSING CHECKER allowed it. It then used `exec`, replacing the shell with the first checker, so any second check appended to it would have been silently unreachable. The consequence was measured the same day: a GitHub personal access token under .claude/ was staged by a git add -A inside a regenerate-after-rebase one-liner and reached a commit with no commit-time check of any kind looking at content. The push gate refused the push, which is the last line rather than the first -- by then the blob was in the object store, in the index and in a commit that had to be amended, and the credential had to be treated as exposed regardless.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "73c75db05dc2",
+   "date": "2026-09-28",
+   "detected_by": "probe-control",
+   "prior_severity": "moderate",
+   "risk": "tests/run_fact_sheet_regenerates_probe.py asserted the REAL docs/FACT-SHEET-2026-09-29.md was clean as its no-false-positive baseline. Four sessions push continuously, so the commits figure moves within minutes of any refresh -- including on the commit that refreshes it. The arm was green on its first run and red on main thereafter. Fixed by copying the sheet, refreshing the COPY with --update, and asserting silence on that; the real sheet's live exit code is now printed as information and asserted on by nothing.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "8bf5891da949",
+   "date": "2026-09-28",
+   "detected_by": "probe-control",
+   "prior_severity": "moderate",
+   "risk": "tools/fail_open_scan.py's headline number counted a SHAPE and was published as a count of defects. After the self-match fix it reported 30 dependency-shaped fail-opens in tools/, and that figure was reported to Michael as the work remaining. Reading all 30 showed most are CORRECT: twelve wrap best-effort operations whose failure cannot change any verdict -- nine of them sys.stdout.reconfigure() on Pythons without TextIOWrapper.reconfigure, where failure means mojibake and refusing to run would be absurd -- and one carries a written argument for failing open in the SAFE direction (tools/deploy_verify_notify.py:93: 'Fails OPEN (checks anyway) if the file list cannot be determined, because the alternative is silently skipping a real verification'). Ratcheting on the raw number would have driven thirty edits to code that is already right, and flattening a written, argued decision together with an unnoticed swallow is how a findings list stops being read. Corrected split: 17 real, 12 benign, 1 documented, 1 scope.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "cf5e2c6bb520",
+   "date": "2026-09-28",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/fail_open_scan.py matched its own documentation. The tool searches source for fail-open shapes and its docstring QUOTES those shapes in order to explain them, so it counted itself six times -- from the docstring, the shape table and a print string -- and tools/tooling_inventory.py contributed two more from the PURPOSES entry describing this very tool. EIGHT OF THE EIGHTEEN REPORTED SITES WERE PROSE. The figures published from it, 21 dependency-shaped fail-opens falling to 16, were both inflated by a scanner reading its own description of the thing it looks for, and both were reported to Michael as measurements. After masking strings and comments the true count is THIRTY, worse than either published number, with none in git hooks. Found by re-deriving five recent results after a window change rather than by any check.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "dea05ca6fffe",
+   "date": "2026-09-28",
+   "detected_by": "code-review",
+   "prior_severity": "low",
+   "risk": "tooling_inventory.py reported a PURPOSES entry whose tool is UNTRACKED as one that no longer exists -- a confident wrong cause that sends the reader after a deletion that never happened",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "e1ec9d2f31b7",
+   "date": "2026-09-28",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "The fact sheet's nine detection-method rows were outside tools/fact_sheet_regenerates.py's coverage entirely, so they held the values typed when the sheet was written while the register moved underneath them. They summed to 358 against a stated total of 366 -- eight defects counted in the totals table and in no row of the breakdown on the facing page, on a document due to be printed and read aloud.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "f44c608aa1a1",
+   "date": "2026-09-28",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": ".githooks/pre-commit and .githooks/post-rewrite each guarded their preconditions with `|| exit 0`, and from a git hook exit 0 MEANS ALLOW. In pre-commit the two guarded lines were `ROOT=$(git rev-parse --show-toplevel)` and `GITDIR=$(git rev-parse --git-dir)`, and the consequence is sharper than a generic fail-open: WITHOUT GITDIR THE SCOPE TEST ON THE NEXT LINE CANNOT RUN EITHER, so a discovery failure silently disarmed the hover-auditor scope gate in the one clone that gate exists for -- the role the platform documents as having no second reader. pre-commit also used `exec`, replacing the shell with the first checker, so any second check added later would have looked correct and never run. In post-rewrite the exit code was already correct by design (git ignores post-rewrite's status and the hook runs after the fact), but both guards exited SILENTLY, so a missing defect_register.py meant the register was not re-seated and nothing said so; the next signal was the push gate refusing with 'that sha is not in this history' several steps later, which is the exact round trip that hook was built to remove.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "2c5c621d544c",
+   "date": "2026-09-29",
+   "detected_by": "probe-control",
+   "prior_severity": "moderate",
+   "risk": "cross_tenant_isolation_scope.py stripped JS comments with a regex that was not string-aware, so a '//' inside a string literal read as a comment and swallowed the rest of the line: 21 real resource names lost in stonedesk.html alone, including sd_customers, sd_slab_history, sd_blocks and sd_bundles, each then reported UNDECLARED on a technicality about a URL. The fix had also gone into ONE of the TWO places that derive DRIVEN, so the shared grader was still crediting a comment two days later.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "44e5ab7ee7c3",
+   "date": "2026-09-29",
+   "detected_by": "probe-control",
+   "prior_severity": "low",
+   "risk": "tests/run_tier_a_reseat_probe.py asserted that the real dry run printed the string 'DRY RUN' or 'Nothing to reseat'. The tool has a THIRD message -- printed when there are refusals but nothing reseatable -- which is more informative and matches neither, so the arm failed on a correct tool. The obvious repair would have been to WEAKEN the message so the string reappeared, which punishes a report for explaining itself better. It now reads the ledger before and after a no---write run and requires byte-identical.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "4d5f3deb557d",
+   "date": "2026-09-29",
+   "detected_by": "hover-audit",
+   "prior_severity": "low",
+   "risk": "hover2 auditor tooling, two defects in one commit, both found by the closed-system checker's own report this session: (1) hover_log.py's seq-273 CLI-integration selftest arm reads the REAL self-log (line-count before/after a must-refuse append) with no disclosure marker, reported UNDISCLOSED_LIVE by sabotage_closed_system_check.py -- the arm was honest but undisclosed, violating the checker's own convention; disclosure comment added in the arm's own words. (2) The checker itself had a def-line-as-call-site false positive: a selftest whose own body touches LOG_PATH lands in indirect_callees and its own 'def selftest():' line matches the zero-arg call regex -- fixture FIXTURE_SELF_NAMED_DEF confirmed FAILING against unfixed code (1 of 12) before the one-guard fix, 12/12 after. Report now 0 UNDISCLOSED-live. Auditor-internal tooling; no platform code path served.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "50d16fd4ac2a",
+   "date": "2026-09-29",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/push_retry.py -- the tool built to replace hand-written git add -A loops -- used git add -A in its own regenerate-after-rebase step, staging whatever happened to be in the tree into an amended commit on every push from every clone",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "543e087dbe51",
+   "date": "2026-09-29",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/schema_provisioning_check.py derived a confident finding from a read that returned nothing. Its registry reader searched for one literal spelling of the resource list; api/_resources/sairncode.js declares a const array and exports it under the resources key, so that spelling never matched and the reader returned an EMPTY SET rather than a could-not-read. The tool then printed \"registered: 0 checkable\" immediately followed by \"NOT REGISTERED: 15 (the schema builds these and no code can ask for them)\" -- for an app with twenty-eight registered resources, every one of the fifteen live and routed through SC_RESOURCES in api/sd-data.js. The two halves of that output contradict each other and neither was flagged: the first is a could-not-read presented as a measurement and the second was DERIVED FROM IT. A second, independent defect in the same function compared SCHEMA TABLE names against REGISTRY RESOURCE names, which SAIRNgrounds and SAIRNscape deliberately map between -- resource `properties` reaches table `grd_properties` -- so seven further live tables were reported as unreachable while code reaches them on every page load. Twenty-two tables were reported as unreachable in total and all twenty-two were false; a re-run after the fix shows all twenty-two resolve, are checkable, and exist.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "5e84f1ae69b6",
+   "date": "2026-09-29",
+   "detected_by": "static-checker",
+   "prior_severity": "low",
+   "risk": "The comment in role_gate_negative_coverage.py that WARNS about a literal 0x08 backspace byte shipping in place of the two characters backslash-b was itself written with two raw 0x08 bytes on that line. A reader sees nothing there at all. Caught by the control-character push gate on the very next push, not by review.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "76885c1bd14b",
+   "date": "2026-09-29",
+   "detected_by": "static-checker",
+   "prior_severity": "moderate",
+   "risk": "api/alf-append-only-read-order.test.js matched each PostgREST trail read by requiring the whole query inside one inline rest('...') literal. When the alf_incidents read was refactored into a query built up in a variable -- with its order=created_at.desc still present -- the matcher found ZERO reads and the suite went RED on main with 'expected exactly 1 ... found 0'. The check reported on the SPELLING of the call rather than on the ordering it exists to verify, so every refactor of a covered read reads as a regression.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "819cc2e44a76",
+   "date": "2026-09-29",
+   "detected_by": "fault-injection",
+   "prior_severity": "moderate",
+   "risk": "role_gate_negative_coverage.py printed a bucket labelled 'NOT DRIVEN by any suite at all' whose inline comment asserted 'there is no suite to add an arm to'. It could not see a table-driven suite -- a for-of over an array of [resource, action, ...] rows with a fixed role -- so FIVE of sixteen resources were driven by exactly that shape and reported as driven by nothing. --ablate alf_billing then reported 3 of 3 gate blocks CAUGHT by that very suite. The bucket over-reported by at least 31 percent, and the tool was stating a fact about the WORLD using a fact about ITSELF.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "8c09948c5d95",
+   "date": "2026-09-29",
+   "detected_by": "probe-control",
+   "prior_severity": "low",
+   "risk": "tests/fixtures/baseline_gate_fixture.py counted occurrences of its own anchor literal in its own source and required three; the literal occurs once. So the fixture was RED at every baseline, and the control that uses it could never pass its GREEN arm -- a fixture failing for its own reasons, which is precisely the condition the harness precondition exists to refuse, arriving one level down.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "98a97bf59bea",
+   "date": "2026-09-29",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/citation_drift_hook.py -- main() has FOUR could-not-* paths, not the three its header implied, and the fourth exits 0. The header said could-not-run 'exits non-zero' with no exception; COULD-NOT-ATTRIBUTE (no HEAD baseline, so drift cannot be split into this-edit's and pre-existing) returns 1 if any drift exists and 0 if none does. DRIVEN in both sub-cases rather than read off the source. THE EXIT CODE IS CORRECT AND IS NOT A FOLD: what could not run is ATTRIBUTION, not the drift check, whose counts are printed; a zero-drift document entails zero drift from this edit; and exiting 2 would fire on a provably clean document in every ordinary condition where git show HEAD:<file> has nothing to give -- a fresh clone, a detached head, a file not yet in HEAD -- which is a hook somebody switches off. WHAT WAS WRONG IS THE OUTPUT: it printed the could-not-attribute note, then the line 'Listing ALL drift in the document', then NOTHING, and exited 0. It now states the verdict, names its basis as the whole-document answer rather than a before/after comparison, says what that basis cannot tell (a cite this edit FIXED; drift introduced and removed inside one write), and no longer prints a listing header with nothing under it.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "a0d9b68d53c4",
+   "date": "2026-09-29",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "tools/citation_no_source_report.py -- the CONTRADICTORY bucket read 32 and the honest count is ZERO, with no register row edited. Reading all 32 by hand, which is what the number was for, found 31 carrying real disclosed evidence in a form the tool did not recognise and 1 that was a pure regex false positive. THREE CRITERIA CORRECTIONS: 27 rows carry 'Confidentiality individually read 2026-09-22', the 3.2 pass's per-row stamp WITHOUT a group label -- the same disclosure GROUP_STAMP already accepted, one degree less labelled, and THIS IS THE SAME MISTAKE THE TOOL ALREADY CORRECTED ONCE when the bucket went 138 to 32; 4 rows carry a field list lifted out of the source (READ OUT OF THE APP / HANDLER plus a brace list), and a rule keyed on the word APP would have missed both HANDLER rows; 1 row, law_mattermilestones, matched the bare word re-derived inside its own sentence 'the matter survives it and the stage can be re-derived'. SEPARATELY, measured at exactly 2 of 391 so it is not overstated: CITE was ':\\d{3,5}' and could not see a line number under 100, so api/_resources/stonedesk.js:27 and api/_resources/sairnroofing.js:56 were both counted as citing nothing -- api/_resources declarations live at the TOP of their files. The zero is now printed WITH its history (138, then 32, then 0, no row edited) and beside the figure that has not moved: 207 of 391 rows point at no LINE, 142 of them Tier A.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "a3c0b23793c1",
+   "date": "2026-09-29",
+   "detected_by": "hover-audit",
+   "prior_severity": "low",
+   "risk": "hover2_log_mirror.py classify_remote(): a non-github ssh URL carrying userinfo (ssh://deploy@gitlab.com/...) was refused with the WRONG REASON -- the credential/userinfo wording instead of the non-github wording -- because the userinfo regex ran before the host check and fired on any scheme://user@ shape regardless of host. Not a security gap: the URL was refused under either reason; the defect is a misleading refusal message. Found by the OTHER auditor instance (H1) from black-box description, reproduced here exactly, fixed tests-first: R7 (the reported URL must get the non-github reason) confirmed failing before the fix; R8 known-bad control (a real github.com URL WITH a credential must STILL get the credential reason) passing before and after, proving the fix narrows scope rather than deleting the check. 52/52 after.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "d0bb06783104",
+   "date": "2026-09-29",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "sairn_claim.py reads a token inside a BLOCKER CLAUSE (waiting for X, when X frees, NOT TOUCHING X, X is hank's) as evidence of ownership, so the conflict declaration PR 4.3 requires makes the declaring session a blocker for everyone else",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "fdd7068a6085",
+   "date": "2026-09-29",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "tools/hedge_carry_check.py -- a REAL PLAIN COMMIT was reported DROPPED, a false finding on a check about honesty. Root cause is one line: every hedge was matched as a bare word with nothing but word boundaries, and three of the nineteen entries are polysemous. `appears` in 'the resource name APPEARS IN citation_drift_hook.py\\u0027s docstring' means OCCURS and hedges nothing; `possible` in 'confirm the only POSSIBLE VALUES are A and B' enumerates; `suspect` in 'the named SUSPECT is the matcher' is a noun. Each produced DROPPED against a commit with nothing to answer for. AND THE SAME LINE CAUSED A FALSE NEGATIVE: the loop broke after the first occurrence of each word, so a non-hedging 'appears in' EARLIER in a dispatch SHADOWED a real 'appears to be' later -- one bug, both directions. A FOURTH DEFECT FOUND WHILE REPRODUCING: the context sentence was cut at the first bare '.', so a dispatch naming citation_drift_hook.py reported 'The resource name appears in citation_drift_hook.' -- a reader could not see what was hedged, on a report whose entire value is showing them.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "ff6279ea74b0",
+   "date": "2026-09-29",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/plugin_upgrade_check.py carried its own github_token() that shelled out to git credential fill and read the password line itself, rather than importing tools/gh_token.py -- the module created specifically to end that duplication after two other tools each carried a copy, both read a file 0 bytes since 2026-08-08, and both raised on every invocation for seven weeks with nothing saying so. The third copy could not benefit from the ordering that fix established: env var, then credential manager, then .env.local LAST so a stale file cannot shadow a live credential. Found while enumerating credential read sites for the SAIRN-Session55 rotation.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "071156163223",
+   "date": "2026-09-30",
+   "detected_by": "code-review",
+   "prior_severity": "low",
+   "risk": "tests/run_dead_rule_sweep_probe.py section A2 sabotaged tools/dead_rule_sweep.py IN THE CLONE -- emptying its never-matching sentinel to prove the criteria lock is load-bearing -- and restored it in a finally. The same defect the sweep itself was fixed for that morning (80c5984c), one layer up, inside its own control: a kill mid-run leaves a tool with a broken sentinel on disk in a clone four sessions push from, where it reads as code. Fixed by mutating a byte-verified copy in a scratch tree outside the clone, with no restore because nothing is put back.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "2918287762b6",
+   "date": "2026-09-30",
+   "detected_by": "code-review",
+   "prior_severity": "low",
+   "risk": "The auditor-tree clause in tools/tier_a_review_gate.py's SKIP_REASONS landed as the WHOLE directory tree, making it the widest exclusion in the file and fenced only at its prefix -- 66 of 79 tracked files exempted to cover the 13 that carry a Tier A name. Narrowed to tools*/ subdirectories, measured over every file in the tree rather than argued, with the measurement itself kept as a probe arm so it cannot go stale silently. Not narrowed further to .py, because hover-watchlist.json sits beside the tools and is the shape that will name resources one day.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "36b4343e7176",
+   "date": "2026-09-30",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "A live gate verification was driven by an UNCOMMITTED scratchpad script, which imported nothing and was therefore invisible to tools/live_probe_residue_audit.py -- whose universe is tracked files under tools/ tests/ scripts/. audit_licence.require_audit_licence would have refused the demo-facing key outright. Two rows were left on a demo licence on tables with no DELETE grant. Replaced by tools/mech_gate_live_probe.py, and running the auditor against THAT found three further ways a correct declaration counts as absent: a write action passed positionally (tool missing from the writer list entirely, 9 instead of 10), LIVE_PROBE_RESIDUE written as a multi-line concatenation when RESIDUE_RE matches one quoted literal, and a residue declaration not starting with an existing path.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "41f0689295fb",
+   "date": "2026-09-30",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "The citation-drift detector credited a line that names every resource at once. It\nasked whether a resource name appeared within 40 lines of a cited `:NNNN`, and\nsairnfreedom.html carries two blocks -- `var SF_SYNCED=[...]` at 1919-1928 and the\n`K_ACCOUNTS='sf_accounts', ...` storage-constant block at 2340-2344 -- each listing\nEVERY sf_ resource. A citation into either therefore read as sound for all 36\nresources simultaneously, and the \"corrected\" offsets were computed from the first\ntextual occurrence of the name, which is inside the sync list, so all 40 offsets\nwere measured from the same line. The app has no per-resource writer at all -- one\ngeneric sfData('write', key, r) serves them -- so the real per-resource write is\nst(K_<CONST>, ...), and the checker now resolves resource to constant to st() call\nsite and excludes any line naming two or more prefixed resources. Re-run: 41\ncitations over 28 resources, 8 SOUND, 33 DRIFTED, 0 INCONCLUSIVE. The earlier\nfigure of 40 wrong was itself wrong in both directions.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "46f8c0133043",
+   "date": "2026-09-30",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "tools/rebase_state_guard.py: git_dir() returns None for a missing git, a non-zero rev-parse, an exception OR A 10-SECOND TIMEOUT, and operation_in_progress(None) returned the same None it returns for a clean tree. For git add -A, git add . and git commit -am x there is no second question to fall through to, so decide() answered (False, empty) and the command was ALLOWED -- a blanket stage into a live stopped rebase, silently, which is the 2026-09-27 incident the hook exists to prevent. The hook is wired into .claude/settings.json for all five clones.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "7bc3a5a25bb5",
+   "date": "2026-09-30",
+   "detected_by": "hover-audit",
+   "prior_severity": "moderate",
+   "risk": "tools/hover_auditor_scope_gate.py hardcoded OWN_CLAIM = '.claude/claims/hover.json', so a SECOND auditor instance (hover2) could not commit its own claim file and structurally could not satisfy the claim-before-work commit half of PR 2.2. Second location of one assumption -- hover #205 fixed the same single-instance hardcoding in eligible_reviewers. Fixed with AuditorScope, a class keyed by session name, in both the gate and the history audit; the first attempt patched the gate alone and broke six arms of the paired control, because the two tools ask different questions (this clone's own vs any instance's) and were conflated.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "80c5984c6cd5",
+   "date": "2026-09-30",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/dead_rule_sweep.py neutralised a compiled rule IN THE TRACKED TOOL SOURCE and restored it in a finally, so a killed run left the neutralisation on disk. Measured on the first full run: 20 tracked tool sources written at the 240s bound, each carrying a rule replaced by a never-matching pattern, in a clone four build sessions push from. A restore reached only on a normal exit is not isolation, it is a tidy-up. Fixed by moving every mutation and every evidence run into a throwaway worktree, an unmakeable sandbox being exit 2 with NO fallback to the clone.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "9643cb4c3f6e",
+   "date": "2026-09-30",
+   "detected_by": "probe-control",
+   "prior_severity": "moderate",
+   "risk": "tests/mech_docs_redaction_wiring_probe.py arm 8 had been passing VACUOUSLY. Its arms are predicates over mutated source rather than suite runs, so the baseline question is whether the predicate is TRUE on the unmutated file -- and arm 8's predicate required the literal resource === mech_docs, which the 2026-09-29 map refactor removed. With the predicate already false, not predicate(mutated) is true before and after, so the arm reported a refusal it never tested. Arm 1 went RED off the identical cause and was fixed the day before without anyone noticing arm 8 had gone quiet.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "9b2735faba06",
+   "date": "2026-09-30",
+   "detected_by": "hover-audit",
+   "prior_severity": "moderate",
+   "risk": "tools/tier_a_review_gate.py forced a Tier A review obligation on the hover auditor's own tooling, because a resource NAME appearing as a short token in a fixture or rotation-pool list is indistinguishable from the same literal in a handler. The obligation is one the auditor STRUCTURALLY CANNOT COMMIT -- hover_auditor_scope_gate.py refuses docs/tier-a-reviews.json from that clone -- so two individually-correct gates deadlocked the role. Fired twice in one session (H2 seq 416, 422), and at seq 422 the record was written on disk to satisfy the push gate and then reset, so the gate was satisfied by something that did not persist. Fixed with a SKIP_REASONS clause keyed on what the file IS.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "a1247a2e063f",
+   "date": "2026-09-30",
+   "detected_by": "probe-control",
+   "prior_severity": "high",
+   "risk": "tests/sabotage_harness.py returned exit 1 when the subject suite was RED AT ITS OWN BASELINE -- the same code it returns when a planted defect was NOT refused. A run that planted nothing and verified nothing was therefore indistinguishable, by exit code, from a run that found a real hole in the subject. 68 probes take this gate from the shared harness. Found when run_self_exclusion_guard_sabotage_probe.py went red at its baseline and every mutation under it was meaningless while the exit code claimed a finding.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "a468b4b89d68",
+   "date": "2026-09-30",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "tools/condition_coverage.py mutated api/_lib/ledger.js -- a production financial\nengine -- in place. It is a mutation tester: it flips an && to || , runs the\nengine's suite, and restores. Every guard around that was correct and none of them\nmattered. On 2026-09-30 a bare-run sweep launched it with no arguments under a\n15-second timeout, it was KILLED mid-mutation, and the scratch clone was left with\na mutated engine that `git status --porcelain` named. A `finally` does not run in a\nkilled process, and neither does the tool's three-stage restore verification. The\nfix is that the real tree is no longer the thing mutated: sweeps now run in a\ndetached git worktree at HEAD, chosen over a file copy because the suites resolve\nby path. A --report option was added and REFUSES any path under api/ sql/ tools/\ntests/ scripts/ or with a source extension, so no output of the tool can land in\nsrc through the front door either.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "f70a69be600b",
+   "date": "2026-09-30",
+   "detected_by": "hover-audit",
+   "prior_severity": "moderate",
+   "risk": "tools/sairn_claim.py file_verdict() refused on ANY shared declared-file token including a BARE BASENAME, producing a false hard block between two physically distinct per-clone files: hover's hover_log.py and hover2's live in their own hover-audit-log/ directories, neither in the platform repo, and no write conflict is possible. Two sessions were blocked from working at the same time by a filename. Fixed by refusing only on a separator-bearing shared path; a bare-name overlap falls through to the lexical matcher.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "2f52470b6d73",
+   "date": "2026-10-05",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/sairn_claim.py disclosed_files() exempted a path from the WHOLE claim whenever ANY clause carried a disjointness marker, so a claim that TAKES a file in one clause and mentions it in a disclaimer in another had it exempted outright and the matcher answered CLEAR to every other session wanting it. The 2026-09-29 finding had stated the required test -- a token disclosed ONLY inside a blocker clause -- and the implementation that landed that day carried the first half and not the second. Compounding it, markers were matched as bare SUBSTRINGS, so `blocked` matched inside UNBLOCKED: fourth's \"queue9 items 1,5,6 in api/sd-data.js, NOW UNBLOCKED\", a claim TAKING the file, read as a disclosure of not taking it and cleared against cc's concurrent FILES: api/sd-data.js. Measured over all 532,512 cross-session pairs in the 1,178-claim record: the two fixes together restore 54 blocks and remove none, all on api/sd-data.js, docs/tier-a-reviews.json and tools/report_only_checks.py. Seven new blocker-clause markers were added at a measured cost of ZERO blocks each; four more (deferred 73, holds 61, is-session's 50, conflict-declared 22) were measured and REJECTED, leaving two of the finding's eight wordings open on purpose with a probe arm asserting they still block.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "38514b5b4877",
+   "date": "2026-10-05",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "tools/schema_provisioning_check.py declared_tables() matched 'create table if not exists public.<name>' and 25 files in sql/ write the unqualified form, so 28 declared tables were invisible to the only tool that answers whether a migration ran -- 442 visible with the prefix required against 470 with it optional, almost all of the 28 being the *_employee_auth and *_audit_log families an app's sign-in depends on. THE SILENT HALF IS WORSE: a file whose every table is unqualified returned an EMPTY LIST and the tool printed 'schema declares : 0', 'PROVISIONED : 0', 'MISSING : 0' and exited 0, in the same shape as a fully-migrated app. sql/stonedesk_audit_log_schema.sql did exactly that in the 2026-10-05 Gate-1 sweep: one declared table, read as none, reported clean, and the sweep's published totals (402 declared, 24 missing) were therefore floors rather than counts. Found by following one register cell rather than by review or by a test -- supplier_lead_times is recorded as not provisioned and was absent from both the missing list and the sweep, which exposed first an app-prefix glob reading 113 schema files of 147 and then this. Fixed by making the prefix optional, stripping line comments in the same change because the widening made a comment reading 'see create table if not exists in the other file' yield the table name 'in', and refusing with exit 2 on a schema that declares nothing while naming both causes the tool cannot distinguish.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "d3d2db42af5d",
+   "date": "2026-10-05",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "Push-gate check 11 -- the one gate whose entire subject is a byte in a committed blob -- derived its file list from the OUTGOING COMMIT RANGE and then handed tools/control_char_check.py WORKING-TREE paths, so it answered about bytes that are not the bytes being pushed. Reproduced in a throwaway repo: commit a file containing PAT = r'grant[^;]*<BS>delete<BS>', repair the working tree without committing, and the checker prints \"CLEAN -- no raw control bytes\" and exits 0 while git show HEAD:guard.py still carries two raw 0x08. The push that shipped the defect would have passed a clean gate. Three further defects were found inside the same block and fixed with it. (a) A named file that could not be opened was skipped by a bare `continue` while `files scanned` still counted it, so the printed number was a claim about bytes nobody read and the gate's own count guard compared against it and agreed -- PR 1.11. (b) `git ls-files` QUOTES a path it cannot print plainly, and this repo tracks one: archive/.../SAIRNlaw \\342\\200\\224 A Partnership Proposal ... .pdf. Every sweep since 2026-09-10 looked for a filename beginning with a quote character, failed, and skipped it in silence while counting it as scanned -- 25 days of a tracked file never being read, disclosed only when (a) turned the silent skip into an exit 2. Fixed with ls-files -z rather than an unquoter. (c) Check 11 handled exit 1 and the scoping mismatch and nothing else, so an exit 2 COULD NOT RUN from the checker fell through the block as a pass; latent until --rev made exit 2 reachable.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "19c872e077b6",
+   "date": "2026-10-06",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/tooling_inventory.py REFUSED LOUDLY on a MISSING PURPOSES entry (exit 2, naming the tool) and exited 0 SILENTLY on a DUPLICATE key. Python keeps the last of two identical dict keys and discards the first with no warning, so an entry somebody wrote became dead text -- invisible in the rendered document AND in the source, with nothing able to tell the author. It happened for real on 2026-10-06 to a gate_parity_check.py entry written while another session had already added one. Severity moderate rather than high because no WRONG cell was produced: the surviving entry was the better of the two, so the defect is that the mechanism cannot report, not that the document lied.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "3cf3d5ec3e2c",
+   "date": "2026-10-06",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "tools/exit_status_attributable.py, the hook whose subject is reading a status off the wrong subject, did it three ways itself. (1) Its new --post observer read 'if rc_head != 0 or rc_ab != 0: return 0' -- a SILENT SKIP. A clone with no comparable origin/main makes rev-list exit non-zero, the observer vanishes, and nothing downstream can tell that from 'nothing worth saying'. (2) The subject matcher matched a tool path ANYWHERE in a non-final element, so a grep or sed over a tool's own source was reported as running it. (3) It fired on the exact remedy its own message recommends, and MY FIRST FIX FOR THAT WAS THE SAME DEFECT AGAIN: it accepted a status read anywhere after the tool, which blesses 'tool > f; tail -3 f; echo $?' where the status belongs to tail. Fourth reported the false positive independently in docs/2026-10-05-exit-status-attributable-false-positive.md and its discriminator -- did anything EXECUTE between the tool and the expansion -- is the one now implemented. Fixed: every leg of the observer names what it could not read and only a total blackout is silence; the path must stand in invocation position; the status read must be in the element immediately after, reached by a sequencing separator and never a pipe.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "53168bb506f0",
+   "date": "2026-10-06",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/accepted_risk_expiry_audit.py main() prints its per-verdict section headers with box-drawing rules and the module never reconfigures sys.stdout. Under cp1252 -- the real console encoding on this machine -- that raises UnicodeEncodeError AT THE REPORTING STAGE, after the whole audit has run, so the process exits 1 and prints no findings. Exit 1 is also this tool's finding status, so a caller reading the status alone cannot tell a crash from a result. Found by driving all 296 tools/*.py under forced PYTHONIOENCODING=cp1252 in a scratch copy of the tree: 1 crash of 296, with 26 slow tools re-driven at a long timeout and run_all_tests.py reported as COULD-NOT-TELL rather than folded into the pass count. Fixed by reconfiguring stdout and stderr to utf-8 at import -- the stream, not the text, because ASCII-ing this file would fix one file and leave the pattern in the other ~295.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "6a4ee580b47e",
+   "date": "2026-10-06",
+   "detected_by": "fault-injection",
+   "prior_severity": "moderate",
+   "risk": "probe_public_book_guardian.py, rf_claim_gate_live_probe.py and rf_roundtrip_probe.py anchored `git rev-parse --show-toplevel` correctly and then returned an UNCHECKED `os.path.dirname(__file__ dir)` fallback. Run from a copy sitting directly under the home directory, that fallback IS C:/Users/marsh -- the home repository, which is the exact wrong answer the anchoring exists to avoid. The anchored call refused it, printed a warning, and the fallback returned it anyway. A warning on stderr is not a refusal: nothing downstream reads it, so the caller imports from the wrong tree with exit 0. Driven, not read: the probe returned C:/Users/marsh from all three on its first run.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "db8cc2d485db",
+   "date": "2026-10-06",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "tools/tier_a_review_gate.py strip_diff_noise() blanked PROSE STRING bodies but deliberately counted COMMENT text, so writing a sentence about a Tier A resource registered the author as changing code that serves it. Each false demand opened a real obligation costing a reviewer a full read, and complying was always cheaper than fixing, so ten accumulated instead of forcing the question. Now a comment body of three or more whitespace-separated words is blanked by the same _blank threshold already used for prose strings, with the marker chosen by file extension and NO comment stripping at all when the path is unknown -- because the direction of a wrong guess there is a gate going quiet, which the docstring already names as the worse failure. Character walk, not a regex, per the lesson _strip_code_noise() records. ONE commit-level flip in the entire register (BLOCKED->CLEAN on f07d8660), hand-verified three independent ways rather than accepted. The context-only, never-blocking walk is deliberately unchanged, so a comment is DEMOTED rather than deleted.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "db8cc2d485db",
+   "date": "2026-10-06",
+   "detected_by": "static-checker",
+   "prior_severity": "moderate",
+   "risk": "tools/fmea_draft.py had two defects found by driving it. (1) _d_checker_without_probe's regex included the case-sensitive alternative \\bCLEAN\\b, written for the VERDICT TOKEN a checker prints, and it matched the English word 'clean' once a comment was upper-cased -- so metamorphic_check reported a verdict MOVE on tools/alf_facility_role_gate_live_probe.py. Rewording the subject file was rejected as slipping past the matcher and re.I was rejected on a measurement (\\bCLEAN\\b matches 197 times across 296 files); the detector is instead made blind to full-line comment text, which satisfies the relation by construction. Cost named, not counted: 96 files still fire, exactly 3 lose their verdict. (2) _d_fixed_window fired on 44.6% of 691 files and tests/run_fmea_probe.py arm 3b was RED ON MAIN for it. Measured per half: the bare [:NNN] slice accounted for 307 of 308 and every one inspected was a DISPLAY truncation in a message, not a window that exempts data. Slice half dropped, named half widened, 14/691 = 2.0%, and all fourteen hand-checked as real bounds.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "0dcb2dafb001",
+   "date": "2026-10-07",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "tools/run_all_tests.py --pinned isolated the TREE and not the CONFIG: a linked worktree shares .git/config, so a git config write with cwd inside it lands in the real clone. This clone was found core.bare=true, written 2026-10-07T01:14:02Z during a 23463s unpinned run of this file, with git status, add and commit broken afterwards and two api/ files left mutated, one of them unparseable. --pinned now builds a throwaway CLONE, which has its own config. Proved byte for byte: the exact write run inside the sandbox leaves .git/config at sha256 93070fe59db2, 506 bytes, and git config -l identical.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "18078d382de8",
+   "date": "2026-10-07",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/tier_a_review_gate.py stamped opened_at_sha from head_sha(), so a Tier A review obligation was anchored to whatever commit happened to be on top of the branch -- a regeneration, a chore(claims) commit, a merge -- rather than to the commit its own files were changed in. code_staleness() diffs the record's named files between that sha and HEAD, so a sha that never contained those files makes STALE/FRESH a verdict about the wrong interval, and the reviewer either reconstructs the subject by hand or reviews the wrong diff. Measured over the whole ledger at dea44d22 and again at 8ee6e7c2, identical both times: of 238 records, 63 carry both a sha that resolves here and a file list, and 34 of those 63 -- 54 percent -- stamp a commit whose diff contains NONE of the files the record names. They come from five sessions (hank 12, cody 12, hover2 4, cc 4, fourth 2), so this is five independent record sets showing one shape rather than two agreeing. subject_sha(files) now returns (sha, basis): the last commit touching the named files with basis file-set, HEAD with basis head when a record names no files, and (None, could-not-tell) when git cannot answer; the basis is written onto the record as opened_at_sha_basis rather than left to be inferred. The file list is computed before the sha and the record publishes that same list by construction. The existing 34 records are NOT re-stamped: the ledger is append-only and a sha change is a delete plus an insert under its own identity rule.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "1ae447cf0b5e",
+   "date": "2026-10-07",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/va_rule_currency.py, the seventh of the eight argv tools, and its refusal is not the one the other six needed. It reads path, wanted = sys.argv[1], sys.argv[2:]. A bare run raised IndexError and exited 1 -- the same third-state collapse. But given ONE argument it did NOT raise: wanted came back empty, the loop test name not in wanted matched nothing, and the tool printed NOTHING and exited 0. SILENT SUCCESS ON A RUN THAT EXAMINED NO RULE, indistinguishable from every rule is clean -- worse than the traceback, because a traceback at least stops somebody. A guard written for the bare case alone would have closed the louder half and left the quieter half exactly as it was. It is also the file with NO OWNER AT ALL in docs/tool-owner-map.json (basis NONE, owner null), which is why it sat on a routing list that could never route it.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "2281de97ff5c",
+   "date": "2026-10-07",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "tools/gen_va_seed.py could not emit `trigger_document`, and TWO rules in the committed Virginia seed carry one: va-r-3-8b-answer-after-motions-overruled and va-r-3-8b-answer-after-jurisdiction-or-process-motion-overruled. --check read DRIFTED (28481 vs 27622 bytes) and a regeneration would have deleted both. Both record that the 21 days run from the date the clerk ENTERED the order, not the date it was signed, decided, announced in court, or mailed. THE KEY'S POSITION DIFFERS FROM MISSOURI and was taken from the file rather than assumed: here it sits between trigger_event and computation, in Missouri between count and computation, because Virginia's rule() appends count conditionally at the END. That difference is why this is a second commit and not a sweep -- one sweep would have placed the key identically in both and quietly re-drifted one of them. The seed was NOT regenerated; the only change was re-indenting 10 lines the hand-insertions had put one space too deep, json.loads proved equal before and after. deadline-trigger-document.test.js: 41 passed, 0 failed. The _readme was checked first and statically: 51 lines to 51, no difference.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "24bb3baefc27",
+   "date": "2026-10-07",
+   "detected_by": "static-checker",
+   "prior_severity": "moderate",
+   "risk": "sql/sairnlaw_deadline_seed_massachusetts.json carries a 73-line _readme; tools/gen_ma_seed.py emitted 54. The 19-line difference was the ACCESS correction of 2026-08-27, which recorded that a BARE curl -- no user-agent, no Accept header -- gets HTTP 200 and full rule text from mass.gov (rule-6-time 253,869 B; rule-5-service 293,422 B), overturning an earlier 'every mass.gov URL returns 403' claim. e0b8e481 applied the correction to the generated OUTPUT and never back to the generator, so for six weeks --check read DRIFTED and a regeneration would have REINSTATED, as current, a 403 claim already measured false -- sending the next reader to set up browser automation they do not need, which is the cost the corrected paragraph itself names. The generator's MODULE DOCSTRING carried the same stale claim and was corrected in the same commit. The seed was NOT regenerated: the generator was brought up to the output, because the output was the corrected copy.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "2f1a2dae7641",
+   "date": "2026-10-07",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/role_gate_mc_config.py recognised exactly ONE flag, --check, and every other argument fell through to the generate-and-write path. `python tools/role_gate_mc_config.py --help` -- the first thing a reader types to find out what a tool does -- therefore REGENERATED docs/spec/MCRoleGates.tla and .cfg. Found by my own --help probe doing exactly that during a read-only tool inventory, and caught only because git status was captured before and after the probe. Fixed: KNOWN_FLAGS is a closed list, classify_argv is pure and runs BEFORE read_sets(), and an unrecognised argument exits 2 having invoked no node and opened no file for writing.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "320ddabedae4",
+   "date": "2026-10-07",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "Eight of 315 scripts under tools/ read sys.argv[1] with no length check, so a bare run raised IndexError and exited 1. On this platform EXIT 1 MEANS FINDINGS and exit 2 means COULD NOT RUN, so to anything reading an exit code a tool that needed an argument was indistinguishable from a tool that ran and found something. 67 other tools in the same directory already refuse in words, so the convention was established and these were the exceptions. Six are fixed here: checkblocks.py, div_balance_check.py, extract_scripts.py, js_code_only_diff.py, literal_drift_check.py, nav_panel_check.py. Measured by running all 315 scripts once each in a throwaway worktree and reading the captured exit codes -- the 8 and the 67 are counts from that sweep, not estimates.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "339ea4eb3162",
+   "date": "2026-10-07",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "tools/role_gate_mc_config.py silently stopped modelling 4 of 10 apps. Its node reader evaluates a non-exported role set with `vm.runInNewContext` and folded the throw into the SAME null it returns for 'no declaration found', so sairncare, sairnbuild, sairnlegacy and sairndesign -- which each declare MANAGEMENT_ROLES -- were reported as having no such concept. The trigger was dadfedf4 wrapping every internal declaration in roleSet(), which the sandbox had no binding for. Consequence: the committed MCRoleGates spec models 10 apps, the generator produced 6, --check read DRIFT, and the tool's own printed remedy -- 'Regenerate: python tools/role_gate_mc_config.py' -- would have DELETED four apps of model coverage. Anyone following the tool's instruction would have made it worse. This generator's own docstring warns about this exact mistake in these exact four apps, from an earlier version that read only module.exports; it recurred through a different door. Fixed two ways: the sandbox is handed the REAL auth.roleSet, and a found-but-unevaluable declaration now refuses the whole run with exit 2 and writes nothing. The committed spec files were never wrong and were NOT regenerated.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "33a91b5e965b",
+   "date": "2026-10-07",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "tools/gen_mo_seed.py could not emit `trigger_document`, a field the DEADLINE ENGINE READS. The committed Missouri seed carries one on mo-r-55-25b-reply-ordered-by-court and the string trigger_document appeared nowhere in the generator, so --check read DRIFTED (39096 vs 38708 bytes) and a regeneration would have DELETED the field. It is not decoration: api/_lib/deadline-engine.js reads it, api/legal-deadlines.js surfaces it, and api/_lib/deadline-trigger-document.test.js exists for it (41 passed, 0 failed after this change). Its content is the distinction a lawyer loses money on -- the 20 days run from the date the clerk ENTERED the order, 'not the date it was signed, decided, announced in court, or mailed to the parties'. Without it the row counts from whatever date a caller happens to supply, silently. Fixed: rule() takes trigdoc and emits the key BETWEEN count and computation, where the committed file has it. The seed was NOT regenerated; the only change to it was re-indenting 5 lines the hand-insertion had put one space too deep, with json.loads proved equal before and after. The _readme was checked FIRST and statically (ast.literal_eval on the _readme literal) and matched 55 lines to 55 -- the whole gap was in the rules.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "6860aee4a4d3",
+   "date": "2026-10-07",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "tools/defect_register.py --reseat REPORTED SUCCESS OVER A REGISTER ITS OWN --check REFUSES. Driven on a clean tree: --check 0, then --reseat re-seated 12 records and RETURNED 0 printing 're-seated 12 record(s)', then --check 1 with 'FAIL: 4 register problem(s)' -- four DUPLICATE records. The register's identity is (commit, summary) and --reseat maps a stale sha forward by SUBJECT, so where one defect was recorded twice (once before a rebase and once after) both records resolve to the same sha and collapse onto each other. An exit 0 from a repair tool is read as 'the thing is fixed', so a 0 over a register the checker rejects is worse than a crash -- and the next reader of the register has no way to tell. FIXED WITH TWO GUARDS, deliberately not the same guard twice: PREVENTION -- a record whose destination key is already taken is LEFT ALONE and named, because which of two records survives is a content question a pointer repair must not decide; and a BACKSTOP -- after the write, cmd_check() runs on what was just written and, if it fails for ANY reason, the file is restored from a BYTE pre-image and the exit is 2. A partial repair now exits 1 rather than 0. The backstop calls cmd_check rather than a private copy of the rules, which is this file's own stated argument about --add versus --check.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "6ca2e3a5d88c",
+   "date": "2026-10-07",
+   "detected_by": "code-review",
+   "prior_severity": "low",
+   "risk": "tools/run_all_tests.py --pinned removes its throwaway clone on two paths out of one acquisition, and only the SUCCESS path was fixed. The checkout-FAILURE path kept shutil.rmtree(wt, ignore_errors=True) while the success path 68 lines below had been changed to onerror=_force_rm on the same day, for this exact reason, with the helper sitting 134 lines above both call sites. git marks loose objects read-only and Windows refuses to unlink a read-only file, so ignore_errors abandons the object store in silence -- the original incident leaked 239 files without saying so. MEASURED on the clone this batch's KILLED run left behind: 4,047 files of which 38 were read-only, which is exactly the set ignore_errors cannot remove; removed cleanly with the retry handler, 0 left, 215 MB. Severity low because the failure path is rarely reached -- it needs a checkout to fail inside a clone that was just created successfully -- and the consequence is abandoned disk rather than a wrong verdict; but it is the same silent-failure shape and it sits in the harness every suite run goes through. METHOD: the 53-of-322 population was derived by a one-off scanner in the session scratchpad, not by any landed checker, and the verdict that this specific site is genuine came from reading it -- which is why this record says code-review and names no tool. The class was swept: 53 of 322 rmtree(ignore_errors=True) calls under tests/ and tools/ are in the real leak class once pre-create deletes are excluded and linked-worktree directories are measured out, 17 are attributable to me, and 7 are genuine after reading every one. This commit fixes the only one of the 7 inside this batch's declared FILES; the other six, and 36 not mine, are routed.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "83da8d39a19d",
+   "date": "2026-10-07",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "tools/condition_coverage.py drop_sandbox() ran `git worktree remove --force` and DISCARDED the result, then shutil.rmtree(..., ignore_errors=True). Routed by H1 as an unchecked-cleanup call in a shared build-agent file. Three ordinary failures for that git call: a locked worktree, an open handle (routine on Windows, where a node process holding a file under the sandbox is exactly what this tool creates), and an administrative entry already pruned. AND THE COST IS NOT A STALE DIRECTORY: rmtree then deletes the FILES while git keeps the entry under .git/worktrees, which is the state that makes `git worktree add` refuse the SAME PATH on the next run -- so the failure surfaces later, elsewhere, as a sandbox that cannot be created. sandbox() already coped with a leftover DIRECTORY; it could not cope with a leftover REGISTRATION because nothing told it there was one. Fixed: drop_sandbox returns True when the sandbox is gone and False with a printed reason and the `git worktree prune` repair when it is not, and the single call site reads the verdict instead of dropping it. It REPORTS rather than raises, because this runs in a finally and a cleanup that throws replaces the real error with its own. Driven both ways: True and silent on a real sandbox created by sandbox() itself, False and loud on a non-worktree path with git's own 'is not a working tree' text.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "88d7543b2698",
+   "date": "2026-10-07",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/tier_a_review_gate.py decided a review record's subject commit was usable with an EXISTENCE test -- `git rev-parse --verify --quiet <sha>^{commit}` -- and then diffed against it and printed an ordinary FRESH or STALE verdict. That command answers OK for a commit that is on a ref AND for one that is ORPHANED: present in this clone's object store, reached by nothing, gc-eligible here, absent from every other clone. The gate ALREADY contained the correct test -- its own _is_reachable() uses `git merge-base --is-ancestor` -- so it carried both methods and the freshness path used the weaker one. Measured at eb430f25: docs/tier-a-reviews.json cites SEVEN orphaned 40-char shas (00030f2d11b7 13e40c9d79b7 773fc2189cb0 7d15d0a27af0 a9e35feef967 c4dd292fd8a8 e4b3f21a2ceb) and one of them, 00030f2d11b7, was the basis of a printed \"** STALE ** moved since 00030f2d11b7\" verdict on an OPEN Tier A obligation -- a diff against a commit no other clone has, reported as a plain verdict. FIXED by asking reachability from origin/main or HEAD after the resolve and refusing with a distinct COULD-NOT-TELL that NAMES orphaned, so it reads differently from \"never fetched\"; after the fix four open records report it correctly. HEAD is accepted alongside origin/main deliberately, because a record opened at an unpushed local commit is ordinary work and not an orphan. GUARDED BY FOUR NEW ARMS in tests/run_tier_a_review_gate_probe.py, two of them negative plus a paired positive on a synthetic source. THE FIRST VERSION OF THE ARM WAS VACUOUS AND AN ABLATION CAUGHT IT: it sliced ~1500 lines of source and swallowed the definition of _is_reachable itself, so the substring matched whether or not the freshness path called it, and removing the guard left the probe green. The window is now bounded to 3000 bytes, truncated at `def _is_reachable`, and the bound is asserted by its own arm. Re-ablated: guard removed -> probe exit 1 naming both arms; file restored byte-identical; guard back -> exit 0.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "92071d45b5bd",
+   "date": "2026-10-07",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "EIGHT sites reported FINDINGS where their own message said COULD NOT RUN. sys.exit('text') and raise SystemExit('text') PRINT the string and exit 1; on this platform 1 means FINDINGS and 2 means COULD NOT RUN. THE EXPENSIVE ONE IS tools/sairn_load_state_check.py:533 -- the push gate calls that checker, so an absent SAIRNLAW_LICENSE_KEY in any clone read as SEED DRIFT in the licence: `python tools/sairn_load_state_check.py --app sairnlaw` exited 1 printing 'No license key'. tools/load_deadline_seed.py:167 and :177 the same, and :177's own first words were already 'COULD NOT RUN:' while it exited 1. tools/outline.py:34 an absent ctags DEPENDENCY, :112 a missing argument, :118 no <script> blocks. tests/run_alf_read_order_sabotage_probe.py:84 and :88 are two STALE-ANCHOR guards, and those are the sharpest: a stale anchor means the arm NEVER RAN, and exiting 1 filed that as a finding -- from a SABOTAGE probe, where a finding reads as 'the sabotage was detected', the exact opposite. All eight now print to stderr and raise SystemExit(2), each driven before and after. Rule R4 of tools/py_guard_check.py goes from 8 to ZERO over the same 711 files.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "94c99fb350b8",
+   "date": "2026-10-07",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/sairn_push_gate_hook.py's SCOPED exemption (SAIRN_GATE_EXEMPT=seed) was ungrantable from the ordinary context. One `git push` from a Bash tool call runs the hook TWICE -- PreToolUse on the command text, then the real .githooks/pre-push -- and both modes read ONE store file and both DELETED the pending record on a match. The PreToolUse half, which cannot let a push through, spent the token; prepush then found an empty store, soft-captured again and denied. Observed: push 1 pretooluse soft-capture DENY; push 2 pretooluse CONSUME + allow, prepush soft-capture DENY; push 3 identical, forever. Seven attempts over ~30 minutes. AND THE OUTPUT POINTED AT OPERATOR ERROR: every attempt printed the same SOFT CAPTURE notice, which reads as 'you have not pushed twice yet', so the real cause stayed behind a plausible one -- three other sessions were pushing every ~2.5 min, so each loop also looked like a rebase race. Fixed by AUTHORITY: prepush is the mode git will not push without and is the only one that deletes; pretooluse grants on a match and leaves the token to be spent. consume defaults from MODE so a second call site cannot get it wrong. NOT widened -- one named check, one resolved sha pin, the 15-minute TTL, spent exactly once.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "a003bf63f9b6",
+   "date": "2026-10-07",
+   "detected_by": "hover-audit",
+   "prior_severity": "moderate",
+   "risk": "docs/CRITICALITY-TIERS.md per-app rollup TOTALS column summed to 390 while 391 detail rows exist and five other figures in the same file said 391. Localised to ONE CELL: sairnfreedom read n=35 against its own A+B+C of 36 and 36 real sf_ rows. AND THE COLUMN IT HID IN IS THE ONLY ONE THE CHECKER NEVER COMPARED -- the COUNT guard in tools/criticality_tier_check.py looped over the three TIER columns from the day it was written and never over n, while that file header claims a rollup count that does not match the rows under it is caught. Moderate rather than high: the register is a judgement document read by people, no code derives from the totals column, and the figure was wrong by one.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "a27cd83b23e3",
+   "date": "2026-10-07",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/sairn_build_load_gates.py WROTE FIVE .sql FILES ON A BARE RUN, and those five files had been DELETED BY A HUMAN DECISION. Michael standardised on tools/sairn_load_state_check.py on 2026-08-29 and the generated gates were removed as part of it, because a generated gate must be regenerated after every seed edit and a forgotten regeneration makes it check yesterday's expectations and report clean -- the silent-failure shape the gate exists to catch, inside the catcher. This file is KEPT rather than deleted because three of its findings are load-bearing, and its own docstring says 'read this before adding an app'. So it invites being read, and anyone who then ran it to see what it does silently reinstated all five gates into their clone, with no prompt and nothing to notice but git status. Same shape as role_gate_mc_config.py's --help the same day and one tier worse: there the write rewrote a current file, here it UNDOES A DECISION. Fixed: a bare run exits 2, writes nothing and names the replacement; the write needs --write-superseded-gates; an unknown flag exits 2; --check, --determinism and --selftest are read-only. The five outputs are still NOT committed and the drift check is NOT extended, because determinism does not answer staleness -- a byte-stable generated gate goes stale on the next seed edit just as surely. Determinism WAS proved: eight builds (two isolated sandboxes, three in-process, three under PYTHONHASHSEED 0/1/12345) gave identical sha256 for all five files. And it is FIVE tables, not the two my own claim named -- the claim understated the blast radius.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "da9ecbd40810",
+   "date": "2026-10-07",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/gate_parity_check.py cross-resource pass flagged a table whenever two branches reading it DISAGREED on a role or assignment gate, with no notion of WHICH WAY. Hand-verifying all twelve live flags on 2026-10-07: two were real (alf_mar, PHI to billing through derive_charges; alf_staff, the OWNING branch gating on nothing) and ten were false positives for the cross-resource question -- seven safe-direction and three role-set containment. So a correct answer to the wrong question put a real PHI leak in a list of twelve items of equal apparent weight, and buried a second real defect of a DIFFERENT CLASS inside a report about disagreement. Precision on api/sd-data.js was 2 of 12.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "e2612fef8a55",
+   "date": "2026-10-07",
+   "detected_by": "probe-control",
+   "prior_severity": "moderate",
+   "risk": "FOUR DEFECTS IN tools/py_guard_check.py ITSELF, all four found by its own controls before it ever reported on anything, and recorded rather than quietly fixed because the tool exists to find exactly this family. (1) ARM 0 asserts the tool never executes what it reads; it searched the file's TEXT for 'exec(', 'eval(', 'compile(' and FAILED ON ITS FIRST RUN on `re.compile(` -- the regex compiler. That is PR 1.2 (grep cannot tell code from text about code) inside the tool written to avoid PR 1.2. It now asks the TREE: a bare call to one of those names, or an import of importlib/subprocess. (2) Rule R1 flagged tools/outline.py:80, which is CORRECT CODE -- `check=True` IS the exit-code check, expressed as an exception rather than an if -- and `subprocess.check_call` / `check_output` were in the call list for the same reason and would have flagged correct code too, since both raise on non-zero. Found by hand-verifying every flag of the first full run, which is the step the item required. (3) Rule R4 matched any name called `status`, and SIX of the first run's eleven R4 flags were a STRING verdict compared to a string (ok rc=1, TIMEOUT, UnicodeEncodeError, DRIFTED) in cp1252_console_sweep.py, push_retry.py and register_freshness_propose.py -- all correct code. `status` and `ret` removed from the name set. (4) `--help` EXITED 1: it printed the module docstring, the docstring carried box-drawing characters, and on a cp1252 console print() raised UnicodeEncodeError. That is the class tools/cp1252_console_sweep.py exists for, in a brand new file, and it was found by the CLI probe's '--help exits 0' arm. The docstring is now ASCII AND the print is encode-safe. All four now have arms, and the near-miss set IS the false positives: R1-check-true, R1-check-call, R4-status-str, R4-status-tmo.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "f2ee7be0d6da",
+   "date": "2026-10-07",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/tier_a_review_gate.py decided a review record's subject commit was usable with an EXISTENCE test -- `git rev-parse --verify --quiet <sha>^{commit}` -- and then diffed against it and printed an ordinary FRESH or STALE verdict. That command answers OK for a commit that is on a ref AND for one that is ORPHANED: present in this clone's object store, reached by nothing, gc-eligible here, absent from every other clone. The gate ALREADY contained the correct test -- its own _is_reachable() uses `git merge-base --is-ancestor` -- so it carried both methods and the freshness path used the weaker one. Measured at eb430f25: docs/tier-a-reviews.json cites SEVEN orphaned 40-char shas (00030f2d11b7 13e40c9d79b7 773fc2189cb0 7d15d0a27af0 a9e35feef967 c4dd292fd8a8 e4b3f21a2ceb) and one of them, 00030f2d11b7, was the basis of a printed \"** STALE ** moved since 00030f2d11b7\" verdict on an OPEN Tier A obligation -- a diff against a commit no other clone has, reported as a plain verdict. FIXED by asking reachability from origin/main or HEAD after the resolve and refusing with a distinct COULD-NOT-TELL that NAMES orphaned, so it reads differently from \"never fetched\"; after the fix four open records report it correctly. HEAD is accepted alongside origin/main deliberately, because a record opened at an unpushed local commit is ordinary work and not an orphan. GUARDED BY FOUR NEW ARMS in tests/run_tier_a_review_gate_probe.py, two of them negative plus a paired positive on a synthetic source. THE FIRST VERSION OF THE ARM WAS VACUOUS AND AN ABLATION CAUGHT IT: it sliced ~1500 lines of source and swallowed the definition of _is_reachable itself, so the substring matched whether or not the freshness path called it, and removing the guard left the probe green. The window is now bounded to 3000 bytes, truncated at `def _is_reachable`, and the bound is asserted by its own arm. Re-ablated: guard removed -> probe exit 1 naming both arms; file restored byte-identical; guard back -> exit 0.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "f3267f477224",
+   "date": "2026-10-07",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "tools/guard_ablation.py run() returned 124 on a timeout and the ablation loop read 'if run(...) != 0: noticed = s', so a suite that never finished counted as proof the ablated guard was LOAD-BEARING. A fabricated positive in the safe-looking direction: the guard reads as individually necessary and nothing proved it. run() now returns None, three baseline buckets replace two, a gate whose observers all timed out is COULD-NOT-RUN rather than SILENT or LOAD-BEARING, and --bound makes the path drivable. Driven: bound 1ms returns None, old '!= 0' would have called it noticed, end-to-end --bound 0.001 exits 2 naming 0 red and 178 did-not-finish.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "09e54de5a142",
+   "date": "2026-10-08",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "tools/cron_liveness_check.py and tools/audit_checkpoint_status.py DESTROYED A GOOD RECORD whenever CRON_SECRET was absent. Measured 2026-10-07: a bare run in a clone without the secret REPLACED a real OK in docs/CRON-LIVENESS-STATUS.md -- four cron jobs, all ok, measured 09:18:44Z -- with COULD NOT TELL, and nothing anywhere recorded that an OK had ever existed. The same path overwrote docs/AUDIT-CHECKPOINT-STATUS.md. Both exited 2 CORRECTLY, after writing. THE REASONING BEHIND IT WAS SOUND AND THE SCOPE WAS WRONG: \"say so rather than keeping a stale OK\" is right when the tool ASKED and could not get an answer -- a 401, a timeout, an unparseable body are facts about the subject -- and wrong when it could not ask at all. A missing environment variable is a fact about the CLONE, and five of the six clones on this box do not carry CRON_SECRET, so every sweep that drove every tool bare erased the record again.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "2505c5aa0262",
+   "date": "2026-10-08",
+   "detected_by": "code-review",
+   "prior_severity": "low",
+   "risk": "36 rmtree(..., ignore_errors=True) calls across 25 test files not mine removed directories holding a real .git, where git marks loose objects READ-ONLY and Windows refuses to unlink a read-only file -- so the removal fails, ignore_errors swallows the refusal, and the tree is left behind in silence. Same class as the seven of mine fixed earlier, and the same one-line patch. Population: 322 such calls under tests/ and tools/, 53 in the real leak class once pre-create deletes are excluded and linked-worktree directories are measured out (an init'ed repo dir carries 3 of 33 read-only files, a linked worktree 0 of 2 and its .git is a FILE), of which 17 were attributable to me and 36 were not. All 25 files were claim-checked FREE against the live registry at 2026-10-08 and added to my FILES before any edit. X OF 36: patched 36, refused 0, held 0, routed 0; 25 of 25 compile clean; 6 of 25 run as a stated SAMPLE with every exit code from a capture_exit .status file. The one EXIT 1 in the sample is pre-existing and proved so against the completed suite run at aa2f014d, which predates the patch. The one or two remaining ignore_errors calls per file are the OUT-OF-CLASS sites and stay, which is the point of the ordered predicate.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "35ec89c5dd8d",
+   "date": "2026-10-08",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/capture_exit.py read a status file saying RUNNING <pid> and reported RUNNING without ever asking whether that pid still existed. Measured twice on 2026-10-07: two --pinned suite runs were stopped from outside, one by a harness stop that killed the whole process tree, and both left RUNNING on disk for a process that no longer existed. --read reported RUNNING for hours afterwards, so a reader waiting on it waits forever and a reader reporting it says a run is in progress that ended before lunch. The file's own docstring says a reader who finds RUNNING knows the answer is NOT YET KNOWN, which is true only while the writer is alive. read_status() now resolves liveness into three states -- RUNNING when the pid is alive, DEAD when it is gone, COULD-NOT-TELL-PID when liveness cannot be determined -- none of which is EXIT and none of which exits 0, and a RUNNING line whose pid will not parse is UNREADABLE. os.kill(pid, 0) is deliberately NOT used on Windows because there it calls TerminateProcess, a liveness check that kills what it asks about; OpenProcess with PROCESS_QUERY_LIMITED_INFORMATION plus GetExitCodeProcess can only read. Proved against the real stale file from the killed run, which now reads DEAD and exits 2, while the live run read in the same minute still reads RUNNING. STATED LIMIT, in the code: a recycled pid reads as alive, so DEAD is sound and RUNNING means alive-or-recycled; closing that needs the process start time compared against the status timestamp and this does not do it.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "4f3267a7712f",
+   "date": "2026-10-08",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/bare_run_write_check.py -- the tool built to catch a bare run that mutates -- could not see any write OUTSIDE the working tree, and three real mutations lived there. It compared `git status` only. So tools/session_lock_check.py acquiring a session lock in ~/SAIRN-SESSION-LOCKS on a bare run was reported CLEAN; a `git config` write from inside a linked worktree landing in the owning clone's SHARED .git/config was reported CLEAN (that is how core.bare=true reached a live working clone); and a tool registering a worktree and leaving it registered was reported CLEAN. THE SCOPE WAS THE DEFECT, NOT THE COMPARISON.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "6372c94318ee",
+   "date": "2026-10-08",
+   "detected_by": "code-review",
+   "prior_severity": "low",
+   "risk": "tools/run_all_tests.py --pinned deleted its throwaway clone unconditionally in a finally, including when the post-run tree read had FAILED -- which is the one case where that directory is the only evidence of why. Measured cost, 2026-10-07: a run ended EXIT 2 COULD NOT RUN reporting 'the clone was broken during this run', on git status exiting 3221225794 = 0xC0000142, which is a process that failed to INITIALISE, i.e. git could not be LAUNCHED. Whether the clone was really broken or git merely could not start was answerable in that directory and nowhere else, and the cleanup had already removed it; the batch had to report the cause as UNKNOWN for want of evidence the tool destroyed on its way out. The inner run now writes a .sairn-tree-unreadable marker when the tree read fails and _drop_pinned_clone() keeps the directory and prints its path. Kept for that ONE cause only -- clean runs, red runs and every other COULD-NOT-RUN still clean up, because keeping 215 MB per run would get the behaviour switched off and 29 abandoned directories is the failure in the other direction. The signal is a FILE and not a phrase in stdout, because the two halves are one tool but separate processes and a text contract between them is one rewording away from silently keeping nothing.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "7eb134585c02",
+   "date": "2026-10-08",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "tools/tier_a_review_gate.py reseat_shas() filtered its population to status=='open' and disclosed nothing about the filter, so a reviewed record carrying an orphaned opened_at_sha was not refused, not listed and not counted -- it was absent, and the tool exited 0 reporting a true count of a population it had silently chosen. Adding the disclosure made the size visible on its first run: 72 REVIEWED records carry a sha and 32 of them are NOT reachable from origin/main. One record was the symptom; thirty-two is the finding, and none of it was visible before. Three changes: the excluded population is printed on every run whether or not the new flag is used; --include-reviewed widens the population, says it widened, and recomputes the walk window from the widened set because an index built from the open set alone cannot contain a reviewed record's survivor; and --only <opened_at> because --write repoints every fixable record in one keystroke, 11 across four sessions at that HEAD. The default count is deliberately unchanged at 22 before and after. 4aa33b4565dd was then reseated to survivor 27de70bee07a, established three independent ways that agree -- cc's file-history recovery, my own git log --diff-filter=A in batch 25, and the tool's own SUBJECT TWIN match -- with the old sha kept in opened_at_sha_was so the reseat is reversible rather than a silent overwrite. 12 new arms, the fail-first one being the disclosure arm; tests/run_tier_a_review_gate_probe.py EXIT 0, 242 ok, re-run EXIT 0 after a 36-commit rebase.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "83e59bd0b591",
+   "date": "2026-10-08",
+   "detected_by": "static-checker",
+   "prior_severity": "moderate",
+   "risk": "Three tool defects closed in one commit, each found by a different sweep. (1) tools/session_lock_check.py read `sys.argv[1] if len(sys.argv) > 1 else \"start\"`, so a BARE RUN ACQUIRED A SESSION LOCK, printed nothing and exited 0 -- measured by running it bare in a throwaway clone, which created ~/SAIRN-SESSION-LOCKS/b2-i6-clone.lock. Of 15 tools flagged across the 175 ownerless ones, it was the only one whose silence hid an ACTION rather than an absence of findings, and the repo own detector for this (bare_run_write_check.py) cannot see it because that registry lives OUTSIDE every clone by design. Stale locks named after throwaway clones -- bare_scratch, b11wt2, b12wt2 -- are the evidence it has been happening. (2) tools/vercel_config_check.py called json.load bare, so a missing or non-JSON path raised and exited 1 = FINDINGS; its BARE run is clean because the default path is the real vercel.json, so only the one-argument run could find it. (3) tools/nav_panel_check.py counted id attributes inside HTML comments, reporting FAIL:DUPLICATE_IDS on sairncode.html for mr-kx-ytd where one of the two occurrences is inside a comment documenting a REMOVED input -- a false positive produced by a comment that explains a past fix.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "f67fed680b86",
+   "date": "2026-10-08",
+   "detected_by": "code-review",
+   "prior_severity": "low",
+   "risk": "tools/exit_status_attributable.py warns that a piped command's exit status comes from the text filter and tells the reader to measure the program alone and read $?. That advice is correct for a foreground run and WRONG the moment the run is backgrounded, when $? is the wrapper's -- a false negative the tool cannot detect because the signal is not in its input: it reads command TEXT and backgrounding is decided by the harness afterwards. The routing row asking for a standalone backgrounding check is CLOSED AS NOT NEEDED on a measurement taken before anything was written: over 398 command lines in docs/*.md, 107 distinct, such a warning would have been NEW OUTPUT ON 106 OF 107, and since the hook fires on every Bash call rather than only documented ones, 99% is a floor on the live rate. A 99% firing rate is how a hook gets switched off. The change made instead rides on the warning that was already firing -- it now names capture_exit.py --status and says to read the status FILE -- so it adds words and no new messages; driven by feeding the hook a piped command, 775 bytes, --selftest EXIT 0, 40 ok. THEN REVERTED: the file carries '# OWNER: cc' on line 1 and docs/tool-owner-map.json records cc on basis OWNER_LINE, and I wrote to it without checking, so 1e60f011 backed it out and the text is routed to cc as a proposal instead.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "fa1f22d2bb41",
+   "date": "2026-10-08",
+   "detected_by": "code-review",
+   "prior_severity": "low",
+   "risk": "Six rmtree(..., ignore_errors=True) calls across five of my files removed directories that hold a real .git, where git marks loose object files READ-ONLY and Windows refuses to unlink a read-only file -- so the removal fails, ignore_errors swallows the refusal, and the tree is left behind in silence. Measured 2026-10-07 on the clone a killed run abandoned: 4,047 files of which 38 were read-only, which is exactly the set ignore_errors cannot remove; the retry handler removed all of them with 0 left. The class was swept across tests/ and tools/: 322 such calls, 53 in the real leak class once pre-create deletes are excluded and linked-worktree directories are measured out (an init'ed repo dir carries 3 of 33 read-only files, a linked worktree 0 of 2 and its .git is a FILE), 17 attributable to me and 7 genuine after reading every one. This commit fixes the six that remained after the seventh landed earlier. Each edit was anchored on an exact string whose occurrence count was asserted to be 1 before the write. tools/clone_health_check.py:328 was deliberately NOT touched: it removes a linked worktree and the next line is an arm asserting it is gone. Verified after patching: run_freshness_probe EXIT 0, redaction_base_probe EXIT 0, refspec_and_override_probe EXIT 0, run_bare_run_write_probe EXIT 0, clone_health_check --fixtures EXIT 0 with 11 arms, every code read from a capture_exit .status file or measured alone.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "16245537cc56",
+   "date": "2026-10-12",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "batch b16 re-runs tools/audit_event_type_check.py and tests/run_audit_event_type_probe.py directly against current HEAD rather than trusting fourth's claimed-live status. CONFIRMED STILL OPEN, worse than this commit's own recurrence_open recorded: 3 of 16 audit tables reject an emitted event_type -- sairncode_audit_log rejects credential_change_refused/pin_setup (api/sc-ai.js, api/sc-auth.js); stonedesk_audit_log rejects order_link_created/order_link_revoked/pin_setup/sub_roster_write (api/sd-auth.js, api/sd-sub-auth.js, api/sd-sub-data.js, api/stonedesk-track.js); sairnlaw_audit_log rejects SIX values -- ai_interaction, ai_rejected, ai_reviewed, ai_used_in_filing, deadline_engine, legal_reference_lookup (api/law-auth.js, api/legal-citator.js, api/legal-deadlines.js, api/legal-reference.js) -- NOT previously named in this commit's own recurrence_open, which only listed stonedesk/sairncode. sv_audit_log has NO event_type CHECK constraint at all (separate, undetermined-severity gap, listed by the tool as WITHOUT-a-CHECK rather than a violation). SEPARATE FINDING, same run: tests/run_audit_event_type_probe.py's own H0 arm FAILS -- its regex 'const AUDIT_TABLES = \\{([^}]*)\\}' expects a static key:true literal, but api/_lib/audit.js:101-103 (2026-10-11) now builds AUDIT_TABLES dynamically from AUDIT_TABLE_BY_APP in a loop, so the probe's own allowlist-population check is now blind to a legitimate refactor -- a checker that stopped checking (PR 1.1 shape), not a security regression. This is checking the repo's own sql/*.sql CHECK literals against the repo's own emitted event_type literals; it says nothing about whether Michael's 2026-10-13 live Supabase migration applied a DIFFERENT, uncommitted CHECK -- only that the committed SQL and the committed code still disagree.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "16245537cc56",
+   "date": "2026-10-12",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "batch b18: CLOSES the live security half of the recurring sairncode/stonedesk pin_setup CHECK finding (seq958-shaped, tracked across b16-b18), OPENS a sql-sync finding for the DDL half. Michael's live-DB query (relayed via chat, this role has no Supabase credential): sairncode_audit_log and stonedesk_audit_log's live event_type CHECK now ALLOWS pin_setup. The attribution write (api/sc-auth.js, api/sd-auth.js) therefore records successfully in production today -- the original security gap (an unrecorded credential grant) is CLOSED on that evidence. NOT CLOSED: the repo's own tracked DDL. Direct read this batch: sql/sairncode_audit_log_schema.sql and sql/stonedesk_audit_log_schema.sql both still lack pin_setup in their CHECK list (grep -n pin_setup on both returns nothing) -- confirmed by tools/audit_event_type_check.py's own live re-run, still exit 1, still reporting both as rejecting. A fresh provision from the repo's own sql/ files would therefore recreate the ORIGINAL bug. Independently found and logged the same batch by H1 (hover), seq1345/1347. Routed to hank: add pin_setup to both DDL files' CHECK list to match what was actually run live.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "3b99c19c38a4",
+   "date": "2026-10-12",
+   "detected_by": "probe-control",
+   "prior_severity": "moderate",
+   "risk": "tests/hover_separation_ci_probe.py, the ONE control that drives tools/hover_separation_ci.py against a real git repository, had nine arms reporting COULD NOT RUN and a traceback on the tenth -- measured at HEAD before anything was changed. Two independent causes. target_repo()'s guard accepted git's root only if it contained hover_separation_ci.py, which rejected the fixture repo the probe creates, so every fixture SHA resolved against the wrong clone and came back as an invalid revision range. And the scope-drift arm patched `hover_separation_audit.AUDITOR_SCOPE`, a tuple 7bc3a5a2 had DELETED when the scope became a per-session class, so it raised AttributeError and took the probe down after its last real assertion. The arms that stopped running are exactly the ones proving the gate refuses a build agent reaching into the auditor's clone -- the enforcement the triad exists for -- and they were dark from 2026-09-30 to 2026-10-12.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "403b9d2b5d34",
+   "date": "2026-10-12",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "tests/push_gate/check4_probe.py and check7_probe.py planted fixtures in a linked git worktree, which SHARES .git/config with the owning clone -- so a git config write from inside the worktree lands in the real clone. Reproduced in two commands (docs/2026-10-07-fourth-routed-pinned-worktree-shared-config.md): the delta was bare = true, after which every git command in Documents/SAIRN-fourth failed with 'this operation must be run in a work tree'. Converted to a throwaway hardlinked clone, the move check8_probe.py made on 2026-10-06 and these two never got. Three things a clone does not inherit were each the silent-pass direction and are now set and asserted: core.hooksPath (without it the pre-push hook never fires and the probe reports 'not blocked' about a gate it never asked), origin's real URL, and the retry fetch inside dry_push() which relied on the shared object store. Two new results per probe, in the verdict rather than only the printout: .git/config byte-identical to a pre-run snapshot, and no worktree registered -- neither of which the existing clean-tree and unmoved-HEAD arms could ever have seen, because bare=true leaves both perfectly clean.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "7a3b24c9046d",
+   "date": "2026-10-12",
+   "detected_by": "static-checker",
+   "prior_severity": "moderate",
+   "risk": "tools/ghost_field_read_scan.py went silent on exactly the two defects its own mutation probe plants, because the probe payloads are string literals in a .py file (strings are kept by design) and because docs/known-red-suites.json own write-up of the failure quoted both field names in a .json file read as raw data -- so both names counted as spelled somewhere in the repo, both stopped being ghosts, and five probe arms had been failing since 2026-10-06 against a scan that was working; the explanation of the failure was what sustained the failure",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "93b96c4ee2da",
+   "date": "2026-10-12",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "tools/tier_a_review_gate.py reseat_shas(): the git-log WALK WINDOW was computed from rows, which --only has already narrowed, so the SELECTOR decided which commits the bases were matched against. The same record got two different verdicts -- RESEATABLE [EXACT FILE SET] in the full population (window from 2026-09-15, 1311 file sets) and REFUSED [TWIN_SUBJECT_AMBIGUOUS] under --only on that one record (window from 2026-10-05, 310 file sets). Wrong way round for a safety flag: --only exists so a session repairs its OWN records without rewriting anybody else's, so it is the careful path, and it was the path that saw less. Window now taken from every record in the selected STATUS population, before --only.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "93b96c4ee2da",
+   "date": "2026-10-12",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "tools/tier_a_review_gate.py reseat_shas(): an EXACT FILE SET match was offered as a STRONG basis with NO TIME BOUND, and it produced a wrong answer rather than a thin one. Record 2026-10-05T09:25:27Z names exactly ['tools/sairn_claim.py']; exactly one commit in the window changes that set alone -- 6b9dc2635433, dated 2026-09-17, EIGHTEEN DAYS EARLIER and about a different change -- and --write alone would have applied it. A one-file record is where this bites and single-file records are common: uniqueness within an arbitrary window is not identity. Now bounded by the existing WEAK_BASIS_WINDOW_HOURS, and OUTSIDE it it REFUSES rather than demoting to WEAK, because an 18-day gap is a different commit and the tool's own SHA_WRONG_WHEN_WRITTEN refusal already holds that a wrong sha is worse than a dangling one.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "93b96c4ee2da",
+   "date": "2026-10-12",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tests/run_tier_a_review_gate_probe.py: the arm '--only NARROWS the population to the one record named' asserted rc == 0 against a fixture whose sha is forty zeros ON PURPOSE -- the fixture's own comment says 'dangling by construction rather than by luck' -- so the record is unresolvable and reseat_shas returns 1 whenever nothing is reseatable. The arm demanded a clean exit from a fixture built not to have one and was RED AT HEAD before this batch touched the gate, confirmed by running HEAD's own gate against the same ledger with REPO patched to this clone: rc=1, REFUSED [NO_OBJECT_IN_CLONE], byte-identical. An exit code is not what 'narrows' means; the arm now asserts the narrowing alone and a NEW arm asserts the invariant the gate fix exists to protect -- the record's verdict line is identical with and without --only.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "9b0bfd512250",
+   "date": "2026-10-12",
+   "detected_by": "live-verification",
+   "prior_severity": "moderate",
+   "risk": "tools/sairn_claim.py: a one-sided FILES declaration left PROSE able to hard-block. The real refusal, from this clone at batch pickup: `python tools/sairn_claim.py check cc \"batch W b4 resume\"` was REFUSED against a live claim declaring six files, none of them this session's, with the reason `one task is entirely inside the other: \"batch resume\"` -- two words describing WHEN work happens, against a claim that had already said in paths WHAT it touches. Both-sides-declared had been decided by the file sets since 2026-09-22; the one-sided case was still falling straight through to the lexical matcher, and a gate that refuses on batch vocabulary is one sessions learn to talk past. Observed, not reasoned about: the refusal is reproduced verbatim in section 5 of tests/claims/run_fileset_matcher_probe.py.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "9d435023f5c7",
+   "date": "2026-10-12",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tools/defect_register.py: `superseded_by` had a VALIDATOR and no WRITER. superseded_survivor() has validated the field since 2026-10-07 and `--check` has enforced it, but the only way to set one was to hand-edit 26,000 lines of JSON -- the row-splitting failure PR 2.1 names, on the file whose own merge_policy exists because four clones append to it. So the four pending duplicate pairs stayed duplicates and `--reseat` reported them as COLLIDES on every run, in every clone, for five days. A second defect surfaced the moment the first pointer was written: `--check` listed the superseded records as RE-SEATABLE and told the reader to run `--reseat`, which answers that superseded records are never re-seated and exits 1 -- a check advertising work the tool it names refuses. Both are fixed here, and the second one turned a pre-existing RED arm (E13 of tests/run_defect_register_probe.py) green.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "cc6d3c525262",
+   "date": "2026-10-12",
+   "detected_by": "live-verification",
+   "prior_severity": "low",
+   "risk": "tools/register_feed_gate.py printed one sentence -- `no ref lines on stdin -- cannot tell what is being pushed` -- for FOUR different situations, under the heading `Blocked: this gate could not tell what is being pushed`, which reads as an accusation about the change. The identical sentence lived in three gates, so a reader could not tell which one spoke; two were given the D9 treatment on 2026-10-08 and this was the third. OBSERVED, not supposed: it refused an ordinary push issued from inside a shell script today -- main() reads stdin whenever it is not a tty, a script's stdin is not a tty and carries no refs. Neither earlier fix names that case, and it is the one a session hits, because wrapping the push in a script is the obvious way to shrink the window in a four-session push race.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "23d0f73ce221",
+   "date": "2026-10-13",
+   "detected_by": "live-verification",
+   "prior_severity": "moderate",
+   "risk": "tools/tier_a_review_gate.py refused a push over resource names that appeared ONLY IN PROSE. The blocked paths were SAIRN-report-cc-b4.txt and SAIRN-digest-cc-b4.txt -- a batch report and digest at the repo root -- and the names it demanded obligations for, `leg_invoices` and `rf_draws`, appear nowhere in that push's code. One of them appears in a sentence REPORTING A DIFFERENT FALSE POSITIVE IN THIS SAME GATE. The clause above the gap already stated the rule and keyed on the wrong thing: \"markdown is prose, never a request handler -- and every session worklog lives at the repo root by convention\", keyed on `.md` because worklogs are markdown, while the report and digest are `.txt`. MEASURED CONSEQUENCE RATHER THAN A HYPOTHETICAL: all eight report/digest files across the four sessions are tracked prose, and docs/BYPASS-LOG.jsonl carries 93 rows whose recent entries are the BLANKET SAIRN_SEED_GATE=off form -- so a false positive on one path has been switching off every other check in the push.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "2567062ed309",
+   "date": "2026-10-13",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tests/push_gate/check4_probe.py and check7_probe.py could produce NO VERDICT, twice -- 2026-10-12 and 2026-10-13 -- because they read a refusal by a DIFFERENT check in the same hook as evidence about their own. The external-file-index check refused a CLEAN push over another session's handoff on a shared Google Drive, and both probes exited 3 COULD NOT RUN for a reason entirely outside the repository. Fixed by CLASSIFYING the clean-push refusal rather than counting it: carries the check's own marker means a real check failure and still exits 3; carries none means another check voted no, the affected ARM is UNPROVEN and the run continues, because a planted violation refused WITH the check's own marker is evidence no matter what else also refused. The hook is not stubbed and no override is set. Also adds an opt-in throwaway BARE REMOTE so a verdict stops depending on the network and on origin/main moving mid-run, seeded by a FETCH INTO the bare repo rather than a push out of the clone -- a push ran the clone's own pre-push hook against fixture setup, and the alternative was --no-verify, which would mean a probe for a push gate bypassing a push gate to start up. VERDICTS NOW: check4 exit 0 CHECK 4 VERIFIED True (arm 1 UNPROVEN), check7 exit 0 11 checks 0 failed (2 arms UNPROVEN), default mode re-run also 0 and 0. AND ONE LEAK OF MY OWN in the new helper, found by ls rather than review: when seeding failed, create() returned a reason and left the half-built bare repo in TEMP, and because it returned None the caller's handle stayed None so atexit had nothing to remove and never warned. Every failure path now cleans up, driven in both directions.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "3b8f23d3c062",
+   "date": "2026-10-13",
+   "detected_by": "code-review",
+   "prior_severity": "low",
+   "risk": "tools/dead_rule_sweep.py lost its module __doc__ at import: an isolation-guard block was inserted above the docstring, so the docstring stopped being the first statement and a 700-line explanation of the tool's purpose was silently emptied. Import still succeeded and every arm still passed, so the only symptom was missing documentation. Introduced and fixed inside the same unpushed range; never on origin/main.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "3ed683657725",
+   "date": "2026-10-13",
+   "detected_by": "live-verification",
+   "prior_severity": "moderate",
+   "risk": "tools/tooling_inventory.py REFUSED TO GENERATE AT ALL once this clone's hooks were committed empty: the `hook entries` derivation leg was a hard leg whose rule is \"a zero here is a BROKEN READER or a MOVED SOURCE, not an empty repo\". In a clone disarmed on purpose it is neither. The refusal then froze everything behind it -- exactly the cost closing_error.py's own text warns about: the derived-document push gate blocked the push because docs/TOOLING-INVENTORY.md no longer matched its sources, and the generator would not regenerate it, so neither path was open. Now an optional_leg() with a REQUIRED reason, gated on hook_integrity_check.intentionally_disarmed() by import rather than a second copy -- a half-wired or absent `hooks` key is still a HARD leg, which is the 2026-10-11 shape.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "54ead33fef5e",
+   "date": "2026-10-13",
+   "detected_by": "live-verification",
+   "prior_severity": "moderate",
+   "risk": "tools/external_file_index_check.py refused a push for every handoff any session wrote to `G:/My Drive/SAIRN-status`, which is declared non-transient. MEASURED: five push refusals in ONE session over SIX files, none of them belonging to the session being refused -- two handoffs, then two different ones forty minutes later, then one, then one, then one, each refusal cleared only for the next to arrive. TWICE the PreToolUse half denied the whole compound command, so the edit that would have cleared the refusal never ran and the commit in the same command never happened: a gate that blocks the repair of its own finding is a loop rather than strictness. And it was already being paid for in blanket overrides -- docs/BYPASS-LOG.jsonl carries 93 rows, mostly `SAIRN_SEED_GATE=off`, which switches off EVERY check in the push. A handoff-shaped `.md` under that one directory now WARNS; an undeclared tool or script still BLOCKS, which is what the check was built for.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "55777a74de8f",
+   "date": "2026-10-13",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "tools/copy_exactly_gate.py --pre-push verified its range BASE with rev-parse --verify and refused 'COULD NOT RUN: <sha> does not resolve in this clone, so the range cannot be read and nothing was checked (PR 1.11)'. In --pre-push mode that base is the sha THE REMOTE currently has, read off git's stdin line, so with five sessions pushing one branch it is routinely an object this clone has never fetched -- an ordinary condition, refusing a push that has nothing to do with it. THIRD GATE WITH THIS EXACT SHAPE, and found by it refusing the very next push attempt after the same defect was fixed in tools/register_feed_gate.py at 774cf1d2: the remote tip was bef3f6df, unfetched, and the gate reported it as an unreadable range. Fixed by falling back to merge-base(origin/main, tip) when the base does not resolve, which is ALREADY this file's own pattern nine lines above the site -- a brand-new branch with no remote base compares against origin/main and says so -- and with an unfetched remote tip that base is a SUPERSET of the range asked for, so it judges more commits and never fewer. The TIP stays a hard refusal because it is a LOCAL sha this clone is pushing; the two causes are not folded together.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "98f33b675d97",
+   "date": "2026-10-13",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "scp_session_gate_repro.py's branch_gate check was a bare substring test for 'verifySessionToken' anywhere in the action's body; it matched the call inside scp_progress_photos write's qc_status-gated sub-branch and scored the whole write path FIXED when an upload with no qc_status at all reached the table with no session check at all. Real figure at the time was 16 of 22 REPRODUCES, not the reported 15.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "9c36aa7c09d2",
+   "date": "2026-10-13",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "tools/sairn_push_gate_hook.py read its range BASE from the pre-push stdin line -- the sha THE REMOTE currently has -- and passed it unverified to every check below. With five sessions pushing one branch that sha is routinely an object this clone has never fetched, and because every check reads the same variable, ONE unfetched sha produces a DIFFERENT wrong answer in each of them while none reports that the base could not be read. THE WORST CONSUMER PRODUCES A FALSE FINDING RATHER THAN A COULD-NOT-RUN: the owner-header check decides whether a file is ADDED by this push with \"git cat-file -e <base>:<path>\", which fails for EVERY path when the base is absent, so every modified tools/*.py is classified as newly added. On the real push it printed NO OWNER: 4 over tools/copy_exactly_gate.py, tools/register_feed_gate.py, tools/sairn_push_gate_hook.py and tools/tooling_inventory.py -- all four pre-existing and all four grandfathered by that check's own stated scope, 'ADDED FILES ONLY. The 282 that already exist are grandfathered' -- and blocked the push. The remedy it instructed would have had one session write itself as OWNER of four shared tools, two of them contested, to get an unrelated push out. Fixed centrally where the base is established rather than per check, because the identical defect had already been fixed twice the same day in tools/register_feed_gate.py (774cf1d2) and tools/copy_exactly_gate.py (ee06c61c) and a check added later would repeat it a fourth time: the base is tested with git cat-file -e <sha>^{commit} and replaced with merge-base(origin/main, tip) when absent, which is a SUPERSET of the range asked for, with the substitution printed and both shas named.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "a031dbe4bbdc",
+   "date": "2026-10-13",
+   "detected_by": "code-review",
+   "prior_severity": "low",
+   "risk": "hover2_external_file_check.py's handoff_glob_prefix field covered only one growing-filename family; SAIRN-report-h2-*/SAIRN-digest-h2-* showed up UNINDEXED on the first run after Michael asked for a per-batch Drive upload, because the field was never generalized to a list of prefixes.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "ac9d47d834fe",
+   "date": "2026-10-13",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "tools/register_feed_gate.py outgoing_range() returned the remote sha straight off the pre-push stdin line as the left side of its range, and commits_in() then printed 'Blocked: the outgoing range A..B could not be read' when that sha is not an object in this clone. Five sessions push this repo, so between a clone's last fetch and its push the remote tip moves and the hook is handed a sha that was never fetched here; git log exits 128 and the one line printed pointed at the range as though the change were malformed. MEASURED TWICE EIGHT DAYS APART ON THIS CLONE: b8 refused at 326f2894..94e608a4 with cat-file -t exit 128, and after a fetch the identical range read clean with 20 records and 0 malformed; b9 refused again at 14a771a4..79545180 because another session had pushed since that fetch. It held 36 commits across five batches. Fixed by testing the remote sha with git cat-file -e <sha>^{commit} and, when absent, falling back to merge-base(origin/main, tip)..tip -- the same answer the function already gives for a brand-new branch, and with an unfetched remote tip a SUPERSET of the range asked for, so it judges more commits and never fewer. The substitution is printed with both shas and the reason on every use; an unresolvable base still refuses, naming the remote rather than the commits.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "af5057c0f734",
+   "date": "2026-10-13",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "bld_draws_bypass_repro.py only checked whether the GENERIC BLD_RESOURCES read/write loop gained a session check; it had never heard of the THIRD, dedicated bld_draws branch (commit 86189e37) running BEFORE that generic loop, so it kept printing BYPASS CONFIRMED against an already-fixed resource for at least this role's own b11 and b12 re-checks.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "c2c4aa7bad9e",
+   "date": "2026-10-13",
+   "detected_by": "live-verification",
+   "prior_severity": "low",
+   "risk": "tools/defect_register.py: `--reseat` exited 1 FOREVER, in every clone, once any record carried a verified `superseded_by` pointer. The four pointers written on 2026-10-12 made every subsequent run report 'nothing re-seated: 4 record(s) are SUPERSEDED ... that is not a no-op to report as success'. That sentence was right about a DIFFERENT situation: a record is superseded only once `--supersede` has written a pointer to a survivor that EXISTS and is an ancestor of the branch, and `--check` re-validates every one on every run, so there is nothing left for a non-zero exit to prompt. A recurring finding nobody can act on is how a checker gets switched off -- the failure class this file's own header is about. A COLLISION or a dangling SHA still exits 1, because those do need a human, and the message says so.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "e08bab0c2471",
+   "date": "2026-10-13",
+   "detected_by": "static-checker",
+   "prior_severity": "moderate",
+   "risk": "tools/open_work_shard.py generated a 198-CHARACTER FILENAME. slug() is derived from a prose table cell and had no length cap; one row's App cell is a struck-through section marker rather than an app, so the shard was named after the whole sentence. git could not stat it, and the push-gate control-byte check exited 2 COULD NOT RUN -- a check that cannot read a file reports nothing, which is the worst of the three states and exactly why that gate refuses instead of passing over it. Capped at 48 characters plus an 8-character hash of the FULL app string: truncation alone would silently merge two long App values sharing a prefix into one shard, a data loss dressed as a filename that --check could not have caught because both row sets would be present in the merged file.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "f2f9953b9e60",
+   "date": "2026-10-13",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "tools/sairn_push_gate_hook.py check 12 measured the TIP in the live working tree and the BASE in a clean throwaway worktree, so 'clean there, dirty here' compared the base commit against the base commit PLUS this clone's uncommitted files. A push carries commits, not a working tree. The live-tree asymmetry fired on .claude/settings.json, which is tracked and is modified-not-committed in this clone by decision -- hooks cleared on purpose and never to be restored -- and tools/tooling_inventory.py derives one of seven sources from that file, so in the live tree hook entries reads 0 and the generator correctly REFUSES rather than writing a thinner document. In a worktree of the same tip it reads 19. Check 12 therefore attributed a deliberate uncommitted local condition to every push from this clone. THE WORSE HALF IS THAT IT MASKED A REAL FINDING: the live-tree refusal fires on the empty source before the generator reaches its undescribed-tool list, so the genuine defect in this push -- tools/report_sha_check.py added in b5 and tools/temp_state_leak_check.py added in b7, each with no PURPOSES or REGISTRY entry -- never appeared in the output check 12b greps. A wrong subject did not merely produce a false refusal, it replaced the true one. Check 12 now re-derives its tip verdicts in a worktree of the pushed commit, the same way the base side already does, with the live-tree run kept as a screen so a clean push still builds no worktree.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "9733963d5468",
+   "date": "2026-10-14",
+   "detected_by": "static-checker",
+   "prior_severity": "low",
+   "risk": "api/_lib/auth-roleset-seam.test.js stated its own coverage population as EIGHTEEN callers, in four places, while tools/sairn_seam_check.py reported NINETEEN could-not-tell lines for the roleSet() seam and the source held TWENTY-ONE files in api/ calling roleSet(). The sweep in that file was never wrong -- it reads every file in api/, so the extra callers were covered the day they landed -- but the written figure was, and a stale number sitting next to a working check invites somebody to \"fix\" the check. Found by running the seam check to resolve its COULD NOT TELL report and comparing its count against the test's prose.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "9733963d5468",
+   "date": "2026-10-14",
+   "detected_by": "static-checker",
+   "prior_severity": "low",
+   "risk": "docs/fmea/api_sd-data.js.json was a THIRTY-DAY-OLD prediction and the FMEA loop scored it MISSED twice without ever saying it was stale. Re-saved at this HEAD the same draft moves from defect_records 57 to 548, matched_this_file 1 to 90, detectors_fired [] to [1.3, 1.7], and app_matched from `sairnvet` to `sairnscape` -- so it was reasoning over a TENTH of the available evidence and had the wrong app attributed. \"This draft predicted the wrong thing\" and \"this draft is stale\" have opposite fixes, and the loop reports both as MISSED.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "b7aa45b22766",
+   "date": "2026-10-14",
+   "detected_by": "fault-injection",
+   "prior_severity": "high",
+   "risk": "tools/tier_a_review_gate.py save_reviews() called os.replace with no retry. On Windows that is MoveFileEx(MOVEFILE_REPLACE_EXISTING) and it fails ERROR_ACCESS_DENIED while the destination is held open, including by another MoveFileEx on the same target: 335 of 400 concurrent saves raised PermissionError. Safety held -- no reader ever saw a half-written file -- and LIVENESS did not: one of two concurrent writers errored instead of completing, and --open, --discharge and --reseat-shas all end in save_reviews, so a caller did its work and its Tier A record was never written. Arm 11 of the probe carried the traceback in 12 of 12 runs and exited 0 every time. Fixed with a bounded 20-attempt retry on PermissionError BY NAME that re-raises on exhaustion.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (tooling) has this defect on record",
+   "cite": "e89e0a778aba",
+   "date": "2026-10-14",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "tools/hover_auditor_scope_gate.py changed_outgoing() built its diff range from rsha, the remote sha read off git pre-push stdin by field position, with no existence test, then reported the failure as a property of the RANGE: could not read the outgoing range A..B. With five sessions pushing one branch that sha is routinely an object this clone has never fetched, so the ordinary case was reported as an anomaly about the change being pushed. FOURTH INSTANCE of a shape fixed three times (register_feed_gate ac9d47d8, copy_exactly_gate 55777a74, sairn_push_gate_hook 9c36aa7c, the last printing a FALSE FINDING NO OWNER: 4). Fixed with _have_commit plus a merge-base(origin/main, local) fallback that states the substitution out loud, or a could-not-read naming git fetch origin when neither end resolves.",
+   "source": "defect-register"
+  },
+  {
+   "action": "make it fail on purpose before trusting it; add the plant-the-defect probe in the same commit",
+   "basis": "section 1.1 applies -- A check that stopped checking",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 1.1",
+   "risk": "a check that cannot fail is indistinguishable from one that is not running",
+   "source": "process-rules"
+  },
+  {
+   "action": "search a comment-stripped copy, or parse; if the subject IS the comment, declare it",
+   "basis": "section 1.2 applies -- Grep cannot tell code from text that describes code",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 1.2",
+   "risk": "matching a source file by TEXT cannot tell code from a comment or string describing code",
+   "source": "process-rules"
+  },
+  {
+   "action": "assert the anchor matches exactly once AND read what it matched before acting",
+   "basis": "section 1.3 applies -- An anchor that still matches is not an anchor that still points at the right thing",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 1.3",
+   "risk": "an exact-string anchor verifies UNIQUENESS, never that it still points at the right code",
+   "source": "process-rules"
+  },
+  {
+   "action": "confirm each shelled command writes nothing; prefer `git show <ref>:<path>`",
+   "basis": "section 1.4 applies -- A read-only-sounding command that mutates",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 1.4",
+   "risk": "a read-only-sounding command can write -- `git checkout <ref> -- path` writes AND stages",
+   "source": "process-rules"
+  },
+  {
+   "action": "check every caller; the expensive part of a false success is the confident line after it",
+   "basis": "section 1.5 applies -- The confident line printed after the error",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 1.5",
+   "risk": "a function reporting failure by return value needs a caller that reads it",
+   "source": "process-rules"
+  },
+  {
+   "action": "sort before emitting; run it twice under different PYTHONHASHSEED",
+   "basis": "section 1.9 applies -- A checker must answer the same on identical input",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 1.9",
+   "risk": "set and dict iteration order makes a checker answer differently on identical input",
+   "source": "process-rules"
+  }
+ ],
+ "target": "tools/red_suite_register_check.py"
+}

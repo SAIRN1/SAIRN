@@ -1,0 +1,44 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "cc",
+  "batch": "b9",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "",
+      "status": "done",
+      "evidence": "tools/sairn_status_line.py: 26/26 fixtures; live render 'cc | Sonnet 5 | ctx 14% of 967k' against this session's real transcript"
+    },
+    {
+      "id": 2,
+      "title": "",
+      "status": "blocked",
+      "evidence": "DONE: docs/SAIRN-hooks-record-original-clone.md written first, then hooks cleared to {} (uncommitted, matching house rule) in SAIRN clone's .claude/settings.json. BLOCKED on the pull --rebase there: that clone is 7810 commits behind origin/main with 1 local unpushed commit (content-equivalent to origin's 6c1cb4d0) plus uncommitted permissions edits plus an untracked PEM-shaped file -- a materially different operation than hank/cody/fourth's small divergence, flagged to Michael rather than guessed at, see report section 2. hank/cody/fourth: SKIPPED by the stated rule (live claim), re-checked via sairn_claim.py list immediately before this write -- all three still active (hank b10, cody b10, fourth b18)."
+    },
+    {
+      "id": 3,
+      "title": "",
+      "status": "done",
+      "evidence": "tools/batch_manifest.py --fixtures 32/32 (plus fixed --set's hardcoded cc/b6 default, caught live when it overwrote b6's evidence); tools/sairn_claim.py commit subjects now capped at 72 chars"
+    },
+    {
+      "id": 4,
+      "title": "",
+      "status": "done",
+      "evidence": "tests/run_selftest_sweep_probe.py --list: 3 false positives excluded via AST, 40 real self-tests; tools/ooda_phases.py --selftest exit 0; tools/subprocess_decode_check.py: tools/ 13->0, tests/ 56 routed to cody; tools/sairn_sql_preflight.py: license_keys + sairn_circuit_breaker_step clean"
+    },
+    {
+      "id": 5,
+      "title": "",
+      "status": "done",
+      "evidence": "tools/red_suite_register_check.py: --selftest 10/10 (added cases 6,10 locking the new behavior); real ordinary run (no --from-run) now exits 1 on 5 genuine RECOVERED findings instead of always 2, NOTICE printed separately and does not gate the exit code -- scratchpad/red_suite_real2.log. fmea_draft.py --save for all 3 named tools: docs/fmea/tools_red_suite_register_check.py.json, docs/fmea/tools_nhi_register.py.json, docs/fmea/tools_sairn_status_line.py.json"
+    },
+    {
+      "id": 6,
+      "title": "",
+      "status": "open",
+      "evidence": ""
+    }
+  ]
+}
