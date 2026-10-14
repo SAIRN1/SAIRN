@@ -7,6 +7,16 @@
   B. SAIRN_SEED_GATE=off was read from os.environ only, which a PreToolUse hook
      cannot see when it is written as an inline prefix on the Bash command.
 
+THE B2 ARM WAS INVERTED ON 2026-10-14, and the reason is worth more than the
+diff. The blanket override was RETIRED on 2026-10-13 -- the hook no longer exits
+0 before the checks, it refuses and prints the scoped `SAIRN_SKIP=<gate>` form.
+B2 went on asserting the push was ALLOWED, so a deliberate retirement reported
+itself as a broken override. Section B still proves the MATCHER recognises the
+spelling, because the hook must recognise an attempt in order to refuse and log
+it; what changed is only what happens next. `override_in_command()` is now a
+DETECTOR, not an escape hatch, and B2 asserts the refusal -- its text derived
+from tools/gate_skip.py so it cannot drift from the tool that defines it.
+
 Driven by calling the hook's own functions and by feeding it a real PreToolUse
 payload on stdin -- no network, no remote, and no dependence on the live
 licence, so this runs identically in any clone at any time.
@@ -311,7 +321,7 @@ else:
           got != here, True)
 
 # ── B: the override, reachable and not over-eager ───────────────────────────
-print("\nB. override_in_command() -- the escape hatch that did not exist")
+print("\nB. override_in_command() -- now a DETECTOR, not an escape hatch")
 POS = [
     ("inline prefix, the documented spelling", 'SAIRN_SEED_GATE=off git push origin main'),
     ("quoted value", 'SAIRN_SEED_GATE="off" git push origin main'),
@@ -338,18 +348,27 @@ for name, cmd in NEG:
 # ── B2: end to end through the real PreToolUse entry point ──────────────────
 # The unit above proves the matcher. This proves the hook WIRES it: a payload
 # that would otherwise reach the checks exits 0 immediately with no deny.
-print("\nB2. the hook itself honours an inline override on a real payload")
+print("\nB2. the hook REFUSES the blanket override on a real payload, and says "
+      "what to use")
 
 
 def run_hook(command):
+    """Returns (returncode, denied, stdout).
+
+    THE TEXT IS RETURNED NOW, and that is not cosmetic. The blanket override is
+    REFUSED rather than honoured (below), and a refusal is only evidence about
+    THIS gate if the arm can read which refusal it got -- `rc == 1` alone is
+    satisfied by a refusal for any unrelated reason, which is the shape
+    tests/push_gate/missing_checker_probe.py locks as L2.
+    """
     payload = json.dumps({"tool_input": {"command": command}})
     p = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'sairn_push_gate_hook.py')],
                        input=payload, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=180, cwd=REPO)
     denied = '"permissionDecision": "deny"' in p.stdout
-    return p.returncode, denied
+    return p.returncode, denied, (p.stdout or '') + (p.stderr or '')
 
 
-rc, denied = run_hook('echo not a push')
+rc, denied, _ = run_hook('echo not a push')
 check("a non-push command is ignored entirely", (rc, denied), (0, False))
 
 # THE ARM MUST USE A COMMAND THE GATE REALLY REFUSES. The first version of this
@@ -365,14 +384,81 @@ CMD = 'git add sql/zz_probe_override_arm.sql && git commit -m probe && git push 
 try:
     with open(probe_sql, 'w') as f:
         f.write('-- probe fixture, never committed\nselect 1;\n')
-    rc, denied = run_hook(CMD)
+    rc, denied, plain_out = run_hook(CMD)
     check("fixture is valid: the un-overridden push really is denied",
           (rc, denied), (0, True))
-    rc, denied = run_hook('SAIRN_SEED_GATE=off ' + CMD)
-    check("the same push with an inline override is ALLOWED", (rc, denied), (0, False))
-    rc, denied = run_hook('git commit -m "mentions SAIRN_SEED_GATE=off" && ' + CMD)
+
+    # ── THE BLANKET FORM IS REFUSED, AND THIS ARM WAS INVERTED (2026-10-14) ──
+    # It asserted `(0, False)` -- the push ALLOWED -- because when it was
+    # written the hook exited 0 here before a single check ran. That escape
+    # hatch was RETIRED ON PURPOSE on 2026-10-13: 80 of the 94 rows in
+    # docs/BYPASS-LOG.jsonl were that shape, which is nobody choosing to switch
+    # off fourteen checks, it is the only thing that was available. The hook now
+    # REFUSES and prints the scoped form instead (tools/sairn_push_gate_hook.py:
+    # 1377-1392).
+    #
+    # SO THE ARM WAS MEASURING A CONTRACT THE HOOK NO LONGER HAS, and the
+    # failure it reported read as "the override is broken" when the override
+    # working as designed is exactly what produced it. A stale expectation, not
+    # a defect -- which is why the repair is here and nothing in tools/ moved.
+    rc, denied, blanket_out = run_hook('SAIRN_SEED_GATE=off ' + CMD)
+    check("the BLANKET override is REFUSED, not honoured", (rc, denied), (1, False))
+    # Shape, not just a code: the blanket refusal is the hook declining to run,
+    # NOT a gate verdict, so it must not wear a permissionDecision.
+    check("...and it is not dressed as a gate deny", '"permissionDecision"' in blanket_out, False)
+
+    # THE REFUSAL TEXT IS DERIVED FROM tools/gate_skip.py, NOT RETYPED. A quoted
+    # copy of the message here would go stale the day the flag, the minimum
+    # reason length or the ceiling changes -- and `_blanket_refusal_lines()`
+    # exists in the hook for that same reason, with the same comment. Asserting
+    # the lines the TOOL defines means this arm cannot drift away from it.
+    try:
+        sys.path.insert(0, os.path.join(REPO, 'tools'))
+        import gate_skip as _gs
+        _expected = [l for l in _gs.BLANKET_REFUSAL if l.strip()]
+        _missing = [l for l in _expected if l not in blanket_out]
+        check("the refusal prints every line tools/gate_skip.py BLANKET_REFUSAL "
+              "defines (%d line(s))" % len(_expected), _missing, [])
+    except ImportError as _e:
+        # Not folded into a pass. PR 1.11: "could not run" is a third state.
+        check("tools/gate_skip.py is importable so the refusal text can be "
+              "derived (%s)" % _e, False, True)
+    # The two sentences a reader must actually get, pinned apart from the
+    # line-for-line match above so a reformat of the message does not take the
+    # meaning with it.
+    check("...it says the blanket form no longer works",
+          'BLANKET form' in blanket_out and 'no longer works' in blanket_out, True)
+    check("...and it names the SCOPED form as the thing to use instead",
+          'USE THE SCOPED FORM' in blanket_out and 'SAIRN_SKIP=' in blanket_out, True)
+
+    # THE ATTEMPT IS ON THE LOG EVEN THOUGH IT WAS REFUSED. `honoured: false` is
+    # the only thing separating an override somebody tried from one that worked,
+    # and a refusal that logs nothing would make the second invisible.
+    _bl = os.environ['SAIRN_BYPASS_LOG']
+    _rows = []
+    if os.path.isfile(_bl):
+        with open(_bl, encoding='utf-8') as _fh:
+            _rows = [json.loads(l) for l in _fh if l.strip()]
+    _all_rows = [r for r in _rows if r.get('check') == 'ALL']
+    check("the refused attempt is RECORDED as a blanket override",
+          len(_all_rows) >= 1, True)
+    check("...and the record says it was not honoured",
+          any('not honoured' in (r.get('reason') or '') for r in _all_rows), True)
+
+    rc, denied, quoted_out = run_hook('git commit -m "mentions SAIRN_SEED_GATE=off" && ' + CMD)
     check("a quoted mention in a commit message does NOT disable the gate",
           (rc, denied), (0, True))
+
+    # ── THE CONTROL: "ANY REFUSAL COUNTS" MUST NOT SATISFY THE ARMS ABOVE ────
+    # Delete the blanket-refusal branch and the hook falls through to the real
+    # checks, which refuse this fixture too -- so an arm that only read "the
+    # push did not go through" would stay green with the retired escape hatch
+    # fully restored. These two arms are what make that impossible: the OTHER
+    # two refusals in this section must NOT carry the blanket text.
+    check("CONTROL: the un-overridden refusal does NOT carry the blanket text",
+          'BLANKET form' in plain_out, False)
+    check("CONTROL: the quoted-mention refusal does NOT carry it either",
+          'BLANKET form' in quoted_out, False)
 finally:
     if os.path.exists(probe_sql):
         os.remove(probe_sql)

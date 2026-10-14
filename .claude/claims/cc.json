@@ -3904,8 +3904,8 @@
       "task": "b10 -- (1) hover_auditor_scope_gate.py:409 fix plus unfetched-base checker per fourth routing doc, failing-first. (2) cody-routed b10: blob_coverage recursive api_files universe, citation anchor line-exact code-only; test-side routed to cody by file:line not edited. (3) save_reviews retry patch, hank 13 bare-run findings, 7 H1 Drive name-vs-content mismatches. (4) CLAUDE.md push-protocol section 3 retired SAIRN_SEED_GATE=off replaced with scoped logged-exemption form, sweep tools/ for ast.parse-only write guards -> compile(), confirm git -C allow rule live uncommitted. (5) methodology failing-first with control arms, no self-FMEA, confirm original clone untracked PEM-shaped file is untracked/ignored WITHOUT reading it. (6) push no force confirm landed. I WRITE UNDER tools/ ONLY plus CLAUDE.md and the docs/ routing files named here and my own root b10 artifacts. NO tests/ FILE (cody), NO api/ FILE (hank), NO sql/ FILE (hank). CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: cody's tests/ files are READ-ONLY and routed; hank's api/ and sql/ READ-ONLY; fourth's docs/ READ-ONLY. No hook added or restored, settings.json never committed, no SAIRN_SEED_GATE override, no auditor clone entered or written. FILES: tools/hover_auditor_scope_gate.py tools/unfetched_base_check.py tools/blob_coverage_scope.py tools/citation_line_drift_check.py tools/tier_a_review_gate.py CLAUDE.md docs/2026-10-14-cc-b10-routed-to-cody.md docs/batch-manifest-cc-b10.json SAIRN-handoff-cc-b10.md SAIRN-report-cc-b10.txt SAIRN-digest-cc-b10.txt",
       "claimed_at": "2026-10-14T16:27:23Z",
       "claimed_at_epoch": 1791995243.5245295,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-14T17:29:44Z",
       "files": [
         "CLAUDE.md",
         "SAIRN-digest-cc-b10.txt",
@@ -3918,6 +3918,27 @@
         "tools/hover_auditor_scope_gate.py",
         "tools/tier_a_review_gate.py",
         "tools/unfetched_base_check.py"
+      ]
+    },
+    {
+      "id": "cc-1791999352",
+      "session": "cc",
+      "subject": "cc",
+      "task": "b11 -- (1) sairn_push_gate_hook.py OVERRIDE_HINT names scoped SAIRN_GATE_EXEMPT=seed first per its own :990 comment, failing-first + ablation. (2) session-start surface for obligations open over 48h, A3 fail-closed A6 third state, failing-first + ablation. (3) secrets_inventory.py step 4a, failing-first; NHI-REGISTER.md:69 half routed to fourth. (4) tier_a_review_gate.py eligible_reviewers liveness so a dead session is not eligible, then takeover of the four obligations owned by dead session cloud. (5) wire hank four new api suites into the gate driver, fmea_draft --save for six hank files drafts only, msb_bottle_scans scanner false-positive note. (6) push no force confirm landed. I WRITE UNDER tools/ ONLY plus my own root b11 artifacts and the docs/ routing + fmea files named here. NO tests/ FILE (cody), NO api/ FILE (hank), NO sql/ FILE (hank), NO app html (hank). CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: cody b11 item 2 covers the TEST side of my item 1 (tests/push_gate/refspec_and_override_probe.py) and is READ-ONLY here; hank api/ sql/ html READ-ONLY; fourth docs/ and the Tier A obligations it is discharging READ-ONLY. No hook added or restored, settings.json never committed, no SAIRN_SEED_GATE or SAIRN_GATE_EXEMPT override used, no auditor clone entered. FILES: tools/sairn_push_gate_hook.py tools/tier_a_review_gate.py tools/secrets_inventory.py tools/obligation_surface.py tools/run_all_tests.py docs/2026-10-14-cc-b11-routed-to-fourth.md SAIRN-handoff-cc-b11.md SAIRN-report-cc-b11.txt SAIRN-digest-cc-b11.txt",
+      "claimed_at": "2026-10-14T17:35:52Z",
+      "claimed_at_epoch": 1791999352.8781962,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-cc-b11.txt",
+        "SAIRN-handoff-cc-b11.md",
+        "SAIRN-report-cc-b11.txt",
+        "docs/2026-10-14-cc-b11-routed-to-fourth.md",
+        "tools/obligation_surface.py",
+        "tools/run_all_tests.py",
+        "tools/sairn_push_gate_hook.py",
+        "tools/secrets_inventory.py",
+        "tools/tier_a_review_gate.py"
       ]
     }
   ],

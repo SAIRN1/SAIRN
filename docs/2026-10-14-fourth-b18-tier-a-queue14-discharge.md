@@ -17,6 +17,18 @@ opened; held 418 hours — 17 days — at the time of this discharge.**
 > moved.** Said here because a document whose citations silently rot is the
 > eighth cross-domain convention's exact case, and this one rotted inside an
 > hour of being written.
+>
+> **RE-DERIVED A THIRD TIME, 2026-10-14 b19, after another pull: 71 citations
+> checked, 70 UNMOVED, 1 MOVED, 0 NOT FOUND.** The one that moved was
+> `api/_lib/sen-evv-clock.js:120-131`, and it had been wrong in a way an
+> offset-shift would not have caught — the cited range held the tail of a
+> refusal message rather than the literal array the sentence names. It is now
+> anchored on the array's own text and on the stamp assignment, so the next
+> drift is visible rather than silent. **Two bare `:N` continuations were
+> confirmed as pointing at the file two paragraphs back rather than the nearest
+> one (`:20-24` → the census SQL, `:740` → the compliance seed); both were
+> right, and both are the kind of thing a mechanical re-offset would have
+> broken.**
 
 **THIS DISCHARGES THE OBLIGATION. It is the oldest one assigned to me and the
 single biggest thing my own b17 handoff left open, by my own words there: *"THE
@@ -380,7 +392,10 @@ start. Untested. hank's.
 clean by assertion**, which is the stronger of the two and is what hank asked
 for. The stamp keys can only ever be the four
 `clock_{in,out}_{received_at,skew_ms}`, derived by `field.replace('_at', …)` over
-a **literal** array (`api/_lib/sen-evv-clock.js:120-131`) — a caller cannot
+a **literal** array — `const CLOCK_FIELDS = ['clock_in_at', 'clock_out_at'];`
+(`api/_lib/sen-evv-clock.js:79`), derived over at `:129-140` whose stamp
+assignment is `stamps[field.replace('_at', '_received_at')] = serverNowISO;`
+(`:139`) — a caller cannot
 inject a key — and none of them is in `SEN_VISIT_EVV_FIELDS`. So
 `Object.assign(visitData, clockCheck.stamps)` at `:7184` running after the field
 copy **cannot** overwrite a claimed time. **The claimed time is what persists on

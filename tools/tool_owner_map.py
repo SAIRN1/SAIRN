@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # OWNER: cody
+# OWNER-INTENDED BARE-RUN WRITER -- docs/tool-owner-map.json. Declared in
+# tools/bare_run_writers.py with its reason; producing the map IS the run.
 """Who owns each tool, derived from the claim-commit history rather than guessed.
 
     python tools/tool_owner_map.py              # report, and write the JSON

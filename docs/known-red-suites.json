@@ -355,23 +355,6 @@
    "cause_tag": "test-design/oracle-selection/live-tree-as-expected-value"
   },
   {
-   "file": "tests/push_gate/refspec_and_override_probe.py",
-   "kind": "py",
-   "tail": "  - a quoted mention in a commit message does NOT disable the gate",
-   "since": "2026-10-06",
-   "why": "DRIVEN IN THE LIVE CLONE 2026-10-14 (cody b10): EXIT 1, 1 failing arm of about 30. `why` WAS BLANK; first diagnosis. STALE EXPECTATION, AND THE SUBJECT CHANGED ON PURPOSE. Failing arm: `the same push with an inline override is ALLOWED`, got (1, False) want (0, False). The hook was driven directly with the arm's exact payload and answered: `REFUSED: SAIRN_SEED_GATE=off is the BLANKET form and it no longer works. ... USE THE SCOPED FORM. SAIRN_SKIP=<gate> SAIRN_SKIP_WHY=\"...\"`. The blanket override was deliberately retired; the arm at :372 still asserts it is honoured. AND THE SAME STALENESS IS IN THE STANDING DOCUMENT: CLAUDE.md's push-protocol section 3 still documents SAIRN_SEED_GATE=off as the override. ROUTED -- CLAUDE.md is not the tests owner's. Exit-code line tests/push_gate/refspec_and_override_probe.py:541. NOTE ON HYGIENE: this is the one suite in the b10 sweep that dirtied the tree (docs/scrutiny-flags.json, plus docs/BYPASS-LOG.jsonl from the direct hook repro). Both restored with `git checkout --` and the tree confirmed clean before the next suite.",
-   "owner": "cody",
-   "diagnosed": "2026-10-14",
-   "diagnosed_by": "cody",
-   "environment": {
-    "where": "live-clone",
-    "pinned": false,
-    "tool": "the suite itself, invoked directly, one process, python -u for .py",
-    "sha": "86f6b0ca",
-    "basis": "DRIVEN IN THE LIVE CLONE in cody b10, one at a time, exit code read from `echo \"EXIT=$?\"` on its own line. THE LIVE CLONE DELIBERATELY: b9 got two false RED verdicts from an isolated worktree, where .git is a file and a sentinel cannot resolve. `git status --short` was checked before AND after every suite and any dirt was restored with `git checkout --` before the next one ran."
-   }
-  },
-  {
    "file": "tests/rebase_resolve_merge_control.py",
    "kind": "py",
    "tail": " a1_clean_append",
@@ -415,24 +398,6 @@
    "tail": "  - 5. THE FIX IS STILL THERE BUT THE ARM CAN NO LONGER SEE IT: the alf_mar read is hoisted into a local, so the arm finds ZERO list reads for that table. A swe",
    "since": "2026-10-06",
    "why": "DRIVEN IN THE LIVE CLONE 2026-10-14 (cody b10): EXIT 1, 1 of 8 planted mutations SURVIVED. `why` WAS BLANK; first diagnosis. A REAL DEFECT, AND IT IS THE FAIL-OPEN SHAPE PR 1.11 EXISTS FOR. Surviving mutation: `5. THE FIX IS STILL THERE BUT THE ARM CAN NO LONGER SEE IT: the alf_mar read is hoisted into a local, so the arm finds ZERO list reads for that table`, reported `SILENT -- the suite passed with this defect planted`. The subject api/alf-append-only-read-order.test.js SCORES 'zero reads found' AS A PASS instead of COULD NOT RUN -- so hoisting the read into a local variable silently empties the arm and it goes on passing. THE PROBE IS NOT BROADLY BROKEN: mutations 1, 2, 3, 4, 6 and 7 all bit. Exit-code line tests/run_alf_read_order_sabotage_probe.py:168. NEXT STEP: the subject arm must treat zero matches as a third state, not a pass -- that is an api/ test file and is hank's.",
-   "owner": "cody",
-   "diagnosed": "2026-10-14",
-   "diagnosed_by": "cody",
-   "environment": {
-    "where": "live-clone",
-    "pinned": false,
-    "tool": "the suite itself, invoked directly, one process, python -u for .py",
-    "sha": "86f6b0ca",
-    "basis": "DRIVEN IN THE LIVE CLONE in cody b10, one at a time, exit code read from `echo \"EXIT=$?\"` on its own line. THE LIVE CLONE DELIBERATELY: b9 got two false RED verdicts from an isolated worktree, where .git is a file and a sentinel cannot resolve. `git status --short` was checked before AND after every suite and any dirt was restored with `git checkout --` before the next one ran."
-   },
-   "exit_code": 1
-  },
-  {
-   "file": "tests/run_all_tests_floor_probe.py",
-   "kind": "py",
-   "tail": "2. _main_body() -- THE COPY A HUMAN RUNS",
-   "since": "2026-10-06",
-   "why": "DRIVEN IN THE LIVE CLONE 2026-10-14 (cody b10): EXIT 1, AND IT IS A COULD-NOT-RUN RATHER THAN A COLOUR -- it CRASHED after arm 1 of about 10. `why` WAS BLANK; first diagnosis. `TypeError: fake_run() takes from 2 to 3 positional arguments but 4 were given`, raised from tools/run_all_tests.py:1278 `failures, skipped, retried, not_run = _run(js, py, quiet, excluded)`. The exit code comes from an UNCAUGHT EXCEPTION at tests/run_all_tests_floor_probe.py:142, not from its designed `sys.exit(1)` at :299. A STALE STUB SIGNATURE: the probe's stub at :82 is `def fake_run(js, py, quiet=True)` and the subject is now `def _run(js, py, quiet, excluded=None)` (tools/run_all_tests.py:519). A fourth parameter was added to the real function and the stub was not. ONE THING IT DID SAY BEFORE DYING, and it is a standing housekeeping note rather than a b10 finding: `the suite GREW: 792 files discovered, MIN_TEST_FILES says 370 ... 422 test file(s) could be deleted with the guard silent`. NEXT STEP: update the stub signature -- tests/, so the tests owner's -- and then the floor arms can be judged at all.",
    "owner": "cody",
    "diagnosed": "2026-10-14",
    "diagnosed_by": "cody",
@@ -554,23 +519,6 @@
    },
    "exit_code": 1,
    "cause_tag": "tooling/path-derivation/file-fallback-reads-the-home-repo"
-  },
-  {
-   "file": "tests/run_cron_liveness_probe.py",
-   "kind": "py",
-   "tail": "  FAILED: the pre-change workflow had NO commit step -- only the artifact upload, which is the gap this closes",
-   "since": "2026-10-06",
-   "why": "DRIVEN IN THE LIVE CLONE 2026-10-14 (cody b10): EXIT 1, 56 passed 1 failed. `why` WAS BLANK; first diagnosis. A STALE HISTORICAL ANCHOR, AND THE SUITE NAMES ITS OWN FAILURE MODE IN THE DETAIL STRING: `the historical anchor moved; this arm proves nothing as written`. Verified directly: the arm at :507-520 takes `git log -2 -- .github/workflows/cron-liveness.yml` and uses `_prev[-1]`. That file now has THREE commits, so `_prev[-1]` is a9394d8e -- the commit that ADDED the step the arm says was absent -- and `git show a9394d8e:... | grep -c 'Commit the status document'` is 1. A later unrelated commit (c3f2b2a0, an actions v4->v7 bump) SLID THE TWO-COMMIT WINDOW. THIS IS THE EIGHTH DISCIPLINE EXACTLY: a check anchored to a relative position in history stops testing anything the moment an unrelated commit lands, and nothing announces the day. Exit-code line tests/run_cron_liveness_probe.py:527. NEXT STEP: anchor on the SHA or on the content, not on `-2`; tests/, the tests owner's.",
-   "owner": "cody",
-   "diagnosed": "2026-10-14",
-   "diagnosed_by": "cody",
-   "environment": {
-    "where": "live-clone",
-    "pinned": false,
-    "tool": "the suite itself, invoked directly, one process, python -u for .py",
-    "sha": "86f6b0ca",
-    "basis": "DRIVEN IN THE LIVE CLONE in cody b10, one at a time, exit code read from `echo \"EXIT=$?\"` on its own line. THE LIVE CLONE DELIBERATELY: b9 got two false RED verdicts from an isolated worktree, where .git is a file and a sentinel cannot resolve. `git status --short` was checked before AND after every suite and any dirt was restored with `git checkout --` before the next one ran."
-   }
   },
   {
    "file": "tests/run_defect_dispersion_probe.py",
@@ -842,23 +790,6 @@
    "tail": "  FAILED: E1 --derive: nothing is derived that is neither declared nor exempted",
    "since": "2026-10-06",
    "why": "DRIVEN 2026-10-14 (cody b8), in an isolated worktree at 433860be: exit 1, 14 passed 4 failed. `why` WAS BLANK; this is the first diagnosis. THREE OF THE FOUR ARE THE TOOL EXITING 2 COULD NOT RUN, FOLDED INTO FAIL BY THE PROBE -- B1 'real-repo --verify: anchors resolve and coverage is complete', B1b 'the mirror verifies before it is damaged', and B4 'a hook on disk the map does not name is exit 1' all report exit=2. The tool's own words: \"COULD NOT RUN -- 1 anchor(s) unresolvable. This is NOT a pass: post_rewrite_hook .githooks/post-rewrite contains its anchor '--post-rewrite' 3 times -- an ambiguous anchor is not evidence\". THAT IS A REAL REPO-STATE FINDING AND NOT A SANDBOX ARTIFACT: the anchor '--post-rewrite' occurs three times in .githooks/post-rewrite, so the uniqueness guard refuses, which is the correct direction. FIX THE ANCHOR, NOT THE PROBE -- either the guard takes a more specific anchor or the hook stops repeating the string. THE FOURTH IS A GENUINE FAILURE: E1 '--derive: nothing is derived that is neither declared nor exempted' exits 1, which is the tool working. NOTE THE PROBE FOLDS COULD-NOT-RUN INTO FAIL, which is the exact third-state collapse this platform refuses elsewhere; the probe's summary arithmetic has no unproven counter. Exit code produced at tests/run_rewrite_convergence_probe.py:282, `sys.exit(1 if FAIL else 0)`. EVIDENCE: docs/2026-10-13-cody-b8-undriven-suite-results.md suite 7.",
-   "owner": "cody",
-   "diagnosed": "2026-10-14",
-   "diagnosed_by": "cody",
-   "environment": {
-    "where": "live-clone",
-    "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
-  },
-  {
-   "file": "tests/run_role_gate_negative_coverage_probe.py",
-   "kind": "py",
-   "tail": "FAILED  run_role_gate_negative_coverage_probe: 4 failed",
-   "since": "2026-10-06",
-   "why": "DRIVEN 2026-10-14 (cody b8), in an isolated worktree at 433860be: exit 1, 19 ok 4 failed. `why` WAS BLANK; this is the first diagnosis. ALL FOUR FAILURES ARE PIN-FILE ARMS AND ALL FOUR REPORT exit=2, NOT A WRONG VERDICT -- 'at the pinned number it is OK and exits 0', '...and says a ratchet is not a pass on the same run', 'a NEW uncovered gate is a REGRESSION, exit 1', and 'an added negative arm reads as IMPROVED and asks to be re-pinned'. THE DISCRIMINATING FACT, AND IT IS WHY THIS IS A PIN PROBLEM AND NOT A TOOL PROBLEM: the probe's section 8 ('AND THE REAL REPO -- so the arms above are not a fixture dialect') passed ENTIRELY, including 'it runs against the shipping repo and exits 0 or 1, never 2', 'UNCOVERED and COVERED are BOTH non-zero -- if either is 0 the classifier has stopped discriminating' and 'IT WROTE NOTHING to api/ -- bytes AND mtime'. So the classifier works against real source and the four red arms are about the pin file the fixture arms construct. NEXT STEP: read why the tool returns 2 on the probe's constructed pin -- section 7 proves exit 2 is its correct answer for a missing/unparseable pin, so the likely cause is the fixture pin not being where the tool looks, which is a probe-side path problem. Exit code produced at tests/run_role_gate_negative_coverage_probe.py:283, `sys.exit(1 if fails else 0)`. EVIDENCE: docs/2026-10-13-cody-b8-undriven-suite-results.md suite 8.",
    "owner": "cody",
    "diagnosed": "2026-10-14",
    "diagnosed_by": "cody",
@@ -1190,42 +1121,6 @@
    "tail_remeasured_2026_10_14": "cody b9, see the b9 note appended to `why`"
   },
   {
-   "file": "tests/app_session_isolation.js",
-   "kind": "node",
-   "tail": "FAILED: sairngrounds: measured SOME, recorded NONE -- NOT DOCUMENTED -- api/grd-auth.js exists; grd_invoices and msb_licenses are Tier A",
-   "since": "2026-10-12",
-   "why": "DRIVEN IN THE LIVE CLONE 2026-10-14 (cody b10): EXIT 1 on the first posture mismatch. `why` WAS BLANK; first diagnosis. THE SUITE IS WORKING AS A DRIFT DETECTOR AND ITS OWN BOOKKEEPING IS THE STALE HALF. Failure: `sairngrounds: measured SOME, recorded NONE -- NOT DOCUMENTED -- api/grd-auth.js exists; grd_invoices and msb_licenses are Tier A`. The recorded row is tests/app_session_isolation.js:212 `sairngrounds: { gate: 'NONE', auth: true, why: 'NOT DOCUMENTED ...' }`, last written 2026-09-14 at b9f95a1b. THE GATE IT SAYS IS ABSENT WAS ADDED 2026-10-07 by 6a2690be -- \"the LICENCE KEY ALONE reached every read and every write on 21 resources -- 16 of 17 grd_* had no session gate at all\" -- driven by tests/sd_data_grd_session_gate.js. SO THE MEASUREMENT IS RIGHT AND THE RECORD IS SEVEN DAYS OLD. Real-but-clerical, not a product defect: the gate exists. Exit-code line tests/app_session_isolation.js:538. NEXT STEP: update the recorded posture row to SOME with the commit that added it; tests/, the tests owner's.",
-   "owner": "cody",
-   "exit_code": 1,
-   "diagnosed": "2026-10-14",
-   "diagnosed_by": "cody",
-   "environment": {
-    "where": "live-clone",
-    "pinned": false,
-    "tool": "the suite itself, invoked directly, one process, python -u for .py",
-    "sha": "86f6b0ca",
-    "basis": "DRIVEN IN THE LIVE CLONE in cody b10, one at a time, exit code read from `echo \"EXIT=$?\"` on its own line. THE LIVE CLONE DELIBERATELY: b9 got two false RED verdicts from an isolated worktree, where .git is a file and a sentinel cannot resolve. `git status --short` was checked before AND after every suite and any dirt was restored with `git checkout --` before the next one ran."
-   }
-  },
-  {
-   "file": "tests/run_all_tests_pinned_probe.py",
-   "kind": "py",
-   "tail": "If core.bare is true, `git config core.bare false` and re-run. Could-not-tell is not a clean tree.",
-   "since": "2026-10-12",
-   "why": "DRIVEN IN THE LIVE CLONE 2026-10-14 (cody b10): EXIT 1, 1 failure of about 35 arms. `why` WAS BLANK; first diagnosis. A STALE HARDCODED ANCHOR, broken by a deliberate change. The arm at :217 asserts `'PINNED: running in a throwaway worktree' in body`; the subject prints `'PINNED: running in a throwaway CLONE at %s'` (tools/run_all_tests.py:866) since the worktree->clone switch. THE SIBLING ARM PASSED -- `...AND the inner run's own output` -- so `--out` really does carry both halves and only the word changed. That pair is what makes this diagnosable in one read instead of a hunt. Exit-code line tests/run_all_tests_pinned_probe.py:278. NEXT STEP: re-point the anchor; tests/, the tests owner's.",
-   "owner": "cody",
-   "exit_code": 1,
-   "diagnosed": "2026-10-14",
-   "diagnosed_by": "cody",
-   "environment": {
-    "where": "live-clone",
-    "pinned": false,
-    "tool": "the suite itself, invoked directly, one process, python -u for .py",
-    "sha": "86f6b0ca",
-    "basis": "DRIVEN IN THE LIVE CLONE in cody b10, one at a time, exit code read from `echo \"EXIT=$?\"` on its own line. THE LIVE CLONE DELIBERATELY: b9 got two false RED verdicts from an isolated worktree, where .git is a file and a sentinel cannot resolve. `git status --short` was checked before AND after every suite and any dirt was restored with `git checkout --` before the next one ran."
-   }
-  },
-  {
    "file": "tests/run_blob_coverage_scope_sabotage.py",
    "kind": "py",
    "tail": "FAIL -- 3 passed, 2 failed",
@@ -1249,42 +1144,6 @@
    "tail": "FAIL -- 2 passed, 4 failed",
    "since": "2026-10-12",
    "why": "DRIVEN IN THE LIVE CLONE 2026-10-14 (cody b10): EXIT 1, 2 passed 4 failed. `why` WAS BLANK; first diagnosis. FOUR REAL DEFECTS IN A CITATION CHECKER THAT IS A SUBSTRING TEST. Confirmed verbatim: `! AP2 CONFIRMED -- _body_lines() is a flat 60-line window, so a short function is credited with its NEIGHBOUR access and the report names the wrong accessor` and `! AP0 CONFIRMED -- a COMMENT on the cited line reads as 'direct', so a citation pointing at a comment about a moved write is reported SOUND`. The other two: a function body that only MENTIONS a resource in a // comment is credited with reaching it, and so is a STRING LITERAL naming it. SO ITS ANCHORED-VIA ROWS ARE UNVERIFIED RATHER THAN SOUND, which is a claim about the checker and not about any one citation. AND THE PROBE DISCRIMINATES: its arm `S3b. LIMIT, NOT A FINDING` PASSES, so it does tell a safe limitation from a defect. Exit-code line tests/run_citation_anchor_hop_sabotage.py:227. NEXT STEP: tools/, cc's.",
-   "owner": "cody",
-   "exit_code": 1,
-   "diagnosed": "2026-10-14",
-   "diagnosed_by": "cody",
-   "environment": {
-    "where": "live-clone",
-    "pinned": false,
-    "tool": "the suite itself, invoked directly, one process, python -u for .py",
-    "sha": "86f6b0ca",
-    "basis": "DRIVEN IN THE LIVE CLONE in cody b10, one at a time, exit code read from `echo \"EXIT=$?\"` on its own line. THE LIVE CLONE DELIBERATELY: b9 got two false RED verdicts from an isolated worktree, where .git is a file and a sentinel cannot resolve. `git status --short` was checked before AND after every suite and any dirt was restored with `git checkout --` before the next one ran."
-   }
-  },
-  {
-   "file": "tests/run_committer_identity_probe.py",
-   "kind": "py",
-   "tail": "  - and no local override was left behind",
-   "since": "2026-10-12",
-   "why": "DRIVEN IN THE LIVE CLONE 2026-10-14 (cody b10): EXIT 1, 1 failure of about 20. `why` WAS BLANK; first diagnosis. AN ENVIRONMENT PRECONDITION OF THIS CHECKOUT, NOT A DEFECT AND NOT THE PROBE'S DOING. Failing arm: `and no local override was left behind`, reporting `fx@example.invalid`. Measured: `git config --local --get user.email` is fx@example.invalid and user.name is fx -- a PRE-EXISTING local override in this clone. THE EVIDENCE THAT THE PROBE DID NOT WRITE IT is the arm immediately before, `the identity is unchanged in THIS clone`, which PASSED and compares before against after inside the same run (:189-191); and the tree was clean before the run. The arm at :192 asserts the local override is EMPTY -- a property of the checkout, not of the probe. Exit-code line tests/run_committer_identity_probe.py:200. NEXT STEP: a DECISION rather than a code change -- either this clone's local identity is intentional and the arm should assert the expected value instead of emptiness, or the override should be removed. Michael's call; it is not the tests owner's to unset a committer identity.",
-   "owner": "cody",
-   "exit_code": 1,
-   "diagnosed": "2026-10-14",
-   "diagnosed_by": "cody",
-   "environment": {
-    "where": "live-clone",
-    "pinned": false,
-    "tool": "the suite itself, invoked directly, one process, python -u for .py",
-    "sha": "86f6b0ca",
-    "basis": "DRIVEN IN THE LIVE CLONE in cody b10, one at a time, exit code read from `echo \"EXIT=$?\"` on its own line. THE LIVE CLONE DELIBERATELY: b9 got two false RED verdicts from an isolated worktree, where .git is a file and a sentinel cannot resolve. `git status --short` was checked before AND after every suite and any dirt was restored with `git checkout --` before the next one ran."
-   }
-  },
-  {
-   "file": "tests/run_graduated_exemption_probe.py",
-   "kind": "py",
-   "tail": "  - ...proven: the third push is refused again",
-   "since": "2026-10-12",
-   "why": "DRIVEN IN THE LIVE CLONE 2026-10-14 (cody b10): EXIT 1, 2 of about 20 arms failed. `why` WAS BLANK; first diagnosis. A STALE EXPECTATION AGAINST A DELIBERATE 2026-10-07 CHANGE. Failing arms: `...and the exemption is CONSUMED -- single use` and `...proven: the third push is refused again`. tools/sairn_push_gate_hook.py:1093-1094 is now `if consume is None: consume = (MODE == 'prepush')`, documented in its own docstring as \"consumption follows AUTHORITY: prepush ... is the only one that deletes the record\". The probe never sets MODE, so it stays at the module default `pretooluse` (:194), which BY DESIGN does not consume. The two arms at :101 and :105 still encode the pre-change single-use-on-any-mode semantics. THE SETTLING, WINDOW-EXPIRY AND UNRESOLVABLE-TIP ARMS ALL PASSED, so the exemption machinery itself is intact and only the consumption semantics moved. Exit-code line tests/run_graduated_exemption_probe.py:198. NEXT STEP: the probe should drive MODE='prepush' for those two arms; tests/, the tests owner's.",
    "owner": "cody",
    "exit_code": 1,
    "diagnosed": "2026-10-14",
@@ -1392,6 +1251,24 @@
     "basis": "MEASURED in cody b9 against the REAL api/sd-data.js handler with auth, licence and fetch mocked and a STATEFUL store, driven as a CAREGIVER on purpose because SEN_VISIT_SCHEDULER_ROLES excludes one and a scheduler-tier caller cannot reach the clock fields at all. PAST_FLAG_MS is read off api/_lib/sen-evv-clock.js rather than hardcoded."
    },
    "tail_at_creation": "4 passed, 2 failed, 0 unproven"
+  },
+  {
+   "file": "tests/run_cross_tenant_dispatchers_sabotage_probe.py",
+   "kind": "py",
+   "exit_code": 1,
+   "tail": "2 check(s) did not hold across 15 filter mutations and 2 gate tripwires.",
+   "since": "2026-10-14",
+   "owner": "cody",
+   "diagnosed": "2026-10-14",
+   "diagnosed_by": "cody",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process, python -u for .py, node for .js",
+    "sha": "665636f0",
+    "basis": "DRIVEN IN THE LIVE CLONE in cody b11, one at a time, exit code read from `echo \"EXIT=$?\"` on its own line -- never from a pipeline, whose status is its LAST element. THE LIVE CLONE DELIBERATELY: b9 got two false RED verdicts from an isolated worktree, where .git is a FILE and a sentinel cannot resolve. RED WAS CAPTURED BEFORE EVERY FIX and the before/after logs are named in the b11 handoff. `git status --short` was checked before and after each suite."
+   },
+   "why": "MOVED OUT OF `not_red` INTO `entries` 2026-10-14 (cody b11). The old row had it at exit 2 COULD NOT RUN, blocked by api/sd-data-cross-tenant-dispatchers.test.js being red, and predicted it would recover by itself. b10 took that baseline green (419 passed), so this probe now RUNS -- and it is RED, exit 1, with 15 filter mutations all holding and 2 GATE TRIPWIRES failing: `grd_boq_rates tripwire: a session gate arrived on this branch and the arm STAYED GREEN: grd_boq_rates [L] tenant A sees ONLY tenant A rows` and the same for `grd_rounds`. api/sd-data.js was unchanged afterwards. DIAGNOSED, AND IT IS A STALE EXPECTATION IN tests/ -- NOT a defect in api/. tests/run_cross_tenant_dispatchers_sabotage_probe.py:406-416 HARDCODES two `app: null` tripwires on grd_boq_rates and grd_rounds. Those units stopped being `app: null` DELIBERATELY: api/sd-data-cross-tenant-dispatchers.test.js:647-654 now carries `app: 'sairngrounds', role: 'superintendent'`, and the comment at :633-646 states the trade in its own words -- the tripwire property is given up for these six so the arms test TENANT ISOLATION again, \"which is this suite's actual subject and which has been untested for these six resources for as long as the section has been red\", with the gate's arrival held instead by a dedicated gate suite. THE REPLACEMENT COVERAGE EXISTS AND WAS CHECKED, not taken on trust: tests/sd_data_grd_session_gate.js (10,776 bytes, added 2026-10-07 in 6a2690be alongside the 21-resource sairngrounds gate) and it names both grd_boq_rates and grd_rounds. The comment guesses the path as api/sd-data-grd-session-gate.js; the real file is under tests/. SO THE PROBE IS MEASURING A PROPERTY THE SUITE NO LONGER HAS, BY DESIGN, and the hardcoded list is the defect -- the same derived-not-hardcoded rule this repo keeps paying for. NEXT STEP, cody, NOT DONE IN b11 (outside the dispatched item list, and recorded here rather than done quietly): DERIVE the tripwire list from the suite's own `app: null` units instead of naming two, so it cannot go stale again, AND assert in the same arm that tests/sd_data_grd_session_gate.js covers the GRD gate -- otherwise dropping the two tripwires drops the coverage rather than relocating it. DO NOT simply delete the two arms. Exit-code line tests/run_cross_tenant_dispatchers_sabotage_probe.py:474 (`sys.exit(1)` under the `%d check(s) did not hold` summary); the green exit is :478."
   }
  ],
  "_why_the_whole_tree_run_was_not_trusted": "THREE CONFOUNDS, each evidenced rather than suspected. (1) THE TREE MOVED UNDER IT: the log shows tests/sairnbiz_vendor_ytd_derivation.js PASSING, and at the time it was driven it failed at module scope -- cc pushed the anchor rename mid-run. tools/run_all_tests.py --pinned exists for exactly this and was not used. (2) THE RUN MUTATED THE TREE IT WAS MEASURING: tests/seam_check/run_delegation_probe.py left api/sd-data.js and api/_lib/subcontractor-compliance.js carrying planted sabotage, one of which is a redeclaration that does not parse. Four suites driven after it were re-driven on a restored tree and ONE of them -- tests/seam_check/run_probe.py -- went GREEN, so that confound changed at least one verdict. (3) THE RUN CORRUPTED THE CLONE: tests/push_gate/check8_probe.py left .git/config with core.bare = true and a fixture user identity, after which every git command in the clone fails with \"this operation must be run in a work tree\". Observed three times on 2026-10-06 and attributed by digesting .git/config after every suite.",
@@ -1747,6 +1624,150 @@
    "why": "VERIFIED GREEN in cody b10, DRIVEN IN THE LIVE CLONE: EXIT 0, 419 passed 0 failed, INCLUDING its negative controls -- `an unfiltered query returns BOTH tenants` and `the mock honours select=`, which are what stop 419 green arms from being 419 vacuous ones. Exit-code line api/sd-data-cross-tenant-dispatchers.test.js:1072, `process.exit(fail ? 1 : 0)`. `why` and `diagnosed` were BLANK and the owner was hank -- it was the ONLY api/ file in the undriven set. Driven here because driving it is read-only; the row is moved out of `entries` and no api/ file was edited.",
    "previous_tail": "405 passed, 14 failed",
    "previously_diagnosed": null
+  },
+  {
+   "file": "tests/run_all_tests_floor_probe.py",
+   "exit_code": 0,
+   "recovered": "2026-10-14",
+   "recovered_by": "cody",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process, python -u for .py, node for .js",
+    "sha": "665636f0",
+    "basis": "DRIVEN IN THE LIVE CLONE in cody b11, one at a time, exit code read from `echo \"EXIT=$?\"` on its own line -- never from a pipeline, whose status is its LAST element. THE LIVE CLONE DELIBERATELY: b9 got two false RED verdicts from an isolated worktree, where .git is a FILE and a sentinel cannot resolve. RED WAS CAPTURED BEFORE EVERY FIX and the before/after logs are named in the b11 handoff. `git status --short` was checked before and after each suite."
+   },
+   "why": "FIXED AND VERIFIED GREEN in cody b11: EXIT 0, 26 checks, 0 failing. WAS COULD-NOT-RUN, not red -- RED CAPTURED FIRST at exit 1 with a traceback at arm 2: `TypeError: fake_run() takes from 2 to 3 positional arguments but 4 were given`, raised from tools/run_all_tests.py:1278. CAUSE: `fake_run(js, py, quiet=True)` at tests/run_all_tests_floor_probe.py:82 was a THIRD retyped copy of `_run`'s signature; the real `_run(js, py, quiet, excluded=None)` (tools/run_all_tests.py:519) gained a fourth parameter for the pinning exclusion set and `_main_body` passes it POSITIONALLY. A SECOND retyped stub in `patched_result` would have moved the crash to arm 8 rather than removing it. FIX IN tests/ ONLY: both stubs are `*a, **k`, and a new arm 0 binds them against `inspect.signature(R._run)` for every real call shape and pins the call-site count, exiting 2 COULD NOT RUN with the reason named rather than letting the floor arms report anything. Control: three mutants driven, all three caught -- the retyped signature restored, a shape the real `_run` cannot take, and a third call site appearing. STANDING NOTE, REPORTED NOT FIXED: arm 1 prints `the suite GREW: 796 files discovered, MIN_TEST_FILES says 370 ... 426 test file(s) could be deleted with the guard silent`. MIN_TEST_FILES lives in tools/run_all_tests.py:line of `MIN_TEST_FILES = ` -- cc's file, ROUTED, not edited here. Exit-code lines tests/run_all_tests_floor_probe.py:176 (exit 2 seam) and :390 (exit 1).",
+   "previous_tail": "2. _main_body() -- THE COPY A HUMAN RUNS",
+   "previously_diagnosed": "2026-10-14"
+  },
+  {
+   "file": "tests/push_gate/refspec_and_override_probe.py",
+   "exit_code": 0,
+   "recovered": "2026-10-14",
+   "recovered_by": "cody",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process, python -u for .py, node for .js",
+    "sha": "665636f0",
+    "basis": "DRIVEN IN THE LIVE CLONE in cody b11, one at a time, exit code read from `echo \"EXIT=$?\"` on its own line -- never from a pipeline, whose status is its LAST element. THE LIVE CLONE DELIBERATELY: b9 got two false RED verdicts from an isolated worktree, where .git is a FILE and a sentinel cannot resolve. RED WAS CAPTURED BEFORE EVERY FIX and the before/after logs are named in the b11 handoff. `git status --short` was checked before and after each suite."
+   },
+   "why": "FIXED AND VERIFIED GREEN in cody b11: EXIT 0, 0 failure(s). RED CAPTURED FIRST: exit 1, 1 failing arm -- `the same push with an inline override is ALLOWED`, got (1, False) want (0, False). STALE EXPECTATION; THE SUBJECT CHANGED ON PURPOSE. The BLANKET SAIRN_SEED_GATE=off override was retired 2026-10-13: tools/sairn_push_gate_hook.py:1377-1392 now records the attempt and REFUSES, printing tools/gate_skip.py BLANKET_REFUSAL (the scoped SAIRN_SKIP form) instead of exiting 0 before any check. FIX IN tests/ ONLY, at tests/push_gate/refspec_and_override_probe.py section B2: the arm now asserts (1, False), that the refusal is NOT dressed as a gate deny, that every line of gate_skip.BLANKET_REFUSAL is present (DERIVED from the tool, not retyped -- 15 lines matched), the two load-bearing sentences pinned separately from the line match, and the refused attempt logged as check `ALL` with `not honoured`. `run_hook` returns stdout now, because `rc == 1` alone is satisfied by a refusal for any unrelated reason. TWO CONTROL ARMS: the un-overridden refusal and the quoted-mention refusal must NOT carry the blanket text -- which is exactly what deleting the refusal branch would produce, since the gate refuses that fixture anyway. Exit-code line tests/push_gate/refspec_and_override_probe.py:627. HYGIENE: this run did NOT dirty the tree -- the b10 note about docs/scrutiny-flags.json and docs/BYPASS-LOG.jsonl came from a direct hook repro outside the suite; the suite redirects SAIRN_BYPASS_LOG to a temp file at :52. STILL OPEN AND NOT THIS ROW'S: CLAUDE.md push-protocol section 3 documents the retired blanket form as the override, and so does a comment block at tools/sairn_push_gate_hook.py:988-991 (\"THE BLANKET FORM STILL WORKS and is deliberately not removed\") which the code 390 lines below contradicts. Both ROUTED -- neither is the tests owner's.",
+   "previous_tail": "  - a quoted mention in a commit message does NOT disable the gate",
+   "previously_diagnosed": "2026-10-14"
+  },
+  {
+   "file": "tests/run_all_tests_pinned_probe.py",
+   "exit_code": 0,
+   "recovered": "2026-10-14",
+   "recovered_by": "cody",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process, python -u for .py, node for .js",
+    "sha": "665636f0",
+    "basis": "DRIVEN IN THE LIVE CLONE in cody b11, one at a time, exit code read from `echo \"EXIT=$?\"` on its own line -- never from a pipeline, whose status is its LAST element. THE LIVE CLONE DELIBERATELY: b9 got two false RED verdicts from an isolated worktree, where .git is a FILE and a sentinel cannot resolve. RED WAS CAPTURED BEFORE EVERY FIX and the before/after logs are named in the b11 handoff. `git status --short` was checked before and after each suite."
+   },
+   "why": "FIXED AND VERIFIED GREEN in cody b11: EXIT 0, ALL 27 PINNED/OUT ASSERTIONS PASS. RED CAPTURED FIRST: exit 1, 1 arm -- `...and carries the PINNED banner (the outer half)`. STALE EXPECTATION: the arm hardcoded `PINNED: running in a throwaway worktree` while the isolation was deliberately changed worktree -> throwaway CLONE (a worktree's .git is a 64-byte FILE, so sentinels built under it can never resolve) and the banner changed with it to `PINNED: running in a throwaway CLONE at <sha>` at tools/run_all_tests.py:866. The EIGHTH cross-domain discipline exactly -- nothing announces the day a string anchor stops matching. FIX IN tests/ ONLY: the anchor is now read out of the runner's own source up to the first format placeholder, and FAILS CLOSED on not finding it, because an empty anchor is `'' in body` -- true for any body including an empty one, which is the exact truncation arm 5 exists to catch. Control: the derived anchor must name a CLONE and the retired worktree spelling must not match the body. Exit-code line tests/run_all_tests_pinned_probe.py:310.",
+   "previous_tail": "...and carries the PINNED banner (the outer half)",
+   "previously_diagnosed": "2026-10-14"
+  },
+  {
+   "file": "tests/run_cron_liveness_probe.py",
+   "exit_code": 0,
+   "recovered": "2026-10-14",
+   "recovered_by": "cody",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process, python -u for .py, node for .js",
+    "sha": "665636f0",
+    "basis": "DRIVEN IN THE LIVE CLONE in cody b11, one at a time, exit code read from `echo \"EXIT=$?\"` on its own line -- never from a pipeline, whose status is its LAST element. THE LIVE CLONE DELIBERATELY: b9 got two false RED verdicts from an isolated worktree, where .git is a FILE and a sentinel cannot resolve. RED WAS CAPTURED BEFORE EVERY FIX and the before/after logs are named in the b11 handoff. `git status --short` was checked before and after each suite."
+   },
+   "why": "FIXED AND VERIFIED GREEN in cody b11: EXIT 0, 59 passed, 0 failed. RED CAPTURED FIRST: exit 1, 56 passed 1 failed -- `the pre-change workflow had NO commit step -- only the artifact upload`. STALE ANCHOR, AND IT WAS A POSITION: the arm ran `git log -2 -- .github/workflows/cron-liveness.yml` and read `_prev[-1]`, \"the second-newest commit that touched this file\". On 2026-09-23 an UNRELATED commit -- c3f2b2a0, actions/checkout and setup-node v4 -> v7 across all five workflows -- touched the file and slid the window by one, so the arm read a9394d8e, the commit that ADDED the step, and reported that the pre-change version contained it. Nothing was wrong with the workflow. FIX IN tests/ ONLY: anchored on CONTENT -- the newest revision whose source lacks `Commit the status document` is the pre-change version by definition, whatever lands either side of it. Content and not a pinned sha because this repo rebases; the sha found is PRINTED as evidence (5d0f4459, step added in a9394d8e), not hardcoded. No revision lacking the step is COULD NOT TELL, never a pass. TWO CONTROLS: the next revision must ADD the step (a transition, not merely an old file) and HEAD must still carry it, so losing the step cannot be satisfied by sliding the anchor to a yet older revision. Exit-code line tests/run_cron_liveness_probe.py:582.",
+   "previous_tail": "the pre-change workflow had NO commit step -- only the artifact upload, which is the gap this closes",
+   "previously_diagnosed": "2026-10-14"
+  },
+  {
+   "file": "tests/run_graduated_exemption_probe.py",
+   "exit_code": 0,
+   "recovered": "2026-10-14",
+   "recovered_by": "cody",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process, python -u for .py, node for .js",
+    "sha": "665636f0",
+    "basis": "DRIVEN IN THE LIVE CLONE in cody b11, one at a time, exit code read from `echo \"EXIT=$?\"` on its own line -- never from a pipeline, whose status is its LAST element. THE LIVE CLONE DELIBERATELY: b9 got two false RED verdicts from an isolated worktree, where .git is a FILE and a sentinel cannot resolve. RED WAS CAPTURED BEFORE EVERY FIX and the before/after logs are named in the b11 handoff. `git status --short` was checked before and after each suite."
+   },
+   "why": "FIXED AND VERIFIED GREEN in cody b11: EXIT 0, ALL ARMS PASS. RED CAPTURED FIRST: exit 1, 2 arms -- `...and the exemption is CONSUMED -- single use` and `...proven: the third push is refused again`. STALE EXPECTATION; CONSUMPTION FOLLOWS `MODE` BY DESIGN since 2026-10-07. tools/sairn_push_gate_hook.py `graduated_exempt` defaults `consume` to `MODE == 'prepush'`, because ONE Bash `git push` runs the hook TWICE -- PreToolUse on the command text, then the real pre-push hook -- over ONE store file, and the PreToolUse half was eating the token, so the store was empty when prepush looked and the message said SOFT CAPTURE forever. The exemption was UNGRANTABLE in the ordinary case. The probe imports the module, where MODE is 'pretooluse' (tools/sairn_push_gate_hook.py:194), so an UNCONSUMED record is the correct answer there. FIX IN tests/ ONLY: both modes are driven through the DERIVED default -- pretooluse grants and leaves it, a repeat pretooluse read is granted again, prepush grants AND consumes, the next prepush is refused -- plus an arm pinning that MODE was restored. THAT PAIR IS THE CONTROL: `consume` hardcoded False fails the prepush arms, hardcoded True fails the pretooluse arms, and \"always consume\" is the 2026-10-07 defect itself. Exit-code line tests/run_graduated_exemption_probe.py:249.",
+   "previous_tail": "...and the exemption is CONSUMED -- single use, so a third push starts the cycle over rather than riding the same grant",
+   "previously_diagnosed": "2026-10-14"
+  },
+  {
+   "file": "tests/app_session_isolation.js",
+   "exit_code": 0,
+   "recovered": "2026-10-14",
+   "recovered_by": "cody",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process, python -u for .py, node for .js",
+    "sha": "665636f0",
+    "basis": "DRIVEN IN THE LIVE CLONE in cody b11, one at a time, exit code read from `echo \"EXIT=$?\"` on its own line -- never from a pipeline, whose status is its LAST element. THE LIVE CLONE DELIBERATELY: b9 got two false RED verdicts from an isolated worktree, where .git is a FILE and a sentinel cannot resolve. RED WAS CAPTURED BEFORE EVERY FIX and the before/after logs are named in the b11 handoff. `git status --short` was checked before and after each suite."
+   },
+   "why": "FIXED AND VERIFIED GREEN in cody b11: EXIT 0, ALL 66 ASSERTIONS PASS. node --check clean. RED CAPTURED FIRST: exit 1, aborting at `sairnscape: measured ALL, recorded SOME`. THE SUITE MEASURED CORRECTLY; ITS OWN HAND-WRITTEN POSTURE ROWS WERE STALE -- it is working as a drift detector. AND IT UNDER-REPORTED: the comparison was one `assert.ok` per app, so the FIRST mismatch aborted the loop and the remaining apps were never compared. b10 recorded \"its own recorded posture row is 7 days stale\" in the SINGULAR on the strength of that output; driving all 18 found THREE drifted rows. FIX IN tests/ ONLY: every row is measured and printed with its gated/total count, then ONE assertion carries all mismatches. The counts are printed because the rows' prose carries numbers and nothing ever printed the measured pair, so correcting a row meant rebuilding the harness in a scratch file. THE THREE ROWS, each corrected against a LANDED commit rather than to go green: sairngrounds NONE -> SOME, 21 of 30, gate landed 6a2690be 2026-10-07 (\"the LICENCE KEY ALONE reached every read and every write on 21 resources\"), and the nine still ungated are exactly the msb_* set INCLUDING msb_licenses (Tier A) -- DRIVEN, not inferred, and named in the row because SOME is the measurement and not an all-clear; sairnscape SOME -> ALL, 12 of 12 (0442646c, d99b47f9, 5776ef19), whose old row said the other ten stayed licence-only DELIBERATELY, which is worse than an undecided posture because it claimed the gap was a decision; sairnfreedom SOME -> ALL, 36 of 36 (46d74678 2026-10-13). Exit-code line tests/app_session_isolation.js:608.",
+   "previous_tail": "FAILED: sairnscape: measured ALL, recorded SOME",
+   "previously_diagnosed": "2026-10-14"
+  },
+  {
+   "file": "tests/run_committer_identity_probe.py",
+   "exit_code": 0,
+   "recovered": "2026-10-14",
+   "recovered_by": "cody",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process, python -u for .py, node for .js",
+    "sha": "665636f0",
+    "basis": "DRIVEN IN THE LIVE CLONE in cody b11, one at a time, exit code read from `echo \"EXIT=$?\"` on its own line -- never from a pipeline, whose status is its LAST element. THE LIVE CLONE DELIBERATELY: b9 got two false RED verdicts from an isolated worktree, where .git is a FILE and a sentinel cannot resolve. RED WAS CAPTURED BEFORE EVERY FIX and the before/after logs are named in the b11 handoff. `git status --short` was checked before and after each suite."
+   },
+   "why": "FIXED AND VERIFIED GREEN in cody b11: EXIT 0, 19 PASS, 0 failure(s). RED CAPTURED FIRST: exit 1, 1 arm -- section F's `and no local override was left behind`, detail `fx@example.invalid`. WAS CLASSED AS AN ENVIRONMENT PRECONDITION; IT WAS A DEFECT IN THE ARM. Its name is \"left behind\" -- a BEFORE/AFTER property of the run -- and it tested `--local --get user.email == ''`, which is a property of whoever's clone it is. This clone carries user.email=fx@example.invalid in LOCAL config, set deliberately and by no probe. FIX IN tests/ ONLY, and NO IDENTITY WAS UNSET OR CHANGED: both repairs the failure invited were wrong -- unsetting a committer identity is not a test's call, and dropping the arm would retire the only check that the probe cleans up after itself. The arm now asserts the LOCAL override layer is byte-identical before and after, named SEPARATELY from the merged read because the merged read would stay equal if a probe wrote a local override identical to the inherited value -- which is the shape that hid for three days in 2026-09. HERMETIC NOW: git merges system, global and local, so every git command and tool invocation against the throwaway clone runs with GIT_CONFIG_GLOBAL and GIT_CONFIG_SYSTEM pointed at an empty file; without it an operator whose GLOBAL identity happened to be a known throwaway would see section B refuse. Section A is deliberately NOT isolated -- its job is to report what this clone really commits as -- and it now prints that identity and whether it comes from the local layer. NEW CONTROL (section B0), both directions: a hostile GLOBAL config carrying a known throwaway identity DOES reach the checker and is refused, so the fixture is not inert; and under the isolation the same clone is CLEAN. That pair fails if the isolation is deleted, which matters because the symptom of missing isolation is a verdict that depends on whose machine it is. NO LONGER A DECISION FOR MICHAEL: the b10 handoff routed this as one, and it was not -- the identity is the operator's and the arm was asking the wrong question. MEASURED: this clone commits as fx <fx@example.invalid> from LOCAL config; global is Michael Dibert <mikied68@gmail.com>. Exit-code line tests/run_committer_identity_probe.py:329.",
+   "previous_tail": "and no local override was left behind",
+   "previously_diagnosed": "2026-10-14"
+  },
+  {
+   "file": "tests/run_role_gate_negative_coverage_probe.py",
+   "exit_code": 0,
+   "recovered": "2026-10-14",
+   "recovered_by": "cody",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process, python -u for .py, node for .js",
+    "sha": "665636f0",
+    "basis": "DRIVEN IN THE LIVE CLONE in cody b11, one at a time, exit code read from `echo \"EXIT=$?\"` on its own line -- never from a pipeline, whose status is its LAST element. THE LIVE CLONE DELIBERATELY: b9 got two false RED verdicts from an isolated worktree, where .git is a FILE and a sentinel cannot resolve. RED WAS CAPTURED BEFORE EVERY FIX and the before/after logs are named in the b11 handoff. `git status --short` was checked before and after each suite."
+   },
+   "why": "FIXED AND VERIFIED GREEN in cody b11: EXIT 0, 0 failed. RED CAPTURED FIRST: exit 1, 4 arms, every one `exit=2` with `COULD NOT TELL -- the pin carries neither `exposed` nor an integer `not_driven`, so the sum cannot be derived. NOTHING WAS COMPARED on that leg.` -- `at the pinned number it is OK and exits 0`, `...and says a ratchet is not a pass on the same run`, `a NEW uncovered gate is a REGRESSION, exit 1`, `an added negative arm reads as IMPROVED and asks to be re-pinned`. STALE FIXTURE, AND THE TOOL IS RIGHT -- b9 read this as the tool exiting 2 on the fixture's constructed pin, which is the symptom; the cause is that all four constructed pins were `{\"uncovered\": N}`, the PRE-CHANGE shape. tools/role_gate_negative_coverage.py:763 ratchets on `exposed` = uncovered + not_driven, because deleting the only suite that drives a resource moves it uncovered -> not_driven: `uncovered` FALLS, the old rule printed \"IMPROVED -- re-pin\", and the ratchet could be walked down by deleting tests. FIX IN tests/ ONLY -- NOTHING IN tools/ WAS EDITED. The fixture's own numbers are stated once (OWNER_ONLY: uncovered 1, not_driven 1, exposed 2; WITH_NEG: 0, 1, 1) and the pins are built from them. THREE LEGS DRIVEN, not just the repaired one: the modern pin carrying `exposed`; the LEGACY pin (uncovered + not_driven, no `exposed`) which must still compare by DERIVING the sum and must DISCLOSE that it derived it; and the `uncovered`-ONLY pin, whose exit 2 is asserted as the CORRECT answer rather than erased by the repair -- the failure is now a test. NEW CONTROL: `uncovered` falling while the SUM HOLDS must be \"no worse\" and must NOT be IMPROVED, because that is precisely what deleting a driving suite looks like; without it \"any fall in uncovered is an improvement\" satisfies the IMPROVED arm, which is the behaviour the ratchet was rewritten to remove. The b10 criteria lock on num() still passes 6/6 and was not touched. Exit-code lines tests/run_role_gate_negative_coverage_probe.py:147 (exit 2, lock) and :433 (exit 1).",
+   "previous_tail": "at the pinned number it is OK and exits 0",
+   "previously_diagnosed": "2026-10-14"
+  },
+  {
+   "file": "tests/push_gate/missing_checker_probe.py",
+   "exit_code": 0,
+   "recovered": "2026-10-14",
+   "recovered_by": "cody",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process, python -u for .py, node for .js",
+    "sha": "665636f0",
+    "basis": "DRIVEN IN THE LIVE CLONE in cody b11, one at a time, exit code read from `echo \"EXIT=$?\"` on its own line -- never from a pipeline, whose status is its LAST element. THE LIVE CLONE DELIBERATELY: b9 got two false RED verdicts from an isolated worktree, where .git is a FILE and a sentinel cannot resolve. RED WAS CAPTURED BEFORE EVERY FIX and the before/after logs are named in the b11 handoff. `git status --short` was checked before and after each suite."
+   },
+   "why": "VERIFIED GREEN in cody b11, DRIVEN IN THE LIVE CLONE: EXIT 0, 40 PASS, 0 failure(s), criteria lock 7/7 first. IT HAD NO ROW IN THIS FILE AT ALL, which the register itself calls UNMEASURED -- b10 named its two failures in a handoff and nothing here recorded them. THE TWO b10 FAILURES WERE A CASCADE, NOT DEFECTS: `a push of a sql file whose table the snapshot has is allowed` and `the throwaway worktree is removed`. b10's own cleanup note records the cause -- two leftover gate worktrees (gate-missing-968, gate-missing-3568) and one gate base worktree were still registered when it ran, and `git worktree remove --force` cannot finish against that residue, so the cleanup arm fails and the section-F control that runs after it inherits a dirty worktree registry. b10 removed them BY HAND at the end of its batch. EVIDENCE THAT THIS IS THE CAUSE AND NOT A GUESS: `git worktree list` was read immediately BEFORE this run and showed ONLY the live clone; during the run it showed exactly one addition, this run's own gate-missing-19808; the cleanup arm then PASSED and the list is back to one. NOTHING WAS EDITED -- not this probe, not the gate. The residue-cascade shape is the one tools/run_all_tests.py already reports for exactly this reason: four files went red at once there and every one passed individually on a clean tree. STANDING RULE FOR THE NEXT SESSION: read `git worktree list` before driving this suite, because a stale entry makes it report two failures that have nothing to do with the fail-closed rule it tests. Exit-code line tests/push_gate/missing_checker_probe.py:390. Budget ~25 minutes -- it runs the full gate eleven times.",
+   "previous_tail": "a push of a sql file whose table the snapshot has is allowed",
+   "previously_diagnosed": null
   }
  ],
  "_b5_addition_2026_10_12": "ELEVEN entries added by fourth, batch b5 item 2, and the brief asked for THIRTY. The 30 is hank's 2026-10-08 figure (\"101 red, registry records 75, 30 RED AND NOT RECORDED\") and it was re-derived rather than carried: the gap against this register at HEAD 327e9e80 is 23, not 30, because the register has absorbed some of them since and cody's later run moved others. Of those 23, driving each ALONE returned 11 RED, 7 GREEN, 2 exit-2 COULD NOT RUN, 2 exit-3 SKIPPED and 1 TIMEOUT at 180s. ONLY THE 11 ARE RED. The 7 GREEN are the finding that matters: a run log named them red and they are not, so the stale half of a census is a wrong answer in both directions. The 12 non-red are listed by name with their measured state in docs/2026-10-12-fourth-b5-routing.md -- they are NOT in this file, because an entry here is an exemption and an exemption over a suite that is green or that never ran would swallow its next real failure.",
@@ -1754,36 +1775,18 @@
  "not_red": [
   {
    "file": "tests/app_session_isolation_probe.py",
-   "exit_code": 2,
-   "state": "COULD NOT RUN",
-   "blocked_by": "tests/app_session_isolation.js",
-   "root_cause": "A SABOTAGE CONTROL ON A RED BASELINE. Its own output: \"The baseline is red, so no mutation below would mean anything. Stopping.\" The baseline it drives is tests/app_session_isolation.js, which IS red and IS registered in `entries` with the same reason -- \"sairngrounds: measured SOME, recorded NONE\". So this is not a second defect: it is the first one making its own control unusable. IT WILL RECOVER BY ITSELF when the baseline does, and it must NOT be entered as red, because an entry here would absorb a genuinely new failure of the control itself.",
-   "measured": "2026-10-12",
-   "root_caused": "2026-10-13",
-   "by": "fourth",
+   "exit_code": 3,
+   "state": "COULD NOT RUN -- the PRE-FIX COUNTERFACTUAL only; all 13 arms pass",
+   "blocked_by": "its own historical control: the pre-fix copy of tests/app_session_isolation.js is no longer green against current api/sd-data.js",
+   "root_cause": "UPDATED 2026-10-14 (cody b11). THE OLD BLOCK IS GONE AND THE ROW'S OWN PREDICTION HELD: it read \"A SABOTAGE CONTROL ON A RED BASELINE ... IT WILL RECOVER BY ITSELF when the baseline does\". The baseline, tests/app_session_isolation.js, was fixed and verified green in b11, so this probe now RUNS: ALL 13 ARMS PASS, 8 mutations planted and every one refused, api/sd-data.js and the suite byte-identical afterwards, nothing newly dirty. DRIVEN, NOT ASSUMED -- the prediction was in this file for a day and nothing had tested it. AND IT FOUND A REAL STALE ANCHOR ON THE FIRST DRIVE, which is the value of actually running it: mutation 7 (`the gate refuses with 500 instead of 403`) reported ANCHOR-3 and FAILED, exit 1. Its anchor was the bare 403/FORBIDDEN block, unique when written and now present THREE times in api/sd-data.js -- the SD_SESSION_GATED gate at :2106, which is the one the mutation names, plus two ROLE gates that landed later and have nothing to do with the session boundary: sairnsenior MANAGEMENT_ROLES at :6777 and sairnbuild BLD_DRAW_ROLES at :13983. `replace(o, n, 1)` would have planted in whichever came first. NOT a coverage gap in the suite -- the arm was never running. REPAIRED IN tests/ ONLY: the anchor now carries `if (!gateSession) {`, the line that IDENTIFIES the session gate, measured unique; the harness still fails loudly on ANCHOR-0 or ANCHOR-2 if that changes again. WHAT REMAINS IS EXIT 3 AND IS NEITHER COLOUR: the pre-fix counterfactual -- the suite as it stood before PHASE_2_GATED existed -- is not green against current source, so \"BLIND\" would mean nothing and the harness refuses to print it. That is correct (PR 1.11) and it is a loss of evidence rather than a failure: the same-reason mutations can no longer be shown to have been invisible to the OLD predicate. NOT ENTERED AS RED, because an entry would absorb a genuinely new failure of a probe whose 13 arms all pass. NEXT STEP, cody: decide whether the pre-fix counterfactual can be re-based on a later pre-repair commit or should be retired with its finding recorded -- it is a historical control and it has done its job once.",
+   "measured": "2026-10-14",
+   "by": "cody",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, invoked directly, one process per suite",
-    "sha": "e1c6aef6",
-    "basis": "MEASURED 2026-10-12 by fourth driving each suite ALONE with a 180s ceiling (batch b5 item 2), ROOT-CAUSED 2026-10-13 (batch b6 item 3) by reading the tail each one printed rather than by re-running it. The exit code is the one that process returned; the cause is quoted from the suite's own output."
-   }
-  },
-  {
-   "file": "tests/run_cross_tenant_dispatchers_sabotage_probe.py",
-   "exit_code": 2,
-   "state": "COULD NOT RUN",
-   "blocked_by": "api/sd-data-cross-tenant-dispatchers.test.js",
-   "root_cause": "THE SAME CLASS AND A DIFFERENT BASELINE. Its own output: \"COULD NOT RUN: the baseline is not green (14 failing). A sabotage control on a red baseline cannot distinguish its own mutation from the pre-existing failure.\" The baseline is api/sd-data-cross-tenant-dispatchers.test.js, registered in `entries` at 405 passed / 14 failed. Recovers when that does.",
-   "measured": "2026-10-12",
-   "root_caused": "2026-10-13",
-   "by": "fourth",
-   "environment": {
-    "where": "live-clone",
-    "pinned": false,
-    "tool": "the suite itself, invoked directly, one process per suite",
-    "sha": "e1c6aef6",
-    "basis": "MEASURED 2026-10-12 by fourth driving each suite ALONE with a 180s ceiling (batch b5 item 2), ROOT-CAUSED 2026-10-13 (batch b6 item 3) by reading the tail each one printed rather than by re-running it. The exit code is the one that process returned; the cause is quoted from the suite's own output."
+    "tool": "the suite itself, invoked directly, one process, python -u for .py, node for .js",
+    "sha": "665636f0",
+    "basis": "DRIVEN IN THE LIVE CLONE in cody b11, one at a time, exit code read from `echo \"EXIT=$?\"` on its own line -- never from a pipeline, whose status is its LAST element. THE LIVE CLONE DELIBERATELY: b9 got two false RED verdicts from an isolated worktree, where .git is a FILE and a sentinel cannot resolve. RED WAS CAPTURED BEFORE EVERY FIX and the before/after logs are named in the b11 handoff. `git status --short` was checked before and after each suite."
    }
   },
   {
@@ -1840,5 +1843,6 @@
  ],
  "_b9_census_2026_10_13": "RE-DRIVEN 2026-10-13 (fourth, b9 item 10) at HEAD 988a1d8f. 20 of the 86 entries this register listed as red were driven ALONE: COULD NOT RUN 1, GREEN 2, RED 17. 2 RECOVERED (exit 0) and were moved out of `entries` -- the file's own rule is that an entry whose suite has gone green \"swallows the next real failure of that file\". 4 came back in the THIRD STATE (exit 2, exit 3 or a timeout) and were LEFT IN PLACE: not-run is not green, and moving one would quietly declare a red suite fixed. 66 WERE NOT DRIVEN and are therefore NOT re-verified by this pass -- 86 entries is about three hours at the 180s ceiling, and a partial sweep reported as a whole one is the exact shape this file exists to prevent. THE SWEEP LOG IS THE AUTHORITY, not this sentence: scratchpad/drive_red86.jsonl, one JSON record per suite with its real exit code and the tail it printed.",
  "_owner_basis_2026_10_13_b10": "The `owner` field on every entry was \"unassigned\" on all 84 rows until this batch and is now set by ONE RULE: the directory the suite's own path starts in -- api/ hank, tests/ cody, tools/ cc, docs/ fourth. IT IS A PATH, NOT A JUDGEMENT about the failure's subject, and it must not be read as an investigation: a tests/ suite whose real defect is in api/ is still cody's ROW here and hank's FIX, and the two are different questions. Result: hank 5, cody 79, cc 0, fourth 0. cc and fourth getting nothing is a measurement and is stated rather than left as an empty section -- no registered red suite lives under tools/ or docs/, which is a statement about what this register COVERS and not about those directories being healthy. Map and routing: docs/2026-10-13-fourth-b10-red-suite-owners.tsv (84 rows, generated) and docs/2026-10-13-fourth-b10-routed-red-suites.md.",
- "_b9_census_2026_10_13_CORRECTION_b10": "THE CENSUS SENTENCE ABOVE IS WRONG ABOUT ITS OWN NUMBERS AND THE OLD TEXT IS LEFT IN PLACE RATHER THAN OVERWRITTEN, because a published figure needs a correction and not a silent edit. It says \"20 of the 86 entries ... were driven ALONE\", from which b9's digest and handoff reported 65-66 undriven. ITS OWN AUTHORITY LOG HAS 50 RECORDS -- scratchpad/drive_red86.jsonl, 43 RED, 5 COULD NOT RUN, 2 GREEN -- and the marker itself says \"THE SWEEP LOG IS THE AUTHORITY, not this sentence\". So it was right about where to look and wrong about the number: the sentence was drafted while the sweep was still running and nothing re-derived it. RE-DERIVED 2026-10-13 in b10: 84 entries now, 48 of them carry a log record (the 2 GREEN were moved out in b9), so UNDRIVEN = 84 - 48 = 36, ALL of them under tests/. This is RULE E failing inside the paragraph that states RULE E's own principle, which is why the correction is recorded here and not just in a report."
+ "_b9_census_2026_10_13_CORRECTION_b10": "THE CENSUS SENTENCE ABOVE IS WRONG ABOUT ITS OWN NUMBERS AND THE OLD TEXT IS LEFT IN PLACE RATHER THAN OVERWRITTEN, because a published figure needs a correction and not a silent edit. It says \"20 of the 86 entries ... were driven ALONE\", from which b9's digest and handoff reported 65-66 undriven. ITS OWN AUTHORITY LOG HAS 50 RECORDS -- scratchpad/drive_red86.jsonl, 43 RED, 5 COULD NOT RUN, 2 GREEN -- and the marker itself says \"THE SWEEP LOG IS THE AUTHORITY, not this sentence\". So it was right about where to look and wrong about the number: the sentence was drafted while the sweep was still running and nothing re-derived it. RE-DERIVED 2026-10-13 in b10: 84 entries now, 48 of them carry a log record (the 2 GREEN were moved out in b9), so UNDRIVEN = 84 - 48 = 36, ALL of them under tests/. This is RULE E failing inside the paragraph that states RULE E's own principle, which is why the correction is recorded here and not just in a report.",
+ "_b11_2026_10_14_cody": "EIGHT ROWS MOVED entries -> recovered by cody b11, every one FIXED AND DRIVEN rather than re-measured: tests/run_all_tests_floor_probe.py, tests/push_gate/refspec_and_override_probe.py, tests/run_all_tests_pinned_probe.py, tests/run_cron_liveness_probe.py, tests/run_graduated_exemption_probe.py, tests/app_session_isolation.js, tests/run_committer_identity_probe.py, tests/run_role_gate_negative_coverage_probe.py. ALL EIGHT WERE STALE EXPECTATIONS OR STALE ANCHORS IN tests/, NOT DEFECTS IN THEIR SUBJECTS: a retyped stub signature, a retired blanket override, a worktree->clone banner, a `git log -2` POSITION, a mode-dependent consumption rule, three hand-written posture rows, an absolute-emptiness arm named \"left behind\", and four pre-`exposed` pin fixtures. NOT ONE api/, sql/ or tools/ FILE WAS EDITED, and no test was edited to turn it green -- each repair has a RED captured before it and a CONTROL arm that stops \"delete the check\" from satisfying it. A NINTH ROW IS NEW RATHER THAN MOVED: tests/push_gate/missing_checker_probe.py had no row at all -- UNMEASURED by this file's own definition -- and is now in `recovered` at exit 0 with its b10 failures diagnosed as WORKTREE RESIDUE CASCADE, nothing edited. AND TWO `not_red` PREDICTIONS WERE DRIVEN RATHER THAN LEFT STANDING, because both said \"it will recover by itself when the baseline does\" and both baselines had since gone green with nothing testing the claim. tests/app_session_isolation_probe.py: the block IS cleared, ALL 13 ARMS PASS over 8 mutations -- and the first drive found a real stale anchor (ANCHOR-3, mutation 7, repaired in tests/ only). It stays in `not_red` at exit 3, because what remains is the pre-fix COUNTERFACTUAL being unreachable, which is neither colour. tests/run_cross_tenant_dispatchers_sabotage_probe.py: the block IS cleared and the probe is RED, exit 1, so it is PROMOTED to `entries` -- two `app: null` gate tripwires hardcoded in the probe measure a property api/sd-data-cross-tenant-dispatchers.test.js deliberately gave up. DIAGNOSED AND NOT FIXED, because it is outside b11's dispatched items; recorded with the exact next step instead of done quietly. entries 76 -> 69, recovered 22 -> 31, not_red 5 -> 4."
 }

@@ -85,10 +85,20 @@ import sys
 from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from hover_log import LOG_PATH, GENESIS, digest_of, read_all  # noqa: E402
+from hover_log import (LOG_PATH, GENESIS, digest_of, read_all,  # noqa: E402
+                        _LOG_PATH_IS_UNSAFE_FALLBACK,
+                        _refuse_if_duplicate_script_present)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-BEACON_PATH = os.path.join(HERE, 'TIP-BEACON.md')
+# BEACON_PATH, 2026-10-14 (h1 b33) -- no longer HERE-relative. TIP-BEACON.md
+# lives in the SAME directory as the real hover-audit-log.jsonl in every
+# known instance, so it is derived from hover_log's own (already-corrected,
+# h1 b32) LOG_PATH rather than guessed from this file's own location --
+# HERE is inside the platform repo, nowhere near where the real beacon
+# lives, and that mismatch is exactly what let a stale, untracked duplicate
+# of THIS file run unnoticed (see hover_log.py's module docstring for the
+# full h1 b30-b32 account of the same bug in that file).
+BEACON_PATH = os.path.join(os.path.dirname(os.path.abspath(LOG_PATH)), 'TIP-BEACON.md')
 
 # A beacon older than this many entries behind the real tip is STALE. Chosen
 # to be smaller than a typical session's own entry count (this session alone
@@ -209,7 +219,37 @@ def _parse_beacon(text):
     return out
 
 
+def _resolve_max_lag(argv):
+    """--max-lag N overrides STALE_AFTER_ENTRIES for this one invocation.
+    Returns (value, error_or_None). Absent --max-lag -> the module default,
+    never silently a different number. A bad value is REFUSED, not clamped
+    or defaulted around -- the same standard mech_insurance_policies' own
+    warn_days validation holds a caller-supplied threshold to elsewhere in
+    this codebase, because a threshold a typo turned into 0 or -5 would
+    silently fire FINDING: STALE on every real gap, or never fire at all.
+    MERGED IN 2026-10-14 (h1 b33) from the untracked copy -- see
+    docs/defect-density-register.json for the h1 b32/b33 two-copy-drift
+    record."""
+    if '--max-lag' not in argv:
+        return STALE_AFTER_ENTRIES, None
+    i = argv.index('--max-lag')
+    if i + 1 >= len(argv):
+        return None, '--max-lag requires a value'
+    raw = argv[i + 1]
+    try:
+        n = int(raw)
+    except (TypeError, ValueError):
+        return None, '--max-lag must be a whole number, got %r' % raw
+    if n <= 0:
+        return None, '--max-lag must be a positive whole number, got %r' % raw
+    return n, None
+
+
 def cmd_check(argv):
+    max_lag, max_lag_err = _resolve_max_lag(argv)
+    if max_lag_err:
+        print('COULD NOT RUN: %s' % max_lag_err)
+        return EXIT_COULD_NOT_RUN
     if not os.path.isfile(BEACON_PATH):
         print('COULD NOT RUN: no beacon published yet -- run --publish first')
         return EXIT_COULD_NOT_RUN
@@ -243,17 +283,17 @@ def cmd_check(argv):
         return EXIT_FINDING
 
     gap = len(entries) - int(fields['total_entries_at_publish'])
-    if gap > STALE_AFTER_ENTRIES:
+    if gap > max_lag:
         print('FINDING: STALE. beacon published at %d entries; log now has '
               '%d (%d entries behind, over the %d threshold). Not tampering '
               '-- the beacon simply has not been refreshed.'
               % (int(fields['total_entries_at_publish']), len(entries), gap,
-                 STALE_AFTER_ENTRIES))
+                 max_lag))
         return EXIT_FINDING
 
     print('OK: checkpoint seq %d matches the live log; beacon is %d '
           'entries behind the current tip (within the %d-entry staleness '
-          'bound).' % (checkpoint_seq, gap, STALE_AFTER_ENTRIES))
+          'bound).' % (checkpoint_seq, gap, max_lag))
     return EXIT_OK
 
 
@@ -331,6 +371,35 @@ def cmd_selftest(argv):
         check('TEETH: a beacon left far behind the real tip reports STALE',
               rc == EXIT_FINDING)
 
+        # 3a. --max-lag, added so a caller can tighten OR widen the window
+        # without editing the module constant. The log is still in the SAME
+        # state 3 just produced (gap = STALE_AFTER_ENTRIES + 3), so these
+        # fixtures prove --max-lag actually changes the verdict, not just
+        # that it is accepted. MERGED IN 2026-10-14 (h1 b33) from the
+        # untracked copy.
+        actual_gap = STALE_AFTER_ENTRIES + 3
+        rc = cmd_check(['--max-lag', str(actual_gap + 10)])
+        check('--max-lag WIDER than the real gap turns an otherwise-STALE '
+              'result OK', rc == EXIT_OK)
+        rc = cmd_check(['--max-lag', '1'])
+        check('--max-lag TIGHTER than default still reports STALE '
+              '(narrowing the window does not hide a real gap)',
+              rc == EXIT_FINDING)
+        rc = cmd_check(['--max-lag', 'abc'])
+        check('TEETH: a non-numeric --max-lag is COULD_NOT_RUN, never '
+              'silently defaulted', rc == EXIT_COULD_NOT_RUN)
+        rc = cmd_check(['--max-lag', '0'])
+        check('TEETH: --max-lag 0 is refused (a zero threshold would fire '
+              'STALE on every gap, including a freshly published one)',
+              rc == EXIT_COULD_NOT_RUN)
+        rc = cmd_check(['--max-lag', '-5'])
+        check('TEETH: a negative --max-lag is refused, not clamped to 0 '
+              'or treated as unlimited', rc == EXIT_COULD_NOT_RUN)
+        rc = cmd_check([])
+        check('...and omitting --max-lag after all of the above still '
+              'falls back to the module default, not whatever was passed '
+              'last', rc == EXIT_FINDING)
+
         # 3b. --anchor: locked payload shape, printed not sent (fixture,
         # 2026-09-28). Captures stdout rather than re-deriving the parse.
         import contextlib
@@ -369,6 +438,38 @@ def cmd_selftest(argv):
         check('an unparsable beacon -> COULD NOT RUN, never OK',
               rc == EXIT_COULD_NOT_RUN)
 
+        # 6. TEETH, added H1 b28: the read-back guard in cmd_publish fires
+        # on a real negative control, not just on paper. render() is
+        # monkeypatched to emit a seq ONE LOWER than what cmd_publish
+        # computed and is about to report -- the exact shape of 2026-10-13's
+        # incident, where the on-disk beacon disagreed with the value a
+        # batch reported publishing. A real --publish run must refuse,
+        # not print "published", when what it reads back does not match
+        # what it just computed. MERGED IN 2026-10-14 (h1 b33) from the
+        # untracked copy -- the guard itself already existed here (H1 b28);
+        # only this regression fixture for it was missing.
+        global render
+        real_render = render
+        def _wrong_seq_render(seq, ts, h, total, now):
+            return real_render(seq - 1, ts, h, total, now)
+        render = _wrong_seq_render
+        try:
+            buf3 = io.StringIO()
+            with contextlib.redirect_stdout(buf3):
+                rc = cmd_publish([])
+        finally:
+            render = real_render
+        out3 = buf3.getvalue()
+        check('TEETH: a beacon write that reads back with the WRONG seq is '
+              'COULD_NOT_RUN, not "published"',
+              rc == EXIT_COULD_NOT_RUN and 'published:' not in out3)
+        check('...and the refusal names BOTH numbers, not just "mismatch"',
+              'wrote seq=' in out3 and 'reading' in out3)
+        # Leave the beacon correctly republished for anything that runs
+        # after this selftest in the same process -- the control above
+        # intentionally left it one entry stale.
+        cmd_publish([])
+
         print('')
         print('%d ok, %d failed' % (ok, fail))
         return EXIT_FINDING if fail else EXIT_OK
@@ -379,13 +480,27 @@ def cmd_selftest(argv):
 
 
 def main(argv):
+    if '--selftest' in argv:
+        return cmd_selftest(argv)
+    # ── THE TWO h1 b32/b33 GUARDS, BEFORE ANY REAL DISPATCH ────────────────
+    # Same pattern as hover_log.py (h1 b32): skipped only for --selftest
+    # above, which monkeypatches LOG_PATH/BEACON_PATH itself in an isolated
+    # tmpdir and never relies on either check.
+    if _LOG_PATH_IS_UNSAFE_FALLBACK:
+        print('REFUSED: hover_log.py could not determine this clone\'s real '
+              'log path (see its own error for why), so BEACON_PATH -- '
+              'derived from it -- cannot be trusted either. Set '
+              'HOVER_LOG_PATH_OVERRIDE explicitly instead.')
+        return EXIT_COULD_NOT_RUN
+    dup_err = _refuse_if_duplicate_script_present(LOG_PATH, __file__)
+    if dup_err:
+        print('REFUSED: %s' % dup_err)
+        return EXIT_COULD_NOT_RUN
     if '--publish' in argv:
         return cmd_publish(argv)
     if '--check' in argv:
         return cmd_check(argv)
-    if '--selftest' in argv:
-        return cmd_selftest(argv)
-    print('usage: hover_tip_beacon.py --publish | --check | --selftest')
+    print('usage: hover_tip_beacon.py --publish [--anchor] | --check [--max-lag N] | --selftest')
     return EXIT_COULD_NOT_RUN
 
 

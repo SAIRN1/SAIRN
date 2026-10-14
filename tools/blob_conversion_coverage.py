@@ -112,17 +112,43 @@ class CouldNotTell(Exception):
 
 
 def api_files():
+    """Every non-test .js under api/, AT ANY DEPTH.
+
+    ── IT WAS A FLAT os.listdir AND THE UNIVERSE WAS A THIRD OF api/ ─────────
+    Routed by cody, 2026-10-14, and the measurement is why it is a defect and
+    not a preference: `os.listdir(API)` saw 50 files where a recursive walk
+    sees 179, so **129 files were outside the universe this tool reports
+    coverage over** -- every route under api/_lib/, api/agent/, api/sairncash/,
+    api/sairndental/ and the rest. Two of them are live `data:` write sites:
+    api/_lib/sd-store.js:166 and api/sairndental/public-complaint-submit.js:136.
+
+    A COVERAGE TOOL WITH A SILENTLY NARROW UNIVERSE IS THE WORST SHAPE THIS
+    REPO HAS A NAME FOR. It did not report "I only looked at the top level";
+    it reported a conversion percentage, over a denominator that excluded the
+    files most likely to differ -- the shared store helper and the per-app
+    routes. "N of N converted" read as complete. This is the
+    denominator-over-the-subset-you-looked-at error, and the fact that the
+    count LOOKED plausible is exactly what kept it alive.
+
+    node_modules is pruned because it is vendored third-party code this
+    tool's conventions do not apply to; nothing else is excluded, and a
+    directory this walk cannot read raises rather than being skipped.
+    """
     if not os.path.isdir(API):
         raise CouldNotTell('api/ does not exist, so nothing was scanned')
     out = []
-    for n in sorted(os.listdir(API)):
-        if not n.endswith('.js') or n.endswith('.test.js'):
-            continue
-        out.append(os.path.join(API, n))
+    for dirpath, dirnames, filenames in os.walk(API):
+        # Pruned in place so os.walk does not descend. Named, not silent.
+        dirnames[:] = [d for d in sorted(dirnames) if d != 'node_modules']
+        for n in sorted(filenames):
+            if not n.endswith('.js') or n.endswith('.test.js'):
+                continue
+            out.append(os.path.join(dirpath, n))
     if not out:
-        raise CouldNotTell('api/ holds no non-test .js file -- the layout moved '
-                           'and NOTHING was scanned. This is not "no sites".')
-    return out
+        raise CouldNotTell('api/ holds no non-test .js file at any depth -- the '
+                           'layout moved and NOTHING was scanned. This is not '
+                           '"no sites".')
+    return sorted(out)
 
 
 def classify(expr, at, bound_kind):
@@ -251,6 +277,118 @@ def load_pin():
         raise CouldNotTell('%s will not parse (%s)' % (os.path.relpath(PIN, REPO), e))
 
 
+# ── THE UNIVERSE LOCK ───────────────────────────────────────────────────────
+# Added cc b10, 2026-10-14, with the fix to api_files(). Its arms are about
+# the DISCOVERY and not the classification: a coverage tool's denominator is
+# the thing that was silently wrong, and the one arm that matters is the
+# ABLATION -- it puts the old flat os.listdir back and requires that the
+# nested-file arm then FAILS. Without that arm, deleting the recursion and
+# deleting the check would both "pass", which is the shape this repo's
+# methodology forbids.
+def run_selftest():
+    import shutil
+    import tempfile
+    print('BLOB CONVERSION COVERAGE -- universe lock')
+    bad = total = 0
+
+    def check(label, got, want):
+        nonlocal bad, total
+        total += 1
+        if got != want:
+            bad += 1
+            print('  LOCK FAILED  %s' % label)
+            print('               wanted %r, got %r' % (want, got))
+
+    tmp = tempfile.mkdtemp(prefix='blobcov-universe-')
+    global API
+    real_api = API
+    try:
+        # A fixture api/ tree: one top-level route, one NESTED route, a test
+        # file, and a node_modules copy that must not be walked.
+        def w(rel, body='exports.h = async (q, r) => { await put({ data: payload }); };\n'):
+            p = os.path.join(tmp, rel.replace('/', os.sep))
+            os.makedirs(os.path.dirname(p), exist_ok=True)
+            io.open(p, 'w', encoding='utf-8', newline='\n').write(body)
+            return p
+        w('top.js')
+        w('_lib/store.js')
+        w('sairndental/public-complaint-submit.js')
+        w('top.test.js')
+        w('node_modules/vendor/index.js')
+
+        API = tmp
+        found = [os.path.relpath(p, tmp).replace(os.sep, '/')
+                 for p in api_files()]
+
+        check('a NESTED route is in the universe -- the routed defect: a flat '
+              'os.listdir saw 50 of 179 files and excluded api/_lib/ entirely',
+              '_lib/store.js' in found, True)
+        check('...and a route nested TWO levels deep is too',
+              'sairndental/public-complaint-submit.js' in found, True)
+        check('a TOP-LEVEL route is still in the universe -- the fix widens, '
+              'it does not relocate', 'top.js' in found, True)
+        check('a .test.js file is NOT in the universe', 'top.test.js' in found,
+              False)
+        check('node_modules is NOT walked -- vendored third-party code is not '
+              'subject to this repo\'s blob conventions',
+              any('node_modules' in f for f in found), False)
+        check('the universe is exactly the 3 real routes, so nothing else '
+              'leaked in either', sorted(found),
+              ['_lib/store.js', 'sairndental/public-complaint-submit.js',
+               'top.js'])
+
+        # THE ABLATION. Put the pre-fix flat listdir back and require the
+        # nested arm to go RED. An arm that passes under both implementations
+        # is not testing the fix.
+        def flat_api_files():
+            out = []
+            for n in sorted(os.listdir(API)):
+                if not n.endswith('.js') or n.endswith('.test.js'):
+                    continue
+                out.append(os.path.join(API, n))
+            return out
+        flat = [os.path.relpath(p, tmp).replace(os.sep, '/')
+                for p in flat_api_files()]
+        check('ABLATION: with the old flat os.listdir back, the nested route '
+              'is ABSENT -- so the recursion is what fixes this and nothing '
+              'else', '_lib/store.js' in flat, False)
+        check('ABLATION: ...while the top-level route is present under BOTH, '
+              'which is why the old code looked like it worked',
+              'top.js' in flat, True)
+
+        # AN EMPTY UNIVERSE IS A REFUSAL, NEVER "no sites". A coverage tool
+        # that reports 0 of 0 converted is the always-passing shape.
+        empty = tempfile.mkdtemp(prefix='blobcov-empty-')
+        API = empty
+        try:
+            api_files()
+            raised = False
+        except CouldNotTell:
+            raised = True
+        check('an api/ with no .js file at ANY depth raises CouldNotTell '
+              'rather than reporting an empty universe as "no sites"',
+              raised, True)
+        shutil.rmtree(empty, ignore_errors=True)
+
+        API = os.path.join(tmp, 'does-not-exist')
+        try:
+            api_files()
+            raised = False
+        except CouldNotTell:
+            raised = True
+        check('an absent api/ raises too', raised, True)
+    finally:
+        API = real_api
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    print('  %d/%d arm(s) pass' % (total - bad, total))
+    if bad:
+        print('  THE UNIVERSE LOCK IS BROKEN. Every coverage figure this tool '
+              'prints is over a denominator nothing is checking.')
+        return 1
+    return 0
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument('--list', metavar='KIND',
@@ -259,7 +397,14 @@ def main(argv=None):
     ap.add_argument('--repin', action='store_true',
                     help='rewrite the pin to the CURRENT numbers. Only correct '
                          'after a real conversion, never to make a run pass')
+    ap.add_argument('--selftest', action='store_true',
+                    help='the universe lock: arms over api_files() discovery, '
+                         'including an ablation that restores the old flat '
+                         'os.listdir and requires the nested arm to go red')
     args = ap.parse_args(argv)
+
+    if args.selftest:
+        return run_selftest()
 
     try:
         rows = scan()

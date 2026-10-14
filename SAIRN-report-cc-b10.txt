@@ -1,0 +1,453 @@
+REPORT cc b10
+================================================================================
+cc batch b10 -- 2026-10-14 -- Documents\SAIRN-cc on main
+HEAD 70a25041, origin/main 70a25041, 0 ahead / 0 behind
+Handoff: SAIRN-handoff-cc-b10.md (written BEFORE this file)
+Digest:  SAIRN-digest-cc-b10.txt
+Transcript: C:\Users\marsh\.claude\projects\
+            C--Users-marsh-Documents-SAIRN-cc\
+            bb71ca91-ccbc-4a82-aa5e-0bff468b6ed5.jsonl
+            (the same file as b9 -- the /model switch continued the session)
+Logs: C:\Users\marsh\AppData\Local\Temp\claude\
+      C--Users-marsh-Documents-SAIRN-cc\
+      bb71ca91-ccbc-4a82-aa5e-0bff468b6ed5\scratchpad\
+EVERY FIGURE BELOW NAMES THE COMMAND THAT PRODUCED IT. Where something was
+already done before this batch it says so and was re-verified, not assumed.
+No gate override of either form was used. No hook added or restored.
+================================================================================
+
+1. SCOPE GATE :409 AND THE UNFETCHED-BASE CHECKER -- ALREADY CLOSED IN b7
+
+Both halves of fourth's routing were already done, which the brief did not
+know. Verified against source rather than against the registry text claiming
+it:
+
+  grep -n "_have_commit\|merge-base" tools/hover_auditor_scope_gate.py
+  -> _have_commit defined :247, called :427, merge-base fallback :442
+
+  python tests/run_scope_gate_unfetched_base_probe.py
+  -> 12/12 arms pass
+  -> ARM 5 is an ABLATION: stubbing _have_commit to always say yes IS the
+     pre-fix code, and it puts the opaque range refusal back. So the guard is
+     what fixes it and nothing else.
+  -> ARM 6 re-measures the population every run: 3 tools bind a remote sha
+     from a pre-push ref line by field position, all 3 guarded.
+  -> ARM 6b refuses an EMPTY population, so arm 6 cannot pass vacuously.
+
+The DECIDE_OR_NOT_PROMOTED ruling is live and measured, not a preference:
+  grep -n "NOT_PROMOTED" tools/report_only_checks.py  -> :2829, ruling at :3551
+The standalone taint checker was declined because the population is three
+files and all three are guarded; arm 6 is the mechanical re-measurement that
+keeps that true.
+
+THE ONE GENUINE GAP, ROUTED NOT FIXED: arm 6 checks a guard exists SOMEWHERE
+in the file, not that it sits between the taint source and the sink. A fourth
+author could define _have_commit and never call it on the path that matters.
+That file is tests/ and cody's.
+
+2. BLOB CONVERSION COVERAGE -- THE UNIVERSE WAS A THIRD OF api/
+
+FAILING-FIRST, captured before the fix (scratchpad/blobcov_before.log):
+
+  FLAT api_files() count:        50
+  RECURSIVE count:              179
+  MISSING FROM UNIVERSE:        129
+  api/_lib/sd-store.js                        in flat universe: False
+  api/sairndental/public-complaint-submit.js  in flat universe: False
+
+cody's row said 126; measured at HEAD it is 129. Not a contradiction -- the
+figure moves as api/ grows -- and re-derived rather than copied.
+
+AFTER (scratchpad/blobcov_after.log):
+  api_files() count AFTER: 179
+  both named write sites in universe: True
+  node_modules leaked in: False
+
+THE ABLATION IS THE ARM THAT MATTERS (scratchpad/blobcov_teeth.log):
+  python tools/blob_conversion_coverage.py --selftest   -> 10/10 arms pass
+  ...with api_files() rebound to the PRE-FIX flat implementation -> 7/10, exit 1
+     LOCK FAILED  a NESTED route is in the universe
+     LOCK FAILED  ...and a route nested TWO levels deep is too
+     LOCK FAILED  the universe is exactly the 3 real routes
+  So the recursion is what fixes it, and deleting the check cannot satisfy it.
+
+Arms also cover: a .test.js file excluded, node_modules not walked, an EMPTY
+api/ raising CouldNotTell rather than reporting an empty universe as "no
+sites", and an absent api/ raising.
+
+WHAT THE WIDENED UNIVERSE FOUND, and it is a NEW finding:
+  python -c "... b.scan_one(...) for the two routed files ..."
+  -> api/_lib/sd-store.js:166                        BUILT  (expr `slab`)
+  -> api/_lib/sd-store.js:203                        RAW    (expr `payload`)
+  -> api/sairndental/public-complaint-submit.js:136  BUILT  (expr `data`)
+
+:203 was invisible to the narrow universe and is the +1 that took unconverted
+from 57 to 58. Routed to hank. The two sites cody's row named are both BUILT,
+which api/_lib/blob.js states is already immune -- so not gaps, but they were
+genuinely unexamined before, which was cody's point.
+
+NOT RE-PINNED, and this is deliberate: docs/blob-conversion-coverage.json says
+unconverted=64, pinned over the OLD narrow universe, so the tool now prints
+`IMPROVED -- unconverted fell from 64 to 58` on a comparison across a universe
+change. Measured both ways to be sure it is the pin and not my change:
+  old narrow universe -> 255 sites, 57 unconverted
+  new recursive       -> 265 sites, 58 unconverted
+Re-pinning would bless an apples-to-oranges comparison. Left to cody.
+
+3. CITATION ANCHOR -- THREE SUBSTRING ROUTES, TWO PULLING OPPOSITE WAYS
+
+FAILING-FIRST (scratchpad/citation_before.log), all three reproduced exactly:
+
+  DEFECT A -- a COMMENT on the cited line read as direct access:
+    "// historical: used to call getItem('sd_slabs') here"  -> True
+    "/* getItem('sd_slabs') */"                             -> True
+    "const x = 1;  // see 'sd_slabs'"                       -> True
+
+  DEFECT B -- the flat 60-line window credited a NEIGHBOUR:
+    targetFn() body is lines 1-3; _body_lines(start=1) returned 22 lines
+    reaches the neighbour's getItem('sd_slabs') at :21?  True
+    anchor_verdict on a line calling ONLY targetFn()
+      -> ('via', 'targetFn() at :1 reaches it in 1 hop(s)')
+    targetFn touches nothing. A confident false attribution naming the wrong
+    accessor -- and short functions are the COMMON case, so this was not a
+    rare spill: any function under 60 lines absorbed its successors.
+
+  DEFECT C -- cody's arm S1b, and the one I would have missed:
+    log('K_COMMS was migrated away from this path')  -> credited as a write
+
+AFTER (scratchpad/citation_after.log) -- fixes AND controls:
+    all three comment shapes            -> False
+    CONTROL "return getItem('sd_slabs')"              -> True   (real code)
+    CONTROL 'const u = "http://x//y"; getItem(...)'   -> True   (// in a STRING
+                                                                 is not a comment)
+    _body_lines(start=1) now returns 3 lines: the body, brace-matched
+    anchor_verdict calling only targetFn()  -> ('', '')
+    CONTROL a REAL accessor -> ('via', 'realFn() at :1 reaches it in 1 hop(s)')
+    CONTROL direct access   -> ('direct', 'the cited line names the resource')
+
+THE TWO BRANCHES NEEDED OPPOSITE TREATMENT OF STRING LITERALS, which is why
+defect C was a separate fix and not a repeat of A:
+  * the RESOURCE KEY is a string -- getItem('sd_comms') -- so string literals
+    must be LEFT INTACT; flattening them would destroy that branch's only
+    signal.
+  * a STORAGE CONSTANT is an identifier -- st(K_COMMS, rows) -- so inside a
+    string it is prose. Its contents are blanked for that test only.
+I fixed comments, saw the comment arms go green, and would have shipped.
+cody's S1b is the only reason the second route was found.
+
+  python tests/run_citation_anchor_hop_sabotage.py  -> 6 passed, 0 failed
+                                                       (was 2 passed, 4 failed)
+  python tests/run_citation_line_drift_probe.py     -> 24 passed, 0 failed
+Its paired-positive S3 (a real one-hop chain still anchors) and S3b (a
+definition below its call still safely misses) both still pass, so the tool
+did not simply stop anchoring.
+
+4. THE BARE-RUN SWEEP -- hank's SHARPEST FINDING WAS FALSE
+
+hank's 2026-10-13 routing named three tools as writing ANOTHER SESSION'S
+status row and called it "the sharpest item in this table":
+
+  idempotency_check.py               -> SAIRN-SESSION-LOCKS/status/hover.json
+  register_freshness_check.py --help -> ...                     /fourth.json
+  shape_antipattern_check.py         -> ...                     /hover2.json
+
+NONE OF THE THREE CAN DO IT:
+  grep -ln "SESSION-LOCKS\|sairn_status\|status/" \
+      tools/idempotency_check.py tools/register_freshness_check.py \
+      tools/shape_antipattern_check.py tools/checker_kit.py
+  -> (no output)
+Not one of them -- nor checker_kit, which two of them import -- references the
+registry at all. What the three write targets have in common is only that
+hover, fourth and hover2 were LIVE SESSIONS during the sweep.
+
+THE MECHANISM: shared_snapshot() fingerprints all of ~/SAIRN-SESSION-LOCKS/
+before and after each tool. status/<session>.json has five other writers BY
+DESIGN -- that is what the registry is for -- so a 25-second window records
+their writes and cannot tell them from the subject's. The sweep tool itself is
+in the list of status writers.
+
+A FALSE FINDING WITH A PLAUSIBLE REMEDY IS WORSE THAN A MISS: it is specific,
+it names real files, and the remedy it implies is to go break three working
+tools. Same shape as this repo's own `NO OWNER: 4` incident.
+
+THE FIX AND ITS CONTROL:
+  python tools/bare_run_write_check.py --selftest   -> 11 passed, 0 failed
+     A8   a status/<other session>.json change is UNATTRIBUTABLE, not a finding
+     A8b  ...and is still REPORTED -- a silent exclusion is the other failure
+     A8c  CONTROL: a LOCK file is still ATTRIBUTABLE and still a finding
+  ...with _unattributable rebound to always-False (the PRE-FIX behaviour):
+     -> 9 passed, 2 failed, exit 1; A8 and A8b RED, A8c still GREEN
+     (scratchpad/bare_run_teeth.log)
+A8c is what stops A8 being satisfied by a tool that calls everything
+unattributable and detects nothing at all. The 8 pre-existing arms still pass.
+
+THE TWO WRITES(bare) FINDINGS WERE ALLOWLIST ENTRIES, as hank judged. Both
+paths re-derived from source, not copied:
+  tool_owner_map.py        OUT at :84   -> docs/tool-owner-map.json  (fixed)
+  mech_gate_live_probe.py  at :97       -> docs/live-residue/<date>-<tool>.json
+
+The dated one could not be a fixed string -- an entry naming one day's
+spelling fails on every other day -- so a declared path ending in `/` is now a
+directory contract. THE CONTROLS PROVE IT NARROW
+(scratchpad/prefix_match.log):
+  dated file under the declared dir            -> []                  covered
+  a DIFFERENT date                             -> []                  covered
+  docs/MASTER-PLAN.md                          -> ['docs/MASTER-PLAN.md']
+  docs/live-residue-other/x.json               -> [...]  sibling NOT covered
+  an exact entry plus an extra write           -> ['docs/other.json']
+  declared without a trailing slash            -> [...]  no prefix behaviour
+
+  python tools/bare_run_writers.py --check
+  -> OK: every entry exists, carries the header, and states a reason
+  -> mech_gate_live_probe.py   writes: docs/live-residue/
+  -> tool_owner_map.py         writes: docs/tool-owner-map.json
+
+The pre-commit hook's own live-probe residue audit re-ran on commit and still
+reports mech_gate_live_probe.py as VERIFICATION, guard=yes, with its residue
+declaration intact.
+
+5. save_reviews RETRY -- ALREADY LANDED, VERIFIED BY ITS OWN CRITERION
+
+  grep -n "_REPLACE_RETRIES" tools/tier_a_review_gate.py
+  -> :113 _REPLACE_RETRIES = 20, retry loop at :567, PermissionError by name,
+     re-raises on exhaustion
+
+cody's routing doc set the acceptance criterion itself: "that count should
+fall to 0 on every run... if it does not fall to zero, the fix is not working
+and the probe says so without a new arm."
+
+  python tests/run_tier_a_review_gate_probe.py   -> ALL ARMS PASS, exit 0
+  -> RETRY COUNT: save_reviews needed 0 retry/retries to get BOTH writers
+     through
+  python tests/run_save_reviews_retry_probe.py   -> 10/10 arms pass
+  -> ARM 4: OSError(ENOSPC) escapes on the FIRST attempt, so `except OSError`
+     was correctly not used
+
+(The traceback visible in that probe's log is an intentional fixture -- a
+lambda injecting a failure to drive the _guarded crash path. Exit 0.)
+
+6. THE DRIVE MISMATCHES -- 7 ROUTED, 8 MEASURED, AND ONLY ONE IS DANGEROUS
+
+  python tools/drive_upload_verify.py --audit   -> exit 1
+  -> CHECKED / LISTING : 250 / 294 entries
+  -> 8 file(s) carry one agent's name over another's content, or wrong batch
+
+H1 b28 routed SEVEN. The eighth is SAIRN-digest-hank-b9.txt, which did not
+exist at H1's run -- so this is an ONGOING convention divergence, not a closed
+backlog, and that is the fact that changed what to do about it.
+
+SEVEN are a digest whose first line names no agent:
+  'STATUS b9 closed. All 6 items landed; HEAD == origin/main, 0/0, ...'
+ONE is categorically different:
+  SAIRN-handoff-cc-b6.md -> '# cody b6 handoff (filename as requested)'
+i.e. one agent's filename over ANOTHER AGENT'S CONTENT -- the exact failure
+this tool exists for. All eight printed the same DISAGREES label, so the only
+one that can mis-route a session's state was buried in cosmetic noise.
+
+AFTER (scratchpad/drive_audit2.log):
+  WRONG AGENT     SAIRN-handoff-cc-b6.md -- the first line names cody, not cc.
+                  This is one agent's filename over another's CONTENT ...
+  NO AGENT NAMED  (the six digests) -- ... names no other known agent either,
+                  so it is a convention gap rather than a mis-file
+  (plus SAIRN-digest-h1-b5.txt, which names h1 but NOT batch b5)
+
+  python tools/drive_upload_verify.py --fixtures -> 36/36 classify correctly
+
+NEITHER CLASS IS RECLASSIFIED AS PASSING and the exit code is unchanged. Only
+the label and what a reader looks at first changed.
+
+I DECLINED H1's OPTION (a), RELAXING THE CHECK. It is the control that found
+the one real mis-file; accepting `STATUS b9 closed ...` would mean a digest
+filed under the wrong agent could no longer be detected at all. Seven cosmetic
+failures are not a reason to retire the control that caught the real one. They
+are one token each, at source, by their authors -- routed.
+
+I DID NOT RENAME OR EDIT ANY OTHER AGENT'S DRIVE DELIVERABLE.
+
+7. THE PUSH-PROTOCOL DOCUMENTS -- BOTH OF THEM
+
+  grep -n "SAIRN_SEED_GATE" CLAUDE.md                    -> :229 (one site)
+  grep -n "SAIRN_SEED_GATE" docs/SAIRN-PROCESS-RULES.md  -> :771, :930
+
+CLAUDE.md section 3 taught the blanket flag as THE override. PR section 3.3 --
+the document CLAUDE.md's own section 3 POINTS INTO -- taught the same thing, so
+fixing one alone would have left a pointer to the contradicting page. Both now
+teach SAIRN_GATE_EXEMPT=seed, with the mechanics rather than just the spelling:
+one named check, two pushes on purpose, the first REFUSED and writing a pending
+exemption pinned to the exact tip sha, a 15-minute window, single use,
+invalidated by amend or rebase, every other check still able to deny, and a
+store that fails CLOSED.
+
+BOTH CONSTANTS VERIFIED AT HEAD rather than transcribed from the comment:
+  grep -n "EXEMPTABLE\s*=\|EXEMPT_TTL_SECONDS\s*=" tools/sairn_push_gate_hook.py
+  -> :999  EXEMPTABLE = {'seed': 'seed-gate'}
+  -> :1000 EXEMPT_TTL_SECONDS = 15 * 60
+Both documents now tell the reader to re-read EXEMPTABLE rather than trust the
+prose for the list. The blanket form is documented as still working and as the
+wrong first reach, with the 2026-09-25 incident that earned it.
+
+A FINDING ABOUT THE HOOK ITSELF, routed to cc next batch: its OVERRIDE_HINT at
+tools/sairn_push_gate_hook.py:845 still advertises ONLY the blanket flag, and
+that is the text it printed on every refusal this batch. Its own design comment
+at :990 claims the refusal text "now names the scoped form first". The
+documents are fixed; the hook's own string is not. Not changed here -- it is a
+gate's refusal text and deserves its own failing-first arm.
+
+tests/push_gate/refspec_and_override_probe.py has ZERO occurrences of
+GATE_EXEMPT, so nothing tests the scoped form. It is cody's file and their live
+b11 item 2 already names it.
+
+8. THE ast.parse -> compile SWEEP -- A POPULATION OF ONE, ALREADY FIXED
+
+  (scratchpad/astparse_sweep.log, _sweep2.log, _sweep3.log)
+  tools/*.py using ast.parse AND opening a file for writing : 10
+  ...of those, parsing and writing inside ONE function      : 3
+     clone_health_check.py      _fixtures()        :281  ast.parse
+     rewrite_convergence_map.py _tracked_writes()  :373  ast.parse
+     subprocess_decode_check.py fix_file()         :191  compile
+
+TWO OF THE THREE ARE FALSE POSITIVES, read rather than assumed:
+  * clone_health_check._fixtures() parses its OWN source for an analysis arm
+    (which functions the production half actually calls); its 'w' writes
+    fixtures to a tempdir.
+  * rewrite_convergence_map._tracked_writes() DETECTS which tracked paths a
+    file opens for writing. It does not rewrite source.
+
+So the only in-place source rewriter with a parse-then-write guard is
+subprocess_decode_check.fix_file(), converted to compile() in b9. The other
+known write-when-run mutators were checked too: sabotage.py, line_endings.py,
+guard_ablation.py, condition_coverage.py are byte/text-level, and
+cp1252_console_sweep.py PRINTS the insertion it recommends and writes only
+tempdir fixtures and a report -- verified by reading all four of its 'w' sites.
+
+THE ANSWER TO THIS ITEM IS A MEASUREMENT AND NOT A CHANGE.
+
+9. THE git -C ALLOW RULE -- LIVE, NOTHING TO ADD
+
+  python -c "<read ~/.claude/settings.json>"
+  -> allow rules total        : 98
+  -> git -C allow rules       : 7  (both slash spellings, both C: spellings,
+                                    backslash, and a quoted form)
+  -> additionalDirectories    : 7
+  -> deny rules               : 112
+  -> hooks                    : {}
+  -> statusLine present       : True
+Uncommitted by nature: that file is outside every repo and is never committed.
+
+10. THE PEM-SHAPED FILE -- NOT TRACKED, AND NOT IGNORED EITHER
+
+Checked by git metadata ONLY. The file was not opened, read or copied.
+
+  git -C ...\SAIRN ls-files --error-unmatch .claude/MIGfMA0...txt
+  -> error: pathspec did not match any file(s) known to git     NOT TRACKED
+  git -C ...\SAIRN check-ignore -q .claude/MIGfMA0...txt
+  -> exit 1                                                     NOT IGNORED
+  git -C ...\SAIRN status --porcelain -- .claude/MIGfMA0...txt
+  -> ?? .claude/MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQK.txt          untracked
+  git -C ...\SAIRN check-ignore -v .claude/settings.json
+  -> (empty)                            nothing ignores .claude/ at all
+
+THE REQUESTED CONFIRMATION FAILS ON ITS SECOND HALF. It is not tracked, but it
+is NOT git-ignored, so `git add -A` or `git add .` in that clone WOULD stage it
+and it could then be pushed. Reported, not fixed: the brief said report only,
+and the safe fix is Michael moving or deleting the file rather than my adding
+an ignore rule to a tracked file in a clone 7,810 commits behind that already
+carries two dirty tracked files. Chat's decision to leave that clone alone was
+honoured -- no pull --rebase, no commit, nothing touched there.
+
+11. METHODOLOGY -- FAILING-FIRST, CONTROLS, AND NO SELF-FMEA
+
+Every fix in this batch has a captured red BEFORE state and a control arm that
+stops "delete the check" from satisfying it:
+
+  blob coverage   red: 7/10 with the pre-fix flat api_files()   (blobcov_teeth)
+                  control: the top-level route passes under BOTH
+                           implementations, which is why the old code looked
+                           like it worked
+  citation        red: three reproduced defect shapes           (citation_before)
+                  control: real code, a URL with // inside a string, a real
+                           accessor and a direct hit all still detected
+  bare-run        red: 9/11 with _unattributable always-False   (bare_run_teeth)
+                  control: A8c, a lock file must stay attributable
+  drive verify    red: 8 reproduced live mismatches             (drive_audit)
+                  control: 36/36 fixtures, and neither class now passes
+  prefix matcher  control: four narrowness cases                (prefix_match)
+
+NO TOOL OF MINE WAS FMEA-DRAFTED BY ME. The register's FMEA loop asked for
+drafts on five files after my records landed; all are left for another session,
+because a detector drafting the FMEA for the fix it just made is the
+detector-blesses-its-own-fix shape. WORTH KNOWING: the citation defect came
+back PREDICTED -- docs/fmea/tools_citation_line_drift_check.py.json had already
+cited rule 1.2 for that file. The loop worked.
+
+12. PUSH
+
+One rebase during landing, clean, no conflicts:
+  git pull --rebase origin main   -> Successfully rebased, 6 commits replayed
+Every suite re-run AFTER the rebase before pushing:
+  blob --selftest 10/10, bare-run --selftest 11/11, drive --fixtures 36/36,
+  allowlist --check OK, citation sabotage 6/6, citation drift 24/24
+
+Three gates refused in turn and each was satisfied rather than overridden:
+  1. non-fast-forward        -> rebased
+  2. no defect record        -> 4 records filed (section 13)
+  3. no Tier A obligation    -> opened, auto-assigned to fourth
+
+  git push origin main      -> 9c48bbde..566666c2, then 566666c2..70a25041
+VERIFIED AFTER PUSH:
+  git fetch origin main --quiet
+  git rev-list --left-right --count origin/main...HEAD  -> 0  0
+  git rev-parse HEAD  -> 70a25041... (full: 70a25041, tree clean)
+
+No --force in any spelling. NO override of either form was used.
+
+13. THE FOUR DEFECT RECORDS THIS BATCH FILED
+
+  b12a7631  blob coverage universe, flat listdir  (high, independent-review,
+            rule 1.7)
+  3b1dc5fe  citation anchor, three substring routes (high, independent-review,
+            rule 1.2)  -- came back PREDICTED by an existing FMEA draft
+  7788d3d1  bare-run attribution of a concurrent writer (high,
+            independent-review, rule 1.9)
+  d1308719  drive verify collapsing two failure classes (moderate,
+            hover-audit, found-by-session hover, not-citable with a note)
+
+Each carries --factors-unknown rather than a worked root-cause pass: this batch
+verified and shipped the fixes and did not do the deeper analysis, and the
+tool's own documentation treats that as the honest state rather than a gap to
+fill with a guess. Each also carries a --recurrence-open naming what the fix
+does NOT close.
+
+================================================================================
+FILES TOUCHED THIS BATCH
+
+tools/blob_conversion_coverage.py, tools/citation_line_drift_check.py,
+tools/bare_run_write_check.py, tools/bare_run_writers.py,
+tools/drive_upload_verify.py, tools/mech_gate_live_probe.py,
+tools/tool_owner_map.py, CLAUDE.md, docs/SAIRN-PROCESS-RULES.md,
+docs/2026-10-14-cc-b10-routed-to-cody.md, docs/defect-density-register.json,
+docs/tier-a-reviews.json, docs/scrutiny-flags.json, SAIRN-handoff-cc-b10.md,
+SAIRN-report-cc-b10.txt, SAIRN-digest-cc-b10.txt.
+
+NOT IN cc's DECLARED b10 FILES, said out loud: docs/SAIRN-PROCESS-RULES.md (in
+no session's live claim; CLAUDE.md section 3 points into it);
+tools/blob_conversion_coverage.py, tools/bare_run_write_check.py,
+tools/bare_run_writers.py, tools/drive_upload_verify.py,
+tools/mech_gate_live_probe.py (all under tools/, which is cc's, but not named
+individually in the claim); tools/tool_owner_map.py, which carries
+`# OWNER: cody`, is NOT in cody's live b11 claim, and was routed to cc by hank
+-- the change there is one comment line, the header the allowlist --check
+requires; and the three gate ledgers each required before a push would be
+accepted.
+
+tools/unfetched_base_check.py was named in the claim and DOES NOT EXIST and was
+not created -- the b7 ruling declined it on a measured basis that still holds
+(population 3, all guarded, re-measured by arm 6 this batch). Said here rather
+than left as a file somebody looks for.
+
+NO tests/ FILE WAS EDITED. Every test-side change is routed by file:line in
+docs/2026-10-14-cc-b10-routed-to-cody.md. No api/ or sql/ file was edited. No
+auditor clone was entered or written.
+
+SHA256 7d2f7e5e3040ff39878bc0cfff0a4bb672ccad2655bfce7dd629f7bc1e8c99b3
+END-OF-REPORT

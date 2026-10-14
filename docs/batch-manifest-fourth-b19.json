@@ -1,0 +1,44 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "fourth",
+  "batch": "b19",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "Discharge the 397h Tier A obligation (cody 2026-09-28T03:34:57Z, dnt_ar/dnt_revenue, five named claims, tests/reachability/resource_demand_probe.py; sha f88105a88287 NO_OBJECT_IN_CLONE so it is a STATE review and the verdict says so). Name what I opened and what I looked for.",
+      "status": "done",
+      "evidence": "DISCHARGED exit 0: PYTHONIOENCODING=utf-8 python tools/tier_a_review_gate.py --discharge cody 2026-09-28T03:34:57Z --body-file <verdict> -> 'DISCHARGED -- fourth reviewed the obligation cody opened 2026-09-28T03:34:57Z, on dnt_ar, dnt_revenue'. Verdict doc docs/2026-10-14-fourth-b19-tier-a-queue16-discharge.md names what was opened and looked for per claim; STATE review, sha f88105a88287 dangling, WEAK candidate bb840eeccb3c read but not written. 7 findings. Re-check: tier_a_review_gate.py --list"
+    },
+    {
+      "id": 2,
+      "title": "Discharge the 338h Tier A obligation (hover2 2026-09-30T13:59:56Z, leg_insurance/mech_checks) by a real READ-ONLY drive of hover_citation_linter.py against THIS clone's mirror of .claude/skills/sairn-hover-auditor/ -- never entering Documents\\SAIRN-hover. Two discharges this batch, not three: hank's 3h leg_* obligation is b20's unless it nears 24h.",
+      "status": "done",
+      "evidence": "DISCHARGED exit 0: --discharge hover2 2026-09-30T13:59:56Z --body-file <verdict>. REAL DRIVE, four invocations with real exit codes 0/0/2/0 (scratchpad hover_lint_drive1.log, hover_lint_selftest.log 33 ok 0 failed, hover_lint_failclosed.log exit 2 COULD NOT RUN, hover_lint_noargs.log); linter sha256 c226563783a8e56e unchanged before and after; auditor clone NEVER entered. Verdict doc docs/2026-10-14-fourth-b19-hover2-citation-linter-discharge.md. One finding F1 (selftest leaks a temp dir). hank's 3h leg_* obligation deliberately LEFT for b20 per instruction. Re-check: tier_a_review_gate.py --list"
+    },
+    {
+      "id": 3,
+      "title": "Re-derive every line number in the two b18 documents (tier-a-queue14-discharge, tier-a-triage) against HEAD after the pull; replace rotted offsets with quoted-text anchors.",
+      "status": "done",
+      "evidence": "71 citations re-derived against HEAD after the pull: 70 UNMOVED, 1 MOVED, 0 NOT FOUND. The mover was api/_lib/sen-evv-clock.js:120-131 in the queue14 discharge doc, now replaced with quoted-text anchors on 'const CLOCK_FIELDS = [...]' (:79) and \"stamps[field.replace('_at','_received_at')] = serverNowISO;\" (:139). Two bare :N continuations confirmed as pointing two paragraphs back, not to the nearest file. Re-check: grep -n 'sen-evv-clock.js' docs/2026-10-14-fourth-b18-tier-a-queue14-discharge.md"
+    },
+    {
+      "id": 4,
+      "title": "Examine the 34 of 88 REVIEWED records whose sha no longer resolves: classify each (reachable by re-seat / weak / refused), write the table in docs/, and route the tool work to cc by file:line.",
+      "status": "done",
+      "evidence": "docs/2026-10-14-fourth-b19-dangling-sha-census.md: all 34 listed individually with classification, re-seat target, author->reviewer and resources; 7 classes counted; the b18 figure 34-of-88 independently re-derived (252 records, 107 with a sha, 66 reachable). The framing finding: 145 further reviewed records are NO_SHA_AT_ALL, which is NOT a dangling sha -- 179 unre-derivable, only 34 a defect. Four asks routed to cc by anchor with a stated priority. Re-measure: tools/tier_a_review_gate.py --reseat-shas --include-reviewed"
+    },
+    {
+      "id": 5,
+      "title": "Methodology: measure the sd_photos premise from SOURCE ONLY before anything acts on it -- sql/stonedesk_data_schema.sql row-size cap vs the base64 payload the client syncs, and the 400->503 NOT_PROVISIONED mapping in api/sd-data.js. Say which half is the urgent defect (size failure vs provenance gap) with evidence, route to hank, and mark UNVERIFIED anything that needs SQL.",
+      "status": "done",
+      "evidence": "docs/2026-10-14-fourth-b19-sd-photos-premise.md: SOURCE-ONLY measurement. cap 65536 on data::text (sql/stonedesk_data_schema.sql:343), client stores the whole base64 data URL unmodified (stonedesk.html:25999) from files accepted up to 10MB (:25988), so the threshold is ~48.9KB of binary; the 400 is folded into 404 and answered 503 NOT_PROVISIONED (api/sd-data.js:14263, one of twelve such branches); the only client report is console.warn in sdDataFailed. VERDICT: the SIZE FAILURE is the urgent half and the provenance gap is latent behind it for all real photos, so T17 must land with or before the size fix. Four items routed to hank, one failing-first arm to cody, four things marked UNVERIFIED as needing SQL. Re-check: sed -n '343p' sql/stonedesk_data_schema.sql"
+    },
+    {
+      "id": 6,
+      "title": "Push without --force and confirm landed (HEAD == origin/main, 0 ahead / 0 behind). Release the claim last.",
+      "status": "done",
+      "evidence": "Pushed WITHOUT force: e46ccfcd..a96efce0, first attempt, no rejection. Confirmed landed: git rev-parse --short HEAD and origin/main both a96efce0; git rev-list --left-right --count origin/main...HEAD -> 0 0; git status --porcelain empty; all five b19 docs/ files present via git cat-file -e origin/main:<path>; both discharges visible in origin/main:docs/tier-a-reviews.json with verdict lengths 7015 and 5752. grep -ci 'force' over the push log -> 0. Re-check: git log origin/main --oneline -3"
+    }
+  ]
+}

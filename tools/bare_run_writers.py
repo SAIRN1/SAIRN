@@ -116,6 +116,35 @@ WRITERS = {
                            'SAIRNlaw deadline calendar generator.'),
     'gen_va_seed.py': (['sql/sairnlaw_deadline_seed_virginia.json'],
                        'SAIRNlaw deadline seed generator.'),
+    # ── TWO ENTRIES ADDED 2026-10-14 (cc b10), ROUTED BY hank ───────────────
+    # hank's 2026-10-13 bare-run sweep found these as the only two
+    # `WRITES(bare)` findings in 313 tools, and judged both "plausibly
+    # INTENDED writers that were never added" -- with the right fix being an
+    # entry with a reason rather than a code change. Both write paths were
+    # re-derived from the source at HEAD rather than copied from that table.
+    'tool_owner_map.py': (
+        ['docs/tool-owner-map.json'],
+        'A GENERATOR, and the name says so. `OUT` is a single fixed path at '
+        'tool_owner_map.py:84 and the file header states it writes exactly '
+        'that one file and never touches a tool. Producing the map IS the '
+        'run; there is nothing else to ask it for. Its bare run exits 1 when '
+        'the map it just wrote still has unowned tools, which is a FINDING '
+        'about ownership and not a failure of the write.'),
+    'mech_gate_live_probe.py': (
+        ['docs/live-residue/'],
+        'A LIVE PROBE RECORDING WHAT IT TOUCHED, and the only entry here that '
+        'declares a DIRECTORY rather than a file -- deliberately. It writes '
+        '`docs/live-residue/<date>-mech_gate_live_probe.json` '
+        '(mech_gate_live_probe.py:97), so a dated filename cannot be declared '
+        'as a fixed string: an entry naming one day\'s spelling would make '
+        'the sweep fail on every other day, which is a stale anchor and not a '
+        'check. The residue file is the thing that makes the probe\'s own '
+        'writes to the live audit licence recoverable -- it enumerates each '
+        'row by table and id and prints the SQL that removes it -- so '
+        'suppressing the write would cost the cleanup trail, and a --write '
+        'flag would make a probe that forgot the flag unrecoverable. '
+        'bare_run_write_check.py honours the trailing slash as a PREFIX, '
+        'covering that directory and nothing else.'),
 }
 
 # The header every entry is expected to carry in its own file, so a reader who

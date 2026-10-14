@@ -32,6 +32,7 @@ where it landed, not by letting it run 590 files.
 """
 import io
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -214,8 +215,39 @@ finally:
     subprocess.Popen = real_popen
 body = io.open(outfile, encoding='utf-8', errors='replace').read() if os.path.exists(outfile) else ''
 check('the --out file exists', bool(body), 'empty or absent: %r' % outfile)
-check('...and carries the PINNED banner (the outer half)',
-      'PINNED: running in a throwaway worktree' in body, body[:200])
+# ── THE BANNER IS DERIVED FROM THE TOOL, NOT RETYPED (2026-10-14) ───────────
+# This arm was `'PINNED: running in a throwaway worktree' in body`, a hardcoded
+# anchor. The isolation mechanism was deliberately changed from a git WORKTREE
+# to a throwaway CLONE -- because a worktree's `.git` is a 64-byte FILE and
+# sentinels built under it can never resolve, which is the defect
+# tests/worktree_sentinel_guard.py was written for. The banner changed with it,
+# the anchor did not, and this arm then reported a correct run as broken.
+#
+# This is the eighth cross-domain discipline exactly: nothing announces the day
+# a string anchor stops matching. So the anchor is READ OUT OF THE TOOL'S OWN
+# SOURCE, up to the first format placeholder -- the day the wording changes
+# again, this arm changes with it instead of going red for no reason.
+#
+# IT FAILS CLOSED ON NOT FINDING IT. An anchor that silently became the empty
+# string would be `'' in body` -- true for any body at all, including an empty
+# one, which is the exact truncation this section exists to catch.
+_runner_src = io.open(os.path.join(REPO, 'tools', 'run_all_tests.py'),
+                      encoding='utf-8').read()
+_m = re.search(r"print\('(PINNED: running in a [^%']+)", _runner_src)
+_banner = _m.group(1).strip() if _m else ''
+check('the PINNED banner text was found in tools/run_all_tests.py to anchor on '
+      '(not retyped here)', bool(_banner),
+      'no `print(\'PINNED: running in a ...\')` in the runner -- the anchor '
+      'cannot be derived, so arm 5 is COULD NOT RUN rather than passing')
+check('...and --out carries that banner (the outer half)',
+      bool(_banner) and _banner in body, body[:200])
+# CONTROL: the derived anchor must be the CLONE wording, so "derive something,
+# anything" cannot satisfy the two arms above. The retired worktree spelling
+# must NOT match -- without this, a regex that happened to capture an empty or
+# over-broad string would pass both.
+check('CONTROL: the derived anchor names a CLONE, and the retired WORKTREE '
+      'spelling no longer matches the body',
+      ('CLONE' in _banner, 'throwaway worktree' in body), (True, False))
 check("...AND the inner run's own output, which is the half that was lost",
       marker in body, body[:400])
 try:

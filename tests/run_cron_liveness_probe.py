@@ -504,20 +504,75 @@ elif wf:
     # 4. THE RETROACTIVE ARM: the version BEFORE this step must not commit. A
     #    step added today is trivially present; what needs proving is that its
     #    absence was the defect.
-    _prev = subprocess.run(
-        ['git', '-C', REPO, 'log', '--format=%H', '-2', '--',
+    #    ── ANCHORED ON CONTENT, NOT ON A LOG POSITION (2026-10-14) ──────────
+    #    It was `git log -2` and `_prev[-1]`: "the second-newest commit that
+    #    touched this file". That is a RELATIVE POSITION, and on 2026-09-23 an
+    #    unrelated commit -- c3f2b2a0, the actions/checkout v4 -> v7 bump across
+    #    all five workflows -- touched the file and slid the window by one. The
+    #    arm then read a9394d8e, the commit that ADDED the step, and reported
+    #    that the pre-change version contained it. Nothing was wrong with the
+    #    workflow; the arm had stopped pointing at the thing it names.
+    #
+    #    THE EIGHTH CROSS-DOMAIN DISCIPLINE: nothing announces the day an anchor
+    #    stops matching. A position moves whenever anybody edits the file for any
+    #    reason. CONTENT does not: "the newest revision of this file that does
+    #    NOT contain the commit step" is the pre-change version by definition, no
+    #    matter how many commits land on either side of it.
+    #
+    #    Content and not a pinned SHA because this repo rebases -- the defect
+    #    register has already had to re-seat seven records onto rewritten shas.
+    #    The sha found is PRINTED as evidence rather than hardcoded as the test.
+    _revs = subprocess.run(
+        ['git', '-C', REPO, 'log', '--format=%H', '--',
          '.github/workflows/cron-liveness.yml'],
         capture_output=True, text=True).stdout.split()
-    if _prev:
-        _old = subprocess.run(
+
+    def _wf_at(sha):
+        return subprocess.run(
             ['git', '-C', REPO, 'show',
-             '%s:.github/workflows/cron-liveness.yml' % _prev[-1]],
+             '%s:.github/workflows/cron-liveness.yml' % sha],
             capture_output=True, text=True, encoding='utf-8',
             errors='replace').stdout
+
+    _STEP = 'Commit the status document'
+    _pre_sha, _pre_src, _added_sha = None, None, None
+    for _i, _sha in enumerate(_revs):          # newest first
+        _src = _wf_at(_sha)
+        if _STEP not in _src:
+            _pre_sha, _pre_src = _sha, _src
+            # the next NEWER revision of this file is the one that added it
+            _added_sha = _revs[_i - 1] if _i else None
+            break
+    if _pre_sha is None:
+        #    NOT A PASS. Every revision carrying the step means the retroactive
+        #    arm has nothing to compare against -- which is a loss of coverage,
+        #    not evidence the gap was ever closed (PR 1.11).
+        ok('COULD NOT TELL: no revision of cron-liveness.yml lacks the commit '
+           'step, so its ABSENCE cannot be shown to have been the defect',
+           False, '%d revision(s) searched, all contain %r' % (len(_revs), _STEP))
+    else:
+        print('    pre-change revision found by CONTENT: %s%s'
+              % (_pre_sha[:12],
+                 '  (step added in %s)' % _added_sha[:12] if _added_sha else ''))
         ok('the pre-change workflow had NO commit step -- only the artifact '
            'upload, which is the gap this closes',
-           'Commit the status document' not in _old and 'upload-artifact' in _old,
-           'the historical anchor moved; this arm proves nothing as written')
+           _STEP not in _pre_src and 'upload-artifact' in _pre_src,
+           'rev %s: step=%s upload=%s'
+           % (_pre_sha[:12], _STEP in _pre_src, 'upload-artifact' in _pre_src))
+        #    CONTROL. Without this, "find a revision without the step" is
+        #    satisfied by a revision from before the workflow did anything at
+        #    all, and by the arm being deleted outright. It pins the TRANSITION:
+        #    the very next revision must contain the step, and TODAY's file must
+        #    contain it too -- so a workflow that lost the step again fails here
+        #    rather than quietly finding an even older pre-change revision to
+        #    point at.
+        ok('CONTROL: the next revision after it ADDS the step -- a transition, '
+           'not just an old file',
+           bool(_added_sha) and _STEP in _wf_at(_added_sha),
+           'added_sha=%s' % _added_sha)
+        ok("CONTROL: today's workflow still has the step, so losing it again "
+           'fails this arm instead of sliding the anchor back',
+           _STEP in _wf_at('HEAD'), 'HEAD lacks %r' % _STEP)
 
 
 print('\n' + '=' * 66)
