@@ -4288,11 +4288,21 @@
       ],
       "what": "SIX RESOURCES, AND ONLY ONE OF THEM IS A REAL CHANGE -- read this before reviewing. (1) alf_facility IS a real change: api/sd-data-alf-isolation.test.js gains six excluded-role arms for the write gate (nursing, med_aide, caregiver, activities each asserted 403 FORBIDDEN and asserted that NOTHING was upserted, plus a management CONTROL arm and an ORDERING arm proving the role refusal precedes the licensing_state validator). api/sd-data.js IS NOT TOUCHED -- hank held it and adding arms needs no change to it. The gate was ABLATION-CONFIRMED: deleting ALF_MANAGEMENT_ROLES from that branch is now CAUGHT by this suite where it was SILENT across 403 suites before, run in a detached worktree so hank's working file was never mutated. WHAT TO ATTACK: the arms assert 403 and no-upsert against a MOCK, and the DEPLOYED gate is still UNVERIFIED -- tools/alf_facility_role_gate_live_probe.py exists and exits 2 for want of credentials, and a live 401 NO_LICENSE is all the evidence there is. Also worth attacking: caregiver is in NO roleSet() in api/sd-data.js despite being offered in both sairncare.html role dropdowns, so that arm refuses for the wrong reason and buys no measured coverage. (2) bld_draws, bld_tna, sdn_clients, sen_claims and sen_clients are flagged ONLY because tests/role_gate_loop_rule_probe.py uses their names as SYNTHETIC FIXTURE STRINGS -- they appear inside quoted JavaScript snippets in a Python probe that never runs a suite and never touches api/sd-data.js. Nothing about those five resources changed. This is the same gate blindness cody recorded on 2026-09-21: whether a Tier A change is recorded depends on which unrelated file is in the commit with it, and here it runs the other way -- a fixture naming a resource raises an obligation about it. I have NOT edited tools/tier_a_review_gate.py, which cody holds; the mis-attribution is declared here rather than worked around.",
       "status": "open",
-      "reviewer_owner": "cloud",
-      "owner_assigned_at": "2026-09-28T00:16:59Z",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-10-14T17:58:19Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "owner_reassignments": [
+        {
+          "from": "cloud",
+          "to": "hank",
+          "by": "cc",
+          "at": "2026-10-14T17:58:19Z",
+          "from_silent_hours": 422.1,
+          "why": "the assigned owner has been silent for 422h, past the 168h liveness threshold, so it was never going to discharge this. Ownership moved; NO verdict was written and the review still has to happen."
+        }
+      ]
     },
     {
       "author_session": "fourth",
@@ -5181,11 +5191,21 @@
       ],
       "what": "RE-OPENED 2026-09-30 AFTER THE RECORD WAS DELETED BY A DE-DUPLICATION THAT KEYED ON A NON-UNIQUE FIELD. Originally opened by hank on hover2's behalf in 9616b2d0; removed in d7afaa86.\n\nWHAT HAPPENED, and neither session did anything careless. Four obligations were opened in one command, so TWO of them carry the identical opened_at of 2026-09-30T14:00:26Z -- the gate stamps whole seconds. A rebase on docs/tier-a-reviews.json then produced a genuine union duplicate elsewhere in the file, and the session cleaning it up identified duplicates BY opened_at. That predicate is right for a union duplicate and wrong for two records minted in the same second: these two share a timestamp and nothing else. The one owned by cc (resource `quotes`, stale_basis_check.py) survived; this one did not.\n\nTHE TWO RECORDS WERE NEVER THE SAME RECORD -- different resources, different files, different owners:\n  cc     quotes                                    stale_basis_check.py\n  cloud  leg_insurance, quotes, sv_soapnotes       presync_tier_a_dryrun.py, routing_field_shape_audit.py\n\nAUTHOR OF THE CHANGE IS hover2, NOT hank -- author_session is corrected to hover2 in the same commit, as it was on the original. The gate's self-review refusal reads that field to decide who may not review, so leaving it as hank would exclude the wrong party.\n\nWHAT CHANGED: commit 29203c25 synced routing_field_shape_audit.py and landed presync_tier_a_dryrun.py. Three resources -- leg_insurance, quotes, sv_soapnotes -- all appearing as EXAMPLE TOKENS in presync_tier_a_dryrun.py's own docstring. The list is DERIVED: recomputed by running the gate's own tier_a_resources() and touched_tier_a() over `git show 29203c25` with the auditor-tree skip clause bypassed by reason text. It agrees exactly with H2's own seq-429 prediction from running that tool against itself.\n\nREVIEWER, NAMED BY ROLE AND NOT BY AGENT: ANY BUILD SESSION OTHER THAN THE AUTHOR of the change, holding no claim on .claude/skills/sairn-hover-auditor/ at the time of review. THE HOVER AUDITOR IS EXPLICITLY NOT ELIGIBLE, either instance -- it does not build, and using the one independent role as reviewer of record would make it a participant in the thing it audits.\n\nWHAT THE REVIEW MUST DRIVE, NOT READ: confirm presync_tier_a_dryrun.py and routing_field_shape_audit.py are report-only and READ-ONLY toward platform data, and construct no write to any of the three resources. presync_tier_a_dryrun.py IMPORTS the real gate module to predict its behaviour -- confirm that import is read-only and cannot make the gate record anything as a side effect. A verdict of \"reviewed, no findings\" is refused unless it names what it opened and what it looked for.",
       "status": "open",
-      "reviewer_owner": "cloud",
-      "owner_assigned_at": "2026-09-30T15:53:29Z",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-14T17:58:19Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "owner_reassignments": [
+        {
+          "from": "cloud",
+          "to": "cc",
+          "by": "cc",
+          "at": "2026-10-14T17:58:19Z",
+          "from_silent_hours": 422.1,
+          "why": "the assigned owner has been silent for 422h, past the 168h liveness threshold, so it was never going to discharge this. Ownership moved; NO verdict was written and the review still has to happen."
+        }
+      ]
     },
     {
       "author_session": "cc",
@@ -6151,11 +6171,21 @@
       ],
       "what": "DOCUMENT ONLY -- NO CODE IN THIS PUSH. The gate names bld_draws, sf_events and sf_products as uncovered Tier A resources because SAIRN-addendum-hank-b5.txt MENTIONS them in prose. The obligation is recorded rather than argued away, which is the same call cody made on 2026-10-12 for the same reason (\"the batch's documents NAME 22 Tier A resources\").\n\nWHAT THE ADDENDUM ACTUALLY CONTAINS ABOUT EACH:\n\nsf_events and sf_products -- they appear ONLY as the UNGATED CONTROLS in the re-run live probe table. Both answered 200 on read and 400 on an id-less write with a bare licence key, which is the expected and correct behaviour for a resource that is deliberately NOT gated (both are named in b4's five-left list, with Michael, and were not touched). Their presence in the table is what makes the eleven 403s evidence rather than a guess: same key, same request shape, gated refuses and ungated does not. NO CODE PATH SERVING EITHER WAS CHANGED IN THIS BATCH.\n\nbld_draws -- mentioned in the addendum's closing routing note, not in the probe. cc's live claim says it will \"Live-verify bld_draws 86189e37 on the restored deployment\"; that is the obligation I DISCHARGED earlier this batch (cc's record of 2026-10-12T11:35:03Z) on source evidence, with the verdict explicitly recording \"NOT PROVEN LIVE, and it cannot be today\". The note says that when cc's live evidence lands, that discharge is worth re-reading against it, because a verdict whose stated limit has been removed should say so. NO bld_draws CODE WAS CHANGED BY ME IN THIS BATCH -- api/sd-data.js was not edited at all, and `git diff --quiet api/sd-data.js` was clean at every checkpoint.\n\nWHAT A REVIEWER SHOULD ACTUALLY CHECK, since there is no diff to read:\n\n1. That the three resource names in the addendum are prose and nothing more -- `git show --stat` on this push should show SAIRN-addendum-hank-b5.txt, docs/external-files-index.json, docs/hank-evidence/* and docs/scrutiny-flags.json, and no api/ or *.html file.\n\n2. THE ONE SUBSTANTIVE CLAIM WORTH ATTACKING: the addendum asserts that the eleven 403s are the gate, on the strength of four ungated controls answering 200 on the same key. The counter-argument to test is whether a 403 could come from somewhere other than the session gate -- a licence-scope refusal, for instance. The controls rule that out only if they share the same licence and the same dispatch path, which they do (sf_events and sf_products on SF-PINNACLE-2026 alongside the five sf_ gated ones; scp_jobs and scp_irr_zones on SCP-DEMO-2026 alongside the six scp/invoices/customers ones). Read docs/hank-evidence/b5_live_bare_key_probe_RESTORED.out and the probe source, both committed.\n\n3. That the addendum does NOT overclaim. It should say, and does, that the VALID-SESSION half remains unverified for want of an employee PIN, and that no ROLE check exists on any of the eleven -- so \"a bare key is refused\" is the whole of what was proven.\n\nNOT PROVEN LIVE DOES NOT APPLY TO THIS PUSH: there is nothing in it to deploy.",
       "status": "open",
-      "reviewer_owner": "cloud",
-      "owner_assigned_at": "2026-10-13T09:03:35Z",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-10-14T17:58:19Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "owner_reassignments": [
+        {
+          "from": "cloud",
+          "to": "fourth",
+          "by": "cc",
+          "at": "2026-10-14T17:58:19Z",
+          "from_silent_hours": 422.1,
+          "why": "the assigned owner has been silent for 422h, past the 168h liveness threshold, so it was never going to discharge this. Ownership moved; NO verdict was written and the review still has to happen."
+        }
+      ]
     },
     {
       "author_session": "hank",
@@ -6290,11 +6320,21 @@
       ],
       "what": "hank b8 item 4: api/sd-data.js gained a server-side double-booking gate on leg_bookings (SELECT the server's rows for the same facility, 409 BOOKING_CONFLICT before any upsert, cancellation exempt, an unreadable existing window refused as BOOKING_CHECK_INDETERMINATE rather than treated as non-overlapping), plus the client-side rollback in sairnlegacy.html saveBooking() and the new suite api/sd-data-leg-bookings-toctou.test.js (48 arms, both halves ablated). leg_cases is Tier A and is touched by this change only as a NEGATIVE CONTROL in the new suite -- the narrowness arm asserts leg_cases, leg_facilities and leg_obituaries still take a single blind upsert, so the reviewer's question is whether that arm really proves the gate did not widen, and whether a leg_cases write can reach the new branch at all. What to review hardest: the gate is a READ-THEN-WRITE and is not atomic, so judge whether the residual millisecond-wide interleave is correctly described rather than minimised, and whether refusing a write because another row's timestamp is unparseable is the right trade against wedging a funeral home's calendar.",
       "status": "open",
-      "reviewer_owner": "cloud",
-      "owner_assigned_at": "2026-10-14T10:31:40Z",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-14T17:58:19Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "owner_reassignments": [
+        {
+          "from": "cloud",
+          "to": "cc",
+          "by": "cc",
+          "at": "2026-10-14T17:58:19Z",
+          "from_silent_hours": 422.1,
+          "why": "the assigned owner has been silent for 422h, past the 168h liveness threshold, so it was never going to discharge this. Ownership moved; NO verdict was written and the review still has to happen."
+        }
+      ]
     },
     {
       "author_session": "hank",
