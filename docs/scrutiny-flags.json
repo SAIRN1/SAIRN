@@ -1303,6 +1303,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/ai-provenance-client-sites.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'exclusion from REDACTION was never an exemption from DISCLOSURE, and '"
+    }
+   ],
+   "sha": "44abebb30bf5313b5343aab3b9a947c390f642d3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/faults/grd_write_faults.js",
    "class": "test file",
    "level": "CHANGE",
@@ -3107,6 +3120,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/sd-data-sv-role-matrix.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'the WRITE half and named rather than silently skipped: '"
+    }
+   ],
+   "sha": "9841e14a5eaa680b206f66557559f33b2b8eebc2",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/claims/run_own_claim_state_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -4428,6 +4454,19 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "d67d1941c18b6b3c79d3dd9998820ab5247c17df",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/alf-append-only-read-order.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "assertions NET REMOVED",
+     "detail": "3 removed, 1 added; first removed: assert.strictEqual(hits.length, 1,"
+    }
+   ],
+   "sha": "d6e58c61766a8edd8b050220fb5eb5bd3a8359f7",
    "criteria_version": "2026-10-06.1"
   },
   {

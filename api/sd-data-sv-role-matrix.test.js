@@ -484,6 +484,48 @@ console.log('SAIRNvet role matrix -- 42 resources, 6 roles, criteria '
        .join(', '),
      disagreements.slice(0, 12).join('\n           '));
 
+  // ── THE TWO WRITE EXCLUSIONS ARE MEASURED, NOT MERELY NAMED ─────────────
+  // The push gate's scrutiny ledger flags this file WEAKENING for "a skip /
+  // exemption / allowlist entry ADDED", quoting D1's own label. The flag is
+  // RIGHT that the line makes a claim about an exemption; what was missing is
+  // that nothing checked the claim. b9 answered the same flag on
+  // tests/mar_billing_grant.test.js the same way: do not argue the flag down,
+  // make the line carry an assertion.
+  //
+  // WHAT IS ACTUALLY EXCLUDED, AND ONLY FROM THE SWEEP: the WRITE half of two
+  // resources whose answer comes from a SECOND control that runs after the
+  // role gate (the witnessing lock, the append-only lock). The role table
+  // still governs them, and this arm is what says so: a role the table DENIES
+  // must still get the role refusal on a write, and a role it ALLOWS must get
+  // something that is NOT the role refusal. An exemption from a sweep is not
+  // an exemption from the policy.
+  {
+    const wrong = [];
+    for (const resource of Object.keys(WRITE_EXCLUDED)) {
+      for (const role of ROLES) {
+        const want = svRoles.decide(resource, role, 'write');
+        const { res } = await call(resource, 'write', role);
+        const roleRefusal = res.statusCode === 403 && eCode(res) === 'FORBIDDEN';
+        if (want === svRoles.DENY && !roleRefusal) {
+          wrong.push(resource + '/' + role + ' table=DENY but got '
+            + res.statusCode + '/' + eCode(res) + ' -- the second control '
+            + 'answered where the ROLE gate should have');
+        }
+        if (want === svRoles.ALLOW && roleRefusal) {
+          wrong.push(resource + '/' + role + ' table=ALLOW but the role gate '
+            + 'refused it');
+        }
+      }
+    }
+    is(wrong.length === 0,
+       'D1b. both WRITE-EXCLUDED resources are still governed by the role '
+     + 'table on writes for all ' + ROLES.length + ' roles -- the exclusion is '
+     + 'from the SWEEP (whose comparison the second control would spoil), not '
+     + 'from the policy. This arm is what makes D1\'s exclusion note a '
+     + 'measurement rather than an assurance',
+       wrong.join('; '));
+  }
+
   // AND THE SWEEP IS NOT VACUOUS. A sweep in which the table says ALLOW
   // everywhere would pass D1 while gating nothing, and a sweep that says DENY
   // everywhere would pass it while refusing everybody.
