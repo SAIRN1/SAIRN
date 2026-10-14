@@ -6295,6 +6295,40 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-14T11:55:18Z",
+      "opened_at_sha": "3a2fa87fde45242e56b9b35f419116bb50437643",
+      "opened_at_sha_basis": "file-set",
+      "resources": [
+        "bld_photo_analyses",
+        "grd_progress_photos",
+        "mech_checks",
+        "mech_quotes",
+        "sc_auth_requests",
+        "sen_branches",
+        "sen_referrals",
+        "sen_settings",
+        "sen_training_records",
+        "sen_training_rules"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/_lib/ai-safeguards.js",
+        "api/_lib/sairnsenior-branches.test.js",
+        "api/ai-safeguards.test.js",
+        "api/sd-data-ai-approval.test.js",
+        "api/sd-data-sen-role-asymmetry.test.js"
+      ],
+      "what": "hank b9: THREE changes touching Tier A resources. (1) api/_lib/ai-safeguards.js is a NEW platform policy table naming mech_quotes, mech_takeoffs, grd_ecosystem_reports, rf_photos and bld_photo_analyses as HIGH-RISK AI surfaces, plus six deliberately-excluded resources including grd_progress_photos and sf_bottle_fills; api/sd-data.js enforces it before SD_SESSION_GATED, refusing 403 AI_APPROVAL_REQUIRED for an ai_source-carrying record leaving draft and STAMPING ai_approved_by/ai_approved_at from the verified session. mech_checks and sc_auth_requests appear only as NEGATIVE CONTROLS in api/sd-data-ai-approval.test.js -- the narrowness arms asserting they are untouched. (2) api/sd-data.js tiers the sen_branches and sen_settings READS by allowlist, and narrows the SEN_REFERRAL_RESOURCES write (sen_referrals, sen_training_rules, sen_training_records, sen_applicants, sen_referral_sources) from SEN_CLIENT_BROAD_READ_ROLES to MANAGEMENT_ROLES. (3) api/ai-notice.js is a new endpoint writing two columns on every *_employee_auth row. WHAT TO REVIEW HARDEST, in order: (a) the SEN_REFERRAL write narrowing takes referral logging and training-record entry away from coordinators and schedulers -- judge whether that breaks intake, because it is a product decision and reversing it is one map; (b) the sen_settings non-management tier WITHHOLDS UNKNOWN KEYS while the write path stores unknown keys as-is, so judge whether the allowlist direction is right or merely safe; (c) the AI approval gate fires ONLY on a client-supplied ai_source field, which means no production client reaches it yet -- judge whether a bounded dormancy with 25 driven arms is the right trade against a gate that cannot be bypassed by omitting a field; (d) api/ai-notice.js takes app_id from the BODY and then re-verifies the token against it, and the cross-tenant ack is the highest-value bug in that feature.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-10-14T11:55:18Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
