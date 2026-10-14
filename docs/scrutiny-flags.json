@@ -180,6 +180,35 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/sd-data-leg-overlap.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0442c8e0c95d734600bdb2c0d69e185fe61e477e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-leg-role-matrix.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0442c8e0c95d734600bdb2c0d69e185fe61e477e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-rf-settings-tier.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "{ setting_key: 'damage_threshold',"
+    }
+   ],
+   "sha": "0442c8e0c95d734600bdb2c0d69e185fe61e477e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/alf-append-only-read-order.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -246,6 +275,23 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "0927eb546b1d8c71927c33ff0c0a224884097372",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-leg-overlap.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "if (/_employee_auth\\?.*&select=active&limit=1/.test(String(url))) {"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "exempt: 'Cancelled', prefix: 'BOOKING',"
+    }
+   ],
+   "sha": "0a230a153b2c168e984d7d723cc80ea82a900891",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -1908,6 +1954,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/sd-data-leg-role-matrix.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6e106f344b44c3d4631da010284aa17b97c4237f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_batch_cleanup_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -3213,6 +3267,14 @@
     }
    ],
    "sha": "a0cf0a417f0ed24296b15a5d0e12cce7d312e66e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sql-run-order-agreement.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a1e415ba23cfff89a81ef36f2b34ed08540b72e0",
    "criteria_version": "2026-10-06.1"
   },
   {
