@@ -3750,6 +3750,28 @@
         "docs/2026-10-13-cody-b8-undriven-suite-results.md",
         "tests/mar_billing_grant.test.js"
       ]
+    },
+    {
+      "id": "cody-1791971739",
+      "session": "cody",
+      "subject": "tests",
+      "task": "cody b8 -- billing/MAR role vocabulary note + failing-first grant tests, b7 two-run reconciliation, first 12 undriven suites from fourth b10, unproven_arm_check build, hank api/ Tier A independent review. FILES: SAIRN-handoff-cody-b8.md SAIRN-report-cody-b8.txt SAIRN-digest-cody-b8.txt docs/2026-10-13-cody-b8-billing-mar-role-vocabulary.md docs/2026-10-13-cody-b8-b7-reconciliation.md docs/2026-10-13-cody-b8-undriven-suite-results.md docs/2026-10-13-cody-b8-tier-a-review.md tests/mar_billing_grant.test.js tools/unproven_arm_check.py tests/run_unproven_arm_check_probe.py",
+      "claimed_at": "2026-10-14T09:55:39Z",
+      "claimed_at_epoch": 1791971739.2113855,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-cody-b8.txt",
+        "SAIRN-handoff-cody-b8.md",
+        "SAIRN-report-cody-b8.txt",
+        "docs/2026-10-13-cody-b8-b7-reconciliation.md",
+        "docs/2026-10-13-cody-b8-billing-mar-role-vocabulary.md",
+        "docs/2026-10-13-cody-b8-tier-a-review.md",
+        "docs/2026-10-13-cody-b8-undriven-suite-results.md",
+        "tests/mar_billing_grant.test.js",
+        "tests/run_unproven_arm_check_probe.py",
+        "tools/unproven_arm_check.py"
+      ]
     }
   ],
   "refusals": [
