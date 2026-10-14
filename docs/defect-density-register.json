@@ -28548,7 +28548,7 @@
       "recurrence_open": "The derived-population arm is SAIRNscape's only. Every other per-app gate suite still hand-types its resource list, so the same invisible-twelfth shape is available in each of them. And hover2's repro still measures 22 pairs -- it was not changed by this fix and will keep reporting 22 of 22 FIXED whatever happens to the twelfth resource."
     },
     {
-      "commit": "583571e7a0ad",
+      "commit": "3997a045bd26",
       "date": "2026-10-14",
       "subject": "fix(subprocess decode check): fixer produced a duplicate keyword argument",
       "files": [
@@ -28998,7 +28998,7 @@
       "factors_unknown_reason": "fourth routed the defect twice and named the shape; the causal question -- why four separate gates each bound a remote sha from pre-push stdin with no existence test -- is a real analysis nobody has done, and a guess here would be worse than the gap"
     },
     {
-      "commit": "014399c19cea",
+      "commit": "540e0b162887",
       "date": "2026-10-14",
       "subject": "fix(tools): batch_manifest cp1252 console crash, --set's silent b6 default, claim commit subjects",
       "files": [
@@ -29029,7 +29029,7 @@
       "factors_unknown_reason": "not investigated this batch -- the fix (refuse like --close already does) is verified; root-cause factor analysis was not done"
     },
     {
-      "commit": "670e101de5e0",
+      "commit": "2dc072c36a52",
       "date": "2026-10-14",
       "subject": "fix(red suite register): ordinary run can now exit 0, not always 2",
       "files": [
@@ -29058,7 +29058,7 @@
       "factors_unknown_reason": "not investigated this batch -- the fix (no-from-run demoted to a non-gating notice) is verified; root-cause factor analysis was not done"
     },
     {
-      "commit": "9409a11abd02",
+      "commit": "ca131d983903",
       "date": "2026-10-14",
       "subject": "fix(status line): real per-model window, never a hardcoded 200K guess",
       "files": [
@@ -29087,7 +29087,7 @@
       "factors_unknown_reason": "not investigated this batch -- the fix (named-model matching, unknown renders ctx ??%) is verified; root-cause factor analysis was not done"
     },
     {
-      "commit": "9d9d0e53bb68",
+      "commit": "f9e56cfd0c3a",
       "date": "2026-10-14",
       "subject": "fix(cody-routed): AST-confirm self-test flags, ooda_phases stale threshold",
       "files": [
@@ -29115,7 +29115,7 @@
       "factors_unknown_reason": "not investigated this batch -- the fixes (AST-confirm, added wording, structural assertion) are verified; root-cause factor analysis was not done"
     },
     {
-      "commit": "d2d91d0f4ebb",
+      "commit": "29c8fc612db0",
       "date": "2026-10-14",
       "subject": "fix(sql preflight): license_keys catalogue gap + function-as-table false positive",
       "files": [
@@ -29142,7 +29142,7 @@
       "factors_unknown_reason": "not investigated this batch -- the fixes (supplemental catalogue from db/schema_snapshot.json, function-call-position structural exclusion) are verified; root-cause factor analysis was not done"
     },
     {
-      "commit": "fda7e0214883",
+      "commit": "070efcd3042e",
       "date": "2026-10-14",
       "subject": "fix(tools): encoding= on the 13 subprocess_decode_check findings in tools/",
       "files": [
