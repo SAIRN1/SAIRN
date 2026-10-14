@@ -171,7 +171,7 @@ handoff, the report and the digest.
 
 ## Current state
 
-HEAD at time of writing: `eaca4608`, matching `origin/main` exactly --
+HEAD at time of writing: `d2ae28a2`, matching `origin/main` exactly --
 0 ahead / 0 behind, confirmed after push. Chain tip 1416, genesis-to-tip
 intact. Beacon checkpoint seq1415 (republished earlier this batch, was
 17 behind the 15-entry threshold) is 1 entry behind the current tip --
