@@ -690,6 +690,23 @@
         "SAIRN-handoff-h1-b31.md",
         "SAIRN-report-h1-b31.txt"
       ]
+    },
+    {
+      "id": "hover-1791985744",
+      "session": "hover",
+      "subject": "hover",
+      "task": "h1 b32 -- (1) one tracked hover_log.py only: log data stays outside repo, tracked tool finds it via one default-path constant + env-var override, delete stale untracked copy once contained, add a check that fails loudly if a second copy appears; selftests pass, chain verifies same entry count. (2) deep-verify cody b10 (landed e730b906): op-audit stub 15->0, reservation_lock fixture, server_backup 35->36 (36th deliberate?), exit-3 change, rows 39/46/40, worktree-sentinel guard, 13 undriven suites (8 green 11 diagnosed) -- reproduce key ones, read api/ myself to confirm cody's claim api/ was correct in all 3 fixture repairs. (3) landed check cc b9/hank b10/fourth b18 via Drive then source, skip unlanded. (4) routing doc to cc: CLAUDE.md section 3 still teaches retired SAIRN_SEED_GATE=off override; cody clone git identity fx@example.invalid vs an arm asserting no local override exists; the two stashes + four stale root pairs. (5) verify cc b9 claims if landed: status line real window, 3 hooks cleared in original SAIRN clone, pulls into hank/cody/fourth. (6) push no force confirm landed. I WRITE ONLY under .claude/skills/sairn-hover-auditor/ plus my own three root deliverables (handoff/report/digest b32); no tools/ api/ sql/ tests/ file in the platform repo edited (except .claude/skills/sairn-hover-auditor/tools/hover_log.py, this role's own tool), no hook added/restored, no settings.json commit, no SAIRN_SEED_GATE override. FILES: SAIRN-handoff-h1-b32.md SAIRN-report-h1-b32.txt SAIRN-digest-h1-b32.txt .claude/skills/sairn-hover-auditor/routing/2026-10-14-h1-b32-cc-routing.md .claude/skills/sairn-hover-auditor/tools/hover_log.py",
+      "claimed_at": "2026-10-14T13:49:04Z",
+      "claimed_at_epoch": 1791985744.6014774,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        ".claude/skills/sairn-hover-auditor/routing/2026-10-14-h1-b32-cc-routing.md",
+        ".claude/skills/sairn-hover-auditor/tools/hover_log.py",
+        "SAIRN-digest-h1-b32.txt",
+        "SAIRN-handoff-h1-b32.md",
+        "SAIRN-report-h1-b32.txt"
+      ]
     }
   ],
   "refusals": [
