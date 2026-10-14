@@ -2704,6 +2704,61 @@ REGISTRY = [
                     'PRESENT and an arm pins it -- all 26 read empty the '
                     'moment they exist.',
     },
+
+    # ── ADDED 2026-10-14 (cc, b12 item 2) ──────────────────────────────────
+    # AND IT IS IN _FRONT, which is a claim about the time budget and not a
+    # preference. The comment below documents that only 36 of 73 entries clear
+    # the 540s line, so appending to the tail wires a tool that provably never
+    # runs. Measured cost of this one: 0.17s, by
+    # `subprocess.run` around the real CLI. Entry 35 currently STARTS at
+    # cumulative 333.3s; 0.17s moves that to 333.5s, still 206s under the
+    # line, so the same 36 entries clear it and nothing is displaced.
+    {
+        'tool': 'runbook_constant_agreement.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-10-14, report-only, and the reason it is NOT a gate '
+                    'is measurable rather than cautious: it FINDS A REAL '
+                    'DIVERGENCE TODAY. docs/NHI-REGISTER.md:69 omits all five '
+                    'things the code constant requires of step 4a. That file '
+                    'is fourth\'s, the exact replacement text is routed in '
+                    'docs/2026-10-14-cc-b11-routed.md, and fourth has not '
+                    'landed it. Wired blocking, this would refuse every push '
+                    'by every session on the platform for one agent\'s open '
+                    'routed item -- which is how a gate gets switched off '
+                    'rather than satisfied. Promotion to blocking is a '
+                    'separate decision once the register copy lands, on the '
+                    'same path as push-gate checks 5 and 7. Controls: '
+                    '--selftest 10 arms over throwaway fixture trees, and '
+                    'BOTH DIRECTIONS -- six arms require a FINDING on bad '
+                    'prose (missing needle, dead anchor, absent file, a needle '
+                    'satisfied from 50 lines away, an empty needle list) and '
+                    'three require a CLEAN pass on good prose (a paraphrase, a '
+                    'Markdown line wrap, a complete copy), because a check '
+                    'that fires on ordinary editing gets deleted. --ablation '
+                    'removes four layers one at a time and every one is '
+                    'load-bearing. THE ARM THAT MATTERS MOST IS A9: it adds a '
+                    'needle to secrets_inventory._IRREVERSIBLE and requires '
+                    'this registry to start demanding it, which is the only '
+                    'thing that proves the needle list is IMPORTED from the '
+                    'lock and not a second hand-written copy inside the tool '
+                    'built to stop second copies.',
+        'catches': 'a Markdown runbook whose copy of a rule has diverged from '
+                   'the code constant that rule lives in -- specifically a '
+                   'prose rotation procedure that omits the precondition on '
+                   'its only IRREVERSIBLE step, which reads as complete and '
+                   'is the copy an operator follows at 3am',
+        'evidence': 'both halves of cc b11 were this shape. OVERRIDE_HINT was '
+                    'wrong for a month underneath a design comment asserting '
+                    'it had been fixed, and fixing it did not fix the output '
+                    'because a SECOND hardcoded copy in another file was what '
+                    'printed. Step 4a was missing from all three '
+                    'operator-facing copies while living in a code comment. '
+                    'secrets_inventory._IRREVERSIBLE now locks the code '
+                    'constant on every invocation; nothing watched the '
+                    'Markdown, and the b11 handoff said so out loud as an '
+                    'open item.',
+    },
 ]
 
 # ── MY TWO MOVED OUT OF THE DEAD TAIL, AND THE MOVE IS DERIVED ─────────────
@@ -2759,7 +2814,8 @@ REGISTRY = [
 # delivered as paste-ready text in docs/2026-10-06-cc-routed.md, for whoever holds
 # that file. This comment is here so the next session reading the registry knows
 # the two are MISSING ON PURPOSE and knows the one edit that unblocks them.
-_FRONT = ('hover_routing_gap_check.py', 'pattern_enumeration_sweep.py')
+_FRONT = ('hover_routing_gap_check.py', 'pattern_enumeration_sweep.py',
+          'runbook_constant_agreement.py')
 REGISTRY = ([e for e in REGISTRY if e['tool'] in _FRONT]
             + [e for e in REGISTRY if e['tool'] not in _FRONT])
 

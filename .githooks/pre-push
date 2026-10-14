@@ -21,7 +21,22 @@
 #
 # Fails OPEN on any internal error, same standard as the other hooks: a gate
 # that crashes closed gets disabled, and then protects nothing.
-# Override deliberately with SAIRN_SEED_GATE=off, and say so out loud.
+# OVERRIDE, SCOPED FORM FIRST -- corrected 2026-10-14 (cc b12 item 2). This
+# line named only `SAIRN_SEED_GATE=off`, the BLANKET form that disables every
+# check in the gate, and it is a THIRD copy of the same defect cc b11 fixed
+# twice: OVERRIDE_HINT in tools/sairn_push_gate_hook.py and a hardcoded copy
+# in tools/register_feed_gate.py both pointed at the blanket flag while a
+# design comment claimed otherwise. The sweep that found this one is the open
+# item that handoff left for this batch.
+#   SAIRN_GATE_EXEMPT=seed git push ...   skips ONLY the seed check; takes two
+#                                         pushes on purpose, the first refused
+#   SAIRN_SEED_GATE=off git push ...      disables EVERY check -- the wrong
+#                                         first reach, kept for a real
+#                                         incident where the scoped form is
+#                                         itself broken
+# Only `seed` is exemptable today; re-read EXEMPTABLE in
+# tools/sairn_push_gate_hook.py rather than trusting this comment for the
+# list. Say so out loud whichever you use.
 
 command -v python >/dev/null 2>&1 && PY=python || PY=python3
 ROOT=$(git rev-parse --show-toplevel)

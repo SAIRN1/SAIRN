@@ -21,23 +21,23 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**350 files in `tools/`.** By what actually invokes them:
+**352 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 13 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 76 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 77 | runs automatically on every push, never blocks |
 | **ADVISORY** | 0 | session-start or prompt hooks, informational |
 | **DECIDED** | 86 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 88 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 87 | nothing runs these at all |
+| **UNWIRED** | 88 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
 | ADVISORY | 4 |
-| CHECKER | 241 |
+| CHECKER | 242 |
 | GATE | 1 |
 | GENERATOR | 23 |
 | GUARD | 2 |
@@ -46,7 +46,7 @@ By what they are, independent of wiring:
 | PUSH-GATE | 1 |
 | REPORT | 1 |
 | REPORT-ONLY | 1 |
-| REPORTER | 7 |
+| REPORTER | 8 |
 | TOOL | 14 |
 | UNWIRED | 1 |
 
@@ -204,7 +204,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (76)
+## REPORT-ONLY (77)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -273,6 +273,7 @@ quiet in practice.
 | `register_freshness_check.py` | 2026-09-24, report-only and ADVISORY PER ITEM by decision -- a register with one stale cell must not freeze every unrelated push, the same scoping check 12 already established for generated documents. It is registered rather than left unrun because the drift it finds is currently only caught when an auditor happens to individually read that exact row: all NINE line citations on sc_anesthesia_base_units were 30-45 lines stale within a DAY, found only because a review obligation sent a reader there. | a citation in docs/CRITICALITY-TIERS.md or docs/tier-a-reviews.json that no longer points at what it says: a file:line whose named identifier has moved out of the +/-8-line window, a cite past EOF, a path or files[] pointer that is gone, a prose sha that does not resolve. UNVERIFIABLE (a cite with no adjacent identifier) is a third state, counted and printed, never folded into pass |
 | `removal_path_check.py` | 2026-09-10, the day it was built | a NEWLY registered resource the product cannot remove a record from -- no delete and no soft_delete verb -- that is not in tools/removal_path_baseline.json with a reason |
 | `response_shape_check.py` | 2026-09-17 report-only, and report-only is right for it: the FIX differs per call site -- one of the two real instances needed a non-200 branch that had never existed, the other needed both halves -- so a blocking gate would be demanding a mechanical edit that is not always the correct one. It is cheap (AST, two directories, under a second) so it runs bare rather than --self-check; the blind lock runs on every invocation anyway | a caller binding sairn_http fetch()/fetch_json() Response and using it AS THE BODY -- isinstance(resp, dict) is ALWAYS False for a namedtuple, so the tool takes its unreadable-answer branch on every input forever |
+| `runbook_constant_agreement.py` | 2026-10-14, report-only, and the reason it is NOT a gate is measurable rather than cautious: it FINDS A REAL DIVERGENCE TODAY. docs/NHI-REGISTER.md:69 omits all five things the code constant requires of step 4a. That file is fourth's, the exact replacement text is routed in docs/2026-10-14-cc-b11-routed.md, and fourth has not landed it. Wired blocking, this would refuse every push by every session on the platform for one agent's open routed item -- which is how a gate gets switched off rather than satisfied. Promotion to blocking is a separate decision once the register copy lands, on the same path as push-gate checks 5 and 7. Controls: --selftest 10 arms over throwaway fixture trees, and BOTH DIRECTIONS -- six arms require a FINDING on bad prose (missing needle, dead anchor, absent file, a needle satisfied from 50 lines away, an empty needle list) and three require a CLEAN pass on good prose (a paraphrase, a Markdown line wrap, a complete copy), because a check that fires on ordinary editing gets deleted. --ablation removes four layers one at a time and every one is load-bearing. THE ARM THAT MATTERS MOST IS A9: it adds a needle to secrets_inventory._IRREVERSIBLE and requires this registry to start demanding it, which is the only thing that proves the needle list is IMPORTED from the lock and not a second hand-written copy inside the tool built to stop second copies. | a Markdown runbook whose copy of a rule has diverged from the code constant that rule lives in -- specifically a prose rotation procedure that omits the precondition on its only IRREVERSIBLE step, which reads as complete and is the copy an operator follows at 3am |
 | `sairn_dead_button_audit.py` | 2026-09-09 | a handler target never defined (A), an inline handler whose only action is a toast (B), a toast-only function with zero callers (C2), and a same-scope duplicate definition (D1) |
 | `sairn_strict_args_check.py` | 2026-09-10, after its one real-run finding turned out to be correct code | Guardian check 31 -- a function that mutates a parameter and then forwards `arguments` under strict mode, where the mutation is silently discarded |
 | `schema_snapshot_freshness.py` | 2026-09-11, the day it was built | db/schema_snapshot.json no longer knowing a table that sql/ creates -- either that SQL has never been run, or the snapshot is behind the database |
@@ -503,7 +504,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (87)
+## UNWIRED (88)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -579,6 +580,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `role_gate_mc_config.py` | CHECKER | a TLA+ model instance that has gone stale against the apps it describes -- `--check` refuses when role sets move and docs/spec/MCRoleGates.* still says otherwise, so the model cannot keep passing about a platform that no longer exists. READS EXPORTS AND INTERNAL CONSTANTS SEPARATELY and says which: an earlier version read only module.exports and concluded 10 of 16 apps had no MANAGEMENT_ROLES, when FOUR declare one internally and never export it. The const anchor sits at LINE START on purpose -- four apps carry the text MANAGEMENT_ROLES inside a comment saying they have no such concept and that inventing one would be a new authorisation tier, so an unanchored scraper invents exactly the tier that comment refuses. EXCLUDES the six apps with no management concept and prints the exclusion every run rather than supplying a set, because Management = Provisioning would make ProvisioningIsManagement true by construction | &mdash; |
 | `route_suite_failures.py` | REPORTER | a triaged suite-failure population split by the SAIRN app it exercises, and -- only where a declaration exists -- by the agent who declared the file. Carries over the method H1 reached in .claude/skills/sairn-hover-auditor/routing/2026-10-08-routed-field-findings.md: this platform has NO durable per-agent app assignment, so naming a build agent without a declaration behind it is a fabricated claim wearing the word "proposed", while the APP is derivable and is the unit the claim system already routes on. The app column is derived by loading api/_resources/index.js through node -- a different route to that map than the auditor's own resource_app_map(), which is independence by different method and keeps a build agent out of the auditor's clone. NODE'S ABSENCE IS EXIT 2, never a column that quietly becomes PLATFORM for every row: a routing table reporting a population of platform probes it never measured is worse than no table. An owner comes only from docs/tool-owner-map.json or a claim FILES: declaration, with the map's own `basis` printed beside it, because that file declares CLAIM_SUBJECT_ONLY weaker than LAST_CLAIM and four of the real run's owners rest on exactly that. The active-work mention is a SEPARATE, weaker column and is never promoted to an owner. ITS OWN FIRST TWO VERSIONS ARE THE REASON THE CRITERIA LOCK EXISTS: 13 registry resource names carry no app prefix and are ordinary English words, so a word-boundary match sent hover_separation_ci_probe.py to sairngrounds on the word "quotes" and run_dependency_graph_probe.py to sairnscape on "schedule", and a quoted-literal-only rule still caught run_cron_liveness_probe.py, whose 'jobs' and 'schedule' are GitHub Actions YAML keys. Generic names are now not evidence at all, the prefixed/generic split is read off the live registry rather than an exclusion list a new resource would fall outside, and 13 fixtures pin it in BOTH directions -- including two the deriver must REFUSE to resolve -- on the DEFAULT path, printed beside the real result. REPORT ONLY, and a BARE RUN WRITES NOTHING: output appears only under an explicit --out. First run (2026-10-11, the 76 REAL of 86) routed 18 rows to an app, 11 MULTI and 47 PLATFORM, and agreed with hank's independent derivation on 67 of the 72 suites in both tables. CANNOT SEE whether a row's failure is the app's fault -- the column says which app's resources a suite exercises, and a sairncare suite can fail for a reason living entirely in shared tooling -- and cannot see whether an UNOWNED file really has no author | &mdash; |
 | `run_tlc.py` | CHECKER | a TLA+ spec in docs/spec that has stopped being consistent with ITSELF -- which is a different question from whether the code matches it, and is the half role_gate_invariants.js structurally cannot ask because it never evaluates the spec. THE FIRST REAL RUN, 2026-09-22, FOUND A BLOCKING DEFECT IN BOTH SPECS: RoleGates.tla had an unbounded CHOOSE that TLC cannot evaluate (0 states generated) and RateLimitConsume.tla defined -1 under EXTENDS Naturals and did not parse at all. Encodes the EXPECTED outcome per run rather than treating green as success -- RacySpec MUST violate the cap, because exhibiting that schedule is what it is for, and a run where it held would mean the spec had stopped modelling the race. NOT a gate and cannot be one: TLC needs a JVM and a 2.3MB jar that is not vendored, so it exits 2 COULD NOT RUN rather than 0 when either is missing | &mdash; |
+| `sairn_board_publish.py` | REPORTER | the six-agent SAIRN board, published to the shared Drive as a SIDE EFFECT of a status, claim or context change rather than as a second command somebody has to remember. sairn_status.py calls publish_event() after every row write and sairn_claim.py reaches the same function through publish_claims(), so the board moves when the thing it reports moves. ONE SAIRN-board.md covering hank, cc, cody, fourth, H1 and H2 -- state, liveness, batch, claims, CONTEXT %, the last digest's own STATUS line, its own NEXT line as open items, chain tip, blocked-on and row age -- plus a SAIRN-latest-<agent>.md per agent under 60 lines. EVERY FIELD NAMES ITS SOURCE OR SAYS UNKNOWN: there is no default that reads like data. CONTEXT prefers the live row and falls back to the newest digest's CONTEXT line, LABELLED with which, because a figure copied out of a digest written hours ago is a different claim. The Drive connector's update_file changes title and parent only, never content, so this publishes through the sync mount and VERIFIES by reading the bytes back and comparing sha256. WHAT IT CANNOT TELL YOU: the mount read-back does not prove Google acknowledged the write -- the board's own header carries the Drive file id read back through the connector so a later turn can compare rather than assume. FAIL-OPEN on purpose: an unwritable mount must never be the reason an agent cannot record that it is blocked, so publish_event() prints BOARD NOT PUBLISHED and returns False instead of raising. Controls: --selftest 14 arms over throwaway fixtures, --ablation removes 10 layers one at a time and every one is load-bearing. TWO OF THOSE ARMS CAME FROM DEFECTS THE BOARD ITSELF EXPOSED rather than from design: sairn_status.payload rebuilt the row without the three keys publish_claims owns, so every `set` wiped the mirrored claims seconds after a claim was taken, and the board read claims from `app` where sairn_claim writes `subject`. | &mdash; |
 | `sairn_build_load_gates.py` | GENERATOR | SUPERSEDED -- its header says so; a generated gate goes stale by design | &mdash; |
 | `sairn_clickthrough_driver.js` | LIBRARY | a nav entry that opens nothing, a panel that renders blank, an error thrown on open, or a control naming a function that does not exist at RUNTIME -- in a SIGNED-IN app, which is the half no static checker reaches and which Guardian's own Known Scope Limitation names. Run in the browser, FOREGROUND TAB ONLY: hidden-tab setTimeout throttling stops every render hook and reports 67 blank panels that are fine | &mdash; |
 | `sairn_dom_snapshot.js` | LIBRARY | a rendered-DOM snapshot, run in the browser | &mdash; |
@@ -631,10 +633,10 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      350   git ls-files tools/
+  tools on disk                      352   git ls-files tools/
   hook entries                         0   .claude\settings.json  (zero, allowed: this clone's hooks are intentionally EMPTY -- Michael disabl)
   push-gate invocations               13   tools\sairn_push_gate_hook.py
-  report-only registry                77   report_only_checks.REGISTRY
+  report-only registry                78   report_only_checks.REGISTRY
   tools invoked by tests/            239   tests/**/*.py, *.js
   recorded NOT-promoted decisions     88   report_only_checks.NOT_PROMOTED
   numbered gate checks                17   tools\sairn_push_gate_hook.py
