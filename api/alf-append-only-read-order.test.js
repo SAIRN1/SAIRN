@@ -72,9 +72,47 @@ const path = require('path');
 const { stripJs } = require('../tests/lib/strip_comments.js');
 
 let passed = 0;
+// ── ZERO MATCHES IS A THIRD STATE, AND THIS FILE HAD ONLY TWO (2026-10-14) ──
+// The file-level guards below already exit 2 COULD NOT RUN when a file it does
+// not own is missing or unparseable. The PER-ARM guards did not: an arm that
+// could no longer FIND its subject threw an assertion, which printed `FAIL`
+// and exited 1 -- the same answer as "this read has no order= clause".
+//
+// THOSE TWO ANSWERS SEND A READER TO DIFFERENT PLACES. Exit 1 says the app is
+// wrong: go and add the clause. Zero matches says THE CHECK is wrong: the read
+// was renamed or restructured and this arm is now measuring nothing, which is
+// the eighth cross-domain discipline -- nothing announces the day a check stops
+// testing anything. Proven on this file: renaming the alf_op_audits read
+// literal (a pure refactor, the clause still present) printed
+// "FAIL - alf_op_audits list read carries an explicit order= clause", which is
+// a false accusation against correct code.
+//
+// Routed by cody. Three outcomes now, counted separately, named in the summary,
+// and the exit code reports the WORST: 1 if anything failed, else 2 if anything
+// could not run, else 0. A run with both prints both and exits 1 -- the summary
+// line is where the second is not lost.
+let cannotRun = 0;
+const couldNotRun = [];
+// Thrown by an arm that cannot see its subject. Carried as a distinct error
+// type rather than a boolean return, so an arm cannot accidentally continue
+// asserting about something it just said it could not find.
+function CouldNotRun(message) {
+  const e = new Error(message);
+  e.__couldNotRun = true;
+  return e;
+}
 function test(name, fn) {
   try { fn(); passed++; console.log('  ok - ' + name); }
-  catch (e) { console.error('  FAIL - ' + name + '\n    ' + e.message); process.exitCode = 1; }
+  catch (e) {
+    if (e && e.__couldNotRun) {
+      cannotRun++; couldNotRun.push(name);
+      console.error('  COULD NOT RUN - ' + name + '\n    ' + e.message);
+      if (process.exitCode !== 1) process.exitCode = 2;
+      return;
+    }
+    console.error('  FAIL - ' + name + '\n    ' + e.message);
+    process.exitCode = 1;
+  }
 }
 
 // FAIL CLOSED, NOT SKIP. This arm depends on two files it does not own. If
@@ -302,13 +340,29 @@ function main() {
   TABLES.forEach((table) => {
     test(table + ' list read carries an explicit order= clause', () => {
       const hits = listReadFor(table);
-      // Zero hits is NOT a pass. It means the read was renamed or restructured
-      // and this arm can no longer see it -- indistinguishable from a clean
-      // sweep unless it is asserted.
-      assert.strictEqual(hits.length, 1,
-        'expected exactly 1 facility-wide list read for ' + table + ', found ' +
-        hits.length + '. Zero means this arm can no longer find the read, which ' +
-        'is a broken check, not a passing one.');
+      // Zero hits is NOT a pass AND IT IS NOT A FAILURE EITHER. It means the
+      // read was renamed or restructured and this arm can no longer see it --
+      // the check is broken, not the code. Reported as COULD NOT RUN (exit 2)
+      // so a reader is sent to this file rather than to sd-data.js to add a
+      // clause that is probably already there.
+      //
+      // MORE THAN ONE IS THE SAME THIRD STATE FROM THE OTHER DIRECTION: with
+      // two candidate reads this arm cannot say which one it graded, so
+      // `hits[0]` below would be an arbitrary choice presented as a verdict.
+      if (hits.length === 0) {
+        throw CouldNotRun(
+          'no facility-wide list read for ' + table + ' could be found in ' +
+          'api/sd-data.js. The read was renamed, inlined or restructured and ' +
+          'this arm is now measuring nothing -- fix the matcher in this file. ' +
+          'This is NOT a pass, and it is NOT evidence the order= clause is ' +
+          'missing: go and look at the read before changing it.');
+      }
+      if (hits.length > 1) {
+        throw CouldNotRun(
+          'found ' + hits.length + ' candidate facility-wide list reads for ' +
+          table + ', so this arm cannot say which one it graded. Narrow the ' +
+          'matcher. Candidates: ' + hits.join(' | '));
+      }
       const col = ORDER_COLUMN[table];
       assert.ok(hits[0].indexOf('&order=' + col + '.desc') !== -1,
         table + ' list read has no `&order=' + col + '.desc`; its rows come back ' +
@@ -411,14 +465,37 @@ function main() {
     // asserting something about them.
     const probes = CODE.split('\n').filter(
       (l) => /rest\('alf_[a-z_]+\?license_hash=eq\./.test(l) && l.indexOf('&entry_id=eq.') !== -1);
-    assert.ok(probes.length >= 5,
-      'expected the 5+ entry_id existence probes to still be present, found ' + probes.length);
+    // AND THIS LOWER BOUND IS THE THIRD STATE TOO, 2026-10-14. Finding fewer
+    // than five probes does not mean somebody ordered one -- it means this
+    // line-based matcher has lost its subject, which is exactly the failure its
+    // own comment above records having had on a first draft. Reporting it as
+    // FAIL would send a reader hunting for an order= clause on a probe the
+    // matcher can no longer even see.
+    if (probes.length < 5) {
+      throw CouldNotRun(
+        'expected the 5+ entry_id existence probes to still be present, found ' +
+        probes.length + '. The probe URL is built by concatenation, so this ' +
+        'matcher is line-based and brittle by construction -- fewer than five ' +
+        'means it stopped matching, not that a probe was ordered. Fix the ' +
+        'matcher in this file.');
+    }
     const ordered = probes.filter((p) => p.indexOf('&order=') !== -1);
     assert.deepStrictEqual(ordered, [],
       'an entry_id existence probe was given an order= clause: ' + ordered.join(' | '));
   });
 
-  console.log('\n' + passed + ' assertions passed');
+  // THREE COUNTS ON ONE LINE, because the exit code can only carry the worst
+  // of them. A run with one failure and one could-not-run exits 1, and this is
+  // the only place the second is not lost.
+  console.log('\n' + passed + ' assertions passed, ' + cannotRun
+            + ' COULD NOT RUN');
+  if (cannotRun) {
+    console.log(cannotRun + ' ARM(S) COULD NOT RUN: ' + couldNotRun.join(', '));
+    console.log('A COULD NOT RUN arm checked NOTHING. It is not a pass and it '
+              + 'is not a finding against api/sd-data.js -- the matcher in '
+              + 'THIS file lost its subject. Exit 2 unless something also '
+              + 'FAILED, in which case exit 1 and this line is the record.');
+  }
 }
 
 main();

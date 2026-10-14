@@ -1480,10 +1480,31 @@ function alfData(action,resource,payload,withSession,extra){
       return d.data;
     });
   }).catch(function(e){
-    console.warn('alfData network error:',e.message);
+    // ── THE FAILURE PATH MUST NOT BE ABLE TO FAIL (2026-10-14) ──────────────
+    // alfData's contract is the one every caller is written for: it RESOLVES to
+    // null on any failure and never rejects. This catch broke that contract --
+    // `console.warn` and `alfNote` were both unguarded, so if either threw, the
+    // promise REJECTED and the defect was relocated rather than fixed: every
+    // `await alfData(...)` caller would throw out of its own handler and skip
+    // the toast that exists to say the save did not land. The user clicks Save,
+    // the screen says nothing, and that is indistinguishable from not clicking.
+    //
+    // THIS IS THE RULE stonedesk.html's sdData ALREADY WROTE DOWN and it is
+    // being applied, not invented: "a failure path that can itself fail is the
+    // shape this session has spent two days on, so it is not left to the
+    // reporter being present". Driving the real transport against a fetch that
+    // never answers is what surfaced it -- the reporter was missing from the
+    // harness, the catch threw a ReferenceError and the transport rejected.
+    //
+    // THE RETURN IS OUTSIDE BOTH GUARDS, so `null` is reached whatever either
+    // reporter does. A guard that wrapped the return too would be the same bug
+    // one level in.
+    try { console.warn('alfData network error:',e&&e.message); }catch(_w){}
     var timedOut=!!(e&&(e.name==='TimeoutError'||e.name==='AbortError'));
-    alfNote(resource,'UNKNOWN',{code:timedOut?'TIMEOUT':'NETWORK',
-      message:timedOut?('No answer in '+(ALF_FETCH_TIMEOUT_MS/1000)+'s.'):('The server could not be reached or its answer could not be read. '+((e&&e.message)||''))});
+    try{
+      alfNote(resource,'UNKNOWN',{code:timedOut?'TIMEOUT':'NETWORK',
+        message:timedOut?('No answer in '+(ALF_FETCH_TIMEOUT_MS/1000)+'s.'):('The server could not be reached or its answer could not be read. '+((e&&e.message)||''))});
+    }catch(_n){}
     return null;
   });
 }

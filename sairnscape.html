@@ -2172,7 +2172,16 @@ async function scpData(action, resource, payload, appId) {
     // must not inherit one. A stale code left here from an earlier, unrelated
     // failure of the SAME resource would read as a fresh server judgement --
     // the exact defect sairndental.html's sdnData records having shipped.
-    scpLastErr[resource] = { code: 'NETWORK', message: '' };
+    //
+    // AND IT IS GUARDED (2026-10-14). The console.warn above was already
+    // wrapped; this line was not, so the recording half of the failure path
+    // could still throw and make the whole transport REJECT -- and a rejecting
+    // transport is the defect relocated, not fixed: every `await scpData(...)`
+    // caller would throw out of its own handler and skip the toast. Found by
+    // driving the real transport against a fetch that never answers. The
+    // `return null` is outside the guard so the caller's vocabulary is
+    // delivered whatever this assignment does.
+    try { scpLastErr[resource] = { code: 'NETWORK', message: '' }; }catch(_s){}
     return null;
   }
 }

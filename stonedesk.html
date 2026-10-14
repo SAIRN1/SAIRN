@@ -30071,7 +30071,20 @@ function sdFetchTimeoutSignal(){
 async function sdData(action, resource, payload) {
   // FIRST LINE, ahead of the licence check, so no early return can leave a
   // stale `true` from an earlier call standing as this call's verdict.
-  _sdWriteOk[resource] = false;
+  //
+  // AND GUARDED, 2026-10-14, WHICH IS NOT BELT-AND-BRACES HERE. This line is
+  // OUTSIDE the try below, so a throw from it rejects sdData before fetch is
+  // ever reached -- and this function's own comment forty lines down already
+  // states the rule it was breaking: "a rejecting transport is the defect
+  // relocated, not fixed: every `await` caller would throw out of its own
+  // handler and skip the toast it exists to show". The reporter call in the
+  // catch was guarded for exactly that reason and this bookkeeping line was
+  // not. Driving the real transport against a fetch that never answers put the
+  // throw here, before the signal was armed -- which is why the sweep reported
+  // "fetch was called with no signal" on a transport that has carried
+  // `signal: sdFetchTimeoutSignal()` since 2026-09-11 (:30084, 15s at :30065).
+  // THE MISSING ABORT WAS A SYMPTOM OF THIS LINE, not a second finding.
+  try { _sdWriteOk[resource] = false; } catch (_w) {}
   const licKey = sdLicenseKey();
   if (!licKey) return null;
   try {
