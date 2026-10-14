@@ -384,8 +384,8 @@
       "task": "b26 -- external log repo only: tip beacon/token republish check, re-check hank b9 landed status, stonedesk site verify, scan reconciliation, baseline-compare mode, mirror push. FILES: hover-audit-log/ only (no platform docs/api/tools/tests/sql). Own root deliverables SAIRN-handoff-h2-b26.md SAIRN-report-h2-b26.txt SAIRN-digest-h2-b26.txt written to Drive, not committed to platform repo.",
       "claimed_at": "2026-10-14T12:03:18Z",
       "claimed_at_epoch": 1791979398.1043067,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-14T12:28:48Z",
       "files": [
         "SAIRN-digest-h2-b26.txt",
         "SAIRN-handoff-h2-b26.md",
