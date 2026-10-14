@@ -173,9 +173,28 @@ MUTATIONS = [
      "satisfied by a 500 and the pre-fix suite is BLIND to it; "
      "`=== 403 && FORBIDDEN` is not. (401 was tried here first and is NOT "
      "evidence: it is the one code the old predicate could see.)",
+     # ── ANCHOR REPAIRED 2026-10-14 (cody b11), REPORTED AS ANCHOR-3 ─────────
+     # The anchor was the bare 403/FORBIDDEN block. It was unique when written
+     # and api/sd-data.js now contains it THREE times -- the SD_SESSION_GATED
+     # gate at :2106, which is the one this mutation names, plus two ROLE gates
+     # that landed later and have nothing to do with the session boundary:
+     # sairnsenior's MANAGEMENT_ROLES at :6777 and sairnbuild's BLD_DRAW_ROLES
+     # at :13983. The harness reported ANCHOR-3 and FAILED the arm, which is
+     # the right answer -- `replace(o, n, 1)` would have planted in whichever
+     # came first, asserting something about a line nobody chose.
+     #
+     # NOT A COVERAGE GAP IN THE SUITE, and the distinction is the whole point:
+     # this arm was never running. It was reachable only because the fix to
+     # tests/app_session_isolation.js took this probe from exit 2 COULD NOT RUN
+     # (baseline red) to actually driving its mutations.
+     #
+     # `if (!gateSession) {` is carried into the anchor because it is the line
+     # that IDENTIFIES the session gate. Measured unique at the time of writing,
+     # and the harness fails loudly on ANCHOR-0 or ANCHOR-2 if that changes
+     # again rather than planting somewhere arbitrary.
      API,
-     "        res.status(403).json({\n          error: {\n            code: 'FORBIDDEN',",
-     "        res.status(500).json({\n          error: {\n            code: 'FORBIDDEN',"),
+     "      if (!gateSession) {\n        res.status(403).json({\n          error: {\n            code: 'FORBIDDEN',",
+     "      if (!gateSession) {\n        res.status(500).json({\n          error: {\n            code: 'FORBIDDEN',"),
 
     ("8. a GATED fixture resource joins SD_SESSION_GATED "
      "with no SD_GATE_APP entry, so its expected app defaults to 'stonedesk' "
