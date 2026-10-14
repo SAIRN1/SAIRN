@@ -28593,6 +28593,64 @@
       "factors_unknown_reason": "not investigated this batch -- the fix (compile() instead of ast.parse(), only add what is missing) is verified; root-cause factor analysis was not done"
     },
     {
+      "commit": "44abebb30bf5",
+      "date": "2026-10-14",
+      "subject": "feat(ai-safeguards): the client half -- six save sites that stored model output unflagged",
+      "files": [
+        "api/ai-provenance-client-sites.test.js",
+        "sairngrounds.html",
+        "sairnmechanical.html",
+        "sairnroofing.html",
+        "sairnscape.html",
+        "stonedesk.html"
+      ],
+      "lines_added": 493,
+      "lines_removed": 6,
+      "app": "sairnroofing",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "SIX CLIENT SAVE SITES STORED MODEL OUTPUT WITH NO PROVENANCE FIELD, AND THE SERVER COULD NOT KNOW. api/_lib/ai-safeguards.js landed in b9 with its own honest limit stated out loud: `ai_source` is a CLAIM BY THE WRITER, so 'a client that does not stamp it gets no gate'. No production client stamped it on a high-risk resource, so the approval gate was reachable and never reached -- and no server test can detect that. H2 traced four sites (seq852): sairnmechanical saveDoc -> mech_docs, sairnroofing saveMeasurementReading -> rf_photos, sairngrounds grdUploadProgressPhoto and sairnscape scpUploadProgressPhoto. rf_photos is the one that was not merely unlabelled: it is in HIGH_RISK_AI because an insurance supplement is built on the model's read of a measurement photograph, so stamping it switches a real refusal on for the first time in production. Two more found in this batch: stonedesk's Review Request Generator put model-written SMS text in front of an operator with nothing saying so, and that text goes to a named customer under the shop's name; and msb_bottle_scans, whose exclusion from REDACTION (correct -- no model prose is stored) was being read as an exemption from DISCLOSURE (wrong -- brand_read is what a model read off a label and the row syncs to the server). 18 arms green from 10 passed / 7 failed / 1 unproven; ablated four ways.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Six save sites across five apps, each added with its own AI feature over roughly two months; there is no single injecting commit and naming one of the six would misattribute the other five."
+      },
+      "contributing_factors": [
+        {
+          "factor": "The safeguard's enforcement point is the server and its trigger is a client-supplied field. That is the correct design and it means the server half can be complete and correct while doing nothing at all.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "api/ai-provenance-client-sites.test.js reads the real HTML files and fails when a save site that stores model output does not stamp the field."
+        },
+        {
+          "factor": "An exclusion from one safeguard was read as an exemption from another. ai-scan-redaction's DELIBERATELY_EXCLUDED entry for msb_bottle_scans is about prose to redact; nothing said it was silent on disclosure.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Arms E1/E2/E3 assert both sides at file:line and record why the resource stays out of BOTH risk maps."
+        },
+        {
+          "factor": "All six sites save the moment the model answers, so there is no approver. The tempting fix -- fill ai_approved_by with whoever pressed the button -- would turn 'nobody has checked this' into 'checked by the person who took the photograph'.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "No client assigns ai_approved_by at all, asserted across six files by arm B1; the footer reads 'AI-assisted \u2014 not reviewed' and arm B2 pins that it is not an empty string."
+        },
+        {
+          "factor": "A boolean flag would have been the smaller change and would make 'which surface produced this' unanswerable the moment two surfaces write one resource.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Each site carries a distinct machine tag and arm A5 fails if two are the same."
+        }
+      ],
+      "recurrence_open": "yes"
+    },
+    {
       "commit": "540e0b162887",
       "date": "2026-10-14",
       "subject": "fix(tools): batch_manifest cp1252 console crash, --set's silent b6 default, claim commit subjects",
@@ -29094,6 +29152,64 @@
       "recurrence_open": "The other drafts in docs/fmea/ were not audited for age -- only these seven were touched. Nothing stops the same decay starting again tomorrow, because the staleness check is routed and not built, and re-saving a draft resets its age without improving its reasoning."
     },
     {
+      "commit": "9841e14a5eaa",
+      "date": "2026-10-14",
+      "subject": "feat(sairnvet): the role matrix -- 42 resources, 41 of them ungated until now",
+      "files": [
+        "api/_lib/sv-roles.js",
+        "api/sd-data-sv-role-matrix.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 846,
+      "lines_removed": 0,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "independent-review",
+      "summary": "41 OF SAIRNvet's 42 RESOURCES HAD NO PER-RESOURCE ROLE CHECK. MEASURED, not asserted: `grep -nE \"SV_[A-Z_]*ROLES\" api/sd-data.js` returned nothing. So a `frontdesk` token read and wrote sv_soapnotes, sv_labresults, sv_surgery, sv_imaging and sv_invoicing exactly as the owner did. The 42nd is sv_controlled, the DEA-relevant register, which has had PRESCRIBER_ROLES and the witnessing lock since 2026-09-13 -- and the existence of that one gate is part of why the other 41 looked like policy rather than a 1-of-42 coverage figure. The 2026-09-21 session gate (6fb6d696) closed 'no session' and left 'any session' open; nothing between then and now asked what a session was allowed to DO. Fixed with one table of 42 rows and one decide() in api/_lib/sv-roles.js, consulted ONCE before the read/write dispatch so neither branch is reachable without it, plus the append-only lock on sv_audit_log which binds the owner too and therefore cannot be a role grant. sv_controlled's row is DERIVED from PRESCRIBER_ROLES rather than re-listed, and arm C4 asserts the new block does not reference api/sv-witness.js at all. 30 arms green from 19 passed / 11 failed; D1 drives all 492 (resource, role, action) combinations against the table in both directions and D2 is the control that the table holds both verdicts. Ablated three ways.",
+      "rules": [
+        "1.7"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "6fb6d696489c",
+        "date": "2026-09-22",
+        "subject": "fix(sairnvet): 41 tables including the DEA-relevant controlled-substance register were readable and writable on a bare licence key",
+        "lag_days": 22
+      },
+      "contributing_factors": [
+        {
+          "factor": "The session gate was an AUTHENTICATION fix and it succeeded at what it set out to do. Authorisation was a separate question nobody asked in the same change, and the fix's own comment records the premise it rested on rather than the one it left open.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "One table, 42 rows, one decide() consulted once before the dispatch."
+        },
+        {
+          "factor": "One existing gate on the sharpest resource made the app look gated. A single named role set reads as a policy; nothing reported it as 1 of 42.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Arm A2 compares the table against the handler's own SV_RESOURCES dict READ OUT OF THE SOURCE, in both directions, so a 43rd resource with no row fails."
+        },
+        {
+          "factor": "Two of the spec's rules are real-world questions this code cannot answer -- whether a practice manager reads clinical records, and whether a technician may record a controlled-substance administration (a state licensing question).",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "Implemented as the spec's own proposed answers and named as open [CONFIRM]s in the handoff, not settled silently."
+        },
+        {
+          "factor": "A byte-identical copy of SAIRNlegacy's table would have been wrong: this app has NO deprecated role to migrate, and its one existing gate had to be imported rather than restated.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The absence of a migration tier is stated in the file's header, and arm A5 ties sv_controlled's row to PRESCRIBER_ROLES role by role."
+        }
+      ],
+      "recurrence_open": "yes"
+    },
+    {
       "commit": "b7aa45b22766",
       "date": "2026-10-14",
       "subject": "fix(tier a review gate): save_reviews stops losing a writer on Windows, with the failing-first probe that caught it",
@@ -29153,6 +29269,65 @@
       "factors_unknown_reason": "not investigated this batch -- the fix (named-model matching, unknown renders ctx ??%) is verified; root-cause factor analysis was not done"
     },
     {
+      "commit": "d6e58c61766a",
+      "date": "2026-10-14",
+      "subject": "fix(transports): three failure paths that could themselves fail, and a third state",
+      "files": [
+        "api/alf-append-only-read-order.test.js",
+        "sairncare.html",
+        "sairnscape.html",
+        "stonedesk.html"
+      ],
+      "lines_added": 136,
+      "lines_removed": 16,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "fault-injection",
+      "summary": "THREE WRITE TRANSPORTS COULD REJECT INSTEAD OF RESOLVING TO THE FAILURE VALUE EVERY CALLER IS WRITTEN FOR, AND A REJECTING TRANSPORT IS THE DEFECT RELOCATED RATHER THAN FIXED: every `await` caller throws out of its own handler and skips the toast that exists to say the save did not land -- the user clicks Save, the screen says nothing, and that is indistinguishable from not clicking. Driven against a fetch that never answers and the rejection PRINTED rather than inferred: sairncare's catch called alfNote unguarded, sairnscape's recorded scpLastErr unguarded, and stonedesk assigned _sdWriteOk on its FIRST LINE, outside its own try -- so the throw happened before fetch was reached. stonedesk's sdData had ALREADY WRITTEN THE RULE down beside its guarded reporter call ('a failure path that can itself fail is the shape this session has spent two days on') and left its bookkeeping line outside it. REFUTED in the same work: the routed claim that sdData has no 15s abort -- it has carried signal: sdFetchTimeoutSignal() since 2026-09-11 at stonedesk.html:30084 with SD_FETCH_TIMEOUT_MS = 15000 at :30065, and the sweep's 'no signal' arm was a SYMPTOM of the first-line throw. Also in this commit: api/alf-append-only-read-order.test.js conflated 'this arm can no longer FIND its read' with 'this read has no order= clause' -- both printed FAIL and exited 1, sending a reader to the wrong file. It now has three outcomes, proven both directions by ablation. tests/faults/transport_timeout_sweep.js: 77 passed / 4 FAILED -> all 81 arms pass across 15 apps.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tests/faults/transport_timeout_sweep.js",
+      "found_by_session": null,
+      "injection": {
+        "commit": "22270df7c3de",
+        "date": "2026-09-11",
+        "subject": "fix(platform): every write transport is bounded -- twelve had no timeout anywhere",
+        "lag_days": 33
+      },
+      "contributing_factors": [
+        {
+          "factor": "The timeout rollout (22270df7) added a timer to fourteen transports and relied on each one's existing catch to deliver the failure. It did not ask whether the catch itself could throw, and on three of them it could.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "All three failure paths are now unable to throw, and in every case the `return null` is OUTSIDE the guard so the caller's vocabulary is delivered regardless."
+        },
+        {
+          "factor": "The sweep's hand-written scaffolding list rotted. It pre-stubs _sdReadFailed and _sdLastStatus but not _sdWriteOk, and knows nothing of alfNote or scpLastErr -- globals these three transports gained after the list was written. Twelve apps pass partly by that list's grace.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "ROUTED TO cody (tests/ is theirs): the reactive __stub loop cannot help because within() resolves with {rejected:true} instead of rejecting, so the 'X is not defined' retry never sees it."
+        },
+        {
+          "factor": "A routed finding arrived part right and part wrong, and taking it at face value would have produced a change to a transport that already had the thing it was said to be missing.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The abort was re-derived at file:line and REFUTED in the commit message, with the real cause named as the reason that arm failed."
+        },
+        {
+          "factor": "A probe that cannot see its subject reported FAIL, which is an accusation against correct code rather than a report about the probe. Zero matches is a third state in both directions -- more than one match is the same state from the other side.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "COULD NOT RUN with exit 2, counted and named separately in the summary; a pure refactor now exits 2 and a genuinely deleted order= clause still exits 1."
+        }
+      ],
+      "recurrence_open": "yes"
+    },
+    {
       "commit": "d99b47f9683e",
       "date": "2026-10-14",
       "subject": "fix(sairnscape): the last five licence-only resources are gated, and the repro that found them now reports 22 of 22 FIXED",
@@ -29200,6 +29375,67 @@
         }
       ],
       "recurrence_open": "`schedule` is still licence-only and that is a disclosure, not a fix: nobody has decided it, and it is the one SAIRNscape resource whose bare name is also a StoneDesk panel id. Nothing here closes the same shape in the other apps -- the derived-population arm is SAIRNscape's only; the other per-app gate suites still hand-type their resource lists."
+    },
+    {
+      "commit": "e3858f19aad8",
+      "date": "2026-10-14",
+      "subject": "feat(sairncare): the MAR access grant, and billing out of family_mar by default",
+      "files": [
+        "api/_resources/sairncare.js",
+        "api/sd-data.js",
+        "sairncare.html",
+        "sql/2026-10-14-hank-b11-mar-grant.sql",
+        "sql/sairncare_audit_log_schema.sql",
+        "sql/sairncare_mar_access_grants_schema.sql"
+      ],
+      "lines_added": 572,
+      "lines_removed": 15,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "independent-review",
+      "summary": "BILLING READ ANY RESIDENT'S FULL MEDICATION ADMINISTRATION RECORD THROUGH A SIBLING RESOURCE, AND IT WAS THE THIRD DOOR THE SAME ROLE FOUND TO THE SAME DATA. `alf_mar` -- the resource that OWNS the table -- has refused billing on both read and write since it was written (ALF_MAR_ROLES = {owner, nursing, med_aide}). But the `alf_family_contacts` action `family_mar` gated on ALF_FAMILY_READ_ROLES = {owner, billing, nursing}, so a billing clerk 403'd from the MAR directly received a named resident's whole MAR by asking for that resident's family contact -- and because billing is in the BROAD half of that set the assignment scope was skipped entirely, so it was every resident on the licence, not one. Prior two doors: 2026-10-05 H1 #877, where family_mar had NO caller gate at all and was fixed by inheriting read's role set, which is how billing arrived; and 2026-10-07 7ed27c5e, where derive_charges handed billing the medication NAME for every dose for a month. The #877 author declared this and declined to narrow it in passing, correctly -- a gate disagreeing with its sibling was the defect being repaired -- and flagged it instead. Fixed by giving family_mar its OWN set (ALF_FAMILY_MAR_ROLES = {owner, nursing}) rather than narrowing the contact LIST's set, because the decision was about the MAR and a business office still has to be able to ring a resident's daughter about an invoice. Billing now gets in only through a named, time-limited, audited grant made by an office_manager, expiring at READ time. 28 arms green from 8 passed / 16 failed / 4 unproven; ablated four ways.",
+      "rules": [
+        "1.7"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "8246d8bab707",
+        "date": "2026-10-06",
+        "subject": "fix(sairncare): family_mar disclosed any resident's MAR to any session -- the consent check was standing in for an authorisation check",
+        "lag_days": 8
+      },
+      "contributing_factors": [
+        {
+          "factor": "The #877 fix closed 'no caller gate at all' by INHERITING the contact list's role set. That set was chosen for names, phones and the consent trail -- not for a clinical record -- and inheriting it was the smallest correct fix available to that author at that moment.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "family_mar has its own named set, and arm A9 of tests/mar_billing_grant.test.js fails if the gate ever reads ALF_FAMILY_READ_ROLES again."
+        },
+        {
+          "factor": "Nothing compares a resource's role set against the set guarding the TABLE the data lives in. alf_mar and family_mar disagreed for nine days and both looked locally reasonable.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Arms A4/A5 pin alf_mar's refusals as regression arms beside A1, so the two answers are asserted together in one file."
+        },
+        {
+          "factor": "The role with the authority to grant did not exist in the app's vocabulary at all, so the decision could not be implemented when it was made -- b10 added office_manager as a name with no authority to exercise.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "ALF_MAR_GRANT_ROLES is imported from api/alf-auth.js rather than re-listed, and sairncare.html now offers the role at all three sites."
+        },
+        {
+          "factor": "The grant could have been implemented as a role change with a timer, or as a row a sweeper deletes. Both fail silently -- the first widens a role, the second stays live for as long as the sweeper is down and nothing says so.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The grant names ONE employee and ONE contact, and expiry is compared to now() on EVERY read. Arms C5/C6/C7 drive all three narrowings."
+        }
+      ],
+      "recurrence_open": "yes"
     },
     {
       "commit": "e444dc83ba08",
