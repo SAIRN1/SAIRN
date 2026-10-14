@@ -11,7 +11,29 @@ live probe ran against production with **`fail=0 couldnot=0`**.
 
     git fetch -q origin main
     git rev-list --left-right --count HEAD...origin/main   ->  0 0
-    git rev-parse HEAD                                     ->  21dd38d9c778
+    git rev-parse HEAD                                     ->  9f488101
+
+**CORRECTED 2026-10-14 (b12 item 1). THIS LINE READ `21dd38d9c778` AND IT NAMED
+A COMMIT THAT CANNOT CONTAIN THIS DOCUMENT.** `21dd38d9` was HEAD at the
+*instant this file was being typed*, which was true and useless: this handoff
+was then committed as `ffb2463a`, so anybody who checked out `21dd38d9` to see
+"the state this handoff describes" would get a tree with no handoff in it. A
+standing document may not quote a HEAD that predates its own existence.
+
+The three b11 deliverables disagreed and the disagreement was real, not a
+typo — all three shas are on `origin/main` and each was accurate at its own
+moment of writing:
+
+| file | said | was it true when written | why it is still wrong or right |
+|---|---|---|---|
+| this handoff | `21dd38d9` | yes, before its own commit | **WRONG, and corrected above** — it predates the file |
+| `SAIRN-report-hank-b11.txt` | `ffb2463a` | yes | **RIGHT, and left alone** — it labels that sha as the handoff commit on its own line and says a report cannot carry the sha of the commit that adds it |
+| `SAIRN-digest-hank-b11.txt` | `ffb2463a` | yes | **RIGHT, same reason, left alone** |
+
+`9f488101` is b11's last commit — the push gate's own ledger row for the
+report/digest commit. The full b11 range is `4c258b04..9f488101`, and
+`797c37f2` (the claim release) sits inside it. **Verify, do not trust this
+line:** `git merge-base --is-ancestor 9f488101 origin/main`.
 
 No `--force` at any point. **No override of either form was used** — not
 `SAIRN_SEED_GATE=off` and not the scoped `SAIRN_GATE_EXEMPT=seed`. Every gate
