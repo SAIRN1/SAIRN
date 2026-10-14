@@ -1,0 +1,239 @@
+REPORT fourth b12
+
+SAIRN batch report -- session fourth (ted), batch b12, 2026-10-14.
+Every figure names the command that produced it. Nothing here is quoted from a
+prior batch's report without being re-driven in this one.
+
+HEAD AND PUSH
+  CMD git rev-parse HEAD                                 73700129...
+  CMD git rev-parse origin/main                           73700129...
+  CMD git rev-list --left-right --count origin/main...HEAD  0  0
+  CMD git status --porcelain                              (empty)
+  CMD git show --stat --format= 73700129                  3 files, +536
+  push range d29b8846..73700129, ONE rebase, NOT FORCED.
+  73700129 IS THE STATE AT WHICH THE FIVE SUBSTANTIVE ITEMS LANDED. The commit
+  carrying this report, the digest and the handoff lands after it, and the
+  claim release after that, so HEAD WILL NOT EQUAL 73700129 when you read
+  this. Re-derive it; do not quote this block as current.
+  SAIRN_SEED_GATE=off was NOT used in any form.
+  No file under tools/ was edited by this batch.
+  A PRIOR b12 SESSION EXISTED: it published a claim (0f9dcede, later re-landed
+  as c0cd082b) and left items 1-5 UNCOMMITTED in the working tree. Checked
+  first, per instruction: CMD git log --oneline -30 plus git status showed one
+  modified doc and two untracked docs and NO b12 work commit. Everything below
+  was therefore re-driven in this session rather than carried over, and two of
+  the carried-over evidence lines turned out to be wrong (see ITEM 1).
+
+ITEM 1 -- THE TWO FAIL-OPEN-FIRST CHECKERS, RE-DRIVEN ON A DELIBERATELY BAD
+INPUT, RECORDED FAILING CLOSED
+
+  CMD python scratchpad/bad_drive_b12.py                  exit 0
+      ok  A1  no NOT_PROMOTED block in the ACK source        want 2  got 2
+      ok  A2  a routing document it reads is absent          want 2  got 2
+      ok  A3  v2 on a MENTION-ONLY block                     want 1  got 1
+      ok  A3  ABLATED (guard removed) is FAIL-OPEN           want 0  got 0
+      ok  I1  a declared DRIVE path that does not resolve    want 1  got 1
+      ok  I2  the Drive index is absent                      want 2  got 2
+      ok  I2b the Drive index is not valid JSON              want 2  got 2
+      ok  I3  v2 on one UNEXPLAINED dead docs/ token         want 1  got 1
+      ok  I3  ABLATED (guard removed) prints it and ALLOWS   want 0  got 0
+      ok  I4  CONTROL: the 3 EXPLAINED tokens alone PASS     want 0  got 0
+      10 arm(s), 0 failing
+      VERDICT: both checkers FAIL CLOSED on a deliberately bad input (exit 1
+      for a finding, exit 2 for COULD NOT CHECK), and each one with its single
+      guard ABLATED exits 0 on the SAME tree.
+
+  Each arm builds a throwaway tree whose only content is the bad input, runs
+  the real program in it, and asserts on the PROCESS EXIT CODE -- which is the
+  only thing a gate, a hook or another session ever sees.
+
+  In-process arms, re-driven, unchanged:
+  CMD python scratchpad/ack_check.py --fixtures           8 arm(s), 0 failing
+  CMD python scratchpad/index_resolve.py --fixtures       8 arm(s), 0 failing
+  CMD python scratchpad/ablation_b12.py                   exit 0
+
+  TWO THINGS THE END-TO-END RUN FOUND THAT NO IN-PROCESS ARM COULD, AND BOTH
+  ARE CORRECTIONS TO MY OWN EVIDENCE RATHER THAN DISCOVERIES ABOUT SOMEBODY
+  ELSE'S CODE:
+
+  (a) MY OWN FIRST BAD-INPUT FILE TESTED THE OPPOSITE OF WHAT IT CLAIMED.
+      Arm A1 writes a report_only_checks.py carrying NO NOT_PROMOTED block, and
+      my first version of that fixture said so IN A COMMENT, in those words.
+      The reader is a substring search, it found the token in the comment, and
+      the arm returned exit 0 where it must return exit 2. A bad-input fixture
+      can itself be fail-open. Caught only because the arm declares the exit
+      code it demands instead of printing whatever it got.
+
+  (b) ack_check.v1.py AND index_resolve.v1.py IN b11's SCRATCHPAD ARE NOT THE
+      AS-SHIPPED VERSIONS. They are mid-patch snapshots and already carry the
+      fix at the use site: driven on the same bad trees, both produce the
+      CORRECTED verdict (MENTION_ONLY; exit 1). "Driven against v1" would have
+      been a false evidence line in this report. Those checkers were never
+      committed, so no as-shipped copy survives in git either. The ablation
+      therefore removes the one guard from the REAL CURRENT FILE by exact text
+      substitution and REFUSES unless the substitution applies exactly once --
+      an ablation that silently ablates nothing would report the fixture as
+      locking a guard it never touched.
+
+ITEM 2 -- THE RULE, WRITTEN INTO THE METHODOLOGY AND APPLIED
+
+  docs/METHODOLOGY.md, new dated section: EVERY CHECKER SHIPS WITH A
+  DELIBERATELY BAD INPUT FIXTURE PROVING IT FAILS CLOSED. Three parts: a
+  bad-input arm built from the input that actually fooled the checker; an
+  ablation showing the arm FAILS when the single guard is removed; and the exit
+  code, driven as a program. The third part was added BY DOING IT -- it is not
+  in the version the prior session left in the working tree.
+  Applied to both checkers with real fixtures, 8 arms each, commands and
+  outputs quoted in the document.
+  WHAT IT DOES NOT DO is stated in the document: nothing mechanises the rule,
+  no gate refuses a checker that has no --fixtures arm, and an ablation is PER
+  GUARD -- a checker with ten guards and one fixture is locked at one point.
+
+ITEM 3 -- THE BY-DESIGN-REGISTER VALIDATOR SPEC, ROUTED, NO tools/ EDIT
+
+  docs/2026-10-13-fourth-b12-routed-to-cc-bydesign-validator.md, 220 lines.
+  Required fields with types and rules, including the two conditional halves a
+  field-presence checker usually misses (DONE requires a resolvable closed_in
+  sha; NOT_PROMOTED requires both a rebuttal and a real NOT_PROMOTED entry).
+  file:line required for BOTH the flag (subject) and the rebuttal, and the
+  rebuttal must name the SAME file as the subject -- the one rule in the spec
+  paid for by a measured defect, namely the MENTION_ONLY failure above.
+  A subject is ruled on ONCE, with three distinct duplicate shapes separated:
+  same id (refuse), same subject under two ids (refuse unless one is SUPERSEDED
+  and names the other), and a subject already live in another register (report,
+  not refuse). Exit contract 0/1/2 with 2 reserved for COULD NOT CHECK.
+  15-arm criteria lock, of which arms 7, 8, 9 and 14 exist only to stop the
+  validator over-refusing.
+  EVERY PREMISE RE-VERIFIED AT THIS HEAD, not quoted from b11:
+  CMD python -c "len(json.load(...)['rulings'])"          1
+  CMD python -c "sorted(_the_states)"                     DECIDE_OR_NOT_PROMOTED,
+                                                          DONE, NOT_PROMOTED,
+                                                          SUPERSEDED
+  CMD test -f for the 7 tools the spec cites               all PRESENT
+  CMD test -f tools/by_design_register_check.py            ABSENT (correct --
+                                                           it is the thing
+                                                           being specified)
+  CMD grep -c duplicate_purposes_keys tools/tooling_inventory.py   3
+
+ITEM 4 -- THE ROUTED-FINDING ACK CHECK, RE-RUN AGAINST CURRENT origin/main
+
+  CMD python scratchpad/ack_check.py                      exit 1
+      routing documents read     : 4
+      file:line findings in scope: 9
+      BY STATE: {'UNACK': 4, 'MENTION_ONLY': 2, 'ACK_COMMIT': 1,
+                 'ACK_STATUS': 2}
+      UNACKNOWLEDGED (UNACK + MENTION_ONLY): 6
+
+  SIX OF NINE, UNCHANGED FROM b11 -- tests owner (cody) 4, tools owner (cc) 2,
+  hank 0:
+      tests/faults/grd_write_faults.js:385                      UNACK
+      tests/push_gate/check8_probe.py:209                       UNACK
+      tests/sairnlegacy_session_gate_review_probe.js:202        UNACK
+      tests/seed_never_syncs_platform.js:274                    UNACK
+      tools/hover_auditor_scope_gate.py:409                     MENTION_ONLY
+      tools/session_lock_check.py:128                           MENTION_ONLY
+
+  THE COUNTS DID NOT MOVE AND THE WINDOW DID. b11 measured over 19 commits;
+  this re-run measured over 27, against origin/main at 90fa5e98 before the
+  push:
+  CMD git rev-list --count 29f27993..origin/main                      27
+  CMD git log --format=%h origin/main --not 29f27993 -- <the six files>  (empty)
+  CMD git log --format=%h origin/main --not 29f27993 -- tools/report_only_checks.py
+                                                                      (empty)
+  So the six are unacknowledged because nothing happened to them, not because
+  the checker looks in the wrong place: all four signals it reads (a commit on
+  the file, an active claim naming it, the owner's status row, a NOT_PROMOTED
+  entry naming the file AND the line) are absent, and the file where a decline
+  would land was not touched either.
+
+ITEM 5 -- THE 36-UNDRIVEN-SUITES DOCUMENT, REGENERATED
+
+  CMD python scratchpad/gen_undriven_doc.py               exit 0
+      wrote docs/2026-10-13-fourth-b10-undriven-suites.md
+      undriven rows        : 36
+      list/TSV cross-check : IDENTICAL (36 names)
+      by owner             : {'hank': 5, 'cody': 79}
+      undriven by owner    : {'cody': 36}
+      driven b9 states     : {'RED': 43, 'COULD NOT RUN': 5}
+      entries with no why  : 21
+  CMD git diff --stat -- docs/2026-10-13-fourth-b10-undriven-suites.md
+      (no output -- the regenerated file is BYTE-IDENTICAL to the committed one)
+
+  AND THE ONE THING THAT WOULD HAVE MOVED IT IS A CLAIM, NOT A RESULT:
+  CMD git show --stat --format= 433860be      .claude/claims/cody.json, 1 file
+  CMD git cat-file -e origin/main:docs/2026-10-13-cody-b8-undriven-suite-results.md
+                                              exit 128 -- NOT on origin/main
+  CMD git log -1 --format='%h %cI' origin/main -- docs/known-red-suites.json
+                                              5bb0950a 2026-10-13T16:33:58-04:00
+  The tests owner's latest push declares that results document and "first 12
+  undriven suites from fourth b10" in its claim text and carries the claim
+  file alone. The 36 is therefore not a figure read too early; the work is
+  claimed and in flight, and the register it would move was last touched
+  before b11's own measurement.
+
+ITEM 6 -- PUSH WITHOUT FORCE, CONFIRMED LANDED
+
+  CMD git pull --rebase origin main        rebased onto d29b8846
+  CMD git push origin main                 d29b8846..73700129  main -> main
+  CMD git fetch -q origin; git rev-parse HEAD; git rev-parse origin/main
+      73700129... == 73700129...
+  CMD git rev-list --left-right --count origin/main...HEAD      0  0
+  CMD git status --porcelain                                    (empty)
+  CMD git log origin/main --format=%h -1 -- <the three changed docs>  73700129
+  The push gate ran and reported: guard-test gate (check 9) SKIPPED because
+  every outgoing file is under docs/, so no code seam can have moved. That is
+  the gate's own wording and it is a skip with a stated reason, not a pass.
+
+HOOKS AND SETTINGS -- THE STATE CHANGED, AND NOT BY ME
+  CMD python -c "json.load('.claude/settings.json')['hooks']"
+      hook groups: 1, entries: 1
+  CMD git log --format='%h %s' -1 -- .claude/settings.json
+      eb53e267 feat(compaction survival): ONE SessionStart hook on matcher
+               compact -- the authorised exception, and not a restoration
+  I ADDED NOTHING, RESTORED NOTHING, AND COMMITTED NOTHING to that file; the
+  working tree matches HEAD. Reported because b11's handoff records hooks as 0
+  groups / 0 entries, and a session quoting that line would conclude a
+  restoration happened here.
+
+CLAIMS, LOCKS AND HOLDS
+  CMD python tools/sairn_claim.py own     state DEAD -- CLAUDE_PID 53204 no
+      longer exists. The claim entry IS published (c0cd082b) and the work IS
+      landed (73700129); the liveness heartbeat is what is stale. Same shape
+      hover2 reported in b19 and b20.
+  CMD git worktree list                   4 besides main, NONE MINE, unchanged
+      from b11, including the push gate's own unremoved throwaway.
+  CMD git stash list                      (empty) -- two stashes were taken and
+      popped to let the claim rebase; none is held.
+  CMD git for-each-ref refs/salvage/      (empty)
+  CMD ls ~/SAIRN-SESSION-LOCKS/*.lock     14 files; fourth.lock still held,
+      release still denied by the permission layer; b12wt2.lock still orphaned.
+
+UNVERIFIED -- WHAT THIS BATCH DOES NOT PROVE
+  * The bad-input rule is mechanised by NOTHING. No gate refuses a checker that
+    ships without a --fixtures arm, and the ablation is per guard.
+  * The validator in item 3 is SPECIFIED AND NOT BUILT. A spec is not a check;
+    docs/by-design-register.json still has one row and still no reader.
+  * The ack check CANNOT distinguish an owner who read the routing and chose to
+    do nothing from one who never saw it. That needs a reply channel this
+    platform does not have.
+  * The 36 undriven suites are still UNDRIVEN. Regenerating the document is not
+    evidence about any suite.
+  * No live deployment was touched or verified in this batch; nothing here is a
+    claim about a deployed URL.
+
+NEXT
+  tools owner (cc): write tools/by_design_register_check.py to the routed spec,
+  or a NOT_PROMOTED entry saying why a one-row register does not need one, with
+  the reason -- and answer either half of DECIDE_OR_NOT_PROMOTED on
+  tools/hover_auditor_scope_gate.py:409.
+  tests owner (cody): drive the 36 in a worktree, one JSON record each; and
+  close the four b9 findings with a commit on the line or a NOT_PROMOTED entry
+  naming the file AND the line.
+  fourth: release the b12 claim as the last action of this batch.
+
+EVIDENCE
+  Handoff: SAIRN-handoff-fourth-b12.md (written BEFORE this report).
+  Logs and scripts:
+  C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\240036a6-0d02-441d-a22d-73ed022c11a3\scratchpad\
+SHA256 c52aafa13fc7d419d3a4f08cf2c3b3b281fe6dec32a356e146937fc5b9c48bef
+END-OF-REPORT
