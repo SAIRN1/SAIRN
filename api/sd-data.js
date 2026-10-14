@@ -6752,6 +6752,37 @@ module.exports = async (req, res) => {
         res.status(200).json({ ok: true, data, provisioned: true });
         return;
       }
+      // ── THE WRITE IS MANAGEMENT-ONLY NOW (2026-10-14, b9) ────────────────
+      // MICHAEL'S DECISION, and the asymmetry it closes is visible in the name
+      // of the role set this branch was using: SEN_CLIENT_BROAD_READ_ROLES.
+      // A set defined for a BROAD READ was deciding a WRITE for all five of
+      // these resources, so a coordinator or a scheduler could change
+      // sen_training_rules -- the rule that decides whether a caregiver is
+      // compliant to work -- and sen_applicants, employment data about
+      // somebody who is not yet staff.
+      //
+      // THE CONSEQUENCE IS STATED RATHER THAN DISCOVERED: a coordinator can no
+      // longer LOG a referral or record a completed training from this
+      // endpoint, only read them. If intake is genuinely a coordinator's job
+      // -- and the comment above this map argues it is, for referrals
+      // specifically -- then the fix is a per-resource write set here, not a
+      // return to the broad one, and it is ONE map. Named in
+      // docs/SAIRN-handoff-hank-b9.md as the thing to confirm, because this is
+      // a product decision and reversing it should be deliberate.
+      //
+      // READ IS UNCHANGED and deliberately still broad: these records are
+      // limited to management, coordinators and schedulers, which is what the
+      // role set was built for.
+      if (!senAuth.MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({
+          error: {
+            code: 'FORBIDDEN',
+            message: 'Only management can change referral, applicant or '
+              + 'training records. Coordinators and schedulers can read them.'
+          }
+        });
+        return;
+      }
       if (!payload || !payload.id) { res.status(400).json({ error: { message: resource + ' payload.id is required' } }); return; }
       // storedBlob: column keys per branch, scope keys never stored.
       // READ PATH CHECKED (:5496, eleven lines up in this same branch):
@@ -7378,7 +7409,39 @@ module.exports = async (req, res) => {
         if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
-        res.status(200).json({ ok: true, data: (rows || []).map((x) => Object.assign({ id: x.branch_id }, x.data)), provisioned: true });
+        // ── THE READ IS NOW TIERED, NOT OPEN (2026-10-14, b9) ──────────────
+        // THE ASYMMETRY THIS CLOSES: the write above is management-only and the
+        // read was any-signed-in-employee returning THE WHOLE BLOB. So a
+        // caregiver could read every field management had ever put on a branch
+        // row -- including `updatedBy` and `updatedByRole`, which say WHO
+        // changed the office configuration, and any field a later panel adds
+        // without anybody re-reading this line.
+        //
+        // A FLAT ROLE GATE WAS THE WRONG FIX AND IS NOT WHAT THIS IS. The
+        // comment above records a real need in the caregiver's own words: a
+        // caregiver's roster row names a branch, and if the name cannot resolve
+        // the screen shows a raw id. Refusing the read outright would break
+        // that, which is how a security change gets reverted as broken.
+        //
+        // SO IT IS MINIMUM-NECESSARY INSTEAD, the same pattern this file
+        // already uses for SAIRNdental's financial tier: management sees the
+        // row, everybody else sees the four fields the need actually requires.
+        // ALLOWLIST, NOT A DENYLIST -- a field added to the blob next month is
+        // withheld by default rather than disclosed by default.
+        const brMgmt = !!senAuth.MANAGEMENT_ROLES[session.role];
+        const SEN_BRANCH_PUBLIC_FIELDS = ['name', 'state', 'active'];
+        res.status(200).json({
+          ok: true, provisioned: true,
+          data: (rows || []).map((x) => {
+            const d = x.data || {};
+            if (brMgmt) return Object.assign({ id: x.branch_id }, d);
+            const out = { id: x.branch_id };
+            SEN_BRANCH_PUBLIC_FIELDS.forEach((f) => {
+              if (d[f] !== undefined) out[f] = d[f];
+            });
+            return out;
+          })
+        });
         return;
       }
       if (!senAuth.MANAGEMENT_ROLES[session.role]) {
@@ -7759,9 +7822,47 @@ module.exports = async (req, res) => {
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
+      // ── TIERED, FOR THE SAME REASON AS sen_branches ABOVE (2026-10-14, b9) ─
+      // THE ASYMMETRY: write is management-only, read was any signed-in
+      // employee and returned EVERY setting row whole, plus `updated_by` and
+      // `updated_at` -- who last changed the agency's compliance declaration,
+      // and when. That is management information about management, and nothing
+      // on a caregiver's screen needs it.
+      //
+      // WHAT A NON-MANAGEMENT READER STILL GETS is exactly what the comment
+      // above this branch justifies: the operating state and the aggregator,
+      // because the EVV rules applied to their own visits are unexplainable
+      // without them, plus the agency's display name.
+      //
+      // UNKNOWN KEYS ARE WITHHELD FROM NON-MANAGEMENT, which is deliberately
+      // the opposite of how the write path treats them -- it stores unknown
+      // keys as-is because "this is a settings store, not a schema registry".
+      // A store that accepts anything must not also DISCLOSE anything, or the
+      // next setting somebody adds is published to every caregiver by default.
+      const stMgmt = !!senAuth.MANAGEMENT_ROLES[session.role];
+      const SEN_SETTING_PUBLIC_FIELDS = {
+        evv_config: ['state', 'aggregator'],
+        agency_profile: ['name']
+      };
       res.status(200).json({
         ok: true, provisioned: true,
-        data: (rows || []).map((x) => ({ setting_key: x.setting_key, value: x.data, updated_by: x.updated_by, updated_at: x.updated_at }))
+        tiered: !stMgmt,
+        data: (rows || []).reduce((acc, x) => {
+          if (stMgmt) {
+            acc.push({ setting_key: x.setting_key, value: x.data,
+                       updated_by: x.updated_by, updated_at: x.updated_at });
+            return acc;
+          }
+          const allow = SEN_SETTING_PUBLIC_FIELDS[x.setting_key];
+          if (!allow) return acc;                  // unknown key: withheld
+          const v = x.data || {};
+          const out = {};
+          allow.forEach((f) => { if (v[f] !== undefined) out[f] = v[f]; });
+          // NO updated_by AND NO updated_at on this tier. Their absence is the
+          // point rather than an oversight.
+          acc.push({ setting_key: x.setting_key, value: out });
+          return acc;
+        }, [])
       });
       return;
     }

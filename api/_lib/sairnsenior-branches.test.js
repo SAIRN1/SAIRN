@@ -240,8 +240,23 @@ check('the state is refused unless it is two letters, in the page',
   const sd = fs.readFileSync(path.join(__dirname, '..', 'sd-data.js'), 'utf8');
   check('and refused again on the server, so the page cannot merely look like it saved',
     /sen_branches: state must be a 2-letter code/.test(sd), true);
-  check('read is open to any signed-in employee and write is management-only',
-    /sen_branches[\s\S]{0,1600}?Only management can add or change a branch/.test(sd), true);
+  // ── UPDATED 2026-10-14 (b9): THE READ IS TIERED, NOT OPEN ──────────────
+  // This arm said "read is open to any signed-in employee" and proved it with
+  // a 1600-CHARACTER WINDOW between the resource name and the write refusal.
+  // Both halves were a liability. The sentence became FALSE the day the read
+  // was tiered, and the window broke on the commit that tiered it -- not
+  // because the behaviour regressed but because the explanatory comment above
+  // the gate got longer. A proximity window is a measurement of comment
+  // length pretending to be a measurement of code.
+  //
+  // Asserted as TWO independent facts instead, neither of which depends on how
+  // far apart they are written.
+  check('the branch write is management-only',
+    /Only management can add or change a branch/.test(sd), true);
+  check('and the branch READ is tiered by an ALLOWLIST rather than open',
+    /SEN_BRANCH_PUBLIC_FIELDS\s*=\s*\['name', 'state', 'active'\]/.test(sd), true);
+  check('...and that allowlist does not leak who changed the office',
+    /SEN_BRANCH_PUBLIC_FIELDS\s*=\s*\[[^\]]*updatedBy/.test(sd), false);
   check('the resource is registered so the provisioning probe can see it',
     /'sen_branches'/.test(fs.readFileSync(path.join(__dirname, '..', '_resources', 'sairnsenior.js'), 'utf8')), true);
 }
