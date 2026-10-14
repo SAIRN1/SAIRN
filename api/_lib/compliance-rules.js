@@ -427,6 +427,28 @@ function normalizeRequirements(rule) {
       // set -- and the one tools/payload_field_ghost_scan.py was written for.
       applies_to_positions: Array.isArray(r.applies_to_positions)
         ? r.applies_to_positions : null,
+      // ── A PRESENT-BUT-WRONG-SHAPED LIST WAS DROPPED SILENTLY (2026-10-14, N3)
+      // The line above is right to insist on an array: a string "caregiver"
+      // would make `list.indexOf(staff.position)` match single CHARACTERS. But
+      // it collapsed "absent" and "present and malformed" into the same null,
+      // and those are different facts. An author who seeds
+      // `applies_to_positions: 'caregiver'` gets a requirement that matches
+      // NOBODY, matchAudience falls through to its prose branch, and the reason
+      // the reader is given is "this requirement identifies its audience in
+      // PROSE" -- which is false. The rule DID declare a position list; it
+      // declared it in the wrong shape.
+      //
+      // RECORDED, NOT REPAIRED. Coercing a string to [string] would be this
+      // code inventing an audience, which is precisely what matchAudience's
+      // own refusal says it may not do. So the shape is reported and the
+      // requirement still applies to nobody -- fail-closed, with the true
+      // reason attached.
+      positions_malformed: (r.applies_to_positions !== undefined
+                            && r.applies_to_positions !== null
+                            && !Array.isArray(r.applies_to_positions))
+        ? ('applies_to_positions is a ' + typeof r.applies_to_positions
+           + ', not an array: ' + JSON.stringify(r.applies_to_positions).slice(0, 80))
+        : null,
       within_general: withinGeneral,
       additive: additive,
       // A POOL IS A SET OF HOURS THAT SATISFY EACH OTHER. Declared only:
@@ -460,6 +482,17 @@ function matchAudience(req, staff) {
   }
   if (req.audience && staff.position && req.audience === staff.position) {
     return { applies: true, why: 'audience token equals the staff position token' };
+  }
+  // THE MALFORMED CASE ANSWERS BEFORE THE PROSE CASE, because otherwise the
+  // reader is told the rule used prose when it did not (N3).
+  if (req.positions_malformed) {
+    return { applies: null,
+             why: 'this requirement DECLARED a position list and declared it in '
+                  + 'the wrong shape, so it matches nobody: '
+                  + req.positions_malformed
+                  + '. Fix the rule rather than reading this as a prose '
+                  + 'audience -- the audience was machine-readable and is not '
+                  + 'being guessed at here.' };
   }
   return { applies: null,
            why: req.audience
@@ -512,6 +545,32 @@ function hoursInWindow(records, window, onDate, trainingYearStart, hireDate) {
       out.window_error = 'NO_HIRE_DATE';
       return out;
     }
+    // ── AN IMPOSSIBLE HIRE DATE PUBLISHED AN IMPOSSIBLE WINDOW (2026-10-14) ─
+    // The check above is SHAPE ONLY. fourth's b18 discharge found that
+    // '2024-02-30' passes it; DRIVEN HERE rather than reasoned about, and the
+    // real behaviour is WORSE than reported:
+    //
+    //   hire 2024-02-30  ->  window_from '2026-02-30'   impossible DAY
+    //   hire 2024-13-01  ->  window_from '2025-13-01'   impossible MONTH
+    //   hire 2024-04-31  ->  window_from '2026-04-30'   normalised, correct
+    //   hire 2024-02-29  ->  window_from '2026-02-28'   normalised, correct
+    //
+    // The leap normalisation below decrements the DAY, so it rescues 02-30 and
+    // 04-31 in years where the real end-of-month is one day earlier -- and it
+    // cannot touch a bad MONTH at all, which fourth's report did not reach.
+    // `window_from` is printed on a compliance finding a surveyor reads.
+    //
+    // REFUSED, NOT REPAIRED, and that is the whole judgement here. Normalising
+    // '2024-02-30' to the 29th would be this code choosing which date the
+    // person was hired on; the value is a TYPO and the honest answer is that
+    // the window cannot be computed from it. Same three-valued shape
+    // NO_HIRE_DATE already uses -- and the consequence is already correct one
+    // door along: a window_error makes the verdict `null` with a stated reason,
+    // never `false`, so nobody is reported non-compliant for a mistyped field.
+    if (!isRealDate(hire)) {
+      out.window_error = 'HIRE_DATE_NOT_A_REAL_DATE';
+      return out;
+    }
     if (hire > on) {
       // Hired after the date being evaluated. A data problem, named rather than
       // guessed past.
@@ -531,7 +590,13 @@ function hoursInWindow(records, window, onDate, trainingYearStart, hireDate) {
     // date. A wrong date on a regulated report is not cosmetic.
     //
     // NORMALISED, NOT CLAMPED BLINDLY: the 29th is kept in years that have one,
-    // and an arm drives that. Falling back to 28 February is the common-law
+    // NORMALISED, NOT CLAMPED BLINDLY: the 29th is kept in years that have one.
+    // ** AND NO ARM DRIVES THAT (N4, 2026-10-14). ** This read "and an arm
+    // drives that"; fourth's b18 discharge measured it -- `grep -n "02-29"`
+    // over the compliance tests hits only source comments. The case was driven
+    // BY HAND. The arm is routed to cody; the line below is corrected rather
+    // than left claiming an artefact that does not exist.
+    // Falling back to 28 February is the common-law
     // reading of an anniversary that does not occur -- and it moves the window
     // one day EARLIER, which counts MORE training rather than less.
     if (!isRealDate(from)) {
@@ -843,7 +908,25 @@ function evaluateTraining(rules, opts) {
       // ── DAY ZERO OF A WINDOW IS NOT A NON-COMPLIANCE FINDING ────────────
       // 2026-09-29. A hire-anchored window opens on the anniversary, so on that
       // day the recorded total is 0 by construction -- and this branch turned
-      // that into `meets: false`. Driven: hire 2024-11-03, eight hours completed
+      // that into `meets: false`.
+      //
+      // ── "Driven" HERE MEANT BY HAND, AND SAYING SO IS THE FIX (N4) ────────
+      // fourth's b18 discharge checked: `grep -rn "2026-11-03"` over
+      // api/_lib/compliance-rules-staff-join.test.js has NO MATCH. The dates
+      // below were DRIVEN BY HAND ON 2026-09-29 and no committed arm passes
+      // either of them -- the sole anchor arm drives the mid-year case
+      // 2026-09-27. A hand-drive is a real activity; what it does not leave is
+      // an artefact, so six weeks later this comment was the only evidence the
+      // case was ever exercised and it reads exactly like a reference to a
+      // committed arm. Nothing fails when the behaviour changes.
+      //
+      // THE BOUNDARY ITSELF WAS RE-VERIFIED BY HAND IN THAT REVIEW and holds.
+      // The three arms that would make it checkable are ROUTED TO cody (the
+      // exact anniversary, a 2024-02-29 hire in a common year, and a day-zero
+      // shortfall asserting meets === null). Until they land, distrust the
+      // sentence below exactly as far as a hand-drive goes.
+      //
+      // Driven BY HAND on 2026-09-29, NO COMMITTED ARM: hire 2024-11-03, eight hours completed
       // 2026-10-15, evaluated 2026-11-02 -> compliant; evaluated 2026-11-03 ->
       // NON-COMPLIANT. That person is not late. They have twelve months.
       //
@@ -859,6 +942,13 @@ function evaluateTraining(rules, opts) {
       // edited this file chose it. What the module does instead is hand every
       // consumer `window_days_elapsed` and `window_days_remaining` so late and
       // early are distinguishable without it guessing.
+      //
+      // ── NONE OF THIS DAY-ZERO BEHAVIOUR IS ASSERTED BY ANYTHING (N4) ─────
+      // `window_days_elapsed`, `windowJustOpened`, `dayZeroWithheld` and the
+      // `meets: null` withholding below are covered by NO arm -- measured in
+      // fourth's b18 discharge. The reasoning above is the whole of the
+      // evidence, and reasoning is not a test. Routed to cody as a day-zero
+      // shortfall arm asserting `meets === null` rather than `false`.
       //
       // MEETING THE REQUIREMENT ON DAY ZERO IS STILL `true`: somebody who
       // front-loads their training is determinately compliant, and a blanket
@@ -888,6 +978,33 @@ function evaluateTraining(rules, opts) {
       const anyUnmapped = normRows.some(function (r) {
         return matchAudience(r, { position: s.position || null }).applies === null;
       });
+      // ── WHAT THIS POSITION WAS EXCLUDED FROM IS NOW ON THE FINDING (N3) ──
+      // fourth's b18 discharge PARTLY OVERTURNED attack point (e): the mapping
+      // choice survives review, the SILENCE does not. A requirement that
+      // returned a clean `false` for this person was dropped from `applicable`
+      // with no disclosure anywhere on the response -- `unmapped_requirements`
+      // is built only from rows that are STRUCTURALLY unmappable, so a row WITH
+      // a position list is `mappable: true` and never appears there no matter
+      // who it excluded. `grep -n "excluded_by_position"` returned nothing.
+      //
+      // WHY THAT MATTERS AND IS NOT TIDYING: hank's own self-flag on (e) was
+      // "under-inclusion is the dangerous direction here and it is the one I
+      // chose". Under-inclusion that is visible is a decision somebody can
+      // check; under-inclusion that is invisible is indistinguishable from the
+      // requirement not existing. `required_annual_hours` silently omits those
+      // hours and nothing on the response says a row was considered and
+      // excluded.
+      //
+      // IT RECORDS THE REASON matchAudience GAVE, not a reconstruction of it --
+      // one rule, one sentence, and no second copy of the condition to drift.
+      const excludedByPosition = [];
+      normRows.forEach(function (r) {
+        const m = matchAudience(r, { position: s.position || null });
+        if (m.applies === false) {
+          excludedByPosition.push({ key: r.key, annual_hours: r.annual_hours,
+                                    why: m.why });
+        }
+      });
       const singlePool = !unattributable && !emptyApplicable && !dayZeroWithheld
         && (poolCount <= 1 || verdict !== null);
       return {
@@ -896,6 +1013,19 @@ function evaluateTraining(rules, opts) {
         required_annual_hours: target,
         recorded_annual_hours: recorded,
         shortfall_hours: Math.max(0, target - recorded),
+        // N3: ABSENT WHEN NOTHING WAS EXCLUDED, present with its reasons when
+        // something was. A key that appears on every finding carrying an empty
+        // list is a key a reader stops reading -- the same argument this file
+        // already makes for `effective_clock` in api/sd-data.js.
+        excluded_by_position: excludedByPosition.length ? excludedByPosition : undefined,
+        excluded_by_position_caveat: excludedByPosition.length
+          ? (excludedByPosition.length + ' requirement(s) in this rule were '
+             + 'considered for this person and did NOT apply to their position, '
+             + 'so their hours are not in `required_annual_hours`. Listed rather '
+             + 'than dropped: a position mapping that excludes somebody is a '
+             + 'decision to check, and an exclusion nobody can see is '
+             + 'indistinguishable from the requirement not existing.')
+          : undefined,
         // WHERE THE HOURS CAME FROM, on every finding, always.
         hours_source: hasRecords ? 'server_records' : 'caller_supplied',
         hours_window: hasRecords ? windowUsed : null,
@@ -934,6 +1064,13 @@ function evaluateTraining(rules, opts) {
                    + 'would report a fully trained person as non-compliant from a '
                    + 'missing field. Record the hire date, or ask for one of the '
                    + 'facility-wide windows explicitly.')
+                : win.window_error === 'HIRE_DATE_NOT_A_REAL_DATE'
+                ? ('The recorded hire date is the right SHAPE but is not a real '
+                   + 'date on the calendar, so no training year can be computed '
+                   + 'from it. It is not guessed at: normalising it would mean '
+                   + 'this code choosing which date the person was hired on, and '
+                   + 'the window start is printed on a regulated finding. Fix the '
+                   + 'hire date.')
                 : ('The recorded hire date is AFTER the date being '
                    + 'evaluated, so there is no training year to compute. That is '
                    + 'a data problem and it is named rather than guessed past.'))

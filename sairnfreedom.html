@@ -3512,8 +3512,31 @@ function sfScheduleSession(){
   sfRenderAll();
 }
 function sfDeleteSession(id){
+  // ── THE POINTER WAS LEFT DANGLING (verified 2026-10-14, fourth b19 F6) ───
+  // An event that created a bingo session holds `event.sessionId`. This
+  // function removed the session and never touched that field, so the event
+  // kept pointing at a row that no longer existed -- and the UI offers Remove
+  // on EVERY session row, so it is reachable in one click.
+  //
+  // THE CONSEQUENCE WAS NOT COSMETIC: sfDeleteEvent chose its toast on
+  // `ev.sessionId` being TRUTHY, so after this ran, deleting the event
+  // announced "Event and its bingo session removed" having removed no session
+  // at all. Affirmative false success, which is worse than a silent failure
+  // because it tells the operator a thing happened.
+  //
+  // CLEARED RATHER THAN DELETED, and the direction matters: the EVENT is still
+  // a real event that happened. What is no longer true is that it has a
+  // session, so the field goes and the event stays.
+  var cleared = 0;
+  var evs = getEvents().map(function(e){
+    if (e && e.sessionId === id) { cleared += 1; e = Object.assign({}, e); delete e.sessionId; }
+    return e;
+  });
+  if (cleared) st(K_EVENTS, evs);
   st(K_SESSIONS, getSessions().filter(function(s){ return s.id!==id; }));
-  toast('Session removed');
+  toast(cleared
+    ? ('Session removed. ' + cleared + ' event(s) no longer linked to a bingo session.')
+    : 'Session removed');
   sfRenderAll();
 }
 
@@ -5200,8 +5223,33 @@ function sfDeleteEvent(id){
   var ev=null;
   getEvents().forEach(function(e){ if(e.id===id) ev=e; });
   st(K_EVENTS, getEvents().filter(function(e){ return e.id!==id; }));
-  if(ev && ev.sessionId) st(K_SESSIONS, getSessions().filter(function(s){ return s.id!==ev.sessionId; }));
-  toast(ev && ev.sessionId ? 'Event and its bingo session removed' : 'Event removed');
+  // ── THE TOAST REPORTED AN INTENTION, NOT A RESULT ───────────────────────
+  // VERIFIED 2026-10-14 (fourth b19 F6). This read
+  //   if(ev && ev.sessionId) st(K_SESSIONS, ...filter(...));
+  //   toast(ev && ev.sessionId ? 'Event and its bingo session removed' : ...)
+  // so the message was chosen on the POINTER BEING TRUTHY and never on whether
+  // the filter removed anything. A stale pointer -- which sfDeleteSession
+  // created on every session deletion until today -- made this announce a
+  // removal that did not happen. The filter is not the problem; reporting on
+  // the input instead of the outcome is.
+  //
+  // MEASURED BY COUNTING THE ROWS, before and after. A boolean "did it match"
+  // would have been enough for the toast, but the count is what makes the
+  // three outcomes distinguishable: no pointer, a pointer that resolved, and a
+  // pointer that resolved to nothing. The third is the one that was invisible.
+  var removedSessions = 0;
+  if (ev && ev.sessionId) {
+    var before = getSessions();
+    var after = before.filter(function(s){ return s.id!==ev.sessionId; });
+    removedSessions = before.length - after.length;
+    st(K_SESSIONS, after);
+  }
+  toast(removedSessions
+    ? 'Event and its bingo session removed'
+    : ((ev && ev.sessionId)
+        ? 'Event removed. Its bingo session was already gone, so nothing else '
+          + 'was deleted.'
+        : 'Event removed'));
   sfRenderAll();
 }
 

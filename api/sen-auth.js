@@ -277,6 +277,39 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: { message: 'display_name max 128 chars' } });
         return;
       }
+      // ── setup COULD DEMOTE THE LAST OWNER (2026-10-14, N2) ───────────────
+      // `set_active` has been guarded against deactivating the last
+      // provisioner since the lifecycle module was written. This branch
+      // reaches THE SAME END STATE by a different door: it upserts on
+      // (license_hash, employee_id) with `role` taken from the body, so an
+      // owner calling setup on their OWN employee_id with role 'caregiver'
+      // demotes themselves -- and if they were the only active owner, the
+      // licence has no provisioner left, `bootstrap` 409s because credentials
+      // exist, and nobody can get back in through the app.
+      //
+      // Six sibling endpoints already call soleRoleDemotionRefusal() for
+      // exactly this and SAIRNsenior did not. THE GUARD IS CALLED, NOT
+      // REWRITTEN: what can drift dangerously is who counts, whether an
+      // inactive holder is cover, and the order of the read -- a second copy
+      // of that condition is a second thing to get wrong, which is the
+      // module's own argument for being shared. The MESSAGE is this app's,
+      // because a refusal in words the app does not use sends somebody looking
+      // for a screen that is not there.
+      const demote = await lifecycle.soleRoleDemotionRefusal({
+        provisioningRoles: PROVISIONING_ROLES, soleRole: 'owner',
+        newRole: role, employee_id: employee_id,
+        licHash: licHash, table: TABLE, rest: rest, headers: headers,
+        soleMessage: 'This is the only active Owner on this license. Changing '
+          + 'their role would leave the agency with no Owner, and an Owner is '
+          + 'the only role that can create or change employee credentials -- so '
+          + 'nobody could be provisioned again through the app. Set up another '
+          + 'Owner first, then change this one. Nothing was saved.'
+      });
+      if (demote) {
+        if (demote.upstream) return upstream(res, demote.upstream);
+        res.status(demote.status).json(demote.body);
+        return;
+      }
       const { pin_hash, pin_salt } = hashPin(pin);
       const r = await fetch(rest(TABLE + '?on_conflict=license_hash,employee_id'), {
         method: 'POST',

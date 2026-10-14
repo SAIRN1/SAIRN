@@ -7177,6 +7177,42 @@ module.exports = async (req, res) => {
             flags: clockCheck.flags || [] } });
           return;
         }
+        // ── A RECORDED CLOCK TIME IS NOT OVERWRITABLE (2026-10-14, N1) ─────
+        // The line below copies every EVV field the payload carries straight
+        // over whatever is in the row. For `clock_in_at` and `clock_out_at`
+        // that is the exact thing this module exists to prevent, said in its
+        // own words forty lines up: "a correction that OVERWRITES the
+        // caregiver's record destroys the evidence the record is ... a state
+        // audit that finds an edited time with no trail cannot tell a typo
+        // correction from a fabrication." `propose_clock_correction` was built
+        // to be append-only BY CONSTRUCTION for that reason -- and this path,
+        // which any caregiver can reach on their own visit, had no such rule.
+        //
+        // AN IDENTICAL RE-SEND IS STILL ACCEPTED, and that is not a loophole,
+        // it is the offline path. sairnsenior queues clock events and replays
+        // them UNCHANGED, so the same visit can legitimately arrive twice with
+        // the same timestamp. Refusing that would break the replay this module
+        // is written around; what is refused is a DIFFERENT value over a value
+        // that is already there.
+        //
+        // 409 AND NOT 400: the request is well formed and the caller may
+        // normally do this -- the row's state is what refuses. The message
+        // names the route that CAN change it, because a refusal that does not
+        // say where to go next gets worked around.
+        const SEN_CLOCK_IMMUTABLE = ['clock_in_at', 'clock_out_at'];
+        for (const f of SEN_CLOCK_IMMUTABLE) {
+          const had = (existingRow.data || {})[f];
+          if (had && payload[f] !== undefined && String(payload[f]) !== String(had)) {
+            res.status(409).json({ error: { code: 'CLOCK_ALREADY_RECORDED',
+              message: 'This visit already has a recorded ' + f.replace(/_/g, ' ')
+                + ' (' + String(had) + ') and it cannot be replaced — an edited '
+                + 'EVV time with no trail cannot be told from a fabricated one. '
+                + 'Nothing was saved. A scheduler can file a correction, which '
+                + 'is recorded BESIDE the original rather than over it.',
+              field: f, recorded: String(had) } });
+            return;
+          }
+        }
         SEN_VISIT_EVV_FIELDS.forEach((f) => { if (payload[f] !== undefined) visitData[f] = payload[f]; });
         // AFTER the field copy, and it cannot collide with it: the module
         // guarantees every stamp key is `*_received_at` or `*_skew_ms` -- never
