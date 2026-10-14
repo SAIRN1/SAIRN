@@ -69,6 +69,15 @@ const FUTURE_TOLERANCE_MS = 2 * 60 * 1000;
 // is legitimate and a replay a year later is a data-entry accident.
 const PAST_FLAG_MS = 7 * 24 * 60 * 60 * 1000;
 
+// THE CLOCK FIELDS THIS MODULE REPORTS ON. Hoisted out of checkClockEvent and
+// exported on 2026-10-14 because a SECOND place now has to know the same set:
+// the sen_visits write branch merges stored flags on `field`, and the fields it
+// treats as superseded by a payload MUST be exactly the fields this function
+// re-checks. Two copies of that list would drift the day a third clock field is
+// added, and the merge would then keep a stale flag on it forever -- the drift
+// that cost SAIRNsenior a real bug (cross-domain convention 7).
+const CLOCK_FIELDS = ['clock_in_at', 'clock_out_at'];
+
 // Closed vocabulary. A free-text reason is a field that fills with "correction"
 // and answers nothing at audit; the whole point of a reason CODE is that the
 // categories can be counted.
@@ -117,7 +126,7 @@ function checkClockEvent(payload, existingData, serverNowISO) {
   const stamps = {};
   let touched = 0;
 
-  ['clock_in_at', 'clock_out_at'].forEach(function (field) {
+  CLOCK_FIELDS.forEach(function (field) {
     if (payload[field] === undefined) return;
     touched++;
     const claimed = parseISO(payload[field]);
@@ -272,6 +281,7 @@ function effectiveClock(visitData, field) {
 module.exports = {
   FUTURE_TOLERANCE_MS: FUTURE_TOLERANCE_MS,
   PAST_FLAG_MS: PAST_FLAG_MS,
+  CLOCK_FIELDS: CLOCK_FIELDS,
   CORRECTION_REASONS: CORRECTION_REASONS,
   checkClockEvent: checkClockEvent,
   proposeCorrection: proposeCorrection,

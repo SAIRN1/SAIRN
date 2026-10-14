@@ -7175,8 +7175,45 @@ module.exports = async (req, res) => {
         // FLAGS ARE STORED, NOT ONLY RETURNED. A LATE_REPLAY that appears in one
         // response and nowhere else is a finding nobody can audit later, and
         // late replay is the case a state audit asks about.
-        if (clockCheck.flags && clockCheck.flags.length) {
-          visitData.clock_flags = clockCheck.flags;
+        //
+        // ── MERGED ON `field`, NOT ASSIGNED (2026-10-14) ───────────────────
+        // This line used to be `visitData.clock_flags = clockCheck.flags`, and
+        // a visit's two halves arrive as TWO separate writes. checkClockEvent
+        // only reports on the clock fields present in THIS payload, so the
+        // clock-out's write REPLACED the clock-in's flags and a LATE_REPLAY on
+        // the way in vanished with nothing saying it had existed. Found by
+        // cody's Tier A review; tests/sd_data_clock_flags_merge.test.js drives
+        // it against this handler across two writes.
+        //
+        // IT ONLY SHOWED WHEN BOTH HALVES WERE FLAGGED -- with a clean
+        // clock-out `flags` was empty, the old `if` never fired, and the
+        // clock-in's flag survived by luck. The audit case was the broken one.
+        //
+        // THE SUPERSEDED SET IS TAKEN FROM THE PAYLOAD, NOT FROM THE NEW FLAGS.
+        // That is the whole correctness of this merge. A field this payload
+        // re-reported has been re-checked, so its old flag is stale and must go
+        // EVEN IF the re-check produced no flag -- otherwise a corrected
+        // clock-in keeps a LATE_REPLAY forever. A field this payload did not
+        // mention was not checked at all, so its flag is kept untouched. Using
+        // `clockCheck.flags` to decide what to drop would get the first case
+        // wrong in exactly the direction that leaves a false finding on a
+        // record.
+        //
+        // The per-field stamps above already behave this way -- clock_in_skew_ms
+        // and clock_out_skew_ms coexist because they are KEYED. This is the same
+        // requirement applied to the one unkeyed array.
+        const reportedClockFields = senEvvClock.CLOCK_FIELDS
+          .filter((f) => payload[f] !== undefined);
+        if (reportedClockFields.length) {
+          const keptFlags = (Array.isArray(visitData.clock_flags) ? visitData.clock_flags : [])
+            .filter((f) => f && reportedClockFields.indexOf(f.field) === -1);
+          const mergedFlags = keptFlags.concat(clockCheck.flags || []);
+          // THE KEY IS STILL ABSENT WHEN THERE IS NOTHING TO SAY. An empty
+          // array would be a visible change to every clean EVV write, and
+          // api/sd-data-sen-evv-clock.test.js:200 asserts the key is not
+          // present on a clean one.
+          if (mergedFlags.length) visitData.clock_flags = mergedFlags;
+          else delete visitData.clock_flags;
         }
       }
       const r = await fetch(rest('sen_visits?on_conflict=license_hash,visit_id'), {
