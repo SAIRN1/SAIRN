@@ -208,14 +208,25 @@ test('and that resource is one the ENCLOSING function actually writes', () => {
     'can return another write\'s message:\n       ' + bad.join('\n       '));
 });
 
-test('the pairing covers every site — 58 of them, counted not assumed', () => {
+test('the pairing covers every site — 59 of them, counted not assumed', () => {
   // 57 -> 58 on 2026-10-06: saveGplNonDeclinable() is a new save path, added
   // with the declinability work (tests/sairnlegacy_declinability.js). It
   // writes leg_gplservices and names leg_gplservices, so the pairing arm
   // above covers it; only the count moved. Updated per this arm's own
   // instruction rather than by widening the assertion.
-  assert.strictEqual(sites.length, 58,
-    'expected 58 call sites, found ' + sites.length +
+  //
+  // 58 -> 59 on 2026-10-13 (b8): saveBooking() gained a SECOND reply, on the
+  // BOOKING_CONFLICT branch of the new server-side double-booking gate
+  // (api/sd-data-leg-bookings-toctou.test.js). It is not a new save path --
+  // it is the same path answering a refusal the server can now give -- and it
+  // names leg_bookings, which is what the enclosing function writes, so the
+  // two pairing arms above cover it unchanged and only the count moved.
+  //
+  // THIS ARM IS WHY THAT EDIT DID NOT LAND UNNOTICED. The new reply was added
+  // in sairnlegacy.html by a session working on api/sd-data.js, and nothing
+  // else in the regression run had an opinion about it.
+  assert.strictEqual(sites.length, 59,
+    'expected 59 call sites, found ' + sites.length +
     '. If a save path was added, pair it; if one was removed, update this number.');
 });
 

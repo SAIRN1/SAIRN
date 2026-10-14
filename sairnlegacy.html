@@ -3040,6 +3040,42 @@ async function saveBooking(){
   var list=bookings();list.push(rec);st('leg_bookings',list);
   closeBookingModal();rScheduling();
   var syncResult=await sdnData('write','leg_bookings',rec);
+  // ── THE SERVER HAS THE LAST WORD ON A DOUBLE BOOKING (2026-10-13) ───────
+  // bookingConflict() above reads THIS DEVICE'S localStorage, so it cannot see
+  // a booking another device made and this one has not synced yet. The real
+  // check now runs in api/sd-data.js's leg_bookings branch against the server's
+  // rows. This is the client half of that, and without it the fix would make
+  // things WORSE in the one way that matters: the optimistic local write above
+  // would stay on this device showing a booking the server refused, so the
+  // calendar would say the chapel is ours while the server knows it is not --
+  // a silent divergence, where before there was at least a visible toast.
+  //
+  // SAME TWO PROPERTIES AS confirmReserve()'s ROLLBACK, which is the only other
+  // place in this file that undoes an optimistic write: RE-READ rather than
+  // writing back the `list` snapshot taken before the await (writing `list`
+  // back would silently revert every other leg_bookings change made while the
+  // request was in flight -- a cancellation, or another booking saved on this
+  // same device), and only remove the record if it is still OURS and unchanged.
+  //
+  // sdnData() IS USED HERE AND confirmReserve() DELIBERATELY DOES NOT USE IT.
+  // That is not an inconsistency: confirmReserve() was written on 2026-08-10,
+  // when sdnData() collapsed every non-2xx to a bare null and the error code
+  // was unrecoverable. sdnData() has recorded the code per resource since
+  // 2026-09-05, so legLastErrCode() is enough and a second direct-fetch call
+  // site -- with its own copy of the headers, the token and the timeout -- is
+  // not worth having.
+  if(!syncResult&&legLastErrCode('leg_bookings')==='BOOKING_CONFLICT'){
+    var fresh=bookings();
+    var i=-1;
+    for(var k=0;k<fresh.length;k++){
+      var fb=fresh[k];
+      if(fb.id===rec.id&&fb.status==='Scheduled'&&fb.facility_id===rec.facility_id&&fb.start_time===rec.start_time&&fb.end_time===rec.end_time){i=k;break;}
+    }
+    if(i>-1){fresh.splice(i,1);st('leg_bookings',fresh);}
+    rScheduling();
+    toast(legWriteFailText('leg_bookings','That facility is already booked for that time on another device -- nothing was saved.'),7000);
+    return;
+  }
   toast(syncResult?'Booking created':legWriteFailText('leg_bookings','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 async function cancelBooking(id){
