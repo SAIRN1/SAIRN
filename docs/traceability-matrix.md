@@ -214,6 +214,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 - `rotation_blast_radius.py` -- IT READS DECLARATIONS, NOT THE WORLD. Every figure comes from the scope and rotation TEXT in tools/nhi_register.py; no clone holds any of these credentials, so nothing here is measured against a live grant. A push notice would put "20 of 22 unrotated" in front of people every day, where the number cannot move without a human attesting a rotation that this tool cannot verify either. It belongs where the accepted-risk and NHI registers are reviewed, on the same cadence as those.
 - `trend_alarm.py` -- ITS OWN OUTPUT SAYS IT IS NOT ARMED, and wiring an unarmed measurement into a push notice would put a number in front of people that nothing has been tuned to interpret -- which is how a measurement becomes a threshold by habit. It is also SLOW by construction: the series are recovered from git history, 221 `git show` calls per run, about 14 seconds. Promote it when a labelled episode exists AND gains are recorded, which is the same gate the tool applies to itself.
 - `weakness_combination.py` -- IT REPORTS PAIRS AND REFUSES THE VERDICT, on purpose -- whether two accepted risks compound is a judgement about consequences. A push notice implies a number to drive to zero and the right number of shared-property pairs is not zero; a register of four risks that shared nothing would mean the register was too small, not that the platform was safe. Its one genuinely mechanical half -- whether a trigger claimed as MECHANICAL is watched by anything that runs -- COULD be promoted on its own, and should be split out first rather than promoting the judgement half alongside it.
+- `unfetched_base_check.py (PROPOSED, NEVER WRITTEN)` -- THE OTHER HALF OF fourth b10/b11 IS DECLINED, AND THE HALF THAT MATTERED WAS APPLIED INSTEAD. The fix itself landed: tools/hover_auditor_scope_gate.py now carries `_have_commit` and reports an unfetched REMOTE TIP as a could-not-read about the remote rather than as a range error about the change, driven by 12 arms in tests/run_scope_gate_unfetched_base_probe.py including an ablation that puts the pre-fix refusal back. What is NOT being built is the standalone 6-arm STATIC TAINT CHECKER over every tool with this shape. THE REASON IS A MEASUREMENT, NOT A PREFERENCE: the population is THREE files -- hover_auditor_scope_gate.py, register_feed_gate.py, sairn_push_gate_hook.py -- counted by the arm-6 code in that probe (tools/*.py containing a pre-push ref-line parse binding a sha by field position), and all three are guarded as of this run. A new tool with a criteria lock, fixtures and six arms, maintained for ever, over three files that are already clean, buys only the FOURTH author of the shape. AND fourth NAMED THE EXPENSIVE PART ITSELF: arm 3 (`cat-file -e <sha>:<path>`, which looks like an existence test and is a question about a path) needs flow-level analysis to classify, and a checker that gets it wrong passes the worst real instance WHILE REPORTING ITSELF CLEAN. SO THE SUBSTITUTE IS CHEAPER AND ACTUALLY RUNS: arm 6 of that probe re-measures the population every run and FAILS if any member loses its guard, and arm 6b fails if the population ever reads as empty -- the way this kind of arm dies quietly. ITS LIMIT IS STATED IN THE PROBE AND HERE: the guard is detected PER FILE, not along the flow, so it catches "no guard anywhere", which is the shape all four real instances had, and NOT "guarded on one path and not another". That residue is the thing declined; it is not claimed as covered. PROMOTE THE FULL CHECKER IF a fourth instance appears despite arm 6, or if the population grows past about six files -- at that size the per-file reading this substitute relies on stops being something a reviewer can hold.
 
 ## 4. Requirements traced through the open-work index
 
@@ -547,7 +548,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | Requirement | Status | Proved by |
 |---|---|---|
 | **&#128993; `sf_district_keypair` holds an EXTRACTABLE ECDSA P-256 PRIVATE key JWK in `localStorage`, and the platform has no criticality statement about its only stored private key** <!-- QUEUE25-ITEM3-HANK-2026-09-29 --> | **FOUND 2026-09-29 (hank), CORROBORATED INDEPENDENTLY by hover log #718(g), which proposes A-confidentiality / B-integrity. The proposed statement is written out in `docs/2026-09-29-register-cells-han | `tests/sairnfreedom_key_reconciliation.js` |
-| **&#128993; Resources gated in four batches, the last on 2026-09-24 &mdash; count them in `SD_SESSION_GATED`, never here &mdash; a FELONY and gambling disqualification flag on a named volunteer, MINORS&rsquo; names, and an ORC 2915 payee record were all reachable on a browser-shipped licence key. The ones still ungated are still a decision NOBODY HAS MADE** | **CODE LANDED AND HALF LIVE-VERIFIED 2026-09-22** (`20d82277`). Audited by **hover2** across all 35; approved by **Michael**; built by **Hank**. **AMBER not green: the gates refuse, but the half that  | `api/sd-data-sf-session-gate.test.js`, `tests/run_sf_session_gate_sabotage_probe.py` |
+| **&#128993; Resources gated in four batches, the last on 2026-09-24 &mdash; count them in `SD_SESSION_GATED`, never here &mdash; a FELONY and gambling disqualification flag on a named volunteer, MINORS&rsquo; names, and an ORC 2915 payee record were all reachable on a browser-shipped licence key. ALL 36 ARE NOW GATED (hank b7, 2026-10-13) -- count them in `SD_SESSION_GATED`, never here** | **CODE LANDED AND HALF LIVE-VERIFIED 2026-09-22** (`20d82277`). Audited by **hover2** across all 35; approved by **Michael**; built by **Hank**. **AMBER not green: the gates refuse, but the half that  | `api/sd-data-sf-session-gate.test.js`, `tests/run_sf_session_gate_sabotage_probe.py` |
 | **A recorded NEGATIVE with an expiry measured in hours, being set by its own author &mdash; `sf_resources_session_gate_probe.py` says SAIRNfreedom has no session plumbing, and hank is building it now** | **NOTED 2026-09-21 (Cody), NOTHING TO FIX YET** &mdash; from the Tier A review of hank&rsquo;s 14:06:04Z obligation (discharged, no finding against the work) | `tests/sf_resources_session_gate_probe.py` |
 | **&#9989; The general ledger, the chart of accounts and vendor pricing were authorised by the LICENCE KEY ALONE &mdash; the app now has per-employee credentials and those three are gated** | **BUILT 2026-09-21 (Hank)** &mdash; `sql/sairnfreedom_employee_auth_schema.sql`, `ROLES_BY_APP` + `AUTH_TABLE_BY_APP` in `api/_lib/auth.js`, `api/sf-auth.js` (NEW), `X-SD-Auth` in `sairnfreedom.html`& | `api/_lib/employee-lifecycle-wiring.test.js` |
 | **&#128308; The session gate CANNOT be wired yet &mdash; four pieces of employee-auth plumbing are missing, and the table entry is the LAST of them** | **INVESTIGATED 2026-09-21 (Hank)**, answer recorded in `tests/sf_resources_session_gate_probe.py`. **NOT wired &mdash; wiring it today 403s every real call** | `tests/sf_resources_session_gate_probe.py` |
@@ -703,11 +704,11 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 208 test files are traced to no stated requirement
+### 211 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 733 of 941 traced, 77.9%.
+For context and not as the headline: 733 of 944 traced, 77.6%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -729,10 +730,10 @@ An untraced test is not a bad test. It means no source in this repo states what 
 
 | kind | count | what it means | the fix |
 |---|---|---|---|
-| **bound to a subject, tied to no requirement** | 39 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 169 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **bound to a subject, tied to no requirement** | 40 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
+| **no subject binding either** | 171 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
-**These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 39 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
+**These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 40 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
 - `api/_lib/alf-family-mar.test.js`
 - `api/_lib/compliance-rules-staff-join.test.js`
@@ -831,6 +832,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_defect_register_vocab_probe.py`
 - `tests/run_demo_credentials_probe.py`
 - `tests/run_doc_sha_reseat_probe.py`
+- `tests/run_drive_upload_verify_probe.py`
 - `tests/run_dup_dom_ids_probe.py`
 - `tests/run_entry_point_scope_probe.py`
 - `tests/run_exec_msgs_gate_sabotage_probe.py`
@@ -882,7 +884,9 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_role_gate_negative_coverage_probe.py`
 - `tests/run_role_gate_table_rule_probe.py`
 - `tests/run_sabotage_harness_baseline_probe.py`
+- `tests/run_save_reviews_retry_probe.py`
 - `tests/run_schema_provisioning_probe.py`
+- `tests/run_scope_gate_unfetched_base_probe.py`
 - `tests/run_scrutiny_flag_probe.py`
 - `tests/run_seam_cannot_tell_watch_probe.py`
 - `tests/run_session_recheck_coverage_probe.py`
@@ -961,11 +965,11 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 941   tests/**, api/** (both walked)
+  test files on disk                 944   tests/**, api/** (both walked)
   open-work rows citing a test       392   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 10   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                77   report_only_checks.REGISTRY
-  recorded NOT-promoted decisions     81   report_only_checks.NOT_PROMOTED
+  recorded NOT-promoted decisions     82   report_only_checks.NOT_PROMOTED
   numbered gate checks                17   sairn_push_gate_hook.py
 ```
 
