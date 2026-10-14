@@ -35,6 +35,7 @@ to" is the whole risk, so `git status --porcelain` is captured before and after
 and any difference FAILS. That check is the reason this file can safely run a
 mutating tool at all.
 """
+import ast
 import io
 import os
 import re
@@ -52,6 +53,47 @@ TOOLS = os.path.join(REPO, 'tools')
 # and would have reported a pass for a run that tested nothing.
 SELFTEST_RX = re.compile(
     r"['\"](--self-?check|--selftest)['\"]\s*in\s*(?:sys\.)?argv", re.I)
+
+# ── THE "in argv" TIGHTENING WAS STILL TEXT, 2026-10-14 ─────────────────────
+# The regex above requires the FULL phrase `'--selftest' in sys.argv`, and
+# three files still false-positived: tools/first_article_inspection.py (the
+# phrase appears inside a STRING LITERAL it builds and writes to disk as a
+# FIXTURE for its own --fixtures test), tools/subprocess_decode_check.py (the
+# phrase appears in its module DOCSTRING, quoting this exact bug class as
+# prose), and tools/checker_selftest_check.py (the phrase appears in a `#`
+# COMMENT, explaining a past fix to ITS OWN unrelated flag-detection code).
+# A regex run over raw source text cannot distinguish "this is real code" from
+# "this is a string/comment that merely contains the shape of real code" --
+# text does not know what a string literal is. An AST does: a Python string
+# whose CONTENTS look like an `if` statement is one opaque ast.Constant, never
+# an ast.Compare, because the parser never looks inside it. Confirmed live:
+# all three fail at the actual invocation with argparse's "unrecognized
+# arguments" -- the AST check below reproduces that without spending a
+# subprocess per candidate.
+def _flag_is_live_code(src, flag):
+    """True iff `<flag> in (sys.)?argv` is a REAL `if`/comparison the parser
+    sees, not text sitting inside a string, docstring or comment."""
+    try:
+        tree = ast.parse(src)
+    except SyntaxError:
+        return False
+    target = flag.lower().replace('-', '').replace('_', '')
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Compare):
+            continue
+        if not any(isinstance(op, ast.In) for op in node.ops):
+            continue
+        left = node.left
+        if not (isinstance(left, ast.Constant) and isinstance(left.value, str)):
+            continue
+        if left.value.lower().replace('-', '').replace('_', '') != target:
+            continue
+        for comp in node.comparators:
+            name = (comp.attr if isinstance(comp, ast.Attribute)
+                    else comp.id if isinstance(comp, ast.Name) else None)
+            if name == 'argv':
+                return True
+    return False
 
 # ── DECLARED EXCLUSIONS, EACH WITH A REASON ───────────────────────────────────
 # Not a convenience list. A tool is excluded only when RUNNING it in the suite
@@ -74,9 +116,16 @@ EXCLUDE = {
 # A tool whose self-test needs something this environment may not have. These
 # are RUN, and a failure is reported as COULD NOT TELL rather than as a defect
 # -- but never as a pass.
+# "not recognized" was spelled for a DIFFERENT message than the one argparse
+# actually prints. argparse's rejection of an unknown flag is "unrecognized
+# arguments: --selftest" -- no "not", one word -- so a tool that gets run with
+# a flag it never had (exactly what the three AST false-positives above used
+# to trigger) went to `fails` as a real defect instead of COULD NOT TELL.
+# Verbatim from a live run: `checker_selftest_check.py: error: unrecognized
+# arguments: --selftest`.
 TOLERATE_MISSING = re.compile(
-    r'No module named|command not found|not recognized|ENOENT|'
-    r'connection|timed out|NOT_PROVISIONED', re.I)
+    r'No module named|command not found|not recognized|unrecognized argument|'
+    r'ENOENT|connection|timed out|NOT_PROVISIONED', re.I)
 
 fails, could_not = [], []
 
@@ -97,6 +146,8 @@ def discover():
                       errors='replace').read()
         m = SELFTEST_RX.search(src)
         if not m:
+            continue
+        if not _flag_is_live_code(src, m.group(1)):
             continue
         out.append((f, m.group(1)))
     return out

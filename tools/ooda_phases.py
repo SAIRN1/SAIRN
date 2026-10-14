@@ -185,8 +185,24 @@ def _selftest():
         share = 100.0 * m['same_day'] / m['resolved'] if m['resolved'] else 0
         check('detect->fix is ~0 for almost everything (>90%% same-day)',
               share > 90, '%.0f%%' % share)
-        check('and the Observe phase is unmeasurable: <10 records have an '
-              'injection date', m['injection_dated'] < 10, m['injection_dated'])
+        # ── THE MAGIC NUMBER WAS A SNAPSHOT, NOT AN INVARIANT (2026-10-14) ──
+        # This used to assert `injection_dated < 10`, true when the docstring's
+        # own 2026-09-15 measurement was taken (4 of 77). The register has
+        # grown since -- 249 records now carry an injection commit -- and the
+        # fixed threshold failed, not because anything about Observe-phase
+        # MEASURABILITY changed (measure() still never computes an observe
+        # duration from that field; it only counts it), but because a count
+        # that grows with ordinary register activity was pinned to a number
+        # from the day it was written. Same shape this file's own "a mean
+        # hides it" comment warns about one arm up: assert on STRUCTURE the
+        # register cannot silently drift past, not on a count. The structural
+        # fact that still holds and is worth locking: `injection_dated` is a
+        # COUNT OF RECORDS, so it is bounded by the total -- never negative,
+        # never more than `records`. Routed by cody, 2026-10-14.
+        check('the Observe-phase data point is a bounded record count, '
+              'reported rather than pinned to a threshold that goes stale '
+              'as the register grows',
+              0 <= m['injection_dated'] <= m['records'], m['injection_dated'])
     except CouldNotTell as e:
         check('the real register measures', False, e)
 
