@@ -794,6 +794,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "docs/hank-evidence/b8_live_gate_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "print('    (the cancellation-exempt path is NOT driven live: proving it '"
+    }
+   ],
+   "sha": "3752dcb3e6ef21a0711de2d6ae485d2a8ceaacf5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": ".claude/settings.json",
    "class": "CI / hook configuration",
    "level": "CHANGE",
