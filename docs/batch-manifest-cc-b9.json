@@ -37,8 +37,8 @@
     {
       "id": 6,
       "title": "",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "pushed without force; git rev-list --left-right --count origin/main...HEAD = 0 0, HEAD f0afdadc on origin/main. Two rebases during landing (one clean, one docs/defect-density-register.json conflict resolved via tools/sairn_rebase_resolve.py), defect register re-seated onto rewritten shas both times."
     }
   ]
 }

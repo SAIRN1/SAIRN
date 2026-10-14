@@ -5039,6 +5039,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_selftest_sweep_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f9e56cfd0c3a08a5cb002ae69fef8a93c9c1bffa",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/sd-data-law-role-matrix.test.js",
    "class": "test file",
    "level": "CHANGE",
