@@ -601,6 +601,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/role-vocabulary-agreement.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'skip is how a real app stops being checked', function () {"
+    }
+   ],
+   "sha": "28f7744eef0f63f97dc4dc53a5e3e4c19e81642e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-sf-role-matrix.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "28f7744eef0f63f97dc4dc53a5e3e4c19e81642e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_tier_a_review_gate_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -770,6 +791,19 @@
     }
    ],
    "sha": "3722913645e4b66126b054998a00776096fc711b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "docs/hank-evidence/b8_live_gate_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "print('    (the cancellation-exempt path is NOT driven live: proving it '"
+    }
+   ],
+   "sha": "3752dcb3e6ef21a0711de2d6ae485d2a8ceaacf5",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -1467,6 +1501,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/lifecycle-audit-event-coverage.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "650e0228257341f2d43a9f0fdb325bfaaad77a27",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/sd-data-law-role-matrix.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -1987,6 +2029,31 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/sd-data-leg-bookings-toctou.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "if (/_employee_auth\\?.*&select=active&limit=1/.test(String(url))) {"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "section('5. cancelling a booking is exempt -- no check at all');"
+    }
+   ],
+   "sha": "8447c36954049c3b065092f209f31083190775c0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlegacy_write_failure_voice.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "8447c36954049c3b065092f209f31083190775c0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_scrutiny_flag_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -2357,6 +2424,14 @@
     }
    ],
    "sha": "956de43ce6afb1293d38e253c2eff0ca6568db50",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/role-vocabulary-agreement.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "979a08410c2565fdcd49b2e092590e4fe9189dec",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -3468,6 +3543,22 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "d95612bc63597e202d39353be57ecf4030a785fc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-scp-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d99b47f9683ef3cc4a94574271c12d9e0fc4ee0c",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d99b47f9683ef3cc4a94574271c12d9e0fc4ee0c",
    "criteria_version": "2026-10-06.1"
   },
   {

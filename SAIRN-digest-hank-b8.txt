@@ -1,0 +1,9 @@
+STATUS b8 closed. All 6 items landed; HEAD == origin/main, 0/0, no --force, no seed-gate override. Items 1-2 were committed-but-unpushed by a prior b8 session; verified, not redone.
+DECISION-NEEDED Michael: may an unsigned-in SAIRNscape crew read `schedule`? It is the 12th resource, outside the repro's 22 pairs, still licence-only.
+CHANGED Five scp_ resources gated -- repro 10/22 to 22/22 FIXED. leg_bookings double-booking gate, server + client rollback, 48 arms. Role-CHECK agreement gained a per-app both-directions negative control. Three defect-register records.
+EVIDENCE-path docs/SAIRN-handoff-hank-b8.md; docs/hank-evidence/b8_live_gate_probe.out
+UNVERIFIED The leg_bookings 409 path was not driven live -- proving it needs writing a real booking. The gate is read-then-write, not atomic. reservation_lock.js is red, pre-existing.
+NEXT Michael decides `schedule`; cloud discharges the Tier A obligation on leg_cases.
+CONTEXT ~2% of 15,000,000 session tokens (316k used, tool-reported). Not a context-window figure.
+SHA256 3745adf9f66b8c925817b9e16decc84f7556e1c34bab4f1b7a3ee3b0d43f622a
+END-OF-REPORT
