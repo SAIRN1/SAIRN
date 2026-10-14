@@ -1,0 +1,29 @@
+{
+  "_what": "ONE leg_custodylog row created on LEG-PINNACLE-2026 by hank's b10 post-push live verification, 2026-10-14. Recorded here BY THE RUN THAT CREATED IT rather than discovered later -- the contract in docs/live-residue/README.md.",
+  "tool": "docs/hank-evidence/b10_live_gate_probe.py (a tracked file in this repo, not an ad-hoc script in a temp directory)",
+  "licence_key": "LEG-PINNACLE-2026",
+  "licence_note": "The SAIRNlegacy DEMO licence, the one docs/2026-09-03-demo-credentials.md publishes a PIN for. It holds no real funeral home's data. If this licence is ever given to a real practice this row must be removed before it is, because a chain-of-custody log with a probe row in it is a chain-of-custody log with a wrong entry in it -- and by the rule this very row was created to prove, NOBODY CAN EDIT IT OUT through the API. Only the SQL below removes it.",
+  "date": "2026-10-14",
+  "why": "api/_lib/leg-roles.js makes leg_custodylog APPEND-ONLY for every role including the owner, enforced in api/sd-data.js by an existence lookup before the upsert. That rule has TWO halves and only one of them is a refusal. A probe that sent only the second request could not tell 'edits refused, appends work' from 'the log is read-only and nothing can be recorded at all' -- and the second is the worse bug, because a custody log that cannot be appended to is a custody log that has stopped existing. The only way to separate them live is to append once and then re-send the same id.",
+  "result": "APPEND ZZ-B10-APPEND-PROBE -> HTTP 200 ok. EDIT of the same id -> HTTP 409 APPEND_ONLY. Both halves proven against the deployed endpoint; fail=0 couldnot=0 for the whole probe. The 409 is also the read-back: the row is really there, not merely reported, because the refusal is raised BY the existence lookup finding it.",
+  "rows": [
+    {
+      "table": "leg_custodylog",
+      "id_column": "custodylog_id",
+      "id": "ZZ-B10-APPEND-PROBE",
+      "accumulates": false,
+      "accumulates_note": "The id is FIXED, not generated. A re-run's first request now answers 409 APPEND_ONLY instead of 200 -- the probe prints that as a PASS with the reason, rather than failing on it -- so no second row can ever be created by this tool. That is a consequence of the append-only rule itself: the upsert is never reached twice."
+    }
+  ],
+  "removal_sql": [
+    "create extension if not exists pgcrypto;",
+    "-- THE LICENCE HASH IS DERIVED, never pasted. If this does not match the hash on the row you are about to delete, STOP.\nselect encode(digest('LEG-PINNACLE-2026', 'sha256'), 'hex') as derived_license_hash;",
+    "-- SELECT FIRST. Expect EXACTLY 1 row. Anything else means something other than this probe wrote here and the delete below is wrong.\nselect custodylog_id, data, updated_at\n  from public.leg_custodylog\n where license_hash = encode(digest('LEG-PINNACLE-2026', 'sha256'), 'hex')\n   and custodylog_id = 'ZZ-B10-APPEND-PROBE';",
+    "-- AND THE BLAST RADIUS, because a predicate is only safe if you have seen what it does NOT match. Expect this count to be at least 1 and the delete to remove exactly 1 of it.\nselect count(*) as all_custody_rows_on_this_licence\n  from public.leg_custodylog\n where license_hash = encode(digest('LEG-PINNACLE-2026', 'sha256'), 'hex');",
+    "-- THEN, and only after reading both of the above:\ndelete from public.leg_custodylog\n where license_hash = encode(digest('LEG-PINNACLE-2026', 'sha256'), 'hex')\n   and custodylog_id = 'ZZ-B10-APPEND-PROBE';",
+    "-- CONFIRM. Expect 0.\nselect count(*) as remaining\n  from public.leg_custodylog\n where license_hash = encode(digest('LEG-PINNACLE-2026', 'sha256'), 'hex')\n   and custodylog_id = 'ZZ-B10-APPEND-PROBE';"
+  ],
+  "the_grant_makes_this_a_human_job_and_that_is_deliberate": "sql/sairnlegacy_data_schema.sql's grants do not give service_role a DELETE on leg_custodylog, and the handler now refuses an EDIT to any role. So this row cannot be removed by the API, by this probe, or by any tool -- only by a human in the SQL editor. That is the append-only rule working exactly as designed, and the cost of proving it live is one row that has to be cleaned up by hand. Said plainly rather than left for whoever finds it.",
+  "leaving_it_is_also_defensible_and_here_is_the_judgement": "On a DEMO licence, a custody row with an obviously synthetic id and the note 'b10 live probe' is self-describing and harmless, and removing it costs a human a SQL session. The reason to remove it anyway is the one above: the moment this licence stops being a demo, the row is a false entry in a regulated record and there is no quick way out. Remove it before any real practice is put on LEG-PINNACLE-2026; until then leaving it is a reasonable call.",
+  "what_this_record_does_not_cover": "Rows written to this licence by anything other than this probe. tools/live_probe_residue_audit.py's universe is tracked files under tools/ tests/ scripts/, and this probe lives under docs/hank-evidence/ -- so an audit scoped to those three directories would not find this run. The record is here because the run wrote it, not because a sweep caught it."
+}

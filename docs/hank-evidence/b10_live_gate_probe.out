@@ -1,0 +1,25 @@
+B10 LIVE GATE PROBE -- the clergy overlap helper, leg_custodylog append-only, the role matrix over-refusal control, rf_settings
+data https://sairn.vercel.app/api/sd-data
+
+leg-auth login -> 200  token=YES
+  leg_clergybookings write, no window -> 400 CLERGY_BOOKING_WINDOW_REQUIRED   PASS
+  leg_bookings write, no window -> 400 BOOKING_WINDOW_REQUIRED   PASS
+  leg_custodylog APPEND ZZ-B10-APPEND-PROBE -> 200 ok   PASS
+  leg_custodylog EDIT  ZZ-B10-APPEND-PROBE -> 409 APPEND_ONLY   PASS
+  leg_deathrecords read, OWNER -> 200 ok rows=0   PASS
+
+rf-auth login -> 200  token=YES
+  rf_settings read, MANAGEMENT -> 200 ok rows=0 tiered=False   PASS
+
+fail=0 couldnot=0
+
+NOT DRIVEN HERE, and this is the list rather than a silence:
+  * every role-matrix REFUSAL arm -- needs a non-owner SAIRNlegacy
+    session, and the five new roles are rejected by the database
+    until run-order block 6 is run. SOURCE AND SUITE VERIFIED ONLY.
+  * the rf_settings TIERED half -- needs a non-management SAIRNroofing
+    session; no such demo credential exists.
+  * the sen_visits clock_flags merge -- needs two writes ten days
+    apart against an assigned visit. That is a fixture, not a probe.
+  * the office_manager role end to end -- the database rejects it
+    until run-order block 5 is run.
