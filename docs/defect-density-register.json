@@ -28619,6 +28619,68 @@
         }
       ],
       "recurrence_open": "The new test reads sql/ files, so a CHECK widened LIVE and never written back is still invisible -- the exact state three audit-log tables were in until 2026-10-13. Nothing yet compares any app's HTML, the third copy of these vocabularies, except SAIRNfreedom's."
+    },
+    {
+      "commit": "028d7275cab7",
+      "date": "2026-10-14",
+      "subject": "fix(tier a review gate): save_reviews stops losing a writer on Windows, with the failing-first probe that caught it",
+      "files": [
+        "tests/run_save_reviews_retry_probe.py",
+        "tools/tier_a_review_gate.py"
+      ],
+      "lines_added": 289,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "fault-injection",
+      "summary": "tools/tier_a_review_gate.py save_reviews() called os.replace with no retry. On Windows that is MoveFileEx(MOVEFILE_REPLACE_EXISTING) and it fails ERROR_ACCESS_DENIED while the destination is held open, including by another MoveFileEx on the same target: 335 of 400 concurrent saves raised PermissionError. Safety held -- no reader ever saw a half-written file -- and LIVENESS did not: one of two concurrent writers errored instead of completing, and --open, --discharge and --reseat-shas all end in save_reviews, so a caller did its work and its Tier A record was never written. Arm 11 of the probe carried the traceback in 12 of 12 runs and exited 0 every time. Fixed with a bounded 20-attempt retry on PermissionError BY NAME that re-raises on exhaustion.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tests/run_tier_a_review_gate_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "a51047b398f0",
+        "date": "2026-09-21",
+        "subject": "feat(tier-a): an obligation is ASSIGNED when it is opened -- the duplicate-review race removed rather than detected",
+        "lag_days": 23
+      },
+      "citation_note": "no standing rule names a Windows-specific atomic-replace liveness failure; PR 1.11 covers could-not-run states and this is a lost write",
+      "factors_unknown_reason": "cody measured the behaviour and routed the fix; why MoveFileEx semantics were not considered when the atomic write was added has not been investigated by anybody and inventing a cause here would be a guess"
+    },
+    {
+      "commit": "cb1849a77543",
+      "date": "2026-10-14",
+      "subject": "fix(scope gate): an unfetched remote tip is a could-not-read about the REMOTE, not a range error about the change -- plus the ruling fourth asked for",
+      "files": [
+        "docs/2026-10-13-cc-routed-b7.md",
+        "tests/run_scope_gate_unfetched_base_probe.py",
+        "tools/hover_auditor_scope_gate.py",
+        "tools/report_only_checks.py"
+      ],
+      "lines_added": 474,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "tools/hover_auditor_scope_gate.py changed_outgoing() built its diff range from rsha, the remote sha read off git pre-push stdin by field position, with no existence test, then reported the failure as a property of the RANGE: could not read the outgoing range A..B. With five sessions pushing one branch that sha is routinely an object this clone has never fetched, so the ordinary case was reported as an anomaly about the change being pushed. FOURTH INSTANCE of a shape fixed three times (register_feed_gate ac9d47d8, copy_exactly_gate 55777a74, sairn_push_gate_hook 9c36aa7c, the last printing a FALSE FINDING NO OWNER: 4). Fixed with _have_commit plus a merge-base(origin/main, local) fallback that states the substitution out loud, or a could-not-read naming git fetch origin when neither end resolves.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "792117dd16e6",
+        "date": "2026-09-15",
+        "subject": "feat(process): the hover auditor's separation becomes mechanical -- and both alleged breaches did not happen",
+        "lag_days": 29
+      },
+      "citation_note": "the nearest standing rule is PR 1.11 (could-not-run is a third state) and this is its mirror image: the gate did not skip, it reported a could-not-read as a FINDING about the change. Cross-domain-disciplines item 8 covers the staleness half. Neither names this shape exactly, so not-citable rather than a stretched citation",
+      "factors_unknown_reason": "fourth routed the defect twice and named the shape; the causal question -- why four separate gates each bound a remote sha from pre-push stdin with no existence test -- is a real analysis nobody has done, and a guess here would be worse than the gap"
     }
   ],
   "started": "2026-09-09",
