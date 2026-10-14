@@ -715,8 +715,8 @@
       "task": "h1 b33 -- (1) land-check cc b10/cody b11/hank b11/fourth b19/H2 b32 via Drive then source, deep-verify any fully closed, skip active. (2) tools/hover_tip_beacon.py: diff tracked vs untracked, merge --max-lag, apply KNOWN_INSTANCE_LOGS default + duplicate-refusal pattern, rename stale copy aside, register defect. (3) deep-verify hank b10 (shas 49780043/9731d880/85206564/fdd06d06/ad128e5c): office_manager, sairnlegacy 5 roles, ai-notice.js 503-until-migrated, audit checkpoint -- not the run-order SQL (hover2's). (4) deep-verify fourth b18 (b5ea4d3b, closed a52a4edb): 418h Tier A discharge, reviewer-not-author, every cited line, tier_a_review_gate.py --validate. (5) deep-verify cc b9 (f0afdadc, closed) beyond status-line/hooks/pulls already checked. (6) log findings, push no force confirm landed, chain+token check. I WRITE ONLY under .claude/skills/sairn-hover-auditor/ plus my own three root deliverables b33; no tools/ (platform) api/ sql/ tests/ file edited except this role's own .claude/skills/sairn-hover-auditor/tools/hover_tip_beacon.py; no hook added/restored, no settings.json commit, no SAIRN_SEED_GATE override. FILES: SAIRN-handoff-h1-b33.md SAIRN-report-h1-b33.txt SAIRN-digest-h1-b33.txt .claude/skills/sairn-hover-auditor/tools/hover_tip_beacon.py .claude/skills/sairn-hover-auditor/routing/2026-10-14-h1-b33-findings.md",
       "claimed_at": "2026-10-14T16:58:58Z",
       "claimed_at_epoch": 1791997138.9150612,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-14T17:41:32Z",
       "files": [
         ".claude/skills/sairn-hover-auditor/routing/2026-10-14-h1-b33-findings.md",
         ".claude/skills/sairn-hover-auditor/tools/hover_tip_beacon.py",
