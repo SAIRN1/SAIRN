@@ -828,6 +828,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/_lib/auth-roleset-seam.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "30e48f6622f8f7ad212a3325c754ea623f65836b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/push_gate/_local_remote.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -1596,6 +1604,35 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/sd-data-scp-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "5776ef1962382d3facba73db990e10df55d5364e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "5776ef1962382d3facba73db990e10df55d5364e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "docs/hank-evidence/b9_live_gate_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "print('    (the cancellation-exempt path is NOT driven live: proving it '"
+    }
+   ],
+   "sha": "5776ef1962382d3facba73db990e10df55d5364e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_gh_push_argv_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -2341,6 +2378,32 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "7e7c3d27cf01e0a852c2d9b0d44082a6d4206cb7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/sairnsenior-branches.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "check('...and that allowlist does not leak who changed the office',"
+    }
+   ],
+   "sha": "7eae3077467fd164ca70d929c8c1cd5000b64d73",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-sen-role-asymmetry.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "if (/_employee_auth\\?.*&select=active&limit=1/.test(String(url))) {"
+    }
+   ],
+   "sha": "7eae3077467fd164ca70d929c8c1cd5000b64d73",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -3129,6 +3192,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairnfreedom_ai_disclosure.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a428abcae6d699d3e55c6a9171bacf7a4bf628c2",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/mar_billing_grant.test.js",
    "class": "test file",
    "level": "WEAKENING",
@@ -3167,6 +3238,32 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "a6ea0087d7686c675dbd1e86327ee592f8552069",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/ai-safeguards.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "+ 'limit is the reason the field exists');"
+    }
+   ],
+   "sha": "a6fa37a37a6303f9f9d311e6ebeeec048c5bb6fc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-ai-approval.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "if (/_employee_auth\\?.*&select=active&limit=1/.test(String(url))) {"
+    }
+   ],
+   "sha": "a6fa37a37a6303f9f9d311e6ebeeec048c5bb6fc",
    "criteria_version": "2026-10-06.1"
   },
   {
