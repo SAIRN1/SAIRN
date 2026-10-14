@@ -3547,6 +3547,45 @@ NOT_PROMOTED = [
      'trigger claimed as MECHANICAL is watched by anything that runs -- COULD '
      'be promoted on its own, and should be split out first rather than '
      'promoting the judgement half alongside it.'),
+    # ══ ONE ENTRY LANDED 2026-10-13 (cc b7) ═════════════════════════════════
+    # THE RULING ON fourth's DECIDE_OR_NOT_PROMOTED, recorded here because
+    # that is the mechanism fourth's routing named, and the register row it
+    # belongs beside (docs/by-design-register.json) is in fourth's LIVE b12
+    # FILES -- declared, not overridden (PR 4.3). The full account is
+    # docs/2026-10-13-cc-routed-b7.md.
+    ('unfetched_base_check.py (PROPOSED, NEVER WRITTEN)',
+     'THE OTHER HALF OF fourth b10/b11 IS DECLINED, AND THE HALF THAT MATTERED '
+     'WAS APPLIED INSTEAD. The fix itself landed: '
+     'tools/hover_auditor_scope_gate.py now carries `_have_commit` and reports '
+     'an unfetched REMOTE TIP as a could-not-read about the remote rather than '
+     'as a range error about the change, driven by 12 arms in '
+     'tests/run_scope_gate_unfetched_base_probe.py including an ablation that '
+     'puts the pre-fix refusal back. What is NOT being built is the standalone '
+     '6-arm STATIC TAINT CHECKER over every tool with this shape. '
+     'THE REASON IS A MEASUREMENT, NOT A PREFERENCE: the population is THREE '
+     'files -- hover_auditor_scope_gate.py, register_feed_gate.py, '
+     'sairn_push_gate_hook.py -- counted by the arm-6 code in that probe '
+     '(tools/*.py containing a pre-push ref-line parse binding a sha by field '
+     'position), and all three are guarded as of this run. A new tool with a '
+     'criteria lock, fixtures and six arms, maintained for ever, over three '
+     'files that are already clean, buys only the FOURTH author of the shape. '
+     'AND fourth NAMED THE EXPENSIVE PART ITSELF: arm 3 '
+     '(`cat-file -e <sha>:<path>`, which looks like an existence test and is a '
+     'question about a path) needs flow-level analysis to classify, and a '
+     'checker that gets it wrong passes the worst real instance WHILE '
+     'REPORTING ITSELF CLEAN. '
+     'SO THE SUBSTITUTE IS CHEAPER AND ACTUALLY RUNS: arm 6 of that probe '
+     're-measures the population every run and FAILS if any member loses its '
+     'guard, and arm 6b fails if the population ever reads as empty -- the way '
+     'this kind of arm dies quietly. ITS LIMIT IS STATED IN THE PROBE AND '
+     'HERE: the guard is detected PER FILE, not along the flow, so it catches '
+     '"no guard anywhere", which is the shape all four real instances had, and '
+     'NOT "guarded on one path and not another". That residue is the thing '
+     'declined; it is not claimed as covered. '
+     'PROMOTE THE FULL CHECKER IF a fourth instance appears despite arm 6, or '
+     'if the population grows past about six files -- at that size the '
+     'per-file reading this substitute relies on stops being something a '
+     'reviewer can hold.'),
 ]
 
 

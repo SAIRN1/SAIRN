@@ -244,6 +244,21 @@ def git(*args, **kw):
     return r.returncode, r.stdout, r.stderr
 
 
+def _have_commit(sha):
+    """Is `sha` an object THIS CLONE has? Nothing cleverer.
+
+    `cat-file -e <sha>^{commit}` answers exactly that and says nothing about
+    reachability, which is not the question. A sha the remote has and this
+    clone does not is the ORDINARY state after another session pushes.
+
+    NOT `cat-file -e <sha>:<path>`, which looks like an existence test and is a
+    question about a PATH AT A COMMIT -- that confusion is what produced the
+    `NO OWNER: 4` false finding in `sairn_push_gate_hook.py` (fixed 9c36aa7c).
+    """
+    code, _o, _e = git('cat-file', '-e', '%s^{commit}' % sha)
+    return code == 0
+
+
 def repo_root():
     code, out, _ = git('rev-parse', '--show-toplevel')
     if code != 0:
@@ -399,12 +414,53 @@ def changed_outgoing(stdin_text):
         _lref, lsha, _rref, rsha = parts[:4]
         if lsha == ZERO:               # a delete; sends no content
             continue
-        rng = lsha if rsha == ZERO else '%s..%s' % (rsha, lsha)
+        # `rng` IS ASSIGNED INSIDE BOTH BRANCHES, not before them. It used to be
+        # computed once up front, so the error text below could quote a range
+        # the `log` branch never used -- a true-looking message about the wrong
+        # subject.
         if rsha == ZERO:
             notes.append('new branch: checking every commit reachable from ' + lsha[:8])
+            rng = lsha
             code, out, err = git('log', '--format=', '--name-only', lsha)
         else:
+            rng = '%s..%s' % (rsha, lsha)
+            if not _have_commit(rsha):
+                # THE REMOTE MOVED SINCE THIS CLONE'S LAST FETCH -- ordinary
+                # with five sessions pushing one branch, not an anomaly. The
+                # fourth instance of a shape fixed three times already
+                # (register_feed_gate ac9d47d8, copy_exactly_gate 55777a74,
+                # sairn_push_gate_hook 9c36aa7c), routed by fourth b10/b11.
+                #
+                # RE-QUALIFIED FOR THIS TARGET RATHER THAN COPIED (convention
+                # 7): merge-base(origin/main, lsha) sits FURTHER BACK than the
+                # range git asked about when the remote tip is merely unfetched,
+                # so MORE paths are examined, never fewer. For a gate whose job
+                # is to REFUSE an out-of-scope path, a superset can only refuse
+                # more -- the safe direction here. It is said out loud on every
+                # use, because a gate that silently changes its own subject is
+                # convention 8 one step later.
+                mcode, mout, _me = git('merge-base', 'origin/main', lsha)
+                mb = (mout or '').strip()
+                if mcode != 0 or not mb:
+                    return None, (
+                        'the remote tip %s is NOT an object in this clone -- the '
+                        'remote moved since the last fetch, which is ordinary '
+                        'with five sessions pushing -- AND '
+                        'merge-base(origin/main, %s) could not be resolved '
+                        'either, so there is no range to read. FETCH AND PUSH '
+                        'AGAIN: git fetch origin. This is a COULD-NOT-READ '
+                        'about the REMOTE, not a finding about the change.'
+                        % (rsha[:12], lsha[:12]))
+                notes.append(
+                    'the remote tip %s is not an object in this clone, so the '
+                    'range git handed this hook cannot be read -- the remote '
+                    'moved since the last fetch. Examining '
+                    'merge-base(origin/main, %s) = %s instead, a SUPERSET of '
+                    'the range asked for' % (rsha[:12], lsha[:12], mb[:12]))
+                rng = '%s..%s' % (mb, lsha)
             code, out, err = git('diff', '--name-only', rng)
+        # NOT DELETED: this is still the right message for `git diff` failing on
+        # a range whose BOTH ends resolve, which is a real anomaly.
         if code != 0:
             return None, 'could not read the outgoing range %s: %s' % (rng, err.strip())
         paths.extend(l for l in out.split('\n') if l.strip())
