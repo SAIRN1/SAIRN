@@ -13,6 +13,16 @@ single-direction check.
 AND THE REAL DEFECT IT WAS BUILT FOR IS REPRODUCED IN §1: a suite whose every arm
 runs as the ONE allowed role. That is api/sd-data-family-contacts.test.js, which
 was eighteen green arms over a resource with no gate at all.
+
+THE RATCHET IS ON `exposed`, NOT ON `uncovered`, AND §6 DRIVES ALL THREE LEGS.
+Deleting the only suite that drives a resource moves it uncovered -> not_driven:
+`uncovered` falls, and the tool used to call that IMPROVED, so the ratchet could
+be walked down by deleting tests. It now compares uncovered + not_driven. §6
+drives the modern pin, the legacy pin that must DERIVE the sum and disclose it,
+and the `uncovered`-only pin that must refuse with exit 2 -- plus the control
+that `uncovered` falling while the sum HOLDS is explicitly not an improvement.
+This file's four pin fixtures were the pre-change shape until 2026-10-14 and all
+four §6 arms were reading that correct refusal as a tool failure.
 """
 CONTROLS_FOR = ['role_gate_negative_coverage.py']
 
@@ -167,7 +177,35 @@ async function h(req, res) {
 # and the fixture was the thing to change -- a synthetic name cannot be confused
 # for the real resource by any tool, and the ROLE SETS are renamed to match for
 # the same reason.
-PIN0 = {'uncovered': 0}
+# ── THE PIN FIXTURES CARRY THE SHAPE THE TOOL RATCHETS ON (2026-10-14) ──────
+# EVERY CONSTRUCTED PIN IN THIS FILE WAS `{'uncovered': N}` AND THE TOOL STOPPED
+# RATCHETING ON `uncovered` ALONE. It ratchets on `exposed` = uncovered +
+# not_driven, because deleting the only suite that drives a resource moves it
+# from `uncovered` to `not_driven` -- `uncovered` FALLS, the tool printed
+# "IMPROVED -- re-pin", and the ratchet could be walked down by deleting tests.
+# A pin carrying neither `exposed` nor an integer `not_driven` is now
+# `exit 2 COULD NOT TELL -- NOTHING WAS COMPARED on that leg`, which is the
+# right answer and was the cause of all four section-6 failures.
+#
+# So the fixtures carry both keys. SECTION 6 ALSO NOW DRIVES THE DERIVATION LEG
+# AND THE REFUSAL LEG EXPLICITLY -- the exit 2 that was failing these arms is
+# asserted as CORRECT for an `uncovered`-only pin rather than erased by the
+# repair, and the legacy shape (uncovered + not_driven, no `exposed`) is pinned
+# to derive the sum and SAY it derived it.
+#
+# PIN0 gains `not_driven` for the same reason, so the sections that do not
+# assert an exit code still produce a real comparison instead of printing
+# COULD NOT TELL under arms that pass on the report text.
+PIN0 = {'uncovered': 0, 'not_driven': 0}
+
+# THE FIXTURE'S OWN NUMBERS, STATED ONCE. SD declares two gated resources.
+# OWNER_ONLY drives zz_profile as its ALLOWED role only (uncovered) and no
+# suite drives zz_notes at all (not_driven) -- so uncovered 1, not_driven 1,
+# exposed 2. WITH_NEG drives zz_profile with an EXCLUDED role (covered), leaving
+# uncovered 0, not_driven 1, exposed 1. Sections 1-5 assert those numbers
+# directly; section 6 builds its pins from them.
+OWNER_ONLY_EXPOSED = 2
+WITH_NEG_EXPOSED = 1
 
 # ---------------------------------------------------------------------------
 print('1. THE REAL DEFECT: every arm runs as the ONE allowed role')
@@ -270,24 +308,68 @@ shutil.rmtree(d, ignore_errors=True)
 
 # ---------------------------------------------------------------------------
 print('\n6. THE RATCHET MOVES ONE WAY AND SAYS SO')
-d = sandbox(SD, {'a.test.js': OWNER_ONLY}, {'uncovered': 1})
+d = sandbox(SD, {'a.test.js': OWNER_ONLY},
+            {'uncovered': 1, 'not_driven': 1, 'exposed': OWNER_ONLY_EXPOSED})
 rc, out = run(d)
 check('at the pinned number it is OK and exits 0',
-      rc == 0 and 'OK -- no worse' in out, 'exit=%s' % rc)
+      rc == 0 and 'OK -- no worse' in out, 'exit=%s :: %s' % (rc, out[-400:]))
 check('...and says a ratchet is not a pass on the same run',
       'A RATCHET IS NOT A PASS' in out, out[-300:])
 shutil.rmtree(d, ignore_errors=True)
 
-d = sandbox(SD, {'a.test.js': OWNER_ONLY}, {'uncovered': 0})
+# THE LEGACY PIN SHAPE, DERIVED AND SAID OUT LOUD. Every pin the tool has ever
+# written carries `uncovered` and `not_driven`, so one predating `exposed` must
+# still answer rather than freezing an unrelated push -- and it must DISCLOSE
+# that the figure was derived, or a reader cannot tell a compared leg from an
+# assumed one.
+d = sandbox(SD, {'a.test.js': OWNER_ONLY}, {'uncovered': 1, 'not_driven': 1})
+rc, out = run(d)
+check('a pin PREDATING `exposed` still compares, by deriving the sum',
+      rc == 0 and 'OK -- no worse' in out, 'exit=%s :: %s' % (rc, out[-400:]))
+check('...and DISCLOSES that it derived it rather than comparing silently',
+      'predates `exposed`' in out and 'derived %d' % OWNER_ONLY_EXPOSED in out,
+      out[-400:])
+shutil.rmtree(d, ignore_errors=True)
+
+# AND THE REFUSAL LEG -- the exit 2 that was failing all four of these arms,
+# asserted as the CORRECT answer rather than removed by the repair. An
+# `uncovered`-only pin cannot answer the question the tool now ratchets on, and
+# a sum that cannot be derived must not be guessed at.
+d = sandbox(SD, {'a.test.js': OWNER_ONLY}, {'uncovered': 1})
+rc, out = run(d)
+check('an `uncovered`-ONLY pin is exit 2 COULD NOT TELL -- the sum cannot be '
+      'derived and is not guessed',
+      rc == 2 and 'COULD NOT TELL' in out and 'NOTHING WAS COMPARED' in out,
+      'exit=%s :: %s' % (rc, out[-400:]))
+shutil.rmtree(d, ignore_errors=True)
+
+d = sandbox(SD, {'a.test.js': OWNER_ONLY},
+            {'uncovered': 0, 'not_driven': 1, 'exposed': 1})
 rc, out = run(d)
 check('a NEW uncovered gate is a REGRESSION, exit 1',
       rc == 1 and 'REGRESSION' in out, 'exit=%s :: %s' % (rc, out[-300:]))
 shutil.rmtree(d, ignore_errors=True)
 
-d = sandbox(SD, {'a.test.js': WITH_NEG}, {'uncovered': 5})
+d = sandbox(SD, {'a.test.js': WITH_NEG},
+            {'uncovered': 5, 'not_driven': 0, 'exposed': 5})
 rc, out = run(d)
 check('an added negative arm reads as IMPROVED and asks to be re-pinned',
       rc == 0 and 'IMPROVED' in out, 'exit=%s :: %s' % (rc, out[-300:]))
+shutil.rmtree(d, ignore_errors=True)
+
+# ── THE CONTROL FOR THE IMPROVED ARM, AND IT IS THE GAMED SHAPE ─────────────
+# Without it, "any fall in `uncovered` is an IMPROVEMENT" satisfies the arm
+# above -- which is exactly the behaviour the ratchet was rewritten to remove,
+# because that is what DELETING a driving suite looks like. Same WITH_NEG
+# fixture, same exposed sum, `uncovered` one lower than pinned: the answer must
+# be "no worse" and must NOT be IMPROVED, with the reason named.
+d = sandbox(SD, {'a.test.js': WITH_NEG},
+            {'uncovered': 1, 'not_driven': 0, 'exposed': WITH_NEG_EXPOSED})
+rc, out = run(d)
+check('CONTROL: `uncovered` falling while the SUM holds is NOT an improvement '
+      '-- that is what deleting a driving suite looks like',
+      rc == 0 and 'IMPROVED' not in out and 'NOT AN IMPROVEMENT' in out,
+      'exit=%s :: %s' % (rc, out[-400:]))
 shutil.rmtree(d, ignore_errors=True)
 
 # ---------------------------------------------------------------------------
