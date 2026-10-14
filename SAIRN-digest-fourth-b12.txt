@@ -1,0 +1,11 @@
+DIGEST fourth b12
+
+STATUS Landed. HEAD == origin/main 73700129, 0 ahead 0 behind, tree clean, push not forced. A prior b12 session had claimed and left items 1-5 uncommitted; all were re-driven here, not carried over.
+DECISION-NEEDED none.
+CHANGED 73700129 (3 docs, +536): METHODOLOGY bad-input-fixture rule, by-design-register validator spec routed to cc, ack/undriven re-check. No tools/ edit. settings.json untouched by me, but it now carries 1 hook group from eb53e267 (another session).
+EVIDENCE-path SAIRN-report-fourth-b12.txt; scratchpad bad_drive_b12.log, ack_live_b12.log, gen_undriven_b12b.log, landed_b12.log.
+UNVERIFIED Rule mechanised by nothing; validator specified, not built; 36 suites still undriven; ack check cannot tell "declined" from "never saw it". Two prior evidence lines found FALSE: my own A1 fixture was fail-open, and the scratchpad .v1.py files are mid-patch, not as-shipped.
+NEXT cc: validator or NOT_PROMOTED. cody: drive 36, close 4. fourth: release claim.
+CONTEXT ~15% used (1M window; estimated, not measured)
+SHA256 f1593f72dd35d3cb7cb2fb205de98262b22dfaab3c3f4bf3ae0cc4ddf91b863c
+END-OF-REPORT
