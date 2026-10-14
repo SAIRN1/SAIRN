@@ -1,0 +1,11 @@
+DIGEST fourth b14
+
+STATUS Landed. HEAD == origin/main 73b5577e, 0/0, clean, not forced. Six items, one commit. b14 claim held.
+DECISION-NEEDED None for Michael. Three spec questions decided by chat. hank must pick ONE notice-ack store -- api/ai-notice.js or my *_employee_auth columns -- or two records hold one fact.
+CHANGED 73b5577e, 6 docs: AI spec s7 decided plus s7.4 yielding to hank's build; 13 hook-manifest findings triaged (0 real drift); both WEAKENING flags signed off false with file:line; first 25 fixtures of 616 prioritised; 3 register rulings. Nothing outside docs/.
+EVIDENCE-path SAIRN-report-fourth-b14.txt; scratchpad triage_b14.log, weakening_b14.log, priority25_tools_b14.log, register_b14.log.
+UNVERIFIED No suite run; findings classified not fixed; fixtures named not written; 4 rulings, still no reader; batch_manifest --close exit 2, no manifest exists.
+NEXT cc regenerate plus 3 rulings; hank ack store; cody T9/T10/T4 arms; fourth row 11.
+CONTEXT ~35% used (1M window; estimated)
+SHA256 60a190c7d0355a9aa7e150c1cfa3c808f7a88b5a834894787e5bd739b2fe0b13
+END-OF-REPORT
