@@ -2504,6 +2504,23 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/mar_billing_grant.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "ok('C1. a grant with NO expires_at is 400. \"Time-limited\" cannot be a '"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'Registered in docs/known-red-suites.json; no gate reads this.');"
+    }
+   ],
+   "sha": "a47cdf2d3f529bcc3a01c2302248d69a0f502b90",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_tier_a_review_gate_probe.py",
    "class": "test file",
    "level": "CHANGE",
