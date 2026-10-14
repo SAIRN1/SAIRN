@@ -3596,6 +3596,23 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "docs/hank-evidence/b11_live_gate_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "print('    tests/faults/transport_timeout_sweep.js, 81 arms over 15 apps.')"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "(line, 'PASS (the draft exemption is live -- a working copy may be '"
+    }
+   ],
+   "sha": "a53650cdff72c14af11a328f782ac780b626886b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sf_role_matrix_driven.test.js",
    "class": "test file",
    "level": "CHANGE",
