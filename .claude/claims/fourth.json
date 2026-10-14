@@ -3737,6 +3737,25 @@
         "docs/batch-manifest-fourth-b17.json",
         "docs/tier-a-reviews.json"
       ]
+    },
+    {
+      "id": "fourth-1791984200",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "fourth b18 -- (1) write the b18 manifest first, close with PYTHONIOENCODING=utf-8 until cc fixes batch_manifest.py:386 (2) discharge or --takeover my 417h-overdue Tier A obligation (hank 2026-09-27T03:42:29Z, alf_staff and sen_visits) (3) docs/2026-10-14-ai-safeguards-spec.md: section 7.5 correction inline, spec the write side of stonedesk photoAnalyze (sd_photos, no ai_source/ai_approved_by, H2 seq842), note fqSaveQuote local-only (H2 seq845), each with a failing-first arm for cody (4) one home-care practitioner question in docs/2026-10-14-fourth-b16-confirm-questions.md (5) triage the 19 open Tier A obligations by age and request a cc tool that surfaces any obligation over 48h at session start (6) push without force, confirm landed. I WRITE UNDER docs/ ONLY plus my own root b18 artifacts. NO api/ FILE (hank), NO sql/ FILE (hank), NO tools/ FILE (cc), NO tests/ FILE (cody). CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: hank's api/ and sql/, cody's tests/ and cc's tools/ files are READ-ONLY here; the item-5 tool is REQUESTED from cc, not written by me. Hooks untouched, settings.json never committed, no SAIRN_SEED_GATE override, no auditor clone entered. FILES: docs/batch-manifest-fourth-b18.json docs/2026-10-14-ai-safeguards-spec.md docs/2026-10-14-fourth-b16-confirm-questions.md docs/2026-10-14-fourth-b18-tier-a-triage.md SAIRN-handoff-fourth-b18.md SAIRN-report-fourth-b18.txt SAIRN-digest-fourth-b18.txt",
+      "claimed_at": "2026-10-14T13:23:20Z",
+      "claimed_at_epoch": 1791984200.3215308,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b18.txt",
+        "SAIRN-handoff-fourth-b18.md",
+        "SAIRN-report-fourth-b18.txt",
+        "docs/2026-10-14-ai-safeguards-spec.md",
+        "docs/2026-10-14-fourth-b16-confirm-questions.md",
+        "docs/2026-10-14-fourth-b18-tier-a-triage.md",
+        "docs/batch-manifest-fourth-b18.json"
+      ]
     }
   ],
   "refusals": [
