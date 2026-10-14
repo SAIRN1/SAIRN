@@ -93,6 +93,12 @@ const lawRoles = require('./_lib/law-roles');
 // ONE table and ONE function for all 36 sf_ resources, in api/_lib/sf-roles.js,
 // the same shape and for the same reason as law-roles directly above.
 const sfRoles = require('./_lib/sf-roles');
+// ── THE AI-SAFEGUARD POLICY, AS DATA (2026-10-14) ─────────────────────────
+// Which resources are a document-or-decision, which are deliberately not, and
+// the one function that refuses an unapproved one. Same reasoning as the two
+// lines above: a policy spread across five `if`s is a policy that will be
+// written at four of them.
+const aiSafeguards = require('./_lib/ai-safeguards');
 // ── MIRRORED FROM THE CLIENT, AND THE MIRROR IS THE POINT ─────────────────
 // sairnfreedom.html's CAPABILITIES at :2300 carries `provisioning:true` on two
 // entries and `sole:true` on one. The server-side sf_officers guards below need
@@ -2027,6 +2033,57 @@ module.exports = async (req, res) => {
               + 'token alone.');
           } catch (e) { /* logging must never refuse a request */ }
         }
+      }
+    }
+
+    // ── AI-SOURCED RECORDS NEED A HUMAN NAME ON THEM (2026-10-14, b9) ──────
+    // MICHAEL'S INSTRUCTION. A record whose content came from a model and which
+    // becomes a DOCUMENT OR A DECISION may not leave draft unless a signed-in
+    // employee's name goes on it -- and the SERVER writes that name from the
+    // verified session, never from the payload.
+    //
+    // THE PRECEDENT IS 160 LINES OF THIS FILE'S OWN HISTORY, not a new idea:
+    // the sc_auth_requests sign-off gate (search `attemptingSignOff`) refuses a
+    // submission-ready transition without a real Compliance Admin session and
+    // then sets signedOffBy ITSELF, because "a client-side 'reviewed' checkbox
+    // is a UI convenience, never the real boundary". Same shape, same reason,
+    // generalised: the policy lives in api/_lib/ai-safeguards.js as data so it
+    // is one table rather than one `if` per resource -- the defect being
+    // avoided is a check written at one call site and not the others, which is
+    // indistinguishable from no policy at all when read one branch at a time.
+    //
+    // PLACED HERE, BEFORE SD_SESSION_GATED, BECAUSE IT IS NOT A SESSION GATE.
+    // Four of the five high-risk resources are not in that table at all
+    // (mech_quotes, mech_takeoffs, grd_ecosystem_reports, rf_photos,
+    // bld_photo_analyses are licence-only for ordinary writes, which is a
+    // separate open question and NOT changed here). This block must therefore
+    // verify its own session, for the app that OWNS the row.
+    //
+    // WHAT FIRES IT, AND THE HONEST LIMIT OF THAT. Only a payload carrying
+    // `ai_source`. A server cannot look at prose and know a model wrote it, so
+    // the field is a CLAIM BY THE WRITER -- which means a client that does not
+    // stamp it gets no gate. NO CLIENT STAMPS IT ON A HIGH-RISK RESOURCE
+    // TODAY: SAIRNfreedom's sf_bottle_fills is the first adopter and is
+    // deliberately NOT high-risk (its reason is in the lib). So this refusal
+    // is REACHABLE BUT NOT YET REACHED IN PRODUCTION, which is a bounded
+    // dormancy and is recorded as one in docs/SAIRN-handoff-hank-b9.md rather
+    // than left to be discovered -- the next adopter is the first high-risk
+    // surface to stamp the field, and api/sd-data-ai-approval.test.js drives
+    // the whole gate in both directions in the meantime.
+    //
+    // A DRAFT IS EXEMPT AND AN ABSENT STATUS IS NOT A DRAFT. The direction
+    // matters: treating a missing `status` as draft would silence the gate on
+    // every resource that has no status field, which is most of them.
+    {
+      const aiRefusal = aiSafeguards.enforceAiApproval(
+        resource, payload,
+        (ownerApp) => verifySessionToken(tokenFromRequest(req), licHash, ownerApp),
+        nowISO);
+      if (aiRefusal) {
+        res.status(aiRefusal.status).json({
+          error: { code: aiRefusal.code, message: aiRefusal.message }
+        });
+        return;
       }
     }
 
