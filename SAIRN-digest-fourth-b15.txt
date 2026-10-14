@@ -1,0 +1,11 @@
+DIGEST fourth b15
+
+STATUS Landed. HEAD == origin/main 83b5a7e9 at the work push, 0/0, not forced. b14 manifest CLOSED; b15 claim held until release.
+DECISION-NEEDED Ten [CONFIRM] role questions need a practitioner; three are law. Counsel has five wording questions.
+CHANGED 9 docs: ack store decided (employee login wins; api/ai-notice.js deleted by hank); three role matrices, 98 resources; both manifests; fixture rows 26-50 plus row 11 spec; counsel wording package. Handoff adds STARTUP CONTEXT: ~28-32k tokens before work, ~3% of 1M.
+EVIDENCE-path SAIRN-report-fourth-b15.txt; scratchpad bands_b15.log, startup_context_b15.log, gitstatus_cost_b15.log.
+UNVERIFIED No suite run; 98 gates specified not built; rows 26-50 named not written; wording is draft. Startup figures part measured, part estimated; /context unavailable.
+NEXT hank ack delete then sairnlegacy; cc batch_manifest.py:386 and shorter claim subjects; cody row 39; counsel five questions.
+CONTEXT ~45% used (1M window; estimated)
+SHA256 de36bff8a748cccb7d3123eeb5234f4c25805056cc8514ff240b6b8d89586227
+END-OF-REPORT
