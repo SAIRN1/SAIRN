@@ -1,0 +1,54 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "cc",
+  "batch": "b8",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "",
+      "status": "done",
+      "evidence": "af71d006 .claude/settings.json hooks {} again, 2 insertions 16 deletions; hook_integrity_check --wiring-only INTENTIONALLY DISARMED exit 0; 0 tracked files wire a Claude hook"
+    },
+    {
+      "id": 2,
+      "title": "",
+      "status": "done",
+      "evidence": "~/.claude/settings.json: 7 allow rules for git -C under Documents/SAIRN-*, 27 DERIVED -C deny rules, 7 additionalDirectories; git -C drove two other clones in both path spellings with no prompt"
+    },
+    {
+      "id": 3,
+      "title": "",
+      "status": "done",
+      "evidence": "tools/sairn_status_line.py 21/21 fixtures; user-level statusLine covers all six folders; live render 'cc | Opus 5 (1M) | ctx 33% of 1000k'"
+    },
+    {
+      "id": 4,
+      "title": "",
+      "status": "done",
+      "evidence": "attack point 2 re-checked: 8 of 9 in SD_SESSION_GATED, dnt_appointments via dntGate at api/sd-data.js:15045; live anonymous call 401 NO_LICENSE; A4 added to tools/unproven_arm_check.py, 1 finding over 407 files"
+    },
+    {
+      "id": 5,
+      "title": "",
+      "status": "done",
+      "evidence": "8-state git reproduction in tools/prepush_refline_repro.py then the patch; red_suite_register_check drove 85 entries in a worktree, 5 RECOVERED; nhi_register selftest exit 0 in both a clone and a temp worktree"
+    },
+    {
+      "id": 6,
+      "title": "",
+      "status": "done",
+      "evidence": "HEAD 385606cb == origin/main, 0 ahead 0 behind, no force, SAIRN_SEED_GATE unused"
+    }
+  ],
+  "closed": {
+    "drive_verify": "PASS",
+    "verified_by": "python tools/drive_upload_verify.py --agent cc --batch b8 --verify-only",
+    "criteria": "2026-10-13.1",
+    "deliverables": [
+      "SAIRN-handoff-cc-b8.md sha256 43d6f27e3030502f",
+      "SAIRN-report-cc-b8.txt sha256 ac85fe042f760eaa",
+      "SAIRN-digest-cc-b8.txt sha256 9ecf3516be702f4b"
+    ]
+  }
+}
