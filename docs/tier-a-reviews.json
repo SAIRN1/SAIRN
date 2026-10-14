@@ -6239,6 +6239,29 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-14T10:33:35Z",
+      "opened_at_sha": "a47cdf2d3f529bcc3a01c2302248d69a0f502b90",
+      "opened_at_sha_basis": "file-set",
+      "resources": [
+        "alf_clients",
+        "alf_family_contacts",
+        "alf_mar"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tests/mar_billing_grant.test.js"
+      ],
+      "what": "tests/mar_billing_grant.test.js -- a FAILING-FIRST suite encoding Michael's 2026-10-13 decision that billing never reads the MAR by default, and that for coding work only an office manager may grant billing access to a named resident's MAR, time-limited, expiring on its own, and audit-logged. NO api/ FILE WAS EDITED: this push adds a test file, a docs/known-red-suites.json entry, five b8 documents and two regenerated derived docs. The suite drives the real api/sd-data.js handler with auth, licence and fetch mocked, which is why it reads as touching alf_clients, alf_family_contacts and alf_mar. MEASURED red at a47cdf2d: exit 1, 5 passed 16 failed 4 unproven. WHAT A REVIEWER SHOULD ATTACK: (1) THE CONTROLS, because they are the only arms that pass -- A4/A5 pin billing at 403 on alf_mar read and write (api/sd-data.js:11148 gated :11191 and :11234), A6/A7 pin that nursing and the assigned narrow role still get 200 so a deny-everything fix cannot satisfy the file, and C4 PASSES VACUOUSLY while A1 is red and says so in its own arm text -- check that disclosure is actually in the arm and not only in the routed note. (2) THE FIXTURE, because a reimplementation would pass against the unfixed code: the alf_clients mock answers assigned_employee_id scope queries and the alf_family_contacts mock answers contact_id lookups, and an unmocked read THROWS rather than returning [] because an empty list makes a DENY arm pass for the wrong reason. Decide whether the mock's scope query faithfully reproduces api/sd-data.js:12657-12668. (3) ARM B2 IS A QUESTION I MAY NOT ANSWER: there is no office_manager role in SAIRNcare (api/_lib/auth.js:238), so either the role is added across ROLES_BY_APP, api/alf-auth.js:52 and the role CHECK in both schema files together, or owner is declared to BE the office manager -- docs/2026-10-13-cody-b8-billing-mar-role-vocabulary.md section 5 states both and picks neither. (4) THAT THE SUITE IS OUT OF EVERY GATE: nothing in tools/sairn_push_gate_hook.py reads this path, and the register row is what lets the next session tell this deliberate red from a regression. THE OPEN HOLE IS STILL OPEN AT HEAD and is not fixed by this push: ALF_FAMILY_READ_ROLES = { owner, billing, nursing } (api/sd-data.js:12551) is inherited by family_mar (:12654) and billing is in the BROAD half so assignment scope is skipped (:12656) -- every resident on the licence. ROUTE TO ANY SESSION EXCEPT cody; the api/ half belongs to hank.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-10-14T10:33:35Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
