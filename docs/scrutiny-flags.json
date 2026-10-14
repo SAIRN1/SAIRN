@@ -2761,6 +2761,23 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/tier_a_review_gate.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "'the %dh liveness threshold, so it was never going to '"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(tmp, ignore_errors=True)"
+    }
+   ],
+   "sha": "832a180edcf2e8ab6c173ec934adea89fe6ea7ee",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/sd-data-leg-bookings-toctou.test.js",
    "class": "test file",
    "level": "WEAKENING",
@@ -2966,6 +2983,19 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "8c5d9741e97a88714406f46f23855857f3eefbb8",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "\"`SAIRN_GATE_EXEMPT=seed git push ...` skips ONLY that check and leaves \""
+    }
+   ],
+   "sha": "8d3db65ff594f01c75fc8ee6f514c47be7c1b3e0",
    "criteria_version": "2026-10-06.1"
   },
   {
