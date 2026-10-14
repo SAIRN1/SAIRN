@@ -3696,6 +3696,26 @@
         "docs/batch-manifest-fourth-b14.json",
         "docs/batch-manifest-fourth-b15.json"
       ]
+    },
+    {
+      "id": "fourth-1791980286",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "batch b16 -- MANIFEST FIRST. (1) docs/batch-manifest-fourth-b16.json written before any other item, closed with PYTHONIOENCODING=utf-8 until cc fixes tools/batch_manifest.py:386. (2) the row 44 and row 50 fixture probes written and DRIVEN -- run_removal_path_probe and sairncash_entitlement_gate_probe -- delivered in docs/ with their measured output because tests/ is cody's writer and this batch writes docs/ only. (3) ONE routing note to cc: tools/fixture_lock_check.py from b13 built by nobody, docs/by-design-register.json has no reader, 7 of 14 session locks over 160h including fourth.lock with dead pid 53204, and the scratchpad litter left after the rm-deny. (4) the 10 [CONFIRM] role questions as one plain-English sheet -- 3 law questions for counsel, 7 for a funeral-home or veterinary practitioner, each naming the app, the role and the exact yes/no. (5) methodology: every file:line reference in my b15 docs re-derived against current HEAD after a pull, movers fixed, and the check requested of cc as a tool. (6) push without force and confirm HEAD == origin/main 0/0. FINAL: handoff BEFORE the report, uploaded to Drive 14Xc5oT0xzSLa_rTSOSXWVK3Kko1Fbx09 and verified, then report and digest uploaded and verified. I WRITE ONLY UNDER docs/ plus my own three root deliverables; nothing under tools/, api/, sql/ or tests/ is edited. NO HOOKS ADDED OR RESTORED, settings.json never committed, no SAIRN_SEED_GATE=off, no route around a denied permission rule. FILES: docs/batch-manifest-fourth-b16.json docs/2026-10-14-fourth-b16-row44-row50-probes.md docs/2026-10-14-fourth-b16-routed-to-cc.md docs/2026-10-14-fourth-b16-confirm-questions.md docs/2026-10-14-fourth-b16-citation-recheck.md SAIRN-handoff-fourth-b16.md SAIRN-report-fourth-b16.txt SAIRN-digest-fourth-b16.txt",
+      "claimed_at": "2026-10-14T12:18:06Z",
+      "claimed_at_epoch": 1791980286.382951,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b16.txt",
+        "SAIRN-handoff-fourth-b16.md",
+        "SAIRN-report-fourth-b16.txt",
+        "docs/2026-10-14-fourth-b16-citation-recheck.md",
+        "docs/2026-10-14-fourth-b16-confirm-questions.md",
+        "docs/2026-10-14-fourth-b16-routed-to-cc.md",
+        "docs/2026-10-14-fourth-b16-row44-row50-probes.md",
+        "docs/batch-manifest-fourth-b16.json"
+      ]
     }
   ],
   "refusals": [
