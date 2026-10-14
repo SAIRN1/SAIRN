@@ -6453,6 +6453,30 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-14T23:53:53Z",
+      "opened_at_sha": "31406a87e01060d93e2eacf34730be73f6ad8306",
+      "opened_at_sha_basis": "file-set",
+      "resources": [
+        "bld_photo_analyses",
+        "grd_progress_photos",
+        "sen_visits"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/n1-n4-and-sf-delete.test.js",
+        "api/sd-photos-size-and-provenance.test.js"
+      ],
+      "what": "hank b12: THREE Tier A surfaces, each needing a different thing reviewed hardest. (1) sd_photos -- the image is now DOWNSCALED client-side to a measured 44,000-char budget (11-rung ladder, each rung's resulting length checked), and the row carries ai_source plus what was done to the image. REVIEW HARDEST: whether the budget leaves enough room for the rest of the row in the worst case -- aiAnalysis is model prose with no length cap on this path, so a very long QC note could still push a downscaled row over 65,536; and whether storing ONLY the downscaled image (the original is not kept anywhere) is right for a damage photo that an insurer might later want at full resolution. (2) the 89-branch notProvisioned() rewrite in api/sd-data.js -- a mechanical edit across 89 sites, 5 of which pre-read the body. REVIEW HARDEST: that no other site consumes the body before its guard in a way the script's INSIDE-the-branch property could not see (that exact hazard broke five sites in the first draft), and that the fourth answer, 400 UPSTREAM_REJECTED, is not itself a new silent failure for a caller that was switching on 503. (3) N1's clock immutability in sen_visits -- REVIEW HARDEST whether refusing a DIFFERENT clock value can strand a legitimate correction: the only route left is propose_clock_correction, which is scheduler-only, so a caregiver who clocked in at the wrong time on their own visit now cannot fix it themselves at all. That is the intended direction but it is a product consequence, not just a security one. Suites: api/sd-photos-size-and-provenance.test.js 26/26, api/n1-n4-and-sf-delete.test.js 21/21, api/role-picker-vs-check-constraint.test.js 6 clean / 0 failed / 11 UNPROVEN, plus every pre-existing api/ and tests/faults suite green.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-10-14T23:53:53Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
