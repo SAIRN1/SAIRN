@@ -3870,6 +3870,32 @@
         "tools/tooling_inventory.py",
         "tools/unproven_arm_check.py"
       ]
+    },
+    {
+      "id": "cc-1791980537",
+      "session": "cc",
+      "subject": "cc",
+      "task": "b9 -- (1) status line denominator from real window, fixtures Sonnet5 967k Opus 1M, red at 70pct, ctx ??pct with reason when unknown (2) clear 3 hooks in SAIRN clone with record copy first, pull --rebase hank cody fourth only if clean no live claim (3) batch_manifest.py --close encoding-safe cp1252, sairn_claim.py shorten claim commit subjects (4) cody tools sweep SELFTEST_RX TOLERATE_MISSING ooda_phases subprocess_decode_check license_keys SQL preflight (5) red_suite_register_check.py exit code meaningful, fmea_draft.py --save for red_suite_register_check nhi_register sairn_status_line (6) push no force confirm landed, release claim after uploads. FILES: tools/sairn_status_line.py tools/batch_manifest.py tools/sairn_claim.py tools/ooda_phases.py tools/subprocess_decode_check.py tools/license_keys.py tools/red_suite_register_check.py tools/fmea_draft.py tools/nhi_register.py SAIRN-handoff-cc-b9.md SAIRN-report-cc-b9.txt SAIRN-digest-cc-b9.txt docs/batch-manifest-cc-b9.json docs/SAIRN-hooks-record-original-clone.md",
+      "claimed_at": "2026-10-14T12:22:17Z",
+      "claimed_at_epoch": 1791980537.4890294,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-cc-b9.txt",
+        "SAIRN-handoff-cc-b9.md",
+        "SAIRN-report-cc-b9.txt",
+        "docs/SAIRN-hooks-record-original-clone.md",
+        "docs/batch-manifest-cc-b9.json",
+        "tools/batch_manifest.py",
+        "tools/fmea_draft.py",
+        "tools/license_keys.py",
+        "tools/nhi_register.py",
+        "tools/ooda_phases.py",
+        "tools/red_suite_register_check.py",
+        "tools/sairn_claim.py",
+        "tools/sairn_status_line.py",
+        "tools/subprocess_decode_check.py"
+      ]
     }
   ],
   "refusals": [
