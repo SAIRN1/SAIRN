@@ -422,6 +422,22 @@ def references(text):
                 r'\bdelete\s+from\s+([\w".]+)', r'\balter\s+table\s+(?:if\s+exists\s+)?([\w".]+)',
                 r'\btruncate\s+(?:table\s+)?([\w".]+)'):
         for m in re.finditer(pat, text, re.I):
+            # AN IDENTIFIER IMMEDIATELY FOLLOWED BY `(`, NO WHITESPACE, IS A
+            # FUNCTION CALL IN RELATION POSITION -- never a table, regardless
+            # of its name (2026-10-14). The builtin set-returning functions
+            # (`unnest`, `generate_series`, ...) are already excluded in
+            # NOT_A_TABLE, by name, which only covers the ones this file's
+            # author thought to list. A USER-DEFINED function in the same
+            # position was invisible to that list: measured, `from
+            # public.sairn_circuit_breaker_step(...)` -- a state-machine
+            # helper DEFINED by `create or replace function` in
+            # sql/sairn_circuit_breaker_schema.sql, called the same way
+            # `unnest(...)` is -- reported UNDECLARED_TABLE and blocked an
+            # already-shipped, correct file. The shape generalises: SQL syntax
+            # does not allow parenthesising a bare table name in FROM/JOIN
+            # position, so this check cannot exclude a real table by mistake.
+            if text[m.end():m.end() + 1] == '(':
+                continue
             add_table(m.group(1))
 
     # ALIAS -> TABLE, so `a.last_login_at` is checked against the table `a`
@@ -513,11 +529,41 @@ def load_live(path):
     return schema, generated
 
 
+# ── TABLES THAT PREDATE THE REPO'S SCHEMA FILES (2026-10-14) ────────────────
+# DECLARED mode's whole catalogue comes from parsing CREATE TABLE out of
+# sql/*.sql, so a table created by hand before this repo tracked schema at
+# all is not "has no columns recorded" -- it is ABSENT, invisible the same
+# way a table that never existed would be. This file's own comment at
+# check()'s UNDECLARED_TABLE/MISSING_TABLE wording already named the case
+# ("public.license_keys, for one") without closing it: DECLARED-mode runs
+# over sql/*.sql reported MISSING_COLUMN for every real license_keys column
+# in four already-shipped, correct seed files, which is exactly the
+# "the gate must not block existing correct files" failure this exists to
+# prevent. Columns are copied from `db/schema_snapshot.json`
+# (`_generated_at` 2026-10-05 15:10:30 UTC) -- the LIVE source of truth this
+# tool treats as authoritative everywhere else -- not hand-typed, so
+# re-copy from a fresh snapshot rather than guessing if this ever needs an
+# update. Applied to DECLARED mode only: LIVE mode already has the real
+# columns directly from the database and must keep catching a genuine
+# drift (a renamed or dropped column) rather than have this supplement
+# paper over it.
+PREDATES_REPO_SCHEMA = {
+    'license_keys': {
+        'id', 'key', 'app_id', 'shop_name', 'customer_email',
+        'stripe_customer_id', 'stripe_subscription_id', 'plan', 'status',
+        'created_at', 'updated_at',
+    },
+}
+
+
 def check(path, schema, source='DECLARED', self_declare=True):
     raw = open(path, encoding='utf-8', errors='replace').read()
     text = strip_noise(raw)
     tables, cols, unresolved = references(text)
     known = dict((k, set(v)) for k, v in schema.items())
+    if source != 'LIVE':
+        for t, c in PREDATES_REPO_SCHEMA.items():
+            known.setdefault(t, set()).update(c)
     if self_declare:
         # A file that CREATEs a table may then INSERT into it in the same run.
         own = declared_from_text(text)
