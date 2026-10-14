@@ -2766,7 +2766,7 @@ module.exports = async (req, res) => {
       });
       const rows = await r.json();
       if (r.status === 404 || r.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Supplier documents are not set up — run sql/sairnroofing_supplier_documents_schema.sql' } });
+        await notProvisioned(res, r, 'Supplier documents are not set up — run sql/sairnroofing_supplier_documents_schema.sql', rows);
         return;
       }
       if (r.status === 409) {
@@ -2985,7 +2985,7 @@ module.exports = async (req, res) => {
       });
       const rows = await r.json();
       if (r.status === 404 || r.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The site asset registry is not set up — run sql/mech_site_assets_schema.sql' } });
+        await notProvisioned(res, r, 'The site asset registry is not set up — run sql/mech_site_assets_schema.sql', rows);
         return;
       }
       if (!r.ok) return upstream(res, rows);
@@ -3328,7 +3328,7 @@ module.exports = async (req, res) => {
       });
       const rows = await r.json();
       if (r.status === 404 || r.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Technician credentials are not set up — run sql/mech_credentials_schema.sql' } });
+        await notProvisioned(res, r, 'Technician credentials are not set up — run sql/mech_credentials_schema.sql', rows);
         return;
       }
       if (r.status === 409) {
@@ -3431,7 +3431,7 @@ module.exports = async (req, res) => {
       if (r.status === 404 || r.status === 400) {
         // A write, unlike a read, has genuinely failed to do the thing asked.
         // 503 naming the file rather than a cheerful 200 with nothing stored.
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Signed approvals are not set up — run sql/sd_approvals_schema.sql' } });
+        await notProvisioned(res, r, 'Signed approvals are not set up — run sql/sd_approvals_schema.sql', rows);
         return;
       }
       if (r.status === 409) {
@@ -3635,7 +3635,7 @@ module.exports = async (req, res) => {
           notes: payload.notes || null, updated_at: nowISO()
         })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Employee profiles table is not set up yet — run sql/sd_employee_profiles_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'Employee profiles table is not set up yet — run sql/sd_employee_profiles_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0] : payload });
@@ -3719,7 +3719,7 @@ module.exports = async (req, res) => {
         })
       });
       if (r.status === 404 || r.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'That table is not set up yet — run sql/stonedesk_locations_schema.sql in Supabase first.' } });
+        await notProvisioned(res, r, 'That table is not set up yet — run sql/stonedesk_locations_schema.sql in Supabase first.');
         return;
       }
       const rows = await r.json();
@@ -3756,7 +3756,7 @@ module.exports = async (req, res) => {
         })
       });
       if (r.status === 404 || r.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'That table is not set up yet — run sql/stonedesk_remnants_schema.sql in Supabase first.' } });
+        await notProvisioned(res, r, 'That table is not set up yet — run sql/stonedesk_remnants_schema.sql in Supabase first.');
         return;
       }
       const rows = await r.json();
@@ -4912,7 +4912,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', property_id: String(payload.id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -4933,7 +4933,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', job_id: String(payload.id), property_id: String(payload.property_id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -4954,7 +4954,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', quote_id: String(payload.id), property_id: String(payload.property_id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -4975,7 +4975,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', zone_id: String(payload.id), property_id: String(payload.property_id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5011,7 +5011,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', schedule_id: String(payload.id), property_id: String(payload.property_id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5073,7 +5073,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', photo_id: String(payload.id), schedule_id: String(payload.schedule_id), data: aiScan.redactAiFields(resource, payload, nowISO), updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5109,7 +5109,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', invoice_id: String(payload.id), property_id: String(payload.property_id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5130,7 +5130,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', dreamclose_id: String(payload.id), property_id: String(payload.property_id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5159,7 +5159,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', sighting_id: String(payload.id), property_id: String(payload.property_id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5180,7 +5180,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', report_id: String(payload.id), property_id: String(payload.property_id), data: aiScan.redactAiFields(resource, payload, nowISO), updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5213,7 +5213,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', round_id: String(payload.id), property_id: String(payload.property_id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds caddie tables are not set up yet — run sql/sairngrounds_caddie_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds caddie tables are not set up yet — run sql/sairngrounds_caddie_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5234,7 +5234,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', order_id: String(payload.id), property_id: String(payload.property_id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds caddie tables are not set up yet — run sql/sairngrounds_caddie_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds caddie tables are not set up yet — run sql/sairngrounds_caddie_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5255,7 +5255,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', design_id: String(payload.id), property_id: String(payload.property_id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5276,7 +5276,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', controller_id: String(payload.id), property_id: String(payload.property_id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5297,7 +5297,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', zone_id: String(payload.id), property_id: String(payload.property_id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5318,7 +5318,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', irrsched_id: String(payload.id), zone_id: String(payload.zone_id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5339,7 +5339,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', feature_id: String(payload.id), property_id: String(payload.property_id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5360,7 +5360,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', course_id: String(payload.id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5381,7 +5381,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', completion_id: String(payload.id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5402,7 +5402,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', rate_id: String(payload.id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5423,7 +5423,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', vendor_id: String(payload.id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5444,7 +5444,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', product_id: String(payload.id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5479,7 +5479,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', sale_id: String(payload.id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5500,7 +5500,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', msblicense_id: String(payload.id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5521,7 +5521,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', log_id: String(payload.id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5542,7 +5542,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', scan_id: String(payload.id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5563,7 +5563,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', foodscan_id: String(payload.id), data: aiScan.redactAiFields(resource, payload, nowISO), updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5584,7 +5584,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', waste_id: String(payload.id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5605,7 +5605,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', costlog_id: String(payload.id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5627,7 +5627,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5653,7 +5653,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnscape', customer_id: String(payload.id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5674,7 +5674,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnscape', job_id: String(payload.id), customer_id: String(payload.customer_id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5695,7 +5695,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnscape', quote_id: String(payload.id), customer_id: String(payload.customer_id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5716,7 +5716,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnscape', schedule_id: String(payload.id), customer_id: String(payload.customer_id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5769,7 +5769,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnscape', invoice_id: String(payload.id), customer_id: String(payload.customer_id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5795,7 +5795,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnscape', design_id: String(payload.id), customer_id: String(payload.customer_id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema_phase2.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema_phase2.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5816,7 +5816,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnscape', controller_id: String(payload.id), customer_id: String(payload.customer_id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema_phase2.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema_phase2.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5837,7 +5837,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnscape', zone_id: String(payload.id), customer_id: String(payload.customer_id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema_phase2.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema_phase2.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5858,7 +5858,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnscape', irrsched_id: String(payload.id), zone_id: String(payload.zone_id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema_phase2.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema_phase2.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5879,7 +5879,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnscape', feature_id: String(payload.id), customer_id: String(payload.customer_id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema_phase2.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema_phase2.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5900,7 +5900,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnscape', vendor_id: String(payload.id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema_phase2.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema_phase2.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5946,7 +5946,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnscape', photo_id: String(payload.id), schedule_id: String(payload.schedule_id), data: aiScan.redactAiFields(resource, payload, nowISO), updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -6048,7 +6048,7 @@ module.exports = async (req, res) => {
           // (found live: PostgREST returns PGRST205 "table not found in schema cache" for this
           // exact case, which the write POST further down would otherwise surface as a generic
           // "Data store error" with no hint what's actually wrong).
-          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Shared knowledge tracking is not set up yet — run sql/sd_shared_knowledge_schema.sql in Supabase first.' } });
+          await notProvisioned(res, r, 'Shared knowledge tracking is not set up yet — run sql/sd_shared_knowledge_schema.sql in Supabase first.');
           return;
         }
         if (r.ok) {
@@ -6591,7 +6591,7 @@ module.exports = async (req, res) => {
       // isMissingTable() helper exists in this file (that's a *-auth.js-only helper, sd-data.js
       // never had one) -- checking the status code directly instead of importing one.
       if (r.status === 404 || r.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Training needs assessment tracking is not set up yet — run sql/sairnbuild_tna_schema.sql in Supabase first.' } });
+        await notProvisioned(res, r, 'Training needs assessment tracking is not set up yet — run sql/sairnbuild_tna_schema.sql in Supabase first.');
         return;
       }
       const rows = await r.json();
@@ -6819,7 +6819,7 @@ module.exports = async (req, res) => {
       });
       if (r.status === 404 || r.status === 400) {
         const setupFile = SEN_REFERRAL_SETUP_FILE[resource];
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'That table is not set up yet — run ' + (setupFile || 'the matching sql/sairnsenior_*_schema.sql') + ' in Supabase first.' } });
+        await notProvisioned(res, r, 'That table is not set up yet — run ' + (setupFile || 'the matching sql/sairnsenior_*_schema.sql') + ' in Supabase first.');
         return;
       }
       const rows = await r.json();
@@ -6943,7 +6943,7 @@ module.exports = async (req, res) => {
         })
       });
       if (r.status === 404 || r.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Caregiver tracking is not set up yet — run sql/sairnsenior_caregivers_schema.sql in Supabase first.' } });
+        await notProvisioned(res, r, 'Caregiver tracking is not set up yet — run sql/sairnsenior_caregivers_schema.sql in Supabase first.');
         return;
       }
       const rows = await r.json();
@@ -7298,7 +7298,7 @@ module.exports = async (req, res) => {
         })
       });
       if (r.status === 404 || r.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Billing claims tracking is not set up yet — run sql/sairnsenior_claims_schema.sql in Supabase first.' } });
+        await notProvisioned(res, r, 'Billing claims tracking is not set up yet — run sql/sairnsenior_claims_schema.sql in Supabase first.');
         return;
       }
       const rows = await r.json();
@@ -7529,7 +7529,7 @@ module.exports = async (req, res) => {
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnsenior', branch_id: String(payload.id), data: brBody, updated_at: nowISO() })
       });
       if (r.status === 404 || r.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'That table is not set up yet — run sql/sairnsenior_branches_schema.sql in Supabase first.' } });
+        await notProvisioned(res, r, 'That table is not set up yet — run sql/sairnsenior_branches_schema.sql in Supabase first.');
         return;
       }
       const rows = await r.json();
@@ -7596,7 +7596,7 @@ module.exports = async (req, res) => {
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnsenior', contract_id: String(payload.id), data: pcBody, updated_at: nowISO() })
       });
       if (r.status === 404 || r.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'That table is not set up yet — run sql/sairnsenior_payer_contracts_schema.sql in Supabase first.' } });
+        await notProvisioned(res, r, 'That table is not set up yet — run sql/sairnsenior_payer_contracts_schema.sql in Supabase first.');
         return;
       }
       const rows = await r.json();
@@ -7687,7 +7687,7 @@ module.exports = async (req, res) => {
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnsenior', auth_id: String(payload.id), data: azBody, updated_at: nowISO() })
       });
       if (r.status === 404 || r.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'That table is not set up yet — run sql/sairnsenior_authorizations_schema.sql in Supabase first.' } });
+        await notProvisioned(res, r, 'That table is not set up yet — run sql/sairnsenior_authorizations_schema.sql in Supabase first.');
         return;
       }
       const rows = await r.json();
@@ -7766,7 +7766,7 @@ module.exports = async (req, res) => {
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnsenior', rate_id: String(payload.id), data: prBody, updated_at: nowISO() })
       });
       if (r.status === 404 || r.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'That table is not set up yet — run sql/sairnsenior_pay_rates_schema.sql in Supabase first.' } });
+        await notProvisioned(res, r, 'That table is not set up yet — run sql/sairnsenior_pay_rates_schema.sql in Supabase first.');
         return;
       }
       const rows = await r.json();
@@ -7854,7 +7854,7 @@ module.exports = async (req, res) => {
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnsenior', agreement_id: String(payload.id), data: frBody, updated_at: nowISO() })
       });
       if (r.status === 404 || r.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'That table is not set up yet — run sql/sairnsenior_franchise_schema.sql in Supabase first.' } });
+        await notProvisioned(res, r, 'That table is not set up yet — run sql/sairnsenior_franchise_schema.sql in Supabase first.');
         return;
       }
       const rows = await r.json();
@@ -8447,7 +8447,7 @@ module.exports = async (req, res) => {
       });
       const rows = await r.json();
       if (r.status === 404 || r.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Photo capture is not set up yet — run sql/sairnroofing_photos_schema.sql in Supabase first.' } });
+        await notProvisioned(res, r, 'Photo capture is not set up yet — run sql/sairnroofing_photos_schema.sql in Supabase first.', rows);
         return;
       }
       if (!r.ok) return upstream(res, rows);
@@ -8515,7 +8515,7 @@ module.exports = async (req, res) => {
           data: payload.data || {}, verified_by: session.employee_id, updated_at: nowISO()
         })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Certification tracking is not set up yet — run sql/sairnroofing_certifications_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'Certification tracking is not set up yet — run sql/sairnroofing_certifications_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -11482,7 +11482,7 @@ module.exports = async (req, res) => {
         })
       });
       if (r.status === 404 || r.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Staff tracking is not set up yet — run sql/sairncare_staff_schema.sql in Supabase first.' } });
+        await notProvisioned(res, r, 'Staff tracking is not set up yet — run sql/sairncare_staff_schema.sql in Supabase first.');
         return;
       }
       const rows = await r.json();
@@ -12110,7 +12110,7 @@ module.exports = async (req, res) => {
         })
       });
       if (r.status === 404 || r.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Billing tracking is not set up yet — run sql/sairncare_billing_schema.sql in Supabase first.' } });
+        await notProvisioned(res, r, 'Billing tracking is not set up yet — run sql/sairncare_billing_schema.sql in Supabase first.');
         return;
       }
       const rows = await r.json();
@@ -12290,7 +12290,7 @@ module.exports = async (req, res) => {
         body: JSON.stringify(incidentRow)
       });
       if (r.status === 404 || r.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Incident tracking is not set up yet — run sql/sairncare_incidents_schema.sql in Supabase first.' } });
+        await notProvisioned(res, r, 'Incident tracking is not set up yet — run sql/sairncare_incidents_schema.sql in Supabase first.');
         return;
       }
       const rows = await r.json();
@@ -12353,7 +12353,7 @@ module.exports = async (req, res) => {
         })
       });
       if (r.status === 404 || r.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Activities tracking is not set up yet — run sql/sairncare_activities_schema.sql in Supabase first.' } });
+        await notProvisioned(res, r, 'Activities tracking is not set up yet — run sql/sairncare_activities_schema.sql in Supabase first.');
         return;
       }
       const rows = await r.json();
@@ -12456,7 +12456,7 @@ module.exports = async (req, res) => {
         })
       });
       if (r.status === 404 || r.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The facility profile is not set up yet — run sql/sairncare_facility_schema.sql in Supabase first.' } });
+        await notProvisioned(res, r, 'The facility profile is not set up yet — run sql/sairncare_facility_schema.sql in Supabase first.');
         return;
       }
       const rows = await r.json();
@@ -12554,7 +12554,7 @@ module.exports = async (req, res) => {
         })
       });
       if (r.status === 404 || r.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Signal tracking is not set up yet — run sql/sairncare_signals_schema.sql in Supabase first.' } });
+        await notProvisioned(res, r, 'Signal tracking is not set up yet — run sql/sairncare_signals_schema.sql in Supabase first.');
         return;
       }
       const rows = await r.json();
@@ -12657,7 +12657,7 @@ module.exports = async (req, res) => {
         })
       });
       if (r.status === 404 || r.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Billing rules are not set up yet — run sql/sairncare_payer_rules_schema.sql in Supabase first.' } });
+        await notProvisioned(res, r, 'Billing rules are not set up yet — run sql/sairncare_payer_rules_schema.sql in Supabase first.');
         return;
       }
       const rows = await r.json();
@@ -12815,7 +12815,7 @@ module.exports = async (req, res) => {
         })
       });
       if (r.status === 404 || r.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Claim routing is not set up yet — run sql/sairncare_payer_rules_schema.sql in Supabase first.' } });
+        await notProvisioned(res, r, 'Claim routing is not set up yet — run sql/sairncare_payer_rules_schema.sql in Supabase first.');
         return;
       }
       const rows = await r.json();
@@ -13621,7 +13621,7 @@ module.exports = async (req, res) => {
         })
       });
       if (r.status === 404 || r.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Compliance rules are not set up yet — run sql/sairncare_compliance_schema.sql in Supabase first.' } });
+        await notProvisioned(res, r, 'Compliance rules are not set up yet — run sql/sairncare_compliance_schema.sql in Supabase first.');
         return;
       }
       const rows = await r.json();
@@ -13879,7 +13879,7 @@ module.exports = async (req, res) => {
         })
       });
       if (r.status === 404 || r.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Staff credentialing is not set up yet — run sql/sairncare_compliance_schema.sql in Supabase first.' } });
+        await notProvisioned(res, r, 'Staff credentialing is not set up yet — run sql/sairncare_compliance_schema.sql in Supabase first.');
         return;
       }
       const rows = await r.json();
@@ -14165,7 +14165,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairndesign', [idCol]: String(payload.id), data: sdnData, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdesign data tables are not set up yet — run sql/sairndesign_data_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNdesign data tables are not set up yet — run sql/sairndesign_data_schema.sql in Supabase first.'); return; }
       // Invoice-per-proposal uniqueness (2026-08-10): once
       // sql/sairndesign_invoice_uniqueness.sql's index exists, a genuinely
       // new invoice for an already-invoiced proposal_id fails here with
@@ -14411,7 +14411,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnbuild', [idCol]: String(payload.id), data: aiScan.redactAiFields(resource, payload, nowISO), updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNbuild data tables are not set up yet — run sql/sairnbuild_data_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNbuild data tables are not set up yet — run sql/sairnbuild_data_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -14536,7 +14536,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'stonedesk', [idCol]: String(payload.id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'StoneDesk data tables are not set up yet — run sql/stonedesk_data_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'StoneDesk data tables are not set up yet — run sql/stonedesk_data_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -14919,7 +14919,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnfreedom', [idCol]: String(payload.id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNfreedom data tables are not set up yet — run sql/sairnfreedom_data_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNfreedom data tables are not set up yet — run sql/sairnfreedom_data_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -15245,7 +15245,7 @@ module.exports = async (req, res) => {
           headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
           body: JSON.stringify({ license_hash: licHash, app_id: 'sairnbiz', [idCol]: String(payload.id), data: payload, updated_at: nowISO() })
         });
-        if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNbiz data tables are not set up yet — run sql/sairnbiz_data_schema.sql in Supabase first.' } }); return; }
+        if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNbiz data tables are not set up yet — run sql/sairnbiz_data_schema.sql in Supabase first.'); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -15407,7 +15407,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnlaw', [lawIdCol]: String(payload.id), data: lawRow, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlaw extended data tables are not set up yet — run sql/sairnlaw_data_extended_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNlaw extended data tables are not set up yet — run sql/sairnlaw_data_extended_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       // `lawRow`, not `payload`, on the fallback for the same reason: a caller
@@ -15600,7 +15600,7 @@ module.exports = async (req, res) => {
           headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
           body: JSON.stringify({ data: payload, updated_at: nowISO() })
         });
-        if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlegacy data tables are not set up yet — run sql/sairnlegacy_data_schema.sql in Supabase first.' } }); return; }
+        if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNlegacy data tables are not set up yet — run sql/sairnlegacy_data_schema.sql in Supabase first.'); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         if (!Array.isArray(rows) || rows.length === 0) {
@@ -15703,7 +15703,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnlegacy', [idCol]: String(payload.id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlegacy data tables are not set up yet — run sql/sairnlegacy_data_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNlegacy data tables are not set up yet — run sql/sairnlegacy_data_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -16518,7 +16518,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairndental', [idCol]: String(payload.id), data: locStamped, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdental data tables are not set up yet — run sql/sairndental_data_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNdental data tables are not set up yet — run sql/sairndental_data_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -16575,7 +16575,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairndental', [vIdCol]: String(payload.id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdental vendor tables are not set up yet \u2014 run sql/sairndental_vendor_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNdental vendor tables are not set up yet \u2014 run sql/sairndental_vendor_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -16760,7 +16760,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnmechanical', [mIdCol]: String(mPayload.id), data: mPayload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNmechanical record tables are not set up yet \u2014 run sql/sairnmechanical_records_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNmechanical record tables are not set up yet \u2014 run sql/sairnmechanical_records_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       // `mPayload`, NOT `payload`, on the fallback arm. Returning the raw
@@ -16924,7 +16924,7 @@ module.exports = async (req, res) => {
           booking_slug: dntMerged.booking_slug || null, updated_at: nowISO()
         })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdental data tables are not set up yet — run sql/sairndental_data_schema.sql and sql/sairndental_availability_booking_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNdental data tables are not set up yet — run sql/sairndental_data_schema.sql and sql/sairndental_availability_booking_schema.sql in Supabase first.'); return; }
       if (r.status === 409) { res.status(409).json({ error: { code: 'SLUG_TAKEN', message: 'This booking link is already in use by another practice — choose a different one.' } }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
@@ -17278,7 +17278,7 @@ module.exports = async (req, res) => {
           data: payload.data || {}, verified_by: dntRuleSess.employee_id, updated_at: nowISO()
         })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdental credentialing tables are not set up yet — run sql/sairndental_credentials_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNdental credentialing tables are not set up yet — run sql/sairndental_credentials_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -17449,7 +17449,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnlaw', client_id: String(payload.id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlaw data tables are not set up yet — run sql/sairnlaw_data_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNlaw data tables are not set up yet — run sql/sairnlaw_data_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -17470,7 +17470,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnlaw', matter_id: String(payload.id), client_id: String(payload.client_id), data: storedBlob(payload, []), updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlaw data tables are not set up yet — run sql/sairnlaw_data_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNlaw data tables are not set up yet — run sql/sairnlaw_data_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -17509,7 +17509,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnlaw', entry_id: String(payload.id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlaw deadline tables are not set up yet \u2014 run sql/sairnlaw_deadline_rules_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNlaw deadline tables are not set up yet \u2014 run sql/sairnlaw_deadline_rules_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -18124,7 +18124,7 @@ module.exports = async (req, res) => {
           headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
           body: JSON.stringify({ license_hash: licHash, app_id: 'sairncode', entry_id: String(payload.id), data: payload, updated_at: nowISO() })
         });
-        if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: scNotProvisionedMessage(resource) } }); return; }
+        if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, scNotProvisionedMessage(resource)); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -18243,7 +18243,7 @@ module.exports = async (req, res) => {
         const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&entry_id=eq.' + enc(String(payload.id))), {
           method: 'DELETE', headers: headers
         });
-        if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: scNotProvisionedMessage(resource) } }); return; }
+        if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, scNotProvisionedMessage(resource)); return; }
         if (!r.ok) { const errRows = await r.json().catch(function () { return null; }); return upstream(res, errRows); }
         res.status(200).json({ ok: true });
         return;
@@ -18319,6 +18319,94 @@ function refuseUnconfirmedWrite(res, what) {
 function upstream(res, detail) {
   console.error('sd-data upstream error:', detail);
   res.status(502).json({ error: { message: 'Data store error — try again' } });
+}
+
+// ── A 400 IS NOT A 404, AND 89 BRANCHES SAID IT WAS (2026-10-14) ────────────
+// MEASURED, not estimated. `if (r.status === 404 || r.status === 400)` appears
+// across this file; of the branches that answer 503 NOT_PROVISIONED, 98 exist
+// and **89 of them read nothing at all** before deciding -- they fold a
+// Postgres CHECK violation, a not-null violation and a malformed filter in with
+// "the tables are not set up yet" and send the reader to re-run a migration
+// they have already run. (fourth's b19 premise document put the figure at
+// twelve; it is 89 of 98, re-derived here with the script in the batch
+// evidence, because a count quoted from a document drifts toward the first
+// number somebody wrote down.)
+//
+// The nine that already discriminate were LEFT ALONE: they read the body and
+// test for `relation ... does not exist` or for the 23xxx class themselves, and
+// the body of a fetch Response can only be consumed once -- rewriting them to
+// call this helper would make them answer on an already-read stream.
+//
+// THE CASE THAT MADE IT URGENT. sd_photos' rows carry a whole base64 data URL
+// and the table has the house 65,536-byte cap on `data::text`, so EVERY real
+// photograph was refused 400 by the constraint and reported as 503 "tables are
+// not set up yet" (docs/2026-10-14-fourth-b19-sd-photos-premise.md §1.4).
+//
+// FOUR ANSWERS, NOT TWO, AND THE FOURTH IS THE THIRD STATE:
+//   404                      -> 503 NOT_PROVISIONED, the caller's own message.
+//   400 + pg class 23xxx     -> 400 ROW_REFUSED. 23514 check, 23505 unique,
+//                               23502 not-null, 23503 foreign key: every one
+//                               of them means the table EXISTS and refused
+//                               THIS ROW. Named so the reader can act.
+//   400 + "does not exist"   -> 503 NOT_PROVISIONED. PostgREST answers a
+//                               missing table 400 with PGRST205 on some
+//                               versions, which is why the 400 was folded in
+//                               here in the first place -- that reason is real
+//                               and is preserved rather than discarded.
+//   400, unclassifiable      -> 400 UPSTREAM_REJECTED, which says the table
+//                               exists, the request was refused, and the
+//                               reason COULD NOT BE CLASSIFIED. It does not
+//                               say "run the migration". "Could not tell" is a
+//                               third state and folding it into either of the
+//                               other two is how this defect was built.
+//
+// IT READS THE BODY ONCE AND NEVER THROWS. A failure to parse is itself the
+// unclassifiable case; a helper on a failure path that can fail is the shape
+// this file has paid for twice (see sdData's own catch in stonedesk.html).
+//
+// ── `preread` EXISTS BECAUSE FIVE CALL SITES HAD ALREADY CONSUMED THE BODY ──
+// AND THE FIRST DRAFT OF THIS CHANGE BROKE ALL FIVE. 2768, 2987, 3330, 3431 and
+// 8449 do `const rows = await r.json();` BEFORE the status guard, so a helper
+// calling `r.text()` got an empty string on an already-consumed stream and
+// classified a genuine 404 as UNCLASSIFIABLE -- turning one wrong diagnosis
+// into a different wrong diagnosis. Caught by reading two rewritten sites in
+// context after the mechanical pass, which is the only reason it did not ship:
+// a bulk edit is safe exactly as far as the property the script checked, and
+// the script checked INSIDE the branch and not what came before it.
+//
+// So the pre-read body is PASSED IN at those five, and the helper's own read is
+// skipped. `undefined` means "nobody has read it"; a null or a parsed value
+// means "this is what came back".
+async function notProvisioned(res, r, message, preread) {
+  let raw = '';
+  let body = null;
+  if (preread !== undefined) {
+    body = preread;
+    try { raw = JSON.stringify(preread) || ''; } catch (e) { raw = ''; }
+    return notProvisionedDecide(res, r, message, raw, body);
+  }
+  try { raw = await r.text(); } catch (e) { raw = ''; }
+  try { body = JSON.parse(raw); } catch (e) { body = null; }
+  return notProvisionedDecide(res, r, message, raw, body);
+}
+
+function notProvisionedDecide(res, r, message, raw, body) {
+  const pgCode = (body && body.code) ? String(body.code) : '';
+  if (r.status === 400 && pgCode.slice(0, 2) === '23') {
+    res.status(400).json({ error: { code: 'ROW_REFUSED', message:
+      'The database refused this record (' + pgCode + '). The table exists — '
+      + 'the row itself was rejected, most often for exceeding the 64KB row '
+      + 'cap. Nothing was saved and re-running the migration will not help.' } });
+    return;
+  }
+  if (r.status === 404 || /relation .* does not exist|PGRST205|does not exist/i.test(raw)) {
+    res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: message } });
+    return;
+  }
+  res.status(400).json({ error: { code: 'UPSTREAM_REJECTED', message:
+    'The data store refused this request and the reason could not be '
+    + 'classified, so it is reported as-is rather than guessed at. The table '
+    + 'does exist — this is NOT a missing migration. Nothing was saved.' } });
 }
 
 // ── AN APPEND-ONLY CHECK THAT COULD NOT RUN IS NOT A CLEAN BILL (2026-09-04) ─

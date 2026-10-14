@@ -82,6 +82,18 @@ const AI_SCANNED_TEXT = {
   // eight turns of a conversation, stored to be fed back into later prompts.
   // Nobody reads it, which is exactly why an unredacted name in it survives.
   memory: ['memory_text'],
+  // ── THE FOURTH PHOTO SIBLING, AND IT WAS THE ONE THAT WAS FORGOTTEN ────
+  // stonedesk.html photoAnalyze(): `p.aiAnalysis` is d.content[0].text
+  // VERBATIM -- a stone-fabrication QC read of a job photograph, 3-5
+  // sentences, and the prompt asks for defects and concerns by name. It is
+  // the same shape as bld_photo_analyses, grd_progress_photos and rf_photos,
+  // all three of which were already here; this one was missed (T17, b18 spec
+  // §7.6.1, measured by fourth's b19 premise document).
+  //
+  // `data` IS THE IMAGE AND IS NOT TEXT, so it is not listed -- redacting a
+  // base64 payload would corrupt the photograph. `job`, `cat`, `name` and
+  // `size` are app-set or come from the file system.
+  sd_photos: ['aiAnalysis'],
 };
 
 // ── DELIBERATELY NOT IN THE MAP, each with the reason it was excluded ─────

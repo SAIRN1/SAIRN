@@ -25982,6 +25982,70 @@ function photoFilePick(e) {
   e.target.value = '';
 }
 
+// ── EVERY REAL PHOTOGRAPH MISSED THE ROW CAP BY A FACTOR OF ~40 ────────────
+// MEASURED by fourth's b19 premise document, from source, before anything
+// acted on it (docs/2026-10-14-fourth-b19-sd-photos-premise.md):
+//   sd_photos has the house constraint `octet_length(data::text) <= 65536`
+//   (sql/stonedesk_data_schema.sql:343), shared with a dozen sibling tables.
+//   handlePhotoFiles put `e.target.result` -- the WHOLE FileReader data URL --
+//   straight onto the row, accepting files up to 10 MB. Base64 is a 4/3
+//   expansion, so ~48.9 KB of image was the most that could ever land and a
+//   phone photo is 2-5 MB. The row was refused by Postgres, reported as
+//   "tables are not set up yet", and the only trace was a console.warn.
+//
+// THE DECISION WAS MICHAEL'S AND IT IS (a) CLIENT-SIDE DOWNSCALE. The premise
+// document laid out three options and recommended this one as the smallest
+// change that makes the backup REAL, with "separate the blob from the row"
+// named as the direction of travel. The analysis is a QC note, not forensics.
+//
+// THE BUDGET IS NOT THE CAP, AND THE DIFFERENCE IS THE REST OF THE ROW. The
+// same row later carries `aiAnalysis` -- 3-5 sentences of model prose -- plus
+// id, job, cat, name, size, date, ai_source and a JSON-escaped data URL whose
+// quoting adds bytes of its own. So the image budget is 44,000 characters of
+// data URL, leaving ~21 KB for everything else. That is a deliberate margin
+// and not a guess at the cap.
+//
+// IT MEASURES RATHER THAN ASSUMES. A "1024px at q0.7 is comfortably under
+// 48 KB" rule of thumb is wrong for a detailed photograph, so the ladder is
+// walked and the RESULTING LENGTH IS CHECKED at each rung. The first rung that
+// fits wins, and which one won is recorded on the row.
+var SD_PHOTO_DATAURL_BUDGET = 44000;
+var SD_PHOTO_LADDER = [
+  [1600, 0.72], [1280, 0.72], [1280, 0.6], [1024, 0.7], [1024, 0.55],
+  [800, 0.6], [800, 0.45], [640, 0.5], [512, 0.45], [400, 0.4], [320, 0.4]
+];
+// Returns {data, w, h, rung, bytes} or null when it cannot get under budget or
+// the browser cannot re-encode. NULL IS A REAL ANSWER and the caller reports
+// it -- a downscaler that silently returns the original is how an oversized
+// row reaches the server looking like a downscaled one.
+function sdDownscalePhoto(dataUrl, cb) {
+  var img = new Image();
+  img.onload = function () {
+    try {
+      for (var i = 0; i < SD_PHOTO_LADDER.length; i++) {
+        var maxPx = SD_PHOTO_LADDER[i][0], q = SD_PHOTO_LADDER[i][1];
+        var scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+        var w = Math.max(1, Math.round(img.width * scale));
+        var h = Math.max(1, Math.round(img.height * scale));
+        var c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        var ctx = c.getContext('2d');
+        if (!ctx) { cb(null); return; }
+        ctx.drawImage(img, 0, 0, w, h);
+        var out = c.toDataURL('image/jpeg', q);
+        // THE CHECK, not the assumption.
+        if (out && out.length <= SD_PHOTO_DATAURL_BUDGET) {
+          cb({ data: out, w: w, h: h, rung: maxPx + 'px/q' + q, bytes: out.length });
+          return;
+        }
+      }
+      cb(null);
+    } catch (e) { cb(null); }
+  };
+  img.onerror = function () { cb(null); };
+  img.src = dataUrl;
+}
+
 function handlePhotoFiles(files) {
   const job = document.getElementById('photo-job').value.trim() || 'Unassigned';
   const cat = document.getElementById('photo-cat').value;
@@ -25990,13 +26054,34 @@ function handlePhotoFiles(files) {
   validFiles.forEach(file => {
     const reader = new FileReader();
     reader.onload = e => {
+      sdDownscalePhoto(e.target.result, function (small) {
+      // A FAILED DOWNSCALE IS SAID OUT LOUD AND THE PHOTO IS STILL KEPT. The
+      // local copy is the one the user is looking at; refusing to keep it
+      // would lose the photograph to protect a backup. But the toast says the
+      // server copy will not exist, because the alternative is the silence
+      // this whole change exists to end.
+      if (!small) {
+        showToast('Photo kept on this device only — it could not be resized '
+          + 'small enough to back up. Try a smaller image.');
+      }
       const photo = {
         id: 'P' + Date.now() + Math.random().toString(36).slice(2,6),
         job: job,
         cat: cat,
         name: file.name,
         size: file.size,
-        data: e.target.result,
+        // THE ORIGINAL IS NOT KEPT ANYWHERE. Storing both would double the
+        // localStorage cost of the one thing already capped at 200 entries,
+        // and the 200-cap comment below is explicit that the server holds the
+        // deeper archive -- so the version that is backed up must be the
+        // version that exists.
+        data: small ? small.data : e.target.result,
+        // WHAT WAS DONE TO THE IMAGE, ON THE ROW. A downscale that is not
+        // recorded is indistinguishable from a camera that produced a small
+        // file, and a QC note read a year later needs to know which it was.
+        src_bytes: (e.target.result || '').length,
+        downscaled: small ? small.rung : null,
+        dims: small ? (small.w + 'x' + small.h) : null,
         date: new Date().toISOString()
       };
       sdPhotos.unshift(photo);
@@ -26011,6 +26096,7 @@ function handlePhotoFiles(files) {
       sdPhotos = sdCapLocal('sd_photos', sdPhotos, 200);
       saveSD3Data();
       renderPhotos();
+      });
     };
     reader.readAsDataURL(file);
   });
@@ -26075,7 +26161,7 @@ function photoAnalyze(id) {
   var result = document.getElementById('photo-ai-result');
   if(modal) modal.style.display='flex';
   if(result) result.innerHTML='<div style="color:var(--muted)">&#129504; Analyzing with Claude...</div>';
-  if(p.aiAnalysis){if(result)result.innerHTML=p.aiAnalysis.replace(/\n/g,'<br>');return;}
+  if(p.aiAnalysis){if(result)result.innerHTML=sdPhotoAiLabel()+p.aiAnalysis.replace(/\n/g,'<br>');return;}
   fetch('https://sairn.vercel.app/api/claude',{
     method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
@@ -26088,10 +26174,41 @@ function photoAnalyze(id) {
   }).then(function(r){return r.json();}).then(function(d){
     var txt=d.content&&d.content[0]&&d.content[0].text?d.content[0].text:'Analysis unavailable.';
     p.aiAnalysis=txt;
+    // ── T17, 2026-10-14: THE ROW NOW SAYS A MODEL WROTE THIS ────────────────
+    // b18 spec §7.6.1 measured `grep -c "ai_source" stonedesk.html` -> 0, and
+    // `aiAnalysis` was d.content[0].text VERBATIM with no provenance of any
+    // kind: no source, no approver, no model id. It is the FOURTH photo-QC
+    // sibling and the only one that had nothing -- bld_photo_analyses,
+    // grd_progress_photos and rf_photos were all already covered.
+    //
+    // DISCLOSURE, NOT APPROVAL, and the reason is recorded in
+    // api/_lib/ai-safeguards.js's NOT_HIGH_RISK_AI entry rather than implied
+    // here: the CONTENT would justify high-risk, but sd_photos is not in
+    // SD_SESSION_GATED, so an approval gate would refuse every analysed photo
+    // on an app with no sign-in requirement. NO ai_approved_by IS SET -- this
+    // write happens the moment the model answers and nobody has approved it,
+    // so aiFooter() reads "AI-assisted - not reviewed", which is true.
+    p.ai_source='claude:photo-qc';
     saveSD3Data();
-    if(result)result.innerHTML=txt.replace(/\n/g,'<br>');
+    if(result)result.innerHTML=sdPhotoAiLabel()+txt.replace(/\n/g,'<br>');
     renderPhotos();
   }).catch(function(){if(result)result.innerHTML='Analysis failed. Check connection.';});
+}
+// ── THE ONLY AI WORDING ON THIS PAGE WAS THE SPINNER IT OVERWRITES ─────────
+// T17 supporting arm (c): "Analyzing with Claude..." is replaced by the answer
+// the moment the answer arrives, so a reader who opens a cached analysis sees
+// model prose with nothing saying so. This label is on the SUCCESS RENDER only
+// -- the sairnfreedom and Review-Request convention -- because a label on
+// "Analysis failed. Check connection." would make the label mean nothing.
+// ONE helper, two call sites, and the wording lives here: the AI safeguards
+// spec is explicit that the final text is the lawyer's.
+function sdPhotoAiLabel(){
+  return '<div style="border-left:4px solid #B45309;background:#FFFBEB;'
+    + 'border-radius:6px;padding:9px;margin-bottom:10px;font-size:12px;'
+    + 'color:#78350F"><strong>Written by AI.</strong> An AI model (Claude) '
+    + 'wrote this quality-control note from the photograph. It has not been '
+    + 'reviewed by anyone &mdash; read it before you act on it or put it in a '
+    + 'customer file.</div>';
 }
 
 function photoBeforeAfter() {
@@ -30214,10 +30331,57 @@ async function sdData(action, resource, payload) {
 // was missing is the record, not the interruption. `_sdReadFailed` is left
 // exactly as it was: read-path UI depends on it and this adds to it rather than
 // changing it.
+// ── A console.warn IS NOT A REPORT TO A HUMAN (2026-10-14, b12 item 2c) ────
+// This function's whole body was one console.warn. The platform's own comment
+// in sdSyncCollection states the argument and it was already written in this
+// file: "silence would make a backup that is not happening look like one that
+// is." The user saw the photo in the panel with its 'Done' badge, because the
+// LOCAL write had succeeded, and nothing anywhere told them the server copy
+// did not exist.
+//
+// A TOAST FOR THE FIRST, A COUNTER FOR THE REST. One toast per failure would
+// be a wall of toasts on a sync of 200 photos -- which is its own kind of
+// silence, because a user dismisses the first three and stops reading. So the
+// first failure in a burst speaks, subsequent ones increment a count, and the
+// burst is summarised once it stops.
+//
+// IT STILL CANNOT THROW. Every branch is guarded and showToast is called
+// through a typeof test: this is a FAILURE PATH, and a failure path that can
+// itself fail is the shape sdData's own catch records paying for twice.
+var _sdFailBurst = { n: 0, timer: null, first: '' };
 function sdDataFailed(action, resource, why) {
   try {
     console.warn('StoneDesk: ' + action + ' "' + resource + '" did NOT reach the '
       + 'server (' + why + ').');
+  } catch (e) {}
+  try {
+    // THE ROW-TOO-LARGE CASE IS NAMED, because it is the one a user can act
+    // on: the server now answers 400 ROW_REFUSED for a CHECK violation
+    // instead of 503 "tables are not set up yet" (api/sd-data.js
+    // notProvisioned()), so the reason that reaches here is a real one.
+    var tooBig = /ROW_REFUSED|too large|400/.test(String(why));
+    _sdFailBurst.n += 1;
+    if (_sdFailBurst.n === 1) {
+      _sdFailBurst.first = resource;
+      if (typeof showToast === 'function') {
+        showToast(tooBig
+          ? ('"' + resource + '" was NOT backed up — the server refused the '
+             + 'record as too large. It is saved on this device only.')
+          : ('"' + resource + '" was NOT backed up (' + why + '). It is saved '
+             + 'on this device only.'));
+      }
+    }
+    if (_sdFailBurst.timer) { clearTimeout(_sdFailBurst.timer); }
+    _sdFailBurst.timer = setTimeout(function () {
+      try {
+        if (_sdFailBurst.n > 1 && typeof showToast === 'function') {
+          showToast(_sdFailBurst.n + ' records did not reach the server this '
+            + 'time, starting with "' + _sdFailBurst.first + '". They are '
+            + 'saved on this device only.');
+        }
+      } catch (e2) {}
+      _sdFailBurst = { n: 0, timer: null, first: '' };
+    }, 1500);
   } catch (e) {}
 }
 

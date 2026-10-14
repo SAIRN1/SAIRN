@@ -128,6 +128,25 @@ const NOT_HIGH_RISK_AI = {
   memory: 'INTERNAL AND NOBODY READS IT. A one-sentence summary stored to be '
     + 'fed back into later prompts (stonedesk.html:30425). It becomes no '
     + 'document and drives no decision; it is already redacted for PII.',
+  // ── sd_photos, 2026-10-14 (b12, T17). CLASSIFIED NOT-HIGH-RISK, AND THE
+  //    REASON IS A CONSTRAINT ON THE APP RATHER THAN A JUDGEMENT ABOUT THE
+  //    CONTENT. SAID OUT LOUD BECAUSE THE CONTENT ARGUES THE OTHER WAY. ──────
+  sd_photos: 'THE CONTENT WOULD JUSTIFY HIGH-RISK AND THE APP CANNOT CARRY IT '
+    + 'YET. `aiAnalysis` is a stone-fabrication QC read of a job photograph '
+    + 'that names defects and recommends next steps -- the same shape as '
+    + 'bld_photo_analyses, which IS high-risk for exactly that reason ("a '
+    + 'job-site finding that drives work"). The difference is not the text, it '
+    + 'is the gate: `sd_photos` is NOT in SD_SESSION_GATED, so StoneDesk writes '
+    + 'photos on a bare licence key with no signed-in employee. Marking it '
+    + 'high-risk would make enforceAiApproval refuse EVERY analysed photo 403 '
+    + 'AI_APPROVAL_REQUIRED -- the local copy having already saved -- which is '
+    + 'an over-refusal introduced on a path that works today, for a feature '
+    + 'with no sign-in requirement. PROMOTING THIS ROW IS A SESSION DECISION '
+    + 'FIRST: add sd_photos to SD_SESSION_GATED, then move it to HIGH_RISK_AI, '
+    + 'in that order and not the other. Until then it gets DISCLOSURE, the row '
+    + 'carries ai_source, and aiFooter() reads "AI-assisted - not reviewed", '
+    + 'which is the true sentence for a write that happens the moment the model '
+    + 'answers with nobody approving it.',
   // Added 2026-10-14 (b9) with the SAIRNfreedom wiring, and it is the one
   // entry here that is an ARGUMENT rather than an observation:
   sf_bottle_fills: 'AN AUTOMATIC-ONLY DETERMINATION, AND REQUIRING A HUMAN '
