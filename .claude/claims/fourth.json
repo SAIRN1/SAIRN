@@ -3912,8 +3912,8 @@
       "task": "b26: (1) Tier A review of hank's a1c22397 obligation (law_optx, law_trusttx, sd_hr_certs, sd_hr_employees, sen_pay_rates, sen_settings, sen_visits) -- change (3) law_trusttx vs api/_lib/law-roles.js:87 first; Michael decided adjustment-posts-next-period and EVV-reads-effective-clock; I decide the straight-time floor and the reopen rule. (2) re-derive the 22-branch list at HEAD and review hank's ten blob conversions as a change. (3) drive (d) LATE_REPLAY live. (4) reclassify the 33 server-only GETs and extend the branch census to follow variables. (5) methodology -- mechanical span recount so a branch count cannot drift, failing-first with ablation. (6) push. CONFLICTS DECLARED PER PR 4.3: api/ and sql/ are hank's and READ-ONLY here; tests/ is cody's and READ-ONLY here; tools/ is cc's and READ-ONLY (RUN not edited). FILES: docs/tier-a-reviews.json docs/2026-09-13-cross-domain-disciplines.md docs/2026-10-15-fourth-b26-*.md docs/batch-manifest-fourth-b26.json SAIRN-handoff-fourth-b26.md SAIRN-report-fourth-b26.txt SAIRN-digest-fourth-b26.txt SAIRN-latest-fourth-b26.md. HOOKS STAY CLEARED, settings.json NEVER committed, no SAIRN_SEED_GATE override, no auditor clone entered.",
       "claimed_at": "2026-10-15T15:28:08Z",
       "claimed_at_epoch": 1792078088.9474137,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-15T16:50:38Z",
       "files": [
         "SAIRN-digest-fourth-b26.txt",
         "SAIRN-handoff-fourth-b26.md",
