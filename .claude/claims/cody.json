@@ -3954,6 +3954,35 @@
         "tests/sairnbuild_backup_pending.js",
         "tests/sd_data_family_mar_gate.js"
       ]
+    },
+    {
+      "id": "cody-1792078195",
+      "session": "cody",
+      "subject": "tests",
+      "task": "cody b18: (1) tests/server_wins_hydration.js 1-of-179 to cause plus the blocked baseline of run_server_wins_hydration_sabotage_probe.py. (2) run_fail_open_probe.py, run_register_feed_gate_probe.py, run_audit_event_type_probe.py control/precondition failures to cause, and CONVERT THE THREE HOOK PROBES TO EXIT 3 COULD NOT RUN on Michael's confirmation -- hooks stay cleared, settings.json never committed. (3) run_tier_a_open_basis_probe.py 9/30 to cause, failing-first. (4) the run_known_red_probe.py fixture blocker, then a full-tree run, then the 16 CHANGED register rows before the 9 RECOVERED, then the floor raise. (5) methodology -- read the tests/-owned routed hypotheses to cause and add the failure-line-vs-cause divergence class to the recurring bug classes with a permanent check. (6) push without force and confirm landed. CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: api/ and sql/ are hank's and are READ-ONLY here, mutated only inside the sabotage harness's own worktrees which assert byte-identical restoration; tools/ is cc's and is RUN not edited; docs/ re-derivation is fourth's. FILES: tests/server_wins_hydration.js tests/run_server_wins_hydration_sabotage_probe.py tests/run_fail_open_probe.py tests/run_register_feed_gate_probe.py tests/run_audit_event_type_probe.py tests/hook_command_anchoring_probe.py tests/run_conflict_preflight_hook_probe.py tests/run_tooling_inventory_probe.py tests/run_tier_a_open_basis_probe.py tests/run_known_red_probe.py docs/known-red-suites.json docs/test-file-floor.json docs/2026-10-15-cody-b18-triage.md SAIRN-handoff-cody-b18.md SAIRN-report-cody-b18.txt SAIRN-digest-cody-b18.txt SAIRN-latest-cody-b18.md",
+      "claimed_at": "2026-10-15T15:29:55Z",
+      "claimed_at_epoch": 1792078195.8558798,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-cody-b18.txt",
+        "SAIRN-handoff-cody-b18.md",
+        "SAIRN-latest-cody-b18.md",
+        "SAIRN-report-cody-b18.txt",
+        "docs/2026-10-15-cody-b18-triage.md",
+        "docs/known-red-suites.json",
+        "docs/test-file-floor.json",
+        "tests/hook_command_anchoring_probe.py",
+        "tests/run_audit_event_type_probe.py",
+        "tests/run_conflict_preflight_hook_probe.py",
+        "tests/run_fail_open_probe.py",
+        "tests/run_known_red_probe.py",
+        "tests/run_register_feed_gate_probe.py",
+        "tests/run_server_wins_hydration_sabotage_probe.py",
+        "tests/run_tier_a_open_basis_probe.py",
+        "tests/run_tooling_inventory_probe.py",
+        "tests/server_wins_hydration.js"
+      ]
     }
   ],
   "refusals": [
