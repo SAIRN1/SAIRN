@@ -144,6 +144,32 @@ SYNTHETIC_APP_LABELS = frozenset({
     'NOT A RESOURCE',   # the fixture's rows are registered in no api/_resources
 })
 
+# ── DOCUMENT-SCOPE, NOT ROW-SCOPE (added 2026-10-14, cody b14) ───────────
+# HEADLINE is not a row-level problem and never was. It is a check on the
+# DOCUMENT's own prose -- tools/criticality_tier_check.py:1003-1008 re-reads the
+# whole register and looks for the "N resources, A A, B B, C C" summary
+# sentence, and says so in its own comment: "this is a check on the DOCUMENT's
+# prose, not on the table parse() builds". Every fixture here is a two-row
+# table with no summary sentence by construction, so the checker reports a
+# could-not-tell on every single run.
+#
+# THAT IS WHY ARM 2 WAS RED, AND THE PARSER WAS NEVER IMPLICATED. The fixture
+# parses: the same run prints RESOURCE_ROWS:2 and ROWS_MIGRATED_TWO_AXIS:2 of
+# 2, and arms 3-14 pass on it. row_problems() was over-collecting a
+# headline-scope third state into an arm whose own words say "row-level".
+# Diagnosed by fourth 2026-10-06, re-driven by cody b9, fixed here.
+#
+# THE OTHER REPAIR -- giving the fixtures a headline -- WAS REJECTED, and the
+# reason is this file's own recorded defect class. HEADER is shared by all 14
+# arms over fixtures with different row counts and different tier letters, so a
+# typed sentence would be a second copy of NEW_ROWS that goes stale the first
+# time a fixture row changes, and a derived one would make the HEADLINE check
+# agree with itself on every arm -- a check that can no longer fail. Scoping
+# the helper changes one judgement; rewriting the fixtures changes fourteen.
+DOCUMENT_LABELS = frozenset({
+    'HEADLINE',         # the register's summary SENTENCE; fixtures have none
+})
+
 # The five that were hand-typed here until 2026-09-23. Kept ONLY as a criteria
 # lock: a derivation that silently returned garbage -- or nothing -- would make
 # row_problems() return [] and arm 2 would pass vacuously forever, which is the
@@ -165,11 +191,27 @@ if _missing:
           'absence of nothing. Nothing was verified.' % _missing)
     sys.exit(3)
 
+# AN EXCLUSION THAT EXCLUDES NOTHING IS THE DANGEROUS SHAPE, so the two
+# hand-written sets are checked against the derivation rather than trusted. If
+# the checker renames or retires one of these labels, the exclusion stops
+# naming anything real and quietly narrows what arm 2 asserts -- and nothing
+# would say so, because the arm would simply pass. COULD NOT RUN, not a pass.
+# (A label renamed the other way is already safe: the new name lands in
+# ROW_PROBLEMS and turns arm 2 red naming it.)
+_stale = [k for k in sorted(SYNTHETIC_APP_LABELS | DOCUMENT_LABELS)
+          if k not in _labels]
+if _stale:
+    print('COULD NOT RUN: %s is excluded from row_problems() but the checker no '
+          'longer emits it, so the exclusion is stale and arm 2 is asserting '
+          'the absence of a label that cannot occur. Re-read the checker and '
+          'fix the set. Nothing was verified.' % _stale)
+    sys.exit(3)
+
 # Derived, so a NEW problem class is asserted absent the day it is added. A new
 # APP-level label would land here wrongly and turn arm 2 red -- that is the
 # safe direction and it names the label, where the old tuple would have said
 # nothing at all.
-ROW_PROBLEMS = tuple(sorted(_labels - SYNTHETIC_APP_LABELS))
+ROW_PROBLEMS = tuple(sorted(_labels - SYNTHETIC_APP_LABELS - DOCUMENT_LABELS))
 
 
 def row_problems(out):
@@ -197,6 +239,22 @@ check('2. the NEW six-cell shape parses, raises no row-level problem, and counts
       'as migrated',
       'ROWS_MIGRATED_TWO_AXIS:2 of 2' in out and not row_problems(out),
       'row problems: %s\n%s' % (row_problems(out), out[-400:]))
+
+# ── THE CONTROL ON ARM 2'S EXCLUSION (2026-10-14, cody b14) ──────────────
+# Arm 2 passes partly because HEADLINE is excluded from row_problems(). That
+# exclusion is only honest while the checker still RAISES a headline problem on
+# this fixture. If somebody deletes the headline check from
+# tools/criticality_tier_check.py, arm 2 would go on passing and would be
+# passing for a reason that no longer exists -- the exact "delete the check and
+# the control is satisfied" shape. So the signal arm 2 sets aside is asserted
+# PRESENT, on the same run, on the same output.
+# This is NOT a second copy of the checker's behaviour: it asserts only that
+# the label appears, not what it says, and the label itself is read out of the
+# checker by checker_problem_labels() above.
+check('   ...and the HEADLINE problem arm 2 sets aside is STILL RAISED on that '
+      'same run, so the exclusion re-scopes a live signal rather than hiding '
+      'an absent one',
+      'HEADLINE' in out, out[-400:])
 
 # ── 3. the mis-parse hover2 found before a row moved ──────────────────────
 # If a six-cell RESOURCE row fell into the rollup branch it would not be

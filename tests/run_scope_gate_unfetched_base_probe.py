@@ -1,6 +1,13 @@
 #!/usr/bin/env python
-# OWNER: cc
-# written 2026-10-13, batch b7, queue item 5
+# OWNER: cody
+# written 2026-10-13, batch b7, queue item 5 (by cc)
+# OWNER REASSIGNED cc -> cody 2026-10-14, cody b14, ON MICHAEL'S DECISION.
+# The file lives in tests/, and the directory-owner rule makes tests/ cody's;
+# the header had said `cc` since it was written because cc wrote it, and an
+# OWNER line records who a finding is ROUTED to, not who typed the file.
+# tools/tool_owner_map.py reads this line as AUTHORITATIVE, so until now any
+# finding here routed to cc, who does not own the directory it sits in.
+# cc's authorship is kept on the line above rather than erased.
 """`hover_auditor_scope_gate.changed_outgoing()` against a remote tip this clone has NEVER FETCHED.
 
     python tests/run_scope_gate_unfetched_base_probe.py
