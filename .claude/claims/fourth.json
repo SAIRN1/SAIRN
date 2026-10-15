@@ -3808,8 +3808,8 @@
       "task": "b22: (1) discharge cody obligations 2026-10-15T00:00:41Z and 00:02:27Z on tests/run_cross_tenant_dispatchers_sabotage_probe.py, one change or two. (2) BLOCKED AND NOT TAKEN -- hank holds a live claim on leg_aftercare key ambiguity and T17; flagged back to Michael, not started. (3) tier A review of hank sd_photos size fix. (4) tier A review of hank 400-to-503 helper, 63 branches 22 resources. (5) docs/CRITICALITY-TIERS.md sf_events seventh anchor re-anchored + stale citation total re-counted from source. (6) push without force, confirm landed. HOOKS STAY CLEARED, settings.json NEVER committed, no SAIRN_SEED_GATE override, no auditor clone entered. CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: hank's api/sd-data.js api/sen-auth.js api/sd-data-cross-tenant-dispatchers.test.js are READ-ONLY here; cc's tools/ files and docs/scrutiny-flags.json docs/TOOLING-INVENTORY.md docs/fmea/ are READ-ONLY here; cody's tests/ files are READ-ONLY here. FILES: docs/CRITICALITY-TIERS.md docs/tier-a-reviews.json docs/batch-manifest-fourth-b22.json docs/2026-10-15-fourth-b22-cody-sabotage-probe-discharge.md docs/2026-10-15-fourth-b22-hank-tier-a-reviews.md SAIRN-handoff-fourth-b22.md SAIRN-report-fourth-b22.txt SAIRN-digest-fourth-b22.txt SAIRN-latest-fourth.md",
       "claimed_at": "2026-10-15T00:41:26Z",
       "claimed_at_epoch": 1792024886.6493263,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-15T01:22:56Z",
       "files": [
         "SAIRN-digest-fourth-b22.txt",
         "SAIRN-handoff-fourth-b22.md",
