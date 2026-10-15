@@ -4,6 +4,41 @@
 -- Run in the Supabase SQL editor. READ ONLY -- every statement is a SELECT and
 -- there is no write, no ALTER and no DELETE in this file.
 --
+-- ╔═══════════════════════════════════════════════════════════════════════╗
+-- ║ RUN ORDER, AND WHAT EACH ANSWER MEANS (added 2026-10-15, hank b14)    ║
+-- ╚═══════════════════════════════════════════════════════════════════════╝
+--
+-- You can paste the WHOLE FILE. The Supabase editor runs the statements in
+-- order and returns one result grid per select. But READ PART 0's grid before
+-- reading any other, because it is the only thing that tells you whether the
+-- rest of the file is measuring anything at all.
+--
+--   PART 0  the shape guard.  flat_enc_rows / nested_enc_rows / total_rows
+--           * nested_enc_rows > 0 and flat_enc_rows = 0  -> NORMAL. Go on.
+--           * BOTH 0 -> THE TABLE HOLDS NO CREDENTIAL. Part 1's
+--             legacy_rows = 0 then means "nothing exists", which is NOT the
+--             step-4 precondition. STOP: step 4 is not authorised by this.
+--           * flat_enc_rows > 0 -> an unknown shape. The census is INCOMPLETE.
+--             STOP and read api/sc-credentials.js before trusting part 1.
+--
+--   PART 1  the number step 4 depends on, per surface. legacy_rows must be 0
+--           on BOTH rows of the grid, on a part 0 that found rows.
+--
+--   PART 2  which licences/employees/services are affected, so a backfill can
+--           be scoped. Empty when part 1 is 0. No ciphertext, no plaintext.
+--
+--   PART 3  v2_rows_total. 0 WITH SD_ENCRYPTION_KEY SET is a prompt, not a
+--           verdict -- enrol one test secret and re-run part 1.
+--
+-- THE jsonb PATH IS THE REAL ONE AND IT WAS RE-CONFIRMED FROM THE WRITER, not
+-- from this comment, on 2026-10-15: api/sc-credentials.js:205 does
+-- `next[service] = nextEntry` with `nextEntry.enc`, so the ciphertext lives at
+-- `data->'<service>'->>'enc'` -- `stedi` being the only member of
+-- ALLOWED_SERVICES (`:58`) today. PART 0 counts the nested shape GENERICALLY,
+-- over every object-valued key, rather than hardcoding `stedi`: a second
+-- service added to that list would otherwise go uncounted and the census would
+-- under-report in the authorising direction.
+--
 -- ── THE SELECT NOBODY HAD RUN ───────────────────────────────────────────────
 -- docs/2026-09-24-sd-encryption-key-revoke.md §3 lists two things it could not
 -- settle. The first is measured now (SD_ENCRYPTION_KEY exists in Vercel,
