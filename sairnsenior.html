@@ -4204,11 +4204,15 @@ function renderReadyToBill(){
 // server's is the one that counts, which is why it is consulted first.
 //
 // WHAT DOES NOT USE THIS, ON PURPOSE: the clock-action gates below
-// (`canClockIn`, `canClockOut`) and the EVV anomaly checks. Whether a clock
-// EVENT was recorded is a fact about the raw field -- substituting there would
-// let an approved correction re-enable the Clock In button on a visit that was
-// already clocked. The EVV anomaly half is fourth's F2 and is HELD FOR
-// MICHAEL, so it is left exactly as it was rather than decided here.
+// (`canClockIn`, `canClockOut`). Whether a clock EVENT was recorded is a fact
+// about the raw field -- substituting there would let an approved correction
+// re-enable the Clock In button on a visit that was already clocked.
+//
+// THE EVV ANOMALY HALF WAS HELD FOR MICHAEL AND IS NOW DECIDED (2026-10-15,
+// b16, F2): the EVV checks read the same effective clock pay uses, so an EVV
+// export and a pay run cannot disagree about the same visit. See
+// senEvvException() below -- the TIME SPAN moved onto this helper and the GPS
+// arms deliberately did not.
 function senEffClock(v,field){
   if(!v||typeof v!=='object')return null;
   var ec=v.effective_clock&&v.effective_clock[field];
@@ -4223,6 +4227,33 @@ function senEffClock(v,field){
     if(c.proposed_at)val=c.proposed_at;
   }
   return val;
+}
+// ── THE EVV EXCEPTION PREDICATE, ONE COPY (2026-10-15, b16 -- F2) ────────
+// Returns the issue string for a visit, or null when there is none. The
+// compliance panel used to carry this condition TWICE -- once to filter the
+// list and once to label each row -- and two copies of one predicate is how
+// the filter and the label stop agreeing about what a row is. One function,
+// consulted by both.
+//
+// THE TIME SPAN READS THE EFFECTIVE CLOCK, which is F2: a visit whose
+// clock-out exists only as an APPROVED correction is paid real minutes by
+// api/_lib/sen-payroll.js and must not also be listed here as "clocked in,
+// never clocked out". A PENDING correction clears nothing -- an unapproved
+// self-asserted time making a visit look compliant is worse than the
+// divergence being closed.
+//
+// THE GPS ARMS STAY ON THE RAW FIELDS, deliberately. A correction supplies a
+// TIME and never a LOCATION, so an approved correction must not clear "No GPS
+// on clock-out": there is still no coordinate. The consequence is visible and
+// correct -- a corrected clock-out with no GPS moves from the time-span
+// exception to the GPS one, rather than disappearing.
+function senEvvException(v){
+  if(!v||typeof v!=='object')return null;
+  var co=senEffClock(v,'clock_out_at');
+  if(v.clock_in_at&&!co&&v.status==='in_progress')return 'Clocked in, never clocked out';
+  if(v.clock_in_at&&(!v.clock_in_lat||v.clock_in_lat==null))return 'No GPS on clock-in';
+  if(v.clock_out_at&&(!v.clock_out_lat||v.clock_out_lat==null))return 'No GPS on clock-out';
+  return null;
 }
 function visitHours(v){
   // F3: the EFFECTIVE values, because this figure reaches a claim.
@@ -5939,11 +5970,8 @@ function cpRender(){
   var last30=vs.filter(function(v){var d=certDaysUntil(v.scheduled_date);return d!==null&&d<=0&&d>=-30;});
   var completed30=last30.filter(function(v){return v.status==='completed';});
   var evvRate=last30.length?Math.round((completed30.length/last30.length)*100):null;
-  var exceptions=vs.filter(function(v){
-    return (v.clock_in_at&&!v.clock_out_at&&v.status==='in_progress')||
-           (v.clock_in_at&&(!v.clock_in_lat||v.clock_in_lat==null))||
-           (v.clock_out_at&&(!v.clock_out_lat||v.clock_out_lat==null));
-  });
+  // ONE PREDICATE, shared with the row labels below. See senEvvException().
+  var exceptions=vs.filter(function(v){return senEvvException(v)!==null;});
   $('cp-kpi-row').innerHTML=
     '<div class="kpi"><div class="klbl">Certs Expiring (30d)</div><div class="kval">'+expiring.length+'</div><div class="kt">Caregivers</div></div>'+
     '<div class="kpi"><div class="klbl">Certs Expired</div><div class="kval">'+expired.length+'</div><div class="kt d">Needs immediate action</div></div>'+
@@ -5976,9 +6004,7 @@ function cpRender(){
   }).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">No caregivers on file</td></tr>';
   var etb=$('cp-evvtbody');
   etb.innerHTML=exceptions.length?exceptions.map(function(v){
-    var issue=(v.clock_in_at&&!v.clock_out_at&&v.status==='in_progress')?'Clocked in, never clocked out'
-      :(v.clock_in_at&&!v.clock_in_lat)?'No GPS on clock-in'
-      :'No GPS on clock-out';
+    var issue=senEvvException(v)||'No GPS on clock-out';
     return '<tr><td>'+H(v.client_name||'--')+'</td><td>'+H(senEmployeeName(v.assigned_employee_id))+'</td><td>'+fdate(v.scheduled_date)+'</td><td><span class="badge bw">'+H(issue)+'</span></td></tr>';
   }).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">No EVV exceptions</td></tr>';
 }

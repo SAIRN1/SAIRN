@@ -152,6 +152,15 @@ const FEDERAL_SOURCE = {
   ]
 };
 
+// THE ONLY require IN THIS FILE (2026-10-15, b16 -- F2). It does not break the
+// purity this module keeps: api/_lib/sen-evv-clock.js is itself pure -- no
+// fetch, no I/O -- and what is imported is the single function that decides
+// which clock value is in effect. api/_lib/sen-payroll.js carries the same
+// import for the same reason and says so in the same words; the whole point of
+// F2 is that these two files ask ONE function rather than each holding a copy
+// of the approval rule.
+const senEvvClock = require('./sen-evv-clock');
+
 // A visit is only worth checking once it is finished. An in-progress or
 // scheduled visit is not "not ready" -- it is not done, which is a different
 // statement, and conflating them would fill the panel with false alarms every
@@ -299,15 +308,45 @@ function checkVisit(visit, client, caregiver, options) {
   // Checked against the ACTUAL clock in/out, never the scheduled window -- EVV
   // verifies what happened, not what was planned, and substituting the schedule
   // would manufacture a compliant-looking record for a visit nobody verified.
-  const inOk = isIsoInstant(v.clock_in_at);
-  const outOk = isIsoInstant(v.clock_out_at);
+  //
+  // ── THE EFFECTIVE CLOCK, NOT THE RAW ONE (2026-10-15, b16 -- fourth's F2)
+  // MICHAEL'S DECISION: the EVV checks read the SAME effective clock pay uses,
+  // so an EVV export and a pay run cannot disagree about the same visit.
+  //
+  // WHAT THE RAW READ PRODUCED. b15 made api/_lib/sen-payroll.js read the
+  // effective clock. These two lines did not move, so a visit whose clock-out
+  // exists ONLY as an approved correction was simultaneously PAID with real
+  // minutes and reported here as "No clock-out time recorded" -- an export
+  // saying the visit has no end time, against a payroll register saying hours
+  // were paid for it. A state EVV programme reconciling the two finds that,
+  // and neither number looks wrong to a reader of one of them.
+  //
+  // ONE SOURCE FOR THE RULE. effectiveClock() decides what "approved" means,
+  // including that a missing `status` is approved. A second copy of that
+  // condition in a file that produces a COMPLIANCE verdict is a second thing
+  // to drift, and the drift would be invisible on both sides.
+  //
+  // A PENDING CORRECTION STILL MOVES NOTHING, which is this element's own
+  // existing argument applied to the new source: a caregiver's unapproved
+  // assertion must not make a visit submittable, because that is exactly the
+  // "compliant-looking record for a visit nobody verified" the note above
+  // refuses. effectiveClock() enforces it in the one place.
+  //
+  // GPS IS NOT TOUCHED AND MUST NOT BE. A correction supplies a TIME and never
+  // a LOCATION, so an approved correction clearing "no GPS on clock-out" would
+  // be asserting a coordinate that does not exist. Elements 4 and 5 keep
+  // reading the raw `clock_*_lat`/`clock_*_lng` fields.
+  const effIn = senEvvClock.effectiveClock(v, 'clock_in_at').value;
+  const effOut = senEvvClock.effectiveClock(v, 'clock_out_at').value;
+  const inOk = isIsoInstant(effIn);
+  const outOk = isIsoInstant(effOut);
   if (!inOk && !outOk) {
     miss('time_span', 'Time the service begins and ends', 'No clock-in or clock-out time recorded.', 'visit');
   } else if (!inOk) {
     miss('time_span', 'Time the service begins and ends', 'No clock-in time recorded.', 'visit');
   } else if (!outOk) {
     miss('time_span', 'Time the service begins and ends', 'No clock-out time recorded.', 'visit');
-  } else if (Date.parse(v.clock_out_at) <= Date.parse(v.clock_in_at)) {
+  } else if (Date.parse(effOut) <= Date.parse(effIn)) {
     // A non-positive duration is a data-integrity problem, not a missing field.
     // It is reported as missing anyway because a submission carrying it would be
     // rejected, and silently passing it would be the more expensive outcome.
