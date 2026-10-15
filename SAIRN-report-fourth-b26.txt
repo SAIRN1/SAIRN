@@ -1,0 +1,582 @@
+REPORT fourth b26
+
+SAIRN batch report -- session fourth (ted), batch b26, 2026-10-15.
+
+ALL SIX ITEMS DONE and the batch manifest closes 6/6. IT WAS OPENED AS THE FIRST
+ACTION OF THE BATCH -- `--new fourth b26 --items 6`, id_lock 906816e5cf0d24f9 --
+which is the thing b25 could not honestly do, because a manifest authored after
+the work reads as tracking that never happened. Nothing is parked, nothing is
+half-checked, nothing is recorded as verified that was not.
+
+Context at close: 54.6% of 1000k (545,603 tokens, max `usage` sum over this
+session's transcript).
+
+EVERY FIGURE NAMES THE COMMAND THAT PRODUCED IT. Re-derive anything you mean to
+quote, including out of this file.
+
+THE HANDOFF WAS WRITTEN AND UPLOADED BEFORE THIS FILE, as instructed:
+SAIRN-handoff-fourth-b26.md, Drive id 149YHnIP-qMuD9eds_O2tBA-KmXIlEeQC,
+createdTime 2026-10-15T16:09:58.293Z.
+
+== 0. STATE ==
+
+  HEAD                 0851dbff   git rev-parse --short HEAD
+  origin/main          0851dbff   git rev-parse --short origin/main
+  behind / ahead       0 / 0      git rev-list --left-right --count origin/main...HEAD
+  working tree         clean at this line; report+digest+latest commit after it
+  push forced          NO -- PROVED BY ANCESTRY, not by grepping git's wording.
+                       b26_pre_push_tip*.txt -> git merge-base --is-ancestor
+                       <tip> HEAD -> ANCESTOR. grep -c force on every push log
+                       -> 0
+  landed on origin     VERIFIED BY READING IT BACK:
+                       git show origin/main:docs/2026-10-15-fourth-b26-findings.md
+                       returns its first line. A clean exit from git push is not
+                       proof and was not treated as any
+  push gate            ran live via .githooks/pre-push and allowed
+  SAIRN_SEED_GATE /
+  GATE_EXEMPT /
+  SAIRN_SKIP           none used, in any form
+  .claude/settings.json  not edited, not committed
+  hooks                untouched and never re-added
+  api/ sql/ tests/
+  tools/ files written 0. Every suite RUN, every drive against a COPY of api/
+                       in a tempdir
+  auditor clones       not entered; 0 files under
+                       .claude/skills/sairn-hover-auditor/
+  git stash            0
+  b26 manifest         6/6 done, opened FIRST
+  Tier A for fourth    1 -- ARRIVED MID-BATCH at 15:12:47Z, UNTOUCHED (s8)
+
+== 1. ITEM 1 -- THE a1c22397 TIER A REVIEW, DISCHARGED ==
+
+Seven Tier A resources, three changes, every one money or a regulated
+determination. hank's routing document docs/2026-10-15-hank-b16-to-fourth-tier-a.md
+read first, as it asks. Michael's two decisions carried in rather than re-opened:
+an adjustment posts to the NEXT period, and the EVV export reads the SAME
+effective clock as pay. My two decisions, with rationale, are in sections 1.2 and
+1.3.
+
+Driver: <scratchpad>/b26_freeze_drive.js -> .log, five sections, against a COPY
+of api/ in a tempdir -- the live tree was never written. Ablation:
+<scratchpad>/b26_lock_ablation.py -> .log.
+
+1.1 CHANGE (3) FIRST, AS INSTRUCTED, BECAUSE IT IS SETTLEABLE MECHANICALLY
+
+THE law_trusttx ARM IS STRICTLY STRONGER AND NOT AN EXEMPTION, and I checked the
+assertion rather than the description. The old arm asserted all three roles could
+read the IOLTA trust ledger -- a STALE EXPECTATION, not a defect:
+api/_lib/law-roles.js:87 gives paralegal '' and :52-55 hard-locks it, both read
+directly at HEAD. Arms 3a/3b/3c cover FOUR independent failure modes where the
+old arm covered one and covered it wrongly:
+
+  * a 401 -- the gate wrongly rejecting a good session, the thing this suite
+    exists to catch -- fails on 3a's status assertion, which is asserted FIRST;
+  * a 403 from another cause fails on the error code;
+  * a "refusal" that leaks an empty data array fails the third assertion;
+  * the degenerate "paralegal always refused" cannot pass, because 3b drives the
+    SAME token at law_optx expecting 200 and 3c's second half asserts the table
+    does NOT deny it.
+
+403 AND NOT 404 IS RIGHT, AND THERE IS NO INDEPENDENT SPEC -- said plainly.
+grep -rn APPEND_ONLY-style search over docs/*.md returns one row for the status
+and it is hank's own handoff, i.e. the same author as the handler. On the merits
+the refusal is a POLICY refusal about an object the caller's own navigation shows
+them; 404 would be a lie they can disprove by clicking, and the handler says so
+in its own words at api/sd-data.js:15707-15715.
+
+  node api/sd-data-law-trusttx-session.test.js   EXIT=0   13/13 passed
+
+FINDING H1 -- THE TRUST HARD-LOCK IS UNTESTED. 2x2 ABLATION, NOT AN ARGUMENT.
+
+Arm 3a's own comment cites BOTH defences, which reads as though both are covered.
+decide() applies the TABLE first and re-asserts the LOCK only after the table
+agrees, so on the shipped table the lock can never be reached for a paralegal.
+Measured over all four configurations, each against a COPY of api/:
+
+  BASELINE  lock INTACT,  table DENIES                exit 0   3a ok
+  ARM B     lock INTACT,  table says paralegal 'r'    exit 0   3a ok
+  ARM C     lock EMPTIED, table says paralegal 'r'    exit 1   3a FAIL
+  ARM A     lock EMPTIED, table DENIES (the shipped)  exit 0   3a ok   <-- THE FINDING
+
+  the TABLE ROW is load-bearing for arm 3a      : YES -- ARM C goes red
+  the HARD LOCK alone can save a permissive row : YES -- ARM B stays green
+  arm 3a CAN DETECT the lock being removed      : NO  -- ARM A stays green
+
+SO DELETE LAW_TRUST_LOCKED ENTIRELY AND THE WHOLE SUITE STAYS GREEN. The one
+defence built for the case where the table is wrong -- its own comment says it is
+"what survives somebody editing the table or layering an override on top" -- has
+no arm. ARM B is the half that proves the lock really works, which is why this is
+a test-coverage finding and not a product defect.
+
+AND law_bankstatements HAS NO ARM AT ALL in that suite. It is the other member of
+LAW_TRUST_LOCKED, the bank side of the same IOLTA three-way reconciliation, rated
+A on integrity at docs/CRITICALITY-TIERS.md:425 by the module's own citation.
+
+NEXT STEP (hank), and LAW_TRUST_LOCKED is ALREADY EXPORTED, so it is two
+assertions plus one behavioural arm for paralegal -> law_bankstatements -> 403.
+THEN RE-RUN THE 2x2: ARM A MUST GO RED, or the arm still is not testing the lock.
+
+CHECKED AND CORRECT, so it is not re-found later as a gap. decide() fails CLOSED
+on an unknown law_ resource -- a new law_ table nobody added to the table returns
+DENY -- and returns NOT_LAW rather than a decision for a non-law one. The lock is
+re-asserted AFTER the table agrees rather than instead of it.
+
+AND ONE CONSOLE LINE I CHECKED RATHER THAN TREATING AS NOISE. The suite prints
+"active-credential re-check DID NOT RUN for app sairndental (NO_ACTIVE_CHECK) on
+law_trusttx/read". That is the DOCUMENTED CROSS-APP ARM -- a SAIRNdental session
+presented at a law_ resource, which has no row in sairndental_employee_auth -- and
+the pre-gate deliberately runs the active check only when the expected app
+matches the token's, because its first version refused employees who were simply
+in the wrong app. The branch's own gate then refuses the mismatch, and arm 4
+proves the real path: a deactivated credential with a valid token -> 403
+CREDENTIAL_INACTIVE. CORRECT, and logged rather than silent.
+
+THE sd_hr_certs / sd_hr_employees ID-SHADOW CHANGE IS CORRECT AND IT CLOSES A
+FINDING OF MINE, IN THE OPPOSITE DIRECTION TO WHAT I ROUTED.
+api/sd-data.js:4160 is now Object.assign({}, x.data, { id: x[cfg.idCol] }) -- the
+COLUMN spread LAST, so it wins over a blob id. My b25 LOW asked for
+storedBlob(payload, ['id']) so the blob would stop carrying id. hank's answer is
+better: stripping id from the blob would have been a correct-looking fix that
+emptied the identifier off the three sites whose written row has no id column at
+all, which is precisely cody's arm-Z scenario. api/b16-id-shadow.test.js's header
+records that the other two candidates were rejected BY MEASUREMENT. MY LOW IS
+CLOSED, not open.
+
+AND HANK'S OWN QUESTION IS ANSWERED by widening the universe rather than
+accepting his sample. He measured "the four id mints in stonedesk.html and
+stonedesk-hr.html" and asked whether making id always a string could break a
+consumer he did not measure. Outside archive/, sd_hr_employees appears in
+api/sd-data.js, api/_resources/stonedesk.js (a RESOURCE REGISTRY, not an id
+consumer), stonedesk.html, stonedesk-hr.html and three test files; the SD_HR
+dispatcher map is app 'stonedesk' only
+(api/sd-data-cross-tenant-dispatchers.test.js:871-872), so there is no cross-app
+id consumer; and a strict-equality search for a numeric comparison against the HR
+id in stonedesk-hr.html returns NOTHING. THE TWO FILES HE MEASURED ARE THE WHOLE
+LIVE UNIVERSE. The register's note that "the employees seam is the one three
+other apps read" is about a DIFFERENT resource.
+
+1.2 MY DECISION -- THE STRAIGHT-TIME FLOOR. FINDING H2 (HIGH): IT IS VIOLATED.
+
+THE RULE I AM SETTING: an adjustment line is straight time at the rate in force
+on the service date, and that is acceptable AS A FLOOR -- BUT AN ADJUSTMENT MUST
+NEVER BE NEGATIVE. A downward approved correction must not reduce a later
+period's pay.
+
+DRIVEN, section C, against the real api/_lib/sen-payroll.js:
+
+  UPWARD   (clock_in moved 1h earlier) -> adjustment_cents= 2000  delta=[ 60]  total_payable_cents= 2000
+  DOWNWARD (clock_in moved 1h later)   -> adjustment_cents=-2000  delta=[-60]  total_payable_cents=-2000
+
+`b.adjustment_cents += dCents` has no sign guard and
+`total_payable_cents = gross + b.adjustment_cents`. SO A SCHEDULER APPROVING A
+DOWNWARD CORRECTION SILENTLY DEDUCTS $20 FROM A LATER PERIOD'S WAGES.
+
+THE RATIONALE, because the decision was asked for and not just the rule. An
+adjustment line exists to PAY for work already performed and underpaid. A
+negative adjustment is not an adjustment; it is A WAGE DEDUCTION TO RECOVER AN
+OVERPAYMENT, and that is a separate regulated act with its own conditions -- an
+employer may recoup an overpayment under the FLSA but not where the deduction
+takes a workweek below the minimum wage, and many states additionally require the
+employee's written authorisation. A PAYROLL RUN MUST NOT PERFORM ONE AS A SIDE
+EFFECT OF AN APPROVAL, with no notice, in a period the employee has not been told
+about. It is also the mirror of the harm F1 closed: F1 was sixty minutes unpaid
+BY OMISSION; this is sixty minutes removed BY COMMISSION, which is worse because
+somebody chose it. AND IT PAYS BELOW STRAIGHT TIME IN MICHAEL'S LITERAL WORDS:
+the later period's own work is paid at gross minus 2000 cents.
+
+NEXT STEP (hank):
+  * adjustment_cents floored at 0 per visit -- Math.max(0, dCents);
+  * the negative deltas surfaced as their own list, e.g. overpayments[], carrying
+    employee, visit, service date, minutes and cents, so the figure is VISIBLE
+    and requires a human act. NEVER netted into a payable total;
+  * total_payable_cents then cannot fall below gross_cents, which is the
+    invariant worth an arm.
+
+AND THE FLSA PREMIUM GAP STAYS A DISCLOSED FLOOR, WITH ONE CONDITION.
+not_computed entry [5] names the class correctly. IT DOES NOT NAME THE CAREGIVER.
+Flagging does NOT require reopening the frozen week -- the as-paid weekly minutes
+are already in hand on the frozen run -- so an adjustment should carry
+premium_may_be_owed whenever the as-paid week was at or over the FLSA threshold
+or the delta crosses it. A DISCLOSURE THAT NAMES A CLASS IS A NOTE; A FLAG THAT
+NAMES A PERSON IS PAYABLE. The same distinction that made F1 money rather than a
+comment.
+
+1.3 MY DECISION -- THE REOPEN RULE. FINDING H3 (HIGH): IT IS VIOLATED.
+
+THE RULE I AM SETTING: a paid period is reopened only by an APPENDED correction
+record. Never a silent replace.
+
+payroll_closed_periods lives as ONE sen_settings row (api/sd-data.js:7755-7757,
+read-only there and never from the payload -- that part is right). But
+sen_settings has a generic WRITE path at api/sd-data.js:8282 which:
+
+  * requires only senAuth.MANAGEMENT_ROLES[session.role] -- {owner, billing} --
+    AND billing IS ALSO THE ROLE THAT RUNS PAYROLL (api/sd-data.js:7710);
+  * validates ONLY evv_config and agency_profile, and says so in its own words:
+    "Unknown keys are stored as-is -- this is a settings store, not a schema
+    registry";
+  * upserts on_conflict=license_hash,setting_key with
+    resolution=merge-duplicates, i.e. A FULL REPLACE of that key's data.
+
+DRIVEN, section A, through the REAL handler with a real signed session:
+
+  stored before : {"periods":[{"period_start":"2026-09-01","period_end":"2026-09-15","paid_at":"2026-09-20T00:00:00.000Z"}]}
+  as billing    -> HTTP 200
+  as owner      -> HTTP 200
+  stored after  : {"periods":[]}
+  rows carrying the key: 1       (an APPEND would leave 2+; a REPLACE leaves 1)
+
+AND SECTION B IS THE CONSEQUENCE, the same payroll run twice through the real
+handler:
+
+  closed_periods = the real one -> HTTP 200  period_closed={...paid_at...}  minutes=240  gross=8000
+  closed_periods = EMPTIED      -> HTTP 200  period_closed=null             minutes=300  gross=10000
+
+SO THE WHOLE CHAIN IS: a billing session POSTs one settings row, gets a 200, and
+the next pay run reports $100.00 for a period already paid at $80.00, with
+period_closed:null stating that nothing is frozen -- AND NO RECORD ANYWHERE THAT
+THE LIST EVER CONTAINED ANYTHING. updated_by/updated_at sit on the single row the
+next write overwrites.
+
+THE RATIONALE. The freeze exists so a paid figure is REPRODUCIBLE. A control that
+can be erased by the same role that runs payroll, through an endpoint whose own
+comment disclaims validating it, with the prior value overwritten, IS NOT A
+CONTROL -- IT IS A CONVENTION. And it defeats the mechanism's own safety argument
+in its own words: the 503 on an unreadable list exists because treating it as
+empty "would silently UNFREEZE every paid period and restate history". THE CODE
+REFUSES TO DO THAT BY ACCIDENT AND PERMITS IT ON PURPOSE. The direction is not
+the point either -- the same write can move paid_at later so an owed adjustment
+vanishes, or shorten a period so part of it unfreezes.
+
+NEXT STEP (hank), and it is a schema decision rather than a patch:
+  * payroll_closed_periods must NOT be reachable through the generic setting_key
+    path. Refuse that key there explicitly -- a NAMED refusal, not an allowlist
+    the next payroll control also misses;
+  * it needs its own APPEND-ONLY resource -- one row per closing (period_start,
+    period_end, paid_at, closed_by, closed_at), never updated, never deleted, the
+    shape leg_custodylog already has and api/_lib/leg-roles.js already models.
+    The read unions them;
+  * a REOPEN is then a new appended row referencing the closing it reverses, with
+    a reason, which is what makes it auditable instead of invisible;
+  * UNTIL THAT EXISTS THIS GAP IS OPEN and the freeze should not be described to
+    an agency as a guarantee.
+
+1.4 HANK'S FIVE QUESTIONS, ANSWERED FROM MEASUREMENT
+
+Q1 THE UNDATABLE APPROVAL -- HIS REASONING HOLDS, AND I CHECKED THE PREMISE
+RATHER THAN THE CONCLUSION. Driven, section E:
+
+  the CLOSED period itself -> minutes=300  gross=10000  adjustment_cents=0  undatable_corrections=1  adjustments=0
+  a LATER open period      -> minutes=0    gross=0      adjustment_cents=0  undatable_corrections=1  adjustments=0
+
+NO DOUBLE COUNT: it applies once, in the closed run, and posts no adjustment
+anywhere. AND THE REASON IS STRUCTURAL, NOT HIS COUNTERFACTUAL ABOUT HISTORY:
+proposeCorrection writes approved_at_server:null WITH a status
+(api/_lib/sen-evv-clock.js:290) so a pending entry is not approved;
+approveCorrection stamps a real instant (:349); and clock_corrections is in
+NEITHER sen_visits payload allowlist, which I established in b25. SO AN UNDATABLE
+APPROVED ENTRY CAN ONLY BE A LEGACY ROW -- provable from the writers rather than
+from the past.
+
+Q4 THE STRADDLING RUN -- THE HAZARD IS REAL AND NOTHING DISCLOSES IT. Driven,
+section D, one visit inside the closed period and one after it, run 2026-09-10 to
+2026-09-25 across the closed end 2026-09-15:
+
+  period_closed = null
+  minutes=480  gross=16000  adjustment_cents=0
+  not_computed entries: 7, and NONE of them mentions a straddle
+
+THE PER-VISIT FREEZE IS THE SAFE HALF AND IT WORKED -- the corrected visit
+contributed its as-paid 240 and not its corrected 300, so 480 rather than 540.
+THE LABEL IS THE UNSAFE HALF: period_closed:null says nothing in this total is
+frozen while half of it is, so a reader reconciling that figure against the EVV
+record will find a difference the output denies exists. NEXT STEP: a third state
+-- null only when NO visit in the run was frozen, and a partially_closed naming
+the overlapping closings otherwise.
+
+Q5 THE 503 DIRECTION -- CORRECT, AND I AM NOT SPLITTING IT. Treating a failed
+read as "nothing is closed" unfreezes every paid period and restates history,
+which is unrecoverable; refusing a pay run on a settings blip is annoying and
+recoverable. The asymmetry is the whole argument and the code states it in the
+same terms.
+
+Q(b)2 THE DELIBERATE EVV/PAY DISAGREEMENT -- AND MICHAEL'S DECISION IS NOT FULLY
+IMPLEMENTED. api/_lib/sen-evv-readiness.js:339-340 calls
+senEvvClock.effectiveClock(v, field) -- THE NO-AS-OF FORM. So for an OPEN period
+EVV and pay agree, and FOR A CLOSED PERIOD pay reads as at paid_at while EVV
+reads NOW. Michael's standing decision for b26 is that the EVV export reads the
+SAME effective clock as pay; on a closed period it does not. effectiveClockAsOf
+already exists, so the gap is threading the as-of through, not building anything.
+REPORTED RATHER THAN DECIDED BY ME -- this is the shape of Michael's decision.
+
+Q(b)1 A corrected clock-out with no GPS now surfaces as a GPS exception. hank is
+right that it is correct and right that it changes what a surveyor is shown. I
+agree with the direction: the visit really has no clock-out coordinate. NOT A
+FINDING.
+
+Q(c) THE PURITY QUESTION -- THE HEADERS ARE NOW MISLEADING AND THAT IS THE
+DEFECT, NOT THE require(). The import is defensible and his argument is the right
+one. What is not defensible is two headers still claiming purity when the claim
+was doing two jobs -- no I/O, and no dependencies -- and only one is still true.
+His own line that "I did not edit either header's purity claim, which may itself
+be the defect" is correct, and it is.
+
+THE THROW QUESTION: his F17 arm over 15 hostile shapes is good and the reason it
+exists -- no per-visit try/catch, so a throw fails the run for every caregiver --
+is right. HIS CAVEAT STANDS AND I AM NOT UPGRADING IT: 15 shapes are not a
+property, and I did not write the fuzz either.
+
+== 2. ITEM 2 -- THE 22 RE-DERIVED, AND THE TEN CONVERSIONS AS A CHANGE ==
+
+THE 22 IS STILL 22, at ceea750d, 18,867 lines. The file grew about 100 lines
+since b25's 18,769 AND THE COUNT DID NOT DRIFT -- which is the methodology
+working rather than luck, and is the first time this figure has been re-derived
+without moving. The citations moved (+24 on the early ones, +98 on the later):
+
+  :2668  :3230  :3591  :4176  :4240  :4489  :4571  :4646  :8328  :9126
+  :9321  :10650 :10797 :10996 :11115 :11285 :11362 :11613 :11692 :13757
+  :13888 :14445
+
+AND A 23rd WRITE-GUARDED GUARD EXISTS IN A SHAPE NOBODY COUNTED -- :15150 -- AND
+IT IS NOT A DEFECT. It is neither the helper nor a bare inline 503 nor a
+200-empty, so it lands in the census's `other` bucket; its own comment names
+23505 / 23502 / 23503, says "the table EXISTS and refused this row", and is
+DELIBERATELY SCOPED to that branch. So it is the one write-guarded branch that
+already distinguishes the integrity class. Reported because a count of 22 beside
+a bucket of 23 invites exactly the 25-vs-22 mistake again.
+
+HANK'S TEN BLOB CONVERSIONS (8627f4e4) -- CORRECT, AND NO DATA LOSS.
+storedBlob(payload, columnKeys) copies payload, deletes columnKeys, then deletes
+NEVER_STORED (api/_lib/blob.js). So storedBlob(payload, []) narrows by EXACTLY
+THE THREE SCOPE KEYS AND NOTHING ELSE -- every other key is stored as before.
+THE NINE EMPTY COLUMN LISTS ARE RIGHT RATHER THAN AN OMISSION, and stripping a
+mapped column would have been cody's arm-Z defect. The one non-empty list,
+['shop_id'], is right too AND LOSES NOTHING: the read selects data,shop_id and
+returns flat(row.data, { shop_id: row.shop_id }) (:2339, :2343), and the write
+echo does the same (:2355). storedBlob mutates a COPY, so payload.id is still
+readable by the same object literal that calls it.
+
+== 3. ITEM 3 -- (d) LATE_REPLAY, DRIVEN LIVE AT LAST ==
+
+b23 read it; B24 AND B25 BOTH LEFT IT AS READ-ONLY EVIDENCE and b23's own verdict
+named it its weakest-evidenced item. Four writes in sequence against ONE
+PERSISTENT ROW through the real handler
+(<scratchpad>/b26_late_replay_drive.js -> .log). The property under test is the
+superseded set at api/sd-data.js:7396-7420. All four hold:
+
+  1. an 8-day-old clock-in raises LATE_REPLAY and it is STORED, not only
+     returned (PAST_FLAG_MS is 7 days, api/_lib/sen-evv-clock.js:70; the fixture
+     is computed from now so it cannot rot into or out of the window);
+  2. a later write on the OTHER clock field does not erase it -- AND THE
+     BOTH-FLAGGED CASE IS THE DISCRIMINATING ONE, which is the one driven,
+     because the code's own comment says the pre-2026-10-14 bug ONLY SHOWED WHEN
+     BOTH HALVES WERE FLAGGED and a clean clock-out let the flag survive by luck;
+  3. THE T16 REFINEMENT HOLDS: a re-sent immutable clock field lands as a
+     PENDING CORRECTION, the row keeps the original, and the original's
+     LATE_REPLAY is KEPT -- because the row still holds the value the flag is
+     about;
+  4. a write mentioning no clock field at all keeps every flag untouched.
+
+ONE FIXTURE CORRECTION DISCLOSED: the first draft moved clock_in to NOW, which
+inverts the visit, and the handler refused it 400 CLOCK_OUT_BEFORE_IN -- correct
+behaviour, and it meant arm 3 NEVER RAN. Corrected to +30 minutes and re-driven.
+AN ARM THAT WAS REFUSED BEFORE IT REACHED ITS SUBJECT PROVES NOTHING ABOUT THE
+SUBJECT, and its exit code would have reported a pass.
+
+== 4. ITEM 4 -- THE 33 RECLASSIFIED, AND TWO OF MY OWN FIGURES WITHDRAWN ==
+
+<scratchpad>/branch_census_b26.py -> b26_census.log. 332 guards at 18,867 lines.
+Shapes: A-helper 88, B-inline-503 70, C-200-empty 151, other 23.
+
+CLASS B's 46 GET-GUARDED BRANCHES:
+
+  influence        b23    b26
+  CALLER            13     32
+  SESSION            --     1
+  UNRESOLVED   (no state)    4
+  SERVER-ONLY       33      9
+
+CALLER WAS LOW BY 19 AND SERVER-ONLY WAS HIGH BY 24.
+
+AND MY OWN b23 STATEMENT ON THE 151 IS WITHDRAWN. b23 said "0 of them
+interpolates a caller value, so a caller cannot provoke a non-missing-table 400
+on any of them." The census finds 16 CALLER, 2 SESSION, 19 UNRESOLVED and 114
+SERVER-ONLY. So a caller CAN provoke one on at least 16 of the 151, and the
+reachability withdrawal I made in b23 was itself too generous.
+
+SPOT-CHECKED IN BOTH DIRECTIONS rather than trusted -- the b23 lesson is that an
+over-reporting predicate is as bad as an under-reporting one:
+
+  :5120   CALLER, CORRECT -- enc(String(payload.id)) is literally in the URL.
+  :15150  write-guarded, CORRECT, and a true NON-defect (section 2).
+  :10556  UNRESOLVED, CORRECT, AND IT IS THE THIRD STATE EARNING ITS KEEP --
+          jobId is a FUNCTION PARAMETER of rfJobGate, and its call sites at
+          :10612 and :10746 both pass payload.job_id, SO IT IS CALLER once you
+          go inter-procedural.
+
+THE LOWER BOUND IS NOT GONE -- IT IS NAMED. 26 enumerated UNRESOLVED lines
+(4 in class B, 19 in class C, 3 in other) instead of a hidden `else` branch, with
+one resolved by hand as a worked example. SAID THIS WAY RATHER THAN CLAIMING THE
+ITEM IS CLOSED: closing it fully needs inter-procedural resolution for the
+handful of helper arrows, which is routed with the tool.
+
+== 5. ITEM 5 -- THE SPAN RULE IS NOW A FIXTURE, NOT A SENTENCE ==
+
+CRITERIA_VERSION 2026-10-15.b26.1. TEN FIXTURES, 10/10, locked BEFORE the real
+file is read -- and the program EXITS 2 COULD NOT RUN RATHER THAN REPORTING A
+CENSUS if they fail, because a classifier that cannot pass its own locked
+criteria produces a number nobody can use.
+
+Three rules, each with fixtures in BOTH directions:
+
+  R1 the span for reading a fetch's own options ENDS AT THE NEXT await fetch(,
+     never at a line count;
+  R2 a guard binds to the fetch that assigned ITS OWN variable, and the backward
+     walk STOPS at another variable's fetch;
+  R3 a caller value is followed TRANSITIVELY through assignments, AND an
+     identifier whose origin cannot be resolved IS ITS OWN THIRD STATE -- never
+     folded into SERVER-ONLY, which is what made CALLER a lower bound.
+
+ABLATION PER ARM, NOT PER EXIT CODE:
+
+  WITHOUT R1 span-bounded-at-next-fetch          1 fixture changes -> GET becomes POST
+  WITHOUT R2 guard-binds-to-own-variable         1 fixture changes -> UNCLASSIFIED becomes GET
+  WITHOUT R3 follow-caller-through-assignments   3 fixtures change -> all collapse to SERVER-ONLY
+
+EVERY RULE IS LOAD-BEARING, and removing R1 reproduces the EXACT 25-vs-22 error
+while removing R3 reproduces the EXACT lower-bound error. If a future edit makes
+a rule buy nothing, --ablate prints that the rule is not load-bearing AND CALLS
+IT A FINDING ABOUT THE FIXTURES RATHER THAN A PASS, which is the thing a bare
+exit code cannot tell you.
+
+ONE FIXTURE WAS WRONG AND IS DISCLOSED RATHER THAN QUIETLY FIXED: the first R1
+fixture put the guard AFTER the upsert -- a layout api/sd-data.js does not
+contain -- and failed for that reason, not because the rule was wrong. It is now
+the shipped :5061-5072 layout, with the reason recorded in the fixture's own
+comment so the next reader does not "fix" it back.
+
+tools/ IS cc's, SO IT IS ROUTED WITH ITS FULL SOURCE INLINE in
+docs/2026-10-15-fourth-b26-branch-census-routed-to-cc.md -- because the three
+previous censuses each lived in a session scratchpad and EACH REBUILD
+RE-INTRODUCED A BUG THE PREVIOUS ONE HAD FIXED, and a routing note pointing at a
+scratchpad path is a fourth rebuild waiting to happen.
+
+CONVENTION 35 GAINS ONE OPERATIONAL CLAUSE RATHER THAN A 36th NUMBER, because
+the rule was already written and what was missing was its mechanisation. Counted
+before and after: 35 `## <n>.` headings, 1-35, no gap and no duplicate, and the
+denominator heading still reads "ELEVEN of the thirty-five".
+
+== 6. METHOD-NOTE -- THREE ARMS THAT DID NOT REACH THEIR SUBJECT ==
+
+Said together because the pattern is the point rather than any one instance, and
+all three were caught by RUNNING something rather than by reading it.
+
+ONE. MY LATE_REPLAY ARM 3 WAS REFUSED BEFORE IT ARRIVED. The correction moved
+clock_in to NOW, which inverts the visit, so the handler answered 400
+CLOCK_OUT_BEFORE_IN -- correct behaviour -- and the T16 property was never
+exercised. The run's exit code was 0 and the log said HTTP 400 in a line nobody
+would read as a miss.
+
+TWO. MY FIRST CENSUS FIXTURE USED A LAYOUT THE SUBJECT FILE DOES NOT CONTAIN. It
+failed, which is the good outcome; the bad outcome available was to "fix" the
+rule to satisfy a fixture describing code that does not exist.
+
+THREE. HANK'S ARM 3a CANNOT REACH THE LOCK IT CITES. The table denies first, so
+the lock is unreachable for a paralegal and deleting it leaves the suite green.
+Only the 2x2 showed it; reading the arm confirmed the citation and not the
+coverage.
+
+THE THROUGH-LINE is cross-domain-disciplines item 16 -- a probe that never
+reached the code proves nothing about the code, so prove it arrived -- and item
+20, an arm counts only after an ablation shows it can fail. TWO OF THE THREE WERE
+MINE, and the cheapest guard in all three cases was a control or an ablation
+rather than a closer reading.
+
+== 7. WHAT b26 PROVED vs LEFT UNPROVEN ==
+
+PROVED, driven: that a billing session can unfreeze a paid period with one
+settings POST and that the next pay run restates it from 240 minutes to 300; that
+a downward approved correction produces a negative adjustment and a reduced
+payable total; that the trust hard-lock can be deleted with the suite staying
+green, and that the lock nevertheless works; that the law_trusttx arm is strictly
+stronger on four failure modes; that an undatable approval cannot double-count,
+and why, from the writers rather than from history; that a straddling run presents
+a partly-frozen total as live with nothing disclosing it; that all four
+LATE_REPLAY properties hold including the T16 refinement; that the 22 is still 22
+while the file grew about 100 lines; that the ten blob conversions lose nothing;
+that CALLER was low by 19 and that 16 of the 151 are caller-reachable; and that
+every one of the census's three rules is load-bearing, by per-arm ablation.
+
+LEFT UNPROVEN, and none of it is recorded as checked:
+
+  * NO LIVE VERIFICATION. Nothing ran against a real Supabase. NO PRODUCTION ROW
+    READ, NO TABLE TOUCHED, NO DEPLOYMENT FETCHED. And NO AGENCY HAS A
+    payroll_closed_periods ROW, so THE FREEZE HAS NEVER RUN ON REAL DATA BY
+    ANYONE -- which hank says too.
+  * THE INTER-PROCEDURAL HALF OF THE CENSUS. 26 UNRESOLVED lines stand, one of
+    them already known to be CALLER.
+  * THE CENSUS IS NOT A GATE. Nothing runs it on a push, so item 8 applies to it
+    like everything else.
+  * cody 2026-10-15T15:12:47Z -- arrived MID-BATCH, UNTOUCHED, section 8.
+  * law_optx is covered only as the CONTROL in arm 3b.
+  * sairnsenior.html and sairnbuild.html were grepped and read in commit
+    messages, never re-extracted block by block and never rendered.
+  * THE FLSA PREMIUM ITSELF is not computed by me. I accept the floor and require
+    the flag; I do not assert what any premium is worth.
+  * hank's F17 throw arm stands with his own caveat.
+  * The one-person-agency self-approval exception is NOT reviewed and is NOT a
+    gap -- unbuilt by Michael's standing decision, recorded for question H8.
+
+== 8. ONE FRESH TIER A OBLIGATION ARRIVED MID-BATCH -- UNTOUCHED ==
+
+Section 0's "1 assigned to fourth" is this, and it is NOT in b26's dispatch.
+NOTHING WAS DONE TO IT: not begun, not partly checked, no verdict recorded.
+
+  cody 2026-10-15T15:12:47Z, sha d47880d3, held 1h, ASSIGNED TO fourth
+  resource bld_bids (Tier A)
+  tests/sairnbuild_server_wins.js,
+  tests/run_sairnbuild_server_wins_sabotage_probe.py
+
+WHY IT MATTERS, in cody's own measurement: the suite asserted the literal
+key==='bld_bids' appears in bldRetryPending. That literal is GONE from the code
+-- sairnbuild.html:2369 now declares BLD_SESSION_REQUIRED = { bld_bids: true,
+bld_draws: true } and the retry passes !!BLD_SESSION_REQUIRED[key] -- but the
+string still occurs twice in the file and BOTH OCCURRENCES ARE COMMENTS, one of
+them INSIDE bldRetryPending explaining that the old form used to read that way.
+SO THE ASSERTION WAS SATISFIED BY THE COMMENT DOCUMENTING THE REMOVAL OF THE
+THING IT ASSERTED, and the sabotage arm guarding it was ANCHOR-0 at the same
+time. Two layers of guard on a Tier A resource, neither guarding.
+
+EXACT NEXT STEP: it is MECHANICALLY SETTLEABLE and should be quick. Check that
+the new regex cannot be satisfied by a future comment or string literal the way
+its predecessor was -- read what the suite strips and confirm the four-argument
+call-site requirement a comment cannot meet -- then checks (2) and (3) from the
+record's own `what`, and ABLATE THE RE-ANCHORED SABOTAGE ARM so it is known to be
+able to fail, which is the property its predecessor lacked. The 24h clock starts
+at 15:12:47Z -- read the runway from tier_a_review_gate.py --list, not from this
+line.
+
+== 9. DELIVERABLES ==
+
+  docs/batch-manifest-fourth-b26.json             NEW, opened FIRST, 6/6 done
+  docs/2026-10-15-fourth-b26-findings.md          NEW, the evidence document
+  docs/2026-10-15-fourth-b26-branch-census-routed-to-cc.md  NEW, tool + source
+  docs/2026-09-13-cross-domain-disciplines.md     convention 35 + one clause
+  docs/tier-a-reviews.json                        a1c22397 discharged
+  SAIRN-handoff-fourth-b26.md                     written AND uploaded before this
+  SAIRN-report-fourth-b26.txt                     this file
+  SAIRN-digest-fourth-b26.txt                     the digest
+  SAIRN-latest-fourth-b26.md                      the short board file
+
+No api/ sql/ tests/ tools/ file written. Scratchpad:
+C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\990beb38-3b90-4380-8bf3-2fb64608e44e\scratchpad\
+
+DEFINITION the hash below is sha256 over every byte of this file up to and NOT
+including the final hash line, CRLF normalised to LF, taking the LAST occurrence
+of the marker. Reproduce:
+    import io, hashlib
+    s = io.open('SAIRN-report-fourth-b26.txt', 'rb').read().decode('utf-8').replace('\r\n','\n')
+    body = s.rsplit('SHA' + '256 ', 1)[0]
+    print(hashlib.sha256(body.encode('utf-8')).hexdigest())
+SHA256 e27c725c5fdd1535456fc44c684e9e57a273b0972da9b0239fb81f063820fe4f
+END-OF-REPORT
