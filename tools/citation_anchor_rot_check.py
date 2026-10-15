@@ -71,6 +71,20 @@ except Exception:                                                # noqa: BLE001
     EXIT_CLEAN, EXIT_FINDING, EXIT_COULD_NOT_RUN = 0, 1, 2
 
 CRITERIA_VERSION = '2026-10-14.1'
+
+# THE EXACTLY-ONCE RULE, as a named hook. `n != 1` inline would make
+# the ablation a rewrite of check() instead of the removal of one
+# layer, and an ablation that rewrites the thing it measures tells you
+# nothing about which layer caught the defect.
+def _COUNT_IS_FINDING(n):
+    return n != 1
+
+
+# Does the declared target exist. Named for the same reason as
+# _COUNT_IS_FINDING: a layer that cannot be removed cannot be measured.
+def _TARGET_EXISTS(path):
+    return os.path.isfile(path)
+
 NL = chr(10)
 
 # ── R1: THE ANCHOR FORM ────────────────────────────────────────────────────
@@ -251,7 +265,12 @@ def check(doc_path, text_override=None, target_override=None, repo=None):
     bodies = {}
     for t in targets:
         tfull = t if os.path.isabs(t) else os.path.join(repo, t)
-        if not os.path.isfile(tfull):
+        # THE FAIL-CLOSED LEG, through a named hook so the ablation can REMOVE
+        # it. The first version of that ablation patched read_text() instead
+        # and the ablation reported this layer UNPROVEN -- correctly: the leg
+        # A4 exercises is this existence test, which runs BEFORE any read. An
+        # ablation that misses its own layer is the thing ablations are for.
+        if not _TARGET_EXISTS(tfull):
             out.append('COULD NOT RUN -- the declared target file does not '
                        'exist: %s' % t)
             out.append('  %d anchor(s) point into it and NONE was checked. A '
@@ -272,7 +291,9 @@ def check(doc_path, text_override=None, target_override=None, repo=None):
         body = bodies[a['target']]
         n = body.count(a['text'])
         a['count'] = n
-        if n != 1:
+        # EXACTLY ONCE, through a module-level hook so the ablation can REMOVE
+        # this one rule rather than rewrite the checker around it.
+        if _COUNT_IS_FINDING(n):
             findings.append(a)
 
     for t in targets:
@@ -516,15 +537,22 @@ def _a7(tmp):
 def _a7b(tmp):
     rc, out = check('docs/CRITICALITY-TIERS.md')
     body = NL.join(out)
-    # DELIBERATELY NOT ASSERTING THE NUMBER OF FINDINGS. Today it is 1 (hank's
-    # 31406a87). The moment somebody re-anchors that cell it becomes 0, and an
-    # arm pinned to 1 would go red on a correct fix -- a rotting citation
-    # inside the rot checker. What must hold is that the document is read, its
-    # declaration resolves, all seven anchors are found and a real verdict
-    # comes out.
-    return (rc in (EXIT_CLEAN, EXIT_FINDING)
-            and '7 anchor(s)' in body
-            and 'sairnfreedom.html: 7 anchor(s)' in body), body
+    # DELIBERATELY NOT ASSERTING THE NUMBER OF FINDINGS. b13 got that right
+    # and then pinned the ANCHOR COUNT instead, which rotted for the same
+    # reason within a day: fourth b22 re-anchored the cell, so the row went
+    # from 7 anchors with 1 dead to 8 anchors all resolving, and this arm went
+    # red on somebody else's CORRECT FIX. Twice now, in the rot checker.
+    #
+    # SO THE ARM ASSERTS ONLY WHAT CANNOT ROT: the document is read, its
+    # declaration resolves, a real verdict comes out rather than COULD NOT
+    # RUN, and the row still carries AT LEAST the seven anchors fourth
+    # established -- a floor, which a re-anchoring can raise and only a
+    # deletion can break. The live numbers are REPORTED by the tool and not
+    # pinned here.
+    m = re.search(r'sairnfreedom\.html: (\d+) anchor\(s\)', body)
+    n = int(m.group(1)) if m else 0
+    return (rc in (EXIT_CLEAN, EXIT_FINDING) and n >= 7), \
+        'exit %d, %d anchors into sairnfreedom.html' % (rc, n)
 
 
 @arm('A8-prose-about-anchors', 'a backticked ellipsis inside prose about '
@@ -637,6 +665,150 @@ def selftest():
     return EXIT_CLEAN
 
 
+# ── THE ABLATION (added 2026-10-14, cc b14 item 5) ─────────────────────────
+# THIS TOOL LANDED IN b13 WITH 12 ARMS AND NO ABLATION, which is the gap item
+# 5 of b14 was sent to close across b12-b13. An arm proves a check FIRES on
+# bad input; it does not prove the check is what caught it. Only removing the
+# layer and watching a named arm go red does that, and the one time this
+# platform skipped it -- b12's `latest-ceiling` -- the layer turned out to be
+# deletable with no arm noticing.
+#
+# PER ARM, NOT PER EXIT CODE. Each entry removes exactly one layer from
+# otherwise-clean code and re-runs every arm; the measurement is WHICH arms go
+# quiet. A layer that breaks nothing is UNPROVEN and said so.
+_ABLATIONS = (
+    ('exactly-once',
+     'a count of 2 is a FINDING -- the arm a reviewer would cut, and the only '
+     'one that catches the NEXT rot rather than this one',
+     lambda: _patch_count_rule(lambda n: n < 1)),
+    ('zero-count-finding',
+     'a count of 0 is a FINDING rather than "well, nothing matched"',
+     lambda: _patch_count_rule(lambda n: n > 1)),
+    ('declared-target',
+     'the target is DECLARED and never inferred, so an anchor with no '
+     'declaration is COULD NOT RUN instead of being measured against a '
+     'filename guessed from nearby prose',
+     lambda: _patch('extract', _infer_target_extract)),
+    ('fail-closed-target',
+     'a missing or unreadable target file is exit 2 NAMING the file, never 0 '
+     '-- otherwise the absence of a finding becomes evidence of freshness',
+     lambda: _patch_fail_open_target()),
+    ('r6-anchor-filter',
+     'an anchor must be >= 8 chars with a non-word character, so prose ABOUT '
+     'anchors is not counted as one. Measured need: the spec\'s own '
+     'instruction produced a phantom eighth anchor from a literal ellipsis',
+     lambda: _patch('is_real_anchor', lambda text: (True, ''))),
+    ('near-match-report',
+     'a zero-count anchor names its nearest surviving candidate, found by '
+     'relaxing whitespace FOR READING ONLY -- a relaxed MATCH would bless a '
+     'rewritten line',
+     lambda: _patch('near_match', lambda a, t: None)),
+)
+
+
+def _patch(name, replacement):
+    old = globals()[name]
+    globals()[name] = replacement
+    return lambda: globals().__setitem__(name, old)
+
+
+def _patch_count_rule(predicate):
+    """Replace the exactly-once rule with a weaker one.
+
+    The rule lives inline in check() as `n != 1`, so it is ablated through a
+    module-level hook rather than by editing the function -- which keeps the
+    ablation a REMOVAL of one layer instead of a rewrite of the checker.
+    """
+    old = globals().get('_COUNT_IS_FINDING')
+    globals()['_COUNT_IS_FINDING'] = predicate
+    return lambda: globals().__setitem__('_COUNT_IS_FINDING', old)
+
+
+def _patch_fail_open_target():
+    """Remove BOTH legs of the fail-closed path, because it is one layer
+    implemented twice.
+
+    FOUND BY THIS ABLATION REPORTING THE LAYER UNPROVEN, TWICE. Patching
+    read_text() alone left the os.path.isfile guard; patching the guard alone
+    left read_text() returning None for a missing file, which the next branch
+    turns into COULD NOT RUN. Either half alone is invisible, which means
+    neither half alone is what A4 was testing -- the LAYER is "an unusable
+    target is never a pass", and an ablation has to remove the whole of it.
+    That redundancy is a good property of the code and a trap for a lazy
+    ablation.
+    """
+    restore_a = _patch('_TARGET_EXISTS', lambda path: True)
+    restore_b = _patch('read_text', _absent_target_is_empty)
+
+    def restore():
+        restore_a()
+        restore_b()
+    return restore
+
+
+def _infer_target_extract(doc_text):
+    """extract() with R2 removed: guess the target from any filename in sight."""
+    anchors, skipped, cites, bare = _real_extract(doc_text)
+    guess = None
+    m = re.search(r'\b([A-Za-z0-9_./\\-]+\.(?:html|js|py|sql|md))\b', doc_text)
+    if m:
+        guess = m.group(1).replace('\\', '/')
+    for a in anchors:
+        if not a['target']:
+            a['target'] = guess
+    return anchors, skipped, cites, bare
+
+
+def _absent_target_is_empty(path):
+    """read_text() with the fail-closed leg removed: an unreadable file reads
+    as empty, so every anchor into it silently counts zero... or, with the
+    isfile guard also bypassed, as clean."""
+    if not os.path.isfile(path):
+        return '', ''
+    return _real_read_text(path)
+
+
+
+def ablation():
+    print('citation_anchor_rot_check --ablation  (criteria %s)'
+          % CRITERIA_VERSION)
+    print('ONE layer removed at a time from clean code; every arm re-run. The')
+    print('measurement is WHICH arms go quiet, never the exit code.')
+    print('')
+    bp, bf, _ = run_arms(verbose=False)
+    print('  baseline: %d pass / %d fail' % (bp, bf))
+    if bf:
+        print('  ABLATION NOT RUN -- the baseline is not clean, so nothing '
+              'below could be attributed to the removed layer.')
+        return EXIT_COULD_NOT_RUN
+    print('')
+    naked = []
+    for name, what, patcher in _ABLATIONS:
+        restore = patcher()
+        try:
+            _p, f, fails = run_arms(verbose=False)
+        finally:
+            restore()
+        if f == 0:
+            naked.append(name)
+            print('  %-22s NOTHING CAUGHT IT -- UNPROVEN. This layer can be '
+                  'deleted today and no arm notices.' % name)
+        else:
+            print('  %-22s %d arm(s) fail without it: %s'
+                  % (name, f, ', '.join(n for n, _b, _m, _w in fails)))
+        print('    %s' % what)
+    print('')
+    if naked:
+        print('  %d LAYER(S) UNPROVEN: %s' % (len(naked), ', '.join(naked)))
+        return EXIT_FINDING
+    print('  every layer is load-bearing.')
+    return EXIT_CLEAN
+
+
+_real_extract = extract
+_real_read_text = read_text
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(
         description='Prove a document\'s quoted-text citations still resolve, '
@@ -648,10 +820,13 @@ def main(argv=None):
                          'PRINTED when used -- R2 wants the document to '
                          'declare its own target')
     ap.add_argument('--selftest', action='store_true')
+    ap.add_argument('--ablation', action='store_true')
     args = ap.parse_args(argv)
 
     if args.selftest:
         return selftest()
+    if args.ablation:
+        return ablation()
     if not args.document:
         ap.print_usage()
         print('COULD NOT RUN -- no document given. Nothing was checked.')

@@ -4302,10 +4302,33 @@ def selftest():
        'DID NOT SAY WHY' in _r3 and 'NOT a pass' in _r3)
     ck('...and an empty output does not crash the reason-finder',
        'DID NOT SAY WHY' in exit3_reason(''))
-    ck('ABLATION: the PRE-FIX message asserted the platform cause and carried '
-       '`exit 3` as its entire reason, so these arms are about this change',
-       ('SKIPPED as not applicable on this platform -- exit 3'
-        ).startswith('SKIPPED as not applicable'), True)
+    # ── A REAL REMOVAL, NOT A STRING ASSERTION (corrected cc b14 item 5) ──
+    # b13 wrote this arm as `('SKIPPED as not applicable...').startswith(...)`,
+    # which asserts a property of a LITERAL and is true no matter what the
+    # code does. It is a comment wearing an arm's clothes. The ablation below
+    # restores the pre-fix function and requires the three b13 arms to go red
+    # on it, which is the only thing that establishes they are about the fix.
+    def _prefix_exit3_reason(output):
+        lines = [l.strip() for l in (output or '').splitlines() if l.strip()]
+        why = next((l for l in lines if l.startswith('SKIPPED')), 'exit 3')
+        return 'SKIPPED as not applicable on this platform -- ' + why[:300]
+
+    _abl_role = _prefix_exit3_reason(
+        'ROLE PICKER\n  UNPROVEN sairnbiz: no CHECK found\n')
+    _abl_silent = _prefix_exit3_reason('some output that explains nothing')
+    ck('ABLATION: the PRE-FIX function claims a PLATFORM cause for a test '
+       'whose 3 is a missing seam, so the no-platform-claim arm fails on it',
+       'not applicable on this platform' not in _abl_role, False)
+    ck('ABLATION: ...and it does NOT quote the test\'s own UNPROVEN line, so '
+       'the quote-and-attribute arm fails on it',
+       'UNPROVEN sairnbiz' in _abl_role, False)
+    ck('ABLATION: ...and a test that says nothing gets `exit 3` as its entire '
+       'reason rather than a named absence, so that arm fails on it too',
+       'DID NOT SAY WHY' in _abl_silent, False)
+    ck('ABLATION CONTROL: the pre-fix function still produced SOME output for '
+       'both inputs -- it was never silent, it was confidently wrong, which is '
+       'why no arm caught it for a day',
+       (bool(_abl_role), bool(_abl_silent)), (True, True))
 
     # ── THE CONVENTION, DECIDED 2026-10-14 (cc b14), PR 5.1 ───────────────
     # ONE CODE, not split into 3 and 4. The arms below pin the decision so a

@@ -303,7 +303,31 @@ def run_fixtures():
             fails.append("raw-status arm: %s expected ever=%s active=%s, got "
                          "ever=%s active=%s (%s)"
                          % (path, in_ever, in_active, got_e, got_a, why))
-    total = len(FIXTURES) + 5 + 3
+    # ── THE ABLATION, PERMANENT RATHER THAN AD HOC (cc b14 item 5) ────────
+    # The raw-status arm above was first proved to fail by swapping the
+    # selector out in a scratch script. A one-off demonstration is not an
+    # ablation RECORD: it is gone the moment the terminal closes, and the next
+    # reader has only the claim. This restores the pre-fix selector inside the
+    # lock, requires the arm to go red on it, and restores -- so the arm's
+    # provenance is re-established on every run.
+    now_a = time.time()
+    abl_doc = {"session": "zz", "claims": [
+        {"status": "active", "subject": "dead", "task": "FILES: a/dead.py",
+         "claimed_at_epoch": now_a - 400 * 3600},
+    ]}
+    raw_active = {}
+    for c in abl_doc["claims"]:
+        if c.get("status") == "active":
+            raw_active.setdefault("a/dead.py", set()).add("zz")
+    live_active = claim_sets_from_docs([abl_doc])[1]
+    if "a/dead.py" not in raw_active:
+        fails.append("ABLATION: the pre-fix raw-field selector did NOT count "
+                     "the expired claim, so the arm above is not about this "
+                     "change")
+    if "a/dead.py" in live_active:
+        fails.append("ABLATION CONTROL: the fixed selector counted it too, so "
+                     "the fix is not in force")
+    total = len(FIXTURES) + 5 + 3 + 2
     return total - len(fails), total, fails
 
 
