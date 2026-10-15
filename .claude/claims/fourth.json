@@ -3924,6 +3924,27 @@
         "docs/tier-a-reviews.json",
         "settings.json"
       ]
+    },
+    {
+      "id": "fourth-1792083587",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "b27: (1) Tier A cody 2026-10-15T15:12:47Z bld_bids -- FIX the assertion in tests/sairnbuild_server_wins.js and the anchor-0 arm in tests/run_sairnbuild_server_wins_sabotage_probe.py to assert against the real BLD_SESSION_REQUIRED object, re-run, ablate. THE DISCHARGE WRITE IS BLOCKED AND NOT CLAIMED: cc claimed docs/tier-a-reviews.json at 2026-10-15T16:55:20Z, three minutes before my first attempt, LIVE in the registry and not yet on origin, and sairn_claim.py refused me on that shared file. That file is deliberately ABSENT from the FILES list below and the verdict goes into my own findings doc until cc releases. (2) census inter-procedural half -- resolve the 26 UNRESOLVED lines, fixtures in BOTH directions. (3) methodology -- every arm/probe/fixture added this batch confirmed to REACH ITS SUBJECT by ablation before it is counted, named per item. (4) clean my own scratchpad once evidence is in the findings doc. (5) handoff to Drive BEFORE the report. (6) push no force, confirm landed by reading back from origin. CONFLICT DECLARED PER PR 4.3, DIRECTORY-RULE, AND MICHAEL DIRECTED IT: tests/ is cody's and item 1 requires editing two files in it. CHECKED BEFORE CLAIMING: cody's ACTIVE b18 FILES covers tests/server_wins_hydration.js and tests/run_server_wins_hydration_sabotage_probe.py -- SIMILARLY NAMED BUT DIFFERENT FILES -- and neither of mine. No other tests/ file touched. api/ and sql/ are hank's and READ-ONLY here; tools/ is cc's and READ-ONLY (RUN not edited). FILES: tests/sairnbuild_server_wins.js tests/run_sairnbuild_server_wins_sabotage_probe.py docs/2026-10-15-fourth-b27-findings.md docs/batch-manifest-fourth-b27.json SAIRN-handoff-fourth-b27.md SAIRN-report-fourth-b27.txt SAIRN-digest-fourth-b27.txt SAIRN-latest-fourth-b27.md. HOOKS STAY CLEARED, settings.json NEVER committed, no SAIRN_SEED_GATE override, no auditor clone entered.",
+      "claimed_at": "2026-10-15T16:59:47Z",
+      "claimed_at_epoch": 1792083587.0209017,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b27.txt",
+        "SAIRN-handoff-fourth-b27.md",
+        "SAIRN-latest-fourth-b27.md",
+        "SAIRN-report-fourth-b27.txt",
+        "docs/2026-10-15-fourth-b27-findings.md",
+        "docs/batch-manifest-fourth-b27.json",
+        "settings.json",
+        "tests/run_sairnbuild_server_wins_sabotage_probe.py",
+        "tests/sairnbuild_server_wins.js"
+      ]
     }
   ],
   "refusals": [
@@ -4153,6 +4174,21 @@
       "other_claimed_at": "2026-10-05T12:26:49Z",
       "shared_files": [
         "tools/tooling_inventory.py"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-15T16:58:01Z",
+      "my_subject": "fourth",
+      "my_task": "b27: (1) Tier A cody 2026-10-15T15:12:47Z bld_bids -- FIX the assertion in tests/sairnbuild_server_wins.js and the anchor-0 arm in tests/run_sairnbuild_server_wins_sabotage_probe.py to assert against the real BLD_SESSION_REQUIRED object, re-run, discharge the record. (2) census inter-procedural half -- resolve the 26 UNRESOLVED lines, fixtures in BOTH directions. (3) methodology -- every arm/probe/fixture added this batch confirmed to REACH ITS SUBJECT by ablation before it is counted, named per item. (4) clean my own scratchpad once evidence is in the findings doc. (5) handoff to Drive BEFORE the report. (6) push no force, confirm landed by reading back from origin. CONFLICT DECLARED PER PR 4.3 AND IT IS A DIRECTORY-RULE CONFLICT MICHAEL DIRECTED: tests/ is cody's, and item 1 requires editing tests/sairnbuild_server_wins.js and tests/run_sairnbuild_server_wins_sabotage_probe.py. CHECKED BEFORE CLAIMING: sairn_claim.py check -> CLEAR, and cody's ACTIVE b18 FILES list covers tests/server_wins_hydration.js and tests/run_server_wins_hydration_sabotage_probe.py -- SIMILARLY NAMED BUT DIFFERENT FILES -- and does not include either of mine. No other tests/ file touched. api/ and sql/ are hank's and READ-ONLY here; tools/ is cc's and READ-ONLY (RUN not edited). FILES: tests/sairnbuild_server_wins.js tests/run_sairnbuild_server_wins_sabotage_probe.py docs/tier-a-reviews.json docs/2026-10-15-fourth-b27-findings.md docs/batch-manifest-fourth-b27.json SAIRN-handoff-fourth-b27.md SAIRN-report-fourth-b27.txt SAIRN-digest-fourth-b27.txt SAIRN-latest-fourth-b27.md. HOOKS STAY CLEARED, settings.json NEVER committed, no SAIRN_SEED_GATE override, no auditor clone entered.",
+      "other_session": "cc",
+      "other_subject": "cc",
+      "other_task": "b15: (1) full suite sweep logged to docs/sweep-2026-10-15.log + routed triage, (2) run_all_tests.py acquire_lock liveness + release_lock owner-scoping + floor literal, (3) hover-chain mirror component freshness + publisher-owned MIRROR-FRESHNESS.md, (4) four obligations via obligation_surface.py --mine + tools/ routed leftovers, (5) ablation records b12-b14 + CRITICALITY-TIERS citation staleness, (6) push + handoff/report/digest/latest. I WRITE UNDER tools/ ONLY plus docs/ABLATION-RECORDS.md docs/tier-a-reviews.json docs/ablation/ my own b15 docs and root b15 artifacts. CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: tests/ is cody's and run_suite_lock_probe.py is ROUTED not edited; api/ and sql/ and app HTML are hank's; docs/CRITICALITY-TIERS.md is fourth's and is MEASURED read-only; no auditor clone entered or written. FILES: tools/run_all_tests.py tools/sairn_board_publish.py tools/batch_manifest.py tools/citation_anchor_rot_check.py tools/tier_a_review_gate.py tools/secrets_inventory.py docs/ABLATION-RECORDS.md docs/ablation/b15_arms.py docs/tier-a-reviews.json docs/sweep-2026-10-15.log docs/2026-10-15-cc-b15-sweep-triage.md docs/2026-10-15-cc-b15-routed.md",
+      "other_claimed_at": "2026-10-15T16:55:20Z",
+      "shared_files": [
+        "docs/tier-a-reviews.json"
       ],
       "source": "status-registry",
       "why": "same declared FILES",
