@@ -1083,6 +1083,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "assertions NET REMOVED",
+     "detail": "1 removed, 0 added; first removed: ck('ABLATION: the PRE-FIX message asserted the platform cause and carried '"
+    }
+   ],
+   "sha": "2ab32b34221dcb234061d1239fb3c09ca59765ec",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/sd-data-rf-settings-tier.test.js",
    "class": "test file",
    "level": "WEAKENING",
@@ -6596,6 +6609,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "edbaa8583af5214faa415beb87ae21c5762be285",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "efd2626e04e44e1e07eca54aa9c062d10608368a",
    "criteria_version": "2026-10-06.1"
   },
   {
