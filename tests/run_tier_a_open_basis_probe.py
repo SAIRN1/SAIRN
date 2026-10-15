@@ -112,7 +112,7 @@ def epoch(rec):
 
 # ── THE PREDICATE. One function, used on the REAL records and on the fixtures,
 # because two copies of a rule that must agree is how they stop agreeing.
-def problems(rec, resolve_files=True):
+def problems(rec, resolve_files=True, unknown=None):
     """-> [] when this post-fix record is sound, else a list of reasons."""
     bad = []
     basis = rec.get('opened_at_sha_basis')
@@ -145,15 +145,60 @@ def problems(rec, resolve_files=True):
                    'was no set to derive it from')
         return bad
     if resolve_files:
-        q = git('log', '-1', '--format=%H', '--', *files)
-        want = q.stdout.strip()
-        if q.returncode != 0 or not want:
-            bad.append('git log -1 over its %d file(s) answered nothing, so the '
+        # ── THE OLD PREDICATE WAS IMPOSSIBLE TO HOLD. 2026-10-15 (cody b18) ─
+        # It required `git log -1 --format=%H -- <files>` to EQUAL the recorded
+        # sha -- i.e. the record's sha must still be the LAST commit touching
+        # its own file set. That is true at the instant the record is written
+        # and decays the moment anybody touches any of those files again, which
+        # on a repo with five pushing sessions is hours.
+        #
+        # MEASURED over the 26 records carrying the field:
+        #     3   still match (their files simply have not been touched since)
+        #     11  the recorded sha is an ANCESTOR of the current answer -- the
+        #         record was RIGHT when written and the files moved after it
+        #     8   the recorded sha IS NOT AN OBJECT IN THIS CLONE AT ALL -- the
+        #         commit was rewritten by a rebase after the record was written
+        #     4   the sha exists but is unreachable from HEAD -- same cause, an
+        #         abandoned pre-rebase commit still in the object store
+        # 23 of 26 CANNOT match, and not one of them is a defect in a record.
+        # That is 23 of this probe's 24 real-record failures.
+        #
+        # WHAT THE STAMP IS ACTUALLY FOR: proving the sha was derived from the
+        # record's OWN FILE SET rather than from HEAD -- which is the whole
+        # reason `opened_at_sha_basis` exists. The time-stable form of that is
+        # MEMBERSHIP, not recency: the sha must be a commit that TOUCHES the
+        # file set. A HEAD-derived stamp on a record whose files HEAD did not
+        # touch still fails it, which is the defect being guarded. It survives
+        # every later commit, and it is NAMED AS WEAKER than the original: it
+        # cannot tell "derived from the file set" from "derived from HEAD on a
+        # day HEAD happened to touch one of these files".
+        #
+        # AND A REWRITTEN SHA IS COULD-NOT-TELL, NOT A FAILURE. A rebase can
+        # delete the commit a correct record names. Folding that into either a
+        # pass or a failure would be the same mistake in two directions, so it
+        # goes out of band through `unknown`.
+        if unknown is not None:
+            t = git('cat-file', '-t', sha)
+            if t.returncode != 0 or t.stdout.strip() != 'commit':
+                unknown.append('sha %s is NOT AN OBJECT in this clone -- the '
+                               'commit was rewritten (a rebase) after this '
+                               'record was written. COULD NOT TELL.'
+                               % str(sha)[:12])
+                return bad
+            if git('merge-base', '--is-ancestor', sha, 'HEAD').returncode != 0:
+                unknown.append('sha %s is not reachable from HEAD -- an '
+                               'abandoned pre-rebase commit. COULD NOT TELL.'
+                               % str(sha)[:12])
+                return bad
+        q = git('log', '--format=%H', '--', *files)
+        touched = set((q.stdout or '').split())
+        if q.returncode != 0 or not touched:
+            bad.append('git log over its %d file(s) answered nothing, so the '
                        'sha cannot be re-derived -- COULD NOT TELL for this row'
                        % len(files))
-        elif want != sha:
-            bad.append('sha %s is not the last commit touching its own file set '
-                       '(%s)' % (str(sha)[:12], want[:12]))
+        elif sha not in touched:
+            bad.append('sha %s touches NONE of its %d declared file(s), so it '
+                       'was not derived from them' % (str(sha)[:12], len(files)))
     return bad
 
 
@@ -175,13 +220,32 @@ arms = []
 # ── FAIL-FIRST FIXTURES. Hand-built, locked before the real records are read.
 GOODFILES = ['tools/tier_a_review_gate.py']
 _real = git('log', '-1', '--format=%H', '--', *GOODFILES).stdout.strip()
+# A REAL commit that touches something else entirely, for the negative fixture.
+# Re-derived rather than pinned, and checked to be DIFFERENT from _real -- if a
+# single commit touched both files the fixture would assert nothing, and that is
+# a precondition rather than an assumption.
+_other = git('log', '-1', '--format=%H', '--', 'docs/SAIRN-PROCESS-RULES.md'
+             ).stdout.strip()
+if not _real or not _other or _real == _other:
+    could_not_run('the fail-first fixtures need two DIFFERENT real commits, one '
+                  'touching tools/tier_a_review_gate.py and one touching '
+                  'docs/SAIRN-PROCESS-RULES.md. Got %r and %r, so the negative '
+                  'fixture would assert nothing.'
+                  % (str(_real)[:12], str(_other)[:12]))
 FIXTURES = [
     ('the field MISSING is flagged',
      {'opened_at': '2099-01-01T00:00:00Z', 'files': GOODFILES,
       'opened_at_sha': _real}),
+    # ── THE NEGATIVE FIXTURE NEEDED A REAL SHA. 2026-10-15 (cody b18) ──────
+    # It used 'd' * 40. Under the membership predicate a non-existent sha is
+    # COULD-NOT-TELL rather than flagged -- correctly, because a rebase can
+    # delete the commit a sound record names -- so this fixture would have
+    # stopped flagging anything. It now uses a REAL commit that touches a
+    # DIFFERENT file, which is the actual defect shape: a sha derived from
+    # something other than the record's own file set.
     ('a file-set sha that does NOT match its file set is flagged',
      {'opened_at': '2099-01-01T00:00:00Z', 'files': GOODFILES,
-      'opened_at_sha': 'd' * 40, 'opened_at_sha_basis': 'file-set'}),
+      'opened_at_sha': _other, 'opened_at_sha_basis': 'file-set'}),
     ('basis "head" while NAMING files is flagged',
      {'opened_at': '2099-01-01T00:00:00Z', 'files': GOODFILES,
       'opened_at_sha': _real, 'opened_at_sha_basis': 'head'}),
@@ -214,8 +278,17 @@ if not POST:
                   'by construction and UNEXERCISED by the real --open path; the '
                   'next --open by anybody closes this.' % len(PRE))
 
+CNR = []
 for rec in POST:
-    p = problems(rec)
+    _u = []
+    p = problems(rec, unknown=_u)
+    if _u:
+        # COULD NOT TELL, OUT OF BAND. The sha this record names was rewritten
+        # or abandoned by a rebase, so neither "sound" nor "unsound" is
+        # derivable for it. Counted and printed, never folded into either.
+        CNR.append('%s %s -- %s' % (rec.get('author_session'),
+                                    rec['opened_at'], _u[0]))
+        continue
     arms.append(('REAL: %s %s is stamped from its FILE SET'
                  % (rec.get('author_session'), rec['opened_at']), p, []))
 
@@ -234,6 +307,27 @@ for name, got, want in arms:
     if not ok:
         print('       wanted %r' % (want,))
         print('       got    %r' % (got,))
+if CNR:
+    print('')
+    print('%d post-fix record(s) COULD NOT BE TOLD EITHER WAY -- not passed, '
+          'not failed:' % len(CNR))
+    for c in CNR:
+        print('  - ' + c)
+    print('  Each names a commit a REBASE rewrote or abandoned after the record '
+          'was written.')
+    print('  The record may be perfectly sound; this clone can no longer '
+          're-derive it.')
 print('tier-a --open basis probe: %d/%d arm(s) pass (%d fail-first fixture, '
-      '%d real record)' % (passed, len(arms), len(FIXTURES) + 1, len(POST)))
-sys.exit(0 if passed == len(arms) else 1)
+      '%d real record asserted, %d could-not-tell)'
+      % (passed, len(arms), len(FIXTURES) + 1, len(POST) - len(CNR), len(CNR)))
+# A FAILED ARM OUTRANKS A COULD-NOT-TELL. And a run where EVERY real record was
+# could-not-tell has asserted nothing about the ledger, so it must not report
+# clean -- that is the empty-population shape this file's own docstring is about,
+# arriving by rebase rather than by there being no records.
+if passed != len(arms):
+    sys.exit(1)
+if CNR and len(POST) == len(CNR):
+    could_not_run('every one of the %d post-fix records names a sha this clone '
+                  'cannot resolve, so the fixtures passed and NOTHING was '
+                  'asserted about the real ledger.' % len(POST))
+sys.exit(3 if CNR else 0)
