@@ -3989,6 +3989,29 @@
         "tools/sairn_push_gate_hook.py",
         "tools/tooling_inventory.py"
       ]
+    },
+    {
+      "id": "cc-1792027767",
+      "session": "cc",
+      "subject": "cc",
+      "task": "b14: board chain_tip frozen-mirror fix + staleness detection; sweep raw claim status consumers; decide exit-3 convention; full run_all_tests + obligation_surface sweep; b12-b13 ablation records; push. FILES: tools/sairn_board_publish.py tools/sairn_push_gate_hook.py tools/claim_activity_check.py tools/dispatch_state.py tools/sairn_self_state.py docs/2026-10-14-cc-b14-routed.md docs/ABLATION-RECORDS.md SAIRN-handoff-cc-b14.md SAIRN-report-cc-b14.txt SAIRN-digest-cc-b14.txt SAIRN-latest-cc.md",
+      "claimed_at": "2026-10-15T01:29:27Z",
+      "claimed_at_epoch": 1792027767.0503557,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-cc-b14.txt",
+        "SAIRN-handoff-cc-b14.md",
+        "SAIRN-latest-cc.md",
+        "SAIRN-report-cc-b14.txt",
+        "docs/2026-10-14-cc-b14-routed.md",
+        "docs/ABLATION-RECORDS.md",
+        "tools/claim_activity_check.py",
+        "tools/dispatch_state.py",
+        "tools/sairn_board_publish.py",
+        "tools/sairn_push_gate_hook.py",
+        "tools/sairn_self_state.py"
+      ]
     }
   ],
   "refusals": [
