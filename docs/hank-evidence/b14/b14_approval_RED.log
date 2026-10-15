@@ -1,0 +1,39 @@
+b14. no self-approval: the approver must differ from the submitter
+
+S. api/sd-data.js approve_clock_correction
+  FAIL     S1. THE ARM THE DECISION IS -- a scheduler cannot approve a correction THEY submitted: 403 and NOTHING written. b13 marked this `self_approved: true` and allowed it; the decision is that an approval by the submitter is not an approval at all
+           status=200 code= writes=1
+  FAIL     S2. ...with its own code, not the generic FORBIDDEN the role gate returns. A caller cannot act on a refusal they cannot tell apart from "you are the wrong role"
+           code=
+  FAIL     S3. ...and the message says what to do next. A refusal that does not name the route gets worked around
+           ""
+  ok       S4. CONTROL -- a DIFFERENT person approving still works. Without this arm the fix could be "refuse every approval" and S1 would still pass
+  FAIL     S5. ...and `self_approved` is GONE from the entry and the response. A field that can no longer be true is a field a reader will still look for and a consumer will still branch on
+           entry={"field":"clock_in_at","original_at":"2026-10-15T07:40:56.910Z","proposed_at":"2026-10-15T06:40:56.910Z","reason_code":"transcription_error","reason_label":"The time was entered incorrectly","proposed body.self_approved=false
+  FAIL     S6. a SCHEDULER filing through propose_clock_correction no longer approves it at the same moment. The filer and the approver were the same person by construction on that route, which is the thing the decision forbids -- so b13's approve-at-filing had to go with it
+           status=200 entry={"field":"clock_in_at","original_at":"2026-10-15T07:40:56.910Z","proposed_at":"2026-10-15T06:40:56.910Z","reason_code":"transcription_error","reason_label":"The time was entered in
+  FAIL     S7. ...and the effective clock does NOT move on filing. This is the half that makes the rule real rather than a field on a row
+           {"value":"2026-10-15T06:40:56.910Z","corrected":true,"entry":{"field":"clock_in_at","original_at":"2026-10-15T07:40:56.910Z","proposed_at":"2026-10-15T06:40:56.910Z","reason_code":"transcription_error
+  ok       S8. ...and the filer is TOLD it is pending. A 200 that reads like a completed correction is affirmative false success
+  ok       S9. CONTROL -- a caregiver still cannot approve at all, and still gets the ROLE refusal rather than the new identity one. Two different reasons, two different codes
+  ok       S10. CONTROL -- an already-approved entry still 409s, and the identity check did not displace that. Order matters: a second approval record for one decision double-counts at audit
+  FAIL     S11. api/_lib/sen-evv-clock.js approveCorrection() refuses it ITSELF. A rule enforced only in one branch of one handler is a rule the next caller does not get
+           {"ok":true,"entry":{"field":"clock_in_at","proposed_by":"E1","status":"approved","approved_by":"E1","approved_at_server":"2026-10-15T11:40:56.910Z"}}
+  ok       S12. CONTROL -- the module still approves for anybody else
+
+U. the pending-corrections queue and its Approve control
+  FAIL     U1. the queue functions are not all present in sairnsenior.html -- the panel has not been built
+           missing: senPendingCorrections, renderCorrectionsView, vsCorrectionsBadgeText
+  FAIL     U2. the queue functions are not all present in sairnsenior.html -- the panel has not been built
+           missing: senPendingCorrections, renderCorrectionsView, vsCorrectionsBadgeText
+  FAIL     U3. the queue functions are not all present in sairnsenior.html -- the panel has not been built
+           missing: senPendingCorrections, renderCorrectionsView, vsCorrectionsBadgeText
+  FAIL     U4. the queue functions are not all present in sairnsenior.html -- the panel has not been built
+           missing: senPendingCorrections, renderCorrectionsView, vsCorrectionsBadgeText
+  FAIL     U5. the queue functions are not all present in sairnsenior.html -- the panel has not been built
+           missing: senPendingCorrections, renderCorrectionsView, vsCorrectionsBadgeText
+  FAIL     U6. sairnsenior.html records WHY a senData call failed, so the corrections panel can show the server's refusal instead of doing nothing visible. senData() returned a bare null on every failure
+           no senLastErr in sairnsenior.html
+
+5 passed, 13 failed, 0 unproven
+13 ARM(S) FAILED: S1, S2, S3, S5, S6, S7, S11, U1, U2, U3, U4, U5, U6

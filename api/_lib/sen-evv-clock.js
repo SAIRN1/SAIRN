@@ -315,6 +315,31 @@ function approveCorrection(entry, approver, atISO) {
       'An approval is attributed or it is not an approval. The caller must '
       + 'supply the employee id from the verified session, never the payload.');
   }
+  // ── THE APPROVER MUST DIFFER FROM THE SUBMITTER (2026-10-15, Michael) ────
+  // b13 MARKED this case (`self_approved: true`) and allowed it, on the
+  // argument that a one-person agency has nobody else and refusing would
+  // strand them. MICHAEL DECIDED THE OTHER WAY: an approval by the submitter
+  // is not an approval, so it is refused rather than flagged.
+  //
+  // IT LIVES HERE AND NOT ONLY IN THE HANDLER. A rule enforced in one branch
+  // of one endpoint is a rule the next caller does not get, and this module
+  // already owns every other correction rule -- the reason vocabulary, the
+  // attribution, the server time. The handler maps this to 403.
+  //
+  // THE CONSEQUENCE IS NAMED, NOT HIDDEN: in a one-person agency the owner IS
+  // the assigned caregiver and there is now NO route to make any correction
+  // effective. That is the decided trade and it is a workflow change, not a
+  // side effect.
+  if (String(entry.proposed_by) === String(approver)) {
+    return refuse('SELF_APPROVAL_REFUSED',
+      'This correction was submitted by '
+      + JSON.stringify(String(entry.proposed_by))
+      + ' and cannot be approved by the same person. ANOTHER scheduler or '
+      + 'manager has to approve it before payroll or an EVV export uses it -- '
+      + 'an edited EVV time with no second party cannot be told from a '
+      + 'fabricated one, which is the whole reason the submission is pending. '
+      + 'Nothing was written.');
+  }
   if (parseISO(atISO) === null) {
     return refuse('NO_SERVER_TIME',
       'The receiving server did not supply its own time, so the approval '

@@ -414,13 +414,18 @@ console.log('T16. a second clock write APPENDS a correction and never replaces\n
   }
 
   {
-    // ── THE SCHEDULER'S OWN ROUTE MUST NOT HAVE BECOME A NO-OP ───────────
-    // `status` now defaults to pending IN THE MODULE, which is right for a
-    // caregiver submission and would be a silent no-op here: the office files
-    // a correction, sees 200, and the effective clock never moves because
-    // nobody else exists to approve what the approving tier just filed. This
-    // arm is the one that fails if a later edit removes the approve-at-filing
-    // step, which is a change nothing else would notice.
+    // ── SUPERSEDED BY MICHAEL'S b14 DECISION, 2026-10-15 ─────────────────
+    // This arm asserted that a scheduler filing through
+    // propose_clock_correction was APPROVED AT THE MOMENT OF FILING and
+    // immediately effective, on the argument that the route is scheduler-tier
+    // only so the approving authority IS the caller. The decision is that the
+    // approver must DIFFER from the submitter -- and on this route they were
+    // the same person by construction, so approve-at-filing is exactly what it
+    // forbids. The entry now stays PENDING for a second scheduler.
+    //
+    // Rewritten rather than deleted, so the route stays covered here too; the
+    // full two-person contract is driven in
+    // api/b14-clock-approval-two-person.test.js.
     VISIT = { visit_id: 'V1', assigned_employee_id: 'E1',
               data: { clock_in_at: RECORDED } };
     const { res, writes: w } = await call('propose_clock_correction',
@@ -430,12 +435,13 @@ console.log('T16. a second clock write APPENDS a correction and never replaces\n
     const d = stored(w) || {};
     const e = ((d.clock_corrections) || [])[0] || {};
     const eff = clock.effectiveClock(d, 'clock_in_at');
-    is(res.statusCode === 200 && e.status === 'approved' && e.approved_by === 'S1'
-       && eff.value === SUBMITTED && d.clock_in_at === RECORDED,
-       'T16aa. a SCHEDULER filing through propose_clock_correction is approved '
-     + 'at the moment of filing and is immediately effective -- that route was '
-     + 'already scheduler-tier only, so the approving authority IS the caller, '
-     + 'and the row\'s own clock_in_at is still untouched',
+    is(res.statusCode === 200 && e.status === 'pending'
+       && eff.value === RECORDED && eff.corrected === false
+       && d.clock_in_at === RECORDED,
+       'T16aa. a SCHEDULER filing through propose_clock_correction files it '
+     + 'PENDING and does NOT make it effective -- the filer cannot be the '
+     + 'approver. The row\'s own clock_in_at is still untouched either way, '
+     + 'which is the property that has not moved',
        'status=' + res.statusCode + ' entry=' + JSON.stringify(e).slice(0, 200)
      + ' eff=' + JSON.stringify(eff.value));
   }

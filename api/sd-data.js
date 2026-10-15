@@ -7081,34 +7081,25 @@ module.exports = async (req, res) => {
         verdict.entry.self_correction = true;
         corrected.has_self_correction = true;
       }
-      // ── A SCHEDULER'S OWN FILING IS APPROVED AT THE MOMENT IT IS FILED ───
-      // T16 (2026-10-15) gave every correction a `status`, pending by default,
-      // because a CAREGIVER may now submit one through the ordinary clock route
-      // and "a scheduler approves it before payroll uses it". THIS route was
-      // already scheduler-tier only -- the gate twelve lines up is the same
-      // SEN_VISIT_SCHEDULER_ROLES the approval route uses -- so the approving
-      // authority is the caller. Leaving it pending would invent a second step
-      // with nobody else to take it, and would silently turn every existing
-      // office correction into a no-op: the filer would see 200 and the
-      // effective clock would never move.
+      // ── A FILING IS NO LONGER AN APPROVAL (2026-10-15, Michael's decision)
+      // b13 approved a scheduler's own filing AT THE MOMENT IT WAS FILED,
+      // because this route is scheduler-tier only and the approving authority
+      // was therefore the caller. But on this route the submitter and the
+      // approver are the same person BY CONSTRUCTION, which is exactly what
+      // "the approver must differ from the submitter" forbids. So the entry
+      // stays PENDING and a SECOND scheduler makes it effective through
+      // `approve_clock_correction`.
       //
-      // THE SELF-CORRECTION CASE IS UNCHANGED AND IS THE ONE PLACE SUBMITTER
-      // AND APPROVER ARE THE SAME PERSON BY DESIGN. This route's own comment
-      // already argues it: refusing would create a real lockout in a one-person
-      // agency where the owner IS the assigned caregiver and there is nobody
-      // else to file it, and the evidence survives either way because
-      // `proposed_by`, `approved_by` and `self_correction` are all on the
-      // entry. Flag, not refusal -- same trade as before, now with the
-      // approver recorded too.
-      const crApproved = senEvvClock.approveCorrection(
-        verdict.entry, session.employee_id, nowISO());
-      if (!crApproved.ok) {
-        res.status(400).json({ error: { code: crApproved.error.code,
-                                        message: crApproved.error.message } });
-        return;
-      }
-      verdict.entry = crApproved.entry;
-      if (crSelf) verdict.entry.self_correction = true;
+      // THIS IS A REAL WORKFLOW CHANGE AND IT IS NOT A SIDE EFFECT. An office
+      // that files a correction now needs a second pair of eyes before payroll
+      // sees it, and a ONE-PERSON AGENCY HAS NO ROUTE AT ALL -- the owner is
+      // the assigned caregiver, the submitter and the only possible approver.
+      // That is the decided trade; it is named in the handoff as a follow-up
+      // decision rather than discovered by whoever hits it.
+      //
+      // `self_correction` STAYS. It records that the FILER is the assigned
+      // caregiver, which is a different fact from who approved, and an auditor
+      // reading a hundred visits should not have to join two fields by eye.
       corrected.clock_corrections = (Array.isArray(corrected.clock_corrections)
         ? corrected.clock_corrections : []).concat([verdict.entry]);
       const cw = await fetch(rest('sen_visits?on_conflict=license_hash,visit_id'), {
@@ -7127,6 +7118,16 @@ module.exports = async (req, res) => {
         // who can explain it, and a flag they only meet at audit is one nobody
         // had the chance to annotate.
         self_correction: crSelf,
+        // ── AND THE FILER IS TOLD IT IS NOT YET IN EFFECT (2026-10-15) ─────
+        // This route used to approve at filing, so a 200 here meant the clock
+        // had moved. It no longer does, and a 200 that still READS that way is
+        // affirmative false success -- the filer walks away believing the
+        // correction is live and payroll still sees the original.
+        status: 'pending',
+        message: 'Filed, and NOT yet in effect. The recorded time is still '
+          + String(verdict.entry.original_at) + '. ANOTHER scheduler or '
+          + 'manager has to approve this before payroll or an EVV export uses '
+          + 'it -- you cannot approve your own filing.',
         corrections: corrected.clock_corrections.length });
       return;
     }
@@ -7473,22 +7474,21 @@ module.exports = async (req, res) => {
       const aVerdict = senEvvClock.approveCorrection(
         arList[idx], session.employee_id, nowISO());
       if (!aVerdict.ok) {
-        // 409 for ALREADY_APPROVED: the request is well formed and the caller
-        // may normally do this -- the entry's state is what refuses.
-        res.status(aVerdict.error.code === 'ALREADY_APPROVED' ? 409 : 400).json({
+        // THREE STATUSES FOR THREE DIFFERENT REFUSALS, and they are not
+        // interchangeable to a caller.
+        //   409 ALREADY_APPROVED      the request is fine, the entry's STATE
+        //                             refuses -- a second approval record for
+        //                             one decision double-counts at audit.
+        //   403 SELF_APPROVAL_REFUSED the caller is the right ROLE and the
+        //                             wrong PERSON (2026-10-15, Michael). Its
+        //                             own code, because a caller cannot act on
+        //                             a refusal they cannot tell apart from
+        //                             "you are the wrong role".
+        //   400 everything else       a malformed request.
+        res.status(aVerdict.error.code === 'ALREADY_APPROVED' ? 409
+                 : aVerdict.error.code === 'SELF_APPROVAL_REFUSED' ? 403 : 400).json({
           error: { code: aVerdict.error.code, message: aVerdict.error.message } });
         return;
-      }
-      // ── MARKED WHEN THE APPROVER IS THE SUBMITTER, NOT REFUSED ───────────
-      // Same reasoning the self-correction flag beside this already carries: in
-      // a one-person agency the owner IS the assigned caregiver and there is
-      // nobody else to approve, so refusing would strand them exactly as the
-      // 409 did. The evidence survives either way -- `proposed_by` and
-      // `approved_by` are both on the entry -- so what was missing is the
-      // SIGNAL, and an auditor should not have to join two fields by eye.
-      if (String(aVerdict.entry.proposed_by) === String(session.employee_id)) {
-        aVerdict.entry.self_approved = true;
-        arData.has_self_correction = true;
       }
       arList[idx] = aVerdict.entry;
       arData.clock_corrections = arList;
@@ -7504,7 +7504,6 @@ module.exports = async (req, res) => {
       const awRows = await aw.json();
       if (!aw.ok) return upstream(res, awRows);
       res.status(200).json({ ok: true, entry: aVerdict.entry,
-        self_approved: !!aVerdict.entry.self_approved,
         effective_clock: senEvvClock.effectiveClock(arData, aVerdict.entry.field) });
       return;
     }

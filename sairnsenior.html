@@ -431,11 +431,22 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
          branch refuses regardless; this only stops offering a tab that would
          always 403. -->
     <button class="btn bo bs" id="vs-tab-payroll" onclick="vsShowTab('payroll')" style="display:none">Payroll</button>
+    <!-- PENDING CLOCK CORRECTIONS (2026-10-15). The approval route existed from
+         b13 and NOTHING SHOWED IT: a caregiver's submitted correction sat
+         pending for ever because no screen listed it, which made the append
+         path strictly better than the old refusal for the caregiver and no
+         better at all for payroll. Scheduler/coordinator tier, the same gate
+         as the readiness tab beside it, because an unapproved EVV time is a
+         supervisory matter. The count is on the button so it is visible
+         without opening the tab -- a queue nobody can see is a queue nobody
+         works. -->
+    <button class="btn bo bs" id="vs-tab-corrections" onclick="vsShowTab('corrections')" style="display:none">Clock Corrections</button>
   </div></div>
   <div id="vs-view-schedule"></div>
   <div id="vs-view-clock" style="display:none"></div>
   <div id="vs-view-readiness" style="display:none"></div>
   <div id="vs-view-payroll" style="display:none"></div>
+  <div id="vs-view-corrections" style="display:none"></div>
 </div>
 <div class="modal" id="visitmodal">
   <div class="mbox">
@@ -1502,9 +1513,16 @@ function senFetchTimeoutSignal(){
     return AbortSignal.timeout(SEN_FETCH_TIMEOUT_MS); }catch(e){}
   return undefined;
 }
+// The last failure per RESOURCE, so a caller can say what really happened
+// instead of inventing a reason. Per resource and not per app: a shared slot
+// would hand one caller another caller's message, which is a wrong reason
+// stated confidently.
+var senLastErr={};
+function senLastErrText(resource){return senLastErr[resource]?senLastErr[resource].message:'';}
+function senLastErrCode(resource){return senLastErr[resource]?senLastErr[resource].code:'';}
 function senData(action,resource,payload,withSession){
   var lic=senLicenseKey();
-  if(!lic)return Promise.resolve(null);
+  if(!lic){senLastErr[resource]={code:'NO_LICENSE',message:'This device has no licence key entered, so nothing can reach the server. Enter it in Settings.'};return Promise.resolve(null);}
   var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};
   if(withSession&&senSession&&senSession.token)h['X-SD-Auth']=senSession.token;
   return fetch(DATA_API,{
@@ -1514,7 +1532,22 @@ function senData(action,resource,payload,withSession){
     body:JSON.stringify({action:action,resource:resource,app_id:APP_ID,payload:payload||{}})
   }).then(function(r){
     return r.json().then(function(d){
-      if(!r.ok||!d||!d.ok){console.warn('senData '+resource+' failed ('+r.status+'):',(d&&d.error&&(d.error.code||d.error.message))||'unknown');return null;}
+      if(!r.ok||!d||!d.ok){
+        // ── REMEMBER WHY, PER RESOURCE (2026-10-15) ───────────────────────
+        // This returned a bare null and logged to the console, so EVERY
+        // failure arrived at every caller as an indistinguishable nothing.
+        // That was survivable while the callers were saves with their own
+        // "on this device only" wording, and it is NOT survivable for the
+        // clock-corrections Approve button, whose most common refusal is
+        // SELF_APPROVAL_REFUSED -- a rule the user has to be able to read, or
+        // the button is a silent no-op. Same mechanism sairnlegacy.html has
+        // carried since 2026-09-05 and for the same reason.
+        senLastErr[resource]={code:(d&&d.error&&(d.error.code||''))||('HTTP_'+r.status),
+                              message:(d&&d.error&&d.error.message)||''};
+        console.warn('senData '+resource+' failed ('+r.status+'):',(d&&d.error&&(d.error.code||d.error.message))||'unknown');
+        return null;
+      }
+      delete senLastErr[resource];
       // ONE LINE IN THE TRANSPORT (2026-09-21): a write past the guard above is
       // a write the server accepted, and the server-wins carve-out needs to know
       // which ids those are.
@@ -2766,6 +2799,12 @@ function vsRender(){
     if(rb)rb.style.display=senIsScheduler()?'':'none';
     var pb=$('vs-tab-payroll');
     if(pb)pb.style.display=senIsManagement()?'':'none';
+    // THE COUNT IS ON THE BUTTON, not only inside the tab. A pending
+    // correction nobody can see from the outside is one nobody opens the tab
+    // to find, which is how the b13 approval route shipped with a working
+    // endpoint and zero approvals possible in practice.
+    var cb2=$('vs-tab-corrections');
+    if(cb2){cb2.style.display=senIsScheduler()?'':'none';cb2.textContent=vsCorrectionsBadgeText();}
     vsShowTab(_vsTab);
   });
 }
@@ -2782,7 +2821,12 @@ function vsShowTab(tab){
   if(tab==='readiness'&&!senIsScheduler())tab='schedule';
   _vsTab=tab;
   if(tab==='payroll'&&!senIsManagement())tab='schedule';
-  ['schedule','clock','readiness','payroll'].forEach(function(t){
+  // Same argument as the readiness line above, and for the same reason it is
+  // repeated rather than shared: hiding a button is cosmetic, and vsShowTab is
+  // reachable from _vsTab on re-render, so a role that lost access between
+  // renders must not land back on this tab.
+  if(tab==='corrections'&&!senIsScheduler())tab='schedule';
+  ['schedule','clock','readiness','payroll','corrections'].forEach(function(t){
     var v=$('vs-view-'+t),b=$('vs-tab-'+t);
     if(v)v.style.display=(t===tab?'block':'none');
     if(b&&b.style.display!=='none')b.className='btn '+(t===tab?'bp':'bo')+' bs';
@@ -2791,6 +2835,7 @@ function vsShowTab(tab){
   if(tab==='clock')renderClockView();
   if(tab==='readiness')renderReadinessView();
   if(tab==='payroll')renderPayrollView();
+  if(tab==='corrections')renderCorrectionsView();
 }
 
 // ── EVV SUBMISSION READINESS (2026-08-27) ────────────────────────────────
@@ -2879,6 +2924,104 @@ function runPayroll(){
       +(d.not_computed||[]).map(function(x){return '<li>'+H(x)+'</li>';}).join('')
       +'</ul></div>';
   });
+}
+// ── THE PENDING-CORRECTIONS QUEUE (2026-10-15) ───────────────────────────
+// b13 built the append-a-correction path and the scheduler-only approval verb
+// and SHOWED NEITHER. effectiveClock() already returned `pending`,
+// `pending_count` and `pending_entries` and nothing rendered them, so a
+// caregiver's submitted correction sat pending for ever: strictly better than
+// the old 409 for the caregiver, and no better at all for payroll, because
+// nobody could see there was anything to approve. This is that half.
+//
+// READ FROM THE LOCAL ROWS, not from a new endpoint. `visits()` is already
+// server-merged by senHydrateVisits(), the corrections live on the visit row,
+// and inventing a second read path would be a second thing to drift.
+function senPendingCorrections(){
+  var out=[];
+  (visits()||[]).forEach(function(v){
+    var list=(v&&Array.isArray(v.clock_corrections))?v.clock_corrections:[];
+    list.forEach(function(e,i){
+      // ONLY `status === 'pending'`. An entry with NO status at all is one
+      // written before b13 and is APPROVED -- treating a missing status as
+      // pending here would fill this queue with historical corrections that
+      // are already in effect, and somebody would "approve" them a second
+      // time.
+      if(e&&e.status==='pending')out.push({visit:v,entry:e,index:i});
+    });
+  });
+  return out;
+}
+function vsCorrectionsBadgeText(){
+  var n=senPendingCorrections().length;
+  return n?('Clock Corrections ('+n+')'):'Clock Corrections';
+}
+function renderCorrectionsView(){
+  var el=$('vs-view-corrections');if(!el)return;
+  var rows=senPendingCorrections();
+  var me=(senSession&&senSession.employee_id)||'';
+  if(!rows.length){
+    // A SENTENCE, NOT A BLANK PANEL. An empty panel is indistinguishable from
+    // one that failed to load, which is the same argument the offline badge
+    // above this makes for itself.
+    el.innerHTML='<div class="card"><div class="cb">'
+      +'<div class="ct">Clock corrections awaiting approval</div>'
+      +'<div class="note">Nothing is waiting. When a caregiver submits a '
+      +'different clock time through Clock In / Out, the recorded time is kept '
+      +'and their submission appears here for a scheduler to approve. Until it '
+      +'is approved, payroll and EVV exports use the ORIGINAL time.</div>'
+      +'</div></div>';
+    return;
+  }
+  el.innerHTML='<div class="card"><div class="cb">'
+    +'<div class="ct">'+rows.length+' clock correction(s) awaiting approval</div>'
+    +'<div class="note">The recorded time is unchanged until you approve. '
+    +'<strong>You cannot approve a correction you submitted yourself</strong> — '
+    +'the server refuses it, because an edited EVV time with no second party '
+    +'cannot be told from a fabricated one.</div>'
+    +'<div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>'
+    +'<thead><tr><th>Visit</th><th>Field</th><th>Recorded (in effect)</th>'
+    +'<th>Submitted</th><th>Reason</th><th>Submitted by</th><th></th></tr></thead><tbody>'
+    +rows.map(function(r){
+      var e=r.entry;
+      var mine=String(e.proposed_by||'')===String(me);
+      // BOTH TIMES ON THE ROW, ALWAYS. A queue that shows only the proposed
+      // value has quietly become the overwrite this whole mechanism exists to
+      // avoid -- the same sentence api/_lib/sen-evv-clock.js makes about
+      // effectiveClock().
+      return '<tr><td>'+H(r.visit.id)+'</td><td>'+H(String(e.field||'').replace(/_/g,' '))+'</td>'
+        +'<td>'+H(e.original_at)+'</td><td>'+H(e.proposed_at)+'</td>'
+        +'<td>'+H(e.reason_label||e.reason_code||'')+(e.note?(' — '+H(e.note)):'')+'</td>'
+        +'<td>'+H(e.proposed_by)+'</td>'
+        +'<td>'+(mine
+          ? '<button class="btn sm" disabled title="You submitted it">You submitted this one</button>'
+          : '<button class="btn sm bp" onclick="vsApproveCorrection('+JSON.stringify(String(r.visit.id)).replace(/"/g,'&quot;')+','+r.index+')">Approve</button>')
+        +'</td></tr>';
+    }).join('')
+    +'</tbody></table></div>'
+    +'<div class="note" id="vs-corr-err" style="color:var(--bad)"></div>'
+    +'</div></div>';
+}
+async function vsApproveCorrection(visitId,index){
+  var err=$('vs-corr-err');if(err)err.textContent='';
+  var r=await senData('approve_clock_correction','sen_visits',
+                      {id:visitId,correction_index:index},true);
+  if(!r){
+    // THE SERVER'S OWN WORDS, NOT A PARAPHRASE. senData() returns a bare null
+    // on every failure and used to log only to the console, so this button
+    // would have been a silent no-op -- and the refusal it most often gets is
+    // the self-approval one, which a user must be able to read.
+    if(err)err.textContent=senLastErrText('sen_visits')
+      ||'That approval did not go through, and the server gave no reason. The correction is still pending.';
+    return;
+  }
+  // RE-READ FROM THE SERVER rather than patching the local row. The approval
+  // changed an entry inside a jsonb blob; re-hydrating is the only way the
+  // screen and the server agree without a second copy of the merge rule.
+  await senHydrateVisits();
+  renderCorrectionsView();
+  var cb3=$('vs-tab-corrections');if(cb3)cb3.textContent=vsCorrectionsBadgeText();
+  vsRenderKpis();
+  toast('Correction approved — payroll and EVV exports now use the corrected time');
 }
 function renderReadinessView(){
   var el=$('vs-view-readiness');

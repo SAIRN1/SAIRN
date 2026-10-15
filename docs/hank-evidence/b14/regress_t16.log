@@ -1,0 +1,37 @@
+T16. a second clock write APPENDS a correction and never replaces
+
+  ok       T16a. CONTROL -- a FIRST clock-in on a visit with none recorded is stored as the clock time itself and raises NO correction entry. Without this arm the whole design could be "every clock write is a pending correction" and nothing would ever be an EVV record
+  ok       T16b. a DIFFERENT clock_in_at over a recorded one is ACCEPTED, not refused. This is the half that replaces N1: a caregiver who clocked in at the wrong time on their own visit had no route at all under the 409, because propose_clock_correction is scheduler-only
+  ok       T16c. ...and THE ORIGINAL IS STILL THE CLOCK TIME ON THE ROW. An append that also moved the field would be the overwrite wearing a trail -- "a state audit that finds an edited time with no trail cannot tell a typo correction from a fabrication", and a trail beside a silently moved value answers that no better
+  ok       T16d. ...and exactly ONE correction entry was appended
+  ok       T16e. ...carrying the OLD value and the NEW value. Both numbers, on the record, which is the whole point of an additive correction
+  ok       T16f. ...attributed to the actor from the VERIFIED SESSION. A correction attributed from the payload is a correction attributed by whoever is submitting it
+  ok       T16g. ...with a reason from the closed vocabulary and its label. A correction with a blank reason is the silent drop with extra steps -- and the caller supplied none here, so the route's own code is used and is NOT left empty
+  ok       T16h. ...and a SERVER timestamp for when it was submitted, which is a different fact from the time being proposed
+  ok       T16i. ...and it is PENDING. "A scheduler approves it before payroll uses it" is the decision, so an unapproved self-submitted time must not be indistinguishable from an approved one
+  ok       T16j. ...and the CALLER IS TOLD at the time -- the submission is pending and needs an approval. A 200 that looks like an accepted clock change is affirmative false success, which is worse than a refusal
+
+T16. a pending correction does not move the effective clock
+  ok       T16k. effectiveClock IGNORES a pending entry -- the effective value is still the recorded one. This is the arm that carries the approval requirement into the number payroll reads; without it `pending` is a decoration
+  ok       T16l. ...and it SAYS a correction is awaiting approval rather than dropping it from view. A submission nobody can see is a submission nobody will approve
+  ok       T16m. ...and an APPROVED entry does move it, with the original still returned beside it
+  ok       T16n. CONTROL -- an entry written BEFORE this change, with no `status` at all, is still effective. Treating a missing status as pending would silently revert every live corrected visit to its uncorrected time, which is this change causing the defect it is fixing
+
+T16. the approval route, and who may use it
+  ok       T16o. a CAREGIVER cannot approve -- 403 and nothing written. The whole reason the correction is pending is that an unverified self-assertion is what EVV exists to stop; a caregiver who can approve their own submission has the overwrite back with two extra fields
+  ok       T16p. a SCHEDULER-tier caller approves it, and the entry becomes approved
+  ok       T16q. ...recording WHO approved it and WHEN, from the session and the server. An approval with no approver is the same unattributed act the submission was not allowed to be
+  ok       T16r. ...and APPROVAL STILL DOES NOT MOVE THE FIELD. The row's clock_in_at is the caregiver's original forever; what approval moves is which value effectiveClock reports
+  ok       T16s. re-approving is answered deliberately rather than silently appending a second approval. Either is defensible; what is not is a second approval record for one decision
+  ok       T16t. an index that is not there is refused 400 with nothing written, not quietly ignored with a 200
+
+T16 controls -- what must NOT have moved
+  ok       T16u. CONTROL -- an IDENTICAL re-send appends NOTHING. sairnsenior queues clock events offline and replays them UNCHANGED, so the same visit legitimately arrives twice; turning every replay into a pending correction would bury the real ones
+  ok       T16v. CONTROL -- the OTHER half of the visit still writes normally. The rule is per field and a clock-out after a clock-in is the ordinary case, not a correction
+  ok       T16w. clock_out_at is covered by the same rule, not just clock_in_at. A rule proven on one of two fields covers one of two fields
+  ok       T16x. CONTROL -- a SCHEDULER-tier write still cannot touch an EVV field, and does not get a correction entry as a side door either. Their route is propose_clock_correction, which this change leaves alone
+  ok       T16y. CONTROL -- a time AHEAD of the server that received it is still refused 400 with nothing written. The append path must not become a route around checkClockEvent
+  ok       T16z. a reason the caller DID supply is the one recorded. The route's own code covers the silent case and does not overwrite a real one
+  ok       T16aa. a SCHEDULER filing through propose_clock_correction files it PENDING and does NOT make it effective -- the filer cannot be the approver. The row's own clock_in_at is still untouched either way, which is the property that has not moved
+
+27 passed, 0 failed, 0 unproven
