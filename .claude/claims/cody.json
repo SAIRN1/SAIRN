@@ -3886,6 +3886,27 @@
         "tests/run_two_axis_tier_parser_probe.py",
         "tests/sairnlegacy_reservation_lock.js"
       ]
+    },
+    {
+      "id": "cody-1792024820",
+      "session": "cody",
+      "subject": "tests",
+      "task": "b14: two-axis red arm at cause or row correction, scope-gate OWNER line to cody, blob conversion routing doc to hank, leg_aftercare key-collision arm, function-name anchor arm, leg_clergybookings arm, three N4 compliance anniversary arms, all failing-first with counterfactuals. FILES: tests/run_two_axis_tier_parser_probe.py tests/run_scope_gate_unfetched_base_probe.py docs/known-red-suites.json docs/2026-10-14-cody-b14-blob-conversion-routing.md tests/run_b14_leg_aftercare_probe.py tests/run_b14_compliance_anniversary_probe.py tests/sairnlegacy_reservation_lock.js SAIRN-handoff-cody-b14.md SAIRN-latest-cody.md. NO api/ FILE (hank's), NO tools/ FILE (cc's), NO sql/ FILE, NO auditor clone entered.",
+      "claimed_at": "2026-10-15T00:40:20Z",
+      "claimed_at_epoch": 1792024820.9503598,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-handoff-cody-b14.md",
+        "SAIRN-latest-cody.md",
+        "docs/2026-10-14-cody-b14-blob-conversion-routing.md",
+        "docs/known-red-suites.json",
+        "tests/run_b14_compliance_anniversary_probe.py",
+        "tests/run_b14_leg_aftercare_probe.py",
+        "tests/run_scope_gate_unfetched_base_probe.py",
+        "tests/run_two_axis_tier_parser_probe.py",
+        "tests/sairnlegacy_reservation_lock.js"
+      ]
     }
   ],
   "refusals": [
