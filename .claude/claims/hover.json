@@ -754,8 +754,8 @@
       "task": "b36 land-check cody b12/hank b12/cc b12/fourth b20/H2 b34, weakening-flags routing-doc check, seq1407+HEAD correction, stash/stale-file recheck, claim-liveness repro, push",
       "claimed_at": "2026-10-14T23:54:42Z",
       "claimed_at_epoch": 1792022082.8813648,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-15T00:20:43Z",
       "files": null
     }
   ],
