@@ -853,8 +853,8 @@
       "task": "b45: chain+token check; land-check hank b17/cody b18/fourth b26 if closed; verify hank claims released, cody arm-8 roster fix, sd-data census :8328; hank b17 pay-period close drive; 30-suite fresh sample + cody b17 hypotheses read; board accuracy sweep; push. AUDIT-ONLY: every platform file is READ or RUN, never edited. FILES: SAIRN-handoff-H1-b45.md SAIRN-report-H1-b45.txt SAIRN-digest-H1-b45.txt SAIRN-latest-H1.md",
       "claimed_at": "2026-10-15T15:57:22Z",
       "claimed_at_epoch": 1792079842.1816785,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-15T20:20:11Z",
       "files": [
         "SAIRN-digest-H1-b45.txt",
         "SAIRN-handoff-H1-b45.md",
