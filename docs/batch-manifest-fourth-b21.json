@@ -40,5 +40,15 @@
       "status": "done",
       "evidence": "Pushed WITHOUT force: first attempt, no rejection. Confirmed landed: git rev-parse --short HEAD and origin/main both 7a5e6a11; git rev-list --left-right --count origin/main...HEAD -> 0 0; all four b21 docs/ paths present via git cat-file -e origin/main:<path>; both discharges on origin. NOT-FORCED IS NOW PROVED BY ANCESTRY RATHER THAN BY GREPPING GIT'S WORDING, which is b21 item 5's self-finding fixed in the same batch: git merge-base --is-ancestor <pre-push tip> HEAD -> ANCESTOR, i.e. a fast-forward. Re-check: git log origin/main --oneline -3"
     }
-  ]
+  ],
+  "closed": {
+    "drive_verify": "PASS",
+    "verified_by": "python tools/drive_upload_verify.py --agent fourth --batch b21 --verify-only",
+    "criteria": "2026-10-13.1",
+    "deliverables": [
+      "SAIRN-handoff-fourth-b21.md sha256 40f688f0a0bd0a52",
+      "SAIRN-report-fourth-b21.txt sha256 ca08b25fdc2e8d2a",
+      "SAIRN-digest-fourth-b21.txt sha256 222f122bf1dd2214"
+    ]
+  }
 }
