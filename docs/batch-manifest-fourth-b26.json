@@ -37,8 +37,8 @@
     {
       "id": 6,
       "title": "",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "PUSHED AND LANDED, not forced. HEAD == origin/main f54bbb19, 0/0, clean. Not-forced PROVED BY ANCESTRY (git merge-base --is-ancestor <pre-push tip> HEAD -> ANCESTOR) and by grep -c force b26_push.log -> 0, never by reading git's wording. The push gate ran live via .githooks/pre-push and allowed. No SAIRN_SEED_GATE / GATE_EXEMPT / SAIRN_SKIP in any form, settings.json not edited or committed, hooks untouched. Verified on origin by reading the landed file back: git show origin/main:docs/2026-10-15-fourth-b26-findings.md"
     }
   ]
 }
