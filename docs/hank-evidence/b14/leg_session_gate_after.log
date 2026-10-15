@@ -1,0 +1,33 @@
+LEG_RESOURCES require an employee session -- read AND write
+
+1. a licence key alone is REFUSED, and never reaches the database
+  ok   leg_deathrecords read -> 401 NO_SESSION, 0 queries
+  ok   leg_deathrecords write -> 401 NO_SESSION, 0 queries
+  ok   leg_custodylog read -> 401 NO_SESSION, 0 queries
+  ok   leg_custodylog write -> 401 NO_SESSION, 0 queries
+  ok   leg_cremations read -> 401 NO_SESSION, 0 queries
+  ok   leg_cremations write -> 401 NO_SESSION, 0 queries
+  ok   leg_invoices read -> 401 NO_SESSION, 0 queries
+  ok   leg_invoices write -> 401 NO_SESSION, 0 queries
+
+2. a real session still works -- the gate must not refuse everything
+  ok   leg_deathrecords read with a session -> 200
+  ok   leg_deathrecords write with a session -> 200
+  ok   leg_custodylog read with a session -> 200
+  ok   leg_custodylog write with a session -> 409 APPEND_ONLY (append-only, and the GATE was passed to get there)
+  ok   leg_cremations read with a session -> 200
+  ok   leg_cremations write with a session -> 200
+  ok   leg_invoices read with a session -> 200
+  ok   leg_invoices write with a session -> 200
+
+3. the session must be a SAIRNlegacy one -- Check 28, the cross-app collision
+  ok   a valid session for ANOTHER app is refused
+
+4. the gate covers the WHOLE map, not the four this suite names
+  ok   every LEG_RESOURCES member is behind the same gate
+  ok   and the map really is 36 resources, including the two that matter most
+
+5. the CLIENT half, without which this gate is an outage
+  ok   sairnlegacy.html attaches the token on EVERY sdnData call
+
+20 passed, 0 failed

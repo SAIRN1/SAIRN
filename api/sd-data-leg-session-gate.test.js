@@ -144,13 +144,50 @@ const RESOURCES = ['leg_deathrecords', 'leg_custodylog', 'leg_cremations', 'leg_
       assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
       assert.strictEqual(res.body.ok, true, JSON.stringify(res.body));
     });
-    await test(resource + ' write with a session -> 200', async () => {
-      const { handler } = load();
-      const res = mockRes();
-      await handler(withSession('write', resource, { id: 'X-1' }), res);
-      assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
-      assert.strictEqual(res.body.ok, true, JSON.stringify(res.body));
-    });
+    // ── ONE RESOURCE MUST REFUSE A WRITE, AND THIS LOOP DID NOT KNOW IT ──
+    // ROOT-CAUSED 2026-10-15. This suite was RED on
+    // `leg_custodylog write with a session -> 200` and had been for at least
+    // two batches -- it was carried as a known red through b13 with the honest
+    // note "not mine", and nobody had asked WHY.
+    //
+    // THE ANSWER IS THAT THE ARM IS WRONG AND THE CODE IS RIGHT.
+    // `leg_custodylog` is APPEND-ONLY: the handler answers 409 APPEND_ONLY in
+    // its own words -- "a custody record that can be edited is not a chain of
+    // custody" -- and it refuses EVERYONE, including the owner. A generic
+    // "every write returns 200" loop over a resource list cannot be right
+    // across a list that contains one resource whose whole point is to refuse.
+    //
+    // A FALSE RED IS NOT THE SAFE DIRECTION. This one sat in the suite long
+    // enough to be inherited as a fact about the codebase, and a reader who
+    // learns that this file is "always a bit red" reads the next REAL failure
+    // the same way.
+    //
+    // THE REPLACEMENT IS STRICTLY STRONGER, not an exemption: for this one
+    // resource the arm asserts the session gate was PASSED and then the
+    // append-only rule refused -- 409 with the code, not 401/403. A 401 here
+    // would mean the gate rejected a good session, which is what this suite
+    // exists to catch, and the old arm could not tell those apart.
+    const APPEND_ONLY_WRITE = { leg_custodylog: 'APPEND_ONLY' };
+    const expectCode = APPEND_ONLY_WRITE[resource];
+    if (expectCode) {
+      await test(resource + ' write with a session -> 409 ' + expectCode
+               + ' (append-only, and the GATE was passed to get there)', async () => {
+        const { handler } = load();
+        const res = mockRes();
+        await handler(withSession('write', resource, { id: 'X-1' }), res);
+        assert.strictEqual(res.statusCode, 409, JSON.stringify(res.body));
+        assert.strictEqual(res.body && res.body.error && res.body.error.code,
+                           expectCode, JSON.stringify(res.body));
+      });
+    } else {
+      await test(resource + ' write with a session -> 200', async () => {
+        const { handler } = load();
+        const res = mockRes();
+        await handler(withSession('write', resource, { id: 'X-1' }), res);
+        assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
+        assert.strictEqual(res.body.ok, true, JSON.stringify(res.body));
+      });
+    }
   }
 
   section('3. the session must be a SAIRNlegacy one -- Check 28, the cross-app collision');
