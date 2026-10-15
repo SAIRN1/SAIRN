@@ -1,0 +1,44 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "fourth",
+  "batch": "b21",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "Manifest first, then tier_a_review_gate.py --list. Discharge hank 2026-10-13T09:03:35Z (11 resources, SAIRN-addendum-hank-b5.txt, DOCUMENT ONLY, overdue). Decide the strong-basis re-seat f0e81b92459c -> 8a572a6ead25 DELIBERATELY and record the decision.",
+      "status": "done",
+      "evidence": "DISCHARGED exit 0: --discharge hank 2026-10-13T09:03:35Z --body-file <verdict> (scratchpad discharge_addendum_b21.log). Doc docs/2026-10-14-fourth-b21-addendum-b5-discharge.md. RE-SEAT DECIDED: NOT RE-SEATED -- the offered candidate 8a572a6ead25 was AUTHORED 2026-10-13T09:06:42Z, 3m07s AFTER opened_at 09:03:35Z, while 13f3a3be (09:00:18Z) precedes it; the exact-file-set match succeeded only because the recorded files list is one path and the real push was four. Routed to cc: require the candidate author time to PRECEDE opened_at. Re-check: tier_a_review_gate.py --reseat-shas"
+    },
+    {
+      "id": 2,
+      "title": "Discharge hank 2026-10-14T17:56:56Z (33 resources, 5 files incl. api/_lib/sv-roles.js and api/sd-data.js). HARDEST on alf_family_contacts losing inherited read roles for a named, time-limited, audited grant.",
+      "status": "done",
+      "evidence": "DISCHARGED exit 0: --discharge hank 2026-10-14T17:56:56Z --body-file <verdict> (scratchpad discharge_sv_b21.log). REAL DIFF review, sha d19971890058 RESOLVES. Doc docs/2026-10-14-fourth-b21-sv-role-matrix-discharge.md. Surface 2 CLEAN (42 rows by three agreeing counts, one decide() with no bypass, sv_controlled derived by reference, sv-witness.js untouched, append-only lock binds the owner, 56 insertions/0 deletions so no widening). Four findings: F1 billing not refused by default, F2 the existence oracle survives, F3 billing can self-assign via alf_clients and bypass the grant with NO audit row, F4 the rf_photos handler rebuilds the record and DROPS ai_source/ai_approved_by so aiFooter() returns empty. Re-check: grep -n 'ai_source|ai_approved' api/sd-data.js -> one comment line"
+    },
+    {
+      "id": 3,
+      "title": "Correct the b19 item-5 undercount in a new doc line: 'roughly twelve' -> 63 across 22 resources (H1 re-ran my command: 242 raw matches, 63 narrowed to the 503-folding shape). Add step 4a to the operator runbook at docs/NHI-REGISTER.md:69 -- cc's secrets_inventory.py step 4a is fixed and the doc is mine.",
+      "status": "done",
+      "evidence": "docs/2026-10-14-fourth-b21-corrections-landings-and-measurement.md sections 1 and 2. b19 undercount CORRECTED: 'roughly twelve' -> 63 across 22 resources (242 raw, 63 narrowed to the 503-folding shape), H1's re-run of my own command. Step 4a: cc fixed TWO of three places (secrets_inventory.py:74,89 and nhi_register.py:335-345); the THIRD, the session-signing REVOKE paragraph at docs/NHI-REGISTER.md:69 from tools/nhi_register.py:374-376, still says 'wait 12h, clear PREVIOUS' with no 4a. NOT hand-edited: the doc is GENERATED, --check exits 0 OK, so a hand-edit would be reverted and would break --check. Replacement prose written and routed to cc, anchored on signingKeys() because that paragraph's own citation api/_lib/auth.js:365 is rotted (real line :510). Re-check: python tools/nhi_register.py --check"
+    },
+    {
+      "id": 4,
+      "title": "Land-check cc b12 (F3 probe arm re-pointed at the token WRONG AGENT; run_drive_upload_verify_probe.py 35/35?) and hank b12 (sd_photos client-side downscale, T17) ONCE CLOSED. Deep-verify what is closed; SKIP anything with an active claim.",
+      "status": "done",
+      "evidence": "docs/...-corrections-landings-and-measurement.md section 3. cc b12 SKIPPED by instruction: cc holds an ACTIVE claim (0.6h) whose FILES list includes tools/drive_upload_verify.py, so the F3 token re-point and the 35/35 are in flight and were NOT graded -- next step after it closes: python tests/run_drive_upload_verify_probe.py, expect 35/35 exit 0 against b20's measured 34/35 exit 1. hank b12 NOT LANDED, measured: hank holds 0 active claims, no b12 artifacts, no downscale on the photo path, ai_source present only on the review-log row, and sd_photos still in NEITHER AI registry. Re-check: grep -n sd_photos api/_lib/ai-safeguards.js api/_lib/ai-scan-redaction.js -> no match"
+    },
+    {
+      "id": 5,
+      "title": "Methodology: measure by SCRIPT, read-only, how many docs/CRITICALITY-TIERS.md line citations are stale -- report count and total with the command named. And check my own b20 docs for any claim that greps PROSE instead of a TOKEN.",
+      "status": "done",
+      "evidence": "docs/...-corrections-landings-and-measurement.md section 4. MEASURED BY SCRIPT, read-only, <scratchpad>/citation_staleness_b21.py, run twice and NOT added to tools/: docs/CRITICALITY-TIERS.md carries 551 line citations, of which 196 are explicit file:line -- 0 PROVABLY STALE, 37 of 196 (19pc) land on a blank or pure-comment line and are LIKELY stale, 159 unverified. The loose pass's 14 'provably stale' were ENTIRELY my own bare-citation attribution error, demonstrated: three :NNNN citations that belong to stonedesk.html were charged to an 893-line .py file. 355 of 551 (64pc) are bare and UNASSESSABLE, which is the real finding and reframes the rot-spec's R3. b20 prose-grep audit: exactly ONE real instance, MINE -- grep -ci force over the push log -- replaced this batch by the token-grade ancestry check git merge-base --is-ancestor. Re-check: run the script again"
+    },
+    {
+      "id": 6,
+      "title": "Push without --force and confirm landed (HEAD == origin/main, 0 ahead / 0 behind).",
+      "status": "open",
+      "evidence": ""
+    }
+  ]
+}
