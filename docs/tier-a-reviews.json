@@ -6707,6 +6707,28 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-15T15:12:47Z",
+      "opened_at_sha": "d47880d3700bb5e8fec3281de28d5f7e7d7361b8",
+      "opened_at_sha_basis": "file-set",
+      "resources": [
+        "bld_bids"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tests/run_sairnbuild_server_wins_sabotage_probe.py",
+        "tests/sairnbuild_server_wins.js"
+      ],
+      "what": "cody b17, bld_bids: tests/sairnbuild_server_wins.js:420 asserted the LITERAL `key==='bld_bids'` appears in bldRetryPending as its proxy for 'the retry sends a session-required resource WITH its session'. That literal is gone from the code -- sairnbuild.html:2369 declares BLD_SESSION_REQUIRED = { bld_bids: true, bld_draws: true } and the retry passes !!BLD_SESSION_REQUIRED[key] -- but the string still occurs TWICE in sairnbuild.html and BOTH occurrences are COMMENTS, one at :2534 INSIDE bldRetryPending explaining that the old form used to read that way. So the assertion was being satisfied by the comment documenting the removal of the thing it asserted, and the sabotage arm guarding it (tests/run_sairnbuild_server_wins_sabotage_probe.py arm 6) was ANCHOR-0 at the same time. Two layers of guard on a Tier A resource, neither guarding. CHANGED: the suite assertion now runs over COMMENT-STRIPPED source and requires a fourth argument at the bldData call site, which a comment cannot satisfy; the sabotage arm is re-anchored on the current 4-argument form. WHAT TO CHECK HARDEST: (1) that the new regex cannot be satisfied by a future comment or string literal the way its predecessor was -- comment stripping is a regex, not a parser; (2) that dropping the session flag is still the RIGHT defect to plant, given bld_draws joined the map and the arm names only bld_bids; (3) that arm 6 reporting CAUGHT is not CAUGHT for an unrelated reason -- it was SILENT before this change and ANCHOR-0 before that, so it has never been green for a verified reason until now; (4) whether the sibling assertion on BLD_PENDING_TRACKED['bld_bids'] has the same substring-proxy shape. Reviewer must not be cody.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-10-15T15:12:47Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
