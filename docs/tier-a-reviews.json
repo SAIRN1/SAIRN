@@ -6558,6 +6558,27 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-15T01:18:14Z",
+      "opened_at_sha": "45d0a1cfe0322af55efdbb39d04aa71fe8d22792",
+      "opened_at_sha_basis": "file-set",
+      "resources": [
+        "leg_aftercare"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tests/run_b14_leg_aftercare_probe.py"
+      ],
+      "what": "cody b14: tests/run_b14_leg_aftercare_probe.py is a NEW failing-first probe over leg_aftercare (Tier A). It adds NO api/ or sql/ code and changes no write path -- it EXTRACTS both existing key derivations from source and runs them to assert that two different (case_id, checkin_type) pairs cannot derive one aftercare_id. ARM 1 IS RED ON PURPOSE: ('CS-7','1 Week') and ('CS-7-1','Week') both produce AC-CS-7-1-WEEK, and the upsert is on_conflict=license_hash,aftercare_id with resolution=merge-duplicates, so a collision silently overwrites a different case's check-in and returns 200. The FIX is routed to hank (api/sd-data.js and sairnlegacy.html). WHAT A REVIEWER SHOULD CHECK: that the probe asserts the PROPERTY and not the agreement between the two copies (arm E4 of api/sd-data-leg-role-matrix.test.js passes on the colliding pair because both copies agree on the wrong answer); that neither expression is retyped; and that the known-red-suites.json entries row names ARM 1 ONLY as the expected red. Reviewer must not be cody.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-10-15T01:18:14Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

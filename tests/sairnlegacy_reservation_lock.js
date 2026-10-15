@@ -63,6 +63,10 @@ process.env[['SD', 'AUTH', 'SECRET'].join('_')] =
 
 const reg = require(path.join(ROOT, 'api/_resources'));
 const LEG = require(path.join(ROOT, 'api/_resources/sairnlegacy.js'));
+// The overlap guard's OWN spec map, so the resources that need a window-shaped
+// payload are read from the handler's source of truth rather than named here.
+// See the derivation note in section 4.
+const LEG_OVERLAP = require(path.join(ROOT, 'api/_lib/leg-overlap.js'));
 const HANDLER = path.join(ROOT, 'api/sd-data.js');
 const HTML = fs.readFileSync(process.env.LEG_HTML
   || path.join(ROOT, 'sairnlegacy.html'), 'utf8').replace(/\r\n/g, '\n');
@@ -306,6 +310,7 @@ console.log('SAIRNlegacy: the reservation lock, both halves, and the posture of 
   {
     let missingId = 0, notProvisionedWrite = 0, honestEmptyRead = 0;
     const odd = [];
+    const preconditionUnmet = [];
     for (const resource of LEG.resources) {
       const a = await call(h, { resource, action: 'write', payload: {} });
       if (a.code === 400 && a.calls.length === 0) missingId += 1;
@@ -327,11 +332,47 @@ console.log('SAIRNlegacy: the reservation lock, both halves, and the posture of 
       // call that receives the 404 here, and it maps 404 to the SAME 503
       // NOT_PROVISIONED -- so the property under test is unchanged, not
       // relaxed, and leg_bookings is not exempted from it.
-      const writePayload = resource === 'leg_bookings'
-        ? { id: 'X', facility_id: 'FAC-X',
+      //
+      // ── IT WAS NEVER ONE RESOURCE, AND THE HARDCODED NAME IS WHY NOBODY
+      //    KNEW (cody b14) ─────────────────────────────────────────────────
+      // The line above read `resource === 'leg_bookings'`, so when the SAME
+      // guard was extended to leg_clergybookings on 2026-10-14 -- a second
+      // SPECS entry in api/_lib/leg-overlap.js, not a second copy of the
+      // block -- this loop went to 35/36 and stayed there. The arm reported a
+      // PROPERTY failure on a resource whose precondition it had stopped
+      // satisfying: measured, `leg_clergybookings (unprovisioned write -> 400)`,
+      // i.e. CLERGY_BOOKING_WINDOW_REQUIRED before any upstream call. The
+      // handler was right the whole time; the hardcoded name had gone stale.
+      //
+      // DERIVED FROM THE SPECS MAP, NOT A SECOND NAME ADDED BESIDE THE FIRST.
+      // A third literal here would go stale the day a fourth overlap resource
+      // is added, in exactly this way and with exactly this symptom. The group
+      // field is read per resource -- leg_bookings keys on `facility_id`,
+      // leg_clergybookings on `clergy_id` -- because a shared literal is the
+      // copy-paste defect leg-overlap.js refuses a default for.
+      const ovSpec = LEG_OVERLAP.SPECS[resource];
+      const writePayload = ovSpec
+        ? { id: 'X', [ovSpec.groupField]: 'GRP-X',
             start_time: '2026-11-02T14:00:00.000Z',
             end_time: '2026-11-02T15:00:00.000Z' }
         : { id: 'X' };
+      // AND THE PRECONDITION IS ASSERTED SATISFIED RATHER THAN ASSUMED. If a
+      // spec grows a second required field, the payload above stops satisfying
+      // it and this loop would go back to counting a precondition refusal as a
+      // property failure -- silently, because the only visible symptom is a
+      // number one lower than 36. A 400 *_WINDOW_REQUIRED on a spec'd resource
+      // is named here as its own finding instead.
+      if (ovSpec) {
+        const wr = await call(h, { resource, action: 'write',
+                                   payload: writePayload,
+                                   replies: [{ status: 404, rows: [] }] });
+        if (wr.code === 400 && wr.body && wr.body.error
+            && /_WINDOW_REQUIRED$/.test(String(wr.body.error.code))) {
+          preconditionUnmet.push(resource + ' (' + wr.body.error.code
+            + ' -- the payload built from SPECS no longer satisfies this '
+            + 'guard, so the property below was NOT measured on it)');
+        }
+      }
       const b = await call(h, { resource, action: 'write', payload: writePayload,
                                 replies: [{ status: 404, rows: [] }] });
       if (b.code === 503 && b.body && b.body.error
@@ -348,6 +389,38 @@ console.log('SAIRNlegacy: the reservation lock, both halves, and the posture of 
       else odd.push(resource + ' (unprovisioned read -> ' + c.code + ' '
                     + JSON.stringify(c.body && c.body.provisioned) + ')');
     }
+    // ── THE THREE CONTROLS ON THE DERIVATION RUN FIRST, AND THAT ORDER IS
+    //    LOAD-BEARING (cody b14) ─────────────────────────────────────────────
+    // They were written AFTER the three counts and the counterfactual run
+    // proved they could never fire: `ok()` throws, so an empty SPECS map
+    // reported an unattributable `34/36` from the count arm and the control
+    // that names the cause was never reached. A diagnostic placed downstream
+    // of the thing it diagnoses is not a control.
+    // Driven, on scratch copies: SPECS emptied, a spec stripped of its
+    // groupField, and the derived payload missing `start_time` each now stop
+    // HERE with the reason named instead of surfacing as a lower number.
+    ok(preconditionUnmet.length === 0,
+       'CONTROL: every overlap-spec\'d resource\'s precondition is actually '
+       + 'SATISFIED by the payload derived for it, so the counts below measure '
+       + 'the property and not the guard: '
+       + (preconditionUnmet.join('; ') || 'none unmet'));
+    const ovNames = Object.keys(LEG_OVERLAP.SPECS).sort();
+    ok(ovNames.length > 0,
+       'CONTROL: the overlap SPECS map is NOT EMPTY -- a derivation over zero '
+       + 'resources would hand every one of the 36 a bare payload and pass for '
+       + 'ever. specs: [' + ovNames.join(', ') + ']');
+    ok(ovNames.every((r) => LEG.resources.indexOf(r) !== -1),
+       '...and every spec\'d resource is one of SAIRNlegacy\'s own 36, so the '
+       + 'map is being read against the right app rather than widening the loop');
+    // A FOURTH CONTROL WAS WRITTEN HERE AND REMOVED, and the reason is worth
+    // more than the arm was: "every spec names a groupField". Driving its
+    // failure path on a scratch copy -- a spec with `groupField` deleted --
+    // showed it can never be the arm that fires. A missing groupField puts an
+    // `undefined` key in the payload, the guard refuses 400 *_WINDOW_REQUIRED,
+    // and the precondition control above catches it first and by name. The
+    // two conditions are causally linked, so the second arm could only ever
+    // pass. It was an assertion wearing a control's clothes; do not re-add it.
+
     ok(missingId === 36, 'all 36 refuse a write with no payload.id, before any '
        + 'upstream call -- ' + missingId + '/36');
     ok(notProvisionedWrite === 36,
