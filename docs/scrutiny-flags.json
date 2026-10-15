@@ -1395,6 +1395,39 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": ".githooks/pre-push",
+   "class": "CI / hook configuration",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "3e590fc6deff4a5e1da9e9eba236d059857d9226",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/run_all_tests.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "3e590fc6deff4a5e1da9e9eba236d059857d9226",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "'limit out loud -- `ai_source` is a CLAIM BY THE WRITER, so \"a client '"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "import gate_skip"
+    }
+   ],
+   "sha": "3e590fc6deff4a5e1da9e9eba236d059857d9226",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/lifecycle-audit-event-coverage.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -4945,6 +4978,22 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "beef16df447f4ac8cc6822f3e414fefb87d70596",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": ".githooks/pre-push",
+   "class": "CI / hook configuration",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bf20843ed0e60f2d19fb658ccbed389920ec9bcb",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/report_only_checks.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bf20843ed0e60f2d19fb658ccbed389920ec9bcb",
    "criteria_version": "2026-10-06.1"
   },
   {
