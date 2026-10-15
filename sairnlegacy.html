@@ -1654,7 +1654,23 @@ function sdnData(action,resource,payload,withSession){
       // one, and a missed one means a record silently loses its protection.
       // Here it is unmissable: a write that got past the `!r.ok||!d.ok` guard
       // above is a write the server accepted.
-      if(action==='write'&&payload&&payload.id!==undefined&&payload.id!==null)legMarkSynced(resource,payload.id);
+      // ── AND IT IS THE SERVER'S ID THAT GETS MARKED (2026-10-15, F5) ────
+      // This marked the CLIENT's id and threw the server's away. leg_aftercare
+      // is CANONICALISED server-side so that "a device still running the old
+      // page" converges on one row -- true of the server row, and NOT of that
+      // device: the local store kept the random id, marked synced, and the next
+      // hydrate pulled the canonical row, failed to match it by id and pushed
+      // it back as a SECOND local row. One check-in, two grief-support
+      // follow-ups to a bereaved family, which is the symptom the
+      // canonicalisation exists to prevent, surviving on exactly the device
+      // its own comment invokes. Found in fourth's b20 review.
+      if(action==='write'&&payload&&payload.id!==undefined&&payload.id!==null){
+        var srvId=(d.data&&d.data.id!==undefined&&d.data.id!==null)?d.data.id:null;
+        if(srvId!==null&&String(srvId)!==String(payload.id)){
+          legAdoptServerId(resource,payload.id,srvId);
+          legMarkSynced(resource,srvId);
+        }else legMarkSynced(resource,payload.id);
+      }
       return d.data;
     });
   }).catch(function(e){legLastErr[resource]={code:'NETWORK',message:e.message};console.warn('sdnData network error:',e.message);return null;});
@@ -4203,16 +4219,60 @@ function rMemorial(){
 
 // ── DATA ACCESSORS (Phase 3) ──────────────────────────────────────────────
 function aftercareCheckins(){return ld('leg_aftercare',[]);}
+// api/sd-data-leg-role-matrix.test.js arm E4 also extracts this function and
+// compares it against the handler. (That filename was WRONG on first write --
+// it named a file that has never existed, which is the citation that reads as a
+// guarantee and is a dead end.)
+// ── THE SEPARATOR IS NOW ENCODED, NOT ASSUMED AWAY (2026-10-15, fourth's F4)
+// The old derivation was 'AC-'+case_id+'-'+NORMALISED_TYPE, and `-` is BOTH
+// the joiner and the type normaliser's output character, so the boundary
+// between the two fields was not recoverable:
+//
+//   {case_id:'CS-7',   checkin_type:'1 Week'}  ->  AC-CS-7-1-WEEK
+//   {case_id:'CS-7-1', checkin_type:'Week'}    ->  AC-CS-7-1-WEEK   <- same
+//
+// The upsert is merge-duplicates, so a collision silently overwrote a
+// DIFFERENT case's check-in and returned 200. Not reachable through this page
+// -- three fixed types, and newId('CS') is always three numeric segments -- but
+// reachable by anyone posting to the endpoint directly, and by any future
+// creation path with a free-text type. The old comment rested on exactly that:
+// "(case_id, checkin_type) is unique by construction". A delimiter-safe key
+// removes the assumption instead of restating it.
+//
+// EXISTING IDS ARE PRESERVED BYTE FOR BYTE, and that is why there are two
+// forms rather than one clean one. Every aftercare row this app has ever
+// written has a case id matching ^CS-[0-9]+-[0-9]+$ (newId at :1561) and one
+// of three fixed types, and for THAT shape the boundary IS recoverable --
+// strip a known type suffix, the rest is the case, and the last case segment
+// cannot contain a `-`. So those pairs keep the historic key. Anything else
+// gets the escaped form, where no segment contains a bare `-` at all. A scheme
+// that changed the historic keys would orphan every live row: the next write
+// would land on a new row and leave the old one stranded, which is the
+// duplicate this key exists to prevent.
+//
+// NOT HASHED. A hash is shorter and uniform, and a hash collision silently
+// merges two records -- the exact defect being fixed, with a smaller
+// probability attached. The escape is reversible, so it cannot collide at all.
+function legAcEsc(s){return String(s).replace(/~/g,'~~').replace(/-/g,'~1');}
 // Must produce the SAME string as api/sd-data.js's leg_aftercare branch. Two
 // copies of a key derivation is exactly the drift cross-domain convention 7
 // warns about, and there is no way to share one function across a static page
-// and a serverless handler -- so api/sd-data-leg-role-matrix.test.js arm E4
-// asserts the two agree by extracting this function and running it against the
-// handler's own result, rather than trusting this comment. (That filename was
-// WRONG on first write -- it named a file that has never existed, which is the
-// citation that reads as a guarantee and is a dead end.)
+// and a serverless handler -- so api/leg-aftercare-key-unambiguous.test.js arm
+// F4i extracts this function and runs it against the handler's own result for
+// eight pairs including the colliding one, rather than trusting this comment.
+//
+// NULL WHEN EITHER FIELD IS EMPTY, mirroring the server's guard. That guard
+// used to be raw truthiness on both sides and this function had no guard at
+// all, so an empty checkin_type made the two copies DISAGREE -- the server
+// kept the caller's id and the page derived a key from nothing. Found by F4i,
+// which compared them instead of reading them.
 function legAftercareId(caseId,type){
-  return 'AC-'+String(caseId).trim()+'-'+String(type).trim().toUpperCase().replace(/[^A-Z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+  var c=String(caseId==null?'':caseId).trim();
+  var raw=String(type==null?'':type).trim();
+  if(!c||!raw)return null;
+  var t=raw.toUpperCase().replace(/[^A-Z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+  if(/^CS-[0-9]+-[0-9]+$/.test(c)&&(t==='1-WEEK'||t==='1-MONTH'||t==='1-YEAR'))return 'AC-'+c+'-'+t;
+  return 'ACX-'+legAcEsc(c)+'-'+legAcEsc(t);
 }
 function processions(){return ld('leg_processions',[]);}
 function vehicles(){return ld('leg_vehicles',[]);}
@@ -4254,7 +4314,14 @@ async function generateAftercareSchedule(){
     // impossible by the key rather than caught by a check. api/sd-data.js
     // derives the SAME key server-side, so a device still on the old page
     // converges on the same row instead of creating a second one.
-    var rec={id:legAftercareId(caseId,p.type),case_id:caseId,checkin_type:p.type,due_date:daysFromNow(p.days),status:'Pending',completed_date:'',notes:'',created_at:legLocalToday()};
+    // `||newId('AC')` because legAftercareId() now returns null when either
+    // field is empty, mirroring the server's guard -- a key derived from a
+    // missing field collides with every other row missing it. UNREACHABLE
+    // FROM HERE TODAY (caseId is guarded above, the three types are literals)
+    // and present because the fallback is what the server does with the same
+    // input, and a free-text type is the creation path F4 names as the one
+    // that makes this live.
+    var rec={id:legAftercareId(caseId,p.type)||newId('AC'),case_id:caseId,checkin_type:p.type,due_date:daysFromNow(p.days),status:'Pending',completed_date:'',notes:'',created_at:legLocalToday()};
     list.push(rec);
     created.push(rec);
   });
@@ -4265,6 +4332,14 @@ async function generateAftercareSchedule(){
     var r=await sdnData('write','leg_aftercare',created[i]);
     if(!r)allSynced=false;
   }
+  // RE-RENDERED AFTER THE WRITES (2026-10-15, F5). sdnData() may now RENAME a
+  // local row to the id the server stored, and the rows above were rendered
+  // before that happened -- so every "Complete" button in the list would be
+  // carrying an id that is no longer in the store, and
+  // confirmAftercareComplete()'s `if(!a)return;` would do nothing at all with
+  // no message. A silent no-op introduced by the fix is not an improvement on
+  // the duplicate.
+  rAftercare();
   toast(allSynced?(created.length+' check-in(s) scheduled'):legWriteFailText('leg_aftercare',created.length+' check-in(s) scheduled on this device only -- they did not reach the server, so no other computer can see them'),allSynced?3000:5500);
 }
 function openAftercareNoteModal(id){
@@ -4280,6 +4355,10 @@ async function confirmAftercareComplete(){
   st('leg_aftercare',list);
   closeAftercareNoteModal();rAftercare();
   var syncResult=await sdnData('write','leg_aftercare',a);
+  // Same reason as generateAftercareSchedule: an old-page device's existing
+  // row has a RANDOM id, so completing it is exactly the write the server
+  // canonicalises, and the list was rendered before the rename.
+  rAftercare();
   toast(syncResult?'Check-in completed':legWriteFailText('leg_aftercare','Completed on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rAftercare(){
@@ -5211,6 +5290,43 @@ function legSyncedRead(){
   }catch(e){}
   try{console.error('SAIRNlegacy: "'+LEG_SYNCED_KEY+'" did not parse -- hydration will NOT overwrite anything this run. This is NOT the same as nothing having been synced.');}catch(_e){}
   return {state:'unreadable',map:{}};
+}
+// ── THE LOCAL ROW ADOPTS THE ID THE SERVER ACTUALLY STORED (2026-10-15, F5)
+// Called from sdnData() only when the server's returned id DIFFERS from the one
+// sent, which today is leg_aftercare's canonical key and nothing else. Marking
+// the server's id as synced is not enough on its own: the local row would still
+// carry the random id, so the next hydrate pulls the canonical row, finds no
+// local match and pushes it as a second row. The row has to be renamed.
+//
+// IT MERGES RATHER THAN KEEPING BOTH. If a row already carries the canonical
+// id -- a device that hydrated the canonical row and still has its own random
+// one -- the server has already said these are ONE record, so keeping both
+// locally is the duplicate surviving the fix. The renamed row wins, because it
+// is the one whose write just landed.
+//
+// IT DOES NOTHING IT CANNOT DO SAFELY. No local row with that id, or a store
+// that is not an array, and it returns without writing -- a rename that
+// invents a row would be worse than the duplicate.
+function legAdoptServerId(resource,localId,serverId){
+  if(!resource||localId===undefined||localId===null)return;
+  if(serverId===undefined||serverId===null)return;
+  if(String(localId)===String(serverId))return;
+  var list=ld(resource,[]);
+  if(!Array.isArray(list))return;
+  var mine=null,keep=[];
+  for(var i=0;i<list.length;i++){
+    var row=list[i];
+    if(row&&row.id!==undefined&&String(row.id)===String(localId)&&mine===null){mine=row;continue;}
+    keep.push(row);
+  }
+  if(mine===null)return;
+  mine.id=serverId;
+  var at=-1;
+  for(var j=0;j<keep.length;j++){
+    if(keep[j]&&keep[j].id!==undefined&&String(keep[j].id)===String(serverId)){at=j;break;}
+  }
+  if(at===-1)keep.push(mine);else keep[at]=mine;
+  st(resource,keep);
 }
 // Called from sdnData() on a write that really landed, so every save path in
 // the file is covered by one line instead of 57 call sites that can be missed.

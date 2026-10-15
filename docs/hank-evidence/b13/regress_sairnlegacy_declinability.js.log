@@ -1,0 +1,49 @@
+
+A. the distinction F2 names: declined is not never-offered
+  ok   A1. a declined line lands in `declined`, not in `notOffered`
+  ok   A2. a line nobody touched lands in `notOffered`, not in `declined`
+  ok   A3. CONTROL: the two cases genuinely differ, so A1/A2 are not both satisfied by putting everything in both lists
+  ok   A4. and the STORED fields differ too, which is where F2 actually bit
+
+B. 16 CFR 453.2(b)(4)(iii)(C) permits exactly one non-declinable charge
+  ok   B1. none marked -> DISCLOSE, and the document still prints
+  ok   B2. two marked -> REFUSE
+  ok   B3. one marked -> no problem about it at all
+  ok   B4. a mark pointing at a line not on the list -> REFUSE
+  ok   B5. declining the non-declinable line -> REFUSE, and it NAMES the line
+  ok   B6. NOTHING infers the non-declinable line from its NAME
+
+C. an absent price is never rendered or stored as 0
+  ok   C1.1 selected with price undefined -> REFUSE, total null
+  ok   C1.2 selected with price null -> REFUSE, total null
+  ok   C1.3 selected with price "" -> REFUSE, total null
+  ok   C1.4 selected with price "abc" -> REFUSE, total null
+  ok   C2. a real 0 is a PRICE, not a missing one
+  ok   C3. an unpriced line that was DECLINED does not refuse
+  ok   C4. the total sums SELECTED only
+
+D. a decision about a line that has left the price list
+  ok   D1. REFUSE rather than silently omit it
+
+E. the WRITER must not undo the composer refusal
+  ok   E1. legInvoiceFields REFUSES on a non-printable statement
+  ok   E2. ABLATION: the pre-fix writer produced exactly the row the composer refuses
+
+F. purity, so these arms are about the rules and not the browser
+  ok   F1. same input twice, same answer -- no clock, no randomness
+  ok   F2. it does not mutate its inputs
+  ok   F3. missing arguments are handled as data, not as an exception
+
+G. the panel actually USES it -- an engine with no caller is the SAIRNmechanical defect
+  ok   G1. the picker renders THREE states per line, with Not offered as the default
+  ok   G2. the SAVE path refuses, not only the preview
+  ok   G3. the preview total reads the SAME composer, so the three cannot disagree
+  ok   G4. the Statement document distinguishes UNRECORDED from none-declined
+  ok   G5. the Statement button is reachable from the invoice table
+  ok   G6. the non-declinable mark is editable and nothing is pre-ticked
+  ok   G7. the status line says when nothing is marked, and when too many are
+
+H. the vocabulary F2 measured at zero
+  ok   H1. declinability now has a representation in the app
+
+31 passed, 0 failed

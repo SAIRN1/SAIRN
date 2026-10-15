@@ -1,0 +1,16 @@
+--- the server's own words come first ---
+  ok   a recorded server message is returned verbatim
+  ok   a MISSING LICENCE KEY says so, and says what to do about it
+  ok   an UNREGISTERED resource gets a sentence a funeral home can act on
+  ok   nothing recorded falls back to the CALLER's sentence, not a generic one
+  ok   and with no fallback either, it still never returns empty
+  ok   NOT ONE reply claims sync is unavailable for this app
+--- THE PAIRING — every call site names the resource its own function writes ---
+  ok   every call site passes a resource literal (or a conditional between two)
+  ok   and that resource is one the ENCLOSING function actually writes
+  ok   the pairing covers every site — 59 of them, counted not assumed
+--- the false sentence is gone from the source ---
+  ok   it survives only in the historical comment that records it was wrong
+  ok   sdnData records a reason on EVERY failure path, including no licence
+
+ALL 11 WRITE-FAILURE-VOICE ASSERTIONS PASS

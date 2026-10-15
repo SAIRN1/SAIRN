@@ -1,0 +1,39 @@
+SAIRNlegacy: the reservation lock, both halves, and the posture of all 36
+
+
+0. the registry and the fixture are real
+  ok   the registry still owns 36 SAIRNlegacy resources -- 36
+  ok   and every one is owned by sairnlegacy in the shared registry
+  ok   leg_merch_units -- the resource the lock is on -- is among them
+  ok   and so are the three Tier A resources, including leg_preneed
+
+1. reserving is an atomic conditional PATCH, not a read-then-write
+  ok   a reservation that wins returns 200 -- 200
+  ok   and it takes exactly ONE upstream call -- a read-then-write would take two and would not be atomic. Took 1
+  ok   the call is a PATCH, not a POST upsert -- PATCH
+  ok   and its URL carries the CONDITION data->>status=eq.Available, which is the whole lock: Postgres decides, not the app
+  ok   ...scoped to this licence, so one funeral home cannot reserve another's unit
+  ok   ...and to this unit -- license_hash=eq.8254c329a92850f6d539dd376f4816ee2764517da5e0235514af433164480d7a&merch_unit_id=eq.MU-2&data->>status=eq.
+  ok   and the row Postgres actually wrote is what comes back, not the payload the client sent
+
+2. a lost race is a 409, not a quiet success
+  ok   zero rows matched -> 409, not 200 -- 409
+  ok   and the code is ALREADY_RESERVED, which is what the client branches on
+  ok   and the message names BOTH causes it cannot distinguish rather than guessing one: This unit could not be reserved -- it may have already been reserved or sold by someone else, or it has not fi
+
+3. every OTHER transition stays a blind upsert
+  ok   status="Available" is an upsert, not a conditional PATCH -- POST on_conflict=license_hash,merch_unit_id
+  ok   ...and carries no status condition at all
+  ok   status="Sold" is an upsert, not a conditional PATCH -- POST on_conflict=license_hash,merch_unit_id
+  ok   ...and carries no status condition at all
+  ok   status="" is an upsert, not a conditional PATCH -- POST on_conflict=license_hash,merch_unit_id
+  ok   ...and carries no status condition at all
+  ok   status=undefined is an upsert, not a conditional PATCH -- POST on_conflict=license_hash,merch_unit_id
+  ok   ...and carries no status condition at all
+  ok   CONTROL: leg_bookings with status Reserved is an ordinary upsert -- the lock is scoped to leg_merch_units. code=200 POSTs=1
+  ok   ...and NO call it makes carries a status condition, which is the half that proves the conditional PATCH is scoped to the merch unit rather than to the word "Reserved"
+
+4. the generic branch, across all 36 resources
+  ok   all 36 refuse a write with no payload.id, before any upstream call -- 36/36
+
+FAILED: all 36 turn an upstream 404 into 503 NOT_PROVISIONED on write -- 35/36

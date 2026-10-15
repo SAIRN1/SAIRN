@@ -15837,11 +15837,46 @@ module.exports = async (req, res) => {
       // exactly as it was rather than being given a half-derived key, because
       // a key built from a missing field collides with every other row missing
       // the same field -- which would be a worse bug than the one being fixed.
-      if (resource === 'leg_aftercare' && payload
-          && payload.case_id && payload.checkin_type) {
-        const acKey = 'AC-' + String(payload.case_id).trim() + '-'
-          + String(payload.checkin_type).trim().toUpperCase()
-              .replace(/[^A-Z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      //
+      // ── AND THE SEPARATOR IS NOW ENCODED (2026-10-15, fourth's b20 F4) ──
+      // The derivation above was ambiguous: `-` was BOTH the joiner and the
+      // type normaliser's output character, and `case_id` went through with
+      // trim() alone, so the boundary between the two fields was not
+      // recoverable. ('CS-7','1 Week') and ('CS-7-1','Week') both produced
+      // AC-CS-7-1-WEEK, and this upsert is merge-duplicates -- so one case's
+      // check-in SILENTLY OVERWROTE another's and returned 200. Not reachable
+      // through the shipped page; reachable by anything posting here directly,
+      // which this branch trusts for both fields, and by any future creation
+      // path with a free-text type. The sentence above -- "(case_id,
+      // checkin_type) is unique by construction" -- is the assumption, and a
+      // delimiter-safe key removes it rather than restating it.
+      //
+      // TWO FORMS, SO EXISTING IDS SURVIVE BYTE FOR BYTE. Every row this app
+      // has written has a case id of newId('CS') shape (^CS-[0-9]+-[0-9]+$,
+      // sairnlegacy.html:1561) and one of three fixed types, and for that
+      // shape the boundary IS recoverable, so those pairs keep the historic
+      // key. Everything else gets the escaped form, in which no segment
+      // contains a bare `-` at all. Changing the historic keys would orphan
+      // every live aftercare row -- the next write lands on a new row and the
+      // old one is stranded, which is the duplicate the key exists to stop.
+      //
+      // THE GUARD IS ON THE TRIMMED VALUES NOW, not raw truthiness. A
+      // case_id of ' ' passed the old guard and trimmed to '', producing a key
+      // that collides with every other whitespace case_id -- which is the
+      // exact failure the paragraph above warns about for a MISSING field,
+      // arriving through a present one. The client half carries the same
+      // guard; before this they disagreed on an empty type, found by an arm
+      // that compared the two copies instead of reading them.
+      const acEsc = (s) => String(s).replace(/~/g, '~~').replace(/-/g, '~1');
+      const acCase = payload ? String(payload.case_id == null ? '' : payload.case_id).trim() : '';
+      const acRawType = payload ? String(payload.checkin_type == null ? '' : payload.checkin_type).trim() : '';
+      if (resource === 'leg_aftercare' && payload && acCase && acRawType) {
+        const acType = acRawType.toUpperCase()
+          .replace(/[^A-Z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        const acKey = (/^CS-[0-9]+-[0-9]+$/.test(acCase)
+                       && (acType === '1-WEEK' || acType === '1-MONTH' || acType === '1-YEAR'))
+          ? ('AC-' + acCase + '-' + acType)
+          : ('ACX-' + acEsc(acCase) + '-' + acEsc(acType));
         // The blob's own `id` is rewritten too, not just the column. A client
         // that re-renders from the response would otherwise show the id it
         // sent while the server holds another -- the seam that makes the next

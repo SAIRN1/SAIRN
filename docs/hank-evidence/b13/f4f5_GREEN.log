@@ -1,0 +1,25 @@
+F4/F5. the leg_aftercare key, and the id the device keeps
+
+F4. two different records cannot derive one key
+  ok       F4a. THE ARM THE FINDING IS -- ('CS-7','1 Week') and ('CS-7-1','Week') derive DIFFERENT keys. They used to derive the same one, and the upsert is merge-duplicates, so one case's check-in silently overwrote another's and returned 200
+  ok       F4b. ...and both are still real keys. "Make them different" is also satisfied by returning null for one of them, which would break the de-duplication the key exists for
+  ok       F4c. no two DISTINCT (case_id, normalised checkin_type) pairs in a 16-row adversarial table derive one key -- including a case id that swallows a type fragment, a type that looks like a case segment, and an empty type
+  ok       F4j. ...and the TYPE normalisation is still deliberate: '1 Week', '1-Week' and '1  week' are one check-in type and share one key. That is the de-duplication the key exists for, and a fix that made them three keys would be three follow-ups to one family
+
+F4. and the ids the shipped app has already written are unchanged
+  ok       F4d. THE PRESERVATION ARM -- a real generated case id with each of the three standard types still derives the EXACT historic key, byte for byte. Any scheme that changes these orphans every aftercare row in production: the next write lands on a new row and the old one is stranded, which is the duplicate this key exists to prevent
+  ok       F4e. CONTROL -- the three standard types on one case are three keys. Without this, "collapse everything to one row" passes F4d
+  ok       F4f. CONTROL -- two different real cases with the SAME type are two keys. This is the direction fourth measured as uncovered: the existing arms proved different-type-same-case and nothing proved different-case
+  ok       F4g. CONTROL -- a payload missing case_id or checkin_type keeps its own id. A key built from a missing field collides with every other row missing the same field, which is worse than the bug being fixed
+  ok       F4h. case_id is NOT case-folded, and that is a DECISION recorded as an arm rather than left to drift. fourth flagged the fold as the same class; folding only here would make the key say two cases are one while every other comparison in sairnlegacy.html (`a.case_id===caseId`) says they are two. Whether case ids should be case-insensitive at all is a product question and is routed, not answered in a key derivation
+
+F4. the client copy and the server copy agree on every pair
+  ok       F4i. the CLIENT's legAftercareId() and the SERVER's derivation produce the same key for all eight pairs, INCLUDING the colliding one. Two copies of a key derivation is convention 7's drift risk and there is no way to share one function between a static page and a serverless handler, so they are extracted and RUN against each other rather than compared by eye
+
+F5. the un-upgraded device stops keeping a second local row
+  ok       F5a. after a write the server CANONICALISED, the local row carries the SERVER's id and there is still exactly one row. It used to keep the random id: the next hydrate pulls the canonical row, fails to match it, and pushes it as a second local row -- one check-in, two grief-support follow-ups to a bereaved family
+  ok       F5b. ...and it is the SERVER's id that is marked synced. Marking the client's meant the record the server actually holds had no recorded permission to be overwritten by a hydrate, which is the server-wins carve-out reading the wrong id
+  ok       F5c. ...and a device that ALREADY has both rows ends with one. The server merged them into a single row, so keeping both locally is the duplicate surviving the fix that was supposed to remove it
+  ok       F5d. CONTROL -- when the server returns the same id, the row and the synced map are exactly as before. 57 call sites go through this transport and only leg_aftercare rewrites an id; a change that touched the other 56 would be the blast radius nobody asked for
+
+14 passed, 0 failed, 0 unproven

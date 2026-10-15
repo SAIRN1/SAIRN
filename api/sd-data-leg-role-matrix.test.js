@@ -385,14 +385,25 @@ console.log('SAIRNlegacy role matrix -- 36 resources, 8 roles, criteria '
   // ── E. THE DETERMINISTIC AFTERCARE KEY, BOTH HALVES ─────────────────────
   console.log('\nE. leg_aftercare -- the key is the fix, and both halves agree');
 
+  // ── THE CASE ID HERE IS NOW A REAL ONE (2026-10-15, fourth's F4) ────────
+  // These arms used case_id 'CS-7' and pinned 'AC-CS-7-1-WEEK'. F4 made the key
+  // delimiter-safe: the HISTORIC form is kept for the only pairs the shipped
+  // app can produce -- a newId('CS') case id (^CS-[0-9]+-[0-9]+$) with one of
+  // the three fixed types -- and anything else gets the escaped form. 'CS-7'
+  // is not a shape the generator can emit, so it correctly takes the escaped
+  // form now, and pinning it here was pinning a key no production row has.
+  // Switched to a real generated id, which is also what makes these arms
+  // evidence that live ids did not move. Full account and the collision arms:
+  // api/leg-aftercare-key-unambiguous.test.js
+  const AC_CASE = 'CS-1760000000000-123';
   const a1 = await call('leg_aftercare', 'write', 'owner',
-    { id: 'AC-1760000000000-abc', case_id: 'CS-7', checkin_type: '1 Week',
+    { id: 'AC-1760000000000-abc', case_id: AC_CASE, checkin_type: '1 Week',
       status: 'Pending' });
   const a2 = await call('leg_aftercare', 'write', 'owner',
-    { id: 'AC-1760000009999-xyz', case_id: 'CS-7', checkin_type: '1 Week',
+    { id: 'AC-1760000009999-xyz', case_id: AC_CASE, checkin_type: '1 Week',
       status: 'Pending' });
   const idOf = (r) => (r.res.body && r.res.body.data && r.res.body.data.id) || '';
-  is(idOf(a1) === 'AC-CS-7-1-WEEK' && idOf(a1) === idOf(a2),
+  is(idOf(a1) === 'AC-' + AC_CASE + '-1-WEEK' && idOf(a1) === idOf(a2),
      'E1. two devices sending DIFFERENT random ids for the same (case, '
    + 'check-in type) both land on ONE deterministic key, so the upsert '
    + 'de-duplicates by construction rather than by a check',
@@ -407,8 +418,8 @@ console.log('SAIRNlegacy role matrix -- 36 resources, 8 roles, criteria '
      idOf(a3));
 
   const a4 = await call('leg_aftercare', 'write', 'owner',
-    { id: 'X', case_id: 'CS-7', checkin_type: '1 Month' });
-  is(idOf(a4) === 'AC-CS-7-1-MONTH' && idOf(a4) !== idOf(a1),
+    { id: 'X', case_id: AC_CASE, checkin_type: '1 Month' });
+  is(idOf(a4) === 'AC-' + AC_CASE + '-1-MONTH' && idOf(a4) !== idOf(a1),
      'E3. CONTROL -- a DIFFERENT check-in type on the same case gets a '
    + 'DIFFERENT key. Without this arm, "they all collapse to one row" would '
    + 'pass E1',
@@ -425,28 +436,36 @@ console.log('SAIRNlegacy role matrix -- 36 resources, 8 roles, criteria '
     cannot('E4. sairnlegacy.html is not readable, so the client half of the '
          + 'key derivation was not compared', 'ENOENT');
   } else {
+    // legAcEsc() IS LIFTED WITH IT (2026-10-15). legAftercareId() now calls the
+    // escape helper, so extracting it alone threw ReferenceError -- which this
+    // block would have reported as "would not compile", i.e. as an unproven
+    // arm about the fixture rather than about the thing being measured.
+    const esc = html.match(/function legAcEsc\(s\)\{[\s\S]*?\n\}/);
     const m = html.match(/function legAftercareId\(caseId,type\)\{([\s\S]*?)\n\}/);
-    if (!m) {
+    if (!m || !esc) {
       cannot('E4. legAftercareId() was not found in sairnlegacy.html, so the '
            + 'two derivations could not be compared', 'anchor absent');
     } else {
       let clientFn = null;
       try {
         /* eslint-disable no-new-func */
-        clientFn = new Function('caseId', 'type', m[1]);
+        clientFn = new Function('caseId', 'type', esc[0] + ';\n' + m[1]);
       } catch (e) { clientFn = null; }
       if (!clientFn) {
         cannot('E4. the extracted client function would not compile', 'syntax');
       } else {
-        const cases = [['CS-7', '1 Week'], ['CS-7', '1 Month'],
-                       ['CS-7', '1 Year'], ['CS 9', 'ad hoc  check-in']];
+        const cases = [[AC_CASE, '1 Week'], [AC_CASE, '1 Month'],
+                       [AC_CASE, '1 Year'], ['CS 9', 'ad hoc  check-in'],
+                       ['CS-7', '1 Week'], ['CS-7-1', 'Week']];
         const disagree = [];
         for (const c of cases) {
           const serverR = await call('leg_aftercare', 'write', 'owner',
             { id: 'RANDOM', case_id: c[0], checkin_type: c[1] });
           const serverId = idOf(serverR);
           const clientId = clientFn(c[0], c[1]);
-          if (serverId !== clientId) {
+          // The client returns null where the server leaves the caller's id
+          // alone -- both declining is agreement, not disagreement.
+          if (serverId !== (clientId === null ? 'RANDOM' : clientId)) {
             disagree.push(JSON.stringify(c) + ' server=' + serverId
                         + ' client=' + clientId);
           }

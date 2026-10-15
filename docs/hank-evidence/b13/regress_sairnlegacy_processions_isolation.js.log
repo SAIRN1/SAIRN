@@ -1,0 +1,10 @@
+leg_processions -- a device's live GPS, joined to a named case
+  ok   LEG_RESOURCES parses to a non-trivial map (36 resources)
+  ok   leg_processions IS in LEG_RESOURCES, so the session gate covers it
+  ok   the session check runs BEFORE the read and write branches, not inside one
+  ok   every leg_ query is scoped by license_hash
+  ok   the app writes leg_processions through a transport that sends the session
+  ok   the GPS write comes from the device sensor and nothing else sets it
+  ok   the coordinates are rendered only into a link the USER clicks, never fetched
+
+7 passed

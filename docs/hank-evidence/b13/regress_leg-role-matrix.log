@@ -1,0 +1,47 @@
+SAIRNlegacy role matrix -- 36 resources, 8 roles, criteria 2026-10-14.1
+
+A. completeness -- no resource without a rule, in either direction
+  ok       A1. the handler dispatches 36 leg_ resources and the table carries 36 rows
+  ok       A2. every resource the handler dispatches has a row, and every row is a resource the handler dispatches -- READ from the source, not a hand-written list
+  ok       A3. ROLES_BY_APP.sairnlegacy carries 8 roles and `staff` is STILL among them -- removing it would invalidate every existing credential row
+  ok       A4. every row names every role in the vocabulary. A role with no column is denied by decide(), which is right, but silently -- this arm is what makes an omission visible
+  ok       A6. all 36 rows carry a `why` of at least 30 characters. The band is a judgement and the reason is the only thing a reviewer can check it against; nothing else reads this field, so without this arm it can empty out silently
+  ok       A7. LEG_APPEND_ONLY is exactly { leg_custodylog }, and isAppendOnly agrees with it in both directions
+  ok       A5. the bands are 9 REGULATED / 15 MONEY / 12 OPERATIONS, as specified. A band count that drifts is a resource that moved band without anyone deciding to move it
+
+B. `staff` is deprecated to the NARROWEST band, not promoted
+  ok       B1. THE ARM THAT PROTECTS A LIVE PRACTICE -- `staff` gets NOTHING on any of the 15 MONEY resources, not even read. Mapping the deprecated role to `arranger` would have granted all 15 to everyone who had a login yesterday
+  ok       B2. `staff` cannot WRITE any REGULATED resource
+  ok       B3. CONTROL -- `staff` keeps read+write on all 12 OPERATIONS resources. Without this arm, "staff is narrowed" is satisfied by a migration that locks every existing employee out of the app entirely
+
+C. decide() fails closed
+  ok       C1. a NEW leg_ resource with no row is DENIED, not allowed by default -- the exact state this table exists to end
+  ok       C2. a non-leg resource answers NOT_LEG, a third state never folded into ALLOW -- a silent ALLOW here would read as "this table approved it"
+  ok       C3. a role outside the row, an empty role and a null role are all DENY
+  ok       C4. an unknown VERB is treated as write-class, so a future action cannot slip through on a read grant (arranger has read on leg_deathrecords)
+  ok       C5. prototype keys are not roles and not resources -- the table is built on a null prototype, so `constructor` is not a truthy row
+
+D. spec §5 negative controls L1-L10, driven end to end
+  ok       L1. a deprecated staff token writes an invoice -> 403, the body NAMES THE ROLE, and NO data fetch happened
+  ok       L2. a livery token reads death records -> 403, the body NAMES THE ROLE, and NO data fetch happened
+  ok       L3. an apprentice writes a cremation authorisation -> 403, the body NAMES THE ROLE, and NO data fetch happened
+  ok       L4. an office token writes the custody log -> 403, the body NAMES THE ROLE, and NO data fetch happened
+  ok       L6. CONTROL -- a director writes a cremation authorisation -> 200
+  ok       L7. CONTROL -- an arranger writes an invoice -> 200
+  ok       L7b. CONTROL -- an arranger reads documents -> 200
+  ok       L5a. CONTROL -- an owner APPENDS a new custody entry and it is accepted. Append-only must not mean read-only, or the log stops being written
+  ok       L5. THE OWNER EDITING AN EXISTING CUSTODY ROW IS REFUSED 409 APPEND_ONLY and no upsert is sent. A chain-of-custody log that can be edited is not a chain of custody, and no role grant reaches past this
+  ok       L5b. ...and a director too -- the rule is not owner-specific
+  ok       L8. a role string not in the vocabulary (`embalmer`) cannot even be SIGNED into a token -- refused one step earlier than the spec predicted, so no request carrying it can exist
+  ok       L9. a VALID, correctly signed session for another app (`nursing`, SAIRNcare) is refused 401 on a leg_ resource and no data is fetched -- the cross-app vocabulary leak is closed by the app scope, not by this table
+
+L10. CONTROL -- all 36 resources, owner token, read AND write
+  ok       L10. an owner gets 200 on all 36 resources, read and write (72 calls). An owner locked out of their own app is the failure mode that gets a gate deleted
+
+E. leg_aftercare -- the key is the fix, and both halves agree
+  ok       E1. two devices sending DIFFERENT random ids for the same (case, check-in type) both land on ONE deterministic key, so the upsert de-duplicates by construction rather than by a check
+  ok       E2. CONTROL -- a payload MISSING case_id or checkin_type keeps its own id. A key built from a missing field would collide with every other row missing the same field, which is worse than the bug being fixed
+  ok       E3. CONTROL -- a DIFFERENT check-in type on the same case gets a DIFFERENT key. Without this arm, "they all collapse to one row" would pass E1
+  ok       E4. the CLIENT's legAftercareId() and the SERVER's derivation produce the same key for every case tried, including one with spaces and doubled separators -- extracted from the HTML and RUN, not compared by eye
+
+32 passed, 0 failed, 0 unproven

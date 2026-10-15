@@ -1,0 +1,35 @@
+SAIRNlegacy -- the Funeral Rule itemised price lists
+
+
+A. the lists draw from the real catalog
+  ok   A1. the casket list holds exactly the caskets
+  ok   A2. the OBC list holds the outer burial containers
+  ok   A3. an unknown list kind returns nothing and does not throw
+
+B. the category mapping, which is a DISCLOSURE decision
+  ok   B1. CONTROL: the two lists are not the same list
+  ok   B2. a VAULT is on the OBCPL -- the Rule's term covers vaults
+  ok   B3. an URN is on NEITHER list -- cremation urns are not governed by either itemised list, and listing one is a disclosure about an item the Rule does not reach
+  ok   B4. a vault is NOT on the casket list
+
+C. a missing price is never rendered as money
+  ok   C1. an item with no retail is flagged, not priced at $0
+  ok   C2. ...and the real price still prints
+  ok   C3. iplRows reports WHICH items lack a price, not just how many
+  ok   C4. a retail of 0 entered ON PURPOSE is treated as a real price, not as missing -- a no-charge item is a legitimate line
+
+D. an empty catalog must not print as a finished list
+  ok   D1. an empty casket list REFUSES to render a table
+  ok   D2. ...and says so in words a reader cannot mistake for a result
+
+E. the panel status line agrees with the documents
+  ok   E1. it names both lists and their counts
+  ok   E2. it reports unpriced items rather than calling the list ready
+  ok   E3. it never claims COMPLIANCE -- whether a list was OFFERED to a family is an act this system cannot observe
+
+F. source properties a later edit would quietly undo
+  ok   F1. both buttons are on the MERCHANDISE panel, where caskets are shown
+  ok   F2. the OBC kind still names BOTH source categories
+  ok   F3. CONTROL: the stripped source is real code, so F1 is not vacuous
+
+19 passed, 0 failed

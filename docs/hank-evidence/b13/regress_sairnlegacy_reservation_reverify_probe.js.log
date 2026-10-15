@@ -1,0 +1,95 @@
+cc RE-VERIFYING cody -- obligation 2026-09-21T23:14:57Z
+REPORT-ONLY. Nothing in the subject is edited by this probe.
+
+==========================================================================
+PRESS-ON (1)  reproduce the ORIGINAL defect out of the fix's PARENT, not out of a mutation of today's file
+==========================================================================
+
+cody: "reproduce the ORIGINAL defect against pre-fix behaviour -- plant mutation
+16 of tests/sairnlegacy_fault_probe.py, or check out the fix's parent -- and see
+confirmReserve() send no X-SD-Auth and keep a local Reserved after a refusal."
+
+The parent is checked out. A mutation of today's file would test my idea of what
+the bug was; a worktree at 4b5260f5^ IS the bug.
+
+  AT 4b5260f5^ -- the shipped page before the fix:
+    requests sent            1
+    X-SD-Auth on that request undefined
+    local status after a 401  "Reserved"  reserved_for_case_id "CS-1"
+  ok    BOTH halves of the defect reproduce exactly as cody described them
+        the token is absent, so the deployed endpoint answers 401
+        NO_SESSION -- and the device is left showing Reserved for a
+        unit the server never gave it.
+
+==========================================================================
+PRESS-ON (2)  does the CURRENT code close both halves?
+==========================================================================
+
+cody: "confirm the current code closes both halves".
+
+  AT HEAD:
+    X-SD-Auth on the request  "TOK-1"
+    local status after a 401  "Available"
+    toast                     "Your sign-in could not be verified."
+  ok    both halves closed -- the token is sent AND the refusal rolls back
+    signed OUT: header undefined, local status "Available"
+  ok    a signed-out page sends no token and still rolls back
+
+==========================================================================
+PRESS-ON (3)  ATTACK the 4xx/5xx split -- and is arm (f) preserved honestly?
+==========================================================================
+
+cody: "rollback on an explicit 4xx refusal, deliberately NOT on 5xx or a thrown
+request, on the reasoning that could-not-tell is not a refusal and releasing a
+unit whose write may have landed is the same bug reversed. Section 6 arm (f) ...
+asserts the keep-local behaviour with its own stated reason -- check I preserved
+it honestly rather than in name."
+
+  ok   401 NO_SESSION         -> local Available  (expected Available)
+  ok   403 FORBIDDEN          -> local Available  (expected Available)
+  ok   400 bad request        -> local Available  (expected Available)
+  ok   409 ALREADY_RESERVED   -> local Available  (expected Available)
+  ok   500 server error       -> local Reserved   (expected Reserved)
+  ok   503 unavailable        -> local Reserved   (expected Reserved)
+  ok   a thrown request       -> local Reserved   (expected Reserved)
+
+  VERDICT ON THE SPLIT: IT IS THE RIGHT CALL, and the argument survives being
+  attacked from the other side. The tempting objection is that a 5xx leaves the
+  device showing a lock it may not hold -- but the two errors are not
+  symmetrical. Keeping a phantom Reserved costs ONE unit being unavailable to
+  one device until a refresh reconciles it. Releasing a reservation the server
+  DID accept puts the unit back in the Available pool for a second family, and
+  the failure this whole path exists to stop is two families and one casket.
+  Refusing to guess, in the direction where guessing wrong is recoverable, is
+  the same discipline as every "could not tell is a third state" rule on this
+  platform.
+
+  WHERE I WOULD PRESS FURTHER, recorded not fixed: nothing RECONCILES the
+  phantom. The 5xx path keeps a local Reserved and a device-only toast, and the
+  only thing that corrects it is a later read of the server's copy. That is
+  correct-and-incomplete rather than wrong, and it is worth an open-work row
+  rather than a change to this diff.
+
+  arm (f) still present in the suite: true;  it still names a 5xx and the kept Reserved: true
+  ok    arm (f) is preserved in substance, not only by its label
+
+==========================================================================
+PRESS-ON (4)  undoLocalReservation() has TWO callers -- do BOTH re-read, and do BOTH only touch a unit still reserved for this case?
+==========================================================================
+
+cody: "confirm BOTH still re-read rather than writing back the pre-await
+snapshot, and both only touch a unit still reserved for this case."
+
+DRIVEN, not read: a SECOND unit is changed WHILE the request is in flight. If a
+rollback wrote back the pre-await snapshot, that change would be reverted.
+
+  ok   the 409 caller   MU-2 -> Available   MU-9 (changed mid-flight) -> Sold
+  ok   the 4xx caller   MU-2 -> Available   MU-9 (changed mid-flight) -> Sold
+  ok   the 409 caller   a reservation that became SOMEBODY ELSE'S mid-flight -> Reserved / CS-OTHER
+  ok   the 4xx caller   a reservation that became SOMEBODY ELSE'S mid-flight -> Reserved / CS-OTHER
+  ok    both callers re-read, and both leave a unit that is no longer ours alone
+
+==========================================================================
+EVERY PRESS-ON DRIVEN. 0 finding(s).
+The original defect was reproduced out of 4b5260f5^, not out of a
+mutation of the fixed file, which is what the obligation asked for.
