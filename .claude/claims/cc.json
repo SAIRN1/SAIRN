@@ -4012,6 +4012,30 @@
         "tools/sairn_push_gate_hook.py",
         "tools/sairn_self_state.py"
       ]
+    },
+    {
+      "id": "cc-1792083320",
+      "session": "cc",
+      "subject": "cc",
+      "task": "b15: (1) full suite sweep logged to docs/sweep-2026-10-15.log + routed triage, (2) run_all_tests.py acquire_lock liveness + release_lock owner-scoping + floor literal, (3) hover-chain mirror component freshness + publisher-owned MIRROR-FRESHNESS.md, (4) four obligations via obligation_surface.py --mine + tools/ routed leftovers, (5) ablation records b12-b14 + CRITICALITY-TIERS citation staleness, (6) push + handoff/report/digest/latest. I WRITE UNDER tools/ ONLY plus docs/ABLATION-RECORDS.md docs/tier-a-reviews.json docs/ablation/ my own b15 docs and root b15 artifacts. CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: tests/ is cody's and run_suite_lock_probe.py is ROUTED not edited; api/ and sql/ and app HTML are hank's; docs/CRITICALITY-TIERS.md is fourth's and is MEASURED read-only; no auditor clone entered or written. FILES: tools/run_all_tests.py tools/sairn_board_publish.py tools/batch_manifest.py tools/citation_anchor_rot_check.py tools/tier_a_review_gate.py tools/secrets_inventory.py docs/ABLATION-RECORDS.md docs/ablation/b15_arms.py docs/tier-a-reviews.json docs/sweep-2026-10-15.log docs/2026-10-15-cc-b15-sweep-triage.md docs/2026-10-15-cc-b15-routed.md",
+      "claimed_at": "2026-10-15T16:55:20Z",
+      "claimed_at_epoch": 1792083320.0625715,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/2026-10-15-cc-b15-routed.md",
+        "docs/2026-10-15-cc-b15-sweep-triage.md",
+        "docs/ABLATION-RECORDS.md",
+        "docs/ablation/b15_arms.py",
+        "docs/sweep-2026-10-15.log",
+        "docs/tier-a-reviews.json",
+        "tools/batch_manifest.py",
+        "tools/citation_anchor_rot_check.py",
+        "tools/run_all_tests.py",
+        "tools/sairn_board_publish.py",
+        "tools/secrets_inventory.py",
+        "tools/tier_a_review_gate.py"
+      ]
     }
   ],
   "refusals": [
@@ -4225,6 +4249,19 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "shared phrase: \"dead rule\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-15T12:12:35Z",
+      "my_subject": "cc",
+      "my_task": "b15: (1) full suite sweep logged to docs/sweep-2026-10-15.log + routed triage, (2) run_all_tests.py acquire_lock live-run theft fix + stale 20s budget comment, (3) refresh frozen hover-chain-h2 mirror + sairn_board_publish.py event-driven + mirror-vs-digest seq for H1, (4) four obligations via obligation_surface.py --mine + tools/ routed leftovers (_MIN_TEST_FILES_FLOOR, subject_sha disclosure, anchor-rot prose-span false positives, b21 re-seat author-time guard, batch_manifest PYTHONIOENCODING), (5) ablation records for b12-b14 tools/ arms + CRITICALITY-TIERS citation staleness count, (6) push + handoff/report/digest/latest. I WRITE UNDER tools/ ONLY plus docs/ABLATION-RECORDS.md docs/sweep-2026-10-15.log my own b15 docs and root b15 artifacts. CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: tools/sf_events_anchor_check.py is LIVE-CLAIMED BY FOURTH b23 and is NOT touched or deleted here; tests/ is cody's; api/ and sql/ and app HTML are hank's; docs/CRITICALITY-TIERS.md is fourth's and is MEASURED read-only; no auditor clone entered or written. FILES: tools/run_all_tests.py tools/sairn_board_publish.py tools/report_only_checks.py docs/ABLATION-RECORDS.md docs/sweep-2026-10-15.log docs/2026-10-15-cc-b15-routed.md docs/2026-10-15-cc-b15-sweep-triage.md SAIRN-handoff-cc-b15.md SAIRN-report-cc-b15.txt SAIRN-digest-cc-b15.txt SAIRN-latest-cc.md",
+      "other_session": "hover",
+      "other_subject": "hover",
+      "other_task": "b39: log b38 to chain, chain/beacon check; deep-verify cc b13/cody b14/hank b13 by re-deriving counts from source; re-derive fourth b21's 63-across-22 figure; reproduce scope-gate pass/refuse discrepancy (191d8fc6 vs b38 handoff) and route to cc; land-check weakening-flags sign-off + Flag1/H2 + 9 stale root pairs; push; final handoff/report/digest/latest b39",
+      "other_claimed_at": "2026-10-15T11:46:26Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: handoff/report/digest/latest",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
