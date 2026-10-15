@@ -111,7 +111,7 @@ try:
 except Exception:                                                # noqa: BLE001
     EXIT_CLEAN, EXIT_FINDING, EXIT_COULD_NOT_RUN = 0, 1, 2
 
-CRITERIA_VERSION = '2026-10-14.1'
+CRITERIA_VERSION = '2026-10-15.1'
 NL = chr(10)
 
 # The Drive file id the chat-turn connector returned for SAIRN-board.md. It is
@@ -304,6 +304,136 @@ def git_tip():
 # output, where the opposite cost six days of a wrong number.
 MIRROR_STALE_HOURS = 48.0
 
+# ── THE MIRROR FROZE ONE FILE AT A TIME (fixed 2026-10-15, b15) ────────────
+# b14's detector aged the mirror by its NEWEST file. Measured this morning
+# against the real h1 mirror on the mount, not reasoned about:
+#
+#   hover-chain-h1\  TIP-BEACON.md           2026-10-14 21:50    10.4h
+#                    hover-audit-log.jsonl   2026-10-08 09:58   165h
+#                    chain-tip-seq1185.tsr   2026-10-08 09:58   165h
+#
+# and the board printed `mirror last written 10.4h ago (TIP-BEACON.md)`. That
+# sentence is TRUE and the thing a reader takes from it is false: the beacon
+# is a 1.2KB checkpoint CLAIM, and the two artefacts it is a claim ABOUT are a
+# week old. A mirror exists to cross-check, and a cross-check needs every half
+# of itself current -- so the age that decides FROZEN is the OLDEST
+# load-bearing component, never the newest file in the directory. b14 fixed
+# "the whole directory stopped" and left "one file in it kept moving", which
+# is the same defect at a finer grain and reads MORE reassuring than silence.
+#
+# AND THE AGE BASIS IS A POSITIVE ALLOWLIST, which is the other half of the
+# fix rather than tidiness. This batch makes the publisher write
+# MIRROR-FRESHNESS.md into the mirror on every event, and an age-by-newest
+# basis would have made that notice itself the proof the mirror was fresh --
+# a detector refreshing its own subject, which is item 8 of the cross-domain
+# disciplines one step later. Anything NOT on the allowlist cannot contribute
+# freshness in either direction: it is counted and named as UNAGED, so a
+# genuinely new auditor artefact surfaces as something to classify instead of
+# silently voting the mirror current.
+#
+# WHAT EACH COMPONENT IS, and why only two of the four are load-bearing:
+#   TIP-BEACON.md          the checkpoint claim           LOAD-BEARING
+#   hover-audit-log.jsonl  the thing the claim is about   LOAD-BEARING
+#   chain-tip-seq*.{msg,tsq,tsr}, chain-tip-timestamp.*
+#                          the RFC-3161 countersignature  LOAD-BEARING
+#   freetsa-*.pem/.crt     the TSA trust anchors          NOT AGED: they are
+#                          long-lived certificates and would read as stale
+#                          for ever, which would make every mirror frozen and
+#                          the signal worthless.
+#   MIRROR-FRESHNESS.md    written by THIS publisher      NEVER AGED
+_MIRROR_BEACON = 'tip-beacon.md'
+_MIRROR_LOG = 'hover-audit-log.jsonl'
+_MIRROR_NOTICE = 'MIRROR-FRESHNESS.md'
+_MIRROR_TS_RE = re.compile(r'^chain-tip-(?:seq\d+|timestamp)\.', re.IGNORECASE)
+_MIRROR_TRUST_RE = re.compile(r'\.(?:pem|crt|cer|der)$', re.IGNORECASE)
+
+
+def mirror_component(fn):
+    """What role a filename plays in a chain mirror. -> (kind, load_bearing).
+
+    kind is one of 'beacon', 'log', 'timestamp', 'trust-anchor', 'notice',
+    'unclassified'. Only the first three carry freshness.
+    """
+    low = fn.lower()
+    if fn == _MIRROR_NOTICE:
+        return 'notice', False
+    if low == _MIRROR_BEACON:
+        return 'beacon', True
+    if low == _MIRROR_LOG:
+        return 'log', True
+    if _MIRROR_TS_RE.match(fn):
+        return 'timestamp', True
+    if _MIRROR_TRUST_RE.search(fn):
+        return 'trust-anchor', False
+    return 'unclassified', False
+
+
+def mirror_files(cdir):
+    """(aged, unaged) PER FILE -- the detail table, not the verdict.
+
+    aged is [(hours, name, kind)] oldest-first; unaged is [(name, kind)] for
+    everything the allowlist declines to let vote.
+    """
+    aged, unaged = [], []
+    now = time.time()
+    for fn in _listdir(cdir):
+        kind, load_bearing = mirror_component(fn)
+        if not load_bearing:
+            unaged.append((fn, kind))
+            continue
+        try:
+            mt = os.path.getmtime(os.path.join(cdir, fn))
+        except OSError:
+            # NOT dropped. A component whose mtime cannot be read is a
+            # could-not-tell, and folding it into "fine" is PR 1.11's shape.
+            unaged.append((fn, kind + ' (mtime unreadable)'))
+            continue
+        aged.append((max(0.0, (now - mt) / 3600.0), fn, kind))
+    aged.sort(reverse=True)                      # oldest first
+    return aged, unaged
+
+
+# ── A FAMILY'S AGE IS NOT ITS OLDEST FILE (caught in b15, before pushing) ──
+# The first version of this aged the mirror by the oldest load-bearing FILE,
+# and run against the real h1 mirror it reported `chain-tip-seq1098.tsr is
+# 187h old`. That file is from 2026-10-07 and is SUPPOSED to be: the
+# chain-tip-seq set is APPEND-ONLY -- each publish adds a new triple and never
+# rewrites the old ones. An oldest-file basis would therefore pin every mirror
+# FROZEN for ever, the moment its chain had any history at all, and a verdict
+# that is always FROZEN is a verdict nobody reads.
+#
+# So the age is taken PER FAMILY and then the oldest FAMILY decides:
+#   beacon    REWRITTEN every publish  -> its own mtime
+#   log       REWRITTEN every publish  -> its own mtime
+#   timestamp APPENDED TO              -> its NEWEST member, which is when
+#                                         the family last gained anything
+# Found by running it against the live mount rather than by reading it, which
+# is b14's third lesson arriving one batch later on a different tool.
+_MIRROR_APPEND_ONLY = ('timestamp',)
+
+
+def mirror_components(cdir):
+    """(aged, unaged) PER FAMILY -- what decides FROZEN.
+
+    aged is [(hours, representative_file, kind)] oldest-first, one entry per
+    load-bearing family. unaged is mirror_files()'s, unchanged.
+    """
+    per_file, unaged = mirror_files(cdir)
+    best = {}
+    for hours, fn, kind in per_file:
+        if kind in _MIRROR_APPEND_ONLY:
+            # the NEWEST member: smallest hours wins
+            if kind not in best or hours < best[kind][0]:
+                best[kind] = (hours, fn, kind)
+        else:
+            # rewritten each publish, so a second copy would be a surprise --
+            # take the oldest and let it show.
+            if kind not in best or hours > best[kind][0]:
+                best[kind] = (hours, fn, kind)
+    aged = sorted(best.values(), reverse=True)
+    return aged, unaged
+
+
 # ── THE REAL SENTENCES, READ RATHER THAN SPECIFIED ─────────────────────────
 # A first version of this carried three tidy format-shaped patterns and
 # matched NEITHER auditor, which would have been a parser that reports "the
@@ -376,26 +506,44 @@ def digest_chain_tip(token, ddir):
 
 
 def mirror_age_hours(cdir):
-    """(hours, newest_mtime_name) for the freshest file in the mirror, or
+    """(hours, name) for the OLDEST LOAD-BEARING component, or (None, '').
+
+    THE MIRROR IS AGED BY MTIME and not by the beacon's `published_at`. A
+    published_at is a string the publisher wrote; an mtime is what the
+    filesystem observed. When a mirror is abandoned they agree, and when
+    somebody hand-edits the beacon they do not -- and the filesystem is the one
+    that cannot be talked into a date.
+
+    AND IT IS THE OLDEST, NOT THE NEWEST. See the component comment above: the
+    real h1 mirror had a 10-hour beacon over a 165-hour log, and the newest-file
+    basis printed the 10. The oldest load-bearing component is the age at which
+    this mirror can still cross-check anything.
+    """
+    aged, _unaged = mirror_components(cdir)
+    if not aged:
+        return None, ''
+    hours, name, _kind = aged[0]
+    return hours, name
+
+
+def digest_published_hours(token, ddir):
+    """(hours, basename) since the agent's own newest digest was written, or
     (None, '').
 
-    THE MIRROR IS AGED BY ITS OWN NEWEST FILE and not by the beacon's
-    `published_at`. A published_at is a string the publisher wrote; an mtime is
-    what the filesystem observed. When a mirror is abandoned they agree, and
-    when somebody hand-edits the beacon they do not -- and the filesystem is
-    the one that cannot be talked into a date.
+    THE COMPARISON SUBJECT FOR "a mirror older than its own digest". The
+    digest and the mirror are produced by two different actions, so a digest
+    newer than the mirror means the auditor closed a batch WITHOUT
+    republishing the chain -- a freeze that starts at a known moment and that
+    an absolute 48h ceiling cannot see for two more days.
     """
-    best, name = None, ''
-    for fn in _listdir(cdir):
-        try:
-            mt = os.path.getmtime(os.path.join(cdir, fn))
-        except OSError:
-            continue
-        if best is None or mt > best:
-            best, name = mt, fn
-    if best is None:
+    _batch, path = newest_digest(token, ddir)
+    if not path:
         return None, ''
-    return max(0.0, (time.time() - best) / 3600.0), name
+    try:
+        mt = os.path.getmtime(path)
+    except OSError:
+        return None, ''
+    return max(0.0, (time.time() - mt) / 3600.0), os.path.basename(path)
 
 
 def chain_tip(token, ddir):
@@ -484,13 +632,48 @@ def chain_tip(token, ddir):
 
     # ── THE THREE THINGS THE OLD VERSION COULD NOT SAY ────────────────────
     if frozen:
-        bits.append('MIRROR IS FROZEN: its newest file (%s) is %.0fh old, past '
-                    'the %.0fh line -- the margin is printed rather than '
-                    'trusted. A mirror this old cannot cross-check anything, '
-                    'so nothing above rests on it'
+        bits.append('MIRROR IS FROZEN: its OLDEST load-bearing component (%s) '
+                    'is %.0fh old, past the %.0fh line -- the margin is '
+                    'printed rather than trusted. A mirror this old cannot '
+                    'cross-check anything, so nothing above rests on it'
                     % (age_file, age_h, MIRROR_STALE_HOURS))
     elif age_h is not None:
-        bits.append('mirror last written %.1fh ago (%s)' % (age_h, age_file))
+        bits.append('mirror oldest component %.1fh old (%s)'
+                    % (age_h, age_file))
+
+    # ── A MIRROR CAN FREEZE ONE FILE AT A TIME ────────────────────────────
+    # The newest-file basis is still computed, and only so that the GAP
+    # between it and the oldest can be reported. A beacon refreshed over a
+    # week-old log is the shape that made this cell read `mirror last written
+    # 10.4h ago` about a mirror whose chain had not moved since 2026-10-08.
+    aged, unaged = mirror_components(cdir)
+    note = partial_refresh_note(aged)
+    if note:
+        bits.append(note)
+
+    # ── OLDER THAN ITS OWN DIGEST ─────────────────────────────────────────
+    # An absolute ceiling cannot see a freeze until the ceiling passes. The
+    # agent's own digest timestamps the moment it closed a batch, so a
+    # component older than that digest is a batch closed WITHOUT republishing
+    # the chain -- visible the same hour instead of two days later.
+    d_age, d_name = digest_published_hours(token, ddir)
+    if d_age is not None and aged:
+        behind = [(h, n) for h, n, _k in aged if h > d_age + 1.0]
+        if behind:
+            bits.append('MIRROR OLDER THAN ITS OWN DIGEST: %s was published '
+                        '%.1fh ago and %d of %d load-bearing family(s) '
+                        'predate it, the worst by %.0fh (%s, %.0fh old) -- '
+                        'the auditor closed a batch without republishing the '
+                        'chain, and this fires on the hour it happens rather '
+                        'than when the %.0fh ceiling catches up'
+                        % (d_name, d_age, len(behind), len(aged),
+                           behind[0][0] - d_age, behind[0][1], behind[0][0],
+                           MIRROR_STALE_HOURS))
+    if unaged:
+        bits.append('%d file(s) in the mirror are UNAGED by design and vote '
+                    'on nothing: %s'
+                    % (len(unaged),
+                       ', '.join('%s [%s]' % (n, k) for n, k in unaged[:6])))
 
     # ── THE WITHIN-MIRROR COMPARISON IS KEPT, AND DEMOTED ─────────────────
     # b12 called this the lag detector and it was the whole detector. It is a
@@ -518,7 +701,52 @@ def chain_tip(token, ddir):
                     'resolved, because which is right is the auditor\'s call'
                     % (mirror_seq, d_seq))
 
+    # ── BOTH NUMBERS, EVERY RUN, INCLUDING WHEN THEY AGREE ────────────────
+    # b14 printed the two sources' numbers only on a DISAGREEMENT, so the
+    # agreeing case published one number and a reader could not tell whether
+    # the second source had been consulted at all or had simply been dropped.
+    # On 2026-10-15 h1's two sources agreed at 1451 having been 1444 vs 1440
+    # the night before, and nothing in the cell distinguished "cross-checked
+    # and agreed" from "cross-check not performed". An absent disagreement is
+    # not evidence of agreement unless something says both were read.
+    note = seq_cross_check(mirror_seq, d_seq)
+    if note:
+        bits.append(note)
+
     return '; '.join(bits)
+
+
+def partial_refresh_note(aged):
+    """The 'one file kept moving' sentence, or ''. -> text.
+
+    Its own function so --ablation can remove exactly this. The newest-file
+    basis is computed HERE and only to report the gap, never to decide FROZEN.
+    """
+    if len(aged) > 1 and aged[0][0] - aged[-1][0] > MIRROR_STALE_HOURS:
+        return ('PARTIALLY REFRESHED MIRROR: %s is %.0fh old while %s is only '
+                '%.1fh old -- one component kept moving and the others did '
+                'not, which reads more current than silence and is why the '
+                'age above is the OLDEST and not the newest'
+                % (aged[0][1], aged[0][0], aged[-1][1], aged[-1][0]))
+    return ''
+
+
+def seq_cross_check(mirror_seq, d_seq):
+    """The 'both numbers were read' sentence, or '' when a disagreement has
+    already said it. -> text.
+
+    Its own function so --ablation can remove exactly this and nothing else.
+    """
+    if d_seq is not None and mirror_seq is not None and d_seq == mirror_seq:
+        return ('MIRROR SEQ %d / DIGEST SEQ %d -- the two sources AGREE, and '
+                'that is printed rather than left as the absence of a '
+                'disagreement' % (mirror_seq, d_seq))
+    if mirror_seq is None:
+        return ('MIRROR SEQ none / DIGEST SEQ %s -- the mirror carries no '
+                'CHECKPOINT and no chain-tip-seq file, so there was nothing '
+                'to cross-check against'
+                % ('none' if d_seq is None else str(d_seq)))
+    return ''
 
 
 def routed_for(label):
@@ -936,6 +1164,122 @@ def build_manifest(observed, reason):
     return NL.join(L) + NL
 
 
+# ── THE MIRROR IS KEPT FRESH BY THE PUBLISHER, NOT BY MEMORY (b15) ─────────
+# Michael's decision 2026-10-15: the frozen hover-chain-h2 mirror is REFRESHED
+# rather than retired, and kept fresh by the publisher itself.
+#
+# WHAT THIS DOES AND DOES NOT DO, said plainly because the difference is the
+# whole boundary. It writes ONE new publisher-owned file, MIRROR-FRESHNESS.md,
+# into each mirror on every board event. It does NOT write TIP-BEACON.md, it
+# does not write a chain-tip-seq file, it does not touch hover-audit-log.jsonl
+# and it does not invent a seq. A build agent forging an entry into a
+# tamper-evident chain would destroy the only thing that chain exists to
+# prove, and "refreshed" cannot be allowed to mean that.
+#
+# SO THE REFRESH IS OF THE MIRROR AS A PUBLISHED ARTEFACT: b14's open item 12
+# said the real cost of the freeze is that "while it sits there it is a
+# tamper-evidence artefact a reader takes as current". A reader who opens the
+# folder now finds a file, newer than everything else in it, that says in
+# plain text how old each component is and what the auditor's own digest
+# claims instead. That is the half a build agent can honestly do, and it
+# happens on every event so nobody has to remember.
+#
+# ITS OWN NAME IS ON THE UNAGED ALLOWLIST (mirror_component) so it can never
+# become the evidence that the mirror it describes is fresh. Arm A25 drives
+# exactly that: write the notice into a frozen mirror and the mirror must
+# still read FROZEN.
+MIRROR_NOTICE_NAME = _MIRROR_NOTICE
+
+
+def render_mirror_notice(token, ddir, reason):
+    """The publisher-owned freshness statement for one chain mirror. -> text.
+
+    Returns '' when there is no mirror directory: a notice invented beside a
+    directory that does not exist would be the publisher creating the thing it
+    reports on.
+    """
+    cdir = os.path.join(ddir, 'hover-chain-%s' % token)
+    if not os.path.isdir(cdir):
+        return ''
+    aged, unaged = mirror_components(cdir)
+    per_file, _u = mirror_files(cdir)
+    age_h, age_file = mirror_age_hours(cdir)
+    d_age, d_name = digest_published_hours(token, ddir)
+    L = ['# MIRROR FRESHNESS -- hover-chain-%s' % token,
+         '',
+         'WRITTEN BY `tools/sairn_board_publish.py` (a BUILD agent tool), not '
+         'by %s.' % token,
+         'It describes this directory and asserts nothing about the chain. '
+         'The beacon,',
+         'the log and the timestamp files in here are %s\'s and are never '
+         'written by' % token,
+         'this tool -- so a fresh timestamp on THIS file is not evidence of '
+         'anything',
+         'about them, and this filename is excluded from every freshness '
+         'basis the',
+         'board computes.',
+         '',
+         'observed_at : %s (local)'
+         % time.strftime('%Y-%m-%dT%H:%M:%S'),
+         'observed_by : sairn_board_publish.py, event: %s' % reason,
+         '']
+    if age_h is None:
+        L.append('NO LOAD-BEARING COMPONENT FOUND. This directory holds no '
+                 'TIP-BEACON.md, no')
+        L.append('hover-audit-log.jsonl and no chain-tip-* file, so there is '
+                 'nothing here to')
+        L.append('age and nothing to cross-check a digest against.')
+    else:
+        verdict = ('FROZEN -- past the %.0fh line' % MIRROR_STALE_HOURS
+                   if age_h > MIRROR_STALE_HOURS
+                   else 'within the %.0fh line' % MIRROR_STALE_HOURS)
+        L.append('VERDICT: oldest load-bearing component is %.1fh old (%s) '
+                 '-- %s' % (age_h, age_file, verdict))
+        L.append('')
+        L.append('FAMILY ages, OLDEST FIRST -- the oldest family decides. The '
+                 'chain-tip-* set is')
+        L.append('APPEND-ONLY, so its age is its NEWEST member; the beacon '
+                 'and the log are')
+        L.append('rewritten every publish, so each is aged by its own mtime.')
+        for h, n, k in aged:
+            L.append('  %7.1fh  %-12s via %s' % (h, k, n))
+        L.append('')
+        L.append('every load-bearing file, for reference (old members of an '
+                 'append-only set are')
+        L.append('EXPECTED to be old and are not a finding):')
+        for h, n, k in per_file:
+            L.append('  %7.1fh  %-28s [%s]' % (h, n, k))
+    if unaged:
+        L.append('')
+        L.append('UNAGED BY DESIGN -- these vote on nothing:')
+        for n, k in unaged:
+            L.append('  %-28s [%s]' % (n, k))
+    L.append('')
+    if d_age is not None:
+        L.append('%s\'s own newest digest (%s) was published %.1fh ago.'
+                 % (token, d_name, d_age))
+        stale = [(h, n) for h, n, _k in aged if h > d_age + 1.0]
+        if stale:
+            L.append('%d of %d FAMILY(s) PREDATE that digest -- a batch was '
+                     'closed without' % (len(stale), len(aged)))
+            L.append('republishing the chain. Worst: %s, %.0fh old.'
+                     % (stale[0][1], stale[0][0]))
+        else:
+            L.append('No component predates it.')
+    else:
+        L.append('No digest for %s on the mount, so there is nothing to '
+                 'compare these ages against.' % token)
+    L.append('')
+    L.append('To make this directory genuinely current, %s runs its own '
+             'publisher:' % token)
+    L.append('  python .claude/skills/sairn-hover-auditor/tools/'
+             'hover_tip_beacon.py --publish')
+    L.append('and re-uploads hover-audit-log.jsonl and the chain-tip-* '
+             'files beside it.')
+    L.append('')
+    return NL.join(L) + NL
+
+
 def publish(reason='manual run', ddir=None, dry_run=False, quiet=False):
     """(exit_code, lines). The whole job: collect, render, write, verify."""
     out = []
@@ -961,6 +1305,14 @@ def publish(reason='manual run', ddir=None, dry_run=False, quiet=False):
             out.append('  note: SAIRN-latest-%s.md truncated %d -> %d lines'
                        % (r['label'], n, text.count(NL)))
         files.append((LATEST_NAME % r['label'], text))
+    # The mirror freshness notices ride the SAME write-and-read-back path as
+    # the board, so a notice that did not land is a FAIL line rather than an
+    # assumption. Mirrors that do not exist contribute nothing.
+    for _lbl, _tok in (('H1', 'h1'), ('H2', 'h2')):
+        notice = render_mirror_notice(_tok, ddir, reason)
+        if notice:
+            files.append(('hover-chain-%s/%s' % (_tok, MIRROR_NOTICE_NAME),
+                          notice))
     if dry_run:
         out.append('DRY RUN -- nothing written. Would write %d file(s) to %s:'
                    % (len(files), ddir))
@@ -1260,6 +1612,149 @@ def _a22(sdir, ddir):
             bad.append((sentence[:48], want, got))
     return (not bad), ('%d of %d real sentences mis-parsed: %s'
                        % (len(bad), len(cases), bad))
+
+
+def _age_files(cdir, names, hours):
+    old = time.time() - hours * 3600
+    for fn in names:
+        p = os.path.join(cdir, fn)
+        if os.path.isfile(p):
+            os.utime(p, (old, old))
+
+
+@arm('A23-partial-refresh', 'a mirror whose BEACON kept moving over a '
+                            'week-old log and week-old timestamp files reads '
+                            'as current, because the age came off the NEWEST '
+                            'file -- the real h1 state on 2026-10-15, where '
+                            'the board printed "mirror last written 10.4h '
+                            'ago" about a chain frozen since 2026-10-08')
+def _a23(sdir, ddir):
+    _write(os.path.join(ddir, 'SAIRN-digest-h1-b7.txt'),
+           'DIGEST h1 b7\nSTATUS: Chain tip 1451 (11 new entries this '
+           'batch), verified.\nNEXT: n.\nCONTEXT 40% used\n')
+    cd = os.path.join(ddir, 'hover-chain-h1')
+    _write(os.path.join(cd, 'hover-audit-log.jsonl'), '{"seq": 1451}\n')
+    # THE MEASURED SHAPE: beacon 10.4h, log and timestamps 165h.
+    _age_files(cd, ['hover-audit-log.jsonl', 'chain-tip-seq10.msg'], 165.0)
+    _age_files(cd, ['TIP-BEACON.md'], 10.4)
+    txt = _board_for(sdir, ddir)[0]
+    # The FROZEN line must name the 165h component, not the 10.4h beacon --
+    # that substitution is the entire defect and asserting only the words
+    # would pass with the newest-file basis still in place.
+    return ('PARTIALLY REFRESHED MIRROR' in txt
+            and 'MIRROR IS FROZEN' in txt
+            and 'OLDEST load-bearing component (hover-audit-log.jsonl) is '
+                '165h old' in txt
+            and 'while TIP-BEACON.md is only 10.4h old' in txt), txt
+
+
+@arm('A28-append-only-history', 'a FULLY REFRESHED mirror reads FROZEN for '
+                                'ever because the oldest chain-tip-seq triple '
+                                'in it is from last week -- that set is '
+                                'APPEND-ONLY and its old members are supposed '
+                                'to be old. Caught in b15 by running the fix '
+                                'against the live h1 mount, which reported '
+                                '`chain-tip-seq1098.tsr is 187h old` about a '
+                                'mirror that had just been republished')
+def _a28(sdir, ddir):
+    _write(os.path.join(ddir, 'SAIRN-digest-h1-b7.txt'),
+           'DIGEST h1 b7\nSTATUS: Chain tip 1459 (8 new entries this batch), '
+           'verified.\nNEXT: n.\nCONTEXT 40% used\n')
+    cd = os.path.join(ddir, 'hover-chain-h1')
+    _write(os.path.join(cd, 'hover-audit-log.jsonl'), '{"seq": 1459}\n')
+    # HISTORY: two old triples that will never be rewritten again.
+    for seq, hrs in ((1098, 200.0), (1159, 190.0)):
+        for ext in ('msg', 'tsq', 'tsr'):
+            fn = 'chain-tip-seq%d.%s' % (seq, ext)
+            _write(os.path.join(cd, fn), 'x')
+            _age_files(cd, [fn], hrs)
+    # AND A REPUBLISH JUST NOW: new triple, fresh beacon, fresh log.
+    for ext in ('msg', 'tsq', 'tsr'):
+        _write(os.path.join(cd, 'chain-tip-seq1459.%s' % ext), 'x')
+    txt = _board_for(sdir, ddir)[0]
+    h1cell = txt.split('## H1')[-1].split('## H2')[0] if '## H1' in txt else txt
+    return ('MIRROR IS FROZEN' not in h1cell
+            and 'PARTIALLY REFRESHED MIRROR' not in h1cell
+            and 'MIRROR SEQ 1459 / DIGEST SEQ 1459' in h1cell), h1cell
+
+
+@arm('A24-older-than-its-digest', 'a mirror that stopped moving while the '
+                                  'auditor kept closing batches is silent '
+                                  'until the 48h ceiling catches up -- the '
+                                  'digest timestamps the moment the freeze '
+                                  'started and an absolute ceiling cannot')
+def _a24(sdir, ddir):
+    _write(os.path.join(ddir, 'SAIRN-digest-h2-b7.txt'),
+           'DIGEST h2 b7\nSTATUS: Chain tip 901 this batch.\n'
+           'NEXT: n.\nCONTEXT 40% used\n')
+    cd = os.path.join(ddir, 'hover-chain-h2')
+    # BOTH WELL INSIDE THE 48h CEILING, on purpose: the ceiling must not be
+    # what fires here, or the arm would pass with this layer deleted.
+    _age_files(cd, _listdir(cd), 10.0)
+    _age_files(ddir, ['SAIRN-digest-h2-b7.txt'], 1.0)
+    txt = _board_for(sdir, ddir)[0]
+    return ('MIRROR OLDER THAN ITS OWN DIGEST' in txt
+            and 'MIRROR IS FROZEN' not in txt), txt
+
+
+@arm('A25-notice-cannot-refresh', 'the publisher\'s OWN freshness notice '
+                                  'becomes the evidence that the mirror it '
+                                  'describes is fresh -- a detector '
+                                  'refreshing its own subject')
+def _a25(sdir, ddir):
+    # The digest carries a tip so the run reaches the reporting path rather
+    # than A19's "neither source is current" early return.
+    _write(os.path.join(ddir, 'SAIRN-digest-h2-b7.txt'),
+           'DIGEST h2 b7\nSTATUS: Chain tip 901 this batch.\n'
+           'NEXT: n.\nCONTEXT 40% used\n')
+    cd = os.path.join(ddir, 'hover-chain-h2')
+    _age_files(cd, _listdir(cd), 200.0)
+    _write(os.path.join(cd, MIRROR_NOTICE_NAME), 'written just now\n')
+    txt = _board_for(sdir, ddir)[0]
+    frozen = 'FROZEN' in txt
+    unaged = ('%s [notice]' % MIRROR_NOTICE_NAME) in txt
+    # AND IT MUST NOT BE NAMED AS THE FRESH HALF of a partial refresh: that
+    # is what fires if the allowlist stops excluding it while the oldest
+    # basis still holds, and it isolates the allowlist from the basis.
+    not_the_fresh_half = MIRROR_NOTICE_NAME not in txt.split(
+        'PARTIALLY REFRESHED MIRROR')[-1][:200] or 'PARTIALLY' not in txt
+    return (frozen and unaged and not_the_fresh_half), txt
+
+
+@arm('A26-both-seqs-when-they-agree', 'the two sources are printed only on a '
+                                      'DISAGREEMENT, so an agreeing cell '
+                                      'cannot be told apart from one where '
+                                      'the cross-check never ran -- h1 agreed '
+                                      'at 1451 on 2026-10-15 having been 1444 '
+                                      'vs 1440 the night before')
+def _a26(sdir, ddir):
+    _write(os.path.join(ddir, 'SAIRN-digest-h1-b7.txt'),
+           'DIGEST h1 b7\nSTATUS: Chain tip 10 this batch.\n'
+           'NEXT: n.\nCONTEXT 40% used\n')
+    txt = _board_for(sdir, ddir)[0]
+    return ('MIRROR SEQ 10 / DIGEST SEQ 10' in txt
+            and 'the two sources AGREE' in txt), txt
+
+
+@arm('A27-notice-published', 'the mirror sits on the Drive with nothing in it '
+                             'saying how old it is, so a reader who opens the '
+                             'folder takes a frozen tamper-evidence artefact '
+                             'as current -- b14 open item 12')
+def _a27(sdir, ddir):
+    old = ST.STATUS_DIR
+    ST.STATUS_DIR = sdir
+    try:
+        code, lines = publish(reason='A27', ddir=ddir)
+    finally:
+        ST.STATUS_DIR = old
+    p = os.path.join(ddir, 'hover-chain-h2', MIRROR_NOTICE_NAME)
+    if not os.path.isfile(p):
+        return False, 'no notice written (code %s): %s' % (code, lines[:2])
+    body = io.open(p, encoding='utf-8').read()
+    return ('WRITTEN BY `tools/sairn_board_publish.py`' in body
+            and 'FAMILY ages, OLDEST FIRST' in body
+            and 'APPEND-ONLY, so its age is its NEWEST member' in body
+            and 'hover_tip_beacon.py --publish' in body), body
 
 
 @arm('A4-unlisted-agent', 'a seventh agent with a status row is silently '
@@ -1572,6 +2067,44 @@ _ABLATIONS = (
      'mirror is reported as frozen instead of inferred from a comparison whose '
      'two halves are both inside it',
      lambda: _patch('mirror_age_hours', lambda cdir: (None, ''))),
+    # ── b15: the four layers that split "the directory froze" from "one
+    # file in it kept moving", plus the publisher-owned refresh ───────────
+    ('mirror-oldest-component',
+     'mirror_age_hours ages the mirror by its OLDEST load-bearing component. '
+     'The b14 behaviour -- restored exactly here -- was the NEWEST file, which '
+     'printed 10.4h about a chain frozen since 2026-10-08 because the beacon '
+     'alone had been rewritten',
+     lambda: _patch('mirror_age_hours', _newest_file_age)),
+    ('mirror-allowlist',
+     'mirror_component lets only the beacon, the log and the chain-tip files '
+     'carry freshness, so the publisher\'s own notice cannot become the '
+     'evidence that the mirror it describes is current',
+     lambda: _patch('mirror_component', lambda fn: ('everything', True))),
+    ('append-only-family',
+     'mirror_components ages the APPEND-ONLY chain-tip-* set by its NEWEST '
+     'member, so a mirror with history does not read FROZEN for ever. Removing '
+     'this restores the oldest-FILE basis, which called a just-republished h1 '
+     'mirror 187h old',
+     lambda: _patch('_MIRROR_APPEND_ONLY', ())),
+    ('partial-refresh-note',
+     'chain_tip says WHICH component kept moving and which did not, instead '
+     'of reporting one age and leaving the gap invisible',
+     lambda: _patch('partial_refresh_note', lambda aged: '')),
+    ('digest-publish-age',
+     'the mirror\'s components are compared against the agent\'s OWN newest '
+     'digest, so a freeze is visible the hour it starts rather than when the '
+     '48h ceiling catches up',
+     lambda: _patch('digest_published_hours', lambda token, ddir: (None, ''))),
+    ('seq-cross-check',
+     'both source numbers are printed when they AGREE, so an agreeing cell '
+     'can be told apart from one where the cross-check never ran',
+     lambda: _patch('seq_cross_check', lambda mirror_seq, d_seq: '')),
+    ('mirror-notice',
+     'the publisher writes MIRROR-FRESHNESS.md into each mirror on every '
+     'event, so a reader who opens a frozen chain directory is told it is '
+     'frozen without running anything',
+     lambda: _patch('render_mirror_notice',
+                    lambda token, ddir, reason: '')),
     ('digest-tip-source',
      'chain_tip reads the agent\'s own newest digest as an INDEPENDENT source '
      '-- a different artefact written by a different action, which is what the '
@@ -1655,6 +2188,23 @@ def _unverified_write(path, text):
     # instead of what it read off the mount, so a manifest built from it
     # agrees with itself after a truncated write. That is the arm.
     return True, 'not checked', text.encode('utf-8')
+
+
+def _newest_file_age(cdir):
+    """mirror_age_hours as b14 wrote it: the NEWEST file in the directory,
+    whatever it is. Restored verbatim rather than paraphrased, so the ablation
+    measures the real prior behaviour and not a convenient stand-in."""
+    best, name = None, ''
+    for fn in _listdir(cdir):
+        try:
+            mt = os.path.getmtime(os.path.join(cdir, fn))
+        except OSError:
+            continue
+        if best is None or mt > best:
+            best, name = mt, fn
+    if best is None:
+        return None, ''
+    return max(0.0, (time.time() - best) / 3600.0), name
 
 
 def _patch(name, replacement):
