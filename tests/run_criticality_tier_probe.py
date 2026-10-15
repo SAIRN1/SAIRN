@@ -83,6 +83,31 @@ if add.returncode != 0:
     sys.exit(3)
 
 DOC = os.path.join(wt, REL_DOC)
+
+# ── DEFINED BEFORE ITS FIRST USE, AND THAT ORDER IS THE WHOLE FIX
+#    (moved here 2026-10-15, cody b15 item 1) ─────────────────────────────
+# It used to be defined ~20 lines BELOW the module-level `finally:` that
+# calls it. Python resolves a name when the line RUNS, and that `finally`
+# runs during module execution -- so every run of this probe died with
+# `NameError: name '_rm_ro' is not defined` IN THE CLEANUP PATH, which
+# then discarded whatever the arms above had just concluded. A probe whose
+# cleanup raises reports nothing about its subject; measured on a clean tree
+# in the b15 full-tree triage, exit 1 with the NameError as the last line.
+def _rm_ro(fn, path, _exc):
+    """rmtree onerror: clear the read-only bit and retry once.
+
+    git marks loose object files READ-ONLY and Windows will not unlink a
+    read-only file, so `ignore_errors=True` leaves the object store behind and
+    says nothing. Measured 2026-10-07: a cleanup that swallowed those refusals
+    left 4,047 files, 38 of them read-only, in one abandoned clone.
+    """
+    import os as _os
+    try:
+        _os.chmod(path, 0o700)
+        fn(path)
+    except Exception:                                   # noqa: BLE001
+        pass
+
 try:
     ORIGINAL = io.open(DOC, encoding='utf-8', newline='').read()
 
@@ -504,21 +529,6 @@ check('this clone\'s own register is untouched', here == '', here)
 sys.path.insert(0, os.path.join(REPO, 'tools'))
 import criticality_tier_check as C            # noqa: E402
 
-
-def _rm_ro(fn, path, _exc):
-    """rmtree onerror: clear the read-only bit and retry once.
-
-    git marks loose object files READ-ONLY and Windows will not unlink a
-    read-only file, so `ignore_errors=True` leaves the object store behind and
-    says nothing. Measured 2026-10-07: a cleanup that swallowed those refusals
-    left 4,047 files, 38 of them read-only, in one abandoned clone.
-    """
-    import os as _os
-    try:
-        _os.chmod(path, 0o700)
-        fn(path)
-    except Exception:                                   # noqa: BLE001
-        pass
 
 _names, _err = C.resource_names(
     os.path.join(REPO, 'api', '_resources', 'sairnvet.js'))

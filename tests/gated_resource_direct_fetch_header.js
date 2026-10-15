@@ -71,8 +71,27 @@ const API = fs.readFileSync(path.join(ROOT, 'api', 'sd-data.js'), 'utf8');
 // resource is gated, and the arm would then pass over the very site the new
 // gate breaks. Asserted non-trivial so a parse failure cannot read as "no
 // gated resources, nothing to check".
-const gatedBlock = API.slice(API.indexOf('SD_SESSION_GATED'),
-                             API.indexOf('SD_GATE_APP'));
+// ── THE ANCHOR ROTTED, AND THE GUARD IS WHAT CAUGHT IT (2026-10-15, b15) ──
+// It used to slice between `API.indexOf('SD_SESSION_GATED')` and
+// `API.indexOf('SD_GATE_APP')` on the RAW source. Both identifiers are
+// DISCUSSED IN COMMENTS long before they are declared -- the first mention of
+// SD_SESSION_GATED is a comment at :99 and the declaration is at :859 -- so
+// indexOf found the comments and the slice spanned a 58,800-character region
+// that was not the table at all. It parsed 17 names, the guard below refused,
+// and the suite died rather than sweeping for almost nothing. THE GUARD DID
+// ITS JOB; the anchor was the defect.
+// Fixed by anchoring on the DECLARATION rather than the identifier, and by
+// slicing the COMMENT-STRIPPED source -- which this file already imports and
+// was not using here. Measured after: 66 names, not 17.
+const SRC_NO_COMMENTS = stripComments(API);
+const gStart = SRC_NO_COMMENTS.indexOf('const SD_SESSION_GATED = {');
+const gEnd = SRC_NO_COMMENTS.indexOf('const SD_GATE_APP = {');
+assert.ok(gStart >= 0 && gEnd > gStart,
+  'the SD_SESSION_GATED / SD_GATE_APP DECLARATIONS were not both found in '
+  + 'order in api/sd-data.js (start=' + gStart + ' end=' + gEnd + '). Anchored '
+  + 'on `const <NAME> = {` deliberately: the bare identifier appears in '
+  + 'comments first and matching one of those is how this anchor rotted.');
+const gatedBlock = SRC_NO_COMMENTS.slice(gStart, gEnd);
 const GATED = [...new Set([...gatedBlock.matchAll(/'([a-z_]+)':\s*\[/g)]
   .map((m) => m[1]))];
 assert.ok(GATED.length >= 20,

@@ -6607,6 +6607,30 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-15T12:18:41Z",
+      "opened_at_sha": "41c20344eb0cbce915c1958ae2618fe1b5d3ab0b",
+      "opened_at_sha_basis": "file-set",
+      "resources": [
+        "quotes",
+        "sd_hr_certs",
+        "sd_hr_employees",
+        "sdn_projects"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tests/sd_data_blob_scope_ten_routed_sites.js"
+      ],
+      "what": "cody b15 item 3: tests/sd_data_blob_scope_ten_routed_sites.js is a NEW failing-first suite over the ten unconverted stored-blob write sites, three of which serve Tier A resources -- sd_hr_employees and sd_hr_certs (PERSON DATA: employees and training records) and sdn_projects. IT ADDS NO api/ OR sql/ CODE AND CHANGES NO WRITE PATH. It drives the real handler with licence, session and fetch mocked and asserts on the body actually POSTED upstream. TEN ARMS ARE RED ON PURPOSE: every one of the ten sites stores a forged license_hash, app_id and p_license_hash inside the row data jsonb, verbatim; the fix is routed to hank. WHAT A REVIEWER SHOULD CHECK, hardest first: (1) that the scope-key list is READ from api/_lib/blob.js NEVER_STORED and not typed in the suite, so a fourth scope key is asserted absent the day it is added; (2) that arm Z asserting id SURVIVES is present and correct -- sd_slabs and both dispatcher reads return or re-attach the blob, so a fix stripping id would be a correct-looking scope fix that silently emptied the id off every record, and without arm Z strip-everything satisfies every A arm; (3) that the sdn_projects CONTROL really is an already-converted branch, because it is the only thing standing between thirteen red arms and a harness that cannot read a clean blob at all; (4) that sd_hr_employees and sd_hr_certs are PERSON DATA and their tier is re-qualified before hank converts them, not after. Reviewer must not be cody.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-10-15T12:18:41Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

@@ -682,6 +682,60 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/gated_resource_direct_fetch_header.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "13bd13d8c1c223543ee327a9ea4645ffe475dd26",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_b13_b14_ablation_record.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "encoding='utf-8', errors='replace', timeout=TIMEOUT,"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "ignore=shutil.ignore_patterns('__pycache__'))"
+    }
+   ],
+   "sha": "13bd13d8c1c223543ee327a9ea4645ffe475dd26",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_criticality_tier_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "13bd13d8c1c223543ee327a9ea4645ffe475dd26",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairncare_compliance_window_boundary.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "13bd13d8c1c223543ee327a9ea4645ffe475dd26",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_blob_scope_ten_routed_sites.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'docs/known-red-suites.json records. A failing PRECONDITION or '"
+    }
+   ],
+   "sha": "13bd13d8c1c223543ee327a9ea4645ffe475dd26",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/auth-setup-attribution.test.js",
    "class": "test file",
    "level": "WEAKENING",
@@ -1646,6 +1700,60 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "41130c84682e72a6ab25266be7c7ff203b8b6dad",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/gated_resource_direct_fetch_header.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "41c20344eb0cbce915c1958ae2618fe1b5d3ab0b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_b13_b14_ablation_record.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "encoding='utf-8', errors='replace', timeout=TIMEOUT,"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "ignore=shutil.ignore_patterns('__pycache__'))"
+    }
+   ],
+   "sha": "41c20344eb0cbce915c1958ae2618fe1b5d3ab0b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_criticality_tier_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "41c20344eb0cbce915c1958ae2618fe1b5d3ab0b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairncare_compliance_window_boundary.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "41c20344eb0cbce915c1958ae2618fe1b5d3ab0b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_blob_scope_ten_routed_sites.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'docs/known-red-suites.json records. A failing PRECONDITION or '"
+    }
+   ],
+   "sha": "41c20344eb0cbce915c1958ae2618fe1b5d3ab0b",
    "criteria_version": "2026-10-06.1"
   },
   {
