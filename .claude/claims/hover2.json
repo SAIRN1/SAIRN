@@ -559,6 +559,19 @@
         "SAIRN-latest-H2.md",
         "SAIRN-report-h2-b41.txt"
       ]
+    },
+    {
+      "id": "hover2-1792079827",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "b43: chain and RFC3161 token check, upload b42 artefacts to Drive, land-check and adversarially re-run hank b16 cody b17 fourth b25, confirm owners and next steps for open items, propose and route the hover claim-vocabulary collision fix, push, handoff/report/digest/latest. Audit role, read-only against the platform repo except this claim file itself. FILES: .claude/claims/hover2.json",
+      "claimed_at": "2026-10-15T15:57:07Z",
+      "claimed_at_epoch": 1792079827.7159436,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        ".claude/claims/hover2.json"
+      ]
     }
   ],
   "refusals": [
@@ -720,6 +733,19 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "same file or resource: api/sd-data.js",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-15T15:27:27Z",
+      "my_subject": "hover2",
+      "my_task": "hover audit b42: chain/token check; land-check cody b17/hank b16; fourth b25 closure watch; deep-verify H1 b43; register the hank b15/b16 claim-overlap gap; push; handoff/report/digest/latest b42. FILES: docs/defect-density-register.json SAIRN-handoff-H2-b42.md SAIRN-report-H2-b42.txt SAIRN-digest-H2-b42.txt SAIRN-latest-H2.md",
+      "other_session": "hover",
+      "other_subject": "hover",
+      "other_task": "b44: deep-verify hank b16 and cody b17 land-checks; settle tier-a-reviews.json three-vs-four inconsistency; check cody sabotage-arm8 roster fix landed live; check sd-data.js:8231 routing; deep-verify H2 b41 and fourth b25; chain+token check; push",
+      "other_claimed_at": "2026-10-15T15:00:57Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: deep-verify",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
