@@ -1,0 +1,290 @@
+{
+ "app_matched": "stonedesk",
+ "considered": {
+  "defect_records": 584,
+  "detectors_fired": [],
+  "detectors_run": 12,
+  "matched_this_file": 2
+ },
+ "drafted_on": "2026-10-14",
+ "exists": true,
+ "no_detector_yet": [
+  "1.6",
+  "2.2",
+  "3.1",
+  "3.2",
+  "3.3",
+  "4.1",
+  "4.2",
+  "4.3",
+  "5"
+ ],
+ "risks": [
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "2ea91d84b482",
+   "date": "2026-09-30",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "Raw model output was persisted unredacted on seven resources across six apps: the server-side redaction gate existed only inside the SAIRNmechanical branch as MECH_SCANNED_TEXT, so bld_photo_analyses (full, summary), grd_progress_photos, grd_ecosystem_reports, msb_food_scans, scp_progress_photos, rf_photos and memory stored whatever a model read off a photograph -- a name, a phone number, an SSN on a taped-up work order -- verbatim in the row. Now one declared map in api/_lib/ai-scan-redaction.js, gated per field on the server, with deliverables (parsed quantities, product names, quote lines) explicitly excluded because over-redaction is a different way to lose the record.",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "e9d9c8192620",
+   "date": "2026-10-14",
+   "detected_by": "independent-review",
+   "prior_severity": "critical",
+   "risk": "EVERY REAL PHOTOGRAPH FAILED TO BACK UP AND THE SERVER BLAMED A MIGRATION. sd_photos carries the house constraint `octet_length(data::text) <= 65536` and handlePhotoFiles put the WHOLE FileReader data URL on the row while accepting files up to 10 MB. Base64 is a 4/3 expansion, so ~48.9 KB of image was the most that could ever land and a phone photo is 2-5 MB -- a factor of ~40. The row was refused 400 by Postgres, the handler folded 400 in with 404 and answered 503 'StoneDesk data tables are not set up yet', and the only trace was a console.warn. The user saw the photo in the panel with its Done badge because the LOCAL write had succeeded. Measured from source by fourth's b19 premise document before anything acted on it. Fixed three ways: an 11-rung client downscale whose resulting LENGTH is checked against a 44,000-char budget at each rung (the budget is not the cap -- the same row carries aiAnalysis, ai_source and JSON quoting); ONE notProvisioned() helper with four answers replacing 89 branches that decided blind; and sdDataFailed reporting to a human instead of only the console. THE COUNT WAS RE-DERIVED, NOT QUOTED: fourth's document said twelve branches, the real figure is 89 of 98. T17 landed in the same commit because until the row lands the provenance gap is latent behind the size failure. 26 arms green from 6 passed / 13 failed / 4 unproven; ablated eight ways.",
+   "rules": [
+    "1.11"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "52adc1b8182a",
+   "date": "2026-09-09",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "The timesheet AI panel priced labour from raw rows, so unrated rows reached the model as bare hours and the cost estimate carried no exclusion note",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "34583678b347",
+   "date": "2026-09-11",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "sql/stonedesk_recovery_admin_seed.sql wrote credential rows with no recoverability guard and no transaction, landing a day after the guard tool and check 2 shipped and never being stopped",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "a3d8c8551fe5",
+   "date": "2026-09-11",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "sdData was the only transport of fifteen with no console call: it set the READ-path flag _sdReadFailed and returned null, so a write that never reached the server left no trace on the two call sites that read no result",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "72b040988b2e",
+   "date": "2026-09-16",
+   "detected_by": "mutation-testing",
+   "prior_severity": "moderate",
+   "risk": "api/sd-data-employees-refusal.test.js asserted nothing about the manager payroll strip: deleting `if (session.role !== 'owner') { delete copy.hourly_rate; }` from api/sd-data.js left the suite GREEN, and `hourly_rate` appeared in NO test anywhere on the platform. 'Manager: full roster visibility, but never payroll' was a promise made in a comment and asserted by nothing -- a second guarantee living inside the branch of the first, which the existing arms could not reach because their fixture row carries no payroll field",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "fda7627c647b",
+   "date": "2026-09-16",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "api/sd-agent.js drove up to MAX_ITERATIONS model calls per request with no budget check at all -- the only AI endpoint on the platform not consuming the shared daily limiter",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "3cc02f974279",
+   "date": "2026-09-18",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "SEVEN CSV export paths in stonedesk.html never reached the sdCsvCell guard, and TWO exports across stonedesk and sairnbiz threw a ReferenceError on every cell. Six of the seven wrapped cells in bare quotes with no .replace, which is the token the checker's RAW pattern keys on, so paths with WORSE quoting than the ones the 2026-09-17 sweep fixed were invisible to it; the seventh, crExportCSV, had no quoting at all. The two throwing exports are 'return' glued to the inserted call -- returnsbCsvCell(x) and returnsdCsvCell(c) -- which node --check accepts as a valid expression statement.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "49f721c1e071",
+   "date": "2026-09-18",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "stonedesk.html parseAndStress(): the Pricing Formula Backtest reads a user-uploaded CSV, splits every line on a bare comma and zips it to the header by position with headers.forEach((h,i)=>obj[h]=vals[i]). A cell containing a comma is quoted by every CSV writer, a bare split tears it, and every later column is read ONE PLACE LEFT. The shifted row's material and project_type then miss MATERIALS/PROJECTS, the row returns null, and .filter(Boolean) DROPS IT SILENTLY -- so the panel prints 'Jobs Tested: N' over a number that looks like the whole file and an average computed from whichever rows survived. Driven: a 3-row file containing one torn row reported 'Jobs Tested: 2' with no message of any kind. Fixed by refusing the file when any non-empty row's cell count disagrees with the header, naming the first offending line.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "92be209aadda",
+   "date": "2026-09-18",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "Both soft-delete paths in api/sd-data.js read the PATCH representation through .json().catch(() => null) and then checked only w.ok before answering {ok:true}. Under Prefer: return=representation a PATCH that MATCHED returns one row and a PATCH that matched ZERO returns [] with status 200, so neither w.ok nor a null from the catch could separate 'it landed' from 'it matched nothing' from 'the answer could not be read' -- all three reached the same success response and the caller was told a record was removed while it was still there. Driven on both paths with the stub row untouched: the generic path and the sd_quote_requests path each returned 200 {ok:true} over a delete that did not happen. The generic SD_LOCAL_RESOURCES path serves seven Tier A resources (sd_invoices, sd_fin_jobs, sd_pricing_rules, sd_negotiated_prices, sd_order_history, stonedesk_quote_history, sd_aiquotes)",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "4f4afc8a113f",
+   "date": "2026-09-21",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "api/provisioner-health.js counted active holders of ANY provisioning role, so a licence with an active admin and no owner row at all reported HEALTHY though no route back to an owner exists; and tools/licence_recoverability_check.py keyed its verdict on state=='TRAPDOOR' alone, so the new unrecoverable state would have printed and exited 0. The detector shared the blind spot of the guard it exists to monitor, and watched 6 of the 16 apps that can reach the state.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "9efc6d0a8aec",
+   "date": "2026-09-21",
+   "detected_by": "code-review",
+   "prior_severity": "critical",
+   "risk": "api/sd-auth.js's last-admin guard counted active PROVISIONERS (owner + admin) instead of active OWNERS, so an admin deactivating the last active owner was allowed: 200 with the PATCH sent, the licence reached zero owners, and with bootstrap's unfiltered existence check plus the non-owner-cannot-create-an-owner rule there is no route back through the API.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "fcd622dfd47d",
+   "date": "2026-09-21",
+   "detected_by": "independent-review",
+   "prior_severity": "critical",
+   "risk": "api/sd-data.js served sd_exec_msgs -- StoneDesk's private CEO/CFO/CTO channel -- through SD_LOCAL_RESOURCES, a dispatcher that deliberately has NO session gate because its other twenty members are the shared shop record (quote history, inventory, drawings, remakes) that every role in a fabrication shop reads. That justification was never true of the executive channel. The licence key is a BEARER credential held by the whole shop, so any employee, or anyone who obtained the key, could read, write and soft_delete every private executive message. Reproduced with a valid key and NO X-SD-Auth header: 200 ok:true, the private message returned verbatim. stonedesk.html's own comment above the exec Delete button already recorded it in prose -- 'this is a UI courtesy, not an authorisation boundary' -- and sdExecRole came from localStorage, never checked against a session, so the courtesy was spoofable too. Fixed with a gate on all three verbs enforcing the boundary the client already had: a real stonedesk session with role owner or admin.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "04412beed2a4",
+   "date": "2026-09-22",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "stonedesk.html Seam AI: every row sdSeamAnalyze() wrote carried remake:false, set at both insert sites and never set true by anything, and three user-facing readers derived from it -- First-Pass Approval read 100% for every shop forever, Remake Issues read 0, and the CSV exported No in a column headed Remake Risk. The sd_remakes log that would answer it already existed and was never wired to the panel. Beside it, Material Savings read a bare d.length*180 with no benchmark or source.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "de7b4838c1b5",
+   "date": "2026-09-22",
+   "detected_by": "static-checker",
+   "prior_severity": "moderate",
+   "risk": "stonedesk.html carried eleven uncoerced numeric folds of the shape `s + (x.field || 0)`, seven of them money: invoice totals, revenue MTD, average job margin, contractor YTD spend, waste cost and two profit calculations. `|| 0` does not coerce -- a non-empty string is truthy, so the guard never fires and `+` concatenates, turning a sum into a string from the first non-numeric row onward. Found by tools/truthy_sum_check.py via its own probe going red on the real-tree arm. REPAIRED IN PLACE 2026-09-22: three backtick spans in this summary were executed as SHELL COMMAND SUBSTITUTIONS by --add and arrived as empty strings, so the sentence read \\\"folds of the shape , seven of them\\\" and \\\"the guard never fires and  concatenates\\\". The words are restored here and the loss is recorded rather than tidied away -- tool-bugs item 5, fourth instance, and the first in defect_register.py, which has no --body-file route.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "39947e7dc93c",
+   "date": "2026-09-23",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "StoneDesk's photo-to-quote visualizer listed slabs from sdSlabs, the localStorage array, filtered to status:'in-stock'. The filter is right; the input is not. slabSyncFromSupabase() runs only from loadSlabs(), behind the _slabLoaded once-per-session guard, so the picker showed whatever was cached when the app started. A slab another device reserved an hour earlier still read in-stock. THE DOUBLE SALE WAS NEVER THE EXPOSURE and that is why this looked closed: api/sd-data.js's slabs/reserve branch is a real compare-and-swap that refuses a conflict with 409 and uses a plain INSERT rather than the write branch's upsert, so two devices racing an unsynced slab collide on the unique index. What a stale list costs is a METERED render -- the panel tracks viz-kpi-used/cap/left, so a rep picks the held slab, SPENDS a render showing the customer their kitchen in that stone, and only finds out at Quote This. The money is safe; the render and the conversation are not. Fixed by awaiting the sync before listing, and by giving slabSyncFromSupabase() a {ok, reason} return so a failed or empty refresh renders the cached list WITH a line saying the reservations on it may be out of date rather than silently passing it off as current.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "4d588676aa46",
+   "date": "2026-09-23",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "StoneDesk's profit figure coerced one operand of a subtraction and not the other. de7b4838 wrapped the invoices half in Number() and left the bills half -- bills.reduce(s + (b.amt || 0)) -- untouched ON THE SAME LINE, at stonedesk.html:36531 and :36544. DRIVEN, NOT REASONED: bills of \"100\" and \"200\" fold to the STRING \"0100200\", so profit reports -99450 where 450 is right. A string sum inside a subtraction produces an arbitrary negative rather than merely appending, which is why this is worse than an uncoerced sum alone. BOTH CONSUMERS STATE THE NUMBER AS FACT RATHER THAN DISPLAYING IT: sdTaxCalc posts it to /api/claude as \"Actual tracked data: revenue minus expenses (profit) of $X\" and asks for estimated annual liability, quarterly schedule and 1099 obligations; sdTaxPrint prints it on a Tax Report where Math.max(0, profit*0.28) turns the negative into $0 rather than NaN, silently understating tax on a document a shop hands a CPA. The same function's salesTaxYTD was uncoerced too -- entries of \"50\" and \"25\" fold to \"05025\", which Math.round makes 5025, so $75 prints as \"$5,025\": not an error, a plausible wrong number two orders of magnitude out. FOUND BY INDEPENDENT REVIEW of the very commit that introduced it, while discharging that commit's Tier A obligation. Both fields were in truthy_sum_baseline.json's grandfathered map so truthy_sum_check.py exited 0 and printed CLEAN throughout; removing them immediately exposed a THIRD tax surface -- taxRender(), drawing panel-tax's KPI tiles -- with three more uncoerced folds, one of which the checker structurally cannot detect because it has no fallback at all. Six folds fixed, two baseline entries removed, and api/sd-data.js's invoices write branch now refuses a non-numeric amount with 400 INVALID_AMOUNT so the input cannot reach storage in the first place.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "f89ef507871d",
+   "date": "2026-09-23",
+   "detected_by": "live-verification",
+   "prior_severity": "moderate",
+   "risk": "The new 'tombstones' action on api/sd-data.js shipped UNREACHABLE. Handlers were implemented and gated for sd_customers, sd_quote_requests and the seven soft-delete SAIRNcode resources, but the action was never declared in extraActions -- and the dispatcher checks that allowlist BEFORE any resource branch runs, so every call answered 400 'action must be read or write or soft_delete'. Seven source-level arms passed the whole time.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "3c4c79e365c4",
+   "date": "2026-09-24",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "The tombstone feature's write branches carried a quiet last-write-wins that reversed deletions: sd_customers' write and the SAIRNcode generic write are merge-duplicates upserts replacing the stored jsonb wholesale with the caller's payload, so a device still holding a soft-deleted record that saved any ordinary edit cleared _deleted_at and un-deleted it -- on the customer table a live public tracking link resolves against, and on the seven soft-delete-only Tier A medical-billing resources. Every other device holds deleted records indefinitely because no client calls the tombstones action yet, which made the resurrection likely rather than theoretical. Michael's recorded decision was server-wins; the third branch of the same feature (sd_quote_requests) had the guard from day one, so the design intended it and two of three implementations lacked it. The tombstone branch's own comment additionally instructed the future client half to compare deleted_at against a local edit's timestamp and keep the newer -- LWW stated in prose, waiting to be implemented.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "1f9936429432",
+   "date": "2026-09-26",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "api/bridge.js's push gate checked lic.valid (the key EXISTS in license_keys) and never lic.active (status === 'active'), so a REVOKED licence still wrote expense invoices -- payee, amount, memo, GL account -- to bridge_data. `status` is the platform's only licence revocation control: license_keys carries no expiry column at all, so a manual status flip is the entire mechanism for cutting off a cancelled, refunded or charged-back account, and this write path did not honour it. All 40 other handlers calling validateLicenseKey read `active`; this was the only one that did not",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "be352a7d021a",
+   "date": "2026-09-26",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "stonedesk.html saveSD3Data() wrote the customer list one record at a time from 16 call sites including render paths, and the 2026-09-24 sd_customers resurrection guard made every one of those two PostgREST round trips -- 200 customers cost 400 trips on a single render, on a function whose own comment said it must not wait on a round trip",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "c8b5e5b123c4",
+   "date": "2026-09-26",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "api/sd-data.js carried 132 verifySessionToken gates and ONE credentialStillActive, placed inside the SD_SESSION_GATED conditional so it covered 34 resources and 70 action-pairs. A credential DEACTIVATED after its token was issued kept read and write on the other 131 gates for up to the 12h token life, across thirteen apps' resources -- and deactivation is the one control an owner has over somebody who has just left. The comment beside the single call site read NOTHING CLOSED IT FOR THE DATA PATH, which reads as closed-for-all, and its eight-arm control was green because every arm was true of that one call site",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "f764f90eb99e",
+   "date": "2026-09-26",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "stonedesk.html sdData() returned j.data for the write_batch action, and the endpoint's write_batch response has NO data key -- its answer IS the envelope {ok, written, refused, skipped_without_id}. So the client saw undefined on every SUCCESSFUL batch and three things broke silently at once: saveSD3Data warned 'the customer list did not reach the server' on every save that DID reach it; its refused branch was unreachable, so a customer deleted on another device was never dropped locally (the resurrection tests/customer_delete_does_not_resurrect.js exists to prevent, arriving by a second route); and sdMarkSynced is scoped to action==='write', so sd_customers ids stopped entering the synced map -- the server-wins carve-out's only input -- which failed in the SAFE direction and therefore showed nothing. Injected by be352a7d the same day, which correctly replaced a per-customer write storm and read the wrong half of the answer. Also in this commit: slabSyncOne() and sdLineageSyncOne() discarded their write result entirely (fire-and-forget audit findings 4 and 5), and pcToggleSlab had tested 'ok === false' since the public catalog shipped to warn 'the catalog on the web has NOT changed' -- slabSyncOne returned undefined on every path, so that warning could never fire and a failed publish said 'Slab published to the catalog'.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "d211c6293616",
+   "date": "2026-09-28",
+   "detected_by": "static-checker",
+   "prior_severity": "moderate",
+   "risk": "stonedesk.html's Admin Overview 'Storage Used' KPI computed Math.min(100, Math.round((totalBytes/1024/5120)*100)) and wrote it into a card labelled only 'Storage Used'. THE FLAGGED Math.min IS THE ONE PART THAT WAS RIGHT and is recorded as a FALSE POSITIVE for the overrun-inversion class: a localStorage quota is a hard ceiling, a write past it throws, so the ratio cannot legitimately exceed 1 and the cap could never hide an overrun. The two real defects were beside it. (1) THE DENOMINATOR WAS ASSUMED: 5120 KB is a guess at the browser quota, real quotas vary by browser and origin, and where the true quota is larger this reported a half-used store as FULL -- a number an owner acts on, by deleting data, from the two delete buttons on the same panel. (2) THE POPULATION WAS NOT THE ONE THE LABEL NAMED: the loop sums EVERY key in localStorage, which on this platform is every SAIRN app in the browser, and presented it as StoneDesk's -- while the paragraph eleven lines below the card draws exactly that distinction for the delete buttons ('removes only what StoneDesk stored -- other SAIRN apps in this browser are untouched'). So the card showed a percentage of a guess over another app's data. Fixed to report the measured bytes with the label naming the population; the percentage returns when navigator.storage.estimate() is wired with a real quota rather than a constant. Regression suite written first with a known-bad control that restores both halves in a copy and requires two arms red, file restored byte-identical.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "35fb7d2c85a7",
+   "date": "2026-09-29",
+   "detected_by": "code-review",
+   "prior_severity": "low",
+   "risk": "stonedesk.html's Admin Overview storage KPI reported bytes as if they were exact after the invented 5MB percentage was removed earlier the same day. Two things were still wrong with the figure. (1) `.length * 2` assumes two bytes per UTF-16 code unit, which is wrong for an astral character (a surrogate pair is two units) and is not how every engine charges its quota, so the total is an approximation presented as a measurement. (2) THE KEYS WERE NOT COUNTED AT ALL -- only the values -- and keys are stored too, so the figure was biased DOWN, which is the wrong direction for a number somebody reads as 'how full am I'. Keys are now included and the value carries a `~`, a mark on the number rather than a longer label because the card has room for a figure and not a sentence. AND THE QUOTA SEARCH IS RECORDED SO IT IS NOT REPEATED: no storage_quota, storage_limit, quota_bytes or max_storage exists anywhere in the repo's .js, .sql, .json or .html, and vercel.json carries no storage configuration. It would not help if it did -- this KPI counts BROWSER localStorage, which neither Supabase nor Vercel governs, and the browser's own limit varies by engine and origin and is not knowable synchronously. So no percentage is computed and none is invented.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "4dc17346ccb5",
+   "date": "2026-09-29",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "slabSyncOne and sdLineageSyncOne reported a LANDED write as lost. Both decided\nwhether the write reached the server by testing sdData()'s return value against\nnull, and that value is the unwrapped `data` key. api/sd-data.js answers\n`data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload` on 69 write\nbranches -- the guard is on the ROW existing, not on its jsonb blob being\nnon-null -- so a stored row whose `data` column is null comes back as 200 /\nok:true / data:null, sdData unwraps it to null, and both functions fall through\nto `return false` and warn that the yard copy and the server copy now disagree\nabout a record that is sitting on the server. The fix reads the envelope instead:\n_sdWriteOk[resource] is set false on sdData's first line and true only after the\nj.ok test passes, and sdWriteLanded(resource) returns it with a strict === true\nso a call that never happened is false rather than undefined.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "d9083b93265d",
+   "date": "2026-09-30",
+   "detected_by": "code-review",
+   "prior_severity": "low",
+   "risk": "Three StoneDesk suites were RED at HEAD and none of the three causes was an app\ndefect -- every one was a stale expectation inside the test. A suite that fails for\na stale reason is a suite nobody reads, so the coverage it represented was already\ngone. quote_builder_delete_does_not_resurrect.js was not running AT ALL: grabLine()\nthrew on `  quoteHistory.unshift(q);`, a line item 92 removed when saveQuote stopped\nmutating ahead of its store, so the file died on line 80 before any arm ran.\nai_shortcuts_reach_the_chat.js asserted `id=\"userInput\"` is absent from the raw HTML\nand failed on the COMMENT at stonedesk.html:4812 that documents the absence and\nspells the literal to do so. ai_analysis_logs_delete.js failed seven arms with\n`seamRemakeLog is not defined` -- a function that exists at :34452 and was simply\nnot in the suite's hand-listed lift set -- and one arm required exactly two\nsdEnsureRowIds calls in sdVeinAnalyze, which was refactored so both paths call a\nshared record() helper that assigns the id once.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "53168bb506f0",
+   "date": "2026-10-06",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "stonedesk.html's IT-admin panel rendered 'Plan: <value>' from var plan=localStorage.getItem('sd_plan')||'Demo'. sd_plan has ZERO write sites anywhere on the platform -- the only two references are that read and the keep-list in itaClearData() that preserves it across a demo purge. The fallback was therefore not a fallback but the value, unconditionally, so a licensed customer read 'Plan: Demo' for ever on the one row that answers what they are paying for. Same class as sairncash's hardcoded 'Pro' fixed the same day, and harder to notice: a literal in markup is visible on sight, a dead localStorage key reads as derived state. Fixed to report that the browser does not hold a plan rather than naming one; inventing a label from the licence key's presence would be the same defect one step along.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "d6e58c61766a",
+   "date": "2026-10-14",
+   "detected_by": "fault-injection",
+   "prior_severity": "high",
+   "risk": "THREE WRITE TRANSPORTS COULD REJECT INSTEAD OF RESOLVING TO THE FAILURE VALUE EVERY CALLER IS WRITTEN FOR, AND A REJECTING TRANSPORT IS THE DEFECT RELOCATED RATHER THAN FIXED: every `await` caller throws out of its own handler and skips the toast that exists to say the save did not land -- the user clicks Save, the screen says nothing, and that is indistinguishable from not clicking. Driven against a fetch that never answers and the rejection PRINTED rather than inferred: sairncare's catch called alfNote unguarded, sairnscape's recorded scpLastErr unguarded, and stonedesk assigned _sdWriteOk on its FIRST LINE, outside its own try -- so the throw happened before fetch was reached. stonedesk's sdData had ALREADY WRITTEN THE RULE down beside its guarded reporter call ('a failure path that can itself fail is the shape this session has spent two days on') and left its bookkeeping line outside it. REFUTED in the same work: the routed claim that sdData has no 15s abort -- it has carried signal: sdFetchTimeoutSignal() since 2026-09-11 at stonedesk.html:30084 with SD_FETCH_TIMEOUT_MS = 15000 at :30065, and the sweep's 'no signal' arm was a SYMPTOM of the first-line throw. Also in this commit: api/alf-append-only-read-order.test.js conflated 'this arm can no longer FIND its read' with 'this read has no order= clause' -- both printed FAIL and exited 1, sending a reader to the wrong file. It now has three outcomes, proven both directions by ablation. tests/faults/transport_timeout_sweep.js: 77 passed / 4 FAILED -> all 81 arms pass across 15 apps.",
+   "source": "defect-register"
+  }
+ ],
+ "target": "api/_lib/ai-scan-redaction.js"
+}

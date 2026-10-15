@@ -225,7 +225,96 @@ MODE = 'pretooluse'
 # EVERY ENTRY IS A RECORDED DEFECT, not a test somebody liked. Adding one is
 # a registry entry with the same four fields, and a test with no real defect
 # behind it does not belong here -- it belongs in the report-only runner.
+# ── EXIT 3 IS COULD-NOT-RUN, AND THE RUNNER MUST NOT INVENT THE REASON ─────
+# The exit-3 channel was added 2026-09-25 for ONE test:
+# tests/session_lock_liveness_probe.py, which drives a Windows
+# process-start-time signature that does not exist on Linux. So the message
+# was written as "SKIPPED as not applicable on this platform", and when the
+# test said nothing the reason fell back to the literal string "exit 3".
+#
+# cc b13 WIRED THE FIRST EXIT-3 TEST THAT IS NOT A PLATFORM SKIP and the label
+# became false. api/role-picker-vs-check-constraint.test.js exits 3 because
+# ELEVEN OF SEVENTEEN APPS have no `check (role in (...))` in any sql/ file to
+# compare their picker against -- a missing other side, on this machine, on
+# every platform. The runner would have reported:
+#
+#     SKIPPED as not applicable on this platform -- exit 3
+#
+# which asserts a cause nothing established, about a test whose own first line
+# says "NOT a pass: an app whose constraint cannot be found is exactly the app
+# whose picker nobody has checked". A could-not-run that states the wrong
+# reason is worse than one that states none: a reader dismisses a platform
+# skip and investigates a missing constraint.
+#
+# SO THE REASON COMES FROM THE TEST OR IS ADMITTED ABSENT. Three outcomes and
+# they are different sentences. It is a named function so an arm can drive it.
+EXIT3_MARKERS = ('SKIPPED', 'UNPROVEN', 'COULD NOT RUN', 'NOT APPLICABLE')
+
+
+def exit3_reason(output):
+    """The could-not-run line for a guard test that exited 3.
+
+    Quotes the test's OWN reason when it gives one, says the reason is absent
+    when it does not, and never asserts a platform cause the runner cannot
+    know.
+    """
+    lines = [l.strip() for l in (output or '').splitlines() if l.strip()]
+    for marker in EXIT3_MARKERS:
+        hit = next((l for l in lines if l.upper().startswith(marker)), None)
+        if hit:
+            return ('COULD NOT RUN (exit 3), by the test\'s own account: %s'
+                    % hit[:300])
+    for marker in EXIT3_MARKERS:
+        hit = next((l for l in lines if marker in l.upper()), None)
+        if hit:
+            return ('COULD NOT RUN (exit 3), reason taken from its output: %s'
+                    % hit[:300])
+    return ('COULD NOT RUN (exit 3) AND THE TEST DID NOT SAY WHY -- no '
+            'SKIPPED/UNPROVEN/COULD NOT RUN line in its output. It is removed '
+            'from the required set for this run and that is NOT a pass; the '
+            'missing reason is itself the thing to fix, because a '
+            'could-not-run nobody can act on gets read as noise.')
+
+
 GUARD_TESTS = [
+    # ── HANK'S THREE NEW SUITES, WIRED 2026-10-14 (cc b13 item 4) ──────────
+    # Measured against the registry's own admission bar before wiring -- a
+    # SEAM test, and run to a known exit code first. Two are green (26/0/0 and
+    # 21/0/0) and the third exits 3, which is why exit3_reason() above exists:
+    # wiring it is what showed the could-not-run channel asserting a platform
+    # cause it had no evidence for.
+    ('api/sd-photos-size-and-provenance.test.js',
+     'a stored photo row and the size/provenance rules the write path is '
+     'supposed to enforce still agree',
+     'A SEAM between what the client sends and what the server will store. '
+     'Run green before wiring: 26 passed, 0 failed, 0 unproven, exit 0. A '
+     'suite wired red denies every push on the platform until somebody turns '
+     'the gate off, which this list has already survived once.'),
+    ('api/n1-n4-and-sf-delete.test.js',
+     'the four N-findings and the sairnfreedom delete path stay fixed -- a '
+     'clock time that could be overwritten, a last owner that could be '
+     'demoted, an exclusion nobody could see, and a delete that lied',
+     'Pins hank 31406a87. The delete half is the one with a second witness in '
+     'this batch: that same commit refactored the line fourth b20 had quoted '
+     'as an anchor in docs/CRITICALITY-TIERS.md, and '
+     'tools/citation_anchor_rot_check.py found the citation at zero the same '
+     'day. A fix that lands correctly and silently invalidates a citation '
+     'elsewhere is exactly the cross-document shape neither side can see '
+     'alone. Run green before wiring: 21 passed, 0 failed, 0 unproven, exit 0.'),
+    ('api/role-picker-vs-check-constraint.test.js',
+     'every role a picker offers is a role the database CHECK constraint '
+     'will accept',
+     'THE STRONGEST SEAM OF THE THREE and the only one that is not green: it '
+     'exits 3, because 11 of 17 apps have no `check (role in (...))` in any '
+     'sql/ file naming their employee_auth table, so there is nothing to '
+     'compare the picker against. ITS OWN WORDS: "NOT a pass: an app whose '
+     'constraint cannot be found is exactly the app whose picker nobody has '
+     'checked." Wired deliberately in that state -- exit 3 removes it from '
+     'the required set for that run and is reported in the could-not-tell '
+     'channel, never folded into the pass -- because the alternative is a '
+     'seam test nothing runs until somebody remembers it. The 6 measured apps '
+     'are clean with 0 refused roles; the 11 are UNPROVEN and named on every '
+     'run.'),
     # ── TWO OF HANK'S FOUR, WIRED 2026-10-14 (cc b12 item 3) ───────────────
     # b11 wired the first two of hank's suites and routed the other two with
     # the registry's own admission bar quoted back: a SEAM test with a
@@ -2898,11 +2987,8 @@ def main():
             # apply to this platform" is skippable, and only the test itself
             # can say which it is.
             if _r.returncode == 3:
-                _skip_out = ((_r.stdout or '') + (_r.stderr or '')).strip().splitlines()
-                _skip_why = next((l.strip() for l in _skip_out
-                                  if l.strip().startswith('SKIPPED')), 'exit 3')
-                _guard_unrun.append((_t, 'SKIPPED as not applicable on this '
-                                         'platform -- ' + _skip_why[:300]))
+                _guard_unrun.append(
+                    (_t, exit3_reason((_r.stdout or '') + (_r.stderr or ''))))
                 continue
             if _r.returncode != 0:
                 _out = ((_r.stdout or '') + (_r.stderr or '')).strip().splitlines()
@@ -4187,6 +4273,48 @@ def selftest():
            'the whole finding: the hint named neither the mechanism the gate '
            'recommends nor the fact the one it did name had been refused',
            _gs_env in b11, False)
+
+    # ── THE EXIT-3 CHANNEL (cc b13 item 4) ────────────────────────────────
+    # Added when wiring the first exit-3 guard test that is NOT a platform
+    # skip. The old message asserted "SKIPPED as not applicable on this
+    # platform" with the reason "exit 3", about a test whose 3 means eleven
+    # apps have no CHECK constraint to compare against.
+    print('')
+    print('PUSH GATE -- the exit-3 could-not-run channel')
+    _r1 = exit3_reason('ROLE PICKER vs DATABASE CHECK CONSTRAINT\n'
+                       '  UNPROVEN sairnbiz: no `check (role in (...))` found\n'
+                       '  ok       sairnbuild: all 1 role picker(s) fine\n')
+    ck('a test that SAYS why it could not run has its own words quoted',
+       'UNPROVEN sairnbiz' in _r1)
+    ck('...and the quote is attributed to the TEST rather than asserted by '
+       'the runner', 'by the test\'s own account' in _r1)
+    ck('THE DEFECT: the runner no longer claims a PLATFORM cause it cannot '
+       'know. api/role-picker-vs-check-constraint.test.js exits 3 on every '
+       'platform, because the other side of the seam is missing -- not '
+       'because of the OS', 'not applicable on this platform' not in _r1)
+    _r2 = exit3_reason('SKIPPED: kernel32 process-start-time is Windows-only')
+    ck('a genuine platform skip still reads correctly -- the fix must not '
+       'lose the case the channel was built for',
+       'SKIPPED: kernel32' in _r2)
+    _r3 = exit3_reason('some output that explains nothing')
+    ck('a test that exits 3 and says NOTHING is reported as a missing reason, '
+       'not as a skip -- and the absent reason is named as the thing to fix',
+       'DID NOT SAY WHY' in _r3 and 'NOT a pass' in _r3)
+    ck('...and an empty output does not crash the reason-finder',
+       'DID NOT SAY WHY' in exit3_reason(''))
+    ck('ABLATION: the PRE-FIX message asserted the platform cause and carried '
+       '`exit 3` as its entire reason, so these arms are about this change',
+       ('SKIPPED as not applicable on this platform -- exit 3'
+        ).startswith('SKIPPED as not applicable'), True)
+    ck('CROSS-CHECK: all %d GUARD_TESTS entries name a file that exists -- a '
+       'registry entry pointing at a deleted file is a suppression nobody '
+       'would notice' % len(GUARD_TESTS),
+       all(os.path.isfile(os.path.join(os.path.dirname(
+           os.path.dirname(os.path.abspath(__file__))), e[0]))
+           for e in GUARD_TESTS))
+    ck('...and no file is registered twice, which would run it twice and '
+       'report one failure as two',
+       len({e[0] for e in GUARD_TESTS}) == len(GUARD_TESTS))
 
     print('  %d/%d arm(s) pass' % (total - bad, total))
     if bad:
