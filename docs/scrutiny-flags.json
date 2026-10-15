@@ -2319,6 +2319,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "docs/hank-evidence/b13_live_gate_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "\"F4: the delimiter-escaping helper the new key derivation calls\"),"
+    }
+   ],
+   "sha": "5d50a758ca2b0f30661f42aa94ea628f86ffa88e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/report_only_checks.py",
    "class": "push-gate logic",
    "level": "WEAKENING",
