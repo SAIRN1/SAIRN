@@ -3992,6 +3992,29 @@
         "sql/2026-10-14-michael-run-order.sql",
         "sql/append_only_grant_audit.sql"
       ]
+    },
+    {
+      "id": "hank-1792072805",
+      "session": "hank",
+      "subject": "hank",
+      "task": "b16: paid-period freeze rule as adjustment line in next period (api/_lib/sen-payroll.js); EVV reads same effective clock as pay F2 (api/_lib/sen-evv-readiness.js + sairnsenior.html anomaly checks); app_id tenancy assertion for memApp/safety binding in api/sd-data.js; cody b15 three failing api/ suites incl active-credential re-check; SD_LINEAGE/SD_HR id-shadow pick; slice(x,x+N) source-window check. CONFLICTS DECLARED PER PR 4.3: tests/ is cody's and READ-ONLY here; tools/ is cc's and READ-ONLY here; docs/ triage+re-derivation docs are cody's and fourth's. FILES: api/_lib/sen-payroll.js api/_lib/sen-evv-readiness.js api/_lib/sen-evv-clock.js api/sd-data.js sairnsenior.html api/b16-paid-period-freeze.test.js api/b16-evv-pay-agreement.test.js api/b16-app-id-tenancy.test.js api/b16-slice-window-check.test.js docs/2026-10-15-hank-b16-h8-self-approval.md docs/hank-evidence/b16/ SAIRN-handoff-hank-b16.md",
+      "claimed_at": "2026-10-15T14:00:05Z",
+      "claimed_at_epoch": 1792072805.3409276,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-handoff-hank-b16.md",
+        "api/_lib/sen-evv-clock.js",
+        "api/_lib/sen-evv-readiness.js",
+        "api/_lib/sen-payroll.js",
+        "api/b16-app-id-tenancy.test.js",
+        "api/b16-evv-pay-agreement.test.js",
+        "api/b16-paid-period-freeze.test.js",
+        "api/b16-slice-window-check.test.js",
+        "api/sd-data.js",
+        "docs/2026-10-15-hank-b16-h8-self-approval.md",
+        "sairnsenior.html"
+      ]
     }
   ],
   "refusals": [
