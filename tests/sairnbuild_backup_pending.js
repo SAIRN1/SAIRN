@@ -124,6 +124,22 @@ function build(store, bldData, toasts) {
     // api/sd-data.js's bld_bids branch demands a real employee session -- so
     // the retry filters on BLD_PENDING_TRACKED rather than on _bldSyncOn.
     'var BLD_PENDING_TRACKED = Object.assign({}, _bldSyncOn); BLD_PENDING_TRACKED.bld_bids = true;\n' +
+    // ── WHY THIS LINE EXISTS, 2026-10-15 ───────────────────────────────
+    // sairnbuild.html:2369 added `var BLD_SESSION_REQUIRED = { bld_bids:
+    // true, bld_draws: true };` and bldSyncCollection, bldRetryPending and
+    // the hydration path all pass `!!BLD_SESSION_REQUIRED[key]` as a fourth
+    // argument to bldData(). It was NOT declared here, so inside this
+    // sandbox the identifier was undefined and the reference THREW -- and
+    // st() swallows it (`try{bldSyncCollection(k,v,prev);}catch(e){}` at
+    // sairnbuild.html:2109), so every arm in this file measured zero pushes
+    // and read as "the backup queued nothing" rather than "the backup never
+    // ran". Eight arms failed and the ninth crashed on an empty writes
+    // array, TypeError at :241 -- which is how this was found.
+    //
+    // EXTRACTED, not transcribed: a hand-written copy of that map here is
+    // free to disagree with the app's, which is the whole reason the rest of
+    // this harness uses decl()/fn() instead of quoting the app.
+    decl('BLD_SESSION_REQUIRED') + '\n' +
     'var bldSeeding = false;\n' +
     decl('_bldBackup') + '\n' +
     decl('BLD_PENDING_KEY') + '\n' +
@@ -237,7 +253,14 @@ const flush = () => new Promise((r) => setImmediate(r));
     check('one id, not two', w.pendingAll(), { bld_lien_waivers: ['LW-1'] });
     refuse = false;
     await w.retry();
-    const last = srv.writes[srv.writes.length - 1];
+    // A PRECONDITION, BECAUSE THE ALTERNATIVE WAS A CRASH THAT TOOK THE
+    // REST OF THE FILE WITH IT. On 2026-10-15 `srv.writes` was empty here
+    // and `last.payload` threw a TypeError at this line, aborting the run
+    // before six further arms below ever executed -- so the file reported
+    // one crash instead of nine failures and the cause was read as "a
+    // sairnbuild retry bug" rather than "the harness never pushed anything".
+    check('PRECONDITION: the retry attempted at least one push', srv.writes.length > 0, true);
+    const last = srv.writes[srv.writes.length - 1] || { payload: {} };
     check('the retry sends the amount as it stands NOW', last.payload.amount, 4500);
   }
 

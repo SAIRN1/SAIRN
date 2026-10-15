@@ -55,6 +55,18 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REL_DOC = os.path.join('docs', 'CRITICALITY-TIERS.md')
 REL_TOOL = os.path.join('tools', 'criticality_tier_check.py')
 
+# ── THE CLEANUP HANDLER IS IMPORTED NOW, 2026-10-15 ───────────────────────
+# It was a local copy, byte-identical to the one in
+# tests/claims/run_freshness_probe.py, and its POSITION in this file was the
+# b15 defect: defined ~20 lines BELOW the module-level `finally:` that calls
+# it, so every run died with `NameError: name '_rm_ro' is not defined` in the
+# CLEANUP PATH and discarded every verdict the arms above had reached. An
+# import cannot have that defect -- the name is bound before this module's
+# first statement runs -- which is the real reason to share it rather than
+# the duplication. Full account and its own self-check: tests/lib/rm_ro.py.
+sys.path.insert(0, os.path.join(REPO, 'tests', 'lib'))
+from rm_ro import rm_ro as _rm_ro                                # noqa: E402
+
 fails = []
 
 
@@ -84,29 +96,6 @@ if add.returncode != 0:
 
 DOC = os.path.join(wt, REL_DOC)
 
-# ── DEFINED BEFORE ITS FIRST USE, AND THAT ORDER IS THE WHOLE FIX
-#    (moved here 2026-10-15, cody b15 item 1) ─────────────────────────────
-# It used to be defined ~20 lines BELOW the module-level `finally:` that
-# calls it. Python resolves a name when the line RUNS, and that `finally`
-# runs during module execution -- so every run of this probe died with
-# `NameError: name '_rm_ro' is not defined` IN THE CLEANUP PATH, which
-# then discarded whatever the arms above had just concluded. A probe whose
-# cleanup raises reports nothing about its subject; measured on a clean tree
-# in the b15 full-tree triage, exit 1 with the NameError as the last line.
-def _rm_ro(fn, path, _exc):
-    """rmtree onerror: clear the read-only bit and retry once.
-
-    git marks loose object files READ-ONLY and Windows will not unlink a
-    read-only file, so `ignore_errors=True` leaves the object store behind and
-    says nothing. Measured 2026-10-07: a cleanup that swallowed those refusals
-    left 4,047 files, 38 of them read-only, in one abandoned clone.
-    """
-    import os as _os
-    try:
-        _os.chmod(path, 0o700)
-        fn(path)
-    except Exception:                                   # noqa: BLE001
-        pass
 
 try:
     ORIGINAL = io.open(DOC, encoding='utf-8', newline='').read()

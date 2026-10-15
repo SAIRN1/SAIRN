@@ -41,13 +41,38 @@ API = os.path.join('api', 'sd-data.js')
 TIERS = os.path.join('docs', 'CRITICALITY-TIERS.md')
 
 _REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_ROWS = [ln for ln in io.open(os.path.join(_REPO, TIERS), encoding='utf-8')
-         if ln.startswith('| `sd_exec_msgs` |')]
-if len(_ROWS) != 1:
-    print('CANNOT RUN: %s holds %d sd_exec_msgs rows, not 1 -- the register half '
-          'of this probe cannot be aimed and a probe that cannot be aimed is not '
-          'a pass.' % (TIERS, len(_ROWS)))
+
+
+# ── EVERY exit 3 NOW NAMES ITS PRECONDITION (2026-10-15, cody b17) ────────
+# There was ONE could-not-run state here and it did say which precondition
+# failed -- the sd_exec_msgs row count. The other two did not exist as checks
+# at all: a MISSING or unreadable CRITICALITY-TIERS.md raised an IOError
+# traceback (a crash, not a could-not-run), and an absent SUITE or API file
+# reached the harness and came back as something else. Three preconditions,
+# three named refusals, one exit code, so "could not run" never arrives
+# wearing another verdict's clothes.
+def _cannot_run(why):
+    print('CANNOT RUN: ' + why)
     sys.exit(3)
+
+
+for _rel in (TIERS, SUITE, API):
+    if not os.path.isfile(os.path.join(_REPO, _rel)):
+        _cannot_run('%s is not on disk, so this probe has nothing to aim at. '
+                    'It was NOT run and this is not a pass.' % _rel)
+
+try:
+    _ROWS = [ln for ln in io.open(os.path.join(_REPO, TIERS), encoding='utf-8')
+             if ln.startswith('| `sd_exec_msgs` |')]
+except (IOError, OSError, UnicodeDecodeError) as _exc:
+    _cannot_run('%s could not be READ (%s). The register half of this probe '
+                'cannot be aimed; nothing was verified.'
+                % (TIERS, str(_exc)[:120]))
+
+if len(_ROWS) != 1:
+    _cannot_run('%s holds %d sd_exec_msgs rows, not 1 -- the register half '
+                'of this probe cannot be aimed and a probe that cannot be '
+                'aimed is not a pass.' % (TIERS, len(_ROWS)))
 _EXEC_ROW = _ROWS[0].rstrip('\n')
 
 GATE_READ = "      if (resource === 'sd_exec_msgs' && !sdExecGate(res)) return;\n"

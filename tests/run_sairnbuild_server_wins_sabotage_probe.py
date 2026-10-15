@@ -72,7 +72,22 @@ MUTATIONS = [
      "branch in api/sd-data.js refuses that, so a pending bid is retried "
      "forever and never clears",
      APP,
-     "jobs.push(bldData('write',key,rec,key==='bld_bids').then(function(saved){",
+     # ── RE-ANCHORED 2026-10-15 ──────────────────────────────────────────
+     # The anchor quoted `key==='bld_bids'` as the fourth argument. That
+     # literal is gone: sairnbuild.html:2369 now declares
+     # `var BLD_SESSION_REQUIRED = { bld_bids: true, bld_draws: true };` and
+     # all three call sites pass `!!BLD_SESSION_REQUIRED[key]` instead -- a
+     # GENERALISATION, because bld_draws joined the session-required set. So
+     # the arm was ANCHOR-0 and its label read as a live defect in the
+     # retry when the mutation had never been applied.
+     #
+     # The mutation is unchanged in intent -- drop the flag so the retry
+     # sends a session-required resource with no session -- and is now
+     # broader in effect, because dropping it breaks bld_draws too. That is
+     # the right direction: the arm names bld_bids because that is the
+     # resource whose api/sd-data.js branch was measured refusing, and any
+     # resource the map adds inherits the same assertion for free.
+     "jobs.push(bldData('write',key,rec,!!BLD_SESSION_REQUIRED[key]).then(function(saved){",
      "jobs.push(bldData('write',key,rec).then(function(saved){"),
 
     ("7. [CARVE-OUT] THE PENDING CHECK IS REMOVED -- every id the server has "

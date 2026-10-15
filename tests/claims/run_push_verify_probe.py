@@ -520,6 +520,11 @@ def main():
         landed = [c for c in origin_doc['claims'] if c.get('task') == 'retry arm task']
         check('...and origin/main carries exactly ONE claim for that task',
               len(landed) == 1, 'on origin: %d' % len(landed))
+        # RAW `status` IS CORRECT HERE, not is_active(). This arm asserts WHAT
+        # THE TOOL WROTE, seconds after it wrote it, in a fixture clone;
+        # is_active() would additionally apply the liveness rule and make the
+        # arm about the clock rather than about the publish. (Decided b17,
+        # 2026-10-15, for all four raw reads in this file.)
         check('...and it is active', landed and landed[0].get('status') == 'active',
               str(landed))
 
@@ -609,6 +614,7 @@ def main():
         def active11():
             p = os.path.join(clone, '.claude', 'claims', 'probe.json')
             with open(p, encoding='utf-8') as f:
+                # RAW: the subject is the LOCAL WRITE this arm just caused.
                 return [c for c in json.load(f)['claims']
                         if c.get('status') == 'active'
                         and c.get('subject') == 'probe11']
@@ -645,6 +651,7 @@ def main():
         rcC, outC = run_tool(clone, 'claim', 'probe11', A)
         check('re-running the EARLIER wording on a clean tree publishes it',
               rcC == 0, outC[-400:])
+        # RAW: counting what reached origin, not judging whether it is live.
         pub11 = [c for c in (claims_on_origin(clone, 'probe') or {'claims': []})['claims']
                  if c.get('status') == 'active' and c.get('subject') == 'probe11']
         check('...and origin/main carries exactly ONE claim for that subject',
@@ -660,6 +667,8 @@ def main():
                              'a genuinely different second piece of work')
         check('CONTROL: once the first is published, a DIFFERENT second claim on '
               'the same subject is allowed', rcD == 0, outD[-400:])
+        # RAW, same reason as pub11: the assertion is `two rows exist`, and a
+        # liveness predicate could drop one and report the defect as the fix.
         pub11b = [c for c in (claims_on_origin(clone, 'probe') or {'claims': []})['claims']
                   if c.get('status') == 'active' and c.get('subject') == 'probe11']
         check('...and origin/main now carries two, which is correct',

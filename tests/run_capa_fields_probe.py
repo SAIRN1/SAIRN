@@ -26,7 +26,9 @@ import copy
 import io
 import json
 import os
+import shutil
 import sys
+import tempfile
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
@@ -35,8 +37,23 @@ import defect_register as D                                      # noqa: E402
 CONTROLS_FOR = ['defect_register.py']
 
 fails = []
-TMP_REL = os.path.join('docs', '_capa_probe_tmp.json')
-TMP_FULL = os.path.join(REPO, TMP_REL)
+# ── THE MUTATED COPY LEFT THE TREE, 2026-10-15 ────────────────────────────
+# This wrote `docs/_capa_probe_tmp.json` -- 2,461,216 bytes, a whole copy of
+# the real defect register -- INSIDE the repository, and removed it in a
+# `finally` at the bottom of the file. A `finally` does not run when the
+# process is KILLED, and this probe is killed: it exceeds 180s. So every
+# timed-out run left 2.46MB of untracked JSON in `docs/`, and that is the
+# tree-dirtier b15's full-tree run could see but could not attribute.
+# Measured today: `timeout 200 python tests/run_capa_fields_probe.py` ->
+# rc 124, and `git status --porcelain` -> `?? docs/_capa_probe_tmp.json`.
+#
+# IT NOW LIVES OUTSIDE THE REPO. defect_register resolves its register as
+# `os.path.join(REPO, REG)`, and os.path.join returns the second argument
+# unchanged when it is absolute, so an absolute path here needs no change in
+# the tool. A kill can no longer dirty any clone, which is a stronger
+# guarantee than a cleanup path that has to be reached.
+_TMP_DIR = tempfile.mkdtemp(prefix='capa_probe_')
+TMP_FULL = os.path.join(_TMP_DIR, '_capa_probe_tmp.json')
 BASE = json.load(io.open(os.path.join(REPO, D.REG), encoding='utf-8'))
 
 
@@ -45,6 +62,11 @@ def check(name, cond, detail=''):
           + ('' if cond else '\n         ' + str(detail)[:400]))
     if not cond:
         fails.append(name)
+    # FLUSHED PER ARM. stdout is block-buffered when this run is redirected to
+    # a log, so the run killed at the 180s ceiling wrote a ZERO-BYTE log and a
+    # hang was indistinguishable from a silent pass. Segmented verification
+    # needs its segments legible while the run is still going.
+    sys.stdout.flush()
 
 
 def with_register(mutate):
@@ -54,7 +76,7 @@ def with_register(mutate):
     io.open(TMP_FULL, 'w', encoding='utf-8', newline='').write(
         json.dumps(reg, indent=1, ensure_ascii=False) + '\n')
     old, buf = D.REG, io.StringIO()
-    D.REG = TMP_REL
+    D.REG = TMP_FULL
     try:
         with contextlib.redirect_stdout(buf):
             rc = D.cmd_check()
@@ -196,8 +218,7 @@ try:
         if len(kinds) == 1:
             single_kind.append((r['commit'], sorted(kinds)))
 finally:
-    if os.path.exists(TMP_FULL):
-        os.remove(TMP_FULL)
+    shutil.rmtree(_TMP_DIR, ignore_errors=True)
 
 print('\n%d failure(s)' % len(fails))
 # The count, printed rather than enforced, so the habit stays visible.

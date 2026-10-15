@@ -223,7 +223,26 @@ function bad(l, why) {
   const famBlock = CODE.split(ANCHOR)[1] || '';
   const upToConsent = famBlock.split('familyMarView(')[0] || '';
 
-  if (/marBroad/.test(upToConsent) && /ALF_FAMILY_READ_ROLES/.test(upToConsent)) {
+  // ── C1 RE-DERIVED 2026-10-15, AND THE OLD FORM WAS FAILING ON A FIX ───
+  // This required the literal `ALF_FAMILY_READ_ROLES` in the branch. That
+  // identifier is no longer there and has not been since the family_mar
+  // role set was SPLIT OUT: api/sd-data.js:13353 now reads
+  // `const marBroad = !!ALF_FAMILY_MAR_ROLES[session.role];`, a narrower
+  // purpose-built set, and the comment at :13182 says why -- family_mar had
+  // INHERITED { owner, billing, nursing } from the broad read set and
+  // billing had no business in a medication record.
+  //
+  // So this arm was reporting a security TIGHTENING as a failure, and b15's
+  // triage read that failure as "the active-credential re-check did not
+  // run" -- which it never was: all five arms printing that line pass. Third
+  // instance today of a probe lagging its subject and being read as a defect
+  // in the subject.
+  //
+  // THE ARM NOW ASSERTS THE PROPERTY, NOT THE NAME. What matters is that
+  // `marBroad` is decided from a DECLARED role-set map before the consent
+  // library is required; which map it is, is a product decision that is
+  // allowed to change without this file going red.
+  if (/const marBroad = !!ALF_[A-Z_]+ROLES\[session\.role\]/.test(upToConsent)) {
     ok('C1. the role gate runs BEFORE the consent library is required');
   } else {
     bad('C1. the role gate must precede the consent check', '');

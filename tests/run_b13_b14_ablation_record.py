@@ -239,6 +239,90 @@ ABLATIONS = [
                 "remnant_id: String(payload.id), data: storedBlob(payload, []), updated_at: nowISO()"),
         'want': 'ok',
     },
+
+    # ══ b17, 2026-10-15 ══════════════════════════════════════════════════
+    # Four of b17's five fixes. Each was OBSERVED in the state the ablation
+    # restores before it was fixed, which is what makes these records rather
+    # than hopes -- the observation is quoted in each `what`.
+    #
+    # NOT HERE, AND WHY, so the gap is a decision rather than an oversight:
+    #
+    #  * b17's sairnbuild_server_wins.js fix cannot be expressed in this
+    #    harness. Its state change is in a DIFFERENT file from the one
+    #    mutated: reverting the suite's assertion turns arm 6 of
+    #    tests/run_sairnbuild_server_wins_sabotage_probe.py from CAUGHT to
+    #    SILENT. This harness applies its fix to the suite it then runs.
+    #    Observed in-session both ways; recorded in the b17 report.
+    #  * b16's four arms are NOT here. Their fix hunks are long re-aims and
+    #    re-anchors and one of them (the registry_claim `blocked_lines`
+    #    revert) only goes red when ANOTHER session's live claim prose
+    #    happens to contain the word BLOCKED, which is not a deterministic
+    #    arm and must not be written as one. Get the hunks with
+    #    `git show 7af3737e -U0 -- <file>` and add the three that are
+    #    deterministic.
+    {
+        'id': 'b17.1', 'batch': 'b17', 'direction': 'green-arm',
+        'suite': 'tests/sairnbuild_backup_pending.js',
+        'arm': 'a successful push is attempted once',
+        'what': 'the BLD_SESSION_REQUIRED declaration is removed from the '
+                'extraction list, which is the b17 defect -- bldSyncCollection '
+                'references it, the sandbox throws ReferenceError, and st() '
+                'swallows it in a bare `try{...}catch(e){}`, so the whole '
+                'backup silently does nothing. OBSERVED: 8 arms failed with '
+                'every push count 0 and the 9th crashed with a TypeError '
+                'reading `payload` of undefined',
+        'target': 'suite',
+        'fix': ("    decl('BLD_SESSION_REQUIRED') + '\\n' +\n", ""),
+        'want': 'FAIL',
+    },
+    {
+        'id': 'b17.2', 'batch': 'b17', 'direction': 'green-arm',
+        'suite': 'tests/sd_data_family_mar_gate.js',
+        'arm': 'C1. the role gate runs BEFORE the consent library is required',
+        'what': 'the C1 assertion is reverted to requiring the literal '
+                '`ALF_FAMILY_READ_ROLES` in the family_mar branch. That '
+                'identifier was SPLIT OUT of the branch when family_mar got '
+                'its own narrower role set, so the old form reported a '
+                'security tightening as a failure. OBSERVED: 9 passed, 1 '
+                'failed, and b15 read that failure as an active-credential '
+                'defect it never was',
+        'target': 'suite',
+        'fix': ("if (/const marBroad = !!ALF_[A-Z_]+ROLES\\[session\\.role\\]/.test(upToConsent)) {",
+                "if (/marBroad/.test(upToConsent) && /ALF_FAMILY_READ_ROLES/.test(upToConsent)) {"),
+        'want': 'FAIL',
+    },
+    {
+        'id': 'b17.3', 'batch': 'b17', 'direction': 'green-arm',
+        'suite': 'tests/run_python_escape_hygiene_probe.py',
+        'arm': 'AND IN A NESTED tests/ SUBDIRECTORY',
+        'what': 'the arm-2 anchor is reverted to the bare string "import os". '
+                'tests/claims/run_freshness_probe.py has TWO matches for it -- '
+                '`import os` and `import os as _os`, the second CONTAINING the '
+                'first -- so the arm refuses with ANCHOR-2. OBSERVED: it was '
+                'the single remaining stale anchor in the repo, 1 of 530, and '
+                'it was also why run_mutation_anchor_probe arm 7a was red',
+        'target': 'suite',
+        'fix': ('     "import os\\nimport shutil",\n'
+                '     "import os\\n_PLANTED = \\"\\\\d not a real escape\\"\\nimport shutil"),',
+                '     "import os",\n'
+                '     "_PLANTED = \\"\\\\d not a real escape\\"\\nimport io"),'),
+        'want': 'FAIL',
+    },
+    {
+        'id': 'b17.4', 'batch': 'b17', 'direction': 'green-arm',
+        'suite': 'tests/run_sv_session_gate_sabotage_probe.py',
+        'arm': '5. THE GATE MOVES BEHIND THE QUERY',
+        'what': 'arm 5 is reverted from its two short anchors to the single '
+                'quoted 6-line gate block. That block grew to ~68 lines on '
+                '2026-10-14 when the role table and the append-only check '
+                'landed inside it, so the anchor matches nothing. OBSERVED: '
+                'ANCHOR-0 on arms 5 AND 7, both printing their labels as if '
+                'the live gate had moved',
+        'target': 'suite',
+        'fix': ('     ["    if (SV_RESOURCES[resource]) {\\n      const svSess = verifySessionToken(tokenFromRequest(req), licHash, \'sairnvet\');",',
+                '     ["    if (SV_RESOURCES[resource]) {\\n      const svSess = verifySessionToken(tokenFromRequest(req), licHash, \'sairnvet\');\\n      if (!svSess) {\\n        res.status(401).json({ error: { code: \'NO_SESSION\', message: \'gone\' } });",'),
+        'want': 'FAIL',
+    },
 ]
 
 
@@ -335,10 +419,25 @@ def main(argv):
                 src = io.open(suite_abs, encoding='utf-8').read()
                 ext = os.path.splitext(a['suite'])[1]
                 if a.get('special') == 'drop_rm_ro':
-                    m = re.search(r'\ndef _rm_ro\(fn, path, _exc\):.*?\n        pass\n',
-                                  src, re.S)
+                    # ── RE-TARGETED 2026-10-15 (cody b17) ──────────────────
+                    # This searched for a local `def _rm_ro(...)` and moved it
+                    # to the end of the file, reproducing the b15 defect of a
+                    # name used before it is bound. The definition is GONE:
+                    # b17 de-duplicated it into tests/lib/rm_ro.py and both
+                    # consumers now IMPORT it. Left as it was, this arm would
+                    # have reported "_rm_ro definition not found" -> UNPROVEN,
+                    # which is the honest answer but a silent loss of
+                    # coverage, so the ablation moves the IMPORT instead. The
+                    # defect shape is identical -- the name is unbound when
+                    # the module-level `finally:` runs -- and it is the reason
+                    # the import is the better form, so the arm now measures
+                    # exactly the property that motivated the change.
+                    m = re.search(r'\nfrom rm_ro import rm_ro as _rm_ro[^\n]*\n',
+                                  src)
                     if not m:
-                        mutated_ok, why = False, '_rm_ro definition not found'
+                        mutated_ok, why = (
+                            False, 'neither a local _rm_ro definition nor the '
+                                   'tests/lib/rm_ro import was found')
                     else:
                         new = src[:m.start()] + '\n' + src[m.end():] + m.group(0)
                 elif a['fix'] and a['fix'][0] in src:

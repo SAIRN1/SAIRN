@@ -78,8 +78,25 @@ MUTATIONS = [
     ("5. THE GATE MOVES BEHIND THE QUERY -- it answers 401 having already read "
      "the rows, which passes every status-code assertion and leaks anyway",
      SD,
-     "    if (LEG_RESOURCES[resource]) {\n      const legSess = verifySessionToken(tokenFromRequest(req), licHash, 'sairnlegacy');\n      if (!legSess) {\n        res.status(401).json({ error: { code: 'NO_SESSION', message: 'Your sign-in could not be verified, so nothing was read or saved. Sign out and sign in again, then try once more.' } });\n        return;\n      }\n    }\n    if (LEG_RESOURCES[resource] && action === 'read') {\n      const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });",
-     "    if (LEG_RESOURCES[resource] && action === 'read') {\n      const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });\n      if (!verifySessionToken(tokenFromRequest(req), licHash, 'sairnlegacy')) {\n        res.status(401).json({ error: { code: 'NO_SESSION', message: 'no' } });\n        return;\n      }"),
+     # ── RE-DERIVED 2026-10-15. SAME DEFECT, SAME DAY, THIRD FILE ─────────
+     # This quoted the WHOLE gate block (6 lines) plus the read branch's
+     # opening and its fetch line. The LEG gate block has since grown to 45
+     # lines -- api/sd-data.js:15751 to :15795, with the read branch now
+     # opening at :15796 -- so the anchor matched nothing and the arm sat
+     # ANCHOR-0 while the probe still printed its label. Identical rot was
+     # found and fixed in tests/run_sv_session_gate_sabotage_probe.py arms 5
+     # and 7 in the same pass; the SF probe's seven anchors were all still
+     # unique, so this is a block-quoting problem rather than an api/ one.
+     #
+     # SPLIT INTO TWO SHORT ANCHORS, which is the only form that does not rot
+     # again when the block grows: edit 1 takes the front gate off the read
+     # path, edit 2 puts a 401 in the read branch AFTER its fetch has already
+     # run. Neither anchor contains anything that is free to grow between
+     # them, which is the whole property.
+     ["    if (LEG_RESOURCES[resource]) {\n      const legSess = verifySessionToken(tokenFromRequest(req), licHash, 'sairnlegacy');",
+      "    if (LEG_RESOURCES[resource] && action === 'read') {\n      const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });"],
+     ["    if (LEG_RESOURCES[resource] && action !== 'read') {\n      const legSess = verifySessionToken(tokenFromRequest(req), licHash, 'sairnlegacy');",
+      "    if (LEG_RESOURCES[resource] && action === 'read') {\n      const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });\n      if (!verifySessionToken(tokenFromRequest(req), licHash, 'sairnlegacy')) {\n        res.status(401).json({ error: { code: 'NO_SESSION', message: 'no' } });\n        return;\n      }"]),
 
     ("6. [CLIENT] THE TRANSPORT STOPS SENDING THE TOKEN -- the gate becomes an "
      "outage on all 56 call sites that pass no flag, which is how a security "

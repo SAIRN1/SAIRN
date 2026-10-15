@@ -417,7 +417,28 @@ test('the retry covers bld_bids too, with the session its branch demands', () =>
   const body = fn('bldRetryPending');
   assert.ok(body.indexOf('BLD_PENDING_TRACKED[key]') !== -1,
     'the retry still filters on _bldSyncOn, so a pending bld_bids is never retried');
-  assert.ok(body.indexOf("key==='bld_bids'") !== -1,
+  // ── THIS ASSERTION WAS PASSING ON A COMMENT. 2026-10-15 ───────────────
+  // It read `body.indexOf("key==='bld_bids'") !== -1`. That expression is no
+  // longer in bldRetryPending: sairnbuild.html:2369 declares
+  // `var BLD_SESSION_REQUIRED = { bld_bids: true, bld_draws: true };` and the
+  // retry passes `!!BLD_SESSION_REQUIRED[key]` instead -- a generalisation,
+  // because bld_draws joined the set. The literal still occurs TWICE in the
+  // file and BOTH occurrences are COMMENTS, one of them at :2534 INSIDE this
+  // very function, written to explain that the old form "used to read
+  // `key==='bld_bids'`, which was right until there were two."
+  //
+  // So the assertion was satisfied by the comment documenting the removal of
+  // the thing it was asserting, and `tests/run_sairnbuild_server_wins_sabotage_probe.py`
+  // arm 6 -- which plants exactly that defect by deleting the session flag --
+  // reported SILENT once its own anchor was repaired on the same day. Two
+  // layers of guard, neither of them guarding.
+  //
+  // THE PROPERTY, OVER COMMENT-STRIPPED SOURCE, AT THE CALL SITE. A fourth
+  // argument must be passed to bldData() by the retry. Which expression
+  // computes it is allowed to change; its absence is not, and a comment can
+  // no longer satisfy it.
+  const retryCode = body.replace(/\/\/[^\n]*/g, '');
+  assert.ok(/bldData\('write',\s*key,\s*rec,\s*[^)\s][^)]*\)/.test(retryCode),
     'the retry sends bld_bids without a session, which its branch refuses');
 });
 

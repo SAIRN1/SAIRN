@@ -70,20 +70,14 @@ import tempfile
 import time
 
 
-def _rm_ro(fn, path, _exc):
-    """rmtree onerror: clear the read-only bit and retry once.
-
-    git marks loose object files READ-ONLY and Windows will not unlink a
-    read-only file, so `ignore_errors=True` leaves the object store behind and
-    says nothing. Measured 2026-10-07: a cleanup that swallowed those refusals
-    left 4,047 files, 38 of them read-only, in one abandoned clone.
-    """
-    import os as _os
-    try:
-        _os.chmod(path, 0o700)
-        fn(path)
-    except Exception:                                   # noqa: BLE001
-        pass
+# ── THE CLEANUP HANDLER IS IMPORTED NOW, 2026-10-15 ───────────────────────
+# A byte-identical copy of this lived in tests/run_criticality_tier_probe.py,
+# where its POSITION relative to a module-level `finally:` had already cost a
+# whole probe run. One definition, in tests/lib/rm_ro.py, with its own
+# fail-first self-check.
+sys.path.insert(0, os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'lib'))
+from rm_ro import rm_ro as _rm_ro                                # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 TOOL = os.path.join(ROOT, 'tools', 'sairn_claim.py')

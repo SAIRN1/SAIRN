@@ -64,8 +64,23 @@ MUTATIONS = [
      "recursive pattern that had quietly stopped recursing would look exactly "
      "like a clean scan",
      NESTED_SUBJECT,
-     "import os",
-     "_PLANTED = \"\\d not a real escape\"\nimport io"),
+     # ── ANCHOR-2, FIXED 2026-10-15 ──────────────────────────────────────
+     # The anchor was the bare string "import os". tests/claims/run_freshness_probe.py
+     # now has TWO matches for it -- `import os` at :65 and `import os as _os`
+     # at :81, whose text CONTAINS the anchor as a substring -- so the arm
+     # refused with ANCHOR-2 and sat red. It was the single remaining stale
+     # anchor in the whole repo: `python tools/mutation_anchor_check.py`
+     # reported 530 anchors checked, 1 not matching exactly once, and this
+     # was it, which is also why tests/run_mutation_anchor_probe.py arm 7a
+     # was failing. One anchor, two red files.
+     #
+     # Anchored on two consecutive import lines, which no `as` alias can be a
+     # substring of, and the replacement now KEEPS `import os` rather than
+     # swapping it for `import io` -- the planted escape is the point, and a
+     # mutant that also removes an import the file uses is testing two
+     # things.
+     "import os\nimport shutil",
+     "import os\n_PLANTED = \"\\d not a real escape\"\nimport shutil"),
 
     ("3. THE SCAN IS NARROWED TO NOTHING -- it matches no file at all and must "
      "report COULD NOT RUN rather than clean, because an empty result set and "
