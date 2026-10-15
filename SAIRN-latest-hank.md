@@ -67,4 +67,8 @@ overridden**. Six merges, every one `pull --no-rebase`. Live probe:
 CONTEXT 39% of 1000k used, measured from this session's own transcript
 (cache_read 390,226 + 850), not from `/context`.
 
-Chain tip: `58e67efa` (origin/main at handoff time).
+Chain tip at close: **`8d116389`** — `HEAD == origin/main`, 0/0, verified by
+`git fetch` immediately before this line was written. The commit that carries
+this line is the one *after* it, by construction; `58e67efa` is the tip the
+handoff and report quote, which is where b13's work landed before the
+deliverables were committed.
