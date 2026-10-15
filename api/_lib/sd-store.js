@@ -18,6 +18,12 @@
 // ---------------------------------------------------------------------------
 
 const { validateLicenseKey } = require('./license');
+// storedBlob strips the scope keys -- license_hash, app_id, p_license_hash --
+// that a posted payload can carry into a stored blob and back out on read.
+// Added 2026-10-15 with the two conversions in this file; `node --check` passes
+// on a file with an undefined identifier, so an import missed here would have
+// been a ReferenceError at the first real write and not a syntax error.
+const { storedBlob } = require('./blob');
 
 const MAX_PAYLOAD_BYTES = 64 * 1024; // 65536, matches sd-data.js
 
@@ -162,8 +168,25 @@ async function writeSlab(lic, slab) {
     body: JSON.stringify({
       license_hash: lic.license_hash,
       app_id: 'stonedesk',
+      // ── `id` IS IN BOTH PLACES ON PURPOSE (named 2026-10-15) ───────────
+      // `slab_id` is the mapped column and `id` stays INSIDE the blob, so the
+      // same value is stored twice. That is a duplication and it is DELIBERATE:
+      // the read at the bottom of this function returns `rows[0].data` WHOLE
+      // and re-adds no column, so stripping `id` would make every slab
+      // unidentifiable to the client. The column is `String(slab.id)` while the
+      // blob keeps whatever type the caller sent, which is why they are not
+      // interchangeable and why the blob copy is the one the client reads.
+      //
+      // WHAT THE storedBlob CALL BUYS, THEN, IS THE SCOPE STRIP ALONE --
+      // license_hash / app_id / p_license_hash. And this site was NOT in the
+      // ten routed for conversion because tools/blob_conversion_coverage.py
+      // files `data: slab` under BUILT ("already immune, a field-by-field
+      // blob"), which it is not: `slab` is the raw caller argument. Measured:
+      // converting it moved CONVERTED 34 -> 45 for ten routed sites, i.e. by
+      // eleven. The tool is cc's and the misclassification is routed, not
+      // edited here.
       slab_id: String(slab.id),
-      data: slab,
+      data: storedBlob(slab, []),
       updated_at: nowISO()
     })
   });
@@ -200,7 +223,7 @@ async function writeMemory(lic, memory) {
   const r = await fetch(restUrl('ai_memories'), {
     method: 'POST',
     headers: Object.assign({}, supabaseHeaders(), { Prefer: 'return=representation' }),
-    body: JSON.stringify({ license_hash: lic.license_hash, app_id: 'stonedesk', shop_id: shopId, data: payload })
+    body: JSON.stringify({ license_hash: lic.license_hash, app_id: 'stonedesk', shop_id: shopId, data: storedBlob(payload, []) })
   });
   const rows = await r.json();
   if (!r.ok) throw storeError('UPSTREAM', 'Memory write failed');

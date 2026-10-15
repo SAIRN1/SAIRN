@@ -1,0 +1,16 @@
+STORED-BLOB CONVERSION COVERAGE (api/_lib/blob.js, item 94)
+266 stored-blob site(s) across api/, by shape:
+   CONVERTED   45
+   RAW         48
+   SPREAD       0
+   NESTED       2
+   BUILT      171
+
+UNCONVERTED (RAW + SPREAD): 48
+CONVERTED:                  45
+
+BUILT is NOT a gap -- blob.js says a field-by-field blob is already
+immune. NESTED (`data: payload.data`) is a different shape with a
+different argument and is counted apart rather than folded either way.
+
+RE-PINNED to unconverted=48 converted=45

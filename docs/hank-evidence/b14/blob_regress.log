@@ -1,0 +1,8 @@
+api/sd-data-stored-blob-scope-keys.test.js exit=0
+api/sd-data-slab-reserve.test.js exit=0
+api/sd-data-locations.test.js exit=0
+api/sd-data-mech-assets.test.js exit=0
+api/sd-data-memory-app-scope.test.js exit=1
+api/sd-data-customers-batch.test.js exit=0
+api/stonedesk-public.test.js exit=0
+api/sd-agent-budget.test.js exit=0

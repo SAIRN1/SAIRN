@@ -164,7 +164,21 @@ test('stonedesk.html still sends no app_id -- the default is load-bearing', () =
   const sd = fs.readFileSync(path.join(__dirname, '..', 'stonedesk.html'), 'utf8');
   const at = sd.indexOf('async function sdData(');
   assert.ok(at > 0);
-  const body = sd.slice(at, at + 900);
+  // ── A FIXED-WIDTH SLICE IS THE WRONG TOOL AND THIS ARM PROVED IT ────────
+  // This read `sd.slice(at, at + 900)` and WENT RED ON 2026-10-15 WITHOUT THE
+  // CODE CHANGING. Comments were added to sdData() on 2026-10-14 and pushed
+  // the body line from inside the window to offset 1612, so the arm reported
+  // "sdData() now sends something else" about a line that is still byte-for-
+  // byte what it asserts. A false RED is not the safe direction: it teaches a
+  // reader that this suite is noise, and the next real failure reads the same.
+  //
+  // THE WINDOW IS NOW THE FUNCTION, not a byte count -- from the declaration
+  // to the next brace at column zero, which is this file's own formatting for
+  // a top-level function. A measurement anchored on a LENGTH drifts with every
+  // comment somebody adds above the thing being measured.
+  const close = sd.indexOf('\n}', at);
+  assert.ok(close > at, 'sdData() has no top-level close brace after it');
+  const body = sd.slice(at, close);
   assert.match(body, /body: JSON\.stringify\(\{ action: action, resource: resource, payload: payload \}\)/,
     'sdData() now sends something else -- re-check the app_id default');
 });

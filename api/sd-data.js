@@ -2323,7 +2323,7 @@ module.exports = async (req, res) => {
       const r = await fetch(rest('business_profiles?on_conflict=license_hash,app_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
-        body: JSON.stringify({ license_hash: licHash, app_id: 'stonedesk', data: payload, updated_at: nowISO() })
+        body: JSON.stringify({ license_hash: licHash, app_id: 'stonedesk', data: storedBlob(payload, ['shop_id']), updated_at: nowISO() })
       });
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
@@ -3660,7 +3660,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({
           license_hash: licHash, app_id: 'stonedesk',
-          slab_id: String(payload.id), data: payload, updated_at: nowISO()
+          slab_id: String(payload.id), data: storedBlob(payload, []), updated_at: nowISO()
         })
       });
       const rows = await r.json();
@@ -3715,7 +3715,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({
           license_hash: licHash, app_id: 'stonedesk',
-          location_id: String(payload.id), data: payload, updated_at: nowISO()
+          location_id: String(payload.id), data: storedBlob(payload, []), updated_at: nowISO()
         })
       });
       if (r.status === 404 || r.status === 400) {
@@ -3752,7 +3752,7 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({
           license_hash: licHash, app_id: 'stonedesk',
-          remnant_id: String(payload.id), data: payload, updated_at: nowISO()
+          remnant_id: String(payload.id), data: storedBlob(payload, []), updated_at: nowISO()
         })
       });
       if (r.status === 404 || r.status === 400) {
@@ -4113,7 +4113,7 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: { message: resource + ' payload.id is required' } });
         return;
       }
-      const row = { license_hash: licHash, app_id: 'stonedesk', data: payload, updated_at: nowISO() };
+      const row = { license_hash: licHash, app_id: 'stonedesk', data: storedBlob(payload, []), updated_at: nowISO() };
       row[cfg.idCol] = String(payload.id);
       const w = await fetch(rest(resource + '?on_conflict=license_hash,' + cfg.idCol), {
         method: 'POST',
@@ -4172,7 +4172,7 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: { message: resource + ' payload.id is required' } });
         return;
       }
-      const hrRow = { license_hash: licHash, app_id: 'stonedesk', data: payload, updated_at: nowISO() };
+      const hrRow = { license_hash: licHash, app_id: 'stonedesk', data: storedBlob(payload, []), updated_at: nowISO() };
       hrRow[cfg.idCol] = String(payload.id);
       const hw = await fetch(rest(resource + '?on_conflict=license_hash,' + cfg.idCol), {
         method: 'POST',
@@ -4910,7 +4910,7 @@ module.exports = async (req, res) => {
       const r = await fetch(rest('grd_properties?on_conflict=license_hash,property_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
-        body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', property_id: String(payload.id), data: payload, updated_at: nowISO() })
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', property_id: String(payload.id), data: storedBlob(payload, []), updated_at: nowISO() })
       });
       if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
@@ -4931,7 +4931,7 @@ module.exports = async (req, res) => {
       const r = await fetch(rest('grd_jobs?on_conflict=license_hash,job_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
-        body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', job_id: String(payload.id), property_id: String(payload.property_id), data: payload, updated_at: nowISO() })
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', job_id: String(payload.id), property_id: String(payload.property_id), data: storedBlob(payload, []), updated_at: nowISO() })
       });
       if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema.sql in Supabase first.'); return; }
       const rows = await r.json();
@@ -4952,7 +4952,7 @@ module.exports = async (req, res) => {
       const r = await fetch(rest('grd_quotes?on_conflict=license_hash,quote_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
-        body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', quote_id: String(payload.id), property_id: String(payload.property_id), data: payload, updated_at: nowISO() })
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', quote_id: String(payload.id), property_id: String(payload.property_id), data: storedBlob(payload, []), updated_at: nowISO() })
       });
       if (r.status === 404 || r.status === 400) { await notProvisioned(res, r, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema.sql in Supabase first.'); return; }
       const rows = await r.json();

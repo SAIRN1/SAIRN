@@ -1,0 +1,20 @@
+STORED-BLOB CONVERSION COVERAGE (api/_lib/blob.js, item 94)
+266 stored-blob site(s) across api/, by shape:
+   CONVERTED   34
+   RAW         58
+   SPREAD       0
+   NESTED       2
+   BUILT      172
+
+UNCONVERTED (RAW + SPREAD): 58
+CONVERTED:                  34
+
+BUILT is NOT a gap -- blob.js says a field-by-field blob is already
+immune. NESTED (`data: payload.data`) is a different shape with a
+different argument and is counted apart rather than folded either way.
+
+OK -- no worse than pinned (58 unconverted).
+A RATCHET IS NOT A PASS. 58 site(s) still hand the raw payload or a
+payload copy to the store, so a posted license_hash still rides into
+those blobs and is echoed back on read. This run says only that the
+number did not get worse.
