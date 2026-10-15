@@ -1,74 +1,75 @@
-# hank — latest (b13, 2026-10-15)
+# hank — latest (b14, 2026-10-15)
 
-**LANDED.** HEAD == origin/main `58e67efa` when the handoff was written, 0/0,
-clean, **NOT forced**. Claim taken as the batch's FIRST action. Three gate
-refusals (register-feed, derived-docs, tier-a), three satisfied, **zero
-overridden**. Six merges, every one `pull --no-rebase`. Live probe:
-**verified=5 fail=0 couldnot=3**, the three named.
+**LANDED.** HEAD == origin/main `359858ad` at the moment of the check, 0/0,
+**NOT forced**. Claim taken as the batch's first action. Three gate refusals
+(register-feed, tier-a, derived-docs), three satisfied, **zero overridden**.
+**40 suites driven, 40 green.** Live probe: **verified=7 fail=0 couldnot=4**,
+the four named *and counted*.
 
 ## What changed
 
-* **T16 as Michael decided, replacing hank's own N1 refusal.** The 409 closed
-  the silent EVV overwrite and left no route for the caregiver who made the
-  mistake. Now the original stays on the row and the submission is **appended**
-  (old value, new value, actor from the verified session, reason, server
-  timestamp), **pending** — and `effectiveClock()` ignores a pending entry, so
-  payroll does not move on an unverified self-assertion. New scheduler-only
-  `approve_clock_correction`, declared in the resource registry in the same
-  edit. An entry with **no status is approved**, so live corrected visits are
-  not silently reverted. RED 18/8 → GREEN 27/0.
-* **T18** — `mappable` accepted any non-empty `applies_to_positions` while the
-  leg beside it validated `audience`. Unmatchable is **UNDECIDED** with the
-  token named; a false is **withheld** while a token is unread. RED 9/8 →
-  GREEN 17/0.
-* **T17** was already closed by b12's N2. Necessity proven by **ablation** (N2a
-  red, three controls green). No new code.
-* **N4** — the coverage claim now names the real `tests/` suite. cody's probe:
-  **exit 0, 8/8**, was exit 1 with 3 findings.
-* **F4/F5 (fourth's b20)** — the `leg_aftercare` key was delimiter-ambiguous
-  and `merge-duplicates` made a collision silently overwrite a different case's
-  check-in. Two forms now, so **every existing id survives byte for byte**; not
-  hashed, because a hash collision merges two records. F5: the device adopts
-  the id the server stored. RED 7/1/6 → GREEN 14/0.
-* **The 11 UNPROVEN apps → 0.** Nine were the check's own fault: a table name
-  it derived when `api/_lib/auth.js` says a derivation is wrong for five apps,
-  and one detection method over one representation. 17 clean, 0 refused, 0
-  unmeasurable.
+* **No self-approval on clock corrections, both routes.** The rule lives in
+  `api/_lib/sen-evv-clock.js`, not just the handler; `403
+  SELF_APPROVAL_REFUSED` with its own code. `propose_clock_correction` no
+  longer auto-approves — on that route the filer **was** the approver by
+  construction, so b13's approve-at-filing had to go with it.
+  `self_approved` removed; `self_correction` kept.
+* **The queue b13 shipped without.** The approval verb existed and nothing
+  rendered `pending`/`pending_count`/`pending_entries`. Now a scheduler-tier
+  **Clock Corrections** tab, count on the button, both times per row, Approve
+  **disabled with the reason** when this user submitted it, a sentence not a
+  blank panel. `senData()` gained `senLastErr` — it returned a bare `null`, so
+  the button would have been a **silent no-op** on its commonest refusal.
+  RED 13/5 → GREEN 18/0, **plus a real-browser DOM run against the deployed
+  page** (`button.disabled` as a property, not a regex).
+* **Census SQL.** PART 0 is generic over every object-valued key and that is
+  **better** than the `stedi` path — hardcoding one service under-reports the
+  day a second is added, in the direction that *authorises* clearing the key.
+  Run-order header added. `SAIRN-census-sql.txt`, Drive id
+  `1cJ-Y68nBGd23IN08NbCcJfhhmCxVCsTO`.
+* **cody's X1/X2 closed; T16/T17/T18 hold** (probe exit 0, 8/8; window suite
+  15/15). X1's comment was **wrong**, not unproven. X2 cited a field the
+  finding never carried.
+* **Ten blob conversions, 58 → 48 exactly.** Nine column lists came out
+  **empty** — a finding about the reads. `CONVERTED` moved by **eleven**, and
+  the extra one is `writeSlab`, a raw site the coverage tool files as
+  "already immune".
+* **The misspelt-role blind spot is closed**, sabotage-measured both ways —
+  and b13's own **fixture** was wrong as well as its check.
+* **Two false reds root-caused.** `leg_custodylog` is append-only and the arm
+  asserted 200; the memory suite's asserted line had been pushed past a
+  fixed-width slice by comments.
 
 ## Open
 
-1. **T16's approval route has no UI.** API-only; `pending_entries` is rendered
-   by nothing, so a submission is invisible to a scheduler. → hank b14.
-2. **The approver may be the submitter** in a one-person agency, marked
-   `self_approved` not refused. Chosen from precedent, not a rule. → Michael.
-3. **Tier A obligation open**, assigned to **fourth**: `alf_staff`,
-   `leg_aftercare`, `leg_cases`, `sen_visits`, one question each.
-4. **A misspelt role in a picker is still invisible** to the role-picker check
-   — measured by sabotage, printed every run, **not closed**.
-5. **Five apps' clean verdict is ARRAY-ONLY** — weaker than "the picker was
-   checked", and labelled as such on each line.
-6. **`api/sd-data-leg-session-gate.test.js` is red and is NOT mine** —
-   identical exit 1 at the pre-b13 HEAD.
-7. **Four SQL files unrun**, all Michael's: the census (PART 0 first), the two
-   MAR-grant blocks, b10 block 5, and `sql/2026-10-14-michael-run-order.sql`
-   — the last is the lag the role-picker check cannot see.
+1. **A one-person agency now has NO route to correct a clock time** — owner is
+   caregiver, submitter and only possible approver. The decision's own
+   consequence. → Michael.
+2. **The queue reads local rows**: a scheduler whose hydrate has not run sees
+   an empty queue that is not empty. → hank b15.
+3. **`approve_clock_correction` has never run against the live database.**
+4. **Tier A obligation open**, `leg_custodylog` + `sen_visits` → fourth.
+5. **SD_LINEAGE / SD_HR still let a payload `id` shadow the column** —
+   deliberately; three mutually exclusive one-line fixes and I did not pick.
+6. **The census is the only SQL left on Michael's list.**
+7. **Seven `api/` suites owed gate-driver wiring**, four FMEA drafts → cc.
+8. **Nothing sweeps suites for the two false-red shapes** found this batch.
 
 ## Routed
 
-* **cody** — your b14 `tests/run_b14_leg_aftercare_probe.py` is fourth's routed
-  F4 arm. **My fix has landed**; `api/leg-aftercare-key-unambiguous.test.js`
-  F4a drives the exact colliding pair. Write yours as a regression guard, and
-  **do not build a second copy of the derivation**.
-* **cc** — six `api/` suites need wiring into the gate driver (b12's three plus
-  b13's three; the role-picker one exits **3 by design**, so treat 3 as
-  could-not-run). Plus `fmea_draft --save` for four files.
-* **fourth** — the Tier A discharge above.
+* **cc** — the coverage tool's `BUILT` bucket classifies by **identifier
+  name**, so `data: slab` was reported immune while being a raw site. Plus the
+  seven suites (the role-picker one exits **3 by design**) and four
+  `fmea_draft --save`.
+* **fourth** — the Tier A discharge; its three questions are deliberately ones
+  an author cannot answer about their own work.
+* **cody** — X1 and X2 are closed in `api/`; your two files were **run, never
+  edited**.
 
-CONTEXT 39% of 1000k used, measured from this session's own transcript
-(cache_read 390,226 + 850), not from `/context`.
+CONTEXT 61% of 1000k used, measured from this session's own transcript
+(cache_read 608,283 + 571), not from `/context`.
 
-Chain tip at close: **`8d116389`** — `HEAD == origin/main`, 0/0, verified by
-`git fetch` immediately before this line was written. The commit that carries
-this line is the one *after* it, by construction; `58e67efa` is the tip the
-handoff and report quote, which is where b13's work landed before the
-deliverables were committed.
+Chain tip at close: **`f1eb09f8`** — `HEAD == origin/main`, 0/0, verified by
+`git fetch` immediately before this line. The commit carrying this line is the
+one *after* it, by construction; `359858ad` is the tip the handoff and report
+quote, where b14's work landed before the deliverables were committed.

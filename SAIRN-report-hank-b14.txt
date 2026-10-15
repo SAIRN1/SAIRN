@@ -1,0 +1,372 @@
+REPORT hank b14
+
+SIX DISPATCHED ITEMS, ALL SIX DONE AND PUSHED. HEAD == origin/main 359858ad at
+the moment of the check, 0 ahead 0 behind, NOT forced. Three gate refusals --
+register-feed, tier-a, derived-docs -- three satisfied, ZERO OVERRIDDEN: not
+SAIRN_SEED_GATE=off, not SAIRN_GATE_EXEMPT=seed, not SAIRN_SKIP. The claim was
+taken as the FIRST action of the batch. 40 suites driven, 40 green.
+
+--------------------------------------------------------------------------
+1. THE QUEUE, AND NO SELF-APPROVAL
+--------------------------------------------------------------------------
+
+THE DECISION APPLIES TO BOTH ROUTES, AND THAT IS NOT A SIDE EFFECT.
+approveCorrection() in api/_lib/sen-evv-clock.js refuses SELF_APPROVAL_REFUSED
+when the approver is the submitter -- IN THE MODULE, not only in the handler,
+because a rule enforced in one branch of one endpoint is a rule the next caller
+does not get. The handler maps it to 403 WITH ITS OWN CODE: a caller cannot act
+on a refusal they cannot tell apart from "you are the wrong role", and the
+message names what to do next.
+
+AND propose_clock_correction NO LONGER AUTO-APPROVES. On that route the
+submitter and the approver were the same person BY CONSTRUCTION -- the filing
+itself approved -- so b13's approve-at-filing is exactly what the decision
+forbids. The entry stays pending, and that route's 200 now carries
+`status: 'pending'` plus a sentence naming the unchanged recorded time. A 200
+that still read like a completed correction would be affirmative false success:
+the filer walks away believing it is live and payroll still sees the original.
+
+`self_approved` IS GONE from the entry and the response. A field that can no
+longer be true is one a reader still looks for and a consumer still branches
+on. `self_correction` STAYS, because who FILED is a different fact from who
+approved, and an auditor reading a hundred visits should not have to join two
+fields by eye.
+
+THE QUEUE IS THE HALF b13 SHIPPED WITHOUT. The approval verb existed and
+NOTHING SHOWED IT: effectiveClock() already returned pending / pending_count /
+pending_entries and no screen rendered any of them, so a caregiver's submitted
+correction sat pending for ever -- strictly better than the old 409 for the
+caregiver and NO BETTER AT ALL for payroll. Now a scheduler-tier Clock
+Corrections tab, THE COUNT ON THE BUTTON so the queue is visible without
+opening it, both times on every row, an Approve control DISABLED WITH THE
+REASON ON SCREEN when this user submitted it, and a sentence rather than a
+blank panel when nothing is waiting -- a blank panel is indistinguishable from
+one that failed to load, which is this app's own argument for its offline
+badge.
+
+senData() RECORDED NOTHING ABOUT A FAILURE -- a bare null and a console.warn --
+so the Approve button would have been a SILENT NO-OP on its single most common
+refusal. senLastErr per RESOURCE now, the same mechanism sairnlegacy.html has
+carried since 2026-09-05, and per resource rather than per app because a shared
+slot hands one caller another caller's message.
+
+MEASURED. api/b14-clock-approval-two-person.test.js, 18 arms: RED 13 failed / 5
+passed, GREEN 18/0. Twelve server arms against the real handler and the real
+module; six UI arms against the real render functions extracted into a vm.
+
+AND THE DOM WAS DRIVEN IN A REAL BROWSER, AGAINST THE DEPLOYED PAGE.
+docs/hank-evidence/b14/dom_real_browser.md. The tooling was MEASURED first
+rather than assumed: Playwright, jsdom and html5lib are ALL ABSENT from this
+clone and `npx playwright` refuses to install, so the standing functional
+tool is not available and installing one is not a change this batch may make.
+The Chrome tooling reaches something better than a local harness -- the page
+Vercel is actually serving. No credentials: the real render functions were
+driven against injected fixture rows, which is what the vm arms do, with the
+difference that `button.disabled === true` is read as A PROPERTY OF A REAL
+ELEMENT rather than as a regex over a markup string. That is the arm a vm
+cannot give honestly. The refusal line was also read back out of the live DOM
+and it is THE SERVER'S OWN WORDS, which is what senLastErr was added for.
+
+THE ONE THING THAT LOOKED LIKE A SIDE EFFECT AND WAS CAUGHT: making
+proposeCorrection default to pending would have turned the scheduler route into
+a silent no-op if approve-at-filing had simply been deleted without the
+response change -- 200 to the filer and the number never moving. T16aa in
+api/t16-clock-correction-record.test.js was REWRITTEN to the new contract
+rather than deleted, so that route stays covered in both suites. 27/0.
+
+--------------------------------------------------------------------------
+2. THE CENSUS SQL
+--------------------------------------------------------------------------
+
+PART 0 DOES NOT READ `data->'stedi'->>'enc'` AND THAT IS CORRECT, WHICH IS A
+BETTER ANSWER THAN THE ONE THE ITEM ASKED TO CONFIRM. It counts the nested
+shape GENERICALLY -- every object-valued key carrying an `enc` -- and the
+writer is why: api/sc-credentials.js:205 does `next[service] = nextEntry`, so
+the ciphertext lives one level down under the SERVICE key, and `stedi` is
+simply the only member of ALLOWED_SERVICES (:58) today. RE-CONFIRMED FROM THE
+WRITER, not from the file's own comment. Hardcoding the one service would
+under-report the moment a second is added, and UNDER-REPORTING HERE IS WHAT
+AUTHORISES CLEARING THE OLD KEY.
+
+A RUN ORDER HEADER was added saying what each part's answer MEANS, including
+the two STOP conditions a reader would otherwise take for a pass: both-zero in
+part 0 means "no credential exists", which is NOT the step-4 precondition, and
+a non-zero flat count means the table holds a shape this file does not know
+about and the census is INCOMPLETE.
+
+UPLOADED AND READ BACK THROUGH THE DRIVE API, not only through the sync mount:
+SAIRN-census-sql.txt, 13,261 bytes, byte count matching local, Drive id
+1cJ-Y68nBGd23IN08NbCcJfhhmCxVCsTO. The mount PASS alone proves the bytes are in
+the sync set, not that Google acknowledged them; the API read closes that.
+MICHAEL RUNS IT, and it is now the ONLY unrun item on his SQL list -- the
+run-order and MAR-grant files are confirmed run and are off it.
+
+--------------------------------------------------------------------------
+3. CODY's ROUTED X1, X2, T16, T17, T18
+--------------------------------------------------------------------------
+
+X1 -- THE COMMENT WAS WRONG, NOT MERELY UNPROVEN. It claimed a person was
+compliant the day before their hire anniversary and non-compliant on it.
+Measured, the anniversary evaluation returns meets: null. The day-zero
+withholding landed AFTER that hand-drive on 2026-09-29 and superseded it, and
+nobody re-read the sentence the change had just made untrue. IT IS THE KIND OF
+CLAIM A READER CHECKS LEAST PRECISELY BECAUSE IT NAMES ITS OWN EVIDENCE.
+Corrected rather than deleted: the boundary it describes is real and worth
+stating -- the same hours are a determinate PASS the day before and fall
+outside the rolled window on the day.
+
+X2 -- A CITATION TO A FIELD THAT WAS NOT THERE. meets_unknown_reason tells the
+reader that a days-remaining field "says how much of it is left" and the
+finding carried no such key. Both numbers WERE computed and stayed on the
+internal window object, while a THIRD comment said the module hands "every
+consumer" both -- three places said the reader had this and the reader did not.
+hours_window_days_elapsed and hours_window_days_remaining are on the staff
+finding now. A citation to an absent field is worse than no citation: the
+obvious conclusion when somebody cannot find it is that the response was
+TRUNCATED.
+
+T16, T17 AND T18 ALL HOLD. python tests/run_b12_routed_findings_probe.py ->
+exit 0, NO FINDINGS, 8 of 8. cody's window suite -> 15/15, was 13/15. Both of
+cody's files were RUN, NEVER EDITED: the defects were in api/, which is where
+they were fixed.
+
+TWO MORE COMMENTS WENT STALE THE DAY CODY's ARMS LANDED, IN THE OPPOSITE
+DIRECTION FROM N4's ORIGINAL DEFECT. The leap-day note and the day-zero note
+both still said NO ARM DRIVES THIS and ROUTED TO CODY. Both now cite the suite
+and what it actually asserts -- including that the leap-day case is driven in
+BOTH directions, a common year and a leap year, because either arm alone passes
+against the wrong rule. N4b in api/n1-n4-and-sf-delete.test.js was rewritten
+for the same reason: it REQUIRED the module to keep confessing "no committed
+arm", which would have pinned the comment to a sentence that had itself become
+false. It now requires the comment to cite a suite AND that suite to exist on
+disk, which is a claim that can be checked rather than a confession that cannot
+go out of date.
+
+A TEXT CHECK CANNOT TELL A CLAIM FROM A QUOTATION OF THAT CLAIM, and this batch
+hit it twice more: X1 and N4a both flagged MY FIXES, because the fixes quoted
+the superseded phrase in order to explain it. Third and fourth instances after
+b13's N4. The corrections describe the old wording without spelling it, and say
+why in the comment so the next author does not re-learn it.
+
+--------------------------------------------------------------------------
+4. THE TEN BLOB CONVERSIONS
+--------------------------------------------------------------------------
+
+Done mechanically by scratchpad/convert_blobs.py, which VERIFIES EVERY TARGET
+BEFORE CHANGING ANYTHING and refuses on the first mismatch -- a partial rewrite
+of a 2MB file is worse than none -- and prints each site with the reason for
+its column list.
+
+NINE OF THE TEN COLUMN LISTS CAME OUT EMPTY, AND THAT IS A FINDING ABOUT THE
+READS RATHER THAN LAZINESS. The routing doc is explicit that the tool cannot
+choose the keys and neither can the document, and that each converter must
+derive them from the paired read. Derived:
+  flat(data, {col})        Object.assign({}, data, extra) -- the COLUMN wins, so
+                           a payload copy is already shadowed and stripping it
+                           removes something nobody could read. That is site 2,
+                           business_profiles, the ONE real key list.
+  x.data returned WHOLE    nothing re-adds any column, so stripping a key
+                           DELETES it from the client's view. Empty list.
+What all ten buy is the NEVER_STORED strip -- license_hash, app_id,
+p_license_hash -- which IS the defect the tool counts: a posted license_hash
+rode into the blob and came back out on read.
+
+AND TWO SITES WERE NOT STRIPPED THOUGH THEIR READ IS THE SHADOWING SHAPE.
+SD_LINEAGE (:4116) and SD_HR (:4175) read Object.assign({id: x[idCol]}, x.data),
+so DATA wins and a payload `id` SHADOWS the column -- exactly what columnKeys
+exists for. NOT STRIPPED: the column is String(payload.id) while the blob keeps
+whatever type the caller sent, so stripping silently changes THE TYPE THE
+CLIENT READS, and stonedesk.html:39814 compares block ids with ===. Routed as a
+decision with the measurement rather than changed on an argument about
+neatness. That is the one place in this item where I did less than the obvious
+thing on purpose.
+
+MEASURED, both halves the routing doc asked for:
+  UNCONVERTED 58 -> 48   exactly ten, so the drop is attributable
+  CONVERTED   34 -> 45   ELEVEN, and the extra one is the finding below
+  --repin RUN ONCE, after the conversions, never by hand
+
+api/_lib/sd-store.js writeSlab WAS NOT ONE OF THE TEN BECAUSE THE COVERAGE TOOL
+FILES `data: slab` UNDER BUILT -- "already immune, a field-by-field blob" --
+WHICH IT IS NOT. `slab` is the raw caller argument, and the only thing
+distinguishing it from the ten counted RAW sites is that the identifier is not
+called `payload`. A raw site hiding in the immune bucket, with the tool
+reporting it as safe and BUILT printed in its output as "NOT a gap". Converted
+here because api/ is mine; the tool is cc's and the misclassification is
+ROUTED, not edited. The `id` duplication on that row IS DELIBERATE and the row
+now says so -- the read returns the blob whole, so stripping id would make every
+slab unidentifiable, and a reader who "fixed" the duplication would break them.
+
+THE storedBlob IMPORT IN sd-store.js IS CALLED OUT IN ITS OWN COMMENT because
+`node --check` passes on a file with an undefined identifier: a missed import
+would have been a ReferenceError at the first real write and not a syntax
+error. The module was loaded with `require()` to prove it resolves.
+
+AND A FALSE RED FOUND WHILE REGRESSING THIS, IN A FILE I OWN.
+api/sd-data-memory-app-scope.test.js asserted sdData()'s body line inside
+`sd.slice(at, at + 900)`. Comments added to sdData() on 2026-10-14 pushed that
+line to offset 1612, so the arm reported "sdData() now sends something else"
+about a line that is BYTE-FOR-BYTE what it asserts. The window is the FUNCTION
+now, to the next brace at column zero. A measurement anchored on a LENGTH
+drifts with every comment somebody adds above the thing being measured.
+
+THE leg_aftercare KEY AGREEMENT IS PROVEN by two arms that extract the client
+copy and RUN it against the handler -- F4i over eight pairs including the
+colliding one, and E4. The dispatch's cited lines have MOVED: the client half is
+sairnlegacy.html:4256/:4269 and the server half api/sd-data.js:15869/:15875,
+not 4214-4216 and 15610.
+
+--------------------------------------------------------------------------
+5. METHODOLOGY -- THE BLIND SPOT, AND THE RED SUITE
+--------------------------------------------------------------------------
+
+THE MISSPELT-ROLE BLIND SPOT IS CLOSED. b13 measured it by sabotage -- exit 0,
+MISSED -- and left it open on the view that closing it needed "a vocabulary
+nobody has written" of legitimate non-role option values. THAT FRAMING WAS
+WRONG. The discriminator does not need to know which non-role values are
+legitimate, only which ones are PROBABLE ROLES, and that is answerable from the
+app's own vocabulary: containment either way, or ONE edit.
+
+AND b13's OWN SABOTAGE FIXTURE WAS WRONG AS WELL AS ITS CHECK. 'med_aide_II' is
+not a misspelling of ANY SAIRNsenior role -- med_aide is SAIRNcare's -- so that
+plant could never have been caught by any vocabulary-anchored rule, and the
+miss was partly the fixture's. Re-sabotaged with 'caregiver_II' and 'office_II':
+
+  SABOTAGE 1   a misspelt role in a picker            -> exit 1, sairnsenior
+  SABOTAGE 1b  the same, in an array role list        -> exit 1, sairnscape
+  SABOTAGE 2   a CHECK narrowed under a good picker   -> exit 1, both named
+  THE LIVE REPO                                       -> 17 clean, 0 refused,
+                                                         0 unmeasurable
+
+THE FIRST DRAFT OF THE CLOSURE MANUFACTURED TWO FALSE POSITIVES and that is the
+part worth carrying. Edit distance 2 read stonedesk's service-type dropdown
+offering "other" as a misspelling of "owner", and a job-title dropdown as well.
+The cause was not the distance: it was the PICKER CLASSIFIER. "Two or more
+option values in the vocabulary" was harmless while non-vocabulary values were
+SKIPPED, and stopped being harmless the moment one of them could FAIL -- a
+loosening that only became a defect when something downstream got stricter. A
+picker must now be ALL roles or near-roles, which is the same ALL-not-some rule
+the array path already used, and the distance is ONE.
+
+THE ARRAY PATH NEEDED THE SAME ALLOWANCE OR THE SABOTAGE SWITCHED THE DETECTOR
+OFF. Breaking one token made a literal stop satisfying "ALL tokens in vocab",
+so the list VANISHED from the comparison and the app reported clean. A detector
+that stops looking at a list the moment somebody breaks one of its values is a
+detector the breakage disables. Sabotage 1b is the arm that proves it fails
+instead of going quiet.
+
+THREE LIMITS ARE PRINTED EVERY RUN, two of them new and honest: a misspelt role
+in a TWO-token list is not caught, because breaking one leaves fewer than two
+real roles and the list stops being distinguishable from any other pair of
+strings -- a 3+ token list IS caught; and a picker carrying a non-empty
+non-role placeholder is DISQUALIFIED, so its app reports UNPROVEN rather than
+clean, which is visible rather than silent. The live-lag limit is unchanged.
+
+THE RED SUITE IS ROOT-CAUSED AND IT WAS A FALSE RED.
+api/sd-data-leg-session-gate.test.js asserted that every leg_* write returns
+200 with a session, over a list containing leg_custodylog -- which is
+APPEND-ONLY. The handler answers 409 APPEND_ONLY in its own words, "a custody
+record that can be edited is not a chain of custody", and refuses EVERYONE
+including the owner. The suite was carried through b13 as a known red with the
+note "not mine". That was true and it was not an answer.
+
+THE REPLACEMENT IS STRICTLY STRONGER, NOT AN EXEMPTION: for that one resource
+the arm asserts the session gate was PASSED and then the append-only rule
+refused -- 409 with the code, not 401 or 403. A 401 there would mean the gate
+rejected a good session, which is what this suite exists to catch, and the old
+arm could not tell those apart. 20/20, was 19/20.
+
+A FALSE RED IS NOT THE SAFE DIRECTION. This one sat long enough to be inherited
+as a fact about the codebase, and a reader who learns a suite is "always a bit
+red" reads the next REAL failure the same way.
+
+--------------------------------------------------------------------------
+6. PUSH AND THE REGRESSION SURFACE
+--------------------------------------------------------------------------
+
+40 SUITES DRIVEN, 40 GREEN (docs/hank-evidence/b14/suite_run.log). Both app
+files syntax-checked per script block -- sairnsenior.html 3 blocks, 0 errors;
+sairnlegacy.html 3 blocks, 0 errors -- plus `node --check` on every changed
+api/ file.
+
+THREE GATE REFUSALS, THREE SATISFIED, ZERO OVERRIDDEN.
+  register-feed -> seven records, scratchpad/reg_b14.py. ONE WAS REFUSED first
+    time -- action_status 'planned' with a `note` and no `action` -- and
+    re-fed with the action named, which is the register refusing a status
+    without the thing that was done.
+  tier-a        -> an obligation over leg_custodylog and sen_visits, assigned
+    to fourth, carrying three questions an author cannot answer about their own
+    work.
+  derived-docs  -> MASTER-PLAN and traceability-matrix REGENERATED, never
+    hand-merged (PR 2.5).
+
+Two push attempts lost the ref race rather than being refused ("cannot lock
+ref") with four other sessions pushing in the same window.
+scratchpad/pushloop.sh distinguishes a race from a refusal and BAILS on any
+conflict outside the two generated documents.
+
+POST-PUSH LIVE VERIFICATION, PR 3.2 -- verified=7 fail=0 couldnot=4.
+docs/hank-evidence/b14_live_gate_probe.py, exit 0. Not bare curl:
+tools/sairn_http.py, which raises on a Vercel challenge rather than handing
+back the challenge page, and a non-200 is recorded as UNVERIFIED and never
+folded into a pass. Seven legs verified against the real deployed pages,
+including b13's legAdoptServerId RE-CHECKED rather than assumed still there.
+FOUR LEGS COULD NOT RUN and are COUNTED, not only described -- both sen_visits
+correction verbs, X1/X2's fields, and all ten blob conversions sit behind 401
+NO_LICENSE or are write paths with no readable surface. b13's first probe
+printed couldnot=0 under a paragraph listing three unreachable legs; that is
+fixed here by construction.
+
+--------------------------------------------------------------------------
+WHAT IS NOT PROVEN
+--------------------------------------------------------------------------
+
+A ONE-PERSON AGENCY NOW HAS NO ROUTE TO CORRECT A CLOCK TIME AT ALL. The owner
+is the assigned caregiver, the submitter and the only possible approver. b13
+chose flag-not-refusal for exactly this case; the b14 decision overturned it,
+and applying it to both routes is the only consistent reading. That is the
+decided trade and it is a workflow change, not a side effect -- but nothing in
+the app says so at the point of filing beyond the pending message.
+
+approve_clock_correction HAS NEVER RUN AGAINST THE LIVE DATABASE. The server
+half is proven against the real handler, the DOM against the deployed page, and
+neither is a production round trip.
+
+THE QUEUE READS LOCAL ROWS. senPendingCorrections() is built from visits(),
+which is server-merged by senHydrateVisits(), so a scheduler whose hydrate has
+not run sees an empty queue that is not empty -- and the empty state says
+"nothing is waiting", which would then be false.
+
+NO ARM PROVES A SHARED CREDENTIAL CANNOT DEFEAT THE TWO-PERSON RULE. The
+identity compared is the session's employee_id, so two people sharing one login
+are one person to this check and nothing detects that. Named so nobody reads
+the rule as stronger than it is.
+
+SD_LINEAGE AND SD_HR STILL LET A PAYLOAD id SHADOW THE COLUMN, deliberately,
+and the three available fixes are mutually exclusive: the column stops
+stringifying, the read stops re-adding id, or the client stops comparing with
+===. Only one is right and I did not pick.
+
+THE COVERAGE TOOL'S BUILT BUCKET STILL HIDES ANY SITE WHOSE PAYLOAD VARIABLE IS
+NOT NAMED `payload`, and nothing here enumerates them -- that needs the
+classifier changed, which is cc's.
+
+NOTHING SWEEPS COMMITTED SUITES FOR THE TWO FALSE-RED SHAPES found this batch:
+a fixed-width source window, and a generic loop over a list with a known
+exception. Both were found by running the suites and READING THE OUTPUT, which
+is not a control.
+
+THE CENSUS IS STILL UNRUN and is the only item left on Michael's SQL list.
+
+SEVEN api/ SUITES ARE OWED GATE-DRIVER WIRING (b12's three, b13's three, and
+this batch's one) and FMEA drafts are owed for four files. Both are cc's.
+
+NO SCREENSHOT of the new tab. The real-browser checks are DOM assertions, and
+`.disabled` is not visible in a picture anyway -- but a reader wanting to see
+what a scheduler sees does not have one.
+
+DEFINITION the hash below is sha256 over every byte of this file up to and NOT
+including the final hash line, CRLF normalised to LF, taking the LAST
+occurrence of the marker.
+SHA256 ca9f6518a29f787211d4dca7fd548da7f99e751a79bd8ad955fe8480c5ab4e10
+END-OF-REPORT
