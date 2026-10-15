@@ -1,0 +1,44 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "fourth",
+  "batch": "b26",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "",
+      "status": "done",
+      "evidence": "DISCHARGED hank 2026-10-15T15:04:38Z (7 Tier A resources), reviewer not author. Change (3) first per Michael: the law_trusttx arm is STRICTLY STRONGER -- 4 independent failure modes vs the old arm's 1, verified on the assertion not the description; 403 right on the merits with NO independent spec (only hank's own handoff). H1: a 2x2 ABLATION proves the TRUST HARD-LOCK IS UNTESTED -- lock emptied + shipped table -> exit 0, 3a still ok; ARM B proves the lock does work; law_bankstatements has no arm at all. H2 THE STRAIGHT-TIME FLOOR IS VIOLATED DOWNWARD, driven: a DOWNWARD approved correction yields adjustment_cents=-2000 and total_payable_cents=-2000, i.e. a silent wage deduction. H3 THE REOPEN RULE IS VIOLATED, driven end to end through the real handler: billing AND owner can POST sen_settings/payroll_closed_periods -> HTTP 200, one row (REPLACE not append, prior value gone), and the same payroll run then reports 300min/10000c for a period already paid at 240min/8000c with period_closed=null. hank Q1 answered STRUCTURALLY (undatable is legacy-only because both writers stamp and clock_corrections is in neither payload allowlist), Q4 hazard CONFIRMED (period_closed=null on a partly-frozen 480min total; 7 not_computed entries and none mentions a straddle), Q5 direction CORRECT, the EVV as-of gap named (readiness uses the no-as-of form so Michael's same-clock decision is unimplemented for closed periods), the purity headers named as the defect. My own b25 LOW on the HR branch is CLOSED by hank's better fix and I widened the consumer universe to confirm his sample was the whole of it. EVIDENCE: scratchpad b26_freeze_drive.js+.log (sections A-E), b26_lock_ablation.py+.log (2x2), verdict_b26_hank_a1c22397.txt, b26_trusttx_baseline.log (13/13 exit 0)"
+    },
+    {
+      "id": 2,
+      "title": "",
+      "status": "done",
+      "evidence": "THE 22 RE-DERIVED AT HEAD ceea750d and STILL 22 at 18,867 lines -- the count did NOT drift though the file grew ~100 lines; the citations moved (+24 early, +98 late). List: :2668 :3230 :3591 :4176 :4240 :4489 :4571 :4646 :8328 :9126 :9321 :10650 :10797 :10996 :11115 :11285 :11362 :11613 :11692 :13757 :13888 :14445. PLUS a 23rd write-guarded guard in a shape nobody counted, :15150, and it is NOT a defect -- its own comment names 23505/23502/23503 and says the table exists and refused the row, deliberately scoped. HANK'S TEN BLOB CONVERSIONS REVIEWED AS A CHANGE (8627f4e4): CORRECT and no data loss. storedBlob(payload, cols) copies payload minus cols minus NEVER_STORED, so storedBlob(payload, []) narrows by EXACTLY the three scope keys and nothing else -- the nine empty column lists are right rather than an omission, and stripping a mapped column would have been cody arm Z's defect. The one non-empty list ['shop_id'] is right too and loses nothing: the read selects data,shop_id and returns flat(row.data, {shop_id: row.shop_id}) at :2339/:2343, the write echo the same at :2355. storedBlob mutates a copy, so payload.id is still readable by the same object literal. EVIDENCE scratchpad b26_census.log"
+    },
+    {
+      "id": 3,
+      "title": "",
+      "status": "done",
+      "evidence": "(d) LATE_REPLAY DRIVEN LIVE, four writes in sequence against one persistent row through the real handler (scratchpad b26_late_replay_drive.js+.log). b23 read it, b24 and b25 both left it read-only and named it the weakest-evidenced item in the b23 verdict. ALL FOUR PROPERTIES HOLD: (1) an 8-day-old clock-in raises LATE_REPLAY and it is STORED not only returned; (2) a later write on the OTHER clock field does not erase it -- and the BOTH-FLAGGED case is the discriminating one, which is the one driven, because the code's own comment says the pre-2026-10-14 bug only showed when both halves were flagged and a clean clock-out let the flag survive by luck; (3) THE T16 REFINEMENT HOLDS: a re-sent immutable clock field lands as a PENDING CORRECTION, the row keeps the original, and the original's LATE_REPLAY is KEPT; (4) a write mentioning no clock field keeps every flag untouched. ONE FIXTURE CORRECTION DISCLOSED: the first draft moved clock_in to NOW, which inverts the visit, and the handler refused it 400 CLOCK_OUT_BEFORE_IN -- correct behaviour, and it meant arm 3 never ran. Corrected to +30 minutes and re-driven"
+    },
+    {
+      "id": 4,
+      "title": "",
+      "status": "done",
+      "evidence": "THE 33 SERVER-ONLY GETS RECLASSIFIED with a variable-following census. In class B's 46 GET-guarded branches: CALLER 32, SESSION 1, UNRESOLVED 4, SERVER-ONLY 9. b23 reported 13 CALLER and 33 server-only, so CALLER WAS LOW BY 19 and server-only was high by 24. AND MY OWN b23 STATEMENT ON THE 151 IS WITHDRAWN: b23 said 0 of them interpolates a caller value; the census finds 16 CALLER, 2 SESSION, 19 UNRESOLVED, 114 SERVER-ONLY, so a caller CAN provoke a non-missing-table 400 on 16 of the 151. SPOT-CHECKED IN BOTH DIRECTIONS rather than trusted: :5120 is CALLER by direct reading (enc(String(payload.id)) literally in the URL); :15150 is a true write-guarded and a true non-defect; :10556 is UNRESOLVED because jobId is a FUNCTION PARAMETER of rfJobGate, and its call sites at :10612 and :10746 pass payload.job_id -- SO IT IS CALLER once inter-procedural. THE LOWER BOUND IS NOT GONE, IT IS NAMED: 26 enumerated UNRESOLVED lines (4+19+3) instead of a hidden default, and one resolved by hand as a worked example. Closing it fully needs inter-procedural resolution for the handful of helper arrows -- ROUTED"
+    },
+    {
+      "id": 5,
+      "title": "",
+      "status": "done",
+      "evidence": "THE CENSUS NOW RECOUNTS SPANS MECHANICALLY, with locked criteria and a per-arm ablation (scratchpad branch_census_b26.py, CRITERIA_VERSION 2026-10-15.b26.1). THREE RULES, FIXTURES IN BOTH DIRECTIONS, 10/10: R1 the span ends at the next await fetch( and never at a line count; R2 a guard binds to the fetch that assigned ITS OWN variable; R3 a caller value is followed transitively through assignments AND an unresolvable identifier is its own THIRD STATE, never folded into SERVER-ONLY. ABLATION PER ARM, not per exit code: without R1 one fixture flips GET to POST (the exact b24 25-vs-22 bug); without R2 one flips UNCLASSIFIED to GET; without R3 three collapse to SERVER-ONLY including the third state (the exact b23 lower-bound bug). EVERY RULE IS LOAD-BEARING and the program exits 2 COULD NOT RUN rather than reporting a census if its own fixtures fail. ONE FIXTURE WAS WRONG AND IS DISCLOSED: the first R1 fixture put the guard AFTER the upsert, a shape the file does not contain, so it failed; corrected to the shipped :5061-5072 layout. tools/ is cc's, so this is ROUTED for installation rather than written there"
+    },
+    {
+      "id": 6,
+      "title": "",
+      "status": "open",
+      "evidence": ""
+    }
+  ]
+}

@@ -2119,6 +2119,21 @@ from the other direction.
 - **A count that only ever moves UP when a span is loosened is a false-positive
   generator**, not a more thorough tool. In (c) bounding the span dropped three
   and added none, which is the signature.
+- **AND THE SPAN RULE ITSELF HAS TO BE A FIXTURE, not a sentence.** *(Added
+  2026-10-15, batch b26, by the session that wrote this convention — because the
+  convention alone did not stop the next census from being able to re-introduce
+  either bug.)* A span stated in prose is re-decided by whoever writes the next
+  predicate. Give the program a **named criteria version**, a **fixture per rule
+  in BOTH directions**, and an **ablation that removes one rule at a time and
+  reports which fixtures change, per arm rather than per exit code** — and make
+  the program **exit COULD-NOT-RUN rather than report a count** when its own
+  fixtures fail, because a classifier that cannot pass its locked criteria
+  produces a number nobody can use. Measured on the b26 rebuild of this
+  census: **without the span rule one fixture flips GET to POST** — the exact
+  25-vs-22 error — **and without the transitive-origin rule three collapse into
+  SERVER-ONLY**, including the third state, which is the exact lower-bound
+  error. Both were prose in this convention and neither was a test until that
+  run.
 
 ### Where this does NOT transfer
 
