@@ -2016,9 +2016,148 @@ is why it earns its own number beside 8 instead of a cross-reference inside it.
 
 ---
 
+## 35. A PREDICATE HAS A SPAN AS WELL AS A PATTERN — and a re-count that disagrees is a predicate disagreement until the SUBJECT is proved to have moved
+
+**The rule, in three clauses.** A predicate that produces a number is not
+publishable until it states all three:
+
+1. **THE PATTERN — which token.** Adopted as item 28's sibling in batch b22:
+   when a predicate names an identifier, say *which* identifier. Without it a
+   figure cannot be reproduced and cannot be argued with.
+2. **THE SPAN — where the predicate LOOKS, stated relative to its anchor.**
+   Not "it searches the file" but "it searches from the fetch assignment to the
+   next `await fetch(`". A span that is a fixed line count rather than a
+   structural boundary will, on some input, reach into the next construct and
+   find the right token in the wrong place.
+3. **WHEN A RE-COUNT DISAGREES WITH A PUBLISHED COUNT, PROVE THE SUBJECT MOVED
+   BEFORE CALLING IT DRIFT.** One command settles it:
+   `git rev-parse <old-sha>:<path> <new-sha>:<path>` — two identical blob
+   hashes mean the file did not move, so the two numbers are **two predicates
+   over the same bytes and at least one of them is wrong.** "The file moves" is
+   the most available explanation for a changed count and it is the one that
+   ends the investigation, which is exactly why it has to be the one that is
+   checked rather than assumed.
+
+**None of these was a wrong token. Every instance below is the right token
+found in the wrong place, and every one produced a confident number.**
+
+### The three instances, each measured
+
+**(a) A select-clause test that matched the end of nearly every URL** (batch
+b23). A caller-influence predicate over the 151 class-C read branches flagged
+**68 of 151**, because its `select=` pattern matched the trailing
+`'), { headers }` that closes essentially every `rest(...)` call in the file.
+Caught by spot-reading two of the flagged branches — `api/sd-data.js:5120` and
+`:3604` — both of which interpolate nothing but the server's own `licHash`.
+**Corrected to 0 of 151.** The pattern was right; it was being applied to the
+whole line instead of to the query string.
+
+**(b) A body-read detector that matched the answer instead of the read** (batch
+b23). It reported *"reads the body first: YES"* for all eight sampled branches,
+because it searched the lines **after** the guard and matched
+`code: 'NOT_PROVISIONED'` **inside the response object**. Re-measured
+positionally — *is there a `.json()` or `.text()` on that variable BETWEEN the
+fetch and the guard* — the real figure is **7 of 332**, not the nine that had
+been reported from the other side.
+
+**(c) THE SHARPEST, because the predicate that committed it was written one
+batch AFTER (a) and (b) were published, and the error was then attributed to
+the file moving** (batch b24, corrected in b25).
+`pick_branches_b24.py` classified the 400→503 guards and reported **25**
+class-B write-guarded branches at `api/sd-data.js`, against batch b23's **22**,
+and the b24 handoff recorded that as the file having moved: *"25 at this HEAD
+(18,769 lines), not b23's 22 at 18,770 … so b23's 22 is superseded by 25, and
+the b23 routing list is short by three."* **Both halves of that are wrong, and
+clause 3 is what catches it:**
+
+    git rev-parse 5f5fcbad:api/sd-data.js 1727fde6:api/sd-data.js
+    496593b2b753a5ad16fd0e4ee7a3ec47af932d64
+    496593b2b753a5ad16fd0e4ee7a3ec47af932d64
+
+**The file is byte-identical across b23's published HEAD and b24's**, 36
+commits apart, so nothing drifted and the two counts are two predicates over
+one blob. The defect is clause 2: the census decided a fetch's HTTP method by
+searching a **fixed 14-line window** after the assignment, and all three of the
+"new" branches are pre-write **GET**s followed within that window by the real
+upsert —
+
+    api/sd-data.js:5061  const existingPhoto = await fetch(rest('grd_progress_photos?…'), { headers });
+    api/sd-data.js:5072        method: 'POST',          <- a DIFFERENT fetch, 11 lines on
+
+— so `grd_progress_photos` (`:5062`), `scp_progress_photos` (`:5935`) and
+`rf_schedule` (`:11241`) were each reported as write branches because the window
+reached into the next construct. **Re-run with the span BOUNDED at the next
+`await fetch(`**, both numbers printed from one pass so the difference is
+attributable rather than asserted:
+
+    unbounded 14-line window : 25
+    bounded-to-next-fetch    : 22
+    dropped by bounding the span: [5062, 5935, 11241]
+    added  by bounding the span: []
+
+**22 is the count. b24's 25 is withdrawn, and so is the claim that the routing
+list was short by three.** A fourth consequence worth naming because it is the
+one a reader would carry away silently: b23's own line numbers were each **+1**
+from `:8231` onward against this blob, which means b23's census was run against
+a mid-batch tree and published under its end-of-batch HEAD — clause 3 again,
+from the other direction.
+
+### Operational form
+
+- **Write the span down beside the pattern**, in the tool and in the report. "A
+  14-line window after the assignment" is a span and is falsifiable; "near the
+  fetch" is not.
+- **Prefer a STRUCTURAL boundary to a line count.** The next `await fetch(`,
+  the enclosing brace, the next `resource === '…'` guard. A line count is a
+  guess about the shape of the input, and it is wrong on the input that matters.
+- **Print both numbers from one pass when you tighten a span.** The corrected
+  figure alone is an assertion; the pair plus the named difference is a
+  measurement, and it is what distinguishes a real tightening from a predicate
+  that simply found less.
+- **Before writing "the subject moved", run the blob compare.** It costs one
+  command and it is the difference between a drift note and a withdrawal.
+- **A count that only ever moves UP when a span is loosened is a false-positive
+  generator**, not a more thorough tool. In (c) bounding the span dropped three
+  and added none, which is the signature.
+
+### Where this does NOT transfer
+
+This is about predicates that produce a COUNT over a corpus. It is not about a
+single file:line citation — a citation that has moved is item 8's subject and
+is re-derived against the source, not re-measured. And clause 3 is **not** a
+licence to distrust every changed number: a subject that really did move
+produces a different count legitimately, and the blob compare is what tells the
+two cases apart rather than a presumption either way.
+
+**Relationship to the neighbours, said rather than left to be inferred.**
+**21** is a bound measured against the wrong thing and **22** is an unbounded
+window; both are measurement faults and this is their third sibling — the span
+being *bounded but bounded wrongly*. **28** already requires a figure to carry
+its denominator, command, commit and date, and clause 3 is what makes that
+stamp load-bearing instead of decorative: b24 recorded two different line
+counts and still concluded drift, because nothing compared the two commits it
+had just named. **8** is the cadence rule and clause 3 is its test — you cannot
+know whether a check has gone stale without separating "the subject changed"
+from "my predicate changed".
+
+**Cause tag:**
+`measurement/predicate/span-unbounded-into-next-construct-and-difference-attributed-to-subject-drift`.
+
 ---
 
-## The failure mode ELEVEN of the thirty-four share
+---
+
+## The failure mode ELEVEN of the thirty-five share
+
+*(Denominator moved 2026-10-15 when fourth's 35 was landed, and the membership
+question was asked rather than assumed. **35 IS NOT A MEMBER; the group stays at
+ELEVEN.** The group is a CHECK THAT READS AS COVERAGE AND STRUCTURALLY CANNOT
+FIRE. Every instance behind 35 **fired** — 68 of 151, eight of eight, 25 — and
+each produced a confident number; what was wrong was WHERE the predicate looked,
+which is a measurement fault and puts 35 beside **21** and **22**, both of which
+were asked the same question and both of which stay outside the group for the
+same reason. **The heading's denominator was changed from "thirty-four" to
+"thirty-five" rather than left to drift, and the ELEVEN is untouched.**)*
 
 *(Denominator moved 2026-10-13 when hank's 34 was landed, and the membership
 question was asked rather than assumed. **34 IS AN ELEVENTH MEMBER**, and the

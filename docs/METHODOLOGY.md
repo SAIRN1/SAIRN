@@ -89,6 +89,7 @@ than an empty row — it would look exactly like the handover having worked.
 | **2026-10-08** | **32.** the exit code of a past run is not recoverable and must not be invented | **CHAT-ADOPTED by direct instruction**, **derived by cody** | same document, `:251`, the `### And the corollary this batch paid for twice` SUBSECTION. Landed at `:1806`; same backfill and same reason as 31 above. **These two are the pair I reported as NOT LOCATABLE in batch b3 and they were never missing** -- my search keyed on `## METHODOLOGY` HEADINGS, found one, and counted one convention, while these two live as `###` subsections underneath it. **Recounted independently 2026-10-11 at `263f736f` rather than restated from my own earlier write-up:** `grep -n "^#"` over that document returns one `## METHODOLOGY (ITEM 8)` at `:198` and the two `###` children at `:243` and `:251`, so cody's *"three conventions + three more"* resolves as **3 new + 3 from queue 16, one of which was already convention 15, leaving exactly the two owed** |
 | **2026-10-11** | **33.** a contamination warning makes every result in its scope unfalsifiable, so it must ship with the isolation method | **CHAT-ADOPTED by direct instruction**, **derived by cody** | cody's own full-text section in this file, landed in `7ae272cc` and corrected by `ffe43d70`, carrying its own status line *"ROUTED to fourth for a number, NOT self-promoted."* **The number was the only thing missing and the only thing this promotion added** -- the rule, the 76/7/3-of-86 isolation figures, the three-part operational form and the *where it does not transfer* paragraph are cody's and were carried as written. **Counted before assigning:** 32 `## <n>.` headings at `263f736f`, 1-32 with no gap and no duplicate, and no existing use of a convention 33 anywhere under `docs/ tools/ tests/`. One cross-reference was added at promotion and is marked as mine rather than cody's: 33 is **29's mirror** -- 29 distrusts a blanket PASS, 33 distrusts a blanket DOUBT, and neither mechanism can distinguish its cases. **Asked and NOT folded into the cannot-fire group:** 33's warning fired correctly and loudly, so the group stays at TEN and the heading's denominator moved to thirty-three |
 | **2026-10-13** | **34.** a checker's universe must exclude the artefacts that describe its own findings -- and a change that moves a pattern behind a shared helper must extend the checker keyed to the old shape, in the same push | **CHAT-ADOPTED by direct instruction**, **derived by hank** | the `CONVENTION CANDIDATE` section of `SAIRN-report-hank-b4.txt`, text only, which routed the number rather than self-promoting it: *"that file's numbering has been wrong twice from two sessions adding an item within the same hour, and the file has an owner. ROUTED."* **The number was the only thing missing and the only thing this promotion added** -- the rule, the three b4 instances (a probe's own planted payloads entering the universe it tests; a `.json` write-up of that finding doing the same through an extension the `*.md` rule missed; and fourteen files leaving `audit_event_type_check.py`'s field of view while its printed total stayed the same) and the argument against folding it into 8 are hank's and are carried as written. **Counted before assigning:** 33 `## <n>.` headings, 1-33, no gap and no duplicate, and no existing use of a convention 34 under `docs/ tools/ tests/`. **Asked and FOLDED IN:** 34 IS a member of the cannot-fire group, so that group moved from TEN to ELEVEN and the heading's denominator from thirty-three to thirty-four -- it is the first member whose trigger is a COMMIT rather than elapsed time, which is why it sits beside 8 instead of inside it |
+| **2026-10-15** | **35.** a predicate has a SPAN as well as a PATTERN -- and a re-count that disagrees with a published count is a predicate disagreement until the SUBJECT is proved to have moved | **CHAT-ADOPTED by direct instruction**, **derived by fourth**, and **SELF-NUMBERED, which this table otherwise refuses** | the rule was stated in `SAIRN-report-fourth-b23.txt:485-489` and in b23's digest METHOD-NOTE and was carried in no standing document for two batches; b25's dispatch instructed it be written in, so the number was assigned by its own deriver rather than routed. **Said plainly because convention 11 is the reason the column exists:** promoting a rule out of one's own defects is the detector-blessing-its-own-fix shape, and the mitigation here is not the instruction -- it is that the third instance b25 added **WITHDRAWS its own b24 figure** (25 class-B write branches reduced to 22) rather than confirming it, which is the opposite of self-flattery. **Counted before assigning:** 34 `## <n>.` headings at `1727fde6`, 1-34 with no gap and no duplicate, and no existing use of a convention 35 anywhere under `docs/ tools/ tests/` -- the one `convention 35` hit in this file (`:680`) is generic prose using the number as an example. **A COLLISION WORTH NAMING AND NOT A BLOCKER:** `item 35` ALREADY means the hash-chained tamper-evident audit log in the open-work queue (`docs/2026-09-14-hash-chained-audit-logs-scoping.md`, `docs/2026-09-14-nightly-backup-design.md`, `docs/2026-09-14-first-article-inspection.md`), so this convention must be cited as **convention 35** or **cross-domain-disciplines item 35**, never as a bare *item 35*. **Asked and NOT folded into the cannot-fire group:** every instance behind 35 fired and produced a confident number -- the fault is WHERE the predicate looked -- so it sits beside 21 and 22 and the group stays at ELEVEN, with the heading's denominator moved from thirty-four to thirty-five |
 
 **18 AND 19 WERE ADOPTED IN CHAT, NOT SELF-PROMOTED, and that distinction is
 the reason the column says so.** Promoting a convention out of one's own
@@ -330,18 +331,24 @@ either.** It was 30 at `7ae272cc`, 32 within the hour at `2290bd45`, and 32 at
 
 ---
 
-## Count at the close of this edit, 2026-10-13 (fourth, b9)
+## Count at the close of this edit, 2026-10-15 (fourth, b25)
 
-**34 `## <n>.` headings in `docs/2026-09-13-cross-domain-disciplines.md`, numbers
-1-34 with no gap and no duplicate**, measured the same way: `re.match(r'^## (\d+)\.')`
+**35 `## <n>.` headings in `docs/2026-09-13-cross-domain-disciplines.md`, numbers
+1-35 with no gap and no duplicate**, measured the same way: `re.match(r'^## (\d+)\.')`
 over the file, a `Counter` for duplicates and a gap scan over `1..max`. The
-denominator heading reads **"ELEVEN of the thirty-four"** and agrees with `max`.
-**17 promotion rows in the table above, max 34, and every row has a heading** --
+denominator heading reads **"ELEVEN of the thirty-five"** and agrees with `max`.
+**18 promotion rows in the table above, max 35, and every row has a heading** --
 the reverse does not hold and must not be asserted: 17 of the first 17
 conventions have no row, because this table started later.
 
-**No other session added a 35 while b9 ran**, which was the thing to check rather
-than assume. **Do not take 34 from this page.** Count the headings.
+**No other session added a 36 while b25 ran**, which was the thing to check rather
+than assume. **Do not take 35 from this page.** Count the headings.
+
+*(This block read "Count at the close of this edit, 2026-10-13 (fourth, b9)", 34
+headings, "ELEVEN of the thirty-four" and 17 promotion rows, and is re-measured
+rather than silently overwritten -- carrying what it said so the correction is
+visible, per the numbering note at the end of the disciplines file. The ELEVEN is
+unchanged: convention 35 was asked the membership question and is NOT a member.)*
 
 ---
 
