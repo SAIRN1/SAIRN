@@ -1,0 +1,735 @@
+REPORT cc b13
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-14
+HEAD      f8e0b5e0  ==  origin/main   (git rev-list --left-right --count
+          origin/main...HEAD  ->  0  0), tree clean, zero stashes
+FORCE     none, in any spelling.
+OVERRIDE  none of the three forms. docs/BYPASS-LOG.jsonl holds 97 rows and
+          NONE is dated 2026-10-15, so neither SAIRN_SEED_GATE=off nor
+          SAIRN_GATE_EXEMPT=seed nor SAIRN_SKIP was used. That is the audit,
+          not an assertion: the gate records an override ATTEMPT before it
+          decides whether to honour it, so an unused override is an absent
+          row rather than a silence.
+HOOKS     none added or restored. .claude/settings.json never committed.
+TRANSCRIPT
+          C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\
+          5521d10f-06f8-4089-8534-150e3e3c8d84.jsonl
+          The SAME session as b12, so the CONTEXT figure covers both batches.
+
+
+================================================================================
+WHAT LANDED
+================================================================================
+
+  0d33f659  fix(claims,citation): the audit counted a session eighteen days
+            gone, and a citation pointed at the wrong function
+  ccd7350e  feat(anchor rot): the check fourth specced, and its own A7 was
+            wrong within hours of being written
+  10209464  feat(gate driver): hank's three new seams wired, and the exit-3
+            channel stopped inventing a reason
+  cf989dad  fix(board): the fileSize mismatch was a propagation lag, and now
+            there is a published number to compare against
+  0154a8e3  chore(defect register): two records for b13, each with its
+            contributing factors
+  c3c66331  chore(derived,tier-a): regenerate MASTER-PLAN and the traceability
+            matrix, and record the Tier A obligation
+  35f3863c  chore(scrutiny ledger): the gate's own rows for b13's commits
+  383ec52a  chore(defect register): re-seat b13's two records onto their
+            rebased shas
+  f8e0b5e0  chore(scrutiny ledger): rows for the rebased shas
+
+FIVE GATE REFUSALS, EVERY ONE SATISFIED RATHER THAN OVERRIDDEN: register-feed
+twice (the second because the rebase moved the shas the records cited),
+tier-a, derived-docs, and one non-fast-forward. One push was denied by TWO
+checks at once and printed both reasons rather than stopping at the first --
+"Blocked: 2 check(s) refused this push, and all 2 are true right now."
+
+TWO REBASES, one with a real conflict in docs/tier-a-reviews.json, resolved by
+tools/sairn_rebase_resolve.py rather than by hand:
+
+    MERGE  docs/tier-a-reviews.json  256 ancestor + 0 upstream-only
+                                     + 1 local-only = 257
+    validated docs/tier-a-reviews.json  (tier_a_review_gate.py --validate)
+
+NO LIVE DEPLOYED-URL CHECK, AND THAT IS NOT A SKIPPED STEP. This batch changed
+no api/, sql/ or app file -- tools/, tests/ and docs/ only. There is no
+deployed surface to verify, and quoting a 200 from an unrelated route would be
+the kind of true-but-irrelevant evidence that makes a report worse.
+
+
+================================================================================
+ITEM 1 -- THE WEAKENING-FLAGS SIGN-OFF
+================================================================================
+
+Four `independent_review` blocks from h1 b34 into docs/scrutiny-flags.json,
+pasted verbatim from
+.claude/skills/sairn-hover-auditor/routing/2026-10-14-h1-b34-weakening-flags-signoff.md:
+
+    tests/run_unproven_arm_probe.py        24e88957479d
+    tests/run_worktree_isolation_probe.py  4ff63a51c357
+    tests/push_gate/check4_probe.py        c465743b34b0
+    tests/bld_draws_role_arms.test.js      db2a47f1fa22
+
+-- WHY THIS IS A cc COMMIT AND NOT AN h1 ONE -------------------------------
+
+h1 b34 did the verification work and its first attempt wrote the blocks
+directly. tools/hover_auditor_scope_gate.py --pre-commit REFUSED the commit:
+docs/ is platform territory, outside the auditor's scope, which is
+.claude/skills/sairn-hover-auditor/ plus docs/defect-density-register.json
+plus the hover claim file. The edit was reverted before any push and the work
+was ROUTED. That is the separation working exactly as designed, and it is the
+reason this landed from a build clone.
+
+cody authored the three WEAKENING rebuttals and MAY NOT SIGN ITS OWN WORK --
+the same rule tools/tier_a_review_gate.py enforces, and the same rule that
+later in this batch assigned cc's own Tier A obligation to fourth.
+
+-- WHAT h1 ACTUALLY CHECKED, AND ONE OF THE THREE WAS RE-DERIVED -----------
+
+Claim A and Claim B of the three were re-READ: every matched `ignore_errors`
+line sits in a `finally:` block cleaning up a tempfile.mkdtemp() or mk_clone()
+fixture tree, so the match is a stdlib shutil.rmtree kwarg and not an
+exemption. Claim C was read directly: drawRolesFromSource() parses
+BLD_DRAW_ROLES out of api/sd-data.js and runs assert.ok(roles.length > 0),
+which THROWS on an empty allowlist -- it refuses, it does not permit.
+
+CLAIM B WAS RE-DERIVED RATHER THAN RE-READ, and that is the one worth noting.
+h1 extracted both revisions of check4_probe.py with `git show`, ast.parse'd
+each itself, and counted ast.Assert / ast.Raise / sys.exit Call nodes: 2->2,
+1->1, 7->7, matching cody's numbers WITHOUT TAKING THEM. A second reading of
+the same diff would have shared cody's blind spot; an independent AST count
+does not.
+
+ONE INACCURACY FOUND IN CODY'S CORROBORATING NARRATIVE, carried into the block
+rather than dropped: cody's write-up claims "named ARM labels 3 -> 4" and the
+file defines only TWO named arms (ARM 1, ARM 2) in BOTH revisions. It does not
+reopen the verdict -- the AST re-derivation confirms that directly -- and it is
+recorded in the method field so cody can correct its own write-up.
+
+-- HOW IT WAS APPLIED, AND WHAT THE APPLIER REFUSES ------------------------
+
+THE ROUND-TRIP WAS MEASURED BEFORE ANYTHING WAS WRITTEN:
+
+    json.dumps(doc, ensure_ascii=False, indent=1) + newline  ==  the file
+    indent=2 -> 221,809 bytes      indent=4 -> 262,365      actual: 201,532
+
+So a load/modify/dump at indent=1 is byte-exact and leaves all 726 other rows
+untouched. The applier checks that BEFORE modifying anything and REFUSES
+rather than reformatting if it ever stops being true -- reformatting 6,858
+lines to add four blocks would bury the additions in churn and make the diff
+unreviewable.
+
+It also refuses if a (path, sha) matches anything other than exactly one row,
+and refuses if a row ALREADY carries an independent_review: overwriting
+somebody else's sign-off is not additive, whatever the merge_policy says about
+extra keys.
+
+Resulting diff: 28 added, 4 changed. The four changed lines are the trailing
+comma on the key each block was appended after.
+
+-- THE VERIFICATION IS NARROWER THAN "CLEAN", AND THAT MATTERS -------------
+
+    python tools/scrutiny_ledger_check.py   ->  exit 0
+
+    CLEAN -- every checkable row is true of the commit it names, and 411
+    could not be checked (said above, not folded in).
+
+411 ROWS COULD NOT BE CHECKED because their shas do not resolve in this
+clone. So "CLEAN" on its own would NOT establish that these four were
+examined -- it is consistent with all four having been skipped. Checked
+separately:
+
+    git cat-file -e <sha>^{commit}  for all four   ->  all RESOLVE
+    grep -cE "24e88957|4ff63a51|c465743b|db2a47f1" <the could-not-check list>
+                                                   ->  0
+
+All four resolve and none appears in the unchecked list, so the clean verdict
+really does cover them. That second step is the whole difference between
+quoting a tool's summary and knowing what it measured.
+
+
+================================================================================
+ITEM 2 -- ONE RECORD, THREE ANSWERS; AND A CITATION THAT POINTED ELSEWHERE
+================================================================================
+
+-- 2a THE CITATION -------------------------------------------------------
+
+docs/2026-10-14-cc-b11-routed.md cited the msb_bottle_scans cost-note defect
+at sairngrounds.html:4771-4779. Re-derived against the file:
+
+    :4771-4779   msbParseScanResult()'s return and the top of
+                 msbHandleScanResult() -- the brand-legibility guard
+    :4788        var costPerOz=(match.cost||0)/match.bottle_oz;
+    :4810        var rec={... note:costNote ...}   <- the write site
+
+THE QUOTED CODE WAS RIGHT AND THE LINE NUMBERS POINTED SOMEWHERE ELSE. That is
+PR 1.3 exactly: an anchor that still matches a real range is not an anchor
+that points at the right thing, and it is the hardest kind of wrong citation
+to notice, because a reader following it finds plausible adjacent code and
+moves on. Corrected in place WITH a note saying what it used to say -- a
+silently fixed citation teaches nobody and the next reader cannot tell a
+correction from an original.
+
+-- 2b THE LIVENESS MISMATCH, REPRODUCED BEFORE ANYTHING WAS CHANGED --------
+
+    .claude/claims/cloud.json     "status": "active", "released_at": null
+    sairn_claim.py list           cloud absent entirely
+    sairn_claim.py list --all     [EXPIRED ] cloud  sairngrounds
+
+`cloud` last claimed 2026-09-27 and has been gone eighteen days. The stored
+`status` field is written once and never revisited; liveness is COMPUTED by
+is_active(), which `list` applies and the raw JSON cannot. So every consumer
+reading the field directly gets "active" for ever.
+
+MEASURED ACROSS THE REAL 1,373-CLAIM RECORD:
+
+    session       raw   is_active
+    cc              1           1
+    cloud           1           0   <- DISAGREE
+    hank            1           1
+    hover           1           1
+    hover2          1           1
+    total           5           4
+
+sairn_claim.py's own `audit` read the raw field. tools/claim_activity_check.py
+had ALREADY PAID FOR THIS on 2026-09-28 -- 13 rows stored active, is_active()
+was true for TWO -- and wrote the distinction up at its own :68: "the RAW
+field. That is half the answer ... The sibling tool draws the distinction;
+this one did not." The tool that OWNS is_active() was not applying it to its
+own audit.
+
+THE ARM WAS WRITTEN FIRST AND PROVED TO FAIL ON THE CODE AS IT WAS. The
+selection was extracted from cmd_audit into audit_active_by() so an arm could
+drive it, then driven against the pre-fix raw-field version with
+audit_active_by swapped out:
+
+    === arms driven against the PRE-FIX raw-`status` selection ===
+      FAIL A2 THE DEFECT: a stored `status: active` whose claim has EXPIRED is
+           NOT counted as held
+           wanted True, got False
+      6/7 arm(s) pass
+      THE AUDIT IS NOT COUNTING WHAT IT SAYS IT COUNTS.
+    exit 1
+
+After the fix: 7/7, exit 0. New `python tools/sairn_claim.py selftest`.
+
+ON FIXTURES, NOT ON THE LIVE RECORD, and that is deliberate: an arm whose
+verdict depends on whether `cloud` happens to be dead today is an arm that
+goes green on its own the moment somebody tidies the record.
+
+A4 IS THE ARM THAT STOPS THE OBVIOUS WRONG FIX. An OLD claim whose session is
+still ALIVE must still count as held, because "older than four hours is
+expired" is the pre-2026-09-23 rule that read a 9.96-hour build's own claim as
+abandoned -- for about six of those hours, to every other clone, while the
+work was going on.
+
+THE ABLATION CONTROL pins that the raw-field version was never wrong about a
+live claim, a released one, or a long-running one. An ablation that fails
+everything proves nothing about which arm caught the defect.
+
+TODAY THE INFLATION IS ONE AND DOES NOT CROSS MANY_ACTIVE=4, so the audit's
+verdict was unchanged. That is the reason to fix it rather than leave it: the
+number was already wrong and nothing would have said so until a session held
+three live claims plus one dead row and got reported as a hoarder. And the
+section it feeds is LITERALLY about this population -- "claims never RELEASED
+... another session reads a phantom block" -- so it was describing the phantom
+using the phantom's own field.
+
+The gap is now PRINTED beside the count rather than silently removed from it:
+
+    AND 1 ROW(S) STORE `status: active` WHILE NO LONGER HELD.
+      cloud    sairngrounds     claimed 2026-09-27T03:52:51Z, never released
+
+Not a defect in the record -- a session that died holding a claim looks
+exactly like this.
+
+-- 2c A THIRD TOOL HAD IT ---------------------------------------------------
+
+Found while repro'ing the second, and FIXED here rather than routed, because
+b12's whole lesson was that a fix in one place does not reach the others.
+tools/sairn_claim_doc_freshness.py:139 built its denominator from the raw
+field, so "N of M active claims carry FILES:" reported M=5 while 4 was true --
+a dead session's eighteen-day-old row diluting the very convention figure the
+check exists to watch. Now "2 of 4". It imports is_active and FAILS CLOSED: a
+COULD NOT RUN naming the module rather than falling back to the raw field,
+which would be the defect wearing a fallback.
+
+SAID OUT LOUD: that file was not in cc's declared b13 FILES.
+
+
+================================================================================
+ITEM 3 -- THE F3 ARM, AND A TOOL WHOSE OWN FIXTURE WAS ALREADY STALE
+================================================================================
+
+-- 3a THE F3 ARM -----------------------------------------------------------
+
+tests/run_drive_upload_verify_probe.py was RED at 34/35 on an anchor that had
+rotted. It asserted `'does not name cc' in out`. drive_upload_verify split
+that one message into two on 2026-10-13 -- routed by H1 b28 as seven
+mismatches and re-measured there as EIGHT, which made it an ongoing
+convention divergence rather than a closed backlog:
+
+    WRONG AGENT ...     one agent's filename over ANOTHER agent's content
+    NO AGENT NAMED ...  a first line naming nobody, a convention gap
+
+Only one of those two can mis-route a session's state, which is why they were
+split. The old phrasing survived only on the SECOND branch. The fixture is
+cody content under a cc filename, so it takes the FIRST. The arm was right
+about the behaviour and wrong about the token.
+
+Re-pointed at `WRONG AGENT` -- the label the split created, and the thing that
+distinguishes the dangerous half -- with the two agent names asserted
+SEPARATELY, so a future reword of the prose around them cannot rot this again
+without also losing the distinction the arm is about.
+
+    python tests/run_drive_upload_verify_probe.py  ->  35/35, exit 0
+
+-- 3b tools/citation_anchor_rot_check.py -----------------------------------
+
+Built to docs/2026-10-14-fourth-b20-anchor-rot-check-spec.md. fourth specced
+it and deliberately wrote nothing, because tools/ is cc's. All 8 requirements;
+the 10 specced arms plus two of cc's.
+
+ITS SUBJECT, from fourth's own measurement: the sf_events row of
+docs/CRITICALITY-TIERS.md carried SEVEN line citations into sairnfreedom.html
+and ALL SEVEN WERE WRONG. Every function the cell named was real and did what
+the cell said -- only the numbers had moved. The cell's own named trigger says
+to re-read the row if the event-to-session link stops being a single stored
+id; nothing in it fires when the citations stop pointing at the code.
+
+AND ITS OWN A7 FAILED ON ITS FIRST RUN. The spec asked A7 to assert the real
+row CLEAN at 7 of 7, as the regression pinning fourth's work. It came back
+6 of 7. Diagnosed rather than adjusted:
+
+    git show 924085fb:sairnfreedom.html | grep -c '<the anchor>'   ->  1
+    grep -c '<the anchor>' sairnfreedom.html  (HEAD)               ->  0
+    git log --oneline 924085fb..HEAD -- sairnfreedom.html
+      31406a87  fix(N1-N4,F6): ... and a delete that lied
+
+fourth's anchor resolved EXACTLY ONCE when fourth wrote it. hank's 31406a87
+then refactored that one-liner into `if (ev && ev.sessionId) {` opening a
+block, and the quoted form now survives only inside an elided comment at
+sairnfreedom.html:5228 -- which does not literally match either.
+
+SO THE ANCHOR WENT TO ZERO WITHIN HOURS, AND THAT IS THE ENTIRE POINT OF THE
+FORM. It broke LOUDLY, as a count of 0, where a line number would have gone on
+pointing at whatever moved into its place. The b19 case fourth named is the
+contrast: a line number that had NEVER pointed at what its sentence said,
+which no re-offset would have caught and a zero count would have. Nobody did
+anything wrong here. A citation is out of date, the same day, and something
+says so.
+
+SO A7 IS TWO ARMS:
+
+  A7   FROZEN at 924085fb -- both the document and the app extracted from that
+       revision into a temp tree. Pins fourth's work permanently and cannot
+       rot. If the blobs are unavailable in a clone the arm reports COULD NOT
+       RUN for itself rather than passing.
+  A7b  LIVE at HEAD, asserting only what cannot rot: the document is read, its
+       declaration resolves, all seven anchors are found, and a real verdict
+       comes out rather than COULD NOT RUN. It deliberately does NOT assert
+       "exactly 1 finding" -- that is true today and becomes false the moment
+       somebody re-anchors the cell, so an arm pinned to it would go red on a
+       CORRECT FIX. A rotting citation inside the rot checker.
+
+WHAT THE REQUIREMENTS COST, where the obvious version would have been wrong:
+
+  R1  an anchor is `anchor `<text>``, not every backticked string. Otherwise
+      every identifier in a prose cell is a citation.
+  R2  the target is DECLARED, never inferred. The real convention the register
+      already uses is "... must resolve EXACTLY ONCE in <file>". An anchor
+      with no declaration in scope is COULD NOT RUN, and the output says
+      nothing was guessed from a nearby filename -- which is how a checker
+      measures the wrong file, the exact defect citation_line_drift_check.py
+      refuses to commit by requiring both its flags. --target exists and is
+      PRINTED as a caller fact rather than a document one.
+  R3  the surviving file:line citations are a SECOND count, listed and judged
+      not at all, because a half-converted document reads as a converted one.
+  R4  a missing or unreadable target is exit 2 NAMING THE FILE, never 0. A rot
+      check that silently passes when the app moves turns the absence of a
+      finding into evidence of freshness.
+  R5  it writes nothing. It names the nearest surviving candidate by relaxing
+      runs of whitespace FOR READING ONLY -- a relaxed MATCH would quietly
+      bless a rewritten line, which is A9, and a document edit here means
+      rebuilding a table row whole (PR 2.1).
+  R6  an anchor must be >= 8 characters and contain a non-word character.
+      MEASURED NEED: writing the spec's own instruction produced a phantom
+      eighth anchor from a literal ellipsis, and this document really does
+      carry `anchor `^| `` on line 40 as an editing instruction about anchors.
+      It is skipped and the SKIP IS PRINTED.
+  R7  every finding prints the anchor, the count and the document line.
+  R8  the criteria lock runs BEFORE any verdict about a real document, and A11
+      asserts THIS tool's own floor rather than inheriting a neighbour's --
+      per the b19 review of run_rotation_blast_radius_probe.py.
+
+BOTH DIRECTIONS, 12/12. A1, A2 and A9 require a FINDING; A4 and A5 require
+COULD NOT RUN; A3, A6, A7, A7b, A8 and A10 require a CLEAN pass. A tool that
+refuses everything scores perfectly on the first three and gets switched off.
+
+  A2 is the one a reviewer would cut -- "it resolves, so it's fine" -- and it
+     is the only arm that catches the NEXT rot rather than this one: an anchor
+     matching two sites points at one the author did not choose.
+  A4 is the fail-closed leg.
+  A10 keeps a zero meaningful: a document with no anchors prints "0 anchors,
+     0 line citations" and says that is a measurement rather than a silence.
+
+THE FIRST LIVE RUN IS THE MEASUREMENT THE SPEC SAID IT WOULD BE:
+
+    7 anchor(s), 198 line citation(s), 323 bare `:NNNN` citation(s)
+    sairnfreedom.html: 7 anchor(s), 6 resolving EXACTLY ONCE, 1 not
+
+    FINDING  count 0  document line 358
+      anchor : 'if(ev && ev.sessionId) st(K_SESSIONS, getSessions().filter('
+      no near match even with whitespace relaxed, so the cited text is gone
+      rather than reformatted.
+
+    SECOND CLASS: 521 `file:line`-style citation(s) survive.
+
+fourth said outright that the stale fraction of those 521 was UNVERIFIED and
+refused to extrapolate from the sf_events row's 7-of-7. IT IS STILL
+UNVERIFIED. This run counted the population and judged none of it, because
+that is citation_line_drift_check.py's form and it needs --app and --prefix
+per target, which makes it one run per app rather than one sweep.
+
+
+================================================================================
+ITEM 4 -- THREE SEAMS WIRED, AND THE EXIT-3 CHANNEL STOPPED INVENTING A REASON
+================================================================================
+
+GUARD_TESTS is now 17 entries, no duplicates, every named file present --
+checked by import AND by a new arm, not by reading.
+
+Each run to a known exit code BEFORE wiring, because a suite wired red denies
+every push on the platform until somebody turns the gate off:
+
+  api/sd-photos-size-and-provenance.test.js   26 passed, 0 failed, exit 0
+  api/n1-n4-and-sf-delete.test.js             21 passed, 0 failed, exit 0
+  api/role-picker-vs-check-constraint.test.js  6 apps clean, 11 UNPROVEN,
+                                               exit 3
+
+THE THIRD IS WIRED IN THAT STATE DELIBERATELY. It exits 3 because 11 of 17
+apps have no `check (role in (...))` in any sql/ file naming their
+employee_auth table, so there is nothing to compare the picker against. Its
+own words: "NOT a pass: an app whose constraint cannot be found is exactly the
+app whose picker nobody has checked." Exit 3 removes it from the required set
+for that run and is reported in the could-not-tell channel, never folded into
+the pass. The alternative is a seam test nothing runs until somebody
+remembers, which is the shape report_only_checks.py exists to end.
+
+-- AND WIRING IT EXPOSED THE CHANNEL ASSERTING A CAUSE IT CANNOT KNOW ------
+
+The exit-3 path was added 2026-09-25 for ONE test:
+tests/session_lock_liveness_probe.py, which drives a Windows
+process-start-time signature (kernel32 via ctypes) that does not exist on
+Linux. So the message was written as "SKIPPED as not applicable on this
+platform", with the reason falling back to the literal string "exit 3" when
+the test said nothing.
+
+This is the FIRST exit-3 guard that is not a platform skip, and the runner
+would have printed:
+
+    SKIPPED as not applicable on this platform -- exit 3
+
+about a test that exits 3 on EVERY platform because the other side of the seam
+is missing. A COULD-NOT-RUN STATING THE WRONG REASON IS WORSE THAN ONE STATING
+NONE: a reader dismisses a platform skip and investigates a missing
+constraint. The label and the diagnosis both pointed away from the problem.
+
+exit3_reason() now produces three different sentences:
+
+  the test says why       its own SKIPPED/UNPROVEN/COULD NOT RUN line is
+                          QUOTED and ATTRIBUTED to the test
+  the marker is mid-line  the same, with the provenance stated differently
+  the test says nothing   "COULD NOT RUN (exit 3) AND THE TEST DID NOT SAY
+                          WHY ... that is NOT a pass; the missing reason is
+                          itself the thing to fix"
+
+NINE NEW ARMS, 31/31 on the push gate's selftest. Two of them are the pair
+that matters: one requires the string "not applicable on this platform" to be
+GONE for a non-platform 3, and one requires a GENUINE platform skip to still
+read correctly -- a fix that loses the case the channel was built for is a
+worse trade than the defect it fixes. Plus two cross-checks on the registry
+itself: every entry names a file that exists (an entry pointing at a deleted
+file is a suppression nobody would notice) and no file is registered twice
+(which runs it twice and reports one failure as two).
+
+-- THE SECOND WIRED SUITE HAS A SECOND WITNESS IN THIS BATCH ---------------
+
+Recorded in its registry entry because neither side can see it alone. hank's
+31406a87 -- the commit n1-n4-and-sf-delete pins -- refactored the very line
+fourth b20 had quoted as an anchor in docs/CRITICALITY-TIERS.md, and this
+batch's new citation_anchor_rot_check.py found that citation at ZERO the same
+day. A fix that lands correctly and silently invalidates a citation in another
+document is exactly the cross-document shape that has no owner, and it took
+two independent pieces of this batch to see it.
+
+-- FMEA: THE DISPATCH SAID FIVE AND THE MEASURED NUMBER IS NINE ------------
+
+Derived from git rather than from a list: files added or modified in the last
+60 commits, excluding docs/, tests/ and this clone's own artifacts, with no
+docs/fmea/<slug>.json. FIFTEEN lack one.
+
+SIX of the fifteen are cc's own -- citation_anchor_rot_check,
+runbook_constant_agreement, sairn_board_publish, sairn_claim,
+sairn_claim_doc_freshness, sairn_status -- and are deliberately NOT drafted
+here: a detector drafting the FMEA for its own fix is
+detector-blesses-its-own-fix. They stay routed to any session except cc.
+
+The NINE that are not cc's are drafted:
+
+  api/_lib/ai-safeguards.js                     28 risks
+  api/_lib/ai-scan-redaction.js                 29 risks
+  api/_lib/compliance-rules.js                  16 risks
+  api/sen-auth.js                               19 risks
+  api/sd-photos-size-and-provenance.test.js     30 risks
+  api/n1-n4-and-sf-delete.test.js               12 risks
+  api/role-picker-vs-check-constraint.test.js    0 risks
+  sql/legacy_ciphertext_census.sql              15 risks
+  sql/sd_encryption_key_revoke_2026-09-24.sql   14 risks
+
+DRAFTS ONLY. The tool carries no bless or approve field and none was added.
+Each states its own gap in its own output: "RULES WITH NO DETECTOR YET, named
+rather than skipped: 1.6, 2.2, 3.1, 3.2, 3.3, 4.1, 4.2, 4.3, 5."
+
+ONE CAME BACK WITH ZERO RISKS and that is reported rather than treated as a
+clean bill: the drafter matched no rule against
+api/role-picker-vs-check-constraint.test.js, which is a statement about the
+drafter's detectors and not about the file.
+
+DOING EXACTLY FIVE WOULD HAVE MEANT CHOOSING FOUR TO LEAVE OUT AND SAYING
+NOTHING. The population is derived, the superset is delivered, and the
+discrepancy against the dispatch is stated here.
+
+
+================================================================================
+ITEM 5 -- RESOLVED BY WAITING, AND ONE THING NOT FOUND
+================================================================================
+
+-- 5a THE fileSize MISMATCH -------------------------------------------------
+
+b12 published this board, read it back through the Drive connector and got a
+fileSize that disagreed with the mount three times -- 14600 vs 14514, then
+2404 vs 2976, then 2952 vs 2976 -- and recorded it as an open could-not-tell.
+
+RE-MEASURED ON A SETTLED FILE:
+
+    mount : 15586 bytes, sha256 deb328e9f16c2663...
+    Drive : fileSize 15586, id 19GSUTWQLddPwZiLEUNfssAjrMxK4vVE1,
+            modifiedTime 2026-10-15T00:56:35Z
+
+IT CONVERGES, and the same file id throughout. Every earlier mismatch was a
+metadata read taken SECONDS after a write while the newest revision was still
+propagating: the connector reports the PREVIOUS revision's size, not a
+different file. So it was a LAG and never a corruption, and the honest
+statement is bounded in both directions -- a size disagreement on a
+just-republished file is not evidence of a bad upload, and a size agreement on
+a settled file is real evidence.
+
+WHAT COULD NOT BE DONE, SAID PLAINLY SO THIS IS NOT OVERSOLD: the Drive
+connector's read_file_content does not support text/markdown, so NO chat turn
+can hash the Drive-side bytes. The only field the API exposes is fileSize.
+That cannot be fixed from here.
+
+SO THE FIX MAKES THAT ONE FIELD WORTH SOMETHING. publish now writes
+SAIRN-board-MANIFEST.txt carrying the sha256 AND the exact byte count of every
+published file, so a later turn compares Drive's fileSize against a PUBLISHED
+number instead of against a memory of what was written:
+
+    SAIRN-board.md            15612  e26d108be679c090d4cccdd0bb868734...
+    SAIRN-latest-hank.md       2841  15856dc3efdbad71a0fdb764826c729d...
+    SAIRN-latest-cc.md         3013  b0b245d05e7fdd5e13161665d975e4c2...
+    SAIRN-latest-cody.md       2940  4e7c55f9edfd74224b5b4e7b65d42ddc...
+    SAIRN-latest-fourth.md     2953  e932e02397bb21171e391715ebfd29d1...
+    SAIRN-latest-H1.md         1478  3463f3751dd351c3ba33efbb8e53d747...
+    SAIRN-latest-H2.md         2241  573b41e40355adebd82ac28c2e10fe2b...
+
+AND IT IS BUILT FROM THE READ-BACK BYTES, NOT FROM THE RENDERED TEXT. That is
+the design decision and A16 is the arm for it: a manifest describing what the
+process MEANT to write would agree with itself after a truncated write, so the
+one available Drive-side check would compare a real short file against a
+published long number -- and be read as a propagation lag, which is PRECISELY
+the thing b12 could not rule out. write_verified returns the observed bytes
+now, and the manifest is written from them.
+
+THE MANIFEST STATES ITS OWN LIMIT IN ITS OWN TEXT: a size match is weaker than
+a hash match, a same-length corruption passes it, that is a third state and
+not a pass. It also records the lag finding so the next reader does not
+re-diagnose it.
+
+write_verified returns THREE VALUES ON EVERY PATH including the failures. It
+briefly returned two on one branch and three on another, which is the next
+unpack error, and it is called from a loop that cannot see which branch it
+took. The ablation stub returns the same shape and hands back what it MEANT to
+write -- which is what makes it an ablation of the read-back rather than of
+the write.
+
+The manifest is itself written through write_verified: a manifest nobody
+checked is a second unverified claim about the first. A board that publishes
+while its manifest does not is reported as its own state -- files verified,
+numbers missing -- rather than called clean.
+
+    --selftest   16/16 arms
+    --ablation   11 layers, every one load-bearing
+
+-- 5b H2's SCRATCH FILE: NOT FOUND, AND NOT DELETED ------------------------
+
+The dispatch asked for scratch_handoff_h2_b34_NOTAPUSH.md to be deleted from
+the repo root. IT IS NOT THERE, and the search was five things rather than one
+`ls`:
+
+    ls | grep -i scratch                                   nothing
+    git status --porcelain --untracked-files=all  (root)    nothing
+    git ls-files | grep -i scratch_handoff                  nothing
+    git log --oneline --all -- <that path>                   nothing
+    the three other build clones + the home directory        nothing
+
+So it is untracked, has never been tracked, and is absent from every location
+a build agent may look. The one remaining location is Documents\SAIRN-hover2,
+H2's own clone, which a build agent must not reach into.
+
+THIS IS THE SAME MIS-ROUTING SHAPE b12 RESOLVED for H1's five stale root .txt
+pairs, which had been routed to cc four times with cc named as not having
+acted -- while the files sat inside the auditor's own clone where `rm -f` had
+been denied by the permission system. Either this one is already gone or it is
+somewhere cc cannot act. NOTHING WAS DELETED AND NOTHING HERE REPORTS
+OTHERWISE; routed back with the search that was actually run.
+
+
+================================================================================
+THE DEFECT RECORDS
+================================================================================
+
+Two, filed through the tool's own CLI from a script file rather than a shell
+line -- the --factors payload is JSON full of quotes.
+
+  0d33f659  tooling / moderate / independent-review / rule 1.1
+            The audit counted a session eighteen days gone, plus the same
+            defect in a third tool and the b11 citation. Injection UNKNOWN
+            with the reason: the raw-status selection has been there since the
+            command was written and is_active() grew its liveness half later,
+            so naming either as the injection would be a guess.
+            RECURRENCE OPEN, and it is the useful part: nothing enumerates the
+            consumers of the raw status field. Three found one at a time
+            across three batches, each by accident while doing something else.
+
+  10209464  tooling / low / code-review / rule 1.5
+            The exit-3 channel asserting a platform cause. Injection cited:
+            0e6607e0, the commit that added the channel for one test whose 3
+            really is a platform skip. One factor is PLANNED rather than done
+            and says what and why: exit 3 still carries two meanings, registry
+            entries already rely on it, and redefining a shared exit code is a
+            cross-session decision rather than a cc one.
+
+THE REGISTER REFUSED THE SECOND RECORD ON ITS FIRST ATTEMPT -- a factor with
+action_status 'planned' and no action, which it calls "the CAPA box this field
+replaces" -- and that refusal was satisfied rather than worked around.
+
+cf989dad CARRIES `no-defect-record:` INSTEAD OF A ROW, with its reason, and
+that was a deliberate choice rather than a shortcut. The fileSize mismatch
+turned out to be a propagation lag, so there was nothing defective to record;
+what the commit adds is instrumentation that did not exist, and absent
+instrumentation is a gap rather than a defect. The gap was already named in
+b12's own digest as an open UNVERIFIED rather than discovered here. The
+write_verified return-shape change was introduced and fixed inside that same
+commit and never shipped, so it has no injection commit and nothing to cite.
+A register row claiming otherwise would make the register worse.
+
+    python tools/defect_register.py --check
+    ->  OK: 586 record(s), every commit resolves and every field is in
+        vocabulary
+
+The shas above are the RE-SEATED ones: the rebase rewrote both fix commits
+(6838cfdd -> 0d33f659, 9c453ae1 -> 10209464) and the register's own --reseat
+wrote the new values, which is a separate commit. Before committing that
+re-seat, all four prior records were verified present and correctly counted --
+the diff was 271/161 lines, larger than two records, and a diff that size
+needs checking rather than trusting.
+
+
+================================================================================
+THE TIER A OBLIGATION
+================================================================================
+
+tools/citation_anchor_rot_check.py is flagged against sf_events, because its
+A7 arm reads the sf_events row of docs/CRITICALITY-TIERS.md and
+sairnfreedom.html. Obligation RECORDED, AUTO-ASSIGNED TO fourth, and only
+fourth can discharge it -- the gate refuses any record whose reviewer is its
+own author, which is the same rule that stopped cc signing cody's
+WEAKENING-flag rebuttals in item 1 of this same batch.
+
+The obligation names the three things to review HARDEST rather than asking for
+a general look:
+
+  1. whether "resolves exactly once in the declared target" is the right
+     criterion for a Tier A row whose integrity argument rests on there being
+     exactly ONE copy of the event-to-session link. A check that blesses a
+     cell whose PROSE is wrong while its QUOTES are right is the failure mode,
+     and this tool reads the quote and not the argument -- it says so in its
+     own clean output.
+  2. the A7/A7b split, and specifically that the live arm still fails if the
+     document stops being read at all. It deliberately does not assert a
+     finding COUNT, and the risk of that choice is an arm that passes on
+     nothing.
+  3. that the tool writes nothing, since a fixer that re-anchors a Tier A cell
+     by itself is detector-blesses-its-own-fix.
+
+
+================================================================================
+EVERY CHECK RUN, AND ITS REAL EXIT CODE
+================================================================================
+
+  tools/scrutiny_ledger_check.py                   0   CLEAN, 411 unchecked
+                                                       and named
+  tools/sairn_claim.py selftest                    0   7/7 arms
+  tools/sairn_claim_doc_freshness.py              *1   its other rows; the
+                                                       FILES-convention row is
+                                                       OK at 2 of 4
+  tools/citation_anchor_rot_check.py --selftest    0   12/12 arms
+  tools/citation_anchor_rot_check.py <doc>        *1   the real rot finding
+  tests/run_drive_upload_verify_probe.py           0   35/35 arms
+  tools/sairn_push_gate_hook.py --selftest         0   31/31 arms
+  tools/sairn_board_publish.py --selftest          0   16/16 arms
+  tools/sairn_board_publish.py --ablation          0   11 layers load-bearing
+  node api/sd-photos-size-and-provenance.test.js   0   26/0/0
+  node api/n1-n4-and-sf-delete.test.js             0   21/0/0
+  node api/role-picker-vs-check-constraint.test.js *3  6 clean, 11 UNPROVEN
+  tools/fmea_draft.py <nine> --save                0   nine drafts
+  tools/defect_register.py --check                 0   586 records
+  tools/tooling_inventory.py --check               0   matches the repo
+  tools/master_plan.py --check                     0   after regeneration
+  tools/traceability_matrix.py --check             0   after regeneration
+  tools/tier_a_review_gate.py --validate           0   via sairn_rebase_resolve
+  node --check on all three wired suites           0
+
+  * THE THREE NON-ZERO CODES ARE THE FINDINGS, NOT FAILURES OF THE RUN.
+    Exit 1 from sairn_claim_doc_freshness is its other rows, unrelated to this
+    batch. Exit 1 from the anchor check is the real rotted citation in
+    docs/CRITICALITY-TIERS.md, which is fourth's cell and is routed. Exit 3 is
+    the role-picker seam's 11 unmeasurable apps, which is the whole reason
+    item 4 touched the exit-3 channel. None was converted into a pass.
+
+NOT RUN, AND SAID OUT LOUD RATHER THAN IMPLIED: the full tools/run_all_tests.py
+sweep over 802 files was not driven. tools/obligation_surface.py was not
+re-run, so b12's 48h queue figures are not restated here. No app or endpoint
+was live-driven, because nothing deployed changed. The staleness of the 521
+file:line citations in docs/CRITICALITY-TIERS.md is UNMEASURED and is
+deliberately not estimated.
+
+
+================================================================================
+CONTEXT
+================================================================================
+
+CONTEXT 54% used (1,000,000 window, Opus 5 1M). MEASURED, not estimated:
+540,698 tokens by tools/sairn_status_line.used_tokens() against this session's
+own transcript (3,935,147 bytes). THIS SESSION IS SHARED WITH b12 -- the same
+transcript -- so the figure covers both batches, where b12's own 34% covered
+b12 alone.
+
+The same number is on the live status row via `sairn_status.py set --context`,
+with a context_set stamp, so the Drive board reports it as a live reading
+rather than falling back to this digest.
+
+SHA256 8dca1fa81ae988946e10634c975cfcba57881dd5e37cbb85bb1197d78347248a
+END-OF-REPORT
