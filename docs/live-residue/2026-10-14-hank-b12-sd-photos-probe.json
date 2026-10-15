@@ -1,0 +1,25 @@
+{
+  "written_by": "docs/hank-evidence/b12_live_gate_probe.py",
+  "session": "hank",
+  "batch": "b12",
+  "date": "2026-10-14",
+  "class": "VERIFICATION-WRITING",
+  "why_it_had_to_write": "The SUCCESS leg of the 89-branch notProvisioned() rewrite cannot be proven by a refusal. A handler that answered 503 to every sd_photos write would pass every refusal arm while backing up nothing -- and 'the row lands' is the entire point of this batch, because before it every real photograph was refused by the 65,536-byte cap and reported as an unrun migration.",
+  "rows": [
+    {
+      "table": "public.sd_photos",
+      "id_column": "photo_id",
+      "id": "ZZ-B12-SIZE-PROBE",
+      "licence": "SD-AUDIT-2026 (the StoneDesk demo/verification licence only)",
+      "size": "a few bytes of `data` -- deliberately far under the cap, because the arm is about the PATH and not about the downscale",
+      "id_is_fixed_not_generated": "so a re-run overwrites rather than accumulating. Confirmed on the second run: sd_photos read returned rows=1, not rows=2.",
+      "blast_radius_sql": "select count(*) from public.sd_photos where photo_id = 'ZZ-B12-SIZE-PROBE';",
+      "blast_radius_expected": "1",
+      "removal_sql": "delete from public.sd_photos where photo_id = 'ZZ-B12-SIZE-PROBE';",
+      "confirm_sql": "select count(*) from public.sd_photos where photo_id = 'ZZ-B12-SIZE-PROBE';",
+      "confirm_expected": "0",
+      "can_the_app_remove_it": "YES, unlike b10's leg_custodylog residue. sd_photos carries a `soft_delete` verb (api/_resources/stonedesk.js:265) and service_role holds DELETE on the table, so this row does not need a human in the SQL editor. The SQL above is given anyway because it is unambiguous and does not depend on a session."
+    }
+  ],
+  "everything_else_the_probe_sent_persisted_nothing": "The 404-leg candidates were reads. The sen_visits arm targeted a visit id that does not exist and was refused before any upsert. The sd_photos read is a read."
+}

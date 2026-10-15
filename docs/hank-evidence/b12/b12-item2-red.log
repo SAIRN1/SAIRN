@@ -1,0 +1,53 @@
+sd_photos: the size cap, the 400 misattribution, T17 provenance -- criteria 2026-10-14.1
+
+A. the server says WHY, instead of blaming a migration
+  FAIL     A1. an upstream 400 carrying pg code 23514 answers 400 ROW_REFUSED. THIS IS THE DEFECT: it used to answer 503 NOT_PROVISIONED -- "run the migration" -- for a table that exists and a row that is too big
+           status=503 code=NOT_PROVISIONED
+  ok       A2. CONTROL -- an upstream 404 still answers 503 NOT_PROVISIONED. Without this arm the fix could be "never say NOT_PROVISIONED again", and a genuinely unmigrated table would stop being diagnosable
+  ok       A3. a 400 whose body says the relation does not exist is STILL 503 NOT_PROVISIONED -- the original reason for folding 400 in with 404 was real and is kept, not thrown away with the defect
+  FAIL     A4. THE THIRD STATE -- a 400 that can be classified as neither answers 400 UPSTREAM_REJECTED and says the reason could not be classified. It does NOT say "run the migration". Folding could-not-tell into either of the other two answers is how this defect was built
+           status=503 code=NOT_PROVISIONED
+  ok       A5. CONTROL -- a successful write is still 200, so A1-A4 are not passing because everything now fails
+  FAIL     A6. ZERO (404||400) branches answer 503 NOT_PROVISIONED without reading the body: 0 go through notProvisioned() and 9 discriminate for themselves. A branch that decides blind is the defect, so the arm counts them rather than naming a number
+           bare=89 routed=0 self-deciding=9
+  FAIL     A7. the 0 call sites that already did `const rows = await r.json()` BEFORE the guard pass that body in, so the helper does not read an already-consumed stream. A Response body can be read once, and a helper that reads it again turns one wrong diagnosis into another
+           sites passing a pre-read body: 0 (expected 5)
+
+B. the image is downscaled to fit, measured rather than assumed
+  UNPROVEN B1. sdDownscalePhoto / the ladder / the budget could not be found in stonedesk.html, so nothing in section B was measured
+           fn=false ladder=false budget=false
+  UNPROVEN B2. depends on B1
+           extraction failed
+  UNPROVEN B3. depends on B1
+           extraction failed
+  FAIL     B4. handlePhotoFiles stores the DOWNSCALED data URL when the downscale succeeded, and falls back to the original only when it did not -- so the row that is written is the row that was measured
+           the assignment was not found in stonedesk.html
+  FAIL     B5. a FAILED downscale tells the user the photo is on this device only. The local copy is kept -- refusing it would lose the photograph to protect a backup -- but the silence is what ends
+           no toast on the failed-downscale path
+
+C. T17 -- provenance on the QC note
+  FAIL     C1. sd_photos resolves in EXACTLY ONE of HIGH_RISK_AI / NOT_HIGH_RISK_AI (high=false, not-high=false). Unclassified fails: the b18 spec requires the decision to exist, not to go a particular way
+           high=false notHigh=false
+  ok       C2. sd_photos is HIGH-RISK, so the approval gate applies and no not-high-risk reason is owed
+  FAIL     C3. all four photo-QC siblings are in AI_SCANNED_TEXT, driven by ONE loop: rf_photos, bld_photo_analyses, grd_progress_photos, sd_photos. sd_photos was the one that was missed, and a per-resource arm would have been written for the three that were already there
+           missing: sd_photos
+  FAIL     C4. sd_photos' redacted field is `aiAnalysis` and NOT `data` -- the model prose is redacted and the base64 photograph is not, because redacting an image payload corrupts the image
+           []
+  FAIL     C5. photoAnalyze stamps ai_source = claude:photo-qc on the row. Before this batch `grep -c "ai_source" stonedesk.html` was 0 for the photo path: aiAnalysis was d.content[0].text verbatim with no source, no approver and no model id
+           the stamp was not found
+  ok       C6. and NOTHING assigns ai_approved_by on this path. The write happens the moment the model answers, so there is no approver; aiFooter() reads "AI-assisted - not reviewed", which is the true sentence
+  UNPROVEN C7. sdPhotoAiLabel() was not found, so the render label could not be measured
+           anchor absent
+
+D. the failure reaches a human
+  FAIL     D1. sdDataFailed reports to a HUMAN and not only to the console. Its whole body was one console.warn, while the platform's own comment in sdSyncCollection already said the argument: "silence would make a backup that is not happening look like one that is"
+            try { console.warn('StoneDesk: ' + action + ' "' + resource + '" did NOT reach the ' + 'server (' + why + ').'); } catch (e) {}
+  ok       D2. ...and the console line is KEPT. The toast is for the user, the warn is for whoever reads a console later, and removing one to add the other would trade one audience for another
+  FAIL     D3. every branch of it is guarded and showToast is reached through a typeof test, so this failure path cannot itself fail -- the rule sdData's own catch records paying for twice
+           try blocks=1
+  FAIL     D4. a burst is summarised rather than toasted per record. One toast per failure on a sync of 200 photos is its own kind of silence, because a user dismisses the first three and stops reading
+           no burst counter
+
+6 passed, 13 failed, 4 unproven
+13 ARM(S) FAILED: A1, A4, A6, A7, B4, B5, C1, C3, C4, C5, D1, D3, D4
+4 ARM(S) UNPROVEN: B1, B2, B3, C7

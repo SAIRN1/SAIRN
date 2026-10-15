@@ -1,0 +1,43 @@
+N1-N4 and the SAIRNfreedom deletes -- criteria 2026-10-14.1
+
+N1. a recorded EVV clock time cannot be replaced silently
+  ok       N1a. CONTROL -- a FIRST clock-in on a visit with none recorded is accepted. Without this arm the fix could be "refuse every clock write" and every arm below would still pass
+  FAIL     N1b. THE ARM THE WHOLE SECTION IS FOR -- a DIFFERENT clock_in_at over a recorded one is refused 409 CLOCK_ALREADY_RECORDED and NOTHING was written. This module's own words: "a state audit that finds an edited time with no trail cannot tell a typo correction from a fabrication"
+           status=200 code= writes=1
+  ok       N1c. CONTROL -- an IDENTICAL re-send is still accepted. sairnsenior queues clock events offline and replays them UNCHANGED, so the same visit legitimately arrives twice; refusing that would break the replay path this module is written around
+  ok       N1d. CONTROL -- the OTHER half of the visit still writes. The guard is per field, so a clock-out after a recorded clock-in is the normal case and is not collateral damage
+  FAIL     N1e. ...and clock_out_at is guarded too, not just clock_in_at. A rule proven on one of two fields is a rule that covers one of two fields
+           status=200 code=
+
+N2. sen-auth setup cannot leave the licence with no Owner
+  FAIL     N2a. the SOLE active Owner cannot be re-roled to caregiver by setup (200 ). set_active has been guarded against the same end state since the lifecycle module was written; setup reached it through the ROLE instead of the active flag
+           status=200 body={"ok":true,"employee_id":"OWN1","role":"caregiver","attributed":true}
+  ok       N2b. CONTROL -- with a SECOND active Owner the same call succeeds. Without this arm the fix could be "never change an owner's role" and N2a would still pass
+  ok       N2c. CONTROL -- provisioning a NEW caregiver while one Owner exists is untouched. The guard is about the target being the last Owner, not about the roster size
+  ok       N2d. CONTROL -- re-running setup on the sole Owner AS an owner (a PIN reset) still works. A guard that blocked that would lock the one person who can fix anything out of their own password
+
+N3. a requirement that excluded this position is disclosed
+  FAIL     N3a. a requirement that returned a clean `false` for this position is listed in `excluded_by_position` with the reason matchAudience gave. It used to vanish: `unmapped_requirements` is built only from STRUCTURALLY unmappable rows, so a row WITH a position list never appeared there no matter who it excluded
+  FAIL     N3b. ...and the caveat says the excluded hours are NOT in `required_annual_hours`, because under-inclusion that nobody can see is indistinguishable from the requirement not existing -- which was the author's own self-flag on this point
+           undefined
+  ok       N3c. CONTROL -- the key is ABSENT when nothing was excluded, not an empty array on every finding
+
+N4. no comment claims an arm that does not exist
+  FAIL     N4a. neither bare "driven" claim survives in api/_lib/compliance-rules.js. They most likely meant DRIVEN BY HAND, which is a real activity -- the defect is that a hand-drive leaves no artefact, so six weeks later the comment is the only evidence and it reads like a reference to a committed arm
+           the leap-day normalisation, the anniversary boundary
+  FAIL     N4b. ...and the replacement says what IS true -- driven by hand, no committed arm, the arms routed to cody. True, cheap, and it tells the next reader exactly what to distrust
+           the corrected wording was not found
+  FAIL     N4c. an impossible hire date yields NO window and a named window_error, instead of an impossible window start printed on a regulated finding. REFUSED, NOT REPAIRED: normalising 2024-02-30 would be this code choosing which date somebody was hired on
+           2024-02-30 -> window_from="2026-02-30" err=null; 2024-13-01 -> window_from="2025-13-01" err=null; 2024-99-99 -> window_from="2025-99-99" err=null; 2024-04-31 -> window_from="2026-04-30" err=null
+  ok       N4d. CONTROL -- a REAL leap-day hire and a real end-of-year hire still compute a window (2024-02-29 -> 2026-02-28 by the day-decrement normalisation, 2024-12-31 -> 2025-12-31). The refusal is for dates that are not dates; a date that merely has no counterpart in the target year is still normalised, and that distinction is the whole of it
+
+F6. sfDeleteEvent reported a removal that did not happen
+  FAIL     F6a. sfDeleteSession CLEARS the event's sessionId. It used to remove the session and leave the pointer, and the UI offers Remove on every session row -- so the stale pointer was one click away
+           event after delete: {"id":"EV1","sessionId":"SS1"}
+  FAIL     F6b. ...and deleting that event does NOT announce "Event and its bingo session removed", because no session was removed. The toast used to be chosen on the POINTER being truthy and never on whether the filter matched -- affirmative false success, which is worse than silence because it tells the operator a thing happened. Said: "Event and its bingo session removed"
+           toast="Event and its bingo session removed"
+  ok       F6c. CONTROL -- when the session IS there, it is removed and the original message is still the one shown. The fix is to report the OUTCOME, not to stop reporting
+  ok       F6d. CONTROL -- an event with NO session says "Event removed" and leaves the unrelated session alone. Three outcomes, three messages
+
+10 passed, 10 failed, 0 unproven
+10 ARM(S) FAILED: N1b, N1e, N2a, N3a, N3b, N4a, N4b, N4c, F6a, F6b

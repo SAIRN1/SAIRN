@@ -1,0 +1,100 @@
+targets 89   skipped 9
+  SKIP   7963  already reads the body and discriminates
+  SKIP   8761  already reads the body and discriminates
+  SKIP   8956  already reads the body and discriminates
+  SKIP  10432  already reads the body and discriminates
+  SKIP  10631  already reads the body and discriminates
+  SKIP  10920  already reads the body and discriminates
+  SKIP  10997  already reads the body and discriminates
+  SKIP  11248  already reads the body and discriminates
+  SKIP  14785  already reads the body and discriminates
+rewrote 89 site(s)
+    2768  'Supplier documents are not set up — run sql/sai
+    2987  'The site asset registry is not set up — run sql
+    3330  'Technician credentials are not set up — run sql
+    3431  'Signed approvals are not set up — run sql/sd_ap
+    3638  'Employee profiles table is not set up yet — run
+    3721  'That table is not set up yet — run sql/stonedes
+    3758  'That table is not set up yet — run sql/stonedes
+    4915  'SAIRNgrounds data tables are not set up yet — r
+    4936  'SAIRNgrounds data tables are not set up yet — r
+    4957  'SAIRNgrounds data tables are not set up yet — r
+    4978  'SAIRNgrounds data tables are not set up yet — r
+    5014  'SAIRNgrounds data tables are not set up yet — r
+    5076  'SAIRNgrounds data tables are not set up yet — r
+    5112  'SAIRNgrounds data tables are not set up yet — r
+    5133  'SAIRNgrounds data tables are not set up yet — r
+    5162  'SAIRNgrounds data tables are not set up yet — r
+    5183  'SAIRNgrounds data tables are not set up yet — r
+    5216  'SAIRNgrounds caddie tables are not set up yet —
+    5237  'SAIRNgrounds caddie tables are not set up yet —
+    5258  'SAIRNgrounds data tables are not set up yet — r
+    5279  'SAIRNgrounds data tables are not set up yet — r
+    5300  'SAIRNgrounds data tables are not set up yet — r
+    5321  'SAIRNgrounds data tables are not set up yet — r
+    5342  'SAIRNgrounds data tables are not set up yet — r
+    5363  'SAIRNgrounds data tables are not set up yet — r
+    5384  'SAIRNgrounds data tables are not set up yet — r
+    5405  'SAIRNgrounds data tables are not set up yet — r
+    5426  'SAIRNgrounds data tables are not set up yet — r
+    5447  'SAIRNgrounds data tables are not set up yet — r
+    5482  'SAIRNgrounds data tables are not set up yet — r
+    5503  'SAIRNgrounds data tables are not set up yet — r
+    5524  'SAIRNgrounds data tables are not set up yet — r
+    5545  'SAIRNgrounds data tables are not set up yet — r
+    5566  'SAIRNgrounds data tables are not set up yet — r
+    5587  'SAIRNgrounds data tables are not set up yet — r
+    5608  'SAIRNgrounds data tables are not set up yet — r
+    5630  'SAIRNgrounds data tables are not set up yet — r
+    5656  'SAIRNscape data tables are not set up yet — run
+    5677  'SAIRNscape data tables are not set up yet — run
+    5698  'SAIRNscape data tables are not set up yet — run
+    5719  'SAIRNscape data tables are not set up yet — run
+    5772  'SAIRNscape data tables are not set up yet — run
+    5798  'SAIRNscape data tables are not set up yet — run
+    5819  'SAIRNscape data tables are not set up yet — run
+    5840  'SAIRNscape data tables are not set up yet — run
+    5861  'SAIRNscape data tables are not set up yet — run
+    5882  'SAIRNscape data tables are not set up yet — run
+    5903  'SAIRNscape data tables are not set up yet — run
+    5949  'SAIRNscape data tables are not set up yet — run
+    6045  'Shared knowledge tracking is not set up yet — r
+    6593  'Training needs assessment tracking is not set u
+    6820  'That table is not set up yet — run ' + (setupFi
+    6945  'Caregiver tracking is not set up yet — run sql/
+    7300  'Billing claims tracking is not set up yet — run
+    7531  'That table is not set up yet — run sql/sairnsen
+    7598  'That table is not set up yet — run sql/sairnsen
+    7689  'That table is not set up yet — run sql/sairnsen
+    7768  'That table is not set up yet — run sql/sairnsen
+    7856  'That table is not set up yet — run sql/sairnsen
+    8449  'Photo capture is not set up yet — run sql/sairn
+    8518  'Certification tracking is not set up yet — run 
+   11484  'Staff tracking is not set up yet — run sql/sair
+   12112  'Billing tracking is not set up yet — run sql/sa
+   12292  'Incident tracking is not set up yet — run sql/s
+   12355  'Activities tracking is not set up yet — run sql
+   12458  'The facility profile is not set up yet — run sq
+   12556  'Signal tracking is not set up yet — run sql/sai
+   12659  'Billing rules are not set up yet — run sql/sair
+   12817  'Claim routing is not set up yet — run sql/sairn
+   13623  'Compliance rules are not set up yet — run sql/s
+   13881  'Staff credentialing is not set up yet — run sql
+   14168  'SAIRNdesign data tables are not set up yet — ru
+   14414  'SAIRNbuild data tables are not set up yet — run
+   14539  'StoneDesk data tables are not set up yet — run 
+   14922  'SAIRNfreedom data tables are not set up yet — r
+   15248  'SAIRNbiz data tables are not set up yet — run s
+   15410  'SAIRNlaw extended data tables are not set up ye
+   15603  'SAIRNlegacy data tables are not set up yet — ru
+   15706  'SAIRNlegacy data tables are not set up yet — ru
+   16521  'SAIRNdental data tables are not set up yet — ru
+   16578  'SAIRNdental vendor tables are not set up yet \u
+   16763  'SAIRNmechanical record tables are not set up ye
+   16927  'SAIRNdental data tables are not set up yet — ru
+   17281  'SAIRNdental credentialing tables are not set up
+   17452  'SAIRNlaw data tables are not set up yet — run s
+   17473  'SAIRNlaw data tables are not set up yet — run s
+   17512  'SAIRNlaw deadline tables are not set up yet \u2
+   18127  scNotProvisionedMessage(resource)
+   18246  scNotProvisionedMessage(resource)

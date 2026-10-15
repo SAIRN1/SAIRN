@@ -1,0 +1,49 @@
+ROLE PICKER vs DATABASE CHECK CONSTRAINT -- criteria 2026-10-14.1
+17 app(s) from ROLES_BY_APP, derived not typed
+
+  UNPROVEN sairnbiz: no `check (role in (...))` found in any sql/ file naming sairnbiz_employee_auth, so there is nothing to compare the picker against. NOT a pass: an app whose constraint cannot be found is exactly the app whose picker nobody has checked
+           searched sql/*.sql for sairnbiz_employee_auth
+  ok       sairnbuild: all 1 role picker(s) offer only roles the CHECK in sairnbuild_employee_auth_schema.sql accepts (3 allowed)
+  ok       sairncare: all 2 role picker(s) offer only roles the CHECK in 2026-10-14-michael-run-order.sql, sairncare_all_remaining_migrations.sql, sairncare_employee_auth_schema.sql, sairncare_employee_auth_schema.sql accepts (7 allowed)
+  UNPROVEN sairncode: no role picker found in sairncode.html -- no <select> has two or more option values from this app's own vocabulary. Either the app provisions roles somewhere this detector cannot see, or the detector has stopped matching. Either way nothing was compared
+           vocabulary: [admin, coder, biller, auditor]
+  UNPROVEN sairndental: no role picker found in sairndental.html -- no <select> has two or more option values from this app's own vocabulary. Either the app provisions roles somewhere this detector cannot see, or the detector has stopped matching. Either way nothing was compared
+           vocabulary: [owner, frontdesk, provider]
+  ok       sairndesign: all 2 role picker(s) offer only roles the CHECK in sairndesign_employee_auth_schema.sql accepts (3 allowed)
+  UNPROVEN sairnfreedom: no role picker found in sairnfreedom.html -- no <select> has two or more option values from this app's own vocabulary. Either the app provisions roles somewhere this detector cannot see, or the detector has stopped matching. Either way nothing was compared
+           vocabulary: [post.govern, post.govern.deputy, records.write, finance.write, trustee.audit, member.admit, services.refer, legal.review, history.write, ceremonial.manage, chaplain.pastoral]
+  UNPROVEN sairngrounds: no `check (role in (...))` found in any sql/ file naming sairngrounds_employee_auth, so there is nothing to compare the picker against. NOT a pass: an app whose constraint cannot be found is exactly the app whose picker nobody has checked
+           searched sql/*.sql for sairngrounds_employee_auth
+  ok       sairnlaw: all 1 role picker(s) offer only roles the CHECK in sairnlaw_employee_auth_schema.sql accepts (3 allowed)
+  ok       sairnlegacy: all 1 role picker(s) offer only roles the CHECK in 2026-10-14-michael-run-order.sql, sairnlegacy_employee_auth_schema.sql, sairnlegacy_employee_auth_schema.sql accepts (8 allowed)
+  UNPROVEN sairnmechanical: no role picker found in sairnmechanical.html -- no <select> has two or more option values from this app's own vocabulary. Either the app provisions roles somewhere this detector cannot see, or the detector has stopped matching. Either way nothing was compared
+           vocabulary: [owner, admin, sales, tech]
+  UNPROVEN sairnroofing: no role picker found in sairnroofing.html -- no <select> has two or more option values from this app's own vocabulary. Either the app provisions roles somewhere this detector cannot see, or the detector has stopped matching. Either way nothing was compared
+           vocabulary: [owner, admin, estimator, foreman, crew]
+  UNPROVEN sairnscape: no `check (role in (...))` found in any sql/ file naming sairnscape_employee_auth, so there is nothing to compare the picker against. NOT a pass: an app whose constraint cannot be found is exactly the app whose picker nobody has checked
+           searched sql/*.sql for sairnscape_employee_auth
+  ok       sairnsenior: all 1 role picker(s) offer only roles the CHECK in sairnsenior_employee_auth_schema.sql accepts (5 allowed)
+  UNPROVEN sairnvet: no role picker found in sairnvet.html -- no <select> has two or more option values from this app's own vocabulary. Either the app provisions roles somewhere this detector cannot see, or the detector has stopped matching. Either way nothing was compared
+           vocabulary: [owner, dvm, tech, assistant, manager, frontdesk]
+  UNPROVEN stonedesk: no `check (role in (...))` found in any sql/ file naming stonedesk_employee_auth, so there is nothing to compare the picker against. NOT a pass: an app whose constraint cannot be found is exactly the app whose picker nobody has checked
+           searched sql/*.sql for stonedesk_employee_auth
+  UNPROVEN stonedesk_sub: no stonedesk_sub.html in the repo, so its pickers could not be read. NOT a pass -- an app with a role vocabulary and no file here is a question, and the file may simply be named differently
+           C:\Users\marsh\Documents\SAIRN-hank\stonedesk_sub.html
+
+── THE LIMIT, REPORTED EVERY RUN RATHER THAN DISCOVERED ──
+This compares a picker against the CHECK IN sql/, which is the
+repo's INTENDED constraint and not the live database's. A role
+that is in the schema file and NOT YET MIGRATED is invisible here
+-- that is the office_manager state as this is written. So:
+  CAUGHT    a picker ahead of the schema file (drift)
+  NOT CAUGHT a schema file ahead of production (lag)
+
+2 CHECK-widening migration(s) found. Each is a lag this check cannot measure:
+  * sairncare: 2026-10-14-michael-run-order.sql widens the CHECK by ALTER, so the repo allows [owner, nursing, med_aide, caregiver, billing, activities, office_manager] and PRODUCTION allows that only if the file has been run
+  * sairnlegacy: 2026-10-14-michael-run-order.sql widens the CHECK by ALTER, so the repo allows [owner, director, arranger, prep, office, apprentice, livery, staff] and PRODUCTION allows that only if the file has been run
+  The live question is one query per app:
+    select pg_get_constraintdef(oid) from pg_constraint
+     where conname = '<app>_employee_auth_role_check';
+
+6 app(s) clean, 0 with a refused role, 11 could not be measured
+11 APP(S) UNPROVEN: sairnbiz, sairncode, sairndental, sairnfreedom, sairngrounds, sairnmechanical, sairnroofing, sairnscape, sairnvet, stonedesk, stonedesk_sub

@@ -1,0 +1,29 @@
+N1 the clock guard removed
+  exit=1
+  18 passed, 2 failed, 0 unproven
+  2 ARM(S) FAILED: N1b, N1e
+N2 the sole-owner demotion guard removed
+  exit=1
+  19 passed, 1 failed, 0 unproven
+  1 ARM(S) FAILED: N2a
+N3 the exclusion disclosure removed from the finding
+  exit=1
+  19 passed, 1 failed, 0 unproven
+  1 ARM(S) FAILED: N3a
+N4 the hire-date reality check removed
+  exit=1
+  19 passed, 1 failed, 0 unproven
+  1 ARM(S) FAILED: N4c
+F6 sfDeleteSession stops clearing the pointer
+  exit=1
+  19 passed, 1 failed, 0 unproven
+  1 ARM(S) FAILED: F6a
+F6 sfDeleteEvent reports the pointer again instead of the outcome
+  exit=0   <-- SURVIVED. The two fixes are each sufficient alone, so neither was
+           individually NECESSARY for any arm: F6b runs after F6a has already
+           cleared the pointer. New arm F6e builds the stale-pointer state
+           DIRECTLY -- the state every row written before today is in.
+F6 toast ablation RE-RUN, with arm F6e present
+  exit=1
+  20 passed, 1 failed, 0 unproven
+  1 ARM(S) FAILED: F6e

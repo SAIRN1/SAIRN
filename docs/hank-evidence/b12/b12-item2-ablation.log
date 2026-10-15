@@ -1,0 +1,36 @@
+A1 the 23xxx discrimination removed
+  exit=1
+  24 passed, 2 failed, 0 unproven
+  2 ARM(S) FAILED: A1, A8
+A2 the third state removed (unclassifiable folded into NOT_PROVISIONED)
+  exit=1
+  25 passed, 1 failed, 0 unproven
+  1 ARM(S) FAILED: A4
+A3 the pre-read argument ignored (helper re-reads a consumed stream)
+  exit=0   <-- SURVIVED, and the FIXTURE was why: the mock served text() after
+           json() had already been called, which a real fetch Response never
+           does. Mock corrected to single-consumption; re-run below.
+A3 RE-RUN, with the mock modelling single consumption
+  exit=1
+  25 passed, 1 failed, 0 unproven
+  1 ARM(S) FAILED: A8
+B1 the budget check removed (first rung returned blind)
+  exit=1
+  25 passed, 1 failed, 0 unproven
+  1 ARM(S) FAILED: B2
+B2 the downscale not used by the caller
+  exit=1
+  25 passed, 1 failed, 0 unproven
+  1 ARM(S) FAILED: B4
+C1 the ai_source stamp removed
+  exit=1
+  25 passed, 1 failed, 0 unproven
+  1 ARM(S) FAILED: C5
+C2 sd_photos removed from AI_SCANNED_TEXT
+  exit=1
+  24 passed, 2 failed, 0 unproven
+  2 ARM(S) FAILED: C3, C4
+D1 the user-facing report made unreachable (early return)
+  exit=1
+  24 passed, 2 failed, 0 unproven
+  2 ARM(S) FAILED: D1, D1b

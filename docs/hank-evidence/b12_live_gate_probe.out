@@ -1,0 +1,37 @@
+B12 LIVE GATE PROBE -- the 89-branch notProvisioned rewrite, the sd_photos write path, and the N1 clock guard
+data https://sairn.vercel.app/api/sd-data
+class=VERIFICATION-WRITING  guard=yes  residue=docs/live-residue/2026-10-14-hank-b12-sd-photos-probe.json
+
+  404 leg -> COULD NOT RUN: none of the 5 candidates reached an ABSENT table, so no 404 was produced to classify. NOT a pass -- the three refusal answers are driven against the real handler by api/sd-photos-size-and-provenance.test.js arms A1-A5.
+      tried sd_approvals -> 403 FORBIDDEN | A valid employee session is re
+      tried sd_shared_knowledge -> 400  | resource must be one of: profile, memor
+      tried sd_rev_log -> 400  | resource must be one of: profile, memor
+      tried sd_employee_profiles -> 400  | resource must be one of: profile, memor
+      tried sd_intake -> 400  | resource must be one of: profile, memor
+  sd_photos read -> 200 ok rows=1 provisioned=True   PASS (the control -- this endpoint does not answer 503 to everything)
+  sd_photos write ZZ-B12-SIZE-PROBE -> 200 ok   PASS (the success leg survived the 89-site rewrite)
+      NOTE: a row this small was ALWAYS accepted. This is evidence the PATH is deployed, NOT evidence the downscale works -- that is browser JavaScript and is driven by arms B1-B5.
+
+sen-auth login -> 200  token=YES
+  sen_visits clock write, unknown visit -> 200 ok   PASS (the immutability guard did NOT fire where nothing is recorded -- it refused for the real reason instead)
+
+-- NOT DRIVEN BY THIS PROBE, so an absence is not read as a pass --
+  * the CLIENT-SIDE DOWNSCALE: browser JavaScript, a canvas re-encode.
+    No HTTP request reaches it. Arms B1-B5 extract the real function
+    and RUN it against a stub canvas whose length depends on the rung.
+  * the TWO SAIRNfreedom DELETES: browser-only AND local-storage only,
+    no server resource exists. Arms F6a-F6e extract and run both.
+  * the N2 LAST-OWNER GUARD: driving it live means writing a credential
+    row from a probe. Arms N2a-N2d drive the real handler, with the
+    control that a second owner makes the same call succeed.
+  * N3 and N4: pure compute, driven directly against the module.
+  * the ROLE-PICKER CHECK: static, HTML against sql/, no runtime half;
+    its own output states the limit that it reads the REPO CHECK and
+    not production's.
+  * the CENSUS SQL: NOT RUN. It is SELECT-only and its value is the
+    number it returns about production, so running it is Michael's.
+  * the THREE OTHER notProvisioned ANSWERS: 400+23xxx, 400+"does not
+    exist", and 400 unclassifiable all need a specific upstream reply.
+    Arms A1-A5 drive all four against the real handler.
+
+fail=0 couldnot=1

@@ -1,0 +1,37 @@
+sd_photos: the size cap, the 400 misattribution, T17 provenance -- criteria 2026-10-14.1
+
+A. the server says WHY, instead of blaming a migration
+  ok       A1. an upstream 400 carrying pg code 23514 answers 400 ROW_REFUSED. THIS IS THE DEFECT: it used to answer 503 NOT_PROVISIONED -- "run the migration" -- for a table that exists and a row that is too big
+  ok       A2. CONTROL -- an upstream 404 still answers 503 NOT_PROVISIONED. Without this arm the fix could be "never say NOT_PROVISIONED again", and a genuinely unmigrated table would stop being diagnosable
+  ok       A3. a 400 whose body says the relation does not exist is STILL 503 NOT_PROVISIONED -- the original reason for folding 400 in with 404 was real and is kept, not thrown away with the defect
+  ok       A4. THE THIRD STATE -- a 400 that can be classified as neither answers 400 UPSTREAM_REJECTED and says the reason could not be classified. It does NOT say "run the migration". Folding could-not-tell into either of the other two answers is how this defect was built
+  ok       A5. CONTROL -- a successful write is still 200, so A1-A4 are not passing because everything now fails
+  ok       A6. ZERO (404||400) branches answer 503 NOT_PROVISIONED without reading the body: 89 go through notProvisioned() and 9 discriminate for themselves. A branch that decides blind is the defect, so the arm counts them rather than naming a number
+  ok       A7. the 5 call sites that already did `const rows = await r.json()` BEFORE the guard pass that body in, so the helper does not read an already-consumed stream. A Response body can be read once, and a helper that reads it again turns one wrong diagnosis into another
+  ok       A8. a call site that had ALREADY consumed the body still classifies correctly -- rf_photos' write reads `rows` before its guard and hands it in, and a 23514 there answers ROW_REFUSED. A7 proves the argument is passed; this proves it is READ, which is the half an ablation showed A7 alone could not see
+
+B. the image is downscaled to fit, measured rather than assumed
+  ok       B1. the data-URL budget is 44000 characters -- under the 65,536-byte row cap with 21536 bytes left for the rest of the row, which carries aiAnalysis (3-5 model sentences), ai_source, the ids and the JSON quoting. The budget is NOT the cap and that difference is the point
+  ok       B2. the ladder is WALKED and the result MEASURED: 2 rung(s) tried, the winner is 1280px/q0.72 at 29491 bytes, under the 44000 budget. The first rung that actually fits wins -- the length is checked, not predicted from the dimensions
+  ok       B3. when NO rung fits the budget the result is null -- not the original, and not a silent pass-through. A downscaler that returns the original on failure is how an oversized row reaches the server looking like a downscaled one
+  ok       B4. handlePhotoFiles stores the DOWNSCALED data URL when the downscale succeeded, and falls back to the original only when it did not -- so the row that is written is the row that was measured
+  ok       B5. a FAILED downscale tells the user the photo is on this device only. The local copy is kept -- refusing it would lose the photograph to protect a backup -- but the silence is what ends
+
+C. T17 -- provenance on the QC note
+  ok       C1. sd_photos resolves in EXACTLY ONE of HIGH_RISK_AI / NOT_HIGH_RISK_AI (high=false, not-high=true). Unclassified fails: the b18 spec requires the decision to exist, not to go a particular way
+  ok       C2. ...and the not-high-risk entry says WHY IN TERMS OF THE APP rather than the content: sd_photos is not in SD_SESSION_GATED, so an approval gate would refuse every analysed photo on an app with no sign-in requirement. The entry names the order a promotion has to happen in
+  ok       C3. all four photo-QC siblings are in AI_SCANNED_TEXT, driven by ONE loop: rf_photos, bld_photo_analyses, grd_progress_photos, sd_photos. sd_photos was the one that was missed, and a per-resource arm would have been written for the three that were already there
+  ok       C4. sd_photos' redacted field is `aiAnalysis` and NOT `data` -- the model prose is redacted and the base64 photograph is not, because redacting an image payload corrupts the image
+  ok       C5. photoAnalyze stamps ai_source = claude:photo-qc on the row. Before this batch `grep -c "ai_source" stonedesk.html` was 0 for the photo path: aiAnalysis was d.content[0].text verbatim with no source, no approver and no model id
+  ok       C6. and NOTHING assigns ai_approved_by on this path. The write happens the moment the model answers, so there is no approver; aiFooter() reads "AI-assisted - not reviewed", which is the true sentence
+  ok       C8. the render carries a label that is NOT the spinner string. "Analyzing with Claude..." is overwritten by the answer the instant it arrives, so a page whose only AI wording is the spinner has no AI wording at all -- the b18 spec names exactly that
+  ok       C9. ...and it is rendered on BOTH success paths -- the cached analysis and the fresh one (3 call sites). A label on one of two paths is a label that is absent half the time
+
+D. the failure reaches a human
+  ok       D1. sdDataFailed, RUN against a stub, reports to a HUMAN: "\"sd_photos\" was NOT backed up — the server refused the record as too large. It is saved on". Its whole body was one console.warn, while the platform's own comment in sdSyncCollection already said the argument -- "silence would make a backup that is not happening look like one that is"
+  ok       D1b. ...and the row-too-large case is NAMED, because it is the one a user can act on. The server now answers 400 ROW_REFUSED for a CHECK violation instead of 503 "tables are not set up yet", so the reason that reaches this function is a real one
+  ok       D2. ...and the console line is KEPT. The toast is for the user, the warn is for whoever reads a console later, and removing one to add the other would trade one audience for another
+  ok       D3. every branch of it is guarded and showToast is reached through a typeof test, so this failure path cannot itself fail -- the rule sdData's own catch records paying for twice
+  ok       D4. a burst is summarised rather than toasted per record. One toast per failure on a sync of 200 photos is its own kind of silence, because a user dismisses the first three and stops reading
+
+26 passed, 0 failed, 0 unproven

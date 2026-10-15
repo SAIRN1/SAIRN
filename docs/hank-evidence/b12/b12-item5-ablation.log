@@ -1,0 +1,8 @@
+A1 office_manager removed from every sairncare CHECK (the real class)
+  exit=1
+    FAIL     sairncare: a picker offers a role the database CHECK refuses -- the save will fail 23514 at the last step with no validation message. 2 case(s)
+  5 app(s) clean, 1 with a refused role, 11 could not be measured
+  1 APP(S) FAILED: sairncare
+A2 picker detection disabled (can the check report CLEAN on nothing?)
+  exit=3
+  0 app(s) clean, 0 with a refused role, 17 could not be measured
