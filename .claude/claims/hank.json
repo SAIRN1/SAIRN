@@ -3944,8 +3944,8 @@
       "task": "b13 T18 N3 applies_to_positions validation, T16 clock_in_at correction record api/sd-data.js, T17 api/sen-auth.js last owner, N4 test comment citation, fourth F4 F5 leg_aftercare key ambiguity, 11 UNPROVEN apps methodology. FILES: api/sd-data.js api/sen-auth.js api/sd-data-cross-tenant-dispatchers.test.js plus my own b13 artifacts.",
       "claimed_at": "2026-10-15T00:22:44Z",
       "claimed_at_epoch": 1792023764.6649113,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-15T01:44:30Z",
       "files": [
         "api/sd-data-cross-tenant-dispatchers.test.js",
         "api/sd-data.js",
