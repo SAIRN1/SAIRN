@@ -1,0 +1,331 @@
+REPORT cody b14
+
+DATE 2026-10-14
+CLONE C:\Users\marsh\Documents\SAIRN-cody
+BRANCH main
+CHAIN TIP 409839e1 -- origin/main identical, 0 ahead / 0 behind, ancestry
+  verified with `git merge-base --is-ancestor`
+WORK COMMIT a91b530a -- the six items; 409839e1 is the handoff on top of it
+PUSHED WITHOUT --force. `grep -ci force` over the successful push log: 0.
+COMMITTER fx <fx@example.invalid>, this clone's LOCAL config, unchanged.
+
+ALL SIX ITEMS DONE AND LANDED. NOTHING IS HALF-FINISHED.
+
+NOTHING OVERRIDDEN. No SAIRN_SKIP, no SAIRN_GATE_EXEMPT, no SAIRN_SEED_GATE, in
+  any form. No hook added or restored. .claude/settings.json never committed. NO
+  api/, sql/ OR tools/ FILE EDITED. No CLAUDE.md edit. No auditor clone entered.
+  Two gates refused this push; both were true and both were fixed at cause.
+
+
+ITEM 1 -- tests/run_two_axis_tier_parser_probe.py, FIXED AT CAUSE
+
+  EXIT 1 -> EXIT 0, 17 of 17 arms.
+
+  THE ROW WAS READ FIRST, as instructed, and its 2026-10-06 diagnosis was right
+  and is the fix that was applied. row_problems() was over-collecting HEADLINE,
+  a DOCUMENT-scope label, into arm 2 whose own criterion says ROW-level.
+  tools/criticality_tier_check.py:1003-1008 re-reads the whole register looking
+  for the "N resources, A A, B B, C C" sentence and says in its own comment that
+  it is "a check on the DOCUMENT's prose, not on the table parse() builds".
+  Every fixture in the probe is a two-row table with NO summary sentence BY
+  CONSTRUCTION, so that could-not-tell fired on every run and said nothing about
+  the parser: the same run printed RESOURCE_ROWS:2 and
+  ROWS_MIGRATED_TWO_AXIS:2 of 2, and arms 3-14 passed on that identical fixture
+  throughout.
+
+  RED CAPTURED FIRST: exit 1, "2. the NEW six-cell shape parses, raises no
+  row-level problem, and counts as migrated / row problems: ['HEADLINE']".
+
+  NO tools/ FILE EDITED (tools/ is cc's) AND NO ARM EDITED TO TURN IT GREEN.
+  Arm 2's assertion is unchanged; only the SCOPE of the helper feeding it.
+
+  THE OTHER REPAIR THE ROW OFFERED WAS REJECTED WITH A REASON, written into the
+  file: giving the fixtures a headline means either a typed sentence that is a
+  second copy of NEW_ROWS -- stale the first time a fixture row changes -- or a
+  derived one that makes the headline check agree with itself on every arm, i.e.
+  a check that can no longer fail. Scoping one helper changes one judgement;
+  rewriting the fixtures changes fourteen.
+
+  TWO CONTROLS, BOTH FAILURE PATHS DRIVEN on scratch copies with REPO pinned:
+    unmodified copy                   -> EXIT 0 (a red cannot be the harness)
+    a bogus label added to the set    -> EXIT 3 COULD NOT RUN, naming it
+    the fixture given a headline      -> EXIT 1, arm 2 still ok, CONTROL FAILS
+
+
+ITEM 2 -- the OWNER line, and the ten blob conversions ROUTED
+
+  tests/run_scope_gate_unfetched_base_probe.py: `# OWNER: cc` -> `# OWNER: cody`,
+  on Michael's decision. tools/tool_owner_map.py treats that line as
+  AUTHORITATIVE, so until now every finding in a file sitting in tests/ routed to
+  cc, who does not own the directory it is in. cc's AUTHORSHIP IS KEPT on the
+  line above rather than erased.
+
+  GREEN AFTER THE EDIT: EXIT 0, 13/13 arms, including the ARM 5 ablation and
+  ARM 6's guard-between-source-and-sink over a NAMED population of 3 tools with
+  4 could-not-tells reported by name.
+  WIRED, MEASURED NOT ASSUMED: tools/run_all_tests.py's own discover() returns
+  it in the 425-file .py list.
+  OWNERSHIP RE-READ THROUGH THE GENERATOR'S FUNCTION, not the generated file:
+  owner_lines() on the path returns 'cody'.
+
+  THE TEN BLOB CONVERSIONS ARE ROUTED TO HANK, NOT CONVERTED, AND THAT WAS THE
+  DECISION. All 58 unconverted sites live in api/, which is hank's.
+  docs/2026-10-14-cody-b14-blob-conversion-routed-to-hank.md names the FIRST TEN
+  in `--list RAW` order -- the tool's own order, no cherry-picking -- each with
+  its branch opener, its table, THE PAIRED READ that decides the column keys,
+  and TWO failing-first commands of DIFFERENT SHAPES per site (one over the
+  source text anchored on the branch opener rather than a line number, one over
+  the tool's own count).
+  docs/blob-conversion-coverage.json IS UNTOUCHED at unconverted: 58,
+  converted: 34. Re-pinning without a conversion is the one use the tool's own
+  note forbids.
+  TWO OF THE TEN ARE GENERIC DISPATCHERS covering five resources between them --
+  sd_blocks/sd_bundles/sd_slab_history and sd_hr_employees/sd_hr_certs, the
+  second of which is PERSON DATA and is flagged for tier re-qualification. So
+  the count must fall to EXACTLY 48; more than ten means something else moved.
+  NO api/ FILE WAS READ INTO AN EDIT: the branch/table/read triples are
+  citations stamped to a sha, not test results, and the document says so.
+
+
+ITEM 3 -- three arms, and a counterfactual that found a defect in my own controls
+
+  tests/sairnlegacy_reservation_lock.js: 35/36 -> 36/36, ALL 62 ASSERTIONS PASS,
+  EXIT 0 (was 59 assertions).
+
+  THE HANDLER WAS RIGHT THE WHOLE TIME. Measured, the odd one was
+  leg_clergybookings (unprovisioned write -> 400) --
+  CLERGY_BOOKING_WINDOW_REQUIRED, refused BEFORE ANY UPSTREAM CALL. The loop
+  hardcoded `resource === 'leg_bookings'` when building the
+  precondition-satisfying payload, so when the same overlap guard was extended
+  to leg_clergybookings on 2026-10-14 -- a second SPECS entry in
+  api/_lib/leg-overlap.js, not a second copy of the block -- this arm silently
+  stopped satisfying the precondition there and COUNTED A PRECONDITION REFUSAL
+  AS A PROPERTY FAILURE. That is the exact shape the b10 comment above it names.
+
+  The payload is DERIVED from LEG_OVERLAP.SPECS[resource].groupField now, so
+  leg_bookings keys on facility_id, leg_clergybookings on clergy_id, and a
+  fourth overlap resource is covered the day it is added. A third literal would
+  have gone stale the same way. NO api/ FILE EDITED; the map is read.
+
+  THE COUNTERFACTUAL FOUND A DEFECT IN THE CONTROLS I HAD JUST WRITTEN. They sat
+  AFTER the three count assertions, and ok() throws -- so an emptied SPECS map
+  reported an unattributable 34/36 from the count arm and the control naming the
+  cause was NEVER REACHED. They run BEFORE the counts now. A diagnostic placed
+  downstream of the thing it diagnoses is not a control.
+
+  AND A FOURTH CONTROL WAS WRITTEN AND REMOVED, with its reason recorded in the
+  file so nobody re-adds it: "every spec names a groupField" can never be the
+  arm that fires, because a missing groupField causes the 400 the precondition
+  control catches first. The two conditions are causally linked. It was an
+  assertion wearing a control's clothes.
+
+  SIX FAILURE PATHS DRIVEN, each on a scratch copy with ROOT pinned:
+    unmodified                     -> EXIT 0, 36/36
+    the hardcoded name restored    -> precondition control fires BY NAME
+      (this is the pre-fix state, and it now reports the CAUSE rather than 35/36)
+    start_time dropped             -> precondition control fires
+    SPECS emptied                  -> not-empty control fires, specs: []
+    a spec outside SAIRNlegacy     -> wrong-app control fires
+    a spec without groupField      -> precondition control fires (why the 4th went)
+
+  tests/run_b14_leg_aftercare_probe.py -- NEW, EXIT 1, ARM 1 RED ON PURPOSE.
+
+  ARM 1 is fourth's b20 F4 made checkable. Measured on BOTH derivations, each
+  EXTRACTED FROM SOURCE AND RUN IN node rather than retyped:
+    ('CS-7',   '1 Week') -> AC-CS-7-1-WEEK
+    ('CS-7-1', 'Week')   -> AC-CS-7-1-WEEK     SAME KEY
+  The upsert is on_conflict=license_hash,aftercare_id with
+  resolution=merge-duplicates, so a collision SILENTLY OVERWRITES a different
+  case's check-in and returns 200.
+  WHY THE EXISTING CROSS-CHECK CANNOT CATCH IT: arm E4 of
+  api/sd-data-leg-role-matrix.test.js extracts the client function and compares
+  it to the server's answer, and BOTH COPIES AGREE ON THE WRONG ANSWER, so the
+  colliding pair PASSES it. A cross-implementation test is necessary and not
+  sufficient; this arm asserts the PROPERTY instead of the agreement.
+  FIX ROUTED TO HANK. The probe has no opinion on which of the two shapes
+  (encode the separator / hash the pair) -- that choice is hank's.
+
+  ARM 2 is GREEN and is the other half of the item. D4 in
+  api/sd-data-leg-overlap.test.js anchors on `function clergyBookingConflict(`
+  and routes to UNPROVEN at EXIT 3 when that anchor moves. The suite did the
+  right thing and NOTHING TESTED IT. Driven on a FIXTURE copy of the HTML
+  through LEG_HTML; NO api/ FILE EDITED.
+
+  FOUR COUNTERFACTUALS DRIVEN:
+    unmodified probe                            -> EXIT 1, arm 1 red
+    a delimiter-safe key on BOTH derivations    -> EXIT 0, ARM 1 GREEN
+    the mutated overlap suite on the real HTML  -> EXIT 0 (mutation is surgical)
+    the exit-3 degradation REMOVED              -> ARM 2 RED (that suite exits 0)
+
+
+ITEM 4 -- the three compliance arms N4 named, all GREEN, plus two found by
+          measuring
+
+  tests/sairncare_compliance_window_boundary.test.js -- NEW, 13 passed, 2 failed.
+  Written in tests/ against the module's PUBLIC exports and the REAL SEED,
+  because api/_lib/compliance-rules-staff-join.test.js is where these would
+  naturally sit and api/ is hank's. A fixture written from the same reading as
+  the code cannot contradict it.
+
+  1. THE EXACT ANNIVERSARY. Evaluated 2026-11-02 the window is 2025-11-03 and
+     the verdict is a determinate PASS. ON 2026-11-03 the window ROLLS to
+     2026-11-03 rather than being decremented, so the same eight hours now fall
+     OUTSIDE it -- which is the fact that makes day zero necessary rather than
+     cosmetic, and the off-by-one this boundary could have had either way.
+  2. A 2024-02-29 HIRE IN A COMMON YEAR. window_from 2026-02-28, not an
+     impossible 2026-02-29. PAIRED POSITIVE: in a LEAP year the same hire keeps
+     2028-02-29, so the normalisation is CONDITIONAL on the target year rather
+     than applied to every 29 February hire. And the day before the normalised
+     anniversary is still the previous window, 2025-02-28.
+  3. THE DAY-ZERO SHORTFALL. meets === null STRICTLY, not false, because
+     `!meets` would read the two alike and that collapse is the bug being
+     refused. The reason names the window opening today. The shortfall is still
+     REPORTED beside the withheld verdict, so withholding the judgement is not
+     hiding the number. PAIRED POSITIVE: meeting the requirement ON day zero is
+     still `true` -- only the FALSE half is withheld, which is the module's own
+     claim.
+
+  ALL THREE FAILURE PATHS DRIVEN on scratch copies of
+  api/_lib/compliance-rules.js:
+    the anniversary comparison made inclusive  -> ARM 1 RED
+    the leap normalisation removed             -> ARM 2 RED
+    the day-zero withholding removed           -> ARM 3 RED
+    the unmodified module                      -> all three GREEN
+
+  TWO ARMS RED ON PURPOSE, FOUND BY MEASURING, BOTH ROUTED TO HANK:
+
+  X1 THE HAND-DRIVEN COMMENT IS NOW WRONG, NOT MERELY UNPROVEN.
+     api/_lib/compliance-rules.js:929-931 says "evaluated 2026-11-03 ->
+     NON-COMPLIANT" and the module returns meets === null. The day-zero
+     withholding landed AFTER that sentence was hand-driven on 2026-09-29 and
+     superseded it. It is the kind of claim a reader checks least, because it
+     names its own evidence.
+  X2 THE WITHHOLDING MESSAGE CITES A FIELD THE FINDING DOES NOT CARRY. It tells
+     the reader "hours_window_days_remaining says how much of it is left".
+     window_days_elapsed and window_days_remaining ARE computed
+     (compliance-rules.js:658,663) and stay on the internal window object, while
+     the comment at :943 claims the module hands "every consumer" both --
+     and evaluateTraining's staff finding exposes NEITHER. Same shape as a
+     citation to a file that does not exist. X2 carries ITS OWN CONTROL
+     asserting the message really does cite the field, so it cannot be satisfied
+     by the message changing instead.
+
+
+ITEM 5 -- METHODOLOGY: 17 counterfactual runs, and four register rows
+
+  EVERY ARM IN ITEMS 3 AND 4 HAS ITS COUNTERFACTUAL, listed under each item
+  above and recorded in the commit message: 3 for item 1, 6 for the reservation
+  lock, 4 for the aftercare probe, 4 for the compliance suite. Each ran on a
+  SCRATCH COPY with ROOT/REPO pinned -- never in the clone -- and EACH SET
+  INCLUDED AN UNMODIFIED COPY FIRST, so a red cannot be the harness. api/ files
+  were copied and mutated in a temp directory, never written in place.
+
+  docs/known-red-suites.json -- FOUR SUITES TOUCHED, FOUR ROWS WRITTEN, NONE
+  LEFT WITHOUT ONE. entries 64 -> 65, recovered 37 -> 39, not_red 4 unchanged.
+
+    run_two_axis_tier_parser_probe.py   entries -> recovered, exit 0. THE
+      SUPERSEDED entries ROW IS KEPT VERBATIM under `superseded_entries_row`
+      rather than deleted, so the old diagnosis stays readable beside the repair.
+    run_scope_gate_unfetched_base_probe.py   NEW in recovered, exit 0. IT HAD NO
+      ROW AT ALL, which by this file's own definition meant UNMEASURED, not
+      green.
+    run_b14_leg_aftercare_probe.py      NEW in entries, exit 1,
+      expected_red_scope: ARM 1 ONLY.
+    sairncare_compliance_window_boundary.test.js   NEW in entries, exit 1,
+      expected_red_scope: X1 AND X2 ONLY.
+    sairnlegacy_reservation_lock.js     recovered, UPDATED IN PLACE: still exit
+      0, 62 assertions not 59, and the 35/36 it never mentioned is fixed.
+
+  THE expected_red_scope FIELD IS NEW AND IT IS THE POINT: a row without it
+  absorbs the NEXT real failure of the same file. Named arm by arm, any other
+  failure in either suite is new.
+
+
+ITEM 6 -- PUSHED, LANDED, CONFIRMED
+
+  a91b530a (the work) and 409839e1 (the handoff), both tested as ancestors of
+  origin/main. 0 ahead / 0 behind. NO --force.
+
+  TWO GATES REFUSED AND BOTH WERE TRUE. NEITHER WAS OVERRIDDEN.
+    tier-a: leg_aftercare is Tier A and the new probe touches code serving it.
+      RECORDED with `python tools/tier_a_review_gate.py --open`, ASSIGNED TO
+      FOURTH; the gate refuses any record whose reviewer is its own author, so
+      cody cannot close it. docs/tier-a-reviews.json committed with the change.
+    derived-docs: docs/MASTER-PLAN.md and docs/traceability-matrix.md stopped
+      matching their sources because this push adds two test files. REGENERATED
+      with their own generators, never hand-edited. The whole diff is this
+      batch's: sairncare 33 -> 34 suites, test files on disk 961 -> 963.
+
+  AND THE MATRIX'S OWN OUTPUT WAS ACTED ON RATHER THAN READ PAST. The
+  regenerated document listed both new files under "traced to no stated
+  requirement" -- this batch would have closed items while adding to that debt.
+  A real REQUIREMENT: header was added to each, not the subject the filename
+  already names, and the figure moves the right way: declared citations
+  336 -> 338, traced 744 -> 746 of 963, 77.4% -> 77.5%. Verified through the
+  generator's own declared_requirements(), not by eye.
+
+  TWO REBASES were needed, all non-fast-forward races with other sessions.
+  `python tools/sairn_rebase_resolve.py` resolved three conflicts: the two
+  generated documents REGENERATED, docs/tier-a-reviews.json MERGED
+  (256 ancestor + 1 upstream-only + 1 local-only = 258) and VALIDATED. Every
+  suite was re-run after every rebase, and again at the landed sha.
+
+  docs/tool-owner-map.json WAS REVERTED RATHER THAN COMMITTED, deliberately.
+  Running tools/tool_owner_map.py regenerated it -- it is a declared
+  OWNER-INTENDED BARE-RUN WRITER and producing the map IS the run -- and its
+  diff was 352 lines of other sessions' claim-history churn
+  (claim_commits_read 2539 -> 2673), which is not this batch's to land.
+
+
+FINAL RE-RUN AT THE LANDED SHA
+
+  EXIT=0  python tests/run_two_axis_tier_parser_probe.py        17 arms
+  EXIT=0  python tests/run_scope_gate_unfetched_base_probe.py   13 arms
+  EXIT=0  node   tests/sairnlegacy_reservation_lock.js          62 assertions
+  EXIT=1  python tests/run_b14_leg_aftercare_probe.py           ARM 1 only
+  EXIT=1  node   tests/sairncare_compliance_window_boundary.test.js  X1, X2 only
+
+  Each exit code read from `echo "EXIT=$?"` on its own line, never from a
+  pipeline, whose status is its LAST element.
+
+
+UNVERIFIED, AND SAID RATHER THAN LEFT OUT
+
+  NO LIVE DEPLOYED-URL CHECK APPLIES. No api/, sql/ or app file changed, so
+  there is nothing on the deployed site this batch could have altered. This is
+  not a skipped step; it is a step with no subject.
+
+  NO FULL-TREE RUN. `python tools/known_red_check.py` exits 2 COULD NOT RUN
+  without `--from-run <log>` or `--run`, by design, and neither was provided.
+  The five suites named above were driven individually; the other 958 test files
+  on disk were NOT run in this batch, so no claim is made about them.
+
+  THE TEN BLOB CONVERSIONS ARE NOT CONVERTED and the ten sites were not
+  exercised. The routing document's branch/table/read triples are CITATIONS
+  stamped to a sha, read out of the source; they are not test results.
+
+  THE TIER A REVIEW IS OPEN, NOT DISCHARGED. It is recorded and assigned to
+  fourth. Recording an obligation is not the same as having been reviewed, and
+  the gate exists to keep those two apart.
+
+  docs/tool-owner-map.json IS STALE on disk -- by 134 claim commits -- and does
+  not yet reflect this batch's OWNER change. Deliberately not bundled.
+
+  THE SCRATCHPAD WAS NOT CLEARED. `rm` inside the session temp directory was
+  REFUSED BY THE PERMISSION LAYER, twice, so 51 files remain there. No
+  deliverable cites a path under it and nothing depends on any of them -- but
+  the handoff's first draft said "removed", which would have been a claim about
+  work that did not run.
+
+
+HANDOFF
+SAIRN-handoff-cody-b14.md, written BEFORE this report and uploaded first.
+  Uploaded and verified both ways: `python tools/drive_upload_verify.py --agent
+  cody --batch b14` PASSED it at 23279 bytes with a matching first line, and a
+  Drive-side API read returned the same 23279 bytes in folder
+  14Xc5oT0xzSLa_rTSOSXWVK3Kko1Fbx09 -- the same folder b13 landed in. The tool's
+  two findings on that run were the report and digest not existing yet, which
+  was true at the time and is what this file and the digest close.
+
+SHA256 SAIRN-handoff-cody-b14.md = c65bc96d88293ce6b3fb1cf98459afaad5e8b09afb89a60d278d260e935d6645
+END-OF-REPORT
