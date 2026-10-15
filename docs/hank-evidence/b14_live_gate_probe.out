@@ -1,0 +1,21 @@
+ok             function renderCorrectionsView     <- the pending-corrections queue itself
+ok             function senPendingCorrections     <- the pending-only selector -- an entry with NO status is approved, not pending
+ok             You submitted this one             <- the DISABLED control's own text: the UI half of approver != submitter
+ok             function vsApproveCorrection       <- the handler the Approve button calls
+ok             senLastErr                         <- the per-resource error memory, without which the Approve button is a silent no-op
+ok             vs-tab-corrections                 <- the tab, so the queue is reachable at all
+ok             function legAdoptServerId          <- b13's F5 fix is still deployed
+
+THE LEGS THAT COULD NOT RUN, NAMED AND COUNTED:
+  api/sd-data.js sen_visits approve_clock_correction -- 401 NO_LICENSE is answered before the action dispatcher
+  api/sd-data.js sen_visits propose_clock_correction -- same reason
+  api/_lib/compliance-rules.js X1/X2 window fields -- reached only through an authenticated SAIRNcare training-compliance read
+  the ten blob conversions -- every one is a WRITE path behind a licence key; the scope-key strip is proven against the real handler locally and has no readable surface here
+  Each is driven against the REAL handler locally:
+    node api/b14-clock-approval-two-person.test.js            (18 arms)
+    node tests/sairncare_compliance_window_boundary.test.js   (15 arms)
+    node api/sd-data-stored-blob-scope-keys.test.js           (41 arms)
+  And the queue's DOM was driven in a real browser against the deployed
+  page: docs/hank-evidence/b14/dom_real_browser.md
+
+verified=7  fail=0  couldnot=4
