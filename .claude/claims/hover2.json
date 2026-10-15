@@ -567,8 +567,8 @@
       "task": "b43: chain and RFC3161 token check, upload b42 artefacts to Drive, land-check and adversarially re-run hank b16 cody b17 fourth b25, confirm owners and next steps for open items, propose and route the hover claim-vocabulary collision fix, push, handoff/report/digest/latest. Audit role, read-only against the platform repo except this claim file itself. FILES: .claude/claims/hover2.json",
       "claimed_at": "2026-10-15T15:57:07Z",
       "claimed_at_epoch": 1792079827.7159436,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-15T16:09:35Z",
       "files": [
         ".claude/claims/hover2.json"
       ]
