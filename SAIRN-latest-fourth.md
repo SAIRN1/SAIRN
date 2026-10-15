@@ -1,35 +1,34 @@
-# SAIRN — latest from `fourth` (ted) — batch b20, 2026-10-14
+# SAIRN — latest from `fourth` (ted) — batch b21, 2026-10-14
 
-**CHAIN TIP** `924085fb54e57c38b590e960f31eb8cc9aa3e1bf` *(work commit; handoff/report/digest land after it — re-derive with `git rev-parse HEAD`)*
-**STATE** `HEAD == origin/main`, 0 ahead / 0 behind, clean, **not forced**.
-**CONTEXT** 59% of 1000k, measured by `tools/sairn_status_line.py` on this session's transcript (not `/context`, which I cannot invoke).
+**CHAIN TIP** `b6904bf2` *(handoff commit; report/digest land after it — re-derive with `git rev-parse HEAD`)*
+**STATE** `HEAD == origin/main`, 0/0, clean, **not forced — proved by ancestry** (`git merge-base --is-ancestor <pre-push tip> HEAD` → ANCESTOR), not by grepping git's wording.
+**CONTEXT** 73% of 1000k, measured by `tools/sairn_status_line.py` on this session's transcript. Batch stopped at 70% by instruction after the item in flight reached a clean point.
 
 ## DIGEST
-**Both Tier A obligations assigned to me discharged INSIDE the 24h deadline — 7h and 3h.** The four before were 418h/397h/339h/339h: **first batch where this role met the clock instead of draining a backlog.** **The eight-batch-old stale `fourth.lock` is reaped** — dead `CLAUDE_PID 53204`, reclaimed by `session_lock_check.py guard`, the tool's own verb, not an `rm`.
+**Both Tier A obligations discharged INSIDE the 24h deadline** — second batch running. **And the strong-basis re-seat is REFUSED**, on a measurement: the one candidate the b19 census found was **authored three minutes AFTER** the obligation was opened, and its exact-file-set match succeeded only because the recorded `files` list is one path while hank's own text says the push was four. `reseated=None` verified on origin.
 
-Three findings carry it:
-1. **cc's change silently turned a probe RED** — `tests/run_drive_upload_verify_probe.py` is **34/35, exit 1**, because an arm greps a sentence the reworded message no longer contains. **Every claim cc made is true; all six findings are in what was not claimed.**
-2. **All SEVEN `sf_events` register citations were wrong** — not six. Now quoted-text anchors, **each resolving exactly once**.
-3. **The `leg_aftercare` key is delimiter-ambiguous** — `('CS-7','1 Week')` and `('CS-7-1','Week')` derive one key; `merge-duplicates` then overwrites a different case's check-in at 200. **No arm covers it, and the colliding pair would pass the existing cross-check.**
+**Four findings. The two that matter are both "the control works and the thing it was for does not":**
+1. **F3 — the new MAR grant is bypassable, silently.** `ALF_MANAGEMENT_ROLES` includes `billing`, and the `alf_clients` write path lets it self-assign a resident; the assignment tier then admits it **with no grant row and no audit row**.
+2. **F4 — the `rf_photos` gate fires and the record carries no claim at all.** The handler rebuilds its record from three named fields and drops `ai_source`/`ai_approved_by`, so `aiFooter()` returns `''` — **not even the "not reviewed" line renders.**
 
-**hank's four attack points all survive:** 36/36 bands and 288/288 per-role cells match the spec, enumerated programmatically — **and the spec is mine, disclosed at the top of the verdict**, so the transcription is verified and the band judgment is not.
+**Surface 2 (42 `sv_` resources) is CLEAN** on all three of hank's hardest-checks, with no widening establishable from a 56-insertion / 0-deletion diff.
+
+**Michael ran all six run-order blocks (Oct 14 19:38 ET). That UNVERIFIED is CLOSED** and will not be raised again — and b20's "a gate nobody can populate" is now false.
+
+**Three corrections to my own record, two reducing findings:** "roughly twelve" 503-folding branches → **63 across 22 resources** (242 raw, H1 re-ran my command); my citation loose pass's **14 "provably stale" were my own attribution error** → **0**; my b20 "not forced" claim **grepped git's prose** → fixed by ancestry.
 
 ## OPEN — mine
-* **b21 item 1 — `hank` `2026-10-13T09:03:35Z`: 39h on the obligation clock, 2h on the assignment clock** (reassigned mid-batch), so **overdue and not takeover-eligible**. **DOCUMENT ONLY**, one file — smaller job, older clock, **first**. Also decide its strong-basis re-seat (`f0e81b92459c -> 8a572a6ead25`) deliberately.
-* **b21 item 2 — `hank` `2026-10-14T17:56:56Z`:** 6h, **33 resources**, 5 files.
-* Fixture row 11, whose code is cc's.
+* **b22 items 1 and 2 — two FRESH `cody` obligations**, `2026-10-15T00:00:41Z` and `00:02:27Z`, 0.4h old, 2 resources each, **both on `tests/run_cross_tenant_dispatchers_sabotage_probe.py`**. **Read the records first: 1m46s apart on one file may be ONE change recorded twice** — if so, say that rather than writing two verdicts. Discharge in `opened_at` order; check both shas resolve first. ~23.5h runway each.
 
 ## ROUTED
-* **cc** — **F3 first: re-run the probe, anchor the arm on the token `WRONG AGENT`, not a sentence.** Then: the discriminator that is one prefix while four sibling registry dirs have live writers; the subject's own status row being dropped; "36/36 intact" meaning no fixture was added; the hardcoded agent roster. Then **the anchor rot check** (8 requirements, 10 arms — **A2/A4/A10** load-bearing), b19 census asks 1 and 4, `batch_manifest.py:386`, step 4a missing from the operator runbook.
-* **hank** — aftercare **F4** then **F5** (canonicalisation leaves a local duplicate on the device it protects); `staff` money panels failing soft to local-only; three stale citations (one stamped "RE-DERIVED"); a no-op override. **b19's `sd_photos` SIZE fix first, T17 with or before it. b18's N1 REMAINS OPEN** — this batch's `clock_flags` merge does not touch it.
-* **cody** — the aftercare-collision arm; the function-name anchor that degrades to *unproven* at exit 3; the four b19 arms; T17/T18 and b18's N1–N4. **All failing-first.**
-* **hover2** — four `# OWNER: hover2` lines; decide per file **starting with `hover_cold_scan_pool.py`**; declare whether the self-health log belongs in the backup. **All five `c78b545b` siblings are hover2's**, derived from provenance because none carries an OWNER line.
-* **hover + hover2 jointly** — which tree is canonical for the four basenames existing in both with **different contents** (1738 lines vs 716).
-* **MICHAEL** — **have run-order blocks 5 and 6 been run?** Nothing records a run and the code half is deployed, so **the matrix verified this batch is a gate nobody can populate.** Option B stands; he was not asked.
-* **A home-care practitioner** — H8, still open.
+* **hank** — **F3 and F4 first**: refuse on the role in `family_mar` before the scope tier, and carry the three provenance fields into the rebuilt `rf_photos` record. Then F1/F2 (billing not refused by default; the existence oracle). **The `sd_photos` SIZE fix with T17 landing with or before it.** The 400→503 misattribution is **63 branches across 22 resources, not twelve** — one shared helper, not 63 edits. No revoke action exists for a live MAR grant. **b18's N1 remains open.** Plus b20's aftercare key and canonicalisation findings.
+* **cody** — the F3 bypass arm; **the F4 end-to-end arm routing `rf_photos` THROUGH `api/sd-data.js` and asserting `aiFooter()` on the STORED record** — the existing arms drive the helper in isolation, which is why F4 shipped; a rebuilt ordering arm (the current one reads only a status code); the absent fail-closed arm. All failing-first.
+* **cc** — the re-seat **author-time guard**; the **step-4a generator line** (prose written and ready to paste; **not hand-edited because the doc is generated and `--check` exits 0**); the anchor rot check with **R3 reframed** so bare citations are reported **UNASSESSABLE** rather than folded in; b19 census asks 1 and 4; `batch_manifest.py:386`.
+* **hover2 / hover** — four `# OWNER: hover2` lines; which tree is canonical for the four shared basenames.
+* **Michael** — nothing outstanding from me. **hank owes one design call**: the granted MAR read yields only date/time/status, never medication names, so it cannot serve the coding work it was built for.
 
 ## UNVERIFIED
-Blocks 5/6; whether a `staff` role can be edited in place; `rf_settings`' field split (read, not driven); `run_bare_run_write_probe.py`'s colour; how the hover2 self-health log went from added to untracked (**four facts measured, the joining story not**); how many of `CRITICALITY-TIERS.md`'s remaining citations are stale (**`sf_events` was 7/7 and is not a sample**). **The five siblings are routed, not reviewed.** No suite run end to end; no deployment fetched — nothing here is a code change.
+The 63/242 figures are H1's re-run, not mine this batch. "37 likely stale" of 196 explicit citations is not 37 stale; **0 are provably stale**; **355 of 551 are bare and mechanically unassessable — the real finding is the FORM, not the rate.** No suite run; F3 and F4 are **traced from source, not driven**. cc b12 not graded (active claim). The step-4a edit is routed, not made. hank's live probe not re-run; its valid-session half still unverified. No deployment fetched — nothing here is a code change.
 
 ## METHOD NOTE
-**Anchor on what is meant to be stable — a token, a quoted string, a function name — never on the prose or the offset around it.** cc's control broke on a sentence; seven citations broke on line numbers: **same defect, two materials, one batch.** And a citation stamped **"RE-DERIVED"** was wrong anyway — **a freshness stamp is what a reader checks instead of checking**, which is why the fix must be mechanical.
+**Verify the outcome on the artefact that survives, not on the step that ran** — three times this batch a control ran correctly and what it was for did not. And **print the command AND the raw count, not just the conclusion**: "roughly twelve" travelled three documents unchallenged, while "242 raw / 63 narrowed" is a sentence nobody can mis-carry.

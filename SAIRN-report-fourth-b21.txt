@@ -1,0 +1,664 @@
+REPORT fourth b21
+
+SAIRN batch report -- session fourth (ted), batch b21, 2026-10-14.
+Working directory C:\Users\marsh\Documents\SAIRN-fourth, branch main.
+
+EVERY FIGURE NAMES THE COMMAND THAT PRODUCED IT. Where a thing was not run it
+is marked UNVERIFIED rather than assumed, and section 8 lists every one.
+
+THE BATCH WAS STOPPED AT 70% CONTEXT BY INSTRUCTION, after the item in flight
+was finished to a clean point. Items 3, 4 and 5 are recorded in ONE document
+rather than three because their measurements were already taken and the
+alternative was losing them. No measurement was skipped; only the filing was
+consolidated.
+
+
+================================================================================
+0. THE SHORT VERSION
+================================================================================
+
+BOTH TIER A OBLIGATIONS DISCHARGED INSIDE THE 24-HOUR DEADLINE -- the second
+batch running, after b20's 7h and 3h. AND THE STRONG-BASIS RE-SEAT IS REFUSED,
+on a measurement rather than a preference.
+
+FOUR FINDINGS, and the two that matter are both "the control works and the
+thing it was for does not":
+
+  F3  THE NEW MAR GRANT IS BYPASSABLE, SILENTLY. ALF_MANAGEMENT_ROLES includes
+      billing, and the alf_clients write path lets isManagement skip BOTH
+      assignment restrictions with assigned_employee_id written verbatim. So a
+      billing session self-assigns a resident, then reads family_mar and is
+      admitted by the ASSIGNMENT tier -- no grant row, and NO mar_access_read
+      audit row, because that write is conditioned on `if (marGrant)`. hank's
+      claim that billing "gets in only via a named, time-limited, audited
+      grant" is false as stated.
+
+  F4  THE rf_photos GATE FIRES AND THE RECORD CARRIES NO CLAIM AT ALL.
+      enforceAiApproval mutates `payload`; the handler rebuilds its record from
+      three named fields and persists that, so ai_source / ai_approved_by /
+      ai_approved_at never reach the row. aiFooter() short-circuits and returns
+      the empty string, so NO footer renders -- not even "AI-assisted, not
+      reviewed", which exists precisely so an absent footer and an unreviewed
+      one cannot read alike. hank asked whether "reviewed by" is HONEST; the
+      prior question is whether there is a claim, and there is not.
+
+THE RE-SEAT: the one strong-basis candidate the b19 census found was AUTHORED
+THREE MINUTES AFTER the obligation was opened, and the exact-file-set match
+succeeded only because the recorded files list is one path while hank's own
+text says the push was four. NOT RE-SEATED; reseated=None verified on origin.
+
+AND THREE CORRECTIONS TO MY OWN RECORD, two of them reducing findings:
+  - "roughly twelve" 503-folding branches is really 63 ACROSS 22 RESOURCES
+    (242 raw). H1 found it by re-running my own command.
+  - my citation-staleness loose pass reported 14 "provably stale" and ALL 14
+    WERE MY OWN ATTRIBUTION ERROR. The real figure is ZERO provably stale.
+  - my b20 "push was not forced" claim rested on grepping git's WORDING. Fixed
+    this batch by ancestry.
+
+MICHAEL RAN ALL SIX RUN-ORDER BLOCKS Oct 14 19:38 ET. That UNVERIFIED is closed
+and will not be raised again.
+
+Pushed without force, twice, both first attempt, ancestry-proved. HEAD ==
+origin/main, 0/0. Context 73% of 1000k.
+
+
+================================================================================
+1. ITEM 1 -- hank's ADDENDUM-B5 OBLIGATION, AND THE RE-SEAT REFUSED
+================================================================================
+
+  CMD tier_a_review_gate.py --list
+      MINE 39h | hank | 2026-10-13T09:03:35Z | sha f0e81b92459c
+         res(11) files: SAIRN-addendum-hank-b5.txt
+         assigned 2026-10-14T17:58:19Z
+  CMD ... --discharge hank 2026-10-13T09:03:35Z --body-file <verdict>   EXIT 0
+
+39h on the OBLIGATION clock (overdue), ~2h on the ASSIGNMENT clock at batch
+start, so not takeover-eligible. Two different clocks, and this record is the
+reason to keep saying so. Full verdict:
+docs/2026-10-14-fourth-b21-addendum-b5-discharge.md, 7,370 characters in the
+register, verified on origin.
+
+1.1 THE RE-SEAT DECISION -- NOT RE-SEATED
+
+b19's census listed this record's f0e81b92459c -> 8a572a6ead25 as the ONE
+strong-basis re-seat on the platform, [EXACT FILE SET]. b20 handed it forward as
+mine to decide deliberately. Decided, and the answer is no.
+
+  obligation opened_at        2026-10-13T09:03:35Z
+  8a572a6ead25 (the offer)    authored 09:06:42Z    3m07s AFTER
+  13f3a3be                    authored 09:00:18Z    3m17s BEFORE
+  both                        committed 10:15:2xZ   -> post-rebase objects
+
+  CMD git show --name-only --format="" 8a572a6ead25
+      SAIRN-addendum-hank-b5.txt                                  (1 file)
+  CMD git show --name-only --format="" 13f3a3be
+      SAIRN-addendum-hank-b5.txt
+      docs/external-files-index.json
+      docs/hank-evidence/b5_live_bare_key_probe_RESTORED.out       (3 files)
+
+THE CANDIDATE THE TOOL OFFERS WAS AUTHORED THREE MINUTES AFTER THE OBLIGATION
+WAS OPENED, so it cannot be what the record was stamped at. And the match is an
+artefact of an under-recorded file list: the obligation's recorded `files` is
+['SAIRN-addendum-hank-b5.txt'] -- ONE path -- while hank's own text says the
+push contained four, so the exact-set index matched the one-file commit and
+EXCLUDED the commit that actually carries the evidence hank tells a reviewer to
+read. Both candidates' committer times are ~70 minutes after their author times,
+so both are post-rebase objects and neither, as it exists today, was the tip at
+09:03:35Z.
+
+Third ground: the tool stamps opened_at_sha_reseated with a basis, so a
+re-seated record READS AS RESOLVED. Replacing an honest COULD-NOT-TELL with a
+confident pointer at the wrong commit is strictly worse than leaving the dangle
+visible.
+
+  CMD git show origin/main:docs/tier-a-reviews.json -> reseated = None (both)
+
+WHAT IT COSTS, SAID PLAINLY: this record stays COULD-NOT-TELL for ever, and the
+one strong-basis re-seat the census found is spent on a refusal. That is the
+right trade -- the census's whole value was to say which re-seats were SAFE, and
+the answer for the only candidate is that it was not.
+
+AND A CORRECTION TO MY OWN FIRST PASS: I initially believed the file-set basis
+was AMBIGUOUS and it is not. 8a572a6ead25 is genuinely the only commit whose
+entire file set is that single path. `git log -- <path>` lists commits TOUCHING
+a path and says nothing about their full file set, and I read it as though it
+did. Second batch running in which my own first measurement needed measuring,
+and both times the correction REMOVED a finding rather than adding one.
+
+ROUTED TO cc, one comparison that would have refused this: the exact-file-set
+basis should require the candidate's AUTHOR TIME TO PRECEDE opened_at, and
+should PRINT that time beside the offer. The current line prints the sha, the
+basis and the subject -- all three of which looked right. The field that
+disproves it is the one not shown.
+
+1.2 hank's THREE CHECKS, since there is no diff to read
+
+CHECK 1, documents only: CONFIRMED. Neither candidate touches api/ or any
+*.html. docs/scrutiny-flags.json is in hank's prose list and in neither
+candidate, consistent with the push having been split across commits and
+rebased -- the same fact that orphaned the sha.
+
+CHECK 2, the controls argument: SOUND, and it is the one substantive claim. hank
+asks whether a 403 could come from a licence-scope refusal rather than the
+session gate. The controls rule it out: sf_events and sf_products sit on
+SF-PINNACLE-2026 alongside the five gated sf_ resources, and scp_jobs and
+scp_irr_zones on SCP-DEMO-2026 alongside the six gated ones -- same key, same
+request shape, gated refuses and ungated does not. ONE THING I WOULD ADD, and it
+strengthens the argument: the controls answering 200 on read AND 400 on an
+id-less write is a TWO-SIDED control, showing both that the key is accepted and
+that dispatch reached a handler which validated input. A one-sided control would
+not have excluded a dispatch-level refusal. hank's table is better than the
+claim made for it.
+
+CHECK 3, no overclaim: CONFIRMED and explicit -- the addendum states that the
+valid-session half is unverified for want of an employee PIN and that no ROLE
+check exists on any of the eleven, so "a bare key is refused" is the whole of
+what was proven.
+
+The 11 resources are PROSE MENTIONS: sf_events and sf_products appear only as
+the ungated controls, bld_draws only in a closing routing note. Recording the
+obligation rather than arguing it away is the right call -- a gate that fires on
+a prose mention is noisy, and a reviewer who waves it away on the author's word
+is the failure mode the gate exists to prevent.
+
+CARRIED FORWARD, hank's note not my finding: when cc's live bld_draws evidence
+lands, the discharge of cc's 2026-10-12T11:35:03Z record -- whose verdict
+recorded "NOT PROVEN LIVE, and it cannot be today" -- is worth re-reading,
+because a verdict whose stated limit has been removed should say so. Not acted
+on: cc holds an active b12 claim and the live evidence is in flight.
+
+
+================================================================================
+2. ITEM 2 -- hank b11, THREE SURFACES, 33 RESOURCES
+================================================================================
+
+  CMD git cat-file -e d19971890058                               ->  RESOLVES
+  CMD ... --discharge hank 2026-10-14T17:56:56Z --body-file <v>  ->  EXIT 0
+
+A REAL DIFF REVIEW, discharged at about 9h. Full verdict:
+docs/2026-10-14-fourth-b21-sv-role-matrix-discharge.md, 12,808 characters in the
+register. NO SUITE WAS EXECUTED: the obligation names four with counts (28/28,
+31/31, 18/18, 81/81) and I ran none, so every statement about an arm is a
+statement about what the arm's SOURCE asserts.
+
+2.1 SURFACE 1 -- alf_family_contacts. WHAT HOLDS, FIRST
+
+  - The role sets are separate and billing is out of the MAR set; family_mar no
+    longer inherits ALF_FAMILY_READ_ROLES.
+  - FAIL-CLOSED ON THE GRANTS TABLE, hank's load-bearing claim, HOLDS on every
+    path I could construct: 404/400 skips the block leaving marGrant null;
+    403/401/500/503 hits !gr.ok and goes upstream as 502; a non-array 200 body
+    yields null; a .json() throw or a network throw hits the outer catch. No
+    path grants access and none skips the check.
+  - The in-memory re-check covers all three fields hank named -- contact_id,
+    grantee_employee_id, expires_at -- PLUS revoked_at, which hank did not
+    claim.
+  - Expiry is server-clock and numeric against the STORED value normalised at
+    write time; a null expires_at is REFUSED, not open-ended; creation refuses
+    absent, unparseable, past or beyond-72h.
+  - GRANT USE IS AUDITED, not just creation: mar_access_read carries the
+    grant_id, alongside mar_access_granted and mar_access_grant_refused, all
+    three in the audit table's CHECK list. "Who looked" is recorded, which is
+    the half that usually is not.
+  - Only office_manager may write a grant; billing cannot grant itself and a
+    grantee cannot extend its own, same gate, and the refusal is itself audited.
+
+That is a well-built control, and the fail-closed and audit-on-use halves are
+better than the claim made for them.
+
+2.2 F1 -- BILLING IS NOT REFUSED BY DEFAULT
+
+There is no 403 on the role in the family_mar branch. The role check only
+computes a boolean (marBroad) and nothing refuses on it; a grantless caller
+falls through to an ASSIGNMENT-SCOPE tier whose only hard refusal is the
+empty-scope case. So "billing is refused by default and gets in only via a
+grant" is false: billing also gets in by being assigned the resident.
+
+2.3 F2 -- THE EXISTENCE ORACLE SURVIVES FOR EXACTLY THAT ROLE
+
+hank's hardest-check is that a grantless billing session must be refused BEFORE
+the contact row is fetched. The grant lookup DOES precede the fetch -- right --
+but the scope test is applied AFTER it:
+
+  const cr = await fetch(rest('alf_family_contacts?...&contact_id=eq.' + ...));
+  ...
+  if (!marBroad && !marGrant
+      && marScope.indexOf(String(contact.resident_id)) === -1) { 403 }
+
+So a grantless billing session with ANY assigned resident passes the
+empty-scope refusal, reaches the fetch, and can distinguish 404
+NO_SUCH_CONTACT from 403 FORBIDDEN for an arbitrary contact_id. The property
+hank wanted holds only when the assignment scope is empty.
+
+2.4 F3 -- THE BYPASS, AND IT IS THE FINDING
+
+  CMD sed -n 8001p api/sd-data.js
+      const ALF_MANAGEMENT_ROLES = roleSet({ owner: true, billing: true });
+  CMD the alf_clients write path
+      if (!isManagement && isBroadEdit) { ...assignment must not change... }
+      } else if (!isManagement) { ...narrow tier... }
+      ...
+      assigned_employee_id: requestedAssignee,     // written verbatim
+  CMD sed -n 13274p api/sd-data.js
+      if (marGrant) {                              // the audit write
+
+isManagement includes billing and SKIPS BOTH assignment restrictions. So a
+billing session POSTs alf_clients with assigned_employee_id set to its own
+employee_id, then calls family_mar and is admitted by the assignment tier --
+with no grant row and NO audit row. THE NEW CONTROL IS BYPASSABLE BY A WRITE THE
+SAME ROLE ALREADY HOLDS, AND THE BYPASS IS SILENT IN THE AUDIT LOG.
+
+ROUTED TO hank: refuse on the role in the family_mar branch before the scope
+tier, or exclude billing from the assignment tier for that action.
+ROUTED TO cody: the failing-first arm is a billing session that self-assigns via
+alf_clients and then reads family_mar -- it must be refused, or at minimum
+audited.
+
+TWO SMALLER ONES: license_hash is server-filtered only and never re-verified in
+memory -- it cannot be, because the selected grant columns do not include it, so
+the belt-and-braces re-check has its one hole on the tenant key. And NO REVOKE
+ACTION EXISTS: the read path honours revoked_at and the schema comment asserts
+the capability, but the resource registers only family_mar and
+mar_access_grant, so only direct database access can revoke a live grant.
+
+AND ONE THING THAT MAKES THE SURFACE LESS USEFUL THAN IT READS: the granted read
+is still gated on family consent and yields only date, time and status over
+administration entries -- never medication names. An office_manager grant admits
+a billing clerk to a list that cannot serve coding work. The access control is
+sound; it is wired to a view that cannot serve the stated purpose. hank's design
+question, not a defect, and worth deciding before more is built on it.
+
+TEST COVERAGE, AND THE PATTERN IS NOT A COINCIDENCE: ordering (F2) effectively
+NONE -- an arm claims it but its evidence is the status code alone, the fixture
+records only non-GET calls so no GET ordering is observable, and its fixture
+gives the caller no assignment so the oracle case is never driven. Fail-closed
+(the one that HOLDS) NONE EXISTS -- the grants mock is unconditionally 200.
+Expiry COVERED. Audit-on-use COVERED. The F3 bypass NONE. So the two halves that
+hold are the two with arms, and the three findings are in the three places with
+no arm or a vacuous one.
+
+2.5 SURFACE 2 -- the 42 sv_ resources: ALL THREE CHECKS VERIFIED
+
+  - 42 resources by THREE AGREEING COUNTS: manual per band (23 REGULATED, 4
+    MONEY, 13 OPERATIONS, 2 REFERENCE), grep -cE on the row declarations, and
+    SV_RESOURCES in api/sd-data.js. The section headers' own counts match.
+  - ONE decide() and NO BYPASS: the gate block opens on
+    `if (SV_RESOURCES[resource])` and the two dispatch branches open AFTER it on
+    the IDENTICAL predicate, so fall-through is the only route in; the session is
+    verified against 'sairnvet' first so the role never comes from the payload;
+    and api/sd-data.js is the only route to these tables.
+  - sv_controlled IS DERIVED BY REFERENCE, not re-listed: the row is built from
+    an imported PRESCRIBER_ROLES in a loop that starts every role at refused and
+    raises only prescribers, so a seventh role gets nothing BY CONSTRUCTION; the
+    literal {owner, dvm} exists in exactly one place on disk; and an arm pins
+    the derivation role by role. The copy-exactly trap avoided, not walked into.
+  - api/sv-witness.js IS UNTOUCHED: two commits in its whole history, neither
+    the obligation's commit nor the commit that introduced the matrix.
+  - THE APPEND-ONLY LOCK BINDS THE OWNER: the rule is keyed by resource only,
+    the predicate takes no session, the deciding `if` reads action, resource and
+    payload.id and NEVER the role, it sits after decide() so no grant can reach
+    past it, and there is no delete action for any sv_ resource.
+  - NO WIDENING, establishable rather than assumed: the handler diff is 56
+    insertions and ZERO deletions, the only prior per-resource check (the
+    witness lock) is intact, and the prior state for the other 41 was any
+    verified session read and write -- the widest possible -- so every new row
+    is a subset. sv_controlled and sv_audit_log both strictly NARROW.
+
+Two residuals, neither a finding against this change: the append-only lock is
+application-level, because the schema still grants update on sv_audit_log to
+service_role (no delete grant anywhere on any sv_ table); and SV_RESOURCES is a
+plain object literal, so a prototype key such as `constructor` enters the gate
+block, gets NOT_SV rather than DENY, queries a table of that name, 404s and
+returns an empty provisioned answer. Harmless today, and worth noting only
+because SV_ROLE_MATRIX was given a null prototype for exactly this reason and
+SV_RESOURCES was not.
+
+2.6 F4 -- SURFACE 3: THE GATE FIRES AND THE RECORD CARRIES NO CLAIM
+
+  CMD sed -n '8431,8435p' api/sd-data.js
+      const photoData = {
+        photo_base64: payload.photo_base64,
+        ai_analysis: String(payload.ai_analysis || '').slice(0, 20000),
+        parsed_quantities: ... };
+  CMD grep -n "ai_source\|ai_approved" api/sd-data.js
+      2074:    // `ai_source`. A server cannot look at prose and know ...
+      (ONE COMMENT LINE, and nothing else in the whole file)
+  CMD sed -n '215,220p' api/_lib/ai-safeguards.js
+      function aiFooter(payload) {
+        if (!payload || !payload[AI_SOURCE_FIELD]) return '';
+
+enforceAiApproval mutates `payload`; this branch does not store `payload`. It
+rebuilds the record from three named fields and persists that, and the redaction
+helper copies its input so it cannot reintroduce fields that were never there.
+So ai_source, ai_approved_by and ai_approved_at NEVER REACH THE ROW, aiFooter()
+returns '', and NO FOOTER RENDERS -- not even the "not reviewed" line that exists
+so an absent footer and an unreviewed one cannot read alike. Nothing
+distinguishes an approved rf_photos row from a pre-change unflagged one. The
+ENFORCEMENT half works: no session still yields 403 AI_APPROVAL_REQUIRED. "The
+gate fired" and "the record says who approved it" have come apart, and only the
+first is true.
+
+WHY NO ARM CAUGHT IT: two arms exist and neither can see it. One asserts the
+literal `ai_source:` appears in the client function's body -- a text test over
+the HTML. The other drives enforceAiApproval IN ISOLATION and asserts the LOCAL
+payload object was mutated. Neither routes rf_photos through api/sd-data.js. The
+end-to-end footer assertion exists only for mech_quotes, whose branch stores the
+payload wholesale. THE RESOURCE THAT WAS SWITCHED ON IS THE ONE RESOURCE WHOSE
+HANDLER REBUILDS THE RECORD, AND THE END-TO-END ARM WAS RUN ON A DIFFERENT ONE.
+
+ON THE HONESTY QUESTION hank ACTUALLY ASKED: the operator never sees the model
+prose. The raw reply is parked in a variable with four occurrences in the file --
+declaration, reset, assignment, payload -- and is NEVER written to the DOM; the
+panel markup has no raw-text element and no AI label. What the operator confirms
+is the extracted numeric quantity form. hank's own disclosure is ACCURATE about
+the human act and I accept it: the quantities are what the estimate is built
+from. But its premise -- "the footer will carry their name" -- is false in this
+build, and when a footer does render it interpolates the employee_id, not a name.
+
+ROUTED TO hank: carry the three provenance fields into the rebuilt record, and
+fix the stale comment that still says no client stamps a high-risk resource.
+ROUTED TO cody: an end-to-end arm routing rf_photos THROUGH api/sd-data.js and
+asserting aiFooter() on the STORED record -- the arm that would have caught this.
+
+
+================================================================================
+3. ITEM 3 -- THE b19 UNDERCOUNT, AND STEP 4a
+================================================================================
+
+docs/2026-10-14-fourth-b21-corrections-landings-and-measurement.md, sections 1-2.
+
+3.1 "ROUGHLY TWELVE" -> 63 ACROSS 22 RESOURCES
+
+242 raw matches, of which 63 narrow to the 503-folding shape
+`if (r.status === 404 || r.status === 400) { ... 503 NOT_PROVISIONED }`, across
+22 resources. H1 FOUND IT BY RE-RUNNING MY OWN COMMAND.
+
+I counted hits in one reading of one file region, called it twelve, and carried
+the twelve forward across three documents as though it had been measured. 63 is
+5.25x twelve, SO THE BLAST RADIUS I HANDED hank WAS FIVE TIMES TOO SMALL. It
+changes the 400->503 misattribution from a tidy-up into a pattern worth one
+shared helper rather than 63 edits; the sd_photos instance remains the one with
+a live consequence and the other 62 are the same wrong diagnosis waiting on a
+different resource.
+
+AND THE METHOD NOTE MATTERS MORE THAN THE NUMBER: my documents DID print the
+command, which is the only reason this was findable, and the command was right
+while my count of its output was wrong. So the convention needs one more clause:
+PRINT THE COMMAND AND THE RAW COUNT, NOT JUST THE CONCLUSION. "242 raw / 63
+narrowed" is a sentence nobody can mis-carry.
+
+3.2 STEP 4a -- THE CONTENT IS MINE, THE MECHANISM IS cc's
+
+cc fixed TWO of three places:
+  CMD grep -n "4a|legacy_ciphertext_census" tools/secrets_inventory.py  -> :74, :89
+  CMD grep -n "4a|legacy_ciphertext_census" tools/nhi_register.py       -> :335, :344-345
+
+THE THIRD STILL OMITS IT, and it is the one I routed. docs/NHI-REGISTER.md:69 is
+the `### session-signing` REVOKE paragraph -- the operator-facing runbook -- and
+its source, tools/nhi_register.py:374-376, still reads "wait one SESSION_TTL_MS
+(12h), clear PREVIOUS" with no 4a. So the identity entry warns and THE PROCEDURE
+AN OPERATOR WOULD ACTUALLY FOLLOW STILL DOES NOT.
+
+WHY I DID NOT HAND-EDIT:
+  CMD head -3 docs/NHI-REGISTER.md
+      **GENERATED by `python tools/nhi_register.py --write`. Do not hand-edit.**
+  CMD python tools/nhi_register.py --check                        ->  EXIT 0
+      OK: docs\NHI-REGISTER.md matches the repo.
+
+The document is generated and currently MATCHES its generator. A hand-edit would
+be reverted by the next --write and would make --check fail, turning a stale
+paragraph into a drift alarm. The staleness is in tools/, which is cc's, and
+PR 1.8 says a generated document is not hand-written. So the prose is written and
+ready to paste in the corrections document, and the one-line edit is routed.
+
+AND A SECOND DEFECT IN THE SAME PARAGRAPH, found while re-deriving it: it cites
+api/_lib/auth.js:365 for the line that accepts SD_AUTH_SECRET_PREVIOUS on verify.
+  CMD sed -n 365p api/_lib/auth.js
+      // THE LIST LIVES IN THREE PLACES and that is a real drift risk, named here
+  CMD grep -n "push(process.env.SD_AUTH_SECRET_PREVIOUS)" api/_lib/auth.js
+      510:  push(process.env.SD_AUTH_SECRET_PREVIOUS);
+  CMD grep -n "function signingKeys" api/_lib/auth.js   ->  491
+The real line is :510 inside signingKeys() at :491, so the replacement prose
+ANCHORS ON THE FUNCTION NAME and not on a number -- b20's lesson applied in the
+one place I am authoring.
+
+
+================================================================================
+4. ITEM 4 -- THE LAND-CHECKS
+================================================================================
+
+cc b12 -- SKIPPED BY INSTRUCTION, because the claim is ACTIVE.
+  CMD python tools/sairn_claim.py list | grep '^\[active.*cc '
+      cc  b12 drive status bridge; runbook-constant guard; wire 2 hank suites;
+          fmea drafts; cody b11 followups.
+          FILES: ... tools/drive_upload_verify.py ...     (0.6h ago)
+tools/drive_upload_verify.py is in that live FILES list, which is the file the F3
+probe arm is about, so the WRONG AGENT token re-point and the 35/35 are in
+flight and were NOT graded. EXACT NEXT STEP after it closes: run
+`python tests/run_drive_upload_verify_probe.py` and expect 35/35 at exit 0.
+b20 measured 34/35 at exit 1; anything other than 35/35 means the arm was
+re-pointed at a different SENTENCE rather than at the token.
+
+hank b12 -- NOT LANDED, measured.
+  CMD sairn_claim.py list                     ->  hank: 0 active claims
+  CMD ls SAIRN-handoff-hank-b12.md ...        ->  neither exists
+  CMD grep downscale|canvas|toDataURL|drawImage|maxDim|resize stonedesk.html
+        | grep -i photo                       ->  no photo-path hit
+  CMD grep -n "ai_source" stonedesk.html
+      42249: ... ai_source:'claude:review-request' ...   (the REVIEW LOG row)
+  CMD grep -n sd_photos api/_lib/ai-safeguards.js api/_lib/ai-scan-redaction.js
+                                              ->  no match
+No client-side downscale on the photo path, no ai_source on the sd_photos row,
+sd_photos still in NEITHER AI registry, no b12 artifacts, and no claim in
+flight: hank b12's sd_photos work HAS NOT HAPPENED -- not blocked, not closed,
+pending. EXACT NEXT STEP, unchanged and worth repeating because the ORDERING is
+the actionable part: the SIZE fix first, with T17's stamp landing WITH or BEFORE
+it, because fixing size alone makes every photo land and turns the latent
+provenance gap live on the same day.
+
+One thing the check did find: ai_source HAS reached StoneDesk, on the
+review-request log row. The convention is being adopted in the app; it just has
+not reached the resource with the open finding.
+
+
+================================================================================
+5. ITEM 5 -- THE MEASUREMENT, AND MY OWN MEASUREMENT CORRECTED
+================================================================================
+
+Script: <scratchpad>/citation_staleness_b21.py, READ-ONLY, writes nothing, run
+twice, and NOT added to tools/ because that is cc's directory.
+
+  CMD python <scratchpad>/citation_staleness_b21.py      (loose pass)
+      total line citations found                 551
+        no file named on the line (bare)          59   not counted either way
+        named file absent from this clone          5   "provably stale"
+        line beyond the end of the file            9   "provably stale"
+        lands on a BLANK or pure-comment line     72   likely stale, not proof
+        lands on a code line                     406   NOT VERIFIED
+
+THEN I MEASURED MY OWN MEASUREMENT AND THE 14 "PROVABLY STALE" COLLAPSED. For a
+bare `:NNNN` the script attributes the citation to the nearest preceding file
+token on the line, and that heuristic manufactures findings:
+
+  CMD doc line 163, around the :10582 citation
+      '... `commsEnsureIds()` back-fills a CONTENT-DERIVED id ... Verified
+       reachable: three call sites at `:10582`, `:10618` and `:10649`.'
+
+Those three cite stonedesk.html. My script charged them to an 893-line .py file
+and reported three BEYOND-EOF "provably stale" citations that are nothing of the
+kind.
+
+  CMD the same script, explicit file:line only            (strict pass)
+      total explicit citations                   196
+      named file absent from this clone            0   PROVABLY STALE
+      line beyond the end of the file              0   PROVABLY STALE
+      lands on blank / pure-comment line          37   LIKELY STALE, not proof
+      lands on a code line                       159   NOT VERIFIED
+
+THE ANSWER, BOUNDED: 551 total citations in a 663-line document; 196 explicit;
+ZERO provably stale; 37 of 196 (19%) landing on a blank or pure-comment line and
+therefore likely stale; and 355 bare citations whose target must be INFERRED,
+where the inference is unreliable -- demonstrated, not supposed.
+
+b20's "hundreds exist" is CONFIRMED at 551, and b20's refusal to extrapolate
+from the sf_events row's 7-of-7 was right: the register-wide PROVABLE rate is
+ZERO, not seven-sevenths.
+
+AND THE REAL FINDING IS THE FORM, NOT THE RATE: 355 of 551 -- 64% -- CANNOT BE
+MECHANICALLY CHECKED AT ALL, because a bare `:NNNN` does not say which file it
+belongs to. That is the strongest argument yet for b20's anchor form, and it
+reframes that spec's R3: counting surviving file:line citations is not enough,
+the bare ones must be counted separately and reported as UNASSESSABLE rather
+than folded into a total.
+
+5.2 THE b20 SELF-AUDIT -- ONE PROSE-GREP, AND IT IS MINE
+
+Audited all five b20 artifacts. Exactly one real instance:
+
+  SAIRN-report-fourth-b20.txt:693
+    CMD grep -ci "force|forced|+ refs" over the push log      ->  0
+
+MY "THE PUSH WAS NOT FORCED" CLAIM RESTED ON GREPPING GIT'S HUMAN OUTPUT
+WORDING. If git rewords its forced-update line, that check silently passes. It is
+the exact defect I routed to cc about their probe arm, in my own evidence, in the
+same batch.
+
+FIXED THIS BATCH BY METHOD RATHER THAN BY WORDING:
+  CMD git merge-base --is-ancestor <pre-push tip> HEAD
+      ANCESTOR -> fast-forward, not forced
+A non-forced push means the pre-push tip is an ANCESTOR of the new tip. That is
+a property of the graph, not of a sentence, and it is what this batch's two push
+confirmations use.
+
+The other four grep-based claims in those documents are tokens and stand:
+`WRONG AGENT|NO AGENT NAMED` are the labels; `^CONTEXT` is a field name anchored
+at line start; `^#\s*OWNER:` is a convention token anchored the same way. Four
+tokens, one sentence -- and the sentence was the one carrying a verification
+claim.
+
+
+================================================================================
+6. ITEM 6 -- PUSHED, NOT FORCED, CONFIRMED LANDED
+================================================================================
+
+  CMD git push origin main  (items 1-5)                 ->  EXIT 0, 1st attempt
+  CMD git push origin main  (handoff + item-6 manifest)  ->  EXIT 0, 1st attempt
+  CMD git rev-parse --short HEAD / origin/main           ->  b6904bf2 / b6904bf2
+  CMD git rev-list --left-right --count origin/main...HEAD  ->  0   0
+  CMD git merge-base --is-ancestor <pre-push tip> HEAD   ->  ANCESTOR, both
+  CMD git cat-file -e origin/main:<each>                 ->  4 of 4 docs/ +
+                                                             the handoff
+  CMD git stash list                                     ->  0
+  CMD git worktree list                                  ->  5, NONE MINE
+
+Neither push was forced, and that is now proved by ANCESTRY rather than by
+grepping git's wording -- section 5.2's self-finding, fixed in the same batch.
+No SAIRN_SEED_GATE and no SAIRN_GATE_EXEMPT override. settings.json untouched
+and in no commit. Hooks unchanged and never re-added. Neither auditor clone
+entered.
+
+
+================================================================================
+7. WHAT CHANGED, FILE BY FILE
+================================================================================
+
+docs/batch-manifest-fourth-b21.json             NEW   6 ids, locked, 6 done
+docs/2026-10-14-fourth-b21-addendum-b5-discharge.md
+                                                NEW   the document review and
+                                                      the RE-SEAT REFUSAL
+docs/2026-10-14-fourth-b21-sv-role-matrix-discharge.md
+                                                NEW   three surfaces, four
+                                                      findings, surface 2 clean
+docs/2026-10-14-fourth-b21-corrections-landings-and-measurement.md
+                                                NEW   items 3, 4 and 5 in one
+                                                      file: the run-order close,
+                                                      the 63-branch correction,
+                                                      the step-4a routing, both
+                                                      land-checks, the citation
+                                                      measurement and the
+                                                      prose-grep self-audit
+docs/tier-a-reviews.json                        EDIT  TWO records open ->
+                                                      reviewed, by the gate,
+                                                      7,370 and 12,808 chars,
+                                                      reseated=None on both
+SAIRN-handoff-fourth-b21.md                     NEW   written BEFORE this report
+
+NO api/ FILE. NO sql/ FILE. NO tools/ FILE. NO tests/ FILE. NO FILE UNDER
+.claude/skills/sairn-hover-auditor/. docs/ and my own root deliverables only,
+exactly as the b21 claim declares -- and the claim named docs/tier-a-reviews.json
+and docs/NHI-REGISTER.md in advance, which is b18's disclosure lesson applied
+forward. NOTE: docs/NHI-REGISTER.md was declared and then NOT written, because
+section 3.2's measurement showed a hand-edit would be wrong. A declared file
+left untouched is the safe direction and is disclosed here rather than left to
+be noticed.
+
+
+================================================================================
+8. UNVERIFIED -- none of it folded into a pass
+================================================================================
+
+ 1. THE 63 / 242 FIGURES ARE H1's RE-RUN OF MY COMMAND, NOT MY OWN. I accepted
+    them and corrected the record; I did not re-execute the grep this batch, and
+    the 22-resource breakdown is likewise H1's.
+ 2. "37 LIKELY STALE" IS NOT 37 STALE. Landing on a comment line is strong
+    evidence, not proof -- a cell may legitimately cite a comment.
+ 3. THE 159 "LANDS ON A CODE LINE" ARE NOT VERIFIED CORRECT. They exist and are
+    not blank; whether each holds the construct its cell names needs the cell
+    read, which is judgement.
+ 4. THE 355 BARE CITATIONS ARE UNASSESSED, by design, because assessing them
+    needs the attribution heuristic that just produced three false findings.
+ 5. NO SUITE WAS RUN. Four are named on the b11 obligation with counts and I ran
+    none, so every arm statement is about the arm's SOURCE.
+ 6. SURFACE 1's FINDINGS ARE READ FROM SOURCE, NOT DRIVEN. I did not POST
+    alf_clients and then call family_mar, so F3 is a traced path and not an
+    observed exploit. F4 is likewise traced: I did not write an rf_photos row
+    and read it back.
+ 7. cc b12 WAS NOT GRADED, by instruction, because its claim is active.
+ 8. THE STEP-4a GENERATOR EDIT IS ROUTED, NOT MADE.
+ 9. I DID NOT RE-RUN hank's LIVE BARE-KEY PROBE. The evidence file is read as
+    committed output, so the eleven 403s are hank's measurement confirmed for
+    internal consistency rather than re-measured by me.
+10. THE VALID-SESSION HALF of hank's b5 probe remains unverified -- an employee
+    PIN is needed and I do not have one.
+11. NO LIVE DEPLOYMENT WAS FETCHED. Nothing in this batch is a code change, so
+    the push protocol's step 2 does not apply -- stated rather than skipped.
+
+
+================================================================================
+9. THE ONE SENTENCE WORTH KEEPING
+================================================================================
+
+Three times in this batch a control was correct and the thing it was for was
+not -- the MAR grant that billing can route around with a write it already
+holds, the AI gate that fires onto a record that then drops the approval, and my
+own "not forced" check that read git's prose instead of the graph: VERIFY THE
+OUTCOME ON THE ARTEFACT THAT SURVIVES, not on the step that ran.
+
+
+  Evidence:
+  docs/2026-10-14-fourth-b21-addendum-b5-discharge.md
+  docs/2026-10-14-fourth-b21-sv-role-matrix-discharge.md
+  docs/2026-10-14-fourth-b21-corrections-landings-and-measurement.md
+  docs/batch-manifest-fourth-b21.json
+  SAIRN-handoff-fourth-b21.md
+
+  Logs and scripts:
+  C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\b0f8683c-3365-4d5b-82ea-094a13bdff7e\scratchpad\
+  tier_a_list_b21.log, reseat_b21.log, verdict_b21_addendum.txt,
+  discharge_addendum_b21.log, verdict_b21_sv.txt, discharge_sv_b21.log,
+  citation_staleness_b21.py, citation_staleness_b21.log,
+  citation_staleness_strict_b21.log, b20_prosegrep_audit.log, nhi_check_b21.log,
+  pre_push_tip_b21.txt, pull_b21.log, pull_loop_b21.log, push_loop_b21.log
+
+  THE SHA256 BELOW IS DEFINED, not decorative: sha256 over every byte of this
+  file up to and NOT including the final hash line -- the second-to-last line --
+  with CRLF normalised to LF, taking the LAST occurrence of the marker. The last
+  occurrence deliberately, because this paragraph mentions the marker itself.
+  Re-derive:
+
+    import io, hashlib
+    s = io.open('SAIRN-report-fourth-b21.txt', 'rb').read().decode('utf-8').replace('\r\n','\n')
+    body = s.rsplit('SHA' + '256 ', 1)[0]
+    print(hashlib.sha256(body.encode('utf-8')).hexdigest())
+SHA256 0f413f0980d9432013b4c2febc5eebaee6faa32babb234c86e6d2c46adf02c16
+END-OF-REPORT
