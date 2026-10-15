@@ -129,9 +129,30 @@ try:
     local = clone(tmp, bodies={
         'handoff': '# cody b6 handoff (filename as requested) -- 2026-10-13\n'})
     rc, out = run(drive, local, '--agent', 'cc', '--batch', 'b7')
+    # ── ANCHOR RE-POINTED 2026-10-14 (cc b13) ──────────────────────────────
+    # This matched 'does not name cc' and had gone RED, 34/35, because
+    # drive_upload_verify split one message into two on 2026-10-13 -- routed by
+    # H1 b28 as seven mismatches, re-measured there as eight. The two halves
+    # are categorically different and only one is dangerous:
+    #
+    #   WRONG AGENT ...     one agent's filename over ANOTHER agent's content
+    #   NO AGENT NAMED ...  a first line naming nobody, a convention gap
+    #
+    # The 'does not name cc' phrasing survived only on the second branch. This
+    # fixture is cody content under a cc filename, so it takes the FIRST, and
+    # the arm was asserting a string the tool had stopped printing for this
+    # input. The arm was right about the behaviour and wrong about the token.
+    #
+    # ANCHORED ON THE LABEL THE SPLIT CREATED, which is the thing that
+    # distinguishes the dangerous half, and the agent names are asserted
+    # SEPARATELY so a future reword of the prose around them cannot rot this
+    # again without also losing the distinction the arm is about.
     arms.append(('WRONG-AGENT: a perfect filename over another agent\'s '
-                 'content is a FINDING',
-                 (rc, 'does not name cc' in out), (1, True)))
+                 'content is a FINDING, on the WRONG AGENT branch '
+                 'specifically -- not the NO AGENT NAMED convention gap',
+                 (rc, 'WRONG AGENT' in out,
+                  'names cody' in out, 'not cc' in out),
+                 (1, True, True, True)))
     arms.append(('...and the run refuses to call the batch closed',
                  'Do not mark this batch closed' in out, True))
     arms.append(('...and the finding quotes the offending first line, so the '

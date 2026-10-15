@@ -1,0 +1,54 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "fourth",
+  "batch": "b22",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "Cody's two fresh obligations on tests/run_cross_tenant_dispatchers_sabotage_probe.py (2026-10-15T00:00:41Z and 00:02:27Z): determine whether they are one change recorded twice, discharge accordingly with evidence.",
+      "status": "done",
+      "evidence": "ONE CHANGE RECORDED TWICE, measured: the two records' what text is byte-identical (987 chars, sha256 599ff05bfc1a3756 both); only opened_at (1m46s apart) and opened_at_sha differ. BOTH DISCHARGED exit 0 in opened_at order with the same review body (scratchpad discharge_A_b22.log, discharge_B_b22.log; bodies verdict_b22_cody_A.txt / _B.txt). Register open owned by fourth: 2 -> 0. F1 routed to cc: NEITHER recorded sha points at the change -- bc24af59f3db does not resolve, f8baf814bfd9 resolves but is a 36-file encoding sweep whose whole hunk on the path is encoding='utf-8', and it reads FRESH; the real change is 44fad1f9 (2 files). F2/F3 cody's: derive_tripwires generalised, the REPLACEMENT COVERAGE arm did not (hardcoded to map: 'GRD ' + tests/sd_data_grd_session_gate.js, 20 units / 0 app:null measured). M1 INDEPENDENTLY DRIVEN: 405 passed, 14 failed, exactly the claimed 14 (scratchpad m1_drive_b22.py, m1_b22.log). Re-check: python -u tests/run_cross_tenant_dispatchers_sabotage_probe.py -> EXIT=0, derived 0 app:null units"
+    },
+    {
+      "id": 2,
+      "title": "Hank's obligations F3/F4 first, then F1/F2 (leg_aftercare key delimiter collision, census SQL).",
+      "status": "blocked",
+      "evidence": "BLOCKED AND NOT STARTED -- NOT MY CALL TO OVERRIDE. python tools/sairn_claim.py check fourth '<the b22 task string verbatim>' returned: 'BLOCKED -- another session already claimed overlapping work: session hank, claimed 2026-10-15T00:22:44Z (0.3h ago), blocked by: same file or resource: leg_aftercare, also share: aftercare, fourth, hank, leg, t17'. hank's live claim text is 'b13 ... fourth F4 F5 leg_aftercare key ambiguity ... FILES: api/sd-data.js api/sen-auth.js api/sd-data-cross-tenant-dispatchers.test.js'. The leg_aftercare delimiter collision is the exact subject hank is working on right now, and the census SQL is hank's own b12 F1 which hank already fixed in 4f69facd. Per PR 4.3 the task string was NOT reworded to slip past the matcher; the item was dropped from my claim and FLAGGED BACK. Next step: Michael decides who runs it, or it waits for hank's b13 claim to release. Re-check: python tools/sairn_claim.py list | grep hank"
+    },
+    {
+      "id": 3,
+      "title": "Hank's sd_photos size fix with T17: Tier A review.",
+      "status": "done",
+      "evidence": "TIER A REVIEW WRITTEN: docs/2026-10-15-fourth-b22-sd-photos-size-t17-review.md, subject e9d9c8192620 (5 files, 938+/92-). Suite driven: node api/sd-photos-size-and-provenance.test.js -> exit 0, 26 passed / 0 failed / 0 unproven (scratchpad sdphotos_suite_b22.log). node --check clean on api/sd-data.js plus both api/_lib files. HOLDS: the 64KB cap is PER ROW -- sdSyncCollection pushes one row per photo at stonedesk.html:2101 and skips unchanged rows at :2100, so the 44,000-char budget does not compound (it would have blown at photo 2 if the collection were blob-wrapped like SD_SYNCED_OBJECT at :2060-2071). T17 IS on the row: p.ai_source set before saveSD3Data() at :26191-26192, and only aiAnalysis is in the redaction partition (api/_lib/ai-scan-redaction.js:96) -- the clean counter-example to my b21 F4 rf_photos rebuild. TWO FINDINGS, both in the caller: F1 stonedesk.html:26078 still puts the ORIGINAL data URL on the row when the downscale returns null, and still syncs it, while the toast at :26064 says the server copy will not exist -- and photoAiAnalyze re-saves the row so it is refused twice; F2 the 21,536-byte margin is counted in UTF-16 characters while octet_length counts bytes, and the filename field (name) is the one unbounded non-ASCII field inside that margin. Re-check: grep -n 'small ? small.data' stonedesk.html"
+    },
+    {
+      "id": 4,
+      "title": "Hank's 400-to-503 helper (63 branches across 22 resources): Tier A review.",
+      "status": "done",
+      "evidence": "TIER A REVIEW WRITTEN: docs/2026-10-15-fourth-b22-not-provisioned-helper-review.md. THE COUNT RE-DERIVED FROM SOURCE, not from either prior doc: the predicate is a single line matching backslash-w-plus dot status === 404 OR the same captured name dot status === 400, over api/sd-data.js at HEAD (18,503 lines) -> RAW 331 lines; A rewritten to the helper 88; B NOT rewritten, still res.status(503) NOT_PROVISIONED inline with no body read 69; C res.status(200) ok:true data:[] provisioned:false 151; other 23; A+B+C+other = 331. So the 503-answering population is 157, NOT hank's 98 and NOT my b21 63. CAUSE NAMED AND MEASURED: 99 of the 157 guards use a response variable literally named r, the other 58 use existingR/w/cur/cr/sr/jr/rr/exq/sfoRows/wr/existingPhoto -- hank's 98 is within one of 99, so the predicate was anchored on an IDENTIFIER that reads like a shape. By call site: 89 notProvisioned call sites, 89/89 awaited, 89/89 control provably stops, 0 may continue, 5 pass a preread body (2769, 2988, 3331, 3434, 8486). FOUR FINDINGS routed to hank: F1 the pgCode class test at api/sd-data.js:18431 names the 64KB cap for the WHOLE integrity class 23, but only 23514 is the cap -- 23505/23503/23502 now get a specific wrong cause; F2 the 503 arm's bare does-not-exist alternative is tested against the whole raw body including echoed data values; F3 the 69 un-rewritten branches, line numbers listed in the log; F4 the 151 read branches fold a 400 into ok:true data:[] provisioned:false, a silent failure strictly worse than the wrong 503. Re-check: python <scratchpad>/np_population_b22.py (log np_population_b22.log), python <scratchpad>/np_shapes_b22.py (log np_shapes_b22.log)"
+    },
+    {
+      "id": 5,
+      "title": "METHODOLOGY: update the sf_events row's seventh anchor in docs/CRITICALITY-TIERS.md to the new code shape, and re-count the stale citation total from source, not from the old doc.",
+      "status": "done",
+      "evidence": "DOC: docs/2026-10-15-fourth-b22-sf-events-reanchor-and-citation-recount.md. (a) RE-ANCHORED, AND THE INSTRUCTION WAS OFF BY ONE: enumerated from the cell's own backticked spans (scratchpad sf_events_allspans_b22.py / .log), anchor 7 resolves EXACTLY ONCE and needed nothing; anchor 6 was the rotted one, count 0. Replaced with the new hank-b12-F6 shape at sairnfreedom.html:5222-5254 -- two new anchors, both verified to resolve exactly once BEFORE the write; the cell now carries EIGHT anchors and says so. Edit method: scratchpad reanchor_sf_events_b22.py, NO split on the pipe char, refuses unless the substring occurs exactly once, refuses a pipe in the replacement, asserts the row's pipe count 7 -> 7, row 358, 3305 -> 4292 chars. After: all 8 anchors count 1, python tools/criticality_tier_check.py -> PROBLEMS:0, RESOURCE_ROWS:391, TIER_A:275. (b) RECOUNTED FROM SOURCE with the predicate printed: TOTAL 571, EXPLICIT-and-resolving 198, path-shaped-but-absent 0, BARE :NNNN 373 (UNASSESSABLE), 198+0+373=571, PROVABLY STALE 0 of 198, LIKELY STALE 39 of 198 (20%). b21 said 551/196/355/0/37. THE DELTA IS ENTIRELY PREDICATE AND IT IS PROVED: git diff --stat 7a5e6a11 HEAD -- docs/CRITICALITY-TIERS.md is EMPTY, and the same script gives 571/198/373 against both git show HEAD:<path> and the working tree, so b21's figures were not re-derivable. Standing conclusion unchanged: 0 provably stale, 65% (373/571) cannot be mechanically checked at all. Re-check: python <scratchpad>/citation_staleness_b22.py (log citation_staleness_b22.log)"
+    },
+    {
+      "id": 6,
+      "title": "Push without force, confirm landed.",
+      "status": "done",
+      "evidence": "PUSHED WITHOUT FORCE AND LANDED, proved by ancestry not by git's wording. Pre-push tip 86a27458e05e recorded in scratchpad pre_push_tip_b22.txt; git merge-base --is-ancestor <tip> HEAD -> ANCESTOR, i.e. a fast-forward. git rev-list --left-right --count origin/main...HEAD -> 0 0; HEAD == origin/main == 86a27458. First push attempt was DENIED by register_feed_gate because the clone was 1 ahead / 4 behind (non-fast-forward, nothing checked and nothing sent) -- resolved with git pull --rebase origin main, exit 0, then pushed clean. NO SAIRN_SEED_GATE in any form, NO SAIRN_GATE_EXEMPT, NO SAIRN_SKIP. .claude/settings.json not edited and not in the commit; hooks untouched; no auditor clone entered. All six b22 docs/ paths confirmed on origin/main with git cat-file -e origin/main:<path>. Re-check: git rev-list --left-right --count origin/main...HEAD"
+    }
+  ],
+  "closed": {
+    "drive_verify": "PASS",
+    "verified_by": "python tools/drive_upload_verify.py --agent fourth --batch b22 --verify-only",
+    "criteria": "2026-10-13.1",
+    "deliverables": [
+      "SAIRN-handoff-fourth-b22.md sha256 b04fd30912e8179b",
+      "SAIRN-report-fourth-b22.txt sha256 d316af8dff939b71",
+      "SAIRN-digest-fourth-b22.txt sha256 ca995b27c21e692e"
+    ]
+  }
+}

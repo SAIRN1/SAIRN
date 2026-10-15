@@ -620,7 +620,7 @@ def write_verified(path, text):
         os.replace(tmp, path)
         tmp = None
     except Exception as exc:                                     # noqa: BLE001
-        return False, 'write failed: %s' % str(exc)[:160]
+        return False, 'write failed: %s' % str(exc)[:160], None
     finally:
         if tmp and os.path.exists(tmp):
             try:
@@ -629,15 +629,96 @@ def write_verified(path, text):
                 pass
     back, why = DUV.read_bytes(path)
     if back is None:
-        return False, 'written and then NOT READABLE: %s' % why[:120]
+        return (False,
+                'written and then NOT READABLE: %s' % why[:120], None)
     if DUV.sha256_of(back) != DUV.sha256_of(data):
-        return False, ('read-back sha256 MISMATCH -- sent %d bytes sha %s, '
-                       'read %d bytes sha %s. Reported NOT PUBLISHED rather '
-                       'than published-with-a-caveat.'
-                       % (len(data), DUV.sha256_of(data)[:12], len(back),
-                          DUV.sha256_of(back)[:12]))
-    return True, 'verified %d bytes sha %s' % (len(data),
-                                               DUV.sha256_of(data)[:12])
+        return (False,
+                ('read-back sha256 MISMATCH -- sent %d bytes sha %s, read %d '
+                 'bytes sha %s. Reported NOT PUBLISHED rather than '
+                 'published-with-a-caveat.'
+                 % (len(data), DUV.sha256_of(data)[:12], len(back),
+                    DUV.sha256_of(back)[:12])), None)
+    # THE OBSERVED BYTES ARE RETURNED, not the sent ones. The manifest is
+    # built from these, so it describes WHAT IS ON THE MOUNT rather than what
+    # this process intended to put there. See build_manifest().
+    #
+    # THREE VALUES ON EVERY PATH, including the failures above. A function
+    # returning two on one branch and three on another is the next
+    # unpack-error, and this one is called from a loop that cannot see which
+    # branch it took.
+    return (True,
+            'verified %d bytes sha %s' % (len(back), DUV.sha256_of(back)[:12]),
+            back)
+
+
+# ── CLOSING THE DRIVE-SIDE COULD-NOT-TELL AS FAR AS THE API ALLOWS ─────────
+# b12 published this board and then read it back through the Drive connector,
+# and the reported fileSize disagreed with the mount three times: 14600 vs
+# 14514, then 2404 vs 2976, then 2952 vs 2976. b12 recorded that as a
+# could-not-tell and did not resolve it.
+#
+# RESOLVED 2026-10-14 (cc b13), by waiting and re-reading rather than by
+# reasoning:
+#
+#   mount  : 15586 bytes, sha256 deb328e9f16c2663...
+#   Drive  : fileSize 15586, id 19GSUTWQLddPwZiLEUNfssAjrMxK4vVE1,
+#            modifiedTime 2026-10-15T00:56:35Z
+#
+# IT CONVERGES. Every earlier mismatch was a metadata read taken SECONDS after
+# a write, while the newest revision was still propagating -- the connector was
+# reporting the PREVIOUS revision's size, not a different file. So the mismatch
+# was a lag and never a corruption, and the honest statement is bounded: a
+# size disagreement on a just-republished file is not evidence of a bad
+# upload, and a size AGREEMENT on a settled file is real evidence.
+#
+# WHAT THE API CANNOT DO, so this is not oversold: read_file_content does not
+# support text/markdown, so no chat turn can hash the Drive-side bytes. The
+# ONLY field available is fileSize. A manifest makes that one field worth
+# something: it publishes the sha256 AND the exact byte count of what is on
+# the mount, so a later turn can compare Drive's fileSize against a published
+# number instead of against a memory.
+#
+# A SIZE MATCH IS WEAKER THAN A HASH MATCH AND THE MANIFEST SAYS SO IN ITS OWN
+# TEXT. A same-length corruption passes it. That is a third state, not a pass.
+MANIFEST_NAME = 'SAIRN-board-MANIFEST.txt'
+
+
+def build_manifest(observed, reason):
+    """The manifest text, from the bytes READ BACK off the mount.
+
+    `observed` is [(name, bytes_actually_on_the_mount)]. Built from the
+    read-back and never from the rendered text: a manifest describing what the
+    process MEANT to write would agree with itself after a truncated write,
+    which is the one failure it exists to make visible.
+    """
+    L = ['SAIRN board manifest -- what is ON THE MOUNT, by sha256 and exact '
+         'byte count',
+         '',
+         'Written by tools/sairn_board_publish.py (OWNER cc) on: %s' % reason,
+         'Published at: %s (local)' % time.strftime('%Y-%m-%dT%H:%M:%S'),
+         '',
+         'WHY THIS FILE EXISTS. The Drive connector cannot read the CONTENT of',
+         'a text/markdown file -- read_file_content does not support that mime',
+         'type -- so no chat turn can hash the Drive-side bytes. The only field',
+         'the API exposes is fileSize. These numbers make that one field worth',
+         'something: compare Drive\'s reported fileSize for each name below',
+         'against the byte count here.',
+         '',
+         'A SIZE MATCH IS WEAKER THAN A HASH MATCH, and that is stated rather',
+         'than glossed: a same-length corruption passes a size comparison. It',
+         'is a third state and not a pass.',
+         '',
+         'AND A SIZE DISAGREEMENT ON A JUST-REPUBLISHED FILE IS NOT A BAD',
+         'UPLOAD. Measured 2026-10-14: the connector reported 14600 while the',
+         'mount held 14514, and minutes later both read 15586 for the same',
+         'file id. The connector reports the PREVIOUS revision while the newest',
+         'is still propagating. Let it settle, then compare.',
+         '',
+         '%-64s %12s  %s' % ('name', 'bytes', 'sha256'),
+         '%-64s %12s  %s' % ('-' * 64, '-' * 12, '-' * 64)]
+    for name, data in observed:
+        L.append('%-64s %12d  %s' % (name, len(data), DUV.sha256_of(data)))
+    return NL.join(L) + NL
 
 
 def publish(reason='manual run', ddir=None, dry_run=False, quiet=False):
@@ -677,16 +758,35 @@ def publish(reason='manual run', ddir=None, dry_run=False, quiet=False):
             'COULD NOT RUN -- no Drive mount at %s. The board was NOT '
             'published and nothing here reports otherwise.' % ddir]
     bad = []
+    observed = []
     for name, text in files:
-        ok, why = write_verified(os.path.join(ddir, name), text)
+        ok, why, data = write_verified(os.path.join(ddir, name), text)
         out.append('  %-26s %s  %s' % (name, 'OK  ' if ok else 'FAIL', why))
         if not ok:
             bad.append(name)
+        else:
+            observed.append((name, data))
     if bad:
         out.insert(0, 'BOARD NOT PUBLISHED -- %d of %d file(s) failed: %s'
                       % (len(bad), len(files), ', '.join(bad)))
         return EXIT_FINDING, out
-    out.insert(0, 'board published and read back: %d file(s) in %s'
+    # ── THE MANIFEST, FROM THE READ-BACK BYTES ─────────────────────────────
+    # Written LAST and from `observed`, which is what came back off the mount
+    # rather than what was rendered. It is itself written through
+    # write_verified, so the file carrying the hashes is hashed too -- a
+    # manifest nobody checked is a second unverified claim about the first.
+    mok, mwhy, mdata = write_verified(os.path.join(ddir, MANIFEST_NAME),
+                                      build_manifest(observed, reason))
+    out.append('  %-26s %s  %s' % (MANIFEST_NAME, 'OK  ' if mok else 'FAIL',
+                                   mwhy))
+    if not mok:
+        out.insert(0, 'BOARD PUBLISHED BUT ITS MANIFEST DID NOT -- the %d '
+                      'file(s) are on the mount and verified, and the sizes a '
+                      'Drive-side read would be compared against are NOT '
+                      'published. Reported rather than called clean.'
+                      % len(files))
+        return EXIT_FINDING, out
+    out.insert(0, 'board published and read back: %d file(s) + manifest in %s'
                   % (len(files), ddir))
     if problems:
         out.append('  %d source(s) could not be read this run; the affected '
@@ -862,7 +962,7 @@ def _a5(sdir, ddir):
         return real(p)
     DUV.read_bytes = lying
     try:
-        ok, why = write_verified(path, 'the real content\n')
+        ok, why, _data = write_verified(path, 'the real content\n')
     finally:
         DUV.read_bytes = real
     return (not ok and 'MISMATCH' in why), why
@@ -872,7 +972,7 @@ def _a5(sdir, ddir):
                                   'reported as a successful publish')
 def _a6(sdir, ddir):
     gone = os.path.join(ddir, 'no-such-dir', 'x.md')
-    ok, why = write_verified(gone, 'content\n')
+    ok, why, _data = write_verified(gone, 'content\n')
     return (not ok and 'write failed' in why), why
 
 
@@ -996,6 +1096,67 @@ def _a14(sdir, ddir):
         'payload kept %s' % sorted(k for k in got if k.startswith('claim'))
 
 
+@arm('A15-manifest-published', 'the sizes a Drive-side read would be compared '
+                               'against are never published, so fileSize is a '
+                               'number with nothing to check it against')
+def _a15(sdir, ddir):
+    old = ST.STATUS_DIR
+    ST.STATUS_DIR = sdir
+    try:
+        code, _lines = publish(reason='selftest', ddir=ddir)
+    finally:
+        ST.STATUS_DIR = old
+    p = os.path.join(ddir, MANIFEST_NAME)
+    if not os.path.isfile(p):
+        return False, 'no manifest written (publish exit %d)' % code
+    body = io.open(p, encoding='utf-8').read()
+    # Every published name must appear with a byte count that matches the file
+    # actually on the mount. A manifest that disagrees with the mount makes a
+    # Drive-side size comparison worse than useless -- it would report a
+    # mismatch that is the manifest's fault.
+    for name in [BOARD_NAME] + [LATEST_NAME % a for a in BOARD_ORDER]:
+        real = os.path.getsize(os.path.join(ddir, name))
+        if ('%-64s %12d' % (name, real)) not in body:
+            return False, ('manifest does not carry %s at its real size %d'
+                           % (name, real))
+    return ('A SIZE MATCH IS WEAKER THAN A HASH MATCH' in body
+            and 'same-length corruption' in body), 'manifest %d bytes' % len(body)
+
+
+@arm('A16-manifest-from-readback', 'the manifest records what the process '
+                                   'MEANT to write, so it agrees with itself '
+                                   'after a truncated write')
+def _a16(sdir, ddir):
+    # THE DEFECT THIS STANDS FOR, and the reason the manifest is built from
+    # `observed` rather than from the rendered text. A mount that silently
+    # truncates would otherwise produce a manifest whose numbers describe the
+    # untruncated original -- so the one Drive-side check available would
+    # compare a real short file against a published long number and be read as
+    # a propagation lag, which is exactly the thing b12 could not rule out.
+    real = DUV.read_bytes
+    target = os.path.join(ddir, BOARD_NAME)
+
+    def truncating(p):
+        data, why = real(p)
+        if data is not None and os.path.abspath(p) == os.path.abspath(target):
+            return data[:len(data) // 2], why
+        return data, why
+    DUV.read_bytes = truncating
+    old = ST.STATUS_DIR
+    ST.STATUS_DIR = sdir
+    try:
+        code, lines = publish(reason='selftest', ddir=ddir)
+    finally:
+        DUV.read_bytes = real
+        ST.STATUS_DIR = old
+    # The read-back check must catch the short read FIRST -- so the board is
+    # reported NOT PUBLISHED and no manifest describing it is written at all.
+    return (code == EXIT_FINDING
+            and 'BOARD NOT PUBLISHED' in NL.join(lines)
+            and not os.path.isfile(os.path.join(ddir, MANIFEST_NAME))), \
+        'exit %d' % code
+
+
 def _run_arms(verbose=True, only=None):
     """(passed, failed, [failures]). Each arm gets a fresh fixture."""
     passed = failed = 0
@@ -1109,7 +1270,22 @@ _ABLATIONS = (
      'sairn_status.payload carries the mirrored claim keys through a status '
      'change instead of rebuilding the row without them',
      lambda: _patch_payload_drops_claims()),
+    ('manifest',
+     'publish writes a manifest of the sha256 and exact byte count of what is '
+     'ON THE MOUNT, so the one field a Drive-side read exposes for markdown '
+     '-- fileSize -- has a published number to be compared against',
+     lambda: _patch_no_manifest()),
 )
+
+
+def _patch_no_manifest():
+    """Remove the manifest and nothing else."""
+    old = globals()['build_manifest']
+
+    def nothing(observed, reason):
+        raise RuntimeError('manifest ablated')
+    globals()['build_manifest'] = nothing
+    return lambda: globals().__setitem__('build_manifest', old)
 
 
 def _patch_payload_drops_claims():
@@ -1137,8 +1313,12 @@ def _unverified_write(path, text):
         with io.open(path, 'w', encoding='utf-8', newline='\n') as fh:
             fh.write(text)
     except Exception as exc:                                     # noqa: BLE001
-        return False, 'write failed: %s' % str(exc)[:160]
-    return True, 'not checked'
+        return False, 'write failed: %s' % str(exc)[:160], None
+    # THE SAME 3-TUPLE SHAPE AS write_verified, and the third value is what
+    # the ablation is about: this stub hands back WHAT IT MEANT TO WRITE
+    # instead of what it read off the mount, so a manifest built from it
+    # agrees with itself after a truncated write. That is the arm.
+    return True, 'not checked', text.encode('utf-8')
 
 
 def _patch(name, replacement):

@@ -757,6 +757,28 @@
       "status": "released",
       "released_at": "2026-10-15T00:20:43Z",
       "files": null
+    },
+    {
+      "id": "hover-1792023906",
+      "session": "hover",
+      "subject": "hover",
+      "task": "b37 deep-verify cody b12, H2 b34, status-board accuracy check, routing-status check, push-gate claim-check methodology, push",
+      "claimed_at": "2026-10-15T00:25:06Z",
+      "claimed_at_epoch": 1792023906.4913433,
+      "status": "released",
+      "released_at": "2026-10-15T00:43:20Z",
+      "files": null
+    },
+    {
+      "id": "hover-1792025789",
+      "session": "hover",
+      "subject": "hover",
+      "task": "b38: write deferred b37 report/digest + republish SAIRN-latest-H1.md uppercase; deep-verify cody b13 and fourth b21; land-check cc next batch; chain-tip/beacon check, hover_tip_beacon two-copy fix, stale root txt cleanup, routing-doc recipients, close #1437; re-derive stale counts; push; final handoff b38",
+      "claimed_at": "2026-10-15T00:56:29Z",
+      "claimed_at_epoch": 1792025789.1861837,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [

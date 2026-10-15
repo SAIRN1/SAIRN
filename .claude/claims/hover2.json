@@ -512,8 +512,19 @@
       "task": "hover2 b35 batch",
       "claimed_at": "2026-10-15T00:05:12Z",
       "claimed_at_epoch": 1792022712.488769,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-15T00:36:56Z",
+      "files": null
+    },
+    {
+      "id": "hover2-1792024682",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "hover2 b36 batch",
+      "claimed_at": "2026-10-15T00:38:02Z",
+      "claimed_at_epoch": 1792024682.7682786,
+      "status": "released",
+      "released_at": "2026-10-15T01:00:47Z",
       "files": null
     }
   ],
@@ -624,6 +635,58 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "shared phrase: \"drive status\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-15T00:36:25Z",
+      "my_subject": "hover2",
+      "my_task": "hover2 b36 -- (1) log b35 to chain, token/gap check republish only if over 15 (2) adversarial check cc Drive board per docs/2026-10-14-cc-b12-routed.md section 1, SAIRN-board.md read-back fileSize 14600 vs 14514 (3) deep-verify hank b12 HEAD 906903f3: run-order Block2 precondition, api/sd-data.js:1352 citation, sd_photos downscale (4) deep-verify cc b12 HEAD d19ae6bb (5) land-check cody reservation_lock leg_clergybookings arm, fourth sf_events 7th anchor in docs/CRITICALITY-TIERS.md (6) push no force confirm landed. AUDIT ROLE ONLY -- platform repo read-only, no api/sql/tools/tests file edited or committed, writes only to this role's own external hover-audit-log/ repo plus claim/release commits. FILES: hover-audit-log/ (external repo only)",
+      "other_session": "cc",
+      "other_subject": "cc",
+      "other_task": "b13: weakening-flags sign-off; b11 citation + claim liveness mismatch; F3 arm + anchor-rot tool; wire 3 hank api tests + fmea drafts; board read-back hash + H2 scratch file; push. FILES: docs/scrutiny-flags.json docs/2026-10-14-cc-b11-routed.md tools/sairn_claim.py tools/anchor_rot_check.py tools/sairn_board_publish.py tools/sairn_push_gate_hook.py tools/tooling_inventory.py docs/TOOLING-INVENTORY.md docs/fmea/ docs/2026-10-14-cc-b13-routed.md SAIRN-handoff-cc-b13.md SAIRN-report-cc-b13.txt SAIRN-digest-cc-b13.txt SAIRN-latest-cc.md",
+      "other_claimed_at": "2026-10-15T00:35:53Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: read-back",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-15T00:36:25Z",
+      "my_subject": "hover2",
+      "my_task": "hover2 b36 -- (1) log b35 to chain, token/gap check republish only if over 15 (2) adversarial check cc Drive board per docs/2026-10-14-cc-b12-routed.md section 1, SAIRN-board.md read-back fileSize 14600 vs 14514 (3) deep-verify hank b12 HEAD 906903f3: run-order Block2 precondition, api/sd-data.js:1352 citation, sd_photos downscale (4) deep-verify cc b12 HEAD d19ae6bb (5) land-check cody reservation_lock leg_clergybookings arm, fourth sf_events 7th anchor in docs/CRITICALITY-TIERS.md (6) push no force confirm landed. AUDIT ROLE ONLY -- platform repo read-only, no api/sql/tools/tests file edited or committed, writes only to this role's own external hover-audit-log/ repo plus claim/release commits. FILES: hover-audit-log/ (external repo only)",
+      "other_session": "hank",
+      "other_subject": "hank",
+      "other_task": "b13 T18 N3 applies_to_positions validation, T16 clock_in_at correction record api/sd-data.js, T17 api/sen-auth.js last owner, N4 test comment citation, fourth F4 F5 leg_aftercare key ambiguity, 11 UNPROVEN apps methodology. FILES: api/sd-data.js api/sen-auth.js api/sd-data-cross-tenant-dispatchers.test.js plus my own b13 artifacts.",
+      "other_claimed_at": "2026-10-15T00:22:44Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: api/sd-data.js",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-15T00:37:34Z",
+      "my_subject": "hover2",
+      "my_task": "hover2 b36 -- (1) log b35 to chain, token/gap check republish only if over 15 (2) adversarial check cc Drive board per docs/2026-10-14-cc-b12-routed.md section 1, SAIRN-board.md read-back fileSize 14600 vs 14514 (3) deep-verify hank b12 HEAD 906903f3: run-order Block2 precondition, api/sd-data.js:1352 citation, sd_photos downscale (4) deep-verify cc b12 HEAD d19ae6bb (5) land-check cody reservation_lock leg_clergybookings arm, fourth sf_events 7th anchor in docs/CRITICALITY-TIERS.md (6) push no force confirm landed. AUDIT ROLE ONLY -- platform repo read-only, no api/sql/tools/tests file edited or committed, writes only to this role's own external hover-audit-log/ repo plus claim/release commits. FILES: hover-audit-log/ (external repo only)",
+      "other_session": "cc",
+      "other_subject": "cc",
+      "other_task": "b13: weakening-flags sign-off; b11 citation + claim liveness mismatch; F3 arm + anchor-rot tool; wire 3 hank api tests + fmea drafts; board read-back hash + H2 scratch file; push. FILES: docs/scrutiny-flags.json docs/2026-10-14-cc-b11-routed.md tools/sairn_claim.py tools/anchor_rot_check.py tools/sairn_board_publish.py tools/sairn_push_gate_hook.py tools/tooling_inventory.py docs/TOOLING-INVENTORY.md docs/fmea/ docs/2026-10-14-cc-b13-routed.md SAIRN-handoff-cc-b13.md SAIRN-report-cc-b13.txt SAIRN-digest-cc-b13.txt SAIRN-latest-cc.md",
+      "other_claimed_at": "2026-10-15T00:35:53Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: read-back",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-15T00:37:34Z",
+      "my_subject": "hover2",
+      "my_task": "hover2 b36 -- (1) log b35 to chain, token/gap check republish only if over 15 (2) adversarial check cc Drive board per docs/2026-10-14-cc-b12-routed.md section 1, SAIRN-board.md read-back fileSize 14600 vs 14514 (3) deep-verify hank b12 HEAD 906903f3: run-order Block2 precondition, api/sd-data.js:1352 citation, sd_photos downscale (4) deep-verify cc b12 HEAD d19ae6bb (5) land-check cody reservation_lock leg_clergybookings arm, fourth sf_events 7th anchor in docs/CRITICALITY-TIERS.md (6) push no force confirm landed. AUDIT ROLE ONLY -- platform repo read-only, no api/sql/tools/tests file edited or committed, writes only to this role's own external hover-audit-log/ repo plus claim/release commits. FILES: hover-audit-log/ (external repo only)",
+      "other_session": "hank",
+      "other_subject": "hank",
+      "other_task": "b13 T18 N3 applies_to_positions validation, T16 clock_in_at correction record api/sd-data.js, T17 api/sen-auth.js last owner, N4 test comment citation, fourth F4 F5 leg_aftercare key ambiguity, 11 UNPROVEN apps methodology. FILES: api/sd-data.js api/sen-auth.js api/sd-data-cross-tenant-dispatchers.test.js plus my own b13 artifacts.",
+      "other_claimed_at": "2026-10-15T00:22:44Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: api/sd-data.js",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]

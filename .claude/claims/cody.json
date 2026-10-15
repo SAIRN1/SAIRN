@@ -3871,8 +3871,8 @@
       "task": "cody b13 -- (1) write the REPLACEMENT for the retired pre-fix counterfactual in tests/app_session_isolation_probe.py: apply the OLD predicate to the mutant's own refusal, NO replay of a historical suite, failing-first with ablation. (2) tests/run_two_axis_tier_parser_probe.py is red on one arm -- check its docs/known-red-suites.json row, then fix the arm AT CAUSE or correct the row; NO silent skip. (3) tests/run_scope_gate_unfetched_base_probe.py OWNER line -> cody per the directory-owner rule, verify green and wired. (4) from fourth b20: the leg_aftercare key-collision arm failing-first (('CS-7','1 Week') and ('CS-7-1','Week') must not derive the same AC-CS-7-1-WEEK key) and the function-name anchor arm degrading to UNPROVEN at exit 3; from H2 the leg_clergybookings arm at tests/sairnlegacy_reservation_lock.js:330, or accept 35/36 explicitly in the register with the reason. (5) methodology: convert the NEXT TEN of the 58 unconverted blob sites, ratchet docs/blob-conversion-coverage.json down with the tool, and for EACH conversion record the command that shows the old shape failed first. (6) push without force, confirm landed. I WRITE UNDER tests/ ONLY plus docs/known-red-suites.json, docs/blob-conversion-coverage.json and my own root b13 artifacts. CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: NO api/ FILE and NO sql/ FILE (hank) -- any blob conversion that would need an api/ edit is ROUTED, not made; NO tools/ FILE (cc); NO OTHER docs/ FILE (fourth); NO CLAUDE.md. No hook added or restored, settings.json never committed, no override of either form, no auditor clone entered. FILES: tests/app_session_isolation_probe.py tests/run_two_axis_tier_parser_probe.py tests/run_scope_gate_unfetched_base_probe.py tests/sairnlegacy_reservation_lock.js tests/run_b13_leg_aftercare_probe.py docs/known-red-suites.json docs/blob-conversion-coverage.json SAIRN-handoff-cody-b13.md SAIRN-report-cody-b13.txt SAIRN-digest-cody-b13.txt SAIRN-latest-cody.md",
       "claimed_at": "2026-10-15T00:20:09Z",
       "claimed_at_epoch": 1792023609.7100763,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-15T00:35:05Z",
       "files": [
         "SAIRN-digest-cody-b13.txt",
         "SAIRN-handoff-cody-b13.md",
@@ -3882,6 +3882,27 @@
         "docs/known-red-suites.json",
         "tests/app_session_isolation_probe.py",
         "tests/run_b13_leg_aftercare_probe.py",
+        "tests/run_scope_gate_unfetched_base_probe.py",
+        "tests/run_two_axis_tier_parser_probe.py",
+        "tests/sairnlegacy_reservation_lock.js"
+      ]
+    },
+    {
+      "id": "cody-1792024820",
+      "session": "cody",
+      "subject": "tests",
+      "task": "b14: two-axis red arm at cause or row correction, scope-gate OWNER line to cody, blob conversion routing doc to hank, leg_aftercare key-collision arm, function-name anchor arm, leg_clergybookings arm, three N4 compliance anniversary arms, all failing-first with counterfactuals. FILES: tests/run_two_axis_tier_parser_probe.py tests/run_scope_gate_unfetched_base_probe.py docs/known-red-suites.json docs/2026-10-14-cody-b14-blob-conversion-routing.md tests/run_b14_leg_aftercare_probe.py tests/run_b14_compliance_anniversary_probe.py tests/sairnlegacy_reservation_lock.js SAIRN-handoff-cody-b14.md SAIRN-latest-cody.md. NO api/ FILE (hank's), NO tools/ FILE (cc's), NO sql/ FILE, NO auditor clone entered.",
+      "claimed_at": "2026-10-15T00:40:20Z",
+      "claimed_at_epoch": 1792024820.9503598,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-handoff-cody-b14.md",
+        "SAIRN-latest-cody.md",
+        "docs/2026-10-14-cody-b14-blob-conversion-routing.md",
+        "docs/known-red-suites.json",
+        "tests/run_b14_compliance_anniversary_probe.py",
+        "tests/run_b14_leg_aftercare_probe.py",
         "tests/run_scope_gate_unfetched_base_probe.py",
         "tests/run_two_axis_tier_parser_probe.py",
         "tests/sairnlegacy_reservation_lock.js"

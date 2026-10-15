@@ -1,0 +1,765 @@
+REPORT cc b12
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-14
+HEAD      d19ae6bb  ==  origin/main   (git rev-list --left-right --count
+          origin/main...HEAD  ->  0  0), tree clean, zero stashes
+FORCE     none, in any spelling. The single `grep -i force` hit across every
+          push log is the word inside "UNENFORCEABLE" in the gate's own text.
+OVERRIDE  none of the three forms. Not SAIRN_SEED_GATE=off, not
+          SAIRN_GATE_EXEMPT=seed, not SAIRN_SKIP. docs/BYPASS-LOG.jsonl
+          carries exactly one row dated 2026-10-14 and it is the
+          "REFUSED, not honoured" row written by my own measurement of the
+          blanket form (item 5), committed rather than reverted.
+HOOKS     none added or restored. .claude/settings.json never committed.
+TRANSCRIPT
+          C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\
+          5521d10f-06f8-4089-8534-150e3e3c8d84.jsonl
+          A NEW session, not the one b9/b10/b11 shared, so the CONTEXT figure
+          below covers this batch alone.
+
+
+================================================================================
+WHAT LANDED
+================================================================================
+
+  46128d86  feat(drive board): the status bridge publishes itself, and two
+            defects it found
+  c7c758ed  fix(push gate,floor): the override hint was corrected in b11 to a
+            state that was already wrong
+  0e6a055f  chore(defect register): three records for b12, each with its
+            contributing factors
+  620a55a1  chore(derived): regenerate docs/traceability-matrix.md
+  bf188c1e  chore(scrutiny ledger): the gate's own rows for b12's two work
+            commits
+  9e5a3786  chore(defect register): re-seat b12's three records onto their
+            rebased shas
+  d19ae6bb  chore(scrutiny ledger): rows for the rebased shas
+
+FIVE GATE REFUSALS DURING LANDING, EVERY ONE SATISFIED RATHER THAN OVERRIDDEN:
+register-feed (twice -- the second time because the rebase moved the shas the
+records cited), derived-docs (the traceability matrix), and two
+non-fast-forwards from other sessions landing mid-push.
+
+AND THE REFUSAL TEXT IS ITEM 5'S FIX VERIFIED IN PRODUCTION OUTPUT. The first
+register-feed refusal printed the NEW derived hint, with the real eight-gate
+list read out of gate_skip.GATES:
+
+    Override, SCOPED FORM FIRST and derived from the tool that owns the list:
+    `SAIRN_SKIP=<gate> SAIRN_SKIP_WHY="..."` ... The gates are:
+    `control-bytes`, `credential-sql`, `derived-docs`, `external-files`,
+    `register-feed`, `scrutiny-ledger`, `seed-gate`, `tier-a` ...
+    BLANKET FORM, and it no longer works at all ...
+
+That is not a selftest result. It is the gate, refusing a real push, printing
+a sentence that is now true.
+
+NO LIVE DEPLOYED-URL CHECK, AND THAT IS NOT A SKIPPED STEP. This batch changed
+no api/, sql/ or app file. Nothing it touched is deployed. PR 3.2 asks for a
+live verification of the specific fix; there is no deployed surface here to
+verify, and claiming a 200 from an unrelated route would be the kind of
+true-but-irrelevant evidence that makes a report worse.
+
+
+================================================================================
+ITEM 1 -- THE DRIVE STATUS BRIDGE
+================================================================================
+
+tools/sairn_board_publish.py (OWNER cc, criteria 2026-10-14.1). Writes, to
+the shared Drive mount at G:\My Drive\SAIRN-status:
+
+    SAIRN-board.md            all six agents, one file, updated IN PLACE
+    SAIRN-latest-<agent>.md   hank, cc, cody, fourth, H1, H2 -- under 60 lines
+
+EVENT-DRIVEN, AND THAT IS THE POINT RATHER THAN A FEATURE. sairn_status.py
+calls publish_event() after every row write; sairn_claim.py reaches the same
+function through sairn_status.publish_claims(). So a state change, a claim, a
+release and a context reading all republish as a side effect of the thing the
+agent was already doing. Nobody has to remember a second command -- which is
+the step that gets skipped exactly when it matters, at the end of a batch,
+when the agent is busy closing out. cc's own b6 report and digest were never
+uploaded at all and the batch was reported closed.
+
+Measured, from a live run:
+
+    status written: C:\Users\marsh\SAIRN-SESSION-LOCKS\status\cc.json
+      cc  working  b12 item1 drive status bridge
+      context 24.0% (set 2026-10-14T19:37:11)
+      drive board republished (cc set state=working)
+
+    board published and read back: 7 file(s) in G:\My Drive\SAIRN-status
+      SAIRN-board.md             OK    verified 14514 bytes sha 906fcedfa4a5
+      SAIRN-latest-hank.md       OK    verified 2339 bytes sha 41dd72e1d3b6
+      SAIRN-latest-cc.md         OK    verified 2446 bytes sha 048fa10e9867
+      SAIRN-latest-cody.md       OK    verified 2896 bytes sha 4144dadcecca
+      SAIRN-latest-fourth.md     OK    verified 2494 bytes sha 5aecbbc6a9d0
+      SAIRN-latest-H1.md         OK    verified 1629 bytes sha ca154981407e
+      SAIRN-latest-H2.md         OK    verified 1750 bytes sha dee2beb1f1c8
+
+-- "IN PLACE AT A FIXED DRIVE FILE ID", AND WHAT CAN AND CANNOT BE PROVEN ----
+
+The brief named the real obstacle: the Drive connector's update_file changes
+title and parent only, never content. So publishing goes through the sync
+mount, and "the same file id" is a property of the mount rather than of the
+tool -- writing new bytes to an existing PATH makes Drive update that file's
+content and keep its id, while creating the path afresh mints a new one.
+
+THE TOOL CANNOT SEE THE ID. So it was read back through the connector and
+recorded in BOARD_DRIVE_FILE_ID:
+
+    id            19GSUTWQLddPwZiLEUNfssAjrMxK4vVE1
+    createdTime   2026-10-14T23:37:11.852Z      (the first publish)
+    modifiedTime  2026-10-14T23:40:14.709Z      (the second)
+    modifiedTime  2026-10-14T23:40:27.493Z      (the third)
+
+Same id across three publishes, with only modifiedTime moving. That pair of
+facts is the entire evidence for "in place at a fixed id", and it is recorded
+with the commands rather than asserted. If a future turn finds a different id
+there, the file was deleted and recreated and every link to it is dead.
+
+AND ONE MEASURED DISCREPANCY, HELD OPEN RATHER THAN FOLDED INTO THE PASS.
+Immediately after the third publish the connector reported fileSize 14600
+while the mount held 14514 -- one revision behind. The mount read-back proves
+the bytes are in the sync set under the right name with the right sha256. IT
+DOES NOT PROVE GOOGLE HAS ACKNOWLEDGED THE WRITE. That is a could-not-tell,
+the tool prints the limit on every run, and the one thing that closes it is a
+Drive-side API read, which is in the routing doc as work for H1/H2.
+
+-- EVERY FIELD NAMES ITS SOURCE, OR SAYS UNKNOWN -----------------------------
+
+  state, task, blocked_on, claims, timestamp   the live status registry row,
+                                               outside every clone, no fetch
+  liveness                                     sairn_status.liveness(), the
+                                               one copy of the recycled-pid
+                                               defence -- never a second one
+  CONTEXT %                                    the row's context_pct if the
+                                               agent has set one, else the
+                                               CONTEXT line of its newest
+                                               digest, LABELLED with which
+  batch                                        the newest digest on the Drive
+                                               AND the batch token in the live
+                                               row, printed as both when they
+                                               disagree -- "b12 live / last
+                                               digest b11" is the normal
+                                               mid-batch state and collapsing
+                                               it would hide it
+  last digest summary                          that digest's own STATUS: line
+  open items                                   that digest's own NEXT: line
+  routed items                                 docs/*-routed-to-<agent>.md by
+                                               filename, plus a COUNT of the
+                                               routing docs whose filename
+                                               names no recipient
+  chain tip                                    H1/H2: the TIP-BEACON.md
+                                               CHECKPOINT, with its
+                                               published_at and its lag behind
+                                               the newest chain-tip-seq file.
+                                               Build agents: the shared
+                                               origin/main tip, LABELLED
+                                               shared, because it is identical
+                                               across all four by construction
+
+A field that cannot be derived prints "UNKNOWN -- <why>". There is no default
+that reads like data.
+
+A NEW `set --context <pct>` RECORDS THE LIVE READING, and `context_set` stamps
+WHEN. The age of the NUMBER is a different fact from the age of the ROW, and
+both are printed: a reading set an hour ago under a row written a minute ago
+reads as current and is not. An unparseable --context stores nothing and says
+so rather than leaving the previous number in place looking fresh.
+
+-- FAIL-OPEN, AND THE ASYMMETRY IS DELIBERATE --------------------------------
+
+publish_event() never raises and never changes its caller's exit code. An
+unwritable Drive mount must not be the reason an agent cannot record that it
+is BLOCKED. The failure prints on the caller's own output -- loud without
+being fatal. Invoked directly the tool is the opposite: exit 1 on any finding,
+exit 2 on could-not-run, because then publishing IS the task.
+SAIRN_BOARD_PUBLISH=off disables it and SAYS SO when it does; a silently
+disabled publisher is a board that stops updating with nothing saying why.
+
+-- THE TWO DEFECTS IT FOUND BY PRINTING A FIELD NOBODY CONSUMED --------------
+
+1. sairn_status.payload() built a FRESH row dict and cmd_set wrote it whole,
+   so the three keys publish_claims() owns -- claims, claims_updated,
+   claims_heartbeat -- survived only until the next status change. WHICH IS
+   ALWAYS: a session claims and then sets `working`, in that order, so the
+   cross-clone early warning was erased within seconds of being written,
+   every single time.
+
+   NOTHING SAID SO AND NOTHING COULD HAVE. An absent `claims` key is also
+   exactly what a session running an older sairn_claim.py looks like, which
+   read_claims() documents in its own docstring as the ordinary state during a
+   rollout. The wipe was indistinguishable from the one benign case the code
+   itself describes.
+
+   Carried forward now, explicitly, and claims_heartbeat deliberately does NOT
+   advance on a status write: it is the claim tool's heartbeat, and
+   re-stamping it would make a stale claim look freshly touched.
+
+2. The board read a claim's subject from `app`. sairn_claim writes `subject`.
+   Every claim rendered as `?`.
+
+BOTH WERE FOUND BECAUSE A REPORTER PRINTED A FIELD NOTHING HAD EVER CONSUMED.
+cc holds a claim and the board said 0. That is the honest attribution and it
+is the found-by-tool on the register record.
+
+-- CONTROLS: 14 ARMS, 10 ABLATIONS, AND THE ABLATION CORRECTED THE ARMS ------
+
+    python tools/sairn_board_publish.py --selftest    ->  14/14
+    python tools/sairn_board_publish.py --ablation    ->  10 layers, all
+                                                          load-bearing
+
+  A1   an agent that has NEVER written a status row reported as idle rather
+       than as absent
+  A2   a missing CONTEXT reading as a number rather than as UNKNOWN
+  A3   a TIP-BEACON checkpoint behind the real chain printed as the live tip
+  A4   a seventh agent with a status row silently left off the board
+  A5   a write that did not land reported as published
+  A6   a destination that cannot be written reported as a successful publish
+  A7   a broken publisher taking its CALLER down with it
+  A8   a per-agent file silently exceeding the ~60-line ceiling
+  A9   a missing Drive mount reported as a publish rather than COULD NOT RUN
+  A10  a digest with no NEXT line borrowing the next labelled block
+  A11  a re-uploaded old digest walking an agent's batch backwards
+  A12  a blocked agent's blocker absent from the board
+  A13  a mirrored claim rendering as `?` from a guessed field name
+  A14  a status change wiping the mirrored claims
+
+THE ABLATION CORRECTED THE ARMS RATHER THAN CONFIRMING THEM, which is the only
+reason to run one. A8's first fixture used an 1,800-character digest field --
+which is ONE line, and the renderer caps it at 900 characters anyway -- so the
+`latest-ceiling` layer could be deleted and NO ARM NOTICED. It reported
+UNPROVEN. The real path to an overlong per-agent file is the uncapped `claims`
+list: an agent holding 60 of them renders 60 lines. A8 now builds that fixture
+and asserts against a LITERAL 60 rather than against LATEST_MAX_LINES -- an
+arm that checks the file against the same constant the code used is a
+tautology: raise the constant and the arm still passes while the file doubles.
+
+A second ablation finding: with the read-back stubbed to (True, 'not checked')
+and no write at all, three arms failed and the attribution was useless. The
+ablation now still WRITES and only skips the comparison, which isolates the
+read-back to the one arm it is actually responsible for (A5).
+
+Per-layer, from --ablation:
+
+  row-absence            3 arms: A1, A12, A13
+  context-unknown        1 arm:  A2
+  beacon-lag             1 arm:  A3
+  unlisted-agent         1 arm:  A4
+  readback               1 arm:  A5
+  digest-label-bounds    1 arm:  A10
+  highest-batch          1 arm:  A11
+  latest-ceiling         1 arm:  A8
+  claim-subject          1 arm:  A13
+  claims-survive-set     1 arm:  A14
+
+
+================================================================================
+ITEM 2 -- THE SWEEP, AND A GUARD ON THE MARKDOWN HALF
+================================================================================
+
+THE SWEEP the b11 handoff left open: .githooks/, docs/ and .claude/skills/,
+for a third copy of the override sentence.
+
+NO THIRD COPY OF THE PRINTED TEXT. Two prose copies that named ONLY the
+blanket form:
+
+  .githooks/pre-push:24                   FIXED. A live comment in the hook
+                                          the gate actually runs from,
+                                          pointing the reader at the flag that
+                                          disables everything.
+  docs/2026-09-09-tooling-inventory.md:94  DELIBERATELY NOT EDITED. A dated
+                                          inventory is a historical snapshot
+                                          and rewriting it is rewriting the
+                                          record.
+
+docs/SAIRN-PROCESS-RULES.md:771-808 and CLAUDE.md:230 both already named the
+scoped form first -- and both were wrong in a DIFFERENT way, which is item 5.
+.claude/skills/sairn-hover-auditor/routing/ carries one correct mention and is
+out of scope for a build agent regardless.
+
+-- tools/runbook_constant_agreement.py ---------------------------------------
+
+The b11 handoff's own words: "NO MECHANICAL GUARD WATCHES THE MARKDOWN COPY --
+mine are locked by _IRREVERSIBLE in secrets_inventory.run_fixtures(); a
+docs-side check is yours to decide." This is that check.
+
+WHAT IS COMPARED, AND WHAT DELIBERATELY IS NOT. Not the wording: asserting a
+code constant's literal sentence against a runbook would fail on every sane
+paraphrase, and a check that fires on good edits gets deleted. What is
+compared is the set of things an operator must be able to ACT on -- and that
+set is IMPORTED from secrets_inventory._IRREVERSIBLE rather than restated.
+
+THAT IMPORT IS THE WHOLE POINT. A second needle list in this file would be a
+third copy of the rule, inside the tool built to stop third copies. Arm A9
+proves it is not: it adds a needle to the LOCK and requires this registry to
+start demanding it. If the list were local, nothing would change.
+
+Live output:
+
+    AGREES     docs/SECRETS-INVENTORY.md    (generated from the same constant)
+    DIVERGES   docs/NHI-REGISTER.md         all five needles missing:
+                 legacy_ciphertext_census
+                 legacy_rows = 0
+                 api/_lib/auth.js:442-445
+                 irreversible
+                 null  (decryptSecret returns it and a caller reads that as
+                        "no secret stored" -- silent as well as permanent)
+
+REPORT-ONLY, NOT A PUSH GATE, AND THE REASON IS MEASURED RATHER THAN CAUTIOUS.
+It finds a real divergence TODAY in another agent's file. docs/NHI-REGISTER.md
+is fourth's, the exact replacement text is routed in
+docs/2026-10-14-cc-b11-routed.md, and fourth has not landed it. Wired
+blocking, this would deny every push by every session on the platform for one
+agent's open routed item -- which is how a gate gets switched off rather than
+satisfied.
+
+IN report_only_checks.REGISTRY AND IN _FRONT, and _FRONT is arithmetic rather
+than preference. That file documents that only 36 of 73 entries clear the 540s
+sweep budget, so appending to the tail wires a tool that provably never runs
+-- the exact defect two earlier entries were added to fix and did not.
+Measured cost of this one: 0.17s by subprocess around the real CLI. Entry 35
+currently starts at cumulative 333.3s; 0.17s moves that to 333.5s, still 206s
+under the line, so the same 36 entries clear it and nothing is displaced.
+
+Controls:
+
+    python tools/runbook_constant_agreement.py --selftest   ->  10/10
+    python tools/runbook_constant_agreement.py --ablation    ->  4 layers, all
+                                                                load-bearing
+
+BOTH DIRECTIONS, and that is deliberate. Six arms require a FINDING on bad
+prose: a missing needle, an anchor that no longer matches anything, a prose
+copy that has been deleted, a needle satisfied from 50 lines away in an
+unrelated section, an empty needle list, and the real registry resolving to
+fewer than three needles. THREE REQUIRE A CLEAN PASS on good prose: a
+paraphrase, a needle broken across a Markdown line wrap, and a complete copy.
+A check that only ever fires is as useless as one that never does -- it gets
+deleted.
+
+  anchor-window              2 arms: a dead anchor, and a needle found far away
+  dead-anchor-is-a-finding   1 arm:  a missing anchor as an empty pass
+  whitespace-normalisation   1 arm:  a needle broken across a line wrap
+  needle-import              2 arms: the needle list being a local copy
+
+
+================================================================================
+ITEM 3 -- TWO OF HANK'S SUITES WIRED
+================================================================================
+
+GUARD_TESTS is now 14 entries, no duplicates, every named file present --
+checked by import rather than by reading.
+
+MEASURED AGAINST THE REGISTRY'S OWN ADMISSION BAR rather than taken on the
+dispatch's word. The bar, stated two screens above the list in its own header:
+EVERY ENTRY IS A RECORDED DEFECT, and the class is the SEAM class.
+
+  api/sd-data-sv-role-matrix.test.js
+    SEAM          the per-resource role matrix in api/sd-data.js and
+                  SAIRNvet's own role vocabulary are maintained in two files
+                  by two different changes; a resource added to one without a
+                  row in the other is invisible in review
+    DEFECT        9841e14a5eaa, CRITICAL, independent-review. 41 of
+                  SAIRNvet's 42 resources had NO per-resource role check.
+                  Measured, not asserted: grep -nE "SV_[A-Z_]*ROLES"
+                  api/sd-data.js returned NOTHING, so a `frontdesk` token read
+                  and wrote sv_soapnotes, sv_labresults, sv_surgery,
+                  sv_imaging and sv_invoicing exactly as the owner did
+    GREEN FIRST   node api/sd-data-sv-role-matrix.test.js -> 31 passed,
+                  0 failed, 0 unproven, exit 0
+
+  api/ai-provenance-client-sites.test.js
+    SEAM          between the client that writes and the server that gates,
+                  with no server-side test able to see the client half
+    DEFECT        44abebb30bf5, HIGH, independent-review. Six client save
+                  sites stored model output with no provenance field and THE
+                  SERVER COULD NOT KNOW. api/_lib/ai-safeguards.js landed in
+                  b9 stating its own limit out loud -- `ai_source` is a CLAIM
+                  BY THE WRITER -- and no production client stamped it on a
+                  high-risk resource, so the approval gate was reachable and
+                  never reached
+    GREEN FIRST   node api/ai-provenance-client-sites.test.js -> 18 passed,
+                  0 failed, 0 unproven, exit 0
+
+BOTH RUN GREEN BEFORE WIRING, and that order is not incidental: a suite wired
+red denies every push on the platform until somebody turns the gate off, which
+this list has already survived once.
+
+STILL NOT WIRED, unchanged from b11 and both waiting on evidence only hank
+has: sql-run-order-agreement.test.js is the strongest seam of the four and is
+ONE defect-register row away from qualifying; rf-settings-tier.test.js is one
+handler's authorization and names no two independently-maintained sides.
+
+
+================================================================================
+ITEM 4 -- NINE FMEA DRAFTS FOR HANK'S FILES
+================================================================================
+
+    python tools/fmea_draft.py <nine paths> --save      ->  exit 0
+
+  docs/fmea/api__lib_sv-roles.js.json
+  docs/fmea/api__resources_sairncare.js.json
+  docs/fmea/api_sd-data-sv-role-matrix.test.js.json
+  docs/fmea/api_ai-provenance-client-sites.test.js.json
+  docs/fmea/api_alf-append-only-read-order.test.js.json
+  docs/fmea/sairnroofing.html.json
+  docs/fmea/sql_2026-10-14-hank-b11-mar-grant.sql.json
+  docs/fmea/sql_sairncare_mar_access_grants_schema.sql.json
+  docs/fmea/sql_2026-10-14-michael-run-order.sql.json
+
+DRAFTS ONLY. The tool has no bless/approve field and none was added; each file
+carries its risks, its basis, and its own disclosed gap -- "RULES WITH NO
+DETECTOR YET, named rather than skipped: 1.6, 2.2, 3.1, 3.2, 3.3, 4.1, 4.2,
+4.3, 5. A risk tool with an undisclosed gap is the failure one level up."
+
+cc is not the author of any of these nine, so drafting them is not
+detector-blesses-its-own-fix. The drafts for cc's OWN tools stay routed to any
+session except cc, and the register's FMEA loop named three more this batch:
+.githooks/pre-push, tools/sairn_board_publish.py and
+tools/runbook_constant_agreement.py -- all three edited or written by cc, so
+all three stay routed.
+
+
+================================================================================
+ITEM 5 -- CODY WAS RIGHT TWICE, AND THE ROUTING WAS WRONG TWICE
+================================================================================
+
+-- 5a THE OVERRIDE HINT, AND WHY b11's FIX WAS ALREADY WRONG WHEN IT LANDED --
+
+cody b11 item 4 routed two lines that contradict each other:
+sairn_push_gate_hook.py said "THE BLANKET FORM STILL WORKS" at one site and
+refused it at another. Both are real. Chasing them found something larger.
+
+MEASURED FIRST, rather than read:
+
+    echo "" | SAIRN_SEED_GATE=off python tools/sairn_push_gate_hook.py \
+        --pre-push
+    ->  exit 1
+        "REFUSED: SAIRN_SEED_GATE=off is the BLANKET form and it no longer
+         works."
+
+So the blanket form does not disable fourteen checks. It disables NOTHING and
+denies the push, on both entry points -- the Bash command path and the
+--pre-push env path -- since 2026-10-13.
+
+OVERRIDE_HINT, WHICH cc b11 "FIXED", WAS THEREFORE WRONG IN TWO WAYS AT ONCE:
+
+  1. it said the blanket form "disables EVERY check in this hook"
+  2. it named SAIRN_GATE_EXEMPT=seed as THE scoped form, while the gate's own
+     refusal text recommends a different mechanism entirely --
+     SAIRN_SKIP=<gate> SAIRN_SKIP_WHY="..." -- covering EIGHT named gates
+     where EXEMPTABLE covers one
+
+AND EVERY ONE OF THE EIGHT SELFTEST ARMS WAS GREEN OVER IT, because all eight
+only ever asked about the ORDER of two variable names. Not one asked whether
+the sentence was true.
+
+THE FIX IS NOT A BETTER SENTENCE. The gate list and the variable name now come
+FROM gate_skip, the tool that owns them, and the hook restates neither. If
+gate_skip will not import, the hint says so and points at it rather than
+falling back to a remembered list: a confident list of the wrong gates is
+worse than an admission.
+
+Four new arms ask about the CLAIMS the sentence makes -- that the gate_skip
+form is named, that it is named BEFORE the narrower exemption, that every gate
+listed is a real key in GATES and every key is listed, that the hint says the
+blanket form no longer works, and that it does not still say "disables every
+check".
+
+AND A SECOND ABLATION, WHICH IS THE ONE THAT EARNS THE ARMS. It uses the b11
+text -- the string this constant actually held between b11 and b12. It PASSES
+all eight original arms and FAILS exactly the four new ones. An ablation
+against the pre-b11 text would have proved only that something changed.
+
+    python tools/sairn_push_gate_hook.py --selftest   ->  22/22
+
+CORRECTED IN FOUR OTHER PLACES, because the fix in one did not reach the
+others and that is the actual defect:
+
+  tools/sairn_push_gate_hook.py   the "THE BLANKET FORM STILL WORKS" comment
+  .githooks/pre-push              named ONLY the blanket form
+  CLAUDE.md section 3             "SAIRN_SEED_GATE=off still works"
+  docs/SAIRN-PROCESS-RULES.md 3.3 the same sentence
+
+Five places, four wrong. Both standing documents now end with the instruction
+not to write it down a sixth time, and name the tool to cite instead.
+
+THE REGEX AND THE RECOGNITION OF THE BLANKET FLAG ARE DELIBERATELY NOT
+REMOVED. A flag that is silently ignored looks exactly like a flag that
+worked, so it is still parsed, still logged, and then denied with
+honoured:false. That field is the only thing separating an ATTEMPT from a
+BYPASS in docs/BYPASS-LOG.jsonl, where 80 of 94 rows are the blanket shape --
+taken because it was the only thing available, not because anybody chose to
+switch off every check.
+
+The row my own measurement wrote is committed rather than reverted, and its
+line terminator was normalised to CRLF to match the other 96 before
+committing, so one test run does not leave an append-only log mixed-ending.
+
+-- 5b THE TEST-FILE FLOOR: 370 AGAINST 802 -----------------------------------
+
+MEASURED: js 378 + py 424 = 802 discovered, 2 unrun. MIN_TEST_FILES was 370.
+SO 432 TEST FILES COULD HAVE BEEN DELETED WITH THE SHRINKING-SUITE GUARD
+SILENT.
+
+The guard was not broken. It was measuring against a number nobody owned. The
+comment above the constant asked for a human cadence -- "the bump has to be
+somebody's JOB on a cadence" -- and then documented its own decay twice inside
+one hour, 307 -> 313 -> 314 across two rebases. THE CADENCE IS THE THING THAT
+NEVER EXISTED, and re-pinning to 802 restarts the same decay from a higher
+number.
+
+IT IS A RATCHET NOW: docs/test-file-floor.json, raised by the tool whenever
+the real count exceeds it, NEVER lowered. A tool that could lower its own
+floor would absorb a mass deletion as the new normal and report clean --
+detector-blesses-its-own-fix one layer out. Lowering is a human edit with a
+reason. The literal 370 stays as the floor of LAST RESORT, so a deleted or
+corrupt ratchet file degrades to the old behaviour rather than to zero, and
+the tool prints which it used.
+
+TWO THINGS HERE WERE FOUND BY RUNNING CODY'S PROBE, NOT BY READING IT.
+
+  1. The first ratchet raised the floor to 807 AGAINST A REAL 802, because
+     tests/run_all_tests_floor_probe.py writes five fixture files into the
+     real tests/ directory and discover() walks the working tree. So RUNNING
+     THE PROBE pushed the floor above the tree, and the next clean run would
+     have reported a shrunken suite. A detector a fixture can drive upward is
+     a detector that fails on correct code tomorrow.
+
+     The basis is now the DISCOVERED list INTERSECTED with `git ls-files`: an
+     untracked file is on one person's disk and in nobody's clone, so it is
+     not a guard, and it is the one number a test run cannot move.
+
+     AND THE FIRST ATTEMPT AT THAT WAS ALSO WRONG. Counting `git ls-files
+     tests` read 688 against 802, because discover() also picks up
+     api/*.test.js -- a basis that looked principled and would have pinned the
+     floor 114 BELOW the tree for ever. The intersection is measured against
+     discover()'s own list for exactly that reason.
+
+  2. Arm 7 counts the constant's assignment in the file's RAW SOURCE, comments
+     included, and requires exactly one. A tuple unpack counts ZERO. And an
+     earlier version of the comment explaining this arm QUOTED the assignment
+     and counted as a second one.
+
+     tests/ is cody's and was not edited. Where the arm is right, the tool is
+     what moves.
+
+    python tests/run_all_tests_floor_probe.py   ->  ALL CHECKS PASS, exit 0
+
+The unattended hook copy REPORTS that the floor is behind and WRITES NOTHING:
+a hook that edits a tracked file after every push changes the tree where
+nobody is reading the output. And that notice is part of the
+silence-breaking CONDITION rather than a line further down -- appended to the
+report list alone it would have been unreachable on exactly the run where it
+matters, a clean tree whose floor has gone stale, which is how 370-against-802
+stayed quiet for weeks.
+
+-- 5c CLAUDE.md SECTION 3 ----------------------------------------------------
+
+cody's third finding, and it was accurate: the paragraph said
+"`SAIRN_SEED_GATE=off` still works and is still the WRONG first reach". Half
+of that is now false. Corrected with the measurement, the honoured:false
+reason it is still parsed, the 80-of-94 figure, and the wider SAIRN_SKIP form
+it never mentioned. docs/SAIRN-PROCESS-RULES.md 3.3 had the same sentence and
+got the same treatment.
+
+Nobody holds either file; cody routed it to "whoever owns CLAUDE.md". Said out
+loud because neither was in cc's declared b12 FILES.
+
+-- 5d THE SEAM CHECK: NINETEEN, AND ONE ROOT CAUSE ---------------------------
+
+    python tools/sairn_seam_check.py
+    ->  96 clean, 0 not-forwarded, 19 could-not-tell, exit 2
+
+hank's b11 digest said "THE SEAM CHECK said COULD NOT TELL for at least one
+endpoint/engine pair and the push was allowed on that basis." It is NINETEEN.
+And they are not nineteen problems -- every one is the same line:
+
+    roleSet() makes no direct `literal.field` reads -- it probably copies or
+    destructures its input first, so this tool cannot see what it depends on
+
+api/_lib/auth.js:72:
+
+    function roleSet(literal) {
+      const m = Object.create(null);
+      const src = literal || {};
+      for (const k of Object.keys(src)) m[k] = src[k];
+      return m;
+    }
+
+A DELIBERATE WHOLE-OBJECT COPY, documented in place at :72-94 as the mechanism
+that fixes all 48 `MAP[role]` sites without editing them -- because a 48-site
+mechanical sweep's real failure mode is transcription. It is not a dropped
+field. A function that copies EVERY key forwards every input by construction,
+which is strictly STRONGER than forwarding a named list.
+
+SO THE NINETEEN ARE A TOOL LIMITATION ON A KNOWN-GOOD PATTERN -- AND THAT IS
+STILL NOT A PASS. Both remedies are routed with owners, and the tools/ half is
+DELIBERATELY NOT TAKEN this batch: teaching the tool to recognise the
+whole-object-copy shape converts 19 unknowns into 19 CLEAN verdicts, and that
+direction earns its own batch with a failing-first fixture proving a PARTIAL
+copy is still not recognised. A recogniser that is slightly too generous turns
+a real dropped field into a green line, which is worse than nineteen honest
+unknowns.
+
+-- 5e THE STASH WAS NOT DIRT -------------------------------------------------
+
+The instruction was "clear your two stashes". THERE WAS ONE, and
+`git stash show --stat` said:
+
+    tools/dispatch_state.py        | 37 +
+    tools/independence_check.py    | 38 +
+    tools/index_duplicate_check.py | 38 +
+    tools/open_work_shard.py       | 77 +
+    tools/stale_row_sweep.py       | 37 +
+    tools/traceability_matrix.py   | 38 +
+    6 files changed, 260 insertions(+), 5 deletions(-)
+
+`git diff stash@{0} HEAD` confirmed all 260 lines are ABSENT from HEAD. It is
+the shared open-work row reader from b6 item 5 -- one reader for the 2.38MB
+index's pipe rows, reading the shards, returning each row with its shard and
+line number -- and it never landed. DROPPING IT ON THE INSTRUCTION'S WORD
+WOULD HAVE DESTROYED IT AND NOTHING WOULD HAVE SAID SO.
+
+Preserved as docs/unlanded/2026-10-13-cc-b6-open-work-shard-read-rows.patch
+with a README saying what it does, why it is not landed here (six tools/ files,
+no probe driven against it in this batch, and landing unverified work to tidy
+a stash is the wrong trade) and how to apply it. THEN the stash was dropped.
+
+    git stash list   ->  (empty)
+
+*.patch and *.diff are now -text in .gitattributes. `git add` warned "LF will
+be replaced by CRLF the next time Git touches it" on the first one, and a
+patch is a byte-level description whose hunk headers count lines -- `git
+apply` reports a CRLF-mangled patch as CORRUPT rather than as a line-ending
+problem, which is the same mis-diagnosis that whole file exists to prevent.
+
+-- 5f THE STALE ROOT FILES ARE IN THE AUDITOR'S OWN CLONE --------------------
+
+H1 has carried this since b29 and reconfirmed in b30, b31 and b33 that "cc has
+not acted". Read against the actual files, THE ROUTING IS MIS-ADDRESSED.
+
+H1's own b29 handoff names them: SAIRN-report-h1-b27.txt and
+SAIRN-digest-h1-b27.txt, untracked, `rm -f` DENIED BY THE PERMISSION SYSTEM IN
+b28 and not re-attempted. b31 adds b28/b29/b30's pairs and says in the same
+breath "No scratch files created in the platform repo."
+
+Measured in cc's clone:
+
+    ls -la SAIRN-*h1*                                  ->  nothing
+    git status --porcelain --untracked-files=all .      ->  no untracked .txt
+
+Zero stale h1 root files here, and zero untracked root .txt of ANY agent.
+Documents\SAIRN-hover is the hover auditor's clone and A BUILD AGENT MUST NOT
+REACH INTO IT -- CLAUDE.md states it and tools/hover_auditor_scope_gate.py
+plus tools/hover_separation_audit.py enforce it. cc clearing files inside that
+clone is the same boundary problem running the other way, and a worse outcome
+than five untracked .txt files. Re-routed to H1 or Michael, with the
+permission denial named as the real blocker.
+
+ONE GENUINELY STALE ROOT FILE cc CAN SEE AND DID NOT DELETE:
+C:\Users\marsh\SAIRN-SESSION66-HANDOFF.md, 2026-07-26, BYTE-IDENTICAL to the
+tracked SAIRN-SESSION66-HANDOFF.md in this clone --
+
+    md5  316774fd75d3a1688870dfee167b7763   both, after CRLF strip
+
+-- so nothing is lost by removing it, and it breaks CLAUDE.md's rule that a
+handoff lives only in a real clone. IT IS IN MICHAEL'S HOME DIRECTORY, so it
+is reported rather than deleted. Michael's call.
+
+-- 5g NOT CHANGED, AND THE OBVIOUS RULE IS WRONG -----------------------------
+
+*.jsonl has no .gitattributes entry, and my one-line append to
+docs/BYPASS-LOG.jsonl drew the CRLF warning. The obvious fix is
+`*.jsonl text eol=lf`. IT IS WRONG, measured rather than assumed: all three
+tracked .jsonl blobs are ALREADY CRLF --
+
+    docs/BYPASS-LOG.jsonl                                           97 CR
+    .claude/skills/sairn-hover-auditor/tools/hover_self_health_fires.jsonl   44
+    .claude/skills/.../tool_provenance_validations.jsonl                     37
+
+-- so the rule would renormalise 178 lines of audit log, including two files
+inside the hover auditor's skill directory. That is exactly the archive/**
+case .gitattributes already documents: "THE OBVIOUS RULE HERE IS `-text` AND
+IT IS WRONG." Named in the routing doc, not acted on.
+
+
+================================================================================
+THE DEFECT RECORDS
+================================================================================
+
+Three, filed through the tool's own CLI from a script file rather than a shell
+line -- the --factors payload is JSON full of quotes and this platform has
+lost text to shell substitution four times in two days.
+
+  c7c758ed  tooling / high     / independent-review / rule 2.3
+            OVERRIDE_HINT named a retired override and omitted the scoped form
+            the gate recommends. Injection cited: 0e6607e0, b11's own fix.
+  c7c758ed  tooling / moderate / independent-review / rule 2.3
+            MIN_TEST_FILES 370 against 802. Injection UNKNOWN with the reason:
+            no single commit introduced the staleness, the maintenance model
+            did, and picking one hand-bump would be a guess.
+  46128d86  tooling / moderate / static-checker     / rule 1.1
+            found-by-tool tools/sairn_board_publish.py. Every status change
+            wiped the mirrored claims.
+
+Each carries three contributing factors with an action status, and each
+carries a RECURRENCE-OPEN sentence saying what the actions do NOT close. The
+shas above are the RE-SEATED ones: the rebase rewrote both work commits and
+the register's own --reseat wrote the new values, which is a separate commit.
+
+    python tools/defect_register.py --check
+    ->  OK: 584 record(s), every commit resolves and every field is in
+        vocabulary
+
+
+================================================================================
+EVERY CHECK RUN, AND ITS REAL EXIT CODE
+================================================================================
+
+  tools/sairn_board_publish.py --selftest          0   14/14 arms
+  tools/sairn_board_publish.py --ablation          0   10 layers load-bearing
+  tools/runbook_constant_agreement.py --selftest   0   10/10 arms
+  tools/runbook_constant_agreement.py --ablation   0   4 layers load-bearing
+  tools/runbook_constant_agreement.py             *1   the real divergence
+  tools/sairn_push_gate_hook.py --selftest         0   22/22 arms
+  tests/run_all_tests_floor_probe.py               0   ALL CHECKS PASS
+  node api/sd-data-sv-role-matrix.test.js          0   31/0/0
+  node api/ai-provenance-client-sites.test.js      0   18/0/0
+  tools/tooling_inventory.py --check               0   matches the repo
+  tools/defect_register.py --check                 0   584 records
+  tools/sairn_seam_check.py                       *2   19 could-not-tell
+  tools/fmea_draft.py <nine> --save                0   nine drafts
+  node --check on both wired suites                0
+  sh -n .githooks/pre-push                         0
+
+  * the two non-zero codes are the FINDINGS, not failures of the run: exit 1
+    is runbook_constant_agreement reporting docs/NHI-REGISTER.md's divergence,
+    which is fourth's open routed item; exit 2 is the seam check's
+    could-not-tell, which is 5d. Both are reported as findings in this report
+    rather than converted into a pass.
+
+NOT RUN, AND SAID OUT LOUD RATHER THAN IMPLIED: the full tools/run_all_tests.py
+sweep (802 files) was not driven end to end this batch -- the floor change was
+exercised through cody's probe and through direct calls to _read_floor,
+raise_floor, _tracked_test_files and discover. tools/obligation_surface.py was
+not re-run, so the 48h queue figures in the b11 digest are not restated here.
+No app or endpoint was live-driven, because nothing deployed changed.
+
+
+================================================================================
+CONTEXT
+================================================================================
+
+CONTEXT 34% used (1,000,000 window, Opus 5 1M). MEASURED, not estimated:
+337,918 tokens by tools/sairn_status_line.used_tokens() against this session's
+own transcript (2,255,229 bytes). This session is NOT shared with b9/b10/b11 --
+it is a new transcript -- so the figure covers b12 alone, unlike b11's 63%
+which included three batches.
+
+The live status row carries the same number through the new
+`sairn_status.py set --context`, with a context_set stamp, so the Drive board
+reports it as a live reading rather than falling back to this digest.
+
+SHA256 ad7d25234301baa4c539833a5f3553224b7d2ac4250c932adbbfaba7b269e8d9
+END-OF-REPORT
