@@ -5786,6 +5786,38 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/_lib/sairnsenior-authorizations.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c059443620c65690db19764d6340f1ba440ab20b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/sairnsenior-branches.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c059443620c65690db19764d6340f1ba440ab20b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/sairnsenior-pay-rates.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c059443620c65690db19764d6340f1ba440ab20b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b16-slice-window-check.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c059443620c65690db19764d6340f1ba440ab20b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_scrutiny_flag_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -6053,6 +6085,14 @@
     }
    ],
    "sha": "c9333dd8a4c15ac8cb38bd1a09492f2f50f8ad08",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b16-evv-pay-agreement.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "caa3cb3e0e282e4424691858daa32ca5e484462c",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -6543,6 +6583,51 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "db2a47f1fa22a78187ec722681388e5afb6d51bc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/sen-evv-clock.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "dc61bfd9060ed5fd8e49e43bd0ec39eab951c746",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b16-app-id-tenancy.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "dc61bfd9060ed5fd8e49e43bd0ec39eab951c746",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b16-id-shadow.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "dc61bfd9060ed5fd8e49e43bd0ec39eab951c746",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b16-paid-period-freeze.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "const sk = (out.adjustments_skipped || [])[0];"
+    }
+   ],
+   "sha": "dc61bfd9060ed5fd8e49e43bd0ec39eab951c746",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-law-trusttx-session.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "dc61bfd9060ed5fd8e49e43bd0ec39eab951c746",
    "criteria_version": "2026-10-06.1"
   },
   {
