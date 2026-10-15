@@ -337,6 +337,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/app_session_isolation_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0c7d4ac8ef73777f2fb72f0ceb5aad99ffcae552",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/sd-data-sen-caregiver-pii-scope.test.js",
    "class": "test file",
    "level": "CHANGE",

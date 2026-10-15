@@ -1,0 +1,220 @@
+REPORT cody b13
+
+DATE 2026-10-14
+CLONE C:\Users\marsh\Documents\SAIRN-cody
+BRANCH main
+HEAD 0c7d4ac8ef73777f2fb72f0ceb5aad99ffcae552
+ORIGIN/MAIN 0c7d4ac8ef73777f2fb72f0ceb5aad99ffcae552  (identical, 0 ahead / 0 behind)
+TREE clean apart from docs/scrutiny-flags.json, the gate's own ledger row for
+     this push, committed with these artefacts
+COMMITTER IDENTITY fx <fx@example.invalid>, author and committer, from this
+     clone's LOCAL config. Unchanged by this batch.
+
+STOPPED EARLY ON INSTRUCTION AT 71% CONTEXT. ITEM 1 DONE AND LANDED. ITEMS 2, 3,
+4 AND 5 NOT REACHED AND NOT STARTED. ITEM 6 DONE.
+
+NOTHING IS HALF-FINISHED. The one item in flight was taken to a clean point,
+committed and pushed. No file belonging to an unstarted item was touched: no arm
+was added and left failing, no register row was edited in anticipation, and
+docs/blob-conversion-coverage.json is untouched at unconverted: 58.
+
+NOTHING OVERRIDDEN. No SAIRN_SEED_GATE and no SAIRN_GATE_EXEMPT in any form. No
+hook added or restored. settings.json never committed. NO api/, sql/, tools/ or
+CLAUDE.md FILE EDITED. No auditor clone entered. No --force.
+
+----------------------------------------------------------------------
+COMMIT
+----------------------------------------------------------------------
+0c7d4ac8  test(b13): the retired replay's REPLACEMENT -- the old predicate
+          applied to the mutant refusal, no replay
+
+Verified with `git merge-base --is-ancestor 0c7d4ac8 origin/main`. Pushed
+WITHOUT --force on the first attempt, no gate refusal. One file changed:
+tests/app_session_isolation_probe.py.
+
+----------------------------------------------------------------------
+PER ITEM
+----------------------------------------------------------------------
+ITEM 1  the replacement for the retired counterfactual -- DONE AND LANDED
+        FAILING-FIRST, AND THE RED IS THE STATE THIS REPLACED. b12 retired the
+        pre-fix replay with the measurement that ruled out re-basing, and wrote
+        the cost at the top of the file: "what is no longer shown is that the OLD
+        predicate was blind to it." run_probe proves the CURRENT suite refuses
+        mutations 6, 7 and 9; nothing proved the pre-repair form was blind to
+        them. The suite exited 0 with the gap recorded. That is the red.
+
+        old_predicate_is_blind() REPLAYS NOTHING, which is the whole design. The
+        retired control ran a historical COPY OF THE SUITE against current
+        source, so it dragged in everything that copy asserted and died on a
+        hand-written posture row that cannot know about a gate landing in
+        2026-10. The property under test is ONE EXPRESSION, not a suite:
+        `out.code !== 401` versus `out.code === 403 && ... FORBIDDEN`. Both
+        predicates are applied DIRECTLY to the refusal shape each mutation
+        produces. No worktree, no historical suite, no world-state.
+
+        EVERY INPUT IS DERIVED, because a retyped predicate or status code is the
+        second-copy defect this file has already paid for twice:
+          NEW predicates   from the two `ok(` expressions in
+                           tests/app_session_isolation.js -- MEASURED: gate
+                           demands 403 FORBIDDEN, oracle demands 400
+          OLD predicate    from HISTORY, the same DERIVED commit the retired
+                           control located (798543873912^), reading ONE
+                           EXPRESSION and never the file to run -- MEASURED:
+                           `code !== 401`
+          mutant codes     from the MUTATION TABLE's own replacement text, so
+                           editing the table moves this control with it
+        Anything underivable is exit 3 UNPROVEN with the reason named, never a
+        pass. A control that cannot find its own inputs has not run.
+
+        MEASURED: 2 same-reason mutations are INVISIBLE to the pre-repair
+        predicate and REFUSED by the current one -- 7 (403 -> 500) and 9
+        (400 -> 404).
+
+        MUTATION 6 IS DECLARED OUT OF SCOPE RATHER THAN COUNTED. It changes an
+        app NAME, not a status code, and the arm it trips did not exist before
+        the repair -- precisely the trap the first version of the retired control
+        fell into: hand-reverting a predicate does not remove an arm. Reported as
+        CANNOT.
+
+        TWO CONTROLS, BOTH DIRECTIONS. The new predicate must ACCEPT the healthy
+        shape, or "it refuses everything" satisfies every REFUSED line. The old
+        predicate must REFUSE 401, or "it accepts everything" satisfies every
+        BLIND line -- which is also why 401 was never a legitimate mutation here.
+
+        ABLATION, 4 OF 4, via `--ablate`: one derived input broken per case,
+        verdict required to change. A1 the new predicate accepts the mutant code
+        -> MISS. A2 the old predicate also refuses it -> SEEN. A3 CONTROL A
+        fires. A4 CONTROL B fires. The baseline is asserted green unmutated
+        first, so a changed verdict is the mutation and not the weather.
+
+        AND THE ABLATION FOUND TWO DEFECTS IN ITS OWN CONTROLS, which is why it
+        was worth driving rather than asserting:
+          CONTROL A COULD NOT FAIL. The healthy SHAPE and the predicate's
+            EXPECTED error code were ONE NAME, so overriding it moved both
+            together and they still agreed. Split into GATE_SHAPE_ERR and
+            GATE_OK_ERR.
+          CONTROL B WAS TAUTOLOGICAL. It asked whether the predicate refuses
+            OLD_BLIND_TO -- true by construction for every value. It now asks
+            whether it refuses DERIVED_OLD, the code HISTORY records, which is
+            the actual property.
+        Both were invisible until the failure path was driven. AN ARM WHOSE
+        FAILURE PATH HAS NEVER BEEN RUN IS AN ASSERTION, NOT A CHECK.
+
+        `force` is the ONE injection point, never set on an ordinary run, and the
+        ablation needs no file copy, no scratch script and no edit to the suite.
+
+        MEASURED: ordinary run exit 0, ALL 13 ARMS PASS (8 mutations), 15 ok
+        lines; `--ablate` 4 of 4; tests/app_session_isolation.js still exit 0.
+
+ITEM 2  run_two_axis_tier_parser_probe.py's red arm -- NOT REACHED, NOT STARTED
+ITEM 3  run_scope_gate_unfetched_base_probe.py OWNER line -- NOT REACHED
+ITEM 4  leg_aftercare collision arm, anchor arm, leg_clergybookings -- NOT REACHED
+ITEM 5  the next ten blob conversions and the ratchet -- NOT REACHED
+        For all four: no file touched, nothing half-applied. Exact next steps in
+        OPEN below and in SAIRN-handoff-cody-b13.md section 4.
+
+ITEM 6  PUSH -- DONE. Landed at 0c7d4ac8 without --force, first attempt, no gate
+        refusal. HEAD == origin/main, 0 ahead / 0 behind, ancestry verified.
+        A leftover sairn-sab-qtbp6o8m worktree from the probe run was removed and
+        pruned; `git worktree list` shows only the live clone.
+
+----------------------------------------------------------------------
+UNVERIFIED / NOT MEASURED -- stated, not folded into the green
+----------------------------------------------------------------------
+Mutation 6 is OUT OF SCOPE for the new control, by construction. The claim that
+the repair mattered now rests on TWO same-reason mutations, not three. Said in
+the suite's own output and here.
+
+The new control measures the PREDICATES, not the handler. It proves the
+pre-repair expression accepted a refusal shape the current one refuses; it does
+not re-prove that the handler produces those shapes -- that is run_probe's job,
+and the two are reported separately rather than summed.
+
+Items 2-5 were NOT driven at all in b13. In particular
+tests/run_two_axis_tier_parser_probe.py is still RED on one arm, and its
+docs/known-red-suites.json row was NOT re-read in this batch.
+
+No live deployed-URL verification was done and none applies: this batch changed
+no api/, sql/ or app file.
+
+----------------------------------------------------------------------
+OPEN, WITH THE EXACT NEXT STEP
+----------------------------------------------------------------------
+1 ITEM 2 -> CODY. tests/run_two_axis_tier_parser_probe.py is RED on one arm --
+  "2. the NEW six-cell shape parses, raises no row-level problem, and counts as
+  migrated". Measured in b12 and confirmed PRE-EXISTING by stashing and
+  re-running. NEXT STEP: read its docs/known-red-suites.json row FIRST, then
+  either fix the arm AT CAUSE or correct the row. No silent skip, and do not edit
+  the arm to turn it green.
+2 ITEM 3 -> CODY. tests/run_scope_gate_unfetched_base_probe.py still carries
+  `# OWNER: cc` on line 2 while living in tests/, which the directory-owner rule
+  makes cody's -- Michael has decided it is mine. NEXT STEP: change the OWNER
+  line to cody, verify green (13/13 in b12) and verify it is WIRED, i.e.
+  something runs it.
+3 ITEM 4 -> CODY, three arms, none written. The leg_aftercare key-collision arm
+  failing-first, where ('CS-7','1 Week') and ('CS-7-1','Week') must not derive
+  the same AC-CS-7-1-WEEK key (source:
+  docs/2026-10-14-fourth-b20-leg-role-matrix-discharge.md); the function-name
+  anchor arm, which must degrade to UNPROVEN at exit 3 rather than pass when its
+  anchor moves; and the leg_clergybookings arm at
+  tests/sairnlegacy_reservation_lock.js:330 OR accepting 35/36 explicitly in the
+  register with the reason. The choice is the deliverable -- 35/36 with no
+  recorded reason is the one outcome that is not acceptable.
+4 ITEM 5 -> CODY, AND ONE QUESTION MUST BE SETTLED FIRST.
+  docs/blob-conversion-coverage.json is untouched at unconverted: 58,
+  converted: 34. NEXT STEP: convert ten, ratchet the pin down WITH THE TOOL
+  (`python tools/blob_conversion_coverage.py --repin`, never by hand), and for
+  EACH conversion record the command that shows the old shape failed first.
+  ROUTING CONSTRAINT NOT RESOLVED: the sites live in api/, which is hank's, and
+  the b13 claim declared api/ read-only. Whoever takes this must either hold an
+  api/ claim or route the ten conversions to hank with the failing-first command
+  per site. Settle that before any conversion.
+5 FROM b12, NOT MINE -> HANK. T16 api/sd-data.js:7179 (a second EVV write
+  replaces clock_in_at with no trail), T17 api/sen-auth.js:263 (setup can demote
+  the last owner), T18 api/_lib/compliance-rules.js (applies_to_positions
+  contents unvalidated), N4 api/sd-data-cross-tenant-dispatchers.test.js:577 (a
+  coverage claim citing a path that does not exist -- one-line comment fix). Each
+  has a RED arm in tests/run_b12_routed_findings_probe.py that goes green on its
+  own when fixed; --ablate shows which fix each measures.
+6 FROM b12 -> FOURTH. The Tier A review obligation in docs/tier-a-reviews.json on
+  grd_boq_rates / grd_rounds, assigned.
+7 FROM b12 -> CC (tools/). MIN_TEST_FILES 370 against 796 discovered;
+  tools/sairn_push_gate_hook.py:988-991 says "THE BLANKET FORM STILL WORKS" while
+  :1377-1392 refuses it. -> CLAUDE.md owner: it still says "SAIRN_SEED_GATE=off
+  still works"; the code contradicts it.
+
+----------------------------------------------------------------------
+CLAIMS HELD
+----------------------------------------------------------------------
+`tests` -- HELD at the time of writing, claimed for all six b13 items, released
+after this report, the digest and SAIRN-latest-cody.md.
+THE CLAIM STRING NAMES FILES FOR ITEMS 2-5 THAT WERE NEVER WRITTEN:
+tests/run_two_axis_tier_parser_probe.py,
+tests/run_scope_gate_unfetched_base_probe.py,
+tests/sairnlegacy_reservation_lock.js, tests/run_b13_leg_aftercare_probe.py and
+docs/blob-conversion-coverage.json. A CLAIMED FILES LIST IS AN INTENTION, NOT A
+RECORD OF WHAT CHANGED -- the only file this batch touched is
+tests/app_session_isolation_probe.py. Said so the next session does not read the
+claim as a change log.
+
+----------------------------------------------------------------------
+CLEANUP
+----------------------------------------------------------------------
+8 scratch files removed; the scratchpad is empty. `git worktree list` shows only
+the live clone. Evidence lives in the commit message and in the suite's own
+`--ablate` output, never in a temp path.
+
+FILES WRITTEN BY THIS BATCH
+  tests/app_session_isolation_probe.py
+  docs/scrutiny-flags.json          (the gate's own ledger row)
+  SAIRN-handoff-cody-b13.md, SAIRN-report-cody-b13.txt,
+  SAIRN-digest-cody-b13.txt, SAIRN-latest-cody.md
+
+TRANSCRIPT
+C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cody\ec3355ad-083b-4402-a518-3d4e79072c4c.jsonl
+
+HANDOFF
+SAIRN-handoff-cody-b13.md, written BEFORE this report and uploaded first
+
+SHA256 SAIRN-handoff-cody-b13.md = 4404cc15981faa005f99d5ada2558c5a8a7a3d57a9a9f2a00006df66fdeb78c5
+END-OF-REPORT

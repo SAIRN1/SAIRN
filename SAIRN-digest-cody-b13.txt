@@ -1,0 +1,97 @@
+DIGEST cody b13  2026-10-14
+
+STATUS
+  STOPPED EARLY ON INSTRUCTION AT 71% CONTEXT. Item 1 DONE and landed; items 2,
+  3, 4 and 5 NOT REACHED and NOT STARTED; item 6 DONE.
+  On origin/main at 0c7d4ac8, 0 ahead / 0 behind, ancestry verified. Pushed
+  WITHOUT --force on the first attempt, no gate refusal.
+  NOTHING IS HALF-FINISHED. The one item in flight was taken to a clean point.
+  No file belonging to an unstarted item was touched -- no arm added and left
+  failing, no register row edited in anticipation,
+  docs/blob-conversion-coverage.json untouched at unconverted: 58.
+  NOTHING OVERRIDDEN: no SAIRN_SEED_GATE, no SAIRN_GATE_EXEMPT, no hook added or
+  restored, settings.json never committed, no api/, sql/, tools/ or CLAUDE.md
+  file edited, no auditor clone entered.
+  Committer identity: fx <fx@example.invalid>, unchanged.
+
+DECISION-NEEDED
+  ONE, AND IT BLOCKS ITEM 5. The ten blob conversions live in api/, which is
+  hank's, and the b13 claim declared api/ read-only. Whoever takes item 5 must
+  either hold an api/ claim or ROUTE the ten conversions to hank with the
+  failing-first command per site. That question was never settled and no
+  conversion was attempted on either reading of it.
+
+CHANGED
+  tests/app_session_isolation_probe.py   old_predicate_is_blind() -- the
+    replacement for the retired replay -- plus ablate_old_predicate_control()
+    and one `force`/`quiet` injection point
+  docs/scrutiny-flags.json               the gate's own ledger row for this push
+  SAIRN-handoff-cody-b13.md / -report- / -digest- / SAIRN-latest-cody.md
+
+  THAT IS THE WHOLE LIST. One test file, one gate record, four artefacts.
+
+EVIDENCE-path
+  Commit 0c7d4ac8, whose message carries the measurement and both
+  ablation-found defects.
+  `python tests/app_session_isolation_probe.py` -- exit 0, ALL 13 ARMS PASS (8
+  mutations), 2 same-reason mutations INVISIBLE to the pre-repair predicate and
+  REFUSED by the current one.
+  `python tests/app_session_isolation_probe.py --ablate` -- 4 of 4 cases change
+  the verdict, after a baseline asserted green unmutated.
+  THE SCRATCHPAD IS EMPTY ON PURPOSE: the evidence is in the commit and in the
+  suite's own --ablate output, not in a temp path that expires.
+  Transcript: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cody\ec3355ad-083b-4402-a518-3d4e79072c4c.jsonl
+
+UNVERIFIED
+  MUTATION 6 IS OUT OF SCOPE for the new control, by construction -- it changes
+  an app name, not a status code, and the arm it trips did not exist before the
+  repair. The claim that the repair mattered now rests on TWO same-reason
+  mutations, not three. Reported as CANNOT in the suite's own output.
+  The new control measures the PREDICATES, not the handler: it proves the
+  pre-repair expression accepted a refusal shape the current one refuses, and
+  does not re-prove that the handler produces those shapes -- that is run_probe's
+  job, and the two are reported separately rather than summed.
+  ITEMS 2-5 WERE NOT DRIVEN AT ALL. In particular
+  tests/run_two_axis_tier_parser_probe.py is still RED on one arm and its
+  docs/known-red-suites.json row was NOT re-read in this batch.
+  No live deployed-URL check applies -- no api/, sql/ or app file changed.
+
+NEXT
+  1 CODY, item 2: tests/run_two_axis_tier_parser_probe.py is RED on one arm
+    ("the NEW six-cell shape parses, raises no row-level problem, and counts as
+    migrated"), PRE-EXISTING, confirmed by stashing in b12. Read its
+    known-red-suites row FIRST, then fix the arm AT CAUSE or correct the row. No
+    silent skip; do not edit the arm to turn it green.
+  2 CODY, item 3: change `# OWNER: cc` to cody on
+    tests/run_scope_gate_unfetched_base_probe.py, then verify green (13/13 in
+    b12) and verify it is WIRED.
+  3 CODY, item 4, three arms, none written: the leg_aftercare key-collision arm
+    failing-first (('CS-7','1 Week') and ('CS-7-1','Week') must not derive the
+    same AC-CS-7-1-WEEK key); the function-name anchor arm degrading to UNPROVEN
+    at exit 3; and the leg_clergybookings arm at
+    tests/sairnlegacy_reservation_lock.js:330 OR 35/36 accepted explicitly in the
+    register WITH THE REASON. 35/36 with no recorded reason is the one outcome
+    that is not acceptable.
+  4 CODY, item 5: settle the api/ ownership question above, then convert ten,
+    ratchet the pin down WITH THE TOOL, and record the failing-first command per
+    conversion.
+  5 HANK, from b12: T16 api/sd-data.js:7179, T17 api/sen-auth.js:263, T18
+    api/_lib/compliance-rules.js, N4
+    api/sd-data-cross-tenant-dispatchers.test.js:577. Each has a RED arm in
+    tests/run_b12_routed_findings_probe.py; --ablate shows which fix each
+    measures.
+  6 FOURTH, from b12: the Tier A review obligation in docs/tier-a-reviews.json on
+    grd_boq_rates / grd_rounds, assigned.
+  7 CC (tools/), from b12: MIN_TEST_FILES 370 against 796;
+    sairn_push_gate_hook.py:988-991 contradicting :1377-1392. And the CLAUDE.md
+    owner: it still says "SAIRN_SEED_GATE=off still works".
+
+CONTEXT 73% used of 1,000,000 (Opus 5 1M)
+  MEASURED, not estimated: 727,340 input tokens on the last request recorded in
+  this session's own transcript, read as the digest was written. The instruction
+  to stop came at 71%; this is the same session continuing to the handoff.
+  WHY IT IS NOT FROM THE TOOL: tools/sairn_status_line.py answers
+  `ctx ??% (no model in payload)` from inside a turn and /context is a user-side
+  command an agent cannot invoke. The number comes from the transcript's own
+  usage records -- a different source from the tool, which is why it can be
+  quoted at all.
