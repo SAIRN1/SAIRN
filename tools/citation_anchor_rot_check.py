@@ -601,6 +601,52 @@ def _a8b(tmp):
                 'function eventRefusals(e){', '')), body
 
 
+@arm('A12-past-eof-is-stale', 'a `file.ext:NNN` citation pointing PAST the '
+                             'end of its file',
+     'FINDING in --resolve-targets, naming the file\'s real length. This is '
+     'the one staleness verdict that needs no judgement: no reading of the '
+     'document makes it right')
+def _a12(tmp):
+    d = _tree(tmp, 'See `app.html:900` and `app.html:2` for the write.\n',
+              'app.html', 'one\ntwo\nthree\n')
+    rc, out = resolve_targets('doc.md', repo=d)
+    body = NL.join(out)
+    return (rc == EXIT_FINDING and 'PAST-EOF       1' in body
+            and 'RESOLVES       1' in body
+            and 'app.html:900' in body and 'file has 3 line(s)' in body), body
+
+
+@arm('A13-bare-cites-not-scored', 'a bare `:NNNN` citation counted as fresh '
+                                  'or as stale',
+     'UNRESOLVABLE and counted APART -- its target is whatever the prose '
+     'says, and guessing is the `--app` guess citation_line_drift_check.py '
+     'refuses to make')
+def _a13(tmp):
+    d = _tree(tmp, 'The write is at `:4255` and the read at `:4378`.\n',
+              'app.html', 'one\n')
+    rc, out = resolve_targets('doc.md', repo=d)
+    body = NL.join(out)
+    return (rc == EXIT_CLEAN and 'UNRESOLVABLE   2' in body
+            and 'RESOLVES       0' in body
+            and 'NOT counted as fresh and NOT as stale' in body), body
+
+
+@arm('A14-at-risk-never-a-pass', 'exit 0 from --resolve-targets reading as '
+                                 '"no staleness" when the cited files have '
+                                 'all moved since the citations were written',
+     'the AT-RISK count is REPEATED in the closing line, so a reader who '
+     'stops at the exit code cannot come away with clean. AT-RISK is '
+     'deliberately not a finding -- it is 160 of 198 on the real register, '
+     'and a permanently-red mode is a mode nobody runs')
+def _a14(tmp):
+    d = _tree(tmp, 'See `app.html:1`.\n', 'app.html', 'one\n')
+    rc, out = resolve_targets('doc.md', repo=d)
+    body = NL.join(out)
+    return (rc == EXIT_CLEAN
+            and 'that is ALL exit 0 means here' in body
+            and ('AT-RISK' in body or 'COULD NOT MEASURE' in body)), body
+
+
 @arm('A9-whitespace-only-diff', 'an anchor differing from the target only by '
                                'run-length whitespace',
      'FINDING, with the near-match named -- a relaxed MATCH would bless a '
@@ -677,6 +723,236 @@ def _rm(path):
         pass
 
 
+# ── THE SECOND CLASS, MEASURED (added 2026-10-15, cc b15 item 5) ───────────
+# check() counts the `file.ext:NNN` citations and deliberately does not judge
+# them. That left a number -- 521 in docs/CRITICALITY-TIERS.md -- with nothing
+# behind it, and TWO BATCHES PRODUCED TWO DIFFERENT TOTALS from undocumented
+# predicates: b21 wrote 551, b22 re-counted 571 with its own regex, and this
+# tool's extractor says 198 qualified + 323 bare. Three numbers for one
+# document is the stale-pin shape with the pin moving instead of the subject.
+#
+# SO THE MEASUREMENT REUSES extract(), not a second regex. If the count in the
+# headline and the count being resolved ever disagree, it is because one
+# extractor changed, and there is only one extractor.
+#
+# WHAT IT CAN AND CANNOT ANSWER, because the difference is the whole value:
+#   RESOLVES      the file exists and has at least NNN lines. A FLOOR, not a
+#                 verdict -- the line may say something else entirely now.
+#                 This check reads the line NUMBER, not the line.
+#   PAST-EOF      the file exists and is shorter than NNN. DEFINITELY stale:
+#                 no reading of the document makes that citation right.
+#   FILE-ABSENT   the cited file is not in the repo at all.
+#   bare `:NNNN`  UNRESOLVABLE BY DESIGN -- its target is whatever the
+#                 surrounding prose says, and a tool that guessed would be
+#                 citation_line_drift_check.py's refused `--app` guess.
+#                 COUNTED, never folded into either other bucket.
+def line_count(text):
+    """How many lines a file really has. -> int.
+
+    A TRAILING NEWLINE IS NOT A LINE. The first version of resolve_targets
+    used `text.count(NL) + 1`, which called a 3-line file 4 lines long and so
+    would have blessed exactly one citation past the end of EVERY file in the
+    repo. Off by one, in the direction that reports stale as fresh. Caught by
+    A12 failing on `file has 4 line(s)` against a 3-line fixture, which is
+    why the arm asserts the number and not just the verdict.
+    """
+    parts = text.split(NL)
+    if parts and parts[-1] == '':
+        parts.pop()
+    return len(parts)
+
+
+def _blame_author_times(doc_path, repo):
+    """{document line number: author epoch}, or {} with a reason.
+
+    AUTHOR TIME, NOT COMMIT TIME. A rebase rewrites commit time and leaves
+    author time alone, and on a four-clone night every line in this document
+    has been rebased. Using commit time would date every citation to the last
+    rebase and report the whole register as freshly written.
+    """
+    import subprocess
+    try:
+        p = subprocess.run(
+            ['git', '-C', repo, 'blame', '--line-porcelain', '--', doc_path],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except Exception as exc:                                     # noqa: BLE001
+        return {}, 'git blame would not run: %s' % str(exc)[:120]
+    if p.returncode != 0:
+        return {}, ('git blame exited %d: %s' % (p.returncode,
+                    p.stderr.decode('utf-8', 'replace')[:120]))
+    times, line_no = {}, 0
+    for raw in p.stdout.decode('utf-8', 'replace').split(NL):
+        m = re.match(r'^[0-9a-f]{7,40} \d+ (\d+)', raw)
+        if m:
+            line_no = int(m.group(1))
+        elif raw.startswith('author-time ') and line_no:
+            times[line_no] = int(raw.split()[1])
+    return times, ''
+
+
+def _commits_since(path, epoch, repo):
+    """How many commits touched `path` strictly after `epoch`. -> (n, why)."""
+    import subprocess
+    try:
+        p = subprocess.run(
+            ['git', '-C', repo, 'log', '--oneline',
+             '--since=@%d' % (epoch + 1), '--', path],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except Exception as exc:                                     # noqa: BLE001
+        return None, str(exc)[:80]
+    if p.returncode != 0:
+        return None, p.stderr.decode('utf-8', 'replace')[:80]
+    body = p.stdout.decode('utf-8', 'replace').strip()
+    return (len(body.split(NL)) if body else 0), ''
+
+
+# ── IN-RANGE IS NEARLY A TAUTOLOGY ON A 2MB FILE ───────────────────────────
+# A citation into stonedesk.html is in range whatever number it carries, so
+# the RESOLVES count above cannot be the staleness answer on its own -- it is
+# the floor that catches the impossible ones. The staleness question is
+# whether the cited FILE has moved since the citation was WRITTEN, and that is
+# answerable from git without reading either side's meaning:
+#
+#   blame the document line  -> when this citation was authored
+#   log the cited file since -> how many commits could have moved it
+#
+# A citation with commits after it is AT RISK, not wrong. The number is a
+# population to re-check, not a defect count, and it is reported as such
+# because the one thing this must not become is 198 "stale citations" in
+# somebody's report.
+def _at_risk_section(doc_path, text, repo):
+    out = ['']
+    times, why = _blame_author_times(doc_path, repo)
+    if not times:
+        out.append('  AT-RISK: COULD NOT MEASURE -- %s. The in-range count '
+                   'above still stands; this half did not run and is not '
+                   'folded into it.' % why)
+        return out
+    per_line = {}
+    for n, line in enumerate(text.split(NL), 1):
+        for c in LINECITE_RE.findall(line):
+            per_line.setdefault(n, []).append(c)
+    at_risk, settled, unknown = [], 0, 0
+    worst = []
+    for n, cites in sorted(per_line.items()):
+        epoch = times.get(n)
+        if epoch is None:
+            unknown += len(cites)
+            continue
+        for c in cites:
+            fn = c.rpartition(':')[0].replace('\\', '/')
+            k, kwhy = _commits_since(fn, epoch, repo)
+            if k is None:
+                unknown += 1
+            elif k:
+                at_risk.append((k, c, n))
+            else:
+                settled += 1
+    at_risk.sort(reverse=True)
+    out.append('  AT-RISK, measured from git rather than from reading either '
+               'side: blame the document line for when the citation was '
+               'AUTHORED (author time, not commit time -- a rebase rewrites '
+               'the latter), then count commits touching the cited file since.')
+    out.append('  AT-RISK     %4d  the cited file moved after the citation '
+               'was written. A POPULATION TO RE-CHECK, not a defect count.'
+               % len(at_risk))
+    out.append('  SETTLED     %4d  nothing has touched the cited file since'
+               % settled)
+    out.append('  UNKNOWN     %4d  blame or log could not answer -- kept out '
+               'of both counts' % unknown)
+    for k, c, n in at_risk[:12]:
+        out.append('    %3d commit(s) since  %-40s doc line %d' % (k, c, n))
+    if len(at_risk) > 12:
+        out.append('    ... and %d more' % (len(at_risk) - 12))
+    return out
+
+
+def resolve_targets(doc_path, repo=None):
+    """(exit_code, lines). Writes nothing."""
+    repo = repo or REPO
+    out = ['citation_anchor_rot_check --resolve-targets  (criteria %s)'
+           % CRITERIA_VERSION]
+    full = doc_path if os.path.isabs(doc_path) else os.path.join(repo, doc_path)
+    text, why = read_text(full)
+    if text is None:
+        out.append('COULD NOT RUN -- %s could not be read: %s. Nothing was '
+                   'measured.' % (doc_path, why))
+        return EXIT_COULD_NOT_RUN, out
+    _a, _s, cites, bare = extract(text)
+    out.append('  PREDICATE, printed with the result rather than described: '
+               'the citations are whatever extract() finds -- '
+               'LINECITE_RE = %s -- and a citation RESOLVES when its file '
+               'exists in this clone and has at least that many lines.'
+               % LINECITE_RE.pattern)
+    out.append('  %d qualified `file.ext:NNN` citation(s), %d bare `:NNNN`, '
+               '%d total -- the same extractor the headline count uses'
+               % (len(cites), len(bare), len(cites) + len(bare)))
+    lens = {}
+    resolves, past_eof, absent = 0, [], []
+    for c in cites:
+        fn, _sep, num = c.rpartition(':')
+        fn = fn.replace('\\', '/')
+        if fn not in lens:
+            p = os.path.join(repo, fn)
+            if not os.path.isfile(p):
+                lens[fn] = None
+            else:
+                t, _w = read_text(p)
+                lens[fn] = None if t is None else line_count(t)
+        n = lens[fn]
+        if n is None:
+            absent.append(c)
+        elif int(num) <= n:
+            resolves += 1
+        else:
+            past_eof.append((c, n))
+    out.append('')
+    out.append('  RESOLVES    %4d  the file exists and is at least that long'
+               % resolves)
+    out.append('  PAST-EOF    %4d  DEFINITELY stale -- no reading of the '
+               'document makes these right' % len(past_eof))
+    out.append('  FILE-ABSENT %4d  the cited file is not in this clone'
+               % len(absent))
+    out.append('  UNRESOLVABLE %3d  bare `:NNNN` -- target is whatever the '
+               'prose says. NOT counted as fresh and NOT as stale.'
+               % len(bare))
+    for c, n in sorted(set(past_eof))[:20]:
+        out.append('    PAST-EOF  %-40s file has %d line(s)' % (c, n))
+    if len(set(past_eof)) > 20:
+        out.append('    ... and %d more distinct' % (len(set(past_eof)) - 20))
+    for c in sorted(set(absent))[:20]:
+        out.append('    FILE-ABSENT  %s' % c)
+    if len(set(absent)) > 20:
+        out.append('    ... and %d more distinct' % (len(set(absent)) - 20))
+    out += _at_risk_section(doc_path, text, repo)
+    out.append('')
+    out.append('  RESOLVES IS A FLOOR AND NOT A VERDICT. It reads the line '
+               'NUMBER, never the line: a citation can point inside a file '
+               'and at completely different code than the document claims. '
+               'For the semantic question on a given app use '
+               'tools/citation_line_drift_check.py --app X --prefix Y.')
+    bad = len(past_eof) + len(absent)
+    if bad:
+        out.append('  %d citation(s) CANNOT be right. That is the finding.'
+                   % bad)
+        return EXIT_FINDING, out
+    # ── EXIT 0 MUST NOT READ AS "NO STALENESS" ────────────────────────────
+    # AT-RISK is deliberately NOT a finding: it is 160 of 198 here and a mode
+    # that is permanently red is a mode nobody runs -- the same trap as a
+    # mirror-freshness check that always says FROZEN. So the number is
+    # repeated in the closing line, where a reader who stops at the exit code
+    # still cannot come away with "clean".
+    risk = [ln for ln in out if ln.strip().startswith('AT-RISK     ')]
+    out.append('  every qualified citation points inside its file, and that '
+               'is ALL exit 0 means here. The %d bare `:NNNN` citation(s) '
+               'are unmeasured by this mode.%s'
+               % (len(bare),
+                  (' ' + risk[0].strip().split('  ')[0] + ' still need '
+                   're-checking against their moved targets.') if risk
+                  else ''))
+    return EXIT_CLEAN, out
+
+
 def selftest():
     print('citation_anchor_rot_check --selftest  (criteria %s)'
           % CRITERIA_VERSION)
@@ -725,6 +1001,13 @@ _ABLATIONS = (
      'a missing or unreadable target file is exit 2 NAMING the file, never 0 '
      '-- otherwise the absence of a finding becomes evidence of freshness',
      lambda: _patch_fail_open_target()),
+    ('trailing-newline-not-a-line',
+     'line_count treats a file\'s trailing newline as a terminator and not as '
+     'a line, so PAST-EOF is measured against the real length. Removing this '
+     'restores `count(NL) + 1`, which blesses exactly one citation past the '
+     'end of every file in the repo -- off by one in the direction that '
+     'reports stale as fresh',
+     lambda: _patch('line_count', lambda text: text.count(NL) + 1)),
     ('r1-anchor-keyword',
      'an anchor is the literal word `anchor` followed by a backticked string, '
      'NOT every backticked string. Removing this is precisely the false-'
@@ -859,6 +1142,10 @@ def main(argv=None):
                     help='override the in-document target declaration. '
                          'PRINTED when used -- R2 wants the document to '
                          'declare its own target')
+    ap.add_argument('--resolve-targets', action='store_true',
+                    help='measure the SECOND class -- every `file.ext:NNN` '
+                         'citation -- for whether its target line still '
+                         'exists at HEAD. Prints the count and the predicate')
     ap.add_argument('--selftest', action='store_true')
     ap.add_argument('--ablation', action='store_true')
     args = ap.parse_args(argv)
@@ -884,6 +1171,12 @@ def main(argv=None):
             print('  %s -- wanted: %s' % (name, must))
             print('    %s' % why[:200])
         return EXIT_COULD_NOT_RUN
+
+    if args.resolve_targets:
+        code, lines = resolve_targets(args.document)
+        for ln in lines:
+            print(ln)
+        return code
 
     code, lines = check(args.document, target_override=args.target)
     for ln in lines:

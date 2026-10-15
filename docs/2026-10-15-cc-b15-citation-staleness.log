@@ -1,0 +1,29 @@
+citation_anchor_rot_check --resolve-targets  (criteria 2026-10-14.1)
+  PREDICATE, printed with the result rather than described: the citations are whatever extract() finds -- LINECITE_RE = (?:[A-Za-z0-9_./\\-]+\.(?:html|js|cjs|mjs|py|sql|md|json|tla|cfg)):\d+ -- and a citation RESOLVES when its file exists in this clone and has at least that many lines.
+  198 qualified `file.ext:NNN` citation(s), 323 bare `:NNNN`, 521 total -- the same extractor the headline count uses
+
+  RESOLVES     198  the file exists and is at least that long
+  PAST-EOF       0  DEFINITELY stale -- no reading of the document makes these right
+  FILE-ABSENT    0  the cited file is not in this clone
+  UNRESOLVABLE 323  bare `:NNNN` -- target is whatever the prose says. NOT counted as fresh and NOT as stale.
+
+  AT-RISK, measured from git rather than from reading either side: blame the document line for when the citation was AUTHORED (author time, not commit time -- a rebase rewrites the latter), then count commits touching the cited file since.
+  AT-RISK      160  the cited file moved after the citation was written. A POPULATION TO RE-CHECK, not a defect count.
+  SETTLED       38  nothing has touched the cited file since
+  UNKNOWN        0  blame or log could not answer -- kept out of both counts
+     87 commit(s) since  api/sd-data.js:8714                      doc line 252
+     87 commit(s) since  api/sd-data.js:5506                      doc line 247
+     87 commit(s) since  api/sd-data.js:13240                     doc line 267
+     87 commit(s) since  api/sd-data.js:11292                     doc line 311
+     87 commit(s) since  api/sd-data.js:10974                     doc line 461
+     86 commit(s) since  api/sd-data.js:13198                     doc line 287
+     86 commit(s) since  api/sd-data.js:12266                     doc line 315
+     71 commit(s) since  api/sd-data.js:2051                      doc line 157
+     69 commit(s) since  api/sd-data.js:7390                      doc line 512
+     61 commit(s) since  api/sd-data.js:8123                      doc line 504
+     61 commit(s) since  api/sd-data.js:12295                     doc line 310
+     61 commit(s) since  api/sd-data.js:12135                     doc line 477
+    ... and 148 more
+
+  RESOLVES IS A FLOOR AND NOT A VERDICT. It reads the line NUMBER, never the line: a citation can point inside a file and at completely different code than the document claims. For the semantic question on a given app use tools/citation_line_drift_check.py --app X --prefix Y.
+  every qualified citation points inside its file, and that is ALL exit 0 means here. The 323 bare `:NNNN` citation(s) are unmeasured by this mode. AT-RISK still need re-checking against their moved targets.
