@@ -4358,6 +4358,56 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_b14_leg_aftercare_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "`docs/known-red-suites.json` before treating this suite's exit 1 as new."
+    }
+   ],
+   "sha": "a91b530a57c5ad3de1e6c87efd0856938571dfc0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_scope_gate_unfetched_base_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a91b530a57c5ad3de1e6c87efd0856938571dfc0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_two_axis_tier_parser_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a91b530a57c5ad3de1e6c87efd0856938571dfc0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairncare_compliance_window_boundary.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'state docs/known-red-suites.json records.');"
+    }
+   ],
+   "sha": "a91b530a57c5ad3de1e6c87efd0856938571dfc0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlegacy_reservation_lock.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a91b530a57c5ad3de1e6c87efd0856938571dfc0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_batch_manifest_probe.py",
    "class": "test file",
    "level": "WEAKENING",
