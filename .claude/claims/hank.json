@@ -3972,6 +3972,26 @@
         "sairnsenior.html",
         "sql/legacy_ciphertext_census.sql"
       ]
+    },
+    {
+      "id": "hank-1792069458",
+      "session": "hank",
+      "subject": "hank",
+      "task": "b15: (1) fourth b23 F1 payroll money bug -- effectiveClock in api/_lib/sen-payroll.js and the sd-data payroll map, plus F3 sairnsenior.html raw-clock reads. (2) legacy Stedi ciphertext backfill STEP for Michael via the app write path, Drive file. (3) hydrate before rendering the corrections tab + a mechanical slice(x,x+N) check for *.test.js. (4) run-order Block 2 precondition + api/sd-data.js:1352, b13 report citation corrections, cody b15's 3 failing api/ suites and the sairnlegacy app_id tenancy question driven live. (5) the 22 write branches folding 23514 into run-the-migration + helper F1/F2, the SD_LINEAGE/SD_HR id-shadow pick, and ablation records for b14-b15 arms. (6) push. FILES: api/sd-data.js api/_lib/sen-payroll.js api/_lib/sen-evv-clock.js sairnsenior.html sql/2026-10-14-michael-run-order.sql sql/append_only_grant_audit.sql plus my own b15 api/*.test.js and docs/hank-evidence/b15/. CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: tests/ is cody's -- tests/sairnlegacy_fault_probe.py is RUN not edited and nothing else under tests/ is touched; tools/ is cc's and is RUN not edited; docs/ triage and routing docs are cody's and fourth's and are READ not edited. HOOKS STAY CLEARED, settings.json NEVER committed, no SAIRN_SEED_GATE override, no auditor clone entered. F2 EVV-readiness raw clock and the one-person-agency exception are HELD FOR MICHAEL and NOT BUILT.",
+      "claimed_at": "2026-10-15T13:04:18Z",
+      "claimed_at_epoch": 1792069458.0901284,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        ".test.js",
+        "4.3",
+        "api/_lib/sen-evv-clock.js",
+        "api/_lib/sen-payroll.js",
+        "api/sd-data.js",
+        "sairnsenior.html",
+        "sql/2026-10-14-michael-run-order.sql",
+        "sql/append_only_grant_audit.sql"
+      ]
     }
   ],
   "refusals": [
