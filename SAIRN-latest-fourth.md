@@ -6,8 +6,9 @@ written, 0/0, clean, **NOT forced** (ancestry-proved; `grep -c force` → 0).
 not drift; naming it here would need another commit and move it again. Gate ran live and allowed. No
 `SAIRN_SEED_GATE` / `GATE_EXEMPT` / `SAIRN_SKIP` in any form. `settings.json`
 untouched. 0 files written under `api/ sql/ tests/ tools/`. Auditor clones not
-entered. **Tier A: all three obligations assigned to fourth DISCHARGED; none
-left.** **CONTEXT 28.8% of 1000k** (288,038 tokens).
+entered. **Tier A: all three obligations assigned to fourth DISCHARGED — and
+then a FOURTH arrived at 15:04:38Z and is UNTOUCHED** (see below).
+**CONTEXT 28.8% of 1000k** (288,038 tokens).
 
 ## The four things worth knowing
 
@@ -36,8 +37,9 @@ left.** **CONTEXT 28.8% of 1000k** (288,038 tokens).
 | cody | known-red row → **RECOVERED**; the control arm's hardcoded *"ten failures above"* → read off `failed.length` |
 | cody | **b24 F1** re-anchor on `const acEsc = (s) =>` + the `acKey` ternary, **with an arm that fails when the anchor stops matching**; and a failing-first arm driving a `23514` through one of the 22 and a `42703` through one of the 151 — b25 **observed** both, nothing drives either |
 | cc | `tier_a_review_gate.py --amend`; wire ONE anchor-rot tool into a gate; R3's 48 citation ranges; **the convention-numbering check is still unbuilt**; **and `SAIRN-latest-<agent>.md` is a FILENAME COLLISION** — see below |
+| fourth | **FRESH TIER A, UNTOUCHED:** `hank 2026-10-15T15:04:38Z` — seven Tier A resources, three changes, routing doc `docs/2026-10-15-hank-b16-to-fourth-tier-a.md`. **Three of hank's five questions are DECISIONS, not checks** (the straight-time adjustment floor vs an FLSA premium on an already-paid week; adjustments that post only in the period containing their approval with nothing sweeping for unposted ones; a frozen period paying as at `paid_at` while a federally mandated EVV export reads now). Take change (3) first — the `law_trusttx` stale expectation is the one settleable by reading the assertion |
 | fourth | **open the batch manifest FIRST next batch**; drive (d) `LATE_REPLAY`; extend the census to follow a variable through its assignments |
-| Michael | **held, not acted on:** the EVV raw-clock and one-person-agency self-approval questions. **And one decision:** an approved clock correction now reaches pay (300/10000 vs 240/8000, driven), but **whether any real visit was underpaid before today is not establishable from the repo** — no production row was read — so whether a **back-payment** is owed is your call |
+| Michael | **b23 F2 IS NO LONGER HELD** — you decided it and hank implemented it in `883ad0bc`; the EVV checks now read the same effective clock pay uses, GPS deliberately unmoved. **Still held and not acted on:** the one-person-agency self-approval question. **And three NEW decisions** sit inside hank's fresh b16 record above. **And one decision:** an approved clock correction now reaches pay (300/10000 vs 240/8000, driven), but **whether any real visit was underpaid before today is not establishable from the repo** — no production row was read — so whether a **back-payment** is owed is your call |
 
 ## For cc: `SAIRN-latest-<agent>.md` is a filename collision
 
@@ -63,4 +65,4 @@ no production row, no live fetch, no table touched.
 **Convention 35 landed** — *a predicate has a SPAN as well as a PATTERN, and a
 re-count that disagrees is a predicate disagreement until the SUBJECT is proved to
 have moved.* **Cite it as `convention 35`, never a bare "item 35".** Report SHA256
-`ee610d06c666a2cc26ffb6feee0ed96470287972cc77065e30090ee6f10b3143`.
+`7979c6269b4958faa27d91f3267ad266db634db3e47348e427c1b4a132cd64e4`.

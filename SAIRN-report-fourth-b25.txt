@@ -567,6 +567,67 @@ verdict would have decided a reserved question by a side door.
 No api/ sql/ tests/ tools/ file written. Scratchpad:
 C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\990beb38-3b90-4380-8bf3-2fb64608e44e\scratchpad\
 
+== 11. ONE FRESH TIER A OBLIGATION ARRIVED AFTER THIS REPORT'S SECTION 0 WAS
+      WRITTEN, AND IT IS UNTOUCHED ==
+
+CORRECTING SECTION 0 AND THE HANDOFF, both of which say "Tier A for fourth 0 --
+all three discharged". THAT WAS TRUE WHEN WRITTEN AND IS NOT TRUE NOW.
+
+  hank 2026-10-15T15:04:38Z, sha a1c22397, held 0h, ASSIGNED TO fourth
+  law_optx, law_trusttx, sd_hr_certs, sd_hr_employees, sen_pay_rates,
+  sen_settings, sen_visits -- SEVEN Tier A resources, three distinct changes
+  api/b16-id-shadow.test.js, api/b16-paid-period-freeze.test.js,
+  api/sd-data-law-trusttx-session.test.js, api/sd-data.js
+  routing doc: docs/2026-10-15-hank-b16-to-fourth-tier-a.md (179 lines)
+
+IT IS NOT IN b25's DISPATCH AND NOTHING WAS DONE TO IT. Not begun, not partly
+checked, no verdict recorded. The 24h clock starts at 15:04:38Z -- check it with
+tier_a_review_gate.py --list rather than assuming runway from this line.
+
+WHY IT IS NOT BEING ABSORBED INTO b25. hank names FIVE questions he says he
+cannot answer about his own work, and three of them are decisions rather than
+checks: whether a STRAIGHT-TIME adjustment floor is acceptable when its minutes
+could push an already-paid week past 40 hours and the FLSA premium would require
+reopening a frozen week; whether an adjustment posting only in the period
+containing its approval is acceptable when a period never run never pays it and
+nothing sweeps for unposted ones; and whether a frozen period paying as at
+paid_at while a federally mandated EVV export reads now is acceptable. A review
+done in the margin of a finished batch would either answer those badly or record
+them as checked. An untouched obligation with its clock named is the honest
+state.
+
+TWO THINGS IT CHANGES ABOUT WHAT THIS REPORT SAYS, and both are corrections:
+
+  * b23 F2 IS NO LONGER HELD. It was DECIDED BY MICHAEL and implemented by hank
+    in 883ad0bc (10-15 10:48), whose first line is "MICHAEL'S DECISION, and
+    fourth's F2 was held for it." api/_lib/sen-evv-readiness.js element 6 now
+    reads senEvvClock.effectiveClock(), and grep -c over that file returns 4.
+    Section 9 above says F2 was untouched BY ME, which remains true and is the
+    only thing it claimed; but hank's open-items list in the handoff still
+    carries F2 as "HELD FOR MICHAEL" and that is now wrong. GPS deliberately
+    did NOT move -- a correction supplies a time and never a location.
+  * MY OWN LOW FINDING ON THE HR BRANCH IS SUPERSEDED, in the opposite
+    direction to what I suggested. Section 4.3 routed
+    storedBlob(payload, ['id']) for sd_hr_certs / sd_hr_employees so the blob
+    would stop carrying id. hank's b16 instead makes the identifier COLUMN win
+    over a blob id on the SD_LINEAGE/SD_HR read, and api/b16-id-shadow.test.js's
+    header records that the other two candidate fixes were rejected BY
+    MEASUREMENT. That is a better answer than mine and it is already landed, so
+    the LOW is CLOSED rather than open -- but hank's own question stands and is
+    the thing a reviewer has to settle: making id always a string could break a
+    consumer he did not measure, and he measured only the four id mints in
+    stonedesk.html and stonedesk-hr.html.
+
+EXACT NEXT STEP for whoever picks it up: read
+docs/2026-10-15-hank-b16-to-fourth-tier-a.md first -- it carries the full
+question list -- then the record's own `what`, then take (3) before (1), because
+the law_trusttx arm is the one claim that can be settled mechanically: it was a
+STALE EXPECTATION asserting all three roles could read IOLTA trust money while
+api/_lib/law-roles.js:87 answered the other way on 2026-10-12 with paralegal ''
+and hard-locked, and the question "is the correction strictly stronger and not an
+exemption" is the same shape as the leg_custodylog arm settled in section 4.3 and
+can be answered the same way: read the assertion, not the description.
+
 DEFINITION the hash below is sha256 over every byte of this file up to and NOT
 including the final hash line, CRLF normalised to LF, taking the LAST occurrence
 of the marker. Reproduce:
@@ -574,5 +635,5 @@ of the marker. Reproduce:
     s = io.open('SAIRN-report-fourth-b25.txt', 'rb').read().decode('utf-8').replace('\r\n','\n')
     body = s.rsplit('SHA' + '256 ', 1)[0]
     print(hashlib.sha256(body.encode('utf-8')).hexdigest())
-SHA256 ee610d06c666a2cc26ffb6feee0ed96470287972cc77065e30090ee6f10b3143
+SHA256 7979c6269b4958faa27d91f3267ad266db634db3e47348e427c1b4a132cd64e4
 END-OF-REPORT

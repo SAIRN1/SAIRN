@@ -59,7 +59,7 @@ under `b0f8683c…`. Neither is in this directory.
 | `api/` `sql/` `tests/` `tools/` files written | **0.** Every suite was RUN, every probe ran against a COPY | — |
 | files under `.claude/skills/sairn-hover-auditor/` | **0 — neither auditor clone entered** | by claim |
 | `git stash` | **0** | `git stash list` |
-| Tier A assigned to fourth | **0 — all three discharged** | `tier_a_review_gate.py --list` |
+| Tier A assigned to fourth | **0 when this line was written; a FOURTH arrived at 15:04:38Z and is UNTOUCHED — §11** | `tier_a_review_gate.py --list` |
 | b25 batch manifest | **ABSENT, deliberately** | §7 |
 | **context now** | **28.8% of 1000k** (288,038 tokens) | max `usage` sum over this session's transcript |
 
@@ -467,3 +467,62 @@ Z cannot fail, by ablation.
 
 **Nothing is partial.** Every open item above is another session's, or Michael's
 with its decision named, or named as mine with its exact next step.
+
+---
+
+## 11. ONE FRESH TIER A OBLIGATION ARRIVED AFTER §0 WAS WRITTEN — UNTOUCHED
+
+**§0 and §5 say "0 assigned to fourth, all three discharged". THAT WAS TRUE WHEN
+WRITTEN AND IS NOT TRUE NOW.** Added here rather than edited into §0, so the
+correction is visible rather than invisible.
+
+| | |
+|---|---|
+| record | **`hank 2026-10-15T15:04:38Z`**, sha `a1c22397`, **held 0h**, assigned to fourth |
+| resources | **SEVEN Tier A** — `law_optx`, `law_trusttx`, `sd_hr_certs`, `sd_hr_employees`, `sen_pay_rates`, `sen_settings`, `sen_visits` |
+| files | `api/b16-id-shadow.test.js`, `api/b16-paid-period-freeze.test.js`, `api/sd-data-law-trusttx-session.test.js`, `api/sd-data.js` |
+| routing doc | **`docs/2026-10-15-hank-b16-to-fourth-tier-a.md`** (179 lines) — read it FIRST; it carries the full question list |
+| state | **NOT in b25's dispatch. NOT begun, NOT partly checked, NO verdict recorded.** |
+
+**The 24h clock starts at `15:04:38Z` — read the runway from
+`tier_a_review_gate.py --list`, not from this line.**
+
+**WHY IT WAS NOT ABSORBED INTO b25.** hank names **five** questions he says he
+cannot answer about his own work, and **three of them are DECISIONS rather than
+checks**: whether a **straight-time adjustment floor** is acceptable when its
+minutes could push an already-paid week past 40 hours and the FLSA premium would
+require reopening a frozen week; whether an adjustment **posting only in the
+period containing its approval** is acceptable when a period never run never pays
+it and nothing sweeps for unposted ones; and whether a frozen period paying **as
+at `paid_at`** while a **federally mandated EVV export reads now** is acceptable.
+A review done in the margin of a finished batch would either answer those badly
+or record them as checked. **An untouched obligation with its clock named is the
+honest state.**
+
+**AND IT CORRECTS TWO THINGS EARLIER IN THIS FILE:**
+
+* **b23 F2 IS NO LONGER HELD, and §6 item 4 is wrong where it says so.** Michael
+  decided it and hank implemented it in **`883ad0bc`** (10-15 10:48), whose first
+  line is *"MICHAEL'S DECISION, and fourth's F2 was held for it."*
+  `api/_lib/sen-evv-readiness.js` element 6 now reads
+  `senEvvClock.effectiveClock()` — `grep -c` over that file returns **4**. **GPS
+  deliberately did NOT move**, because a correction supplies a time and never a
+  location. **I still did not act on it, which is all §1 ever claimed.**
+* **MY OWN LOW FINDING ON THE HR BRANCH IS SUPERSEDED, in the OPPOSITE direction
+  to what I suggested.** §6 item 5 routes `storedBlob(payload, ['id'])` so the
+  blob would stop carrying `id`. **hank's b16 instead makes the identifier COLUMN
+  win over a blob id** on the SD_LINEAGE/SD_HR read, and
+  `api/b16-id-shadow.test.js`'s header records that the other two candidate fixes
+  were **rejected by measurement**. That is a better answer than mine and it is
+  already landed, so **the LOW is CLOSED, not open** — but **hank's own question
+  stands**: making `id` always a string could break a consumer he did not
+  measure, and he measured only the four id mints in `stonedesk.html` and
+  `stonedesk-hr.html`.
+
+**EXACT NEXT STEP:** read the routing doc, then the record's own `what`, then
+take change **(3) before (1)** — the `law_trusttx` arm is the one claim settleable
+mechanically. It was a **stale expectation** asserting all three roles could read
+IOLTA trust money while `api/_lib/law-roles.js:87` answered the other way on
+2026-10-12 with `paralegal ''` and hard-locked. *"Strictly stronger or an
+exemption"* is the same question the `leg_custodylog` arm answered this batch,
+and it is answered the same way: **read the assertion, not the description.**
