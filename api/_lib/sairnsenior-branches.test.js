@@ -79,6 +79,14 @@ function build(world) {
     // See the same stub in sairnsenior-pay-rates.test.js: it lets a break that
     // costs visits at TODAY fail as assertions rather than as a crash.
     'var senLocalToday=function(){return "' + TODAY + '";};\n' +
+    // b15 ADDED senEffClock TO THE PAGE AND NOT TO THIS LIFT, so every arm
+    // below died with ReferenceError: senEffClock is not defined -- a HARD
+    // ERROR, which is the honest signal that a fixture has stopped matching
+    // the code, and three suites sat that way until b16's full api/ sweep.
+    // Extracted rather than stubbed: the approval rule it applies is what
+    // these arms' hours depend on, and a stub that was merely close would
+    // let a real mismatch pass. (hank b16, 2026-10-15)
+    fn('senEffClock') + '\n' +
     fn('hrAddDays') + '\n' + fn('hrIsDate') + '\n' + fn('hrSourceKey') + '\n' + fn('visitHours') + '\n' +
     fn('prInForce') + '\n' + fn('prResolveRate') + '\n' + fn('visitLabourCost') + '\n' +
     fn('brName') + '\n' + fn('brRollup') + '\n' +

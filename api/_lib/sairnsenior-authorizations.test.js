@@ -89,6 +89,14 @@ function build(world) {
     'var visits=W.visits, authorizations=W.authorizations;\n' +
     'var senLocalToday=function(){return "' + TODAY + '";};\n' +
     'var fdate=function(d){return String(d||"--");};\n' +
+    // b15 ADDED senEffClock TO THE PAGE AND NOT TO THIS LIFT, so every arm
+    // below died with ReferenceError: senEffClock is not defined -- a HARD
+    // ERROR, which is the honest signal that a fixture has stopped matching
+    // the code, and three suites sat that way until b16's full api/ sweep.
+    // Extracted rather than stubbed: the approval rule it applies is what
+    // these arms' hours depend on, and a stub that was merely close would
+    // let a real mismatch pass. (hank b16, 2026-10-15)
+    fn('senEffClock') + '\n' +
     fn('hrIsDate') + '\n' + fn('hrAddDays') + '\n' + fn('_senHhmmToMin') + '\n' +
     fn('azCovers') + '\n' + fn('azResolve') + '\n' + fn('azUnits') + '\n' +
     fn('azBurnDown') + '\n' + fn('azUncoveredVisits') + '\n' +
