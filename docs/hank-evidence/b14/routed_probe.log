@@ -1,0 +1,11 @@
+  ok   T16. a second sen_visits `write` cannot silently REPLACE a recorded clock_in_at -- the prior value is kept or an entry is appended
+  ok   N1. CONTROL -- the `propose_clock_correction` route writes NO clock field, so the append-only route really does exist and T16 is an asymmetry
+  ok   T17. sen-auth `setup` cannot demote the LAST owner -- the same recoverability guard `set_active` already enforces
+  ok   N2. CONTROL -- `set_active` DOES carry the last-admin guard, through lifecycle.setActive() over PROVISIONING_ROLES, so T17 is one branch missing what its neighbour has
+  ok   T18. a requirement whose applies_to_positions contains NO valid token is UNDECIDED, not a confident "does not apply"
+  ok   N3. CONTROL -- the SAME `mappable` expression DOES validate `audience` against STAFF_POSITIONS, so T18 is one unvalidated leg and not an absent vocabulary
+  POPULATION: 338 coverage claim(s) in comment blocks cite an api/, tests/ or tools/ path
+  ok   N4. every coverage claim in a comment names a file that EXISTS (population 338)
+  ok   N4b. the sweep really looked at something -- an arm over a handful of claims passes for ever and tests nothing
+
+NO FINDINGS -- all 8 arm(s) hold.

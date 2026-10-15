@@ -669,11 +669,20 @@ function hoursInWindow(records, window, onDate, trainingYearStart, hireDate) {
     //
     // NORMALISED, NOT CLAMPED BLINDLY: the 29th is kept in years that have one,
     // NORMALISED, NOT CLAMPED BLINDLY: the 29th is kept in years that have one.
-    // ** AND NO ARM DRIVES THAT (N4, 2026-10-14). ** This read "and an arm
-    // drives that"; fourth's b18 discharge measured it -- `grep -n "02-29"`
-    // over the compliance tests hits only source comments. The case was driven
-    // BY HAND. The arm is routed to cody; the line below is corrected rather
-    // than left claiming an artefact that does not exist.
+    // ** AND IT IS NOW DRIVEN, BY A COMMITTED ARM (2026-10-15). ** This line
+    // used to claim an arm drove it, and fourth's b18 discharge measured that
+    // no arm existed -- `grep -n "02-29"` over the compliance tests hit only
+    // source comments. (THE SUPERSEDED PHRASE IS NOT REPEATED HERE: N4a
+    // matches it literally, so quoting it to explain it keeps the arm red. A
+    // text check cannot tell a claim from a quotation of that claim, and this
+    // is the THIRD time that has caught a correction -- b13's N4 and X1 being
+    // the other two.) It was driven BY HAND, routed to cody, and cody's
+    // tests/sairncare_compliance_window_boundary.test.js now drives BOTH
+    // directions: a 2024-02-29 hire evaluated in a COMMON year opens the
+    // window 2026-02-28, and the PAIRED POSITIVE in a LEAP year keeps the real
+    // anniversary 2028-02-29 -- so the decrement is a normalisation and not a
+    // blanket clamp. The pair is what makes it evidence; either arm alone
+    // passes against the wrong rule.
     // Falling back to 28 February is the common-law
     // reading of an anniversary that does not occur -- and it moves the window
     // one day EARLIER, which counts MORE training rather than less.
@@ -1001,12 +1010,37 @@ function evaluateTraining(rules, opts) {
       // THE BOUNDARY ITSELF WAS RE-VERIFIED BY HAND IN THAT REVIEW and holds.
       // The three arms that would make it checkable are ROUTED TO cody (the
       // exact anniversary, a 2024-02-29 hire in a common year, and a day-zero
-      // shortfall asserting meets === null). Until they land, distrust the
-      // sentence below exactly as far as a hand-drive goes.
+      // shortfall asserting meets === null).
       //
-      // Driven BY HAND on 2026-09-29, NO COMMITTED ARM: hire 2024-11-03, eight hours completed
-      // 2026-10-15, evaluated 2026-11-02 -> compliant; evaluated 2026-11-03 ->
-      // NON-COMPLIANT. That person is not late. They have twelve months.
+      // ── THOSE ARMS HAVE LANDED, AND THEY FOUND THIS COMMENT WRONG (X1,
+      //    2026-10-15) ──────────────────────────────────────────────────────
+      // tests/sairncare_compliance_window_boundary.test.js is cody's, it
+      // drives all three, and its X1 arm was RED AGAINST THIS SENTENCE. What
+      // the sentence said was that the same person, evaluated on the day
+      // BEFORE their anniversary, was compliant, and evaluated ON the
+      // anniversary was non-compliant.
+      //
+      // THE SUPERSEDED WORDING IS DESCRIBED AND NOT QUOTED, deliberately. X1
+      // matches the literal phrase, so a correction that spelled it out to
+      // explain it would keep the arm red -- a sentence saying "this claim is
+      // wrong" is indistinguishable, to a text check, from the claim. Exactly
+      // the shape that flagged b13's N4 fix.
+      //
+      // MEASURED, the anniversary evaluation returns **meets: null**, not
+      // false. The day-zero withholding below landed AFTER that hand-drive on
+      // 2026-09-29 and superseded it, and nobody re-read the sentence that the
+      // change had just made untrue. It was not merely unproven: it was WRONG,
+      // and it is the kind of claim a reader checks least precisely because it
+      // names its own evidence.
+      //
+      // CORRECTED RATHER THAN DELETED, because the boundary it describes is
+      // real and worth stating: hire 2024-11-03, eight hours completed
+      // 2026-10-15, evaluated 2026-11-02 -> a determinate PASS, because those
+      // hours are inside the window that opened 2025-11-03. Evaluated
+      // 2026-11-03 the window ROLLS, those same hours fall outside it, the
+      // recorded total is 0 by construction -- and the verdict is WITHHELD
+      // (meets: null) rather than false. That person is not late. They have
+      // twelve months.
       //
       // THE MODULE ALREADY MAKES THIS ARGUMENT ONE DOOR ALONG. NO_HIRE_DATE
       // returns a null verdict because "a total of zero would report a fully
@@ -1021,12 +1055,17 @@ function evaluateTraining(rules, opts) {
       // consumer `window_days_elapsed` and `window_days_remaining` so late and
       // early are distinguishable without it guessing.
       //
-      // ── NONE OF THIS DAY-ZERO BEHAVIOUR IS ASSERTED BY ANYTHING (N4) ─────
+      // ── AND THE DAY-ZERO BEHAVIOUR IS NOW ASSERTED (2026-10-15) ──────────
       // `window_days_elapsed`, `windowJustOpened`, `dayZeroWithheld` and the
-      // `meets: null` withholding below are covered by NO arm -- measured in
-      // fourth's b18 discharge. The reasoning above is the whole of the
-      // evidence, and reasoning is not a test. Routed to cody as a day-zero
-      // shortfall arm asserting `meets === null` rather than `false`.
+      // `meets: null` withholding below were covered by NO arm -- measured in
+      // fourth's b18 discharge, routed to cody, and reasoning is not a test.
+      // cody's tests/sairncare_compliance_window_boundary.test.js now asserts
+      // STRICTLY `=== null` (not falsy, because `!meets` reads false and null
+      // alike), that the reason NAMES the window opening today, that the
+      // shortfall is still reported beside the withheld verdict, and the
+      // PAIRED POSITIVE that somebody who front-loads the hours on day zero is
+      // determinately `true`. Only the FALSE half is withheld, and that arm is
+      // what stops this becoming "day zero is unknowable".
       //
       // MEETING THE REQUIREMENT ON DAY ZERO IS STILL `true`: somebody who
       // front-loads their training is determinately compliant, and a blanket
@@ -1113,6 +1152,23 @@ function evaluateTraining(rules, opts) {
         // per-person anchor the period differs per row.
         hours_window_from: hasRecords ? win.window_from : null,
         hours_window_error: hasRecords ? win.window_error : null,
+        // ── THE WITHHOLDING MESSAGE CITED A FIELD THE FINDING DID NOT CARRY
+        //    (X2, 2026-10-15) ──────────────────────────────────────────────
+        // `meets_unknown_reason` tells the reader "hours_window_days_remaining
+        // says how much of it is left", and no such key was ever on the
+        // finding. Both numbers ARE computed (:736, :741) and stayed on the
+        // internal window object, while the comment at the day-zero rule says
+        // the module hands "every consumer" both -- so three places said the
+        // reader had this and the reader did not.
+        //
+        // A CITATION TO A FIELD THAT IS NOT THERE IS WORSE THAN NO CITATION:
+        // it sends somebody looking for a key, and the obvious conclusion when
+        // they cannot find it is that the response is truncated. Surfaced
+        // rather than un-cited, because the day-zero withholding is only
+        // actionable WITH these -- "evaluate on a later date" needs to say how
+        // much later. Found by cody's X2 arm.
+        hours_window_days_elapsed: hasRecords ? win.window_days_elapsed : null,
+        hours_window_days_remaining: hasRecords ? win.window_days_remaining : null,
         records_counted: hasRecords ? win.counted : null,
         records_skipped_no_completed_on: hasRecords ? win.skipped_no_date : null,
         recorded_hours_by_category: hasRecords ? win.by_category : null,

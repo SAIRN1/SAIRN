@@ -1,0 +1,35 @@
+the compliance window boundary -- the three cases N4 said were driven by hand and by nothing else
+
+0. the control that makes the rest readable
+  ok   CONTROL: the drive produces a real per-staff finding with a computed requirement, so the arms below are reading values and not undefined
+
+1. the exact anniversary -- on_date = hire_date + 2 years
+  ok   the DAY BEFORE the anniversary still sits in the OLD window, which opened on the previous anniversary -- window_from 2025-11-03
+  ok   ...and the eight hours completed 2026-10-15 fall inside it, so the verdict is a determinate PASS
+  ok   ON the anniversary the window ROLLS rather than being decremented -- window_from is the evaluation date itself, 2026-11-03, which is the off-by-one this boundary could have had in either direction
+  ok   ...so the SAME eight hours now fall OUTSIDE the window and are not counted -- which is the fact that makes the day-zero rule below necessary rather than cosmetic
+
+2. a leap-day hire, evaluated in a year that has no 29 February
+  ok   hired 2024-02-29 and evaluated 2026-03-15, the window opens 2026-02-28 -- the day-decrement normalisation, and NOT an invalid 2026-02-29
+  ok   PAIRED POSITIVE: in a LEAP year the same hire keeps its real anniversary, window_from 2028-02-29 -- so the normalisation is conditional on the target year rather than applied to every 29 February hire
+  ok   ...and the day before the normalised anniversary is still the PREVIOUS window, 2025-02-28, so the decrement moved the boundary rather than erasing it
+
+3. a day-zero shortfall is WITHHELD, and only the false half is
+  ok   a shortfall on the day the window opens yields meets === null, NOT false -- strictly null, because `!meets` would read false and null alike and that collapse is the bug being refused
+  ok   ...and it SAYS WHY, naming the window opening today, so a null verdict is readable rather than an absence
+  ok   ...and the shortfall is still REPORTED alongside the withheld verdict, so withholding the judgement is not hiding the number
+  ok   PAIRED POSITIVE: somebody who front-loads the hours ON day zero is determinately COMPLIANT -- true, not null. Only the FALSE half is withheld, which is the module's own claim
+
+X. found by measuring the three above -- RED ON PURPOSE, routed to hank
+  FAIL X1 (RED UNTIL hank CORRECTS THE COMMENT): no comment in api/_lib/compliance-rules.js claims the exact-anniversary evaluation is NON-COMPLIANT, because measured it is meets === null
+         the comment still says "evaluated 2026-11-03 -> NON-COMPLIANT" while the module returns meets=null. The day-zero withholding landed AFTER that sentence was hand-driven on 2026-09-29 and superseded it. The sentence is no longer merely unproven -- it is wrong, and it is the kind of claim a reader checks least because it names its own evidence. Fix: say the anniversary verdict is WITHHELD (meets: null), or delete the date.
+  ok   CONTROL: the withholding message really does cite hours_window_days_remaining, so X2 below is about a missing FIELD and not about a message that changed
+  FAIL X2 (RED UNTIL hank EXPOSES THE FIELD): the finding carries the field its own withholding message tells the reader to consult
+         the message says "hours_window_days_remaining says how much of it is left" and the finding has no such key. Present keys: staff_id,name,position,required_annual_hours,recorded_annual_hours,shortfall_hours,excluded_by_position,excluded_by_position_caveat,hours_source,hours_window,hours_window_meaning,hours_window_from,hours_window_error,records_counted,records_skipped_no_completed_on,recorded_hours_by_category,applicable_pool_count,no_applicable_requirement
+
+13 passed, 2 failed
+2 ARM(S) FAILED:
+  - X1 (RED UNTIL hank CORRECTS THE COMMENT): no comment in api/_lib/compliance-rules.js claims the exact-anniversary evaluation is NON-COMPLIANT, because measured it is meets === null
+  - X2 (RED UNTIL hank EXPOSES THE FIELD): the finding carries the field its own withholding message tells the reader to consult
+
+X1 and X2 are EXPECTED RED and are routed to hank (api/ is hank's). If they are the only failures, this suite is in the state docs/known-red-suites.json records.

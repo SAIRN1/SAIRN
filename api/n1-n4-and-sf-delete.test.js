@@ -365,11 +365,24 @@ console.log('N1-N4 and the SAIRNfreedom deletes -- criteria 2026-10-14.1\n');
      + 'artefact, so six weeks later the comment is the only evidence and it '
      + 'reads like a reference to a committed arm',
        left.map((c) => c[1]).join(', '));
-    is(/NO COMMITTED ARM/.test(src) && /routed to cody/i.test(src),
-       'N4b. ...and the replacement says what IS true -- driven by hand, no '
-     + 'committed arm, the arms routed to cody. True, cheap, and it tells the '
-     + 'next reader exactly what to distrust',
-       'the corrected wording was not found');
+    // ── THIS ARM WENT STALE THE DAY THE ARMS LANDED (2026-10-15) ────────
+    // It asserted the module still said "NO COMMITTED ARM" and "routed to
+    // cody", which was the honest wording while the arms were owed. cody's
+    // tests/sairncare_compliance_window_boundary.test.js now drives all three
+    // cases, so insisting on the old wording would have held the comment at a
+    // sentence that had itself become false -- N4's own defect, one turn
+    // later and in the opposite direction. The arm now requires the comment to
+    // CITE THE SUITE THAT EXISTS, which is a claim that can be checked rather
+    // than a confession that cannot go out of date.
+    const SUITE_REL = 'tests/sairncare_compliance_window_boundary.test.js';
+    const cited = src.indexOf(SUITE_REL) !== -1;
+    const suiteThere = fs.existsSync(path.join(__dirname, '..', SUITE_REL));
+    is(cited && suiteThere,
+       'N4b. ...and the replacement CITES THE SUITE THAT NOW DRIVES THEM, and '
+     + 'that suite is really on disk. A comment claiming an arm is only worth '
+     + 'anything if the named file exists -- which is the b13 N4 defect, so '
+     + 'this arm checks both halves rather than the wording alone',
+       'cited=' + cited + ' suite_on_disk=' + suiteThere);
   }
   {
     // THE SHAPE-ONLY HIRE DATE, DRIVEN. fourth reported '2024-02-30' -> a
