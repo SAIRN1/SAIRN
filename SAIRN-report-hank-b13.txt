@@ -1,0 +1,442 @@
+REPORT hank b13
+
+SIX DISPATCHED ITEMS, ALL SIX DONE AND PUSHED. HEAD == origin/main 58e67efa at
+the time the handoff was written, 0 ahead 0 behind, clean, NOT forced. Three
+gate refusals, three satisfied, ZERO OVERRIDDEN -- not SAIRN_SEED_GATE=off,
+not SAIRN_GATE_EXEMPT=seed, not SAIRN_SKIP. Six merges, every one
+`pull --no-rebase`, so no register record's sha moved. The claim was taken as
+the FIRST action of the batch, which b12 did not do.
+
+--------------------------------------------------------------------------
+1. T18 AND N3 -- api/_lib/compliance-rules.js
+--------------------------------------------------------------------------
+
+THE DEFECT. `mappable` accepted ANY non-empty `applies_to_positions` array for
+being non-empty, while the leg IN THE SAME EXPRESSION validated `audience`
+against STAFF_POSITIONS. A requirement declaring ['rn'] was therefore counted
+MAPPED, left out of `unmapped_requirements_caveat`, and `matchAudience` then
+returned a DECIDED `applies: false` for every real position, because
+`list.indexOf()` can never match a token that is not a position. A training
+requirement that applies to nobody, reported to a surveyor as a determination
+about a person rather than as a gap in the rule.
+
+THE FIX, and the shape of it is the part worth reading.
+  * ALL TOKENS UNREADABLE -> UNDECIDED, answered BEFORE the per-person branch,
+    because it is a property of the ROW and is the same answer for everybody.
+    The unreadable token and the vocabulary are both named in the reason.
+  * PARTIALLY VALID -> a TRUE stays true for a person a real token names, since
+    an unreadable token can only widen an audience, never narrow it.
+  * AND A FALSE IS WITHHELD while any token is unread. 'rn' is most plausibly a
+    typo for 'nursing', and a confident false would exclude exactly the person
+    the typo was aimed at -- under-inclusion arriving through a spelling
+    mistake, which is the direction this module withholds in everywhere else.
+  * `positions_unknown` on the normalised row, ABSENT when every token is real.
+  * RECORDED, NOT REPAIRED. Choosing 'nursing' would be this code deciding who
+    a regulated requirement covers, which is what matchAudience's own refusal
+    already says it may not do.
+
+MEASURED. api/t18-positions-vocabulary.test.js, 17 arms, 6 of them controls
+that must be green in BOTH directions. RED 9 failed / 8 passed at HEAD in a
+detached worktree; GREEN 17 passed / 0 failed. BOTH RUNS USED THE FINAL ARMS,
+because two of the first draft's arms were themselves wrong.
+
+TWO ARMS WERE MEASURING THE FIXTURE AND BOTH WERE FOUND BY READING THE OUTPUT
+RATHER THAN THE EXIT CODE. (a) `unmapped_requirements` is computed inside
+`if (Array.isArray(opts.staff))` at :825, so an arm that omitted `opts.staff`
+FAILED AGAINST THE FIXED CODE and reported the fix as absent. (b) `applicable`
+filters on `s.applies_to` and NOT on matchAudience -- the audience decision is
+made by the CALLER and handed in, by api/sd-data.js:13777 -- so an arm that
+omitted `applies_to` was measuring a path production never takes. Arm T18q now
+RE-REFERENCES that mirror against api/sd-data.js itself and fails if the
+endpoint stops building `applies_to` from `.applies === true`. A mirror nothing
+re-checks is the stale-anchor shape this repo keeps paying for.
+
+NOT CHANGED, AND IT LOOKED LIKE A DEFECT UNTIL THE REAL CALLER WAS READ. On
+the ENGINE-DIRECT path with no `applies_to` supplied, a requirement listed in
+`excluded_by_position` still has its hours inside `required_annual_hours`,
+while the caveat beside it says those hours are NOT counted. That is a false
+statement on a regulated finding -- and it is unreachable in production,
+because the endpoint builds `applies_to` from `applies === true` and the
+excluded row never enters `applicable`. Named here rather than "fixed" with a
+change nothing needs.
+
+--------------------------------------------------------------------------
+2. T16 AS DECIDED, AND T17 WAS ALREADY CLOSED
+--------------------------------------------------------------------------
+
+T16. Michael's decision of 2026-10-15, and it REPLACES hank's own N1 refusal
+rather than sitting beside it. b12 answered 409 CLOCK_ALREADY_RECORDED and
+wrote nothing, which closed the silent overwrite and left a hole beside it:
+`propose_clock_correction` is SCHEDULER-ONLY, so a caregiver who clocked in at
+the wrong time on their own visit had NO ROUTE AT ALL.
+
+NOW, in api/sd-data.js's caregiver write branch:
+  * the ORIGINAL STAYS ON THE ROW. The submitted field is taken OUT of the copy
+    loop rather than copied and then restored by a later line -- relying on a
+    later line to put it back is one forgetful edit from the defect.
+  * the submission is APPENDED to the same `clock_corrections` trail the
+    scheduler route writes to, carrying the old value, the new value, the actor
+    FROM THE VERIFIED SESSION, a reason and a server timestamp.
+  * it is PENDING, and effectiveClock() -- the function every reader and every
+    payroll calculation goes through -- IGNORES a pending entry. That is where
+    "a scheduler approves it before payroll uses it" is implemented. A
+    `pending` that nothing consults is a decoration.
+  * the 200 SAYS SO, naming the unchanged recorded time and who must approve
+    it. A 200 that looks like an accepted clock change is affirmative false
+    success, which is worse than the refusal it replaced.
+  * approve_clock_correction, scheduler-tier only, DECLARED in
+    api/_resources/sairnsenior.js IN THE SAME EDIT. An
+    implemented-and-undeclared verb is unreachable and the 400 it returns reads
+    like a client bug, which is how `tombstones` shipped dead.
+  * AN ENTRY WITH NO `status` AT ALL IS APPROVED. Every correction written
+    before today was effective the moment a scheduler filed it, and reading a
+    missing status as pending would SILENTLY REVERT EVERY LIVE CORRECTED VISIT
+    to its uncorrected time -- this change causing the defect it is fixing, on
+    records nobody touched. Arm T16n.
+  * A SUBMITTED FIELD'S STAMPS AND FLAGS FOLLOW THE VALUE THEY DESCRIBE onto
+    the entry. Merging them onto the row would have overwritten the original
+    clock event's observation with one describing a time the row does not hold
+    -- a row saying the caregiver's recorded clock-in arrived with a five-hour
+    skew it never had -- and would have dropped the original's LATE_REPLAY as
+    "superseded" when nothing about it was superseded.
+  * APPROVAL STILL DOES NOT MOVE THE FIELD. What approval moves is which value
+    effectiveClock() reports. Arm T16r.
+
+MEASURED. api/t16-clock-correction-record.test.js, 27 arms. RED 18 failed / 8
+passed; GREEN 27 passed / 0 failed.
+
+ONE CONTROL WAS A FALSE GREEN IN THE RED RUN and saying so is the point: T16t
+(a bad correction index refused 400 with nothing written) passed only because
+the action did not exist yet and every unknown action 400s. It is a real arm
+now, and it was green for the wrong reason before.
+
+THE SCHEDULER ROUTE WAS NEARLY MADE A SILENT NO-OP BY THIS CHANGE.
+proposeCorrection() now stamps `pending` in the module, which is right for a
+caregiver submission and would have made `propose_clock_correction` -- already
+scheduler-tier only, i.e. the approving authority IS the caller -- file
+corrections that never became effective: 200 to the filer, and the number never
+moves. It approves at filing time, and arm T16aa fails if a later edit removes
+that. The existing suites would NOT have caught it: they construct entries by
+hand with no `status`, which the legacy rule reads as approved.
+
+THE FIXTURE TIMES ARE DERIVED FROM NOW, NOT PINNED. The first draft used fixed
+2026-10-15 stamps and every clock arm came back 400 CLOCK_IN_FUTURE, correctly,
+because checkClockEvent refuses a time ahead of the server that received it. A
+pinned future date makes the whole suite measure the fixture; a pinned past one
+goes stale the other way past PAST_FLAG_MS.
+
+N1b AND N1e IN api/n1-n4-and-sf-delete.test.js WERE REWRITTEN, NOT DELETED, to
+the new contract, so the boundary stays covered in both suites. 21 passed / 0
+failed.
+
+T17. api/sen-auth.js's `setup` ALREADY carries soleRoleDemotionRefusal(), landed
+by b12's N2, and cody's own probe arm for T17 is green at this HEAD. NECESSITY
+MEASURED RATHER THAN ASSUMED: ablating the guard in a detached worktree turns
+N2a RED and leaves ALL THREE CONTROLS GREEN
+(docs/hank-evidence/b13/t17_ABLATION.log). 1 of 4 is the correct number -- the
+other three assert the non-refusal cases. NO NEW CODE, and this is reported as
+already-closed rather than re-done.
+
+--------------------------------------------------------------------------
+3. N4 -- THE COVERAGE CLAIM THAT NAMED A FILE THAT HAS NEVER EXISTED
+--------------------------------------------------------------------------
+
+api/sd-data-cross-tenant-dispatchers.test.js:638 claimed its SAIRNgrounds
+session-gate coverage was held by an api/ path with hyphens and a .test.js
+suffix, hedged with "if one exists". There is no such path and there never was;
+the real suite is tests/sd_data_grd_session_gate.js, with underscores. The
+comment now names it and says what it asserts -- that the licence key alone
+reaches NONE of the SAIRNgrounds resources, read or write, and that the refusal
+happens before any table is touched.
+
+THE HEDGE IS THE PART WORTH NOTICING. "If one exists" let a claim about
+coverage be written without checking, and reads as covered to anybody skimming.
+
+AND THE FIRST DRAFT OF THE FIX WAS FLAGGED BY THE SWEEP. It QUOTED the dead
+path in order to explain it, and cody's probe flagged the FIX: a sentence
+saying "X does not exist" is indistinguishable, to a text sweep, from a claim
+that X holds something. The population went 330 -> 332 and the finding stayed.
+The correction now DESCRIBES the dead citation without spelling it, and says
+why.
+
+python tests/run_b12_routed_findings_probe.py -> exit 0, NO FINDINGS, 8 of 8
+arms hold. It was exit 1 with 5 holding and 3 findings at the start of this
+batch. The file was RUN, NEVER EDITED -- tests/ is cody's.
+
+--------------------------------------------------------------------------
+4. FOURTH's F4 AND F5 -- F4 FIRST
+--------------------------------------------------------------------------
+
+F4, THE DEFECT. The leg_aftercare key was 'AC-'+case_id+'-'+NORMALISED_TYPE.
+`-` is BOTH the joiner AND the type normaliser's output character, and
+`case_id` went through with trim() alone, so the boundary between the two
+fields was not recoverable:
+
+    {case_id:'CS-7',   checkin_type:'1 Week'}  ->  AC-CS-7-1-WEEK
+    {case_id:'CS-7-1', checkin_type:'Week'}    ->  AC-CS-7-1-WEEK
+
+The upsert is on_conflict=license_hash,aftercare_id with merge-duplicates, so a
+collision SILENTLY OVERWROTE A DIFFERENT CASE'S grief-support check-in and
+returned 200.
+
+THE FIX, AND WHY IT IS TWO FORMS RATHER THAN ONE CLEAN ONE. Every row the
+shipped app has written has a newId('CS') case id -- ^CS-[0-9]+-[0-9]+$,
+sairnlegacy.html:1561 -- with one of three fixed types, and for THAT shape the
+boundary IS recoverable: strip a known type suffix, the rest is the case, and
+the last case segment cannot contain a `-`. Those pairs keep the HISTORIC key
+byte for byte. Everything else takes 'ACX-' plus a reversible escape in which
+no segment contains a bare `-` at all. A scheme that moved the historic keys
+would ORPHAN EVERY LIVE AFTERCARE ROW: the next write lands on a new row and
+the old one is stranded, which is the duplicate the key exists to prevent.
+
+NOT HASHED, and the reason is the whole argument. A hash is shorter and
+uniform, and a HASH COLLISION SILENTLY MERGES TWO RECORDS -- this defect with a
+smaller probability attached. The escape is reversible, so it cannot collide at
+all.
+
+THE GUARD IS ON THE TRIMMED VALUES ON BOTH SIDES NOW. case_id = ' ' passed the
+old raw-truthiness guard and trimmed to '', producing a key that collides with
+every other whitespace case id -- the exact failure the code's own comment
+warns about for a MISSING field, arriving through a present one.
+
+case_id IS DELIBERATELY NOT CASE-FOLDED and arm F4h asserts that as a decision
+rather than leaving it to drift. fourth flagged the fold as the same class;
+folding only here would make the key say two cases are one while
+`a.case_id===caseId` everywhere else in the page says they are two. Whether
+case ids should be case-insensitive at all is a product question and is routed,
+not answered inside a key derivation.
+
+F5, THE DEFECT. sdnData() marked the CLIENT's id as synced and discarded the
+server's rewritten one. So on an un-upgraded device the local store kept the
+random id, marked synced; the next hydrate pulled the canonical row, failed to
+match it by id and PUSHED IT BACK AS A SECOND LOCAL ROW. One check-in, two
+grief-support follow-ups to a bereaved family, surviving on exactly the "old
+page" device the canonicalisation comment invokes.
+
+THE FIX. The local row ADOPTS the server's id (legAdoptServerId), and that id
+is what gets marked synced -- which also matters for the server-wins carve-out,
+because marking the wrong id meant the row the server really holds had no
+recorded permission to be overwritten. The adopt MERGES onto an existing
+canonical row rather than keeping two, because the server has already said they
+are one record.
+
+AND THE FIX INTRODUCED A SILENT NO-OP OF ITS OWN, CLOSED IN THE SAME EDIT. The
+rows were rendered BEFORE the rename, so every Complete button would have
+carried an id no longer in the store and confirmAftercareComplete()'s
+`if(!a)return;` would have done NOTHING, with no message. Both aftercare
+callers re-render after the write. Found by asking what the rename breaks, not
+by a failing arm.
+
+MEASURED. api/leg-aftercare-key-unambiguous.test.js, 14 arms. RED 7 failed / 1
+unproven / 6 passed at HEAD; GREEN 14 passed / 0 failed. The UNPROVEN in the
+RED run is honest: legAcEsc does not exist at HEAD, so the cross-copy
+comparison could not run there.
+
+THE CLIENT HALF IS EXTRACTED FROM THE HTML AND RUN IN A VM, not reimplemented
+-- a reimplementation passes against the unfixed code. Arm F4i compares the two
+copies over eight pairs INCLUDING the colliding one, AND FOUND A DIVERGENCE
+NOBODY HAD ASKED ABOUT: on an empty checkin_type the server kept the caller's
+id and the page derived a key from nothing. Both decline now, and
+legAftercareId() returns null with the caller falling back to newId('AC').
+
+ARM F4c's FIRST DRAFT FAILED ABOUT ITS OWN FIXTURE. It compared RAW pairs and
+reported '1 Week' / '1-Week' / '1  Week' as collisions -- but the type
+normalisation is DELIBERATE and predates this fix: those ARE one check-in type
+and must share a key. Ambiguity is what is measured; normalisation is asserted
+separately in F4j.
+
+api/sd-data-leg-role-matrix.test.js E1/E3/E4 UPDATED. They pinned
+AC-CS-7-1-WEEK -- A KEY NO PRODUCTION ROW HAS, because 'CS-7' is not a shape
+newId('CS') can emit. Pinned to a real generated id now, which is what makes
+them evidence that live ids did not move. 32 passed / 0 failed.
+
+--------------------------------------------------------------------------
+5. THE 11 UNPROVEN APPS -- 0 REMAIN, AND NINE WERE THE CHECK'S FAULT
+--------------------------------------------------------------------------
+
+Full account with the command per app:
+docs/2026-10-15-hank-b13-unproven-apps-resolved.md
+
+b12 reported 6 clean / 0 failed / 11 UNPROVEN over the 17 apps in ROLES_BY_APP
+and named the 11 as the finding of the run. NINE OF THE ELEVEN WERE DEFECTS IN
+THE CHECK rather than facts about the apps.
+
+CAUSE 1, FOUR APPS (stonedesk, sairnbiz, sairngrounds, sairnscape). The check
+built the table name as `app + '_employee_auth'`. api/_lib/auth.js:1094 says in
+its own words that there is no such rule -- "`sd`, `sb`, `grd` and `scp` use a
+prefix, the rest use the full app name... A derivation would be wrong for at
+least five of them and wrong SILENTLY". It searched sql/ for four names that do
+not exist. ALL FOUR TABLES DO CARRY A ROLE CHECK. The name now comes from the
+exported AUTH_TABLE_BY_APP, the same map the live session gate reads, so there
+is one source for it instead of a second rule that can disagree.
+
+CAUSE 2, FIVE APPS (sairnbiz, sairngrounds, sairnscape, sairnvet,
+sairnfreedom). The detector scanned STATIC <option> markup. sairnfreedom's
+picker is `<select id="ac-cap"></select>` -- empty in the HTML -- filled at
+runtime from the CAPABILITIES array at :2680, so an option whose value is
+`' + c.id + '` leaves no literal token to find. A SECOND METHOD, structurally
+different rather than a wider regex over the same text: any ARRAY LITERAL whose
+quoted tokens are ALL in that app's role vocabulary is a declared role list,
+with the matched literal's LINE NUMBER printed so a reader can check what
+matched. "ALL, not some" is what stops the rule matching anything; the cost
+runs the other way and is stated rather than discovered -- an array MIXING
+roles with non-roles is still missed, which is why the static scan is kept
+beside it rather than replaced.
+
+CAUSE 3, FOUR APPS (sairncode, sairndental, sairnmechanical, sairnroofing).
+They do not assign roles from their own pages at all: `grep -c "'setup'"`
+returns 0 for each, and sairnmechanical says so in its own UI text -- "PINs are
+no longer set here... An Owner provisions them through api/mech-auth.js
+(setup)". A page that cannot send a role cannot offer one the CHECK refuses, so
+"could not measure" OVERSTATED what was owed. NOT APPLICABLE now, with the
+command that re-derives it and with the limit named: what a DIRECT API caller
+sends is the endpoint's own role validation plus the database CHECK, which this
+check does not measure.
+
+CAUSE 4. stonedesk_sub is DELIBERATELY absent from AUTH_TABLE_BY_APP because
+subcontractors authenticate against sd_sub_auth keyed on sub_id. NOT
+APPLICABLE -- and if an app that SHOULD have employee credentials ever lands on
+that line, THE MISSING MAP ENTRY IS ITSELF THE FINDING, because the live
+session gate reads the same map and answers NO_ACTIVE_CHECK without one.
+
+THE RUN NOW: 17 clean, 0 with a refused role, 0 could not be measured, exit 0.
+12 apps compared against a CHECK -- 7 with a static picker, 5 ARRAY-ONLY -- and
+5 NOT APPLICABLE. THE FIVE ARRAY-ONLY VERDICTS ARE LABELLED AS THE WEAKER
+CLAIM on their own lines: what is proven there is "no declared role list in
+this page carries a refused role", which is broader and weaker than "the
+provisioning picker was checked", and reporting the two identically would let
+one read as the other.
+
+SABOTAGED TO PROVE IT STILL FAILS, AND THE FIRST SABOTAGE WAS MISSED. A
+MISSPELT role planted into a picker -- 'med_aide_II' into SAIRNsenior's,
+'crew_lead_II' into SAIRNscape's array -- gave EXIT 0. The comparison skips any
+option value not in ROLES_BY_APP, because a picker legitimately carries '' and
+non-role options, so a misspelt role would be offered, refused 23514 by the
+database, and this check would say nothing. THAT IS NOW A PRINTED LIMIT ON
+EVERY RUN, beside the live-lag one, and it is NOT CLOSED: closing it means
+deciding which non-role option values are legitimate per app, a vocabulary
+nobody has written.
+
+THE SECOND SABOTAGE IS THE REAL DEFECT SHAPE -- a role removed from a schema
+file's CHECK while the picker still offers it -- and BOTH METHODS CATCH IT
+INDEPENDENTLY: exit 1, sairnsenior through the static picker and sairnscape
+through the array literal, which is the path that did not exist before this
+batch. The second method is not permissive.
+
+--------------------------------------------------------------------------
+6. PUSH, AND THE REGRESSION SURFACE
+--------------------------------------------------------------------------
+
+26 SUITES DRIVEN, 25 at exit 0 (docs/hank-evidence/b13/suite_run.log). THE ONE
+RED IS api/sd-data-leg-session-gate.test.js -- "leg_custodylog write with a
+session -> 200", 19 passed / 1 failed -- AND IT IS NOT MINE: verified exit 1
+IDENTICALLY at the pre-b13 HEAD in a detached worktree. tests/
+sairnlegacy_reservation_lock.js's "35/36" line is the same shape and was also
+compared against HEAD before being reported.
+
+THREE GATE REFUSALS, THREE SATISFIED, ZERO OVERRIDDEN.
+  register-feed -> six records fed, scratchpad/reg_b13.py. The tool's own
+    refusals taught two things worth carrying: --rule takes a
+    docs/SAIRN-PROCESS-RULES.md SECTION ID, not prose, and --phase is one of
+    requirement|design|coding|config|unknown.
+  derived-docs  -> docs/MASTER-PLAN.md and docs/traceability-matrix.md
+    REGENERATED, never hand-merged, including through two merge conflicts
+    (PR 2.5).
+  tier-a        -> an obligation opened over alf_staff, leg_aftercare,
+    leg_cases and sen_visits, assigned to fourth, with a DIFFERENT "review
+    hardest" question per resource rather than one generic ask.
+
+A THIRD MERGE CONFLICT NEEDED JUDGEMENT AND GOT IT. docs/tier-a-reviews.json
+collided with cody's own b14 obligation in the SAME array slot, and resolving
+it either way would have DELETED one session's obligation. Both records were
+rebuilt and both survive; the file was re-parsed as JSON before committing.
+
+SIX MERGES, every one `pull --no-rebase`. Four push attempts lost the ref race
+rather than being refused ("cannot lock ref") with five sessions pushing in the
+same window. The retry loop is scratchpad/pushloop.sh and it BAILS on any
+conflict outside the two generated documents. ITS FIRST VERSION WAS WRONG IN
+THE DIRECTION THAT STOPS WORK: it matched `FAIL:` anywhere in the output and
+read a gate's own explanatory prose as a refusal, so a lost race was reported
+as a block.
+
+POST-PUSH LIVE VERIFICATION, PR 3.2 -- verified=5 fail=0 couldnot=3.
+docs/hank-evidence/b13_live_gate_probe.py, exit 0, output in the .out beside
+it. Not bare curl: tools/sairn_http.py, which raises on a Vercel challenge
+rather than handing back the challenge page as if it were the app, and a
+non-200 is recorded as UNVERIFIED and never folded into a pass.
+
+FIVE LEGS VERIFIED AGAINST THE REAL DEPLOYED sairnlegacy.html -- legAcEsc, the
+ACX- form, the ^CS-[0-9]+-[0-9]+$ legacy guard, legAdoptServerId, and
+legMarkSynced(resource,srvId). That is a real check that the client halves of
+F4 and F5 shipped, by the same route a browser takes.
+
+THREE LEGS COULD NOT RUN AND ARE COUNTED, NOT ONLY DESCRIBED. The first run of
+the probe printed `couldnot=0` DIRECTLY UNDER a paragraph listing three
+unreachable legs, because they lived in prose and never entered the counter --
+and a number beside prose that contradicts it is the number people quote.
+Fixed. The three are approve_clock_correction, the leg_aftercare key derivation
+and T18's validation: all three sit behind 401 NO_LICENSE, which is answered
+before the action dispatcher. A licence key would be a real credential in a
+script and was not used. Each is driven against the REAL handler locally
+instead -- 27, 14 and 17 arms.
+
+--------------------------------------------------------------------------
+WHAT IS NOT PROVEN
+--------------------------------------------------------------------------
+
+NO SQL WAS RUN. b12's three are all still unrun and still Michael's: the
+legacy-ciphertext census (PART 0 FIRST), the two MAR-grant blocks, and b10's
+run-order block 5. sql/2026-10-14-michael-run-order.sql is also unrun, and it
+is the LAG the role-picker check cannot see -- it widens sairncare's and
+sairnlegacy's role CHECKs by ALTER, so the repo's intention and production
+disagree until it runs.
+
+T16's APPROVAL ROUTE HAS NO UI. approve_clock_correction is API-only, and
+effectiveClock() returns pending / pending_count / pending_entries that NOTHING
+RENDERS. So a caregiver's submission is invisible to a scheduler who does not
+go looking, and until a queue exists the append path is strictly better than
+the 409 for the caregiver and no better for payroll.
+
+THE APPROVER MAY BE THE SUBMITTER in a one-person agency, marked self_approved
+rather than refused -- the same trade the existing self_correction flag made,
+chosen from this file's own precedent and NOT from a rule. Nothing counts or
+reports those.
+
+NOTHING DROVE THE NEW BEHAVIOUR IN A BROWSER. Every T16 and T18 arm runs
+against the real handler with a stubbed transport, and the F5 arms extract the
+page's functions into a vm with a stubbed localStorage -- so the DOM path that
+calls them, and the rendered result of the re-render added for F5, are
+UNPROVEN. No screenshot of anything.
+
+THE AFTERCARE PRESERVATION CLAIM TESTS THE CASE-ID SHAPES I BELIEVE EXIST.
+F4d proves the historic key is unchanged for ^CS-[0-9]+-[0-9]+$ with the three
+fixed types, which is what newId('CS') and generateAftercareSchedule can
+produce. A row written by a DIRECT API caller with some other case_id WILL
+change key on its next write and strand the old row, and no sweep looks for
+those. That is in the Tier A obligation as the thing a reviewer should check
+hardest, because it is exactly the claim an author cannot check on themselves.
+
+legAdoptServerId DROPS A LOCAL ROW when it merges onto an existing canonical
+one. The argument is that the server has already said the two are one record;
+whether the dropped row can ever carry a field the kept one lacks was reasoned
+about and not proven.
+
+A MISSPELT ROLE IN A PICKER IS STILL INVISIBLE to the role-picker check --
+measured by sabotage, printed every run, not closed.
+
+FIVE APPS' CLEAN VERDICT IS ARRAY-ONLY and no human has confirmed that the
+matched literal really is the picker's source in each case. The run prints the
+line number so that check is cheap; it has not been done.
+
+I DID NOT RE-AUDIT b12's NINE SKIPPED notProvisioned BRANCHES, and the three
+new api/ suites from b12 are STILL not invoked by anything under tools/ -- now
+six suites owed that wiring, which is cc's.
+
+THE TIER A QUEUE IS 14 OBLIGATIONS PAST THE 24h DEADLINE including mine, and
+--auto-discharge has not been run by anybody.
+
+DEFINITION the hash below is sha256 over every byte of this file up to and NOT
+including the final hash line, CRLF normalised to LF, taking the LAST
+occurrence of the marker.
+SHA256 d46940b9b7fb367d412bc53837d97c341ff2d524fa5e394c3c9133e9863fd428
+END-OF-REPORT

@@ -1,75 +1,70 @@
-# hank — latest. batch b12, 2026-10-15
+# hank — latest (b13, 2026-10-15)
 
-**CHAIN TIP** `906903f3` · `HEAD == origin/main`, 0/0, clean, **not forced** ·
-b12 range `9f488101..906903f3` · neither override form used · four gate
-refusals, four satisfied.
+**LANDED.** HEAD == origin/main `58e67efa` when the handoff was written, 0/0,
+clean, **NOT forced**. Claim taken as the batch's FIRST action. Three gate
+refusals (register-feed, derived-docs, tier-a), three satisfied, **zero
+overridden**. Six merges, every one `pull --no-rebase`. Live probe:
+**verified=5 fail=0 couldnot=3**, the three named.
 
-**CONTEXT** 70% of 1000k used, measured from this session's own transcript
-(cache_read 690,013). Above the ~60% threshold — **this batch stopped on
-instruction, not on completion.**
+## What changed
 
-## DIGEST
+* **T16 as Michael decided, replacing hank's own N1 refusal.** The 409 closed
+  the silent EVV overwrite and left no route for the caregiver who made the
+  mistake. Now the original stays on the row and the submission is **appended**
+  (old value, new value, actor from the verified session, reason, server
+  timestamp), **pending** — and `effectiveClock()` ignores a pending entry, so
+  payroll does not move on an unverified self-assertion. New scheduler-only
+  `approve_clock_correction`, declared in the resource registry in the same
+  edit. An entry with **no status is approved**, so live corrected visits are
+  not silently reverted. RED 18/8 → GREEN 27/0.
+* **T18** — `mappable` accepted any non-empty `applies_to_positions` while the
+  leg beside it validated `audience`. Unmatchable is **UNDECIDED** with the
+  token named; a false is **withheld** while a token is unread. RED 9/8 →
+  GREEN 17/0.
+* **T17** was already closed by b12's N2. Necessity proven by **ablation** (N2a
+  red, three controls green). No new code.
+* **N4** — the coverage claim now names the real `tests/` suite. cody's probe:
+  **exit 0, 8/8**, was exit 1 with 3 findings.
+* **F4/F5 (fourth's b20)** — the `leg_aftercare` key was delimiter-ambiguous
+  and `merge-duplicates` made a collision silently overwrite a different case's
+  check-in. Two forms now, so **every existing id survives byte for byte**; not
+  hashed, because a hash collision merges two records. F5: the device adopts
+  the id the server stored. RED 7/1/6 → GREEN 14/0.
+* **The 11 UNPROVEN apps → 0.** Nine were the check's own fault: a table name
+  it derived when `api/_lib/auth.js` says a derivation is wrong for five apps,
+  and one detection method over one representation. 17 clean, 0 refused, 0
+  unmeasurable.
 
-All six dispatched items **done**. Live probe `fail=0 couldnot=1`.
+## Open
 
-1. **b11 sha disagreement** — all three shas exist; the **handoff** was the
-   wrong one (it quoted a HEAD *earlier than its own commit*). Corrected,
-   re-uploaded, verified Drive-side.
-2. **sd_photos** — every real photograph failed to back up (65,536-byte cap vs
-   the whole data URL) and the server blamed a migration. 11-rung downscale with
-   **each rung's length checked**; `null`, never the original, when none fits.
-3. **The 400 misattribution — the dispatch said 12, measured 89 of 98.** One
-   `notProvisioned()` with **four** answers, including a third state for an
-   unclassifiable 400 that does *not* say "run the migration". **The first draft
-   broke five sites** that read the body before the guard.
-4. **T17** — `ai_source` on the photo row, `sd_photos` into `AI_SCANNED_TEXT`,
-   "Written by AI" on both renders. Not-high-risk **because** `sd_photos` is not
-   in `SD_SESSION_GATED` — promoting it is a session decision first.
-5. **F1 census SQL** — read `data->>'enc'`, always NULL, and **that zero gates
-   clearing the old encryption key**. Fixed to walk `jsonb_each`, plus a new
-   part 0 shape guard.
-6. **N1–N4 + F6** — a clock time that could be overwritten, a last Owner that
-   could be demoted, an exclusion nobody could see, three comments claiming arms
-   that do not exist, and a delete that announced a removal that never happened.
-7. **New check over 17 apps**: 6 clean, 0 failed, **11 UNPROVEN — the 11 is the
-   finding.**
+1. **T16's approval route has no UI.** API-only; `pending_entries` is rendered
+   by nothing, so a submission is invisible to a scheduler. → hank b14.
+2. **The approver may be the submitter** in a one-person agency, marked
+   `self_approved` not refused. Chosen from precedent, not a rule. → Michael.
+3. **Tier A obligation open**, assigned to **fourth**: `alf_staff`,
+   `leg_aftercare`, `leg_cases`, `sen_visits`, one question each.
+4. **A misspelt role in a picker is still invisible** to the role-picker check
+   — measured by sabotage, printed every run, **not closed**.
+5. **Five apps' clean verdict is ARRAY-ONLY** — weaker than "the picker was
+   checked", and labelled as such on each line.
+6. **`api/sd-data-leg-session-gate.test.js` is red and is NOT mine** —
+   identical exit 1 at the pre-b13 HEAD.
+7. **Four SQL files unrun**, all Michael's: the census (PART 0 first), the two
+   MAR-grant blocks, b10 block 5, and `sql/2026-10-14-michael-run-order.sql`
+   — the last is the lag the role-picker check cannot see.
 
-## DECISION-NEEDED
+## Routed
 
-* **MICHAEL — three SQL runs, in this order.** (1) `legacy_ciphertext_census.sql`
-  **part 0 first** (both-zero ≠ the precondition); (2)
-  `2026-10-14-hank-b11-mar-grant.sql` blocks 1 and 2, **block 2 pasted whole**;
-  (3) b10 run-order **block 5** — now reachable from the SAIRNcare UI and failing
-  23514.
-* **MICHAEL or fourth — T16.** cody's arm wants a replaced clock time **kept or
-  appended**; my N1 fix **refuses** the second write. Both close the overwrite;
-  pick one. My refusal leaves only a **scheduler-only** route, so a caregiver
-  cannot fix their own mistyped clock-in at all.
+* **cody** — your b14 `tests/run_b14_leg_aftercare_probe.py` is fourth's routed
+  F4 arm. **My fix has landed**; `api/leg-aftercare-key-unambiguous.test.js`
+  F4a drives the exact colliding pair. Write yours as a regression guard, and
+  **do not build a second copy of the derivation**.
+* **cc** — six `api/` suites need wiring into the gate driver (b12's three plus
+  b13's three; the role-picker one exits **3 by design**, so treat 3 as
+  could-not-run). Plus `fmea_draft --save` for four files.
+* **fourth** — the Tier A discharge above.
 
-## OPEN
+CONTEXT 39% of 1000k used, measured from this session's own transcript
+(cache_read 390,226 + 850), not from `/context`.
 
-Eleven items with next steps in `SAIRN-handoff-hank-b12.md`. The live ones:
-both b11 SQL blocks and b10's block 5 **unrun**; the census **correct and
-unrun**; the 11 UNPROVEN apps; nothing invokes the three new suites; five FMEA
-drafts owed; the seam check said COULD NOT TELL; `ZZ-B12-SIZE-PROBE` still in
-production (removable without the SQL editor).
-
-## ROUTED
-
-* **cc** — wire the three new `api/` suites into the gate driver; the
-  role-picker one **exits 3 by design**, so treat 3 as could-not-run. Plus
-  `fmea_draft --save` for five files.
-* **cody** — the three compliance arms N4 names.
-* **fourth** — the Tier A obligation (3 resources) and its three
-  "review hardest" questions.
-* **TO ME, UNFIXED** — cody's **T18** (validate `applies_to_positions`
-  *contents*; an unmatchable list is UNDECIDED, not a confident no) and their
-  **N4** (a comment cites `api/sd-data-grd-session-gate.test.js`, which does not
-  exist). I had started reading both and edited neither.
-
-## CLAIMS / STASHES
-
-**b12 ran with NO CLAIM at all** — verified (hover2, hover, cc active; no hank
-row). A real deviation, named not inferred. **b13: claim first.**
-`stash@{0}` (b10-settings-park) **untouched**; no hook restored;
-`settings.json` never committed.
+Chain tip: `58e67efa` (origin/main at handoff time).
