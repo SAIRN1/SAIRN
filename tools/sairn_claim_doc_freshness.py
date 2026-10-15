@@ -122,11 +122,38 @@ def check_files_convention(ctx):
     """"claims now carry FILES: <paths> in the task string" (2026-09-21) is a
     LIVE convention the matcher decides on, not a rule the tool can enforce --
     so it is observed, not assumed. Active claims that have all stopped
-    carrying it mean the strongest overlap signal is silently starved."""
+    carrying it mean the strongest overlap signal is silently starved.
+
+    ── THE DENOMINATOR WAS THE RAW FIELD (fixed 2026-10-14, cc b13) ────────
+    This selected on `c.get('status') == 'active'`, which is the stored field
+    and is written once and never revisited. Measured on the real record the
+    day it was fixed: 5 rows store `active` and is_active() is true for 4 --
+    `cloud` last claimed 2026-09-27 and has been gone eighteen days. So
+    "N of M active claims carry FILES:" was reporting M=5, and a dead
+    session's ancient row was diluting the very convention figure this check
+    exists to watch. One more row like it and the DRIFTED verdict flips on
+    a claim nobody holds.
+
+    THIS IS THE THIRD TOOL WITH THIS DEFECT. tools/claim_activity_check.py
+    paid for it on 2026-09-28 (13 rows stored active, 2 really were) and
+    wrote up the distinction at its own :68; sairn_claim.py's own `audit`
+    still had it until cc b13; this was found while repro'ing that one.
+    IMPORTED, NOT REIMPLEMENTED, and FAILS CLOSED -- the staleness rule has
+    already changed once and a local copy would freeze the older half.
+    """
     cdir = ctx.get('claims_dir')
     if not cdir or not os.path.isdir(cdir):
         return CNC, 'no claims directory to observe'
     import json
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(
+            os.path.abspath(__file__))))
+        from sairn_claim import is_active
+    except Exception as exc:                                     # noqa: BLE001
+        return CNC, ('sairn_claim.is_active will not import (%s), so "active" '
+                     'could only be read off the raw status field -- which is '
+                     'the defect this check was fixed for. Reporting COULD '
+                     'NOT RUN rather than counting dead rows' % str(exc)[:70])
     active = []
     for fn in sorted(os.listdir(cdir)):
         if not fn.endswith('.json'):
@@ -136,7 +163,7 @@ def check_files_convention(ctx):
         except Exception:                                        # noqa: BLE001
             return CNC, '%s is unreadable, so the observation would be partial' % fn
         for c in doc.get('claims', []):
-            if c.get('status') == 'active':
+            if is_active(c):
                 active.append(c.get('task') or '')
     if not active:
         return CNC, 'no active claims right now -- nothing to observe, which is not a pass'

@@ -2913,6 +2913,155 @@ def same_work_pairs(claims):
 MANY_ACTIVE = 4
 
 
+# ── THE AUDIT'S ACTIVE SET, EXTRACTED SO AN ARM CAN DRIVE IT (cc b13) ──────
+# It was five inline lines in cmd_audit() selecting on the RAW `status` field.
+# That is the defect tools/claim_activity_check.py already paid for and wrote
+# up at its own :68 -- "`active_claims()` selected on `c.get('status') ==
+# 'active'`, the RAW field. That is half the answer." The sibling tool drew
+# the distinction; THIS one, which owns is_active(), did not apply it to its
+# own audit.
+#
+# MEASURED BEFORE THE FIX, over the real 1,373-claim record:
+#
+#     session       raw   is_active
+#     cc              1           1
+#     cloud           1           0   <- DISAGREE
+#     hank            1           1
+#     hover           1           1
+#     hover2          1           1
+#     total           5           4
+#
+# `cloud` last claimed 2026-09-27 and has been gone eighteen days. It still
+# reads `"status": "active", "released_at": null` in
+# `.claude/claims/cloud.json`, because the stored field is written once and
+# never revisited -- liveness is COMPUTED, by is_active(), at display time.
+# `list` already applies it and drops cloud entirely; `list --all` shows it as
+# `[EXPIRED ]`. One record, and the audit was reading the one spelling that
+# says active for ever.
+#
+# TODAY THE INFLATION IS ONE AND DOES NOT CROSS MANY_ACTIVE, so the audit's
+# verdict happened to be the same. That is what makes it worth fixing rather
+# than leaving: the number was already wrong and nothing would have said so
+# until a session held three live claims plus one dead row and got reported as
+# a hoarder. And the section this feeds is LITERALLY about this population --
+# "claims never RELEASED ... another session reads a phantom block" -- so it
+# was describing the phantom using the phantom's own field.
+#
+# IMPORTED, NOT REIMPLEMENTED, for the reason claim_activity_check gives: the
+# staleness rule has already changed once (a fixed timeout became a timeout
+# plus process liveness on 2026-09-23) and a second copy would have frozen the
+# older half.
+def audit_active_by(claims):
+    """{session: [claims it really still holds]}, by is_active() not by `status`.
+
+    Returns the live set only. The raw-status set is deliberately NOT returned
+    alongside it: the audit prints the DIFFERENCE as its own line rather than
+    offering a caller two numbers to pick from.
+    """
+    out = {}
+    for c in claims or []:
+        if is_active(c):
+            out.setdefault(c.get('session'), []).append(c)
+    return out
+
+
+def audit_expired_but_stored_active(claims):
+    """[claims whose stored `status` says active and which are NOT still held].
+
+    This is the gap itself, surfaced as a value rather than left implicit. A
+    non-empty list is not a defect in the record -- a session that died holding
+    a claim is exactly what it looks like -- it is the set every consumer
+    reading `status` directly will get wrong.
+    """
+    return [c for c in (claims or [])
+            if c.get('status') == 'active' and not is_active(c)]
+
+
+# ── THE ARMS. Each drives the real selection against a built claim ──────────
+# No tests/ file is written here: tests/ is cody's. These live in the tool
+# whose rule they are about, reachable as `sairn_claim.py selftest`, and they
+# are driven on FIXTURES rather than on the live record -- an arm whose verdict
+# depends on whether `cloud` happens to be dead today is an arm that goes green
+# on its own when somebody tidies the record.
+def _arm_claims():
+    t = now()
+    return [
+        # held: active, heartbeat seconds old
+        {'session': 'live', 'status': 'active', 'subject': 's1',
+         'claimed_at_epoch': t - 60, '_heartbeat': t - 60},
+        # the defect: active in the stored field, claimed long ago, no
+        # heartbeat and no process answer -> expired by the timeout
+        {'session': 'dead', 'status': 'active', 'subject': 's2',
+         'claimed_at_epoch': t - (STALE_HOURS + 100) * 3600},
+        # released: never in either set
+        {'session': 'gone', 'status': 'released', 'subject': 's3',
+         'claimed_at_epoch': t - 3600, 'released_at': '2026-01-01T00:00:00Z'},
+        # ALIVE DESPITE BEING OLD. Without this the fix could be "drop
+        # anything older than STALE_HOURS", which is the pre-2026-09-23 rule
+        # and breaks a 9.96-hour build's own claim.
+        {'session': 'longrun', 'status': 'active', 'subject': 's4',
+         'claimed_at_epoch': t - 20 * 3600, '_alive': True},
+    ]
+
+
+def selftest():
+    bad = total = 0
+
+    def ck(label, got, want=True):
+        nonlocal bad, total
+        total += 1
+        if got != want:
+            bad += 1
+            print('  FAIL ' + label)
+            print('       wanted %r, got %r' % (want, got))
+        else:
+            print('  ok   ' + label)
+
+    print('SAIRN CLAIM -- the audit\'s active set is is_active(), not `status`')
+    rows = _arm_claims()
+    live = audit_active_by(rows)
+
+    ck('A1 a session that is really still holding a claim is in the active '
+       'set', sorted(live) and 'live' in live)
+    ck('A2 THE DEFECT: a stored `status: active` whose claim has EXPIRED is '
+       'NOT counted as held. This is the arm that fails against the raw-field '
+       'version, and `cloud` is the real row it stands for -- eighteen days '
+       'gone, still `"status": "active"` on disk',
+       'dead' not in live)
+    ck('A3 a RELEASED claim is in neither set', 'gone' not in live)
+    ck('A4 an OLD claim whose session is still ALIVE is still held -- the fix '
+       'must not become "older than %g hours is expired", which is the rule '
+       'that read a 9.96-hour build as abandoned' % STALE_HOURS,
+       'longrun' in live)
+    ck('A5 the gap is surfaced as a value, not left implicit: the expired-but-'
+       'stored-active set names exactly the row the raw field gets wrong',
+       [c.get('session') for c in audit_expired_but_stored_active(rows)],
+       ['dead'])
+
+    # ── ABLATION. Restore the raw-field selection and require A2 to go red.
+    # Without this, A2 would also pass on any implementation that happened to
+    # drop the row for an unrelated reason.
+    raw = {}
+    for c in rows:
+        if c.get('status') == 'active':
+            raw.setdefault(c.get('session'), []).append(c)
+    ck('ABLATION: the RAW-FIELD selection counts the expired session as held, '
+       'so A2 is about this change and not about the fixture',
+       'dead' not in raw, False)
+    ck('ABLATION CONTROL: the raw-field selection PASSES A1, A3 and A4 -- it '
+       'was never wrong about a live claim, a released one, or a long-running '
+       'one. An ablation that fails everything proves nothing about which arm '
+       'caught the defect',
+       ('live' in raw, 'gone' not in raw, 'longrun' in raw),
+       (True, True, True))
+
+    print('  %d/%d arm(s) pass' % (total - bad, total))
+    if bad:
+        print('  THE AUDIT IS NOT COUNTING WHAT IT SAYS IT COUNTS.')
+        return EXIT_FINDING if 'EXIT_FINDING' in globals() else 1
+    return 0
+
+
 def cmd_audit(args):
     claims = load_all(from_origin=False)
     if not claims:
@@ -2931,10 +3080,10 @@ def cmd_audit(args):
         (after if (v[-1].get('claimed_at_epoch') or 0) > GUARDED_FROM
          else before).append((k, v))
 
-    active_by = {}
-    for c in claims:
-        if c.get('status') == 'active':
-            active_by.setdefault(c.get('session'), []).append(c)
+    # is_active(), not the raw `status` field. See audit_active_by()'s own
+    # comment for the measurement and for why `cloud` is the row it is about.
+    active_by = audit_active_by(claims)
+    phantom = audit_expired_but_stored_active(claims)
     hoarders = {s: v for s, v in active_by.items() if len(v) >= MANY_ACTIVE}
 
     print('CLAIM RECORD AUDIT -- %d claim(s) across %d session file(s)'
@@ -2964,6 +3113,30 @@ def cmd_audit(args):
             print('    %-8s %2d active, oldest %s' % (s, len(v), oldest.get('claimed_at')))
     else:
         print('    no session is holding %d or more.' % MANY_ACTIVE)
+    # ── THE PHANTOM, NAMED (cc b13) ────────────────────────────────────────
+    # The paragraph above is about a session reading a phantom block, and the
+    # count under it was itself built from the phantom's own field until this
+    # batch. Now the count is is_active() and the gap is printed BESIDE it, so
+    # a reader sees both numbers rather than one that silently moved.
+    if phantom:
+        print('')
+        print('    AND %d ROW(S) STORE `status: active` WHILE NO LONGER HELD.'
+              % len(phantom))
+        print('    They are NOT in the count above and they are not a defect '
+              'in the record --')
+        print('    a session that died holding a claim looks exactly like '
+              'this. They are the')
+        print('    set that any consumer reading the RAW field gets wrong, '
+              'which is what')
+        print('    tools/claim_activity_check.py was fixed for and what this '
+              'command was')
+        print('    still doing. `list` drops them; `list --all` shows them as '
+              'EXPIRED.')
+        for c in sorted(phantom,
+                        key=lambda x: x.get('claimed_at_epoch') or 0):
+            print('      %-8s %-16s claimed %s, never released'
+                  % (c.get('session'), (c.get('subject') or '')[:16],
+                     c.get('claimed_at')))
     print('')
     # ── THE SHAPE THE EXACT COUNT ABOVE CANNOT SEE ────────────────────────
     # This paragraph used to say the opposite: that deciding two different task
@@ -3036,6 +3209,10 @@ def main():
     c = sub.add_parser('audit', help='duplicates and unreleased claims, binned '
                                      'by whether they predate the guard')
 
+    c = sub.add_parser('selftest', help='the arms on the audit\'s active set: '
+                                        'is_active(), not the raw `status` '
+                                        'field. Fixtures, not the live record')
+
     c = sub.add_parser('own', help='am I still holding my own claim? '
                                    'exit 0 held, 1 not, 2 could not tell')
     c.add_argument('--require-held', action='store_true',
@@ -3051,6 +3228,8 @@ def main():
         return cmd_claim(args)
     if args.cmd == 'release':
         return cmd_release(args)
+    if args.cmd == 'selftest':
+        return selftest()
     if args.cmd == 'audit':
         return cmd_audit(args)
     return cmd_list(args)
