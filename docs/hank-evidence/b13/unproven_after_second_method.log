@@ -1,0 +1,42 @@
+ROLE PICKER vs DATABASE CHECK CONSTRAINT -- criteria 2026-10-14.1
+17 app(s) from ROLES_BY_APP, derived not typed
+
+  ok       sairnbiz: all 0 role picker(s) offer only roles the CHECK in sb_employee_auth_schema.sql accepts (5 allowed)
+  ok       sairnbuild: all 1 role picker(s) offer only roles the CHECK in sairnbuild_employee_auth_schema.sql accepts (3 allowed)
+  ok       sairncare: all 2 role picker(s) offer only roles the CHECK in 2026-10-14-michael-run-order.sql, sairncare_all_remaining_migrations.sql, sairncare_employee_auth_schema.sql, sairncare_employee_auth_schema.sql accepts (7 allowed)
+  UNPROVEN sairncode: no role picker found in sairncode.html -- no <select> has two or more static option values from this app's own vocabulary, AND no array literal carries two or more of them either. Two structurally different methods found nothing, so either this app does not provision roles from its own page or both detectors have stopped matching. SETTLE IT BY HAND: grep -n "role" sairncode.html and read the provisioning call site -- the role it sends is a literal, a variable from a picker, or absent
+           vocabulary: [admin, coder, biller, auditor]
+  UNPROVEN sairndental: no role picker found in sairndental.html -- no <select> has two or more static option values from this app's own vocabulary, AND no array literal carries two or more of them either. Two structurally different methods found nothing, so either this app does not provision roles from its own page or both detectors have stopped matching. SETTLE IT BY HAND: grep -n "role" sairndental.html and read the provisioning call site -- the role it sends is a literal, a variable from a picker, or absent
+           vocabulary: [owner, frontdesk, provider]
+  ok       sairndesign: all 2 role picker(s) offer only roles the CHECK in sairndesign_employee_auth_schema.sql accepts (3 allowed)
+  ok       sairnfreedom: all 0 role picker(s) offer only roles the CHECK in sairnfreedom_employee_auth_schema.sql, sairnfreedom_employee_auth_schema.sql accepts (11 allowed)
+  ok       sairngrounds: all 0 role picker(s) offer only roles the CHECK in grd_employee_auth_schema.sql accepts (5 allowed)
+  ok       sairnlaw: all 1 role picker(s) offer only roles the CHECK in sairnlaw_employee_auth_schema.sql accepts (3 allowed)
+  ok       sairnlegacy: all 1 role picker(s) offer only roles the CHECK in 2026-10-14-michael-run-order.sql, sairnlegacy_employee_auth_schema.sql, sairnlegacy_employee_auth_schema.sql accepts (8 allowed)
+  UNPROVEN sairnmechanical: no role picker found in sairnmechanical.html -- no <select> has two or more static option values from this app's own vocabulary, AND no array literal carries two or more of them either. Two structurally different methods found nothing, so either this app does not provision roles from its own page or both detectors have stopped matching. SETTLE IT BY HAND: grep -n "role" sairnmechanical.html and read the provisioning call site -- the role it sends is a literal, a variable from a picker, or absent
+           vocabulary: [owner, admin, sales, tech]
+  UNPROVEN sairnroofing: no role picker found in sairnroofing.html -- no <select> has two or more static option values from this app's own vocabulary, AND no array literal carries two or more of them either. Two structurally different methods found nothing, so either this app does not provision roles from its own page or both detectors have stopped matching. SETTLE IT BY HAND: grep -n "role" sairnroofing.html and read the provisioning call site -- the role it sends is a literal, a variable from a picker, or absent
+           vocabulary: [owner, admin, estimator, foreman, crew]
+  ok       sairnscape: all 0 role picker(s) offer only roles the CHECK in scp_employee_auth_schema.sql accepts (3 allowed)
+  ok       sairnsenior: all 1 role picker(s) offer only roles the CHECK in sairnsenior_employee_auth_schema.sql accepts (5 allowed)
+  ok       sairnvet: all 0 role picker(s) offer only roles the CHECK in sairnvet_employee_auth_schema.sql accepts (6 allowed)
+  ok       stonedesk: all 3 role picker(s) offer only roles the CHECK in sd_employee_auth_schema.sql accepts (4 allowed)
+  ok       stonedesk_sub: NOT APPLICABLE -- no entry in AUTH_TABLE_BY_APP, so this app has no `<app>_employee_auth` table and no role CHECK of this shape to compare against. api/_lib/auth.js records the reason (stonedesk_sub authenticates against sd_sub_auth keyed on sub_id). If an app that SHOULD have employee credentials appears here, the missing map entry is itself the finding -- the live session gate reads the same map and answers NO_ACTIVE_CHECK without one
+
+── THE LIMIT, REPORTED EVERY RUN RATHER THAN DISCOVERED ──
+This compares a picker against the CHECK IN sql/, which is the
+repo's INTENDED constraint and not the live database's. A role
+that is in the schema file and NOT YET MIGRATED is invisible here
+-- that is the office_manager state as this is written. So:
+  CAUGHT    a picker ahead of the schema file (drift)
+  NOT CAUGHT a schema file ahead of production (lag)
+
+2 CHECK-widening migration(s) found. Each is a lag this check cannot measure:
+  * sairncare: 2026-10-14-michael-run-order.sql widens the CHECK by ALTER, so the repo allows [owner, nursing, med_aide, caregiver, billing, activities, office_manager] and PRODUCTION allows that only if the file has been run
+  * sairnlegacy: 2026-10-14-michael-run-order.sql widens the CHECK by ALTER, so the repo allows [owner, director, arranger, prep, office, apprentice, livery, staff] and PRODUCTION allows that only if the file has been run
+  The live question is one query per app:
+    select pg_get_constraintdef(oid) from pg_constraint
+     where conname = '<app>_employee_auth_role_check';
+
+13 app(s) clean, 0 with a refused role, 4 could not be measured
+4 APP(S) UNPROVEN: sairncode, sairndental, sairnmechanical, sairnroofing
