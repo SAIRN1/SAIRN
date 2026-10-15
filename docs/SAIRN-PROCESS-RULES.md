@@ -1008,6 +1008,58 @@ argument for running gates twice on purpose.**
 
 ## Part 5 — Verification discipline
 
+### 5.1 Exit 3 is ONE code, and the test must say why — decided 2026-10-14
+
+**The question, left open by cc b13:** exit 3 carries two meanings, and only
+the test can know which applies.
+
+| meaning | example |
+|---|---|
+| *not applicable on this platform* | `tests/session_lock_liveness_probe.py` drives a Windows process-start-time signature via `kernel32`; on Linux it cannot run at all |
+| *the other side of the seam is missing* | `api/role-picker-vs-check-constraint.test.js` exits 3 because 11 of 17 apps have no `check (role in (...))` to compare their picker against — on **every** platform |
+
+**DECIDED: one code. Not split into 3 and 4.** Three reasons, in the order
+they actually weighed:
+
+1. **The consequence is identical.** In both cases the gate driver removes
+   that test from the required set *for that run* and reports it in the
+   could-not-tell channel, never folding it into the pass. A second exit code
+   that produces the same behaviour buys a label, not a mechanism — and the
+   label is already available from a better source.
+2. **A migration would touch 51 files across three owners' territories.**
+   Measured with `git ls-files tests api tools` and a grep for
+   `exit(3)` / `process.exit(3)` / `EXIT_SKIPPED`: **51 producers**. Changing
+   a shared exit code means changing every producer *and* every consumer,
+   spread over `tests/` (cody), `api/` (hank) and `tools/` (cc), with a window
+   where the two conventions coexist. That is a large coordinated cost for a
+   distinction a sentence already carries.
+3. **The convention is already de facto universal, so it needs documenting
+   rather than enforcing.** Of the 51 producers, **50 already print a
+   recognised reason marker** — `SKIPPED`, `UNPROVEN`, `COULD NOT RUN` or
+   `NOT APPLICABLE`. One does not. Building a 51-file enforcement checker to
+   catch a single file would be the tool that proves the rule nobody broke.
+
+**So the rule is:** a program that exits 3 **must print a line beginning with
+one of `SKIPPED`, `UNPROVEN`, `COULD NOT RUN` or `NOT APPLICABLE`**, saying
+which of the two meanings applies and what would have to change for the test
+to run. `exit3_reason()` in `tools/sairn_push_gate_hook.py` quotes that line
+and attributes it to the test; when it is absent the runner says so and names
+the absence as the thing to fix. It does **not** guess, and in particular it
+no longer asserts a platform cause — that sentence was wrong for every
+non-platform exit 3 and was corrected in cc b13.
+
+**The one known non-compliant file is
+`tests/run_exec_msgs_gate_sabotage_probe.py`** and it is routed to cody rather
+than silently fixed; `tests/` is not cc's to write.
+
+**If this is ever revisited, the thing that would change the answer** is a
+consumer that needs to BEHAVE differently for the two meanings — a CI lane
+that tolerates a platform skip and fails a missing-seam, say. There is no such
+consumer today, and the decision is recorded here so the next session inherits
+the reasoning rather than the conclusion.
+
+---
+
 A status report is a claim, not a fact, until checked against the real current
 state.
 

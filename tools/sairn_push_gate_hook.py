@@ -4306,6 +4306,24 @@ def selftest():
        '`exit 3` as its entire reason, so these arms are about this change',
        ('SKIPPED as not applicable on this platform -- exit 3'
         ).startswith('SKIPPED as not applicable'), True)
+
+    # ── THE CONVENTION, DECIDED 2026-10-14 (cc b14), PR 5.1 ───────────────
+    # ONE CODE, not split into 3 and 4. The arms below pin the decision so a
+    # future session inherits the reasoning rather than re-opening it, and so
+    # the marker list cannot drift away from what PR 5.1 documents.
+    ck('PR 5.1: exit 3 stays ONE code and the marker list is exactly the four '
+       'PR 5.1 names -- a fifth spelling accepted here and not written down '
+       'there is the convention drifting in the direction nobody reads',
+       sorted(EXIT3_MARKERS),
+       sorted(('SKIPPED', 'UNPROVEN', 'COULD NOT RUN', 'NOT APPLICABLE')))
+    ck('...and every one of the four is actually honoured by the reason-finder, '
+       'not just listed in a tuple',
+       all('by the test\'s own account' in exit3_reason('%s: because' % m)
+           for m in EXIT3_MARKERS))
+    ck('...and the two MEANINGS are distinguished by the test\'s own words '
+       'rather than by the code, which is the whole basis for not splitting it',
+       'UNPROVEN sairnbiz' in exit3_reason('UNPROVEN sairnbiz: no CHECK found')
+       and 'kernel32' in exit3_reason('SKIPPED: kernel32 is Windows-only'))
     ck('CROSS-CHECK: all %d GUARD_TESTS entries name a file that exists -- a '
        'registry entry pointing at a deleted file is a suppression nobody '
        'would notice' % len(GUARD_TESTS),
