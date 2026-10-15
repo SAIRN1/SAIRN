@@ -226,7 +226,17 @@ ABLATIONS = [
         'want_exit_not': 0,
     },
     {
-        'id': 'b15.3', 'batch': 'b15', 'direction': 'RED-arm (fix APPLIED)',
+        # ── CONVERTED RED-ARM -> GREEN-ARM, 2026-10-15 (cody b17) ──────
+        # THIS RECORD DOING ITS JOB IS WHAT FOUND THE RECOVERY. It was a
+        # RED-arm entry: the defect was routed to hank, there was no fix to
+        # remove, so the only honest ablation was to APPLY the fix and require
+        # the arm to go green. Driving it today reported
+        # "the arm is ok as committed and this record expects FAIL" --
+        # i.e. HANK LANDED IT. Measured in api/sd-data.js: the pre-fix text
+        # occurs 0 times and `data: storedBlob(payload, [])` occurs 1.
+        # So it becomes an ordinary green-arm ablation: remove the fix from
+        # the COPIED api/ tree and the arm must fail.
+        'id': 'b15.3', 'batch': 'b15', 'direction': 'green-arm',
         'suite': 'tests/sd_data_blob_scope_ten_routed_sites.js',
         'arm': 'site 5 remnants',
         'what': 'the conversion is APPLIED to one site -- data: payload becomes '
@@ -235,9 +245,9 @@ ABLATIONS = [
                 'hank and the arm is red on purpose',
         'target': 'api', 'module': 'api/sd-data.js',
         'env': 'SAIRN_B15_SD_DATA',
-        'fix': ("remnant_id: String(payload.id), data: payload, updated_at: nowISO()",
-                "remnant_id: String(payload.id), data: storedBlob(payload, []), updated_at: nowISO()"),
-        'want': 'ok',
+        'fix': ("remnant_id: String(payload.id), data: storedBlob(payload, []), updated_at: nowISO()",
+                "remnant_id: String(payload.id), data: payload, updated_at: nowISO()"),
+        'want': 'FAIL',
     },
 
     # ══ b17, 2026-10-15 ══════════════════════════════════════════════════
@@ -263,7 +273,14 @@ ABLATIONS = [
     {
         'id': 'b17.1', 'batch': 'b17', 'direction': 'green-arm',
         'suite': 'tests/sairnbuild_backup_pending.js',
-        'arm': 'a successful push is attempted once',
+        # THE NEEDLE IS THE TALLY LINE, not an arm name. This suite's
+        # check() prints NOTHING for a passing arm -- only FAIL lines and a
+        # final `ok  sairnbuild-backup-pending: N passed, M failed` -- so no
+        # arm name exists in a green run for arm_state() to read a tag off,
+        # and the first run of this record reported "the arm was not found in
+        # the suite's own output". The tally line carries the tag in both
+        # directions (`ok` / `FAILED`), which is the signal that exists here.
+        'arm': 'sairnbuild-backup-pending:',
         'what': 'the BLD_SESSION_REQUIRED declaration is removed from the '
                 'extraction list, which is the b17 defect -- bldSyncCollection '
                 'references it, the sandbox throws ReferenceError, and st() '
@@ -273,15 +290,7 @@ ABLATIONS = [
                 'reading `payload` of undefined',
         'target': 'suite',
         'fix': ("    decl('BLD_SESSION_REQUIRED') + '\\n' +\n", ""),
-        # EXIT-CODE FORM, NOT ARM-TEXT. This suite's check() prints NOTHING
-        # for a passing arm -- only FAIL lines and a final tally -- so there
-        # is no arm name in the output to read a tag off, and the first run
-        # of this record reported "the arm was not found in the suite's own
-        # output" for exactly that reason. The exit code is the available
-        # signal and a sufficient one: the ablation takes this suite from
-        # 29/0 to eight failures and a TypeError.
-        'want': None,
-        'want_exit_not': 0,
+        'want': 'FAIL',
     },
     {
         'id': 'b17.2', 'batch': 'b17', 'direction': 'green-arm',
@@ -303,23 +312,28 @@ ABLATIONS = [
                 "if (/marBroad/.test(upToConsent) && /ALF_FAMILY_READ_ROLES/.test(upToConsent)) {"),
         'want': 'FAIL',
     },
-    {
-        'id': 'b17.3', 'batch': 'b17', 'direction': 'green-arm',
-        'suite': 'tests/run_python_escape_hygiene_probe.py',
-        'arm': 'AND IN A NESTED tests/ SUBDIRECTORY',
-        'what': 'the arm-2 anchor is reverted to the bare string "import os". '
-                'tests/claims/run_freshness_probe.py has TWO matches for it -- '
-                '`import os` and `import os as _os`, the second CONTAINING the '
-                'first -- so the arm refuses with ANCHOR-2. OBSERVED: it was '
-                'the single remaining stale anchor in the repo, 1 of 530, and '
-                'it was also why run_mutation_anchor_probe arm 7a was red',
-        'target': 'suite',
-        'fix': ('     "import os\\nimport shutil",\n'
-                '     "import os\\n_PLANTED = \\"\\\\d not a real escape\\"\\nimport shutil"),',
-                '     "import os",\n'
-                '     "_PLANTED = \\"\\\\d not a real escape\\"\\nimport io"),'),
-        'want': 'FAIL',
-    },
+    # ── b17.3 WAS HERE AND IS DELIBERATELY NOT AN ARM. 2026-10-15 ─────────
+    # The ablation was: revert tests/run_python_escape_hygiene_probe.py arm 2's
+    # anchor to the bare string "import os", which had TWO matches in
+    # tests/claims/run_freshness_probe.py -- `import os` and `import os as
+    # _os`, the second containing the first -- and watch it refuse ANCHOR-2.
+    #
+    # DRIVEN, IT REPORTED `ok -> ok`, AND THE REASON IS THE REST OF THIS SAME
+    # BATCH: the second match lived INSIDE the local `_rm_ro` definition that
+    # b17's own de-duplication deleted (`import os as _os` was its first
+    # line). So `import os` now occurs ONCE in that file -- measured -- and the
+    # ambiguity the arm records cannot be reproduced against the current
+    # subject. The fix and the subject moved in the same commit.
+    #
+    # IT IS NOT WRITTEN AS A PASSING ARM, because it would be asserting
+    # something it no longer measures -- the exact defect class this whole file
+    # exists for. The failure path WAS driven, in-session and quoted:
+    # `python tools/mutation_anchor_check.py` reported
+    # `anchors NOT matching exactly once: 1 / ANCHOR-2 in
+    # tests/claims/run_freshness_probe.py` before the fix and `0` after, and
+    # tests/run_python_escape_hygiene_probe.py went exit 1 -> exit 0, 9/9.
+    # NEXT STEP for whoever wants it re-runnable: aim it at a probe/target pair
+    # where a substring anchor is still ambiguous, rather than at this one.
     {
         'id': 'b17.4', 'batch': 'b17', 'direction': 'green-arm',
         'suite': 'tests/run_sv_session_gate_sabotage_probe.py',
