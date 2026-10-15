@@ -1,0 +1,19 @@
+ok             function legAcEsc  <- F4: the delimiter-escaping helper the new key derivation calls
+ok             ACX-  <- F4: the escaped key form itself, so the deployed page can emit it
+ok             ^CS-[0-9]+-[0-9]+$  <- F4: the legacy-safe guard, which is what preserves every existing id
+ok             function legAdoptServerId  <- F5: the local row adopting the id the server actually stored
+ok             legMarkSynced(resource,srvId)  <- F5: the SERVER's id being marked synced rather than the client's
+
+THE LEGS THAT COULD NOT RUN AND WHY, NAMED RATHER THAN OMITTED:
+  api/sd-data.js sen_visits approve_clock_correction -- 401 NO_LICENSE
+    is answered before the action dispatcher, so the new verb cannot be
+    reached without a real credential in this script.
+  api/sd-data.js leg_aftercare key derivation -- same reason.
+  api/_lib/compliance-rules.js T18 -- reached only through an
+    authenticated SAIRNcare training-compliance read.
+  Each of those is driven against the REAL handler locally:
+    node api/t16-clock-correction-record.test.js        (27 arms)
+    node api/leg-aftercare-key-unambiguous.test.js      (14 arms)
+    node api/t18-positions-vocabulary.test.js           (17 arms)
+
+verified=5  fail=0  couldnot=3
