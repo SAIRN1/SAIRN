@@ -21,21 +21,30 @@ beside it rather than the difference being asserted as drift.
 
 == 0. STATE ==
 
-  HEAD                      e4ba37f9          git rev-parse --short HEAD
-                            (the six items closed at 86a27458; e4ba37f9 is
-                            the hover2-b36 followup, section 10)
-  origin/main               e4ba37f9          git rev-parse --short origin/main
-  the followup's sha        e4ba37f9, NOT 142ef3ca. The first push
-                            of it was DENIED by register_feed_gate,
-                            correctly -- it closes a defect and fed
-                            nothing. The defect was recorded as
-                            e4ba37f97e8d (rule 1.1, hover-audit,
-                            found-by hover2, injection 31406a87) and
-                            the rebase that followed moved the sha.
-                            142ef3ca STILL RESOLVES IN THIS CLONE AND
-                            IS NOT ON origin/main -- the exact trap
-                            section 3 writes up, arriving on my own
-                            commit inside the same batch.
+  HEAD                      7753caa1          git rev-parse --short HEAD
+                            (the six items closed at 86a27458; the
+                            hover2-b36 followup FIX is 2884063e, section
+                            10, with its defect record and a rebase
+                            re-seat committed after it. These four
+                            deliverables land after this line, which is
+                            why HEAD is not the followup commit.)
+  origin/main               7753caa1          git rev-parse --short origin/main
+  the followup's sha        2884063e -- AND IT MOVED TWICE GETTING THERE:
+                            142ef3ca -> e4ba37f9 -> 2884063e. The first
+                            push was DENIED by register_feed_gate,
+                            correctly: it closes a defect and fed nothing.
+                            The defect was recorded (rule 1.1,
+                            hover-audit, found-by hover2, injection
+                            31406a87, re-seated by the rebase to
+                            2884063edf4d by sairn_rebase_resolve.py), and
+                            each pull --rebase rewrote the followup commit.
+                            BOTH EARLIER SHAS STILL RESOLVE IN THIS CLONE
+                            AND NEITHER IS ON origin/main -- the exact trap
+                            section 3 writes up about cody's record,
+                            arriving on my own commit inside the same
+                            batch. Check with `git branch -r --contains`,
+                            not with `git cat-file -t`: resolving locally
+                            is not the same question as being on origin.
   behind / ahead            0 / 0             git rev-list --left-right --count origin/main...HEAD
   forced?                   NO, PROVED BY ANCESTRY, not by grepping git's
                             wording: pre-push tips 86a27458e05e and 4a103abc
@@ -585,7 +594,7 @@ long enough to need an ordinal is long enough to need a program.
 == 10. THE FOLLOWUP -- hover2 b36's ROUTING, RE-DERIVED FROM SOURCE ==
 
 docs/2026-10-15-fourth-b22-sf-events-reanchor-and-citation-recount.md section 3.
-Commit e4ba37f9.
+Commit 2884063e.
 
 hover2 b36 listed docs/CRITICALITY-TIERS.md:358 under EVIDENCE-path as "still
 unfixed, re-grepped", and its handoff queued it as open item 4. BOTH ARE TIMING
@@ -693,7 +702,7 @@ THE MANIFEST WAS NOT REOPENED, AND THAT IS DELIBERATE. b22's manifest records
 the SIX DISPATCHED ITEMS and is closed on them; chat writes the ids and they are
 immutable. A seventh id would break the id_lock, and quietly editing a closed
 block would make the close mean less. The followup is recorded here, in the
-digest, in the handoff and in e4ba37f9's own message instead -- said out loud
+digest, in the handoff and in 2884063e's own message instead -- said out loud
 rather than left for somebody to notice the file count disagrees with the
 manifest.
 
@@ -724,5 +733,5 @@ of the marker. Reproduce:
     s = io.open('SAIRN-report-fourth-b22.txt', 'rb').read().decode('utf-8').replace('\r\n','\n')
     body = s.rsplit('SHA' + '256 ', 1)[0]
     print(hashlib.sha256(body.encode('utf-8')).hexdigest())
-SHA256 6793de37d8928b71c542af289f3875735bb63539380e12434bd8e7d38dc25893
+SHA256 abbbc84bed5b485f53201acc313d1393c5c6752efb5039d211f9557b42150b5f
 END-OF-REPORT
