@@ -6631,6 +6631,30 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-15T12:24:35Z",
+      "opened_at_sha": "9020156b22c22db9db4acc26783d88104e3abf33",
+      "opened_at_sha_basis": "file-set",
+      "resources": [
+        "leg_custodylog",
+        "sen_visits"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/b14-clock-approval-two-person.test.js",
+        "api/sd-data-leg-session-gate.test.js",
+        "sairnsenior.html"
+      ],
+      "what": "b14: leg_custodylog -- api/sd-data-leg-session-gate.test.js. NO PRODUCT CODE CHANGED for this resource; what changed is the ARM that measures its session gate. It asserted 'leg_custodylog write with a session -> 200' over a generic loop, and leg_custodylog is APPEND-ONLY: the handler answers 409 APPEND_ONLY, refusing everyone including the owner. The suite was carried as a known red through b13 with the note 'not mine' and never root-caused. The arm now asserts the session gate was PASSED and then the append-only rule refused -- 409 with the code. REVIEW HARDEST: (a) is 409 the right status for that refusal, or should the suite be asserting whatever the handler ACTUALLY promises somewhere else -- I took the code from the handler's own response and not from a spec, so if a spec says 403 the arm now pins the wrong number; (b) satisfy yourself that the replacement is STRICTLY STRONGER and not an exemption: a 401 there would mean the gate rejected a good session, which is what the suite exists to catch, and my claim is that the new arm distinguishes 401/403/409 where the old one could not -- check that is true of the assertion as written and not just of my description of it; (c) leg_custodylog is the ONLY resource in APPEND_ONLY_WRITE, and I derived that list from one measured failure rather than from the handler -- grep the LEG branches for every append-only refusal and tell me whether a second resource belongs in it, because a missing entry means that resource's arm is asserting 200 against a handler that refuses, i.e. the same false red one app over.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-10-15T12:24:35Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

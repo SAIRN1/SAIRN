@@ -2548,6 +2548,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b14-clock-approval-two-person.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "652f40344fbfea82be9828698f3e1b12f025b97d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/t16-clock-correction-record.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "652f40344fbfea82be9828698f3e1b12f025b97d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/sairn_push_gate_hook.py",
    "class": "push-gate logic",
    "level": "CHANGE",
@@ -3405,6 +3421,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/sd-data-memory-app-scope.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "8627f4e4c7963aff930be5d59dcb822501444dfc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sd_data_write_attribution_three_apps.js",
    "class": "test file",
    "level": "CHANGE",
@@ -3623,6 +3647,22 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "8ff247a2890edf5f3af0483030980424a17113f4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/role-picker-vs-check-constraint.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9020156b22c22db9db4acc26783d88104e3abf33",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-leg-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9020156b22c22db9db4acc26783d88104e3abf33",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -5813,6 +5853,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "cb1849a775431bf8e24a9aa72661d20133782518",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/n1-n4-and-sf-delete.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "cb80fb32b9a0dbe52249beef74a0f597b961c593",
    "criteria_version": "2026-10-06.1"
   },
   {
