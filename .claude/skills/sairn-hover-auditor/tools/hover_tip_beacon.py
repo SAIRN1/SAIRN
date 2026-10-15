@@ -81,6 +81,7 @@ item; --anchor's job today is the approved email path only.
 import io
 import json
 import os
+import re
 import sys
 from datetime import datetime, timezone
 
@@ -112,6 +113,18 @@ EXIT_COULD_NOT_RUN = 2
 
 
 def render(seq, ts, entry_hash, total_entries, published_at):
+    # CHECKPOINT line, added h1 b38. tools/sairn_board_publish.py (cc's own
+    # board renderer) has always parsed TIP-BEACON.md by searching for a line
+    # matching `^CHECKPOINT:\s*(\{.*\})\s*$` and json-decoding seq/hash/
+    # published_at out of it -- checked against this file's own git history,
+    # that line has NEVER existed in any version this tool ever wrote. The
+    # board's "UNKNOWN -- TIP-BEACON.md carries no CHECKPOINT line" verdict
+    # was therefore not a staleness symptom, it was a format the producer
+    # (this function) never produced for the consumer (the board) to read.
+    # Added rather than reported-only because this is this role's own tool.
+    checkpoint = ('CHECKPOINT: %s\n\n'
+                  % json.dumps({'seq': seq, 'hash': entry_hash,
+                                'published_at': published_at}, sort_keys=True))
     return (
         '# Hover-auditor self-log tip beacon\n\n'
         'A PASSIVE second signal, distinct from `hover_log.py --verify`. '
@@ -119,6 +132,7 @@ def render(seq, ts, entry_hash, total_entries, published_at):
         'below does not match the log entry it names, or if this file looks '
         'old next to how many entries the log now has, that is visible by '
         'READING, with no script required. Full account: hover_tip_beacon.py.\n\n'
+        + checkpoint +
         '```\n'
         'checkpoint_seq   : %d\n'
         'checkpoint_ts    : %s\n'
@@ -134,6 +148,23 @@ def render(seq, ts, entry_hash, total_entries, published_at):
         'in a while and should not be trusted as current.\n'
         % (seq, ts, entry_hash, total_entries, published_at, seq, entry_hash)
     )
+
+
+def _drive_beacon_path():
+    """Where cc's tools/sairn_board_publish.py reads THIS instance's beacon
+    from: G:\\My Drive\\SAIRN-status\\hover-chain-h1\\TIP-BEACON.md by
+    default. THE TWO-COPY PROBLEM, found h1 b38: this tool only ever wrote
+    the LOCAL copy next to the real log (BEACON_PATH above); nothing ever
+    copied it here. The Drive-hosted copy the board actually reads was last
+    written by hand on 2026-10-08 (seq1185) and nothing since had touched it
+    -- a fresh, correct local --publish and a board reporting a 2026-10-08
+    snapshot (or, until the CHECKPOINT fix above, UNKNOWN) were both true at
+    the same time, and neither tool's own self-check could see the other's
+    half. Override for tests via HOVER_BEACON_DRIVE_DIR."""
+    override = os.environ.get('HOVER_BEACON_DRIVE_DIR')
+    base = override if override else os.path.join(
+        'G:', os.sep, 'My Drive', 'SAIRN-status', 'hover-chain-h1')
+    return os.path.join(base, 'TIP-BEACON.md')
 
 
 def anchor_payload(tip, total_entries, now):
@@ -192,6 +223,29 @@ def cmd_publish(argv):
               'publish.' % (tip['seq'], BEACON_PATH, readback.get('checkpoint_seq', '<missing>')))
         return EXIT_COULD_NOT_RUN
     print('published: seq=%d hash=%s total=%d' % (tip['seq'], tip['hash'], len(entries)))
+    # DRIVE MIRROR, added h1 b38 -- the two-copy fix. Non-fatal: the local
+    # beacon above is the one this tool's own --check depends on, and a
+    # mounted-drive hiccup (unmounted, offline, permissions) must not block
+    # a real publish from reporting success for the part that worked. Loud
+    # either way, never silent -- see _drive_beacon_path()'s docstring.
+    drive_path = _drive_beacon_path()
+    try:
+        ddir = os.path.dirname(drive_path)
+        if ddir and not os.path.isdir(ddir):
+            os.makedirs(ddir)
+        io.open(drive_path, 'w', encoding='utf-8', newline='\n').write(text)
+        mirrored = io.open(drive_path, encoding='utf-8').read()
+        if mirrored != text:
+            print('DRIVE MIRROR NOT CONFIRMED: wrote %s but the read-back is '
+                  'not byte-identical -- the local beacon above is still '
+                  "correct; the Drive-hosted copy cc's board reads may still "
+                  'be stale.' % drive_path)
+        else:
+            print('drive-mirrored: %s' % drive_path)
+    except OSError as exc:
+        print('DRIVE MIRROR NOT WRITTEN (non-fatal -- the local beacon above '
+              'is still correct and this publish still counts): %s -- %s'
+              % (drive_path, exc))
     if '--anchor' in argv:
         payload = anchor_payload(tip, len(entries), now)
         # ONE line, machine-parseable, so the driving session does not have
@@ -303,6 +357,7 @@ def cmd_selftest(argv):
     real files."""
     import tempfile
     import shutil
+    import contextlib
 
     scratch = tempfile.mkdtemp(prefix='beacon_selftest_')
     try:
@@ -310,6 +365,20 @@ def cmd_selftest(argv):
         real_beacon, real_log = BEACON_PATH, LOG_PATH
         BEACON_PATH = os.path.join(scratch, 'TIP-BEACON.md')
         LOG_PATH = os.path.join(scratch, 'log.jsonl')
+
+        # THE DRIVE MIRROR MUST NEVER TARGET THE REAL MOUNT DURING A
+        # SELFTEST, same reasoning as BEACON_PATH/LOG_PATH above -- set for
+        # the WHOLE function body, not just the sub-block that tests it, or
+        # every other cmd_publish() call in this selftest (there are several)
+        # silently mirrors synthetic fixture data onto the real
+        # G:\My Drive\...\hover-chain-h1\TIP-BEACON.md the instant this
+        # function's module-level default was still in effect. Found by
+        # running this very selftest once without this line: it overwrote
+        # the real Drive beacon with a seq=19 fixture hash. Fixed here, and
+        # the real beacon was republished for real immediately after.
+        had_override = 'HOVER_BEACON_DRIVE_DIR' in os.environ
+        real_drive_override = os.environ.get('HOVER_BEACON_DRIVE_DIR')
+        os.environ['HOVER_BEACON_DRIVE_DIR'] = os.path.join(scratch, 'drive-mirror-default')
 
         import hover_log
         hover_log.LOG_PATH = LOG_PATH
@@ -347,6 +416,68 @@ def cmd_selftest(argv):
         check('a clean single-entry log publishes OK', rc == EXIT_OK)
         rc = cmd_check([])
         check('...and immediately checks OK', rc == EXIT_OK)
+
+        # 1a. CHECKPOINT line, added h1 b38 -- the exact contract
+        # tools/sairn_board_publish.py parses (`^CHECKPOINT:\s*(\{.*\})\s*$`,
+        # json keys seq/hash/published_at). Reproduced here rather than
+        # trusted, since the whole point of this fix is that the two tools'
+        # idea of the format had never once been checked against each other.
+        published_text = io.open(BEACON_PATH, encoding='utf-8').read()
+        cp_match = re.search(r'^CHECKPOINT:\s*(\{.*\})\s*$', published_text, re.M)
+        check('a published beacon carries exactly one CHECKPOINT line',
+              cp_match is not None)
+        if cp_match:
+            cp = json.loads(cp_match.group(1))
+            check('CHECKPOINT seq/hash match the real tip this publish just wrote',
+                  cp.get('seq') == e1['seq'] and cp.get('hash') == e1['hash'])
+            check('CHECKPOINT carries published_at and no stray keys',
+                  set(cp.keys()) == {'seq', 'hash', 'published_at'})
+
+        # 1b. DRIVE MIRROR, added h1 b38 -- the two-copy fix. Point it at a
+        # scratch subdir via the override, never the real G: mount, and
+        # confirm the mirrored bytes are byte-identical to the local beacon
+        # this same --publish call just wrote and verified above.
+        drive_scratch = os.path.join(scratch, 'drive-mirror')
+        os.environ['HOVER_BEACON_DRIVE_DIR'] = drive_scratch
+        try:
+            buf_dm = io.StringIO()
+            with contextlib.redirect_stdout(buf_dm):
+                rc = cmd_publish([])
+            out_dm = buf_dm.getvalue()
+            check('a publish with the Drive-mirror override set still returns OK',
+                  rc == EXIT_OK)
+            check('...and reports the mirror path, not a silent skip',
+                  'drive-mirrored: ' in out_dm)
+            mirrored_path = os.path.join(drive_scratch, 'TIP-BEACON.md')
+            check('the mirrored file actually exists at the override path',
+                  os.path.isfile(mirrored_path))
+            if os.path.isfile(mirrored_path):
+                local_text = io.open(BEACON_PATH, encoding='utf-8').read()
+                mirror_text = io.open(mirrored_path, encoding='utf-8').read()
+                check('TEETH: the mirrored copy is byte-identical to the local '
+                      'beacon, not just present', mirror_text == local_text)
+
+            # 1c. TEETH: the mirror target cannot be created (a FILE sits where
+            # a directory needs to go) -- publish must still return OK for the
+            # part that worked (the local beacon), loudly say the mirror was
+            # NOT written, and never silently swallow the failure.
+            blocked = os.path.join(scratch, 'blocked-file')
+            io.open(blocked, 'w').write('not a directory')
+            os.environ['HOVER_BEACON_DRIVE_DIR'] = os.path.join(blocked, 'hover-chain-h1')
+            buf_dm2 = io.StringIO()
+            with contextlib.redirect_stdout(buf_dm2):
+                rc = cmd_publish([])
+            out_dm2 = buf_dm2.getvalue()
+            check('TEETH: an unwritable Drive-mirror target still returns OK '
+                  '(fail-open on the SECONDARY copy, never on the primary one)',
+                  rc == EXIT_OK)
+            check('...and says so loudly rather than staying silent',
+                  'DRIVE MIRROR NOT WRITTEN' in out_dm2)
+        finally:
+            # Restore to THIS function's own scratch default, not delete --
+            # every cmd_publish() call still ahead in this selftest must
+            # keep mirroring into the scratch tree, never the real mount.
+            os.environ['HOVER_BEACON_DRIVE_DIR'] = os.path.join(scratch, 'drive-mirror-default')
 
         # 2. TAMPER: flip the checkpointed entry's hash in the log after publish.
         tampered = dict(e1)
@@ -476,6 +607,10 @@ def cmd_selftest(argv):
     finally:
         BEACON_PATH, LOG_PATH = real_beacon, real_log
         hover_log.LOG_PATH = real_log
+        if had_override:
+            os.environ['HOVER_BEACON_DRIVE_DIR'] = real_drive_override
+        else:
+            os.environ.pop('HOVER_BEACON_DRIVE_DIR', None)
         shutil.rmtree(scratch, ignore_errors=True)
 
 
