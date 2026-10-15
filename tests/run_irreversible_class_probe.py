@@ -33,9 +33,13 @@ cannot be made to pass by adding a member to the shipped tuple, and adding one
 cannot make it fail.
 """
 import importlib.util
+import io
+import json
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
@@ -82,16 +86,66 @@ if not sha:
     print('  SKIPPED: no recent commit touching ' + AUTH + ' in this clone')
     auth_diff = None
 else:
-    auth_diff = G.range_diff(sha + '~1', sha)
-    code, lines = G.check(auth_diff, verbose=True)
-    # THE PIN IS ON THE GAP, NOT ON THE FIX. If this ever stops being exit 0
-    # with no members, the name-based half has grown to cover shared libraries
-    # and this whole class may be redundant -- which is a finding, not a
-    # failure, and this message says so rather than reading as a defect.
-    check('with NO members, a change to ' + AUTH + ' is still not recorded '
-          '(this is the gap the class exists for)',
-          code == 0, 'exit was %d -- if the name-based half now catches shared '
-                     'libraries, re-read whether this class is still needed' % code)
+    # ── MADE HERMETIC 2026-10-15 (cody b16), AND THE OLD ARM'S OWN
+    #    DIAGNOSIS WOULD HAVE BEEN WRONG ─────────────────────────────────────
+    # This arm went red in the b15 full-tree run and its failure text invited
+    # exactly one conclusion: "if the name-based half now catches shared
+    # libraries, re-read whether this class is still needed". DRIVEN, that
+    # conclusion is FALSE, and it was leaking live state in TWO ways at once:
+    #
+    #  1 THE OBLIGATION FILE. G.check() reads the real
+    #    docs/tier-a-reviews.json, whose open obligations change every time any
+    #    session opens or discharges one. Measured today it answered "TIER A
+    #    CODE CHANGED AND ONLY PART OF IT IS RECORDED ... already covered:
+    #    invoices, leg_aftercare" -- today's backlog, not this gap.
+    #  2 THE COMMIT'S SCOPE. `range_diff(sha~1, sha)` takes the WHOLE commit,
+    #    and the most recent commit touching api/_lib/auth.js also touched
+    #    api/_lib/leg-roles.js and others that DO name Tier A resources. So the
+    #    arm was asking about auth.js and measuring a twenty-resource change.
+    #
+    # Both are closed here: the obligation file is a FIXTURE with no records,
+    # and the diff is RESTRICTED to the one path the arm is about. With both
+    # controlled the gate answers exit 0 -- "No file in this change names a
+    # Tier A resource on a changed line" -- so THE GAP IS REAL and this class
+    # is still needed. The pin is still on the gap; it is now a pin on the gap
+    # rather than on today's obligation backlog.
+    _fxdir = tempfile.mkdtemp(prefix='irrev-tiera-fixture-')
+    _fx = os.path.join(_fxdir, 'tier-a-reviews.json')
+    io.open(_fx, 'w', encoding='utf-8', newline='\n').write(
+        json.dumps({'records': []}, indent=1))
+    _real_reviews = G.REVIEWS
+    G.REVIEWS = _fx
+    try:
+        auth_diff = subprocess.run(
+            ['git', 'diff', '-U3', sha + '~1', sha, '--', AUTH],
+            cwd=REPO, capture_output=True, text=True, encoding='utf-8',
+            errors='replace').stdout
+        # A PRECONDITION, not an assumption: an empty diff would make the arm
+        # below pass over nothing at all.
+        check('the path-restricted diff for ' + AUTH + ' is NON-EMPTY, so the '
+              'arm below is measuring a real change to that one file',
+              len(auth_diff.strip()) > 0,
+              'git diff %s~1 %s -- %s produced %d bytes'
+              % (sha[:12], sha[:12], AUTH, len(auth_diff)))
+        code, lines = G.check(auth_diff, verbose=True)
+        # THE PIN IS ON THE GAP, NOT ON THE FIX. If this ever stops being exit
+        # 0 with no members, the name-based half has grown to cover shared
+        # libraries and this whole class may be redundant -- which is a
+        # finding, not a failure, and this message says so rather than reading
+        # as a defect. It is now a trustworthy signal: with the obligation file
+        # and the diff scope both fixtured, exit 1 can only mean the matcher
+        # changed.
+        check('with NO members, a change to ' + AUTH + ' is still not recorded '
+              '(this is the gap the class exists for)',
+              code == 0, 'exit was %d -- the obligation file is a FIXTURE with '
+                         'no records and the diff is restricted to %s, so if '
+                         'this is not 0 the name-based half really has grown '
+                         'to cover shared libraries; re-read whether this '
+                         'class is still needed. lines: %s'
+                         % (code, AUTH, str(lines)[:200]))
+    finally:
+        G.REVIEWS = _real_reviews
+        shutil.rmtree(_fxdir, ignore_errors=True)
 
 print('\n2. THE EMPTY CLASS IS A NO-OP -- nothing is red on arrival')
 check('an empty class matches nothing, even on a member-shaped path',

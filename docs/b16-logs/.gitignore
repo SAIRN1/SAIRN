@@ -1,0 +1,11 @@
+# Scratch directories this batch's ablations created. NOT committed, on purpose.
+#
+# copytool/  a COPY of tools/run_all_tests.py, made so the floor-layer ablation
+#            could mutate it without writing tools/ (cc's). A second copy of a
+#            tracked tool sitting in docs/ is exactly what the copy-exactly gate
+#            exists to refuse, and committing it would be propagating a pattern
+#            into a new place with no re-qualification.
+# fakereg/   a synthetic claim-registry directory used to reproduce the
+#            run_registry_claim_probe verdict-line defect.
+copytool/
+fakereg/

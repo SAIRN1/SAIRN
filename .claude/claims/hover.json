@@ -809,8 +809,8 @@
       "task": "b41: chain+RFC3161 check, Flag1 sign-off, land-check cc b15/hank b14/cody b15-16/fourth b23, scope-gate direct test, fourth b21 63v68 resources, cleanup _to_delete",
       "claimed_at": "2026-10-15T12:48:57Z",
       "claimed_at_epoch": 1792068537.3275917,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-15T13:33:32Z",
       "files": null
     }
   ],

@@ -1,0 +1,22 @@
+the three test-file-floor layers -- criteria 2026-10-15.1
+subject: tools/run_all_tests.py (READ and DRIVEN, never written)
+fixtures: a temp floor file per arm; the real docs/test-file-floor.json is never written
+
+T. tracked-intersection: the floor may never rise above what git TRACKS
+  ok   T1 the raise is CLAMPED to the tracked count: asked for 385 with 380 tracked, wrote 380
+  ok   T2 ACROSS RUNS: a later read of the floor is 380, still <= the 380 files git tracks, so the next run cannot fail against a floor above its own tree
+  ok   T3 PAIRED POSITIVE: a rise WITHIN the tracked count still lands (377) -- the clamp is not a ratchet that never moves
+  ok   T4 FAIL CLOSED: with the tracked count UNMEASURABLE the floor is not raised at all, and the reason is stated
+
+R. ratchet: the floor is READ from the pin, not the hardcoded literal
+  ok   R1 a pinned floor ABOVE the literal is the one used (377, not the last-resort 370)
+  ok   R2 a pin BELOW the literal is REFUSED and the floor stays at 370, with the reason stated
+  FAIL R3 MIN_TEST_FILES must come from the shipped pin
+         constant=370 pin=808 literal=370
+
+S. silence-breaking: `behind` is INSIDE the early-return condition
+  ok   S1 STRUCTURAL: the early `return 0` in _hook_body() at line 585 tests `behind` (condition names: behind, failures, retried, shrunk, skipped). A clean tree whose floor has gone stale therefore cannot return before any line is built
+       NOTE: structural, not behavioural -- the enclosing function runs the whole suite, so driving it per arm is not practical. Read as "the layer is present", not "the layer works".
+
+1 failure(s)
+  - R3 MIN_TEST_FILES must come from the shipped pin

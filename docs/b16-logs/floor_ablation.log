@@ -1,0 +1,22 @@
+ABLATION -- tests/run_floor_layers_probe.py vs the three layers
+tools/ is COPIED, never written. 3 layer(s).
+
+BASELINE (unmutated copy) -> exit 0
+    R4   ok
+    T1   ok
+    S1   ok
+
+=== ratchet                CAUGHT
+    removed  : the floor is read from the pin instead of the literal
+    probe    : exit 1, arm R4 -> FAIL
+
+=== tracked-intersection   CAUGHT
+    removed  : the raise is clamped to the count git tracks
+    probe    : exit 1, arm T1 -> FAIL
+
+=== silence-breaking       CAUGHT
+    removed  : `behind` is inside the early-return condition
+    probe    : exit 1, arm S1 -> FAIL
+
+tools/run_all_tests.py untouched: True
+3 of 3 layer(s) caught

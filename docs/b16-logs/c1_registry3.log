@@ -1,0 +1,33 @@
+  ok   a claim visible ONLY in the registry BLOCKS
+  ok   ...naming the session that holds it
+  ok   ...and the declared file they collide on
+  ok   ...and SAYING it is not on origin/main, because that changes what to do about it
+  ok   a registry claim on DISJOINT files does not block
+  ok   a registry claim older than the expiry does not block
+  ok   a RELEASED registry claim does not block
+  ok   an ABSENT registry directory leaves the tool as it was
+  ok   an EMPTY registry leaves the tool as it was
+  ok   a CORRUPT registry row leaves the tool as it was
+  ok   ...and does not spill a traceback at the operator
+  ok   a row with NO claims key -- a clone on the older build -- is not an error
+  ok   a row whose claims are the WRONG SHAPE is skipped, not fatal
+  ok   another session's row is byte-identical after a check
+  ok   this session wrote its OWN row
+  ok   ...with a claims key
+  ok   ...stamped so a reader can tell how fresh the mirror is
+  ok   ...and every mirrored claim carries its declared file set
+  ok   ...and the row still says it belongs to THIS session -- a mirror that mislabels its owner corrupts the one key the registry is partitioned by
+  ok   read_claims() itself returns [] on a corrupt row rather than raising, so the INNER guard is held too
+  ok   read_claims() itself returns [] on a directory that is not there rather than raising, so the INNER guard is held too
+  ok   a TEN-HOUR-OLD claim whose session is still RUNNING is still held -- the case that read as abandoned for six hours tonight
+  ok   a ONE-MINUTE-OLD claim whose session is GONE is released NOW, not in three hours and fifty-nine minutes
+  ok   with liveness UNKNOWN a RECENT HEARTBEAT keeps an old claim held
+  ok   ...and a STALE heartbeat does not, so an abandoned row still expires
+  ok   a claim with NO liveness and NO heartbeat falls back to the claim time exactly as before, so a git claim is unaffected
+  ok   and a RELEASED claim is still released whatever liveness says -- a running process must not resurrect finished work
+  ok   end to end: a registry claim whose PROCESS IS GONE does not block, however recently it was taken
+  ok      ...and the tool really did reach a decision on that input, so the arm above is not passing over silence
+  ok   the tool STAMPS a heartbeat, so "still working" is evidence rather than an assumption
+  ok   overlaps() reports the shared FILE explicitly, not only its word fragments
+
+0 failure(s)

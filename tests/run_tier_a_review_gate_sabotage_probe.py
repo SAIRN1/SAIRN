@@ -105,10 +105,38 @@ MUTATIONS = [
      '    candidates = [n for n in roster if n != author]',
      '    candidates = list(roster)'),
 
-    ('8. THE ROSTER STOPS FAILING CLOSED -- an unreadable .claude/claims/ returns an empty list instead of None, so assign_owner sees a roster with nobody on it and every record is quietly born unowned',
+    # ── RE-AIMED 2026-10-15 (cody b16), AND THE OLD MUTATION WAS SURVIVABLE
+    #    BY DESIGN ──────────────────────────────────────────────────────────
+    # This arm reported "not caught" in the b15 full-tree run, which reads as
+    # a fail-open gap in tools/tier_a_review_gate.py. DRIVEN, it is not one.
+    # The old mutation changed reviewer_roster_detail()'s OSError limb from
+    # `return None, [], []` to `return [], [], []` -- and MEASURED on a
+    # sabotaged copy, the harm never reaches anything:
+    #
+    #   reviewer_roster_detail() -> ([], [], [])          <- degraded
+    #   eligible_reviewers()     -> None                  <- STILL closed
+    #   assign_owner(...)        -> (None, 'the eligible-reviewer roster could
+    #                                 not be read ... this record is
+    #                                 first-come. Fix the roster ...')
+    #
+    # because eligible_reviewers() normalises a roster of fewer than two names
+    # to None on its own (tools/tier_a_review_gate.py:1430) -- one name cannot
+    # review anything, so an empty one cannot either. The defect class is
+    # defended in TWO places, and the old mutation only removed the first.
+    # A mutation whose harm is absorbed downstream is not an undetected
+    # defect; it is an arm asserting that a defence nobody can reach is
+    # missing, and it reports that in the voice of a real gap.
+    #
+    # SO IT IS RE-AIMED AT THE SECOND DEFENCE, which is where the harm would
+    # actually land: make eligible_reviewers() hand back the short roster
+    # instead of refusing it. That IS the "roster with nobody on it" the label
+    # names, and tests/run_tier_a_review_gate_probe.py's own arm -- "with no
+    # .claude/claims/ to read, eligible_reviewers() answers None rather than
+    # []" -- is the one that catches it.
+    ('8. THE ROSTER STOPS FAILING CLOSED -- a roster too short to review anything is handed back instead of refused, so assign_owner sees a roster with nobody on it and every record is quietly born unowned',
      GATE,
-     '    except OSError:\n        return None',
-     '    except OSError:\n        return []'),
+     '    return names if len(names) >= 2 else None',
+     '    return names'),
 
     ("9. THE HOVER AUDITOR BECOMES ELIGIBLE -- one filter removed, and the audit role starts receiving the build agents' review queue",
      GATE,
