@@ -2419,6 +2419,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "65da5cbaee5b5a9325fdfa3291225ea673d754a5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/sd-data-law-role-matrix.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -3315,6 +3323,19 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "8775f6161635a9379a0ef6e32e12751d79ef6dcb",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "assertions NET REMOVED",
+     "detail": "1 removed, 0 added; first removed: ck('ABLATION: the PRE-FIX message asserted the platform cause and carried '"
+    }
+   ],
+   "sha": "8783822aec5276d5d2a907013bd7313ad4cc80c9",
    "criteria_version": "2026-10-06.1"
   },
   {
