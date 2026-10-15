@@ -40,5 +40,15 @@
       "status": "done",
       "evidence": "PUSHED WITHOUT FORCE AND LANDED, proved by ancestry not by git's wording. Pre-push tip 86a27458e05e recorded in scratchpad pre_push_tip_b22.txt; git merge-base --is-ancestor <tip> HEAD -> ANCESTOR, i.e. a fast-forward. git rev-list --left-right --count origin/main...HEAD -> 0 0; HEAD == origin/main == 86a27458. First push attempt was DENIED by register_feed_gate because the clone was 1 ahead / 4 behind (non-fast-forward, nothing checked and nothing sent) -- resolved with git pull --rebase origin main, exit 0, then pushed clean. NO SAIRN_SEED_GATE in any form, NO SAIRN_GATE_EXEMPT, NO SAIRN_SKIP. .claude/settings.json not edited and not in the commit; hooks untouched; no auditor clone entered. All six b22 docs/ paths confirmed on origin/main with git cat-file -e origin/main:<path>. Re-check: git rev-list --left-right --count origin/main...HEAD"
     }
-  ]
+  ],
+  "closed": {
+    "drive_verify": "PASS",
+    "verified_by": "python tools/drive_upload_verify.py --agent fourth --batch b22 --verify-only",
+    "criteria": "2026-10-13.1",
+    "deliverables": [
+      "SAIRN-handoff-fourth-b22.md sha256 b04fd30912e8179b",
+      "SAIRN-report-fourth-b22.txt sha256 d316af8dff939b71",
+      "SAIRN-digest-fourth-b22.txt sha256 ca995b27c21e692e"
+    ]
+  }
 }
