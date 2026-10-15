@@ -6655,6 +6655,28 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-15T13:42:07Z",
+      "opened_at_sha": "49f6a75289c07e395292e6f9b6fd80f88afe3138",
+      "opened_at_sha_basis": "file-set",
+      "resources": [
+        "sen_pay_rates",
+        "sen_visits"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/b15-payroll-effective-clock.test.js"
+      ],
+      "what": "b15: sen_pay_rates and sen_visits -- fourth's b23 F1. api/_lib/sen-payroll.js now substitutes the EFFECTIVE clock (api/_lib/sen-evv-clock.js effectiveClock) before computing minutes, so an APPROVED clock correction reaches pay: fourth measured 240 min / 8000 cents as shipped against 300 / 10000 corrected, i.e. 60 minutes and 2000 cents unpaid per visit per correction. The substitution is in the MODULE, not the handler's map, and arm P7 drives the real endpoint with its map unchanged. REVIEW HARDEST, and all three are things I cannot answer about my own work: (a) THE RESTATEMENT QUESTION -- a correction approved AFTER a pay run silently changes a historical total, because nothing anywhere re-states or versions a period already paid. I added corrected_clock_visits to the output so a figure can be reconciled, and that is NOT the same as a restatement trail; decide whether a paid period must be frozen, because if it must then this fix changes history quietly and that is worse than the underpayment it closes. (b) api/_lib/sen-evv-readiness.js and the client's EVV anomaly checks STILL read the raw clock -- fourth's F2, held for Michael by decision -- so an EVV export and a pay run can now disagree about the same visit and nothing reconciles them. Confirm that divergence is acceptable for exactly as long as F2 is open, or say it is not. (c) sen-payroll.js now carries a require() of sen-evv-clock, which is the FIRST require in a file whose header claims purity. I argue it is still pure because the imported module is pure and only one function is used; check that argument rather than the comment I wrote asserting it, and check that effectiveClock cannot throw on any row shape computePayroll accepts -- a throw there takes out a whole pay run, where the old code would have excluded one visit.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-10-15T13:42:07Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

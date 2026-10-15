@@ -2040,6 +2040,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b15-client-effective-clock.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "49f6a75289c07e395292e6f9b6fd80f88afe3138",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b15-payroll-effective-clock.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "49f6a75289c07e395292e6f9b6fd80f88afe3138",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_write_path_scan_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -5878,6 +5894,22 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "c465743b34b08d59d050ff5507e6d58f01d247dc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b14-clock-approval-two-person.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c470c2e13c316cc9aee4757a06b1c2101013a7fc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b15-corrections-hydrate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c470c2e13c316cc9aee4757a06b1c2101013a7fc",
    "criteria_version": "2026-10-06.1"
   },
   {
