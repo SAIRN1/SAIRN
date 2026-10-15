@@ -170,6 +170,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "03a14bad945738d33a0ccab41fb54fc4bc17fafc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/ai-safeguards.test.js",
    "class": "test file",
    "level": "WEAKENING",
@@ -3444,6 +3452,19 @@
     }
    ],
    "sha": "8d3db65ff594f01c75fc8ee6f514c47be7c1b3e0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "assertions NET REMOVED",
+     "detail": "1 removed, 0 added; first removed: ck('ABLATION: the PRE-FIX message asserted the platform cause and carried '"
+    }
+   ],
+   "sha": "8d992b3383da9d9a15efc906dca2ff5143078ff3",
    "criteria_version": "2026-10-06.1"
   },
   {
