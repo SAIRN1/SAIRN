@@ -28469,6 +28469,68 @@
       "recurrence_open": "The actions close the SPECIFIC pair and the specific file. They do NOT close the shape: this is at least the third two-lists-that-must-agree defect in this family, and the platform carries other pairs whose halves live in different languages -- SD_SESSION_GATED and SD_GATE_APP are one, and they are kept in agreement only by a test somebody remembered to write. Nothing systematically enumerates such pairs. They also do not prove the database was migrated: every action here is in the repo, and until the SQL is run the only thing that improved is that the failure is now named 503 CHECK_NOT_WIDENED instead of silently covering 19% of the population."
     },
     {
+      "commit": "00f846de8463",
+      "date": "2026-10-14",
+      "subject": "fix(role-picker check): the 11 UNPROVEN apps resolved -- 9 were this check's fault, not the apps'",
+      "files": [
+        "api/role-picker-vs-check-constraint.test.js",
+        "docs/2026-10-15-hank-b13-unproven-apps-resolved.md",
+        "docs/hank-evidence/b13/unproven_SABOTAGE.log",
+        "docs/hank-evidence/b13/unproven_after.log",
+        "docs/hank-evidence/b13/unproven_after_second_method.log",
+        "docs/hank-evidence/b13/unproven_after_table_fix.log",
+        "docs/hank-evidence/b13/unproven_before.log"
+      ],
+      "lines_added": 586,
+      "lines_removed": 13,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "probe-control",
+      "summary": "api/role-picker-vs-check-constraint.test.js reported 11 of 17 apps UNPROVEN and named that as the finding of the run. Nine of the eleven were defects in the check: it built the auth table name as app+'_employee_auth' when four apps use a prefix (sd, sb, grd, scp) and api/_lib/auth.js states in its own words that there is no such rule, and it scanned only STATIC <option> markup when several pickers are filled at runtime from a JS array. Four more apps do not assign roles from their pages at all and were reported as unmeasurable rather than as not-applicable.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "api/role-picker-vs-check-constraint.test.js",
+      "found_by_session": null,
+      "injection": {
+        "commit": "31406a87e010",
+        "date": "2026-10-14",
+        "subject": "fix(N1-N4,F6): a clock time that could be overwritten, a last owner that could be demoted, an exclusion nobody could see, and a delete that lied",
+        "lag_days": 0
+      },
+      "contributing_factors": [
+        {
+          "factor": "The table name was DERIVED while the platform's own map says a derivation is wrong for at least five apps -- the comment was five lines above the map that would have given the right answer",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The name now comes from the exported AUTH_TABLE_BY_APP, the same map the live session gate reads, so there is one source rather than two rules that can disagree"
+        },
+        {
+          "factor": "One detection method over one representation (markup) read as full coverage, and an empty <select> filled at runtime is invisible to it",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "A second method over ARRAY LITERALS, strict in the safe direction (ALL tokens must be roles), with the matched literal's line number printed so a reader can check what matched"
+        },
+        {
+          "factor": "UNPROVEN was used for three different situations -- a detector gap, an app with no provisioning control, and an app with no employee-auth table -- so the count carried no actionable meaning",
+          "kind": "process",
+          "action_status": "done",
+          "action": "NOT APPLICABLE is now a distinct verdict with the command that re-derives it, and the array-only clean verdicts are LABELLED as the weaker claim"
+        },
+        {
+          "factor": "The check had never been sabotaged, so nobody knew which defects it could see. The FIRST sabotage -- a misspelt role planted into a picker -- was MISSED, exit 0",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "The blind spot is printed as a named limit on every run beside the live-lag one. Closing it means deciding which non-role option values are legitimate per app, a vocabulary nobody has written"
+        }
+      ],
+      "recurrence_open": "A MISSPELT role in a picker is still invisible: the comparison skips any option value not in ROLES_BY_APP, because a picker legitimately carries '' and non-role options. The live-lag limit is also unchanged -- this reads the CHECK in sql/, not production's, so sairncare's and sairnlegacy's widened CHECKs are intentions until sql/2026-10-14-michael-run-order.sql is run. And an array MIXING roles with non-roles is missed by the second method by design."
+    },
+    {
       "commit": "070efcd3042e",
       "date": "2026-10-14",
       "subject": "fix(tools): encoding= on the 13 subprocess_decode_check findings in tools/",
@@ -28502,6 +28564,243 @@
       },
       "citation_note": "no standing process-rule names a text-mode subprocess call missing explicit encoding specifically; closest (1.11, fail-closed-when-absent) is about a dependency being absent, not a locale-default decode",
       "factors_unknown_reason": "not investigated this batch -- the fix (subprocess_decode_check.fix_file(), AST-based, scoped to tools/) is verified; root-cause factor analysis was not done"
+    },
+    {
+      "commit": "07dfa24f489d",
+      "date": "2026-10-14",
+      "subject": "fix(sairnsenior,sairncare): T16 clock corrections are appended and approved, T18 position tokens validated",
+      "files": [
+        "api/_lib/compliance-rules.js",
+        "api/_lib/sen-evv-clock.js",
+        "api/_resources/sairnsenior.js",
+        "api/n1-n4-and-sf-delete.test.js",
+        "api/sd-data-cross-tenant-dispatchers.test.js",
+        "api/sd-data.js",
+        "api/t16-clock-correction-record.test.js",
+        "api/t18-positions-vocabulary.test.js",
+        "docs/hank-evidence/b13/regress_compliance-rules-staff-join.test.js.log",
+        "docs/hank-evidence/b13/regress_compliance-rules-wv.test.js.log",
+        "docs/hank-evidence/b13/regress_compliance_training_window_boundary.js.log",
+        "docs/hank-evidence/b13/regress_n1-n4-and-sf-delete.test.js.log",
+        "docs/hank-evidence/b13/regress_n1-n4.log",
+        "docs/hank-evidence/b13/regress_sd-data-alf-training-join.test.js.log",
+        "docs/hank-evidence/b13/regress_sd-data-sen-caregiver-pii-scope.test.js.log",
+        "docs/hank-evidence/b13/regress_sd-data-sen-evv-clock.test.js.log",
+        "docs/hank-evidence/b13/regress_sd-data-sen-role-asymmetry.test.js.log",
+        "docs/hank-evidence/b13/regress_sd-data-sen-self-correction-flag.test.js.log",
+        "docs/hank-evidence/b13/regress_sd_data_alf_compliance_staff_scope.js.log",
+        "docs/hank-evidence/b13/regress_sd_data_clock_flags_merge.test.js.log",
+        "docs/hank-evidence/b13/regress_t16-clock-correction-record.test.js.log",
+        "docs/hank-evidence/b13/routed_probe_after_items123.log",
+        "docs/hank-evidence/b13/routed_probe_after_t18.log",
+        "docs/hank-evidence/b13/t16_GREEN.log",
+        "docs/hank-evidence/b13/t16_RED.log",
+        "docs/hank-evidence/b13/t17_ABLATION.log",
+        "docs/hank-evidence/b13/t18_GREEN.log",
+        "docs/hank-evidence/b13/t18_RED.log"
+      ],
+      "lines_added": 1901,
+      "lines_removed": 41,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "b12's own fix for the silent EVV clock overwrite (N1) refused the second write 409 CLOCK_ALREADY_RECORDED and wrote nothing. That closed the overwrite and left no route at all for the person who made the mistake: propose_clock_correction is SCHEDULER-ONLY, so a caregiver who clocked in at the wrong time on their own visit could not correct it and could not ask. Michael decided for the append: the original is kept, the submission is appended to clock_corrections with the old value, the new value, the actor from the verified session, a reason and a server timestamp, PENDING, and effectiveClock() ignores a pending entry so payroll does not move until a scheduler approves it.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "31406a87e010",
+        "date": "2026-10-14",
+        "subject": "fix(N1-N4,F6): a clock time that could be overwritten, a last owner that could be demoted, an exclusion nobody could see, and a delete that lied",
+        "lag_days": 0
+      },
+      "contributing_factors": [
+        {
+          "factor": "The append-only route existed BESIDE the defect (propose_clock_correction) and was scheduler-only, so the asymmetry was visible in the same file and the refusal was chosen anyway",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The write path now feeds the SAME clock_corrections trail, so there is one mechanism with two entry points rather than a refusal beside a route"
+        },
+        {
+          "factor": "cody's routed arm asserted KEPT-OR-APPENDED and b12 shipped a refusal, so the arm stayed red against code its author believed was correct -- a design disagreement with no owner",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Escalated as a DECISION-NEEDED rather than re-argued in code; Michael decided and the decision is recorded in the handler comment"
+        },
+        {
+          "factor": "Nothing downstream consulted a correction's state, because corrections had no state -- so 'pending' had nowhere to be honoured",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "effectiveClock() reads the status and ignores pending entries; an entry with NO status is treated as approved so live corrected visits are not silently reverted"
+        },
+        {
+          "factor": "A 200 on a write that did not change the clock time is indistinguishable from one that did",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The response carries clock_correction.status and a sentence saying the recorded time was NOT changed and who must approve it"
+        }
+      ],
+      "recurrence_open": "The approval can still be given by the submitter in a one-person agency -- marked self_approved rather than refused, deliberately, because refusing strands the only person who can act. Nothing counts or reports those, and no UI exists for the approval queue at all: the route is API-only, so a caregiver's submission is invisible to a scheduler who does not go looking."
+    },
+    {
+      "commit": "07dfa24f489d",
+      "date": "2026-10-14",
+      "subject": "fix(sairnsenior,sairncare): T16 clock corrections are appended and approved, T18 position tokens validated",
+      "files": [
+        "api/_lib/compliance-rules.js",
+        "api/_lib/sen-evv-clock.js",
+        "api/_resources/sairnsenior.js",
+        "api/n1-n4-and-sf-delete.test.js",
+        "api/sd-data-cross-tenant-dispatchers.test.js",
+        "api/sd-data.js",
+        "api/t16-clock-correction-record.test.js",
+        "api/t18-positions-vocabulary.test.js",
+        "docs/hank-evidence/b13/regress_compliance-rules-staff-join.test.js.log",
+        "docs/hank-evidence/b13/regress_compliance-rules-wv.test.js.log",
+        "docs/hank-evidence/b13/regress_compliance_training_window_boundary.js.log",
+        "docs/hank-evidence/b13/regress_n1-n4-and-sf-delete.test.js.log",
+        "docs/hank-evidence/b13/regress_n1-n4.log",
+        "docs/hank-evidence/b13/regress_sd-data-alf-training-join.test.js.log",
+        "docs/hank-evidence/b13/regress_sd-data-sen-caregiver-pii-scope.test.js.log",
+        "docs/hank-evidence/b13/regress_sd-data-sen-evv-clock.test.js.log",
+        "docs/hank-evidence/b13/regress_sd-data-sen-role-asymmetry.test.js.log",
+        "docs/hank-evidence/b13/regress_sd-data-sen-self-correction-flag.test.js.log",
+        "docs/hank-evidence/b13/regress_sd_data_alf_compliance_staff_scope.js.log",
+        "docs/hank-evidence/b13/regress_sd_data_clock_flags_merge.test.js.log",
+        "docs/hank-evidence/b13/regress_t16-clock-correction-record.test.js.log",
+        "docs/hank-evidence/b13/routed_probe_after_items123.log",
+        "docs/hank-evidence/b13/routed_probe_after_t18.log",
+        "docs/hank-evidence/b13/t16_GREEN.log",
+        "docs/hank-evidence/b13/t16_RED.log",
+        "docs/hank-evidence/b13/t17_ABLATION.log",
+        "docs/hank-evidence/b13/t18_GREEN.log",
+        "docs/hank-evidence/b13/t18_RED.log"
+      ],
+      "lines_added": 1901,
+      "lines_removed": 41,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "api/_lib/compliance-rules.js counted ANY non-empty applies_to_positions array as MAPPED while the leg beside it validated `audience` against STAFF_POSITIONS. A requirement declaring ['rn'] was therefore left out of unmapped_requirements_caveat, and matchAudience returned a DECIDED applies:false for every real position -- a training requirement that applies to nobody, reported to a surveyor as a determination about a person rather than as a gap in the rule.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The `mappable` expression has carried an unvalidated applies_to_positions leg since the position-list branch was added, and the field was not produced at all until 2026-09-27, so the defect was unreachable before then and the commit that made it reachable is not the one that wrote it."
+      },
+      "contributing_factors": [
+        {
+          "factor": "The two legs sat in one expression and only one checked its values, so the asymmetry was one line from the correct version",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Both legs now check against STAFF_POSITIONS, and the row carries positions_unknown"
+        },
+        {
+          "factor": "indexOf() cannot distinguish 'this person is not in the audience' from 'nothing in this audience is a position', and answered false to both",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The unmatchable case is answered BEFORE the per-person branch, because it is a property of the row and the same for everybody"
+        },
+        {
+          "factor": "A typo ('rn' for 'nursing') would have produced a confident exclusion of exactly the person the author meant to include",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "A false is withheld while any token is unread; recorded and NOT repaired, because choosing 'nursing' would be this code deciding who a regulated requirement covers"
+        },
+        {
+          "factor": "No arm drove an invalid token at all -- the existing arms proved different-type-same-case and nothing proved an unreadable vocabulary",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/t18-positions-vocabulary.test.js, 17 arms, 6 of them controls that must stay green in both directions"
+        }
+      ],
+      "recurrence_open": "STAFF_POSITIONS is a module constant and alf_staff.position is a free-text jsonb field, so a position a facility really uses and the module does not know remains undecidable -- correctly, and with nothing proposing the vocabulary be widened. The seed rules themselves are unvalidated: nothing checks an authored rule's applies_to_positions at write time, so a bad token is still discovered at evaluation."
+    },
+    {
+      "commit": "07dfa24f489d",
+      "date": "2026-10-14",
+      "subject": "fix(sairnsenior,sairncare): T16 clock corrections are appended and approved, T18 position tokens validated",
+      "files": [
+        "api/_lib/compliance-rules.js",
+        "api/_lib/sen-evv-clock.js",
+        "api/_resources/sairnsenior.js",
+        "api/n1-n4-and-sf-delete.test.js",
+        "api/sd-data-cross-tenant-dispatchers.test.js",
+        "api/sd-data.js",
+        "api/t16-clock-correction-record.test.js",
+        "api/t18-positions-vocabulary.test.js",
+        "docs/hank-evidence/b13/regress_compliance-rules-staff-join.test.js.log",
+        "docs/hank-evidence/b13/regress_compliance-rules-wv.test.js.log",
+        "docs/hank-evidence/b13/regress_compliance_training_window_boundary.js.log",
+        "docs/hank-evidence/b13/regress_n1-n4-and-sf-delete.test.js.log",
+        "docs/hank-evidence/b13/regress_n1-n4.log",
+        "docs/hank-evidence/b13/regress_sd-data-alf-training-join.test.js.log",
+        "docs/hank-evidence/b13/regress_sd-data-sen-caregiver-pii-scope.test.js.log",
+        "docs/hank-evidence/b13/regress_sd-data-sen-evv-clock.test.js.log",
+        "docs/hank-evidence/b13/regress_sd-data-sen-role-asymmetry.test.js.log",
+        "docs/hank-evidence/b13/regress_sd-data-sen-self-correction-flag.test.js.log",
+        "docs/hank-evidence/b13/regress_sd_data_alf_compliance_staff_scope.js.log",
+        "docs/hank-evidence/b13/regress_sd_data_clock_flags_merge.test.js.log",
+        "docs/hank-evidence/b13/regress_t16-clock-correction-record.test.js.log",
+        "docs/hank-evidence/b13/routed_probe_after_items123.log",
+        "docs/hank-evidence/b13/routed_probe_after_t18.log",
+        "docs/hank-evidence/b13/t16_GREEN.log",
+        "docs/hank-evidence/b13/t16_RED.log",
+        "docs/hank-evidence/b13/t17_ABLATION.log",
+        "docs/hank-evidence/b13/t18_GREEN.log",
+        "docs/hank-evidence/b13/t18_RED.log"
+      ],
+      "lines_added": 1901,
+      "lines_removed": 41,
+      "app": "stonedesk",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "independent-review",
+      "summary": "api/sd-data-cross-tenant-dispatchers.test.js claimed its SAIRNgrounds session-gate coverage was held by an api/ path with hyphens and a .test.js suffix that has never existed; the real suite is the tests/ one with underscores. Found by cody's coverage-claim sweep: 1 bad claim in a population of 330.",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The claim was written with the hedge 'if one exists' already in it, so there was never a commit at which it was true."
+      },
+      "contributing_factors": [
+        {
+          "factor": "The hedge made the claim unfalsifiable at the time of writing",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The comment now names the real tests/ suite and states what it asserts"
+        },
+        {
+          "factor": "The naming conventions differ between api/ (hyphens, .test.js) and tests/ (underscores, .js), so a plausible-looking path is easy to write",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Renaming 120 suites to one convention is a far larger change than the defect; cody's sweep is the control that makes a wrong path cheap to find"
+        },
+        {
+          "factor": "The first draft of the FIX quoted the dead path to explain it and the sweep flagged the fix -- a sentence saying 'X does not exist' is indistinguishable, to a text sweep, from a claim that X holds something",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The correction describes the dead citation without spelling it, and says why; population went 330 -> 332 and the finding stayed until it was removed"
+        }
+      ],
+      "recurrence_open": "The sweep is cody's and lives under tests/; nothing in a push gate runs it, so a new bad citation is found only when somebody runs the probe. The population figure (330) is also only as current as the last run."
     },
     {
       "commit": "0e6607e0709e",
@@ -28766,143 +29065,6 @@
       "factors_unknown_reason": "not investigated this batch -- the three fixes (comment stripping with block state, string-contents blanking for the identifier branch only, brace-matched body) are verified; root-cause factor analysis was not done"
     },
     {
-      "commit": "c7c758ed4356",
-      "date": "2026-10-14",
-      "subject": "fix(push gate,floor): the override hint was corrected in b11 to a state that was already wrong",
-      "files": [
-        ".gitattributes",
-        ".githooks/pre-push",
-        "CLAUDE.md",
-        "docs/2026-10-14-cc-b12-routed.md",
-        "docs/BYPASS-LOG.jsonl",
-        "docs/SAIRN-PROCESS-RULES.md",
-        "docs/fmea/api__lib_sv-roles.js.json",
-        "docs/fmea/api__resources_sairncare.js.json",
-        "docs/fmea/api_ai-provenance-client-sites.test.js.json",
-        "docs/fmea/api_alf-append-only-read-order.test.js.json",
-        "docs/fmea/api_sd-data-sv-role-matrix.test.js.json",
-        "docs/fmea/sairnroofing.html.json",
-        "docs/fmea/sql_2026-10-14-hank-b11-mar-grant.sql.json",
-        "docs/fmea/sql_2026-10-14-michael-run-order.sql.json",
-        "docs/fmea/sql_sairncare_mar_access_grants_schema.sql.json",
-        "docs/test-file-floor.json",
-        "docs/unlanded/2026-10-13-cc-b6-open-work-shard-read-rows.patch",
-        "docs/unlanded/README.md",
-        "tools/run_all_tests.py",
-        "tools/sairn_push_gate_hook.py"
-      ],
-      "lines_added": 3447,
-      "lines_removed": 55,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "summary": "OVERRIDE_HINT named a blanket override that no longer works and omitted the scoped form the gate itself recommends. MEASURED: SAIRN_SEED_GATE=off with --pre-push exits 1 REFUSED, so the hint claim that it \"disables EVERY check in this hook\" was false in both directions -- it disables nothing and denies the push. The hint also named SAIRN_GATE_EXEMPT=seed as THE scoped form while the gate own refusal recommends SAIRN_SKIP per gate, eight gates against EXEMPTABLE one. b11 corrected this constant to a state that had been retired on 2026-10-13, one day earlier, and all eight selftest arms were green over it.",
-      "rules": [
-        "2.3"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "0e6607e0709e",
-        "date": "2026-10-14",
-        "subject": "fix(push gate): the refusal text names the scoped exemption first, as :990 already claimed",
-        "lag_days": 0
-      },
-      "citation_note": "a fact with a tense: the refusal text asserted a mechanism that had been retired the day before, and the arms over it only ever checked the ORDER of two variable names",
-      "contributing_factors": [
-        {
-          "factor": "the refusal text was hand-written rather than derived from the tool that owns the gate list",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "OVERRIDE_HINT is now built from gate_skip.GATES and gate_skip.ENV_GATE; if that import fails the hint says so rather than falling back to a remembered list"
-        },
-        {
-          "factor": "all eight selftest arms asked only about the ORDER of two variable names, so they stayed green over a false sentence",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "four arms added that ask about the CLAIMS the sentence makes, plus a second ablation using the b11 text, which passes all eight original arms and fails exactly the four new ones"
-        },
-        {
-          "factor": "the same mechanism is written down in five places and a fix in one does not reach the others",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "corrected in .githooks/pre-push, the hook own comment, CLAUDE.md section 3 and docs/SAIRN-PROCESS-RULES.md section 3.3, each ending with the instruction not to write it down a sixth time"
-        }
-      ],
-      "recurrence_open": "nothing mechanically compares a prose copy of this rule to gate_skip. tools/runbook_constant_agreement.py now does exactly that for the secrets rotation runbook and its registry could carry this rule as a second entry; it does not yet."
-    },
-    {
-      "commit": "c7c758ed4356",
-      "date": "2026-10-14",
-      "subject": "fix(push gate,floor): the override hint was corrected in b11 to a state that was already wrong",
-      "files": [
-        ".gitattributes",
-        ".githooks/pre-push",
-        "CLAUDE.md",
-        "docs/2026-10-14-cc-b12-routed.md",
-        "docs/BYPASS-LOG.jsonl",
-        "docs/SAIRN-PROCESS-RULES.md",
-        "docs/fmea/api__lib_sv-roles.js.json",
-        "docs/fmea/api__resources_sairncare.js.json",
-        "docs/fmea/api_ai-provenance-client-sites.test.js.json",
-        "docs/fmea/api_alf-append-only-read-order.test.js.json",
-        "docs/fmea/api_sd-data-sv-role-matrix.test.js.json",
-        "docs/fmea/sairnroofing.html.json",
-        "docs/fmea/sql_2026-10-14-hank-b11-mar-grant.sql.json",
-        "docs/fmea/sql_2026-10-14-michael-run-order.sql.json",
-        "docs/fmea/sql_sairncare_mar_access_grants_schema.sql.json",
-        "docs/test-file-floor.json",
-        "docs/unlanded/2026-10-13-cc-b6-open-work-shard-read-rows.patch",
-        "docs/unlanded/README.md",
-        "tools/run_all_tests.py",
-        "tools/sairn_push_gate_hook.py"
-      ],
-      "lines_added": 3447,
-      "lines_removed": 55,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "independent-review",
-      "summary": "MIN_TEST_FILES was pinned at 370 while discover() returned 802 (js 378 + py 424), so 432 test files could have been deleted with the shrinking-suite guard silent. The guard was not broken; it was measuring against a number nobody owned. Replaced with a ratchet in docs/test-file-floor.json that only ever rises, with the literal 370 kept as the floor of last resort so a corrupt ratchet file degrades to the old behaviour rather than to zero.",
-      "rules": [
-        "2.3"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "the constant has been hand-bumped repeatedly since 307; no single commit introduced the staleness, the maintenance model did, and picking one bump as the injection would be a guess"
-      },
-      "citation_note": "a number with no single source: the floor was a hand-maintained literal and the comment above it predicted its own decay twice inside one hour",
-      "contributing_factors": [
-        {
-          "factor": "the floor was a hand-maintained literal with a requested human cadence that never existed",
-          "kind": "process",
-          "action_status": "done",
-          "action": "the floor is a ratchet raised by the tool itself, and lowering it is a human edit with a reason"
-        },
-        {
-          "factor": "the first ratchet raised the floor ABOVE the tree (807 against 802) because cody probe writes five fixture files into the real tests/ directory and discover() walks the working tree",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "the ratchet basis is the discovered list INTERSECTED with git ls-files; an untracked file is on one person disk and in nobody clone, so it is not a guard. Found by running the probe, not by reading."
-        },
-        {
-          "factor": "a clean tree whose floor had gone stale produced no output at all, because the unattended copy returns before building its report",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "the floor-is-behind condition is part of the silence-breaking test rather than a line further down"
-        }
-      ],
-      "recurrence_open": "the ratchet cannot distinguish a deliberate mass deletion from an accidental one -- it refuses both and asks a human. That is the intended direction and it means a legitimate removal still costs a manual edit."
-    },
-    {
       "commit": "44abebb30bf5",
       "date": "2026-10-14",
       "subject": "feat(ai-safeguards): the client half -- six save sites that stored model output unflagged",
@@ -28959,6 +29121,60 @@
         }
       ],
       "recurrence_open": "yes"
+    },
+    {
+      "commit": "46128d86a4fd",
+      "date": "2026-10-14",
+      "subject": "feat(drive board): the status bridge publishes itself, and two defects it found",
+      "files": [
+        ".githooks/pre-push",
+        "docs/TOOLING-INVENTORY.md",
+        "tools/report_only_checks.py",
+        "tools/runbook_constant_agreement.py",
+        "tools/sairn_board_publish.py",
+        "tools/sairn_status.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 2053,
+      "lines_removed": 12,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "sairn_status.payload built a FRESH row dict and cmd_set wrote it whole, so the three keys publish_claims owns -- claims, claims_updated, claims_heartbeat -- survived only until the next status change. A session claims and then sets working, in that order, so the cross-clone early warning was erased within seconds of being written, every time. Nothing said so and nothing could have: an absent claims key is also exactly what a session running an older sairn_claim.py looks like, which read_claims documents as the ordinary state during a rollout. Also: the new board read a claim subject from the key app where sairn_claim writes subject, so every claim rendered as a question mark.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/sairn_board_publish.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "publish_claims and payload were written at different times by different batches and neither commit is identifiable as the one that introduced the conflict; naming one would be a guess"
+      },
+      "citation_note": "a check that stopped checking: the mirrored claims were the early warning other clones read without a fetch, and they were being erased seconds after every claim",
+      "contributing_factors": [
+        {
+          "factor": "payload rebuilt the whole row instead of carrying forward the keys another function owns",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the three claim keys are carried forward explicitly, and claims_heartbeat deliberately does NOT advance on a status write -- it is the claim tool heartbeat and re-stamping it would make a stale claim look freshly touched"
+        },
+        {
+          "factor": "the erased state was indistinguishable from the one benign case the code documents, so no reader could have told them apart",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the board prints the distinction in the cell rather than printing 0 bare, and arm A14 drives sairn_status.payload directly against the pre-fix shape"
+        },
+        {
+          "factor": "nothing consumed the field, so no behaviour changed when it vanished",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "the Drive board consumes it on every status, claim and context change, which is what surfaced it"
+        }
+      ],
+      "recurrence_open": "five of the six agents still show zero mirrored claims until their clones pull this fix and re-claim. Nothing re-mirrors an existing claim automatically; the row repopulates on the next claim or release."
     },
     {
       "commit": "4f69facd93b3",
@@ -29691,58 +29907,141 @@
       "factors_unknown_reason": "cody measured the behaviour and routed the fix; why MoveFileEx semantics were not considered when the atomic write was added has not been investigated by anybody and inventing a cause here would be a guess"
     },
     {
-      "commit": "46128d86a4fd",
+      "commit": "c7c758ed4356",
       "date": "2026-10-14",
-      "subject": "feat(drive board): the status bridge publishes itself, and two defects it found",
+      "subject": "fix(push gate,floor): the override hint was corrected in b11 to a state that was already wrong",
       "files": [
+        ".gitattributes",
         ".githooks/pre-push",
-        "docs/TOOLING-INVENTORY.md",
-        "tools/report_only_checks.py",
-        "tools/runbook_constant_agreement.py",
-        "tools/sairn_board_publish.py",
-        "tools/sairn_status.py",
-        "tools/tooling_inventory.py"
+        "CLAUDE.md",
+        "docs/2026-10-14-cc-b12-routed.md",
+        "docs/BYPASS-LOG.jsonl",
+        "docs/SAIRN-PROCESS-RULES.md",
+        "docs/fmea/api__lib_sv-roles.js.json",
+        "docs/fmea/api__resources_sairncare.js.json",
+        "docs/fmea/api_ai-provenance-client-sites.test.js.json",
+        "docs/fmea/api_alf-append-only-read-order.test.js.json",
+        "docs/fmea/api_sd-data-sv-role-matrix.test.js.json",
+        "docs/fmea/sairnroofing.html.json",
+        "docs/fmea/sql_2026-10-14-hank-b11-mar-grant.sql.json",
+        "docs/fmea/sql_2026-10-14-michael-run-order.sql.json",
+        "docs/fmea/sql_sairncare_mar_access_grants_schema.sql.json",
+        "docs/test-file-floor.json",
+        "docs/unlanded/2026-10-13-cc-b6-open-work-shard-read-rows.patch",
+        "docs/unlanded/README.md",
+        "tools/run_all_tests.py",
+        "tools/sairn_push_gate_hook.py"
       ],
-      "lines_added": 2053,
-      "lines_removed": 12,
+      "lines_added": 3447,
+      "lines_removed": 55,
       "app": "tooling",
       "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "static-checker",
-      "summary": "sairn_status.payload built a FRESH row dict and cmd_set wrote it whole, so the three keys publish_claims owns -- claims, claims_updated, claims_heartbeat -- survived only until the next status change. A session claims and then sets working, in that order, so the cross-clone early warning was erased within seconds of being written, every time. Nothing said so and nothing could have: an absent claims key is also exactly what a session running an older sairn_claim.py looks like, which read_claims documents as the ordinary state during a rollout. Also: the new board read a claim subject from the key app where sairn_claim writes subject, so every claim rendered as a question mark.",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "OVERRIDE_HINT named a blanket override that no longer works and omitted the scoped form the gate itself recommends. MEASURED: SAIRN_SEED_GATE=off with --pre-push exits 1 REFUSED, so the hint claim that it \"disables EVERY check in this hook\" was false in both directions -- it disables nothing and denies the push. The hint also named SAIRN_GATE_EXEMPT=seed as THE scoped form while the gate own refusal recommends SAIRN_SKIP per gate, eight gates against EXEMPTABLE one. b11 corrected this constant to a state that had been retired on 2026-10-13, one day earlier, and all eight selftest arms were green over it.",
       "rules": [
-        "1.1"
+        "2.3"
       ],
       "citation_confidence": "arguable",
       "injection_phase": "coding",
       "phase_confidence": "stated",
-      "found_by_tool": "tools/sairn_board_publish.py",
+      "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "unknown_reason": "publish_claims and payload were written at different times by different batches and neither commit is identifiable as the one that introduced the conflict; naming one would be a guess"
+        "commit": "0e6607e0709e",
+        "date": "2026-10-14",
+        "subject": "fix(push gate): the refusal text names the scoped exemption first, as :990 already claimed",
+        "lag_days": 0
       },
-      "citation_note": "a check that stopped checking: the mirrored claims were the early warning other clones read without a fetch, and they were being erased seconds after every claim",
+      "citation_note": "a fact with a tense: the refusal text asserted a mechanism that had been retired the day before, and the arms over it only ever checked the ORDER of two variable names",
       "contributing_factors": [
         {
-          "factor": "payload rebuilt the whole row instead of carrying forward the keys another function owns",
+          "factor": "the refusal text was hand-written rather than derived from the tool that owns the gate list",
           "kind": "technical",
           "action_status": "done",
-          "action": "the three claim keys are carried forward explicitly, and claims_heartbeat deliberately does NOT advance on a status write -- it is the claim tool heartbeat and re-stamping it would make a stale claim look freshly touched"
+          "action": "OVERRIDE_HINT is now built from gate_skip.GATES and gate_skip.ENV_GATE; if that import fails the hint says so rather than falling back to a remembered list"
         },
         {
-          "factor": "the erased state was indistinguishable from the one benign case the code documents, so no reader could have told them apart",
+          "factor": "all eight selftest arms asked only about the ORDER of two variable names, so they stayed green over a false sentence",
           "kind": "detection",
           "action_status": "done",
-          "action": "the board prints the distinction in the cell rather than printing 0 bare, and arm A14 drives sairn_status.payload directly against the pre-fix shape"
+          "action": "four arms added that ask about the CLAIMS the sentence makes, plus a second ablation using the b11 text, which passes all eight original arms and fails exactly the four new ones"
         },
         {
-          "factor": "nothing consumed the field, so no behaviour changed when it vanished",
+          "factor": "the same mechanism is written down in five places and a fix in one does not reach the others",
           "kind": "latent-condition",
           "action_status": "done",
-          "action": "the Drive board consumes it on every status, claim and context change, which is what surfaced it"
+          "action": "corrected in .githooks/pre-push, the hook own comment, CLAUDE.md section 3 and docs/SAIRN-PROCESS-RULES.md section 3.3, each ending with the instruction not to write it down a sixth time"
         }
       ],
-      "recurrence_open": "five of the six agents still show zero mirrored claims until their clones pull this fix and re-claim. Nothing re-mirrors an existing claim automatically; the row repopulates on the next claim or release."
+      "recurrence_open": "nothing mechanically compares a prose copy of this rule to gate_skip. tools/runbook_constant_agreement.py now does exactly that for the secrets rotation runbook and its registry could carry this rule as a second entry; it does not yet."
+    },
+    {
+      "commit": "c7c758ed4356",
+      "date": "2026-10-14",
+      "subject": "fix(push gate,floor): the override hint was corrected in b11 to a state that was already wrong",
+      "files": [
+        ".gitattributes",
+        ".githooks/pre-push",
+        "CLAUDE.md",
+        "docs/2026-10-14-cc-b12-routed.md",
+        "docs/BYPASS-LOG.jsonl",
+        "docs/SAIRN-PROCESS-RULES.md",
+        "docs/fmea/api__lib_sv-roles.js.json",
+        "docs/fmea/api__resources_sairncare.js.json",
+        "docs/fmea/api_ai-provenance-client-sites.test.js.json",
+        "docs/fmea/api_alf-append-only-read-order.test.js.json",
+        "docs/fmea/api_sd-data-sv-role-matrix.test.js.json",
+        "docs/fmea/sairnroofing.html.json",
+        "docs/fmea/sql_2026-10-14-hank-b11-mar-grant.sql.json",
+        "docs/fmea/sql_2026-10-14-michael-run-order.sql.json",
+        "docs/fmea/sql_sairncare_mar_access_grants_schema.sql.json",
+        "docs/test-file-floor.json",
+        "docs/unlanded/2026-10-13-cc-b6-open-work-shard-read-rows.patch",
+        "docs/unlanded/README.md",
+        "tools/run_all_tests.py",
+        "tools/sairn_push_gate_hook.py"
+      ],
+      "lines_added": 3447,
+      "lines_removed": 55,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "MIN_TEST_FILES was pinned at 370 while discover() returned 802 (js 378 + py 424), so 432 test files could have been deleted with the shrinking-suite guard silent. The guard was not broken; it was measuring against a number nobody owned. Replaced with a ratchet in docs/test-file-floor.json that only ever rises, with the literal 370 kept as the floor of last resort so a corrupt ratchet file degrades to the old behaviour rather than to zero.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the constant has been hand-bumped repeatedly since 307; no single commit introduced the staleness, the maintenance model did, and picking one bump as the injection would be a guess"
+      },
+      "citation_note": "a number with no single source: the floor was a hand-maintained literal and the comment above it predicted its own decay twice inside one hour",
+      "contributing_factors": [
+        {
+          "factor": "the floor was a hand-maintained literal with a requested human cadence that never existed",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the floor is a ratchet raised by the tool itself, and lowering it is a human edit with a reason"
+        },
+        {
+          "factor": "the first ratchet raised the floor ABOVE the tree (807 against 802) because cody probe writes five fixture files into the real tests/ directory and discover() walks the working tree",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the ratchet basis is the discovered list INTERSECTED with git ls-files; an untracked file is on one person disk and in nobody clone, so it is not a guard. Found by running the probe, not by reading."
+        },
+        {
+          "factor": "a clean tree whose floor had gone stale produced no output at all, because the unattended copy returns before building its report",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the floor-is-behind condition is part of the silence-breaking test rather than a line further down"
+        }
+      ],
+      "recurrence_open": "the ratchet cannot distinguish a deliberate mass deletion from an accidental one -- it refuses both and asks a human. That is the intended direction and it means a legitimate removal still costs a manual edit."
     },
     {
       "commit": "ca131d983903",
@@ -30142,6 +30441,136 @@
       },
       "citation_note": "No PR section describes two independently-maintained copies of one tool diverging; same shape as the hover_log.py record this batch cites, just a second tool with the identical bug.",
       "factors_unknown_reason": "Immediate cause (HERE-relative default + no duplicate-detection, same root cause as the already-registered hover_log.py defect) is understood and fixed; no deeper RCA on why the same bug shape existed in a second tool."
+    },
+    {
+      "commit": "f92fe10aed6d",
+      "date": "2026-10-14",
+      "subject": "fix(sairnlegacy): F4 the leg_aftercare key is delimiter-safe, F5 the device adopts the server's id",
+      "files": [
+        "api/leg-aftercare-key-unambiguous.test.js",
+        "api/sd-data-leg-role-matrix.test.js",
+        "api/sd-data.js",
+        "docs/hank-evidence/b13/f4f5_GREEN.log",
+        "docs/hank-evidence/b13/f4f5_RED.log",
+        "docs/hank-evidence/b13/regress_leg-role-matrix.log",
+        "docs/hank-evidence/b13/regress_sairnlegacy_declinability.js.log",
+        "docs/hank-evidence/b13/regress_sairnlegacy_item_price_lists.js.log",
+        "docs/hank-evidence/b13/regress_sairnlegacy_processions_isolation.js.log",
+        "docs/hank-evidence/b13/regress_sairnlegacy_reservation_lock.js.log",
+        "docs/hank-evidence/b13/regress_sairnlegacy_reservation_reverify_probe.js.log",
+        "docs/hank-evidence/b13/regress_sairnlegacy_write_failure_voice.js.log",
+        "sairnlegacy.html"
+      ],
+      "lines_added": 980,
+      "lines_removed": 23,
+      "app": "sairnlegacy",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "The leg_aftercare key was 'AC-'+case_id+'-'+NORMALISED_TYPE, where `-` is BOTH the joiner and the type normaliser's output character and case_id went through with trim() alone -- so the field boundary was not recoverable and ('CS-7','1 Week') collided with ('CS-7-1','Week'). The upsert is merge-duplicates, so a collision silently overwrote a DIFFERENT case's grief-support check-in and returned 200.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The deterministic key was introduced on 2026-10-14 and the ambiguity arrived with it, but the commit is inside a range that was rebased, so the sha that would be cited here cannot be verified in this clone and is not guessed at."
+      },
+      "contributing_factors": [
+        {
+          "factor": "The code rested on an assumption it stated out loud -- '(case_id, checkin_type) is unique by construction' -- which is true of the shipped UI and not of the endpoint, which trusts both fields from any licence-key holder",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The escaped form removes the assumption rather than documenting it; the historic form is kept only for the pairs the generator can actually emit"
+        },
+        {
+          "factor": "The existing arms proved different-type-same-case and nothing proved different-case -- and the colliding pair would have PASSED the cross-implementation check, because both copies agree on the wrong answer",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/leg-aftercare-key-unambiguous.test.js drives a 16-row adversarial table plus the exact pair; a cross-implementation test is necessary and not sufficient"
+        },
+        {
+          "factor": "Two copies of the derivation exist by necessity -- a static page and a serverless handler cannot share a function -- and they had drifted already: on an empty checkin_type the server kept the caller's id and the page derived a key from nothing",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Both now guard on the TRIMMED values and the client returns null where the server declines; F4i extracts the client copy and runs it against the handler for eight pairs"
+        },
+        {
+          "factor": "A hash would have been the shorter fix and would have made the same failure silent at a lower probability",
+          "kind": "process",
+          "action_status": "declined",
+          "note": "Reversible escaping cannot collide at all; a hash collision merges two records, which is this defect with better odds attached"
+        }
+      ],
+      "recurrence_open": "case_id is deliberately NOT case-folded, so 'cs-7' and 'CS-7' are two keys for what a human would call one case -- folding only here would make the key disagree with every other identity comparison in the page, and whether case ids should be case-insensitive is a product question nobody has answered. Rows written by a DIRECT API caller with a non-generated case_id will change key on their next write and leave the old row stranded; no sweep looks for those."
+    },
+    {
+      "commit": "f92fe10aed6d",
+      "date": "2026-10-14",
+      "subject": "fix(sairnlegacy): F4 the leg_aftercare key is delimiter-safe, F5 the device adopts the server's id",
+      "files": [
+        "api/leg-aftercare-key-unambiguous.test.js",
+        "api/sd-data-leg-role-matrix.test.js",
+        "api/sd-data.js",
+        "docs/hank-evidence/b13/f4f5_GREEN.log",
+        "docs/hank-evidence/b13/f4f5_RED.log",
+        "docs/hank-evidence/b13/regress_leg-role-matrix.log",
+        "docs/hank-evidence/b13/regress_sairnlegacy_declinability.js.log",
+        "docs/hank-evidence/b13/regress_sairnlegacy_item_price_lists.js.log",
+        "docs/hank-evidence/b13/regress_sairnlegacy_processions_isolation.js.log",
+        "docs/hank-evidence/b13/regress_sairnlegacy_reservation_lock.js.log",
+        "docs/hank-evidence/b13/regress_sairnlegacy_reservation_reverify_probe.js.log",
+        "docs/hank-evidence/b13/regress_sairnlegacy_write_failure_voice.js.log",
+        "sairnlegacy.html"
+      ],
+      "lines_added": 980,
+      "lines_removed": 23,
+      "app": "sairnlegacy",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "The server-side canonicalisation of the leg_aftercare key left a duplicate on the device it was built to protect. sdnData() marked the CLIENT's id as synced and discarded the server's rewritten one, so an un-upgraded device kept the random id, the next hydrate pulled the canonical row, failed to match it and pushed it back as a SECOND local row -- one check-in, two grief-support follow-ups to a bereaved family, on exactly the 'old page' device the canonicalisation comment invokes.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Same rebased range as the record above; the sha cannot be verified in this clone and is not guessed at."
+      },
+      "contributing_factors": [
+        {
+          "factor": "The transport returned d.data and every aftercare caller used it only as a truthiness flag, so the rewritten id was discarded at the one place that could have used it",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The transport itself adopts the id (legAdoptServerId) and marks THAT as synced, covering all 57 call sites in one place"
+        },
+        {
+          "factor": "The server-wins carve-out keys on the synced map, so marking the wrong id also meant the row the server really holds had no recorded permission to be overwritten",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The server's id is what gets marked; F5b asserts it"
+        },
+        {
+          "factor": "A device can hold BOTH rows -- its own random one and a hydrated canonical one -- and renaming alone would have kept both",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The adopt merges onto an existing canonical row instead of keeping two, because the server has already said they are one record"
+        },
+        {
+          "factor": "The fix introduced a silent no-op of its own: the rows were rendered BEFORE the rename, so every Complete button carried a dead id and confirmAftercareComplete's `if(!a)return;` would have done nothing with no message",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Both aftercare callers re-render after the write; found by asking what the rename breaks rather than by a failing arm"
+        }
+      ],
+      "recurrence_open": "Only leg_aftercare rewrites an id today, so the adopt path has one real caller and would be exercised by nothing if that changed. The re-render is per-caller rather than in the transport, so a THIRD aftercare write path added later would reintroduce the stale-render half; nothing checks for that."
     },
     {
       "commit": "f9e56cfd0c3a",
