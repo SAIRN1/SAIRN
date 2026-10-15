@@ -1,0 +1,15 @@
+ok             function senEvvException           <- b16 F2: the ONE EVV exception predicate, shared by the filter and the label
+ok             senEvvException(v)!==null          <- ...and the filter really calls it, rather than keeping its own copy
+ok             function senEffClock               <- the effective-clock helper F2's time-span arm reads
+ok             v.clock_out_lat                    <- the GPS arm is STILL RAW -- F2 moved the time span and deliberately not the location, because a correction supplies a time and never a coordinate
+ok             function renderCorrectionsView     <- b15's hydrate-first corrections queue is still deployed
+ok             ABSENT old condition               <- the OLD duplicated exception condition -- its presence would mean the deployed page is not this commit
+COULD NOT RUN  api/_lib/sen-payroll.js -- the freeze and the adjustment line (401 NO_LICENSE)
+COULD NOT RUN  api/_lib/sen-evv-clock.js -- effectiveClockAsOf (not an endpoint)
+COULD NOT RUN  api/_lib/sen-evv-readiness.js -- element 6 on the effective clock (401)
+COULD NOT RUN  api/sd-data.js -- the payroll_closed_periods read from sen_settings (401)
+COULD NOT RUN  api/sd-data.js -- the NO_ACTIVE_CHECK log wording (a server log, not a response)
+COULD NOT RUN  api/sd-data.js -- SD_LINEAGE/SD_HR id: the column wins (needs an owner session)
+
+verified=6  failed=0  could-not-run=6
+A COULD-NOT-RUN IS NOT A PASS. 6 of the 12 legs in this batch could not be exercised without a credential, and the freeze -- the largest change -- is one of them.

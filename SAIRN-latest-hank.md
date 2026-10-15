@@ -1,75 +1,84 @@
-# hank — latest (b14, 2026-10-15)
+# hank — latest (b16, 2026-10-15)
 
-**LANDED.** HEAD == origin/main `359858ad` at the moment of the check, 0/0,
-**NOT forced**. Claim taken as the batch's first action. Three gate refusals
-(register-feed, tier-a, derived-docs), three satisfied, **zero overridden**.
-**40 suites driven, 40 green.** Live probe: **verified=7 fail=0 couldnot=4**,
-the four named *and counted*.
+**LANDED.** HEAD == origin/main `15cf623d` at the moment of the check, 0/0,
+**NOT forced**, **no override form used** — not `SAIRN_SEED_GATE=off`, not
+`SAIRN_GATE_EXEMPT=seed`, not `SAIRN_SKIP`. Two gate refusals (register-feed,
+then tier-a + derived-docs together), **two satisfied, zero overridden**.
+**275 api/ suites run individually, 272 exit 0** — the 3 remaining are
+registered known-reds that were red before this batch. Live probe:
+**verified=6 fail=0 could-not-run=6**, the six named *and counted*.
+
+**HEAD was `253817a4` at session start, not the `11ffb660` the dispatch
+expected** — a merge of `origin/main` on top of b15's tip, made after b15
+closed. Reported, not reconciled.
 
 ## What changed
 
-* **No self-approval on clock corrections, both routes.** The rule lives in
-  `api/_lib/sen-evv-clock.js`, not just the handler; `403
-  SELF_APPROVAL_REFUSED` with its own code. `propose_clock_correction` no
-  longer auto-approves — on that route the filer **was** the approver by
-  construction, so b13's approve-at-filing had to go with it.
-  `self_approved` removed; `self_correction` kept.
-* **The queue b13 shipped without.** The approval verb existed and nothing
-  rendered `pending`/`pending_count`/`pending_entries`. Now a scheduler-tier
-  **Clock Corrections** tab, count on the button, both times per row, Approve
-  **disabled with the reason** when this user submitted it, a sentence not a
-  blank panel. `senData()` gained `senLastErr` — it returned a bare `null`, so
-  the button would have been a **silent no-op** on its commonest refusal.
-  RED 13/5 → GREEN 18/0, **plus a real-browser DOM run against the deployed
-  page** (`button.disabled` as a property, not a regex).
-* **Census SQL.** PART 0 is generic over every object-valued key and that is
-  **better** than the `stedi` path — hardcoding one service under-reports the
-  day a second is added, in the direction that *authorises* clearing the key.
-  Run-order header added. `SAIRN-census-sql.txt`, Drive id
-  `1cJ-Y68nBGd23IN08NbCcJfhhmCxVCsTO`.
-* **cody's X1/X2 closed; T16/T17/T18 hold** (probe exit 0, 8/8; window suite
-  15/15). X1's comment was **wrong**, not unproven. X2 cited a field the
-  finding never carried.
-* **Ten blob conversions, 58 → 48 exactly.** Nine column lists came out
-  **empty** — a finding about the reads. `CONVERTED` moved by **eleven**, and
-  the extra one is `writeSlab`, a raw site the coverage tool files as
-  "already immune".
-* **The misspelt-role blind spot is closed**, sabotage-measured both ways —
-  and b13's own **fixture** was wrong as well as its check.
-* **Two false reds root-caused.** `leg_custodylog` is append-only and the arm
-  asserted 200; the memory suite's asserted line had been pushed past a
-  fixed-width slice by comments.
+* **PAID PERIODS ARE FROZEN** (Michael's decision). A clock correction
+  approved after a pay run no longer rewrites a closed total; it posts as an
+  **adjustment line** in the period containing the approval. The time lives in
+  `api/_lib/sen-evv-clock.js`'s new `effectiveClockAsOf(row, field, asOfISO)` —
+  one function decides what "approved" means — and `api/_lib/sen-payroll.js`
+  takes an optional `closed_periods`. **Three states, not two:** an approval
+  with no readable `approved_at_server` applies on the as-paid basis AND is
+  counted in `undatable_corrections`; a closed period whose `paid_at` cannot be
+  read **refuses the run**. `gross_cents` keeps its meaning;
+  `adjustment_cents` and `total_payable_cents` are new and separate, because
+  folding the adjustment in would recompute overtime on a frozen week.
+* **The closed-period list comes from `sen_settings` and NEVER from the
+  caller.** A caller who could declare a period open could restate a wage
+  already paid. A **failed** read is `503 CLOSED_PERIODS_UNREADABLE`; a
+  404/400 is an honest empty.
+* **F2 — an EVV export and a pay run now read ONE clock.**
+  `api/_lib/sen-evv-readiness.js` element 6 and the client's new
+  `senEvvException()` both read the effective clock. **GPS deliberately did not
+  move**, and the arm asserts both directions: 4 raw coordinate reads, 0 raw
+  time reads. A correction supplies a time and never a location.
+* **The `app_id` tenancy report was REFUTED and the assertion added.** cody's
+  doc was driven, not trusted: the probe label was a *mutation* label. The
+  suite is 8/0/0 both ways and the red evidence is the **ablation** — simplify
+  `api/sd-data.js:2137` to a fixed app and the same request writes `app_id:
+  'sairnvet'`. A **negative** ablation is kept too: the pre-gate at `:2016` has
+  no behavioural arm and the structural check is its only guard.
+* **The SD_LINEAGE/SD_HR id-shadow pick, mine to make, made:** the identifier
+  **column** wins over a blob `id`. The other two options were rejected **by
+  measurement** — all four id mints for those five resources already produce
+  strings, so no `===` had to change.
+* **The `slice(x, x + N)` gate b14 asked for.** Flags same-expression
+  fixed-width source windows, deliberately not structure-bounded ones. It
+  **does not fix the 31 that exist** and an arm asserts that it says so.
+* **Three suites were DEAD, not failing, since b15** — `senEffClock` added to
+  the page and not to their lift lists, so 191 arms died at ReferenceError and
+  none of the three was in `known-red-suites.json`. Now 76/76, 83/83, 32/32.
+  Two more **stale expectations** fixed on the module I changed.
+* **One honesty fix in a log:** the `NO_ACTIVE_CHECK` warning claimed "the
+  request was allowed on the token alone" on requests the gate then refuses
+  403. cody's triage read that sentence as a live suite failure and routed it
+  as one.
 
-## Open
+## What is open
 
-1. **A one-person agency now has NO route to correct a clock time** — owner is
-   caregiver, submitter and only possible approver. The decision's own
-   consequence. → Michael.
-2. **The queue reads local rows**: a scheduler whose hydrate has not run sees
-   an empty queue that is not empty. → hank b15.
-3. **`approve_clock_correction` has never run against the live database.**
-4. **Tier A obligation open**, `leg_custodylog` + `sen_visits` → fourth.
-5. **SD_LINEAGE / SD_HR still let a payload `id` shadow the column** —
-   deliberately; three mutually exclusive one-line fixes and I did not pick.
-6. **The census is the only SQL left on Michael's list.**
-7. **Seven `api/` suites owed gate-driver wiring**, four FMEA drafts → cc.
-8. **Nothing sweeps suites for the two false-red shapes** found this batch.
+* **The freeze is INERT.** There is no write path for
+  `sen_settings.payroll_closed_periods` and I did not build one — "who may
+  freeze a pay period" is a permissions decision. **Michael's call.**
+* **The Tier A obligation covers SEVEN resources and is fourth's.**
+  `docs/2026-10-15-hank-b16-to-fourth-tier-a.md`. The item I most want
+  attacked: the undatable-approval direction, which is a counterfactual about
+  pre-2026-10-14 history and could double-count if wrong.
+* **H8, the one-person-agency self-approval exception, is still NOT built** and
+  b16 makes the dead end sharper — pay and the EVV check now agree the visit is
+  stranded. `docs/2026-10-15-hank-b16-h8-self-approval.md`.
+* **`SD_AUTH_SECRET_PREVIOUS` was not cleared and must not be.** The census row
+  is still legacy.
+* Full list, with the exact next step for each: `SAIRN-handoff-hank-b16.md`.
 
-## Routed
+## Compaction, since it was asked
 
-* **cc** — the coverage tool's `BUILT` bucket classifies by **identifier
-  name**, so `data: slab` was reported immune while being a raw site. Plus the
-  seven suites (the role-picker one exits **3 by design**) and four
-  `fmea_draft --save`.
-* **fourth** — the Tier A discharge; its three questions are deliberately ones
-  an author cannot answer about their own work.
-* **cody** — X1 and X2 are closed in `api/`; your two files were **run, never
-  edited**.
-
-CONTEXT 61% of 1000k used, measured from this session's own transcript
-(cache_read 608,283 + 571), not from `/context`.
-
-Chain tip at close: **`f1eb09f8`** — `HEAD == origin/main`, 0/0, verified by
-`git fetch` immediately before this line. The commit carrying this line is the
-one *after* it, by construction; `359858ad` is the tip the handoff and report
-quote, where b14's work landed before the deliverables were committed.
+**The premise does not reproduce: hank has never compacted.** 38 sessions, zero
+boundary rows and **zero context drops >30%** — the drop test being the one
+that does not depend on the marker existing. Sessions climb to ~960,000 tokens
+and **end**. The winning source is `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=97` in the
+user settings `env` block; nothing else is set anywhere, and the launch command
+carries no flags. **Verdict: flooding, by my own output** — ~1.9× the entire
+tool-result volume — not by tool results. Numbers under EVIDENCE in
+`SAIRN-digest-hank-b16.txt`.

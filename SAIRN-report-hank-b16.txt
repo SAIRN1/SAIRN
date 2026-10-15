@@ -1,0 +1,536 @@
+REPORT hank b16
+2026-10-15  SAIRN-hank  branch main  HEAD 15cf623d == origin/main, 0/0
+
+--------------------------------------------------------------------------
+0. THE DISPATCH SAID HEAD SHOULD BE 11ffb660 AND IT WAS NOT
+--------------------------------------------------------------------------
+
+At session start HEAD was 253817a4 -- a merge of origin/main on top of b15's
+11ffb660, made after b15 closed. 11ffb660 is still reachable and is b15's real
+tip. Reported, not reconciled: nothing was rewritten to make the dispatch's
+expectation true.
+
+--------------------------------------------------------------------------
+1. COMPACTION DIAGNOSIS -- THE PREMISE DOES NOT REPRODUCE
+--------------------------------------------------------------------------
+
+THE DISPATCH SAID "every window compacts every 5-15 minutes". MEASURED ACROSS
+EVERY TRANSCRIPT THIS PROJECT HAS: IT NEVER COMPACTS AT ALL.
+
+  38 hank sessions scanned.                compact_boundary rows:      0
+  Same 38, independent of the marker:      context drops >30%:         0
+  Across all six SAIRN clones, 232 files:  compact_boundary rows:      0
+
+The drop test matters because a version that writes no boundary marker would
+make the first number vacuous. It is computed from each assistant message's
+input+cache_read+cache_creation and looks for any fall to below 70% of the
+previous value from above 50,000 -- the unmistakable signature of a compaction.
+Zero, in 38 sessions, 26 of which reached above 900,000 tokens.
+
+WHAT SESSIONS ACTUALLY DO: they climb to roughly 960,000 tokens and END.
+Observed maxima: 963,946 / 962,971 / 962,950 / 960,802 ... with a cluster at
+959,xxx. They hit the ceiling and stop; nothing summarises and continues.
+
+SETTINGS AND ENVIRONMENT, every value the dispatch asked for:
+
+  CLAUDE_AUTOCOMPACT_PCT_OVERRIDE        = 97        <-- SET, and it WINS
+  CLAUDE_CODE_AUTO_COMPACT_WINDOW        = unset
+  CLAUDE_CODE_MAX_CONTEXT_TOKENS         = unset
+  ANTHROPIC_BETAS                        = unset
+  DISABLE_AUTO_COMPACT                   = unset
+
+  autoCompactWindow:
+    user     C:\Users\marsh\.claude\settings.json                 ABSENT
+    project  SAIRN-hank\.claude\settings.json                     ABSENT
+    local    SAIRN-hank\.claude\settings.local.json               ABSENT
+    managed  C:\Users\marsh\.claude\managed-settings.json         FILE ABSENT
+    managed  C:\ProgramData\ClaudeCode\managed-settings.json      FILE ABSENT
+
+  modelSettings.<model>.autoCompactWindow:
+    modelSettings is ABSENT from all three readable settings files, so there is
+    no per-model override of any kind.
+
+  Launch command (Win32_Process CommandLine for CLAUDE_PID 9368):
+    "C:\Users\marsh\AppData\Roaming\npm\node_modules\@anthropic-ai\claude-code\bin\claude.exe"
+    -- NO ARGUMENTS AT ALL. No --autocompact, no flags.
+
+  /autocompact for this model: the slash command cannot be run from a tool call,
+  so this is DERIVED and labelled as derived: the only live source is
+  CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=97, set in the `env` block of the USER
+  settings file, which on a 1,000,000-token window is a threshold of ~970,000.
+  Sessions top out at ~960,000 and end, i.e. JUST UNDER it.
+
+THE SOURCE THAT WINS: the env var from user settings. ITS VALUE: 97.
+
+LAST 5 COMPACTION EVENTS: there are none, so there is nothing to tabulate --
+not "0 shown", NONE EXIST. Instead, what the dispatch was reaching for:
+
+  b15 session 9ab77c34 -- 807 minutes
+    context      58,522 -> 749,376      growth 856 tok/min
+    my output    593,659 tokens         (735/min)
+    tool results 1,279,597 chars ~ 319,899 tokens
+    5 largest tool results (chars): 65,233 / 26,657 / 26,087 / 23,915 / 23,069
+
+  b16 session 85b41c8d -- 80 minutes at the time of writing
+    context      58,836 -> 386,586      38.7% of the window
+    my output    316,818 tokens         (3,957/min)
+    tool results 626,264 chars ~ 156,566 tokens
+    5 largest tool results (chars): 21,150 / 20,077 / 19,387 / 19,058 / 18,780
+
+FIXED BASELINE: the first assistant message of a session already carries
+58,836 tokens (b16) / 58,522 (b15) -- system prompt, CLAUDE.md, the tool
+schemas, MEMORY.md and the skills list. /context's own category table cannot be
+produced from a tool call and is NOT invented here; the baseline figure above is
+measured from the transcript and is the one number of that table this can
+establish honestly.
+
+VERDICT: FLOODING, BY MY OWN OUTPUT, NOT BY TOOL RESULTS.
+  Not threshold-too-low: 97% is nearly the ceiling.
+  Not window-smaller-than-assumed: the window really is 1M and sessions reach
+    96% of it.
+  My own output is ~1.9x the entire tool-result volume in b15 and ~2x in b16.
+
+AND THE TWO FIGURES ARE NOT PRESENTED AS A PERCENTAGE SPLIT. 593,659 + 319,899
+exceeds b15's 690,854 of measured growth, because cached prefixes and re-sent
+content make per-source attribution approximate. What the ratio supports is
+WHICH IS BIGGER. That is the only claim made, and it is enough to act on.
+
+CAPPED THIS BATCH, and partly measurable: test output to logs, greps with head
+limits, no long chat prose, report and digest written to files rather than
+printed. THE FIVE LARGEST TOOL RESULTS FELL FROM 65KB TO 21KB. My own output
+RATE went UP (3,957/min vs 735/min) because the work was denser, not because
+the cap failed -- the session is at 38.7% after 80 minutes.
+
+--------------------------------------------------------------------------
+2. PAID PERIODS ARE FROZEN (MICHAEL'S DECISION) -- BUILT, FAILING-FIRST
+--------------------------------------------------------------------------
+
+THE DEFECT IS THE MIRROR OF b15's FIX AND b15 NAMED IT. F1 made
+api/_lib/sen-payroll.js read the EFFECTIVE clock, closing a real underpayment
+of 60 minutes and 2000 cents per visit per correction. Nothing anywhere
+versioned a paid period, so the same line silently RESTATED any historical
+total the moment a later approval landed. An underpayment is visible to the
+caregiver; a silently restated history is visible to nobody.
+
+api/_lib/sen-evv-clock.js  effectiveClockAsOf(row, field, asOfISO). The
+  approval rule stays in ONE function; effectiveClock is now that function with
+  asOf null, so every existing caller is byte-for-byte unchanged in behaviour.
+
+api/_lib/sen-payroll.js  optional closed_periods [{period_start, period_end,
+  paid_at}]. A CLOSED period recomputes to its AS-PAID basis. An OPEN period
+  posts an ADJUSTMENT LINE for any visit in a closed period whose approval
+  landed after that period's paid_at -- IN THE PERIOD CONTAINING THE APPROVAL,
+  which is what stops it posting in every period that follows forever.
+
+api/sd-data.js  the payroll branch reads payroll_closed_periods from
+  sen_settings and NEVER from the caller's payload. A caller able to declare a
+  period open could restate a wage already paid. No new table and no migration:
+  sen_settings is already keyed agency configuration.
+
+THREE STATES, NOT TWO, AND THE THIRD IS THE ONE THAT MATTERS. An approved entry
+with no readable approved_at_server CANNOT BE DATED: it applies on the as-paid
+basis AND is counted in undatable_corrections, per caregiver and per period. A
+closed-period record whose paid_at itself cannot be read REFUSES the run,
+UNDATED_CLOSED_PERIOD. A FAILED read of the list is 503
+CLOSED_PERIODS_UNREADABLE, because treating it as "no period is closed" would
+silently unfreeze every paid period -- the louder of the two failures, so it is
+the one that refuses. A 404/400 is an honest empty.
+
+THREE NUMBERS AND NOT ONE. gross_cents keeps its existing meaning (the FLSA
+weeks in the period run), adjustment_cents is what a frozen period owes and
+this period pays, total_payable_cents is the sum. Folding the adjustment into
+gross_cents would put a closed week's hours into an open week's overtime
+computation, which is the freeze defeated one step removed.
+
+api/b16-paid-period-freeze.test.js
+  RED  3 passed / 6 failed / 1 unproven   docs/hank-evidence/b16/red_freeze.log
+  GREEN 17 / 0 / 0
+  F2/F3/F8/F16 are the controls GREEN BOTH WAYS -- a correction approved BEFORE
+    paid_at still applies; an open period is untouched; NO closed_periods gives
+    b15's exact answer; and an agency with no settings row runs as before.
+    Without them "a closed period ignores every correction" passes F1, which
+    would un-pay corrections genuinely in the as-paid figure.
+  F10 is the ABLATION: neuter the as-of comparison in sen-evv-clock.js and the
+    closed period returns to 300 minutes, so F1 tests THAT comparison.
+  F11 is the double-pay guard: running the period AFTER the one containing the
+    approval posts nothing.
+  F12: an adjustment whose corrected basis is unusable is reported in
+    adjustments_skipped WITH A REASON, never as a 0-cent line that would read as
+    "nothing owed".
+  F13-F16 drive the REAL api/sd-data.js payroll action. F14 is the one that
+    matters: a caller sending closed_periods:[] in the payload CANNOT un-freeze
+    the period.
+
+AND ONE FALSE RED THIS BATCH PAID FOR AND IS WORTH THE NEXT READER'S TIME:
+F13/F14 failed at first with 300 minutes, which looked exactly like missing
+handler wiring. The cause was F10's MUTANT SURVIVING IN require.cache -- the
+ablation restores the FILE in its finally and the loaded module object stays
+loaded. RESTORING A FILE IS NOT UNLOADING IT, and only one of the two is
+visible in git diff. The fix and the lesson are in the suite.
+
+--------------------------------------------------------------------------
+3. F2 -- AN EVV EXPORT AND A PAY RUN NOW READ ONE CLOCK
+--------------------------------------------------------------------------
+
+b15 moved pay onto the effective clock and deliberately left the EVV side raw,
+because F2 was reserved for Michael. So a visit whose clock-out existed ONLY as
+an APPROVED correction was simultaneously PAID with real minutes and reported
+"No clock-out time recorded". A state EVV programme reconciling an export
+against a payroll register finds hours paid for a visit the export says has no
+end time, and neither number looks wrong to a reader of one of them.
+
+api/_lib/sen-evv-readiness.js element 6 now reads
+  senEvvClock.effectiveClock(). ONE require(), the same argument sen-payroll.js
+  carries: a second copy of what "approved" means in a file that produces a
+  COMPLIANCE verdict is a second thing to drift, invisibly, on both sides.
+
+sairnsenior.html gains senEvvException(v) -- ONE predicate, consulted by both
+  the exception filter and the row label. The panel carried the condition TWICE,
+  and two copies of one predicate is how a filter and a label stop agreeing
+  about what a row is.
+
+GPS DELIBERATELY DID NOT MOVE, and arm E5 asserts BOTH directions: the GPS
+elements still read raw clock_*_lat/lng (4 reads) and NO time element reads a
+raw clock field (0). A correction supplies a TIME and never a LOCATION, so an
+approved correction clearing "No GPS on clock-out" would assert a coordinate
+that does not exist. Sweeping every clock read would have been the easier change
+and the wrong one.
+
+api/b16-evv-pay-agreement.test.js
+  RED  2 / 6 / 1   docs/hank-evidence/b16/red_evv_pay.log
+  GREEN 9 / 0 / 0
+  E1 drives BOTH MODULES on one visit: 240 minutes paid AND no time_span gap.
+  E2 is the control that makes E1 mean anything -- a PENDING correction moves
+    NEITHER side. Without it, a caregiver's unapproved assertion would make a
+    visit EVV-submittable, which is worse than the divergence being closed.
+  E4: an approved correction that INVERTS a visit is a non-positive duration on
+    both sides.
+  E7 lifts senEvvException from the REAL page and drives it.
+  E8 names the ONE remaining disagreement as deliberate and ATTRIBUTABLE.
+  E9 is the ABLATION: revert the clock-out read to the raw field and E1 fails.
+
+--------------------------------------------------------------------------
+4. THE TENANCY QUESTION -- REFUTED BY CODY, ASSERTION ADDED
+--------------------------------------------------------------------------
+
+cody's docs/2026-10-15-cody-b16-app-id-tenancy.md was DRIVEN, not trusted.
+tests/sairnlegacy_fault_probe.py arm 8's label "app_id is taken from the client
+again" is a MUTATION label -- the defect the probe PLANTS -- not one it found.
+
+api/b16-app-id-tenancy.test.js is 8/0/0 AND WAS 8/0/0 AT THE PRE-CHANGE TREE,
+because the code was already correct. THE SUITE DOES NOT PRETEND TO A
+RED-THEN-GREEN. The red evidence is the ABLATION: T6 simplifies
+api/sd-data.js:2137 to a fixed app and the same request returns 200 with
+app_id 'sairnvet' -- the cross-app write cody predicted in exactly those words.
+
+T2 is the control: a session signed FOR sairnvet with body.app_id sairnvet is
+ADMITTED 200. api/sd-data.js:2105-2112 records the two-device live check that
+found the gate refusing a correctly-signed cross-app call, so an arm that only
+proved refusal would be asking for the bug the gate was written to fix.
+
+T7 IS A NEGATIVE ABLATION, KEPT RATHER THAN DROPPED. Ablating the
+active-credential pre-gate's own app derivation at :2016 does NOT flip T1, so
+that line has NO behavioural arm here and T5's structural check is its only
+guard. Saying so is the point: a suite that prints only the layer it covers
+reads as though it covered both.
+
+tests/sairnlegacy_fault_probe.py WAS NOT TOUCHED -- tests/ is cody's. The
+assertion went into api/, which is mine.
+
+--------------------------------------------------------------------------
+5. CODY'S THREE FAILING api/ SUITES -- TWO WERE ALREADY GREEN
+--------------------------------------------------------------------------
+
+  api/sd-data-leg-session-gate.test.js    20 passed, 0 failed, exit 0
+  api/sd-data-memory-app-scope.test.js    0 failures, exit 0
+  api/sd-data-law-trusttx-session.test.js 9/10 -> now 13/13
+
+REPORTED RATHER THAN CLAIMED AS FIXED: two of the three were already green when
+run alone and nothing in b16 made them so.
+
+THE THIRD HAD A DIFFERENT FAILURE THAN THE ONE ROUTED, and the difference is
+the finding. The routed line -- "active-credential re-check DID NOT RUN for app
+sairndental (NO_ACTIVE_CHECK)" -- is a CONSOLE WARNING from a PASSING arm. The
+real failure was a STALE EXPECTATION: the suite was written 2026-09-16 with a
+header saying the role question was deliberately not asserted, and arm 3
+asserted all three roles could read IOLTA client trust money. On 2026-10-12
+api/_lib/law-roles.js:87 answered it the other way -- paralegal '', hard-locked
+by LAW_TRUST_LOCKED at :52, "no override may open it". The arm had been
+asserting the behaviour the policy was written to remove.
+
+CORRECTED BY ASSERTING THE DENY, NOT BY DELETING THE ARM -- a deleted arm would
+leave nothing asserting which way the policy went. PAIRED with arm 3b: the SAME
+paralegal token CAN read law_optx, which the same table grants 'r'. Without it,
+"a paralegal is always refused" satisfies 3a and that is a broken app rather
+than a locked ledger. Arm 3c asks law-roles.js directly, so the table and the
+endpoint must AGREE -- a policy table saying one thing while the endpoint does
+another is visible in neither alone.
+
+AND THE LOG THAT CAUSED THE MISREAD IS FIXED. It ended "The request was allowed
+on the token alone." on requests the branch gate then refuses 403 a hundred
+lines below. The sibling log eight lines above already had the honest shape.
+Arm 2b captures console.warn, REQUIRES the 403 to have happened, FORBIDS the
+word "allowed" and REQUIRES the continues/not-an-admission claim, so rewording
+cannot quietly satisfy it. FAILING-FIRST, DRIVEN: 12/13 at the pre-change tree
+in a detached worktree, docs/hank-evidence/b16/red_law_trusttx.log.
+
+--------------------------------------------------------------------------
+6. THE SD_LINEAGE / SD_HR ID-SHADOW PICK -- MINE TO MAKE, MADE
+--------------------------------------------------------------------------
+
+b14 found the shape and declined to pick, correctly, because the three fixes
+are mutually exclusive and its measurement did not decide between them.
+
+PICKED: THE READ STOPS LETTING THE BLOB WIN.
+  was  Object.assign({ id: x[cfg.idCol] }, x.data)      data wins
+  now  Object.assign({}, x.data, { id: x[cfg.idCol] })  the COLUMN wins
+
+THE OTHER TWO WERE REJECTED BY MEASUREMENT, NOT ARGUMENT:
+
+  "the column stops stringifying" -- REJECTED. String(payload.id) is what the
+  on_conflict key is built from; the column is the row's ADDRESS. Accepting
+  whatever type arrived would not close the shadow, only make the two agree on
+  easy inputs.
+
+  "the client stops comparing with ===" -- REJECTED, and this needed measuring.
+  Arm I6 measures all four id mints for these five resources: 'BLK'+Date.now(),
+  'BND'+Date.now(), 'EVT'+Date.now()+'-'+random and Date.now().toString(). ALL
+  STRINGS, in stonedesk.html and stonedesk-hr.html. So no === had to change,
+  and if a numeric mint ever appears I6 goes red and the pick needs revisiting.
+
+The hazard was never the comparison: it was that a read could hand a client an
+`id` that does not address the row it came from. Measured: 999 in the blob was
+returned as the row's id where the column said REAL-1.
+
+api/b16-id-shadow.test.js  RED 2/3/1 -> GREEN 6/0/0.
+  I2 is the control: the blob is still returned WHOLE, only `id` is overridden.
+    Nothing re-adds a stripped key for these resources, so dropping any other
+    field would delete it from the client's view.
+  I4 requires the column-wins expression EXACTLY TWICE and the blob-wins
+    expression ZERO times, because fixing one registry and not the other is how
+    this shape survives a fix.
+  I5 is the ABLATION, restoring blob-wins in BOTH registries.
+
+--------------------------------------------------------------------------
+7. THE slice(x, x + N) CHECK -- b15 OPEN ITEM 1, BUILT
+--------------------------------------------------------------------------
+
+api/b16-slice-window-check.test.js flags .slice(V, V + N) over source text
+where the SAME expression appears on both sides and N >= 2. It deliberately
+does NOT flag slice(open, i+1) / slice(m.index, k+1) / slice(start, end+1) --
+windows bounded by a SCANNED STRUCTURE, which is the correct form, and flagging
+them would push authors off it. Nor a single-character read.
+
+MEASURED, AND RE-DERIVED ON EVERY RUN: the broad pattern matches 55 sites, the
+narrowed one 31. The first draft of the suite header said 45 from memory and
+arm S5 printed 55; the header now says so.
+
+FAILING-FIRST, DRIVEN: a file with one planted slice(anchor, anchor + 750) was
+added to api/ and the suite went exit 1 on S1, "32 found, 31 in the baseline".
+The plant was deleted and the suite returned to exit 0.
+docs/hank-evidence/b16/red_slice_window.log.
+
+WHAT IT DOES NOT DO, AND ARM S6 ASSERTS THAT IT SAYS SO: it does not fix the 31
+windows that already exist, in 12 files. They are recorded by file and by V+N
+token -- NEVER by line number, which would make the allowlist itself a
+fixed-width window -- and every one can still produce b14's false red. A green
+run means NO NEW ONE WAS ADDED and nothing more. The baseline is EXACT IN BOTH
+DIRECTIONS: a new window fails, and a baseline entry that has vanished also
+fails, because a tolerated-list that outlives its entries is how a gate stops
+testing anything.
+
+--------------------------------------------------------------------------
+8. THREE SUITES WERE DEAD, NOT FAILING, AND NOTHING SAID SO
+--------------------------------------------------------------------------
+
+Found only because the WHOLE api/ tree was run. b15 added senEffClock to
+sairnsenior.html and not to the lift list of the three suites that extract
+visitHours and azBurnDown, so every arm in all three died at "ReferenceError:
+senEffClock is not defined" before asserting anything:
+
+  api/_lib/sairnsenior-pay-rates.test.js        -> 76/76
+  api/_lib/sairnsenior-branches.test.js         -> 32/32
+  api/_lib/sairnsenior-authorizations.test.js   -> 83/83
+
+191 arms, including every arm over sen_pay_rates -- one of the two resources
+the open Tier A obligation is written over. NONE of the three is in
+docs/known-red-suites.json, so they were UNREGISTERED reds, invisible to
+anything that reads that file.
+
+senEffClock is EXTRACTED and NOT STUBBED. The approval rule it applies is what
+those arms' hours depend on, and each suite's own notes already say a stub that
+was merely close would let a real mismatch pass.
+
+AND TWO MORE STALE EXPECTATIONS ON THE MODULE I CHANGED:
+api/_lib/sen-evv-clock.test.js was 26/2 and is now 29/0. G1 asserted a PENDING
+correction was effective, which the 2026-10-15 approval rule deliberately
+removed; fixed by APPROVING the entry through the module's own
+approveCorrection (with a different approver, since self-approval is refused),
+and PAIRED with a new G1b requiring the pending case to still move nothing. H1
+was an export allowlist stopped at six while the module reached twelve. A STALE
+ALLOWLIST IS WORSE THAN NONE: it was red, so a genuinely unsafe new export
+would have changed nothing a reader saw.
+
+--------------------------------------------------------------------------
+9. ROUTED TO FOURTH, AND ONE QUESTION ANSWERED RATHER THAN FORWARDED
+--------------------------------------------------------------------------
+
+docs/2026-10-15-hank-b16-to-fourth-tier-a.md. The b15 obligation stays fourth's
+to discharge. Two of its three questions are now BUILT rather than asked, so
+the review is WIDER than it was: five named things to attack on the freeze
+(the undatable-approval direction, the straight-time floor, the unposted
+adjustment, the straddling-period label, the 503-vs-empty direction) and three
+on the EVV change.
+
+THE THROW QUESTION IS ANSWERED WITH A MEASUREMENT. Arm F17 drives
+computePayroll with 15 hostile row shapes -- null, undefined, 0, '', a string,
+true, [], a non-array clock_corrections, entries containing null/undefined/0/'x',
+proposed_at null and {}, approved_at_server {nope:1}, a numeric
+scheduled_date -- and NO THROW. The arm exists rather than a reading of the
+source because computePayroll has NO per-visit try/catch, so a throw in the
+substitution fails the pay run for every caregiver, not one visit. What F17 does
+NOT prove: it is 15 shapes I thought of, not a property. No fuzz was written.
+
+THE PURITY QUESTION IS STILL OPEN AND IS NOW IN TWO FILES. Both
+api/_lib/sen-payroll.js and api/_lib/sen-evv-readiness.js require
+sen-evv-clock.js and both headers claim purity. The argument is mine and is the
+thing to attack: whether "pure" meant "no I/O" or "no imports", and whether a
+reader of either header is now misled. I DID NOT EDIT EITHER PURITY CLAIM,
+which may itself be the defect.
+
+THE GATE OPENED A NEW OBLIGATION OVER SEVEN RESOURCES and was right to:
+law_optx, law_trusttx, sd_hr_certs, sd_hr_employees, sen_pay_rates,
+sen_settings, sen_visits. b15's named two, and an obligation covers the
+resources IT NAMES, not every resource a later change touches alongside them.
+ASSIGNED TO fourth; the gate refuses a record whose reviewer is its own author.
+
+H8: the one-person-agency self-approval exception is RECORDED, NOT BUILT, per
+Michael -- docs/2026-10-15-hank-b16-h8-self-approval.md. The dead end is stated
+exactly, and b16 makes it SHARPER: the two sides now agree on *stranded*. Any
+future design must be a licence-level setting with an audit trail AND must carry
+an approved_at_server, or the freeze is unverifiable for exactly the agencies
+using the exception.
+
+--------------------------------------------------------------------------
+10. PUSH
+--------------------------------------------------------------------------
+
+HEAD == origin/main 15cf623d, 0/0, NOT FORCED, NO OVERRIDE FORM USED -- not
+SAIRN_SEED_GATE=off, not SAIRN_GATE_EXEMPT=seed, not SAIRN_SKIP.
+
+TWO GATE REFUSALS, TWO SATISFIED, ZERO OVERRIDDEN:
+  register-feed  -- five records added, each with four contributing factors
+                    and an explicit recurrence-open. The first attempt was
+                    refused for one factor carrying action_status 'open', which
+                    the register does not accept; it is now 'planned' and says
+                    what is not closed.
+  tier-a + derived-docs (one combined refusal, both true at once) -- an
+                    obligation over seven resources, and MASTER-PLAN.md plus
+                    traceability-matrix.md REGENERATED by their own tools,
+                    never hand-merged.
+
+Ten commits, listed in the handoff. The register's cited shas were RE-SEATED
+twice by the rebase's own DOC SHA RE-SEAT step and each re-seated sha was
+verified present on origin/main with `git log --oneline -1 <sha>` -- a register
+that cites a pre-rebase sha cites nothing.
+
+EXTRA SCRUTINY, NOT A REFUSAL, AND SAID OUT LOUD RATHER THAN LEFT IN THE
+LEDGER: the gate matched a WEAKENING shape on
+`const sk = (out.adjustments_skipped || [])[0];` in
+api/b16-paid-period-freeze.test.js. It is a FALSE POSITIVE --
+adjustments_skipped is the output field reporting an adjustment that could NOT
+be computed, and arm F12 exists to require a reason there rather than a 0-cent
+line. Recorded in docs/scrutiny-flags.json under three commits so a reviewer
+can disagree with me.
+
+275 api/ SUITES RUN INDIVIDUALLY, 272 exit 0 --
+docs/hank-evidence/b16/all_api_suites.log. The sweep found 7 reds; four were
+fixed this batch and THREE REMAIN, all three registered in
+docs/known-red-suites.json, all three red before b16, and NONE root-caused
+here: sd-data-customer-soft-delete, sd-data-family-contacts,
+sd-data-scp-licence-only.
+
+GUARDIAN: Check 0a -- python tools/checkblocks.py sairnsenior.html -> 3 blocks,
+0 failed, plus node --check on all 14 changed JS files, all OK. Check 31 --
+python tools/sairn_strict_args_check.py clean over 22 files, node
+tools/strict_args_harness.js all assertions hold.
+docs/hank-evidence/b16/guardian_checks.log. The check COUNT was re-read from
+the skill's own `## The 31 Checks` heading rather than remembered.
+
+LIVE VERIFICATION RAN THIS TIME -- b15 had none and its report said so.
+docs/hank-evidence/b16_live_gate_probe.py against https://sairn.vercel.app,
+via tools/sairn_http.py and not bare curl: 6 VERIFIED, 0 FAILED, 6 COULD NOT
+RUN. docs/hank-evidence/b16/live_probe.log.
+
+--------------------------------------------------------------------------
+WHAT IS NOT PROVEN
+--------------------------------------------------------------------------
+
+THE FREEZE HAS NO LIVE VERIFICATION AT ALL, and it is the largest and most
+consequential change in the batch. The payroll action answers 401 NO_LICENSE
+before the dispatcher and a licence key would be a real credential in a script.
+Six of the twelve legs could not run: the freeze, the adjustment line,
+effectiveClockAsOf, readiness element 6, the payroll_closed_periods read, the
+NO_ACTIVE_CHECK log wording and the SD_LINEAGE/SD_HR id change. A COULD-NOT-RUN
+IS NOT A PASS. What the six VERIFIED legs establish is narrower: the client half
+of F2 is on the deployed page, including that the OLD duplicated condition is
+ABSENT, so the deploy really is this commit.
+
+THE FREEZE HAS NEVER RUN AGAINST REAL DATA EITHER. No agency has a
+payroll_closed_periods row in sen_settings, so there are no closed periods
+anywhere and the mechanism is inert in production. THERE IS ALSO NO WRITE PATH
+for that setting and I did not build one, because "who may freeze a pay period"
+is a permissions decision and not a handler detail. Until Michael decides, the
+freeze is code that cannot fire.
+
+THE UNDATABLE-APPROVAL DIRECTION IS A JUDGEMENT I CANNOT CHECK. An approved
+entry with no approved_at_server APPLIES on the as-paid basis. My reasoning is a
+counterfactual about pre-2026-10-14 history: every pay run before b15 ignored
+corrections entirely, so a legacy correction was never in an as-paid figure. If
+that reasoning is wrong in the other direction, the same entry can be
+double-counted -- once in a frozen total and once as an adjustment. Arm F7 pins
+the behaviour; it does not defend the choice.
+
+THE ADJUSTMENT IS A FLOOR, NOT A TOTAL. Straight time at the rate in force on
+the service date. If its minutes push the already-paid workweek past 40 hours
+there is an FLSA overtime premium owed on top, and computing it means reopening
+the frozen week. Named in not_computed, not computed.
+
+AN ADJUSTMENT POSTS IN THE PERIOD CONTAINING ITS APPROVAL, so a period that is
+never run never pays its adjustments and nothing sweeps for unposted ones.
+
+A CORRECTED CLOCK-OUT WITH NO GPS NOW SURFACES AS A GPS EXCEPTION rather than a
+time-span one. A visible change to what a state surveyor is shown. I believe it
+is correct and NOBODY ELSE HAS REVIEWED IT.
+
+THE 31 FIXED-WIDTH WINDOWS ARE TOLERATED, NOT FIXED, and the gate only stops
+new ones.
+
+THERE IS STILL NO CHECK THAT A LIFTED FUNCTION'S CALLEES ARE LIFTED WITH IT.
+That is what killed three suites for a batch, it is recorded in the register as
+action_status PLANNED, and b16 ADDED senEvvException -- which depends on
+senEffClock -- so the same break is available to the next suite that lifts it.
+
+THE SEAM CHECK SAID COULD-NOT-TELL for at least one endpoint/engine pair on
+both pushes. The push was allowed and nothing was verified about that seam.
+python tools/sairn_seam_check.py was NOT RUN.
+
+/context's OWN CATEGORY TABLE IS NOT IN THIS REPORT. The slash command cannot
+be run from a tool call. The fixed baseline (58,836 tokens) is measured from the
+transcript; the per-category breakdown is not derivable that way and is not
+invented.
+
+THE SECOND hank CLAIM FROM b15 IS STILL ACTIVE alongside this batch's. I did
+not release either, because `release hank` would drop one of the two and the
+tool does not say which.
+
+THREE api/ SUITES ARE STILL RED and none was root-caused. All four red suites
+this batch turned out to be stale expectations or broken fixtures rather than
+real defects, which is a reason to look at the remaining three rather than to
+assume they are different.
+
+DEFINITION the hash below is sha256 over every byte of this file up to and NOT
+including the final hash line, CRLF normalised to LF, taking the LAST
+occurrence of the marker.
+SHA256 16dbb677e3aef422844aed6723693a0da818c054efa46335878a4633fba94a67
+END-OF-REPORT
