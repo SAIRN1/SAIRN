@@ -161,17 +161,54 @@ print('\n4. THE WIRING ITSELF -- a hook nothing registers is a file')
 import json                                                   # noqa: E402
 cfg = json.load(io.open(os.path.join(REPO, '.claude', 'settings.json'),
                         encoding='utf-8'))
-wired = json.dumps(cfg)
-check('conflict_marker_preflight_hook.py is registered in .claude/settings.json',
-      'conflict_marker_preflight_hook.py' in wired,
-      'the shim exists and nothing runs it, which is the state the tool it '
-      'wraps was already in')
-check('...as a PreToolUse hook, so it fires BEFORE the --continue lands',
-      'conflict_marker_preflight_hook.py' in json.dumps(cfg.get('PreToolUse')
-                                                        or cfg.get('hooks', {}).get('PreToolUse')),
-      'a PostToolUse registration would report the marker AFTER the commit it '
-      'was meant to prevent')
+# ── SECTION 4 ALONE IS COULD-NOT-RUN. 2026-10-15, Michael's decision ───────
+# `hooks: {}` in both settings files. The committed `_hooks_note` says why:
+# "The 23 hooks Michael cleared on 2026-10-11 because they were causing agent
+# compaction stay cleared and are recorded verbatim in
+# docs/hooks-disabled-2026-10-13.json." Michael confirmed on 2026-10-15 that
+# they stay cleared, so this is the long-term state.
+#
+# ONLY SECTION 4 IS AFFECTED, AND THAT IS WHY THIS FILE DOES NOT EXIT 3 AT THE
+# TOP THE WAY tests/hook_command_anchoring_probe.py DOES. Sections 1-3 test the
+# discriminator, the real-repo no-op cost and the found-versus-could-not-run
+# separation, and every one of them still measures something. Converting the
+# whole file would discard three working sections to describe one.
+#
+# THE EXIT CODE IS THE PART THAT MATTERS: a run that could not check the
+# wiring must not report plain success, so this exits 3 even with 1-3 green.
+# A REAL FAILURE OUTRANKS A COULD-NOT-RUN -- if anything in 1-3 failed, the
+# exit stays 1, because "I could not check one section" must never soften a
+# section that was checked and was wrong.
+_hooks_declared = bool(cfg.get('hooks') or cfg.get('PreToolUse'))
+if not _hooks_declared:
+    print('  CANNOT RUN: .claude/settings.json declares NO hooks '
+          '(`hooks: {}`), so')
+    print('    whether this hook is REGISTERED, and registered as PreToolUse, '
+          'cannot be')
+    print('    checked. Not a pass and not a failure: the hooks were cleared ON '
+          'PURPOSE')
+    print('    on 2026-10-11, the reason is committed in `_hooks_note`, and the '
+          '23 of')
+    print('    them are in docs/hooks-disabled-2026-10-13.json. The shim and the '
+          'tool it')
+    print('    wraps are UNCHECKED here, which is exactly what section 4 would '
+          'have')
+    print('    reported if it could run.')
+else:
+    wired = json.dumps(cfg)
+    check('conflict_marker_preflight_hook.py is registered in .claude/settings.json',
+          'conflict_marker_preflight_hook.py' in wired,
+          'the shim exists and nothing runs it, which is the state the tool it '
+          'wraps was already in')
+    check('...as a PreToolUse hook, so it fires BEFORE the --continue lands',
+          'conflict_marker_preflight_hook.py' in json.dumps(cfg.get('PreToolUse')
+                                                            or cfg.get('hooks', {}).get('PreToolUse')),
+          'a PostToolUse registration would report the marker AFTER the commit it '
+          'was meant to prevent')
 
-print('\n%s  conflict_preflight_hook probe: %d failed'
-      % ('FAILED' if fails else 'ok', len(fails)))
-sys.exit(1 if fails else 0)
+print('\n%s  conflict_preflight_hook probe: %d failed%s'
+      % ('FAILED' if fails else ('COULD NOT RUN' if not _hooks_declared
+                                 else 'ok'),
+         len(fails),
+         '' if _hooks_declared else ', and section 4 was NOT CHECKED'))
+sys.exit(1 if fails else (3 if not _hooks_declared else 0))

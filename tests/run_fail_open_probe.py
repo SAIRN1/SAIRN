@@ -181,6 +181,26 @@ def main():
                   '    return json.dumps({"action": "write"})' + NL) % HOST)
     ORDINARY_SRC = 'def f():' + NL + '    return 1' + NL
 
+    # ── A NEWER BLOCK WAS FIRING FIRST, 2026-10-15 (cody b18) ───────────
+    # Every sandbox in 2b now carries a satisfied commit_tool_entry_check.py
+    # stub, and the reason is the whole finding here.
+    #
+    # On 2026-10-13 .githooks/pre-commit gained a block at :135-:190 -- "AN
+    # UNDESCRIBED tools/ FILE, AT THE COMMIT THAT ADDS ONE" -- scoped to
+    # `--diff-filter=A` over `tools/*.py`. Every arm below stages
+    # `tools/zz_*.py`, which IS such an add, and the sandboxes did not carry
+    # tools/commit_tool_entry_check.py, so that NEWER block refused before the
+    # live-probe block it names was ever reached.
+    #
+    # WHAT THAT LOOKED LIKE, and it is the reason this is recorded rather than
+    # just fixed: the two arms expecting exit 0 FAILED, and the failure read
+    # "THE CONTROL: audit tool present and CLEAN -> runs and allows -- wanted
+    # 0, got 1", which reads as a fail-open in the live-probe block. It is not.
+    # AND WORSE, SILENTLY: the arms expecting `rc != 0` kept PASSING -- on the
+    # wrong refusal. A probe of a fail-open gate is the last place a refusal
+    # should be accepted without reading which gate produced it, so the
+    # `rc != 0` arm below now names its expected tool too.
+    PRIOR = ['commit_tool_entry_check.py']
     root = sandbox('pre-commit', with_tools=[], marker=False)
     try:
         rc, out = run_hook(root, 'pre-commit')
@@ -188,7 +208,7 @@ def main():
     finally:
         shutil.rmtree(root, onerror=_rm_ro)
 
-    root = sandbox('pre-commit', with_tools=[], marker=False)
+    root = sandbox('pre-commit', with_tools=PRIOR, marker=False)
     try:
         stage(root, 'tools/zz_ordinary.py', ORDINARY_SRC)
         rc, out = run_hook(root, 'pre-commit')
@@ -197,7 +217,7 @@ def main():
     finally:
         shutil.rmtree(root, onerror=_rm_ro)
 
-    root = sandbox('pre-commit', with_tools=[], marker=False)
+    root = sandbox('pre-commit', with_tools=PRIOR, marker=False)
     try:
         stage(root, 'tools/zz_live_probe.py', PROBE_SRC)
         rc, out = run_hook(root, 'pre-commit')
@@ -208,7 +228,8 @@ def main():
     finally:
         shutil.rmtree(root, onerror=_rm_ro)
 
-    root = sandbox('pre-commit', with_tools=['live_probe_residue_audit.py'],
+    root = sandbox('pre-commit',
+                   with_tools=PRIOR + ['live_probe_residue_audit.py'],
                    marker=False)
     try:
         stage(root, 'tools/zz_live_probe.py', PROBE_SRC)
@@ -218,7 +239,7 @@ def main():
     finally:
         shutil.rmtree(root, onerror=_rm_ro)
 
-    root = sandbox('pre-commit', with_tools=[], marker=False)
+    root = sandbox('pre-commit', with_tools=PRIOR, marker=False)
     try:
         # A stub that FINDS something. Without this arm the block could reach
         # the audit, ignore its verdict, and every arm above would still pass.
@@ -228,6 +249,15 @@ def main():
         rc, out = run_hook(root, 'pre-commit')
         expect('  audit present and REPORTING A FINDING -> the hook refuses',
                rc != 0, True)
+        # NAMED, NOT JUST NON-ZERO. This arm passed for two days on a refusal
+        # from a different block entirely -- see the note at the top of 2b.
+        # THE ANCHOR IS THE REFUSAL'S OWN WORDING on this path, which does NOT
+        # repeat the tool's filename: the hook names the tool only when it is
+        # MISSING, and says "a live-probe obligation is unmet in this commit"
+        # when the audit ran and found something. Asserting the filename here
+        # failed on the first run, which is how the two paths were told apart.
+        expect('    ... and the refusal is the LIVE-PROBE one, not another '
+               "block's", 'live-probe obligation is unmet' in out, True)
     finally:
         shutil.rmtree(root, onerror=_rm_ro)
 

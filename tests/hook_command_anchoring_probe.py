@@ -74,8 +74,46 @@ def hook_commands():
     return out
 
 
-print('1. EVERY HOOK COMMAND THAT RUNS A REPO SCRIPT IS ANCHORED')
+# ── NO HOOKS IS COULD-NOT-RUN, NOT FAILED. 2026-10-15, Michael's decision ──
+# `.claude/settings.json` and `~/.claude/settings.json` both carry
+# `hooks: {}`. The committed `_hooks_note` beside it says why, verbatim: "The
+# 23 hooks Michael cleared on 2026-10-11 because they were causing agent
+# compaction stay cleared and are recorded verbatim in
+# docs/hooks-disabled-2026-10-13.json."
+#
+# THIS PROBE WAS REPORTING THAT AS TWO FAILURES -- "settings.json declares
+# hooks at all" and "the anchored form is actually in use (0 command(s))" --
+# which is correct as an OBSERVATION and wrong as a VERDICT. It conflates
+# "the anchoring is wrong" with "there is nothing to anchor", and those need
+# opposite responses. PR 1.11: could-not-run is a third state and is never
+# folded into either of the other two.
+#
+# AND IT WAS WORSE THAN A FALSE FAILURE. The arm "no hook command resolves a
+# repo script relative to the cwd (0 bare)" was PASSING, over a population of
+# ZERO. An arm that passes because its subject does not exist will go on
+# passing for ever, including on the day hooks come back wrong -- so the exit
+# below replaces a false red AND a false green in one change.
+#
+# EXIT 3, NOT 0 AND NOT 1. Michael confirmed on 2026-10-15 that the hooks stay
+# cleared, so this is the long-term state rather than a gap to close, and this
+# file must say "I did not run" every time until that decision changes.
+# NOTHING HERE RESTORES A HOOK AND NOTHING WRITES settings.json.
 cmds = hook_commands()
+if not cmds:
+    print('CANNOT RUN: .claude/settings.json declares NO hooks (`hooks: {}`), '
+          'so there is')
+    print('  nothing to anchor and nothing was checked. This is NOT a pass and '
+          'NOT a')
+    print('  failure -- the hooks were cleared ON PURPOSE on 2026-10-11 and the '
+          'reason is')
+    print('  committed in `_hooks_note` beside the empty object; the 23 of them '
+          'are')
+    print('  recorded verbatim in docs/hooks-disabled-2026-10-13.json. Restore '
+          'hooks and')
+    print('  this probe measures them again, with no change needed here.')
+    sys.exit(3)
+
+print('1. EVERY HOOK COMMAND THAT RUNS A REPO SCRIPT IS ANCHORED')
 check(bool(cmds), 'settings.json declares hooks at all (fixture is valid)')
 # A bare `tools/...` is the defect. Anchored forms carry CLAUDE_PROJECT_DIR.
 bare = [(e, m, c) for e, m, c in cmds

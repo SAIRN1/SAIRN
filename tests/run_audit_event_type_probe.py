@@ -232,9 +232,41 @@ def main(argv):
         # which is worth more than the change was.
         audit_js = io.open(os.path.join(REPO, 'api', '_lib', 'audit.js'),
                            encoding='utf-8').read()
+        # ── RE-DERIVED 2026-10-15 (cody b18). AUDIT_TABLES IS NO LONGER A
+        #    LITERAL, AND THE REFACTOR THAT CHANGED IT WAS A FIX ───────────
+        # This read `const AUDIT_TABLES = \{([^}]*)\}` and pulled `x: true`
+        # pairs out of the capture. On 2026-10-11 the declaration became
+        # `const AUDIT_TABLES = {};` with the entries added in a loop from
+        # AUDIT_TABLE_BY_APP (api/_lib/audit.js:101-103) -- so the regex
+        # matched `{}`, captured nothing, `listed` came back EMPTY, and H0
+        # failed. H0 is RIGHT: an empty list would make H1 and H2 vacuous.
+        # It was the ARM that had gone stale, on a refactor whose own comment
+        # explains it: "a table name repeated in fourteen files is fourteen
+        # chances to mistype one... Two lists that must agree is the defect
+        # shape SD_SESSION_GATED and SD_GATE_APP pay for."
+        #
+        # SO THE ARM READS THE SAME SINGLE SOURCE THE CODE DERIVES FROM,
+        # rather than a second place the names could be written down. If
+        # AUDIT_TABLES ever goes back to being a literal, the first branch
+        # below picks it up; if neither shape is present H0 still fails,
+        # which is the point of H0.
         m = re.search(r'const AUDIT_TABLES = \{([^}]*)\}', audit_js)
         listed = (sorted(re.findall(r'(\w+)\s*:\s*true', m.group(1)))
                   if m else [])
+        if not listed:
+            by_app = re.search(r'const AUDIT_TABLE_BY_APP = \{([^}]*)\}',
+                               audit_js)
+            derived = re.search(
+                r'Object\.keys\(AUDIT_TABLE_BY_APP\)[\s\S]{0,120}?'
+                r'AUDIT_TABLES\[AUDIT_TABLE_BY_APP\[\w+\]\]\s*=\s*true',
+                audit_js)
+            # BOTH halves are required: the map alone does not prove the
+            # allowlist is built from it, and the loop alone does not say
+            # which names it builds from. Either missing -> listed stays
+            # empty -> H0 fails, loudly, naming this.
+            if by_app and derived:
+                listed = sorted(set(
+                    re.findall(r":\s*'([a-z0-9_]+)'", by_app.group(1))))
         ck('H0. the AUDIT_TABLES allowlist is found and parsed at all. Without '
            'this the two arms below would pass on an empty list',
            bool(listed), listed)

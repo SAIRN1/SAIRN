@@ -274,9 +274,17 @@ if _rng is not None:
        _rng == '%s..%s' % (_base, _head), (_rng, _base, _head))
 
 _rng2, _prob2 = G.outgoing_range('refs/heads/x %s refs/heads/x %s\n'
-                                 % (_head, 'a' * 40))
+                                 % (_head, _base))
+# ── THE REMOTE SHA HAS TO BE A REAL OBJECT, 2026-10-15 (cody b18) ─────────
+# This passed 'a' * 40 as the REMOTE sha. The gate has since gained a
+# remote-moved fallback: when the remote tip is not an object in this clone it
+# measures merge-base(origin/main, LOCAL)..LOCAL instead, and says so in a
+# NOTICE whose own text calls the situation "ordinary with five sessions
+# pushing". So this CONTROL stopped measuring the unchanged-range path and
+# started measuring the fallback, and its failure read as the control itself
+# breaking. A control fed an sha that cannot exist is not a control.
 ok('CONTROL: an EXISTING remote branch is still rsha..lsha, unchanged',
-   _rng2 == '%s..%s' % ('a' * 40, _head), _rng2)
+   _rng2 == '%s..%s' % (_base, _head), (_rng2, _prob2))
 
 _rng3, _prob3 = G.outgoing_range('refs/heads/x %s refs/heads/x %s\n'
                                  % (ZERO, 'b' * 40))
@@ -341,11 +349,35 @@ def _with_tty(is_tty, text=''):
 
 
 _r, _p = _with_tty(False)
-ok('EMPTY stdin that is NOT a tty names the SCRIPT case as the likely one',
-   _r is None and 'SHELL SCRIPT' in _p and 'ISSUE THE PUSH DIRECTLY' in _p,
-   _p)
+# ── THESE TWO ASSERTED PROSE THAT WAS DELETED FOR BEING FALSE ─────────────
+# 2026-10-15 (cody b18). They required 'SHELL SCRIPT', 'ISSUE THE PUSH
+# DIRECTLY' and the word 'DENIES'. All three are gone from
+# tools/register_feed_gate.py, and the message itself says why: the wrapper
+# explanation was MEASURED FALSE -- tools/prepush_refline_repro.py, 8 states,
+# git 2.54.0 -- because a pipe, a /dev/null stdin, a .sh file and a python
+# subprocess ALL still receive the ref lines. So these arms were holding a
+# RETRACTED CLAIM open, and their failure read as the empty-stdin handling
+# breaking rather than as the probe asserting something known to be untrue.
+#
+# WHAT IS ASSERTED NOW IS WHAT REPLACED IT, and it is stronger: the message
+# must carry the MEASUREMENT rather than a guess, and must name which of the
+# four states it is -- could-not-measure, non-fast-forward, nothing-to-push,
+# or the real anomaly. WHICH of the four appears depends on this clone's
+# ahead/behind at run time, so the arm requires EXACTLY ONE of them rather
+# than pinning whichever happens to be true today.
+_STATES = ('AND THE STATE COULD NOT BE MEASURED HERE', 'NON-FAST-FORWARD',
+           'THERE IS NOTHING TO PUSH', 'THE REAL ANOMALY')
+ok('EMPTY stdin that is NOT a tty carries its MEASUREMENT and names which of '
+   'the four states it is',
+   _r is None and 'MEASURED, NOT GUESSED' in _p
+   and sum(1 for _m in _STATES if _m in _p) == 1,
+   (_p[:200], [_m for _m in _STATES if _m in _p]))
+# DENIAL IS A BEHAVIOUR, NOT A WORD. `_r is None` means the gate produced no
+# range, so there is nothing a push could be judged clean against -- which is
+# the denial this arm is named for. The word 'DENIES' now appears in only one
+# of the four branches, so asserting it tested WHICH BRANCH RAN.
 ok('...and still DENIES rather than passing -- it cannot tell the two apart',
-   _r is None and 'DENIES' in _p, _p)
+   _r is None, (_r, _p[:120]))
 ok('...and the gate NAMES ITSELF, so a reader knows which of the three spoke',
    _p.startswith('register_feed_gate'), _p[:80])
 
@@ -369,9 +401,13 @@ ok('...and the first bad line is QUOTED so it can be recognised',
 # both pre-existing behaviours, pinned here because the shape filter added for
 # the message above sits one line from the loop that produces them.
 _r, _p = G.outgoing_range('refs/heads/x %s refs/heads/x %s\ngarbage\n'
-                          % ('a' * 40, 'b' * 40))
+                          % (_head, _base))
+# REAL SHAS HERE TOO, and for the same reason as the control above: with a
+# fabricated REMOTE sha this measured the remote-moved fallback rather than
+# "a good line first still yields its range", and reported a could-not-read
+# about the REMOTE as if the mixed-line handling had broken.
 ok('CONTROL: a good ref line first still yields its range',
-   _r == '%s..%s' % ('b' * 40, 'a' * 40) and not _p, (_r, _p))
+   _r == '%s..%s' % (_base, _head) and not _p, (_r, _p))
 _r, _p = G.outgoing_range('garbage\nrefs/heads/x %s refs/heads/x %s\n'
                           % ('a' * 40, 'b' * 40))
 ok('CONTROL: a malformed line FIRST is still the unparseable refusal',

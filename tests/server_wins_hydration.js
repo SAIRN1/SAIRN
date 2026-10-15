@@ -75,6 +75,7 @@ const path = require('path');
 // on a fragment it strips NOTHING AT ALL and looks correct doing it -- which
 // is a worse failure than any of the three copies it replaced.
 const { stripJs } = require(path.join(__dirname, 'lib', 'strip_comments.js'));
+const { balancedEnd } = require(path.join(__dirname, 'lib', 'fn_span.js'));
 const assert = require('assert');
 const vm = require('vm');
 
@@ -581,12 +582,76 @@ each('the transport records an id when a WRITE really lands', (A) => {
   // fixtures to keep in step. What must be true of all of them is one line, so
   // that is what is asserted -- weaker than execution, and named as weaker.
   const src = read(A.file);
-  // [\s\S]{0,200} rather than [^\n]*: StoneDesk's transport puts the guard and
-  // the call on separate lines inside a try. A one-line anchor would have
-  // reported the one app that wrote it most carefully as the one missing it.
-  const re = new RegExp("action\\s*===\\s*'write'[\\s\\S]{0,200}?" + A.transport + "\\(resource,\\s*payload\\.id\\)");
-  assert.ok(re.test(src),
-    A.app + ': no guarded ' + A.transport + '(resource, payload.id) in the transport');
+  // ── THE WINDOW WAS A GUESS AND sairnlegacy OUTGREW IT. 2026-10-15 (b18) ──
+  // This was `action === 'write'[\s\S]{0,200}?<transport>(resource, payload.id)`,
+  // and the comment above it already named the exact failure class it would
+  // hit: "A one-line anchor would have reported the one app that wrote it most
+  // carefully as the one missing it." 200 characters was a wider guess and it
+  // failed the same way.
+  //
+  // MEASURED distance from the `action === 'write'` guard to the
+  // `(resource, payload.id)` call, per app:
+  //     sairnlaw 53 · sairnsenior 53 · sairnfreedom 53 · stonedesk 78
+  //     sairnlegacy 311          <-- FAILED against a 200-char window
+  // sairnlegacy is at 311 because its transport gained the server-id
+  // CANONICALISATION block -- srvId, legAdoptServerId, legMarkSynced(resource,
+  // srvId) -- from fourth's b20 review, whose own comment describes a bereaved
+  // family getting two grief-support follow-ups because a device kept a random
+  // id. So the arm was reporting a CORRECTNESS FIX as a missing guard, and the
+  // most careful transport of the seven was the one named as the broken one.
+  //
+  // NO WIDER WINDOW. A character count is the wrong instrument: the next
+  // careful addition outgrows whatever number is chosen, silently, and nothing
+  // announces the day it stops matching. The property is STRUCTURAL -- the
+  // call is INSIDE the write guard's own block -- so that is what is measured,
+  // with the comment- and quote-aware balancedEnd the repo already ships.
+  // EVERY `action === 'write'` GUARD, NOT THE FIRST. Four apps mention it more
+  // than once, and the first version of this rewrite used a single .exec() --
+  // so it measured whichever guard came first in the file and turned four
+  // green apps red. The predecessor it replaced scanned for ANY occurrence
+  // followed by the call, and that part of it was right. Caught by running it;
+  // recorded because narrowing a search while widening its instrument is
+  // exactly the divergence class this batch is cataloguing.
+  const call = new RegExp(A.transport + '\\s*\\(\\s*resource\\s*,\\s*payload\\.id\\s*\\)');
+  const guard = /action\s*===\s*'write'/g;
+  let examined = 0;
+  let found = false;
+  let g;
+  while ((g = guard.exec(src)) !== null) {
+    const after = g.index + g[0].length;
+    // ── TWO LEGITIMATE SHAPES, AND BOTH ARE IN THE TREE ──────────────────
+    // BRACED  (sairnlegacy, stonedesk, sairnfreedom):
+    //     if(action==='write'&&...&&payload.id!==null){ ...; <call>; }
+    // BRACELESS single statement (sairnlaw, sairndesign, sairnsenior, sairnbiz):
+    //     if(action==='write'&&...&&payload.id!==null)<call>;
+    // A brace-only reading of the consequent found the `.catch(function(e){`
+    // 140 characters later and searched THAT, which is how the second version
+    // of this rewrite still reported four correct apps as missing the guard.
+    //
+    // Which shape it is, is decided by WHICH COMES FIRST after the condition,
+    // `{` or `;` -- a JS if-condition can contain neither -- so the consequent
+    // is identified rather than guessed, and no character budget is involved.
+    const brace = src.indexOf('{', after);
+    const semi = src.indexOf(';', after);
+    let consequent;
+    if (brace !== -1 && (semi === -1 || brace < semi)) {
+      consequent = src.slice(brace, balancedEnd(src, brace) + 1);
+    } else if (semi !== -1) {
+      consequent = src.slice(after, semi + 1);
+    } else {
+      continue;                       // neither: nothing to measure here
+    }
+    examined++;
+    if (call.test(consequent)) { found = true; break; }
+  }
+  // THE POPULATION IS ASSERTED. An arm that examined zero guards would
+  // otherwise pass or fail for a reason that has nothing to do with the rule.
+  assert.ok(examined > 0,
+    A.app + ": no `action === 'write'` guard with a braced block anywhere in "
+    + 'the file, so this arm had nothing to measure');
+  assert.ok(found,
+    A.app + ': no ' + A.transport + '(resource, payload.id) INSIDE any of the '
+    + examined + " `action === 'write'` guard block(s)");
 });
 
 each('every hydrate calls the shared merge AND the bootstrap', (A) => {

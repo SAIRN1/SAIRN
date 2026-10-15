@@ -56,18 +56,62 @@ ok('--check passes against the committed document', rc.returncode == 0,
 print('\nB. the classification is derived, and each bucket is non-empty')
 tools, cls, hk, gi, reg, suite = ti.classify()
 ok('it found a real number of tools', len(tools) > 80, 'found %d' % len(tools))
-for bucket in ('BLOCKING', 'REPORT-ONLY', 'ADVISORY', 'UNWIRED'):
+
+# ── THE HOOK-DERIVED ARMS ARE COULD-NOT-RUN. 2026-10-15, Michael's decision ─
+# `.claude/settings.json` carries `hooks: {}` -- the 23 hooks were cleared on
+# 2026-10-11 and the committed `_hooks_note` says why; Michael confirmed on
+# 2026-10-15 that they stay cleared. classify() derives ADVISORY from
+# SessionStart/UserPromptSubmit hooks and BLOCKING from PreToolUse hooks plus
+# gate_invokes(), so with the hooks gone THREE arms here were reporting an
+# operator decision as a defect:
+#
+#   ADVISORY is non-empty (0)
+#   a SessionStart hook is ADVISORY        -- got DECIDED (not_promoted())
+#   the push gate itself is BLOCKING       -- got SUITE-ONLY
+#
+# AND THE THIRD ONE IS A ROUTED FINDING, NOT JUST A PROBE PROBLEM.
+# `sairn_push_gate_hook.py` is installed through `.githooks/pre-push`, and it
+# demonstrably blocks: it REFUSED cody's b17 push on the tier-a gate. But
+# classify() has no notion of `.githooks/` at all -- it reads only
+# .claude/settings.json and gate_invokes() -- so the gate cannot be BLOCKING by
+# way of being the gate, and falls through to SUITE-ONLY. That means
+# docs/TOOLING-INVENTORY.md currently describes the most blocking thing on the
+# platform as suite-only. -> CC. It is printed below rather than asserted,
+# because asserting BLOCKING here would be asserting something the tool cannot
+# currently derive, and passing it would be the fail-open.
+_hooks_declared = bool(hk)
+_COULD_NOT_RUN = []
+for bucket in ('BLOCKING', 'REPORT-ONLY', 'UNWIRED'):
     n = sum(1 for t in tools if cls[t] == bucket)
     ok('%s is non-empty (%d)' % (bucket, n), n > 0)
-ok('the push gate itself is BLOCKING',
-   cls.get('sairn_push_gate_hook.py') == 'BLOCKING', cls.get('sairn_push_gate_hook.py'))
+if _hooks_declared:
+    _n_adv = sum(1 for t in tools if cls[t] == 'ADVISORY')
+    ok('ADVISORY is non-empty (%d)' % _n_adv, _n_adv > 0)
+    ok('the push gate itself is BLOCKING',
+       cls.get('sairn_push_gate_hook.py') == 'BLOCKING',
+       cls.get('sairn_push_gate_hook.py'))
+    ok('a SessionStart hook is ADVISORY',
+       cls.get('sairn_claim_hook.py') == 'ADVISORY',
+       cls.get('sairn_claim_hook.py'))
+else:
+    _COULD_NOT_RUN += [
+        'ADVISORY is non-empty -- the bucket is hook-derived and there are no '
+        'hooks (`hooks: {}`), so its population is 0 by decision, not by '
+        'defect',
+        'a SessionStart hook is ADVISORY -- sairn_claim_hook.py classifies as '
+        '%r with the hooks cleared' % cls.get('sairn_claim_hook.py'),
+        'the push gate itself is BLOCKING -- sairn_push_gate_hook.py '
+        'classifies as %r. classify() cannot see .githooks/, so the gate that '
+        'refused cody b17 reads as suite-only. ROUTED TO CC rather than '
+        'asserted here.' % cls.get('sairn_push_gate_hook.py'),
+    ]
+    for _c in _COULD_NOT_RUN:
+        print('  CNR   %s' % _c)
 ok('a tool the gate SHELLS OUT TO is BLOCKING, not unwired',
    cls.get('employee_auth_guard_check.py') == 'BLOCKING',
    cls.get('employee_auth_guard_check.py'))
 ok('a REGISTRY tool is REPORT-ONLY',
    cls.get('md_table_check.py') == 'REPORT-ONLY', cls.get('md_table_check.py'))
-ok('a SessionStart hook is ADVISORY',
-   cls.get('sairn_claim_hook.py') == 'ADVISORY', cls.get('sairn_claim_hook.py'))
 
 print('\nC. `catches` for report-only tools comes from REGISTRY, not from here')
 # If it were duplicated into PURPOSES the two could disagree, which is the
@@ -421,4 +465,13 @@ finally:
 print('\n%d failure(s)' % len(FAIL))
 for f in FAIL:
     print('  - ' + f)
-sys.exit(1 if FAIL else 0)
+# A REAL FAILURE OUTRANKS A COULD-NOT-RUN, and a could-not-run outranks a pass.
+# Three arms here cannot be driven while the hooks stay cleared, so this file
+# must not report plain success -- but it must also never let "I could not
+# check three arms" soften an arm that WAS checked and was wrong.
+if _COULD_NOT_RUN:
+    print('\n%d arm(s) COULD NOT RUN -- not passed, not failed:'
+          % len(_COULD_NOT_RUN))
+    for c in _COULD_NOT_RUN:
+        print('  - ' + c)
+sys.exit(1 if FAIL else (3 if _COULD_NOT_RUN else 0))
