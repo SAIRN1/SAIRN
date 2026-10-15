@@ -78,6 +78,7 @@ import time
 REPO = r"C:\Users\marsh\Documents\SAIRN-hover2"
 CLAIMS_GLOB = os.path.join(REPO, '.claude', 'claims', '*.json')
 FILES_RE = re.compile(r'FILES:\s*(.+)')
+_SENTINEL = object()  # marks "caller passed nothing" distinct from "caller passed None"
 
 # INVESTIGATED, NOT LEFT AS A CAVEAT. Keyed by frozenset({claim_id_a,
 # claim_id_b}) so a resolution is pinned to the two EXACT claim records, not
@@ -320,8 +321,43 @@ def _epoch(iso_or_epoch, fallback_epoch=None):
         return None
 
 
-def load_claims(claims_glob=CLAIMS_GLOB, stale_hours=4.0, now=None):
+def _load_claim_liveness():
+    """Import the real liveness check from tools/sairn_status.py rather than
+    trusting a claim record's own `status` string -- same anti-duplication
+    reasoning as _load_stale_hours(), and the same reason cc's
+    route_suite_failures.py fix (hank b14, commit c491f1bf) imports
+    sairn_claim.is_active() instead of re-deriving it: a session that
+    crashed still leaves `status: "active"` sitting in its claims file
+    forever, so that field alone cannot tell "genuinely still working" from
+    "abandoned and nobody released it." claim_liveness() reads the SEPARATE
+    status-registry heartbeat, which a dead process cannot keep refreshing.
+
+    Returns the callable, or None on any import failure -- the caller must
+    fail CLOSED to the OLD raw-status behavior, never assert a liveness
+    state this could not actually check (PR 1.11: a check that depends on
+    another tool must fail closed when that tool is absent, and say so)."""
+    path = os.path.join(REPO, 'tools', 'sairn_status.py')
+    try:
+        spec = importlib.util.spec_from_file_location('sairn_status', path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod.claim_liveness
+    except Exception:
+        return None
+
+
+CLAIM_LIVENESS_FN = _load_claim_liveness()
+
+
+def load_claims(claims_glob=CLAIMS_GLOB, stale_hours=4.0, now=None, liveness_fn=_SENTINEL):
     now = now if now is not None else time.time()
+    # _SENTINEL (not None) distinguishes "caller passed nothing, use the
+    # real module-level check" from "caller explicitly passed None, meaning
+    # unavailable" -- fixtures need to inject a FAKE liveness_fn OR
+    # explicitly test the no-liveness-available fallback, and collapsing
+    # both to the same default would make the second case unreachable.
+    if liveness_fn is _SENTINEL:
+        liveness_fn = CLAIM_LIVENESS_FN
     out = []
     for path in sorted(glob.glob(claims_glob)):
         if not path.endswith('.json'):
@@ -336,7 +372,23 @@ def load_claims(claims_glob=CLAIMS_GLOB, stale_hours=4.0, now=None):
             start = _epoch(c.get('claimed_at'), c.get('claimed_at_epoch'))
             released_at = c.get('released_at')
             end = _epoch(released_at, c.get('released_at_epoch'))
-            unreleased = end is None and c.get('status') == 'active'
+            raw_unreleased = end is None and c.get('status') == 'active'
+            # LIVENESS-AWARE (2026-10-15, b40): raw_unreleased trusts a
+            # claim-record field a dead session cannot ever update. When a
+            # real liveness check is available AND the raw check says
+            # "still active", ask the registry whether that is still true.
+            # Only a CONFIRMED-DEAD session clears the flag -- ALIVE and
+            # UNKNOWN both keep it, because this label is a warning
+            # ("treat this window's end as uncertain"), and an uncertain
+            # liveness answer must not silently downgrade a warning.
+            if raw_unreleased and liveness_fn is not None:
+                try:
+                    state, _why, _beat = liveness_fn(session)
+                except Exception:
+                    state = 'UNKNOWN'
+                unreleased = (state != 'DEAD')
+            else:
+                unreleased = raw_unreleased
             if end is None:
                 end = (start + stale_hours * 3600) if start is not None else None
                 end = min(end, now) if end is not None else None
@@ -478,6 +530,65 @@ def run_fixtures():
        'made end < start here and silently hid a genuine collision',
        raw_end > raw_start)
 
+    # LIVENESS-AWARE UNRELEASED LABEL (2026-10-15, b40, routed at seq909 by
+    # cc then re-confirmed at seq913 by H2's own b39). FAILING-FIRST: this
+    # arm calls load_claims() with an injected liveness_fn -- a parameter
+    # that did not exist before this batch's fix, so running this fixture
+    # against the pre-fix code is a TypeError, not a quiet pass. That is
+    # the failing-first state; the fix below is what makes it callable
+    # and correct.
+    import tempfile as _tf
+    _d2 = _tf.mkdtemp()
+    with io.open(os.path.join(_d2, 'fx.json'), 'w', encoding='utf-8') as _f2:
+        json.dump({'session': 'fx', 'claims': [
+            {'id': 'fx-1', 'subject': 'x', 'task': '',
+             'status': 'active', 'claimed_at_epoch': base, 'released_at': None},
+        ]}, _f2)
+    rows_dead = load_claims(claims_glob=os.path.join(_d2, '*.json'),
+                             liveness_fn=lambda sess: ('DEAD', 'fixture: process gone', None))
+    ck('a claim with status="active" and no released_at, but a CONFIRMED '
+       'DEAD liveness check, is NOT reported unreleased -- the raw '
+       '`status == \'active\'` string survives a crash forever and cannot '
+       'tell this apart from genuinely ongoing work',
+       len(rows_dead) == 1 and rows_dead[0]['unreleased'] is False)
+
+    rows_alive = load_claims(claims_glob=os.path.join(_d2, '*.json'),
+                              liveness_fn=lambda sess: ('ALIVE', 'fixture: heartbeat fresh', None))
+    ck('CONTROL -- the same claim with a CONFIRMED ALIVE liveness check '
+       'still reports unreleased=True; liveness only CLEARS the flag on a '
+       'confirmed-dead session, never asserts one is more active than the '
+       'raw status already says',
+       len(rows_alive) == 1 and rows_alive[0]['unreleased'] is True)
+
+    rows_unknown = load_claims(claims_glob=os.path.join(_d2, '*.json'),
+                                liveness_fn=lambda sess: ('UNKNOWN', 'fixture: registry unreadable', None))
+    ck('CONTROL -- an UNKNOWN liveness answer (could not tell) keeps the '
+       'flag too, the same as ALIVE -- only a POSITIVE dead answer may '
+       'suppress a warning label, per PR 1.11 (a could-not-tell state is '
+       'never folded into a pass)',
+       len(rows_unknown) == 1 and rows_unknown[0]['unreleased'] is True)
+
+    rows_no_liveness = load_claims(claims_glob=os.path.join(_d2, '*.json'), liveness_fn=None)
+    ck('FAIL-CLOSED CONTROL -- when no liveness check is available at all '
+       '(liveness_fn=None, e.g. tools/sairn_status.py would not import), '
+       'this falls back to the OLD raw `status == \'active\'` behavior '
+       'rather than asserting a liveness state nothing actually measured',
+       len(rows_no_liveness) == 1 and rows_no_liveness[0]['unreleased'] is True)
+
+    # ABLATION: remove the fix (force liveness_fn to be ignored, as the
+    # pre-b40 code always did) and confirm the DEAD arm above FLIPS BACK to
+    # the old wrong answer -- proving this fixture actually exercises the
+    # fix rather than passing for an unrelated reason.
+    def _pre_fix_load_claims_ablation():
+        rows = load_claims(claims_glob=os.path.join(_d2, '*.json'), liveness_fn=None)
+        return rows[0]['unreleased'] is True  # the OLD code's answer for this exact fixture
+
+    ck('ABLATION -- with the liveness check disabled (liveness_fn=None, '
+       'the exact pre-fix behavior), the DEAD fixture above goes back to '
+       'unreleased=True, the old wrong answer -- confirming the fix above '
+       'is what changed it, not a coincidence of the fixture data',
+       _pre_fix_load_claims_ablation())
+
     # KNOWN-BAD CONTROL, conflict-marker sweep, 2026-09-28: a claims file
     # left with unresolved git conflict markers must be VISIBLY reported
     # via load_error, never silently skipped or treated as an empty/clean
@@ -499,9 +610,9 @@ def run_fixtures():
        len(conflicted_result) == 1 and 'load_error' in conflicted_result[0])
 
     if bad:
-        print('%d of 10 fixture(s) failed -- refusing to judge real claims' % len(bad))
+        print('%d of 15 fixture(s) failed -- refusing to judge real claims' % len(bad))
         return 2
-    print('OK -- 10/10 fixtures passed')
+    print('OK -- 15/15 fixtures passed')
     return 0
 
 
