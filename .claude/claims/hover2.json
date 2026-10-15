@@ -523,8 +523,8 @@
       "task": "hover2 b36 batch",
       "claimed_at": "2026-10-15T00:38:02Z",
       "claimed_at_epoch": 1792024682.7682786,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-15T01:00:47Z",
       "files": null
     }
   ],
