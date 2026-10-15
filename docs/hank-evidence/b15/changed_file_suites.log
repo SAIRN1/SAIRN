@@ -1,0 +1,14 @@
+api/b15-payroll-effective-clock.test.js exit=0
+api/b15-client-effective-clock.test.js exit=0
+api/b15-corrections-hydrate.test.js exit=0
+api/b14-clock-approval-two-person.test.js exit=0  (was exit=1 before its fixture was repaired for the split render -- see docs/hank-evidence/b15/b14_suite_after.log)
+api/t16-clock-correction-record.test.js exit=0
+api/sd-data-sen-evv-clock.test.js exit=0
+api/sd-data-sen-self-correction-flag.test.js exit=0
+api/sd-data-sen-role-asymmetry.test.js exit=0
+api/sd-data-sen-caregiver-pii-scope.test.js exit=0
+api/sd-data-sen-caregiver-read-paths.test.js exit=0
+api/sd-data-alf-training-join.test.js exit=0
+tests/sd_data_clock_flags_merge.test.js exit=0
+tests/sen_hydrate_comparator_review_probe.js exit=0
+tests/sen_evv_payroll_wiring_probe.py exit=0

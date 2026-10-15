@@ -270,7 +270,16 @@ console.log('b14. no self-approval: the approver must differ from the submitter\
     const m = HTML.match(re);
     return m ? m[0] : null;
   }
+  // ── THE SPLIT HELPERS ARE LIFTED TOO (2026-10-15, b15) ────────────────
+  // renderCorrectionsView() now HYDRATES before it renders -- b14 open item 2,
+  // because a scheduler on a cold device saw an empty table under "Nothing is
+  // waiting" -- so it delegates the markup to _renderCorrectionsRows() and
+  // needs senHydrateVisits() in scope. Lifting only the entry point threw a
+  // ReferenceError, which this suite reported as a hard error rather than as
+  // an arm, and that is the honest signal: the fixture had stopped matching
+  // the code.
   const NEEDED = ['senPendingCorrections', 'renderCorrectionsView',
+                  '_renderCorrectionsRows', '_corrFreshness',
                   'vsCorrectionsBadgeText'];
   const missing = NEEDED.filter((n) => lift(n) === null);
   if (HTML === null) {
@@ -300,6 +309,12 @@ console.log('b14. no self-approval: the approver must differ from the submitter\
       VISITS: [],
       visits: function () { return sandbox.VISITS; },
       senData: function () { return Promise.resolve(null); },
+      // The hydrate is stubbed SUCCESSFUL, so these arms measure the render
+      // and not the sync. The failed-hydrate half is driven in
+      // api/b15-corrections-hydrate.test.js, where it is the subject.
+      senHydrateVisits: function () { return Promise.resolve(true); },
+      senLastErrText: function () { return ''; },
+      Promise: Promise,
       fdatetime: function (v) { return String(v); },
       toast: function () {},
       senLocalToday: function () { return '2026-10-15'; }
@@ -315,7 +330,7 @@ console.log('b14. no self-approval: the approver must differ from the submitter\
         clock_corrections: [{ field: 'clock_in_at', original_at: RECORDED,
           proposed_at: SUBMITTED, reason_code: 'transcription_error',
           proposed_by: 'E1', status: 'pending' }] }];
-      sandbox.renderCorrectionsView();
+      await sandbox.renderCorrectionsView();
       let html = el('vs-view-corrections').innerHTML;
       is(/vsApproveCorrection\(/.test(html) && !/disabled/.test(html),
          'U1. a pending correction submitted by somebody ELSE renders an '
@@ -332,7 +347,7 @@ console.log('b14. no self-approval: the approver must differ from the submitter\
         clock_corrections: [{ field: 'clock_in_at', original_at: RECORDED,
           proposed_at: SUBMITTED, reason_code: 'transcription_error',
           proposed_by: 'S1', status: 'pending' }] }];
-      sandbox.renderCorrectionsView();
+      await sandbox.renderCorrectionsView();
       html = el('vs-view-corrections').innerHTML;
       is(/disabled/.test(html) && /you submitted|your own|submitted it/i.test(html),
          'U3. a pending correction THIS user submitted renders a DISABLED '
@@ -342,7 +357,7 @@ console.log('b14. no self-approval: the approver must differ from the submitter\
 
       // Nothing pending -> an empty state, not a blank panel.
       sandbox.VISITS = [{ id: 'V2', clock_in_at: RECORDED }];
-      sandbox.renderCorrectionsView();
+      await sandbox.renderCorrectionsView();
       html = el('vs-view-corrections').innerHTML;
       is(html.replace(/<[^>]*>/g, '').trim().length > 15,
          'U4. CONTROL -- no pending corrections renders a sentence, not an '

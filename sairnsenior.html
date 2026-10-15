@@ -2957,8 +2957,39 @@ function vsCorrectionsBadgeText(){
   var n=senPendingCorrections().length;
   return n?('Clock Corrections ('+n+')'):'Clock Corrections';
 }
+// ── IT HYDRATES FIRST, AND IT NO LONGER CLAIMS AN EMPTY QUEUE IS EMPTY
+//    (2026-10-15, b14 open item 2) ──────────────────────────────────────────
+// senPendingCorrections() reads visits(), which is the LOCAL store. b14 shipped
+// this panel reading it directly, so a scheduler opening the tab on a cold
+// device -- or after a failed hydrate -- saw an empty table under the sentence
+// "Nothing is waiting", which is a false statement about somebody's unpaid
+// clock correction. The queue exists to stop a submission being invisible, and
+// that sentence made it invisible with extra confidence.
+//
+// TWO CHANGES AND THE SECOND IS THE ONE THAT MATTERS. Hydrating closes the
+// cold-device case. It does NOT close the failed-hydrate case: offline, a 503
+// or an expired session leaves exactly the same empty list. So the empty state
+// now says WHEN it last managed to reach the server, or that it could not --
+// "nothing is waiting, as of just now" is a claim this page can support and
+// the bare version is not.
+var _corrLastSync=null;
 function renderCorrectionsView(){
   var el=$('vs-view-corrections');if(!el)return;
+  el.innerHTML='<div class="card"><div class="cb"><div class="note">Checking the server for pending corrections...</div></div></div>';
+  return senHydrateVisits().then(function(okSync){
+    if(okSync!==false)_corrLastSync=new Date();
+    _renderCorrectionsRows(el,okSync!==false);
+    var cb=$('vs-tab-corrections');if(cb)cb.textContent=vsCorrectionsBadgeText();
+  }).catch(function(){
+    _renderCorrectionsRows(el,false);
+  });
+}
+function _corrFreshness(reached){
+  if(reached&&_corrLastSync)return 'Checked with the server just now ('+_corrLastSync.toLocaleTimeString()+').';
+  if(_corrLastSync)return 'COULD NOT REACH THE SERVER. This list is as of '+_corrLastSync.toLocaleTimeString()+' and may be out of date.';
+  return 'COULD NOT REACH THE SERVER, and this device has not synced since it was opened -- so this list is not evidence that nothing is waiting.';
+}
+function _renderCorrectionsRows(el,reached){
   var rows=senPendingCorrections();
   var me=(senSession&&senSession.employee_id)||'';
   if(!rows.length){
@@ -2967,7 +2998,8 @@ function renderCorrectionsView(){
     // above this makes for itself.
     el.innerHTML='<div class="card"><div class="cb">'
       +'<div class="ct">Clock corrections awaiting approval</div>'
-      +'<div class="note">Nothing is waiting. When a caregiver submits a '
+      +'<div class="note"'+(reached?'':' style="color:var(--bad)"')+'>'+H(_corrFreshness(reached))+'</div>'
+      +'<div class="note">'+(reached?'Nothing is waiting':'No pending correction is on this device')+'. When a caregiver submits a '
       +'different clock time through Clock In / Out, the recorded time is kept '
       +'and their submission appears here for a scheduler to approve. Until it '
       +'is approved, payroll and EVV exports use the ORIGINAL time.</div>'
@@ -3019,9 +3051,11 @@ async function vsApproveCorrection(visitId,index){
   // RE-READ FROM THE SERVER rather than patching the local row. The approval
   // changed an entry inside a jsonb blob; re-hydrating is the only way the
   // screen and the server agree without a second copy of the merge rule.
-  await senHydrateVisits();
-  renderCorrectionsView();
-  var cb3=$('vs-tab-corrections');if(cb3)cb3.textContent=vsCorrectionsBadgeText();
+  //
+  // THE HYDRATE IS renderCorrectionsView()'s OWN now (2026-10-15), so this no
+  // longer calls it twice -- the second read was wasted and the two could
+  // disagree about which one's result was on screen.
+  await renderCorrectionsView();
   vsRenderKpis();
   toast('Correction approved — payroll and EVV exports now use the corrected time');
 }

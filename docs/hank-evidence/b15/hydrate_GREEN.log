@@ -1,0 +1,8 @@
+b15. the corrections tab must hydrate before it claims the queue is empty
+
+  ok       H1. renderCorrectionsView() calls senHydrateVisits(). Before this the queue read whatever was in the local store, so a scheduler opening the tab on a cold device saw an empty table
+  ok       H2. ...and it renders something afterwards rather than leaving the panel blank while it waits
+  ok       H3. THE ARM THAT MATTERS -- the empty state no longer says "Nothing is waiting." A hydrate that FAILED (offline, 503, expired session) leaves exactly the same empty list, so that sentence is a claim the page cannot support and it is the one a scheduler would act on
+  ok       H4. ...and the empty state says WHEN it last managed to check, or that it could not. "Nothing is waiting, as of a moment ago" is a claim the page can support; the bare version is not
+
+4 passed, 0 failed, 0 unproven
