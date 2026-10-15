@@ -3926,6 +3926,34 @@
         "docs/2026-10-15-cody-b16-fulltree-cluster-triage.md",
         "docs/known-red-suites.json"
       ]
+    },
+    {
+      "id": "cody-1792072154",
+      "session": "cody",
+      "subject": "tests",
+      "task": "cody b17: triage remaining 30 tests/ failures by reading each subject; de-duplicate _rm_ro into tests/lib/; extend tests/run_b13_b14_ablation_record.py with b15+b16 arms; raw-status probe reads and exit-3 reason line in tests/run_exec_msgs_gate_sabotage_probe.py; tests/run_capa_fields_probe.py cleanup; 16 CHANGED + 9 RECOVERED known-red register rows; docs/test-file-floor.json raise. CONFLICTS DECLARED PER PR 4.3: api/ and sql/ are hank's and READ-ONLY here; tools/ is cc's and READ-ONLY except nothing; docs/ re-derivation is fourth's. FILES: tests/lib/_rm_ro.py tests/run_criticality_tier_probe.py tests/claims/run_freshness_probe.py tests/run_b13_b14_ablation_record.py tests/run_exec_msgs_gate_sabotage_probe.py tests/run_capa_fields_probe.py tests/sairnbuild_backup_pending.js tests/sd_data_family_mar_gate.js tests/run_sf_session_gate_sabotage_probe.py tests/run_sv_session_gate_sabotage_probe.py tests/run_checker_confidence_probe.py tests/run_tier_a_open_basis_probe.py docs/known-red-suites.json docs/test-file-floor.json docs/2026-10-15-cody-b17-triage.md SAIRN-handoff-cody-b17.md",
+      "claimed_at": "2026-10-15T13:49:14Z",
+      "claimed_at_epoch": 1792072154.7323232,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-handoff-cody-b17.md",
+        "docs/2026-10-15-cody-b17-triage.md",
+        "docs/known-red-suites.json",
+        "docs/test-file-floor.json",
+        "tests/claims/run_freshness_probe.py",
+        "tests/lib/_rm_ro.py",
+        "tests/run_b13_b14_ablation_record.py",
+        "tests/run_capa_fields_probe.py",
+        "tests/run_checker_confidence_probe.py",
+        "tests/run_criticality_tier_probe.py",
+        "tests/run_exec_msgs_gate_sabotage_probe.py",
+        "tests/run_sf_session_gate_sabotage_probe.py",
+        "tests/run_sv_session_gate_sabotage_probe.py",
+        "tests/run_tier_a_open_basis_probe.py",
+        "tests/sairnbuild_backup_pending.js",
+        "tests/sd_data_family_mar_gate.js"
+      ]
     }
   ],
   "refusals": [
