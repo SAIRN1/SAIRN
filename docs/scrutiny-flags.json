@@ -1590,6 +1590,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": ".githooks/pre-push",
+   "class": "CI / hook configuration",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "46128d86a4fd59bd4aca62c0d1d66c9d2c8cf106",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/report_only_checks.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "46128d86a4fd59bd4aca62c0d1d66c9d2c8cf106",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/sd-data-session-gate.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -5161,6 +5177,39 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "c6a841cb9f235ac763992738ff019a47c3913718",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": ".githooks/pre-push",
+   "class": "CI / hook configuration",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c7c758ed43560450484c85133058c493e8b76cf2",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/run_all_tests.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c7c758ed43560450484c85133058c493e8b76cf2",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "'limit out loud -- `ai_source` is a CLAIM BY THE WRITER, so \"a client '"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "import gate_skip"
+    }
+   ],
+   "sha": "c7c758ed43560450484c85133058c493e8b76cf2",
    "criteria_version": "2026-10-06.1"
   },
   {
