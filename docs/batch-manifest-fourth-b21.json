@@ -37,8 +37,8 @@
     {
       "id": 6,
       "title": "Push without --force and confirm landed (HEAD == origin/main, 0 ahead / 0 behind).",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "Pushed WITHOUT force: first attempt, no rejection. Confirmed landed: git rev-parse --short HEAD and origin/main both 7a5e6a11; git rev-list --left-right --count origin/main...HEAD -> 0 0; all four b21 docs/ paths present via git cat-file -e origin/main:<path>; both discharges on origin. NOT-FORCED IS NOW PROVED BY ANCESTRY RATHER THAN BY GREPPING GIT'S WORDING, which is b21 item 5's self-finding fixed in the same batch: git merge-base --is-ancestor <pre-push tip> HEAD -> ANCESTOR, i.e. a fast-forward. Re-check: git log origin/main --oneline -3"
     }
   ]
 }
