@@ -823,6 +823,17 @@
       "status": "released",
       "released_at": "2026-10-15T14:10:02Z",
       "files": null
+    },
+    {
+      "id": "hover-1792073925",
+      "session": "hover",
+      "subject": "hover",
+      "task": "b43: chain+token check, land-check hank b15/fourth b24/newer closed batches, finish tier_a_review_gate_sabotage_probe live drive, deep-verify H2 b40, check sd-data.js 8231 fix+scope-gate+routed-doc ownership, push+handoff",
+      "claimed_at": "2026-10-15T14:18:45Z",
+      "claimed_at_epoch": 1792073925.993904,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
