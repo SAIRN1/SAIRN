@@ -569,6 +569,38 @@ def _a8(tmp):
             and 'skipped (not an anchor, R6)' in body), body
 
 
+@arm('A8b-fourths-three-prose-spans', 'the three BARE PROSE SPANS fourth b22 '
+                                     'routed to cc as this tool\'s likely '
+                                     'first three false positives -- '
+                                     '`eventRefusals()`, `liquorServiceCheck()` '
+                                     'and `sc_auth`, each counting 0 in '
+                                     'sairnfreedom.html because the register '
+                                     'writes empty parentheses and the source '
+                                     'writes arguments',
+     'NOT anchors and NOT findings. Measured against the real register: 8 '
+     'anchors, 8 resolving exactly once, 0 not. The routed concern is '
+     'answered by MEASUREMENT, and this arm is what holds the answer -- R1 '
+     'already requires the literal word `anchor` and R6 already rejects a '
+     'bare identifier, and nothing before this pinned either against these '
+     'three exact spans')
+def _a8b(tmp):
+    # THE SPANS AS THE REGISTER REALLY WRITES THEM, beside a real anchor so
+    # the run reaches the reporting path rather than A10's no-anchors case.
+    doc = ('%s\n'
+           '`eventRefusals()` at `:4255` runs `liquorServiceCheck()` on both '
+           'ends, same shape as `sc_auth` where `exp` IS the alarm.\n'
+           'anchor `function eventRefusals(e){`\n' % DECL)
+    d = _tree(tmp, doc, 'app.html', 'function eventRefusals(e){\n')
+    rc, out = check('doc.md', repo=d)
+    body = NL.join(out)
+    # Exactly ONE anchor is found -- the declared one. Three more would be
+    # three false positives, and a zero would mean the arm proved nothing.
+    return (rc == EXIT_CLEAN and '1 anchor(s)' in body
+            and '1 resolving EXACTLY ONCE, 0 not' in body
+            and 'eventRefusals()' not in body.replace(
+                'function eventRefusals(e){', '')), body
+
+
 @arm('A9-whitespace-only-diff', 'an anchor differing from the target only by '
                                'run-length whitespace',
      'FINDING, with the near-match named -- a relaxed MATCH would bless a '
@@ -693,6 +725,14 @@ _ABLATIONS = (
      'a missing or unreadable target file is exit 2 NAMING the file, never 0 '
      '-- otherwise the absence of a finding becomes evidence of freshness',
      lambda: _patch_fail_open_target()),
+    ('r1-anchor-keyword',
+     'an anchor is the literal word `anchor` followed by a backticked string, '
+     'NOT every backticked string. Removing this is precisely the false-'
+     'positive mode fourth b22 routed: the register\'s bare prose spans '
+     '`eventRefusals()`, `liquorServiceCheck()` and `sc_auth` each count 0 in '
+     'sairnfreedom.html, and a tool that read them as anchors would report '
+     'three rotted citations in a cell that has none',
+     lambda: _patch('ANCHOR_RE', re.compile(r'`([^`]+)`'))),
     ('r6-anchor-filter',
      'an anchor must be >= 8 chars with a non-word character, so prose ABOUT '
      'anchors is not counted as one. Measured need: the spec\'s own '

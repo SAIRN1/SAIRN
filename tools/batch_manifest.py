@@ -91,6 +91,28 @@ if hasattr(sys.stdout, 'reconfigure'):
 if hasattr(sys.stderr, 'reconfigure'):
     sys.stderr.reconfigure(encoding='utf-8')
 
+# ── AND THE RECONFIGURE ABOVE DOES NOTHING FOR THE CHILD (fixed b15) ───────
+# `reconfigure` changes THIS process's streams. drive_upload_verify.py runs as
+# a SUBPROCESS and does not reconfigure its own -- checked, not assumed:
+#
+#   grep -n "reconfigure\|PYTHONIOENCODING\|PYTHONUTF8" tools/drive_upload_verify.py
+#   (no output)
+#
+# so under Windows' default cp1252 console the child encodes its stdout at
+# cp1252, and the first non-ASCII byte in the handoff line it is quoting --
+# an em-dash, which every SAIRN handoff first line has -- raises
+# UnicodeEncodeError IN THE CHILD. drive_verify() then returns that crash's
+# exit code, and cmd_close reports it as the Drive verify FAILING. An
+# encoding crash wearing a gate's verdict is the worst available shape: the
+# batch is refused for a reason that is not the reason.
+#
+# The fix is the one eight other tools in this repo already use -- set the
+# child's environment rather than hoping it inherits a fixed console. It is
+# NOT `errors='replace'` on the decode, which is a different thing and
+# already present below: that handles bytes this process reads, after the
+# child has already died.
+CHILD_ENV = dict(os.environ, PYTHONIOENCODING='utf-8', PYTHONUTF8='1')
+
 CRITERIA_VERSION = '2026-10-13.1'
 NL = chr(10)
 DOCS = os.path.join(REPO, 'docs')
@@ -356,10 +378,10 @@ def drive_verify(agent, batch, runner=None):
     cmd = [sys.executable, DRIVE_VERIFY, '--agent', agent, '--batch', batch,
            '--verify-only']
     if runner is not None:                    # the probe drives this
-        return runner(cmd)
+        return runner(cmd, CHILD_ENV)
     import subprocess
     p = subprocess.run(cmd, cwd=REPO, stdout=subprocess.PIPE,
-                       stderr=subprocess.STDOUT)
+                       stderr=subprocess.STDOUT, env=CHILD_ENV)
     return p.returncode, p.stdout.decode('utf-8', 'replace')
 
 
@@ -587,6 +609,29 @@ def run_fixtures():
               'no_such_verifier.py' in out, True)
     finally:
         DRIVE_VERIFY = keep
+
+    # ── THE CHILD'S ENCODING, DRIVEN RATHER THAN ASSERTED ──────────────────
+    # FAILING-FIRST: run against the pre-fix call site -- `subprocess.run`
+    # with no `env=` -- and the captured env is the ambient one, so under a
+    # cp1252 console PYTHONIOENCODING is unset and the child crashes on the
+    # first em-dash it prints. The fixture drives drive_verify's OWN runner
+    # seam, so it is about the call site and not about a copy of it.
+    seen = {}
+
+    def _capture(cmd, env=None):
+        seen['env'] = env
+        return EXIT_CLEAN, 'captured'
+    drive_verify('cc', 'b15', runner=_capture)
+    env = seen.get('env') or {}
+    check('the Drive-verify CHILD is given PYTHONIOENCODING=utf-8, because '
+          'this process reconfiguring its own streams does nothing for a '
+          'subprocess', env.get('PYTHONIOENCODING') == 'utf-8', True)
+    check('...and PYTHONUTF8=1 with it, so the child\'s own file reads are '
+          'utf-8 too and not just its console',
+          env.get('PYTHONUTF8') == '1', True)
+    check('...and the rest of the environment is CARRIED, not replaced -- an '
+          'env= that dropped PATH would break the child in a new way',
+          bool(env) and len(env) > 2, True)
 
     print('  %d/%d fixtures classify correctly' % (total - bad, total))
     return EXIT_FINDING if bad else EXIT_CLEAN
