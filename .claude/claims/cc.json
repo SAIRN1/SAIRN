@@ -3972,8 +3972,8 @@
       "task": "b13: weakening-flags sign-off; b11 citation + claim liveness mismatch; F3 arm + anchor-rot tool; wire 3 hank api tests + fmea drafts; board read-back hash + H2 scratch file; push. FILES: docs/scrutiny-flags.json docs/2026-10-14-cc-b11-routed.md tools/sairn_claim.py tools/anchor_rot_check.py tools/sairn_board_publish.py tools/sairn_push_gate_hook.py tools/tooling_inventory.py docs/TOOLING-INVENTORY.md docs/fmea/ docs/2026-10-14-cc-b13-routed.md SAIRN-handoff-cc-b13.md SAIRN-report-cc-b13.txt SAIRN-digest-cc-b13.txt SAIRN-latest-cc.md",
       "claimed_at": "2026-10-15T00:35:53Z",
       "claimed_at_epoch": 1792024553.1577287,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-15T01:24:42Z",
       "files": [
         "SAIRN-digest-cc-b13.txt",
         "SAIRN-handoff-cc-b13.md",
