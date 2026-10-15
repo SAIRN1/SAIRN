@@ -1,7 +1,8 @@
 {
-  "floor": 802,
-  "how": "tools/run_all_tests.py raise_floor(), from discover() intersected with git ls-files",
-  "previous": 370,
+  "floor": 808,
+  "how": "tools/run_all_tests.py raise_floor(), from discover() on this tree",
+  "lowered_from_813_why": "cc b14: docs/ablation/floor_layers.py removed the tracked-intersection layer in order to MEASURE it, and the ratchet then counted the floor probe's five untracked fixture files and wrote 812, then 813, against a real 808. That is b12's 807-against-802 incident reproducing on demand, which is the finding the ablation was looking for. Corrected by hand because the ratchet only ever rises; the harness now snapshots and restores this file per layer so a measurement cannot contaminate the ones after it.",
+  "previous": 802,
   "raised_on": "2026-10-14",
   "why_it_only_rises": "a tool that could lower its own floor would absorb a mass deletion as the new normal and report clean. Lowering is a human edit to this file with a reason, and run_all_tests.py refuses a value below its own last-resort literal."
 }

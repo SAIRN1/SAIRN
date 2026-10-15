@@ -1,0 +1,556 @@
+REPORT cc b14
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-15
+HEAD      11697bad  ==  origin/main  (git rev-list --left-right --count
+          origin/main...HEAD  ->  0  0), tree clean, zero stashes, claim
+          released, status row idle
+FORCE     none, in any spelling
+OVERRIDE  none of the three forms. docs/BYPASS-LOG.jsonl holds 97 rows and
+          NONE is dated 2026-10-15. That is an audit rather than an
+          assertion: the gate records an override ATTEMPT before deciding
+          whether to honour it, so an unused override is an absent row and
+          not a silence
+HOOKS     none added or restored. .claude/settings.json never committed
+TRANSCRIPT
+          C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\
+          5521d10f-06f8-4089-8534-150e3e3c8d84.jsonl
+          Shared with b12 and b13, so the CONTEXT figure covers all three
+
+B14 WAS WRAPPED AT A CONTEXT LIMIT, NOT COMPLETED. Items 1, 2, 3 and 5 landed
+in full. Item 4 ran and is reported with one half LOST and two findings
+PARKED. Nothing is mid-edit; the claim is released.
+
+
+================================================================================
+WHAT LANDED
+================================================================================
+
+  3474df69  fix(board): two readings of one frozen directory is one reading
+  c491f1bf  fix(router): a dead session owned two paths for eighteen days
+  efd2626e  docs(PR 5.1),fix(gate): exit 3 stays ONE code
+  2ab32b34  test(ablation): three of b12's layers have no arm anywhere
+  eb917751  docs(b14): the sweep ran, cc destroyed its log, and waiting for it
+            found a lock that steals from a live run
+  0a0091d3  chore(defect register): two records for b14
+  042454ee  chore(scrutiny ledger): the gate's own rows for b14's commits
+  a490fc4b  chore(defect register): re-seat with the register's own --reseat
+  1ad9d83f, 761a69c4, 20dd22a4, f8563325, 11697bad
+            chore: further ledger rows and re-seats across the push races
+
+SEVEN PUSH ATTEMPTS AND THE REMOTE MOVED UNDER FIVE OF THEM. Four refusals
+were gate checks satisfied rather than overridden -- register-feed twice, a
+no-ref-lines could-not-tell, and one "could not tell what is being pushed";
+three were `cannot lock ref` races with other sessions landing mid-push. All
+resolved by rebase. No --force at any point.
+
+ONE REBASE CONFLICT WAS REFUSED BY tools/sairn_rebase_resolve.py AND IT WAS
+RIGHT TO REFUSE. A register re-seat deletes old-sha records and adds new-sha
+ones, which against an append-only ledger reads as two deleted ancestor
+records:
+
+    REFUSED: 1 mergeable ledger(s) hold a difference that is not an append.
+    A union would put every one of them back, which is a different wrong
+    answer, not a safer one.
+    These files CAN be merged automatically, and that is exactly why this
+    case has to be refused out loud: the one difference a union would swallow
+    silently is the one that was not an append.
+
+The hand-written re-seat commit was SKIPPED and the register's own --reseat
+was run after the rebase settled. ITS OUTPUT IS A PARTIAL REPAIR AND SAYS SO:
+2 records re-seated, 4 SUPERSEDED skipped and excluded from that count, 1 LEFT
+ALONE on a destination collision, and the tool verified --check exits 0 on
+what it had just written.
+
+NO LIVE DEPLOYED-URL CHECK, AND THAT IS NOT A SKIPPED STEP. This batch changed
+no api/, sql/ or app file -- tools/ and docs/ only.
+
+
+================================================================================
+ITEM 1 -- THE BOARD REPORTED A SIX-DAY-OLD MIRROR AS THE CURRENT CHAIN TIP
+================================================================================
+
+ROUTED BY H2 b36, which found it by adversarially checking cc's own b12 work
+-- which is exactly what b12 item 1 asked H1 and H2 to do. Its words: the
+chain-tip cell was "silently stale by 111 entries/6 days due to a frozen
+Drive-mount mirror the lag-detector cannot see".
+
+THE ROOT CAUSE IS THE SHAPE OF THE DETECTOR, NOT THE DATA. b12 compared the
+TIP-BEACON's seq against the newest chain-tip-seq file BESIDE IT and called
+that a lag detector. Both sources are files in the same mirror directory, so
+when the directory stops being refreshed they go stale TOGETHER and the
+comparison reports no lag. It could only ever catch a publisher who wrote the
+files and forgot the beacon. TWO READINGS OF ONE FROZEN THING IS ONE READING.
+
+MEASURED BEFORE CHANGING ANYTHING:
+
+  hover-chain-h2\   every file dated 2026-10-08
+    TIP-BEACON.md   seq 778, published_at 2026-10-08T15:08:48Z
+  SAIRN-digest-h2-b36.txt (refreshed every batch)   tip 893
+                                                    -> 115 behind, 154h old
+  hover-chain-h1\   newest chain-tip-seq file  seq 1185, dated 2026-10-08
+  SAIRN-digest-h1-b36.txt   "Chain tip 1435"        -> 250 behind
+
+THREE SOURCES NOW, AND THE CELL SAYS WHICH IT IS REPORTING:
+
+  1. THE DIGEST IS THE INDEPENDENT SOURCE. Each auditor uploads a fresh digest
+     every batch into the same folder and states its own tip there. A
+     different artefact, written by a different action -- which is precisely
+     what the within-mirror second source was not.
+  2. THE MIRROR IS AGED BY ITS OWN NEWEST mtime, so a frozen mirror is
+     reported as FROZEN with its age rather than inferred from a comparison
+     blind to it. By mtime and not by the beacon's published_at: a
+     published_at is a string the publisher wrote, an mtime is what the
+     filesystem observed, and the filesystem cannot be talked into a date.
+  3. BOTH NUMBERS PRINT WHEN THEY DISAGREE and the digest wins as the reported
+     tip, because a beacon is a checkpoint CLAIM and the digest is the agent's
+     own current statement.
+
+MIRROR_STALE_HOURS = 48 AND IT IS NOT A TUNED NUMBER. Auditor batches land
+several times a day -- h1 and h2 both published b36 and b37 within the window
+-- and this mirror is six days old, so anything from a day to several
+classifies the data identically. The margin is PRINTED rather than trusted.
+Erring tight is the safe direction: a quiet mirror reported stale costs a line
+of output, where the opposite cost six days of a wrong number on a
+tamper-evidence cell.
+
+THE WITHIN-MIRROR COMPARISON IS KEPT AND DEMOTED, not deleted. A beacon behind
+its own directory is a real signal about a forgotten beacon. It is relabelled
+INTERNALLY INCONSISTENT MIRROR, and arm A3's anchor was moved onto that
+wording so the arm and the sentence cannot drift apart without one of them
+failing.
+
+THREE THINGS THE ARMS FOUND THAT READING DID NOT:
+
+  * THE PARSER MATCHED NEITHER AUDITOR. A first version carried three tidy
+    format-shaped patterns and matched none of the five real sentences -- a
+    parser that would have reported "no tip published" about agents who
+    publish one every batch, which is a silent zero dressed as a finding. A22
+    drives the MEASURED text: "Chain tip 1435 (9 new entries...)", "Chain
+    hover_log.py --verify -> 893 entries ... (888->893 this batch)", "+5
+    entries (seq889-893: ...)", "TIP-BEACON.md refreshed seq838->seq889",
+    "chain entries #1436-#1440". Five shapes, two authors.
+  * `seq838->seq889` GLUES THE NUMBER TO THE WORD and a lookbehind excluding
+    \w matched neither end of it. The word is separated from its number before
+    scanning rather than widening the lookbehind, which would also admit the
+    digits inside identifiers like sha256.
+  * A FROZEN MIRROR WITH NO DIGEST TIP IS A THIRD STATE. The first version
+    printed the frozen mirror's seq and then said "which is why the tip above
+    comes from the digest" -- a FALSE SENTENCE under a number from the other
+    source. It now returns UNKNOWN -- NEITHER SOURCE IS CURRENT, because a
+    frozen mirror's number is not a tip and reporting it as one is how this
+    cell was wrong by 111 entries in the first place.
+
+AND THE MIRROR CAN BE AHEAD, which is the case at HEAD: h1 refreshed its
+mirror to seq 1444 after its b37 digest said 1440. That is REPORTED and NOT
+resolved -- which of the two is right is the auditor's call, and a board that
+silently picks one is the same class of defect one level over. Routed to H2
+with the question: if a digest can understate the tip, the "digest wins"
+default is wrong and cc should hear it.
+
+  python tools/sairn_board_publish.py --selftest    ->  22/22 arms
+  python tools/sairn_board_publish.py --ablation    ->  14 layers, every one
+                                                        load-bearing
+
+The three new layers break 2, 5 and 1 arms respectively. Live output for the
+cell that was wrong:
+
+  seq 893 (h2's own digest b36 -- THE REPORTED TIP; from b36: py --verify ->
+  893 entries, CHAIN INTACT (888->893 this batch)); beacon claims seq 778 ...
+  published 2026-10-08T15:08:48Z; MIRROR IS FROZEN: its newest file
+  (hover-audit-log.jsonl) is 154h old, past the 48h line ...; THE MIRROR IS
+  115 ENTRIES BEHIND the digest (778 vs 893)
+
+
+================================================================================
+ITEM 2 -- THE RAW-STATUS SWEEP: ELEVEN HITS, ELEVEN JUDGEMENTS
+================================================================================
+
+THE SWEEP THE b13 DIGEST SAID NOBODY HAD RUN. Every consumer of the raw claim
+`status` field outside tools/sairn_claim.py, by grep over *.py and *.js
+excluding node_modules and archive:
+
+  tools/route_suite_failures.py:316           DEFECT -- fixed here
+  .claude/skills/sairn-hover-auditor/
+    tools-hover2/claim_collision_scan.py:339  DEFECT -- routed to H2, auditor
+                                              scope, cc may not write there
+  tests/claims/run_push_verify_probe.py
+    :523 :613 :649 :664                       routed to cody WITH a judgement
+  tools/claim_activity_check.py:155           NOT a defect, two-stage by design
+  tests/run_compliance_loader_probe.py:112    not a claim -- a compliance rule
+  tools/claim_activity_check.py:73,
+    sairn_claim_doc_freshness.py:128,
+    tests/run_claim_activity_probe.py:9       PROSE quoting the defect in their
+                                              own write-ups, not instances
+
+One real defect cc owns, one routed to an auditor, four routed with a
+judgement attached, five dismissed WITH THE REASON RECORDED so the next sweep
+does not re-flag them.
+
+THE DEFECT. route_suite_failures.py decided who ACTIVELY owns a path from the
+stored field, which is written once and never revisited. Liveness is COMPUTED
+by sairn_claim.is_active(), which applies a staleness rule AND a
+process-liveness check where the registry stamped one. So a session that died
+holding a claim kept owning its declared paths for ever -- and this tool's
+whole job is routing a suite failure to its owner.
+
+MEASURED BEFORE AND AFTER, on the real record:
+
+  before   27 paths carried an "ACTIVE <session>" attribution
+           2 of them named `cloud`, last claimed 2026-09-27, gone 18 days:
+             docs/cloud-research/sairngrounds-external-competitive-gap-audit...
+             docs/cloud-research/SAIRN-PLATFORM-2026-09-27-cloud-research-...
+  after    25 paths, 0 naming cloud
+
+THE ARM WAS WRITTEN FIRST AND PROVED TO FAIL ON THE CODE AS IT WAS. The
+selector was split into claim_sets_from_docs() so an arm could drive it over a
+BUILT claim document -- an arm that reads the live .claude/claims is an arm
+whose verdict changes when somebody tidies the record. Against the pre-fix
+version: 15/16, "raw-status arm: a/dead.py expected ever=True active=False,
+got ever=True active=True". After: 16/16, now 18/18 with the permanent
+ablation.
+
+IMPORTED AND NOT REIMPLEMENTED, AND IT FAILS CLOSED. The staleness rule has
+already changed once -- a fixed timeout became a timeout plus process liveness
+on 2026-09-23 -- and a local copy would have frozen the older half. If
+sairn_claim.is_active will not import, the router DIES naming the module
+rather than falling back to the raw field: a router that silently reverts to
+the defect is the defect wearing a fallback.
+
+WHY THE FOUR tests/ HITS ARE ROUTED AND NOT ASSERTED WRONG. A probe that has
+just written a claim and is checking the record it wrote SHOULD read the
+stored field -- that is the thing under test, and is_active() would make the
+assertion depend on a clock. Calling them defects without reading what each
+arm is for would have been over-refusal.
+
+AND tools/claim_activity_check.py:155 IS NOT A DEFECT, read carefully before
+being left alone: active_claims() collects the candidate population from the
+stored field and _claim_is_active() is applied per row at :215, splitting
+EXPIRED out as a reported third state. Two stages on purpose -- and the tool
+that first wrote this defect up is the one that already handles it correctly.
+
+FOURTH TOOL, THIRD BATCH, FIRST ONE FOUND BY LOOKING.
+claim_activity_check.py paid for it on 2026-09-28 (13 rows stored active, two
+really were), sairn_claim.py's own audit and sairn_claim_doc_freshness.py in
+cc b13, and this one now. Every previous one was found by accident while doing
+something else.
+
+
+================================================================================
+ITEM 3 -- EXIT 3 STAYS ONE CODE, DECIDED WITH THE NUMBERS
+================================================================================
+
+THE QUESTION b13 LEFT OPEN. Exit 3 carries two meanings and only the test can
+know which: not-applicable-on-this-platform (session_lock_liveness_probe.py,
+kernel32 via ctypes) and the-other-side-of-the-seam-is-missing
+(role-picker-vs-check-constraint, which exits 3 on EVERY platform because 11
+of 17 apps have no CHECK constraint to compare against).
+
+DECIDED: ONE CODE. Three reasons, in the order they weighed.
+
+1. THE CONSEQUENCE IS IDENTICAL. In both cases the driver removes that test
+   from the required set for that run and reports it in the could-not-tell
+   channel. A second code producing the same behaviour buys a label, not a
+   mechanism -- and the label is already available from a better source.
+
+2. A MIGRATION WOULD TOUCH 51 FILES ACROSS THREE OWNERS. Measured, not
+   estimated: `git ls-files tests api tools` grepped for exit(3) /
+   process.exit(3) / EXIT_SKIPPED -> 51 producers, spread over tests/ (cody),
+   api/ (hank) and tools/ (cc), with a window where both conventions coexist.
+
+3. THE CONVENTION IS ALREADY DE FACTO UNIVERSAL. Of those 51, FIFTY already
+   print a recognised reason marker -- SKIPPED, UNPROVEN, COULD NOT RUN or
+   NOT APPLICABLE. One does not.
+
+THE SURVEY IS WHY THIS IS A DECISION AND NOT A PREFERENCE. It ran BEFORE
+anything was written, and 50-of-51 is what turned "add a checker" into "write
+it down" -- building a 51-file enforcement tool to catch a single file is the
+tool that proves the rule nobody broke. Had it come back 5 of 51 the answer
+would have been the opposite. The number is in PR 5.1 so the next session can
+check it rather than inherit it.
+
+WRITTEN DOWN as PR 5.1, including the one thing that would REVERSE it: a
+consumer that needs to BEHAVE differently for the two meanings -- a CI lane
+tolerating a platform skip while failing a missing seam. There is no such
+consumer today. The reasoning is recorded, not just the conclusion.
+
+THREE ARMS PIN THE DECISION. The marker list must be exactly the four PR 5.1
+names, because a fifth spelling accepted in code and absent from the document
+is the convention drifting in the direction nobody reads; every one of the
+four must be honoured by the reason-finder rather than merely listed in a
+tuple; and the two meanings must be distinguished by the test's own words,
+which is the entire basis for not splitting the code.
+
+  python tools/sairn_push_gate_hook.py --selftest   ->  37/37 arms
+
+ROUTED: tests/run_exec_msgs_gate_sabotage_probe.py is the one non-compliant
+producer and tests/ is cody's.
+
+
+================================================================================
+ITEM 5 -- THE ABLATION RECORDS, AND TWO OF THEM ARE FINDINGS
+================================================================================
+
+AN ARM PROVES A CHECK FIRES ON BAD INPUT. It says nothing about whether the
+check is what caught it. Only removing the layer and watching a NAMED arm go
+red does that -- and the one time this platform skipped it, b12's
+latest-ceiling layer turned out to be deletable with no arm noticing.
+
+tools/citation_anchor_rot_check.py LANDED IN b13 WITH 12 ARMS AND NO ABLATION
+AT ALL. Six layers now, every one load-bearing: exactly-once,
+zero-count-finding (2 arms), declared-target, fail-closed-target,
+r6-anchor-filter (3), near-match-report. Two named hooks exist purely so a
+layer can be REMOVED rather than REWRITTEN -- _COUNT_IS_FINDING(n) and
+_TARGET_EXISTS(path) -- because an ablation that rewrites the function it
+measures tells you nothing about which layer caught the defect.
+
+AND fail-closed-target REPORTED UNPROVEN TWICE BEFORE THE ABLATION WAS RIGHT,
+for a reason that is a good property of the code: the fail-closed path is ONE
+layer implemented TWICE, an os.path.isfile test AND read_text() returning
+None. Patching either half alone left the other standing, A4 stayed green, and
+the layer looked deletable. The layer is "an unusable target is never a pass"
+and an ablation has to remove the whole of it. A REDUNDANTLY-GUARDED LAYER IS
+A TRAP FOR A LAZY ABLATION.
+
+A7b ROTTED WITHIN A DAY, FOR THE SECOND TIME, IN THE ROT CHECKER. b13 got the
+first half right -- do not assert the number of FINDINGS, because a correct
+re-anchoring turns 1 into 0 -- and then pinned the ANCHOR COUNT instead.
+fourth b22 re-anchored the sf_events cell, so the row went from 7 anchors with
+1 dead to 8 anchors all resolving, and the arm went red on somebody else's
+CORRECT FIX. It now asserts a FLOOR of 7 that a re-anchoring can raise and
+only a deletion can break. THE ROUTED FINDING IS CLOSED: 8 of 8 resolve
+exactly once.
+
+FINDING 1 -- THE b13 EXIT-3 "ABLATION" WAS NOT ONE. It read
+
+  ck('ABLATION: ...', ('SKIPPED as not applicable on this platform -- exit 3'
+     ).startswith('SKIPPED as not applicable'), True)
+
+which asserts a property of a LITERAL and is true no matter what the code
+does. A comment wearing an arm's clothes; it would have passed with
+exit3_reason() deleted outright. Replaced with a real removal: the pre-fix
+function is restored and all three b13 arms must go red on it, plus a control
+establishing that the pre-fix version was never SILENT -- it was confidently
+wrong, which is why nothing caught it for a day.
+
+FINDING 2 -- ALL THREE OF b12's TEST-FILE-FLOOR LAYERS ARE UNPROVEN, AND cc
+CANNOT ARM THEM. Measured by removing each from tools/run_all_tests.py and
+running CODY's tests/run_all_tests_floor_probe.py as a subprocess:
+
+  BASELINE  cody probe exit 0 -- ALL CHECKS PASS
+  ratchet                probe exit 0  STILL GREEN -- UNPROVEN
+  tracked-intersection   probe exit 0  STILL GREEN -- UNPROVEN
+  silence-breaking       probe exit 0  STILL GREEN -- UNPROVEN
+  RESTORED  sha256 0306a0e214b0b4fe  IDENTICAL
+  AFTER RESTORE  cody probe exit 0 -- ALL CHECKS PASS
+
+THIS IS NOT CODY'S PROBE BEING WRONG. It predates b12 and tests the
+shrinking-suite floor, that MIN_TEST_FILES is defined exactly once, and that
+both bodies compare against it. It was never asked about the ratchet. So three
+real layers have ZERO arms, tests/ is cody's, and the arms are ROUTED with the
+exact fixture each needs. AN ABLATION CANNOT SEE A LAYER NOBODY WROTE AN ARM
+FOR, and this surfaced only because the ablation was driven from OUTSIDE the
+file that owns the arms.
+
+FINDING 2b -- UNARMED IS NOT HARMLESS, AND THE HARNESS HAD TO CONTAMINATE
+ITSELF TO SHOW IT. The first two runs reproduced b12's incident on demand:
+with the intersection removed, the ratchet counted the floor probe's five
+UNTRACKED fixture files and wrote a floor of 812, then 813, against a real
+808 -- the 807-against-802 shape exactly. cody's probe still exited 0 in the
+run that did it; the harm lands on the NEXT run, which fails with
+"discovered (808) >= MIN_TEST_FILES (813)" for a reason unrelated to the code
+under test. SO THE LAYER IS UNARMED IN-RUN AND DESTRUCTIVE ACROSS RUNS, which
+is worse than merely unarmed and is the strongest argument for the arm cody is
+being asked to add.
+
+AND THE HARNESS WAS THE SECOND DEFECT. It restored the TOOL and left the FLOOR
+FILE poisoned, so silence-breaking read FAILS (load-bearing) in the
+contaminated run and UNPROVEN in the clean one -- the same layer, two
+verdicts, decided by leftover state. It now snapshots and restores
+docs/test-file-floor.json PER LAYER rather than once at the end. The floor
+file is corrected to 808 by hand with the reason recorded inside it, because
+the ratchet only ever rises and lowering it is a human edit.
+
+ALSO: route_suite_failures.py's raw-status arm had only an ad-hoc proof in a
+scratch script. A one-off demonstration is not a RECORD -- it is gone when the
+terminal closes and the next reader has only the claim. The pre-fix selector
+is now restored inside the criteria lock on every run, with a control.
+
+All of it is written up in docs/ABLATION-RECORDS.md with the commands to
+re-run it, INCLUDING what the file does not claim: "every layer load-bearing"
+means every layer breaks at least one arm, not that the arms are sufficient --
+and three layers have none.
+
+
+================================================================================
+ITEM 4 -- THE SWEEP RAN, ITS LOG IS GONE, AND WAITING FOR IT FOUND A DEFECT
+================================================================================
+
+THE SUITE SWEEP COMPLETED AND ITS STDOUT WAS DESTROYED BY cc. It was started
+with nohup redirected to /tmp/b14_sweep.log, and cc later OVERWROTE that same
+path with the output of a second, lock-skipped attempt while the first still
+held an fd on it. THE PER-FILE PASS/FAIL LIST FOR b14 DOES NOT EXIST.
+
+That it FINISHED rather than died is established, not assumed: the lock file
+is absent and pid 25196 is GONE, and release_lock() only runs on a completed
+run -- a killed run leaves the file for the next caller to reclaim by age.
+Lock held 16+ minutes across nine polls.
+
+NOT RE-RUN, and that is a wrap-up decision rather than an omission: a second
+17-minute sweep inside the close-out would have been new work taken in place
+of the handoff. THE HONEST STATEMENT IS THAT THE LIST DOES NOT EXIST, not that
+the suite was clean. The one command that supersedes it is in the doc, with
+the instruction to log to a path NOTHING ELSE WRITES.
+
+WHAT THE SWEEP DID MEASURE, salvaged from the artefact it left in a tracked
+file. docs/report-only-reachability.json, rewritten by the run:
+
+  registry_size  78      reached  7      never_reached  71
+  measured_budget_seconds 20.0           effective_cutoff_seconds 18.0
+
+71 OF 78 REPORT-ONLY ENTRIES ARE NEVER REACHED. And the figure written into
+report_only_checks.py's own comment -- "only 36 of 73 entries clear the 540s
+line" -- is STALE IN BOTH TERMS: the registry is 78 now and the measured
+budget on this clone is 20 seconds, not 540, so the reach is 7 and not 36.
+
+THAT UNDERCUTS THE STATED REASON FOR A DECISION cc MADE TWICE. b12 and b13
+each put a new checker in _FRONT and justified it with arithmetic off the
+540s/36-entry figure. The conclusion still holds -- _FRONT is the only
+position that runs at all, and 7 of 78 makes that MORE true -- but the
+arithmetic was against a number that no longer applies. Not corrected here:
+establishing where the 20s comes from (this machine, or the missing
+report_only_checks hook entry in this clone, which the tool flags as a
+FALLBACK on every run) is a measurement and not an edit.
+
+A REAL DEFECT FOUND BY WAITING, NOT BY READING. acquire_lock() in
+tools/run_all_tests.py will DELETE A LIVE RUN'S LOCK after 15 minutes:
+
+  lock pid 25196, age 16.1 min, LOCK_MAX_AGE 15.0 min
+  holder: ALIVE
+  past reclaim threshold: True
+
+The reclaim is age-only and its own comment says "abandoned by a killed run".
+The code cannot tell an abandoned run from a slow one, and A NORMAL FULL SWEEP
+ON THIS CLONE TAKES LONGER THAN THE THRESHOLD THAT DECLARES IT DEAD. A second
+run starting at minute 16 removes the first's lock and proceeds -- exactly the
+corruption the lock exists to prevent, which the tool's own skip message
+describes in four lines.
+
+NOT FIXED IN b14, PARKED WITH THE FIX DECIDED, because a lock change needs a
+failing-first arm and an ablation rather than a quick edit at a wrap-up point.
+The fix is the 2026-09-23 correction to sairn_claim.is_active() applied one
+domain over -- the honest question is not how old the lock is but whether the
+process that took it is still running -- and the lock file ALREADY RECORDS THE
+PID. Reclaim only when that pid is GONE; fall back to age only when liveness
+cannot be determined; import session_lock_check.owner_state() rather than
+writing a second copy of the recycled-pid defence, as sairn_status.py already
+does; and RAISE NOTHING, because a bigger number holds a crashed run's lock
+longer while still eventually stealing a live one's. Three arms are named in
+the doc: a live pid with an old mtime must NOT be reclaimed, a dead pid must
+be, and an unparseable lock falls back to age.
+
+OBLIGATIONS: 17 open, 10 overdue, routed by OWNER rather than author. hank 1
+(410h, and its recorded sha 3e3e1cca210e does not resolve in this clone -- a
+COULD-NOT-TELL the obligation states itself), cody 5, cc 4. cc's four are NOT
+discharged and that is b11's trade restated: four unbudgeted Tier A reviews at
+a wrap-up point buys four rushed verdicts, and an unreviewed obligation is
+visible where a bad verdict is not.
+
+AND ONE OF cc's OWN WENT STALE DURING THIS BATCH, reported rather than hidden:
+cody's 2026-10-12 obligation covers tools/route_suite_failures.py, which item
+2 changed, so the gate now reports "STALE -- moved since ca81d59d6e66". The
+reviewer must read the file at HEAD.
+
+NOTHING IS ROUTED TO api/ OR tests/ FROM THE SUITE RUN, because the per-file
+results do not exist. Routing a failure to an owner on the strength of a log
+cc destroyed would be worse than routing nothing -- it sends somebody to look
+for a failure nobody can reproduce.
+
+
+================================================================================
+THE DEFECT RECORDS
+================================================================================
+
+  3474df69  tooling / high / HOVER-AUDIT / rule 1.9
+            found-by-session hover2, the honest attribution: H2 b36 found this
+            by adversarially checking cc b12, which is what b12 asked for.
+            Rule 1.9 -- a checker must answer the same on identical input --
+            because both halves of the lag comparison lived in one directory,
+            so a frozen mirror and a current one produced the same verdict.
+            Injection cited: 46128d86, the commit that built the detector.
+
+  c491f1bf  tooling / moderate / static-checker / rule 1.1
+            The router attributed ACTIVE ownership from the raw status field.
+            Injection UNKNOWN with the reason stated. RECURRENCE OPEN, and it
+            is the useful part: four tools across three batches, a fifth
+            routed to H2 in a file cc cannot write, and nothing enumerates the
+            consumers of this field as a standing check -- the sweep was a
+            grep run once, by hand, and goes stale the next time somebody
+            writes the pattern.
+
+THE REGISTER REFUSED THE FIRST RECORD ON ITS FIRST ATTEMPT -- a factor whose
+`kind` was 'design', outside the vocabulary -- and that refusal was satisfied
+rather than worked around.
+
+    python tools/defect_register.py --check
+    ->  OK: 595 record(s), every commit resolves and every field is in
+        vocabulary
+
+The shas above are the final re-seated ones. Across seven push attempts the
+register was re-seated three times by its own --reseat, and each run reported
+its skipped and collided records rather than claiming a clean repair.
+
+
+================================================================================
+EVERY CHECK RUN, AND ITS REAL EXIT CODE
+================================================================================
+
+  tools/sairn_board_publish.py --selftest          0   22/22 arms
+  tools/sairn_board_publish.py --ablation          0   14 layers load-bearing
+  tools/route_suite_failures.py --fixtures         0   18/18 fixtures
+  tools/sairn_push_gate_hook.py --selftest         0   37/37 arms
+  tools/citation_anchor_rot_check.py --selftest    0   12/12 arms
+  tools/citation_anchor_rot_check.py --ablation    0   6 layers load-bearing
+  tools/citation_anchor_rot_check.py <doc>         0   8 of 8 anchors resolve
+                                                       -- the b13 finding is
+                                                       CLOSED by fourth b22
+  tools/runbook_constant_agreement.py --selftest   0   10/10 arms
+  tools/runbook_constant_agreement.py --ablation   0   4 layers load-bearing
+  tools/sairn_claim.py selftest                    0   7/7 arms
+  tools/scrutiny_ledger_check.py                   0   CLEAN, 426 unchecked
+                                                       and named
+  tools/defect_register.py --check                 0   595 records
+  tools/tooling_inventory.py --check               0   matches the repo
+  tests/run_all_tests_floor_probe.py               0   ALL CHECKS PASS
+  docs/ablation/floor_layers.py                   *1   3 layers UNPROVEN --
+                                                       the finding, not a
+                                                       failure of the run
+  tools/obligation_surface.py                     *1   17 open, 10 overdue
+  tools/run_all_tests.py                            -  COMPLETED, output LOST
+
+  * the two non-zero codes are FINDINGS, not failures of the run. Neither was
+    converted into a pass.
+
+NOT RUN, AND SAID OUT LOUD: the per-file suite results (above). No app or
+endpoint was live-driven, because nothing deployed changed. The staleness of
+the 521 file:line citations in docs/CRITICALITY-TIERS.md remains UNMEASURED
+from b13 and is deliberately not estimated.
+
+
+================================================================================
+CONTEXT
+================================================================================
+
+CONTEXT 74% used (1,000,000 window, Opus 5 1M). MEASURED, not estimated:
+741,455 tokens by tools/sairn_status_line.used_tokens() against this session's
+own transcript (5,504,378 bytes). THIS SESSION IS SHARED WITH b12 AND b13 --
+one transcript -- so the figure covers all three batches, where b12's 34%
+covered b12 alone and b13's 54% covered b12+b13.
+
+b14 was wrapped at this figure rather than run to the end of its queue. The
+same number is on the live status row via `set --context`, with a context_set
+stamp, so the Drive board reports it as a live reading rather than falling
+back to this digest.
+
+SHA256 37310e438317e253b21d00e3ccf588caae3b8ff06a50e1066b002e3e02d8c8d0
+END-OF-REPORT

@@ -126,6 +126,103 @@ the citation names a line and not a file. That is a form problem, not a
 staleness problem, and converting a cell to quoted-string anchors (which is what
 `sf_events` already is) is the fix that removes the whole class.
 
+---
+
+## 3. THE hover2 b36 ROUTING, RE-DERIVED — AND THE RULE IS NOW MECHANICAL
+
+**Added after the batch's six items, on hover2's routing.** `SAIRN-digest-H2-b36.txt`
+listed `docs/CRITICALITY-TIERS.md:358` under EVIDENCE-path as *"still unfixed,
+re-grepped"*, and `SAIRN-handoff-H2-b36.md` item 4 queued it as open. **Both are
+timing artefacts and hover2 said so itself**, in the same handoff: *"fourth's
+b22 appears to have landed new commits as this batch wrapped up … not confirmed
+whether the actual fix landed with it."* It had. **Re-derived from source rather
+than taken from either document:**
+
+| | anchors | findings |
+|---|---:|---:|
+| the row at `7a5e6a11` — what hover2 re-grepped | 7 | **1 — ROTTED, anchor 6 of 7** |
+| the row at HEAD — after the b22 re-anchor | 8 | **0** |
+
+(`scratchpad/sf_anchor_counterfactual_b22.log`, both rows run against the same
+live `sairnfreedom.html`.)
+
+**AND IT SETTLES THE ORDINAL INDEPENDENTLY.** hover2 called it *"the 7th"*; the
+b22 instruction called it *"the seventh"*; the program says **6 of 7**, twice,
+by two different enumerations. Three descriptions, one anchor, and the only one
+that is reproducible is the one a program produced.
+
+### The cell's code facts, re-read at HEAD rather than assumed
+
+Re-anchoring proves the quoted text exists. It does not prove the cell's
+argument, so the argument was re-read:
+
+* `eventRefusals()` runs `liquorServiceCheck()` on **both ends** of an alcohol
+  event, and the OAC 4301:1-1-49(B)(3) consumption-as-well-as-sale reasoning is
+  in the source comment, not just in the register.
+* The gaming interlock really is **the Phase 3 function itself** —
+  `out = out.concat(sfSessionRefusals({…}, null))`, with the source's own
+  comment *"Not a re-implementation — the Phase 3 function itself."*
+* `sfScheduleEvent()` **returns before any write** when refusals fire, and on a
+  gaming success pushes a real row into `K_SESSIONS` with the same id it then
+  stores on the event as `sessionId`.
+* **The stored `alcohol` has exactly the two readers the cell names** — the
+  table tag and the combined list. The other `b.alcohol` determinations in that
+  file (`:5335-5376`) are **`sf_rentals`**, driven from the `hr-` hall-rental
+  form, not from an event row. Checked because if they had been event readers
+  the cell's tier argument would turn on `alcohol` rather than on `sessionId`.
+* **The cell contains no line-number citation**, which is what it claims about
+  itself: the only `:NNNN`-shaped token in it is `4301:1`, from the OAC
+  regulation number. *(Worth noting for §2: regulation numbers are counted as
+  BARE citations by that predicate, so the 373 is an upper bound on real bare
+  code citations.)*
+
+### THE FAILING-FIRST CHECK — `tools/sf_events_anchor_check.py`
+
+**The cell stated its own acceptance rule in prose and nothing drove it, so it
+went quiet for a day.** hank b12's F6 moved the text for a correct reason, the
+anchor fell to zero, and the register kept asserting it until a human re-read
+the cell. That is the eighth cross-domain discipline exactly: *nothing announces
+the day a check stops testing anything.*
+
+* **Criteria locked against synthetic fixtures first, 10/10 arms**, and the
+  check refuses to judge real data if the lock breaks.
+* **The failing-first arm is the real pre-b22 anchor text** —
+  `if(ev && ev.sessionId) st(K_SESSIONS, getSessions().filter(` — which must
+  come back ROTTED. If that arm ever passes, the tool has stopped working.
+* **Both failure directions**: zero matches is ROTTED, more than one is
+  AMBIGUOUS. A unique-match rule needs both arms, not one.
+* **Entity escaping is driven in both directions** — an `&amp;`-escaped anchor
+  must match the raw app text, and the unescape must not invent a match for
+  text that is absent.
+* **The false-positive class is an explicit arm**: a prose span with empty
+  parentheses is ignored, not reported. `eventRefusals()`,
+  `liquorServiceCheck()` and `sc_auth` all count 0 in the app, and a tool that
+  treated every backticked span as an anchor would open with three false
+  findings on this one cell.
+* **No anchors at all is a FINDING, not a pass** — otherwise the check passes by
+  measuring nothing, which is the shape this register keeps paying for.
+* **It fails CLOSED**: a missing app file, a missing register, zero sf_events
+  rows or more than one is **exit 2 COULD NOT RUN**, never exit 0.
+* **It prints what it cannot tell you, every run**: a resolving anchor proves
+  the text is there and unique; it does not prove the cell's claim *about* that
+  text. No string match establishes *"removes the linked session by stored id
+  only."*
+
+**Live run: exit 0, 8 of 8 anchors resolve exactly once**
+(`scratchpad/sf_anchor_check_b22.log`). The cell now **names the check inside
+its own rule sentence**, so the rule and its enforcer cannot drift apart
+silently.
+
+**THIS IS NOT cc's ROUTED ANCHOR-ROT TOOL AND MUST NOT BE MISTAKEN FOR IT.**
+That one is general over the whole register — the b20 spec, 8 requirements and
+10 arms, including reporting bare `:NNNN` citations as UNASSESSABLE rather than
+folding them into a total. This is one cell and one app file. **When the general
+tool lands, delete this one rather than maintaining both**; the file says so in
+its own header so that deletion is the expected end state and not a judgement
+call later.
+
+---
+
 ### THE ONE CLAUSE I AM ADDING TO THE CONVENTION
 
 b21 proposed: print the command **and** the raw count. Driven twice more this

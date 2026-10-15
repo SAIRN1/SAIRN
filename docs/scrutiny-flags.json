@@ -27,6 +27,14 @@
    "class": "push-gate logic",
    "level": "CHANGE",
    "shapes": [],
+   "sha": "0019e248a856881906800f051569b74e76a304ba",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
    "sha": "008078c3991b037b26b315255e52f9a6f09e9d39",
    "criteria_version": "2026-10-06.1"
   },
@@ -146,11 +154,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "03055ccedc74746af754d89941d5bf0bd9cd2cd7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sairnfreedom_ai_disclosure.js",
    "class": "test file",
    "level": "CHANGE",
    "shapes": [],
    "sha": "036ad95f5610b05d2feb6e9cfda9c7f28d65baf1",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "03a14bad945738d33a0ccab41fb54fc4bc17fafc",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -1056,6 +1080,19 @@
     }
    ],
    "sha": "2a964aa413328265230c990e50629fe4f16b00da",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "assertions NET REMOVED",
+     "detail": "1 removed, 0 added; first removed: ck('ABLATION: the PRE-FIX message asserted the platform cause and carried '"
+    }
+   ],
+   "sha": "2ab32b34221dcb234061d1239fb3c09ca59765ec",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -2403,6 +2440,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "65da5cbaee5b5a9325fdfa3291225ea673d754a5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/sd-data-law-role-matrix.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -3302,6 +3347,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "assertions NET REMOVED",
+     "detail": "1 removed, 0 added; first removed: ck('ABLATION: the PRE-FIX message asserted the platform cause and carried '"
+    }
+   ],
+   "sha": "8783822aec5276d5d2a907013bd7313ad4cc80c9",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/role-picker-vs-check-constraint.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -3410,6 +3468,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "assertions NET REMOVED",
+     "detail": "1 removed, 0 added; first removed: ck('ABLATION: the PRE-FIX message asserted the platform cause and carried '"
+    }
+   ],
+   "sha": "8d992b3383da9d9a15efc906dca2ff5143078ff3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_batch_manifest_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -3465,6 +3536,19 @@
     }
    ],
    "sha": "91cb57c86e758a5f755ad91b8f0175d2bc5d4fc7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "assertions NET REMOVED",
+     "detail": "1 removed, 0 added; first removed: ck('ABLATION: the PRE-FIX message asserted the platform cause and carried '"
+    }
+   ],
+   "sha": "91eba0b4a1b146d16d2b4488dc448fe0f5294e25",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -5493,6 +5577,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c75c56a944dd45e5055cf1188a551ffb7f28a036",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": ".githooks/pre-push",
    "class": "CI / hook configuration",
    "level": "CHANGE",
@@ -5613,6 +5705,19 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "cb1849a775431bf8e24a9aa72661d20133782518",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "assertions NET REMOVED",
+     "detail": "1 removed, 0 added; first removed: ck('ABLATION: the PRE-FIX message asserted the platform cause and carried '"
+    }
+   ],
+   "sha": "cc4f7ebe094ab0e7ca28830e4792d26fd3d8557d",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -6507,6 +6612,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "efd2626e04e44e1e07eca54aa9c062d10608368a",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_b12_routed_findings_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -7040,6 +7153,19 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "f92fe10aed6de03c2ea820c9a538fa6b3b5ec965",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "assertions NET REMOVED",
+     "detail": "1 removed, 0 added; first removed: ck('ABLATION: the PRE-FIX message asserted the platform cause and carried '"
+    }
+   ],
+   "sha": "f95695ce79b04164be724cf79826f9b0c0b686aa",
    "criteria_version": "2026-10-06.1"
   },
   {

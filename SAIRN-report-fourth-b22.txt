@@ -2,7 +2,16 @@ REPORT fourth b22
 
 SAIRN batch report -- session fourth (ted), batch b22, 2026-10-15.
 Working directory C:\Users\marsh\Documents\SAIRN-fourth, branch main.
-Model Opus 5 (1M context). Context at close: 24% of 1000k.
+Model Opus 5 (1M context). Context at close: 35% of 1000k.
+
+THIS REPORT WAS RE-WRITTEN AFTER A FOLLOWUP LANDED. The six dispatched
+items closed and all four deliverables were uploaded and verified
+Drive-side at 86a27458. hover2 b36 then routed
+docs/CRITICALITY-TIERS.md:358; it was re-derived from source and produced
+a new check and a register edit, so all four deliverables were re-written
+and re-uploaded rather than left describing the earlier state. Section 10
+is that work. NOTHING IN SECTIONS 0-9 IS RETRACTED; the STATE block and
+the context figure moved, and section 6(b) gains one bound.
 
 EVERY FIGURE BELOW NAMES THE COMMAND THAT PRODUCED IT. Re-derive anything you
 mean to quote, including out of this file. Where a number differs from a number
@@ -12,8 +21,30 @@ beside it rather than the difference being asserted as drift.
 
 == 0. STATE ==
 
-  HEAD                      4a103abc          git rev-parse --short HEAD
-  origin/main               4a103abc          git rev-parse --short origin/main
+  HEAD                      7753caa1          git rev-parse --short HEAD
+                            (the six items closed at 86a27458; the
+                            hover2-b36 followup FIX is 2884063e, section
+                            10, with its defect record and a rebase
+                            re-seat committed after it. These four
+                            deliverables land after this line, which is
+                            why HEAD is not the followup commit.)
+  origin/main               7753caa1          git rev-parse --short origin/main
+  the followup's sha        2884063e -- AND IT MOVED TWICE GETTING THERE:
+                            142ef3ca -> e4ba37f9 -> 2884063e. The first
+                            push was DENIED by register_feed_gate,
+                            correctly: it closes a defect and fed nothing.
+                            The defect was recorded (rule 1.1,
+                            hover-audit, found-by hover2, injection
+                            31406a87, re-seated by the rebase to
+                            2884063edf4d by sairn_rebase_resolve.py), and
+                            each pull --rebase rewrote the followup commit.
+                            BOTH EARLIER SHAS STILL RESOLVE IN THIS CLONE
+                            AND NEITHER IS ON origin/main -- the exact trap
+                            section 3 writes up about cody's record,
+                            arriving on my own commit inside the same
+                            batch. Check with `git branch -r --contains`,
+                            not with `git cat-file -t`: resolving locally
+                            is not the same question as being on origin.
   behind / ahead            0 / 0             git rev-list --left-right --count origin/main...HEAD
   forced?                   NO, PROVED BY ANCESTRY, not by grepping git's
                             wording: pre-push tips 86a27458e05e and 4a103abc
@@ -29,8 +60,13 @@ beside it rather than the difference being asserted as drift.
   auditor clones            not entered; 0 files under
                             .claude/skills/sairn-hover-auditor/
   files outside docs/       0, plus my own root deliverables
-  manifest                  5 done, 1 BLOCKED with its reason
+  manifest                  5 done, 1 BLOCKED with its reason -- CLOSED, and
+                            deliberately NOT reopened for the followup (s10)
                             batch_manifest.py --check --agent fourth --batch b22
+  tools/ files added        1, sf_events_anchor_check.py, WITH its inventory
+                            entry. The pre-commit gate refused the first
+                            attempt for exactly that and was right.
+                            tooling_inventory.py --check -> OK, matches repo
   git stash                 0
   worktrees                 5 total, NONE mine
   session lock              arrived DEAD (CLAUDE_PID 3444, the b18-b21 session,
@@ -555,6 +591,141 @@ rotted. The only reason the right one was edited is that the anchors were
 enumerated from the document's own markup rather than counted by eye. A list
 long enough to need an ordinal is long enough to need a program.
 
+== 10. THE FOLLOWUP -- hover2 b36's ROUTING, RE-DERIVED FROM SOURCE ==
+
+docs/2026-10-15-fourth-b22-sf-events-reanchor-and-citation-recount.md section 3.
+Commit 2884063e.
+
+hover2 b36 listed docs/CRITICALITY-TIERS.md:358 under EVIDENCE-path as "still
+unfixed, re-grepped", and its handoff queued it as open item 4. BOTH ARE TIMING
+ARTEFACTS, AND hover2 SAID SO ITSELF in the same handoff: "fourth's b22 appears
+to have landed new commits as this batch wrapped up ... not confirmed whether
+the actual fix landed with it." IT HAD. Re-derived from source rather than taken
+from either document, both rows run against the same live sairnfreedom.html:
+
+    the row at 7a5e6a11 -- the text hover2 actually grepped
+        7 anchors, 1 FINDING: ROTTED, anchor 6 of 7, resolves ZERO times
+    the row at HEAD -- after the b22 re-anchor
+        8 anchors, 0 FINDINGS
+
+(scratchpad sf_anchor_counterfactual_b22.log.)
+
+AND IT SETTLES THE ORDINAL INDEPENDENTLY. hover2 called it "the 7th", the b22
+instruction called it "the seventh", and the program says 6 OF 7 -- twice now,
+by two different enumerations written on different days. Three descriptions, one
+anchor, and the only reproducible one came out of a program. A LIST LONG ENOUGH
+TO NEED AN ORDINAL IS LONG ENOUGH TO NEED A PROGRAM, which is this batch's own
+method note arriving a second time from a different direction.
+
+THE CELL'S CODE FACTS WERE RE-READ, NOT ASSUMED, because re-anchoring proves the
+quoted text EXISTS and says nothing about whether the claim ABOUT it is true:
+
+  * eventRefusals() runs liquorServiceCheck() on BOTH ENDS of an alcohol event,
+    and the OAC 4301:1-1-49(B)(3) consumption-as-well-as-sale reasoning is in
+    the source's own comment, not only in the register.
+  * The gaming interlock really is the Phase 3 function itself --
+    out = out.concat(sfSessionRefusals({...}, null)) -- with the source saying
+    "Not a re-implementation -- the Phase 3 function itself."
+  * sfScheduleEvent() RETURNS BEFORE ANY WRITE when refusals fire, and on a
+    gaming success pushes a real row into K_SESSIONS carrying the same id it
+    then stores on the event as sessionId.
+  * The stored `alcohol` has EXACTLY the two readers the cell names: the table
+    tag and the combined list. The other b.alcohol determinations in that file
+    (:5335-5376) are sf_rentals, reached through hallCharge() and
+    sfRentalRefusals() from readRentalForm()'s hr- inputs. CHECKED RATHER THAN
+    ASSUMED, because if they had been event readers the row's tier argument
+    would turn on `alcohol` instead of on `sessionId`.
+  * The cell contains NO line-number citation, which is what it claims about
+    itself: the only :NNNN-shaped token in it is 4301:1, from the OAC
+    regulation number. AND THAT CARRIES BACK TO SECTION 6(b): regulation
+    numbers are counted as BARE citations by that predicate, so 373 is an UPPER
+    BOUND on real bare code citations rather than the figure itself. Said here
+    rather than quietly leaving the 373 to be re-quoted as exact.
+
+NEW: tools/sf_events_anchor_check.py, AND ITS FAILING-FIRST ARM IS THE REAL
+PRE-b22 ANCHOR TEXT. The cell stated its own acceptance rule in its own prose --
+"every quoted anchor in this cell must resolve EXACTLY ONCE in
+sairnfreedom.html" -- and NOTHING DROVE IT, so the rule went quiet for a day
+when hank b12's F6 moved the text for a correct reason. That is the eighth
+cross-domain discipline exactly: nothing announces the day a check stops testing
+anything.
+
+  * Criteria locked against SYNTHETIC fixtures first, 10/10 arms, and the tool
+    REFUSES to judge real data if the lock breaks.
+  * The failing-first arm is the real pre-b22 anchor text,
+    "if(ev && ev.sessionId) st(K_SESSIONS, getSessions().filter(", which must
+    come back ROTTED. If that arm ever passes, the tool has stopped working.
+  * BOTH failure directions are armed: zero matches is ROTTED, more than one is
+    AMBIGUOUS. A uniqueness rule needs both arms, not one.
+  * Entity escaping is driven in both directions -- an &amp;-escaped anchor must
+    match the raw app text, and the unescape must NOT invent a match for text
+    that is absent.
+  * THE FALSE-POSITIVE CLASS IS AN EXPLICIT ARM: a prose span written with empty
+    parentheses is IGNORED, not reported. eventRefusals(), liquorServiceCheck()
+    and sc_auth all count 0 in the app, so a tool treating every backticked span
+    as an anchor would open with three false findings on this one cell -- which
+    is also the first thing cc's general tool will have to get right.
+  * NO ANCHORS AT ALL IS A FINDING, NOT A PASS: otherwise the check passes by
+    measuring nothing, which is the shape this register keeps paying for.
+  * IT FAILS CLOSED. A missing app file, a missing register, zero sf_events rows
+    or MORE THAN ONE is exit 2 COULD NOT RUN, never exit 0. Could-not-run is a
+    third state and is never folded into passed.
+  * IT PRINTS WHAT IT CANNOT TELL YOU, EVERY RUN: a resolving anchor proves the
+    text is there and unique; it does not prove the cell's claim about that
+    text. No string match establishes "removes the linked session by stored id
+    only."
+
+LIVE RUN: exit 0, 8 of 8 anchors resolve exactly once (scratchpad
+sf_anchor_check_b22.log). THE CELL NOW NAMES THE CHECK INSIDE ITS OWN RULE
+SENTENCE, so the rule and its enforcer cannot drift apart silently. The row was
+edited by the same guarded method as item 5: located by prefix, the substring
+required to occur EXACTLY ONCE, no pipe permitted in the replacement, the line's
+pipe count asserted 7 -> 7, and the register never opened wholesale.
+criticality_tier_check.py PROBLEMS:0, RESOURCE_ROWS:391, TIER_A:275.
+
+THE PRE-COMMIT GATE REFUSED THE FIRST ATTEMPT AND IT WAS RIGHT: a tools/ file
+with no inventory entry. commit_tool_entry_check named the file and the rule
+(Michael's decision, 2026-09-13), a PURPOSES entry naming what it CATCHES was
+written, docs/TOOLING-INVENTORY.md was REGENERATED rather than hand-edited (652
+lines), and tooling_inventory.py --check now reports "OK: matches the repo".
+SAID HERE RATHER THAN LEFT IN A LOG: a gate caught me one commit earlier than
+the push queue would have, which is the whole argument for that check existing.
+
+THIS IS NOT cc's ROUTED GENERAL ANCHOR-ROT TOOL and the file's own header says
+so: that one is the b20 spec over the whole register, 8 requirements and 10
+arms, including reporting bare :NNNN citations as UNASSESSABLE rather than
+folding them into a total. This is ONE cell and ONE app file. WHEN THE GENERAL
+TOOL LANDS, DELETE THIS ONE rather than maintaining both -- written in its own
+header so deletion is the expected end state and not a judgement call later.
+
+THE MANIFEST WAS NOT REOPENED, AND THAT IS DELIBERATE. b22's manifest records
+the SIX DISPATCHED ITEMS and is closed on them; chat writes the ids and they are
+immutable. A seventh id would break the id_lock, and quietly editing a closed
+block would make the close mean less. The followup is recorded here, in the
+digest, in the handoff and in 2884063e's own message instead -- said out loud
+rather than left for somebody to notice the file count disagrees with the
+manifest.
+
+THE BACKGROUND SHELL: WAITED ON, MEASURED, THEN STOPPED -- AND IT WAS NEVER
+PENDING WORK. A shell started earlier in this session was still running when the
+followup began. Its last command, "python tools/sairn_status_line.py", BLOCKS
+READING A STATUS-LINE JSON PAYLOAD FROM STDIN THAT A BACKGROUND SHELL NEVER
+GETS, so it could not terminate on its own. WAITED ON IT FOR A BLOCKING TEN
+MINUTES: status unchanged, output byte-identical, no new line. Everything it was
+going to write it had already written -- "--set 6 done", committed and pushed
+long before -- and the rest of that command line only reads, so stopping it could
+not lose work. STOPPED, which is the only terminal state a blocked read has.
+The context figure in section 0 was obtained by feeding that same tool a
+payload explicitly, not by waiting for it. RECORDED BECAUSE A PROCESS STILL IN
+THE TABLE AND A PROCESS WITH WORK OUTSTANDING LOOK IDENTICAL FROM OUTSIDE.
+
+NOT VERIFIED BY THIS FOLLOWUP, added to section 8 rather than left implicit:
+the new check's own ablation beyond its ten locked arms was not driven -- no
+layer of it was removed on already-clean data to measure what that layer alone
+catches. Its failing-first arm is a real counterfactual on real text, which is
+stronger than a synthetic-only lock, and it is not the same thing as an
+ablation.
+
 DEFINITION the hash below is sha256 over every byte of this file up to and NOT
 including the final hash line, CRLF normalised to LF, taking the LAST occurrence
 of the marker. Reproduce:
@@ -562,5 +733,5 @@ of the marker. Reproduce:
     s = io.open('SAIRN-report-fourth-b22.txt', 'rb').read().decode('utf-8').replace('\r\n','\n')
     body = s.rsplit('SHA' + '256 ', 1)[0]
     print(hashlib.sha256(body.encode('utf-8')).hexdigest())
-SHA256 993aaa611ccf22ddcfebcd311424491b2813ee301bd2cdd9613b219c67d63b98
+SHA256 abbbc84bed5b485f53201acc313d1393c5c6752efb5039d211f9557b42150b5f
 END-OF-REPORT
