@@ -765,8 +765,8 @@
       "task": "b37 deep-verify cody b12, H2 b34, status-board accuracy check, routing-status check, push-gate claim-check methodology, push",
       "claimed_at": "2026-10-15T00:25:06Z",
       "claimed_at_epoch": 1792023906.4913433,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-15T00:43:20Z",
       "files": null
     }
   ],
