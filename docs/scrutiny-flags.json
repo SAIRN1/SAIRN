@@ -31,6 +31,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/role-picker-vs-check-constraint.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "00f846de84636617d73e57a415e8d269307944a5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/claims/run_matcher_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -301,6 +309,48 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "07b3fc8378350fa62e327a18208479ced347102d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/n1-n4-and-sf-delete.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "assertions NET REMOVED",
+     "detail": "1 removed, 0 added; first removed: + 'recorded one is refused 409 CLOCK_ALREADY_RECORDED and NOTHING was '"
+    }
+   ],
+   "sha": "07dfa24f489dbfa8d9089ca1bdf12ca1f678bbae",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-cross-tenant-dispatchers.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "07dfa24f489dbfa8d9089ca1bdf12ca1f678bbae",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/t16-clock-correction-record.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'not quietly ignored with a 200',"
+    }
+   ],
+   "sha": "07dfa24f489dbfa8d9089ca1bdf12ca1f678bbae",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/t18-positions-vocabulary.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "07dfa24f489dbfa8d9089ca1bdf12ca1f678bbae",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -6697,6 +6747,22 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "f9135379ffe4e8c54d521c7c95ac67ca8468d6a5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/leg-aftercare-key-unambiguous.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f92fe10aed6de03c2ea820c9a538fa6b3b5ec965",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-leg-role-matrix.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f92fe10aed6de03c2ea820c9a538fa6b3b5ec965",
    "criteria_version": "2026-10-06.1"
   },
   {
