@@ -1,0 +1,7 @@
+{
+  "floor": 802,
+  "how": "tools/run_all_tests.py raise_floor(), from discover() intersected with git ls-files",
+  "previous": 370,
+  "raised_on": "2026-10-14",
+  "why_it_only_rises": "a tool that could lower its own floor would absorb a mass deletion as the new normal and report clean. Lowering is a human edit to this file with a reason, and run_all_tests.py refuses a value below its own last-resort literal."
+}

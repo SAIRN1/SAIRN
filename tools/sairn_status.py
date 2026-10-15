@@ -164,6 +164,37 @@ _BACKOFF = 0.02
 # OWNERSHIP-PER-KEY IS PRESERVED EXACTLY. A session writes only its own row,
 # which is the property that makes this registry safe to write without
 # locking, and `claims` is just another key inside that row.
+# ── THE DRIVE BOARD IS PUBLISHED AS A SIDE EFFECT, NOT AS A SECOND COMMAND ──
+# Every one of these events used to require an agent to remember a separate
+# upload step, and the step was skipped exactly when it mattered: at the end
+# of a batch, when the agent was busy closing out. cc's b6 report and digest
+# were never uploaded at all and the batch was reported closed.
+#
+# FAIL-OPEN, DELIBERATELY ASYMMETRIC. An unwritable Drive mount must never be
+# the reason an agent cannot record that it is blocked, so this returns False
+# and prints rather than raising. The failure is on the caller's own output,
+# which makes it loud without making it fatal.
+#
+# A LAZY IMPORT, for one measured reason: sairn_board_publish imports
+# sairn_status, and importing it at module scope makes a cycle that fails on
+# whichever module is loaded first.
+def _publish_board(reason):
+    """True if the Drive board was republished and verified. Never raises."""
+    try:
+        import sairn_board_publish
+    except Exception as exc:                                     # noqa: BLE001
+        print('  BOARD NOT PUBLISHED -- sairn_board_publish will not import '
+              '(%s). Your write succeeded; the Drive board is stale.'
+              % str(exc)[:120])
+        return False
+    try:
+        return sairn_board_publish.publish_event(reason)
+    except Exception as exc:                                     # noqa: BLE001
+        print('  BOARD NOT PUBLISHED -- the publisher raised (%s). Your write '
+              'succeeded; the Drive board is stale.' % str(exc)[:120])
+        return False
+
+
 def publish_claims(name, claims):
     """Write `claims` onto this session's OWN row. Returns True on success.
 
@@ -192,6 +223,7 @@ def publish_claims(name, claims):
         prev['claims_heartbeat'] = time.time()
         prev.setdefault('session', name)
         write_status(name, prev)
+        _publish_board('claim change by %s' % name)
         return True
     except Exception:                                            # noqa: BLE001
         return False
@@ -564,7 +596,50 @@ def payload(args, existing=None):
         except Exception:                                        # noqa: BLE001
             pass
     prev = existing or {}
-    return {
+    # ── CONTEXT IS CARRIED FORWARD, AND THAT IS A STALENESS RISK NAMED RATHER
+    # THAN HIDDEN. A figure set an hour ago is wrong by now, so the board
+    # prints `context_set` beside it and a reader can see the age of the
+    # number instead of the age of the row.
+    ctx = prev.get('context_pct')
+    ctx_set = prev.get('context_set')
+    if getattr(args, 'context', None) is not None:
+        raw = str(args.context).strip().rstrip('%')
+        try:
+            ctx = round(float(raw), 1)
+            ctx_set = time.strftime('%Y-%m-%dT%H:%M:%S')
+        except ValueError:
+            # NOT SILENTLY DROPPED. A --context nobody can parse must not
+            # leave the previous number in place looking current.
+            print('  --context %r is not a number, so NOTHING was stored for '
+                  'it and the previous reading is left as it was. Pass a '
+                  'plain percent: --context 63' % args.context)
+    # ── EVERY `set` WAS WIPING THE MIRRORED CLAIMS (found 2026-10-14, b12) ──
+    # payload() builds a FRESH dict and cmd_set writes it whole, so the three
+    # keys publish_claims() owns -- `claims`, `claims_updated`,
+    # `claims_heartbeat` -- survived only until the next status change. Which
+    # is always: a session claims first and then sets `working`, in that
+    # order, so the early warning was gone within seconds of being written
+    # every single time.
+    #
+    # NOTHING SAID SO, and nothing could have: an absent `claims` key is also
+    # exactly what a session running an older sairn_claim.py looks like, which
+    # read_claims() documents as the ordinary state during a rollout. So the
+    # wipe was indistinguishable from the one benign case. It was found by
+    # building a reader that PRINTS the field rather than consuming it --
+    # cc holds a claim, and the board said 0.
+    #
+    # CARRIED FORWARD RATHER THAN RE-DERIVED. publish_claims() owns these
+    # keys; re-reading the claim file here would be a second source for the
+    # one thing the two tools must agree on. `claims_heartbeat` deliberately
+    # does NOT advance -- it is the claim tool's heartbeat, and a status write
+    # re-stamping it would make a stale claim look freshly touched.
+    carried = {}
+    for k in ('claims', 'claims_updated', 'claims_heartbeat'):
+        if k in prev:
+            carried[k] = prev[k]
+    out = {
+        'context_pct': ctx,
+        'context_set': ctx_set,
         'session': args.session or clone_name(),
         'clone': REPO,
         'state': args.state or prev.get('state') or 'working',
@@ -578,6 +653,8 @@ def payload(args, existing=None):
         'claude_start': sig,
         'pid': os.getpid(),
     }
+    out.update(carried)
+    return out
 
 
 def cmd_set(args):
@@ -638,6 +715,14 @@ def cmd_set(args):
     print('status written: %s' % written)
     print('  %s  %s  %s' % (body['session'], body['state'],
                             (body['task'] or '(no task)')[:90]))
+    if body.get('context_pct') is not None:
+        print('  context %s%% (set %s)' % (body['context_pct'],
+                                           body.get('context_set') or '?'))
+    # PUBLISHED HERE, BEFORE THE NOTE VERIFICATION BELOW, because the row on
+    # disk has ALREADY changed by this point. A note that failed to land is a
+    # COULD NOT RUN for the note, not a reason to leave the board showing a
+    # state the registry no longer holds.
+    _publish_board('%s set state=%s' % (body['session'], body['state']))
     # ── THE WRITE IS RE-READ, NOT ASSUMED ───────────────────────────────────
     # The whole failure this field is famous for is a writer seeing a normal
     # success line while the content was gone. "It exited 0" and "it stored
@@ -831,6 +916,11 @@ def main(argv=None):
                    help='REPLACE the whole note. Also the sanctioned way to '
                         'prune it -- pruning is decided, never a side effect')
     s.add_argument('--session', default=None)
+    s.add_argument('--context', default=None,
+                   help='percent of the context window used, as a number. '
+                        'Published to the Drive board as THIS agent\'s live '
+                        'reading; without it the board falls back to the '
+                        'CONTEXT line of your newest digest and says so')
     ap.add_argument('--json', action='store_true')
     ap.add_argument('--self-check', action='store_true', dest='selfcheck')
     ap.add_argument('--session', default=None)
