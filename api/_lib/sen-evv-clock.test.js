@@ -122,13 +122,35 @@ ok('F6 a correction to a non-clock field is refused -- this is not a general '
    + 'edit channel into the EVV record', p.ok === false && p.error.code === 'BAD_FIELD');
 
 section('G. READING A CORRECTED VISIT SHOWS BOTH NUMBERS');
-const corrected = Object.assign({}, visit, { clock_corrections: [
-  c.proposeCorrection(visit, { field: 'clock_in_at', proposed_at: iso(-5 * 3600000),
-                               reason_code: 'device_clock_wrong' }, 'emp-7', NOW).entry
-] });
+// ── G1 WAS A STALE EXPECTATION, NOT A DEFECT (corrected 2026-10-15, hank b16)
+// This fixture used the entry `proposeCorrection` returns, which is ALWAYS
+// `status: 'pending'`, and then asserted `corrected === true`. That was right
+// until the T16 rule landed on 2026-10-15: ONLY AN APPROVED CORRECTION MOVES
+// THE NUMBER, because a caregiver can submit one through the ordinary clock
+// route and a self-asserted time becoming effective on submission is the
+// overwrite this module exists to prevent.
+//
+// So the arm was asserting the behaviour the rule was written to remove, and
+// it had been red since. Fixed by APPROVING the entry -- through the module's
+// own approveCorrection, with a DIFFERENT approver because self-approval is
+// refused -- rather than by weakening the assertion. G1b is the paired
+// control: the pending entry must still move nothing, which is the half that
+// would otherwise be lost.
+const pendingEntry = c.proposeCorrection(visit,
+  { field: 'clock_in_at', proposed_at: iso(-5 * 3600000),
+    reason_code: 'device_clock_wrong' }, 'emp-7', NOW).entry;
+const approvedEntry = c.approveCorrection(pendingEntry, 'sched-1', NOW).entry;
+const corrected = Object.assign({}, visit, { clock_corrections: [approvedEntry] });
+const stillPending = Object.assign({}, visit, { clock_corrections: [pendingEntry] });
 const eff = c.effectiveClock(corrected, 'clock_in_at');
-ok('G1 the corrected value is what a reader sees', eff.corrected === true
+ok('G1 an APPROVED correction is what a reader sees', eff.corrected === true
    && eff.value === iso(-5 * 3600000), JSON.stringify(eff));
+ok('G1b CONTROL -- a PENDING correction moves nothing and is reported as '
+   + 'pending rather than dropped', (function () {
+     const p = c.effectiveClock(stillPending, 'clock_in_at');
+     return p.corrected === false && p.value === visit.clock_in_at
+       && p.pending === true && p.pending_count === 1;
+   })(), JSON.stringify(c.effectiveClock(stillPending, 'clock_in_at')));
 ok('G2 ...and the ORIGINAL is returned alongside it, so a screen showing only '
    + 'the correction has to do that deliberately',
    eff.original_at === visit.clock_in_at, JSON.stringify(eff));
@@ -137,10 +159,34 @@ ok('G3 an uncorrected visit reports corrected:false and its own value',
    uncorrected.corrected === false && uncorrected.value === visit.clock_in_at);
 
 section('H. CONTROL -- the guard SAIRNsenior already has is not weakened');
+// ── H1 IS AN ALLOWLIST AND THAT IS DELIBERATE, BUT IT HAD GONE STALE ──────
+// The arm's job is to force a HUMAN DECISION on every new export from this
+// module: nothing here may become a way to write a clock field directly, and
+// an allowlist catches that where a deny-list of suspicious names would not.
+//
+// It was red because the list stopped at six exports while the module grew to
+// twelve -- CORRECTION_STATUS and approveCorrection and entryIsApproved
+// (2026-10-14/15), CLOCK_FIELDS, and b16's undatableApproval and
+// effectiveClockAsOf. Updated 2026-10-15 (hank b16) to the real twelve, with
+// each one's reason for being safe, because an allowlist nobody can read is an
+// allowlist somebody will delete.
+//
+// A STALE ALLOWLIST IS WORSE THAN NONE: it was red for a week, so a NEW unsafe
+// export would have changed nothing about the output a reader saw.
 ok('H1 the module exports NO way to write clock_in_at directly',
    Object.keys(c).every(function (k) {
-     return ['FUTURE_TOLERANCE_MS', 'PAST_FLAG_MS', 'CORRECTION_REASONS',
-             'checkClockEvent', 'proposeCorrection', 'effectiveClock'].indexOf(k) !== -1;
+     return [
+       // constants -- values, not writers
+       'FUTURE_TOLERANCE_MS', 'PAST_FLAG_MS', 'CLOCK_FIELDS',
+       'CORRECTION_REASONS', 'CORRECTION_STATUS',
+       // pure verdicts and proposals. None of these writes anything; each
+       // RETURNS what the caller must store, which is why the caller's write
+       // is still the only write.
+       'checkClockEvent', 'proposeCorrection', 'approveCorrection',
+       'entryIsApproved', 'undatableApproval',
+       // readers
+       'effectiveClock', 'effectiveClockAsOf'
+     ].indexOf(k) !== -1;
    }), JSON.stringify(Object.keys(c)));
 ok('H2 checkClockEvent returns stamps whose keys are all *_received_at or '
    + '*_skew_ms -- never a clock field, so merging them cannot overwrite one',

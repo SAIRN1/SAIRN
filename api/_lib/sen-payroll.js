@@ -153,6 +153,10 @@ function weekStartKey(ms, weekStartDay) {
  *                  injected so the app and the server share ONE rate
  *                  resolution. A second implementation of "which wage was in
  *                  force" is a second answer to somebody's pay.
+ *   closed_periods {Array}  OPTIONAL. [{period_start, period_end, paid_at}].
+ *                  A period that has been PAID. See the freeze note below.
+ *                  Absent or empty means nothing is frozen and the answer is
+ *                  identical to b15's.
  */
 function computePayroll(input) {
   const i = input || {};
@@ -161,6 +165,7 @@ function computePayroll(input) {
   const end = typeof i.period_end === 'string' ? i.period_end : null;
   const dayIdx = DAY_NAMES.indexOf(String(i.week_start_day || '').toLowerCase());
   const resolveRate = typeof i.resolveRate === 'function' ? i.resolveRate : null;
+  const closedIn = Array.isArray(i.closed_periods) ? i.closed_periods : [];
 
   // REFUSALS, NOT DEFAULTS. Each of these would otherwise produce a confident
   // pay run computed against something nobody chose.
@@ -181,10 +186,71 @@ function computePayroll(input) {
       + 'no wage could be established for any visit. Nothing was computed.');
   }
 
+  // ══ PAID PERIODS ARE FROZEN (2026-10-15, b16 -- MICHAEL'S DECISION) ══════
+  // A clock correction approved AFTER a pay run never rewrites a closed total.
+  // It posts as an ADJUSTMENT LINE in the period where the approval happened.
+  //
+  // WHY, in one sentence: b15's F1 made an approved correction reach pay, and
+  // the mirror of that fix is that it also reached pay runs ALREADY MADE --
+  // a wage reported to a payer and auditable by a state EVV programme moving
+  // because somebody approved a correction a week later. The b15 handoff named
+  // it as worse than the underpayment it closed, and it is: the underpayment
+  // is visible to the caregiver, a silently restated history is visible to
+  // nobody.
+  //
+  // THE FREEZE IS A TIME, NOT A FLAG, and the time lives in
+  // api/_lib/sen-evv-clock.js's effectiveClockAsOf -- the one function that
+  // decides what "approved" means. A second copy of that rule in this file is
+  // the exact shape of the defect F1 was.
+  //
+  // EVERY FIELD IS VALIDATED AND AN UNREADABLE paid_at REFUSES THE RUN. A
+  // freeze that cannot say what instant it froze against would silently pick
+  // one of the two answers, and both are wrong half the time.
+  const closedPeriods = [];
+  for (let ci = 0; ci < closedIn.length; ci += 1) {
+    const c = closedIn[ci] || {};
+    const cs = calendarDate(c.period_start);
+    const ce = calendarDate(c.period_end);
+    const paidMs = instant(c.paid_at);
+    if (!cs || !ce || paidMs === null) {
+      return refusal('UNDATED_CLOSED_PERIOD', 'A closed pay period was supplied '
+        + 'that this engine cannot date: period_start=' + JSON.stringify(c.period_start)
+        + ', period_end=' + JSON.stringify(c.period_end)
+        + ', paid_at=' + JSON.stringify(c.paid_at) + '. Nothing was computed. '
+        + 'A paid period is frozen as at the instant it was paid, so without '
+        + 'that instant there is no way to tell which corrections were in the '
+        + 'figure that was actually paid -- and guessing either way restates '
+        + 'somebody\'s wages or withholds money they are owed.');
+    }
+    closedPeriods.push({ period_start: cs, period_end: ce, paid_at: c.paid_at,
+                         paid_at_ms: paidMs });
+  }
+  // The closed period a SERVICE DATE falls in, or null. Service date and not
+  // the clock instant, for the same reason the period bounds use it: it is
+  // what the rate resolves against and what a payer matches on.
+  const closedFor = (serviceDate) => {
+    for (let k = 0; k < closedPeriods.length; k += 1) {
+      const c = closedPeriods[k];
+      if (serviceDate >= c.period_start && serviceDate <= c.period_end) return c;
+    }
+    return null;
+  };
+  // The period BEING RUN is reported as closed when it falls inside one, so a
+  // caller showing a total can say whether it is a live computation or a
+  // restatement of a frozen one.
+  const runClosed = (start && end) ? closedFor(start) : null;
+  const periodClosed = (runClosed && end <= runClosed.period_end)
+    ? { period_start: runClosed.period_start, period_end: runClosed.period_end,
+        paid_at: runClosed.paid_at }
+    : null;
+
   const excluded = {
     no_clock_out: 0, no_clock_in: 0, non_positive_duration: 0,
     outside_period: 0, no_caregiver: 0, no_rate: 0, ambiguous_rate: 0,
   };
+  const adjustments = [];
+  const adjustmentsSkipped = [];
+  let undatableTotal = 0;
   const byCaregiver = Object.create(null);
 
   const bucket = (id) => {
@@ -197,6 +263,16 @@ function computePayroll(input) {
         // -- which is the whole purpose of keeping the trail. A figure that
         // silently disagrees with the clock is one nobody can check.
         corrected_clock_visits: 0,
+        // b16. Money owed for a FROZEN period, paid in this one. Kept separate
+        // from gross_cents so every existing caller's number keeps its
+        // existing meaning -- the sum of the FLSA weeks in the period run.
+        adjustment_cents: 0,
+        adjustment_minutes: 0,
+        adjustments: 0,
+        // Approved corrections that carry no readable approval instant, so
+        // they cannot be placed on either side of the freeze. Counted, never
+        // silent.
+        undatable_corrections: 0,
       };
     }
     return byCaregiver[id];
@@ -243,24 +319,102 @@ function computePayroll(input) {
     // correction that inverts a visit must be EXCLUDED as a non-positive
     // duration, not paid as a huge number. A substitution applied after the
     // ordering check would be a route around it.
-    const effIn = senEvvClock.effectiveClock(row, 'clock_in_at');
-    const effOut = senEvvClock.effectiveClock(row, 'clock_out_at');
+    // The PERIOD is bounded by the service date, not by the clock instant --
+    // the service date is what the rate is resolved against and what a payer
+    // matches on, so using two different notions of "when" would let a visit
+    // be paid in one period and billed in another.
+    //
+    // READ BEFORE THE CLOCK GUARDS AS OF b16, because the service date is what
+    // decides WHICH FREEZE INSTANT this visit's clock is read as of. The GUARD
+    // ORDER below is unchanged -- no_clock_in/no_clock_out/non_positive still
+    // come before outside_period, so every exclusion count means what it meant.
+    const serviceDate = (typeof row.scheduled_date === 'string')
+      ? row.scheduled_date.trim() : '';
+    const inClosed = serviceDate ? closedFor(serviceDate) : null;
+    const inPeriod = !!serviceDate && serviceDate >= start && serviceDate <= end;
+
+    // AS AT THE INSTANT THIS VISIT'S PERIOD WAS PAID, if it was. A visit in an
+    // open period gets asOf null, which is current truth and is what b15 did.
+    const asOf = inClosed ? inClosed.paid_at : null;
+    const effIn = senEvvClock.effectiveClockAsOf(row, 'clock_in_at', asOf);
+    const effOut = senEvvClock.effectiveClockAsOf(row, 'clock_out_at', asOf);
     const inMs = instant(effIn.corrected ? effIn.value : row.clock_in_at);
     const outMs = instant(effOut.corrected ? effOut.value : row.clock_out_at);
     const usedCorrection = !!(effIn.corrected || effOut.corrected);
+    const undatableHere = (effIn.undatable || 0) + (effOut.undatable || 0);
+    if (undatableHere) {
+      b.undatable_corrections += undatableHere;
+      undatableTotal += undatableHere;
+    }
+
+    // ── THE CARRY-FORWARD. A visit in a CLOSED period carrying an approval
+    //    that landed AFTER that period was paid is money owed and not yet
+    //    paid. It is posted here as an adjustment rather than added to the
+    //    frozen total.
+    //
+    // IT POSTS IN THE PERIOD CONTAINING THE APPROVAL, which is what stops it
+    // posting again in every period that follows forever. The cost of that
+    // choice is stated rather than hidden: a period that is never run never
+    // pays its adjustments, and `not_computed` says so.
+    if (inClosed && !inPeriod) {
+      const notYet = ((effIn.not_yet_entries || []).concat(effOut.not_yet_entries || []))
+        .filter((e) => {
+          const d = typeof e.approved_at_server === 'string'
+            ? e.approved_at_server.slice(0, 10) : '';
+          return d >= start && d <= end;
+        });
+      if (notYet.length) {
+        const nowIn = senEvvClock.effectiveClockAsOf(row, 'clock_in_at', null);
+        const nowOut = senEvvClock.effectiveClockAsOf(row, 'clock_out_at', null);
+        const nIn = instant(nowIn.corrected ? nowIn.value : row.clock_in_at);
+        const nOut = instant(nowOut.corrected ? nowOut.value : row.clock_out_at);
+        const rateA = resolveRate(emp, serviceDate) || {};
+        const rateACents = rateA.status === 'applied' ? cents(rateA.rate_per_hour) : null;
+        // EVERY WAY THIS CAN FAIL IS NAMED AND NONE OF THEM IS A SILENT ZERO.
+        // An adjustment that cannot be computed is a thing a human has to go
+        // and look at, not a line worth 0 cents.
+        let why = null;
+        if (inMs === null || outMs === null || outMs <= inMs) why = 'as_paid_basis_unusable';
+        else if (nIn === null || nOut === null || nOut <= nIn) why = 'corrected_basis_unusable';
+        else if (rateACents === null) why = 'no_rate_on_service_date';
+        if (why) {
+          adjustmentsSkipped.push({ employee_id: emp, visit_id: row.id || row.visit_id || null,
+            service_date: serviceDate, reason: why });
+        } else {
+          const asPaidMinutes = Math.round((outMs - inMs) / 60000);
+          const nowMinutes = Math.round((nOut - nIn) / 60000);
+          const dMin = nowMinutes - asPaidMinutes;
+          if (dMin !== 0) {
+            const dCents = Math.round(rateACents * dMin / MINUTES_PER_HOUR);
+            adjustments.push({
+              employee_id: emp,
+              visit_id: row.id || row.visit_id || null,
+              service_date: serviceDate,
+              closed_period_start: inClosed.period_start,
+              closed_period_end: inClosed.period_end,
+              paid_at: inClosed.paid_at,
+              as_paid_minutes: asPaidMinutes,
+              corrected_minutes: nowMinutes,
+              minutes_delta: dMin,
+              rate_cents_per_hour: rateACents,
+              cents_delta: dCents,
+              approved_at_server: notYet.map((e) => e.approved_at_server)
+            });
+            b.adjustments += 1;
+            b.adjustment_minutes += dMin;
+            b.adjustment_cents += dCents;
+          }
+        }
+      }
+    }
+
     if (inMs === null) { excluded.no_clock_in += 1; b.visits_excluded += 1; return; }
     if (outMs === null) { excluded.no_clock_out += 1; b.visits_excluded += 1; return; }
     if (outMs <= inMs) {
       excluded.non_positive_duration += 1; b.visits_excluded += 1; return;
     }
 
-    // The PERIOD is bounded by the service date, not by the clock instant --
-    // the service date is what the rate is resolved against and what a payer
-    // matches on, so using two different notions of "when" would let a visit
-    // be paid in one period and billed in another.
-    const serviceDate = (typeof row.scheduled_date === 'string')
-      ? row.scheduled_date.trim() : '';
-    if (!serviceDate || serviceDate < start || serviceDate > end) {
+    if (!inPeriod) {
       excluded.outside_period += 1; return;
     }
 
@@ -330,6 +484,17 @@ function computePayroll(input) {
       minutes: weeks.reduce((s, w) => s + w.minutes, 0),
       overtime_minutes: weeks.reduce((s, w) => s + w.overtime_minutes, 0),
       gross_cents: weeks.reduce((s, w) => s + w.gross_cents, 0),
+      // b16. THREE NUMBERS AND NOT ONE. `gross_cents` keeps its existing
+      // meaning (the FLSA weeks in the period run), `adjustment_cents` is what
+      // a frozen period owes and this period pays, and `total_payable_cents`
+      // is what the agency actually hands over. Folding the adjustment into
+      // gross_cents would put a closed week's hours into an open week's
+      // overtime computation, which is the freeze defeated one step removed.
+      adjustment_cents: b.adjustment_cents,
+      adjustment_minutes: b.adjustment_minutes,
+      adjustments: b.adjustments,
+      total_payable_cents: weeks.reduce((s, w) => s + w.gross_cents, 0) + b.adjustment_cents,
+      undatable_corrections: b.undatable_corrections,
       // Rule 2 and rule 3, as two separate facts. A caregiver may be a floor
       // because a clock-out is missing (fixable on the visit) or because no
       // rate is on file (fixable on the rate table), and the two go to
@@ -347,6 +512,20 @@ function computePayroll(input) {
     caregivers: caregivers,
     excluded: excluded,
     total_visits: visits.length,
+    // ── THE FREEZE, IN THE OUTPUT (b16) ───────────────────────────────────
+    // null when nothing is frozen, which is every caller that passes no
+    // closed_periods. When it is set, the period total being shown is a
+    // RESTATEMENT of a figure already paid and the caller must be able to say
+    // so -- a frozen total presented as a live computation is the same lie as
+    // a live one presented as frozen.
+    period_closed: periodClosed,
+    adjustments: adjustments,
+    adjustment_cents: adjustments.reduce((s, a) => s + a.cents_delta, 0),
+    // An adjustment that could NOT be computed. Never a zero-cent line: a
+    // visit whose as-paid or corrected basis is unusable is something a human
+    // has to look at, and a 0 would say the opposite.
+    adjustments_skipped: adjustmentsSkipped,
+    undatable_corrections: undatableTotal,
     // Rule 2 at the period level: ANY exclusion anywhere makes the whole run
     // provisional, because a caller showing a period total has no way to know
     // which caregiver the missing row belonged to.
@@ -362,6 +541,16 @@ function computePayroll(input) {
       'Paid leave, holiday premiums, shift differentials and bonuses, none of '
         + 'which this app records.',
       'State overtime rules that are more generous than the FLSA.',
+      'THE OVERTIME CONSEQUENCE OF AN ADJUSTMENT. An adjustment line is '
+        + 'straight time at the rate in force on the service date. If its '
+        + 'minutes push the already-paid workweek past 40 hours there is an '
+        + 'FLSA overtime premium owed on top, and recomputing it would mean '
+        + 'reopening the frozen week this mechanism exists to protect. The '
+        + 'adjustment is therefore a FLOOR on what is owed, not the whole of '
+        + 'it.',
+      'AN ADJUSTMENT POSTS IN THE PERIOD CONTAINING ITS APPROVAL, so a period '
+        + 'that is never run never pays its adjustments. Nothing here sweeps '
+        + 'for unposted ones.',
     ],
   };
 }

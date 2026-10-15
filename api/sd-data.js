@@ -2037,11 +2037,35 @@ module.exports = async (req, res) => {
               + 'answer FORBIDDEN.');
           } catch (e) { /* logging must never refuse a request */ }
         } else if (!preActive.ok) {
+          // ── THIS LINE SAID "The request was allowed on the token alone."
+          //    AND THAT WAS NOT TRUE OF EVERY REQUEST IT FIRED ON (2026-10-15).
+          // The pre-gate runs ABOVE the per-resource app scoping, so the
+          // commonest way to reach here is a token for an app with no entry in
+          // AUTH_TABLE_BY_APP -- a SAIRNdental session at a law_ resource --
+          // which the branch gate then refuses 403 a hundred lines below. The
+          // log claimed an admission for a request that was about to be
+          // refused.
+          //
+          // MEASURED COST, not a tidy-up: cody's b15 full-tree triage routed
+          // this line to hank as a live failure in
+          // api/sd-data-law-trusttx-session.test.js, whose actual failing arm
+          // was an unrelated stale paralegal expectation. The suite was 9/10
+          // and this sentence is what a reader took the 1 to be. The sibling
+          // log eight lines above already had the honest shape -- "NOT refused
+          // here ... the branch gate will answer FORBIDDEN" -- so this is one
+          // of two logs for one situation being brought into line with the
+          // other, not a new policy.
+          //
+          // WHAT DID NOT CHANGE: the request still continues. NO_ACTIVE_CHECK
+          // is still not a pass, and a transport failure is still not a
+          // deactivation.
           try {
             console.warn('sd-data: active-credential re-check DID NOT RUN for app "'
               + preSession.app + '" (' + preActive.code + ') on '
-              + resource + '/' + action + '. The request was allowed on the '
-              + 'token alone.');
+              + resource + '/' + action + '. NOT an admission -- the request '
+              + 'continues to the per-resource gate, which may still refuse '
+              + 'it. Nothing here was verified about whether this credential '
+              + 'is still active.');
           } catch (e) { /* logging must never refuse a request */ }
         }
       }
@@ -4102,9 +4126,38 @@ module.exports = async (req, res) => {
         if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
+        // -- THE COLUMN WINS, NOT THE BLOB (2026-10-15, b16) --------------
+        // This read put the id FIRST and `x.data` SECOND in the Object.assign,
+        // so later-wins meant the BLOB won: a payload `id` inside the jsonb
+        // SHADOWED the identifier column. (The old expression is not quoted
+        // verbatim here on purpose -- arm I4 of api/b16-id-shadow.test.js
+        // requires ZERO occurrences of it in this file, and a comment quoting
+        // it would satisfy nothing while failing the arm.) The
+        // write stores the column as `String(payload.id)` while the blob keeps
+        // whatever type arrived, so a caller who sent a number got a number
+        // back -- an `id` that does not address the row it came from, and
+        // writing it back keys a different row, or no row.
+        //
+        // b14 FOUND THIS AND DELIBERATELY DID NOT PICK, because the three
+        // fixes are mutually exclusive: stop stringifying the column, stop
+        // letting the blob win here, or stop comparing with === in the client.
+        // PICKED HERE. The other two were rejected with a MEASUREMENT rather
+        // than an argument -- api/b16-id-shadow.test.js's header carries both.
+        // The short form: the column is the row's ADDRESS, it is what
+        // on_conflict keys on, so it is the thing a read must return; and
+        // every id minted for these five resources is already a string
+        // (measured from stonedesk.html and stonedesk-hr.html, arm I6), so no
+        // `===` in either client had to change.
+        //
+        // THE BLOB IS STILL RETURNED WHOLE. Only `id` is overridden -- nothing
+        // re-adds a stripped key for these resources, so dropping any other
+        // field would delete it from the client's view.
+        // SD_HR below carries the same expression; arm I4 counts it twice, on
+        // purpose, because fixing one registry and not the other is how this
+        // shape survives a fix.
         res.status(200).json({
           ok: true,
-          data: (rows || []).map((x) => Object.assign({ id: x[cfg.idCol] }, x.data)),
+          data: (rows || []).map((x) => Object.assign({}, x.data, { id: x[cfg.idCol] })),
           provisioned: true
         });
         return;
@@ -4161,9 +4214,14 @@ module.exports = async (req, res) => {
         if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
+        // THE COLUMN WINS, NOT THE BLOB -- the same fix and the same reason
+        // as SD_LINEAGE above, where the full note and the two rejected
+        // options live. Both registries read identically and arm I4 of
+        // api/b16-id-shadow.test.js requires the expression to appear exactly
+        // twice, so neither can be fixed alone.
         res.status(200).json({
           ok: true,
-          data: (rows || []).map((x) => Object.assign({ id: x[cfg.idCol] }, x.data)),
+          data: (rows || []).map((x) => Object.assign({}, x.data, { id: x[cfg.idCol] })),
           provisioned: true
         });
         return;
@@ -7673,12 +7731,52 @@ module.exports = async (req, res) => {
       }
       const prrows = await prr.json();
       if (!prr.ok) return upstream(res, prrows);
+      // ── THE CLOSED PAY PERIODS (2026-10-15, b16) ─────────────────────────
+      // MICHAEL'S DECISION: a paid period is FROZEN -- a correction approved
+      // after a pay run never rewrites a closed total; it posts as an
+      // adjustment line in the next period. The list of what has been PAID is
+      // the agency's own record, so it comes from sen_settings and NEVER from
+      // the caller's payload: a client able to say which periods are closed
+      // could un-freeze one and restate a historical wage, which is the whole
+      // thing being prevented.
+      //
+      // NO NEW TABLE AND NO MIGRATION. sen_settings is already keyed rows
+      // holding agency configuration, and a closed-period list is exactly
+      // that. One more key, no schema change for Michael to run.
+      //
+      // AN UNREADABLE SETTINGS TABLE IS NOT "NOTHING IS CLOSED", and that
+      // distinction is the whole of PR §1.11 on a pay run: treating a failed
+      // read as an empty list would silently UNFREEZE every paid period and
+      // restate history, which is the louder of the two failures. It refuses.
+      // A 404/400 -- the table genuinely not provisioned -- IS an honest empty,
+      // because an agency with no sen_settings table has never closed a period
+      // through this app.
+      let closedPeriods = [];
+      const cpr = await fetch(rest('sen_settings?license_hash=eq.' + enc(licHash)
+        + '&setting_key=eq.payroll_closed_periods&select=data'), { headers });
+      if (cpr.status !== 404 && cpr.status !== 400) {
+        if (!cpr.ok) {
+          const cperr = await cpr.json();
+          res.status(503).json({ error: { code: 'CLOSED_PERIODS_UNREADABLE',
+            message: 'The list of already-paid pay periods could not be read, so '
+              + 'this run cannot tell which periods are frozen. Nothing was '
+              + 'computed. Treating the failed read as "no period is closed" '
+              + 'would silently restate wages already paid.',
+            upstream: cperr && cperr.message ? cperr.message : undefined } });
+          return;
+        }
+        const cprows = await cpr.json();
+        const cpdata = Array.isArray(cprows) && cprows[0] ? cprows[0].data : null;
+        if (cpdata && Array.isArray(cpdata.periods)) closedPeriods = cpdata.periods;
+      }
       const payOut = senPayroll.computePayroll({
         visits: (pvrows || []).map((x) => Object.assign(
           { id: x.visit_id, assigned_employee_id: x.assigned_employee_id || '' }, x.data)),
         period_start: (payload && payload.period_start) || null,
         period_end: (payload && payload.period_end) || null,
         week_start_day: (payload && payload.week_start_day) || null,
+        // From sen_settings, never from `payload`. See the note above.
+        closed_periods: closedPeriods,
         resolveRate: senPayroll.resolveRateFrom(
           (prrows || []).map((x) => Object.assign({ id: x.rate_id }, x.data))),
       });

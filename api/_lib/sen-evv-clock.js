@@ -349,14 +349,67 @@ function approveCorrection(entry, approver, atISO) {
     status: 'approved', approved_by: approver, approved_at_server: atISO }) };
 }
 
+// ── A CORRECTION IS APPROVED **AS AT** A MOMENT (2026-10-15, b16) ──────────
+// MICHAEL'S DECISION: paid periods are FROZEN. A correction approved after a
+// pay run never rewrites a closed total; it posts as an adjustment line in the
+// next period. That makes "is this correction in effect" a question with a
+// TIME in it, and the time belongs HERE, in the one function that decides what
+// approved means -- not in sen-payroll.js, which would then hold a second copy
+// of the approval rule, which is exactly the shape F1 was.
+//
+// THREE ANSWERS, NOT TWO, and the third is the one that matters:
+//
+//   asOf is null          -> no freeze in play. Current truth. Every existing
+//                            caller, unchanged.
+//   approved_at_server
+//     parses and <= asOf  -> it WAS in the as-paid basis. In effect.
+//     parses and  > asOf  -> it was NOT. NOT in effect as at asOf; the caller
+//                            pays it forward as an adjustment.
+//     does not parse      -> CANNOT TELL. Treated as in effect on the as-paid
+//                            basis AND COUNTED in `undatable`, because every
+//                            correction filed before 2026-10-14 is approved by
+//                            the no-status rule above and carries no
+//                            `approved_at_server` at all. Dropping them would
+//                            un-pay live corrected visits; applying them
+//                            silently would claim a verified basis nobody can
+//                            check. PR §1.11 -- could-not-tell is never folded
+//                            into either answer.
+function approvedAsOf(e, asOfMs) {
+  if (!entryIsApproved(e)) return false;
+  if (asOfMs === null) return true;
+  const t = parseISO(e.approved_at_server);
+  if (t === null) return true;
+  return t <= asOfMs;
+}
+
+/** True when an approved entry carries no readable approval instant, so it
+ *  cannot be placed on either side of a freeze. Counted, never silent. */
+function undatableApproval(e) {
+  return entryIsApproved(e) && parseISO(e.approved_at_server) === null;
+}
+
 // effectiveClock(visitData, field) -> { value, corrected, entry }
 //
 // What a reader should SEE. The latest correction wins for display; the
 // original is still in the record and is returned alongside, because a screen
 // that shows only the corrected value has quietly become the overwrite this
 // module exists to avoid.
+//
+// AS OF NOW, DELIBERATELY. This is the signature every caller already uses and
+// it keeps meaning "current truth": the EVV readiness check and the client's
+// anomaly checks want the same answer a pay run for an OPEN period gets, which
+// is the whole of F2. Only a run of a CLOSED period passes an asOf, through
+// effectiveClockAsOf below.
 function effectiveClock(visitData, field) {
+  return effectiveClockAsOf(visitData, field, null);
+}
+
+// effectiveClockAsOf(visitData, field, asOfISO) -> same shape, plus `undatable`
+//
+// `asOfISO` null (or unreadable -- see the caller's refusal) means no freeze.
+function effectiveClockAsOf(visitData, field, asOfISO) {
   visitData = visitData || {};
+  const asOfMs = asOfISO === null || asOfISO === undefined ? null : parseISO(asOfISO);
   const original = visitData[field] === undefined ? null : visitData[field];
   const list = Array.isArray(visitData.clock_corrections) ? visitData.clock_corrections : [];
   const mine = list.filter(function (c) { return c && c.field === field; });
@@ -367,14 +420,26 @@ function effectiveClock(visitData, field) {
   // back, with a trail attached. "A scheduler approves it before payroll uses
   // it" is implemented HERE, in the function payroll reads, and not only as a
   // field on the entry: a `pending` nothing consults is a decoration.
-  const approved = mine.filter(entryIsApproved);
+  const approved = mine.filter(function (c) { return approvedAsOf(c, asOfMs); });
   const pending = mine.filter(function (c) { return !entryIsApproved(c); });
+  // APPROVED, BUT NOT YET as at asOf. Named separately from `pending` because
+  // the two are different facts going to different people: a pending entry
+  // needs a scheduler, a not-yet entry needs an adjustment line. Folding them
+  // together would make the carry-forward invisible.
+  const notYet = asOfMs === null ? []
+    : mine.filter(function (c) { return entryIsApproved(c) && !approvedAsOf(c, asOfMs); });
   const base = {
     // SAID, NOT DROPPED. A submission no screen shows is a submission nobody
     // will ever approve, which is the refusal again by a slower route.
     pending: pending.length ? true : false,
     pending_count: pending.length,
-    pending_entries: pending.length ? pending : null
+    pending_entries: pending.length ? pending : null,
+    // The carry-forward set, and the count of approvals that cannot be placed
+    // on either side of the freeze. Both are 0/[] when no asOf is in play, so
+    // every existing caller sees the shape it saw before plus two zeroes.
+    not_yet_count: notYet.length,
+    not_yet_entries: notYet.length ? notYet : null,
+    undatable: asOfMs === null ? 0 : mine.filter(undatableApproval).length
   };
   if (!approved.length) {
     return Object.assign({ value: original, corrected: false, entry: null,
@@ -397,5 +462,7 @@ module.exports = {
   proposeCorrection: proposeCorrection,
   approveCorrection: approveCorrection,
   entryIsApproved: entryIsApproved,
-  effectiveClock: effectiveClock
+  undatableApproval: undatableApproval,
+  effectiveClock: effectiveClock,
+  effectiveClockAsOf: effectiveClockAsOf
 };
