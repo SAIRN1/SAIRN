@@ -1,0 +1,17 @@
+RED EVIDENCE -- api/b16-slice-window-check.test.js with ONE planted window
+plant: api/_b16plant.test.js containing  src.slice(anchor, anchor + 750)
+
+api/b16-slice-window-check.test.js
+  no NEW fixed-width source window in an api/ test suite
+  FAIL     S1. NO NEW fixed-width source window. 32 found, 31 in the baseline
+           NEW fixed-width windows -- rewrite each as a window bounded by the structure it is meant to cover (scan to the matching brace or the terminator) rather than a character count:
+           api/_b16plant.test.js :: anchor+750
+  ok       S2. NO STALE baseline entry -- every one of the 31 recorded windows is still really there. A tolerated-list that outlives its entries is how a gate stops testing anything
+  ok       S3. the detector flags a PLANTED window (`slice(anchor, anchor + 750)`). Without this arm a broken regex passes S1 and S2 forever
+  ok       S4. the detector does NOT flag a structure-bounded window (slice(open, i+1), slice(m.index, k+1), slice(start, end+1)) or a single-character read. Flagging those would push authors off the correct form
+  ok       S5. the narrowed pattern matches 32 sites where the broad one matches 56, so excluding two-different-expressions windows is a real distinction and not a rounding error
+  ok       S6. 31 fixed-width windows are TOLERATED, not fixed. A green run here means NO NEW ONE WAS ADDED and nothing more; all 31 can still report a false red when a comment pushes a line past the box. Converting them is named in the handoff
+
+  passed 5  failed 1  unproven 0
+  FAILING ARMS: S1
+exit=1

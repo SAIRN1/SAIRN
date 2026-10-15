@@ -1,0 +1,26 @@
+=== CHECK 0a -- JS syntax, HTML-parser extraction
+TOTAL_BLOCKS:3
+FAILED_BLOCKS:0
+node --check api/_lib/sen-evv-clock.js                            OK
+node --check api/_lib/sen-evv-readiness.js                        OK
+node --check api/_lib/sen-payroll.js                              OK
+node --check api/sd-data.js                                       OK
+node --check api/b16-paid-period-freeze.test.js                   OK
+node --check api/b16-evv-pay-agreement.test.js                    OK
+node --check api/b16-app-id-tenancy.test.js                       OK
+node --check api/b16-id-shadow.test.js                            OK
+node --check api/b16-slice-window-check.test.js                   OK
+node --check api/sd-data-law-trusttx-session.test.js              OK
+node --check api/_lib/sen-evv-clock.test.js                       OK
+node --check api/_lib/sairnsenior-pay-rates.test.js               OK
+node --check api/_lib/sairnsenior-branches.test.js                OK
+node --check api/_lib/sairnsenior-authorizations.test.js          OK
+
+=== CHECK 31 -- strict/arguments
+
+clean -- no mutate-then-forward-arguments sites under strict mode
+in 22 file(s)
+  ok   forwarding via call(this, url, opts)         got 3         want 3
+
+All assertions hold. Check 31 rests on real engine behaviour,
+not on a reading of the spec.

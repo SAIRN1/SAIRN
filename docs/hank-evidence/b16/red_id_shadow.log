@@ -1,0 +1,16 @@
+api/b16-id-shadow.test.js
+  the server's identifier column wins over a blob field
+  FAIL     I1. all FIVE SD_LINEAGE/SD_HR resources return the COLUMN's id ("REAL-1") and not the blob's 999, with every other blob field kept
+           [{"resource":"sd_blocks","status":200,"id":999,"label":"kept"},{"resource":"sd_bundles","status":200,"id":999,"label":"kept"},{"resource":"sd_slab_history","status":200,"id":999,"label":"kept"},{"resource":"sd_hr_employees","status":200,"id":999,"label":"kept"},{"resource":"sd_hr_certs","status":200,"id":999,"label":"kept"}]
+  ok       I2. CONTROL -- an ordinary row still returns its id plus every blob field. The read returns the blob WHOLE for these resources and that did not change
+  FAIL     I3. the returned id is always a STRING, taken from the column the write keys on, so a round-trip addresses the same row
+           typeof=number value=12345
+  FAIL     I4. the column-wins expression appears exactly TWICE (one per registry) and the blob-wins expression ZERO times. Fixing one registry and not the other is how this shape survives a fix
+           column-wins=0 blob-wins=2
+  UNPROVEN I5. ABLATION -- the blob-wins expression put back flips I1
+           I1 did not pass, so there is nothing to ablate
+  ok       I6. the REJECTED option measured rather than argued -- all four id mints for these five resources produce STRINGS, so the clients' === comparisons still match a column-sourced id and did not need to change. If a numeric mint appears this arm goes red and the pick needs revisiting
+
+  passed 2  failed 3  unproven 1
+  FAILING ARMS: I1 I3 I4
+  UNPROVEN ARMS: I5

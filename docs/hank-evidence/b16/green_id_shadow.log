@@ -1,0 +1,10 @@
+api/b16-id-shadow.test.js
+  the server's identifier column wins over a blob field
+  ok       I1. all FIVE SD_LINEAGE/SD_HR resources return the COLUMN's id ("REAL-1") and not the blob's 999, with every other blob field kept
+  ok       I2. CONTROL -- an ordinary row still returns its id plus every blob field. The read returns the blob WHOLE for these resources and that did not change
+  ok       I3. the returned id is always a STRING, taken from the column the write keys on, so a round-trip addresses the same row
+  ok       I4. the column-wins expression appears exactly TWICE (one per registry) and the blob-wins expression ZERO times. Fixing one registry and not the other is how this shape survives a fix
+  ok       I5. ABLATION -- with the blob-wins expression restored in BOTH registries the same read returns 999 again, so I1 is testing that expression and not the stub
+  ok       I6. the REJECTED option measured rather than argued -- all four id mints for these five resources produce STRINGS, so the clients' === comparisons still match a column-sourced id and did not need to change. If a numeric mint appears this arm goes red and the pick needs revisiting
+
+  passed 6  failed 0  unproven 0

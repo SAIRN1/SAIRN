@@ -1,0 +1,23 @@
+api/b16-paid-period-freeze.test.js
+  a paid period is frozen; a later approval is paid forward
+  FAIL     F1. a CLOSED period recomputes to its AS-PAID basis -- 240 minutes and 8000 cents, not the 300/10000 the later approval would produce -- and the output NAMES the period as closed with its paid_at
+           minutes=300 cents=10000 period_closed=undefined refused=null
+  ok       F2. CONTROL -- a correction approved BEFORE paid_at still applies in the closed period: 300 minutes, 10000 cents. The freeze compares approval time to paid_at; it does not blank the period
+  ok       F3. CONTROL -- a visit in the OPEN period uses the effective clock as it always did: 300 minutes, 10000 cents, and the period is not reported closed. b15's F1 fix is intact
+  FAIL     F4. the ADJUSTMENT LINE -- running the NEXT period posts +60 minutes and +2000 cents for V1, naming the closed period it belongs to and the paid_at it was approved after. The same money fourth measured as unpaid, paid in the period where the approval happened
+           adjustments=[] adjustment_cents=undefined
+  FAIL     F5. the adjustment is OUTSIDE the FLSA week maths -- weeks carry 0 minutes, gross_cents stays 0, and the money appears in adjustment_cents with total_payable_cents = gross + adjustment. Folding a closed week's hours into an open week would recompute overtime on a frozen week
+           weekMinutes=0 gross=0 adj=undefined payable=undefined
+  FAIL     F6. the output NAMES the overtime consequence of an adjustment as not computed, rather than presenting a straight-time delta as a finished restatement
+           not_computed=Taxes, withholding and net pay. This is GROSS only. | Travel time between clients, which is generally compensable under 29 C.F.R. §785.38 and is not inferable from visit records alone. | Live-in arrangements and sleep-time exclusions. | Paid leave, holiday premiums, shift differentials and bonuses, 
+  FAIL     F7. an approved correction with NO approved_at_server CANNOT be dated: it applies on the as-paid basis AND is counted in undatable_corrections, per caregiver and per period, so a partly unverifiable basis is visible instead of silent
+           minutes=300 undatable(cg)=undefined undatable(period)=undefined
+  ok       F8. CONTROL -- with NO closed_periods supplied the answer is exactly b15's: 300 minutes, 10000 cents, no period_closed, no adjustments. An agency that has never closed a period is unaffected
+  FAIL     F9. a closed-period record whose paid_at cannot be read REFUSES the run (UNDATED_CLOSED_PERIOD) instead of guessing which corrections were in the as-paid basis. Could-not-tell is not folded into either answer
+           refused=null caregivers=[{"employee_id":"E1","weeks":[{"week_start":"2026-10-04","visits":1,"minutes":300,"overtime_minutes":0,"regular_rate_cents_per_hour":2000,"straight_time_cents":10000,"overtime_premium_cents":0,"gross_cents":10000}],"visits_counted":1,"visits_excluded":0,"corrected_clock_visits":1,"minutes":300,"overtime_minutes":0,"gross_cents":10000,"is_floor":false,"no_rate_visits":0}]
+  UNPROVEN F10. ABLATION of the as-of comparison flips F1
+           F1 did not produce the frozen 240, so there is no freeze to ablate
+
+  passed 3  failed 6  unproven 1
+  FAILING ARMS: F1 F4 F5 F6 F7 F9
+  UNPROVEN ARMS: F10

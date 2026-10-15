@@ -1,0 +1,13 @@
+api/b16-evv-pay-agreement.test.js
+  an EVV export and a pay run read ONE clock
+  ok       E1. AGREEMENT -- a visit whose clock-out comes only from an APPROVED correction is paid 240 minutes AND has no time_span gap in the EVV readiness check. One clock, one answer
+  ok       E2. CONTROL -- a PENDING correction moves NEITHER side: readiness still reports no clock-out and payroll still pays nothing. Only an APPROVED correction is a time, on both sides
+  ok       E3. CONTROL -- an uncorrected visit with no clock-out still reports "No clock-out time recorded". The check did not stop checking
+  ok       E4. an APPROVED correction that INVERTS the visit is a non-positive duration on BOTH sides -- payroll excludes it, readiness reports it. Not a silently submittable record
+  ok       E5. the GPS elements still read the RAW coordinate fields (4 reads) while NO time element reads a raw clock field. A correction is a time and never a location
+  ok       E6. readiness gets the effective clock from api/_lib/sen-evv-clock.js and carries NO second copy of what "approved" means. A second copy is a second thing to drift on a compliance verdict
+  ok       E7. the client's EVV anomaly check reads the effective clock for the TIME SPAN (an approved correction clears "never clocked out", a pending one does not) and the RAW field for GPS
+  ok       E8. the ONE remaining disagreement is deliberate and ATTRIBUTABLE -- a frozen period pays as at paid_at (0 minutes, the correction was approved after it) while the EVV check reads now (ready), and the output names period_closed with the instant so the difference can be explained rather than discovered
+  ok       E9. ABLATION -- with the clock-out read reverted to the raw field the same visit goes back to "no clock-out time recorded", so E1 is testing THAT read and not some other element
+
+  passed 9  failed 0  unproven 0

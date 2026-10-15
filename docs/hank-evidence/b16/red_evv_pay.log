@@ -1,0 +1,22 @@
+api/b16-evv-pay-agreement.test.js
+  an EVV export and a pay run read ONE clock
+  FAIL     E1. AGREEMENT -- a visit whose clock-out comes only from an APPROVED correction is paid 240 minutes AND has no time_span gap in the EVV readiness check. One clock, one answer
+           paidMinutes=240 time_span missing=["No clock-out time recorded."]
+  ok       E2. CONTROL -- a PENDING correction moves NEITHER side: readiness still reports no clock-out and payroll still pays nothing. Only an APPROVED correction is a time, on both sides
+  ok       E3. CONTROL -- an uncorrected visit with no clock-out still reports "No clock-out time recorded". The check did not stop checking
+  FAIL     E4. an APPROVED correction that INVERTS the visit is a non-positive duration on BOTH sides -- payroll excludes it, readiness reports it. Not a silently submittable record
+           time_span=[] excluded={"no_clock_out":0,"no_clock_in":0,"non_positive_duration":1,"outside_period":0,"no_caregiver":0,"no_rate":0,"ambiguous_rate":0}
+  FAIL     E5. the GPS elements still read the RAW coordinate fields (4 reads) while NO time element reads a raw clock field. A correction is a time and never a location
+           gpsRawReads=4 rawTimeReads=2
+  FAIL     E6. readiness gets the effective clock from api/_lib/sen-evv-clock.js and carries NO second copy of what "approved" means. A second copy is a second thing to drift on a compliance verdict
+           requires sen-evv-clock=false local approved rule=false
+  FAIL     E7. the client EVV anomaly check uses the effective clock
+           could not lift from sairnsenior.html: senEvvException
+  FAIL     E8. the ONE remaining disagreement is deliberate and ATTRIBUTABLE -- a frozen period pays as at paid_at (0 minutes, the correction was approved after it) while the EVV check reads now (ready), and the output names period_closed with the instant so the difference can be explained rather than discovered
+           evv time_span=1 paidMinutes=0 period_closed={"period_start":"2026-10-01","period_end":"2026-10-31","paid_at":"2026-10-06T18:30:00.000Z"}
+  UNPROVEN E9. ABLATION -- the raw read put back flips E1
+           E1 did not produce a clean time_span, so there is nothing to ablate
+
+  passed 2  failed 6  unproven 1
+  FAILING ARMS: E1 E4 E5 E6 E7 E8
+  UNPROVEN ARMS: E9

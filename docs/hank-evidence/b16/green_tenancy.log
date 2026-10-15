@@ -1,0 +1,12 @@
+api/b16-app-id-tenancy.test.js
+  the one client-chosen app_id in a 116-write handler, and the binding 183 lines away that makes it safe
+  ok       T1. a memory write with a session signed for stonedesk and body.app_id='sairnvet' is REFUSED 403 and writes NO ai_memories row
+  ok       T2. CONTROL -- the same write with a session signed FOR sairnvet is ADMITTED 200 and the row carries app_id 'sairnvet'. The gate is a binding, not a blanket refusal
+  ok       T3. CONTROL -- no body.app_id at all defaults to stonedesk and is ADMITTED 200 with app_id 'stonedesk'. StoneDesk's own read returns exactly the rows it returned before
+  ok       T4. an app_id outside MEMORY_APPS is 400 UNKNOWN_APP and writes no row -- an orphan namespace nothing can read back is refused rather than created
+  ok       T5. BOTH memory app derivations follow memApp and neither is a literal: gateApp x1, preExpectedApp x1, literal-app memory ternaries 0
+  ok       T6. ABLATION -- with :2137 simplified to a fixed app the SAME request T1 drives is no longer refused, so T1 is testing that line and not something upstream of it (ablated status=200 wroteApp="sairnvet")
+  ok       T7. MEASURED AND REPORTED, not dropped for being negative -- ablating the active-credential pre-gate's own app derivation at :2016 does NOT flip T1 (status=403). That line has NO behavioural arm here; T5 is the only guard on it, and that is a stated gap rather than a covered one
+  ok       T8. no mutant copy of sd-data.js is left in api/ -- an abandoned mutant is an untracked file the push gate would meet later
+
+  passed 8  failed 0  unproven 0

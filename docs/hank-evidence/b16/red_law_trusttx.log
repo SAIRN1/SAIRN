@@ -1,0 +1,24 @@
+RED EVIDENCE -- api/sd-data-law-trusttx-session.test.js at the PRE-CHANGE tree
+worktree: detached at dd66872a (HEAD before b16's api/sd-data.js log change)
+command:  node api/sd-data-law-trusttx-session.test.js   (b16 test file copied in, sd-data.js untouched)
+
+api/sd-data.js -- law_trusttx session gate (attorney trust money)
+  ok - a valid licence with NO session is REFUSED on read
+  ok - a valid licence with NO session is REFUSED on write
+sd-data: active-credential re-check DID NOT RUN for app "sairndental" (NO_ACTIVE_CHECK) on law_trusttx/read. The request was allowed on the token alone.
+  ok - a valid session for a DIFFERENT app is refused
+  FAIL - the NO_ACTIVE_CHECK log does not claim an admission for a request that is refused
+        the log claims the request was ALLOWED while the handler refused it 403: sd-data: active-credential re-check DID NOT RUN for app "sairndental" (NO_ACTIVE_CHECK) on law_trusttx/read. The request was allowed on the token alone.
+  ok - a signed-in owner can READ the trust ledger
+  ok - a signed-in attorney can READ the trust ledger
+  ok - a signed-in paralegal is REFUSED the trust ledger (law-roles.js:87, hard-locked)
+  ok - CONTROL -- the same paralegal token CAN read law_optx (law-roles.js:83)
+  ok - api/_lib/law-roles.js and the endpoint agree on paralegal/law_trusttx
+  ok - a DEACTIVATED credential with a valid token is refused
+  ok - law_trusttx is in SD_SESSION_GATED for BOTH actions
+  ok - ...and its expected app is sairnlaw, not stonedesk
+  ok - law_trust_reconcile still verifies a session and a role
+
+12/13 passed
+
+exit=0

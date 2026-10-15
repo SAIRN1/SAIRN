@@ -1,0 +1,21 @@
+api/b16-paid-period-freeze.test.js
+  a paid period is frozen; a later approval is paid forward
+  ok       F1. a CLOSED period recomputes to its AS-PAID basis -- 240 minutes and 8000 cents, not the 300/10000 the later approval would produce -- and the output NAMES the period as closed with its paid_at
+  ok       F2. CONTROL -- a correction approved BEFORE paid_at still applies in the closed period: 300 minutes, 10000 cents. The freeze compares approval time to paid_at; it does not blank the period
+  ok       F3. CONTROL -- a visit in the OPEN period uses the effective clock as it always did: 300 minutes, 10000 cents, and the period is not reported closed. b15's F1 fix is intact
+  ok       F4. the ADJUSTMENT LINE -- running the NEXT period posts +60 minutes and +2000 cents for V1, naming the closed period it belongs to and the paid_at it was approved after. The same money fourth measured as unpaid, paid in the period where the approval happened
+  ok       F5. the adjustment is OUTSIDE the FLSA week maths -- weeks carry 0 minutes, gross_cents stays 0, and the money appears in adjustment_cents with total_payable_cents = gross + adjustment. Folding a closed week's hours into an open week would recompute overtime on a frozen week
+  ok       F6. the output NAMES the overtime consequence of an adjustment as not computed, rather than presenting a straight-time delta as a finished restatement
+  ok       F7. an approved correction with NO approved_at_server CANNOT be dated: it applies on the as-paid basis AND is counted in undatable_corrections, per caregiver and per period, so a partly unverifiable basis is visible instead of silent
+  ok       F8. CONTROL -- with NO closed_periods supplied the answer is exactly b15's: 300 minutes, 10000 cents, no period_closed, no adjustments. An agency that has never closed a period is unaffected
+  ok       F9. a closed-period record whose paid_at cannot be read REFUSES the run (UNDATED_CLOSED_PERIOD) instead of guessing which corrections were in the as-paid basis. Could-not-tell is not folded into either answer
+  ok       F11. the adjustment posts ONCE -- running the period AFTER the one containing the approval posts nothing. An adjustment that re-posted every period would pay the same 2000 cents forever
+  ok       F12. an adjustment whose CORRECTED basis is unusable is reported in adjustments_skipped with a reason, and no 0-cent adjustment line is written. A zero would read as "nothing owed"
+  ok       F17. 15 hostile row shapes -- null, primitives, a string, a non-array clock_corrections, entries with null/object proposed_at and a non-string approved_at_server -- produce a run, not a throw. computePayroll has NO per-visit try/catch, so one throw in the substitution would fail the whole pay period and not one visit
+  ok       F10. ABLATION -- with the as-of comparison in api/_lib/sen-evv-clock.js neutered, the closed period goes back to 300 minutes. F1 is testing THAT comparison and not the period bounds (ablated minutes=300)
+  ok       F13. END TO END through the real api/sd-data.js payroll action: the closed period read from sen_settings freezes the run to 240 minutes and 8000 cents, and period_closed is in the response
+  ok       F14. a caller sending closed_periods:[] in the payload CANNOT un-freeze the period -- the list comes from the agency's sen_settings and the payload field is ignored. Otherwise anyone who can run payroll could restate a wage already paid
+  ok       F15. a FAILED read of the closed-period list is 503 CLOSED_PERIODS_UNREADABLE and computes nothing. Treating it as "no period is closed" would silently restate every wage already paid -- the louder of the two failures, so it is the one that refuses
+  ok       F16. CONTROL -- an agency with NO closed-period row runs exactly as it did before b16: 300 minutes, nothing frozen. The refusal in F15 is about a FAILED READ, not about an absent record
+
+  passed 17  failed 0  unproven 0
