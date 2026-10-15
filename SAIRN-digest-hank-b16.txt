@@ -1,3 +1,5 @@
+DIGEST hank b16
+
 STATUS
   hank b16 complete and LANDED. HEAD == origin/main 15cf623d, 0/0, NOT forced,
   AND 15cf623d IS THE TIP BEFORE THESE ARTEFACTS -- the handoff, report and
@@ -89,6 +91,15 @@ EVIDENCE-path
     live_probe.log                              6 verified / 0 failed / 6 could
                                                 not run, against the real URL
   SAIRN-report-hank-b16.txt  SAIRN-handoff-hank-b16.md
+
+  SAIRN-latest-hank.md ON THE DRIVE IS GENERATED and was VERIFIED, not
+  overwritten. cc's tools/sairn_board_publish.py rewrites it from my digest on
+  every status change; my hand-written copy was replaced within seconds, which
+  is correct. Verified on the mount: 2,995 bytes, "## Last digest (b16)" and
+  "CONTEXT: 41% (source: digest b16)". The REPO copy is a separate
+  hand-written tracked file and WAS updated for b16. Overwriting a generated
+  document by hand is what the push gate's derived-docs check refuses one
+  layer in, so it was not done here either.
 
   COMPACTION DIAGNOSIS -- THE PREMISE DOES NOT REPRODUCE. Measured, not read:
     38 hank sessions                      compact_boundary rows:  0

@@ -359,3 +359,30 @@ REMOVED:** `wt-b16` deleted with `git worktree remove --force`, and
 `git worktree list` shows **none** under this session's scratchpad. Fifteen
 other detached worktrees under `AppData\Local\Temp` belong to other tools and
 were left alone.
+
+---
+
+## `SAIRN-latest-hank.md` on the Drive is GENERATED, and I did not overwrite it
+
+**The wrap-up asked for it to be uploaded. I copied it, watched it be
+overwritten within seconds, and then stopped** rather than fighting the thing
+that owns it. The Drive copy is written by **cc's
+`tools/sairn_board_publish.py`** every time any agent sets a status row, and it
+is **derived from my digest** — its own header says so.
+
+**Verified instead of overwritten**, which is the correct check for a derived
+document:
+
+    G:\My Drive\SAIRN-status\SAIRN-latest-hank.md   2,995 bytes
+      "## Last digest (b16) -- its own STATUS line"
+      "- **CONTEXT:** 41%  _(source: digest b16)_"
+
+So the Drive copy **already carries b16**, taken from the digest rather than
+from a hand-written file. Overwriting a generated document by hand is the exact
+shape the push gate's derived-docs check refuses one layer in, so doing it here
+would have been the same mistake with no gate to catch it.
+
+**The REPO copy of `SAIRN-latest-hank.md` is a different file, is hand-written,
+is tracked, and WAS updated for b16** — `git log --oneline -- SAIRN-latest-hank.md`
+shows hank writing it by hand at b14 and again here. The two are not copies of
+each other and should not be made so.
