@@ -374,6 +374,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "10209464ad206b0c0878ce655ec86adaf1224dbf",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/mar_billing_grant.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -5358,6 +5366,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "cca943f14c893b139e9891d6ba5966e41bcf4165",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_drive_upload_verify_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ccd7350e6f08a7df9052b86b4deb1df61feb8d28",
    "criteria_version": "2026-10-06.1"
   },
   {
