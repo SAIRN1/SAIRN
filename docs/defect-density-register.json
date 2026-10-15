@@ -31328,6 +31328,65 @@
       "recurrence_open": "Nothing sweeps committed suites for fixed-width source windows or for generic loops over a list with a known exception. Both were found by running the suites and reading the output, which is not a control."
     },
     {
+      "commit": "c059443620c6",
+      "date": "2026-10-15",
+      "subject": "test(api): three b15-broken fixtures repaired, and the slice(x, x+N) gate b14 asked for",
+      "files": [
+        "api/_lib/sairnsenior-authorizations.test.js",
+        "api/_lib/sairnsenior-branches.test.js",
+        "api/_lib/sairnsenior-pay-rates.test.js",
+        "api/b16-slice-window-check.test.js"
+      ],
+      "lines_added": 286,
+      "lines_removed": 0,
+      "app": "sairnsenior",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "THREE TEST SUITES WERE DEAD, NOT FAILING, AND NOTHING SAID SO. b15 added senEffClock to sairnsenior.html and not to the lift list of the three suites that extract visitHours and azBurnDown, so every arm in all three died at 'ReferenceError: senEffClock is not defined' before asserting anything: 191 arms across api/_lib/sairnsenior-pay-rates.test.js (76), sairnsenior-authorizations.test.js (83) and sairnsenior-branches.test.js (32). The pay-rates suite covers sen_pay_rates, one of the two resources the open Tier A obligation is written over.",
+      "rules": [
+        "1.7"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "node",
+      "found_by_session": null,
+      "injection": {
+        "commit": "49f6a75289c0",
+        "date": "2026-10-15",
+        "subject": "fix(sairnsenior): F1 an APPROVED clock correction now reaches payroll -- 60 minutes and 2000 cents per visit",
+        "lag_days": 0
+      },
+      "contributing_factors": [
+        {
+          "factor": "NONE OF THE THREE IS IN docs/known-red-suites.json, so they were UNREGISTERED reds -- invisible to any check that reads that file and visible only to someone running the whole api/ tree",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Found by the b16 full-tree sweep: 275 suites run individually, docs/hank-evidence/b16/all_api_suites.log, which is what turned 7 reds into 3"
+        },
+        {
+          "factor": "A LIFTED FIXTURE BREAKS WHEN THE PAGE GAINS A DEPENDENCY, and nothing connects the two. b15 changed visitHours to call a new helper and no check asks which suites lift it",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "NOT CLOSED IN b16 and carried as planned rather than done: there is still no check that a function lifted from sairnsenior.html has all its callees lifted with it, and the three suites were fixed by hand. The check belongs with the api/ suites that do the lifting, which is hank's, and it is named in the b16 handoff with its exact next step"
+        },
+        {
+          "factor": "The failure was a HARD ERROR rather than a failed arm, so the suite printed no arm names and no counts -- the output of a dead suite looks nothing like the output of a failing one and is easier to skip",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Each suite now prints its real counts (76/76, 32/32, 83/83); a hard error remains distinguishable because it still produces no count line at all"
+        },
+        {
+          "factor": "senEffClock could have been STUBBED, which would have made the suites green while measuring a model of the approval rule rather than the rule",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "EXTRACTED with fn('senEffClock'), not stubbed -- the approval rule it applies is what those arms' hours depend on, and the suites' own notes already say a stub that was merely close would let a real mismatch pass"
+        }
+      ],
+      "recurrence_open": "THE LIFT-DEPENDENCY GAP IS OPEN, as the second factor says. b16 also ADDED senEvvException to sairnsenior.html, which depends on senEffClock, so the same break is available to the next suite that lifts it. AND THREE REDS REMAIN in api/ -- sd-data-customer-soft-delete, sd-data-family-contacts and sd-data-scp-licence-only -- all three registered in docs/known-red-suites.json, all three red before this batch, and NONE of them root-caused here."
+    },
+    {
       "commit": "c470c2e13c31",
       "date": "2026-10-15",
       "subject": "fix(sairnsenior): the corrections tab hydrates first, and no longer claims an empty queue is empty",
@@ -31437,6 +31496,64 @@
         }
       ],
       "recurrence_open": "four tools found across three batches and the fifth is routed to H2 in an auditor-scope file cc cannot write. Nothing enumerates the consumers of this field as a standing check -- the sweep was a grep run once, by hand, and will go stale the next time somebody writes the pattern."
+    },
+    {
+      "commit": "caa3cb3e0e28",
+      "date": "2026-10-15",
+      "subject": "fix(sairnsenior): F2 -- the EVV checks read the SAME effective clock pay uses",
+      "files": [
+        "api/_lib/sen-evv-readiness.js",
+        "api/b16-evv-pay-agreement.test.js",
+        "sairnsenior.html"
+      ],
+      "lines_added": 468,
+      "lines_removed": 16,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "AN EVV EXPORT AND A PAY RUN DISAGREED ABOUT THE SAME VISIT. b15's F1 moved payroll onto the effective clock and deliberately left api/_lib/sen-evv-readiness.js and the client's EVV anomaly checks on the raw clock, so a visit whose clock-out exists ONLY as an APPROVED correction was simultaneously PAID with real minutes and reported as 'No clock-out time recorded'. A state EVV programme reconciling an export against a payroll register finds hours paid for a visit the export says has no end time, and neither number looks wrong to a reader of one of them. Nothing reconciled the two.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "49f6a75289c0",
+        "date": "2026-10-15",
+        "subject": "fix(sairnsenior): F1 an APPROVED clock correction now reaches payroll -- 60 minutes and 2000 cents per visit",
+        "lag_days": 0
+      },
+      "contributing_factors": [
+        {
+          "factor": "THE DIVERGENCE WAS A DECISION, NOT AN OVERSIGHT -- F2 was held for Michael and b15 correctly declined to decide it. What made it a defect was shipping the other half first, which is what created the disagreement",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Closed the same day the reserved question was answered; the batch that opened it also named it as open item 5 with the exact next step"
+        },
+        {
+          "factor": "TWO FILES EACH NEEDED THE APPROVAL RULE and the cheap fix was a second copy of it in a file that produces a COMPLIANCE verdict",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Both require api/_lib/sen-evv-clock.js; arm E6 asserts readiness carries NO local status==='approved' test of its own"
+        },
+        {
+          "factor": "THE EASIER CHANGE WAS THE WRONG ONE: sweeping every clock read onto the effective value would have let an approved correction clear 'No GPS on clock-out', asserting a coordinate that does not exist",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Arm E5 asserts the GPS elements still read the raw clock_*_lat/lng AND that no time element reads a raw clock field -- both directions, so neither a missed move nor an over-broad one passes"
+        },
+        {
+          "factor": "The client carried the exception condition TWICE, once to filter and once to label, so the two could stop agreeing about what a row is",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "senEvvException(v) is one predicate consulted by both, lifted and driven in arm E7 against the real page"
+        }
+      ],
+      "recurrence_open": "ONE DISAGREEMENT REMAINS AND IT IS DELIBERATE: a pay run of a FROZEN period reads the clock as at paid_at while an EVV export reads it as at now. Arm E8 pins it and requires period_closed to name the instant, but whether a deliberate disagreement is acceptable when the thing disagreeing is a federally mandated export is a question routed to fourth and NOT answered. AND a corrected clock-out with no GPS now surfaces as a GPS exception rather than a time-span one -- a visible change to what a surveyor is shown, believed correct and not reviewed by anyone else."
     },
     {
       "commit": "cb80fb32b9a0",
@@ -31551,6 +31668,195 @@
         }
       ],
       "recurrence_open": "The anniversary boundary is now driven for ONE state's rule shape (WV) and one hire date. Nothing drives a facility-wide window, and the claim corrected here is about the hire-anchored one only."
+    },
+    {
+      "commit": "dc61bfd9060e",
+      "date": "2026-10-15",
+      "subject": "fix(sairnsenior,sd-data): paid periods are FROZEN -- a later approval is paid forward, not backdated",
+      "files": [
+        "api/_lib/sen-evv-clock.js",
+        "api/_lib/sen-evv-clock.test.js",
+        "api/_lib/sen-payroll.js",
+        "api/b16-app-id-tenancy.test.js",
+        "api/b16-id-shadow.test.js",
+        "api/b16-paid-period-freeze.test.js",
+        "api/sd-data-law-trusttx-session.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 1790,
+      "lines_removed": 31,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "independent-review",
+      "summary": "A CLOCK CORRECTION APPROVED AFTER A PAY RUN SILENTLY RESTATED A HISTORICAL TOTAL. b15's F1 made api/_lib/sen-payroll.js read the EFFECTIVE clock, which closed a real underpayment (60 minutes and 2000 cents per visit per correction) and opened its mirror: nothing anywhere versioned or froze a period already paid, so re-running a paid period after a later approval produced a DIFFERENT wage with no restatement, no adjustment line and nothing on screen saying the figure had moved. A wage reported to a payer and auditable by a state EVV programme is not a number that may change because somebody approved a correction a week later. Fixed by Michael's decision: a paid period is frozen as at its paid_at, and a later approval posts as an ADJUSTMENT LINE in the period containing the approval.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "49f6a75289c0",
+        "date": "2026-10-15",
+        "subject": "fix(sairnsenior): F1 an APPROVED clock correction now reaches payroll -- 60 minutes and 2000 cents per visit",
+        "lag_days": 0
+      },
+      "contributing_factors": [
+        {
+          "factor": "THE FIX AND THE DEFECT WERE THE SAME LINE. Reading the effective clock is correct for an open period and a silent restatement for a closed one, and nothing in the module distinguished the two because there was no notion of a closed period at all",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "effectiveClockAsOf(row, field, asOfISO) makes 'in effect' a question with a TIME in it, in the one function that decides what approved means; computePayroll passes the period's paid_at or null"
+        },
+        {
+          "factor": "b15 NAMED THIS IN ITS OWN HANDOFF AND SHIPPED ANYWAY, as an open Tier A question. The gap between 'named' and 'closed' was one batch, and during it every pay run was capable of restating history",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Recorded here as a critical rather than a moderate precisely because it shipped knowingly; the decision to ship with it named was correct and the window still existed"
+        },
+        {
+          "factor": "THE OBVIOUS FIX WOULD HAVE LOST THE MONEY. Simply ignoring post-close approvals freezes the total and silently drops a wage the caregiver is owed -- the original underpayment back, by a tidier route",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The delta is posted as an adjustment line carrying the visit, the closed period, the paid_at and both bases; arms F4/F5 drive +60 minutes and +2000 cents into the next period and assert it is OUTSIDE the FLSA week maths"
+        },
+        {
+          "factor": "AN APPROVAL WITH NO approved_at_server CANNOT BE PLACED ON EITHER SIDE OF THE FREEZE, and every correction filed before 2026-10-14 is approved by the no-status rule and has none. Treating that as either answer is wrong half the time",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Three states: applies on the as-paid basis AND is counted in undatable_corrections per caregiver and per period, so a partly unverifiable basis is visible instead of silent (arm F7). A closed period whose paid_at itself cannot be read REFUSES the run, UNDATED_CLOSED_PERIOD (F9)"
+        }
+      ],
+      "recurrence_open": "THE ADJUSTMENT IS STRAIGHT TIME AND IS A FLOOR, NOT A TOTAL: if its minutes push the already-paid workweek past 40 hours there is an FLSA overtime premium owed on top, and computing it means reopening the frozen week. Named in not_computed, NOT computed. AND AN ADJUSTMENT POSTS IN THE PERIOD CONTAINING ITS APPROVAL, so a period that is never run never pays its adjustments and nothing sweeps for unposted ones. AND no agency has a payroll_closed_periods row, so the mechanism has never run against real data -- only fixtures and the real handler with a stubbed upstream. The Tier A obligation over sen_pay_rates and sen_visits is OPEN and assigned to fourth, with five named things to attack in docs/2026-10-15-hank-b16-to-fourth-tier-a.md."
+    },
+    {
+      "commit": "dc61bfd9060e",
+      "date": "2026-10-15",
+      "subject": "fix(sairnsenior,sd-data): paid periods are FROZEN -- a later approval is paid forward, not backdated",
+      "files": [
+        "api/_lib/sen-evv-clock.js",
+        "api/_lib/sen-evv-clock.test.js",
+        "api/_lib/sen-payroll.js",
+        "api/b16-app-id-tenancy.test.js",
+        "api/b16-id-shadow.test.js",
+        "api/b16-paid-period-freeze.test.js",
+        "api/sd-data-law-trusttx-session.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 1790,
+      "lines_removed": 31,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "A VALUE IN THE jsonb BLOB SHADOWED THE ROW'S OWN IDENTIFIER COLUMN on all five SD_LINEAGE and SD_HR resources. The read was Object.assign with the id FIRST and x.data SECOND, so later-wins meant the blob won. The write stores the column as String(payload.id) while the blob keeps whatever type arrived, so a caller who sent a number got a number back -- an `id` that does not address the row it came from, and writing it back keys a different row or no row. Measured: 999 in the blob was returned as the row's id where the column said REAL-1.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "8862515e390f",
+        "date": "2026-08-23",
+        "subject": "feat: StoneDesk Phase 1b -- block/bundle/history lineage above the existing slab->remnant chain",
+        "lag_days": 53
+      },
+      "contributing_factors": [
+        {
+          "factor": "b14 FOUND THE SHAPE AND DELIBERATELY DID NOT PICK, because the three fixes are mutually exclusive and the measurement it had did not decide between them. A correct refusal to guess, and it left the defect live for two batches",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Picked in b16 with the other two options rejected BY MEASUREMENT, not argument: the column is the row's address (what on_conflict keys on), and all four id mints for these five resources already produce strings so no === had to change (arm I6)"
+        },
+        {
+          "factor": "THE EASY FIX WAS THE WRONG ONE. Stripping `id` from the blob would have worked on these two registries and NOT here: the read returns the blob WHOLE for these resources, nothing re-adds a stripped key, so stripping deletes the field from the client's view",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Only `id` is overridden; arm I2 asserts an ordinary row still returns every blob field"
+        },
+        {
+          "factor": "TWO REGISTRIES CARRY THE IDENTICAL EXPRESSION, and fixing one is how this shape survives a fix",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Arm I4 requires the column-wins expression to appear EXACTLY TWICE and the blob-wins expression ZERO times, and the ablation restores it in BOTH before re-driving I1"
+        },
+        {
+          "factor": "The write and the read used two different notions of the id's TYPE and nothing compared them",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Arm I3 asserts the returned id is always a string, taken from the column the write keys on, so a round-trip addresses the same row"
+        }
+      ],
+      "recurrence_open": "NO OTHER REGISTRY WAS SWEPT. b14's measurement covered ten sites and named these two as the un-stripped shadowing shape; nothing in b16 re-enumerated the rest of api/sd-data.js for the same Object.assign ordering, and the coverage tool's BUILT bucket still hides any site whose payload variable is not named `payload` (b14's finding, routed to cc, not closed)."
+    },
+    {
+      "commit": "dc61bfd9060e",
+      "date": "2026-10-15",
+      "subject": "fix(sairnsenior,sd-data): paid periods are FROZEN -- a later approval is paid forward, not backdated",
+      "files": [
+        "api/_lib/sen-evv-clock.js",
+        "api/_lib/sen-evv-clock.test.js",
+        "api/_lib/sen-payroll.js",
+        "api/b16-app-id-tenancy.test.js",
+        "api/b16-id-shadow.test.js",
+        "api/b16-paid-period-freeze.test.js",
+        "api/sd-data-law-trusttx-session.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 1790,
+      "lines_removed": 31,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "A LOG CLAIMED THE REQUEST WAS ALLOWED WHEN THE HANDLER REFUSED IT. api/sd-data.js's NO_ACTIVE_CHECK warning ended 'The request was allowed on the token alone.' The pre-gate runs ABOVE the per-resource app scoping, so the commonest way to reach it is a token for an app with no entry in AUTH_TABLE_BY_APP -- a SAIRNdental session at a law_ resource -- which the branch gate then refuses 403 a hundred lines below. The log described an admission for a request that was about to be refused.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "c8b5e5b123c4",
+        "date": "2026-09-26",
+        "subject": "fix(sd-data): 131 of 132 credential gates closed in ONE edit -- and both controls that were meant to catch this had to be rebuilt first",
+        "lag_days": 19
+      },
+      "contributing_factors": [
+        {
+          "factor": "MEASURED COST, not a tidy-up: cody's b15 full-tree triage routed this line to hank as a LIVE FAILURE in api/sd-data-law-trusttx-session.test.js, whose actual failing arm was an unrelated stale paralegal expectation. The suite was 9/10 and this sentence is what a reader took the 1 to be",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The log now says NOT an admission and that the request continues to the per-resource gate, which may still refuse it"
+        },
+        {
+          "factor": "THE SIBLING LOG EIGHT LINES ABOVE ALREADY HAD THE HONEST SHAPE -- 'NOT refused here ... the branch gate will answer FORBIDDEN' -- so one of two logs for one situation was right and nothing compared them",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Brought into line with the sibling rather than given new wording of its own"
+        },
+        {
+          "factor": "A log is the one output nothing asserts, so a sentence in one can stay wrong indefinitely and be read as evidence",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Arm 2b captures console.warn, requires the request to have actually been refused 403, FORBIDS the word 'allowed' and REQUIRES the continues/not-an-admission claim -- so rewording cannot quietly satisfy it"
+        },
+        {
+          "factor": "NO_ACTIVE_CHECK is a genuine third state (the app has no employee table to ask, or the lookup failed) and the request is deliberately allowed to continue, which is what made the wrong sentence plausible",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Nothing about the CONTROL FLOW changed -- NO_ACTIVE_CHECK is still not a pass and a transport failure is still not a deactivation; only the sentence describing the outcome"
+        }
+      ],
+      "recurrence_open": "NOTHING SWEEPS api/ FOR LOGS THAT DESCRIBE AN OUTCOME THE CODE DOES NOT REACH. This one was found because a human misread it and routed it; the general shape -- a log asserting a disposition decided elsewhere -- is unchecked across 132 gates in this file alone."
     }
   ],
   "started": "2026-09-09",
