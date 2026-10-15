@@ -3093,6 +3093,51 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/claims/run_registry_claim_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "7af3737e8d8c6dd6db30c4ee2fed7070bf31aff7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_floor_layers_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "7af3737e8d8c6dd6db30c4ee2fed7070bf31aff7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_irreversible_class_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(_fxdir, ignore_errors=True)"
+    }
+   ],
+   "sha": "7af3737e8d8c6dd6db30c4ee2fed7070bf31aff7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_tier_a_review_gate_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "7af3737e8d8c6dd6db30c4ee2fed7070bf31aff7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlegacy_fault_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "7af3737e8d8c6dd6db30c4ee2fed7070bf31aff7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_blob_coverage_scope_sabotage.py",
    "class": "test file",
    "level": "CHANGE",
