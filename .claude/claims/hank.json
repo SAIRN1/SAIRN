@@ -3951,6 +3951,27 @@
         "api/sd-data.js",
         "api/sen-auth.js"
       ]
+    },
+    {
+      "id": "hank-1792029022",
+      "session": "hank",
+      "subject": "hank",
+      "task": "b14: (1) pending-corrections queue + Approve control in sairnsenior.html with approver!=submitter enforced server-side and in UI, failing-first arms. (2) legacy-ciphertext census PART 0 jsonb path confirmed, final runnable SQL to a file + Drive upload. (3) cody b14 routed X1 X2 T16 T17 T18. (4) ten blob conversions + blob_conversion_coverage --repin, api/_lib/sd-store.js RAW write + writeSlab id duplication, leg_aftercare key citation agreement. (5) role-picker misspelt-role blind spot closed, red api/sd-data-leg-session-gate.test.js root-caused. (6) push without force. FILES: sairnsenior.html api/sd-data.js api/sen-auth.js api/_lib/sd-store.js api/_lib/compliance-rules.js api/role-picker-vs-check-constraint.test.js sql/legacy_ciphertext_census.sql plus my own b14 api/*.test.js and docs/hank-evidence/b14/. CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: tests/ is cody's -- their two named probe files are the ONE exception, dispatched to me by name, and nothing else under tests/ is touched; tools/ is cc's and blob_conversion_coverage.py is RUN not edited; docs/ specs are fourth's. HOOKS STAY CLEARED, settings.json NEVER committed, no SAIRN_SEED_GATE override, no auditor clone entered.",
+      "claimed_at": "2026-10-15T01:50:22Z",
+      "claimed_at_epoch": 1792029022.0875556,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        ".test.js",
+        "4.3",
+        "api/_lib/compliance-rules.js",
+        "api/_lib/sd-store.js",
+        "api/role-picker-vs-check-constraint.test.js",
+        "api/sd-data.js",
+        "api/sen-auth.js",
+        "sairnsenior.html",
+        "sql/legacy_ciphertext_census.sql"
+      ]
     }
   ],
   "refusals": [
