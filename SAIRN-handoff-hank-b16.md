@@ -13,6 +13,14 @@ named below with what was done and what was not. Everything is pushed.
     git rev-parse --short origin/main -> 15cf623d
     git rev-list --left-right --count HEAD...origin/main  -> 0  0
 
+**`15cf623d` IS THE TIP BEFORE THESE ARTEFACTS, and that is not a slip.** The
+handoff, report and digest land ON TOP of it, so the tip moves after this line
+is written and any sha quoted here is one or two commits behind by the time it
+is read. The report's SHA256 seals its own bytes and cannot be restamped to
+chase the tip. **Re-derive rather than trusting any sha in these three files:**
+
+    git -C C:/Users/marsh/Documents/SAIRN-hank rev-parse --short origin/main
+
 **NOT forced.** No `--force`, no `--force-with-lease`, no `--amend` on anything
 already pushed. **NO OVERRIDE FORM USED** — not `SAIRN_SEED_GATE=off`, not
 `SAIRN_GATE_EXEMPT=seed`, not `SAIRN_SKIP`. **Two gate refusals, two satisfied,

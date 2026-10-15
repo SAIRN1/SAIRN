@@ -2371,6 +2371,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "docs/hank-evidence/b16_live_gate_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "56a24203f35a07ee1b01ed3d27c0ca43fefdf33b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sd_data_write_attribution_three_apps.js",
    "class": "test file",
    "level": "CHANGE",

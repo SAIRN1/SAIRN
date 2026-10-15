@@ -1,5 +1,9 @@
 STATUS
   hank b16 complete and LANDED. HEAD == origin/main 15cf623d, 0/0, NOT forced,
+  AND 15cf623d IS THE TIP BEFORE THESE ARTEFACTS -- the handoff, report and
+  digest land on top of it, so re-derive with `git rev-parse --short
+  origin/main` rather than trusting any sha in these three files. The report's
+  SHA256 seals its own bytes and cannot be restamped to chase the tip.
   NO override form used. Two gate refusals, two satisfied, zero overridden.
   All six dispatched items worked; four complete, two complete-with-named-gaps.
   Ten commits. 275 api/ suites run, 272 exit 0; the 3 remaining are registered
