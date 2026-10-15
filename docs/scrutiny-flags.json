@@ -1001,6 +1001,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairncash_entitlement_gate_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "2f16319e4f111096fc41e8566c22b7a4d9094603",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/_lib/auth-roleset-seam.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -1419,6 +1427,30 @@
     }
    ],
    "sha": "403b9d2b5d349071f75ff3857adcf96c38b685bd",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/mar_billing_grant.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "40dbbbc8e832ed26e7f611c127b994eb50d5757f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairncare_office_manager_role.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "40dbbbc8e832ed26e7f611c127b994eb50d5757f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_clock_flags_merge.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "40dbbbc8e832ed26e7f611c127b994eb50d5757f",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -2495,6 +2527,22 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "78f0aff6fc356d46d4ddc654502573759fd994f7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_blob_coverage_scope_sabotage.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "7a6eaee488e782f3cb6b3acac1915afa4a616afa",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_scope_gate_unfetched_base_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "7a6eaee488e782f3cb6b3acac1915afa4a616afa",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -4493,6 +4541,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/app_session_isolation_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "b9fec015a8fe90bed5c8bd9387868f1e2bd097f8",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_cross_tenant_dispatchers_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "b9fec015a8fe90bed5c8bd9387868f1e2bd097f8",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": ".githooks/pre-commit",
    "class": "CI / hook configuration",
    "level": "WEAKENING",
@@ -4511,6 +4575,291 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "baaaa7f3dcadc519903647d2a0edeb834b2595e0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/criticality_rollup_list_review_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/cross_tenant_grader_declaration_review_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/grader_declaration_reconstruction_review_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/law_phase2_control_bucketing_review_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold CHANGED",
+     "detail": "was: out = subprocess.run(['node', SUITE], capture_output=True, t  now: out = subprocess.run(['node', SUITE], capture_output=True, t"
+    }
+   ],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/law_phase2_control_review_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/python_escape_hygiene_scope_review_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_ai_output_resource_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_alf_scope_mutation_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_all_tests_pinned_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_claim_bare_basename_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_cron_liveness_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_cross_tenant_dispatchers_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_hover_scope_own_claim_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_hover_separation_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_irreversible_class_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_last_admin_sole_role_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_nhi_clone_enumeration_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_numeric_coalesce_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_plugin_upgrade_token_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_provisioner_health_sole_role_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_purge_evidence_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_register_feed_gate_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_register_freshness_propose_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_required_write_permission_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_reseat_fixed_point_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_review_ledger_reseat_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_rewrite_convergence_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_sairnsenior_hydrate_delegation_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_sd_auth_last_admin_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_stored_data_criticality_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_two_axis_tier_parser_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_unproven_arm_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairncare_office_manager_role.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_clock_flags_merge.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/seam_check/run_delegation_residue_control.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -5904,6 +6253,19 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "fa6a390edbc3bc44dbcc171a5d66b4fdadd3745f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_b12_routed_findings_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(d, ignore_errors=True)"
+    }
+   ],
+   "sha": "faf6fe26a3145beca9fd1807227103c331971d17",
    "criteria_version": "2026-10-06.1"
   },
   {
