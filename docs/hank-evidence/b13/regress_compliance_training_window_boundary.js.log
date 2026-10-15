@@ -1,0 +1,22 @@
+
+1. THE WINDOW ARITHMETIC IS UNCHANGED -- the boundary was right
+  ok   the day BEFORE the anniversary is still in the year that is ending
+  ok   the anniversary OPENS the new year, and the count really is zero
+
+2. REPRO (2) -- window_from must be a date that exists
+  ok   a leap-day hire does not publish 29 February of a common year
+  ok   ...and a leap-day hire evaluated in a LEAP year keeps the 29th
+  ok   ...and the leap-day window still counts the right records
+
+3. THE WINDOW REPORTS HOW FAR THROUGH IT IS
+  ok   days elapsed and remaining are on the window result
+  ok   they are absent, not zero, when the window could not be computed
+
+4. REPRO (1) -- day zero of a window is not a non-compliance finding
+  ok   THE DEFECT: on the anniversary, a person trained three weeks ago is NOT reported non-compliant
+  ok   CONTROL: a genuine shortfall LATER in the window is still false
+  ok   CONTROL: meeting the requirement ON day zero is still true
+  ok   CONTROL: the day BEFORE the anniversary is unaffected
+  ok   NEGATIVE CONTROL: the harness can produce a false verdict at all
+
+ALL 12 TRAINING-WINDOW BOUNDARY ASSERTIONS PASS

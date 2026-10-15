@@ -634,9 +634,27 @@ const UNITS = [
   // arriving gates could not pass unnoticed; it is now a real session, so the
   // arms test TENANT ISOLATION again -- which is this suite's actual subject
   // and which has been untested for these six resources for as long as the
-  // section has been red. The gate's own arrival is now held by
-  // api/sd-data-grd-session-gate.test.js if one exists, and by the
-  // GRD_SESSION_RESOURCES set being 21 names in one place if it does not.
+  // section has been red. The gate's own arrival is held by
+  // tests/sd_data_grd_session_gate.js -- which asserts that the licence key
+  // alone reaches NONE of the SAIRNgrounds resources, on read or write, and
+  // that the refusal happens before any table is touched -- and by the
+  // GRD_SESSION_RESOURCES set being one named list in one place.
+  //
+  // ── THIS CLAIM NAMED A FILE THAT HAS NEVER EXISTED (fixed 2026-10-15, N4)
+  // It pointed at an api/ path with hyphens and a .test.js suffix, hedged with
+  // "if one exists". There is no such path and there never was; the real suite
+  // is the tests/ one named above, with underscores. Found by cody's
+  // coverage-claim sweep -- 1 bad claim in a population of 330 -- and the
+  // hedge is the part worth noticing: "if one exists" let a claim about
+  // coverage be written without checking, and reads as covered to anybody
+  // skimming. A coverage claim either names a file that is there or says
+  // there is no arm.
+  //
+  // THE DEAD PATH IS NOT REPEATED HERE EVEN TO EXPLAIN IT. The first draft of
+  // this correction quoted it, and the sweep flagged the FIX -- a sentence
+  // saying "X does not exist" is indistinguishable, to a text sweep, from a
+  // claim that X holds something. The population went 330 -> 332 and the
+  // finding stayed. Describe a dead citation; do not spell it.
   //
   // ROLE: 'superintendent', not 'owner'. ROLES_BY_APP.sairngrounds is
   // [owner, superintendent, manager, crew, office] and the pre-dispatch gate

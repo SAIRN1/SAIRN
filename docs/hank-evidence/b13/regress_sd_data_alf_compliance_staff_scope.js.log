@@ -1,0 +1,33 @@
+ALF COMPLIANCE EVALUATE -- STAFF SCOPE -- criteria 2026-10-06.1
+
+A. NO SESSION
+  ok   A1. no session is 401 NO_SESSION
+  ok   A2. ...and NOTHING was read -- no alf_staff and no alf_staff_credentials request was issued at all, so the refusal is not a filtered answer to a query that already ran
+
+B. NARROW ROLES: scoped to self, and S2 absent from the WHOLE body
+  ok   B. med_aide sees ONLY S1 -- and "Marcus Webb", "S2" and his hire date appear NOWHERE in the response, which is the leak test rather than the list test
+  ok   B. ...and med_aide is told so -- scoped_to_self:true, so a self-view cannot be read as a facility view
+  ok   B. activities sees ONLY S1 -- and "Marcus Webb", "S2" and his hire date appear NOWHERE in the response, which is the leak test rather than the list test
+  ok   B. ...and activities is told so -- scoped_to_self:true, so a self-view cannot be read as a facility view
+  ok   B. caregiver sees ONLY S1 -- and "Marcus Webb", "S2" and his hire date appear NOWHERE in the response, which is the leak test rather than the list test
+  ok   B. ...and caregiver is told so -- scoped_to_self:true, so a self-view cannot be read as a facility view
+
+C. A NARROW CALLER WITH NO RECORD gets a truthful empty, not a refusal
+  ok   C1. a caller with no roster row gets 200 and an EMPTY staff list. "You have no training record" is a true answer to "what do I owe"; a 403 here would be a refusal of a question it is entitled to ask
+
+D. BROAD ROLES still see everything -- the fix is not "deny everything"
+  ok   D. owner sees BOTH staff and scoped_to_self:false. WITHOUT THESE THREE ARMS the fix could refuse the roster to everybody and every arm in B would still pass
+  ok   D. billing sees BOTH staff and scoped_to_self:false. WITHOUT THESE THREE ARMS the fix could refuse the roster to everybody and every arm in B would still pass
+  ok   D. nursing sees BOTH staff and scoped_to_self:false. WITHOUT THESE THREE ARMS the fix could refuse the roster to everybody and every arm in B would still pass
+
+E. THE FLAG IS SERVER-STAMPED, not caller-supplied
+  ok   E1. a caller sending scoped_to_self:false is IGNORED -- the server value wins and the scoping still happened. A flag a caller can set is a flag that describes the request rather than the answer
+
+F. THE FLAG IS ON EVERY RESPONSE, not only the narrow one
+  ok   F1. a narrow caller that did NOT ask for staff is still told scoped_to_self:true. A flag present only in the narrow case is one the client has to infer from its absence
+
+G. PINNED AT SOURCE -- the same set and the same predicate as the sibling
+  ok   G0. the source anchor matches exactly once
+  ok   G1. the branch consults ALF_CRED_READ_ROLES -- the sibling's set, not a new one -- and filters on session.employee_id. A gate that invented its own set would disagree with its sibling about one table, which is the defect being closed
+
+16 passed, 0 failed

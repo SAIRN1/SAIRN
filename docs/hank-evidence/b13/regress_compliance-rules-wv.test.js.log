@@ -1,0 +1,26 @@
+--- STAFFING: the denominator is special-care-needs residents, not census ---
+  ok   THE ARM THAT MATTERS: 4 residents with two or more special care needs on the day shift requires the 1 floor + 1, not 1 per 10 of the census
+  ok   NEGATIVE CONTROL: the summary's answer for the same facility is HIGHER, so a census-based implementation would have looked conservative and been wrong
+  ok   THE FLOOR STANDS ON ITS OWN: zero qualifying residents still requires one direct care staff person, because 4.4.1 is a separate sentence
+  ok   ...and zero staff against that floor does NOT meet it
+  ok   the three shifts carry three different divisors, and the boundary rounds UP
+  ok   THE SECOND ARM THAT MATTERS: a CENSUS with no special-needs count is REPORTED MISSING, never substituted as the denominator
+  ok   no shift is missing too -- the requirement differs by shift and there is no single number correct for all three
+  ok   an undefined shift is refused by name rather than defaulted
+  ok   the enumerated care needs travel WITH the answer -- which needs count is not this app's to decide
+--- THE OTHER FOUR STATES ARE UNTOUCHED BY THE NEW METHOD ---
+  ok   the four pre-existing staffing methods still answer, and none of them became the new one
+  ok   an unseeded state still fails CLOSED, naming the state
+  ok   a WV class this seed does not carry fails CLOSED too, rather than borrowing the assisted_living_residence numbers
+--- THE COVERAGE CAP: five states, and a sixth cannot arrive quietly ---
+  ok   the cap is recorded IN the seed, with who decided it and when
+  ok   THE GUARD: every state with a rule in this file is inside the cap -- a sixth state seeded without a decision turns this red
+  ok   ...and claimed_states agrees with what is actually seeded, so the header cannot claim a state the rules do not carry
+  ok   CONTROL: the guard really bites -- a rule for an uncapped state is detected
+--- WHAT WV DOES NOT ASSERT ---
+  ok   the training rule reports NO hour figure for orientation, because the code sets none -- a deadline is not an hour total
+  ok   the licensure rule records the term as a CEILING, not a fixed year
+  ok   every WV rule carries a citation, a quote and the date it was read
+  ok   the staffing correction is recorded on the rule, so the wrong summary cannot be re-introduced from older notes
+
+ALL 20 WV COMPLIANCE ASSERTIONS PASS

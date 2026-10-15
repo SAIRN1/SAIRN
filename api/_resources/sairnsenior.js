@@ -168,6 +168,15 @@ module.exports = {
     // by construction: api/_lib/sen-evv-clock.js returns an entry to APPEND and
     // deliberately returns no corrected value, so the caller cannot overwrite a
     // caregiver's recorded clock time by copying a field across.
-    sen_visits: ['readiness', 'payroll', 'propose_clock_correction'],
+    // 'approve_clock_correction' DECLARED IN THE SAME EDIT as its handler
+    // (2026-10-15, T16). An implemented-and-undeclared verb is unreachable and
+    // the 400 it gets back looks exactly like a client bug -- which is how
+    // `tombstones` shipped dead, and is what this comment has warned about
+    // since. It is the second half of Michael's decision: a caregiver's
+    // re-clock is appended as a PENDING correction and effectiveClock() ignores
+    // it, so this verb is the only thing that can make one effective, and it is
+    // scheduler-tier only.
+    sen_visits: ['readiness', 'payroll', 'propose_clock_correction',
+                 'approve_clock_correction'],
   },
 };

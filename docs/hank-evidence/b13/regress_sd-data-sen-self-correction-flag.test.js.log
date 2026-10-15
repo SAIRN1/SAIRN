@@ -1,0 +1,15 @@
+
+1. A SELF-CORRECTION IS ALLOWED AND MARKED
+  ok   an owner correcting a visit assigned to THEMSELVES is accepted
+  ok   ...and the ENTRY carries the flag, in the append-only trail
+  ok   ...and the ROW carries it too, so a list view sees it without opening the array
+  ok   ...and the RESPONSE says so, so the filer is told at the time
+
+2. THE CONTROLS -- an ordinary correction must be untouched
+  ok   a scheduler correcting SOMEBODY ELSE'S visit is NOT flagged
+  ok   the flag is STICKY on the row -- a later ordinary correction does not clear it
+  ok   a CAREGIVER is still refused outright -- the role gate is unchanged
+  ok   the caregiver's own CLOCK TIME is still never overwritten
+  ok   NEGATIVE CONTROL: the harness can tell the two cases apart
+
+ALL 9 SELF-CORRECTION-FLAG ASSERTIONS PASS

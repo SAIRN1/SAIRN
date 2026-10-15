@@ -449,6 +449,31 @@ function normalizeRequirements(rule) {
         ? ('applies_to_positions is a ' + typeof r.applies_to_positions
            + ', not an array: ' + JSON.stringify(r.applies_to_positions).slice(0, 80))
         : null,
+      // ── THE LIST'S CONTENTS WERE NEVER CHECKED AGAINST THE VOCABULARY
+      //    (2026-10-15, cody's T18) ────────────────────────────────────────
+      // `mappable` below accepted ANY non-empty array for being non-empty,
+      // while the very next leg of the SAME expression validated `audience`
+      // against STAFF_POSITIONS. So a requirement declaring ['rn'] was counted
+      // MAPPED, left out of `unmapped_requirements_caveat`, and matchAudience
+      // then returned a DECIDED `applies: false` for every real position --
+      // `list.indexOf()` can never match a token that is not a position. A
+      // training requirement that applies to nobody, reported as a
+      // determination about a person rather than as a gap in the rule.
+      //
+      // RECORDED, NOT REPAIRED, for the same reason as the shape above: 'rn'
+      // is most plausibly a typo for 'nursing', and picking that is this code
+      // deciding who a regulated requirement covers.
+      //
+      // ABSENT, NOT EMPTY, when every token is real -- a key on every row
+      // carrying [] is a key a reader stops reading.
+      positions_unknown: Array.isArray(r.applies_to_positions)
+        ? (function () {
+            const bad = r.applies_to_positions.filter(function (p) {
+              return STAFF_POSITIONS.indexOf(p) === -1;
+            });
+            return bad.length ? bad : null;
+          }())
+        : null,
       within_general: withinGeneral,
       additive: additive,
       // A POOL IS A SET OF HOURS THAT SATISFY EACH OTHER. Declared only:
@@ -476,8 +501,61 @@ function matchAudience(req, staff) {
   }
   // An explicit machine-readable list on either side, where both are tokens.
   const list = Array.isArray(req.applies_to_positions) ? req.applies_to_positions : null;
+  // ── T18. THE LIST'S TOKENS ARE CHECKED AGAINST THE VOCABULARY ────────────
+  // `indexOf` cannot distinguish "this person is not in the audience" from
+  // "nothing in this audience is a position", and it answered `false` to both.
+  const unknown = (list && Array.isArray(req.positions_unknown))
+    ? req.positions_unknown : [];
+  const known = list ? list.filter(function (p) {
+    return STAFF_POSITIONS.indexOf(p) !== -1;
+  }) : null;
+  if (list && known.length === 0) {
+    // NOT MATCHABLE AT ALL -> UNDECIDED, and the tokens are named. Answered
+    // before the `staff.position` branch because it is a property of the ROW:
+    // it is the same answer for every person, and an unmatchable list reported
+    // as a per-person `false` is a vocabulary gap wearing a determination.
+    return { applies: null,
+             positions_unknown: unknown,
+             why: 'this requirement declared a position list and NONE of its '
+                  + 'tokens exist in alf_staff.position ('
+                  + STAFF_POSITIONS.join('|') + '): '
+                  + JSON.stringify(unknown).slice(0, 90)
+                  + '. So it can match nobody, which is a gap in the RULE and '
+                  + 'not a decision about this person. Not guessed at: `rn` is '
+                  + 'most plausibly `nursing`, and choosing that here would be '
+                  + 'this code deciding who a regulated requirement covers.' };
+  }
   if (list && staff.position) {
-    return { applies: list.indexOf(staff.position) !== -1,
+    const named = known.indexOf(staff.position) !== -1;
+    const tail = unknown.length
+      ? ('. THE LIST ALSO CARRIES ' + JSON.stringify(unknown).slice(0, 60)
+         + ', which is not in alf_staff.position ('
+         + STAFF_POSITIONS.join('|') + ') and was not read')
+      : '';
+    // A TRUE STAYS TRUE: an unreadable token can only widen an audience, never
+    // narrow it, so somebody a real token names is determinately included.
+    if (named) {
+      return { applies: true,
+               positions_unknown: unknown.length ? unknown : undefined,
+               why: 'position ' + staff.position + ' against the requirement\'s '
+                    + 'declared position list' + tail };
+    }
+    // A FALSE IS WITHHELD WHILE A TOKEN IS UNREAD. `['caregiver','rn']` for a
+    // nursing hire is most plausibly the author meaning to include them, and a
+    // confident `false` would exclude exactly the person the typo was aimed at
+    // -- under-inclusion arriving through a spelling mistake, which is the
+    // direction this module withholds in everywhere else.
+    if (unknown.length) {
+      return { applies: null,
+               positions_unknown: unknown,
+               why: 'position ' + staff.position + ' is not among the '
+                    + 'requirement\'s READABLE tokens '
+                    + JSON.stringify(known).slice(0, 60) + tail
+                    + '. The exclusion is NOT asserted while a token is '
+                    + 'unread: an unrecognised token may be the one that names '
+                    + 'this position.' };
+    }
+    return { applies: false,
              why: 'position ' + staff.position + ' against the requirement\'s declared position list' };
   }
   if (req.audience && staff.position && req.audience === staff.position) {
@@ -1077,9 +1155,11 @@ function evaluateTraining(rules, opts) {
              : emptyApplicable
              ? (anyUnmapped
                 ? ('NO requirement in this rule could be matched to this person, '
-                   + 'and at least one identifies its audience in PROSE rather '
-                   + 'than a token -- so this is "we could not read who it '
-                   + 'applies to", NOT "this person has no obligation". A '
+                   + 'and at least one declares its audience in a way this code '
+                   + 'cannot read -- PROSE rather than a token, a position list '
+                   + 'in the wrong shape, or a position list whose tokens are '
+                   + 'not in alf_staff.position. So this is "we could not read '
+                   + 'who it applies to", NOT "this person has no obligation". A '
                    + 'boolean here would be the fabricated pass this module was '
                    + 'rewritten to stop: an empty requirement set summed to a '
                    + 'target of 0 that every recorded total clears.')
@@ -1132,8 +1212,18 @@ function evaluateTraining(rules, opts) {
     // Whether it matches a PARTICULAR person stays where it belongs, in the
     // per-staff loop.
     normAll.forEach(function (r) {
+      // ── T18: THE LIST'S CONTENTS, NOT JUST ITS LENGTH (2026-10-15) ───────
+      // This leg accepted any non-empty array while the leg BESIDE IT checked
+      // `audience` against the same vocabulary. A row declaring ['rn'] was
+      // counted mapped and the caveat then told the reader every requirement
+      // in the rule had been attributed to somebody.
+      const listTokens = Array.isArray(r.applies_to_positions)
+        ? r.applies_to_positions.filter(function (p) {
+            return STAFF_POSITIONS.indexOf(p) !== -1;
+          })
+        : [];
       const mappable = r.audience === 'all_staff'
-        || (Array.isArray(r.applies_to_positions) && r.applies_to_positions.length > 0)
+        || listTokens.length > 0
         || (r.audience && STAFF_POSITIONS.indexOf(r.audience) !== -1);
       if (!mappable) {
         unmapped.push({ key: r.key, annual_hours: r.annual_hours,

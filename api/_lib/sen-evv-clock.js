@@ -88,8 +88,34 @@ const CORRECTION_REASONS = {
   clocked_wrong_visit: 'The event was recorded against the wrong visit',
   device_unavailable: 'No device was available at the time of the visit',
   transcription_error: 'The time was entered incorrectly',
+  // ── THE ONE THE ORDINARY CLOCK ROUTE USES (2026-10-15, T16) ─────────────
+  // A caregiver who re-clocks through vsClockIn/vsClockOut supplies no reason
+  // code -- the UI has no field for one. Refusing without one is the 409 this
+  // decision replaced; recording an empty reason is the silent drop. So the
+  // route has its own code, and it is a SEPARATE code on purpose: an auditor
+  // counting corrections must be able to tell "the caregiver re-sent a
+  // different time and said nothing" from a reason somebody chose.
+  resubmitted_by_caregiver: 'The caregiver submitted a different time through '
+    + 'the ordinary clock route and gave no reason',
   other: 'Something else -- the note is required and must say what'
 };
+
+// ── A CORRECTION IS SUBMITTED, THEN APPROVED (2026-10-15, T16) ────────────
+// Michael's decision: a caregiver may SUBMIT a correction; a scheduler
+// APPROVES it before payroll uses it. So an entry has a state, and the state
+// is what effectiveClock() reads -- not the mere presence of an entry.
+//
+// AN ENTRY WITH NO `status` IS APPROVED, and that is not laxity. Every
+// correction written before today was filed by a scheduler through
+// propose_clock_correction and was effective the moment it was filed. Reading
+// a missing status as pending would silently revert every live corrected visit
+// to its uncorrected time -- this change causing the exact defect it fixes, on
+// records nobody touched.
+const CORRECTION_STATUS = { pending: 'Awaiting a scheduler\'s approval',
+                            approved: 'Approved and in effect' };
+function entryIsApproved(e) {
+  return !!e && (e.status === undefined || e.status === null || e.status === 'approved');
+}
 
 function refuse(code, message, extra) {
   return Object.assign({ ok: false, error: { code: code, message: message } }, extra || {});
@@ -254,9 +280,48 @@ function proposeCorrection(visitData, proposal, actor, atISO) {
       reason_label: CORRECTION_REASONS[proposal.reason_code],
       note: note || null,
       proposed_by: actor,
-      proposed_at_server: atISO
+      proposed_at_server: atISO,
+      // PENDING ON ARRIVAL, ALWAYS. A caller that holds the approving right
+      // calls approveCorrection() on the entry itself -- it does not get to
+      // mint an approved one, because then "approved" would mean whatever the
+      // caller decided it meant.
+      status: 'pending',
+      approved_by: null,
+      approved_at_server: null
     }
   };
+}
+
+// approveCorrection(entry, approver, atISO) -> verdict
+//
+// MUTATES NOTHING. Returns the approved entry for the caller to store in place
+// of the pending one -- the array is append-only in LENGTH, and an approval is
+// a transition on an entry already in it, not a second entry. Two records for
+// one decision is the double-count shape, and an auditor counting corrections
+// would see twice as many as were filed.
+function approveCorrection(entry, approver, atISO) {
+  if (!entry || typeof entry !== 'object') {
+    return refuse('NO_ENTRY', 'There is no correction at that position to approve.');
+  }
+  if (entryIsApproved(entry)) {
+    return refuse('ALREADY_APPROVED',
+      'That correction is already in effect (approved by '
+      + JSON.stringify(entry.approved_by || 'an earlier filer') + ').'
+      + ' Nothing was written: a second approval record for one decision would '
+      + 'double-count at audit.');
+  }
+  if (!approver) {
+    return refuse('NO_APPROVER',
+      'An approval is attributed or it is not an approval. The caller must '
+      + 'supply the employee id from the verified session, never the payload.');
+  }
+  if (parseISO(atISO) === null) {
+    return refuse('NO_SERVER_TIME',
+      'The receiving server did not supply its own time, so the approval '
+      + 'cannot be dated and is refused rather than dated by the caller.');
+  }
+  return { ok: true, entry: Object.assign({}, entry, {
+    status: 'approved', approved_by: approver, approved_at_server: atISO }) };
 }
 
 // effectiveClock(visitData, field) -> { value, corrected, entry }
@@ -270,12 +335,31 @@ function effectiveClock(visitData, field) {
   const original = visitData[field] === undefined ? null : visitData[field];
   const list = Array.isArray(visitData.clock_corrections) ? visitData.clock_corrections : [];
   const mine = list.filter(function (c) { return c && c.field === field; });
-  if (!mine.length) return { value: original, corrected: false, entry: null, original_at: original };
-  const latest = mine[mine.length - 1];
-  return {
+  // ── ONLY AN APPROVED CORRECTION MOVES THE NUMBER (2026-10-15, T16) ──────
+  // This used to take the latest entry of any kind. With a caregiver able to
+  // SUBMIT one through the ordinary clock route, that would make a
+  // self-asserted time effective the instant it was sent -- the overwrite
+  // back, with a trail attached. "A scheduler approves it before payroll uses
+  // it" is implemented HERE, in the function payroll reads, and not only as a
+  // field on the entry: a `pending` nothing consults is a decoration.
+  const approved = mine.filter(entryIsApproved);
+  const pending = mine.filter(function (c) { return !entryIsApproved(c); });
+  const base = {
+    // SAID, NOT DROPPED. A submission no screen shows is a submission nobody
+    // will ever approve, which is the refusal again by a slower route.
+    pending: pending.length ? true : false,
+    pending_count: pending.length,
+    pending_entries: pending.length ? pending : null
+  };
+  if (!approved.length) {
+    return Object.assign({ value: original, corrected: false, entry: null,
+                           original_at: original }, base);
+  }
+  const latest = approved[approved.length - 1];
+  return Object.assign({
     value: latest.proposed_at, corrected: true, entry: latest,
     original_at: original
-  };
+  }, base);
 }
 
 module.exports = {
@@ -283,7 +367,10 @@ module.exports = {
   PAST_FLAG_MS: PAST_FLAG_MS,
   CLOCK_FIELDS: CLOCK_FIELDS,
   CORRECTION_REASONS: CORRECTION_REASONS,
+  CORRECTION_STATUS: CORRECTION_STATUS,
   checkClockEvent: checkClockEvent,
   proposeCorrection: proposeCorrection,
+  approveCorrection: approveCorrection,
+  entryIsApproved: entryIsApproved,
   effectiveClock: effectiveClock
 };

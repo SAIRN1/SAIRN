@@ -1,0 +1,56 @@
+SAIRNsenior -- three read/write asymmetries, closed without breaking the open read
+
+
+0. the fixture
+  ok   MANAGEMENT_ROLES is imported from api/sen-auth.js and is owner/billing, not re-listed here -- a second copy is the drift this app paid for on 2026-08-20
+  ok   ...and a coordinator and a scheduler are NOT management, which is what makes the write arms below mean something
+
+1. sen_branches -- the read is tiered, not refused
+  ok   no session is still refused with zero database calls -- 401
+  ok   a CAREGIVER can still read branches -- 200. If this went red the roster screen would show a raw id, which is the regression the tier exists to avoid
+  ok   ...and gets the three fields the need actually requires -- {"id":"BR-1","name":"North Office","state":"OH","active":true}
+  ok   ...but NOT who changed the office configuration
+  ok   ...and NOT a field nobody has added yet. THE ALLOWLIST ARM: a denylist would have published internal_lease_cost the day somebody stored it
+  ok   ...and the id still resolves, which is the point
+  ok   MANAGEMENT still reads the row whole -- without this arm the tier could be a blanket redaction and every arm above would pass. {"id":"BR-1","name":"North Office","state":"OH","active":true,"updatedBy":"sen-owner","updatedByRole":"owner","internal_
+  ok   the write is still management-only -- 403
+
+2. sen_settings -- the compliance declaration, tiered the same way
+  ok   a caregiver read succeeds and SAYS it is tiered, so a client cannot mistake a filtered answer for the whole row -- 200
+  ok   ...and the EVV state and aggregator still come through, because the rules applied to a caregiver's own visits are unexplainable without them -- {"state":"OH","aggregator":"sandata"}
+  ok   ...and an aggregator SECRET on the same row does not
+  ok   ...the agency NAME comes through and its tax id does not -- {"name":"Northside Home Care"}
+  ok   AND AN UNKNOWN SETTING KEY IS WITHHELD ENTIRELY. The write path stores unknown keys as-is by design -- "a settings store, not a schema registry" -- so without this the next setting anybody adds is published to every caregiver by default
+  ok   ...and neither updated_by nor updated_at appears anywhere in the non-management response
+  ok   MANAGEMENT reads all three keys including the unknown one -- agency_profile, evv_config, future_unknown_key
+  ok   ...with updated_by intact, so the tier is a tier and not a deletion
+  ok   a caregiver still cannot write a setting -- 403
+  ok   a coordinator still cannot write a setting -- 403
+  ok   a scheduler still cannot write a setting -- 403
+
+3. SEN_REFERRAL_RESOURCES -- a broad-READ set no longer decides a WRITE
+  ok   sen_referral_sources: a coordinator can no longer write -- 403, 0 call(s)
+  ok   sen_referral_sources: a scheduler can no longer write -- 403, 0 call(s)
+  ok   sen_referrals: a coordinator can no longer write -- 403, 0 call(s)
+  ok   sen_referrals: a scheduler can no longer write -- 403, 0 call(s)
+  ok   sen_training_rules: a coordinator can no longer write -- 403, 0 call(s)
+  ok   sen_training_rules: a scheduler can no longer write -- 403, 0 call(s)
+  ok   sen_training_records: a coordinator can no longer write -- 403, 0 call(s)
+  ok   sen_training_records: a scheduler can no longer write -- 403, 0 call(s)
+  ok   sen_applicants: a coordinator can no longer write -- 403, 0 call(s)
+  ok   sen_applicants: a scheduler can no longer write -- 403, 0 call(s)
+  ok   sen_referral_sources: a coordinator can STILL READ it -- 200
+  ok   sen_referrals: a coordinator can STILL READ it -- 200
+  ok   sen_training_rules: a coordinator can STILL READ it -- 200
+  ok   sen_training_records: a coordinator can STILL READ it -- 200
+  ok   sen_applicants: a coordinator can STILL READ it -- 200
+  ok   and MANAGEMENT can write -- without this the gate could be refusing everybody and every arm above would still pass. 200
+  ok   a CAREGIVER still cannot read the referral family at all, which is the pre-existing rule and was not widened by this change -- 403
+
+38 passed, 0 failed
+
+WHAT THIS DOES NOT SETTLE: whether a coordinator SHOULD be able to log a
+referral. The write set is management-only because that is the
+instruction; if intake is a coordinator's job the fix is a per-resource
+write map in ONE place, not a return to the broad set. Named in the
+handoff rather than left in a comment.

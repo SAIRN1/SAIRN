@@ -7081,6 +7081,34 @@ module.exports = async (req, res) => {
         verdict.entry.self_correction = true;
         corrected.has_self_correction = true;
       }
+      // ── A SCHEDULER'S OWN FILING IS APPROVED AT THE MOMENT IT IS FILED ───
+      // T16 (2026-10-15) gave every correction a `status`, pending by default,
+      // because a CAREGIVER may now submit one through the ordinary clock route
+      // and "a scheduler approves it before payroll uses it". THIS route was
+      // already scheduler-tier only -- the gate twelve lines up is the same
+      // SEN_VISIT_SCHEDULER_ROLES the approval route uses -- so the approving
+      // authority is the caller. Leaving it pending would invent a second step
+      // with nobody else to take it, and would silently turn every existing
+      // office correction into a no-op: the filer would see 200 and the
+      // effective clock would never move.
+      //
+      // THE SELF-CORRECTION CASE IS UNCHANGED AND IS THE ONE PLACE SUBMITTER
+      // AND APPROVER ARE THE SAME PERSON BY DESIGN. This route's own comment
+      // already argues it: refusing would create a real lockout in a one-person
+      // agency where the owner IS the assigned caregiver and there is nobody
+      // else to file it, and the evidence survives either way because
+      // `proposed_by`, `approved_by` and `self_correction` are all on the
+      // entry. Flag, not refusal -- same trade as before, now with the
+      // approver recorded too.
+      const crApproved = senEvvClock.approveCorrection(
+        verdict.entry, session.employee_id, nowISO());
+      if (!crApproved.ok) {
+        res.status(400).json({ error: { code: crApproved.error.code,
+                                        message: crApproved.error.message } });
+        return;
+      }
+      verdict.entry = crApproved.entry;
+      if (crSelf) verdict.entry.self_correction = true;
       corrected.clock_corrections = (Array.isArray(corrected.clock_corrections)
         ? corrected.clock_corrections : []).concat([verdict.entry]);
       const cw = await fetch(rest('sen_visits?on_conflict=license_hash,visit_id'), {
@@ -7117,6 +7145,11 @@ module.exports = async (req, res) => {
       const existingRow = Array.isArray(existingRows) && existingRows[0];
       let requestedAssignee;
       let visitData;
+      // T16: declared HERE, not inside the caregiver branch, because the
+      // response at the end of this handler reports it. A block-scoped const
+      // read through `typeof` from a sibling block is a scoping accident
+      // waiting to read as "no corrections".
+      let senSubmitted = [];
       if (isScheduler) {
         // Full write of the scheduling shape, including who it's assigned to. EVV fields are
         // NEVER accepted from a scheduler-tier caller, even on an edit -- preserved from
@@ -7195,30 +7228,95 @@ module.exports = async (req, res) => {
         // is written around; what is refused is a DIFFERENT value over a value
         // that is already there.
         //
-        // 409 AND NOT 400: the request is well formed and the caller may
-        // normally do this -- the row's state is what refuses. The message
-        // names the route that CAN change it, because a refusal that does not
-        // say where to go next gets worked around.
+        // ── THE REFUSAL WAS REPLACED BY A CORRECTION RECORD (2026-10-15, T16)
+        // b12 answered 409 CLOCK_ALREADY_RECORDED here and wrote nothing. That
+        // closed the overwrite and left a hole beside it: the only other route
+        // is `propose_clock_correction`, which is SCHEDULER-ONLY, so a
+        // caregiver who clocked in at the wrong time on their own visit had no
+        // route at all. cody's T16 arm asserted the prior value be KEPT OR
+        // APPENDED rather than the write refused, and MICHAEL DECIDED FOR THE
+        // APPEND on 2026-10-15.
+        //
+        // SO: the original stays exactly where it is -- `visitData[f]` is NOT
+        // moved -- and the submission is appended to the same
+        // `clock_corrections` trail the scheduler route writes to, carrying the
+        // old value, the new value, the actor from the VERIFIED SESSION, a
+        // reason and a server timestamp.
+        //
+        // PENDING, AND THAT IS THE HALF THAT KEEPS THE EVV PROPERTY. "A
+        // caregiver may submit a correction, a scheduler approves it before
+        // payroll uses it": the entry is `pending`, and effectiveClock() --
+        // the function every reader and every payroll calculation goes through
+        // -- ignores a pending entry. So the number does not move on a
+        // caregiver's unverified self-assertion, which is what the 409 was
+        // protecting, without stranding the person who made an honest typo.
+        //
+        // AN IDENTICAL RE-SEND APPENDS NOTHING. sairnsenior queues clock events
+        // offline and replays them UNCHANGED, so the same visit legitimately
+        // arrives twice; turning every replay into a pending correction would
+        // bury the real ones in noise.
         const SEN_CLOCK_IMMUTABLE = ['clock_in_at', 'clock_out_at'];
         for (const f of SEN_CLOCK_IMMUTABLE) {
           const had = (existingRow.data || {})[f];
           if (had && payload[f] !== undefined && String(payload[f]) !== String(had)) {
-            res.status(409).json({ error: { code: 'CLOCK_ALREADY_RECORDED',
-              message: 'This visit already has a recorded ' + f.replace(/_/g, ' ')
-                + ' (' + String(had) + ') and it cannot be replaced — an edited '
-                + 'EVV time with no trail cannot be told from a fabricated one. '
-                + 'Nothing was saved. A scheduler can file a correction, which '
-                + 'is recorded BESIDE the original rather than over it.',
-              field: f, recorded: String(had) } });
-            return;
+            const prop = (payload.correction && typeof payload.correction === 'object')
+              ? payload.correction : {};
+            const verdict = senEvvClock.proposeCorrection(
+              existingRow.data || {},
+              { field: f,
+                proposed_at: payload[f],
+                // THE ROUTE'S OWN CODE IS A DEFAULT, NOT AN OVERRIDE. A reason
+                // the caregiver really gave is the one recorded; what the
+                // default covers is the case the UI has no field for, and it
+                // is a SEPARATE code so an auditor can count the two apart.
+                reason_code: senEvvClock.CORRECTION_REASONS[prop.reason_code]
+                  ? prop.reason_code : 'resubmitted_by_caregiver',
+                note: prop.note },
+              session.employee_id, nowISO());
+            if (!verdict.ok) {
+              res.status(400).json({ error: {
+                code: verdict.error.code, message: verdict.error.message,
+                field: f } });
+              return;
+            }
+            senSubmitted.push(verdict.entry);
           }
         }
-        SEN_VISIT_EVV_FIELDS.forEach((f) => { if (payload[f] !== undefined) visitData[f] = payload[f]; });
+        // THE COPY IS MADE WITH THE SUBMITTED FIELDS REMOVED. Leaving them in
+        // and relying on a later line to put the original back is the shape
+        // that produced this defect in the first place -- one forgetful edit
+        // away from the overwrite. They are taken out of the loop instead.
+        const senSubmittedFields = senSubmitted.map((e) => e.field);
+        SEN_VISIT_EVV_FIELDS.forEach((f) => {
+          if (payload[f] !== undefined && senSubmittedFields.indexOf(f) === -1) {
+            visitData[f] = payload[f];
+          }
+        });
+        if (senSubmitted.length) {
+          visitData.clock_corrections = (Array.isArray(visitData.clock_corrections)
+            ? visitData.clock_corrections : []).concat(senSubmitted);
+        }
         // AFTER the field copy, and it cannot collide with it: the module
         // guarantees every stamp key is `*_received_at` or `*_skew_ms` -- never
         // a clock field -- and its own arm H2 asserts that, so merging these
         // cannot overwrite a caregiver's recorded time.
-        Object.assign(visitData, clockCheck.stamps);
+        //
+        // ── A SUBMITTED FIELD'S STAMPS GO ON THE ENTRY, NOT THE ROW (T16) ──
+        // checkClockEvent stamped the value in THIS payload. For a field that
+        // was appended as a pending correction, that value is not on the row:
+        // merging its `_received_at`/`_skew_ms` here would overwrite the
+        // ORIGINAL clock event's observation with one describing a time the row
+        // does not hold -- a row saying the caregiver's recorded clock-in
+        // arrived with a five-hour skew it never had. The stamps follow the
+        // value they describe.
+        const senStamps = Object.assign({}, clockCheck.stamps);
+        senSubmitted.forEach((e) => {
+          const rk = e.field.replace('_at', '_received_at');
+          const sk = e.field.replace('_at', '_skew_ms');
+          if (senStamps[rk] !== undefined) { e.proposed_received_at = senStamps[rk]; delete senStamps[rk]; }
+          if (senStamps[sk] !== undefined) { e.proposed_skew_ms = senStamps[sk]; delete senStamps[sk]; }
+        });
+        Object.assign(visitData, senStamps);
         // FLAGS ARE STORED, NOT ONLY RETURNED. A LATE_REPLAY that appears in one
         // response and nowhere else is a finding nobody can audit later, and
         // late replay is the case a state audit asks about.
@@ -7249,12 +7347,29 @@ module.exports = async (req, res) => {
         // The per-field stamps above already behave this way -- clock_in_skew_ms
         // and clock_out_skew_ms coexist because they are KEYED. This is the same
         // requirement applied to the one unkeyed array.
+        //
+        // ── A FIELD APPENDED AS A CORRECTION IS *NOT* SUPERSEDED (T16) ─────
+        // The rule above is "a field this payload re-reported has been
+        // re-checked, so its old flag is stale". That holds only when the new
+        // value REPLACES the old one. For a submitted correction the row still
+        // holds the original, so the original's LATE_REPLAY is still a true
+        // finding about the value on the record, and dropping it would erase a
+        // real EVV flag on the strength of a submission nobody has approved.
+        // The submission's own flags go on the entry with its stamps.
+        const senSubmittedFlagFields = senSubmitted.map((e) => e.field);
+        senSubmitted.forEach((e) => {
+          const mine = (clockCheck.flags || []).filter((f) => f && f.field === e.field);
+          if (mine.length) e.proposed_flags = mine;
+        });
         const reportedClockFields = senEvvClock.CLOCK_FIELDS
-          .filter((f) => payload[f] !== undefined);
+          .filter((f) => payload[f] !== undefined
+                      && senSubmittedFlagFields.indexOf(f) === -1);
         if (reportedClockFields.length) {
           const keptFlags = (Array.isArray(visitData.clock_flags) ? visitData.clock_flags : [])
             .filter((f) => f && reportedClockFields.indexOf(f.field) === -1);
-          const mergedFlags = keptFlags.concat(clockCheck.flags || []);
+          const mergedFlags = keptFlags
+            .concat((clockCheck.flags || [])
+              .filter((f) => f && senSubmittedFlagFields.indexOf(f.field) === -1));
           // THE KEY IS STILL ABSENT WHEN THERE IS NOTHING TO SAY. An empty
           // array would be a visible change to every clean EVV write, and
           // api/sd-data-sen-evv-clock.test.js:200 asserts the key is not
@@ -7273,7 +7388,124 @@ module.exports = async (req, res) => {
       });
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
-      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, assigned_employee_id: requestedAssignee || '' }, visitData) });
+      // ── A PENDING SUBMISSION IS SAID OUT LOUD (2026-10-15, T16) ──────────
+      // A 200 on a clock write that did NOT change the clock time is
+      // affirmative false success if it looks like any other 200 -- worse than
+      // the 409 it replaced, because the caregiver walks away believing their
+      // time was fixed. So the response names the submission, its state, and
+      // the fact that the recorded time is unchanged until a scheduler
+      // approves it.
+      const senPending = senSubmitted.length ? senSubmitted : null;
+      res.status(200).json(Object.assign(
+        { ok: true, data: Object.assign({ id: payload.id, assigned_employee_id: requestedAssignee || '' }, visitData) },
+        senPending ? { clock_correction: {
+          status: 'pending',
+          submitted: senPending.map((e) => ({
+            field: e.field, original_at: e.original_at,
+            proposed_at: e.proposed_at, reason_code: e.reason_code })),
+          message: 'Your recorded time was NOT changed — it is still '
+            + senPending.map((e) => e.field.replace(/_/g, ' ') + ' '
+                                   + String(e.original_at)).join(', ')
+            + '. The time you just sent was recorded BESIDE it as a correction '
+            + 'awaiting approval, with your name and the reason on it. A '
+            + 'scheduler or manager must approve it before payroll or an EVV '
+            + 'export uses it — an edited EVV time with no second party cannot '
+            + 'be told from a fabricated one.' } } : {}));
+      return;
+    }
+
+    // ── SAIRNSENIOR: APPROVING A SUBMITTED CORRECTION (2026-10-15, T16) ─────
+    // The second half of the decision. A caregiver may SUBMIT a correction
+    // through the ordinary clock route above; it is `pending` and
+    // effectiveClock() ignores it, so nothing downstream moves. This is where a
+    // scheduler makes it effective.
+    //
+    // SCHEDULER-TIER ONLY, and that is the whole EVV property being kept: the
+    // reason a caregiver's submission is pending is that an unverified
+    // self-assertion is what EVV exists to stop. A caregiver who could approve
+    // their own submission would have the silent overwrite back with two extra
+    // fields on it.
+    //
+    // BY INDEX, AND THAT IS SAFE HERE BECAUSE THE ARRAY IS APPEND-ONLY. Entries
+    // are only ever concatenated, never removed or reordered, so an index is
+    // stable for the life of the row -- an approval cannot land on a different
+    // entry than the one the approver read. An id would be a second thing to
+    // keep unique for no gain.
+    //
+    // THE TRANSITION IS IN PLACE, NOT A SECOND ENTRY. Two records for one
+    // decision would double-count every correction at audit, which is the
+    // opposite of what the trail is for.
+    if (resource === 'sen_visits' && action === 'approve_clock_correction') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!SEN_VISIT_SCHEDULER_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only scheduling or management staff can approve a clock correction. The reason a caregiver\'s submission is pending is that an unverified self-assertion is what EVV exists to stop; approving your own submission would be that assertion with extra steps.' } });
+        return;
+      }
+      if (!payload || !payload.id) { res.status(400).json({ error: { message: 'sen_visits payload.id is required' } }); return; }
+      const idx = Number(payload.correction_index);
+      if (!Number.isInteger(idx) || idx < 0) {
+        res.status(400).json({ error: { code: 'BAD_INDEX', message: 'payload.correction_index must be the position of the correction in the visit\'s clock_corrections array.' } });
+        return;
+      }
+      const ar = await fetch(rest('sen_visits?license_hash=eq.' + enc(licHash) + '&visit_id=eq.' + enc(payload.id) + '&select=assigned_employee_id,data'), { headers });
+      if (ar.status === 404 || ar.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Visit/EVV tracking is not set up yet — run sql/sairnsenior_visits_schema.sql in Supabase first.' } });
+        return;
+      }
+      const arRows = await ar.json();
+      if (!ar.ok) return upstream(res, arRows);
+      const arRow = Array.isArray(arRows) && arRows[0];
+      if (!arRow) {
+        res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No such visit. An approval cannot create the visit it approves a correction on.' } });
+        return;
+      }
+      const arData = Object.assign({}, arRow.data || {});
+      const arList = Array.isArray(arData.clock_corrections)
+        ? arData.clock_corrections.slice() : [];
+      if (idx >= arList.length) {
+        res.status(400).json({ error: { code: 'NO_SUCH_CORRECTION',
+          message: 'This visit has ' + arList.length + ' correction(s); there is '
+            + 'nothing at position ' + idx + '. Nothing was written.',
+          corrections: arList.length } });
+        return;
+      }
+      const aVerdict = senEvvClock.approveCorrection(
+        arList[idx], session.employee_id, nowISO());
+      if (!aVerdict.ok) {
+        // 409 for ALREADY_APPROVED: the request is well formed and the caller
+        // may normally do this -- the entry's state is what refuses.
+        res.status(aVerdict.error.code === 'ALREADY_APPROVED' ? 409 : 400).json({
+          error: { code: aVerdict.error.code, message: aVerdict.error.message } });
+        return;
+      }
+      // ── MARKED WHEN THE APPROVER IS THE SUBMITTER, NOT REFUSED ───────────
+      // Same reasoning the self-correction flag beside this already carries: in
+      // a one-person agency the owner IS the assigned caregiver and there is
+      // nobody else to approve, so refusing would strand them exactly as the
+      // 409 did. The evidence survives either way -- `proposed_by` and
+      // `approved_by` are both on the entry -- so what was missing is the
+      // SIGNAL, and an auditor should not have to join two fields by eye.
+      if (String(aVerdict.entry.proposed_by) === String(session.employee_id)) {
+        aVerdict.entry.self_approved = true;
+        arData.has_self_correction = true;
+      }
+      arList[idx] = aVerdict.entry;
+      arData.clock_corrections = arList;
+      const aw = await fetch(rest('sen_visits?on_conflict=license_hash,visit_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairnsenior', visit_id: String(payload.id),
+          assigned_employee_id: arRow.assigned_employee_id, data: arData,
+          updated_at: nowISO()
+        })
+      });
+      const awRows = await aw.json();
+      if (!aw.ok) return upstream(res, awRows);
+      res.status(200).json({ ok: true, entry: aVerdict.entry,
+        self_approved: !!aVerdict.entry.self_approved,
+        effective_clock: senEvvClock.effectiveClock(arData, aVerdict.entry.field) });
       return;
     }
 

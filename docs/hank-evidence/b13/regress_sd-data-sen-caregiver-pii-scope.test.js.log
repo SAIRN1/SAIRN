@@ -1,0 +1,34 @@
+sen_caregivers READ -- employee-PII field scope (hover2 seq 965)
+
+THE NON-MANAGEMENT TIERS -- every role sairnsenior has that is not owner or billing
+  ok   sairnsenior actually HAS roles outside the HR tier -- otherwise every arm below is vacuous
+  ok   [scheduler] the three HR fields are ABSENT -- not empty, absent
+  ok   [scheduler] ...and the nine fields the app needs SURVIVED, so the arm above cannot be satisfied by returning nothing
+  ok   [scheduler] ...and the response SAYS it was redacted, because a missing field and an empty one are the same thing to a caller that cannot ask
+  ok   [coordinator] the three HR fields are ABSENT -- not empty, absent
+  ok   [coordinator] ...and the nine fields the app needs SURVIVED, so the arm above cannot be satisfied by returning nothing
+  ok   [coordinator] ...and the response SAYS it was redacted, because a missing field and an empty one are the same thing to a caller that cannot ask
+  ok   [caregiver] the three HR fields are ABSENT -- not empty, absent
+  ok   [caregiver] ...and the nine fields the app needs SURVIVED, so the arm above cannot be satisfied by returning nothing
+  ok   [caregiver] ...and the response SAYS it was redacted, because a missing field and an empty one are the same thing to a caller that cannot ask
+
+THE MANAGEMENT TIER -- the negative half: the redaction must not apply to everyone, or it is a flat refusal wearing a field list
+  ok   [owner] sees the whole record, all twelve fields
+  ok   [owner] ...and the response says so
+  ok   [billing] sees the whole record, all twelve fields
+  ok   [billing] ...and the response says so
+
+ROUND-TRIP WIPE -- the check alf_facility's comment says has to be done for every field-level redaction
+  ok   a non-HR role cannot WRITE sen_caregivers, which is the only reason the redaction cannot erase the three fields
+
+NEGATIVE CONTROLS -- the fixture and the mock, driven rather than asserted
+  ok   the seeded row really CARRIES all three HR fields, so the absence arms are measuring a removal and not an empty fixture
+  ok   the mock honours select= -- so "the handler built the response from caregiver_id,data" is a real claim
+  ok   no session at all is 401, not a redacted 200 -- the gate this branch already had is still there
+
+THE OTHER THREE PLACES THE HR FIELDS ARE REACHED (reviewer, 2026-10-13)
+  ok   the EVV-readiness branch reads sen_caregivers under a WIDER role set than the redaction tier, and its engine emits no HR VALUE -- only presence. If summarize() ever echoes one, this arm is what fails
+  ok   sairnsenior.html renders the background-check column behind senIsManagement() in ALL THREE places, not just the roster
+  ok   ...and the caregivers CSV export DROPS the column rather than exporting an empty one, because a file leaves the building
+
+21 passed, 0 failed

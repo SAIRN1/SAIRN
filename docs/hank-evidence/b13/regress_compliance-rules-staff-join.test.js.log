@@ -1,0 +1,80 @@
+
+THE SEED ITSELF -- every arm below reads it, so a bad read must be loud
+  ok   the compliance seed parses and carries training rules
+  ok   the WV training rule is present -- the unreadable-vocabulary case
+  ok   the PA/pch training rule is present -- the additive-pool case
+  ok   ...and PA/pch really does carry an `additive` requirement, so the arm below is not asserting against a field that has gone
+  ok   ...and WV really does carry rows with neither `who` nor `annual_hours`
+
+1. THE WV VOCABULARY IS READ NOW -- and the refusal still guards a row readable in NEITHER vocabulary
+  ok   WV produces a staff finding instead of refusing -- the disclosed gap is closed, and closing it is what the refusal was holding open
+  ok   ...and an UNTRAINED staff member is FALSE, not true -- the original defect was this exact input returning meets:TRUE on zero recorded hours
+  ok   ...and the required figure is a real number read out of `hours_per_year`, not the 0 that `Number(undefined)||0` produced
+  ok   ...and the administrator requirement is listed as UNMAPPED rather than dropped -- an invisible requirement contributing zero is how the first version turned two real rows into a pass
+  ok   a requirement readable in NEITHER vocabulary is still REFUSED, not summed
+  ok   ...naming the state and the rule, so a reader knows WHICH rule is unreadable rather than that something is
+  ok   ...and it does NOT claim the untrained staff member meets anything
+
+2. THE READABLE STATES STILL WORK -- refusing everything is not a fix
+  ok   Ohio still evaluates
+  ok   OHIO IS THE ARM THAT PROVES THE REFUSAL IS SELECTIVE -- its vocabulary IS readable, so it is not refused the way WV is
+  ok   Ohio carries counts_toward_general_annual rows, so summation is wrong HERE TOO -- in the opposite direction to Pennsylvania
+  ok   ...so Ohio also declines to guess a verdict rather than over-requiring
+  ok   ...while still reporting the figures, so the screen is not left blank
+
+3. SEPARATE POOLS ARE NOT APPORTIONED FROM ONE NUMBER
+  ok   PA/pch still evaluates -- an additive rule is readable, just not collapsible
+  ok   18 hours against a largest single pool of 24 is FALSE, not null -- no apportionment of 18 reaches 24, so declining to answer was declining an answer the data already had
+  ok   ...and it reports how many separate pools the person is subject to, so a false is readable as "at least one pool is unreachable"
+  ok   30 hours -- above the largest pool (24), below the sum (42) -- is NULL, because THAT is the band where attribution is the missing fact
+  ok   ...and the reason names separate pools and what would close it
+  ok   ...and the rule-level caveat says how many additive requirements caused it
+  ok   THE RECORDED AND REQUIRED NUMBERS ARE STILL REPORTED, because a null verdict with no figures would be less useful than the wrong answer it replaces
+
+4. A NON-ADDITIVE STATE STILL GETS A BOOLEAN
+  ok   Indiana answers TRUE for an over-trained staff member
+  ok   ...and null is reserved for the pooled case, not used everywhere
+
+4b. AN EMPTY APPLICABLE SET IS NEVER A PASS
+  ok   a position NO requirement maps to is meets:null even with 500 recorded hours -- the empty SET is the reason, not the hours
+  ok   ...and the reason says "we could not read who it applies to" rather than "no obligation" -- only the rule author can make the second claim
+  ok   ...and it reports 0 required over 0 applicable pools, which is exactly the state that used to be summed into a pass
+
+4c. the position lists map role classes and refuse assignments
+  ok   OH-TRAINING-2024: a caregiver with ZERO hours is FALSE now -- a real verdict where this rule used to answer null for want of an audience
+  ok   OH-TRAINING-2024: ...and TRUE when over-trained, so the verdict tracks the hours rather than being pinned one way by the mapping
+  ok   IN-TRAINING-2026: a caregiver with ZERO hours is FALSE now -- a real verdict where this rule used to answer null for want of an audience
+  ok   IN-TRAINING-2026: ...and TRUE when over-trained, so the verdict tracks the hours rather than being pinned one way by the mapping
+  ok   PA-TRAINING-ALR-2010: a caregiver with ZERO hours is FALSE now -- a real verdict where this rule used to answer null for want of an audience
+  ok   PA-TRAINING-ALR-2010: ...and TRUE when over-trained, so the verdict tracks the hours rather than being pinned one way by the mapping
+  ok   PA-TRAINING-PCH-2600: a caregiver with ZERO hours is FALSE now -- a real verdict where this rule used to answer null for want of an audience
+  ok   PA-TRAINING-PCH-2600: ...and TRUE when over-trained, so the verdict tracks the hours rather than being pinned one way by the mapping
+  ok   Ohio STILL DISCLOSES its unmapped requirements rather than dropping them -- two assignment rows and an administrator row are not facts about position, and a meets:true beside them means "meets what could be attributed", never "compliant"
+  ok   every mapped position token is in the REAL alf_staff.position vocabulary -- a token this app cannot store would match nobody and read as an exemption
+  ok   ...and every mapped row records the BASIS for its mapping, so a reader can disagree with the READING rather than with a bare list
+  ok   ...and every row deliberately LEFT unmapped records why, so an absent list reads as a decision rather than as an omission somebody forgot
+
+4d. the annual window is computed, anchored to hire, and names its own could-not-tell
+  ok   THE ANCHOR: hired 2024-11-03, evaluated 2026-09-27 -- the window opens 2025-11-03. Not a calendar year, and not 365 days counted back from today
+  ok   ...and the finding names the window AND what it means, because a verdict computed over a period the reader cannot see is one they cannot check -- and with a per-person anchor the period differs per row
+  ok   hours BEFORE the window do not count: 500 hours dated 2025-06-01 fall in the PREVIOUS training year for a 2024-11-03 hire, so the verdict is FALSE
+  ok   THE ARM THAT MATTERS FOR THE WINDOW: no recorded hire date is meets:NULL, not false -- a total of zero derived from a MISSING FIELD would report a fully trained person as non-compliant, which is the empty-set defect one direction over
+  ok   ...and the reason names the missing field and BOTH ways out, rather than leaving a null for a reader to interpret
+  ok   a hire date AFTER the evaluation date is named, not guessed past
+  ok   THE DECISION IS A DEFAULT, NOT THE REMOVAL OF A CHOICE: the three facility-wide windows are all still available to a caller that states one
+  ok   ...and a caller-stated window is honoured over the default -- the same caregiver evaluated on the facility-wide rolling year sees a DIFFERENT window start, which is what proves the anchor is doing work
+
+4e. facility_training_year WITH NO START DATE -- the window that counted everything (found by tools/ghost_field_read_scan.py)
+  ok   THE ARM THAT MATTERS: a 2019 certificate does NOT satisfy a 2026 annual requirement just because no facility training year was supplied -- recorded hours are 0, not 500
+  ok   ...and it is a COULD-NOT-TELL, not a fail: window_error names the missing input and the verdict is null, the same shape NO_HIRE_DATE already had
+  ok   ...and no window start is reported, because there is none -- a date here would be a period the reader could check against nothing
+  ok   CONTROL: WITH a start date the window computes -- from 2026-01-01, no error -- and the 2019 record is excluded by the DATE rather than by the error, so the arms above are not passing on a window that never counts
+  ok   CONTROL, other direction: a record INSIDE the supplied facility year IS counted (7 hours), so the exclusion above is the date and not the window
+
+5. WHAT REACHES THIS BRANCH, stated as three facts rather than one
+  ok   sairncare.html still asks for training requirements somewhere
+  ok   FACT 1: the PANEL still does not ask for per-staff findings, so nothing in the UI shows one yet -- the window selector it would need is a product decision, not a wiring gap
+  ok   FACT 2: the ENDPOINT can now reach the branch, which is what the old "dormant" arm would have gone on denying -- api/sd-data.js builds `opts.staff` from alf_staff_credentials behind include_staff
+  ok   FACT 3: and a CALLER-SUPPLIED staff array is refused, which is the thing that made the old reachability dangerous rather than merely unused
+
+58 passed, 0 failed

@@ -1,0 +1,36 @@
+sen_visits EVV clock -- the seam between the endpoint and the module that was unreachable
+
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on sen_visits/write. The request was allowed on the token alone.
+  ok - THE ARM THAT MATTERS: a legitimate clock-in is stored AS CLAIMED, not re-stamped with the server time -- re-stamping is what would make an offline replay precise, plausible and false
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on sen_visits/write. The request was allowed on the token alone.
+  ok - ...and the server records its OWN observation beside it, which is the auditable fact an offline replay makes large and legitimate
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on sen_visits/write. The request was allowed on the token alone.
+  ok - A TIME AHEAD OF THE SERVER IS REFUSED 400 with the module's own code -- a clock event cannot be stamped later than the moment it is received, so it is a wrong device clock or a forged value
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on sen_visits/write. The request was allowed on the token alone.
+  ok - AN UNREADABLE TIMESTAMP IS REFUSED, not stored -- an unreadable EVV time is not a time, and storing it produces a visit that looks verified
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on sen_visits/write. The request was allowed on the token alone.
+  ok - A CLOCK-OUT BEFORE ITS STORED CLOCK-IN IS REFUSED -- and the clock-in is only in the STORED row, so a payload-only comparison would never have seen it
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on sen_visits/write. The request was allowed on the token alone.
+  ok - A LATE OFFLINE REPLAY IS STORED AND FLAGGED, never refused -- a past skew at any size is the offline path working, and the flag is STORED rather than only returned so an audit can find it later
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on sen_visits/write. The request was allowed on the token alone.
+  ok - a NON-CLOCK write is untouched -- a scheduling edit goes through the same handler and must not gain stamps or flags
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on sen_visits/write. The request was allowed on the token alone.
+  ok - THE SCHEDULER GUARD IS UNCHANGED: a scheduler-tier caller still cannot set a clock field at all, so the new check did not open a door
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on sen_visits/propose_clock_correction. The request was allowed on the token alone.
+  ok - A CORRECTION IS APPEND-ONLY: clock_in_at is UNCHANGED and an entry is appended, because a correction that overwrites destroys the evidence the record is
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on sen_visits/propose_clock_correction. The request was allowed on the token alone.
+  ok - ...and the actor comes from the SESSION, never the payload -- a correction is attributed or it is not a correction
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on sen_visits/propose_clock_correction. The request was allowed on the token alone.
+  ok - A CAREGIVER CANNOT CORRECT THEIR OWN CLOCK -- correcting your own time with nobody else involved is the unverified self-assertion EVV exists to stop
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on sen_visits/propose_clock_correction. The request was allowed on the token alone.
+  ok - AN UNKNOWN REASON CODE IS REFUSED -- the closed vocabulary is the reason the categories can be counted at audit
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on sen_visits/propose_clock_correction. The request was allowed on the token alone.
+  ok - A CORRECTION CANNOT CREATE THE VISIT IT CORRECTS -- an upsert here would let a correction invent its own subject
+  ok - IS IT REACHABLE: propose_clock_correction is DECLARED in the resource registry, or the dispatcher answers 400 before this branch is ever entered -- which is how `tombstones` shipped unreachable
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on sen_visits/read. The request was allowed on the token alone.
+  ok - A CORRECTED VISIT READS BACK WITH BOTH NUMBERS -- a screen showing only the corrected value has quietly become the overwrite this module exists to avoid
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on sen_visits/read. The request was allowed on the token alone.
+  ok - ...and an UNCORRECTED visit gains no effective_clock key at all -- a key on every row whether or not it says anything is a key a reader stops reading
+
+16 assertion(s) passed
+ALL SEN EVV-CLOCK SEAM ASSERTIONS PASS

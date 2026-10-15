@@ -1,0 +1,60 @@
+alf_compliance_rules evaluate -- the records join, and the two refusals in front of it
+
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on alf_compliance_rules/evaluate. The request was allowed on the token alone.
+  ok - THE ARM THAT MATTERS: a caller-supplied `staff` array is REFUSED 400, not evaluated -- it let the caller choose the compliance answer
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on alf_compliance_rules/evaluate. The request was allowed on the token alone.
+  ok - ...and the refusal says the record is on the SERVER, so a reader knows what to ask for instead
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on alf_compliance_rules/evaluate. The request was allowed on the token alone.
+  ok - a request WITHOUT include_staff is unchanged -- every existing caller still gets exactly the requirements, and no roster is read
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on alf_compliance_rules/evaluate. The request was allowed on the token alone.
+  ok - THE WINDOW IS DECIDED, NOT REFUSED (re-pinned 2026-09-27): include_staff with NO annual_window now ANSWERS, because picking one was Michael's decision to make and he made it -- rolling twelve months anchored to each staff member's hire date
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on alf_compliance_rules/evaluate. The request was allowed on the token alone.
+  ok - ...and an UNKNOWN window is STILL refused rather than falling back to the default -- a typo must not silently choose a reading, and the refusal names the default and every accepted value
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on alf_compliance_rules/evaluate. The request was allowed on the token alone.
+  ok - THE ANCHOR IS NOT POPULATED YET AND THE ENDPOINT SAYS SO RATHER THAN GUESSING: alf_staff carries no hire date -- saveStaff() collects name, phone, position, cert_expiry, bgcheck_date, status and notes -- so a roster row with none comes back meets:null / NO_HIRE_DATE, never false
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on alf_compliance_rules/evaluate. The request was allowed on the token alone.
+  ok - ...and ONE `hire_date` on the roster blob is all it takes -- alf_staff stores an open jsonb blob so no migration is involved, which is why the remaining gap is a UI field and not a schema change
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on alf_compliance_rules/evaluate. The request was allowed on the token alone.
+  ok - AN ABSENT CREDENTIALS TABLE IS 503, NOT ZERO HOURS -- reading [] would report every staff member non-compliant, which is a facility-wide false FAIL rather than a gap
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on alf_compliance_rules/evaluate. The request was allowed on the token alone.
+  ok - ...and an absent ROSTER is 503 for the mirror reason -- "no staff" would report a facility with no obligations
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on alf_compliance_rules/evaluate. The request was allowed on the token alone.
+  ok - THE JOIN: West Virginia now answers a real verdict for a caregiver -- the state the engine used to REFUSE outright
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on alf_compliance_rules/evaluate. The request was allowed on the token alone.
+  ok - ...and it says the hours came from the SERVER RECORDS, so a verdict computed from a record can never be mistaken for one computed from a number a caller sent
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on alf_compliance_rules/evaluate. The request was allowed on the token alone.
+  ok - UNDER-trained is FALSE, and that is the arm that proves the pass is not the only answer it can give
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on alf_compliance_rules/evaluate. The request was allowed on the token alone.
+  ok - HOURS OUTSIDE THE WINDOW DO NOT COUNT -- training from three years ago is not this year's training, and the window is the whole reason the endpoint refuses to guess it
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on alf_compliance_rules/evaluate. The request was allowed on the token alone.
+  ok - A RECORD WITH NO completed_on IS COUNTED AS SKIPPED AND SAID SO, not dropped -- hours nobody dated cannot be placed in a window, and silently ignoring them is how a shortfall appears from nowhere
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on alf_compliance_rules/evaluate. The request was allowed on the token alone.
+  ok - THE ADMINISTRATOR REQUIREMENT IS NAMED AS UNMAPPED, NOT DROPPED -- a requirement this code cannot attribute contributing zero is exactly how WV's two real rows became a confident pass the first time
+  ok - a session is still required -- the join did not open a door
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on alf_compliance_rules/evaluate. The request was allowed on the token alone.
+  ok - AN UNREADABLE RULES TABLE MUST NOT READ AS "NO OBLIGATION" -- the third read in this branch, and the one whose absence is most convincing
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on alf_compliance_rules/evaluate. The request was allowed on the token alone.
+sd-data upstream error: [
+  {
+    rule_id: 'WV-TRAINING-ALR-2026',
+    state: 'WV',
+    requirement_type: 'training',
+    facility_class: 'assisted_living_residence',
+    effective_from: '2026-01-01',
+    effective_to: null,
+    status: 'active',
+    data: {
+      label: 'West Virginia — 8 hours annual for the administrator, 2 hours dementia for all staff, and NO stated hour figure for general staff training',
+      requirements: [Array],
+      orientation: [Object],
+      notes: [Array],
+      authority: [Object]
+    }
+  }
+]
+  ok - ...and a 500 on that read is refused too, not just a 404 -- "the table is missing" and "the store broke" are both could-not-tell
+sd-data: active-credential re-check DID NOT RUN for app "undefined" (NO_ACTIVE_CHECK) on alf_compliance_rules/evaluate. The request was allowed on the token alone.
+  ok - CONTROL: with rulesStatus unset the same request DOES answer, so the two arms above distinguish an unreadable table from a request that never worked
+
+19 assertion(s) passed
+ALL ALF TRAINING-JOIN ASSERTIONS PASS

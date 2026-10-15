@@ -1,0 +1,31 @@
+T18. an unmatchable position list is UNDECIDED, not a decided no
+  FAIL     T18a. a requirement declaring applies_to_positions:['rn'] is UNDECIDED for a real position, not a decided false. `rn` is not in alf_staff.position (nursing|med_aide|caregiver|billing|activities|owner), so indexOf can never match it and the old `false` was the matcher reporting a vocabulary gap as a determination about a person
+           applies=false why="position nursing against the requirement's declared position list"
+  FAIL     T18b. ...and the reason NAMES the unrecognised token and the vocabulary it was checked against. An unmatchable list that is merely undecided, without saying WHICH token could not be read, is the silent drop one step later
+           why="position nursing against the requirement's declared position list"
+  FAIL     T18c. ...and the normalised row carries `positions_unknown` so a reader of the row -- not only a reader of one match result -- can see the declared token that does not exist
+  FAIL     T18d. the row appears in `unmapped_requirements`. This is the finding T18 names: `mappable` accepted the array for being non-empty, so the row was counted MAPPED and the caveat told the reader every requirement in the rule had been attributed
+           []
+  FAIL     T18e. ...and the caveat counts it, so `meets: true` elsewhere cannot be read as compliant
+           undefined
+  FAIL     T18f. the per-staff reason is no longer the CONFIDENT "no requirement in this rule applies to this position". That sentence is a claim about the rule a surveyor reads; what actually happened is that the rule named an audience this code cannot read. Both ways round the applicable set is empty, so the VERDICT does not move -- the sentence beside it does, and the sentence is the finding
+           meets=null reason="No requirement in this rule applies to this position, so there is nothing to compare. Reported as unknown rather than as compliant, because \"no obligation\" is a claim about the rul"
+  FAIL     T18g. ...and the row is NOT listed as an exclusion. `excluded_by_position` means "considered and did not apply to this position", which is a determination -- an unreadable audience has not been determined
+           [{"key":"T18-STAFF#0","annual_hours":8,"why":"position caregiver against the requirement's declared position list"}]
+  ok       T18h. a list with one real token and one unrecognised token still DECIDES true for the person the real token names. An unrecognised token can only widen an audience, never narrow it, so `true` stays true
+  FAIL     T18i. ...and the unrecognised token is still disclosed on that true, because the row is wrong whether or not this particular person matched
+           why="position caregiver against the requirement's declared position list"
+  FAIL     T18j. ...and it REFUSES to decide false for anybody else while `rn` is unread. `rn` is most plausibly a typo for `nursing`, and a confident false here would exclude exactly the person the author meant to include -- under-inclusion arriving through a spelling mistake
+           applies=false why="position nursing against the requirement's declared position list"
+
+T18 controls -- a fully valid list is unchanged in both directions
+  ok       T18k. CONTROL -- an all-valid list still decides TRUE for a named position
+  ok       T18l. CONTROL -- an all-valid list still decides FALSE for a position it does not name. This is the arm that stops the fix from turning every exclusion into an undecided, which would be the opposite fabrication
+  ok       T18m. CONTROL -- `positions_unknown` is absent when every token is real, not an empty array on every row
+  ok       T18n. CONTROL -- an all-valid list is still MAPPED and raises no caveat
+  ok       T18o. CONTROL -- a present-but-wrong-SHAPED list (a string) still gets N3's shape reason, not the new token reason
+  ok       T18p. CONTROL -- all_staff still answers before anything else
+  ok       T18q. api/sd-data.js still builds `applies_to` from `matchAudience(r, person).applies === true`, so the fixture in section 3 is still the production path. An undecided row is excluded from `applies_to` by that `=== true`, which is why the fix needs no change there
+
+8 passed, 9 failed, 0 unproven
+9 ARM(S) FAILED: T18a, T18b, T18c, T18d, T18e, T18f, T18g, T18i, T18j

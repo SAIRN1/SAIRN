@@ -1,0 +1,25 @@
+sen_visits clock_flags -- ASSIGNED, NOT MERGED -- criteria 2026-10-14.1 (FAILING-FIRST)
+
+A. the two-write sequence, against the real handler
+sd-data: active-credential re-check DID NOT RUN for app "sairnsenior" (NO_ACTIVE_CHECK) on sen_visits/write. The request was allowed on the token alone.
+  ok       A2. CONTROL -- write 1 really DID store a clock_in_at flag (["LATE_REPLAY"]). WITHOUT THIS ARM, A1 below could fail because nothing was ever stored, which is a different bug from a flag being lost
+sd-data: active-credential re-check DID NOT RUN for app "sairnsenior" (NO_ACTIVE_CHECK) on sen_visits/write. The request was allowed on the token alone.
+  ok       A1. THE ARM THIS FILE EXISTS FOR -- after a flagged clock-in AND a flagged clock-out, BOTH flags are on the row. The second write merges rather than replacing
+  ok       A3. CONTROL -- the SKEW STAMPS for BOTH halves coexist on the same row (clock_in_skew_ms and clock_out_skew_ms, both received_at present). So per-field keying already works here and A1 is a defect in the unkeyed ARRAY specifically, not in the handler's merging
+  ok       A5. REGRESSION PIN -- both claimed times survived two writes unchanged. A fix to A1 must not start re-stamping anything
+
+A4. the asymmetry -- why nobody has noticed
+sd-data: active-credential re-check DID NOT RUN for app "sairnsenior" (NO_ACTIVE_CHECK) on sen_visits/write. The request was allowed on the token alone.
+sd-data: active-credential re-check DID NOT RUN for app "sairnsenior" (NO_ACTIVE_CHECK) on sen_visits/write. The request was allowed on the token alone.
+  ok       A4. CONTROL -- with a CLEAN clock-out the clock-in's flag SURVIVES, because `flags` is empty and the `if` never fires. THIS IS WHY THE DEFECT IS INVISIBLE IN NORMAL USE and shows only when both halves are flagged -- the audit case
+
+B. the source line, re-derived rather than cited
+  ok       B1. the bare assignment "visitData.clock_flags = clockCheck.flags;" is no longer in api/sd-data.js, so the replacement cannot happen by that route. Arms A1-A4 are what say the behaviour is actually right
+
+E. the exemption claims, measured
+  ok       E1. this suite is GREEN and is NOT in `entries`, which is what the register requires -- a row over a green suite absorbs the next real failure of this file. It is in `recovered`.
+  ok       E2. NO GATE READS THIS -- measured: 0 of the files under tools/ name sd_data_clock_flags_merge. A suite that TELLS you it is harmless is not evidence that it is
+
+8 passed, 0 failed, 0 unproven
+
+THE ROUTED FIX HAS LANDED: api/ merges clock_flags on `field` instead of assigning, so this suite is a REGRESSION GUARD now rather than an open finding. It prints EXPECTED RED again by itself if an arm fails.

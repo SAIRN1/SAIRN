@@ -152,14 +152,27 @@ console.log('N1-N4 and the SAIRNfreedom deletes -- criteria 2026-10-14.1\n');
   {
     const { res, writes: w } = await visitWrite(
       { id: 'V1', clock_in_at: '2026-10-14T08:15:00.000Z' });
-    is(res.statusCode === 409 && eCode(res) === 'CLOCK_ALREADY_RECORDED'
-       && w.length === 0,
+    // ── SUPERSEDED BY MICHAEL'S T16 DECISION, 2026-10-15 ─────────────────
+    // This arm asserted 409 CLOCK_ALREADY_RECORDED with nothing written. The
+    // refusal closed the overwrite and left a hole beside it: the only other
+    // route is scheduler-only, so a caregiver who clocked in at the wrong time
+    // on their own visit had NO route at all. The decision is keep the
+    // original and APPEND a correction record, pending a scheduler's approval.
+    // What the arm now asserts is the part that must still hold -- the
+    // recorded value does not move -- and the full contract is driven in
+    // api/t16-clock-correction-record.test.js. Rewritten rather than deleted,
+    // so the boundary stays covered here too.
+    const n1Stored = w.length ? (JSON.parse(w[w.length - 1].body).data || {}) : {};
+    is(res.statusCode === 200
+       && n1Stored.clock_in_at === '2026-10-14T09:00:00.000Z'
+       && (n1Stored.clock_corrections || []).length === 1,
        'N1b. THE ARM THE WHOLE SECTION IS FOR -- a DIFFERENT clock_in_at over a '
-     + 'recorded one is refused 409 CLOCK_ALREADY_RECORDED and NOTHING was '
-     + 'written. This module\'s own words: "a state audit that finds an edited '
-     + 'time with no trail cannot tell a typo correction from a fabrication"',
+     + 'recorded one does NOT replace it: the original is still on the row and '
+     + 'the submission is appended to the correction trail. This module\'s own '
+     + 'words: "a state audit that finds an edited time with no trail cannot '
+     + 'tell a typo correction from a fabrication"',
        'status=' + res.statusCode + ' code=' + eCode(res)
-     + ' writes=' + w.length);
+     + ' stored=' + JSON.stringify(n1Stored).slice(0, 200));
   }
   {
     const { res } = await visitWrite(
@@ -184,12 +197,17 @@ console.log('N1-N4 and the SAIRNfreedom deletes -- criteria 2026-10-14.1\n');
     VISIT = { visit_id: 'V1', assigned_employee_id: 'E1',
               data: { clock_in_at: '2026-10-14T09:00:00.000Z',
                       clock_out_at: '2026-10-14T13:00:00.000Z' } };
-    const { res } = await visitWrite(
+    const { res, writes: w } = await visitWrite(
       { id: 'V1', clock_out_at: '2026-10-14T17:00:00.000Z' });
-    is(res.statusCode === 409 && eCode(res) === 'CLOCK_ALREADY_RECORDED',
-       'N1e. ...and clock_out_at is guarded too, not just clock_in_at. A rule '
+    // Superseded the same way as N1b -- the rule is now append-not-replace.
+    const n1e = w.length ? (JSON.parse(w[w.length - 1].body).data || {}) : {};
+    is(res.statusCode === 200
+       && n1e.clock_out_at === '2026-10-14T13:00:00.000Z'
+       && (n1e.clock_corrections || []).length === 1
+       && (n1e.clock_corrections || [])[0].field === 'clock_out_at',
+       'N1e. ...and clock_out_at is covered too, not just clock_in_at. A rule '
      + 'proven on one of two fields is a rule that covers one of two fields',
-       'status=' + res.statusCode + ' code=' + eCode(res));
+       'status=' + res.statusCode + ' stored=' + JSON.stringify(n1e).slice(0, 200));
   }
 
   // ── N2. setup CANNOT DEMOTE THE LAST OWNER ──────────────────────────────

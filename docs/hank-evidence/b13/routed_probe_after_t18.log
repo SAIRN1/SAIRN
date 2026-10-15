@@ -1,0 +1,19 @@
+  FIND T16. a second sen_visits `write` cannot silently REPLACE a recorded clock_in_at -- the prior value is kept or an entry is appended
+       api/sd-data.js:7216 copies every EVV field over the existing record and no prior value, history entry or correction is written in the same branch
+  ok   N1. CONTROL -- the `propose_clock_correction` route writes NO clock field, so the append-only route really does exist and T16 is an asymmetry
+  ok   T17. sen-auth `setup` cannot demote the LAST owner -- the same recoverability guard `set_active` already enforces
+  ok   N2. CONTROL -- `set_active` DOES carry the last-admin guard, through lifecycle.setActive() over PROVISIONING_ROLES, so T17 is one branch missing what its neighbour has
+  ok   T18. a requirement whose applies_to_positions contains NO valid token is UNDECIDED, not a confident "does not apply"
+  ok   N3. CONTROL -- the SAME `mappable` expression DOES validate `audience` against STAFF_POSITIONS, so T18 is one unvalidated leg and not an absent vocabulary
+  POPULATION: 330 coverage claim(s) in comment blocks cite an api/, tests/ or tools/ path
+  FIND N4. every coverage claim in a comment names a file that EXISTS (population 330)
+       api/sd-data-cross-tenant-dispatchers.test.js:577 claims coverage "held by" by api/sd-data-grd-session-gate.test.js, which does not exist
+  ok   N4b. the sweep really looked at something -- an arm over a handful of claims passes for ever and tests nothing
+
+FINDINGS (2) -- EVERY ONE IS IN api/ OR A COMMENT IN api/, WHICH IS HANK'S:
+  ! ROUTED TO HANK -- api/sd-data.js sen_visits action=write: the caregiver branch copies SEN_VISIT_EVV_FIELDS straight over `visitData`, which starts as a copy of the stored row, so a SECOND write carrying clock_in_at REPLACES the caregiver's recorded time with NO trail. checkClockEvent() refuses only the impossible and explicitly ALLOWS and stores a past time, so an earlier clock_in_at is accepted. The file's own comment states the rule it breaks: "a state audit that finds an edited time with no trail cannot tell a typo correction from a fabrication." The append-only route exists beside it -- see N1 -- so this is an ASYMMETRY, not a missing feature. api/sd-data.js:7216 copies every EVV field over the existing record and no prior value, history entry or correction is written in the same branch
+  ! ROUTED -- 1 comment(s) claim coverage by a file that does not exist: api/sd-data-cross-tenant-dispatchers.test.js:577 claims coverage "held by" by api/sd-data-grd-session-gate.test.js, which does not exist
+
+ROUTED, NOT FIXED. This suite is RED on purpose and is registered as such.
+When a finding is fixed its arm goes green with no edit here.
+8 arm(s): 6 holding, 2 finding(s)
