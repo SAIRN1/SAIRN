@@ -28803,6 +28803,56 @@
       "recurrence_open": "The sweep is cody's and lives under tests/; nothing in a push gate runs it, so a new bad citation is found only when somebody runs the probe. The population figure (330) is also only as current as the last run."
     },
     {
+      "commit": "0d33f65917d7",
+      "date": "2026-10-14",
+      "subject": "fix(claims,citation): the audit counted a session eighteen days gone, and a citation pointed at the wrong function",
+      "files": [
+        "docs/2026-10-14-cc-b11-routed.md",
+        "tools/sairn_claim.py",
+        "tools/sairn_claim_doc_freshness.py"
+      ],
+      "lines_added": 222,
+      "lines_removed": 7,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "sairn_claim.py audit counted a session gone eighteen days as holding an active claim. The stored `status` field is written once and never revisited; liveness is COMPUTED by is_active(), which `list` applies and the raw JSON cannot. Measured across the real 1,373-claim record: 5 rows store active, is_active() is true for 4, and the difference is `cloud` (claimed 2026-09-27, released_at null). One record, three answers -- the file says active, list omits it, list --all says EXPIRED. Today the inflation is 1 and does not cross MANY_ACTIVE=4, so the verdict was unchanged and nothing would have said so until a session held three live claims plus one dead row. THE SAME DEFECT IN A THIRD TOOL was fixed in the same commit: sairn_claim_doc_freshness.py built its FILES-convention denominator from the raw field, reporting 5 where 4 was true. Also in this commit: a citation in docs/2026-10-14-cc-b11-routed.md pointed at sairngrounds.html:4771-4779, which is the brand-legibility guard rather than the cost arithmetic it quoted -- the real sites are :4788 and :4810.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the raw-status selection has been in cmd_audit since the command was written and no single commit introduced the divergence -- is_active() grew the liveness half later, on 2026-09-23, and naming either as the injection would be a guess"
+      },
+      "citation_note": "a check that stopped checking: the audit section about phantom blocks computed its own count from the phantom field",
+      "contributing_factors": [
+        {
+          "factor": "liveness is computed at display time and the stored status field is never revisited, so the two spellings of \"active\" can only diverge",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the audit selection is extracted into audit_active_by() and uses is_active(); the gap is PRINTED beside the count as audit_expired_but_stored_active() rather than silently removed from it"
+        },
+        {
+          "factor": "the defect was silent because the inflation did not cross the reporting threshold on the day it was looked at",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "five arms plus an ablation and an ablation control on FIXTURES, not on the live record -- an arm whose verdict depends on whether cloud is dead today goes green on its own when somebody tidies the record"
+        },
+        {
+          "factor": "claim_activity_check.py had already paid for this exact defect on 2026-09-28 and wrote the distinction up at its own line 68, and the fix did not reach the tool that OWNS is_active() or a third consumer",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "both remaining consumers now import is_active and fail CLOSED on an import error rather than falling back to the raw field"
+        }
+      ],
+      "recurrence_open": "nothing enumerates the consumers of the raw `status` field. Three have been found one at a time, across three batches, each by accident while doing something else. A sweep for `get('status') == 'active'` outside sairn_claim.py would be the mechanical answer and was not built here."
+    },
+    {
       "commit": "0e6607e0709e",
       "date": "2026-10-14",
       "subject": "fix(push gate): the refusal text names the scoped exemption first, as :990 already claimed",
@@ -28832,6 +28882,66 @@
       },
       "citation_note": "1.3 is about an anchor that still matches but no longer points at the right thing; here the ANCHOR is a design comment asserting the refusal text had been updated, which still read true while the text it described had not changed",
       "factors_unknown_reason": "not investigated this batch -- the fix (scoped form named first and with its scope, plus a 12-arm ablation-proven refusal-text lock) is verified; root-cause factor analysis was not done"
+    },
+    {
+      "commit": "10209464ad20",
+      "date": "2026-10-14",
+      "subject": "feat(gate driver): hank's three new seams wired, and the exit-3 channel stopped inventing a reason",
+      "files": [
+        "docs/fmea/api__lib_ai-safeguards.js.json",
+        "docs/fmea/api__lib_ai-scan-redaction.js.json",
+        "docs/fmea/api__lib_compliance-rules.js.json",
+        "docs/fmea/api_n1-n4-and-sf-delete.test.js.json",
+        "docs/fmea/api_role-picker-vs-check-constraint.test.js.json",
+        "docs/fmea/api_sd-photos-size-and-provenance.test.js.json",
+        "docs/fmea/api_sen-auth.js.json",
+        "docs/fmea/sql_legacy_ciphertext_census.sql.json",
+        "docs/fmea/sql_sd_encryption_key_revoke_2026-09-24.sql.json",
+        "tools/sairn_push_gate_hook.py"
+      ],
+      "lines_added": 1883,
+      "lines_removed": 5,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "the push gate GUARD_TESTS runner reported every exit-3 test as \"SKIPPED as not applicable on this platform\", with the reason falling back to the literal string \"exit 3\" when the test said nothing. That was written for ONE test whose 3 really is a platform skip. api/role-picker-vs-check-constraint.test.js, wired in this commit, exits 3 on EVERY platform because 11 of 17 apps have no `check (role in (...))` to compare their role picker against -- a missing other side, not an OS. The label asserted a cause nothing established, about a test whose own output says \"NOT a pass: an app whose constraint cannot be found is exactly the app whose picker nobody has checked\". The reason now comes from the test or is admitted absent.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "0e6607e0709e",
+        "date": "2026-10-14",
+        "subject": "fix(push gate): the refusal text names the scoped exemption first, as :990 already claimed",
+        "lag_days": 0
+      },
+      "citation_note": "the confident line printed after the error: a could-not-run that states the wrong reason sends the reader away from the problem",
+      "contributing_factors": [
+        {
+          "factor": "a channel built for one instance had that instance's explanation hardcoded as its label",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "exit3_reason() quotes the test's own SKIPPED/UNPROVEN/COULD NOT RUN line and attributes it to the test, or states that no reason was given and names the missing reason as the thing to fix"
+        },
+        {
+          "factor": "nothing exercised the channel with a non-platform exit 3, because until this commit there was not one",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "nine arms including one that requires the platform claim to be GONE for a non-platform 3 and one that requires a genuine platform skip to still read correctly -- a fix that loses the case the channel was built for is a worse trade than the defect"
+        },
+        {
+          "factor": "exit 3 is one code carrying at least two different meanings, and only the test can say which",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "splitting exit 3 into two codes -- \"not applicable here\" and \"the other side is missing\" -- is NOT done here and is deliberately left as planned: entries in the registry already rely on 3, and redefining a shared exit code is a cross-session decision rather than a cc one. What IS done is that the runner no longer guesses which meaning applied."
+        }
+      ],
+      "recurrence_open": "exit 3 still means both \"not applicable on this platform\" and \"the other side of the seam is missing\", and the runner can only report whichever the test chose to say. Nothing requires an exit-3 test to print a reason at all -- the runner now names that absence, which is a report and not a gate."
     },
     {
       "commit": "201b80d51b8b",
@@ -29391,56 +29501,6 @@
       "factors_unknown_reason": "Found and fixed in one sitting (h1 b31) without a deeper five-whys pass; the immediate technical cause (display truncation vs full-string comparison) is understood and fixed, but no RCA was done on why the mismatch between display and comparison went unnoticed across multiple prior batches that hit it."
     },
     {
-      "commit": "0d33f65917d7",
-      "date": "2026-10-14",
-      "subject": "fix(claims,citation): the audit counted a session eighteen days gone, and a citation pointed at the wrong function",
-      "files": [
-        "docs/2026-10-14-cc-b11-routed.md",
-        "tools/sairn_claim.py",
-        "tools/sairn_claim_doc_freshness.py"
-      ],
-      "lines_added": 222,
-      "lines_removed": 7,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "independent-review",
-      "summary": "sairn_claim.py audit counted a session gone eighteen days as holding an active claim. The stored `status` field is written once and never revisited; liveness is COMPUTED by is_active(), which `list` applies and the raw JSON cannot. Measured across the real 1,373-claim record: 5 rows store active, is_active() is true for 4, and the difference is `cloud` (claimed 2026-09-27, released_at null). One record, three answers -- the file says active, list omits it, list --all says EXPIRED. Today the inflation is 1 and does not cross MANY_ACTIVE=4, so the verdict was unchanged and nothing would have said so until a session held three live claims plus one dead row. THE SAME DEFECT IN A THIRD TOOL was fixed in the same commit: sairn_claim_doc_freshness.py built its FILES-convention denominator from the raw field, reporting 5 where 4 was true. Also in this commit: a citation in docs/2026-10-14-cc-b11-routed.md pointed at sairngrounds.html:4771-4779, which is the brand-legibility guard rather than the cost arithmetic it quoted -- the real sites are :4788 and :4810.",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "the raw-status selection has been in cmd_audit since the command was written and no single commit introduced the divergence -- is_active() grew the liveness half later, on 2026-09-23, and naming either as the injection would be a guess"
-      },
-      "citation_note": "a check that stopped checking: the audit section about phantom blocks computed its own count from the phantom field",
-      "contributing_factors": [
-        {
-          "factor": "liveness is computed at display time and the stored status field is never revisited, so the two spellings of \"active\" can only diverge",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "the audit selection is extracted into audit_active_by() and uses is_active(); the gap is PRINTED beside the count as audit_expired_but_stored_active() rather than silently removed from it"
-        },
-        {
-          "factor": "the defect was silent because the inflation did not cross the reporting threshold on the day it was looked at",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "five arms plus an ablation and an ablation control on FIXTURES, not on the live record -- an arm whose verdict depends on whether cloud is dead today goes green on its own when somebody tidies the record"
-        },
-        {
-          "factor": "claim_activity_check.py had already paid for this exact defect on 2026-09-28 and wrote the distinction up at its own line 68, and the fix did not reach the tool that OWNS is_active() or a third consumer",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "both remaining consumers now import is_active and fail CLOSED on an import error rather than falling back to the raw field"
-        }
-      ],
-      "recurrence_open": "nothing enumerates the consumers of the raw `status` field. Three have been found one at a time, across three batches, each by accident while doing something else. A sweep for `get('status') == 'active'` outside sairn_claim.py would be the mechanical answer and was not built here."
-    },
-    {
       "commit": "73b4c0d03800",
       "date": "2026-10-14",
       "subject": "fix(hover): one tracked hover_log.py -- merged the untracked copy's citation gate, real default path, loud duplicate-script refusal",
@@ -29897,66 +29957,6 @@
         }
       ],
       "recurrence_open": "yes"
-    },
-    {
-      "commit": "10209464ad20",
-      "date": "2026-10-14",
-      "subject": "feat(gate driver): hank's three new seams wired, and the exit-3 channel stopped inventing a reason",
-      "files": [
-        "docs/fmea/api__lib_ai-safeguards.js.json",
-        "docs/fmea/api__lib_ai-scan-redaction.js.json",
-        "docs/fmea/api__lib_compliance-rules.js.json",
-        "docs/fmea/api_n1-n4-and-sf-delete.test.js.json",
-        "docs/fmea/api_role-picker-vs-check-constraint.test.js.json",
-        "docs/fmea/api_sd-photos-size-and-provenance.test.js.json",
-        "docs/fmea/api_sen-auth.js.json",
-        "docs/fmea/sql_legacy_ciphertext_census.sql.json",
-        "docs/fmea/sql_sd_encryption_key_revoke_2026-09-24.sql.json",
-        "tools/sairn_push_gate_hook.py"
-      ],
-      "lines_added": 1883,
-      "lines_removed": 5,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "low",
-      "detection_method": "code-review",
-      "summary": "the push gate GUARD_TESTS runner reported every exit-3 test as \"SKIPPED as not applicable on this platform\", with the reason falling back to the literal string \"exit 3\" when the test said nothing. That was written for ONE test whose 3 really is a platform skip. api/role-picker-vs-check-constraint.test.js, wired in this commit, exits 3 on EVERY platform because 11 of 17 apps have no `check (role in (...))` to compare their role picker against -- a missing other side, not an OS. The label asserted a cause nothing established, about a test whose own output says \"NOT a pass: an app whose constraint cannot be found is exactly the app whose picker nobody has checked\". The reason now comes from the test or is admitted absent.",
-      "rules": [
-        "1.5"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "0e6607e0709e",
-        "date": "2026-10-14",
-        "subject": "fix(push gate): the refusal text names the scoped exemption first, as :990 already claimed",
-        "lag_days": 0
-      },
-      "citation_note": "the confident line printed after the error: a could-not-run that states the wrong reason sends the reader away from the problem",
-      "contributing_factors": [
-        {
-          "factor": "a channel built for one instance had that instance's explanation hardcoded as its label",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "exit3_reason() quotes the test's own SKIPPED/UNPROVEN/COULD NOT RUN line and attributes it to the test, or states that no reason was given and names the missing reason as the thing to fix"
-        },
-        {
-          "factor": "nothing exercised the channel with a non-platform exit 3, because until this commit there was not one",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "nine arms including one that requires the platform claim to be GONE for a non-platform 3 and one that requires a genuine platform skip to still read correctly -- a fix that loses the case the channel was built for is a worse trade than the defect"
-        },
-        {
-          "factor": "exit 3 is one code carrying at least two different meanings, and only the test can say which",
-          "kind": "latent-condition",
-          "action_status": "planned",
-          "action": "splitting exit 3 into two codes -- \"not applicable here\" and \"the other side is missing\" -- is NOT done here and is deliberately left as planned: entries in the registry already rely on 3, and redefining a shared exit code is a cross-session decision rather than a cc one. What IS done is that the runner no longer guesses which meaning applied."
-        }
-      ],
-      "recurrence_open": "exit 3 still means both \"not applicable on this platform\" and \"the other side of the seam is missing\", and the runner can only report whichever the test chose to say. Nothing requires an exit-3 test to print a reason at all -- the runner now names that absence, which is a report and not a gate."
     },
     {
       "commit": "b12a763103e9",
@@ -30771,6 +30771,67 @@
         }
       ],
       "recurrence_open": "Five of the seven role names are [CONFIRM] in the spec and still are -- a funeral home's own titles win, and 'prep' may need its own licensed tier the way SAIRNvet's PRESCRIBER_ROLES does because embalmer is a separate state licence in most states. leg_preneed's owner-only DELETION rule is not implemented: this handler has no delete verb. Whether a cremation authorisation legally needs a second named person is a state-law question this code does not answer. And the existing staff rows are only narrowed, not re-assigned -- that is a human task per employee and nothing tracks whether it has been done."
+    },
+    {
+      "commit": "e4ba37f97e8d",
+      "date": "2026-10-15",
+      "subject": "fix(tiers): the sf_events rule was prose with nothing driving it, and it went quiet for a day",
+      "files": [
+        "docs/2026-10-15-fourth-b22-sf-events-reanchor-and-citation-recount.md",
+        "docs/CRITICALITY-TIERS.md",
+        "docs/TOOLING-INVENTORY.md",
+        "tools/sf_events_anchor_check.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 371,
+      "lines_removed": 9,
+      "app": "sairnfreedom",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "docs/CRITICALITY-TIERS.md:358, the sf_events row, asserted a quoted-string anchor that resolved ZERO times in sairnfreedom.html. hank b12's F6 legitimately rewrote sfDeleteEvent() to COUNT the rows it removed instead of choosing its toast on the pointer being truthy, which moved the line the register was quoting. The cell carries its citations as quoted strings precisely BECAUSE all seven of its line citations had rotted once before, and it states its own acceptance rule in its own prose -- every quoted anchor must resolve EXACTLY ONCE -- with nothing driving it. So a Tier A row that argues sf_events is Tier A on INTEGRITY, because exactly one stored id links a hall event to the bingo session a statutory ORC 2915.09(C)(4) limit is computed from, cited that link through text that was no longer in the app. Found by hover2 b36 by hand; re-derived here from source, which also settled the ordinal: hover2 and the dispatch both called it the 7th anchor and it is the 6th of 7, measured twice by two different enumerations.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "commit": "31406a87e010",
+        "date": "2026-10-14",
+        "subject": "fix(N1-N4,F6): a clock time that could be overwritten, a last owner that could be demoted, an exclusion nobody could see, and a delete that lied",
+        "lag_days": 1
+      },
+      "phase_note": "The register edit and the code edit were both correct in isolation; the defect is that nothing tied them together, which surfaced when the code line changed.",
+      "contributing_factors": [
+        {
+          "factor": "The register cited the delete path by copying a LITERAL LINE OF CODE as a quoted anchor, so any legitimate edit to that line breaks the citation with no other symptom.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Re-anchored on the post-fix shape, and on TWO spans rather than one: the stored-id filter and the row-count line, each verified to resolve exactly once BEFORE the write."
+        },
+        {
+          "factor": "The cell stated its own acceptance criterion in its own prose -- every quoted anchor must resolve EXACTLY ONCE -- and NOTHING DROVE IT. A rule written inside the thing it governs is a rule nobody is told about the day it breaks.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "tools/sf_events_anchor_check.py, 10 locked arms, whose failing-first arm IS the real pre-fix anchor text; the cell now names the check inside that same rule sentence so the rule and its enforcer cannot drift apart silently."
+        },
+        {
+          "factor": "The only detector was a human re-reading the cell on the hover rotation. hover2 b36 found it by hand; nothing mechanical would have reported it, and it had already been asserted falsely for a day.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The check is runnable by any session and fails CLOSED -- a missing app file, a missing register, or zero or multiple sf_events rows is exit 2 COULD NOT RUN, never exit 0."
+        },
+        {
+          "factor": "LATENT AND NOT CLOSED: 373 of the 571 line citations in docs/CRITICALITY-TIERS.md are bare :NNNN and cannot be mechanically checked at all, and the other 390 rows carry prose citations with no enforcement. This cell is the only one now covered.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Routed to cc with the spec and with the first three false positives it must not produce: eventRefusals(), liquorServiceCheck() and sc_auth are prose spans written with empty parentheses that the source writes with arguments, so an every-backticked-span implementation reports three phantom rotted citations on this one cell. When that tool lands, DELETE tools/sf_events_anchor_check.py rather than maintaining both -- stated in its own header so deletion is the expected end state."
+        }
+      ],
+      "recurrence_open": "The new check covers ONE cell and ONE app file. The other 390 rows of docs/CRITICALITY-TIERS.md still carry citations with no enforcement, and 373 of the register's 571 line citations are bare :NNNN that cannot be mechanically checked at all. Nothing closes that until cc's general anchor-rot tool lands. Nor does any check establish that a resolving anchor's surrounding CLAIM is true -- that half is still a human reading the cell, and the tool prints that limit every run rather than letting a clean exit stand in for a verdict."
     }
   ],
   "started": "2026-09-09",

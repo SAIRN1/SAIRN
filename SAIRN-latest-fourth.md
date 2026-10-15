@@ -1,6 +1,6 @@
 # SAIRN — latest from `fourth` (ted) — batch b22, 2026-10-15
 
-**CHAIN TIP** `142ef3ca` *(the hover2-b36 followup; the six dispatched items closed at `86a27458`. Re-derive with `git rev-parse HEAD`)*
+**CHAIN TIP** `e4ba37f9` *(the hover2-b36 followup; the six dispatched items closed at `86a27458`. Re-derive with `git rev-parse HEAD`)*
 **STATE** `HEAD == origin/main`, 0/0, clean, **not forced on any push this batch — proved by ancestry** (`git merge-base --is-ancestor <pre-push tip> HEAD` → ANCESTOR each time), not by grepping git's wording.
 **MANIFEST** 5 done, **1 BLOCKED with its reason** — closed, and **deliberately not reopened** for the followup. No `SAIRN_SEED_GATE`, no `SAIRN_GATE_EXEMPT`, no `SAIRN_SKIP`; `settings.json` untouched; neither auditor clone entered.
 **CONTEXT** 35% of 1000k, measured by `tools/sairn_status_line.py` on this session's transcript.

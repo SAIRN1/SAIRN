@@ -63,8 +63,8 @@ Added by the followup: `sf_anchor_check_b22.log`,
 
 | | | command |
 |---|---|---|
-| HEAD | `142ef3ca` *(the followup; the six items closed at `86a27458`)* | `git rev-parse --short HEAD` |
-| `origin/main` | `142ef3ca` | `git rev-parse --short origin/main` |
+| HEAD | `e4ba37f9` *(the followup; the six items closed at `86a27458`)* | `git rev-parse --short HEAD` |
+| `origin/main` | `e4ba37f9` | `git rev-parse --short origin/main` |
 | behind / ahead | **0 / 0** | `git rev-list --left-right --count origin/main...HEAD` |
 | working tree | **clean at the time of this line**; this handoff, the report, the digest and `SAIRN-latest-fourth.md` commit with it | `git status --porcelain` |
 | push forced? | **NO, on every push this batch — PROVED BY ANCESTRY, not by grepping git's wording** | pre-push tips recorded in `pre_push_tip_b22.txt`, `_b22b.txt`, `_b22c.txt`, `_b22d.txt`; `git merge-base --is-ancestor <tip> HEAD` → **ANCESTOR** each time, i.e. fast-forwards throughout |
@@ -79,9 +79,10 @@ Added by the followup: `sf_anchor_check_b22.log`,
 | `tools/` files added | **1**, `sf_events_anchor_check.py`, **with its inventory entry** — the pre-commit gate refused the first attempt for exactly that and was right (§9) | `tooling_inventory.py --check` → OK |
 | b22 manifest | **5 `done`, 1 `blocked` with its reason — CLOSED, and deliberately NOT reopened for the followup** (§9) | `batch_manifest.py --check --agent fourth --batch b22` |
 | the followup's own files on `origin/main` | **5 of 5** | `git cat-file -e origin/main:<path>` per file |
+| the followup's own sha | **`e4ba37f9`, NOT `142ef3ca`** — the first push of it was denied by `register_feed_gate` (correctly: it closes a defect and fed nothing), the defect was recorded as `e4ba37f97e8d`, and the rebase that followed moved the sha. **`142ef3ca` still resolves in this clone and is NOT on `origin/main`** — the exact trap §4 writes up | `git cat-file -e origin/main:<path>`; `git log --oneline -1 e4ba37f9` |
 | **context now** | **35% of 1000k** | `tools/sairn_status_line.py` on this session's transcript |
 
-**`86a27458` WAS THE STATE AT THE FIRST CLOSE; `142ef3ca` IS THE STATE BEFORE
+**`86a27458` WAS THE STATE AT THE FIRST CLOSE; `e4ba37f9` IS THE STATE BEFORE
 THIS REWRITE** — this file, the report, the digest, `SAIRN-latest-fourth.md` and
 the claim release all land after it. **The six items' deliverables were already
 uploaded and verified once at `86a27458`; they are being re-uploaded because the
@@ -468,7 +469,7 @@ the four basenames that exist in both with different contents.
 ## 9. THE FOLLOWUP — hover2 b36's ROUTING, RE-DERIVED
 
 `docs/2026-10-15-fourth-b22-sf-events-reanchor-and-citation-recount.md` §3.
-Commit `142ef3ca`.
+Commit `e4ba37f9`.
 
 **hover2 b36 routed `docs/CRITICALITY-TIERS.md:358` as *"still unfixed,
 re-grepped"* — and said itself why that might be wrong**, in the same handoff:
@@ -539,7 +540,7 @@ header so deletion is the expected end state, not a judgement call later.
 records the **six dispatched items** and is closed on them; chat writes the ids
 and they are immutable. Adding a seventh id would break the `id_lock`, and
 quietly editing a closed block would make the close mean less. **The followup is
-recorded here, in the report, in the digest and in `142ef3ca`'s own message
+recorded here, in the report, in the digest and in `e4ba37f9`'s own message
 instead — said out loud rather than left for somebody to notice the file count
 disagrees.**
 
@@ -567,7 +568,7 @@ say:**
 3. **Release the followup claim LAST**, then set the status row to `idle`.
 
 **The manifest is NOT touched again.** It is closed on the six dispatched items
-and the followup is recorded in prose and in `142ef3ca` — see §9 for why
+and the followup is recorded in prose and in `e4ba37f9` — see §9 for why
 reopening it would cost more than it buys.
 
 **THE BACKGROUND SHELL: WAITED ON, MEASURED, THEN STOPPED — and it was never
