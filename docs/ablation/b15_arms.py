@@ -88,6 +88,20 @@ CASES = (
      'cases 1, 6 and 10 -- 10 is the one that matters: a notice must never '
      'hide a real finding'),
 
+    ('reseat-window-author-time',
+     'tools/tier_a_review_gate.py', ['--selftest'],
+     "            + chr(31) + '%aI' + chr(31) + '%cI', '--name-only']",
+     "            + chr(31) + '%cI' + chr(31) + '%cI', '--name-only']",
+     'the 6-hour weak-basis reseat window is measured against the commit\'s '
+     'AUTHOR time. A rebase rewrites committer time and leaves author time '
+     'alone, and every commit in this clone has been rebased -- measured, 102 '
+     'of 200 recent commits have the two differing and 13 of 500 differ by '
+     'more than the window itself, worst 13.4h. Wrong in BOTH directions: a '
+     'record opened six minutes after its commit reads 10h away and is '
+     'REFUSED, and every commit swept into one rebase lands in the same '
+     'committer minute so a DIFFERENT commit can fall inside the window',
+     'the four b15 reseat-window arms'),
+
     # ── THE LAYER IS AT TWO CALL SITES AND THE FIRST RECIPE ONLY HIT ONE ──
     # Ablating `subprocess.run(..., env=CHILD_ENV)` alone reported UNPROVEN,
     # because the three fixtures drive drive_verify's RUNNER seam and the

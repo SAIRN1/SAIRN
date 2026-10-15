@@ -2948,7 +2948,7 @@ def selftest_roster():
         else:
             print('  ok   ' + label)
 
-    global CLAIMS_DIR
+    global CLAIMS_DIR, REPO
     real = CLAIMS_DIR
     tmp = tempfile.mkdtemp(prefix='tier-a-roster-')
     try:
@@ -3062,6 +3062,71 @@ def selftest_roster():
         CLAIMS_DIR = tmp + '-does-not-exist'
         ck('an UNREADABLE claims directory is None, never an empty roster '
            'reported as "nobody is eligible"', eligible_reviewers() is None)
+
+        # ── THE RESEAT WINDOW IS ON AUTHOR TIME (b15) ──────────────────────
+        # FAILING-FIRST: with `%cI` in _file_set_index the third element of a
+        # _PER_SHA row was the COMMITTER time, so this fixture's gap computed
+        # as 10.0h, the record fell outside WEAK_BASIS_WINDOW_HOURS, and a
+        # reseat six minutes after its own commit was REFUSED. Measured over
+        # 500 commits in this clone: 102 of 200 have the two times differing
+        # at all, and 13 of 500 differ by more than the 6h window -- worst
+        # 13.4h at d0ec2d57.
+        # DRIVEN THROUGH _file_set_index AGAINST A REAL REPO, not by stuffing
+        # _PER_SHA. The first version of these arms injected the row directly
+        # and the ablation reported the layer UNPROVEN -- correctly: the arms
+        # were about _iso_hours_apart and never reached the `%aI` in the
+        # format string. An arm that bypasses the layer it is for is the
+        # thing this whole file exists to catch.
+        keep_per_sha = dict(_PER_SHA)
+        keep_repo = REPO
+        fix = os.path.join(tmp, 'timerepo')
+        try:
+            os.makedirs(fix)
+            env = dict(os.environ,
+                       GIT_AUTHOR_DATE='2026-10-14T21:38:00+00:00',
+                       GIT_COMMITTER_DATE='2026-10-15T07:57:00+00:00',
+                       GIT_AUTHOR_NAME='a', GIT_AUTHOR_EMAIL='a@x',
+                       GIT_COMMITTER_NAME='c', GIT_COMMITTER_EMAIL='c@x')
+            for argv in (['init', '-q'], ['add', 'x.py'],
+                         ['commit', '-q', '-m', 'subj']):
+                if argv[0] == 'add':
+                    io.open(os.path.join(fix, 'x.py'), 'w',
+                            encoding='utf-8').write('pass\n')
+                subprocess.run(['git'] + argv, cwd=fix, env=env,
+                               capture_output=True)
+            REPO = fix
+            _PER_SHA.clear()
+            idx, err = _file_set_index()
+            row = list(_PER_SHA.values())[0] if _PER_SHA else None
+            sha = list(_PER_SHA)[0] if _PER_SHA else ''
+            ck('the fixture repo built one commit whose author and committer '
+               'times are 10.3h apart, so there is something to measure',
+               err is None and row is not None and len(row) == 4)
+            gap = _iso_hours_apart(row[2], '2026-10-14T21:44:00Z') \
+                if row else None
+            ck('the reseat window measures a record against its commit\'s '
+               'AUTHOR time -- a rebase rewrites committer time and leaves '
+               'author time alone, and on a four-clone night every commit '
+               'here has been rebased',
+               gap is not None and gap < 0.2)
+            ck('...and the committer time would have put this same pair '
+               'outside the %dh window, refusing a reseat six minutes after '
+               'its own commit' % WEAK_BASIS_WINDOW_HOURS,
+               row is not None
+               and (_iso_hours_apart(row[3], '2026-10-14T21:44:00Z') or 0)
+               > WEAK_BASIS_WINDOW_HOURS)
+            ck('...and the rebase is NAMED in the output rather than left as '
+               'an unexplained gap, because "this was rebased" is the fact '
+               'that explains it',
+               'REBASED' in rebase_note(sha)
+               and '10.3h' in rebase_note(sha))
+            ck('a sha the index never saw gets NO rebase note -- half the '
+               'commits here differ by seconds and that is noise',
+               rebase_note('nosuchsha') == '')
+        finally:
+            REPO = keep_repo
+            _PER_SHA.clear()
+            _PER_SHA.update(keep_per_sha)
     finally:
         CLAIMS_DIR = real
         shutil.rmtree(tmp, ignore_errors=True)
@@ -3466,8 +3531,31 @@ def _file_set_index(since=None):
     tight -- and it is a WINDOW rather than a cutoff, because an early baseline
     is the error direction backfill_shas already argues for.
     """
+    # ── AUTHOR TIME, NOT COMMITTER TIME (fixed 2026-10-15, cc b15) ───────
+    # This read `%cI` and fed it to the 6-hour WEAK_BASIS_WINDOW_HOURS below.
+    # A REBASE REWRITES COMMITTER TIME AND LEAVES AUTHOR TIME ALONE, and on a
+    # four-clone night every commit here has been rebased. Measured over the
+    # last 500 commits in this clone rather than argued:
+    #
+    #   102 of 200 recent commits have committer time != author time
+    #   13 of 500 diverge by MORE than the 6-hour window; worst 13.4h
+    #     (d0ec2d57), and in b14's own range 3474df69 is
+    #     c=2026-10-15T07:57 against a=2026-10-14T21:38 -- 10.3h apart
+    #
+    # It is wrong in BOTH directions, which is why it had to be the author
+    # time and not a wider window. A record opened six minutes after its
+    # commit was authored reads as 10 hours from the committer time and gets
+    # REFUSED; and every commit swept into one rebase lands in the same
+    # committer minute, so a DIFFERENT commit can fall inside the window and
+    # be wrongly accepted. Widening the window makes the second failure worse
+    # while fixing the first, and the window's own comment already says
+    # widening it is how a wrong reseat happens.
+    #
+    # Both are carried so a reader can see the rebase. The window uses the
+    # author time; the committer time is PRINTED beside it when they differ,
+    # because "this was rebased" is the fact that explains the gap.
     args = ['log', '--format=' + chr(30) + '%H' + chr(31) + '%s'
-            + chr(31) + '%cI', '--name-only']
+            + chr(31) + '%aI' + chr(31) + '%cI', '--name-only']
     if since:
         args.append('--since=' + since)
     try:
@@ -3482,16 +3570,36 @@ def _file_set_index(since=None):
         head, _, rest = chunk.partition(chr(10))
         parts = head.split(chr(31))
         sha, subj = parts[0], parts[1]
-        when = parts[2] if len(parts) > 2 else ''
+        when = parts[2] if len(parts) > 2 else ''          # AUTHOR time
+        ctime = parts[3] if len(parts) > 3 else ''         # committer time
         paths = frozenset(x.strip().replace(chr(92), '/')
                           for x in rest.split(chr(10)) if x.strip())
         if paths:
             idx.setdefault(paths, []).append((sha, subj))
-            _PER_SHA[sha] = (paths, subj, when)
+            _PER_SHA[sha] = (paths, subj, when, ctime)
     return idx, None
 
 
-# Filled by _file_set_index: {sha: (frozenset(paths), subject, committer-ISO)}.
+def rebase_note(sha):
+    """'' or a sentence naming the committer/author gap for this sha.
+
+    SAID ONLY WHEN IT MATTERS. The two times differ on roughly half the
+    commits in this clone by seconds, which is noise; the sentence appears
+    once the gap could change a window verdict.
+    """
+    rec = _PER_SHA.get(sha)
+    if not rec or len(rec) < 4 or not rec[3] or not rec[2]:
+        return ''
+    gap = _iso_hours_apart(rec[2], rec[3])
+    if gap is None or gap < 1.0:
+        return ''
+    return (' [REBASED: committer time %s is %.1fh after the author time '
+            '%s, and the window above is measured on the AUTHOR time]'
+            % (rec[3], gap, rec[2]))
+
+
+# Filled by _file_set_index:
+# {sha: (frozenset(paths), subject, AUTHOR-ISO, committer-ISO)}.
 # A module-level cache rather than a return value, so the extra bases below can
 # ask about a sha the file-set index already walked past without a second git log.
 _PER_SHA = {}
@@ -3643,8 +3751,8 @@ def _subset_candidate(files, opened_at):
     want = frozenset(x.replace(chr(92), '/') for x in (files or []))
     if not want:
         return None, None, 'the record names no files'
-    hits = [(sha, subj, when) for sha, (paths, subj, when) in _PER_SHA.items()
-            if want <= paths and paths != want]
+    hits = [(sha, rec[1], rec[2]) for sha, rec in _PER_SHA.items()
+            if want <= rec[0] and rec[0] != want]
     if not hits:
         return None, None, 'no commit anywhere contains that file set either'
     in_window = []
@@ -3923,12 +4031,14 @@ def reseat_shas(write=False, weak_ok=False, as_json=False,
                                 'commit it describes; a unique file-set match '
                                 'from another day is a DIFFERENT commit that '
                                 'happens to touch the same files. FIX THE '
-                                'RECORD, not the sha'
+                                'RECORD, not the sha%s'
                                 % (hits[0][0][:12], (hits[0][1] or '')[:70],
-                                   _gap, WEAK_BASIS_WINDOW_HOURS)))
+                                   _gap, WEAK_BASIS_WINDOW_HOURS,
+                                   rebase_note(hits[0][0]))))
                 continue
             fixable.append((r, hits[0][0], 'EXACT FILE SET',
-                            '%s, %.1fh apart' % (hits[0][1], _gap)))
+                            '%s, %.1fh apart%s'
+                            % (hits[0][1], _gap, rebase_note(hits[0][0]))))
             continue
         if len(hits) > 1:
             # SAY WHETHER ANY CANDIDATE PRE-DATES THE RECORD. When every one
