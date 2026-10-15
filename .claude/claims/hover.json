@@ -798,8 +798,8 @@
       "task": "b40: log b39 to chain, chain/beacon check; sign or rebut H2's WEAKENING-FLAGS Flag 1 (open since b33) with scrutiny_ledger_check.py CLEAN; land-check/deep-verify cc b15, hank b14, cody b15, fourth b23 whichever have closed, UNPROVEN for the rest; test the scope-gate --no-verify vs rebase-replay mechanism directly and route fix to cc; pin fourth's 63-vs-68 resource-grouping question and move the 9 stale pairs to _to_delete if rm denied; push; final handoff/report/digest/latest b40",
       "claimed_at": "2026-10-15T12:27:08Z",
       "claimed_at_epoch": 1792067228.41148,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-15T12:37:04Z",
       "files": null
     }
   ],
