@@ -1,42 +1,36 @@
-# SAIRN — latest from `fourth` (ted) — batch b23, 2026-10-15
+# SAIRN — latest from `fourth` (ted) — batch b24, 2026-10-15
 
-**CHAIN TIP** `80d86329` *(the handoff; report/digest/latest land after it — re-derive with `git rev-parse HEAD`)*
-**STATE** `HEAD == origin/main`, 0/0, clean, **not forced on either push — proved by ancestry**, not by grepping git's wording.
-**MANIFEST** 6 of 6 done. No `SAIRN_SEED_GATE`, no `SAIRN_GATE_EXEMPT`, no `SAIRN_SKIP`; `settings.json` untouched; **0 `api/` `sql/` `tests/` `tools/` files written** — all read-only here by claim.
-**CONTEXT** 61% of 1000k, measured by `tools/sairn_status_line.py` on this session's transcript.
+**CHAIN TIP** `93ce09ab` *(the handoff; report/digest/latest land after it — re-derive with `git rev-parse HEAD`)*
+**STATE** `HEAD == origin/main`, 0/0, clean, **not forced — proved by ancestry**, not by grepping git's wording.
+**MANIFEST** 2 done, **3 BLOCKED with reasons**, 1 open — **deliberately NOT closed.** No `SAIRN_SEED_GATE`, no `SAIRN_GATE_EXEMPT`, no `SAIRN_SKIP`; `settings.json` untouched; **0 `api/` `sql/` `tests/` `tools/` files written** — every drive ran against a tempdir copy.
+**CONTEXT** 74% of 1000k, measured by `tools/sairn_status_line.py` on this session's transcript. **Stopped at 71% by instruction.**
 
 ## DIGEST
 
-**PAYROLL IGNORES AN APPROVED CLOCK CORRECTION — 60 minutes and $20.00 unpaid on one visit, DRIVEN.** hank b13 asked whether an *unapproved* time could reach payroll. It cannot: a pending correction leaves payroll at 240 minutes, identical to no correction. **The mirror image is the defect, and it is money on a federally mandated EVV record** — 240 min / 8000¢ as shipped against 300 min / 10000¢ with `effectiveClock` applied. `api/_lib/sen-payroll.js:200-201` reads `row.clock_in_at` raw and never requires `sen-evv-clock.js`, while that module's own comment at `:342-344` says the rule is *"implemented HERE, in the function payroll reads"*. **The function payroll reads is `instant(row.clock_in_at)`.** Two more consumers read raw: the federal EVV readiness summary (defensible, **undeclared**) and `sairnsenior.html`, which has **zero** references to `effective_clock` — so the corrected value is reachable by nobody.
+**BOTH OF HANK'S leg_aftercare QUESTIONS ANSWER NO, AND BOTH ARE DRIVEN.** The derivation is stable for every shipped pair — one creation path, three literal types (`sairnlegacy.html:4302`), and `newId('CS')` always matches `^CS-[0-9]+-[0-9]+$` (`:1561`). **But the row's id is not stable, and the question's shape is the finding.**
 
-**`alf_staff` T18: right direction, one branch short.** No consumer coerces `null` to `false`. But `applies_to` is a `=== true` **whitelist**, so an *undecided* requirement lands in the same bucket as a decided `false` and its hours vanish from `required_annual_hours` — and the disclosure fires **only when nothing matched**. A partially-undecided audience, which is T18's own case, gives a surveyor a confident lower figure with no caveat.
+**F2 — HIGH.** Rows predating the deterministic-id change carried `newId('AC')` and **never had a derived id at all**, and `api/sd-data.js:15872-15884` rewrites `payload.id` on every write carrying both fields. Driven: `SAME ROW? false`. **hank's own comment at `sairnlegacy.html:4358-4360` says exactly this.**
 
-**THE 69 AND 151, CLASSIFIED — a count of a SHAPE is not a count of DEFECTS.** 332 guards; classified by the guarded fetch's **method** and what its URL **interpolates**. **22 REAL HIGH** (write-guarded, so a `23514` from the 64 KB cap answers *"run the migration"*), **13 REAL MODERATE** (GETs interpolating a caller value), 33 not caller-reachable and **untested**, **2 unclassified and reported as such**. **And my own b22 severity on the 151 is withdrawn as to reachability**: none guards a write, none interpolates a caller value. What remains there is **deploy-reachable** — a dropped column answers `42703` as 400 and renders `ok:true, data:[]` on 150 read paths.
+**F3 — HIGH, and it is the duplicate the key exists to prevent, arriving through the fix.** `legAdoptServerId` repairs the local store; **nothing repairs the server** — `legServerWinsMerge` (`:5474-5500`) only **adds**. Driven: **the completed check-in reappears as a second Pending row** — a duplicate grief-support follow-up to a bereaved family, the harm `:4308-4310` names.
 
-**5 of 5 of cody's mutants caught**, including the four b22 left uncorroborated, by running a *copy* of the probe whose `ROOT` is a tempdir. M1 returns **exit 2** printing *405 passed, 14 failed* — b22's figure from a second route, and the refusal is correct.
+**F4 — MODERATE-TO-HIGH.** `legAdoptServerId` does `keep[at] = mine`, a **whole-row replace**. Driven on the precondition its own comment names: the canonical row's `notes` and `completed_date` are **lost**, and the next push propagates it. **Both guards' controls hold**, so the loss is in the merge alone.
 
-**My anchor check ablated both ways.** Fix removed → arm fails; restored → arm passes. Every one of four layers load-bearing per arm. **L5 is a finding about my own tool:** the fail-closed guard lives in `main()` and not `check()`, **so no fixture arm can see it** — driven directly instead, exit 2 in both absent directions.
+**F1 — cody's. The probe EXITS 3 COULD NOT RUN at HEAD** because hank's fix moved its extraction anchor. **It fails closed, which is right** — but ARM 1 is **UNRUN rather than RED**, and `known-red-suites.json` still records `exit_code: 1` with *"ARM 1 ONLY"*, which cannot classify an exit 3. **cody's criticism of E4 is CONFIRMED**: `api/sd-data-leg-role-matrix.test.js:456-478` drives the colliding pair and passes, because both halves agree on the wrong answer.
 
-**The 373 bare citations is an actual 371.** 571 occurrences classified: 198 qualified, 323 bare single lines, **48 bare RANGES**, one OAC chapter number, one ISO timestamp. b22 was high by exactly two, both named. **cc's 323 is the single-line form only — the 48 ranges are the difference, and no tool here can assess them**, because a range cannot be checked by any single-line lookup.
+**Three suites green** — t16 27/0/0, t18 17/0/0, leg-aftercare-key 14/0/0, all exit 0. **And that green is not evidence against F2–F4:** the suite tests the *derivation's* preservation property, which holds.
 
-## THE STATE CHANGE THAT MATTERS
+**ONE RE-MEASUREMENT THAT CHANGES ROUTING ALREADY SENT:** the class-B write-guarded population is **25 at this HEAD**, not b23's 22. The three b23 missed: `:5062` `grd_progress_photos`, `:5935` `scp_progress_photos`, `:11241` `rf_schedule`.
 
-**MICHAEL'S `leg_aftercare` CONDITION IS NOW MET.** Measured: 2 active claims (mine and cody's b16), **hank has none**, cody's b16 does not name it and says *"NO api/ FILE (hank)"*, and hank's key fix **is on `origin/main`**. **It is unblocked and still mine. I did not start it and did not hand it to anyone** — the batch was six items and the handoff is the stopping point.
+## OPEN, AND WHY
 
-## DECISIONS WAITING — nothing blocking
-
-1. **F2** — should the state aggregator receive the device clock or the approved correction? Either is arguable; **the silence is not**.
-2. **hank's (c)** — a marked `self_approved` on an EVV record. My view: **yes, with the marking**, if the flag survives into the submission.
-
-## OPEN, BY OWNER
-
-* **hank** — **F1 first** (apply `effectiveClock` in the payroll action's map), then the 22, then the 13, then read `:13503` and `:17127` by hand, then decide the read-case fifth answer before touching the 151. Plus F2, F3, F4 and the status-less-entry write guard.
-* **cc** — **wire ONE anchor-rot tool into a gate.** Both are **UNWIRED**, and cc's A7b **cannot fail on a real rot** by design — so the chain has no live link, which is rule 1.1 one level out. Then delete mine. Also: R3 should count the 48 ranges.
-* **cody** — a failing-first arm driving a `23514` through one of the 22 and a `42703` through one of the 151. **Nothing in the repo drives either today.**
-* **fourth** — the `leg_aftercare` Tier A, and an arm for L5.
+* **Item 3 PARKED at a one-line blocker.** The harness is written and targets `alf_op_audits` write (Tier A, the `23514`) and `mech_site_assets` read (the `42703`) against a tempdir copy, with a control and a counterfactual. **All four sections returned `COULD NOT RUN: SD_AUTH_SECRET not set`, so nothing was observed.** Fix: stub `process.env.SD_AUTH_SECRET` before `_lib/auth` is required — the pattern is `api/auth-license-app-scope.test.js:158-176`.
+* **Items 4 and 5 NOT STARTED, nothing half-checked.** None of the six open findings is recorded as confirmed or cleared; **(d) LATE_REPLAY is still undriven**; the predicate-span rule is in no standing document; **CALLER is still a lower bound** on the 33 server-only GETs.
+* **Two FRESH Tier A obligations against me, untouched:** `cody 2026-10-15T12:18:41Z` (quotes, sd_hr_certs, sd_hr_employees, sdn_projects — **person data**) and `hank 2026-10-15T12:24:35Z` (leg_custodylog, **sen_visits**, where b23's payroll F1 lives).
+* **hank:** b23 F1 **first** — Michael has decided it is a bug — then F3, F4, the 25 branches. **cc:** `tier_a_review_gate.py` has **no `--amend`**, so hank's reviewed carve-out has nowhere in the register to land; and wire **one** anchor-rot tool into a gate. **cody:** re-anchor the probe and arm the anchor itself.
+* **Held at Michael's instruction and not acted on:** the EVV-readiness raw-clock question and the one-person-agency self-approval question.
 
 ## METHOD NOTE
 
-**Two of my own predicates failed inside this batch, and both failures were POSITIONAL rather than lexical** — a `select=` test matching the trailing paren of every URL, and a body-read detector matching `code: 'NOT_PROVISIONED'` *inside the answer*. b22's clause was *"when a predicate names an identifier, say which identifier"*. **This batch adds the sibling: SAY WHERE THE PREDICATE LOOKS.** A predicate has a **span** as well as a pattern, and the span is the half nobody writes down. **And the third correction was a SEVERITY, not a count** — a shape count reads as a defect count unless the report says which it is.
+b23 routed **22** class-B write branches; the same predicate finds **25** here, and three were never listed. b23's clause was *"say which identifier"*; b24's was to be *"say where the predicate looks"*. **The third clause is now forced: say WHICH SHA it was measured at.** A count is a property of a predicate *applied to a tree at a moment* — and a routing list carried across three batches is short by three because nobody wrote the sha down. **The rule is in no standing document yet** (that is item 5, explicitly not done), which is the same shape as the `sf_events` prose rule that went quiet for a day in b22.
 
-*Full detail: `SAIRN-report-fourth-b23.txt`, `SAIRN-handoff-fourth-b23.md`. Every figure names the command that produced it — re-derive anything you mean to quote, including out of this file.*
+*Full detail: `SAIRN-report-fourth-b24.txt`, `SAIRN-handoff-fourth-b24.md`. Every figure names the command that produced it — re-derive anything you mean to quote, including out of this file.*

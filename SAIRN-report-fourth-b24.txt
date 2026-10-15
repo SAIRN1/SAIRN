@@ -1,0 +1,394 @@
+REPORT fourth b24
+
+SAIRN batch report -- session fourth (ted), batch b24, 2026-10-15.
+Working directory C:\Users\marsh\Documents\SAIRN-fourth, branch main.
+Model Opus 5 (1M context). Context at close: 74% of 1000k.
+
+STOPPED AT 71% CONTEXT BY INSTRUCTION. Items 1 and 2 are complete. Items 3, 4
+and 5 are PARKED -- item 3 at a named blocker with a one-line fix identified,
+items 4 and 5 not begun. NOTHING IS HALF-FINISHED AND NOTHING IS RECORDED AS
+VERIFIED THAT WAS NOT.
+
+EVERY FIGURE NAMES THE COMMAND THAT PRODUCED IT. Re-derive anything you mean to
+quote, including out of this file.
+
+
+== 0. STATE ==
+
+  HEAD                      93ce09ab          git rev-parse --short HEAD
+  origin/main               93ce09ab          git rev-parse --short origin/main
+  behind / ahead            0 / 0             git rev-list --left-right --count origin/main...HEAD
+  forced?                   NO, PROVED BY ANCESTRY, not by grepping git's
+                            wording: pre-push tip in scratchpad
+                            pre_push_tip_b24b.txt, then
+                            git merge-base --is-ancestor <tip> HEAD -> ANCESTOR
+  handoff on origin         YES  git cat-file -e origin/main:SAIRN-handoff-fourth-b24.md
+  pushes denied first       3, and NONE was about my commits. Two were
+                            non-fast-forwards with five sessions pushing; one
+                            was the register-feed gate reporting that the remote
+                            tip was not an object in this clone and measuring a
+                            SUPERSET range instead, which it says in terms is
+                            "Not a finding about your commits".
+  SAIRN_SEED_GATE           not used, any form
+  SAIRN_GATE_EXEMPT         not used
+  SAIRN_SKIP                not used
+  .claude/settings.json     not edited, not committed
+  hooks                     untouched, never re-added
+  api/ sql/ tests/ tools/   0 files written. Every drive ran against a tempdir
+                            COPY; `git status --porcelain` was checked after
+                            each and showed only my own b24 files.
+  auditor clones            not entered; 0 files under
+                            .claude/skills/sairn-hover-auditor/
+  b24 manifest              2 done, 3 BLOCKED with reasons, 1 open
+                            batch_manifest.py --check --agent fourth --batch b24
+  manifest NOT closed       DELIBERATE. Three items are blocked and one is open;
+                            closing it would say the batch finished what it was
+                            sent to do.
+  git stash                 0
+
+
+== 1. THE SIX ITEMS ==
+
+  1  leg_aftercare Tier A -- cody's record + hank's carved-out half   DONE
+  2  run the three undriven suites                                    DONE
+  3  drive a 23514 through a write branch, a 42703 through a read      PARKED
+  4  re-verify the six open findings; drive (d) LATE_REPLAY            NOT STARTED
+  5  the predicate-span rule; the 33 GETs with a variable trace        NOT STARTED
+  6  push without force, confirm landed                               DONE
+  -  the handoff, written BEFORE this report                          DONE
+
+VERIFIED ON origin/main AND NOT LOCALLY:
+  cody 2026-10-15T01:18:14Z  status=reviewed  verdict 12,409 chars
+
+
+== 2. ITEM 1 -- BOTH OF HANK'S QUESTIONS ANSWER NO, AND BOTH ARE DRIVEN ==
+
+docs/2026-10-15-fourth-b24-leg-aftercare-discharge.md; the full verdict is on
+the discharged record in docs/tier-a-reviews.json. Reviewer fourth, NOT cody, as
+that record requires.
+
+node <scratchpad>/leg_aftercare_drive_b24.js -> leg_aftercare_drive_b24.log.
+Both halves EXTRACTED BY TEXT from the shipped files and run in a vm against a
+fake localStorage -- the method hank's own b12 suite adopted after an ablation
+showed a source grep could not see an early return. Nothing retyped; the live
+tree was never written.
+
+THE DERIVATION HALF HOLDS, AND I ESTABLISHED IT RATHER THAN ACCEPTING IT:
+
+  * the only creation path uses three literal types --
+    sairnlegacy.html:4302, plan = [{type:'1 Week'},{type:'1 Month'},
+    {type:'1 Year'}] -- and the case id comes from the $('accase') select of
+    existing cases;
+  * newId('CS') is ^CS-[0-9]+-[0-9]+$ for EVERY value it can produce --
+    sairnlegacy.html:1561, prefix + '-' + Date.now() + '-' +
+    Math.floor(Math.random()*1000). The random segment is 1-3 digits and the
+    regex accepts any width. CHECKED, because a fixed-width regex would have
+    been the defect;
+  * both derivations agree on a shipped pair, driven:
+    AC-CS-1760000000000-42-1-WEEK from each.
+
+F2 -- HIGH. ROWS WRITTEN BY SHIPPED BUILDS DO CHANGE ID, AND THE QUESTION'S
+SHAPE IS THE FINDING. The DERIVED KEY is stable for every shipped pair. The
+ROW'S ID is not: rows predating the deterministic-id change carried newId('AC'),
+e.g. AC-1759999999999-7, and never had a derived id at all. api/sd-data.js
+:15872-15884 rewrites payload.id on EVERY leg_aftercare write carrying both
+fields, so completing an old check-in lands on AC-CS-...-1-WEEK. Driven:
+SAME ROW? false. AND HANK'S OWN COMMENT SAYS THIS -- sairnlegacy.html:4358-4360,
+"an old-page device's existing row has a RANDOM id, so completing it is exactly
+the write the server canonicalises".
+
+F3 -- HIGH, AND IT IS THE DUPLICATE THE KEY EXISTS TO PREVENT, ARRIVING THROUGH
+THE FIX. legAdoptServerId repairs the LOCAL store. NOTHING REPAIRS THE SERVER.
+legServerWinsMerge (sairnlegacy.html:5474-5500) only ADDS server rows --
+local.push(row) -- or overwrites a matching id; it never deletes a local row the
+server lacks, and nothing deletes the stranded server row. Driven, with the
+server holding both rows for ONE (case_id, checkin_type) pair:
+
+    after hydrate the device holds 2 row(s):
+      AC-1759999999999-7             status=Pending    notes=""
+      AC-CS-1760000000000-42-1-WEEK  status=Completed  notes="family declined..."
+    ** THE COMPLETED CHECK-IN REAPPEARS AS A SECOND PENDING ROW. **
+
+That is a duplicate grief-support follow-up to a bereaved family -- the exact
+harm sairnlegacy.html:4308-4310 names as the reason the deterministic key
+exists. NEXT STEP: the canonicalising write must also DELETE the row id it
+replaced, server-side, in the same request. The server is the only place that
+knows both ids, and a client-side delete cannot be trusted here because the
+device that would issue it is the one still on the old page.
+
+F4 -- MODERATE-TO-HIGH. legAdoptServerId IS A WHOLE-ROW REPLACE AND LOSES DATA
+THE KEPT ROW HAS. When a canonical row already exists the code does
+keep[at] = mine, so any field present only on the canonical row is gone. Driven
+on exactly the precondition the function's own comment names ("a device that
+hydrated the canonical row and still has its own random one"):
+
+    before: the canonical row carries notes "family declined a visit"
+    after legAdoptServerId, 1 row:
+      AC-CS-1760000000000-42-1-WEEK  status=Pending  notes=""  completed_date=""
+    ** DATA LOST **
+
+AND IT PROPAGATES: the renamed row is the local row and the next push sends it,
+so a completion recorded on device A, with the family's note, is reverted to
+Pending with an empty note by device B merely syncing. CONTROLS DRIVEN so this
+is not a hostile-fixture artefact -- ids equal -> store unchanged; no local row
+with that id -> store unchanged. Both hold, so the function's guards work and
+the loss is in the merge and nowhere else. NEXT STEP: the renamed row wins ONLY
+on the fields THIS WRITE SET, and the canonical row keeps everything else. That
+list is the payload just sent and is NOT currently passed in. Object.assign is
+not the fix: `mine` carries notes:'' and status:'Pending' as real values.
+
+F1 -- CODY'S, AND THE PROBE IS RIGHT TO REFUSE.
+
+    PYTHONIOENCODING=utf-8 python -u tests/run_b14_leg_aftercare_probe.py
+    -> EXIT=3
+    "COULD NOT RUN: the `const acKey = 'AC-' ...` derivation was not found in
+     api/sd-data.js, so the server half could not be extracted. Nothing was
+     verified."
+
+hank's fix replaced the server derivation, so cody's extraction anchor no longer
+matches. THE PROBE FAILS CLOSED, which is PR 1.11's third state and the opposite
+of the failure mode it was built to catch. CREDIT WHERE IT IS DUE. But ARM 1 is
+now UNRUN RATHER THAN RED, and docs/known-red-suites.json still records
+exit_code 1 with "ARM 1 ONLY. Any other failure in this suite is NEW" -- a
+sentence that CANNOT CLASSIFY AN EXIT 3. NEXT STEP: re-anchor the server half on
+`const acEsc = (s) =>` plus the acKey ternary that follows
+(api/sd-data.js:15870-15878), re-drive, re-diagnose the register row, AND ADD AN
+ARM THAT FAILS WHEN THE EXTRACTION ANCHOR STOPS MATCHING. The probe's own ARM 2
+does exactly that for a different anchor; it does not cover its own.
+
+AND CODY'S CRITICISM OF E4 IS CONFIRMED, NOT ACCEPTED.
+api/sd-data-leg-role-matrix.test.js:456-478 -- its `cases` list literally
+contains both ['CS-7','1 Week'] and ['CS-7-1','Week'], and its only assertion is
+disagree.length === 0, "the CLIENT's legAftercareId() and the SERVER's
+derivation produce the same key for every case tried". SO E4 DRIVES THE
+COLLIDING PAIR AND PASSES, because both halves agree on the wrong answer. A
+cross-implementation test is necessary and not sufficient. ARM 1's two controls
+-- liveness, and not-everything-collides -- are what make it trustworthy.
+
+AND THE REGISTER CANNOT CARRY HANK'S CARVED-OUT HALF. tier_a_review_gate.py has
+no --amend and no append (checked: the flag list has neither), so a record
+discharged with a carve-out has NOWHERE for the carve-out's later completion to
+land. hank 2026-10-15T01:21:13Z was discharged in b23 with leg_aftercare and
+leg_cases listed in its body as NOT reviewed; that half is reviewed now and is
+recorded in the b24 doc and in cody's verdict body instead. ROUTED TO cc as a
+tool gap rather than worked around.
+
+
+== 3. ITEM 2 -- THE SUITES, AND WHAT THEIR GREEN DOES NOT MEAN ==
+
+Exit code read from `echo "EXIT=$?"` on its own line, never from a pipeline:
+
+  node api/t16-clock-correction-record.test.js      EXIT=0  27 passed 0 failed 0 unproven
+  node api/t18-positions-vocabulary.test.js         EXIT=0  17 passed 0 failed 0 unproven
+  node api/leg-aftercare-key-unambiguous.test.js    EXIT=0  14 passed 0 failed 0 unproven
+  python -u tests/run_b14_leg_aftercare_probe.py    EXIT=3  COULD NOT RUN (F1)
+
+THE GREEN IS NOT EVIDENCE AGAINST THE FINDINGS, SAID RATHER THAN LEFT TO BE
+INFERRED. The leg_aftercare suite tests the DERIVATION's preservation property,
+which holds; F2-F4 are about rows whose id was never derived and about the local
+merge, and NEITHER IS IN ITS SCOPE. And t16's 27 green arms DO NOT COVER THE
+PAYROLL CONSUMER, which is b23's F1 -- decided a bug by Michael and routed to
+hank -- and which was driven separately against the real modules.
+
+
+== 4. ITEM 3 -- PARKED, AND THE BLOCKER IS ONE LINE ==
+
+The driver is written and it runs: <scratchpad>/drive_400_b24.js copies api/ into
+a tempdir (NEVER the live tree), loads the COPY's sd-data.js with a stubbed
+_lib/license and a PostgREST mock that answers 400 with a real body, and targets
+two NAMED branches rather than line numbers that move:
+
+  * alf_op_audits write -- a TIER A resource -- for the 23514 / 64KB-cap
+    observation;
+  * mech_site_assets read -- for the 42703 observation;
+  * plus a NO-FAILURE CONTROL on both, and a COUNTERFACTUAL that rewrites the
+    copy's alf_op_audits guard to the shipped 3-argument notProvisioned() call.
+
+ALL FOUR SECTIONS RETURNED "COULD NOT RUN: SD_AUTH_SECRET not set in
+environment" (drive_400_b24.log). SO NOTHING WAS OBSERVED AND NO VERDICT IS
+RECORDED. A could-not-run is never folded into a pass.
+
+THE FIX IS IDENTIFIED: api/auth-license-app-scope.test.js:158-176 sets
+process.env.SD_AUTH_SECRET = process.env.SD_AUTH_SECRET ||
+'stub-secret-for-tests' before signing and restores it after. EXACT NEXT STEP:
+add that env stub at the top of drive_400_b24.js, before _lib/auth is required,
+re-run, and record the four observed answers plus the counterfactual.
+
+AND ONE RE-MEASUREMENT THAT CHANGES ROUTING ALREADY SENT. The class-B
+write-guarded population is 25 AT THIS HEAD (18,769 lines), not b23's 22 at
+18,770. <scratchpad>/pick_branches_b24.py names resource and action for each.
+THE THREE b23 DID NOT LIST: :5062 grd_progress_photos write, :5935
+scp_progress_photos write, :11241 rf_schedule write. So b23's routing list to
+hank is SHORT BY THREE, and that is item 5's "a predicate has a SHA" clause
+arriving as a measurement instead of an argument.
+
+
+== 5. ITEMS 4 AND 5 -- NOT STARTED, NOTHING HALF-CHECKED ==
+
+ITEM 4. No re-verification was begun, so NONE OF THE SIX IS RECORDED AS EITHER
+CONFIRMED OR CLEARED BY b24. All six stand exactly as b23 left them, with their
+b23 file:line references still the best current pointers: b18 N1; the MAR grant
+bypass via alf_clients with no audit row (b21 F3); the rf_photos rebuild
+dropping ai_source (b21 F4); license_hash never re-verified in memory; no revoke
+action for a live grant; and the two sd_photos caller findings (b22 F1 the
+failed-downscale branch storing AND syncing the original, F2 the octet-vs-UTF-16
+margin). The (d) LATE_REPLAY item is UNDRIVEN and is still read-only evidence,
+which the b23 verdict already names as its weakest-evidenced item. EXACT NEXT
+STEP: re-verify each against HEAD with a FRESH file:line -- every one of those
+citations was taken at an earlier HEAD and api/sd-data.js has moved from 18,503
+to 18,769 lines across b22-b24 -- and drive (d) as a two-write sequence against
+a COPY of the handler rather than reading the superseded-set logic. The
+drive_400_b24.js harness is the right vehicle once section 4's blocker clears.
+
+ITEM 5. THE PREDICATE-SPAN RULE WAS NOT WRITTEN INTO ANY STANDING DOCUMENT. It
+exists only in the b23 report and digest METHOD-NOTE sections. THE 33
+SERVER-ONLY GETS WERE NOT RE-CLASSIFIED, so CALLER REMAINS A LOWER BOUND and
+b23's UNVERIFIED line saying so is still the current state. EXACT NEXT STEP:
+write all three clauses -- say what the predicate matches, say WHERE it looks,
+and say WHICH SHA it was measured at -- into
+docs/2026-09-13-cross-domain-disciplines.md as ONE numbered item, counting the
+`## <n>.` headings first and trusting no written count; and extend
+<scratchpad>/branch_census_b23.py to follow a variable back through its
+assignments, because the current classifier reads only the fetch expression and
+therefore cannot see a caller value arriving through an earlier variable.
+
+
+== 6. TWO FRESH OBLIGATIONS ARRIVED DURING THIS BATCH -- UNTOUCHED ==
+
+Neither is in b24's dispatch. Both are mine and both are untouched. Check the
+clock before assuming runway: tier_a_review_gate.py --list.
+
+  cody 2026-10-15T12:18:41Z -- quotes, sd_hr_certs, sd_hr_employees,
+    sdn_projects; tests/sd_data_blob_scope_ten_routed_sites.js. A NEW
+    failing-first suite over the ten unconverted stored-blob write sites, three
+    serving Tier A resources. sd_hr_employees and sd_hr_certs are PERSON DATA.
+    NEXT STEP: read the record's own `what` first, then check the suite asserts
+    the SCOPE PROPERTY rather than agreement between two copies -- which is the
+    defect shape b24 F1 just found in its sibling.
+
+  hank 2026-10-15T12:24:35Z -- leg_custodylog, sen_visits;
+    api/b14-clock-approval-two-person.test.js,
+    api/sd-data-leg-session-gate.test.js, sairnsenior.html. NO PRODUCT CODE
+    CHANGED for leg_custodylog; what changed is the ARM measuring its session
+    gate, which asserted "write with a session -> 200" over a generic loop.
+    NEXT STEP: and sen_visits is in it, which is where b23's payroll F1 lives --
+    check the two-person approval arm does not assume effectiveClock is applied
+    by payroll, BECAUSE IT IS NOT.
+
+
+== 7. WHAT IS OPEN, BY OWNER ==
+
+hank      b23 F1 FIRST, and Michael has DECIDED IT IS A BUG: payroll ignores an
+          APPROVED clock correction -- 60 minutes / 2000 cents unpaid on one
+          visit, driven. Apply effectiveClock in the payroll action's map
+          (api/sd-data.js:7678-7679); do NOT change SEN_CLOCK_IMMUTABLE. Then
+          b24 F3 (delete the replaced row id server-side in the canonicalising
+          write) and b24 F4 (field-merge legAdoptServerId on the write's own
+          payload); F2 is the framing both rest on. Then the 25 class-B write
+          branches -- NOT 22 -- then b23's 13 caller-interpolated GETs, then
+          :13503/:17127 by hand, then the read-case fifth answer before touching
+          the 151. Still open and NOT re-verified this batch: the six in section
+          5, plus b23's F2, F3 and F4 and the status-less-entry write guard.
+
+cody      b24 F1 -- re-anchor the leg_aftercare probe, re-diagnose its register
+          row, and arm the anchor itself. And a failing-first arm driving a
+          23514 through one of the 25 and a 42703 through one of the 151:
+          NOTHING IN THE REPO DRIVES EITHER TODAY, and b24's attempt to OBSERVE
+          them is parked at section 4.
+
+cc        tier_a_review_gate.py has no --amend, so a carve-out's later
+          completion has nowhere to land -- NEW THIS BATCH. Wire ONE anchor-rot
+          tool into a gate: both are UNWIRED and cc's A7b cannot fail on a real
+          rot by design, so the chain still has no live link; then delete
+          tools/sf_events_anchor_check.py per its own header. R3 should count
+          the 48 citation RANGES so the second class is 371 and not 323. Plus
+          the b22 subject_sha() touched-file disclosure and the re-seat
+          author-time guard; b19's census asks 1 and 4; batch_manifest.py:386.
+
+Michael   NOTHING BLOCKING, AND TWO THINGS ARE HELD AT YOUR INSTRUCTION AND WERE
+          NOT ACTED ON: the EVV-readiness raw-clock question and the
+          one-person-agency self-approval question. Payroll F1 is decided and
+          routed to hank.
+
+fourth    The two fresh obligations in section 6; items 3, 4 and 5 of this
+          batch; and an arm for L5 of tools/sf_events_anchor_check.py.
+
+hover2    Unchanged: four `# OWNER: hover2` lines; which tree is canonical for
+          the four basenames that exist in both.
+
+
+== 8. WHAT b24 PROVED vs LEFT UNPROVEN ==
+
+PROVED, DRIVEN: that the leg_aftercare derivation is stable for every shipped
+pair; that rows written by shipped builds nevertheless change id; that the
+server-side orphan survives and reappears as a duplicate Pending row; that
+legAdoptServerId loses data on its own named precondition, with both its guards'
+controls holding; that E4 passes on the colliding pair; and that three named
+suites are green at this HEAD while a fourth cannot run.
+
+LEFT UNPROVEN, AND NONE OF IT IS RECORDED AS CHECKED:
+
+  * THE TWO 400 OBSERVATIONS WERE NOT MADE. Item 3 is parked; the harness
+    returned COULD NOT RUN on every section.
+  * Whether any leg_cases row can carry a case_id that is not newId('CS') shape.
+    Not enumerated. IF ONE EXISTS, F2 WIDENS BEYOND PRE-CHANGE ROWS.
+  * The real production rows. No production read, so "rows written before the
+    change exist" is an inference from the code's own comment at :4358-4360
+    saying they do, not an observation.
+  * The full HTTP round trip for leg_aftercare. The server derivation was
+    extracted and run, not reached through a request.
+  * The six re-verifications and the (d) LATE_REPLAY drive. Not begun.
+  * The 33 server-only GETs. Not re-classified; CALLER IS STILL A LOWER BOUND.
+  * NO LIVE DEPLOYMENT FETCHED and no table touched -- b24 is two docs/ files
+    plus my root deliverables.
+  * The Drive upload is verified MOUNT-SIDE with bytes and sha256 matching. The
+    Drive-side API read is what closes it and its state at close is recorded in
+    the digest rather than assumed.
+
+
+== 9. COMPACTION DIAGNOSIS -- READ-ONLY, AND ONE VALUE COULD NOT BE READ ==
+
+  /autocompact (no argument)       COULD NOT RUN. A slash command is invokable
+                                   only if it is a Skill in this session's
+                                   available-skills list, and `autocompact` is
+                                   not in it. So the per-model value this
+                                   command would print was NOT obtained, and no
+                                   substitute is offered for it.
+  CLAUDE_CODE_AUTO_COMPACT_WINDOW  <unset>
+  CLAUDE_AUTOCOMPACT_PCT_OVERRIDE  97
+  autoCompactWindow   user         ABSENT   (~/.claude/settings.json)
+                      project      ABSENT   (.claude/settings.json)
+                      local        ABSENT   (.claude/settings.local.json)
+                      managed      FILE ABSENT -- C:\ProgramData\ClaudeCode\
+                                   managed-settings.json does not exist
+  modelSettings["claude-opus-5[1m]"].autoCompactWindow
+                      user         ABSENT
+                      project      ABSENT
+                      local        ABSENT
+                      managed      FILE ABSENT
+  --autocompact on the launch command
+                                   COULD NOT DETERMINE. No Claude CLI process
+                                   command line is reachable from this shell:
+                                   /proc/$PPID/cmdline does not exist under Git
+                                   Bash (PPID resolves to 1), and a read-only
+                                   Win32_Process sweep returned only the Chrome
+                                   native-messaging host, a `tail -f` on another
+                                   clone's task output, and MY OWN diagnostic
+                                   commands -- the four "autocompact" matches it
+                                   counted were the grep processes themselves.
+
+ABSENT IS REPORTED AS ABSENT AND NEVER AS A DEFAULT. The only value actually SET
+anywhere is CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=97; every autoCompactWindow key is
+absent in all three present scopes and the managed file does not exist. Two of
+the requested values -- the /autocompact per-model figure and the launch flag --
+were NOT obtained, which is a could-not-tell and not a zero.
+
+DEFINITION the hash below is sha256 over every byte of this file up to and NOT
+including the final hash line, CRLF normalised to LF, taking the LAST occurrence
+of the marker. Reproduce:
+    import io, hashlib
+    s = io.open('SAIRN-report-fourth-b24.txt', 'rb').read().decode('utf-8').replace('\r\n','\n')
+    body = s.rsplit('SHA' + '256 ', 1)[0]
+    print(hashlib.sha256(body.encode('utf-8')).hexdigest())
+SHA256 d42a7a5c369b07074846de5279bb79e549a8e1677e2efe3417e1cfd15360e569
+END-OF-REPORT
