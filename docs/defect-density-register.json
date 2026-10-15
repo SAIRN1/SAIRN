@@ -30885,6 +30885,312 @@
       "recurrence_open": "whether the hover-chain-h2 mirror is refreshed or retired is H2 call and a build agent does not write into an auditor published chain directory. While it sits there at 154h it is a tamper-evidence artefact a casual reader takes as current. And h1 mirror is currently AHEAD of its own digest, which the board reports and deliberately does not resolve."
     },
     {
+      "commit": "652f40344fbf",
+      "date": "2026-10-15",
+      "subject": "feat(sairnsenior): no self-approval on clock corrections, and a queue that shows the pending ones",
+      "files": [
+        "api/_lib/sen-evv-clock.js",
+        "api/b14-clock-approval-two-person.test.js",
+        "api/sd-data.js",
+        "api/t16-clock-correction-record.test.js",
+        "docs/hank-evidence/b14/b14_approval_GREEN.log",
+        "docs/hank-evidence/b14/b14_approval_RED.log",
+        "docs/hank-evidence/b14/b14_approval_mid.log",
+        "docs/hank-evidence/b14/regress1.log",
+        "docs/hank-evidence/b14/regress_t16.log",
+        "sairnsenior.html"
+      ],
+      "lines_added": 754,
+      "lines_removed": 59,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "user-report",
+      "summary": "b13 built the append-a-clock-correction path AND the scheduler-only approval verb and SHOWED NEITHER. effectiveClock() already returned pending / pending_count / pending_entries and no screen rendered any of them, so a caregiver's submitted correction sat pending for ever: strictly better than the old 409 for the caregiver and NO BETTER AT ALL for payroll, because nobody could see there was anything to approve. b13's own handoff named it as open work and the route shipped anyway.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "07dfa24f489d",
+        "date": "2026-10-14",
+        "subject": "fix(sairnsenior,sairncare): T16 clock corrections are appended and approved, T18 position tokens validated",
+        "lag_days": 1
+      },
+      "contributing_factors": [
+        {
+          "factor": "The server half was complete and arm-covered, so every signal said the feature was done -- 27 arms green on a mechanism no user could reach",
+          "kind": "process",
+          "action_status": "done",
+          "action": "A scheduler-tier Clock Corrections tab with the count ON THE BUTTON, so the queue is visible without opening it"
+        },
+        {
+          "factor": "senData() returned a bare null on every failure and logged to the console, so the Approve button would have been a silent no-op on its MOST COMMON refusal",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "senLastErr per RESOURCE, the same mechanism sairnlegacy.html has carried since 2026-09-05, and the panel shows the server's own words"
+        },
+        {
+          "factor": "An approval that always 403s was offerable: the UI had no way to know the submitter cannot approve",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The control is DISABLED with the reason on screen when this user submitted it; the server refuses it either way"
+        },
+        {
+          "factor": "A blank panel is indistinguishable from one that failed to load, which is this app's own argument for the offline badge",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "An empty state that says what will appear here and that payroll uses the ORIGINAL time until approval"
+        }
+      ],
+      "recurrence_open": "THE DECISION ITSELF LEFT A HOLE AND IT IS NOT CLOSED: approver != submitter applies to BOTH routes, so a one-person agency -- owner is the assigned caregiver, the submitter and the only possible approver -- now has NO route to make any correction effective. Nothing in the app says so at the point of filing beyond the pending message. And the queue reads LOCAL rows, so a scheduler whose hydrate has not run sees an empty queue that is not empty."
+    },
+    {
+      "commit": "652f40344fbf",
+      "date": "2026-10-15",
+      "subject": "feat(sairnsenior): no self-approval on clock corrections, and a queue that shows the pending ones",
+      "files": [
+        "api/_lib/sen-evv-clock.js",
+        "api/b14-clock-approval-two-person.test.js",
+        "api/sd-data.js",
+        "api/t16-clock-correction-record.test.js",
+        "docs/hank-evidence/b14/b14_approval_GREEN.log",
+        "docs/hank-evidence/b14/b14_approval_RED.log",
+        "docs/hank-evidence/b14/b14_approval_mid.log",
+        "docs/hank-evidence/b14/regress1.log",
+        "docs/hank-evidence/b14/regress_t16.log",
+        "sairnsenior.html"
+      ],
+      "lines_added": 754,
+      "lines_removed": 59,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "b13 allowed a scheduler to approve a correction THEY had submitted, marking it `self_approved: true` rather than refusing, on the argument that a one-person agency has nobody else. On propose_clock_correction the submitter and the approver were the same person BY CONSTRUCTION -- the filing itself approved -- so every office correction was a self-approval. Michael decided the other way: an approval by the submitter is not an approval.",
+      "rules": [
+        "3.4"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "07dfa24f489d",
+        "date": "2026-10-14",
+        "subject": "fix(sairnsenior,sairncare): T16 clock corrections are appended and approved, T18 position tokens validated",
+        "lag_days": 1
+      },
+      "contributing_factors": [
+        {
+          "factor": "The flag-not-refusal trade was taken from a sibling precedent (self_correction) rather than from a rule about EVV, and a precedent is not an argument about a federal record",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Escalated as the batch's one design call rather than re-decided in code; the decision is recorded at both call sites"
+        },
+        {
+          "factor": "The rule lived nowhere: b13's version was an `if` in one handler branch, so the second route reached approval without passing it",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "approveCorrection() in api/_lib/sen-evv-clock.js refuses SELF_APPROVAL_REFUSED itself, where every other correction rule already lives"
+        },
+        {
+          "factor": "`self_approved` would have survived as a field that can no longer be true, which a consumer still branches on",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Removed from the entry and the response; `self_correction` kept, because who FILED is a different fact from who approved"
+        },
+        {
+          "factor": "A 200 on the propose route used to mean the clock had moved and now does not",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "That response carries status: pending and a sentence naming the unchanged recorded time -- otherwise the filer walks away believing it is live"
+        }
+      ],
+      "recurrence_open": "The one-person-agency lockout above. Also: no arm proves a THIRD party cannot be impersonated -- the identity compared is the session's employee_id, so two people sharing one credential defeat the rule and nothing detects that."
+    },
+    {
+      "commit": "8627f4e4c796",
+      "date": "2026-10-15",
+      "subject": "fix(blob): the ten routed conversions, 58 -> 48 exactly, and nine of ten column lists are EMPTY",
+      "files": [
+        "api/_lib/sd-store.js",
+        "api/sd-data-memory-app-scope.test.js",
+        "api/sd-data.js",
+        "docs/blob-conversion-coverage.json",
+        "docs/hank-evidence/b14/blob_RAW_before.log",
+        "docs/hank-evidence/b14/blob_count_after.log",
+        "docs/hank-evidence/b14/blob_count_before.log",
+        "docs/hank-evidence/b14/blob_regress.log",
+        "docs/hank-evidence/b14/blob_repin.log"
+      ],
+      "lines_added": 173,
+      "lines_removed": 16,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "probe-control",
+      "summary": "tools/blob_conversion_coverage.py files api/_lib/sd-store.js's `data: slab` under BUILT -- 'already immune, a field-by-field blob' -- which it is not. `slab` is the RAW caller argument, and the only thing distinguishing it from the ten counted RAW sites is that the identifier is not called `payload`. A raw site hiding in the immune bucket, so a posted license_hash rode into that blob and came back out on read with the tool reporting the site as safe.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/blob_conversion_coverage.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The BUILT heuristic predates the ten-site routing and its introducing commit is not identified here; the misclassification was found by converting the site, not by reading the tool's history."
+      },
+      "contributing_factors": [
+        {
+          "factor": "The bucket is decided by the IDENTIFIER NAME, so the classification is a naming convention wearing a safety claim",
+          "kind": "technical",
+          "action_status": "planned",
+          "action": "ROUTED TO cc, who owns tools/. The site itself is converted here because api/ is mine"
+        },
+        {
+          "factor": "BUILT is reported as 'NOT a gap' in the tool's own output, so anything in it is actively excluded from the number anybody reads",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Measured: converting the ten routed sites moved CONVERTED 34 -> 45, by ELEVEN, and that arithmetic is what identifies the extra one"
+        },
+        {
+          "factor": "The `id` duplication on that same row looks like a defect and is deliberate -- the read returns the blob whole -- so a reader could 'fix' it and break every slab",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The row now says why both copies exist and which one the client reads"
+        }
+      ],
+      "recurrence_open": "Any other site whose payload variable is not named `payload` is still in BUILT and still uncounted. Nothing here enumerates them: that needs the tool's own classifier changed, which is cc's."
+    },
+    {
+      "commit": "9020156b22c2",
+      "date": "2026-10-15",
+      "subject": "fix(checks): the misspelt-role blind spot is closed, and the leg-session-gate red was a FALSE red",
+      "files": [
+        "api/role-picker-vs-check-constraint.test.js",
+        "api/sd-data-leg-session-gate.test.js",
+        "docs/hank-evidence/b14/leg_session_gate_after.log",
+        "docs/hank-evidence/b14/rolepicker_SABOTAGE1.log",
+        "docs/hank-evidence/b14/rolepicker_SABOTAGE1b.log",
+        "docs/hank-evidence/b14/rolepicker_SABOTAGE2.log",
+        "docs/hank-evidence/b14/rolepicker_after.log"
+      ],
+      "lines_added": 450,
+      "lines_removed": 28,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "probe-control",
+      "summary": "The role-picker check skipped any picker value not in ROLES_BY_APP, so a MISSPELT role was offered to a provisioning UI, would be refused 23514 by the database at the last step with no validation message, and the check stayed green. b13 measured the hole by sabotage (exit 0, MISSED) and left it open on the view that closing it needed a per-app vocabulary of legitimate non-role values. The discriminator only needs to know which values are PROBABLE ROLES, which the vocabulary already answers.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "api/role-picker-vs-check-constraint.test.js",
+      "found_by_session": null,
+      "injection": {
+        "commit": "00f846de8463",
+        "date": "2026-10-14",
+        "subject": "fix(role-picker check): the 11 UNPROVEN apps resolved -- 9 were this check's fault, not the apps'",
+        "lag_days": 1
+      },
+      "contributing_factors": [
+        {
+          "factor": "b13's own SABOTAGE FIXTURE was wrong as well as the check: 'med_aide_II' is not a misspelling of any SAIRNsenior role, so that plant could never be caught by a vocabulary-anchored rule and the miss was partly the fixture's",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Re-sabotaged with caregiver_II and office_II; three runs now exit 1 and name the right apps, and the live repo stays at 0 offenders"
+        },
+        {
+          "factor": "The first draft of the closure MANUFACTURED TWO FALSE POSITIVES -- edit distance 2 read stonedesk's service-type dropdown offering 'other' as a misspelling of 'owner'",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Distance tightened to ONE plus containment, and the real cause fixed: the PICKER CLASSIFIER accepted any select with two vocabulary tokens"
+        },
+        {
+          "factor": "'two or more values in the vocabulary' was harmless while non-vocabulary values were skipped and stopped being harmless the moment one could fail -- a loosening that only became a defect when something downstream got stricter",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "A picker must now be ALL roles or near-roles, matching the ALL-not-some rule the array path already used"
+        },
+        {
+          "factor": "Breaking one token made an array list stop qualifying and VANISH from the comparison, so the breakage switched the detector off rather than tripping it",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The array path gained the same near-role allowance, and sabotage 1b proves it fails instead of going quiet"
+        }
+      ],
+      "recurrence_open": "TWO LIMITS REMAIN AND ARE PRINTED EVERY RUN: a misspelt role in a TWO-token list is not caught, because breaking one leaves fewer than two real roles and the list stops being distinguishable from any other pair of strings; and a picker carrying a non-empty non-role placeholder is disqualified, so its app reports UNPROVEN rather than clean. The live-lag limit is also unchanged -- this reads the CHECK in sql/, not production's."
+    },
+    {
+      "commit": "9020156b22c2",
+      "date": "2026-10-15",
+      "subject": "fix(checks): the misspelt-role blind spot is closed, and the leg-session-gate red was a FALSE red",
+      "files": [
+        "api/role-picker-vs-check-constraint.test.js",
+        "api/sd-data-leg-session-gate.test.js",
+        "docs/hank-evidence/b14/leg_session_gate_after.log",
+        "docs/hank-evidence/b14/rolepicker_SABOTAGE1.log",
+        "docs/hank-evidence/b14/rolepicker_SABOTAGE1b.log",
+        "docs/hank-evidence/b14/rolepicker_SABOTAGE2.log",
+        "docs/hank-evidence/b14/rolepicker_after.log"
+      ],
+      "lines_added": 450,
+      "lines_removed": 28,
+      "app": "stonedesk",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "probe-control",
+      "summary": "TWO FALSE REDS AND ONE FALSE GREEN IN COMMITTED SUITES. api/sd-data-leg-session-gate.test.js asserted every leg_* write returns 200 with a session, over a list containing leg_custodylog, which is APPEND-ONLY and refuses everyone including the owner -- carried as a known red through b13 with 'not mine' and never root-caused. api/sd-data-memory-app-scope.test.js asserted a line inside slice(at, at + 900) and went red when COMMENTS pushed that line to offset 1612, reporting 'sdData() now sends something else' about a line that is byte-for-byte what it asserts.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "api/sd-data-leg-session-gate.test.js",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The arm has been a generic loop since the suite was written; which commit added leg_custodylog's append-only refusal underneath it is not identified here, and the suite's red was carried rather than dated."
+      },
+      "contributing_factors": [
+        {
+          "factor": "A generic 'every resource behaves the same' loop cannot be right across a list containing one resource whose whole point is to refuse",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "That resource's arm now asserts the gate was PASSED and then 409 APPEND_ONLY -- strictly stronger, because a 401 there would mean the gate rejected a good session and the old arm could not tell those apart"
+        },
+        {
+          "factor": "A measurement anchored on a LENGTH drifts with every comment somebody adds above the thing being measured",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The window is the FUNCTION now, to the next brace at column zero"
+        },
+        {
+          "factor": "A false red is not the safe direction: it teaches a reader the suite is noise, and the next REAL failure reads the same",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Both root-caused rather than annotated; 'not mine' was true and was not an answer"
+        },
+        {
+          "factor": "A control can be green for the wrong reason too -- b13's T16t passed only because the action did not exist yet",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Named in b13's report and the arm is real now; the pattern is why a RED run's greens are read as well as its reds"
+        }
+      ],
+      "recurrence_open": "Nothing sweeps committed suites for fixed-width source windows or for generic loops over a list with a known exception. Both were found by running the suites and reading the output, which is not a control."
+    },
+    {
       "commit": "c491f1bf1bbf",
       "date": "2026-10-15",
       "subject": "fix(router): a dead session owned two paths for eighteen days, and that is the fourth tool with this defect",
@@ -30931,6 +31237,120 @@
         }
       ],
       "recurrence_open": "four tools found across three batches and the fifth is routed to H2 in an auditor-scope file cc cannot write. Nothing enumerates the consumers of this field as a standing check -- the sweep was a grep run once, by hand, and will go stale the next time somebody writes the pattern."
+    },
+    {
+      "commit": "cb80fb32b9a0",
+      "date": "2026-10-15",
+      "subject": "fix(sairncare): X1 the comment was WRONG not merely unproven, X2 the cited field is now on the finding",
+      "files": [
+        "api/_lib/compliance-rules.js",
+        "api/n1-n4-and-sf-delete.test.js",
+        "docs/hank-evidence/b14/cody_window_GREEN.log",
+        "docs/hank-evidence/b14/cody_window_RED.log",
+        "docs/hank-evidence/b14/regress2.log",
+        "docs/hank-evidence/b14/regress_n1n4.log",
+        "docs/hank-evidence/b14/regress_training_join.log",
+        "docs/hank-evidence/b14/routed_probe.log"
+      ],
+      "lines_added": 266,
+      "lines_removed": 20,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "independent-review",
+      "summary": "meets_unknown_reason tells the reader that a days-remaining field says how much of the window is left, and the staff finding carried no such key. Both numbers WERE computed and stayed on the internal window object, while a third comment said the module hands 'every consumer' both -- three places said the reader had this and the reader did not. Found by cody's X2 arm.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Both numbers have been computed and un-surfaced since the window object gained them; the citing message was written later and the two were never in one diff."
+      },
+      "contributing_factors": [
+        {
+          "factor": "The message and the field it cites are 400 lines apart in one file, and nothing joins them",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "hours_window_days_elapsed and hours_window_days_remaining are on the finding now, beside hours_window_from"
+        },
+        {
+          "factor": "A citation to an absent field is worse than no citation: the obvious conclusion when somebody cannot find it is that the response was truncated",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Surfaced rather than un-cited, because 'evaluate on a later date' is only actionable with the number"
+        },
+        {
+          "factor": "The day-zero withholding is the one branch whose advice depends on these, so the gap was invisible until somebody drove day zero",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "cody's day-zero arms drive it and assert the reason text, not only the null"
+        }
+      ],
+      "recurrence_open": "No check compares the FIELD NAMES a message cites against the keys the same function returns. This was found by a human reading one message; a second instance elsewhere in the module would not be found the same way."
+    },
+    {
+      "commit": "cb80fb32b9a0",
+      "date": "2026-10-15",
+      "subject": "fix(sairncare): X1 the comment was WRONG not merely unproven, X2 the cited field is now on the finding",
+      "files": [
+        "api/_lib/compliance-rules.js",
+        "api/n1-n4-and-sf-delete.test.js",
+        "docs/hank-evidence/b14/cody_window_GREEN.log",
+        "docs/hank-evidence/b14/cody_window_RED.log",
+        "docs/hank-evidence/b14/regress2.log",
+        "docs/hank-evidence/b14/regress_n1n4.log",
+        "docs/hank-evidence/b14/regress_training_join.log",
+        "docs/hank-evidence/b14/routed_probe.log"
+      ],
+      "lines_added": 266,
+      "lines_removed": 20,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "A comment in api/_lib/compliance-rules.js claimed a person was compliant the day before their hire anniversary and NON-COMPLIANT on it. Measured, the anniversary evaluation returns meets: null -- the day-zero withholding superseded the hand-drive and nobody re-read the sentence the change had just made untrue. NOT merely unproven: WRONG, and it is the kind of claim a reader checks least because it names its own evidence. Found by cody's X1 arm.",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The sentence was hand-driven on 2026-09-29 and was true then; the day-zero withholding that made it false landed later in a range that has since been rebased, so the sha cannot be verified in this clone and is not guessed at."
+      },
+      "contributing_factors": [
+        {
+          "factor": "The comment named its own evidence ('Driven: ...'), which is exactly what makes a reader stop checking",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Corrected to the measured verdict and the boundary it describes kept, because the boundary is real"
+        },
+        {
+          "factor": "A behaviour change and the comment describing the old behaviour were in the same file and the comment was not in the diff",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "Nothing greps comments for verdict words near a changed branch, and nothing here builds that. The control that caught this one is cody's suite, which exists for this module only -- so the planned action is a routed one: a comment-vs-behaviour check somebody owns, not a habit."
+        },
+        {
+          "factor": "TWO MORE comments in the same file went stale in the OPPOSITE direction the same day: both still said NO ARM DRIVES THIS and ROUTED TO CODY after cody's arms landed",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Both now cite the suite and what it asserts, including that the leap-day case is driven in BOTH directions because either arm alone passes against the wrong rule"
+        },
+        {
+          "factor": "A text check cannot tell a claim from a QUOTATION of that claim: the first draft of this fix quoted the superseded sentence to explain it and X1 flagged the fix. Third and fourth instances of that shape after b13's N4",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Corrections describe the old wording without spelling it, and say why in the comment so the next author does not re-learn it"
+        }
+      ],
+      "recurrence_open": "The anniversary boundary is now driven for ONE state's rule shape (WV) and one hire date. Nothing drives a facility-wide window, and the claim corrected here is about the hire-anchored one only."
     }
   ],
   "started": "2026-09-09",
