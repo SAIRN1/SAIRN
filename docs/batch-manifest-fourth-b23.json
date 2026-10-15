@@ -37,8 +37,8 @@
     {
       "id": 6,
       "title": "Push without force, confirm it landed (HEAD sha, 0/0 vs origin), then check the leg_aftercare claims and record their state.",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "PUSHED WITHOUT FORCE AND LANDED, proved by ancestry rather than git's wording: pre-push tip in scratchpad pre_push_tip_b23.txt, git merge-base --is-ancestor <tip> HEAD -> ANCESTOR; git rev-list --left-right --count origin/main...HEAD -> 0 0; HEAD == origin/main == 5f5fcbad. All four b23 docs/ paths confirmed on origin with git cat-file -e, AND both discharges verified ON ORIGIN by reading origin/main:docs/tier-a-reviews.json -- cc 01:13:35Z reviewed with a 9,134-char verdict, hank 01:21:13Z reviewed with 13,429, cody 01:18:14Z still open with no verdict, which is the deferral and not a loss. TWO PUSHES WERE DENIED FIRST and neither was about my commits: register_feed_gate got no ref lines because the clone was behind. A LEDGER CONFLICT on docs/tier-a-reviews.json was resolved with tools/sairn_rebase_resolve.py as the gate's own hint says (259 ancestor + 2 upstream-only, merged and validated), and the merge was VERIFIED not to have dropped my two discharges rather than trusted -- it reported '0 local-only' because a discharge mutates an existing record instead of adding one. No SAIRN_SEED_GATE in any form, no SAIRN_GATE_EXEMPT, no SAIRN_SKIP; settings.json untouched, hooks never re-added, no auditor clone entered. ITEM 6 SECOND HALF, THE CLAIM CHECK: sairn_claim.py list shows TWO active claims, mine and cody's b16. hank has NO active claim. cody's b16 does not name leg_aftercare and says NO api/ FILE (hank). The ONLY active claim mentioning leg_aftercare is my own b23 deferral clause. AND hank's key fix HAS LANDED -- api/leg-aftercare-key-unambiguous.test.js is on origin/main. SO MICHAEL'S CONDITION IS NOW MET and the leg_aftercare Tier A is UNBLOCKED and still mine; it was NOT started in this batch because the batch was six items and this is the handoff point. Re-check: python tools/sairn_claim.py list | grep -c leg_aftercare"
     }
   ]
 }
