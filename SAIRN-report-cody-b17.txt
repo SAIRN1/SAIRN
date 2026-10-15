@@ -1,0 +1,870 @@
+REPORT cody b17
+
+================================================================================
+BATCH b17 -- 2026-10-15 -- clone Documents\SAIRN-cody -- branch main
+LANDED ON origin/main AT 27470aeb36b75e6332a73bb76ad3c8740b7483b1
+0 ahead / 0 behind, ancestry verified with `git merge-base --is-ancestor`.
+PUSHED WITHOUT --force: `grep -ci force` over every push log = 0.
+NOTHING OVERRIDDEN. No SAIRN_SKIP, no SAIRN_GATE_EXEMPT, no SAIRN_SEED_GATE,
+in any form. No api/, sql/ or tools/ file edited. No hook restored.
+.claude/settings.json never committed. No auditor clone entered.
+================================================================================
+
+THE EXPECTED HEAD WAS WRONG, AND THAT IS THE FIRST THING MEASURED
+-----------------------------------------------------------------
+The prompt said HEAD should be 763c9560. It was 96d35e12 at session start.
+763c9560 is the b16 HANDOFF commit and was 9 commits behind origin/main when
+this session opened -- `git merge-base --is-ancestor 763c9560 origin/main`
+answers yes, `git rev-list --count 763c9560..origin/main` answers 9. The other
+clones had pushed since b16 wrote it. Fast-forwarded to origin/main before any
+work began.
+
+
+================================================================================
+1. ITEM 1 -- THE COMPACTION DIAGNOSIS. READ-ONLY. IT ANSWERS NONE OF THE THREE
+================================================================================
+
+EVIDENCE: docs/2026-10-15-cody-b17-compaction-diagnosis.md
+
+THE HEADLINE, MEASURED RATHER THAN REASONED:
+
+  232 transcripts across ALL SIX SAIRN clones contain ZERO structural
+  compaction events. Not few -- none. And every clone's sessions reach
+  957,000 to 999,683 context tokens before they end.
+
+  SAIRN          transcripts=  0  compaction_events=0  max_ctx=0
+  SAIRN-cc       transcripts= 44  compaction_events=0  max_ctx=967,168
+  SAIRN-cody     transcripts= 42  compaction_events=0  max_ctx=998,916
+  SAIRN-fourth   transcripts= 43  compaction_events=0  max_ctx=999,683
+  SAIRN-hank     transcripts= 42  compaction_events=0  max_ctx=963,946
+  SAIRN-hover    transcripts= 33  compaction_events=0  max_ctx=971,934
+  SAIRN-hover2   transcripts= 28  compaction_events=0  max_ctx=962,703
+
+Matched on STRUCTURE, not on the word: type == "compact_boundary",
+subtype == "compact_boundary", isCompactSummary is True at either the entry or
+the message level.
+
+WHICH SOURCE WINS, AND ITS VALUE
+  env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE = "97", in
+  C:\Users\marsh\.claude\settings.json (user scope). It is the ONLY autocompact
+  knob set anywhere on the machine, so there is nothing for it to lose a
+  precedence contest to. Confirmed live, not just on disk:
+
+      $ printenv CLAUDE_AUTOCOMPACT_PCT_OVERRIDE
+      97
+
+EVERYTHING ELSE, MEASURED ABSENT
+  autoCompactWindow (top-level)            absent in user, user.local,
+                                           project AND local
+  modelSettings.<model>.autoCompactWindow  there is NO modelSettings block in
+                                           any of the four files
+  managed-settings.json                    NEITHER path exists on disk:
+                                           C:\ProgramData\ClaudeCode\ and
+                                           C:\Users\marsh\AppData\Local\ClaudeCode\
+  CLAUDE_CODE_AUTO_COMPACT_WINDOW          unset
+  CLAUDE_CODE_MAX_CONTEXT_TOKENS           unset
+  ANTHROPIC_BETAS                          unset
+  DISABLE_AUTO_COMPACT                     unset
+
+DOES THE LAUNCH COMMAND PASS --autocompact? NO, AND IT IS MEASURED
+  All SIX live CLI processes were launched with no arguments whatsoever:
+
+      claude.exe | 15120 | "...\@anthropic-ai\claude-code\bin\claude.exe"
+      claude.exe | 33312 | "...\claude.exe"
+      claude.exe | 20476 | "...\claude.exe"
+      claude.exe | 28160 | "...\claude.exe"
+      claude.exe | 20204 | "...\claude.exe"
+      claude.exe |  9368 | "...\claude.exe"
+
+  Six -- one per clone plus one spare. Zero flags on any of them. CLI version
+  2.1.222, read from the `version` field of every entry in this session's own
+  transcript, 140 of 140 agreeing.
+
+THE VERDICT: NONE OF THRESHOLD / WINDOW / FLOODING
+  * Threshold too low? No -- it is set as high as it goes, 97.
+  * Window smaller than assumed? No -- the measured ceiling is the full ~1M of
+    claude-opus-5[1m] and the peak ever recorded is 999,683.
+  * Flooding by my own tests? No. The largest SINGLE tool result across the
+    last five cody sessions is 24,190 chars (~6k tokens) and a whole session's
+    tool results sum to ~122k tokens = 12% of the window. The harness's own
+    >20KB mechanism already persists oversized results to files; it fired
+    twice in this very session on sairn_claim.py output (23.9KB, 22.1KB).
+    NO CAP WAS IMPOSED, because the diagnosis found no flooding to cap.
+
+WHAT HAPPENS INSTEAD: THESE SESSIONS DO NOT COMPACT, THEY END
+  transcript   baseline     peak    peak at   growth rate    requests
+  ee6c4b56 b16   58,825  783,213  +787.2min     920 tok/min      749
+  ec3355ad b15   57,952  753,771  +643.1min   1,082 tok/min      708
+  6f734872 b14   57,968  788,931  +233.3min   3,133 tok/min      588
+  7d8da884       57,441  165,436   +18.6min   5,820 tok/min       92
+  dcd1868a       57,470  455,049  +620.0min     641 tok/min      444
+
+  Peak = session end in all five. At the FASTEST rate ever measured here,
+  5,820 tok/min, a 1M window takes 2.6 HOURS to fill; at the median ~1,000
+  tok/min it takes 15 hours. "Every 5-15 minutes" is three orders of magnitude
+  from the measured rate. Nothing in these transcripts can produce it.
+
+THE FIXED BASELINE: 59,434 TOKENS
+      input_tokens                     2
+      cache_read_input_tokens     24,842
+      cache_creation_input_tokens 34,590
+                                  ------
+                                  59,434
+  Measured from this session's first request, not estimated. Stable within
+  1,400 tokens across the last five sessions (57,441 -> 58,825), so it is not
+  drifting.
+
+  /context's CATEGORY SPLIT IS DELIBERATELY OMITTED, and the reason is stated
+  rather than hidden: /context is a client-side slash command and cannot be
+  invoked from a tool call. Any category breakdown printed here would be my
+  own arithmetic wearing that command's name. The 59,434 total is measured;
+  the split is not, and is left out.
+
+A TRAP THIS DIAGNOSIS WALKED INTO AND CLIMBED OUT OF
+  A first pass searched for the WORD `compact` and reported this fresh
+  133-line session as having isCompactSummary:3, compact_boundary:3 and "This
+  session is being continued from a previous conversation":1 -- i.e. three
+  compactions in a session whose peak context was 89,858 tokens, which is
+  impossible at a 97% threshold. Reading the lines showed every hit was MY OWN
+  SEARCH COMMAND AND ITS OWN ECHOED RESULT, written into the transcript by the
+  act of searching. A substring search for a diagnostic marker, inside the log
+  that records the search, FINDS ITSELF. The structural scan is immune and is
+  where every number above comes from.
+
+UNVERIFIED -- THE ONE THING THIS CANNOT SETTLE
+  Three sessions exceeded the ~970,000 trigger point (cody 998,916, fourth
+  999,683, cody 987,724) and still produced no compact_boundary entry. Two
+  readings fit equally and the transcripts cannot separate them: either CLI
+  2.1.222 writes no structural marker for a compaction, or compaction never
+  fired and the session ran to the ceiling. READ THE ZERO AS "no record of any
+  compaction", NOT as proof none occurred.
+
+AND THE LINK TO ITEM 2 THAT NOBODY ASKED FOR
+  .claude/settings.json's committed _hooks_note says, verbatim: "The 23 hooks
+  Michael cleared on 2026-10-11 because they were causing agent compaction
+  stay cleared". THAT CANNOT BE CREDITED FROM THESE TRANSCRIPTS -- the zero is
+  uniform across the whole period, 2026-08-30 to today, INCLUDING BEFORE
+  2026-10-11. The record cannot show whether the clearing changed anything.
+  Its residual cost is section 6 of this report: four red probes.
+
+FOUND BY ACCIDENT, ROUTED NOT FIXED -> CC
+  C:\Python314\python.exe tools/run_all_tests.py has been running in
+  Documents\SAIRN-cc since 08:12:23 (pid 79316) writing
+  docs/sweep-2026-10-15.log, and that log was 0 BYTES AFTER 1h41m -- the
+  tool's stdout is block-buffered, so a full-tree sweep gives no sign of
+  progress until it exits. Not mine, not touched. Flagged because a 0-byte log
+  is indistinguishable from a dead run.
+
+
+================================================================================
+2. ITEM 2 -- THE 30 FAILURES. EIGHT CLOSED AT CAUSE. THE METHOD HELD
+================================================================================
+
+EVIDENCE: docs/2026-10-15-cody-b17-triage.md
+
+THE FINDING IS NOT THE COUNT:
+
+  NOT ONE of the 30 turned out to be a live api/ defect that b15's last-line
+  triage had named correctly. The largest single cause is a probe anchor that
+  stopped matching its subject -- SIX FILES. The second is an OPERATOR
+  DECISION Michael took on 2026-10-11 that four probes report as a defect in
+  the thing they guard.
+
+HOW THE 36 PATHS WERE MEASURED
+  All 36 files from b15's tests/ list were run ONCE each in an isolated
+  `git worktree` at 084f9df8, 200s per file, each exit code read from
+  `echo "EXIT=$?"` on its own line. Then each failure's SUBJECT was read.
+
+  run 36 | exit 0 already 0 | non-zero 35 | TIMEOUT 1
+  closed at cause and re-verified green: 8
+  routed with an owner and a next step: 22
+
+  A COUNT DISCREPANCY, NOT RESOLVED AND NOT PAPERED OVER: b15's triage doc
+  says 36 for tests/; counting its own rows gives 38 once the two it fixed
+  in-batch are added. b17 ran the 36 paths that document names and reports on
+  those.
+
+CLOSED AT CAUSE -- EIGHT FILES
+  file                                                was            now
+  tests/sairnbuild_backup_pending.js        8 FAIL + crash    exit 0, 29/0
+  tests/sairnbuild_fault_probe.py           exit 1, 2 fails   exit 0, 0 fails
+  tests/sd_data_family_mar_gate.js          9 passed 1 failed exit 0, 10/0
+  tests/run_sv_session_gate_sabotage_probe  arms 5,7 ANCHOR-0 exit 0, 7 CAUGHT
+  tests/run_leg_session_gate_sabotage_probe arm 5 ANCHOR-0    exit 0
+  tests/run_sairnbuild_server_wins_sabotage arm 6 ANCHOR-0    exit 0
+  tests/run_python_escape_hygiene_probe.py  ANCHOR-2          exit 0, 9/9
+  tests/run_mutation_anchor_probe.py        arm 7a            exit 0
+
+  AND ONE REPAIR THAT WAS NOT ON THE LIST AND WAS NEVER RED:
+  tests/sairnbuild_server_wins.js -- section 5.
+
+2.1 CLUSTER 4, TAKEN FIRST AS INSTRUCTED. THE CRASH WAS NOT THE DEFECT
+----------------------------------------------------------------------
+tests/sairnbuild_backup_pending.js crashed at :241 with "TypeError: Cannot
+read properties of undefined (reading 'payload')". Reading the LOG rather than
+the last line: EVERY PUSH COUNT WAS 0, FROM THE FIRST ARM. srv.writes.length
+expected 1, actual 0. The retry had nothing to send because nothing had ever
+been sent.
+
+The chain, each step measured in sairnbuild.html:
+  1. :2369  var BLD_SESSION_REQUIRED = { bld_bids: true, bld_draws: true };
+            was added after this test was written.
+  2. :2425  bldSyncCollection now calls
+            bldData('write', key, r, !!BLD_SESSION_REQUIRED[key]).
+  3. The test's build() sandbox declares BLD_SYNCED, _bldBackup,
+     BLD_PENDING_KEY, BLD_PENDING_MAX, bldSeeding and a hand-built
+     BLD_PENDING_TRACKED -- and NOT BLD_SESSION_REQUIRED. The identifier was
+     undefined and the reference THREW.
+  4. :2109  st() wraps the call in `try{bldSyncCollection(k,v,prev);}catch(e){}`
+            -- a bare swallow. The throw vanished.
+  5. Result: the backup did nothing and reported nothing. Eight arms failed
+     saying "the queue is empty", WHICH IS TRUE AND MEANS THE OPPOSITE OF WHAT
+     IT READS AS, and the ninth crashed on the empty array and took six
+     further arms with it.
+
+FIXED by adding decl('BLD_SESSION_REQUIRED') to the extraction list --
+extracted, not transcribed, for the same reason the rest of the harness uses
+decl()/fn(). Plus a PRECONDITION at :241 (srv.writes.length > 0) so this shape
+can never again cost the arms below it: a crash there reported one TypeError
+instead of nine failures, and the cause was read as a sairnbuild retry bug
+rather than as a harness that never pushed.
+
+tests/sairnbuild_fault_probe.py RECOVERED BY ITSELF -- exit 0, 0 failures --
+the moment the file it guards was fixed. Cluster 4 closed.
+
+-> WHOEVER OWNS sairnbuild.html. A READ, NOT A REQUEST, and it is the sharpest
+   finding in the batch. st()'s try{...}catch(e){} at :2109 silently swallows
+   EVERY error in the entire server-backup path. This test proved what that
+   costs by accident: ONE UNDEFINED IDENTIFIER TURNED THE WHOLE FEATURE OFF AND
+   THE ONLY SYMPTOM WAS "nothing to back up". The identifier is declared in the
+   live app, so there is no bug today -- but any future throw inside
+   bldSyncCollection produces the same silence, IN THE FEATURE THAT EXISTS
+   BECAUSE SILENTLY-FAILING BACKUPS COST REAL RECORDS.
+   NEXT STEP: decide whether that catch should re-raise, console.error, or mark
+   the collection pending.
+
+2.2 CLUSTER 2. b15's SHARED CAUSE IS REFUTED ON THE tests/ HALF
+---------------------------------------------------------------
+`active-credential re-check DID NOT RUN for app "sairncare" (NO_ACTIVE_CHECK)`
+appears FIVE TIMES in tests/sd_data_family_mar_gate.js's output AND EVERY ONE
+OF THE FIVE ARMS PRINTING IT SAYS ok. It is diagnostic stderr from the stubbed
+handler, not a verdict. b15 read it as the failure and routed a shared cause to
+hank on that basis.
+
+The one real failure was arm C1, "the role gate must precede the consent
+check" -- and C0 had already confirmed the source anchor matches EXACTLY ONCE,
+so C1 was measuring the right region. Measured against api/sd-data.js:
+
+      anchor "if (action === 'family_mar')" : 1 occurrence
+      'marBroad'              in branch     : True
+      'ALF_FAMILY_READ_ROLES' in branch     : False   <-- the whole failure
+
+ALF_FAMILY_READ_ROLES is gone from that branch BECAUSE THE ROLE SET WAS
+DELIBERATELY SPLIT. api/sd-data.js:13353 now reads
+`const marBroad = !!ALF_FAMILY_MAR_ROLES[session.role];` and the comment at
+:13182 says why: "family_mar inherited ALF_FAMILY_READ_ROLES = { owner,
+billing, nursing }" -- and billing had no business reading a medication record.
+
+THE ARM WAS FAILING ON A SECURITY TIGHTENING. FIXED by asserting the PROPERTY
+instead of the name -- /const marBroad = !!ALF_[A-Z_]+ROLES\[session\.role\]/ --
+so which map it is remains a product decision that may change without this file
+going red. exit 0, 10 passed, 0 failed.
+
+-> HANK, AND IT IS NOT THE SAME CAUSE.
+   api/sd-data-law-trusttx-session.test.js is STILL EXIT=1 on its own, 9/10
+   passed, with `active-credential re-check DID NOT RUN for app "sairndental"
+   (NO_ACTIVE_CHECK) on law_trusttx/read`. NOTE THE APP: sairndental, NOT
+   sairncare. The tests/ half and the api/ half were never one fix.
+   NEXT STEP: drive that suite alone and fix the pre-gate for sairndental;
+   tests/law_trusttx_session_probe.py (exit 2, baseline red) recovers by itself
+   the moment it does.
+
+2.3 CLUSTERS 5 AND 3 COLLAPSE INTO ONE CAUSE: A GATE BLOCK THAT GREW
+--------------------------------------------------------------------
+b15 said of cluster 5: "both are statements about api/ gate placement. VERIFY
+AGAINST api/sd-data.js BEFORE ROUTING." Verified. NEITHER IS.
+
+Both failure lines are MUTATION LABELS -- text the probe prints while PLANTING
+the defect, exactly as b16 found for sairnlegacy_fault_probe. And for the sv
+probe the mutation WAS NEVER APPLIED AT ALL:
+
+      run_sf_..._probe: arms 1-7 anchors -> count=1 each. All applicable.
+      run_sv_..._probe: arm 5 -> count=0  ANCHOR-0
+                        arm 7 -> count=0  ANCHOR-0
+
+THE CAUSE, MEASURED. Arms 5 and 7 quoted the WHOLE SV gate block -- 6 lines,
+including a 150-character user-facing message string. On 2026-10-14 that block
+GREW: fourth b15's role table (svRoles.decide) and the append-only check landed
+INSIDE it. api/sd-data.js:14900 to :14961 is now ~68 lines, with the read branch
+at :14962. The 6-line anchor matched nothing and the probe printed its labels
+anyway. The arm-5 comment ALREADY RECORDED A 2026-09-25 RE-DERIVATION FOR THE
+SAME REASON -- this is the second rot of the same anchor, and the first fix was
+"a shorter block".
+
+tests/run_leg_session_gate_sabotage_probe.py IS THE SAME DEFECT IN A THIRD FILE
+-- and it is also one of CLUSTER 3. b15 recorded it as baseline-red (exit 2, do
+not touch); measured today it is EXIT 1: its baseline recovered and it now has
+one failing arm, "5. THE GATE MOVES BEHIND THE QUERY", ANCHOR-0 in
+api/sd-data.js, LEG gate block :15751-:15795, read branch :15796.
+
+FIXED, AND THE LESSON TAKEN IS NOT A SHORTER BLOCK -- IT IS NO BLOCK. Both arms
+in both files now use the harness's PAIRED-ANCHOR form (two short (find,
+replace) edits, which tests/sabotage_harness.py:407 has supported all along):
+   edit 1 -- the front gate stops covering the branch being attacked
+   edit 2 -- a 401 appears in that branch AFTER its fetch has already run
+Neither anchor contains anything free to grow between them, which is the
+property. sv -> exit 0, all 7 arms CAUGHT. leg -> exit 0.
+
+A SECOND DEFECT IN THE sv PROBE, FOUND BY READING IT
+  tests/run_sv_session_gate_sabotage_probe.py HAD NO __main__ GUARD.
+  `sys.exit(run_probe(...))` sat at module level, so merely IMPORTING the file
+  -- which any inventory tool, collector or triage script does -- drove a
+  seven-arm sabotage run that writes api/sd-data.js in place and then
+  sys.exit'ed the importer. FOUND BY DOING EXACTLY THAT: a read-only
+  uniqueness check on its mutation list EXECUTED THE PROBE. It restored the
+  file and said so, which is the only reason this was a scare rather than an
+  incident. Guard added; tools/mutation_anchor_check.py now reports "probes
+  that mutate in place and do NOT refuse an import: 0".
+
+-> HANK. tests/run_sf_session_gate_sabotage_probe.py IS THE ONE REAL api/
+   DEFECT IN CLUSTER 5, AND IT IS A SUITE GAP. All seven anchors are good; arm
+   6 reports "SILENT -- the suite passed with this defect planted". The planted
+   defect adds sf_officers and sf_tickets to SD_SESSION_GATED.
+   api/sd-data-sf-session-gate.test.js asserts that each APPROVED resource IS
+   gated and never that an UNAPPROVED one is NOT, so the gate can WIDEN past
+   what was approved and every assertion still passes.
+   NEXT STEP: one arm asserting SET EQUALITY between the gated set and the
+   approved set, not per-resource membership; then arm 6 must flip to ok.
+
+CORRECTION TO b15 ON CLUSTER 3. It said all three "recover BY THEMSELVES when
+their baseline is fixed -- do not touch the probes." Measured:
+  * leg had already recovered its baseline and needed its PROBE fixed.
+  * law_trusttx waits on HANK (2.2).
+  * run_server_wins_hydration_sabotage_probe waits on CODY -- its baseline is
+    tests/server_wins_hydration.js (178 passed, 1 failed), a tests/ FILE, so it
+    does NOT recover from anyone else's work.
+"Do not touch the probes" was right for two of three.
+
+2.4 ONE ANCHOR, TWO RED FILES -- AND THE REPO'S ANCHORS ARE NOW CLEAN
+---------------------------------------------------------------------
+tests/run_python_escape_hygiene_probe.py arm 2 anchored on the bare string
+"import os" in tests/claims/run_freshness_probe.py. That file had TWO matches --
+`import os` at :65 and `import os as _os` at :81, WHICH CONTAINS THE FIRST AS A
+SUBSTRING -- so the arm refused with ANCHOR-2.
+
+It was THE SINGLE STALE ANCHOR IN THE REPOSITORY:
+
+      $ python tools/mutation_anchor_check.py          # before
+        probes with a MUTATIONS list : 76
+        anchors checked              : 530
+        anchors NOT matching exactly once: 1
+            ANCHOR-2 in tests/claims/run_freshness_probe.py
+      EXIT=1
+
+      $ python tools/mutation_anchor_check.py          # after
+        anchors checked              : 530
+        anchors NOT matching exactly once: 0
+      EXIT=0
+
+And it is why tests/run_mutation_anchor_probe.py arm 7a was red. ONE ANCHOR,
+TWO OF THE 30.
+
+A MEASUREMENT NOTE WORTH KEEPING: the first reading of that exit code was 0 --
+because it was taken from `python ... | tail -25; echo "EXIT=$?"`, where $? is
+TAIL'S. Exactly the defect already recorded for backgrounded compound commands,
+reproduced in a plain pipeline. Every exit code in this report was re-taken
+without one.
+
+2.5 AN ASSERTION THAT WAS PASSING ON THE COMMENT DOCUMENTING ITS OBSOLESCENCE
+-----------------------------------------------------------------------------
+NOT ON THE LIST OF 30. EXIT 0 BEFORE AND AFTER. IT WAS NOT TESTING ANYTHING.
+
+Repairing arm 6 of run_sairnbuild_server_wins_sabotage_probe.py turned it from
+ANCHOR-0 into SILENT, which is strictly more informative: the mutation now
+applies and the suite does not catch it. Reading the suite:
+
+      // tests/sairnbuild_server_wins.js:420, before
+      assert.ok(body.indexOf("key==='bld_bids'") !== -1,
+        'the retry sends bld_bids without a session, which its branch refuses');
+
+bldRetryPending no longer contains that expression -- it passes
+!!BLD_SESSION_REQUIRED[key]. THE LITERAL STILL OCCURS TWICE IN sairnbuild.html
+AND BOTH ARE COMMENTS, one of them at :2534, INSIDE THAT VERY FUNCTION, written
+to explain that the old form "used to read key==='bld_bids', which was right
+until there were two."
+
+THE ASSERTION WAS SATISFIED BY THE COMMENT DOCUMENTING THE REMOVAL OF THE THING
+IT WAS ASSERTING. Two layers of guard -- a suite and a sabotage probe -- and
+neither guarding, for the same root reason.
+
+FIXED: the assertion now runs over COMMENT-STRIPPED source and requires a
+fourth argument at the call site, which a comment cannot satisfy and a rename
+does not break. Suite 25 passed 0 failed; sabotage probe exit 0, arm 6 CAUGHT.
+Verified failing-first in BOTH directions (ANCHOR-0 -> SILENT -> CAUGHT).
+
+This is the change that triggered the Tier A gate -- section 7.
+
+2.6 THE HOOKS CLUSTER -- FOUR PROBES REPORTING AN OPERATOR DECISION AS A DEFECT
+-------------------------------------------------------------------------------
+ONE CAUSE, FOUR FILES, AND THE FIX IS EXPLICITLY NOT TO RESTORE ANYTHING.
+
+.claude/settings.json AND ~/.claude/settings.json both carry hooks: {}. The
+committed _hooks_note says why, verbatim: "The 23 hooks Michael cleared on
+2026-10-11 because they were causing agent compaction stay cleared and are
+recorded verbatim in docs/hooks-disabled-2026-10-13.json."
+
+  tests/hook_command_anchoring_probe.py
+      FAIL settings.json declares hooks at all
+      FAIL the anchored form is actually in use (0 command(s))
+  tests/run_conflict_preflight_hook_probe.py
+      FAIL conflict_marker_preflight_hook.py is registered in settings.json
+      FAIL ...as a PreToolUse hook
+  tests/run_tooling_inventory_probe.py
+      FAIL ADVISORY is non-empty (0)
+      FAIL a SessionStart hook is ADVISORY
+  tests/run_closing_error_probe.py
+      FAIL tooling_inventory.hooked -> no hook entries: REFUSES with exit 2
+           (got 0)                                   <-- a REAL tool defect
+
+-> CODY, for the first three. The failure is correct as an OBSERVATION and
+   wrong as a VERDICT: these are COULD NOT RUN, not FAIL. A probe cannot test
+   hook anchoring when there are no hooks, and reporting FAIL conflates "the
+   anchoring is wrong" with "there is nothing to anchor" -- PR 1.11's third
+   state, in the over-reporting direction, which is the safe direction and
+   still wrong.
+   NEXT STEP: each gets a precondition that exits 3 naming hooks: {} as the
+   reason, with the _hooks_note quoted. DO NOT RESTORE A HOOK AND DO NOT COMMIT
+   settings.json. In the same change, hook_command_anchoring_probe.py's PASSING
+   arm "no hook command resolves a repo script relative to the cwd (0 bare)" is
+   A VACUOUS PASS OVER A POPULATION OF ZERO and must become exit 3 too.
+
+-> CC, for run_closing_error_probe.py, AND THE PROBE IS RIGHT. The arm asserts
+   that tools/tooling_inventory.py --hooked REFUSES WITH EXIT 2 when there are
+   no hook entries, AND IT GOT 0. A tool that answers success on an empty
+   population is a fail-open, independent of the hooks decision and true
+   whatever Michael decides about hooks.
+   NEXT STEP: make --hooked exit 2 and say which source was empty; the probe's
+   other two failing arms are the same defect's other halves.
+
+2.7 THE TWO CLAIMS PROBES -- AN INTENTIONAL POLICY CHANGE WITH A QUESTION
+-------------------------------------------------------------------------
+tests/claims/run_own_claim_overlap_probe.py (3 arms) and
+tests/claims/run_claim_audit_probe.py (2 arms) both assert rc == 3 (REFUSED) on
+a RETYPED task string. tools/sairn_claim.py was deliberately changed:
+
+  9b0bfd51  fix(claim matcher): the declared FILES set is the PRIMARY mode --
+            two words about WHEN work happens stopped refusing a claim that had
+            already said in paths WHAT it touches
+
+Confirmed live in THIS session: claiming `tests` against fourth's active claim
+answered "CLEAR ON WORDS -- AND THE FILE OVERLAP COULD NOT BE PROVEN EITHER
+WAY". A word overlap alone no longer refuses.
+
+-> CC FIRST, THEN CODY, AND THE ORDER MATTERS. Two readings, and the probes
+   cannot tell them apart:
+     1. the policy change is right and the probes assert superseded behaviour;
+     2. the change RE-OPENED the two historical incidents these probes exist to
+        hold shut -- a retyped task over DISJOINT files now goes through.
+   NEXT STEP (CC): take the two real incidents' actual task strings AND their
+   FILES lists and run them through the current matcher. If they still refuse,
+   reading 1 holds. If they do not, 9b0bfd51 needs narrowing and the probes are
+   what noticed.
+   THEN (CODY): re-derive both fixtures against whichever policy stands.
+
+2.8 THE REMAINING 18, ROUTED
+----------------------------
+13 -> CODY, 2 -> CODY as could-not-run rather than failing, 1 -> CODY
+long-running, 2 -> HANK. Each has its MEASURED CURRENT failure line, owner and
+next step in docs/2026-10-15-cody-b17-triage.md section 11. Highlights:
+
+  tests/server_wins_hydration.js    178 passed, 1 failed. TAKE THIS FIRST -- it
+                                    is also the blocked baseline of a sabotage
+                                    probe, so one fix closes two.
+  tests/run_tier_a_open_basis_probe 9/30 arms. b15 said 10/27, so THE ARM COUNT
+                                    GREW AND THE PASS COUNT FELL.
+  tests/run_fail_open_probe.py      a CONTROL is failing.
+  tests/run_register_feed_gate_probe TWO CONTROLs are failing.
+  tests/run_audit_event_type_probe  H0, a PRECONDITION arm, is failing -- so
+                                    the two arms below it are vacuous.
+  tests/push_gate/check3_probe.py   TIMEOUT rc 124 at 200s, 0-byte log. b15
+                                    recorded 176s: it has crossed the ceiling.
+  tests/run_known_red_probe.py      7x "COULD NOT RUN: the log says 66 FAILING
+                                    TEST FILE(S) and 64 FAIL lines were
+                                    parsed". THE TOOL IS REFUSING CORRECTLY --
+                                    the PROBE's fixture log has a header count
+                                    two higher than its own FAIL lines.
+  tests/sd_data_write_attribution   -> HANK. rf_schedule fails three ways and
+    _three_apps.js                  C1 says 14 of 15 cases are right. One
+                                    branch, three symptoms. That is what a real
+                                    single-branch defect looks like.
+
+
+================================================================================
+3. ITEM 3 -- REMAINDERS
+================================================================================
+
+3.1 tests/run_capa_fields_probe.py -- THE TREE-DIRTIER IS ATTRIBUTED, AND IT
+    WAS NEVER A HANG
+----------------------------------------------------------------------------
+Fixed the cleanup FIRST, as instructed. MEASURED ANSWER: the cleanup was not
+the cause of the timeout, and the timeout was not a hang.
+
+                              before                         after
+  exit                        rc 124 at 201s                 completes, exit 1
+  its own log                 0 BYTES                        517 arm lines
+  git status --porcelain      ?? docs/_capa_probe_tmp.json    clean
+                              2,461,216 bytes
+
+THREE SEPARATE THINGS:
+  1. THE TREE DIRT. It wrote a whole 2.46MB copy of the real defect register to
+     docs/_capa_probe_tmp.json -- INSIDE the repository -- and removed it in a
+     `finally` at the bottom of the file. A `finally` DOES NOT RUN WHEN THE
+     PROCESS IS KILLED, and this probe was being killed. So every timed-out run
+     left 2.46MB of untracked JSON in docs/. THIS IS THE DIRTIER b15's
+     full-tree run could see and could not name. FIXED by moving the copy to a
+     tempfile.mkdtemp() OUTSIDE the repo -- defect_register resolves its
+     register as os.path.join(REPO, REG) and os.path.join returns an absolute
+     second argument unchanged, so the tool needed no change. A kill can no
+     longer dirty any clone, which is stronger than a cleanup path that has to
+     be reached.
+  2. THE ZERO-BYTE LOG. stdout is block-buffered when redirected, so a run
+     killed at the ceiling wrote NOTHING AT ALL and a hang was
+     indistinguishable from a silent pass. Fixed with sys.stdout.flush() per
+     arm.
+  3. THE RUNTIME. It was never hung: it finishes between 200s and 420s.
+     -> CODY, NOT FIXED. The cost is structural -- with_register() deep-copies
+     and RE-WRITES THE ENTIRE 2.46MB REGISTER, then runs cmd_check() over all
+     of it, ONCE PER ARM, about fifteen times.
+     NEXT STEP: build the mutant from a small fixture register carrying only
+     the records the arms touch, with ONE arm pinned against the real register
+     so the fixture cannot drift into testing nothing.
+
+-> WHOEVER WROTE THESE ROWS. SEVEN REAL FAILURES SURVIVE AND THEY ARE REGISTER
+   CONTENT, NOT THE PROBE. Six records named: 31406a87e010, 44abebb30bf5,
+   4f69facd93b3, 9841e14a5eaa, d6e58c61766a, e3858f19aad8 -- each
+   "recurrence_open states a residual rather than dismissing one".
+   NEXT STEP: `git log -S<hash> -- docs/defect-density-register.json` names
+   each row's author; the field must say what is still LATENT, not that nothing
+   is.
+
+3.2 THE FOUR RAW-STATUS PROBE READS -- DECIDED, WITH THE REASON
+---------------------------------------------------------------
+`grep -rn "get('status')" tests/` returns 22 hits, not 4. Of those, the four
+that are READS OF A CLAIM RECORD'S RAW status field all live in ONE file:
+tests/claims/run_push_verify_probe.py at :523, :613, :649, :664. The rest are
+mutation find/replace strings or a different subject (a review record).
+
+ALL FOUR ARE CORRECT AS RAW, NOT is_active(), AND FOR THE SAME REASON: each
+asserts WHAT THE TOOL JUST WROTE, seconds after it wrote it, in a fixture
+clone. tools/sairn_claim.py:1165's is_active() additionally applies the
+liveness rule, which would make the arm about THE CLOCK rather than about the
+publish -- and would import a second failure mode (a slow fixture, clock skew)
+into an arm about persistence. A comment on each site says so.
+
+3.3 THE exit-3 REASON LINE IN tests/run_exec_msgs_gate_sabotage_probe.py
+------------------------------------------------------------------------
+There was ONE could-not-run state here and it DID name its precondition -- the
+sd_exec_msgs row count. THE OTHER TWO DID NOT EXIST AS CHECKS AT ALL: a MISSING
+or unreadable CRITICALITY-TIERS.md raised an IOError traceback (a crash, not a
+could-not-run), and an absent SUITE or API file reached the harness and came
+back as something else.
+
+Three preconditions, three named refusals, one exit code. DRIVEN BOTH WAYS
+against fixtures:
+
+  ARM A rc=3  CANNOT RUN: docs\CRITICALITY-TIERS.md is not on disk, so this
+              probe has nothing to aim at. It was NOT run and this is not a
+              pass.
+  ARM B rc=3  CANNOT RUN: docs\CRITICALITY-TIERS.md holds 0 sd_exec_msgs rows,
+              not 1 -- the register half of this probe cannot be aimed and a
+              probe that cannot be aimed is not a pass.
+
+3.4 THE 16 CHANGED AND 9 RECOVERED REGISTER ROWS -- NOT DONE, AND THE REASON IS
+    A MEASUREMENT
+-------------------------------------------------------------------------------
+docs/known-red-suites.json was measured 2026-10-12 against 411 files, and NONE
+of b17's eight newly-green files has a row in it -- CHECKED, 0 of 66 entries
+match. tools/known_red_check.py --from-run <log> needs a full-tree log; this
+batch ran 36 files, deliberately, because reading each subject is what the
+batch was for.
+
+WRITING ROWS FROM A 36-FILE RUN WOULD RECORD A SUBSET AS IF IT WERE THE TREE,
+which is the defect the register exists to prevent. So nothing was written.
+NEXT STEP: a full-tree `python tools/run_all_tests.py` (~2h), then
+known_red_check --from-run, then drive each CHANGED file ALONE on a clean tree
+and re-word or split its row. 16 CHANGED before 9 RECOVERED, as instructed.
+AND READ 2.8's run_known_red_probe BLOCKER FIRST.
+
+
+================================================================================
+4. ITEM 4 -- METHODOLOGY, FAILING-FIRST, BOTH HALVES DONE
+================================================================================
+
+4.1 _rm_ro DE-DUPLICATED INTO tests/lib/rm_ro.py
+------------------------------------------------
+Two byte-identical 6-line copies with identical docstrings, in
+tests/run_criticality_tier_probe.py and tests/claims/run_freshness_probe.py.
+The copy-exactly gate flagged it in b15 and was pointing at something true.
+
+AND THE REAL REASON TO SHARE IT IS NOT THE DUPLICATION. The two copies had
+already drifted in POSITION, and that drift cost a whole probe run:
+run_criticality_tier_probe.py defined its copy ~20 lines BELOW the module-level
+`finally:` that calls it. Python resolves a name when the line RUNS, and that
+finally runs during module execution, so every run died with "NameError: name
+'_rm_ro' is not defined" IN THE CLEANUP PATH and discarded every verdict the
+arms above had reached. AN IMPORT CANNOT HAVE THAT DEFECT: the name is bound
+before the importing module's first statement runs. There is no order left to
+get wrong.
+
+The new file is SELF-CHECKING and its first arm is a CONTROL, measured:
+
+      $ python tests/lib/rm_ro.py
+        ok   CONTROL: ignore_errors=True leaves a read-only file behind
+             (platform=win32, survived=True)
+        ok   the handler removes a tree containing a read-only file
+        ok   it swallows a path that does not exist rather than raising out of
+             a finally
+        0 failure(s)                                              EXIT=0
+
+Without that control, arm 2 passing would be consistent with "read-only files
+delete fine here anyway" -- true on POSIX, false on Windows, and this repo runs
+on Windows. survived=True says the problem is real on this machine.
+
+Both consumers verified after the change: run_criticality_tier_probe EXIT=0,
+0 failed; claims/run_freshness_probe EXIT=0, 63 passed 0 failed;
+tools/copy_exactly_check.py EXIT=0.
+
+4.2 tests/run_b13_b14_ablation_record.py -- AND DRIVING IT FOUND FOUR DEFECTS
+    IN THE RECORD ITSELF
+-----------------------------------------------------------------------------
+Four b17 arms were added. The first run returned 3 UNPROVEN and 1 FAIL, AND
+EVERY ONE OF THE FOUR WAS THIS FILE MISREADING ITS OWN SUBJECT -- the same
+shape b17 spent its day on, one level up.
+
+  (a) _pin_repo COULD NOT PIN A SABOTAGE PROBE AT ALL. Such a probe has no REPO
+      constant: tests/sabotage_harness.py computes the repo and the probe only
+      puts its own directory on sys.path to import that harness. A COPY puts
+      the TEMP directory there, so the import fails before any arm runs -- and
+      the function reported "no REPO constant of the expected shape", WHICH IS
+      TRUE AND IS THE WRONG DIAGNOSIS. The import path is now pinned at the
+      live tests/ directory, which makes the WHOLE SABOTAGE-PROBE CLASS
+      ablatable -- the largest family of arms on the platform.
+  (b) _pin_repo COULD NOT PIN A JS SUITE WITH NO ROOT CONSTANT.
+      tests/sairnbuild_backup_pending.js reaches its subject directly,
+      path.join(__dirname, '..', 'sairnbuild.html'). In a COPY, __dirname means
+      the temp directory; for a pinned copy it must mean the live tests/
+      directory. Substituting the literal covers the ROOT shape, this one, and
+      any other path built from __dirname. A file with no __dirname still
+      refuses.
+  (c) b17.1 USED THE ARM-TEXT FORM AGAINST A SUITE THAT PRINTS NOTHING FOR A
+      PASSING ARM -- only FAIL lines and a final tally. The needle is the TALLY
+      LINE now, which carries the tag in both directions (ok / FAILED).
+  (d) b17.2's NEEDLE WAS THE ARM'S ok-NAME. The arm prints a DIFFERENT name
+      when it fails, so the needle found nothing and the record read
+      "ok -> None" rather than "ok -> FAIL". The needle is the common prefix.
+
+AND TWO FINDINGS THE RECORD PRODUCED BY DOING ITS JOB:
+
+  b15.3 WAS A RED-ARM ENTRY AND HANK LANDED THE FIX. A RED-arm ablation applies
+  the fix and requires the arm to go green, so an arm that is ALREADY green
+  means the defect was fixed upstream. The record said so: "the arm is ok as
+  committed and this record expects FAIL". Measured in api/sd-data.js -- the
+  pre-fix text occurs 0 times and `data: storedBlob(payload, [])` occurs 1.
+  Converted to an ordinary green-arm ablation against the COPIED api/ tree.
+
+  b17.3 IS DELETED RATHER THAN LEFT PASSING. Its ablation reverted an anchor to
+  the bare string "import os", which had two matches in
+  tests/claims/run_freshness_probe.py. Driven, it reported ok -> ok: THE SECOND
+  MATCH LIVED INSIDE THE LOCAL _rm_ro DEFINITION THAT 4.1 DELETED (`import os
+  as _os` was its first line), so "import os" now occurs ONCE -- measured --
+  and the ambiguity cannot be reproduced. THE FIX AND THE SUBJECT MOVED IN THE
+  SAME BATCH. Writing it as a passing arm would be asserting something it no
+  longer measures, which is the defect class this file exists for. The failure
+  path WAS driven and the measurements are quoted in a comment where the entry
+  was.
+
+FINAL STATE, after four passes:
+
+      $ python tests/run_b13_b14_ablation_record.py
+      13 ablation(s). api/ is COPIED and never written.
+        ok   b14.1a ... b14.4c          (7 arms, all as the record claims)
+        ok   b15.1a (green-arm): removing the fix breaks the suite (exit 0 -> 1)
+        ok   b15.1b (green-arm): removing the fix breaks the suite (exit 0 -> 1)
+        ok   b15.3  (green-arm) -- site 5 remnants: ok -> FAIL
+        ok   b17.1  (green-arm) -- sairnbuild-backup-pending:: ok -> FAIL
+        ok   b17.2  (green-arm) -- C1.: ok -> FAIL
+        ok   b17.4  (green-arm) -- 5. THE GATE MOVES BEHIND THE QUERY: ok -> FAIL
+        ok   the live clone has no modified tracked file after every ablation
+      ABL_EXIT=0
+
+NOT DONE AND SAID SO: b16's four arms are NOT in the record. Their fix hunks
+are long re-aims, and one of them -- the registry_claim blocked_lines revert --
+ONLY GOES RED WHEN ANOTHER SESSION'S LIVE CLAIM PROSE HAPPENS TO CONTAIN THE
+WORD "BLOCKED", which is not a deterministic arm and must not be written as
+one. NEXT STEP: `git show 7af3737e -U0 -- <file>` for the hunks; add the three
+that are deterministic. And b17's sairnbuild_server_wins.js fix CANNOT be
+expressed in that harness -- its state change lands in a DIFFERENT file from
+the one mutated, and the harness applies its fix to the suite it then runs.
+Observed both ways in-session; 2.5.
+
+
+================================================================================
+5. ITEM 5 -- THE FLOOR IS NOT RAISED, AND "808 vs 970" IS TWO DIFFERENT METRICS
+================================================================================
+
+MEASURED. docs/test-file-floor.json says 808. The floor's OWN population --
+tools/run_all_tests.py discover(), which walks tests/** plus TOP-LEVEL
+api/*.test.js only -- is 819 (266 js + 429 py + 124 api/*.test.js). The 970 in
+the prompt comes from tools/traceability_matrix.py:456, whose leg is labelled
+'tests/**, api/** (both walked)' -- ALL FIVE api/ SUBDIRECTORIES. THEY ARE NOT
+THE SAME METRIC AND THE REAL GAP IS 11, NOT 162.
+
+NOT RAISED, per the instruction: only from a run whose failures are triaged, and
+this run covered 36 files. run_all_tests.py raises it itself on a full-tree run
+anyway. THE RATCHET IS ARMED AND WAS VERIFIED TODAY:
+
+      $ python tests/run_floor_layers_probe.py
+        ok  all three floor layers are armed                        EXIT=0
+
+Arm S remains STRUCTURAL, NOT BEHAVIOURAL, and says so in its own output: read
+it as "the layer is present", never "the layer works".
+
+NEXT STEP: raise it from the same full-tree run as 3.4, and expect 819+ rather
+than 970.
+
+ROUTED TO HANK, AND CONFIRMED LANDED WHERE IT HAS LANDED
+  Of b15's three failing api/ suites:
+      EXIT=0  api/sd-data-leg-session-gate.test.js      LANDED
+      EXIT=0  api/sd-data-memory-app-scope.test.js      LANDED
+      EXIT=1  api/sd-data-law-trusttx-session.test.js   STILL RED, 9/10, and it
+              is the sairndental pre-gate, not sairncare -- 2.2
+  THE LEG SUITE GOING GREEN IS ALSO WHY tests/run_leg_session_gate_sabotage_probe.py
+  MOVED FROM EXIT 2 TO EXIT 1. The chain is confirmed, not inferred.
+
+  tests/run_exec_msgs_gate_sabotage_probe.py: NOTHING NEW, as instructed -- only
+  the three exit-3 preconditions in 3.3.
+  The memApp read at api/sd-data.js:1930 (b16): ALREADY ROUTED, NOT RE-RAISED.
+
+
+================================================================================
+6. THE PUSH, THE GATE, AND THE ONE REFUSAL THAT WAS TRUE
+================================================================================
+
+ONE GATE REFUSED, AND IT WAS RIGHT. NOTHING OVERRIDDEN.
+
+  tier-a:  "TIER A CODE CHANGED WITH NO RECORDED REVIEW OBLIGATION.
+            bld_bids   tests/run_sairnbuild_server_wins_sabotage_probe.py,
+                       tests/sairnbuild_server_wins.js"
+
+That is 2.5's change, and bld_bids is a Tier A resource. The gate does not ask
+for a review before pushing -- it asks that the OBLIGATION be RECORDED, so the
+next session sees an unreviewed Tier A change instead of guessing. Recorded
+with `python tools/tier_a_review_gate.py --open "..."`:
+
+      RECORDED -- cody owes an independent review on: bld_bids
+      ASSIGNED TO fourth, now, rather than left first-come.
+
+FOUR THINGS THE REVIEWER IS ASKED TO CHECK HARDEST, and the third is the one
+that matters: arm 6 has NEVER BEEN GREEN FOR A VERIFIED REASON UNTIL THIS
+CHANGE -- it was ANCHOR-0, then SILENT, now CAUGHT. Also: whether the new regex
+can be satisfied by a future comment the way its predecessor was (comment
+stripping is a regex, not a parser); whether dropping the session flag is still
+the right defect to plant now that bld_draws has joined the map; and whether the
+sibling BLD_PENDING_TRACKED assertion has the same substring-proxy shape.
+Reviewer must not be cody.
+
+THE PUSH TOOK FOUR ATTEMPTS AND NONE OF THEM USED --force
+  1. REFUSED by the tier-a gate. Correct. Obligation recorded.
+  2. rejected by the remote, "fetch first" -- five sessions pushing.
+  3. rebase hit conflicts in docs/MASTER-PLAN.md, docs/traceability-matrix.md,
+     docs/scrutiny-flags.json and docs/tier-a-reviews.json. ALL FOUR RESOLVED
+     BY TAKING THE PUBLISHED FILE WHOLE AND RE-RUNNING THE TOOL THAT PRODUCES
+     IT -- never by hand-merging a row-structured document. The tier-a record
+     was dropped as empty by that resolution and was RE-RECORDED, not
+     reconstructed by hand.
+  4. ALLOWED and landed.
+  `grep -ci force` over every push log: 0.
+
+DERIVED DOCS, REGENERATED BY THEIR OWN GENERATORS AND NEVER HAND-EDITED
+  tests/lib/rm_ro.py takes test files on disk 973 -> 974, declared citations
+  339 -> 340, traced 750 -> 751. It carries a REQUIREMENT header from the
+  start, so it adds to that ratio rather than to the debt.
+
+LANDED STATE
+      HEAD        = 27470aeb36b75e6332a73bb76ad3c8740b7483b1
+      origin/main = 27470aeb36b75e6332a73bb76ad3c8740b7483b1
+      0 ahead / 0 behind, `git merge-base --is-ancestor` verified
+      git status --porcelain: clean
+      git worktree list: the live clone plus the b17 scratch worktree, which is
+      in the scratchpad and named in the handoff for removal
+
+THE SEVEN COMMITS
+      a3ce49f5  test(b17): eight of the thirty closed at cause...
+      1bd6a9b2  test(b17): the ablation record's three UNPROVEN arms...
+      832255ca  test(b17): the ablation record found hank's recovery...
+      f4d4345f  test(b17): _pin_repo could not pin a JS suite...
+      2b7e0e8a  handoff(cody b17): written BEFORE the report...
+      cbe83efd  chore(tier-a): the b17 review obligation on bld_bids...
+      27470aeb  chore(scrutiny): the gate's ledger row for the successful push
+
+
+================================================================================
+7. VERIFICATION AT THE LANDED SHA -- EVERY EXIT CODE READ FROM `echo "EXIT=$?"`
+   ON ITS OWN LINE, NEVER FROM A PIPELINE
+================================================================================
+
+Re-run AFTER the rebase pulled in 20 commits from other sessions, because an
+anchor verified before a rebase is an anchor verified against a different file.
+
+      EXIT=0  python tools/mutation_anchor_check.py     530 anchors, 0 stale
+      EXIT=0  node tests/sairnbuild_backup_pending.js            29 passed 0 failed
+      EXIT=0  node tests/sd_data_family_mar_gate.js              10 passed 0 failed
+      EXIT=0  node tests/sairnbuild_server_wins.js               25 passed 0 failed
+      EXIT=0  python tests/lib/rm_ro.py                          0 failure(s)
+      EXIT=0  python tests/run_mutation_anchor_probe.py          0 arm(s) failed
+      EXIT=0  python tests/run_sv_session_gate_sabotage_probe.py 7 arms CAUGHT
+      EXIT=0  python tests/run_leg_session_gate_sabotage_probe.py
+      EXIT=0  python tests/run_sairnbuild_server_wins_sabotage_probe.py
+      EXIT=0  python tests/run_python_escape_hygiene_probe.py    ALL 9 ARMS PASS
+      EXIT=0  python tests/run_floor_layers_probe.py             3 layers armed
+      EXIT=0  python tests/run_b13_b14_ablation_record.py        13 ablations
+      EXIT=0  python tests/run_criticality_tier_probe.py         0 failed
+      EXIT=0  python tests/claims/run_freshness_probe.py         63 passed 0 failed
+      EXIT=0  python tools/copy_exactly_check.py
+      EXIT=0  python tests/sairnbuild_fault_probe.py             0 failure(s)
+      EXIT=1  python tests/run_capa_fields_probe.py   NO LONGER TIMES OUT, tree
+                                                      CLEAN, 7 real register
+                                                      CONTENT failures
+
+
+================================================================================
+8. WHAT THIS REPORT DOES NOT CLAIM
+================================================================================
+
+ *  22 OF THE 30 WERE ROUTED FROM THEIR MEASURED FAILURE LINE, NOT READ TO
+    CAUSE. Sections 2.1-2.7 were read to cause; the 18 in 2.8 were not. The
+    nine files b16 and b17 have now read to cause produced SIX cases where the
+    failure line meant something other than it said. Treat every row in section
+    11 of the triage document as A HYPOTHESIS WITH EVIDENCE ATTACHED.
+ *  THE 16 CHANGED AND 9 RECOVERED REGISTER ROWS WERE NOT WORKED -- 3.4, with
+    the measurement that makes it a blocker rather than a shortage of time.
+ *  docs/test-file-floor.json WAS NOT RAISED -- section 5.
+ *  THE COMPACTION ZERO IS "no record of any compaction", NOT PROOF NONE
+    OCCURRED -- section 1's UNVERIFIED paragraph. Three sessions crossed the
+    trigger point and produced no marker, and I cannot tell a measurement gap
+    from an absence.
+ *  NO api/, sql/ OR tools/ FILE WAS EDITED. api/sd-data.js and sairnbuild.html
+    were READ and, inside the sabotage probes' own worktrees, mutated and
+    restored byte-identical by the harness's own check, which asserts it.
+ *  tests/run_exec_msgs_gate_sabotage_probe.py WAS NOT RE-DRIVEN END TO END.
+    Its three exit-3 preconditions were driven against fixtures and all three
+    refuse with a named reason; the full >5-minute sabotage run was not
+    repeated.
+ *  ARM S OF THE FLOOR PROBE IS STRUCTURAL, NOT BEHAVIOURAL, and says so in its
+    own output.
+ *  THE THREE REGENERATED DOCUMENTS WERE VERIFIED ONLY AGAINST THEIR OWN
+    GENERATORS, not against a full-tree run.
+
+================================================================================
+SHA256(body above, excluding these last two lines): a8440319f2e37c7a79290c463ec7ee7ef5ab64cd78d993493a6f3043f50df0c1
+END-OF-REPORT

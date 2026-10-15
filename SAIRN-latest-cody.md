@@ -1,32 +1,70 @@
-# SAIRN latest — cody
+# cody — latest
 
-**b16, 2026-10-15. CHAIN TIP `763c9560` — `origin/main` identical, 0 ahead / 0 behind, ancestry verified. Work commit `7af3737e`. Pushed without `--force`** (`grep -ci force` over the successful push log: 0) **after one TRUE gate refusal (`derived-docs`), answered by regenerating the three documents with their own generators.** No `api/`, `sql/`, `tools/` or `CLAUDE.md` edit — `api/` and `tools/` were **copied** for counterfactuals and never written. No hook, no `settings.json`, no auditor clone.
+**Batch b17 · 2026-10-15 · LANDED on `origin/main` at `27470aeb`**
+0 ahead / 0 behind, ancestry verified. Pushed without `--force`. Nothing
+overridden. No `api/`, `sql/` or `tools/` file edited. No hook restored.
+Claim `tests` released.
 
-**STOPPED AT 70% CONTEXT ON INSTRUCTION, at a clean point. Nothing half-finished.** Items 1 (partly), 2, 4, 6 landed. **Items 3 and 5 NOT STARTED; 30 of the 34 triaged failures not reached** — all routed with an exact next step and a reason in `SAIRN-handoff-cody-b16.md`.
+## The one-line result
 
-**The claim was taken FIRST** — the standing decision b15 asked for. `tests` (`cody-1792067786`), CLEAR ON WORDS, FILES disjoint from cc/hank/fourth. **Released with these artefacts**, because b16 is not continuing.
+**Eight of the thirty remaining `tests/` failures closed at cause — and not one
+of the thirty was a live `api/` defect that b15's last-line triage had named
+correctly.**
 
-## What b16 proved — a method, not a count
+## What it was instead
 
-b15 routed 34 failures on each file's **last output line**. b16 read the **subject**, and **three of the first four were the probe misreading itself**, not a defect in the code:
+| cause | files |
+|---|---|
+| a probe anchor that quietly stopped matching its subject | **6** |
+| an operator decision (the 23 hooks cleared 2026-10-11) reported as a defect | **4** |
+| an intentional `sairn_claim.py` policy change reported as a regression | **2** |
+| a real `api/`-side defect, correctly identified | **2**, and both differ from what b15 routed |
 
-- **`sairnlegacy_fault_probe` "app_id is taken from the client again"** — escalated as an urgent live **tenancy defect**. It is a **MUTATION LABEL**: the arm *plants* that defect. The live handler stamps the server's own literal at `api/sd-data.js:16006`; **no** `app_id` comes from `body`/`payload`/`req` anywhere; 116 writes are literals. **REFUTED.** It failed on **anchor rot in its trailing context** — measured by binary search, **205 of 295** characters matched, diverging exactly where `notProvisioned()` was extracted. The `app_id` line itself is byte-identical.
-- **`tier_a_review_gate_sabotage` arm 8 "fail-open"** — **does not exist**. On a sabotaged copy: `reviewer_roster_detail() → ([], [], [])` **degraded**, `eligible_reviewers() → None` **still closed**, because it normalises a short roster to `None` on its own. The class is **defended in two places** and the mutation removed only the first. Re-aimed at the defence that would really bite.
-- **`run_irreversible_class_probe`** — its own failure text invited the conclusion that the gap it pins had **closed**. Driven hermetically (fixture obligation file, diff restricted to one path), **the gap is real**. It had been leaking the live obligation backlog *and* a twenty-resource commit scope.
-- **`run_registry_claim_probe`** — nine arms matched the **word** `BLOCKED` anywhere in the tool's output, and **another session's claim prose contained it**. `tools/sairn_claim.py:660` records the same class one level down. Fixed with a **line-anchored shared helper** plus a paired control. exit 1 → **exit 0, 31 arms**.
+**The sharpest one was never red.** `tests/sairnbuild_server_wins.js:420`
+asserted the literal `key==='bld_bids'` appears in `bldRetryPending`. It does
+not — but the string occurs twice in `sairnbuild.html` and **both are
+comments**, one of them *inside that very function*, explaining that the old
+form used to read that way. **The assertion was satisfied by the comment
+documenting the removal of the thing it asserted**, while the sabotage arm
+guarding it was ANCHOR-0. Two layers of guard, neither guarding.
 
-**A failure summary cannot tell a discovered defect from an injected one, and twice here it read as the worse of the two.**
+## Item 1 — the compaction diagnosis
 
-## Also done — the three floor layers, armed
+**232 transcripts across all six clones. ZERO structural compaction events.
+Peaks of 957k–999,683 tokens.**
 
-`tests/run_floor_layers_probe.py` (NEW, **exit 0, 9 arms**) closes cc's `ABLATION-RECORDS.md` **FINDING 2**, where all three of b12's test-file-floor layers measured UNPROVEN and cc could not arm them because `tests/` is cody's. **`docs/b16-logs/ablate_floor_layers.py`: 3 of 3 CAUGHT**, unmutated copy green first. **tracked-intersection first** — FINDING 2b makes it urgent: unarmed in-run and **destructive across runs** (cc's harness wrote 812 then 813 against a real 808 while the old probe still exited 0). **Two defects in my own harness, found by driving it:** it shadowed `tools/` with `PYTHONPATH` and the probe's own `sys.path.insert` won, so no mutant was ever tested; and **R1 cannot catch the ratchet layer** — removing the wiring leaves `_read_floor()` intact — so arm **R4** was added on the module constant.
+The winning source is `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE = "97"` in
+`~/.claude/settings.json` — the only autocompact knob set anywhere, confirmed
+live. No `autoCompactWindow` at any scope, no `modelSettings` block at all,
+neither managed-settings file on disk, and **all six live `claude.exe`
+processes launched with zero arguments**. Fixed baseline **59,434 tokens**,
+measured.
 
-## Open — next step each (full detail in the handoff)
+**Verdict: not threshold, not window, not flooding.** These sessions do not
+compact — they end. At the fastest growth rate ever measured here (5,820
+tok/min) a 1M window takes 2.6 hours to fill.
 
-- **CODY** — the remaining 30, **clusters first, read each subject**: the active-credential pair; the three **baseline-red** sabotage probes (could-not-run, they recover by themselves — do not touch them); the `sairnbuild` crash/fault pair (fix the `TypeError` first); the two gate-**widening** probes (**verify against `api/sd-data.js` before routing**). Then item 2's four raw-status reads + the exit-3 reason line; the **16 CHANGED rows before the 9 RECOVERED**; `run_capa_fields_probe`'s cleanup; `_rm_ro` into `tests/lib/`; the b14–b15 ablation backfill.
-- **HANK** — a **read, not a request**: `memApp` (`api/sd-data.js:1930`) is the only non-literal `app_id` in a 116-write handler, and the binding that makes it safe (`:2113`) sits **429 lines away** with nothing asserting the two follow each other. Plus the 3 failing `api/` suites.
-- **FOURTH** — the Tier A obligation on `quotes`, `sd_hr_certs`, `sd_hr_employees`, `sdn_projects`, assigned in b15.
+**Read the zero as "no record of any compaction", not as proof none occurred**
+— three sessions crossed the trigger point and still emitted no marker.
 
-## Said rather than claimed
+## Open, with the blocker named
 
-The **re-aimed sabotage arm was not driven end-to-end** (the probe takes >5 min; it may still report "not caught" for another reason). **Arm S is structural, not behavioural**, and prints that beside itself. The **`memApp` gating was read, not driven**. The three regenerated documents were checked only against their own generators. No live-URL check applies. And the **scratchpad was not cleared for the fourth time** — `rm` is refused by the permission layer; **109 files, 247 MB**, all named in the handoff, including the two directories that are nearly all of it: **`cfapi/`** (a 455-file copy of `api/`) and **`clone46/`** (a full git clone). b16's own evidence is **committed** under `docs/b16-logs/` for exactly that reason.
+* **The 16 CHANGED / 9 RECOVERED register rows.** Not done: the register was
+  measured 2026-10-12 against 411 files and **none of b17's eight newly-green
+  files has a row in it (0 of 66)**. Needs a full-tree log.
+* **`docs/test-file-floor.json` not raised** — and "808 vs 970" is **two
+  different metrics**: the floor's own population is **819**, so the real gap
+  is 11, not 162.
+* **18 of the 30 routed from their failure line, not read to cause.**
+  Hypotheses with evidence attached.
+
+→ **HANK:** a widened `sf` session gate is currently **SILENT**;
+`law_trusttx` is the **sairndental** pre-gate, not sairncare; `rf_schedule`
+fails three ways. **Two of b15's three `api/` suites are confirmed landed.**
+→ **CC:** `tooling_inventory.py --hooked` fails **open** on an empty hook set.
+→ **FOURTH:** the `bld_bids` Tier A review is assigned to you.
+
+**Full detail:** `SAIRN-report-cody-b17.txt` ·
+`docs/2026-10-15-cody-b17-triage.md` ·
+`docs/2026-10-15-cody-b17-compaction-diagnosis.md` ·
+`SAIRN-handoff-cody-b17.md`

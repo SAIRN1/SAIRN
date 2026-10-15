@@ -1,0 +1,165 @@
+STATUS cody b17
+  cody b17 LANDED on origin/main at 27470aeb36b75e6332a73bb76ad3c8740b7483b1.
+  0 ahead / 0 behind, ancestry verified. Pushed WITHOUT --force (grep -ci force
+  over every push log: 0). Seven commits. Tree clean. Nothing overridden -- no
+  SAIRN_SKIP, no SAIRN_GATE_EXEMPT, no SAIRN_SEED_GATE, in any form. No api/,
+  sql/ or tools/ file edited. No hook restored. settings.json not committed.
+  Claim `tests` (cody-1792072154) taken BEFORE any work and RELEASED with these
+  artefacts.
+
+  THE EXPECTED HEAD WAS STALE AND THAT IS NOT A PROBLEM. The prompt said
+  763c9560; HEAD was 96d35e12. 763c9560 is the b16 HANDOFF commit and was 9
+  commits behind origin/main at session start (merge-base --is-ancestor: yes).
+  Fast-forwarded before any work.
+
+  ITEM 1 (compaction) read-only and complete. ITEM 2: 8 of the 30 failures
+  CLOSED AT CAUSE and re-verified green, 22 routed with an owner and a next
+  step, plus one suite repaired that was never red and was never testing
+  anything. ITEM 3: the capa cleanup (done first, as instructed), the four
+  raw-status reads, the exit-3 reason lines -- the register rows NOT done, with
+  a measured blocker. ITEM 4: both halves, failing-first, 13 ablations all
+  behaving. ITEM 5: the floor NOT raised, and the comparison turns out to be
+  two different metrics. ITEM 6: pushed, landed, four artefacts.
+
+  THE FINDING IS A METHOD, NOT A COUNT. b15 routed 34 failures on each file's
+  LAST OUTPUT LINE. b17 read each subject and NOT ONE of the 30 was a live api/
+  defect that the last-line triage had named correctly. Largest single cause:
+  a probe anchor that quietly stopped matching -- SIX files. Second: an
+  operator decision of 2026-10-11 that four probes report as a defect in the
+  thing they guard.
+
+DECISION-NEEDED
+  1. THE COMPACTION PREMISE IS NOT REPRODUCIBLE FROM ANY RECORD ON THIS
+     MACHINE, so if you are still seeing it, it is somewhere these transcripts
+     do not reach. 232 transcripts across all six clones, ZERO structural
+     compaction events, peaks of 957k-999,683 tokens. The only knob set
+     anywhere is CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=97 (user settings, confirmed
+     live) and no clone's launch command passes any flag at all. Not threshold,
+     not window, not flooding. NOTHING FOR YOU TO DO unless you are seeing it
+     in a different client, in which case say which.
+  2. sairnbuild.html:2109 -- `try{bldSyncCollection(k,v,prev);}catch(e){}`
+     silently swallows EVERY error in the server backup. b17 proved what that
+     costs by accident: one undefined identifier turned the whole feature off
+     and the only symptom was "nothing to back up". No bug today. YOUR CALL
+     whether that catch should re-raise, console.error, or mark the collection
+     pending -- it guards the feature that exists because silent backup
+     failures cost records.
+  3. THE THREE HOOK PROBES ARE RED BECAUSE YOU CLEARED THE 23 HOOKS ON
+     2026-10-11, AND I DID NOT RESTORE ANYTHING. They will be converted to
+     exit-3 COULD-NOT-RUN. Confirm that is what you want rather than the hooks
+     coming back. (And the clearing CANNOT be credited with fixing compaction:
+     the zero above is uniform across the whole period, including before
+     2026-10-11.)
+
+CHANGED
+  CLOSED AT CAUSE, 8 of the 30, each re-verified green after a rebase that
+  pulled in 20 commits from other sessions:
+    tests/sairnbuild_backup_pending.js            8 FAIL + crash -> exit 0, 29/0
+    tests/sairnbuild_fault_probe.py               recovered by itself, exit 0
+    tests/sd_data_family_mar_gate.js              9/1 -> exit 0, 10/0
+    tests/run_sv_session_gate_sabotage_probe.py   2x ANCHOR-0 -> exit 0, 7 CAUGHT
+    tests/run_leg_session_gate_sabotage_probe.py  ANCHOR-0 -> exit 0
+    tests/run_sairnbuild_server_wins_sabotage_probe.py ANCHOR-0 -> exit 0
+    tests/run_python_escape_hygiene_probe.py      ANCHOR-2 -> exit 0, 9/9
+    tests/run_mutation_anchor_probe.py            arm 7a -> exit 0
+  AND ONE THAT WAS NEVER RED AND WAS NEVER TESTING ANYTHING:
+    tests/sairnbuild_server_wins.js:420 asserted the literal `key==='bld_bids'`
+    appears in bldRetryPending. It does not -- but the string occurs TWICE in
+    sairnbuild.html and BOTH ARE COMMENTS, one at :2534 INSIDE that very
+    function explaining that the old form "used to read key==='bld_bids'". The
+    assertion was satisfied by the comment documenting the removal of the thing
+    it asserted, and the sabotage arm guarding it was ANCHOR-0 at the same
+    time. Two layers of guard, neither guarding. Now asserted over
+    comment-stripped source at the call site: suite 25/0, probe arm 6 CAUGHT,
+    verified ANCHOR-0 -> SILENT -> CAUGHT.
+  THE REPO'S MUTATION ANCHORS ARE NOW CLEAN: tools/mutation_anchor_check.py
+    530 anchors checked, 0 not matching exactly once, exit 0 -- and "probes
+    that mutate in place and do NOT refuse an import: 0", which is the __main__
+    guard added to the sv probe, whose absence meant IMPORTING it drove a
+    sabotage run against api/sd-data.js and sys.exit'ed the importer.
+  tests/lib/rm_ro.py NEW -- one definition of the byte-identical _rm_ro, with a
+    fail-first self-check whose CONTROL confirms ignore_errors=True really does
+    leave a read-only file behind on win32. Both consumers import it. The real
+    reason is not the duplication: a local def can sit BELOW the module-level
+    finally: that calls it, which is the b15 NameError; an import cannot.
+  tests/run_capa_fields_probe.py -- the tree-dirtier b15 could not attribute is
+    ATTRIBUTED: a 2.46MB copy of the register written INSIDE docs/ and removed
+    in a `finally` that does not run when the process is killed, and it was
+    being killed. Now outside the repo entirely, plus a flush per arm. It never
+    was a hang.
+  tests/run_b13_b14_ablation_record.py -- 4 b17 arms, and driving it found FOUR
+    defects in the record itself plus hank's recovery of b15.3. 13 ablations,
+    all behaving, exit 0.
+  tests/run_exec_msgs_gate_sabotage_probe.py -- three preconditions, three named
+    exit-3 refusals, driven both ways.
+  tests/claims/run_push_verify_probe.py -- the four raw-status reads decided
+    with a comment each: RAW is correct.
+  docs/2026-10-15-cody-b17-triage.md, docs/2026-10-15-cody-b17-compaction-diagnosis.md
+  docs/tier-a-reviews.json (the bld_bids obligation, ASSIGNED to fourth)
+  docs/MASTER-PLAN.md, docs/traceability-matrix.md regenerated by their own
+    generators: test files 973 -> 974, declared citations 339 -> 340, traced
+    750 -> 751.
+
+EVIDENCE-path
+  SAIRN-report-cody-b17.txt                        the full account
+  docs/2026-10-15-cody-b17-triage.md               all 30, owner + next step
+  docs/2026-10-15-cody-b17-compaction-diagnosis.md ITEM 1, with the commands
+  SAIRN-handoff-cody-b17.md                        every open item's blocker
+  Transcript: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cody\bdbf0e62-dbf8-4c25-945f-9606bba2bf34.jsonl
+
+UNVERIFIED
+  THE COMPACTION ZERO IS "no record of any compaction", NOT proof none
+  occurred. Three sessions exceeded the ~970,000 trigger point (998,916 /
+  999,683 / 987,724) and still produced no compact_boundary entry. Either CLI
+  2.1.222 writes no structural marker, or compaction never fired. The
+  transcripts cannot separate those.
+  /context's CATEGORY SPLIT IS OMITTED, not estimated: it is a client-side
+  command and cannot be invoked from a tool call. The 59,434-token fixed
+  baseline IS measured, from this session's first request.
+  22 OF THE 30 WERE ROUTED FROM THEIR MEASURED FAILURE LINE, NOT READ TO CAUSE.
+  Of the nine b16 and b17 have read to cause, SIX meant something other than
+  what their failure line said -- so the routed 22 are hypotheses with evidence
+  attached, not verdicts.
+  ARM S of the floor probe is STRUCTURAL, not behavioural, and says so itself.
+  tests/run_exec_msgs_gate_sabotage_probe.py was NOT re-driven end to end --
+  only its three preconditions, against fixtures.
+  The three regenerated documents were verified against their own generators
+  only, not against a full-tree run.
+  No api/, sql/ or tools/ file was edited; those files were READ, and mutated
+  only inside the sabotage probes' own worktrees, which assert byte-identical
+  restoration.
+
+NEXT
+  CODY, in this order:
+   1. tests/server_wins_hydration.js (178 passed, 1 failed) -- it is ALSO the
+      blocked baseline of run_server_wins_hydration_sabotage_probe.py, so one
+      fix closes two of the 30.
+   2. the three files whose failing arm is a CONTROL or a PRECONDITION --
+      run_fail_open_probe.py, run_register_feed_gate_probe.py,
+      run_audit_event_type_probe.py (H0) -- because nothing below a failed
+      control has measured anything.
+   3. the three hook probes -> exit 3 COULD NOT RUN, quoting the _hooks_note.
+      NOT by restoring a hook.
+   4. a full-tree run, THEN the 16 CHANGED register rows before the 9
+      RECOVERED, THEN the floor raise (expect 819+, not 970). Read
+      run_known_red_probe.py's fixture blocker first.
+   5. run_tier_a_open_basis_probe.py -- 9/30, the largest single gap, and the
+      arm count GREW while the pass count FELL since b15's 10/27.
+  HANK: the sf session-gate suite needs a SET-EQUALITY arm (a widened gate is
+  currently SILENT); api/sd-data-law-trusttx-session.test.js is still red on
+  the SAIRNDENTAL pre-gate, not sairncare; rf_schedule fails three ways in
+  tests/sd_data_write_attribution_three_apps.js with C1 reporting 14 of 15
+  cases correct. CONFIRMED LANDED: two of b15's three api/ suites are now green.
+  CC: tools/tooling_inventory.py --hooked fails OPEN on an empty hook set
+  (asserted exit 2, got 0); and answer the claim-matcher question in 2.7 BEFORE
+  cody touches the two claims probes -- run the two real incidents' task
+  strings AND their FILES lists through the current matcher. Also: your
+  full-tree sweep in SAIRN-cc has been running since 08:12:23 with a 0-BYTE log
+  (block-buffered stdout), and a 0-byte log is indistinguishable from a dead
+  run.
+  FOURTH: the bld_bids Tier A review is ASSIGNED TO YOU, with four things to
+  check hardest named -- the third matters most: arm 6 has never been green for
+  a verified reason until this change. Plus the b16 Tier A obligation on
+  quotes / sd_hr_certs / sd_hr_employees / sdn_projects, still open.
+
+CONTEXT 37%
