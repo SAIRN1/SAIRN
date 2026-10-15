@@ -273,12 +273,24 @@ ABLATIONS = [
                 'reading `payload` of undefined',
         'target': 'suite',
         'fix': ("    decl('BLD_SESSION_REQUIRED') + '\\n' +\n", ""),
-        'want': 'FAIL',
+        # EXIT-CODE FORM, NOT ARM-TEXT. This suite's check() prints NOTHING
+        # for a passing arm -- only FAIL lines and a final tally -- so there
+        # is no arm name in the output to read a tag off, and the first run
+        # of this record reported "the arm was not found in the suite's own
+        # output" for exactly that reason. The exit code is the available
+        # signal and a sufficient one: the ablation takes this suite from
+        # 29/0 to eight failures and a TypeError.
+        'want': None,
+        'want_exit_not': 0,
     },
     {
         'id': 'b17.2', 'batch': 'b17', 'direction': 'green-arm',
         'suite': 'tests/sd_data_family_mar_gate.js',
-        'arm': 'C1. the role gate runs BEFORE the consent library is required',
+        # THE NEEDLE IS THE PREFIX, because this arm prints a DIFFERENT name
+        # when it fails -- 'C1. the role gate must precede the consent check'
+        # -- so a needle taken from the ok-name finds nothing and the record
+        # read `ok -> None` instead of `ok -> FAIL`.
+        'arm': 'C1.',
         'what': 'the C1 assertion is reverted to requiring the literal '
                 '`ALF_FAMILY_READ_ROLES` in the family_mar branch. That '
                 'identifier was SPLIT OUT of the branch when family_mar got '
@@ -333,7 +345,25 @@ def _pin_repo(text, ext):
         a = "REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))"
         if a in text:
             return text.replace(a, 'REPO = ' + lit, 1), None
-        return text, 'no REPO constant of the expected shape'
+        # ── THE SABOTAGE-PROBE SHAPE, ADDED 2026-10-15 (cody b17) ──────────
+        # A sabotage probe has NO REPO constant: tests/sabotage_harness.py
+        # computes the repo, and the probe only puts its own directory on
+        # sys.path so it can import that harness. A COPY of such a probe puts
+        # the TEMP directory there instead, so `from sabotage_harness import
+        # run_probe` fails before a single arm runs -- and this function
+        # reported "no REPO constant of the expected shape", which is true and
+        # is the wrong diagnosis. Pinning the import path at the live tests/
+        # directory makes the whole sabotage-probe class ablatable, which is
+        # the largest family of arms on the platform.
+        b = "sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))"
+        if b in text:
+            return text.replace(
+                b,
+                'sys.path.insert(0, ' + json.dumps(
+                    os.path.join(REPO, 'tests').replace(os.sep, '/')) + ')',
+                1), None
+        return text, ('no REPO constant and no sabotage-harness import path '
+                      'of the expected shape')
     a = "const ROOT = path.join(__dirname, '..');"
     if a in text:
         return text.replace(a, 'const ROOT = ' + lit + ';', 1), None
