@@ -847,6 +847,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_b13_b14_ablation_record.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "1bd6a9b23813a8a2a40fb718d1db28db961bfff4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": ".claude/settings.json",
    "class": "CI / hook configuration",
    "level": "WEAKENING",
@@ -3492,6 +3500,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_b13_b14_ablation_record.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "assertions NET REMOVED",
+     "detail": "1 removed, 0 added; first removed: 'first -- so the arm refuses with ANCHOR-2. OBSERVED: it was '"
+    }
+   ],
+   "sha": "832255cab6dddb6aedf78f3e9c42f96868afac63",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/tier_a_review_gate.py",
    "class": "push-gate logic",
    "level": "WEAKENING",
@@ -4837,6 +4858,128 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "a35a89e00aa02a0adecba1fe336c6eb798bf3a99",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/claims/run_freshness_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a3ce49f556d85d91505394f78856d385c26a97db",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/claims/run_push_verify_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a3ce49f556d85d91505394f78856d385c26a97db",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/lib/rm_ro.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "AND WHY `ignore_errors=True` IS NOT THE ANSWER. git marks loose object files"
+    }
+   ],
+   "sha": "a3ce49f556d85d91505394f78856d385c26a97db",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_b13_b14_ablation_record.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a3ce49f556d85d91505394f78856d385c26a97db",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_capa_fields_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(_TMP_DIR, ignore_errors=True)"
+    }
+   ],
+   "sha": "a3ce49f556d85d91505394f78856d385c26a97db",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_criticality_tier_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a3ce49f556d85d91505394f78856d385c26a97db",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_exec_msgs_gate_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a3ce49f556d85d91505394f78856d385c26a97db",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_leg_session_gate_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a3ce49f556d85d91505394f78856d385c26a97db",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_python_escape_hygiene_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a3ce49f556d85d91505394f78856d385c26a97db",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_sairnbuild_server_wins_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a3ce49f556d85d91505394f78856d385c26a97db",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_sv_session_gate_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a3ce49f556d85d91505394f78856d385c26a97db",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnbuild_backup_pending.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a3ce49f556d85d91505394f78856d385c26a97db",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnbuild_server_wins.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a3ce49f556d85d91505394f78856d385c26a97db",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_family_mar_gate.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a3ce49f556d85d91505394f78856d385c26a97db",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -7418,6 +7561,14 @@
     }
    ],
    "sha": "f45ea2ba48bbe3a791eff07aa253f7ac0a4ba74b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_b13_b14_ablation_record.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f4d4345f2db7cec93ebcd2c94c6f1a3e96654609",
    "criteria_version": "2026-10-06.1"
   },
   {
