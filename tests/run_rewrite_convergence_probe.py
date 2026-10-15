@@ -65,7 +65,7 @@ def check(name, ok, detail=''):
 
 def run(args, cwd=None):
     p = subprocess.run([sys.executable, TOOL] + args, cwd=cwd or REPO,
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace')
     return p.returncode, (p.stdout or '') + (p.stderr or '')
 
 
@@ -100,7 +100,7 @@ def mirror():
     import json as _json
     import subprocess as _sp
     _m = _json.loads(_sp.run([sys.executable, TOOL, '--map', '--json'],
-                             cwd=REPO, capture_output=True, text=True).stdout)
+                             cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace').stdout)
     for _f in sorted(set(a['file'] for a in _m['actors'])):
         if _f.startswith('.githooks/'):
             continue
@@ -265,10 +265,10 @@ for name, tool, writes in REGENS:
 
     before = digest()
     r1 = _sub.run([sys.executable, os.path.join(REPO, tool)], cwd=REPO,
-                  capture_output=True, text=True)
+                  capture_output=True, text=True, encoding='utf-8', errors='replace')
     once = digest()
     r2 = _sub.run([sys.executable, os.path.join(REPO, tool)], cwd=REPO,
-                  capture_output=True, text=True)
+                  capture_output=True, text=True, encoding='utf-8', errors='replace')
     twice = digest()
     check('F %-26s second run changes nothing (%s)' % (name, target),
           r1.returncode == 0 and r2.returncode == 0 and once == twice,

@@ -237,7 +237,7 @@ def run_suite(sandbox):
     """Return (ok_names, failed_names, tail). A suite that will not start at all
     is a COULD-NOT-RUN, never a caught sabotage."""
     p = subprocess.run([NODE, os.path.join(sandbox, SUITE)],
-                       cwd=sandbox, capture_output=True, text=True)
+                       cwd=sandbox, capture_output=True, text=True, encoding='utf-8', errors='replace')
     out = p.stdout or ''
     if 'passed,' not in out:
         return None, None, (out + (p.stderr or ''))[-1200:]
@@ -403,18 +403,162 @@ try:
     GATE = ("      { const _g = verifySessionToken(tokenFromRequest(req), licHash, "
             "'sairngrounds'); if (!_g) { res.status(403).json({ error: { code: "
             "'FORBIDDEN', message: 'gate arrived' } }); return; } }")
-    TRIPWIRES = [
-        # grd_boq_rates is the unit's FIRST member, so the once-per-unit
-        # [L-rev] arm drives it too and must go red as well. Naming only the
-        # [L] arm reported a correct result as a MISLANDING on the first run --
-        # the two-sided assertion catching the expectation table rather than
-        # the code, which is the direction it is supposed to fail in.
-        ('grd_boq_rates',
-         "if (resource === 'grd_boq_rates' && action === 'read') {",
-         ['grd_boq_rates [L]', 'NO session gate) [L-rev]']),
-        ('grd_rounds', "if (resource === 'grd_rounds' && action === 'read') {",
-         ['grd_rounds [L]']),
-    ]
+
+    # ── THE LIST IS DERIVED FROM THE SUITE, NOT NAMED HERE (2026-10-14, b12) ─
+    # IT WAS TWO HARDCODED NAMES, grd_boq_rates AND grd_rounds, AND BOTH WENT
+    # RED FOR THE WRONG REASON. Those units stopped being `app: null`
+    # deliberately: the GRD entry in the suite now reads
+    # `app: 'sairngrounds', role: 'superintendent'`, and its own comment states
+    # the trade in its own words -- the tripwire property is given up for those
+    # six resources so the arms test TENANT ISOLATION again, which is this
+    # suite's actual subject and which had been untested for them for as long as
+    # the section was red. The gate's arrival is held by a dedicated suite
+    # instead.
+    #
+    # So this section was asserting a property the suite no longer has, by
+    # design, and reporting a correct configuration as two failures. A hardcoded
+    # list is the defect: it cannot notice the day the thing it names changes
+    # shape. The list is read out of the suite's own source every run.
+    #
+    # THE TWO ARMS ARE NOT DELETED. Deleting them would drop the coverage
+    # instead of relocating it, and nothing would then be checking that the
+    # replacement exists. They are REPLACED by two things the suite's own source
+    # decides: a real tripwire for every `app: null` unit that still exists, and
+    # -- because today there are NONE -- a REQUIREMENT that the named
+    # replacement suite really covers what was traded away. See the
+    # REPLACEMENT COVERAGE block below.
+    def derive_tripwires(suite_src):
+        """Every `{ map: ... app: null ... }` unit, with its first member.
+
+        Reads the suite text rather than a list maintained here. The first
+        member matters: the once-per-unit `[L-rev]` arm drives it too, so a
+        tripwire on the first member must expect BOTH arms red. Naming only the
+        `[L]` arm reported a correct result as a MISLANDING on the first run --
+        the two-sided assertion catching the expectation table rather than the
+        code, which is the direction it is supposed to fail in.
+        """
+        out = []
+        # Units are `{ map: '<name>', app: <x>, role: <y>, members: [ ... ] }`,
+        # spread over lines. Split on the unit opener and keep the ones whose
+        # `app:` is literally null.
+        chunks = re.split(r'\n(?=\s*\{ map: )', suite_src)
+        for ch in chunks[1:]:
+            m = re.match(r"\s*\{ map: '([^']+)'", ch)
+            if not m:
+                continue
+            name = m.group(1)
+            head = ch.split('members:')[0]
+            if not re.search(r'\bapp:\s*null\b', head):
+                continue
+            members = re.findall(r"\[\s*'([a-z0-9_]+)'", ch.split('members:', 1)[1])
+            if not members:
+                continue
+            first = members[0]
+            arms = ['%s [L]' % first, 'NO session gate) [L-rev]']
+            out.append((first, "if (resource === '%s' && action === 'read') {"
+                        % first, arms, name))
+        return out
+
+    suite_src = io.open(os.path.join(sandbox, SUITE), encoding='utf-8').read()
+    _derived = derive_tripwires(suite_src)
+    TRIPWIRES = [(a, b, c) for a, b, c, _n in _derived]
+    print('  derived %d `app: null` unit(s) from %s: %s'
+          % (len(_derived), SUITE,
+             ', '.join('%s (%s)' % (n, f) for f, _o, _a, n in _derived) or 'none'))
+
+    # ── REPLACEMENT COVERAGE -- THE ARM THAT MAKES AN EMPTY LIST HONEST ─────
+    # AN EMPTY DERIVED LIST IS NOT A PASS. "No `app: null` units, so no
+    # tripwires, so nothing failed" is the shape this whole file exists to
+    # refuse: a section that measures nothing and prints a clean line. When the
+    # list is empty the tripwire property has been traded away everywhere, and
+    # the only thing that makes that trade honest is the replacement actually
+    # existing -- so it is asserted here, in the same section, and its absence
+    # is a FAILURE rather than a note.
+    #
+    # DERIVED FROM THE SUITE'S OWN GRD UNIT, not retyped: the member names come
+    # out of the unit that gave the property up, so adding a seventh GRD
+    # resource to the suite requires the gate suite to cover it too.
+    GRD_GATE_SUITE = os.path.join('tests', 'sd_data_grd_session_gate.js')
+    _grd_unit = None
+    for ch in re.split(r'\n(?=\s*\{ map: )', suite_src)[1:]:
+        if re.match(r"\s*\{ map: 'GRD ", ch):
+            _grd_unit = ch
+            break
+    if _grd_unit is None:
+        failures.append('REPLACEMENT COVERAGE: no `{ map: \'GRD ...\' }` unit in '
+                        '%s, so the GRD trade cannot be located and the check '
+                        'below would pass by measuring nothing.' % SUITE)
+        print('  MISS  %-22s no GRD unit in the suite' % 'grd replacement')
+    else:
+        _grd_members = re.findall(r"\[\s*'(grd_[a-z0-9_]+)'",
+                                  _grd_unit.split('members:', 1)[1])
+        _gate_path = os.path.join(ROOT, GRD_GATE_SUITE)
+        if not _grd_members:
+            failures.append('REPLACEMENT COVERAGE: the GRD unit in %s lists no '
+                            'grd_* members, so "every member is covered" would '
+                            'be vacuously true.' % SUITE)
+            print('  MISS  %-22s GRD unit lists no members' % 'grd replacement')
+        elif not os.path.isfile(_gate_path):
+            failures.append('REPLACEMENT COVERAGE: %s does NOT EXIST. The GRD '
+                            'unit gave up its `app: null` tripwire on the stated '
+                            'grounds that a dedicated gate suite holds the '
+                            'gate\'s arrival instead. It does not, so the trade '
+                            'dropped the coverage rather than relocating it.'
+                            % GRD_GATE_SUITE)
+            print('  MISS  %-22s %s missing' % ('grd replacement', GRD_GATE_SUITE))
+        else:
+            _gate_src = io.open(_gate_path, encoding='utf-8').read()
+            _absent = [m for m in _grd_members if m not in _gate_src]
+            # THE REFUSAL ITSELF, not just the names. A suite that lists six
+            # resource names and never asserts a no-session refusal would
+            # satisfy a name check and hold none of the property.
+            _asserts_refusal = ('NO_SESSION' in _gate_src
+                                and '401' in _gate_src)
+            # CONTROL: the name test must be able to FAIL. A resource name that
+            # is NOT in the GRD unit must NOT be found in the gate suite --
+            # otherwise `m not in src` is being satisfied by something other
+            # than real coverage (a glob, a comment listing every grd_ name, a
+            # file so large everything appears in it).
+            _control_name = 'grd_' + 'definitely_not_a_resource'
+            _control_holds = _control_name not in _gate_src
+            if _absent:
+                failures.append('REPLACEMENT COVERAGE: %s does not name %d of '
+                                'the %d grd_* resources the suite traded away: '
+                                '%s. Those are covered by NEITHER the tripwire '
+                                '(given up) nor the gate suite.'
+                                % (GRD_GATE_SUITE, len(_absent),
+                                   len(_grd_members), ', '.join(_absent)))
+                print('  MISS  %-22s %d member(s) uncovered'
+                      % ('grd replacement', len(_absent)))
+            elif not _asserts_refusal:
+                failures.append('REPLACEMENT COVERAGE: %s names every GRD '
+                                'resource but asserts no 401 NO_SESSION '
+                                'refusal, so it records the names without '
+                                'holding the property.' % GRD_GATE_SUITE)
+                print('  MISS  %-22s names but no refusal arm' % 'grd replacement')
+            elif not _control_holds:
+                failures.append('REPLACEMENT COVERAGE CONTROL: the invented name '
+                                '%r was found in %s, so "every member appears" '
+                                'is not evidence of coverage and the arm above '
+                                'proves nothing.' % (_control_name, GRD_GATE_SUITE))
+                print('  MISS  %-22s control name matched' % 'grd replacement')
+            else:
+                print('  ok    %-22s %s covers all %d traded grd_* resources and '
+                      'asserts 401 NO_SESSION; control name absent'
+                      % ('grd replacement', GRD_GATE_SUITE, len(_grd_members)))
+
+    if not TRIPWIRES:
+        print('  NOTE  no `app: null` unit remains in %s, so no gate tripwire '
+              'was driven.' % SUITE)
+        print('        REPORTED, NOT PASSED: the tripwire property has been '
+              'traded away everywhere in')
+        print('        this suite. What stands in its place is the REPLACEMENT '
+              'COVERAGE arm above,')
+        print('        which is a FAILURE when the named gate suite does not '
+              'hold it. If a unit is')
+        print('        ever set back to `app: null`, a real tripwire appears '
+              'here with no edit.')
+
     for label, open_anchor, arms in TRIPWIRES:
         open_line = locate_opener(src_lines, open_anchor)
         if open_line is None:
@@ -473,6 +617,9 @@ if failures:
           'tripwires.' % (len(failures), len(MUTATIONS), len(TRIPWIRES)))
     sys.exit(1)
 print('  all %d filter mutations refused, each in the branch its label names and '
-      'no other branch disturbed; both `app: null` gate tripwires fired.'
-      % len(MUTATIONS))
+      'no other branch disturbed.' % len(MUTATIONS))
+print('  gate tripwires: %d driven -- the count is DERIVED from the suite\'s own '
+      '`app: null` units,' % len(TRIPWIRES))
+print('  so zero means the property was traded away and the REPLACEMENT '
+      'COVERAGE arm is what held.')
 sys.exit(0)

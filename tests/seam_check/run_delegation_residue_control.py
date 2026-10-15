@@ -42,7 +42,7 @@ def arm(name, cond, detail=''):
 
 def clean(path):
     r = subprocess.run(['git', 'status', '--porcelain', '--', path],
-                       cwd=REPO, capture_output=True, text=True)
+                       cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace')
     return r.stdout.strip() == ''
 
 

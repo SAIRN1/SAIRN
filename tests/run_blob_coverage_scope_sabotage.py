@@ -100,31 +100,80 @@ if missed:
         '.js files in api/ subdirectories are outside the coverage universe. '
         'The reported figure is a floor and does not say so.' % len(missed))
 
-# ── S2. AND THE GAP IS NOT EMPTY: real `data:` write sites live out there ───
-DATA_SITES = [
-    ('api/_lib/sd-store.js', 166, 'slab'),
-    ('api/sairndental/public-complaint-submit.js', 136, 'data'),
+# ── S2. THE UNSCANNED REGION MUST BE EMPTY -- RE-AIMED 2026-10-14 (cody b12) ─
+# WHAT IT ASSERTED AND WHY THAT HAD TO CHANGE. This arm was two HARDCODED
+# site paths with HARDCODED line numbers -- api/_lib/sd-store.js:166 and
+# api/sairndental/public-complaint-submit.js:136 -- and it read the one line at
+# each. It existed to prove the gap was not merely theoretical: `api_files()`
+# used a FLAT `os.listdir`, so 126 non-test .js files in api/ subdirectories
+# were outside the coverage universe, and those two were real `data:` writes
+# sitting in the unscanned region.
+#
+# CC HAS SINCE WIDENED api_files(). MEASURED 2026-10-14: the universe is 179
+# files, every non-test api/**/*.js on disk is inside it, and BOTH named sites
+# are IN SCOPE. So the finding is discharged and the old arm now measures a
+# region that does not exist -- a line-numbered read against a file that
+# anybody may reformat, with nothing left to find.
+#
+# THE REPLACEMENT IS DERIVED AND IT ASSERTS THE PROPERTY, NOT THE INSTANCE:
+# whatever is on disk and NOT in the universe must be EMPTY, and no `data:`
+# write may live out there. With the universe complete that set is empty by
+# construction, which is exactly why S1 above -- the completeness arm -- is the
+# thing that licenses it; the two are read together, not separately.
+#
+# AND THE TWO SITES STAY, AS A NAMED REGRESSION PIN RATHER THAN A FINDING.
+# Deleting them would discard the only arm that can see api_files() being
+# re-narrowed: if the flat walk comes back, these two leave the universe again
+# and this arm names them. The LINE NUMBERS ARE GONE, because the property is
+# membership and a line number is drift waiting to happen.
+PINNED_SITES = [
+    'api/_lib/sd-store.js',
+    'api/sairndental/public-complaint-submit.js',
 ]
-unseen = []
-for rel, ln, expr in DATA_SITES:
+outside = sorted(os.path.relpath(p, REPO).replace(os.sep, '/')
+                 for p in (on_disk - scanned))
+outside_data = []
+for rel in outside:
     p = os.path.join(REPO, rel.replace('/', os.sep))
-    if not os.path.isfile(p):
+    try:
+        txt = io.open(p, encoding='utf-8', errors='replace').read()
+    except OSError:
         continue
-    line = io.open(p, encoding='utf-8', errors='replace').read().split('\n')[ln - 1]
-    if 'data:' in line and 'storedBlob(' not in line:
-        unseen.append((rel, ln, line.strip()[:70]))
-check('S2. ...and the unscanned region is NOT EMPTY -- it holds `data:` writes '
-      'whose expression is a BOUND VARIABLE rather than storedBlob(), which is '
-      'the gap this tool exists to count',
-      not unseen,
-      'unclassified: %s' % (unseen,))
-if unseen:
+    for i, line in enumerate(txt.split('\n'), 1):
+        if 'data:' in line and 'storedBlob(' not in line:
+            outside_data.append('%s:%d' % (rel, i))
+check('S2. ...and the UNSCANNED REGION IS EMPTY -- derived from the walk, not '
+      'two named paths, so nothing can be hiding out there',
+      not outside and not outside_data,
+      '%d file(s) outside the universe, %d of them with a non-storedBlob '
+      '`data:` write: %s' % (len(outside), len(outside_data),
+                             outside_data[:4] or outside[:4]))
+
+_pinned_missing = [rel for rel in PINNED_SITES
+                   if os.path.isfile(os.path.join(REPO, rel.replace('/', os.sep)))
+                   and os.path.abspath(os.path.join(REPO, rel.replace('/', os.sep)))
+                   not in scanned]
+check('S2b. REGRESSION PIN -- the two `data:` write sites that WERE outside the '
+      'flat universe are inside it now, so re-narrowing api_files() fails here '
+      'and names them',
+      not _pinned_missing,
+      'back outside the universe: %s' % (_pinned_missing,))
+if _pinned_missing:
     _found.append(
-        'LIVE: %d `data:` write site(s) outside the universe bind a plain '
-        'variable, not storedBlob() -- %s. api/_lib/sd-store.js writeSlab() '
-        'also puts slab_id as a COLUMN beside the unstripped blob, so `id` is '
-        'duplicated: the exact shape storedBlob(rec, [\'id\']) removes.'
-        % (len(unseen), [u[0] + ':' + str(u[1]) for u in unseen]))
+        'REGRESSION: %d of the two previously-unscanned `data:` write sites is '
+        'outside the coverage universe again -- %s. api_files() has been '
+        're-narrowed and the reported figure is a floor once more.'
+        % (len(_pinned_missing), _pinned_missing))
+
+# CONTROL: membership must be able to say NO. Without this, "every file on disk
+# is in the universe" and "the pinned sites are in the universe" are both
+# satisfied by a scanned set that contains everything, including paths that do
+# not exist -- and the two arms above would be measuring nothing.
+_invented = os.path.abspath(os.path.join(REPO, 'api', 'zz_not_a_real_file.js'))
+check('S2c. CONTROL -- an invented api/ path is NOT in the scanned universe, so '
+      'the membership tests above can answer NO',
+      _invented not in scanned,
+      'api_files() claims to scan a file that does not exist')
 
 # ── S3. WHICH HALF IS BROKEN -- scope, or the classifier? ──────────────────
 # This is the arm that makes the finding ACTIONABLE. If the classifier would

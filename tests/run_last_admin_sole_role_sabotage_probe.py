@@ -55,7 +55,7 @@ def write(rel, text):
 def suite_passes():
     """True when the suite exits 0. Anything else -- including a crash -- is a
     refusal, because a suite that cannot run has not cleared the code either."""
-    p = subprocess.run([NODE, SUITE], cwd=ROOT, capture_output=True, text=True)
+    p = subprocess.run([NODE, SUITE], cwd=ROOT, capture_output=True, text=True, encoding='utf-8', errors='replace')
     return p.returncode == 0, (p.stdout or '') + (p.stderr or '')
 
 
@@ -200,7 +200,7 @@ def main():
     # A DIRTY TREE MAKES "RESTORED" UNPROVABLE, so it is established up front
     # rather than discovered at the end.
     pre = subprocess.run(['git', 'status', '--porcelain'] + [SUITE, ENGINE] + APPS,
-                         cwd=ROOT, capture_output=True, text=True)
+                         cwd=ROOT, capture_output=True, text=True, encoding='utf-8', errors='replace')
     if pre.returncode != 0:
         die('could not read git status: %s' % (pre.stderr or '').strip())
     already_dirty = sorted(l[3:] for l in pre.stdout.splitlines() if l.strip())
@@ -246,7 +246,7 @@ def main():
         sys.exit(1)
 
     post = subprocess.run(['git', 'status', '--porcelain'] + [SUITE, ENGINE] + APPS,
-                          cwd=ROOT, capture_output=True, text=True)
+                          cwd=ROOT, capture_output=True, text=True, encoding='utf-8', errors='replace')
     now_dirty = sorted(l[3:] for l in post.stdout.splitlines() if l.strip())
     if now_dirty != already_dirty:
         print('NEWLY DIRTY: %s' % ', '.join(set(now_dirty) - set(already_dirty)))

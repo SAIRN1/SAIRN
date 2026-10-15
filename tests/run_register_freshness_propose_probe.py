@@ -47,10 +47,10 @@ print('register-freshness proposer -- it proposes, it does not apply\n')
 
 before_tiers = sha(TIERS)
 before_head = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=REPO,
-                             capture_output=True, text=True).stdout.strip()
+                             capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 before_branch = subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
                                cwd=REPO, capture_output=True,
-                               text=True).stdout.strip()
+                               text=True, encoding='utf-8', errors='replace').stdout.strip()
 
 rc, out = run([])
 check('the DRY RUN exits 0 and says outright that nothing was written',
@@ -65,11 +65,11 @@ check('THE LOAD-BEARING ONE: the dry run did not touch '
       'docs/CRITICALITY-TIERS.md', sha(TIERS) == before_tiers)
 check('...nor move HEAD',
       subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=REPO,
-                     capture_output=True, text=True).stdout.strip()
+                     capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
       == before_head)
 check('...nor change branch',
       subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], cwd=REPO,
-                     capture_output=True, text=True).stdout.strip()
+                     capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
       == before_branch)
 
 # ── the refusal that protects somebody else's work ──────────────────────────

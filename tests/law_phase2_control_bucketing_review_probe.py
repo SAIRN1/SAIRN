@@ -37,7 +37,7 @@ print('=== FINDING 1: the ALLOW/REFUSAL bucketing cannot see 9 of 25 arms, and S
 print('            of the nine are REFUSAL arms -- which is the side whose')
 print('            emptiness the verdict "an outage, not a hole" rests on')
 
-out = subprocess.run(['node', SUITE], capture_output=True, text=True, timeout=600).stdout
+out = subprocess.run(['node', SUITE], capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=600).stdout
 names = [l.split('ok - ', 1)[1].strip() for l in out.splitlines() if ' ok - ' in l]
 
 neither = [n for n in names if not ALLOW.search(n) and not REFUSE.search(n)]

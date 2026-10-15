@@ -268,7 +268,7 @@ before = io.open(os.path.join(REPO, 'docs', 'tier-a-reviews.json'),
                  encoding='utf-8').read()
 subprocess.run([sys.executable, os.path.join(REPO, 'tools',
                                              'review_ledger_reseat.py')],
-               capture_output=True, text=True, cwd=REPO)
+               capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
 after = io.open(os.path.join(REPO, 'docs', 'tier-a-reviews.json'),
                 encoding='utf-8').read()
 check('a bare run WRITES NOTHING -- a checker that edits the thing it checks is '

@@ -403,7 +403,7 @@ try:
     ok('the register was restored byte for byte' if same else 'RESTORE FAILED')
 finally:
     subprocess.run(['git', '-C', REPO, 'worktree', 'remove', '--force', wt],
-                   capture_output=True, text=True)
+                   capture_output=True, text=True, encoding='utf-8', errors='replace')
 
 print('\n' + '=' * 74)
 if findings:

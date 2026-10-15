@@ -44,13 +44,21 @@ expected app reverts to 'stonedesk'; the gate refuses with 500 instead of 403;
 the enumeration oracle answers 404 instead of 400. Each is invisible to a
 `!== <one code>` predicate and visible to a positive one.
 
-THAT CLAIM IS MEASURED, NOT ASSERTED. old_form_is_blind() pulls the suite AS IT
-ACTUALLY WAS out of git -- the parent of the commit that introduced
-PHASE_2_GATED, derived rather than pinned -- and requires every same-reason
-mutation to leave it GREEN. A mutation the old suite also caught is reported as
-SEEN and the control FAILS, because it is not evidence.
+THAT CLAIM WAS MEASURED AND IS NOW UNVERIFIED, AND THAT IS SAID AT THE TOP
+RATHER THAN BURIED. old_form_is_blind() pulled the suite AS IT ACTUALLY WAS out
+of git -- the parent of the commit that introduced PHASE_2_GATED, derived rather
+than pinned -- and required every same-reason mutation to leave it GREEN. It is
+RETIRED as of 2026-10-14: a suite carrying a HAND-WRITTEN record of its subject
+cannot be replayed against a later subject, and three candidate pre-repair
+commits were driven to prove that rather than assuming it -- all three fail on
+`sairngrounds: measured SOME, recorded NONE`, a gate that landed 2026-10-07 and
+that no historical copy can know about. The full account, the measurement and
+the smaller control that would restore the evidence without replay are in the
+docstring of counterfactual_retired(). SO THE SAME-REASON SET IS STILL DRIVEN
+AND STILL REFUSED; what is no longer shown is that the OLD predicate was blind
+to it.
 
-THE FIRST THREE CANDIDATES WERE WRONG AND THE CONTROL SAID SO:
+THE FIRST THREE CANDIDATES WERE WRONG AND THE CONTROL SAID SO, while it ran:
 
   * 403 -> 401 was SEEN. 401 is the one code the broken predicate could see;
     testing the repair with the only input the defect never had is no test.
@@ -80,6 +88,7 @@ right.
 """
 import io
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -271,8 +280,102 @@ def _git(*a):
                           encoding='utf-8', errors='replace')
 
 
+def counterfactual_retired():
+    """RETIRED 2026-10-14 (cody b12), with the finding recorded.
+
+    WHAT IT DID. `old_form_is_blind()` below replayed the suite AS IT ACTUALLY
+    WAS, taken out of git history, against each same-reason mutation -- so that
+    "the repair mattered" was evidence rather than a claim. It worked once and
+    then stopped, reporting exit 3 COULD NOT RUN: "the pre-fix suite is not
+    green against current source, so BLIND would mean nothing."
+
+    THE DECISION WAS RE-BASE OR RETIRE, AND IT IS RETIRE, BECAUSE RE-BASING
+    CANNOT WORK -- MEASURED, NOT ASSUMED. Three candidate pre-repair commits
+    were driven against current source on 2026-10-14, each copy taken straight
+    out of history:
+
+        79854387^   33 ok, exit 1    the commit the control already used
+        4f757c3f^   33 ok, exit 1    the `!== 401` repair's own parent
+        2efe796f^   33 ok, exit 1    the LATEST pre-repair boundary, the day
+                                     the posture column stopped counting 401
+                                     only -- nine days closer to today
+
+    ALL THREE FAIL AT THE SAME ARM AND IT IS NOT THE PREDICATE:
+    `sairngrounds: measured SOME, recorded NONE`. The sairngrounds session gate
+    landed on 2026-10-07 in 6a2690be and NO historical copy of this suite can
+    know that, because the posture map is a HAND-WRITTEN record of the world at
+    the moment it was written. A later pre-repair commit is still before
+    2026-10-07, so moving the anchor forward buys nothing; and the failure is
+    not in the thing under test, so it cannot be excluded without excluding the
+    arm that makes the suite a drift detector at all.
+
+    THE PREMISE WAS WRONG, WHICH IS THE FINDING. A suite that carries a
+    hand-written record of its subject cannot be replayed against a later
+    subject. It is not that this counterfactual broke; it is that it was always
+    going to, on the first gate that landed after it was written. The cost is
+    real and is named rather than written off: the same-reason mutations can no
+    longer be SHOWN to have been invisible to the old `!== 401` predicate. That
+    is a loss of evidence, not a pass.
+
+    WHAT WOULD REPLACE IT, for whoever picks this up: do not replay the suite.
+    Apply the OLD PREDICATE to the mutant's own refusal -- assert that
+    `!== 401` accepts a 500 and that `=== 403 && FORBIDDEN` refuses it -- which
+    needs no historical copy and no world-state. That is a smaller, durable
+    control over the one line that actually changed.
+
+    SO THIS FUNCTION IS NOT A STUB. It asserts that the retirement reason STILL
+    HOLDS: the suite still carries a hand-written posture table. The day that
+    table becomes DERIVED, replay becomes possible and the retirement must be
+    revisited -- so that is exit 3 COULD NOT TELL with the reason named, never
+    a silent pass.
+    """
+    repo = _git('rev-parse', '--show-toplevel').stdout.strip()
+    gsuite = SUITE.replace(os.sep, '/')
+    src = io.open(os.path.join(repo, SUITE), encoding='utf-8').read()
+    print('')
+    print('PRE-FIX COUNTERFACTUAL -- RETIRED 2026-10-14, reason recorded in the')
+    print('docstring of counterfactual_retired(). Three candidate pre-repair')
+    print('commits were driven and all three fail on the hand-written posture')
+    print('row, not on the predicate under test.')
+    # The retirement rests on ONE property: the posture map is hand-written.
+    # Asserted against the suite's own source, in both directions -- the table
+    # must be there AND must still be literal rows rather than a derivation.
+    has_table = 'const POSTURE' in src
+    literal_rows = len(re.findall(r"\n  [a-z]+:\s*\{ gate: '", src))
+    derived_marker = re.search(r'POSTURE\s*=\s*[^{\n]*\b(map|reduce|'
+                               r'fromEntries|forEach)\b', src)
+    if not has_table or literal_rows < 2 or derived_marker:
+        print('  COULD NOT TELL: the retirement premise no longer holds.')
+        print('    const POSTURE present: %s; literal hand-written rows: %d; '
+              'derivation detected: %s'
+              % (has_table, literal_rows, bool(derived_marker)))
+        print('    If the posture map is now DERIVED, a historical copy CAN be')
+        print('    replayed and the counterfactual should be re-opened rather')
+        print('    than left retired. Exit 3, not a pass.')
+        return 3
+    print('  ok     the posture map is still %d hand-written rows, so a '
+          'historical copy' % literal_rows)
+    print('         still cannot be replayed against current source. The '
+          'retirement stands.')
+    print('  NOTE   LOSS OF EVIDENCE, STATED: the same-reason mutations above '
+          'are no longer')
+    print('         shown to have been INVISIBLE to the old `!== 401` '
+          'predicate. See the')
+    print('         docstring for the smaller control that would restore it '
+          'without replay.')
+    return 0
+
+
 def old_form_is_blind():
-    """Each same-reason mutation, against the suite AS IT ACTUALLY WAS."""
+    """DEAD CODE, KEPT ON PURPOSE -- see counterfactual_retired().
+
+    Not called. It is left in place rather than deleted because it is the only
+    written-down account of how the replay was done correctly -- the derived
+    commit rather than a pinned sha, the oldest introducing commit rather than
+    the newest, the forward-slash pathspec, the anchor guard as a third state --
+    and whoever builds the replacement control will want every one of those
+    lessons. Deleting it would retire the reasoning along with the mechanism.
+    """
     repo = _git('rev-parse', '--show-toplevel').stdout.strip()
     # THE OLDEST commit touching PHASE_2_GATED, not the newest. `-1` gives the
     # most recent, which after any later edit is that edit -- and its parent
@@ -415,5 +518,5 @@ if __name__ == '__main__':
         title='app session isolation -- the suite must refuse a gate that moves, '
               'and must no longer report a 403 as "reachable"',
         stage=[SUITE])
-    rc2 = old_form_is_blind()
+    rc2 = counterfactual_retired()
     sys.exit(rc or rc2)

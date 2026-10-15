@@ -194,7 +194,7 @@ ok('reseat_only is exported by push_retry', hasattr(pr, 'reseat_only'),
 if hasattr(pr, 'reseat_only'):
     verdict, why = pr.reseat_only()
     porc = subprocess.run(['git', '-C', REPO, 'status', '--porcelain', '--',
-                           LEDGER_REL], capture_output=True, text=True).stdout
+                           LEDGER_REL], capture_output=True, text=True, encoding='utf-8', errors='replace').stdout
     if not porc.strip():
         ok('a CLEAN ledger is "no change to fold", never a fold',
            verdict is False and why == 'no change to fold',

@@ -183,7 +183,7 @@ direction to the one it names.
     wt = tempfile.mkdtemp(prefix='cc-p3-')
     shutil.rmtree(wt, ignore_errors=True)
     add = subprocess.run(['git', '-C', REPO, 'worktree', 'add', '-q', '--detach', wt, 'HEAD'],
-                         capture_output=True, text=True)
+                         capture_output=True, text=True, encoding='utf-8', errors='replace')
     if add.returncode != 0:
         cannot(3, 'no worktree: ' + str(add.stderr).strip()[:120])
         return

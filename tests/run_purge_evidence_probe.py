@@ -76,7 +76,7 @@ def run(args, cwd=None, env=None):
     if env:
         e.update(env)
     p = subprocess.run([sys.executable, GATE] + args, cwd=cwd or REPO,
-                       capture_output=True, text=True, env=e)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace', env=e)
     return p.returncode, (p.stdout or '') + (p.stderr or '')
 
 
