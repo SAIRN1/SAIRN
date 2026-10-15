@@ -78,6 +78,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
@@ -267,7 +268,42 @@ def run_fixtures():
         got = AppDeriver.confidence(app, basis, detail)
         if got != want:
             fails.append("confidence(%s,%s) expected %s, got %s" % (app, basis, want, got))
-    total = len(FIXTURES) + 5
+    # ── THE RAW-STATUS ARM (cc b14) ───────────────────────────────────────
+    # load_claim_files() selected ACTIVE on `c.get("status") == "active"`, the
+    # stored field, which is written once and never revisited. So a session
+    # that died holding a claim keeps owning its paths for ever, and this tool
+    # routes a suite failure to somebody who will never answer.
+    #
+    # MEASURED on the real record the day it was fixed: 27 paths carried an
+    # "ACTIVE <session>" attribution and TWO of them named `cloud`, last
+    # claimed 2026-09-27 and gone eighteen days.
+    #
+    # THE ARM DRIVES THE REAL SELECTOR over a built claim document rather than
+    # over the live files, so its verdict does not depend on whether `cloud`
+    # happens to be dead today -- an arm that goes green when somebody tidies
+    # the record is an arm that tested the record and not the code.
+    now = time.time()
+    doc = {"session": "zz", "claims": [
+        {"status": "active", "subject": "live", "task": "FILES: a/live.py",
+         "claimed_at_epoch": now - 60, "_heartbeat": now - 60},
+        {"status": "active", "subject": "dead", "task": "FILES: a/dead.py",
+         "claimed_at_epoch": now - 400 * 3600},
+        {"status": "released", "subject": "gone", "task": "FILES: a/gone.py",
+         "claimed_at_epoch": now - 3600},
+    ]}
+    ever, active = claim_sets_from_docs([doc])
+    for path, in_ever, in_active, why in (
+            ("a/live.py", True, True, "a claim really still held is ACTIVE"),
+            ("a/dead.py", True, False,
+             "a stored status:active whose claim EXPIRED is NOT active -- the "
+             "arm that fails against the raw-field version"),
+            ("a/gone.py", True, False, "a released claim is never active")):
+        got_e, got_a = path in ever, path in {p for p in active}
+        if (got_e, got_a) != (in_ever, in_active):
+            fails.append("raw-status arm: %s expected ever=%s active=%s, got "
+                         "ever=%s active=%s (%s)"
+                         % (path, in_ever, in_active, got_e, got_a, why))
+    total = len(FIXTURES) + 5 + 3
     return total - len(fails), total, fails
 
 
@@ -279,6 +315,64 @@ def load_owner_map(repo=REPO):
             "from the map half of the evidence")
     d = json.load(open(p, encoding="utf-8"))
     return d.get("tools") or {}, d.get("_meta") or {}
+
+
+# ── "ACTIVE" IS is_active(), NOT THE STORED FIELD (cc b14) ────────────────
+# This selected on `c.get("status") == "active"`, which is written once and
+# never revisited -- liveness is COMPUTED by sairn_claim.is_active(), which
+# applies a staleness rule AND a liveness check on the owning process where
+# the registry stamped one. So a session that died holding a claim kept owning
+# its declared paths for ever, and this tool routed a suite failure to
+# somebody who will never answer.
+#
+# MEASURED the day it was fixed: 27 paths carried an "ACTIVE <session>"
+# attribution and TWO named `cloud`, last claimed 2026-09-27 and gone eighteen
+# days. The fourth tool with this defect; the first three were
+# claim_activity_check.py (2026-09-28), sairn_claim.py's own audit and
+# sairn_claim_doc_freshness.py (both cc b13).
+#
+# IMPORTED AND NOT REIMPLEMENTED, and it FAILS CLOSED. The staleness rule has
+# already changed once -- a fixed timeout became a timeout plus process
+# liveness on 2026-09-23 -- and a local copy would freeze the older half. If
+# the import fails this DIES rather than falling back to the raw field: a
+# router that silently reverts to the defect is the defect wearing a fallback.
+def _is_active():
+    try:
+        sys.path.insert(0, os.path.join(REPO, "tools"))
+        from sairn_claim import is_active
+        return is_active
+    except Exception as exc:                                     # noqa: BLE001
+        die("sairn_claim.is_active will not import (%s), so ACTIVE ownership "
+            "could only be read off the raw `status` field -- which is the "
+            "defect this was fixed for. Refusing rather than routing to a "
+            "session that may be eighteen days gone." % str(exc)[:90])
+
+
+def claim_sets_from_docs(docs):
+    """path -> (ever, active) over already-loaded claim documents.
+
+    Split out from load_claim_files so an arm can drive the real selector over
+    a BUILT document. An arm that reads the live .claude/claims is an arm
+    whose verdict changes when somebody tidies the record.
+    """
+    is_active = _is_active()
+    ever, active = {}, {}
+    for rec in docs:
+        sess = rec.get("session") or "?"
+        for c in rec.get("claims") or []:
+            m = re.search(r"FILES:\s*(.*)", c.get("task") or "")
+            if not m:
+                continue
+            for tok in re.split(r"[\s,]+", m.group(1)):
+                tok = tok.strip().strip('"').strip("`")
+                if not tok:
+                    continue
+                if "/" not in tok and not tok.endswith((".py", ".js", ".json", ".md", ".txt")):
+                    continue
+                ever.setdefault(tok, set()).add(sess)
+                if is_active(c):
+                    active.setdefault(tok, set()).add(sess)
+    return ever, active
 
 
 def load_claim_files(repo=REPO):
@@ -293,29 +387,17 @@ def load_claim_files(repo=REPO):
     if not os.path.isdir(d):
         die(".claude/claims is absent, so the claim half of the evidence "
             "cannot be read")
-    ever, active = {}, {}
+    docs = []
     for fn in sorted(os.listdir(d)):
         if not fn.endswith(".json"):
             continue
-        sess = fn[:-5]
         try:
             rec = json.load(open(os.path.join(d, fn), encoding="utf-8"))
         except ValueError:
             continue
-        for c in rec.get("claims") or []:
-            m = re.search(r"FILES:\s*(.*)", c.get("task") or "")
-            if not m:
-                continue
-            for tok in re.split(r"[\s,]+", m.group(1)):
-                tok = tok.strip().strip('"').strip("`")
-                if not tok:
-                    continue
-                if "/" not in tok and not tok.endswith((".py", ".js", ".json", ".md", ".txt")):
-                    continue
-                ever.setdefault(tok, set()).add(sess)
-                if c.get("status") == "active":
-                    active.setdefault(tok, set()).add(sess)
-    return ever, active
+        rec.setdefault("session", fn[:-5])
+        docs.append(rec)
+    return claim_sets_from_docs(docs)
 
 
 def derive_owner(path, om_tools, claim_ever, claim_active):
