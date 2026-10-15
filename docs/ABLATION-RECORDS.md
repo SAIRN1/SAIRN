@@ -21,6 +21,8 @@ Re-run everything here with:
     python tools/sairn_push_gate_hook.py --selftest     # inline ablations
     python tools/sairn_claim.py selftest                # inline ablation
     python tools/route_suite_failures.py --fixtures      # inline ablation
+    python docs/ablation/b15_arms.py                     # the 5 tools with
+                                                         # no --ablation mode
 
 ---
 
@@ -28,11 +30,39 @@ Re-run everything here with:
 
 | tool | arms | layers | all load-bearing? |
 |---|---|---|---|
-| `tools/sairn_board_publish.py` | 22 | 14 | yes |
+| `tools/sairn_board_publish.py` | **28** | **21** | yes — **b15 added 7**, see below |
 | `tools/runbook_constant_agreement.py` | 10 | 4 | yes |
-| `tools/citation_anchor_rot_check.py` | 12 | 6 | yes — **added b14**, it landed in b13 with no ablation at all |
+| `tools/citation_anchor_rot_check.py` | **16** | **9** | yes — **added b14**, it landed in b13 with no ablation at all; **b15 added 3 arms and 2 layers** |
 
-### `sairn_board_publish.py` — 14 layers
+**These counts are as of b15 and will be wrong the next time somebody adds an
+arm.** Re-read them from each tool's own `--ablation` output rather than from
+this table; that is the eighth cross-domain convention applied to this file.
+
+### `sairn_board_publish.py` — 21 layers
+
+**b15 added seven**, all for one defect shape: b14 fixed *"the whole mirror
+directory stopped"* and left *"one file in it kept moving"*, which reads more
+reassuring than silence. `mirror-oldest-component` (2 arms),
+`mirror-allowlist` (3), `append-only-family`, `partial-refresh-note`,
+`digest-publish-age`, `seq-cross-check` (2), `mirror-notice`.
+
+**`append-only-family` exists because the first version of the b15 fix was
+wrong, and running it against the live mount is what said so.** Aged by the
+oldest *file*, it reported `chain-tip-seq1098.tsr is 187h old` about a mirror
+that had just been republished — the `chain-tip-*` set is **append-only** and
+its old members are supposed to be old, so an oldest-file basis pins every
+mirror with any history FROZEN for ever, and a verdict that is always FROZEN
+is a verdict nobody reads. A23 is the arm for the defect; **A28 is the arm for
+the trap the fix walked into.**
+
+**`mirror-allowlist` is the self-reference guard.** b15 also made the
+publisher write `MIRROR-FRESHNESS.md` into each mirror on every event, and an
+age-by-newest-file basis would have made that notice the evidence that the
+mirror it describes is fresh — a detector refreshing its own subject. A25
+drives exactly that: write the notice into a frozen mirror, and the mirror
+must still read FROZEN *and* the notice must be listed as UNAGED.
+
+### `citation_anchor_rot_check.py` — 9 layers
 
 `row-absence` (3 arms), `context-unknown`, `beacon-lag` (6),
 `mirror-freshness` (2), `digest-tip-source` (5), `seq-glue`,
@@ -47,9 +77,28 @@ arm noticed. The real path to an overlong per-agent file is the uncapped
 60** rather than against `LATEST_MAX_LINES` — an arm that checks the file
 against the same constant the code used is a tautology.
 
-### `citation_anchor_rot_check.py` — 6 layers, added b14
+### `citation_anchor_rot_check.py` — ablation added b14, 9 layers at b15
 
-`exactly-once`, `zero-count-finding` (2 arms), `declared-target`,
+**b15 added `r1-anchor-keyword` and `trailing-newline-not-a-line`.**
+
+`r1-anchor-keyword` answers a routed concern by **measurement rather than by a
+code change**: fourth b22 routed `` `eventRefusals()` ``,
+`` `liquorServiceCheck()` `` and `` `sc_auth` `` as this tool's likely first
+three false positives. They are not — the real register measures **8 anchors,
+8 resolving exactly once, 0 not**. R1 already requires the literal word
+`anchor` and R6 already rejects a bare identifier, but **nothing held either
+against these three spans and R1 had no ablation at all**, so the correct
+behaviour was undemonstrated rather than proven. A8b is the arm; removing R1
+reads every backticked span as an anchor and breaks A8b, A7 and A7b.
+
+`trailing-newline-not-a-line` is an off-by-one caught by an arm asserting a
+**number**: `--resolve-targets`' first version used `text.count(NL) + 1`,
+calling a 3-line file 4 lines long, which would have blessed exactly one
+citation past the end of every file in the repo — **stale reported as fresh**.
+A12 asserts `file has 3 line(s)` and not merely the PAST-EOF verdict, which is
+the only reason it failed.
+
+The b14 six: `exactly-once`, `zero-count-finding` (2 arms), `declared-target`,
 `fail-closed-target`, `r6-anchor-filter` (3), `near-match-report`.
 
 **`fail-closed-target` reported UNPROVEN twice before the ablation was
@@ -169,6 +218,100 @@ the end, and the clean measurement above is the one taken afterwards.
 The floor file was corrected to 808 by hand, with the reason recorded in the
 file, because the ratchet only ever rises — lowering it is a human edit and
 this was one.
+
+---
+
+## b15 — the five tools that had arms and no ablation at all
+
+**The population was measured, not assumed.** Over the b12–b14 range
+(`9603441d..HEAD`), every `tools/*.py` cc touched that carries `@arm(`,
+`def selftest(` or `def run_fixtures(` was classified by whether it also
+carries any ablation:
+
+    for f in $(git log --name-only --format="" 9603441d..HEAD -- tools/ \
+                 | grep "^tools/.*\.py$" | sort -u); do
+      grep -qE "@arm\(|def selftest\(|def run_fixtures\(" "$f" || continue
+      grep -qE "_ABLATIONS|def ablation\(|ABLATION" "$f" \
+        && echo "HAS  $f" || echo "NONE $f"
+    done
+
+**6 HAS, 12 NONE.** Of the 12, **six had arms LANDED in the range** and are
+therefore in scope; the other six had only logic changed and are named at the
+bottom of this section rather than dropped.
+
+Re-run all of them with one command, which is the point:
+
+    python docs/ablation/b15_arms.py            # all
+    python docs/ablation/b15_arms.py <name>     # one
+
+**It is a pass/fail/pass sandwich per layer, and that is not ceremony.** b14's
+first lesson was a harness that restored its subject and left the subject's
+*state* behind, so one layer read `load-bearing` in one run and `UNPROVEN` in
+the next. This driver requires the baseline to pass, the ablated run to fail,
+**and the restored run to pass again** — a restore that does not bring the
+baseline back is reported `CONTAMINATED` and the measurement is discarded
+rather than published. It also refuses to swap unless the old substring occurs
+**exactly once**: a swap matching twice ablates the wrong thing, and one
+matching nothing ablates nothing and reports a load-bearing layer.
+
+| layer | tool | verdict |
+|---|---|---|
+| `bare-run-unattributable` | `bare_run_write_check.py` | **LOAD-BEARING** — 11→9 passed, 2 failed |
+| `status-line-no-default-window` | `sairn_status_line.py` | **LOAD-BEARING** — 26/26 → criteria broken |
+| `secrets-irreversible-runbook` | `secrets_inventory.py` | **LOAD-BEARING — only after b15 fixed it.** See Finding 3 |
+| `red-suite-notice-not-couldnotrun` | `red_suite_register_check.py` | **LOAD-BEARING** — 10 cases, 2 failed |
+| `batch-manifest-child-env` | `batch_manifest.py` | **LOAD-BEARING — only after the recipe was corrected.** See Finding 4 |
+
+**Deferred, with its recipe recorded so it is not lost:**
+`sf-events-exactly-once` in `tools/sf_events_anchor_check.py`. fourth holds a
+**live claim** on that file (b23, declared FILES list), so per PR §4.3 the
+conflict is declared and **not overridden** — the swap is written down in
+`DEFERRED` inside the driver and runs after fourth releases.
+
+**Arms did NOT land in the range for these six, so they are out of scope here
+and said so rather than counted as clean:** `drive_upload_verify.py`,
+`external_file_index_audit.py`, `live_probe_declaration_check.py`,
+`mech_gate_live_probe.py`, `sql_column_exists_check.py`,
+`tool_owner_map.py`. **Three of them are a layer with no arm anywhere** — the
+`encoding='utf-8', errors='replace'` added to `git ls-files` calls in
+`external_file_index_audit.py:60`, `live_probe_declaration_check.py:99` and
+`:107`, and `sql_column_exists_check.py:104` and `:270` — landed in b12's
+`070efcd3` with nothing driving a non-ASCII path through them. That is a gap
+in the ARMS, which an ablation cannot see, and it is the same shape as
+Finding 2.
+
+### FINDING 3 — `secrets_inventory.py` reported a clean lock with ZERO arms run
+
+Emptying `_IRREVERSIBLE` made the runbook loop iterate nothing, `bad` stayed
+empty, and the tool printed its clean line. **The five arms guarding
+`SD_AUTH_SECRET_PREVIOUS`'s rotation runbook could have been deleted and
+nothing would have noticed** — a suite that runs zero tests and prints ALL
+PASS, which is the exact shape `run_all_tests.py` carries a floor for.
+
+Fixed in b15: `_MIN_RUNBOOK_ARMS = 5`, counted as the loop runs, with the
+failure naming both numbers. **Pinned as a literal and not as
+`len(_IRREVERSIBLE)`** — an arm that counts the subject against the subject
+agrees with an empty table. Ablated after the fix: exit 2, *"only 0 runbook
+arm(s) RAN, against a floor of 5"*.
+
+### FINDING 4 — the first recipe ablated the half the arms do not see
+
+`batch-manifest-child-env` reported **UNPROVEN** on its first run, and the
+layer was fine. The child's utf-8 environment is passed at **two** call sites —
+`return runner(cmd, CHILD_ENV)` and `subprocess.run(..., env=CHILD_ENV)` — and
+the three fixtures drive the **runner** seam. The first recipe removed the
+other one, so the arms never saw the ablation.
+
+**Same trap as b14's `fail-closed-target`, inverted.** There, one layer written
+twice survived either half being removed. Here, the arms cover only one half,
+so an ablation of the *other* half proves nothing. **A layer written in two
+places needs its ablation aimed at the half the arms actually reach — or at
+both.** Recipe corrected to the runner seam: 35/35 → 32/35, exit 1.
+
+**And the real `subprocess.run` call site still has no arm of its own.**
+Recorded rather than papered over: the honest fixture there would have to spawn
+a real subprocess under a forced cp1252 console, which is
+`tools/cp1252_console_sweep.py`'s job and not this tool's. Routed as such.
 
 ---
 

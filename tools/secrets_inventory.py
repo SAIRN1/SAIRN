@@ -353,6 +353,21 @@ _IRREVERSIBLE = {
 }
 
 
+# ── HOW MANY ARMS MUST ACTUALLY RUN (added 2026-10-15, cc b15 item 5) ──────
+# Found by ablation, not by review: emptying `_IRREVERSIBLE` made the loop
+# below iterate nothing, `bad` stayed empty, and this tool reported a clean
+# lock. **The five runbook arms could be deleted and nothing noticed** --
+# which is the same shape as a test suite that runs zero tests and prints ALL
+# PASS, and the exact reason run_all_tests.py carries a floor.
+#
+# SO THE COUNT IS PINNED, as a literal and not as `len(_IRREVERSIBLE)`. An
+# arm that counts the subject against the subject is a tautology: it would
+# agree with an empty table. The number only ever RISES here for the same
+# reason the test-file floor does -- lowering it is a human edit with a
+# reason, and this comment is that reason's home.
+_MIN_RUNBOOK_ARMS = 5
+
+
 def run_fixtures():
     bad = []
     for label, src, name, want in FIXTURES:
@@ -361,6 +376,7 @@ def run_fixtures():
             bad.append((label, want, got))
     # The runbook arms. A missing entry is itself a finding: the lock must not
     # pass because the thing it guards was renamed out from under it.
+    ran = 0
     for var, checks in sorted(_IRREVERSIBLE.items()):
         entry = SECRETS.get(var)
         if not entry:
@@ -369,9 +385,16 @@ def run_fixtures():
             continue
         desc = (entry[1] or '').lower()
         for label, needle in checks:
+            ran += 1
             if needle.lower() not in desc:
                 bad.append(('%s rotation runbook omits %s' % (var, label),
                             needle, 'absent'))
+    if ran < _MIN_RUNBOOK_ARMS:
+        bad.append(('only %d runbook arm(s) RAN, against a floor of %d -- an '
+                    'empty or gutted _IRREVERSIBLE table makes this lock '
+                    'report clean while checking nothing, and that is how it '
+                    'read before b15'
+                    % (ran, _MIN_RUNBOOK_ARMS), _MIN_RUNBOOK_ARMS, ran))
     return bad
 
 
