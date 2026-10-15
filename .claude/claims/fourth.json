@@ -3885,6 +3885,25 @@
         "docs/batch-manifest-fourth-b24.json",
         "docs/tier-a-reviews.json"
       ]
+    },
+    {
+      "id": "fourth-1792073011",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "b25: (1) item3 resume -- SD_AUTH_SECRET stub in drive_400 harness, record the 23514/42703 400 observations; (2) re-verify the six open findings at HEAD with fresh file:line; (3) write the predicate-span rule into docs/2026-09-13-cross-domain-disciplines.md; (4) Tier A review for hank -- b23 F1 payroll effectiveClock, b24 F3, b24 F4, the 25 class-B write branches; (5) Tier A review for cody -- b24 F1 probe re-anchor; (6) push without force. CONFLICTS DECLARED PER PR 4.3: api/ and sql/ are hank's and READ-ONLY here; tests/ is cody's and READ-ONLY here; tools/ is cc's and READ-ONLY (RUN not edited). FILES: docs/2026-09-13-cross-domain-disciplines.md docs/tier-a-reviews.json docs/2026-10-15-fourth-b25-*.md SAIRN-handoff-fourth-b25.md SAIRN-report-fourth-b25.txt SAIRN-digest-fourth-b25.txt SAIRN-latest-fourth.md. HOOKS STAY CLEARED, settings.json NEVER committed, no SAIRN_SEED_GATE override, no auditor clone entered. EVV raw-clock and one-person-agency self-approval HELD for Michael, not acted on.",
+      "claimed_at": "2026-10-15T14:03:31Z",
+      "claimed_at_epoch": 1792073011.0197492,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b25.txt",
+        "SAIRN-handoff-fourth-b25.md",
+        "SAIRN-latest-fourth.md",
+        "SAIRN-report-fourth-b25.txt",
+        "docs/2026-09-13-cross-domain-disciplines.md",
+        "docs/tier-a-reviews.json",
+        "settings.json"
+      ]
     }
   ],
   "refusals": [
