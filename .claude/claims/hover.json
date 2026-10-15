@@ -834,6 +834,17 @@
       "status": "released",
       "released_at": "2026-10-15T14:42:37Z",
       "files": null
+    },
+    {
+      "id": "hover-1792076457",
+      "session": "hover",
+      "subject": "hover",
+      "task": "b44: deep-verify hank b16 and cody b17 land-checks; settle tier-a-reviews.json three-vs-four inconsistency; check cody sabotage-arm8 roster fix landed live; check sd-data.js:8231 routing; deep-verify H2 b41 and fourth b25; chain+token check; push",
+      "claimed_at": "2026-10-15T15:00:57Z",
+      "claimed_at_epoch": 1792076457.1729107,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
