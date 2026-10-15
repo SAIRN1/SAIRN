@@ -1,0 +1,466 @@
+REPORT hank b12
+
+SAIRN batch report -- session hank, batch b12, 2026-10-14/15.
+Working directory C:\Users\marsh\Documents\SAIRN-hank, branch main.
+
+STOPPED ON A CONTEXT INSTRUCTION AT 70%, NOT ON COMPLETION. All six dispatched
+items are done. What was cut is one item I had started READING and had not
+edited -- two of cody's routed findings -- and it is named below and in the
+handoff with its exact next step, not folded into "done".
+
+PUSH STATE, MEASURED RATHER THAN ASSERTED
+    git fetch -q origin main
+    git rev-list --left-right --count HEAD...origin/main   ->  0 0
+    git rev-parse HEAD                                     ->  906903f3
+b12's own range is 9f488101..906903f3. No --force at any point. NEITHER
+override form was used -- not the blanket SAIRN_SEED_GATE=off and not the
+scoped SAIRN_GATE_EXEMPT=seed. Four gate refusals, four satisfied, zero
+overridden. Four merges, every retry a `pull --no-rebase` so no register
+record's sha moved.
+
+  6e55b1d5  item 1   the b11 handoff's push-state sha corrected
+  e9d9c819  item 2+3a sd_photos size, the 89-branch 400/404 split, the visible
+                      failure, and T17
+  4f69facd  item 3b  the F1 census SQL, both files
+  31406a87  item 4   N1, N2, N3, N4 and the two SAIRNfreedom deletes
+  88e0e47b  item 5   the role-picker vs DB CHECK check
+  065d1135           three register records
+  bf2b2474           the two regenerated documents and the gate's ledger rows
+  b678b175           the Tier A obligation, 3 resources, assigned to fourth
+  eeb637c3           the live probe, its enumerated residue, every captured red
+  80297a3b           the gate's ledger row for that commit
+  906903f3           the handoff, written BEFORE this report
+
+
+ITEM 1 -- THE b11 SHA DISAGREEMENT. DONE, AND ONLY ONE FILE WAS WRONG.
+
+`git -C` against origin/main showed ALL THREE shas exist, so this was not a typo
+in one file: each was accurate at its own moment of writing, and the
+disagreement was real with one wrong side.
+
+  the handoff said 21dd38d9  WRONG, corrected. That commit PREDATES the
+                             handoff's own commit (ffb2463a), so anybody
+                             checking it out to see "the state this handoff
+                             describes" gets a tree with no handoff in it. A
+                             standing document may not quote a HEAD earlier
+                             than itself.
+  the report said  ffb2463a  RIGHT, left alone. It labels that sha as the
+                             handoff commit on its own line and states that a
+                             report cannot carry the sha of the commit that
+                             adds it.
+  the digest said  ffb2463a  RIGHT, left alone, same reason.
+
+The handoff now names 9f488101 -- b11's last commit -- with the full range
+4c258b04..9f488101 and the one-line check that re-derives it. Re-uploaded and
+VERIFIED DRIVE-SIDE THROUGH THE API rather than only on the sync mount: 28,299
+bytes, modifiedTime 20:50:54.
+
+
+ITEM 2 -- sd_photos. DONE, THREE PARTS, AND THE BRIEF'S COUNT WAS WRONG.
+
+Per docs/2026-10-14-fourth-b19-sd-photos-premise.md. Michael's decision was
+option (a), client-side downscale.
+
+(a) THE DOWNSCALE MEASURES INSTEAD OF ASSUMING. An 11-rung ladder from
+1600px/q0.72 down to 320px/q0.4; each rung is encoded and ITS RESULTING LENGTH
+IS CHECKED against a 44,000-character budget. The budget is deliberately NOT the
+cap: the same row later carries aiAnalysis (3-5 model sentences), ai_source, the
+ids and JSON quoting, so ~21 KB is left for the rest of the row. A "1024px at
+q0.7 is comfortably under 48 KB" rule of thumb is wrong for a detailed
+photograph, which is why the length is read rather than predicted. When NO rung
+fits, the result is null -- NOT the original -- because a downscaler that
+silently passes the original through is how an oversized row reaches the server
+looking downscaled. The row records which rung won, the resulting dimensions and
+the original byte length: a downscale that is not recorded is indistinguishable
+from a camera that produced a small file.
+
+(b) THE 400 MISATTRIBUTION, AND THE COUNT IS RE-DERIVED RATHER THAN QUOTED.
+The dispatch said twelve branches. MEASURED at source: 98 branches answer 503
+NOT_PROVISIONED on (404||400) and 89 OF THEM READ NOTHING AT ALL before
+deciding. All 89 now go through one notProvisioned() helper with FOUR answers:
+  404                    -> 503 NOT_PROVISIONED, the caller's own message
+  400 + pg class 23xxx   -> 400 ROW_REFUSED naming the 64KB cap. 23514 check,
+                            23505 unique, 23502 not-null, 23503 FK: every one
+                            means the table EXISTS and refused THIS ROW
+  400 + "does not exist" -> 503. PostgREST really does answer a missing table
+                            400 with PGRST205 on some versions, which is the
+                            real reason 400 was folded in with 404 in the first
+                            place -- that reason is PRESERVED, not discarded
+                            along with the defect
+  400, unclassifiable    -> 400 UPSTREAM_REJECTED, which says the table exists,
+                            the request was refused, and the reason COULD NOT
+                            BE CLASSIFIED. It does not say "run the migration".
+                            Folding could-not-tell into either of the other two
+                            is how this defect was built.
+The nine branches that already read the body and discriminate were LEFT ALONE: a
+fetch Response body is readable once.
+
+THE FIRST DRAFT OF THAT REWRITE BROKE FIVE SITES AND THE SCRIPT COULD NOT SEE
+IT. 2768, 2987, 3330, 3431 and 8449 do `const rows = await r.json()` BEFORE the
+guard, so the helper's own r.text() got an empty string on a consumed stream and
+classified a genuine 404 as unclassifiable -- one wrong diagnosis traded for
+another. Caught by READING two rewritten sites in context after the mechanical
+pass: the script checked a property INSIDE the branch and the hazard was in what
+came before it. Those five now pass their body in, and arm A8 drives one of them
+end to end.
+
+(c) THE FAILURE REACHES A HUMAN. sdDataFailed's whole body was one console.warn,
+while this same file's sdSyncCollection comment already stated the argument:
+"silence would make a backup that is not happening look like one that is." It
+now toasts the first failure in a burst, NAMES the row-too-large case because
+that is the one a user can act on, and summarises the rest once the burst stops
+-- one toast per record on a 200-photo sync is its own kind of silence, because
+a user dismisses the first three and stops reading. Every branch guarded and
+showToast reached through a typeof test: this is a failure path, and a failure
+path that can itself fail is the shape three transports paid for in b11.
+
+
+ITEM 3 -- T17 AND THE F1 CENSUS SQL. DONE.
+
+T17 LANDED IN THE SAME COMMIT AS THE SIZE FIX, as the premise document requires
+("with or before"): until the row lands the provenance gap is latent behind the
+size failure. ai_source: 'claude:photo-qc' on the row; sd_photos added to
+AI_SCANNED_TEXT on `aiAnalysis` and NOT on `data`, because redacting a base64
+payload corrupts the image; and a "Written by AI" label on BOTH success renders
+-- the page's only AI wording was the spinner the answer overwrites, which the
+b18 spec names exactly.
+
+CLASSIFIED NOT-HIGH-RISK, AND THE CONTENT ARGUES THE OTHER WAY, so the reason is
+recorded in full rather than implied: the text is the same shape as
+bld_photo_analyses, which IS high-risk for exactly that reason, but sd_photos is
+NOT in SD_SESSION_GATED, so marking it high-risk would make enforceAiApproval
+refuse EVERY analysed photo 403 -- the local copy having already saved -- on an
+app with no sign-in requirement. PROMOTING THE ROW IS A SESSION DECISION FIRST:
+add sd_photos to SD_SESSION_GATED, THEN move it to HIGH_RISK_AI, in that order.
+The entry says so.
+
+F1. Both sql/legacy_ciphertext_census.sql and
+sql/sd_encryption_key_revoke_2026-09-24.sql:113 read
+`sc_credentials.data->>'enc'`, which assumes a top-level key.
+api/sc-credentials.js:200-205 writes `next[service] = { enc, last4, updated_at }`,
+so the real path is `data->'stedi'->>'enc'`; :76-77 reads it back the same way
+and the test fixtures are `{ data: { stedi: { enc: ... } } }`.
+
+THIS WAS THE WORST POSSIBLE WAY TO BE WRONG. A wrong jsonb path returns NULL
+rather than erroring, so every count came back legacy_rows = 0, v2_rows = 0,
+never_set_rows = total_rows -- "nobody has a credential" -- and legacy_rows = 0
+IS THE PRECONDITION step 4 of the revoke file waits for before clearing
+SD_AUTH_SECRET_PREVIOUS. The wrong path would have authorised clearing the old
+key while legacy ciphertext was still in the table, and THE CENSUS IS THE
+DOCUMENT THAT WOULD HAVE AUTHORISED IT.
+
+Fixed to walk jsonb_each(data), so a second service is counted the day it is
+written rather than the day somebody re-reads the file -- `stedi` is the only
+entry in ALLOWED_SERVICES today and hardcoding it is how this goes stale again.
+Part 2 now returns WHICH service key is legacy, because a backfill needs that
+and not only the row. NEW PART 0 is the guard that would have caught the
+original: it counts rows with a top-level `enc` and rows with a nested one
+SEPARATELY and states what each combination means -- both zero now reads as "no
+credential exists", which is a different fact from "no LEGACY credential
+exists" and must not be mistaken for the step-4 precondition.
+tools/sairn_sql_preflight.py --live: 0 findings on both files.
+
+
+ITEM 4 -- THE SAIRNfreedom DELETES AND N1-N4. DONE.
+
+F6 VERIFIED FIRST, BY READING BOTH FUNCTIONS, AND BOTH HOLD. sfDeleteEvent chose
+its toast on `ev.sessionId` being TRUTHY and never on whether the filter removed
+anything, so a stale pointer made it announce "Event and its bingo session
+removed" having removed nothing -- affirmative false success, which is worse
+than silence because it tells the operator a thing happened. sfDeleteSession was
+what CREATED those stale pointers: it removed the session and never cleared
+`event.sessionId`, and the UI offers Remove on every session row, so it was one
+click away. Both fixed: the session delete CLEARS the pointer and says how many
+events it unlinked (the event still happened, so the field goes and the event
+stays), and the event delete COUNTS the rows it removed and reports that, with
+three outcomes and three messages.
+
+N1 -- the sen_visits EVV write copied every payload field straight over the row,
+so a second clock-in silently REPLACED a recorded one, on a path any caregiver
+reaches on their own visit, while propose_clock_correction beside it was built
+append-only for exactly that reason. The module's own words forty lines up: "a
+state audit that finds an edited time with no trail cannot tell a typo
+correction from a fabrication." Now 409 CLOCK_ALREADY_RECORDED on a DIFFERENT
+value with nothing written; an IDENTICAL re-send is still accepted, because
+sairnsenior queues clock events offline and replays them UNCHANGED and refusing
+that would break the path the module is written around. Both clock fields are
+guarded, not one.
+
+N2 -- `setup` could demote the last active Owner, reaching by ROLE the end state
+set_active has been guarded against by the ACTIVE FLAG since the lifecycle
+module was written; after it, bootstrap 409s because credentials exist and
+nothing can provision. Six sibling endpoints already call
+soleRoleDemotionRefusal() and SAIRNsenior did not. THE GUARD IS CALLED, NOT
+REWRITTEN: who counts, whether an inactive holder is cover and the order of the
+read are what drift dangerously. The message is this app's own words, because a
+refusal in words the app does not use sends somebody looking for a screen that
+is not there.
+
+N3 -- (e) PARTLY OVERTURNED and the overturned half is fixed. The mapping choice
+survives review; the SILENCE does not. A requirement that returned a clean
+`false` for this person vanished from the response, because
+unmapped_requirements is built only from STRUCTURALLY unmappable rows -- a row
+WITH a position list is mappable:true and never appeared there no matter who it
+excluded. The author's own self-flag was "under-inclusion is the dangerous
+direction here and it is the one I chose", and under-inclusion that nobody can
+see is indistinguishable from the requirement not existing. Findings now carry
+excluded_by_position with matchAudience's OWN reason, and the key is ABSENT when
+nothing was excluded. Also in the same function: a present-but-wrong-shaped
+applies_to_positions (a string rather than an array) was collapsed into the same
+null as "absent", so the reader was told the rule identified its audience in
+PROSE when it had declared a machine-readable one in the wrong shape. Recorded,
+not coerced -- coercing would be this code inventing an audience, which
+matchAudience's own refusal says it may not do.
+
+N4 -- the three comments now say "driven by hand on 2026-09-29, NO COMMITTED
+ARM" and name the three arms routed to cody. "Driven" almost certainly meant
+driven BY HAND, which is a real activity; the defect is that a hand-drive leaves
+no artefact, so six weeks later the comment is the only evidence and it reads
+exactly like a reference to a committed arm.
+
+AND THE SHAPE-ONLY HIRE DATE, DRIVEN RATHER THAN REASONED ABOUT -- which found
+the reported case AND A WORSE ONE THE REPORT DID NOT REACH:
+  hire 2024-02-30 -> window_from '2026-02-30'   impossible DAY    (reported)
+  hire 2024-13-01 -> window_from '2025-13-01'   impossible MONTH  (NOT reported)
+  hire 2024-04-31 -> window_from '2026-04-30'   normalised, fine
+  hire 2024-02-29 -> window_from '2026-02-28'   normalised, fine
+The day-decrement normalisation rescues an impossible day in some years and
+CANNOT TOUCH A BAD MONTH AT ALL, and window_from is printed on a compliance
+finding a surveyor reads. Now refused with window_error
+HIRE_DATE_NOT_A_REAL_DATE -- REFUSED, NOT REPAIRED, because normalising
+'2024-02-30' would be this code choosing which date somebody was hired on. The
+consequence was already right one door along: a window_error yields `null` with
+a stated reason, never `false`, so nobody is called non-compliant for a typo.
+
+
+ITEM 5 -- THE ROLE PICKER vs THE DATABASE CHECK. DONE, AND THE FINDING IS THE
+UNPROVEN COUNT.
+
+api/role-picker-vs-check-constraint.test.js, over all 17 apps in ROLES_BY_APP --
+derived, not typed, so an app added there is covered the day it is added.
+
+  6 CLEAN     sairnbuild, sairncare, sairndesign, sairnlaw, sairnlegacy,
+              sairnsenior -- every role picker offers only roles that app's own
+              CHECK accepts
+  0 FAILED    no app currently offers a refused role
+  11 UNPROVEN and THIS IS THE FINDING OF THE RUN, not a footnote to it:
+              no CHECK found in sql/ for sairnbiz, sairngrounds, sairnscape,
+                stonedesk
+              no role picker found in sairncode, sairndental, sairnfreedom,
+                sairnmechanical, sairnroofing, sairnvet
+              no HTML file at all for stonedesk_sub
+An app that cannot be measured is UNPROVEN, never a pass: a comparison with one
+side missing reports a clean sweep over a file it never read. 11 of 17 cannot be
+measured, and nothing in the six clean results says anything about the other
+eleven.
+
+THE LIMIT IS PRINTED EVERY RUN RATHER THAN DISCOVERED. It reads the CHECK out of
+sql/, the repo's INTENDED constraint and not production's, so it catches a
+picker ahead of the schema file (DRIFT) and cannot catch a schema file ahead of
+production (LAG) -- which is exactly the office_manager state today. The two
+dated CHECK-widening migrations are listed by name with the one query per app
+that would settle them.
+
+THE PICKER IS FOUND BY CONTENT, NOT BY ID. sairncare's two are `st-position` and
+`sec-new-role`; an id-based rule would miss one and report the app clean. A
+select is a picker when TWO OR MORE option values are in that app's own
+vocabulary -- two, because a single 'owner' in a filter dropdown is not a
+picker.
+
+ONE DEFECT IN MY OWN FIRST DRAFT, FOUND BY READING THE OUTPUT AND NOT THE EXIT
+CODE, AND IT FAILED IN THE PERMISSIVE DIRECTION. It took any sql/ file
+MENTIONING `<app>_employee_auth` and collected every `check (role in (...))` in
+it, so a file mentioning one table in a COMMENT contributed other apps'
+constraints: sairncare reported 18 allowed roles drawn partly from
+sairnroofing's schema, sairnlaw 15 drawn from four other apps. A union across
+apps makes `allowed` a SUPERSET and the check would report CLEAN on a genuinely
+refused role. The run already said "0 with a refused role" when that was true
+for the wrong reason. Each declaration is now bounded to the statement naming
+that app's table, and the lists are 7 and 3.
+
+Ablated two ways: office_manager removed from every sairncare CHECK -> exit 1,
+sairncare FAILS with 2 cases, which is the real class driven; picker detection
+disabled -> exit 3 with 17 UNPROVEN and 0 clean, so the check cannot report a
+pass on nothing.
+
+
+ITEM 6 -- PUSH. DONE, 0 0, AFTER FOUR REFUSALS AND FOUR MERGES.
+
+1. REGISTER FEED -- three records, each with four contributing factors and an
+   explicit recurrence-open. --check: OK, 577 records at write time (581 after
+   the merge), every commit resolves, every field in vocabulary.
+2. GENERATED-DOCUMENT GATE -- MASTER-PLAN.md and traceability-matrix.md
+   regenerated with their own generators (PR 2.5).
+3. TIER A REVIEW GATE -- 3 resources, obligation opened and assigned to fourth,
+   naming WHAT TO REVIEW HARDEST on each surface rather than listing the diff.
+4. A `no-defect-record:` sentence given once with a real reason.
+5. Four ref-lock / fetch-first rejections, every retry `pull --no-rebase`. Two
+   ledger conflicts resolved with tools/sairn_rebase_resolve.py. I THEN VERIFIED
+   MY OWN TIER A OBLIGATION SURVIVED THAT MERGE rather than trusting the tool's
+   "0 local-only" line -- it is present, opened_at 2026-10-14T23:53:53Z.
+
+
+LIVE VERIFICATION -- PR 3.2, fail=0 couldnot=1
+
+docs/hank-evidence/b12_live_gate_probe.py, output in .out.
+  404 leg of the 89-branch rewrite        COULD NOT RUN -- five candidates
+                                          tried, none reached an absent table,
+                                          each printed with its answer
+  sd_photos read                          200 provisioned=true (the control --
+                                          this endpoint does not answer 503 to
+                                          everything)
+  sd_photos write                         200 (the success leg survived)
+  sen_visits clock, unknown visit         200, NOT 409 (N1's guard does not
+                                          fire where nothing is recorded)
+
+THE 404 ARM'S FIRST DRAFT REPORTED A FAILURE THAT WAS ITS OWN. It sent one
+guessed resource the registry does not expose, and the dispatcher's 400
+"resource must be one of ..." was read as the 404 leg breaking. That refusal
+carries NO error.code ON PURPOSE -- the handler's comment says telling
+FOREIGN_RESOURCE from UNKNOWN_RESOURCE is exactly what a caller must not be able
+to do -- so it is now detected by its MESSAGE, five candidates are tried, and
+finding no absent table is COULD NOT RUN.
+
+IT WRITES ONE ROW AND THE ROW IS ENUMERATED.
+docs/live-residue/2026-10-14-hank-b12-sd-photos-probe.json: table, id column,
+id (ZZ-B12-SIZE-PROBE, FIXED so a re-run overwrites -- confirmed, the second run
+read rows=1 not rows=2), licence, blast-radius select, delete, confirm. UNLIKE
+b10's RESIDUE THIS ONE DOES NOT NEED A HUMAN IN THE SQL EDITOR: sd_photos has a
+soft_delete verb and service_role holds DELETE. The SQL is given anyway because
+it does not depend on a session. It had to write: a handler answering 503 to
+every sd_photos write would pass every refusal arm while backing up nothing, and
+the row landing is the point of the batch.
+
+THE PROBE PRINTS WHAT IT DID NOT DRIVE -- the client-side downscale and the two
+SAIRNfreedom deletes (browser JavaScript, no HTTP request reaches them), the N2
+last-owner guard (driving it live means writing a credential row from a probe),
+N3 and N4 (pure compute), the role-picker check (static, no runtime half), the
+census SQL (not run, and its value is the number it returns about production),
+and the three other notProvisioned answers (each needs a specific upstream
+reply). Each names the arms that DO drive it.
+
+
+METHODOLOGY -- THE FINDING WORTH KEEPING FROM THIS BATCH
+
+Every fix failing-first with the red CAPTURED against HEAD in a detached
+worktree, not described: 6 passed / 13 failed / 4 unproven for sd_photos, 10
+passed / 10 failed for N1-N4. Every fix ablated layer by layer -- eight, six and
+two -- reported by the ARMS each layer alone catches.
+
+THREE ABLATIONS SURVIVED AND ALL THREE WERE SUITE DEFECTS, NOT CODE ONES. That
+is the thing worth carrying forward, because a surviving ablation is normally
+read as a missing fix:
+  * D1 was a SOURCE GREP for showToast( and could not see an early `return`.
+    Ablating the function by returning at the top left the arm GREEN -- the call
+    was still in the text, just unreachable. The function is now extracted and
+    RUN against a stub.
+  * A3 survived because the FIXTURE served text() after json() had already been
+    called, which a real fetch Response never does. The mock now models single
+    consumption and A8 fails without the pre-read argument.
+  * the sfDeleteEvent toast survived because the TWO F6 FIXES ARE EACH
+    SUFFICIENT ALONE, so neither was individually NECESSARY for any arm: F6b
+    runs after F6a has already cleared the pointer. New arm F6e builds the
+    stale-pointer state DIRECTLY -- the state every row written before today is
+    in, and therefore the arm that matters after a deploy.
+
+AND TWO DEFECTS MY OWN ARMS FOUND IN MY OWN WORK:
+  * A6 reported routed=0 as a FAILURE against correct code, because the
+    detector tested for the string NOT_PROVISIONED -- the shape of the UNFIXED
+    code. A detector that can only see the defect cannot see the fix. It failed
+    loudly, which is the only reason it cost a minute.
+  * the role-picker check's first draft was PERMISSIVE across apps, found by
+    reading the output of a run that already said "0 with a refused role".
+
+TWO ARM DEFECTS IN THE N1-N4 SUITE, both corrected and both recorded: N3a
+grepped a serialised entry for 'nursing' and failed against correct code,
+because matchAudience's reason names the STAFF POSITION BEING TESTED and not the
+list's contents; and N4d expected '2024-04-31' to normalise, which encoded the
+OLD path -- April 31 is not a day anybody was hired on, so the hire is refused
+one step earlier, which is the new behaviour and the right one.
+
+WHICH HALF OF EVERY CHANGE IS LIVE, AND WHICH NEEDS MICHAEL:
+  item 1, the corrected handoff        LIVE and on the Drive
+  item 2, the downscale                LIVE on deploy. No SQL
+  item 2, the 89-branch split          LIVE on deploy. No SQL
+  item 2, the visible failure          LIVE on deploy. No SQL
+  item 3, T17 provenance + label       LIVE on deploy. No SQL
+  item 3, the census SQL               FIXED IN THE REPO AND NOT RUN. Its value
+                                       is the number it returns about
+                                       production, so running it is Michael's
+  item 4, N1/N2/N3/N4 and F6           LIVE on deploy. No SQL
+  item 5, the role-picker check         LIVE as a check; it reads the repo's
+                                       CHECK and not production's, and says so
+
+
+WHAT IS OPEN -- eleven items, each with its exact next step, in
+SAIRN-handoff-hank-b12.md. The ones needing somebody other than me:
+  MICHAEL   run sql/2026-10-14-hank-b11-mar-grant.sql blocks 1 and 2 (uploaded
+            to the Drive folder in this batch, 13,295 bytes, verified
+            Drive-side); run b10 run-order block 5, which is now REACHABLE FROM
+            THE SAIRNcare UI and fails 23514 until it runs; and run
+            sql/legacy_ciphertext_census.sql PART 0 FIRST, because both-zero
+            means "no credential exists" and is NOT the step-4 precondition.
+  MICHAEL
+  OR fourth DECIDE T16: cody's arm wants the prior clock value KEPT OR APPENDED;
+            my N1 fix REFUSES the second write instead. Both close the silent
+            overwrite -- theirs keeps an edit trail, mine admits no edit at all.
+            Their arm is a source check and stays red against a refusal.
+  fourth    the Tier A obligation (3 resources), and the N1 product consequence
+            named in it: the only route left to change a recorded clock time is
+            scheduler-only, so a caregiver who clocks in wrong on their own
+            visit cannot fix it themselves at all.
+  CODY      the three compliance arms N4 names.
+  CC        wire the three new api/ suites into the gate driver -- and the
+            role-picker one exits 3 BY DESIGN on an unmeasurable app, so
+            whatever drives it must treat 3 as could-not-run and not as a
+            failure -- plus fmea_draft --save for the files the loop named.
+
+
+UNVERIFIED, STATED RATHER THAN IMPLIED
+  NO SQL WAS RUN. The b11 MAR-grant blocks, b10's block 5 and the census are all
+  UNRUN. The census is now CORRECT and still unrun, which is a different state
+  from before and not a better one until somebody runs it.
+  THE DOWNSCALE HAS NEVER RUN IN A REAL BROWSER. It is driven by extracting the
+  real function and running it against a STUB canvas whose output length is a
+  formula, not an encoder. The ladder logic, the budget check and the null-on-
+  failure path are proven; what a real JPEG encoder returns at 1024px/q0.7 for a
+  real photograph is NOT measured, so WHICH RUNG WINS IN PRACTICE IS UNKNOWN.
+  The first rung that fits is correct whichever it is, but if the real encoder
+  overshoots every rung the result is null and the photo is local-only -- and
+  nothing here says how often that happens.
+  THE 44,000-CHARACTER BUDGET IS A JUDGEMENT, NOT A MEASUREMENT. aiAnalysis has
+  no length cap on this path, so a very long QC note could still push a
+  downscaled row over 65,536. Flagged in the Tier A obligation as the thing to
+  review hardest.
+  THE ORIGINAL IMAGE IS NOT KEPT ANYWHERE. For a damage photo an insurer might
+  later want at full resolution, that is a product consequence and it is in the
+  Tier A obligation.
+  THE 404 LEG OF THE 89-BRANCH REWRITE WAS NOT DRIVEN LIVE -- COULD NOT RUN, five
+  candidates, none on an absent table. It is driven against the real handler by
+  arms A1-A5; the live half is unproven.
+  I DID NOT RE-AUDIT THE NINE SKIPPED BRANCHES. They already discriminate, which
+  is why they were skipped, but whether each does so CORRECTLY is not something
+  this batch measured.
+  cody's T18 AND N4 ARE UNFIXED and I had started reading them when the context
+  instruction arrived. T18 sits in the same function as my own N3 work and is
+  the same class.
+  THE TWO SAIRNfreedom DELETES WERE NEVER DRIVEN IN A BROWSER -- extracted and
+  run in a vm with stubbed storage. The functions' logic is proven; the DOM path
+  that calls them is not.
+  b12 RAN WITH NO CLAIM AT ALL. Verified, not assumed: the claim list shows
+  hover2, hover and cc active and no hank row. Three other sessions were working
+  in this window and nothing but their declared scopes kept us apart. Nothing
+  collided; the risk was real and is named rather than left to be inferred.
+  NO SCREENSHOT AND NO RENDERED CHECK of the new "Written by AI" photo label or
+  the new toasts.
+
+DEFINITION the hash below is sha256 over every byte of this file up to and NOT
+including the final hash line, CRLF normalised to LF, taking the LAST
+occurrence of the marker. Re-derive it with the four lines below:
+
+    import io, hashlib
+    s = io.open('SAIRN-report-hank-b12.txt', 'rb').read().decode('utf-8').replace('\r\n','\n')
+    body = s.rsplit('SHA' + '256 ', 1)[0]
+    print(hashlib.sha256(body.encode('utf-8')).hexdigest())
+SHA256 cea25e932f817d7ac5e8e427524c2d8eba285e7ab785503fa0a5c361d889ee40
+END-OF-REPORT
