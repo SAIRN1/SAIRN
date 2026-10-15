@@ -1,0 +1,323 @@
+REPORT cody b16
+
+DATE 2026-10-15
+CLONE C:\Users\marsh\Documents\SAIRN-cody
+BRANCH main
+CHAIN TIP 763c9560 -- origin/main identical, 0 ahead / 0 behind, ancestry
+  verified with `git merge-base --is-ancestor`
+WORK COMMIT 7af3737e -- items 1 (partly), 2, 4, 6; 763c9560 is the handoff
+PUSHED WITHOUT --force. `grep -ci force` over the successful push log: 0.
+COMMITTER fx <fx@example.invalid>, this clone's LOCAL config, unchanged.
+
+STOPPED AT 70% CONTEXT ON INSTRUCTION, AT A CLEAN POINT. NOTHING IS
+  HALF-FINISHED. Items 3 and 5 were NOT STARTED and 30 of the 34 triaged
+  tests/ failures were not reached; every one is routed with an exact next
+  step and a stated reason in SAIRN-handoff-cody-b16.md.
+
+CLAIM TAKEN FIRST, which was the standing decision b15 asked for and got.
+  `tests` (cody-1792067786, 2026-10-15T12:36:26Z, committed 5039a033), CLEAR
+  ON WORDS with a declared FILES set disjoint from cc's tools/, hank's api/
+  and fourth's docs/. RELEASED with these four artefacts: b16 is not
+  continuing and a claim left standing blocks the next session for four hours.
+
+NOTHING OVERRIDDEN. No SAIRN_SKIP, no SAIRN_GATE_EXEMPT, no SAIRN_SEED_GATE,
+  in any form. NO api/, sql/ OR tools/ FILE EDITED -- both api/ and tools/
+  were COPIED for counterfactuals and never written. No CLAUDE.md edit. No
+  hook added or restored. .claude/settings.json never committed. No auditor
+  clone entered. ONE gate refused this push and it was true.
+
+
+WHAT b16 PROVED, AND IT IS A METHOD RATHER THAN A COUNT
+
+  b15's full-tree run produced 99 failures, 39 of them real, and routed 34 of
+  those on the strength of EACH FILE'S LAST OUTPUT LINE. b16 took the first
+  cluster by READING EACH SUBJECT, and THREE OF THE FOUR turned out to be the
+  probe misreading its own subject rather than a defect in the code under
+  test.
+
+    b15 said                                  b16 measured
+    ----------------------------------------  --------------------------------
+    sairnlegacy_fault_probe: "app_id is       REFUTED. That is a MUTATION
+    taken from the client again" -- flagged   LABEL; the arm PLANTS that
+    as a possible LIVE TENANCY DEFECT,        defect. The live handler stamps
+    urgently                                  the server's own literal at
+                                              api/sd-data.js:16006
+    tier_a_review_gate_sabotage arm 8: a      DOES NOT EXIST. The planted harm
+    FAIL-OPEN in the roster read              is absorbed downstream
+    irreversible_class: "the name-based       THAT CONCLUSION IS FALSE. The
+    half may now catch shared libraries,      arm leaked live state two ways;
+    so this class may be redundant"           driven hermetically the GAP IS
+                                              REAL and the class is needed
+    registry_claim + 2: "a refused            A WORD, NOT A VERDICT. Nine arms
+    session-name argument"                    matched BLOCKED anywhere in the
+                                              output and ANOTHER SESSION'S
+                                              CLAIM PROSE CONTAINED IT
+
+  A FAILURE SUMMARY CANNOT TELL A DISCOVERED DEFECT FROM AN INJECTED ONE, and
+  twice here it read as the worse of the two. That is the transferable
+  finding, and it is why the remaining 30 were not rushed through on the same
+  evidence b15 had.
+
+
+ITEM 1 -- CLUSTER 1 OF FIVE, THREE FILES, ALL NOW GREEN
+
+  tests/claims/run_registry_claim_probe.py -- exit 1 -> EXIT 0, 31 arms.
+    THE VERDICT WAS A WORD, NOT A LINE. Nine arms asserted 'BLOCKED' in / not
+    in the tool's WHOLE output. Eight went red for a reason with nothing to do
+    with registry claims: a LIVE claim from another session carried the word
+    inside its own free-text task string -- fourth's reads "(2) BLOCKED AND
+    NOT TAKEN -- ...". Those arms were reading another agent's PROSE as this
+    tool's verdict.
+    tools/sairn_claim.py:660 RECORDS THE SAME CLASS ONE LEVEL DOWN: `'blocked'
+    in clause` matched inside UNBLOCKED, which is the opposite verdict. So
+    repeating it over the tool's OUTPUT was that defect wearing a different
+    hat, one layer up.
+    FIXED WITH A SHARED HELPER rather than nine more substring tests:
+    blocked_lines(out) matches only a line STARTING 'BLOCKED -- ', which is
+    the real verdict (tools/sairn_claim.py:2219), and decided(out) is its
+    PAIRED CONTROL -- because "no line starts with BLOCKED" is also satisfied
+    by an empty output or a tool that died before deciding, and an arm that
+    cannot tell those apart is not a check.
+    NO tools/ FILE EDITED.
+
+  tests/run_irreversible_class_probe.py -- exit 1 -> EXIT 0, 15 arms.
+    AND THE OLD ARM'S OWN DIAGNOSIS WOULD HAVE BEEN WRONG, which is the
+    finding rather than the fix. Its failure text invited exactly one
+    conclusion -- "if the name-based half now catches shared libraries,
+    re-read whether this class is still needed" -- and DRIVEN, that is FALSE.
+    It was leaking live state TWO WAYS AT ONCE:
+      1 G.check() reads the REAL docs/tier-a-reviews.json, whose open
+        obligations change whenever any session opens or discharges one.
+        Measured today it answered "TIER A CODE CHANGED AND ONLY PART OF IT IS
+        RECORDED ... already covered: invoices, leg_aftercare" -- today's
+        backlog, not this gap.
+      2 range_diff(sha~1, sha) takes the WHOLE commit, and the most recent
+        commit touching api/_lib/auth.js also touched api/_lib/leg-roles.js
+        and others that DO name Tier A resources. The arm asked about auth.js
+        and measured a twenty-resource change.
+    BOTH CLOSED: a FIXTURE obligation file with no records, and the diff
+    RESTRICTED to the one path. With both controlled the gate answers exit 0 --
+    "No file in this change names a Tier A resource on a changed line" -- SO
+    THE GAP IS REAL and the class is still needed. A non-empty-diff
+    PRECONDITION was added so the arm cannot pass over nothing.
+    NO tools/ FILE EDITED; G.REVIEWS is monkey-patched and restored in a
+    finally.
+
+  tests/run_tier_a_review_gate_sabotage_probe.py -- arm 8 RE-AIMED.
+    THE FAIL-OPEN IT REPORTED DOES NOT EXIST. Driven on a sabotaged copy, the
+    planted harm never reaches anything:
+      reviewer_roster_detail() -> ([], [], [])   DEGRADED
+      eligible_reviewers()     -> None           STILL CLOSED
+      assign_owner()           -> (None, 'the eligible-reviewer roster could
+                                    not be read ... this record is first-come.
+                                    Fix the roster and re-assign by hand.')
+    because eligible_reviewers() normalises a roster of fewer than two names
+    to None on its own (tools/tier_a_review_gate.py:1430) -- one name cannot
+    review anything, so an empty one cannot either. THE DEFECT CLASS IS
+    DEFENDED IN TWO PLACES and the old mutation removed only the first.
+    A mutation whose harm is absorbed downstream is not an undetected defect;
+    it is an arm asserting that an unreachable defence is missing, and
+    reporting it in the voice of a real gap.
+    RE-AIMED at the second defence -- `return names if len(names) >= 2 else
+    None` -> `return names` -- which IS the "roster with nobody on it" the
+    label names, and which the detector's own arm catches. Anchor verified to
+    occur exactly once.
+    ALSO MEASURED: the b15 run of this probe reported a SECOND failure, a
+    dirty-tree check naming 2 files already modified before it started.
+    Re-driven on a clean tree that failure is GONE -- it was this session's own
+    in-flight edits, not a probe defect.
+
+
+ITEM 2 -- THE THREE FLOOR LAYERS, ARMED, tracked-intersection FIRST
+
+  tests/run_floor_layers_probe.py (NEW) -- EXIT 0, 9 arms.
+  It closes docs/ABLATION-RECORDS.md FINDING 2: cc removed each of b12's three
+  test-file-floor layers from tools/run_all_tests.py and ran cody's OLD
+  tests/run_all_tests_floor_probe.py against each mutant. ALL THREE STAYED
+  GREEN -- because that probe predates b12 and was never asked about the
+  ratchet. tests/ is cody's, so cc routed them rather than writing them.
+
+  THE ABLATION IS COMMITTED AND DRIVEN, which is the only thing that turns
+  "arms added" into "arms that work": docs/b16-logs/ablate_floor_layers.py
+  removes each layer from a COPIED tool tree and reports 3 of 3 CAUGHT, with
+  the unmutated copy green FIRST so a red cannot be the harness.
+
+    ratchet                R4 ok -> FAIL    CAUGHT
+    tracked-intersection   T1 ok -> FAIL    CAUGHT
+    silence-breaking       S1 ok -> FAIL    CAUGHT
+
+  tracked-intersection WAS TAKEN FIRST because FINDING 2b makes it the urgent
+  one: UNARMED IN-RUN AND DESTRUCTIVE ACROSS RUNS. cc's harness wrote a floor
+  of 812 then 813 against a real 808 while cody's probe still exited 0, and
+  the harm lands on the NEXT run, where the floor sits above the tree and the
+  probe fails for a reason unrelated to the code.
+    T1 is the in-run clamp. T2 IS THE ACROSS-RUNS HALF SPECIFICALLY: a later
+    read of the floor must not sit above the tracked tree. T3 is the PAIRED
+    POSITIVE -- a rise WITHIN the tracked count still lands, so the clamp is
+    not a ratchet that never moves. T4 is FAIL CLOSED: an unmeasurable tracked
+    count must not raise the floor at all, with the reason stated.
+
+  TWO DEFECTS IN MY OWN ABLATION HARNESS, FOUND BY DRIVING IT:
+    * IT DID NOT ABLATE ANYTHING. It shadowed tools/ with PYTHONPATH, and this
+      probe's own `sys.path.insert(0, REPO/tools)` won, so every "mutant" run
+      imported the REAL tool and all three layers reported NOT CAUGHT --
+      against arms that were fine. An ablation that cannot remove the fix
+      reports the arms broken and the fix unnecessary in one stroke. Fixed with
+      ONE declared injection point, SAIRN_B16_RUN_ALL_TESTS.
+    * R1 DOES NOT CATCH THE RATCHET LAYER. Removing
+      `MIN_TEST_FILES = _read_floor()[0]` leaves _read_floor() COMPLETELY
+      INTACT, so an arm calling it directly stays green. THE LAYER IS THE
+      WIRING, and only an arm on the module CONSTANT can see wiring: arm R4
+      was added, and the harness now lays out tools/ + docs/ inside the copy so
+      the copy's own _FLOOR_PATH resolves. R3 is reported NOT APPLICABLE under
+      an injected copy rather than failing -- it is about the shipped tree, and
+      failing it made the whole ablation refuse to start with "the baseline
+      copy is not green".
+
+  ARM S IS STRUCTURAL AND SAYS SO, in the file and in its own printed output:
+  the enclosing function runs the whole suite, so a behavioural drive per arm
+  is not practical. It is an AST SHAPE check, NOT a text anchor -- a text
+  anchor on that condition breaks on re-wrapping and has already done so in
+  this repo. Read it as "the layer is present", never "the layer works".
+
+  NO tools/ FILE AND NO REAL FLOOR FILE WRITTEN. cc's own harness poisoned
+  docs/test-file-floor.json and changed a later layer's verdict between runs
+  (FINDING 2b), which is why every fixture here is per-arm and restored in a
+  finally.
+
+  NOT DONE IN ITEM 2, and said rather than implied: the FOUR RAW-STATUS PROBE
+  READS decision and the EXIT-3 REASON LINE for
+  tests/run_exec_msgs_gate_sabotage_probe.py. The three layer arms and their
+  ablation consumed the item's budget.
+
+
+ITEM 4 -- THE TENANCY CLAIM REFUTED, AND THE ONE REAL CASE IS GATED
+
+  b15 flagged tests/sairnlegacy_fault_probe.py arm 8 -- "app_id is taken from
+  the client again" -- as a possible live tenancy defect, urgently, because
+  that is what its last output line says. IT IS A MUTATION LABEL: the arm
+  PLANTS `app_id: body.app_id || 'sairnlegacy'` and asserts the suite catches
+  it.
+
+  MEASURED AGAINST THE LIVE HANDLER
+    api/sd-data.js:16006              app_id: 'sairnlegacy'  -- a LITERAL
+    app_id taken from body/payload/req  NO MATCH anywhere
+    literal app_id writes             116
+
+  THE ARM FAILED ON ANCHOR ROT IN ITS TRAILING CONTEXT, measured by binary
+  search on the anchor rather than by eye:
+    anchor length            295 chars
+    longest matching prefix  205 chars
+    diverges at              "res.status(503).json({ error: { code:
+                              'NOT_PROVISIONED', ..."
+  That inline branch has since been extracted into `await notProvisioned(res,
+  r, ...)`. THE app_id LINE ITSELF IS BYTE-IDENTICAL to the live file; the rot
+  is entirely in code the arm was not testing. The anchor is cut back to the
+  ONE LINE the mutation changes, verified unique. Suite now EXIT 0 with arm 8
+  passing.
+
+  ONE GENUINE CLIENT-SOURCED app_id EXISTS AND IT IS NOT THIS ONE:
+    api/sd-data.js:1930   const memApp = String((body && body.app_id) || 'stonedesk');
+    api/sd-data.js:2359   ... app_id: memApp, shop_id: shopId, data: ...
+  AND IT IS GATED, not loose:
+    :193-194, :1931-1932  MEMORY_APPS allowlist, 400 UNKNOWN_APP otherwise
+    :2113-2115            gateApp = (resource === 'memory') ? memApp : ...
+                          then verifySessionToken(token, licHash, gateApp)
+  So a caller cannot stamp another app on a memory row without holding a
+  session signed FOR THAT APP. Deliberate cross-app design, stated in the
+  handler's own comment: "only memory follows the caller".
+  ROUTED TO HANK AS A READ, NOT A DEFECT, in
+  docs/2026-10-15-cody-b16-app-id-tenancy.md -- with the one thing worth
+  knowing: memApp is the ONLY non-literal app_id in a 116-write handler, the
+  binding that makes it safe lives 429 LINES from the write, and NOTHING
+  ASSERTS THAT gateApp FOLLOWS memApp.
+
+
+ITEM 6 -- PUSHED, LANDED, CONFIRMED, AND ONE GATE WAS TRUE
+
+  7af3737e (the work) and 763c9560 (the handoff), both tested as ancestors of
+  origin/main. 0 ahead / 0 behind. NO --force.
+
+  derived-docs REFUSED and was right: docs/MASTER-PLAN.md,
+  docs/TOOLING-INVENTORY.md and docs/traceability-matrix.md stopped matching
+  their sources because this push adds one test file. REGENERATED by their own
+  generators, never hand-edited. The whole diff is this batch's: test files on
+  disk 969 -> 970, declared citations 338 -> 339, traced 749 -> 750. The new
+  suite carries a REQUIREMENT: header from the start, so this batch adds to
+  that ratio rather than to the debt.
+
+  docs/b16-logs/copytool/ AND docs/b16-logs/fakereg/ ARE GITIGNORED WITH THE
+  REASON IN THE FILE: the first is a copy of a tracked tool, and a second copy
+  of one sitting in docs/ is exactly what the copy-exactly gate exists to
+  refuse. Committing the evidence should not mean committing a propagation.
+
+
+THE REGISTER -- docs/known-red-suites.json
+
+  entries 66, recovered 44, not_red 4. FIVE ROWS, all five in `recovered` at
+  exit 0, each carrying the measurement that produced it:
+    tests/claims/run_registry_claim_probe.py
+    tests/run_irreversible_class_probe.py
+    tests/sairnlegacy_fault_probe.py
+    tests/run_tier_a_review_gate_sabotage_probe.py
+    tests/run_floor_layers_probe.py            (NEW)
+
+
+VERIFICATION AT THE LANDED SHA
+
+  Each exit code read from `echo "EXIT=$?"` on its own line, never from a
+  pipeline, whose status is its LAST element.
+
+    EXIT=0  python tests/run_floor_layers_probe.py            9 arms
+    EXIT=0  python tests/claims/run_registry_claim_probe.py  31 arms
+    EXIT=0  python tests/run_irreversible_class_probe.py     15 arms
+    EXIT=0  python tests/sairnlegacy_fault_probe.py          arm 8 passing
+    EXIT=0  python docs/b16-logs/ablate_floor_layers.py      3 of 3 CAUGHT
+
+
+UNVERIFIED, AND SAID RATHER THAN LEFT OUT
+
+  THE RE-AIMED ARM 8 OF run_tier_a_review_gate_sabotage_probe HAS NOT BEEN
+  DRIVEN END-TO-END. The new anchor is verified unique and the harm is
+  verified reachable -- it is the defence the detector's own arm asserts -- but
+  the full sabotage probe takes over five minutes and was not re-run after the
+  re-aim. IT MAY STILL REPORT "NOT CAUGHT" FOR A DIFFERENT REASON.
+
+  ARM S OF THE FLOOR PROBE IS STRUCTURAL, NOT BEHAVIOURAL. Its enclosing
+  function runs the whole suite. The probe prints this beside the arm so it
+  cannot be quoted as more than it is.
+
+  THE memApp GATING WAS READ, NOT DRIVEN. No counterfactual exists for it, and
+  the tenancy document says so in its own "what this does not claim" section.
+
+  THE THREE REGENERATED DOCUMENTS were checked only against their own
+  generators, not against a fresh full-tree run.
+
+  30 OF THE 34 TRIAGED tests/ FAILURES WERE NOT REACHED, and the four clusters
+  not opened are named with their next step in the handoff. No claim is made
+  about them.
+
+  ITEMS 3 AND 5 WERE NOT STARTED: the 16 CHANGED and 9 RECOVERED register
+  rows, the run_capa_fields_probe cleanup, the _rm_ro de-duplication into
+  tests/lib/, and the ablation backfill for b14-b15 arms.
+
+  THE 37 KNOWN REGISTER ROWS were not re-driven in this batch either.
+
+  THE SCRATCHPAD WAS NOT CLEARED, for the fourth time across three batches:
+  `rm` inside the session temp directory is REFUSED by the permission layer.
+  109 files, 247 MB, every name listed in the handoff -- including the TWO
+  DIRECTORIES that are nearly all of the volume: cfapi/ (a 455-file copy of
+  api/) and clone46/ (a full git clone). b16's own evidence is COMMITTED under
+  docs/b16-logs/ for exactly this reason.
+
+
+HANDOFF
+SAIRN-handoff-cody-b16.md, written BEFORE this report and uploaded first.
+  `python tools/drive_upload_verify.py --agent cody --batch b16` PASSED it at
+  18154 bytes with a matching first line, in folder
+  14Xc5oT0xzSLa_rTSOSXWVK3Kko1Fbx09. The tool's two findings on that run were
+  the report and digest not existing yet, which was true at the time and is
+  what this file and the digest close.
+
+SHA256 SAIRN-handoff-cody-b16.md = cd8f6bc5d6e05d6424d3d26ec15510ca631f705572b3a52a4b753d39e3b4d5fa
+END-OF-REPORT

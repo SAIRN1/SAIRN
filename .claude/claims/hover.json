@@ -812,6 +812,17 @@
       "status": "released",
       "released_at": "2026-10-15T13:33:32Z",
       "files": null
+    },
+    {
+      "id": "hover-1792072023",
+      "session": "hover",
+      "subject": "hover",
+      "task": "b42: compaction diagnosis, RFC3161 token republish+cadence spec, land-check cody b16/fourth b23-b24/hank 8627f4e4/cc scope-gate decision, chain-tip mechanical check, push+handoff",
+      "claimed_at": "2026-10-15T13:47:03Z",
+      "claimed_at_epoch": 1792072023.9235582,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
