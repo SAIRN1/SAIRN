@@ -3821,6 +3821,26 @@
         "docs/batch-manifest-fourth-b22.json",
         "docs/tier-a-reviews.json"
       ]
+    },
+    {
+      "id": "fourth-1792027781",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "b22 FOLLOWUP (H2 b36 routing): docs/CRITICALITY-TIERS.md:358 sf_events row re-derived from source -- all 8 quoted anchors re-counted in sairnfreedom.html and the cell's code facts re-read; plus a failing-first anchor-resolution check for that cell. This does NOT build cc's routed general anchor-rot tool and does not touch tools/anchor_rot_check.py, which does not exist. HOOKS STAY CLEARED, settings.json NEVER committed, no SAIRN_SEED_GATE override, no auditor clone entered, nothing written under .claude/skills/sairn-hover-auditor/. CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: hank's api/ files, cody's tests/ files and hover's own log repo are READ-ONLY here. FILES: tools/sf_events_anchor_check.py docs/CRITICALITY-TIERS.md docs/2026-10-15-fourth-b22-sf-events-reanchor-and-citation-recount.md SAIRN-handoff-fourth-b22.md SAIRN-report-fourth-b22.txt SAIRN-digest-fourth-b22.txt SAIRN-latest-fourth.md docs/batch-manifest-fourth-b22.json",
+      "claimed_at": "2026-10-15T01:29:41Z",
+      "claimed_at_epoch": 1792027781.8165588,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b22.txt",
+        "SAIRN-handoff-fourth-b22.md",
+        "SAIRN-latest-fourth.md",
+        "SAIRN-report-fourth-b22.txt",
+        "docs/2026-10-15-fourth-b22-sf-events-reanchor-and-citation-recount.md",
+        "docs/CRITICALITY-TIERS.md",
+        "docs/batch-manifest-fourth-b22.json",
+        "tools/sf_events_anchor_check.py"
+      ]
     }
   ],
   "refusals": [
