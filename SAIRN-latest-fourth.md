@@ -61,6 +61,9 @@ corrected before any push:** a first commit attempt used `core.hooksPath=/dev/nu
 bound**); b24 F3/F4, the 22 and cody's re-anchor are **routed, not reviewed — no
 record exists**; no production row, no live fetch, no table touched.
 
-**Chain tip** `7000e165` — *handoff(fourth b25): all six items done, b18 N1
-closed, my own 25 withdrawn to 22, and one bypass disclosed*. Report SHA256
-`ee610d06c666a2cc26ffb6feee0ed96470287972cc77065e30090ee6f10b3143`.
+**Chain tip when these four were written:** `7000e165` — *handoff(fourth b25):
+all six items done, b18 N1 closed, my own 25 withdrawn to 22, and one bypass
+disclosed*. **The report, digest and this file land in the commits AFTER it**, so
+the live tip is ahead of this line by design rather than by drift — stated this
+way because naming its sha here would need another commit and move it again.
+Report SHA256 `ee610d06c666a2cc26ffb6feee0ed96470287972cc77065e30090ee6f10b3143`.
