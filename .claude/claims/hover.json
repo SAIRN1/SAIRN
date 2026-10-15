@@ -779,6 +779,17 @@
       "status": "released",
       "released_at": "2026-10-15T11:41:57Z",
       "files": null
+    },
+    {
+      "id": "hover-1792064786",
+      "session": "hover",
+      "subject": "hover",
+      "task": "b39: log b38 to chain, chain/beacon check; deep-verify cc b13/cody b14/hank b13 by re-deriving counts from source; re-derive fourth b21's 63-across-22 figure; reproduce scope-gate pass/refuse discrepancy (191d8fc6 vs b38 handoff) and route to cc; land-check weakening-flags sign-off + Flag1/H2 + 9 stale root pairs; push; final handoff/report/digest/latest b39",
+      "claimed_at": "2026-10-15T11:46:26Z",
+      "claimed_at_epoch": 1792064786.4750464,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
