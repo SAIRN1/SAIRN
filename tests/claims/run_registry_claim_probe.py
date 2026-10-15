@@ -111,6 +111,40 @@ tmp = tempfile.mkdtemp(prefix='regclaim-probe-')
 # with. The second non-hermetic fixture in this file in one session.
 # The incident is in the header where it belongs; the fixtures use a
 # path that cannot collide with live work.
+
+# -- THE VERDICT IS A LINE, NOT A WORD (2026-10-15, cody b16) ---------------
+# NINE arms in this file asserted `'BLOCKED' in out` / `not in out` over the
+# tool's WHOLE output. Eight of them went red in the b15 full-tree run for a
+# reason that has nothing to do with registry claims: a LIVE claim from
+# another session carried the word inside its own free-text task string --
+# fourth's read "(2) BLOCKED AND NOT TAKEN -- ...". Every one of those arms
+# was reading another agent's prose as this tool's verdict.
+#
+# THE TOOL ITSELF ALREADY PAID FOR THIS EXACT CLASS ONE LEVEL DOWN and says
+# so at tools/sairn_claim.py:660 -- `'blocked' in clause` matched inside
+# UNBLOCKED, which is the opposite verdict. Repeating it over the tool's
+# OUTPUT was the same defect wearing a different hat, and it is why this is a
+# shared helper rather than nine more substring tests.
+#
+# The real verdict is a line that STARTS `BLOCKED -- `
+# (tools/sairn_claim.py:2219). Anchored at line start, a task string can say
+# whatever it likes.
+def blocked_lines(out):
+    """Every real BLOCKED verdict line in the tool's output."""
+    return [l for l in out.split(chr(10)) if l.startswith('BLOCKED -- ')]
+
+
+def decided(out):
+    """True when the tool actually reached a decision on its input.
+
+    Paired with blocked_lines(): "no line starts with BLOCKED" is also
+    satisfied by an empty output or a tool that died before deciding, and an
+    arm that cannot tell those apart is not a check.
+    """
+    return bool(out.strip()) and ('CLEAR' in out or 'BLOCKED -- ' in out
+                                  or 'claim(s)' in out)
+
+
 FIXTURE_FILE = 'docs/zz-registry-probe-fixture-only.md'
 MINE = 'my work FILES: ' + FIXTURE_FILE
 try:
@@ -120,7 +154,9 @@ try:
     os.makedirs(reg)
     write_row(reg, 'hank', [FIXTURE_FILE])
     rc, out = run(reg, 'check', 'tooling', MINE, '--no-fetch')
-    ok('a claim visible ONLY in the registry BLOCKS', 'BLOCKED' in out, out[:300])
+    ok('a claim visible ONLY in the registry BLOCKS',
+       bool(blocked_lines(out)) and decided(out),
+       'verdict line(s): %r' % (blocked_lines(out)[:2],))
     ok('...naming the session that holds it', 'hank' in out, out[:300])
     ok('...and the declared file they collide on',
        FIXTURE_FILE in out, out[:300])
@@ -132,7 +168,9 @@ try:
     # ── blocker, and this is the arm a match-everything regression fails.
     rc, out = run(reg, 'check', 'tooling', 'unrelated FILES: tools/zz_nothing.py',
                   '--no-fetch')
-    ok('a registry claim on DISJOINT files does not block', 'BLOCKED' not in out, out[:300])
+    ok('a registry claim on DISJOINT files does not block',
+       not blocked_lines(out) and decided(out),
+       'verdict line(s): %r' % (blocked_lines(out)[:2],))
 
     # ── 3. EXPIRY IS THE REGISTRY'S TOO. A row nobody cleaned up must not
     # ── block work for ever -- that is the four-hour rule with the rule
@@ -141,32 +179,42 @@ try:
     os.makedirs(old)
     write_row(old, 'hank', [FIXTURE_FILE], age_h=9.0)
     rc, out = run(old, 'check', 'tooling', MINE, '--no-fetch')
-    ok('a registry claim older than the expiry does not block', 'BLOCKED' not in out, out[:300])
+    ok('a registry claim older than the expiry does not block',
+       not blocked_lines(out) and decided(out),
+       'verdict line(s): %r' % (blocked_lines(out)[:2],))
 
     # ── 4. A RELEASED CLAIM IS NOT A CLAIM, even in the fast path.
     rel = os.path.join(tmp, 'released')
     os.makedirs(rel)
     write_row(rel, 'hank', [FIXTURE_FILE], status='released')
     rc, out = run(rel, 'check', 'tooling', MINE, '--no-fetch')
-    ok('a RELEASED registry claim does not block', 'BLOCKED' not in out, out[:300])
+    ok('a RELEASED registry claim does not block',
+       not blocked_lines(out) and decided(out),
+       'verdict line(s): %r' % (blocked_lines(out)[:2],))
 
     # ── 5. FAIL OPEN, FIVE WAYS. Each is a real state a clone can be in
     # ── during a rollout, and none may refuse work.
     rc, out = run(os.path.join(tmp, 'does-not-exist'), 'check', 'tooling', MINE,
                   '--no-fetch')
-    ok('an ABSENT registry directory leaves the tool as it was', 'BLOCKED' not in out, out[:200])
+    ok('an ABSENT registry directory leaves the tool as it was',
+       not blocked_lines(out) and decided(out),
+       'verdict line(s): %r' % (blocked_lines(out)[:2],))
 
     empty = os.path.join(tmp, 'empty')
     os.makedirs(empty)
     rc, out = run(empty, 'check', 'tooling', MINE, '--no-fetch')
-    ok('an EMPTY registry leaves the tool as it was', 'BLOCKED' not in out, out[:200])
+    ok('an EMPTY registry leaves the tool as it was',
+       not blocked_lines(out) and decided(out),
+       'verdict line(s): %r' % (blocked_lines(out)[:2],))
 
     bad = os.path.join(tmp, 'corrupt')
     os.makedirs(bad)
     with io.open(os.path.join(bad, 'hank.json'), 'w', encoding='utf-8') as fh:
         fh.write('{not json at all')
     rc, out = run(bad, 'check', 'tooling', MINE, '--no-fetch')
-    ok('a CORRUPT registry row leaves the tool as it was', 'BLOCKED' not in out, out[:200])
+    ok('a CORRUPT registry row leaves the tool as it was',
+       not blocked_lines(out) and decided(out),
+       'verdict line(s): %r' % (blocked_lines(out)[:2],))
     ok('...and does not spill a traceback at the operator',
        'Traceback' not in out, out[-300:])
 
@@ -177,7 +225,9 @@ try:
                              'task': 'on an older build'}))
     rc, out = run(noclaims, 'check', 'tooling', MINE, '--no-fetch')
     ok('a row with NO claims key -- a clone on the older build -- is not an '
-       'error', 'BLOCKED' not in out, out[:200])
+       'error',
+       not blocked_lines(out) and decided(out),
+       'verdict line(s): %r' % (blocked_lines(out)[:2],))
 
     wrongshape = os.path.join(tmp, 'wrongshape')
     os.makedirs(wrongshape)
@@ -185,7 +235,10 @@ try:
         fh.write(json.dumps({'session': 'hank', 'claims': ['not', 'dicts']}))
     rc, out = run(wrongshape, 'check', 'tooling', MINE, '--no-fetch')
     ok('a row whose claims are the WRONG SHAPE is skipped, not fatal',
-       'BLOCKED' not in out and 'Traceback' not in out, out[:200])
+       not blocked_lines(out) and decided(out)
+       and 'Traceback' not in out,
+       'verdict line(s): %r traceback=%s'
+       % (blocked_lines(out)[:2], 'Traceback' in out))
 
     # ── 6. THE MIRROR IS WRITTEN, AND ONLY THIS SESSION'S ROW IS TOUCHED.
     # ── Ownership-per-key is the property that makes the registry safe to
@@ -318,8 +371,33 @@ try:
     with io.open(_p, 'w', encoding='utf-8') as fh:
         fh.write(json.dumps(_row, indent=1))
     rc, out = run(dead, 'check', 'tooling', MINE, '--no-fetch')
+    # ── ANCHORED ON THE VERDICT LINE, NOT ON THE WORD (2026-10-15, cody b16)
+    # This arm used to assert `'BLOCKED' not in out` over the WHOLE output,
+    # and it went red for a reason that has nothing to do with liveness: a
+    # LIVE claim from another session carried the word in its own free-text
+    # task string -- fourth's read "(2) BLOCKED AND NOT TAKEN -- ...". The
+    # probe was reading another agent's prose as its own verdict.
+    # THE TOOL ITSELF ALREADY PAID FOR THIS EXACT CLASS one level down, and
+    # says so at tools/sairn_claim.py:660 -- `'blocked' in clause` matched
+    # inside UNBLOCKED, which is the opposite. Repeating it over the tool's
+    # output was the same defect wearing a different hat.
+    # The real verdict is a LINE that starts `BLOCKED -- `
+    # (tools/sairn_claim.py:2219), so that is what is matched, at line start.
+    blocked_lines = [l for l in out.split('\n')
+                     if l.startswith('BLOCKED -- ')]
     ok('end to end: a registry claim whose PROCESS IS GONE does not block, '
-       'however recently it was taken', 'BLOCKED' not in out, out[:300])
+       'however recently it was taken',
+       not blocked_lines,
+       'verdict line(s): %r\n(the word may appear anywhere in another '
+       'session\'s task text and that is NOT a verdict)'
+       % (blocked_lines[:2],))
+    # THE PAIRED CONTROL, because "no line starts with BLOCKED" is also
+    # satisfied by an empty output or a tool that crashed before deciding.
+    ok('   ...and the tool really did reach a decision on that input, so the '
+       'arm above is not passing over silence',
+       bool(out.strip()) and ('CLEAR' in out or 'BLOCKED -- ' in out
+                              or 'claim(s)' in out),
+       'rc=%s out=%r' % (rc, out[:200]))
 
     # And the heartbeat is actually written by the tool, not just read.
     beat = os.path.join(tmp, 'beat')

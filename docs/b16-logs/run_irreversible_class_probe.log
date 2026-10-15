@@ -1,0 +1,29 @@
+irreversible class: does it refuse, stay quiet, and fail closed?
+
+1. THE MEASURED GAP -- the name-based half cannot see this change
+  FAIL with NO members, a change to api/_lib/auth.js is still not recorded (this is the gap the class exists for)
+       exit was 1 -- if the name-based half now catches shared libraries, re-read whether this class is still needed
+
+2. THE EMPTY CLASS IS A NO-OP -- nothing is red on arrival
+  ok   an empty class matches nothing, even on a member-shaped path
+  ok   ...and the SHIPPED class is empty, so this gate changes no push today
+
+3. WITH A MEMBER, the same change is REFUSED and NAMED
+  ok   the member matches on path
+  ok   ...and check() refuses it
+  ok   ...naming the file and marking it IRREVERSIBLE
+  ok   ...and says WHY the name-based half missed it
+  ok   ...while an unrelated change still passes with the member installed
+
+4. THE sqlgrant KIND matches a statement, not a directory
+  ok   a diff ADDING a revoke matches
+  ok   a sql/ diff with NO grant or revoke does NOT match -- a gate that refused every SQL file would be talked past
+  ok   a grant in hunk CONTEXT does not match -- it is not what this push does
+
+5. FAIL CLOSED: a member this gate cannot evaluate is COULD NOT TELL
+  ok   an unknown member kind raises rather than being skipped
+  ok   ...and the message names the kind
+  ok   ...and check() returns 2 (could-not-tell), never 1 (a finding)
+
+1 ARM(S) FAILED
+  with NO members, a change to api/_lib/auth.js is still not recorded (this is the gap the class exists for) -- exit was 1 -- if the name-based half now catches shared libraries, re-read whether this class is still needed

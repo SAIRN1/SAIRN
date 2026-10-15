@@ -170,6 +170,51 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/claims/run_registry_claim_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "038cd28d99d5c0501d3b73c09a76a51bd8ff50eb",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_floor_layers_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "038cd28d99d5c0501d3b73c09a76a51bd8ff50eb",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_irreversible_class_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(_fxdir, ignore_errors=True)"
+    }
+   ],
+   "sha": "038cd28d99d5c0501d3b73c09a76a51bd8ff50eb",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_tier_a_review_gate_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "038cd28d99d5c0501d3b73c09a76a51bd8ff50eb",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlegacy_fault_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "038cd28d99d5c0501d3b73c09a76a51bd8ff50eb",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/sairn_push_gate_hook.py",
    "class": "push-gate logic",
    "level": "CHANGE",
@@ -2561,6 +2606,51 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "652f40344fbfea82be9828698f3e1b12f025b97d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/claims/run_registry_claim_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "653c0ceea28e90c056b44d4cb00293127a901510",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_floor_layers_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "653c0ceea28e90c056b44d4cb00293127a901510",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_irreversible_class_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(_fxdir, ignore_errors=True)"
+    }
+   ],
+   "sha": "653c0ceea28e90c056b44d4cb00293127a901510",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_tier_a_review_gate_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "653c0ceea28e90c056b44d4cb00293127a901510",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlegacy_fault_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "653c0ceea28e90c056b44d4cb00293127a901510",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -6450,6 +6540,51 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "dfa57069599d640996db247934504bb5afb1140a",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/claims/run_registry_claim_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "e17359f963fc909ccb4cb6ecd3067bc622e0969c",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_floor_layers_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "e17359f963fc909ccb4cb6ecd3067bc622e0969c",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_irreversible_class_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(_fxdir, ignore_errors=True)"
+    }
+   ],
+   "sha": "e17359f963fc909ccb4cb6ecd3067bc622e0969c",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_tier_a_review_gate_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "e17359f963fc909ccb4cb6ecd3067bc622e0969c",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlegacy_fault_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "e17359f963fc909ccb4cb6ecd3067bc622e0969c",
    "criteria_version": "2026-10-06.1"
   },
   {

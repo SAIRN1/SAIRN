@@ -1,0 +1,27 @@
+SAIRNlegacy -- the reservation lock suite must refuse a handler or a client that has stopped holding it
+
+  ok   0. the suite is GREEN in the worktree before anything is planted (exit 0)
+  ok   1. the lock becomes an ordinary upsert -- the shortest diff that removes it
+  ok   2. the condition survives but the LICENCE scope does not -- one funeral home reserves another's unit
+  ok   3. the status condition is dropped, so the PATCH overwrites a reservation somebody else already holds
+  ok   4. zero rows matched answers 200 -- the silent failure
+  ok   5. the refusal loses its code, so the client cannot tell a lost race from any other failure
+  ok   6. the gate widens to EVERY transition, so an ordinary release starts answering 409
+  ok   7. the message stops naming the not-yet-synced cause, so a director hunts a colleague who did nothing
+  ok   8. app_id is taken from the client again
+  ok   9. THE REAL 2026-09-02 DEFECT, RESTORED: the rollback writes back its PRE-AWAIT snapshot and silently undoes a concurrent release
+  ok   10. the rollback stops checking the reservation is still OURS, clobbering newer state
+  ok   11. the optimistic write is KEPT on a 409 -- the device shows a reservation the server never holds
+  ok   12. every failure rolls back, so a NOT_PROVISIONED answer loses a reservation that is real on this device
+  ok   13. the pre-write local re-check goes, so a stale copy overwrites somebody else's reservation before the server ever sees it
+  ok   14. a failed write stops recording the server's reason, so the toast invents one
+  ok   15. a thrown request is swallowed
+  ok   16. the session token stops being sent -- the exact production defect, restored: a gated resource answers 401 and no reservation reaches the server at all
+  ok   17. an explicit REFUSAL stops rolling back, so a 401 or 403 leaves the device showing a reservation the server denied -- the two-families state, reached by being told no and ignoring it
+  ok   18. ...and the other direction: the rollback widens to EVERY failure, so a 503 or a timeout releases a unit whose reservation may well have landed
+  ok   the worktree copy of api\sd-data.js is byte-identical again
+  ok   the worktree copy of sairnlegacy.html is byte-identical again
+  ok   and the suite is GREEN again with everything restored (exit 0)
+  ok   this run left NOTHING newly dirty in this clone -- 3 file(s) were already modified before it started and are not this probe's doing
+
+ALL 23 ARMS PASS -- every planted defect was refused (18 mutations).

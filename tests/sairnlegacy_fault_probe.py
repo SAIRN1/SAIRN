@@ -112,12 +112,26 @@ MUTATIONS = [
 
     ("8. app_id is taken from the client again",
      API,
-     "        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnlegacy', [idCol]: String(payload.id), data: payload, updated_at: nowISO() })\n"
-     "      });\n"
-     "      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlegacy data tables",
-     "        body: JSON.stringify({ license_hash: licHash, app_id: body.app_id || 'sairnlegacy', [idCol]: String(payload.id), data: payload, updated_at: nowISO() })\n"
-     "      });\n"
-     "      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlegacy data tables"),
+     # ── ANCHOR SHORTENED 2026-10-15 (cody b16), AND THE ROT WAS IN THE
+     #    TRAILING CONTEXT, NOT IN THE LINE THIS ARM IS ABOUT ─────────────
+     # This arm reported ANCHOR-0 in the b15 full-tree run, and its label --
+     # "app_id is taken from the client again" -- reads like a finding that
+     # the live handler had regressed. IT HAD NOT. The app_id line below is
+     # UNCHANGED and still stamps the server's own literal
+     # (api/sd-data.js:16006). What moved was the code AFTER it: the anchor
+     # carried two further lines of trailing context ending in an INLINE
+     # `res.status(503).json({ error: { code: 'NOT_PROVISIONED' ... })`, and
+     # that branch has since been extracted into `await notProvisioned(res,
+     # r, ...)`. MEASURED: the old anchor matched 205 of its 295 characters
+     # and diverged exactly where notProvisioned() now begins.
+     # So the anchor is cut back to the ONE LINE the mutation changes --
+     # verified unique in the file -- and it no longer depends on unrelated
+     # neighbouring code. A mutation arm whose anchor includes context it is
+     # not testing stops testing anything the first time a neighbour is
+     # refactored, and reports it in the voice of the defect it was built to
+     # catch.
+     "        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnlegacy', [idCol]: String(payload.id), data: payload, updated_at: nowISO() })",
+     "        body: JSON.stringify({ license_hash: licHash, app_id: body.app_id || 'sairnlegacy', [idCol]: String(payload.id), data: payload, updated_at: nowISO() })"),
 
     # ── 9, 10 AND 11 RE-AIMED 2026-09-21, AND THE RE-AIMING IS THE POINT ──
     # All three anchored on the rollback as it was written INLINE inside the

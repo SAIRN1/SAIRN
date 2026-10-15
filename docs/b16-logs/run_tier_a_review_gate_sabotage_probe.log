@@ -1,0 +1,12 @@
+check 13 coverage -- the probe must refuse a gate whose coverage test has widened back to an intersection
+
+  (session identity 'cody' carried into the worktree -- see _carry_identity)
+  ok   0. the suite is GREEN in the worktree before anything is planted (exit 0)
+  ok   1. HOVER #270 ITSELF, RESTORED -- the coverage test is an INTERSECTION again, so one open obligation clears a change touching it and anything else alongside it
+  ok   2. the union stops being scoped to THIS SESSION -- another session's open obligation fills my gap, and the gate is satisfied by work nobody in this clone is accountable for
+  ok   3. a PARTIALLY recorded change stops saying it is partial -- the message reads as a change with nothing on file and sends the session to re-record obligations it already holds
+  ok   4. THE ONE THAT READS AS CORRECT: the blocking list names every resource the change touched rather than the uncovered ones, so the heading and both halves are still right and only the list is wrong
+  ok   5. THE OWNER CHECK IS REMOVED AND THE SELF-REVIEW CHECK IS LEFT -- which is exactly what the file looked like yesterday, so it reads as the original rather than as damage
+  ok   6. THE STAMP STOPS BEING APPLIED AT --open -- every new obligation is born UNOWNED, so the queue silently returns to first-come while every existing owned record still looks right
+  ok   7. AN AUTHOR CAN BE ASSIGNED ITS OWN OBLIGATION -- the exclusion in assign_owner goes, so the stamp still happens and still looks like one, and the record becomes unreviewable by the only session holding it
+  FAIL 8. THE ROSTER STOPS FAILING CLOSED -- an unreadable .claude/claims/ returns an empty list instead of None, so assign_owner sees a roster with nobody on it and every record is quietly born unowned  SILENT -- the suite passed with this defect planted
