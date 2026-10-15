@@ -28853,6 +28853,35 @@
       "recurrence_open": "nothing enumerates the consumers of the raw `status` field. Three have been found one at a time, across three batches, each by accident while doing something else. A sweep for `get('status') == 'active'` outside sairn_claim.py would be the mechanical answer and was not built here."
     },
     {
+      "commit": "0d33f65917d7",
+      "date": "2026-10-14",
+      "subject": "fix(claims,citation): the audit counted a session eighteen days gone, and a citation pointed at the wrong function",
+      "files": [
+        "docs/2026-10-14-cc-b11-routed.md",
+        "tools/sairn_claim.py",
+        "tools/sairn_claim_doc_freshness.py"
+      ],
+      "lines_added": 222,
+      "lines_removed": 7,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "tools/sairn_claim.py computes self_hits (a session's own OTHER active claims that overlap the one about to be taken) in cmd_check and PRINTS 'claim will REFUSE this' when the overlap kind is 'refuse', but cmd_claim never checks self_hits at all -- only cmd_check's RETURN CODE (which self_hits never affects) can abort the claim. Confirmed in the real record: hank's b15 claim (active since 2026-10-15T13:04:18Z) was still unreleased when hank successfully claimed b16 (2026-10-15T14:00:05Z) ~56 minutes later, with FILES declared in both claims overlapping on api/sd-data.js, api/_lib/sen-payroll.js, api/_lib/sen-evv-clock.js and sairnsenior.html verbatim -- exactly the shape self_hits exists to catch, and the claim went through anyway. Not sanctioned by instruction: hank's own b15 report says work was 'stopped early on instruction', which is an instruction to stop SUBSTANTIVE WORK, not a decision to leave the claim unreleased while opening a new one. A real claim-registry gap, not a code defect in the platform apps.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "unknown_reason": "the self-overlap warning and its 'claim will REFUSE this' print text were added together with cmd_check's self_hits detection; nothing in the diff history shows the enforcement half (a nonzero return from self_hits) was ever written, so there is no single commit that removed it"
+      },
+      "citation_note": "no standing rule names a safety check that is computed but never enforced",
+      "phase_note": "the comment at tools/sairn_claim.py documents the intended design (self_hits detected in cmd_check, refused in cmd_claim); only the detection and the print statement were ever coded, the refusal branch was not",
+      "factors_unknown_reason": "not investigated this batch -- a real-world manifestation (hank b16 claimed while b15 stayed active, with real FILES overlap on api/sd-data.js, api/_lib/sen-payroll.js, api/_lib/sen-evv-clock.js, sairnsenior.html) was traced to the missing enforcement, but why the enforcement was never written has not been asked of anyone"
+    },
+    {
       "commit": "0e6607e0709e",
       "date": "2026-10-14",
       "subject": "fix(push gate): the refusal text names the scoped exemption first, as :990 already claimed",
@@ -31207,6 +31236,64 @@
       "recurrence_open": "Any other site whose payload variable is not named `payload` is still in BUILT and still uncounted. Nothing here enumerates them: that needs the tool's own classifier changed, which is cc's."
     },
     {
+      "commit": "883ad0bc2478",
+      "date": "2026-10-15",
+      "subject": "fix(sairnsenior): F2 -- the EVV checks read the SAME effective clock pay uses",
+      "files": [
+        "api/_lib/sen-evv-readiness.js",
+        "api/b16-evv-pay-agreement.test.js",
+        "sairnsenior.html"
+      ],
+      "lines_added": 468,
+      "lines_removed": 16,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "AN EVV EXPORT AND A PAY RUN DISAGREED ABOUT THE SAME VISIT. b15's F1 moved payroll onto the effective clock and deliberately left api/_lib/sen-evv-readiness.js and the client's EVV anomaly checks on the raw clock, so a visit whose clock-out exists ONLY as an APPROVED correction was simultaneously PAID with real minutes and reported as 'No clock-out time recorded'. A state EVV programme reconciling an export against a payroll register finds hours paid for a visit the export says has no end time, and neither number looks wrong to a reader of one of them. Nothing reconciled the two.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "49f6a75289c0",
+        "date": "2026-10-15",
+        "subject": "fix(sairnsenior): F1 an APPROVED clock correction now reaches payroll -- 60 minutes and 2000 cents per visit",
+        "lag_days": 0
+      },
+      "contributing_factors": [
+        {
+          "factor": "THE DIVERGENCE WAS A DECISION, NOT AN OVERSIGHT -- F2 was held for Michael and b15 correctly declined to decide it. What made it a defect was shipping the other half first, which is what created the disagreement",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Closed the same day the reserved question was answered; the batch that opened it also named it as open item 5 with the exact next step"
+        },
+        {
+          "factor": "TWO FILES EACH NEEDED THE APPROVAL RULE and the cheap fix was a second copy of it in a file that produces a COMPLIANCE verdict",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Both require api/_lib/sen-evv-clock.js; arm E6 asserts readiness carries NO local status==='approved' test of its own"
+        },
+        {
+          "factor": "THE EASIER CHANGE WAS THE WRONG ONE: sweeping every clock read onto the effective value would have let an approved correction clear 'No GPS on clock-out', asserting a coordinate that does not exist",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Arm E5 asserts the GPS elements still read the raw clock_*_lat/lng AND that no time element reads a raw clock field -- both directions, so neither a missed move nor an over-broad one passes"
+        },
+        {
+          "factor": "The client carried the exception condition TWICE, once to filter and once to label, so the two could stop agreeing about what a row is",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "senEvvException(v) is one predicate consulted by both, lifted and driven in arm E7 against the real page"
+        }
+      ],
+      "recurrence_open": "ONE DISAGREEMENT REMAINS AND IT IS DELIBERATE: a pay run of a FROZEN period reads the clock as at paid_at while an EVV export reads it as at now. Arm E8 pins it and requires period_closed to name the instant, but whether a deliberate disagreement is acceptable when the thing disagreeing is a federally mandated export is a question routed to fourth and NOT answered. AND a corrected clock-out with no GPS now surfaces as a GPS exception rather than a time-span one -- a visible change to what a surveyor is shown, believed correct and not reviewed by anyone else."
+    },
+    {
       "commit": "9020156b22c2",
       "date": "2026-10-15",
       "subject": "fix(checks): the misspelt-role blind spot is closed, and the leg-session-gate red was a FALSE red",
@@ -31326,348 +31413,6 @@
         }
       ],
       "recurrence_open": "Nothing sweeps committed suites for fixed-width source windows or for generic loops over a list with a known exception. Both were found by running the suites and reading the output, which is not a control."
-    },
-    {
-      "commit": "aac69e6acf7d",
-      "date": "2026-10-15",
-      "subject": "test(api): three b15-broken fixtures repaired, and the slice(x, x+N) gate b14 asked for",
-      "files": [
-        "api/_lib/sairnsenior-authorizations.test.js",
-        "api/_lib/sairnsenior-branches.test.js",
-        "api/_lib/sairnsenior-pay-rates.test.js",
-        "api/b16-slice-window-check.test.js"
-      ],
-      "lines_added": 286,
-      "lines_removed": 0,
-      "app": "sairnsenior",
-      "layer": "test",
-      "severity": "high",
-      "detection_method": "static-checker",
-      "summary": "THREE TEST SUITES WERE DEAD, NOT FAILING, AND NOTHING SAID SO. b15 added senEffClock to sairnsenior.html and not to the lift list of the three suites that extract visitHours and azBurnDown, so every arm in all three died at 'ReferenceError: senEffClock is not defined' before asserting anything: 191 arms across api/_lib/sairnsenior-pay-rates.test.js (76), sairnsenior-authorizations.test.js (83) and sairnsenior-branches.test.js (32). The pay-rates suite covers sen_pay_rates, one of the two resources the open Tier A obligation is written over.",
-      "rules": [
-        "1.7"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": "node",
-      "found_by_session": null,
-      "injection": {
-        "commit": "49f6a75289c0",
-        "date": "2026-10-15",
-        "subject": "fix(sairnsenior): F1 an APPROVED clock correction now reaches payroll -- 60 minutes and 2000 cents per visit",
-        "lag_days": 0
-      },
-      "contributing_factors": [
-        {
-          "factor": "NONE OF THE THREE IS IN docs/known-red-suites.json, so they were UNREGISTERED reds -- invisible to any check that reads that file and visible only to someone running the whole api/ tree",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Found by the b16 full-tree sweep: 275 suites run individually, docs/hank-evidence/b16/all_api_suites.log, which is what turned 7 reds into 3"
-        },
-        {
-          "factor": "A LIFTED FIXTURE BREAKS WHEN THE PAGE GAINS A DEPENDENCY, and nothing connects the two. b15 changed visitHours to call a new helper and no check asks which suites lift it",
-          "kind": "latent-condition",
-          "action_status": "planned",
-          "action": "NOT CLOSED IN b16 and carried as planned rather than done: there is still no check that a function lifted from sairnsenior.html has all its callees lifted with it, and the three suites were fixed by hand. The check belongs with the api/ suites that do the lifting, which is hank's, and it is named in the b16 handoff with its exact next step"
-        },
-        {
-          "factor": "The failure was a HARD ERROR rather than a failed arm, so the suite printed no arm names and no counts -- the output of a dead suite looks nothing like the output of a failing one and is easier to skip",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Each suite now prints its real counts (76/76, 32/32, 83/83); a hard error remains distinguishable because it still produces no count line at all"
-        },
-        {
-          "factor": "senEffClock could have been STUBBED, which would have made the suites green while measuring a model of the approval rule rather than the rule",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "EXTRACTED with fn('senEffClock'), not stubbed -- the approval rule it applies is what those arms' hours depend on, and the suites' own notes already say a stub that was merely close would let a real mismatch pass"
-        }
-      ],
-      "recurrence_open": "THE LIFT-DEPENDENCY GAP IS OPEN, as the second factor says. b16 also ADDED senEvvException to sairnsenior.html, which depends on senEffClock, so the same break is available to the next suite that lifts it. AND THREE REDS REMAIN in api/ -- sd-data-customer-soft-delete, sd-data-family-contacts and sd-data-scp-licence-only -- all three registered in docs/known-red-suites.json, all three red before this batch, and NONE of them root-caused here."
-    },
-    {
-      "commit": "c470c2e13c31",
-      "date": "2026-10-15",
-      "subject": "fix(sairnsenior): the corrections tab hydrates first, and no longer claims an empty queue is empty",
-      "files": [
-        "api/b14-clock-approval-two-person.test.js",
-        "api/b15-corrections-hydrate.test.js",
-        "docs/2026-10-15-hank-b15-stedi-backfill-step.md",
-        "docs/hank-evidence/b15/b14_suite_after.log",
-        "docs/hank-evidence/b15/changed_file_suites.log",
-        "docs/hank-evidence/b15/hydrate_GREEN.log",
-        "docs/hank-evidence/b15/hydrate_RED.log",
-        "sairnsenior.html"
-      ],
-      "lines_added": 363,
-      "lines_removed": 7,
-      "app": "sairnsenior",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "independent-review",
-      "summary": "The b14 clock-corrections queue read the LOCAL store and told a scheduler 'Nothing is waiting.' on a cold device or after a failed hydrate. The panel exists to stop a submitted correction being invisible, and that sentence made it invisible with confidence -- the affirmative-false-success shape, in the feature built to prevent it.",
-      "rules": [
-        "1.5"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "652f40344fbf",
-        "date": "2026-10-15",
-        "subject": "feat(sairnsenior): no self-approval on clock corrections, and a queue that shows the pending ones",
-        "lag_days": 0
-      },
-      "contributing_factors": [
-        {
-          "factor": "The queue was built on visits(), the local store, because that is where every other view in the file reads from -- correct for a schedule, wrong for a thing whose whole point is that somebody else wrote it",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "renderCorrectionsView() hydrates before it renders"
-        },
-        {
-          "factor": "HYDRATING DOES NOT CLOSE IT. Offline, a 503 or an expired session leaves exactly the same empty list, so the fix that looks sufficient is not",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "The empty state says when it last reached the server, or that it could not and the list is therefore NOT evidence nothing is waiting"
-        },
-        {
-          "factor": "b14 named this in its own handoff as open item 2 and shipped the panel anyway",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Closed in the next batch; the named-open-item route worked, which is worth recording because the alternative is finding it from a user"
-        },
-        {
-          "factor": "The approve handler hydrated and then called the render, which now hydrates too -- two reads whose results could disagree about which was on screen",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "One call now; the render owns the hydrate"
-        }
-      ],
-      "recurrence_open": "The freshness line is rendered from a client clock, so a device with a wrong clock reports a wrong 'as of'. And NOTHING re-renders the tab on a later successful background sync -- the scheduler has to re-open it, so a correction arriving while the tab is open is still not shown until they do."
-    },
-    {
-      "commit": "c491f1bf1bbf",
-      "date": "2026-10-15",
-      "subject": "fix(router): a dead session owned two paths for eighteen days, and that is the fourth tool with this defect",
-      "files": [
-        "tools/route_suite_failures.py"
-      ],
-      "lines_added": 99,
-      "lines_removed": 17,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "static-checker",
-      "summary": "tools/route_suite_failures.py decided who ACTIVELY owns a path from the stored claim status field rather than from sairn_claim.is_active(), so a session that died holding a claim kept owning its declared paths for ever -- and this tool whole job is routing a suite failure to its owner. MEASURED before and after: 27 paths carried an ACTIVE attribution and TWO named cloud, last claimed 2026-09-27 and gone eighteen days; after, 25 paths and zero naming cloud. THE FOURTH TOOL WITH THIS DEFECT -- claim_activity_check.py 2026-09-28, sairn_claim own audit and sairn_claim_doc_freshness.py in cc b13 -- and the first one found by looking rather than by accident.",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": "grep over *.py and *.js for the raw status field",
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "load_claim_files has selected on the raw status field since it was written and is_active grew its liveness half later, on 2026-09-23; naming either as the injection would be a guess"
-      },
-      "citation_note": "a check that stopped checking: ACTIVE ownership was read from a field written once and never revisited, so a dead session kept owning its paths",
-      "contributing_factors": [
-        {
-          "factor": "liveness is computed at display time while the stored status field is never revisited, so the two spellings of active can only diverge",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "the selector imports is_active and the tool DIES naming the module if that import fails -- a router that silently reverts to the raw field is the defect wearing a fallback"
-        },
-        {
-          "factor": "eleven grep hits needed eleven separate judgements: one real defect, one in an auditor scope cc may not write, four in probes that may be CORRECT as written, five that are prose or not claims at all",
-          "kind": "process",
-          "action_status": "done",
-          "action": "each of the eleven is recorded in docs/2026-10-14-cc-b14-routed.md with its verdict and reason, so the next sweep does not re-flag the five dismissed ones"
-        },
-        {
-          "factor": "the arm was first proved only in a scratch script, which is a demonstration and not a record",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "the pre-fix selector is restored inside the criteria lock on every run, with a control"
-        }
-      ],
-      "recurrence_open": "four tools found across three batches and the fifth is routed to H2 in an auditor-scope file cc cannot write. Nothing enumerates the consumers of this field as a standing check -- the sweep was a grep run once, by hand, and will go stale the next time somebody writes the pattern."
-    },
-    {
-      "commit": "883ad0bc2478",
-      "date": "2026-10-15",
-      "subject": "fix(sairnsenior): F2 -- the EVV checks read the SAME effective clock pay uses",
-      "files": [
-        "api/_lib/sen-evv-readiness.js",
-        "api/b16-evv-pay-agreement.test.js",
-        "sairnsenior.html"
-      ],
-      "lines_added": 468,
-      "lines_removed": 16,
-      "app": "sairnsenior",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "summary": "AN EVV EXPORT AND A PAY RUN DISAGREED ABOUT THE SAME VISIT. b15's F1 moved payroll onto the effective clock and deliberately left api/_lib/sen-evv-readiness.js and the client's EVV anomaly checks on the raw clock, so a visit whose clock-out exists ONLY as an APPROVED correction was simultaneously PAID with real minutes and reported as 'No clock-out time recorded'. A state EVV programme reconciling an export against a payroll register finds hours paid for a visit the export says has no end time, and neither number looks wrong to a reader of one of them. Nothing reconciled the two.",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "49f6a75289c0",
-        "date": "2026-10-15",
-        "subject": "fix(sairnsenior): F1 an APPROVED clock correction now reaches payroll -- 60 minutes and 2000 cents per visit",
-        "lag_days": 0
-      },
-      "contributing_factors": [
-        {
-          "factor": "THE DIVERGENCE WAS A DECISION, NOT AN OVERSIGHT -- F2 was held for Michael and b15 correctly declined to decide it. What made it a defect was shipping the other half first, which is what created the disagreement",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Closed the same day the reserved question was answered; the batch that opened it also named it as open item 5 with the exact next step"
-        },
-        {
-          "factor": "TWO FILES EACH NEEDED THE APPROVAL RULE and the cheap fix was a second copy of it in a file that produces a COMPLIANCE verdict",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Both require api/_lib/sen-evv-clock.js; arm E6 asserts readiness carries NO local status==='approved' test of its own"
-        },
-        {
-          "factor": "THE EASIER CHANGE WAS THE WRONG ONE: sweeping every clock read onto the effective value would have let an approved correction clear 'No GPS on clock-out', asserting a coordinate that does not exist",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Arm E5 asserts the GPS elements still read the raw clock_*_lat/lng AND that no time element reads a raw clock field -- both directions, so neither a missed move nor an over-broad one passes"
-        },
-        {
-          "factor": "The client carried the exception condition TWICE, once to filter and once to label, so the two could stop agreeing about what a row is",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "senEvvException(v) is one predicate consulted by both, lifted and driven in arm E7 against the real page"
-        }
-      ],
-      "recurrence_open": "ONE DISAGREEMENT REMAINS AND IT IS DELIBERATE: a pay run of a FROZEN period reads the clock as at paid_at while an EVV export reads it as at now. Arm E8 pins it and requires period_closed to name the instant, but whether a deliberate disagreement is acceptable when the thing disagreeing is a federally mandated export is a question routed to fourth and NOT answered. AND a corrected clock-out with no GPS now surfaces as a GPS exception rather than a time-span one -- a visible change to what a surveyor is shown, believed correct and not reviewed by anyone else."
-    },
-    {
-      "commit": "cb80fb32b9a0",
-      "date": "2026-10-15",
-      "subject": "fix(sairncare): X1 the comment was WRONG not merely unproven, X2 the cited field is now on the finding",
-      "files": [
-        "api/_lib/compliance-rules.js",
-        "api/n1-n4-and-sf-delete.test.js",
-        "docs/hank-evidence/b14/cody_window_GREEN.log",
-        "docs/hank-evidence/b14/cody_window_RED.log",
-        "docs/hank-evidence/b14/regress2.log",
-        "docs/hank-evidence/b14/regress_n1n4.log",
-        "docs/hank-evidence/b14/regress_training_join.log",
-        "docs/hank-evidence/b14/routed_probe.log"
-      ],
-      "lines_added": 266,
-      "lines_removed": 20,
-      "app": "sairncare",
-      "layer": "product",
-      "severity": "low",
-      "detection_method": "independent-review",
-      "summary": "meets_unknown_reason tells the reader that a days-remaining field says how much of the window is left, and the staff finding carried no such key. Both numbers WERE computed and stayed on the internal window object, while a third comment said the module hands 'every consumer' both -- three places said the reader had this and the reader did not. Found by cody's X2 arm.",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "Both numbers have been computed and un-surfaced since the window object gained them; the citing message was written later and the two were never in one diff."
-      },
-      "contributing_factors": [
-        {
-          "factor": "The message and the field it cites are 400 lines apart in one file, and nothing joins them",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "hours_window_days_elapsed and hours_window_days_remaining are on the finding now, beside hours_window_from"
-        },
-        {
-          "factor": "A citation to an absent field is worse than no citation: the obvious conclusion when somebody cannot find it is that the response was truncated",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Surfaced rather than un-cited, because 'evaluate on a later date' is only actionable with the number"
-        },
-        {
-          "factor": "The day-zero withholding is the one branch whose advice depends on these, so the gap was invisible until somebody drove day zero",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "cody's day-zero arms drive it and assert the reason text, not only the null"
-        }
-      ],
-      "recurrence_open": "No check compares the FIELD NAMES a message cites against the keys the same function returns. This was found by a human reading one message; a second instance elsewhere in the module would not be found the same way."
-    },
-    {
-      "commit": "cb80fb32b9a0",
-      "date": "2026-10-15",
-      "subject": "fix(sairncare): X1 the comment was WRONG not merely unproven, X2 the cited field is now on the finding",
-      "files": [
-        "api/_lib/compliance-rules.js",
-        "api/n1-n4-and-sf-delete.test.js",
-        "docs/hank-evidence/b14/cody_window_GREEN.log",
-        "docs/hank-evidence/b14/cody_window_RED.log",
-        "docs/hank-evidence/b14/regress2.log",
-        "docs/hank-evidence/b14/regress_n1n4.log",
-        "docs/hank-evidence/b14/regress_training_join.log",
-        "docs/hank-evidence/b14/routed_probe.log"
-      ],
-      "lines_added": 266,
-      "lines_removed": 20,
-      "app": "sairncare",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "independent-review",
-      "summary": "A comment in api/_lib/compliance-rules.js claimed a person was compliant the day before their hire anniversary and NON-COMPLIANT on it. Measured, the anniversary evaluation returns meets: null -- the day-zero withholding superseded the hand-drive and nobody re-read the sentence the change had just made untrue. NOT merely unproven: WRONG, and it is the kind of claim a reader checks least because it names its own evidence. Found by cody's X1 arm.",
-      "rules": [
-        "1.3"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The sentence was hand-driven on 2026-09-29 and was true then; the day-zero withholding that made it false landed later in a range that has since been rebased, so the sha cannot be verified in this clone and is not guessed at."
-      },
-      "contributing_factors": [
-        {
-          "factor": "The comment named its own evidence ('Driven: ...'), which is exactly what makes a reader stop checking",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Corrected to the measured verdict and the boundary it describes kept, because the boundary is real"
-        },
-        {
-          "factor": "A behaviour change and the comment describing the old behaviour were in the same file and the comment was not in the diff",
-          "kind": "process",
-          "action_status": "planned",
-          "action": "Nothing greps comments for verdict words near a changed branch, and nothing here builds that. The control that caught this one is cody's suite, which exists for this module only -- so the planned action is a routed one: a comment-vs-behaviour check somebody owns, not a habit."
-        },
-        {
-          "factor": "TWO MORE comments in the same file went stale in the OPPOSITE direction the same day: both still said NO ARM DRIVES THIS and ROUTED TO CODY after cody's arms landed",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "Both now cite the suite and what it asserts, including that the leap-day case is driven in BOTH directions because either arm alone passes against the wrong rule"
-        },
-        {
-          "factor": "A text check cannot tell a claim from a QUOTATION of that claim: the first draft of this fix quoted the superseded sentence to explain it and X1 flagged the fix. Third and fourth instances of that shape after b13's N4",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Corrections describe the old wording without spelling it, and say why in the comment so the next author does not re-learn it"
-        }
-      ],
-      "recurrence_open": "The anniversary boundary is now driven for ONE state's rule shape (WV) and one hire date. Nothing drives a facility-wide window, and the claim corrected here is about the hire-anchored one only."
     },
     {
       "commit": "9a70365b5a21",
@@ -31857,6 +31602,290 @@
         }
       ],
       "recurrence_open": "NOTHING SWEEPS api/ FOR LOGS THAT DESCRIBE AN OUTCOME THE CODE DOES NOT REACH. This one was found because a human misread it and routed it; the general shape -- a log asserting a disposition decided elsewhere -- is unchecked across 132 gates in this file alone."
+    },
+    {
+      "commit": "aac69e6acf7d",
+      "date": "2026-10-15",
+      "subject": "test(api): three b15-broken fixtures repaired, and the slice(x, x+N) gate b14 asked for",
+      "files": [
+        "api/_lib/sairnsenior-authorizations.test.js",
+        "api/_lib/sairnsenior-branches.test.js",
+        "api/_lib/sairnsenior-pay-rates.test.js",
+        "api/b16-slice-window-check.test.js"
+      ],
+      "lines_added": 286,
+      "lines_removed": 0,
+      "app": "sairnsenior",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "THREE TEST SUITES WERE DEAD, NOT FAILING, AND NOTHING SAID SO. b15 added senEffClock to sairnsenior.html and not to the lift list of the three suites that extract visitHours and azBurnDown, so every arm in all three died at 'ReferenceError: senEffClock is not defined' before asserting anything: 191 arms across api/_lib/sairnsenior-pay-rates.test.js (76), sairnsenior-authorizations.test.js (83) and sairnsenior-branches.test.js (32). The pay-rates suite covers sen_pay_rates, one of the two resources the open Tier A obligation is written over.",
+      "rules": [
+        "1.7"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "node",
+      "found_by_session": null,
+      "injection": {
+        "commit": "49f6a75289c0",
+        "date": "2026-10-15",
+        "subject": "fix(sairnsenior): F1 an APPROVED clock correction now reaches payroll -- 60 minutes and 2000 cents per visit",
+        "lag_days": 0
+      },
+      "contributing_factors": [
+        {
+          "factor": "NONE OF THE THREE IS IN docs/known-red-suites.json, so they were UNREGISTERED reds -- invisible to any check that reads that file and visible only to someone running the whole api/ tree",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Found by the b16 full-tree sweep: 275 suites run individually, docs/hank-evidence/b16/all_api_suites.log, which is what turned 7 reds into 3"
+        },
+        {
+          "factor": "A LIFTED FIXTURE BREAKS WHEN THE PAGE GAINS A DEPENDENCY, and nothing connects the two. b15 changed visitHours to call a new helper and no check asks which suites lift it",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "NOT CLOSED IN b16 and carried as planned rather than done: there is still no check that a function lifted from sairnsenior.html has all its callees lifted with it, and the three suites were fixed by hand. The check belongs with the api/ suites that do the lifting, which is hank's, and it is named in the b16 handoff with its exact next step"
+        },
+        {
+          "factor": "The failure was a HARD ERROR rather than a failed arm, so the suite printed no arm names and no counts -- the output of a dead suite looks nothing like the output of a failing one and is easier to skip",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Each suite now prints its real counts (76/76, 32/32, 83/83); a hard error remains distinguishable because it still produces no count line at all"
+        },
+        {
+          "factor": "senEffClock could have been STUBBED, which would have made the suites green while measuring a model of the approval rule rather than the rule",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "EXTRACTED with fn('senEffClock'), not stubbed -- the approval rule it applies is what those arms' hours depend on, and the suites' own notes already say a stub that was merely close would let a real mismatch pass"
+        }
+      ],
+      "recurrence_open": "THE LIFT-DEPENDENCY GAP IS OPEN, as the second factor says. b16 also ADDED senEvvException to sairnsenior.html, which depends on senEffClock, so the same break is available to the next suite that lifts it. AND THREE REDS REMAIN in api/ -- sd-data-customer-soft-delete, sd-data-family-contacts and sd-data-scp-licence-only -- all three registered in docs/known-red-suites.json, all three red before this batch, and NONE of them root-caused here."
+    },
+    {
+      "commit": "c470c2e13c31",
+      "date": "2026-10-15",
+      "subject": "fix(sairnsenior): the corrections tab hydrates first, and no longer claims an empty queue is empty",
+      "files": [
+        "api/b14-clock-approval-two-person.test.js",
+        "api/b15-corrections-hydrate.test.js",
+        "docs/2026-10-15-hank-b15-stedi-backfill-step.md",
+        "docs/hank-evidence/b15/b14_suite_after.log",
+        "docs/hank-evidence/b15/changed_file_suites.log",
+        "docs/hank-evidence/b15/hydrate_GREEN.log",
+        "docs/hank-evidence/b15/hydrate_RED.log",
+        "sairnsenior.html"
+      ],
+      "lines_added": 363,
+      "lines_removed": 7,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "The b14 clock-corrections queue read the LOCAL store and told a scheduler 'Nothing is waiting.' on a cold device or after a failed hydrate. The panel exists to stop a submitted correction being invisible, and that sentence made it invisible with confidence -- the affirmative-false-success shape, in the feature built to prevent it.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "652f40344fbf",
+        "date": "2026-10-15",
+        "subject": "feat(sairnsenior): no self-approval on clock corrections, and a queue that shows the pending ones",
+        "lag_days": 0
+      },
+      "contributing_factors": [
+        {
+          "factor": "The queue was built on visits(), the local store, because that is where every other view in the file reads from -- correct for a schedule, wrong for a thing whose whole point is that somebody else wrote it",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "renderCorrectionsView() hydrates before it renders"
+        },
+        {
+          "factor": "HYDRATING DOES NOT CLOSE IT. Offline, a 503 or an expired session leaves exactly the same empty list, so the fix that looks sufficient is not",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The empty state says when it last reached the server, or that it could not and the list is therefore NOT evidence nothing is waiting"
+        },
+        {
+          "factor": "b14 named this in its own handoff as open item 2 and shipped the panel anyway",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Closed in the next batch; the named-open-item route worked, which is worth recording because the alternative is finding it from a user"
+        },
+        {
+          "factor": "The approve handler hydrated and then called the render, which now hydrates too -- two reads whose results could disagree about which was on screen",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "One call now; the render owns the hydrate"
+        }
+      ],
+      "recurrence_open": "The freshness line is rendered from a client clock, so a device with a wrong clock reports a wrong 'as of'. And NOTHING re-renders the tab on a later successful background sync -- the scheduler has to re-open it, so a correction arriving while the tab is open is still not shown until they do."
+    },
+    {
+      "commit": "c491f1bf1bbf",
+      "date": "2026-10-15",
+      "subject": "fix(router): a dead session owned two paths for eighteen days, and that is the fourth tool with this defect",
+      "files": [
+        "tools/route_suite_failures.py"
+      ],
+      "lines_added": 99,
+      "lines_removed": 17,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "tools/route_suite_failures.py decided who ACTIVELY owns a path from the stored claim status field rather than from sairn_claim.is_active(), so a session that died holding a claim kept owning its declared paths for ever -- and this tool whole job is routing a suite failure to its owner. MEASURED before and after: 27 paths carried an ACTIVE attribution and TWO named cloud, last claimed 2026-09-27 and gone eighteen days; after, 25 paths and zero naming cloud. THE FOURTH TOOL WITH THIS DEFECT -- claim_activity_check.py 2026-09-28, sairn_claim own audit and sairn_claim_doc_freshness.py in cc b13 -- and the first one found by looking rather than by accident.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "grep over *.py and *.js for the raw status field",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "load_claim_files has selected on the raw status field since it was written and is_active grew its liveness half later, on 2026-09-23; naming either as the injection would be a guess"
+      },
+      "citation_note": "a check that stopped checking: ACTIVE ownership was read from a field written once and never revisited, so a dead session kept owning its paths",
+      "contributing_factors": [
+        {
+          "factor": "liveness is computed at display time while the stored status field is never revisited, so the two spellings of active can only diverge",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the selector imports is_active and the tool DIES naming the module if that import fails -- a router that silently reverts to the raw field is the defect wearing a fallback"
+        },
+        {
+          "factor": "eleven grep hits needed eleven separate judgements: one real defect, one in an auditor scope cc may not write, four in probes that may be CORRECT as written, five that are prose or not claims at all",
+          "kind": "process",
+          "action_status": "done",
+          "action": "each of the eleven is recorded in docs/2026-10-14-cc-b14-routed.md with its verdict and reason, so the next sweep does not re-flag the five dismissed ones"
+        },
+        {
+          "factor": "the arm was first proved only in a scratch script, which is a demonstration and not a record",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the pre-fix selector is restored inside the criteria lock on every run, with a control"
+        }
+      ],
+      "recurrence_open": "four tools found across three batches and the fifth is routed to H2 in an auditor-scope file cc cannot write. Nothing enumerates the consumers of this field as a standing check -- the sweep was a grep run once, by hand, and will go stale the next time somebody writes the pattern."
+    },
+    {
+      "commit": "cb80fb32b9a0",
+      "date": "2026-10-15",
+      "subject": "fix(sairncare): X1 the comment was WRONG not merely unproven, X2 the cited field is now on the finding",
+      "files": [
+        "api/_lib/compliance-rules.js",
+        "api/n1-n4-and-sf-delete.test.js",
+        "docs/hank-evidence/b14/cody_window_GREEN.log",
+        "docs/hank-evidence/b14/cody_window_RED.log",
+        "docs/hank-evidence/b14/regress2.log",
+        "docs/hank-evidence/b14/regress_n1n4.log",
+        "docs/hank-evidence/b14/regress_training_join.log",
+        "docs/hank-evidence/b14/routed_probe.log"
+      ],
+      "lines_added": 266,
+      "lines_removed": 20,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "independent-review",
+      "summary": "meets_unknown_reason tells the reader that a days-remaining field says how much of the window is left, and the staff finding carried no such key. Both numbers WERE computed and stayed on the internal window object, while a third comment said the module hands 'every consumer' both -- three places said the reader had this and the reader did not. Found by cody's X2 arm.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Both numbers have been computed and un-surfaced since the window object gained them; the citing message was written later and the two were never in one diff."
+      },
+      "contributing_factors": [
+        {
+          "factor": "The message and the field it cites are 400 lines apart in one file, and nothing joins them",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "hours_window_days_elapsed and hours_window_days_remaining are on the finding now, beside hours_window_from"
+        },
+        {
+          "factor": "A citation to an absent field is worse than no citation: the obvious conclusion when somebody cannot find it is that the response was truncated",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Surfaced rather than un-cited, because 'evaluate on a later date' is only actionable with the number"
+        },
+        {
+          "factor": "The day-zero withholding is the one branch whose advice depends on these, so the gap was invisible until somebody drove day zero",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "cody's day-zero arms drive it and assert the reason text, not only the null"
+        }
+      ],
+      "recurrence_open": "No check compares the FIELD NAMES a message cites against the keys the same function returns. This was found by a human reading one message; a second instance elsewhere in the module would not be found the same way."
+    },
+    {
+      "commit": "cb80fb32b9a0",
+      "date": "2026-10-15",
+      "subject": "fix(sairncare): X1 the comment was WRONG not merely unproven, X2 the cited field is now on the finding",
+      "files": [
+        "api/_lib/compliance-rules.js",
+        "api/n1-n4-and-sf-delete.test.js",
+        "docs/hank-evidence/b14/cody_window_GREEN.log",
+        "docs/hank-evidence/b14/cody_window_RED.log",
+        "docs/hank-evidence/b14/regress2.log",
+        "docs/hank-evidence/b14/regress_n1n4.log",
+        "docs/hank-evidence/b14/regress_training_join.log",
+        "docs/hank-evidence/b14/routed_probe.log"
+      ],
+      "lines_added": 266,
+      "lines_removed": 20,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "A comment in api/_lib/compliance-rules.js claimed a person was compliant the day before their hire anniversary and NON-COMPLIANT on it. Measured, the anniversary evaluation returns meets: null -- the day-zero withholding superseded the hand-drive and nobody re-read the sentence the change had just made untrue. NOT merely unproven: WRONG, and it is the kind of claim a reader checks least because it names its own evidence. Found by cody's X1 arm.",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The sentence was hand-driven on 2026-09-29 and was true then; the day-zero withholding that made it false landed later in a range that has since been rebased, so the sha cannot be verified in this clone and is not guessed at."
+      },
+      "contributing_factors": [
+        {
+          "factor": "The comment named its own evidence ('Driven: ...'), which is exactly what makes a reader stop checking",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Corrected to the measured verdict and the boundary it describes kept, because the boundary is real"
+        },
+        {
+          "factor": "A behaviour change and the comment describing the old behaviour were in the same file and the comment was not in the diff",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "Nothing greps comments for verdict words near a changed branch, and nothing here builds that. The control that caught this one is cody's suite, which exists for this module only -- so the planned action is a routed one: a comment-vs-behaviour check somebody owns, not a habit."
+        },
+        {
+          "factor": "TWO MORE comments in the same file went stale in the OPPOSITE direction the same day: both still said NO ARM DRIVES THIS and ROUTED TO CODY after cody's arms landed",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Both now cite the suite and what it asserts, including that the leap-day case is driven in BOTH directions because either arm alone passes against the wrong rule"
+        },
+        {
+          "factor": "A text check cannot tell a claim from a QUOTATION of that claim: the first draft of this fix quoted the superseded sentence to explain it and X1 flagged the fix. Third and fourth instances of that shape after b13's N4",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Corrections describe the old wording without spelling it, and say why in the comment so the next author does not re-learn it"
+        }
+      ],
+      "recurrence_open": "The anniversary boundary is now driven for ONE state's rule shape (WV) and one hire date. Nothing drives a facility-wide window, and the claim corrected here is about the hire-anchored one only."
     }
   ],
   "started": "2026-09-09",
