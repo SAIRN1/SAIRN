@@ -551,8 +551,8 @@
       "task": "hover audit b41: compaction diagnosis; deep-verify hank b15/cody b16; close loop on H1 b40/b41; land-check citation drift + log; re-run 40 hank suites; push; handoff/report/digest/latest b41. FILES: SAIRN-handoff-H2-b41.md SAIRN-report-h2-b41.txt SAIRN-digest-h2-b41.txt SAIRN-latest-H2.md",
       "claimed_at": "2026-10-15T14:43:23Z",
       "claimed_at_epoch": 1792075403.11114,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-15T14:47:47Z",
       "files": [
         "SAIRN-digest-h2-b41.txt",
         "SAIRN-handoff-H2-b41.md",
