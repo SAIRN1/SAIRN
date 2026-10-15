@@ -6537,6 +6537,34 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-15T01:21:13Z",
+      "opened_at_sha": "f92fe10aed6de03c2ea820c9a538fa6b3b5ec965",
+      "opened_at_sha_basis": "file-set",
+      "resources": [
+        "alf_staff",
+        "leg_aftercare",
+        "leg_cases",
+        "sen_visits"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/_resources/sairnsenior.js",
+        "api/leg-aftercare-key-unambiguous.test.js",
+        "api/sd-data.js",
+        "api/t16-clock-correction-record.test.js",
+        "api/t18-positions-vocabulary.test.js"
+      ],
+      "what": "b13: THREE Tier A resources changed and each needs a different reviewer question. (1) sen_visits -- api/sd-data.js's caregiver write branch no longer REFUSES a second clock_in_at; it keeps the original and APPENDS a pending correction carrying the old value, the new value, the actor from the verified session, a reason and a server timestamp, and a new scheduler-only approve_clock_correction action makes one effective. REVIEW HARDEST: (a) effectiveClock() is the ONLY thing that keeps a pending self-submitted time out of payroll -- find any consumer that reads clock_in_at or clock_corrections directly and would therefore see an unapproved time as recorded; the payroll action on sen_visits is the first place to look. (b) an entry with NO status is treated as APPROVED so live corrected visits are not silently reverted -- confirm that is right against the real rows rather than against my argument for it. (c) the approver may be the submitter in a one-person agency, marked self_approved rather than refused: decide whether a marked self-approval is acceptable on a federal EVV record, because I chose flag-not-refusal from the file's own precedent and not from a rule. (d) a submitted field's stamps and flags now go on the ENTRY rather than the row -- check I did not strand a real LATE_REPLAY flag. (2) alf_staff -- api/_lib/compliance-rules.js now withholds a FALSE while any applies_to_positions token is unreadable, so a partially-valid list produces applies:null for people it previously excluded. REVIEW HARDEST: that is a deliberate move toward OVER-inclusion on a regulated finding and it changes meets_unknown_reason text a surveyor reads; confirm the direction and confirm no consumer treats applies===null as false. (3) leg_aftercare -- the key is now two forms, the historic one for newId('CS')-shaped case ids with the three fixed types and an escaped one otherwise. REVIEW HARDEST: prove to yourself that NO row any shipped build could have written changes key, because a changed key orphans the row rather than updating it; the preservation arm F4d is my evidence and it tests the shapes I believe exist. Also: legAdoptServerId MERGES onto an existing canonical row, which DROPS a local row -- check that the dropped row can never carry data the kept one lacks.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-10-15T01:21:13Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
