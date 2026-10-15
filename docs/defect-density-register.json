@@ -30773,7 +30773,7 @@
       "recurrence_open": "Five of the seven role names are [CONFIRM] in the spec and still are -- a funeral home's own titles win, and 'prep' may need its own licensed tier the way SAIRNvet's PRESCRIBER_ROLES does because embalmer is a separate state licence in most states. leg_preneed's owner-only DELETION rule is not implemented: this handler has no delete verb. Whether a cremation authorisation legally needs a second named person is a state-law question this code does not answer. And the existing staff rows are only narrowed, not re-assigned -- that is a human task per employee and nothing tracks whether it has been done."
     },
     {
-      "commit": "e4ba37f97e8d",
+      "commit": "2884063edf4d",
       "date": "2026-10-15",
       "subject": "fix(tiers): the sf_events rule was prose with nothing driving it, and it went quiet for a day",
       "files": [
