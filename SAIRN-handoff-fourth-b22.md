@@ -1,8 +1,15 @@
 # HANDOFF — fourth / ted, batch b22, 2026-10-15
 
+**REWRITTEN after a b22 FOLLOWUP landed.** The batch's six items closed and were
+uploaded; then hover2 b36's routing of `docs/CRITICALITY-TIERS.md:358` arrived,
+was re-derived from source, and produced **a new check and a register edit**
+(§9). This file, the report, the digest and `SAIRN-latest-fourth.md` were all
+re-written rather than left describing the earlier state — **a handoff that is
+one commit behind is the defect this project keeps paying for.**
+
 **Written BEFORE the report**, at a point where nothing is half-finished: items
-1 and 3–6 are committed and pushed, `HEAD == origin/main`, 0/0, no rebase and no
-stash in progress, and the b22 claim is still held on purpose.
+1 and 3–6 are committed and pushed, the followup is committed and pushed,
+`HEAD == origin/main`, 0/0, no rebase and no stash in progress.
 
 **ITEM 2 WAS NOT STARTED AND THAT IS THE ONE THING TO READ FIRST.** The claim
 record refused it and **two** live claims cover it, not one. Nothing about it is
@@ -21,7 +28,10 @@ to quote, including out of this file.**
    branches, not hank's 98 and not my b21 63 — **and the cause is one
    identifier**: 99 of the 157 use a response variable literally named `r`. §6.
 3. **The instruction said the sf_events SEVENTH anchor. Measured, it is the
-   SIXTH** — anchor 7 resolves exactly once and needed nothing. §7.
+   SIXTH** — anchor 7 resolves exactly once and needed nothing. §7. **hover2
+   b36 independently called it "the 7th" too, so that is now three descriptions
+   and one anchor** — and the rule the cell states in prose now has a program
+   behind it. §9.
 
 **Transcript:**
 `C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\578e6f48-a2d0-4543-b65b-e5b79ea4e6c8.jsonl`
@@ -38,6 +48,12 @@ New this batch: `sabotage_b22.log`, `m1_drive_b22.py`, `m1_b22.log`,
 `reanchor_sf_events_b22.log`, `citation_staleness_b22.py`,
 `citation_staleness_b22.log`, `tiers_head.md`, `pre_push_tip_b22.txt`,
 `pull_b22.log`, `push_b22.log`, `lock_b22.log`.
+Added by the followup: `sf_anchor_check_b22.log`,
+`sf_anchor_counterfactual_b22.log`, `cite_check_sf_events_b22.py`,
+`cite_check_sf_events_b22.log`, `tiers_prefix.md`, `pre_push_tip_b22b.txt`,
+`pre_push_tip_b22c.txt`, `pre_push_tip_b22d.txt`, `push_b22b.log`,
+`push_b22c.log`, `push_b22d.log`, `close_b22.log`, `drive_b22.log`,
+`drive_handoff_b22.log`.
 **This is a NEW session directory** — b18–b21's logs are under
 `b0f8683c-3365-4d5b-82ea-094a13bdff7e` and are not here.
 
@@ -47,11 +63,11 @@ New this batch: `sabotage_b22.log`, `m1_drive_b22.py`, `m1_b22.log`,
 
 | | | command |
 |---|---|---|
-| HEAD | `86a27458` | `git rev-parse --short HEAD` |
-| `origin/main` | `86a27458` | `git rev-parse --short origin/main` |
+| HEAD | `142ef3ca` *(the followup; the six items closed at `86a27458`)* | `git rev-parse --short HEAD` |
+| `origin/main` | `142ef3ca` | `git rev-parse --short origin/main` |
 | behind / ahead | **0 / 0** | `git rev-list --left-right --count origin/main...HEAD` |
-| working tree | **clean at the time of this line**; this handoff and the manifest's item-6 edit commit with it | `git status --porcelain` |
-| push forced? | **NO — PROVED BY ANCESTRY, not by grepping git's wording** | pre-push tip `86a27458e05e` in `pre_push_tip_b22.txt`; `git merge-base --is-ancestor <tip> HEAD` → **ANCESTOR**, i.e. a fast-forward |
+| working tree | **clean at the time of this line**; this handoff, the report, the digest and `SAIRN-latest-fourth.md` commit with it | `git status --porcelain` |
+| push forced? | **NO, on every push this batch — PROVED BY ANCESTRY, not by grepping git's wording** | pre-push tips recorded in `pre_push_tip_b22.txt`, `_b22b.txt`, `_b22c.txt`, `_b22d.txt`; `git merge-base --is-ancestor <tip> HEAD` → **ANCESTOR** each time, i.e. fast-forwards throughout |
 | first push attempt | **DENIED, and it was not about my commits** | `register_feed_gate` got no ref lines because the clone was 1 ahead / 4 behind — a non-fast-forward git was about to refuse itself. `git pull --rebase origin main` exit 0, then pushed clean |
 | `SAIRN_SEED_GATE` | **not used, any form** | — |
 | `SAIRN_GATE_EXEMPT` / `SAIRN_SKIP` | **neither used** | — |
@@ -60,12 +76,16 @@ New this batch: `sabotage_b22.log`, `m1_drive_b22.py`, `m1_b22.log`,
 | files written outside `docs/` | **0**, plus my own root deliverables | by instruction |
 | files under `.claude/skills/sairn-hover-auditor/` | **0 — neither auditor clone entered** | by claim |
 | all six b22 `docs/` paths on `origin/main` | **6 of 6** | `git cat-file -e origin/main:<path>` per file |
-| b22 manifest | **5 `done`, 1 `blocked` with its reason** | `batch_manifest.py --check --agent fourth --batch b22` |
-| **context now** | **24% of 1000k** | `tools/sairn_status_line.py` on this session's transcript |
+| `tools/` files added | **1**, `sf_events_anchor_check.py`, **with its inventory entry** — the pre-commit gate refused the first attempt for exactly that and was right (§9) | `tooling_inventory.py --check` → OK |
+| b22 manifest | **5 `done`, 1 `blocked` with its reason — CLOSED, and deliberately NOT reopened for the followup** (§9) | `batch_manifest.py --check --agent fourth --batch b22` |
+| the followup's own files on `origin/main` | **5 of 5** | `git cat-file -e origin/main:<path>` per file |
+| **context now** | **35% of 1000k** | `tools/sairn_status_line.py` on this session's transcript |
 
-**`86a27458` IS THE STATE BEFORE THIS HANDOFF** — this file, the report, the
-digest, `SAIRN-latest-fourth.md`, the b22 close and the claim release all land
-after it.
+**`86a27458` WAS THE STATE AT THE FIRST CLOSE; `142ef3ca` IS THE STATE BEFORE
+THIS REWRITE** — this file, the report, the digest, `SAIRN-latest-fourth.md` and
+the claim release all land after it. **The six items' deliverables were already
+uploaded and verified once at `86a27458`; they are being re-uploaded because the
+followup changed what they say, not because the first upload failed.**
 
 ---
 
@@ -80,6 +100,7 @@ after it.
 | 5 | the sf_events seventh anchor + re-count staleness from source | **DONE, and the instruction was off by one** (§7) |
 | 6 | push without force, confirm landed | **DONE.** 0/0, ancestry-proved |
 | — | this handoff, before the report | **DONE** |
+| **+** | **FOLLOWUP, not a dispatched item** — hover2 b36's routing of `docs/CRITICALITY-TIERS.md:358` | **DONE.** Re-derived from source; the fix was already landed, and the rule now has an enforcer (§9) |
 
 **Nothing was consolidated this batch.** Items 3, 4 and 5 each got their own
 document, which is the thing b21 could not do.
@@ -90,7 +111,7 @@ document, which is the thing b21 could not do.
 
 | hold | count | detail | command |
 |---|---:|---|---|
-| repo claims held | **1** | b22, published on `origin/main`; **release LAST**, after all four uploads verify | `sairn_claim.py list` |
+| repo claims held | **1** | the b22 claim was released at the first close; **a NEW claim was taken for the followup** and names `tools/sf_events_anchor_check.py` and the register. **Release LAST**, after all four uploads re-verify | `sairn_claim.py list` |
 | **Tier A obligations assigned to me** | **0** | both were discharged this batch; register open owned by `fourth` went **2 → 0** | `tier_a_review_gate.py --list` |
 | obligations discharged this batch | **2** | both as the **assigned owner**, neither by `--takeover`. Register total open **15** after | before/after `--list` |
 | **session lock** | **1, MINE and LIVE** | it was **DEAD on arrival** — `CLAUDE_PID 3444`, the b18–b21 session, 263m idle. Reclaimed by `session_lock_check.py guard` (a reclaim, **not** an `rm`); now `SELF`, `CLAUDE_PID 15120` | `session_lock_check.py status` |
@@ -444,19 +465,124 @@ the four basenames that exist in both with different contents.
 
 ---
 
-## 9. FINAL STEPS STILL AHEAD OF THIS HANDOFF
+## 9. THE FOLLOWUP — hover2 b36's ROUTING, RE-DERIVED
 
-1. Commit this handoff with the manifest's item-6 edit, and push.
-2. **Upload this handoff to Drive folder
-   `14Xc5oT0xzSLa_rTSOSXWVK3Kko1Fbx09` and verify.**
-3. The report and digest, plus **`SAIRN-latest-fourth.md`**, then
-   upload-and-verify, then a **Drive-side API read** — the mount proves the bytes
-   are in the sync set, not that Google acknowledged them. **Expect the API read
-   to lag; b19's, b20's and b21's first reads came back empty and were a retry,
-   not a missing file.**
-4. `batch_manifest.py --close --agent fourth --batch b22` — **after** the uploads
-   verify.
-5. **Release the b22 claim LAST**, then set the status row to `idle`.
+`docs/2026-10-15-fourth-b22-sf-events-reanchor-and-citation-recount.md` §3.
+Commit `142ef3ca`.
+
+**hover2 b36 routed `docs/CRITICALITY-TIERS.md:358` as *"still unfixed,
+re-grepped"* — and said itself why that might be wrong**, in the same handoff:
+*"fourth's b22 appears to have landed new commits as this batch wrapped up …
+not confirmed whether the actual fix landed with it."* **It had.**
+
+**RE-DERIVED FROM SOURCE rather than taken from either document:**
+
+| the row | anchors | findings |
+|---|---:|---:|
+| at `7a5e6a11` — the text hover2 actually grepped | 7 | **1 — ROTTED, anchor 6 of 7** |
+| at HEAD — after the b22 re-anchor | 8 | **0** |
+
+Both run against the same live `sairnfreedom.html`
+(`scratchpad/sf_anchor_counterfactual_b22.log`).
+
+**AND IT SETTLES THE ORDINAL INDEPENDENTLY.** hover2 called it *"the 7th"*; the
+b22 instruction called it *"the seventh"*; the program says **6 of 7**, twice,
+by two different enumerations. **Three descriptions, one anchor, and the only
+reproducible one came out of a program.**
+
+**THE CELL'S CODE FACTS WERE RE-READ, NOT ASSUMED**, because re-anchoring proves
+the quoted text exists and not that the claim about it is true:
+`liquorServiceCheck()` does run on **both ends** with the OAC
+4301:1-1-49(B)(3) consumption reasoning in the source comment; the gaming
+interlock **is `sfSessionRefusals()` itself**, with the source saying *"Not a
+re-implementation"*; `sfScheduleEvent()` **returns before any write** on refusal
+and mints a real `K_SESSIONS` row on success; and the stored `alcohol` has
+**exactly the two readers the cell names** — the other `b.alcohol`
+determinations at `:5335-5376` are **`sf_rentals`**, reached through
+`hallCharge()` / `sfRentalRefusals()` from `readRentalForm()`'s `hr-` inputs.
+**That last one was checked because if they had been event readers the tier
+argument would turn on `alcohol` rather than on `sessionId`.**
+
+**NEW: `tools/sf_events_anchor_check.py`, and its failing-first arm is the real
+pre-b22 anchor text.** The cell stated its own acceptance rule in prose and
+nothing drove it, so **the rule went quiet for a day** when hank b12's F6 moved
+the text for a correct reason. Criteria locked against synthetic fixtures first,
+**10/10 arms**, and it refuses to judge real data if the lock breaks. **Both
+failure directions armed** — zero matches is ROTTED, more than one is AMBIGUOUS.
+Entity escaping driven in both directions. **The false-positive class is an
+explicit arm**: a prose span with empty parentheses is ignored, because
+`eventRefusals()`, `liquorServiceCheck()` and `sc_auth` all count 0 in the app
+and a tool treating every backticked span as an anchor would open with three
+false findings on this one cell. **No anchors at all is a FINDING, not a pass.**
+**It FAILS CLOSED** — missing app file, missing register, zero or multiple
+`sf_events` rows is **exit 2 COULD NOT RUN**, never 0 — and it prints what it
+cannot tell you every run. **Live: exit 0, 8 of 8 anchors resolve exactly once.**
+
+**The cell now NAMES the check inside its own rule sentence**, so the rule and
+its enforcer cannot drift apart silently. Row edited by the b22 method: located
+by prefix, substring exactly once, no pipe in the replacement, **pipe count
+asserted 7 → 7**, register never opened wholesale.
+`criticality_tier_check.py` **PROBLEMS:0**.
+
+**THE PRE-COMMIT GATE REFUSED THE FIRST ATTEMPT AND IT WAS RIGHT:** a `tools/`
+file with no inventory entry. A `PURPOSES` entry naming what it **catches** was
+written, `docs/TOOLING-INVENTORY.md` **regenerated rather than hand-edited**
+(652 lines), and `tooling_inventory.py --check` now reports **OK: matches the
+repo**.
+
+**NOT cc's ROUTED GENERAL ANCHOR-ROT TOOL**, and the file's own header says so:
+that is the b20 spec over the whole register, 8 requirements and 10 arms.
+**When it lands, DELETE this one rather than maintaining both** — stated in the
+header so deletion is the expected end state, not a judgement call later.
+
+**THE MANIFEST WAS NOT REOPENED AND THAT IS DELIBERATE.** `b22`'s manifest
+records the **six dispatched items** and is closed on them; chat writes the ids
+and they are immutable. Adding a seventh id would break the `id_lock`, and
+quietly editing a closed block would make the close mean less. **The followup is
+recorded here, in the report, in the digest and in `142ef3ca`'s own message
+instead — said out loud rather than left for somebody to notice the file count
+disagrees.**
+
+---
+
+## 10. FINAL STEPS, AND WHERE EACH ONE STANDS
+
+**ALREADY DONE at the first close, `86a27458`, and verified then:** all four
+deliverables uploaded, verified mount-side with sha256 agreement, **and read
+back Drive-side through the API** (handoff 26,185 / report 34,239 / digest
+12,920 / latest 5,256 bytes). `batch_manifest.py --close` exit 0. The b22 claim
+released and the status row set to `idle`. **The first Drive-side read of the
+handoff came back empty and was a retry, not a missing file** — the same lag
+b19, b20 and b21 all saw.
+
+**STILL AHEAD OF THIS REWRITE, because the followup changed what these files
+say:**
+
+1. Commit this handoff with the re-written report, digest and
+   `SAIRN-latest-fourth.md`, and push — **without force, confirmed by ancestry
+   and by `0/0`.**
+2. **Re-upload all four to Drive folder `14Xc5oT0xzSLa_rTSOSXWVK3Kko1Fbx09` and
+   read each one back through the API**, not only off the mount. **The sizes
+   will differ from the figures above; that is the point of re-uploading.**
+3. **Release the followup claim LAST**, then set the status row to `idle`.
+
+**The manifest is NOT touched again.** It is closed on the six dispatched items
+and the followup is recorded in prose and in `142ef3ca` — see §9 for why
+reopening it would cost more than it buys.
+
+**THE BACKGROUND SHELL: WAITED ON, MEASURED, THEN STOPPED — and it was never
+pending work.** A shell from earlier in this session was still running at the
+start of the followup. Its last command,
+`python tools/sairn_status_line.py`, **blocks reading a status-line JSON payload
+from stdin that a background shell never gets**, so it could not terminate on
+its own. **Waited on it for a blocking ten minutes: status unchanged, output
+byte-identical, no new line.** Everything it was going to write it had already
+written — `--set 6 done`, committed and pushed long before — and the rest of
+that command line only reads, so stopping it could not lose work. **Stopped, which
+is the only terminal state a blocked read has.** The context figure in §0 was
+taken by feeding that same tool a payload explicitly rather than by waiting for
+it. **Recorded because a process still in the table and a process with work
+outstanding look identical from outside.**
 
 **Nothing is partial.** Every open item above is another session's, or Michael's
 with its decision named, or a measurement with its command stated. **Item 2 is
