@@ -12,6 +12,9 @@ Source: `GUARD_TESTS` in `tools/sairn_push_gate_hook.py`. These are the only tes
 
 | App | Requirement (what it guards) | Proved by | The defect that put it here |
 |---|---|---|---|
+| PLATFORM | a stored photo row and the size/provenance rules the write path is supposed to enforce still agree | `api/sd-photos-size-and-provenance.test.js` | A SEAM between what the client sends and what the server will store. Run green before wiring: 26 passed, 0 failed, 0 unproven, exit 0. A suite wired red denies every push on the platform until somebody turns the gate off, which this list has already survived once. |
+| sairnfreedom | the four N-findings and the sairnfreedom delete path stay fixed -- a clock time that could be overwritten, a last owner that could be demoted, an exclusion nobody could see, and a delete that lied | `api/n1-n4-and-sf-delete.test.js` | Pins hank 31406a87. The delete half is the one with a second witness in this batch: that same commit refactored the line fourth b20 had quoted as an anchor in docs/CRITICALITY-TIERS.md, and tools/citation_anchor_rot_check.py found the citation at zero the same day. A fix that lands correctly and silently invalidates a citation elsewhere is exactly the cross-document shape neither side can see alone. Run green before wiring: 21 passed, 0 failed, 0 unproven, exit 0. |
+| PLATFORM | every role a picker offers is a role the database CHECK constraint will accept | `api/role-picker-vs-check-constraint.test.js` | THE STRONGEST SEAM OF THE THREE and the only one that is not green: it exits 3, because 11 of 17 apps have no `check (role in (...))` in any sql/ file naming their employee_auth table, so there is nothing to compare the picker against. ITS OWN WORDS: "NOT a pass: an app whose constraint cannot be found is exactly the app whose picker nobody has checked." Wired deliberately in that state -- exit 3 removes it from the required set for that run and is reported in the could-not-tell channel, never folded into the pass -- because the alternative is a seam test nothing runs until somebody remembers it. The 6 measured apps are clean with 0 refused roles; the 11 are UNPROVEN and named on every run. |
 | sairnvet | the per-resource role matrix in api/sd-data.js and SAIRNvet's own role vocabulary still agree, resource by resource, and an unknown sv_ resource is DENIED rather than defaulted open | `api/sd-data-sv-role-matrix.test.js` | Recorded CRITICAL (commit 9841e14a5eaa, independent-review): 41 of SAIRNvet's 42 resources had NO per-resource role check at all. MEASURED rather than asserted -- `grep -nE "SV_[A-Z_]*ROLES" api/sd-data.js` returned NOTHING -- so a `frontdesk` token read and wrote sv_soapnotes, sv_labresults, sv_surgery, sv_imaging and sv_invoicing exactly as the owner did. THE SEAM IS THE REASON IT IS HERE and not the severity: the handler's matrix and the app's role vocabulary are maintained in two different files by two different changes, and a resource added to one without a row in the other is invisible in review. Arm D3 is the load-bearing one -- it adds a 43rd resource with no row and requires DENY, so the default direction is pinned rather than assumed. |
 | PLATFORM | every client save site that stores model output on a high-risk resource stamps the provenance field the server's approval gate reads | `api/ai-provenance-client-sites.test.js` | Recorded HIGH (commit 44abebb30bf5, independent-review): six client save sites stored model output with no provenance field, and THE SERVER COULD NOT KNOW. api/_lib/ai-safeguards.js landed in b9 stating its own limit out loud -- `ai_source` is a CLAIM BY THE WRITER, so "a client that does not stamp it gets no gate" -- and no production client stamped it on a high-risk resource. The approval gate was reachable and never reached, which is a gate passing while guarding nothing. A SEAM between the client that writes and the server that gates, with no server-side test able to see the client half; arm F4 is the control that keeps the three NOT-high-risk sites gate-free, so the four positive arms cannot have switched a refusal on by accident. |
 | PLATFORM | the ONLY unhealthy Stripe state visible without calling Stripe still produces a signal, and still produces it in exactly one environment | `api/_lib/stripe-config.test.js` | docs/ACCEPTED-RISKS.md AR-1 is accepted on a trigger, and that trigger IS this module: a `warnings` entry when STRIPE_SECRET_KEY is an sk_test_ key in a production deployment, whose DISAPPEARANCE is the moment the accepted risk becomes live. Found 2026-09-15: the module had NO SUITE AT ALL, so the branch producing that signal could have been edited away and the only consequence would have been an accepted risk's trigger quietly ceasing to exist -- with the register still saying it was monitored. The signal is also LOG-ONLY by design (it must never reach a client), so no checker in this repo can read the signal itself; guarding the PRODUCER is the half that can be held from inside the repo, and AR-1 now says which half is which. The four-cell control is the load-bearing one: a warning that fired in preview as well would be a banner rather than a signal, and AR-1's trigger reads the ABSENCE of it. |
@@ -709,24 +712,24 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 217 test files are traced to no stated requirement
+### 216 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 744 of 961 traced, 77.4%.
+For context and not as the headline: 745 of 961 traced, 77.5%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 744 citations come from
+### Where the 745 citations come from
 
 | source | citations |
 |---|---|
-| `declared` | 336 |
+| `declared` | 334 |
 | `index` | 325 |
 | `declared+index` | 69 |
+| `GUARD_TESTS+declared` | 7 |
 | `GUARD_TESTS+index` | 6 |
-| `GUARD_TESTS+declared` | 5 |
-| `GUARD_TESTS` | 2 |
+| `GUARD_TESTS` | 3 |
 | `GUARD_TESTS+declared+index` | 1 |
 
 **One source carries almost all of it.** That is a concentration, not a defect -- but it means the traced figure moves with how diligently the open-work index is written, not with how well tested this repo is, and if that habit lapsed nothing here would say so.
@@ -736,7 +739,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | kind | count | what it means | the fix |
 |---|---|---|---|
 | **bound to a subject, tied to no requirement** | 40 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 177 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **no subject binding either** | 176 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
 **These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 40 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
@@ -749,7 +752,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/_lib/sen-evv-clock.test.js`
 - `api/agent/enqueue.test.js`
 - `api/ai-safeguards.test.js`
-- `api/n1-n4-and-sf-delete.test.js`
 - `api/provisioner-health-rate-limit.test.js`
 - `api/sairndental/complaint-race.test.js`
 - `api/sairndental/public-book-orphan.test.js`
@@ -978,7 +980,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
   app files                           22   git ls-files '*.html'
   test files on disk                 961   tests/**, api/** (both walked)
   open-work rows citing a test       392   docs\SAIRN-OPEN-WORK-INDEX.md
-  GUARD_TESTS entries                 14   sairn_push_gate_hook.GUARD_TESTS
+  GUARD_TESTS entries                 17   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                78   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     82   report_only_checks.NOT_PROMOTED
   numbered gate checks                17   sairn_push_gate_hook.py
