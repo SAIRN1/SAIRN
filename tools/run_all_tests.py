@@ -144,42 +144,246 @@ CONCURRENCY_SENSITIVE = {
 #   * it does not live in the working tree. An untracked lockfile in REPO would
 #     show as `??` and make every clean-tree-dependent probe skip -- trading
 #     this bug for the cascade the residue section below already warns about.
-#   * staleness is by AGE, not by testing the holder's pid. os.kill(pid, 0) on
-#     Windows does not test liveness, it calls TerminateProcess. A ceiling well
-#     above the 400s hook timeout is the boring answer that cannot kill
-#     somebody's process; a killed run costs one skipped cycle, not a
-#     permanent block.
+#   * staleness is NOT by age alone, and the paragraph that used to sit here
+#     said it was. Kept verbatim so the correction is legible: *"staleness is
+#     by AGE, not by testing the holder's pid. os.kill(pid, 0) on Windows does
+#     not test liveness, it calls TerminateProcess. A ceiling well above the
+#     400s hook timeout is the boring answer that cannot kill somebody's
+#     process; a killed run costs one skipped cycle, not a permanent block."*
+#
+# ── THE CEILING WAS 15 MINUTES AND A REAL RUN IS LONGER (fixed b15) ─────────
+# The reasoning above is sound about `os.kill` and wrong about the ceiling. It
+# chose 900s as "well above the 400s hook timeout", which is the wrong
+# subject: the hook timeout bounds a HOOK invocation, and a bare
+# `python tools/run_all_tests.py` over the whole tree is not bounded by it.
+# MEASURED on 2026-10-15, by running one and watching it:
+#
+#   pid 17876, started 08:12, lock still held and the process still ALIVE at
+#   16.1 min (found at b14's wrap-up), then 29.9, 54.0, 73.7 and 93.4 min
+#   on a run that was still going
+#
+# against LOCK_MAX_AGE = 15.0 min. So from minute 15 onward ANY second run
+# would delete a live run's lock and start concurrently -- which is exactly
+# the condition this lock exists to prevent, and it reinstates it silently in
+# the window where a long run is most likely to be interrupted. Both runs
+# then snapshot and restore the same tracked files, which is the 2026-09-09
+# defect above, and both rewrite docs/test-file-floor.json and
+# docs/report-only-reachability.json -- b14 already lost a floor file that way.
+#
+# NOBODY WOULD HAVE FOUND THIS BY READING acquire_lock(). The code looks
+# correct until you know how long a real run takes, and the only way to know
+# that is to run one and wait. That is b14's third lesson, arriving on the
+# tool it was learned from.
+#
+# THE FIX IS LIVENESS FIRST AND AGE ONLY AS A FALLBACK:
+#   * the lock records the pid AND that process's START-TIME SIGNATURE, so a
+#     recycled pid cannot impersonate the owner. The signature comes from
+#     tools/session_lock_check.process_start_sig() -- IMPORTED, not copied,
+#     because a second copy of a recycled-pid defence is a second thing to
+#     get wrong, and that module already carries the ctypes/powershell
+#     fallbacks and the "os.kill on Windows is TerminateProcess" knowledge.
+#   * a recorded pid that is GONE means the run died: reclaim, whatever the
+#     age. That is the case the old code was really for, and it no longer has
+#     to wait 15 minutes to act on it.
+#   * a recorded pid that is ALIVE means a run is in progress: REFUSE, whatever
+#     the age. This is the defect being fixed.
+#   * liveness UNKNOWN -- no signature in the lock, an old-format lock, the
+#     helper absent, a start time unreadable -- falls back to age, and SAYS
+#     that the fallback is weaker. It is a fallback and not a refusal because
+#     a lock that can never be reclaimed is a permanent block on every future
+#     run, which is worse than a rare steal; but the ceiling for that path is
+#     now 4 hours rather than 15 minutes, because it is only reached when
+#     nothing can confirm the owner is dead and it must therefore be
+#     conservative. 4h matches the claim-expiry convention on this platform.
+#   * IT RAISES NOTHING. acquire_lock() returning False is how a caller
+#     declines to run; an exception here would take the whole suite down over
+#     a lockfile.
 LOCK = os.path.join(
     tempfile.gettempdir(),
     'sairn-suite-%s.lock' % hashlib.sha256(REPO.encode('utf-8')).hexdigest()[:16])
-LOCK_MAX_AGE = 900
+
+# The AGE FALLBACK ONLY. Reached when liveness cannot be established at all.
+# 15 minutes was measured wrong above; this is deliberately far above any real
+# run, because on this path nothing has confirmed the owner is dead.
+LOCK_MAX_AGE = 4 * 3600
+
+try:
+    sys.path.insert(0, os.path.join(REPO, 'tools'))
+    import session_lock_check as _SLC
+except Exception as _exc:                                        # noqa: BLE001
+    _SLC = None
+    _SLC_WHY = 'session_lock_check will not import: %s' % _exc
+else:
+    _SLC_WHY = ''
 
 
-def acquire_lock():
-    """True if this process now owns the suite lock, False if another run has it."""
+def lock_owner(raw):
+    """(state, why) for whoever wrote this lock text.
+
+    state is 'alive' | 'dead' | 'unknown'. UNKNOWN IS A REAL ANSWER and the
+    caller falls back to age on it -- it is never folded into either of the
+    other two, because "this run is alive" and "I could not tell" lead to
+    different decisions and only one of them is safe to act on quickly.
+    """
+    try:
+        rec = json.loads(raw)
+        pid = int(rec['pid'])
+        sig = str(rec.get('started') or '')
+    except Exception:                                            # noqa: BLE001
+        # THE OLD FORMAT, on purpose. A lock written by a pre-b15 run is
+        # `<pid> <epoch>` and carries no start signature, so its owner cannot
+        # be told from a recycled pid and the honest answer is UNKNOWN. This
+        # is also the path a truncated or half-written lock takes.
+        return 'unknown', ('lock is not b15 JSON (%s...) -- written by an '
+                           'older run, or truncated. No start signature, so '
+                           'the owner cannot be distinguished from a recycled '
+                           'pid' % raw.strip()[:24])
+    if not sig:
+        return 'unknown', ('lock records pid %d but no start signature, so a '
+                           'recycled pid would read as the owner' % pid)
+    if _SLC is None:
+        return 'unknown', ('%s -- liveness cannot be tested, so this falls '
+                           'back to AGE, which is a WEAKER guard than '
+                           'intended and this line is the only thing that '
+                           'says so' % _SLC_WHY)
+    state, detail, how = _SLC.process_start_sig(pid)
+    if state == 'gone':
+        return 'dead', 'pid %d no longer exists' % pid
+    if state == 'unknown':
+        return 'unknown', ('could not read the start time of pid %d: %s (via '
+                           '%s)' % (pid, detail, how))
+    if str(detail) == sig:
+        return 'alive', ('pid %d is running and started exactly when the lock '
+                         'says' % pid)
+    return 'dead', ('pid %d exists but started at a different time than the '
+                    'lock records -- the pid was recycled and the lock owner '
+                    'is gone' % pid)
+
+
+def lock_text():
+    """What this process writes into the lock."""
+    sig = ''
+    if _SLC is not None:
+        state, detail, _how = _SLC.process_start_sig(os.getpid())
+        if state == 'found':
+            sig = str(detail)
+    return json.dumps({'pid': os.getpid(), 'started': sig,
+                       'at': time.time()}) + chr(10)
+
+
+def acquire_lock(_report=None):
+    """True if this process now owns the suite lock, False if another run has it.
+
+    RAISES NOTHING. Returning False is how a caller declines to run.
+    `_report` is for the arms: a list that collects the reason strings, so a
+    test can assert WHY a decision was taken and not only which one.
+    """
+    def say(msg):
+        if _report is not None:
+            _report.append(msg)
     for _ in range(2):
         try:
             fd = os.open(LOCK, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-            os.write(fd, ('%d %f\n' % (os.getpid(), time.time())).encode('utf-8'))
+            os.write(fd, lock_text().encode('utf-8'))
             os.close(fd)
+            say('acquired')
             return True
         except FileExistsError:
             try:
+                with io.open(LOCK, encoding='utf-8', errors='replace') as fh:
+                    raw = fh.read()
+            except OSError:
+                say('lock vanished between the calls; retrying')
+                continue
+            state, why = lock_owner(raw)
+            if state == 'alive':
+                say('REFUSED -- a run is in progress: %s' % why)
+                return False
+            if state == 'dead':
+                say('reclaiming -- %s' % why)
+                try:
+                    os.remove(LOCK)
+                except OSError:
+                    say('could not remove the dead run\'s lock')
+                    return False
+                continue
+            # UNKNOWN: fall back to age, and say that it is weaker.
+            try:
                 age = time.time() - os.path.getmtime(LOCK)
             except OSError:
-                continue                      # vanished between the calls; retry
+                say('lock vanished between the calls; retrying')
+                continue
             if age < LOCK_MAX_AGE:
+                say('REFUSED on AGE, not on liveness (%.1f min < %.1f min) -- '
+                    '%s' % (age / 60.0, LOCK_MAX_AGE / 60.0, why))
                 return False
+            say('reclaiming on AGE ALONE (%.1f min >= %.1f min), which is a '
+                'WEAKER basis than a dead pid -- %s'
+                % (age / 60.0, LOCK_MAX_AGE / 60.0, why))
             try:
-                os.remove(LOCK)               # abandoned by a killed run
+                os.remove(LOCK)
             except OSError:
                 return False
     return False
 
 
-def release_lock():
+# ── AND A PROBE INSIDE THE SUITE WAS DELETING THE LIVE RUN'S LOCK ──────────
+# FOUND BY RUNNING THE SWEEP, 2026-10-15, and it is worse than the 15-minute
+# ceiling b14 routed. `tests/run_suite_lock_probe.py:81` opens with
+#
+#     rat.release_lock()                   # start from a known state
+#
+# against the REAL shared lock path, and that probe is PART OF THIS SUITE. So
+# every full run deletes its own lock partway through and spends the whole
+# remainder unprotected. Observed directly: the lock vanished at ~10:45 on a
+# run that started at 08:12 and did not exit until 12:07 -- roughly 80 minutes
+# of a 235-minute run with no lock at all, during which any `git push` hook
+# would have started a second concurrent suite.
+#
+# THE 15-MINUTE CEILING WAS THEREFORE NEVER THE BINDING CONSTRAINT. It would
+# have let a second run in at minute 15; the probe let one in outright. Both
+# are fixed, and they needed different fixes.
+#
+# THE FIX HERE IS THAT A RELEASE IS SCOPED TO THE OWNER. `release_lock()` used
+# to be an unconditional `os.remove` -- any process that imported this module
+# could delete anybody's lock, and one does. It now reads the lock first and
+# removes it only when this process wrote it. The probe is in `tests/`, which
+# is cody's, and is ROUTED rather than edited; but the probe should not have
+# been able to do this, and that half is ours.
+#
+# WHY NOT RAISE. `release_lock()` runs in a `finally`. An exception out of it
+# would replace the suite's real exit code with a lockfile error, and this
+# whole area exists to stop the suite lying about what it verified.
+def release_lock(_report=None):
+    """Remove the lock IF THIS PROCESS OWNS IT. Never raises."""
+    def say(msg):
+        if _report is not None:
+            _report.append(msg)
+    try:
+        with io.open(LOCK, encoding='utf-8', errors='replace') as fh:
+            raw = fh.read()
+    except OSError:
+        say('no lock to release')
+        return
+    try:
+        pid = int(json.loads(raw)['pid'])
+    except Exception:                                            # noqa: BLE001
+        # AN OLD-FORMAT OR UNPARSEABLE LOCK IS NOT OURS TO DELETE. Before b15
+        # every lock was this shape, so this is also the upgrade path: the
+        # first b15 run leaves a pre-b15 lock alone and the age fallback in
+        # acquire_lock() reclaims it. One stale 4-hour wait once, against
+        # deleting a stranger's lock for ever.
+        say('REFUSING to release a lock this process cannot prove it wrote '
+            '(%s...) -- an unconditional remove is how a probe inside the '
+            'suite deleted the live run\'s lock' % raw.strip()[:24])
+        return
+    if pid != os.getpid():
+        say('REFUSING to release pid %d\'s lock from pid %d'
+            % (pid, os.getpid()))
+        return
     try:
         os.remove(LOCK)
+        say('released')
     except OSError:
         pass
 
@@ -281,7 +485,35 @@ def release_lock():
 # fix -- it would absorb a mass deletion as the new normal and report clean.
 # Lowering is a human edit to the JSON with a reason in it, and the tool says
 # so when it refuses.
-_MIN_TEST_FILES_FLOOR = 370
+#
+# ── AND THE LAST-RESORT LITERAL STAYED AT 370 (raised b15) ─────────────────
+# The ratchet fixed the PIN and left the FALLBACK stale, which is the same
+# defect one level down: the literal is what guards this suite when
+# docs/test-file-floor.json is deleted, corrupt or unreadable, and at 370
+# against a measured 811 that degradation was **441 files of silence** --
+# worse than the 426 the ratchet was built to stop, because it is the state
+# nothing announces.
+#
+# MEASURED 2026-10-15, from the tool's own functions rather than a guess:
+#
+#   discover()              js 385 + py 426 = 811  (2 unrun)
+#   _tracked_test_files()   811
+#   _read_floor()           (811, '')   -- the ratchet, raised by this run
+#
+# RAISED TO 800, NOT TO 811, and the 11-file margin is the point: the literal
+# must never be the thing that fails on a legitimately smaller tree -- a
+# clone mid-rebase, a worktree checked out at an older commit. The RATCHET is
+# the tight guard; this is the floor under it.
+#
+# AND THE CADENCE IS NOW A MECHANISM. The comment above asked twice for the
+# bump to be "somebody's JOB on a cadence" and predicted its own decay; the
+# cadence is what never existed. Arm F1 in _selftest() fails when this literal
+# falls more than 15% below the real tracked count, so the next time it rots
+# the suite's own selftest says so instead of a paragraph hoping someone
+# remembers. NEVER LOWER IT: that is a human edit, with a reason, and the
+# ratchet refuses a JSON value below it for the same reason.
+_MIN_TEST_FILES_FLOOR = 800
+_FLOOR_LITERAL_SLACK = 0.15
 _FLOOR_PATH = os.path.join(REPO, 'docs', 'test-file-floor.json')
 
 
@@ -1145,7 +1377,7 @@ class _Tee(object):
         return False
 
 
-SELFTEST_CRITERIA = '2026-10-08.1'
+SELFTEST_CRITERIA = '2026-10-15.1'
 
 
 def _selftest():
@@ -1339,6 +1571,110 @@ def _selftest():
             'a keep-marker is sitting in %s' % REPO)
     finally:
         shutil.rmtree(_kb, onerror=_force_rm)
+
+    # ── THE LOCK, DRIVEN AGAINST A FIXTURE PATH (b15) ─────────────────────
+    # FAILING-FIRST against the pre-b15 code, which was age-only:
+    #   L1 a LIVE owner was reclaimed once the lock passed 15 minutes --
+    #      measured on a real run, pid 17876 still ALIVE at 16.1, 29.9, 54.0,
+    #      73.7, 93.4 and 134.9 minutes against LOCK_MAX_AGE of 15.0
+    #   L2 a DEAD owner had to wait out the full 15 minutes before anybody
+    #      could run, when the pid being gone already settled it
+    #   L4 release_lock() was an unconditional os.remove, so ANY process that
+    #      imported this module deleted anybody's lock -- and
+    #      tests/run_suite_lock_probe.py:81 does exactly that, inside this
+    #      suite, on every run
+    # The real LOCK path is NEVER touched: a selftest that stamps on the
+    # shared lock would be the defect it is testing for, one layer up.
+    _real_lock = LOCK
+    _lk = tempfile.mkdtemp(prefix='run_all_tests_lock_')
+    try:
+        globals()['LOCK'] = os.path.join(_lk, 'suite.lock')
+        _r = []
+        arm('L0 a free lock is acquired', acquire_lock(_r) is True, _r)
+        _r = []
+        arm('L1 THE NEGATIVE ARM, and the defect b14 routed: a lock whose '
+            'owner is ALIVE is REFUSED however OLD it is. Pre-b15 this was '
+            'age-only and reclaimed a live run past 15 minutes, on a run '
+            'that really took 235',
+            acquire_lock(_r) is False and 'a run is in progress' in _r[-1], _r)
+        _old = time.time() - 10 * 3600
+        os.utime(LOCK, (_old, _old))
+        _r = []
+        arm('...and STILL refused at 10 hours, which is past even the new age '
+            'fallback -- liveness decides, age is only consulted when it '
+            'cannot',
+            acquire_lock(_r) is False and 'a run is in progress' in _r[-1], _r)
+        _r = []
+        arm('L4 THE SECOND NEGATIVE ARM, found by running the sweep: a '
+            'release is scoped to the OWNER. A foreign lock is NEVER removed '
+            '-- an unconditional os.remove is how a probe inside this very '
+            'suite deleted the live run\'s lock partway through',
+            (io.open(LOCK, 'w', encoding='utf-8').write(json.dumps(
+                {'pid': 999999, 'started': 'nope', 'at': time.time()}))
+             or True)
+            and (release_lock(_r) or True)
+            and os.path.isfile(LOCK) and 'REFUSING to release' in _r[-1], _r)
+        _r = []
+        arm('L2 a lock whose recorded pid is GONE is reclaimed at once, '
+            'without waiting out any ceiling -- the pid being gone already '
+            'settles it',
+            acquire_lock(_r) is True
+            and any('reclaiming --' in x for x in _r), _r)
+        _r = []
+        release_lock(_r)
+        arm('...and this process CAN release its own', not os.path.isfile(LOCK)
+            and 'released' in _r[-1], _r)
+        io.open(LOCK, 'w', encoding='utf-8').write('12345 1792000000.0\n')
+        _r = []
+        arm('L3 a PRE-b15 lock carries no start signature, so liveness is '
+            'UNKNOWN and it falls back to AGE -- and the fallback SAYS it is '
+            'not liveness, because a weaker guard reported as the strong one '
+            'is the whole defect shape here',
+            acquire_lock(_r) is False
+            and 'REFUSED on AGE, not on liveness' in _r[-1], _r)
+        _old = time.time() - (LOCK_MAX_AGE + 600)
+        os.utime(LOCK, (_old, _old))
+        _r = []
+        arm('...and once past the %.0fh fallback ceiling it IS reclaimed, so '
+            'an abandoned pre-b15 lock is not a permanent block'
+            % (LOCK_MAX_AGE / 3600.0),
+            acquire_lock(_r) is True
+            and any('on AGE ALONE' in x for x in _r), _r)
+        arm('L5 the age fallback ceiling is above any run this suite has '
+            'really taken -- 15 minutes was chosen against the 400s HOOK '
+            'timeout, which is the wrong subject, and a measured run took '
+            '235 minutes',
+            LOCK_MAX_AGE >= 4 * 3600, LOCK_MAX_AGE)
+    finally:
+        globals()['LOCK'] = _real_lock
+        shutil.rmtree(_lk, onerror=_force_rm)
+
+    # ── THE FLOOR LITERAL'S OWN CADENCE, AS A MECHANISM (b15) ─────────────
+    # The ratchet comment asked twice for the bump to be somebody's job on a
+    # cadence and predicted its own decay. This is the cadence. It is a BAND
+    # and not an equality: the literal is deliberately below the real count
+    # so it cannot fail on a legitimately smaller tree, and the band is what
+    # stops "below" drifting to 370-against-811.
+    _tracked, _twhy = _tracked_test_files()
+    if _tracked is None:
+        arm('F1 COULD NOT RUN -- the tracked-file count is unavailable (%s), '
+            'so whether the last-resort floor has rotted was NOT checked. '
+            'That is a third state and not a pass' % _twhy, False, _twhy)
+    else:
+        arm('F1 the last-resort floor literal is within %d%% of the real '
+            'tracked count (%d vs %d) -- it sat at 370 against 811 for '
+            'weeks, which is 441 files that could have gone with nothing '
+            'announcing it, and the paragraph asking for a human cadence is '
+            'what did not work'
+            % (int(_FLOOR_LITERAL_SLACK * 100), _MIN_TEST_FILES_FLOOR,
+               _tracked),
+            _MIN_TEST_FILES_FLOOR >= _tracked * (1 - _FLOOR_LITERAL_SLACK),
+            'raise _MIN_TEST_FILES_FLOOR -- NEVER lower it')
+        arm('...and it is NOT equal to the count, so a clone mid-rebase or a '
+            'worktree at an older commit does not trip the floor of last '
+            'resort. The RATCHET is the tight guard; this is the floor under '
+            'it', _MIN_TEST_FILES_FLOOR <= _tracked,
+            (_MIN_TEST_FILES_FLOOR, _tracked))
 
     # THIS CLONE, as the final arm: a selftest that dirties the tree it is run
     # in has committed the defect it tests for.

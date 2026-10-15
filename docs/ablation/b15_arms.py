@@ -88,6 +88,48 @@ CASES = (
      'cases 1, 6 and 10 -- 10 is the one that matters: a notice must never '
      'hide a real finding'),
 
+    ('suite-lock-liveness',
+     'tools/run_all_tests.py', ['--selftest'],
+     "            state, why = lock_owner(raw)",
+     "            state, why = ('unknown', 'ablated')",
+     'acquire_lock tests whether the recorded pid is ALIVE before reclaiming. '
+     'Removing it restores the age-only rule, which reclaimed a LIVE run\'s '
+     'lock past 15 minutes -- measured on a real run: pid 17876 still alive '
+     'at 16.1, 29.9, 54.0, 73.7, 93.4 and 134.9 minutes against a 15.0-minute '
+     'ceiling, on a run that took 235 minutes end to end',
+     'L1 and the 10-hour arm beside it'),
+
+    ('suite-lock-owner-scoped-release',
+     'tools/run_all_tests.py', ['--selftest'],
+     "    if pid != os.getpid():" + NL + "        say('REFUSING to release pid",
+     "    if False:" + NL + "        say('REFUSING to release pid",
+     'release_lock removes the lock only when THIS process wrote it. '
+     'Unconditional, it is what tests/run_suite_lock_probe.py:81 uses to '
+     '"start from a known state" -- and that probe is PART of this suite, so '
+     'every full run deleted its own lock partway through and spent the rest '
+     'unprotected. Observed: the lock vanished at 10:45 on a run that started '
+     '08:12 and exited 12:07',
+     'L4'),
+
+    # ── THIS ONE PUTS THE PRE-b15 VALUE BACK, not a wider band ────────────
+    # The first recipe widened _FLOOR_LITERAL_SLACK to 0.99 and reported
+    # UNPROVEN -- correctly, and it was measuring the wrong thing. F1 fails
+    # when the literal is too LOW; widening the band only makes F1 unable to
+    # fail, which is not the defect. The LAYER is the raised literal and F1 is
+    # its arm, so the ablation restores the literal that was really there and
+    # watches F1 go red. That is the failing-first proof in its proper
+    # direction.
+    ('floor-literal-stale-370',
+     'tools/run_all_tests.py', ['--selftest'],
+     "_MIN_TEST_FILES_FLOOR = 800",
+     "_MIN_TEST_FILES_FLOOR = 370",
+     'the last-resort floor literal tracks the real tracked count, and F1 '
+     'fails when it falls more than 15% below it. 370 against a measured 811 '
+     'is 441 files that could have been deleted with the ratchet file gone '
+     'and nothing announcing it -- and the ratchet\'s own comment asked twice '
+     'for a human cadence that never existed',
+     'F1'),
+
     ('subject-sha-width-none-not-zero',
      'tools/tier_a_review_gate.py', ['--selftest'],
      "    except Exception:                                            "
