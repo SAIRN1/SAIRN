@@ -1,0 +1,14 @@
+b15 / fourth b23 F3. the client must read the EFFECTIVE clock
+
+  ok       C1. senEffClock() returns the APPROVED corrected value when the server has attached effective_clock
+  ok       C2. ...and computes it from clock_corrections when the row has NOT round-tripped. A helper that only works after a hydrate is a helper that reports the raw time on every locally-created visit
+  ok       C3. CONTROL -- a PENDING correction is IGNORED and the recorded time is returned. Without this arm the helper could apply every correction, which would show and bill an unverified self-asserted time
+  ok       C4. CONTROL -- an uncorrected row returns its raw value, and a row with no clock at all returns null rather than undefined. Every caller below tests the result for truthiness
+  ok       C6a. visitHours() is 5 on a visit with an APPROVED correction moving the clock-in an hour earlier -- not 4. This is the client-side mirror of the payroll bug: the figure a claim is built from
+  ok       C6b. CONTROL -- 4 hours with no correction and 4 with a PENDING one
+  ok       C6c. visitClockReversed() sees the EFFECTIVE values, so an approved correction that inverts a visit is detected as reversed instead of quietly producing a negative duration downstream
+  ok       C7. CONTROL -- the clock-action gates still read the RAW field. Whether a clock EVENT was recorded is a fact about the raw value, and substituting here would let an approved correction re-enable the Clock In button on a visit that was already clocked
+  ok       C8. CONTROL -- the EVV anomaly checks still read the RAW field, UNTOUCHED. That is fourth's F2 and it is HELD FOR MICHAEL; changing it here would be deciding a question that was explicitly reserved
+  ok       C9. senEffClock() is actually CALLED in the page, at least six times (the two delivered-hours sites, visitHours, visitClockReversed and the two display rows). A helper nothing calls is the same zero fourth measured, with an extra function in the file
+
+10 passed, 0 failed, 0 unproven

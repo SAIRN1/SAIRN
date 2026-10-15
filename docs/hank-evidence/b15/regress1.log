@@ -1,0 +1,8 @@
+api/sd-data-sen-evv-clock.test.js exit=0
+api/b14-clock-approval-two-person.test.js exit=0
+api/t16-clock-correction-record.test.js exit=0
+api/sd-data-sen-self-correction-flag.test.js exit=0
+api/sd-data-sen-role-asymmetry.test.js exit=0
+api/sd-data-sen-caregiver-pii-scope.test.js exit=0
+api/sd-data-sen-caregiver-read-paths.test.js exit=0
+tests/sd_data_clock_flags_merge.test.js exit=0

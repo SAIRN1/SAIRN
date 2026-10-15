@@ -1,0 +1,24 @@
+b15 / fourth b23 F1. an APPROVED correction must reach payroll
+
+  ok       P0. CONTROL -- an UNCORRECTED four-hour visit at 2000 cents/hour is 240 minutes and 8000 cents. This is fourth's baseline and it pins the fixture: if this arm moves, every number below means something else
+  FAIL     P1. THE MONEY ARM -- an APPROVED correction moving the clock-in one hour earlier makes the visit 300 minutes, not 240. As shipped payroll read row.clock_in_at raw and paid the ORIGINAL time: 60 minutes unpaid on one visit with one approved correction
+           minutes=240 expected 300
+  FAIL     P2. ...and 10000 cents, not 8000. The 2000-cent gap is the finding in the unit that matters
+           cents=8000 expected 10000
+  ok       P3. CONTROL, AND IT IS THE HALF THAT WAS ALREADY SAFE -- a PENDING correction leaves payroll at 240 / 8000, identical to no correction. Without this arm the fix could be "apply every correction", which would pay an unverified self-asserted time and is exactly what the two-person rule exists to stop
+  FAIL     P4. a correction with NO `status` is treated as APPROVED and DOES reach payroll. Reading a missing status as pending would silently un-pay every correction filed before b13 -- the same rule effectiveClock() already carries, reached through payroll
+           minutes=240
+  FAIL     P5. clock_out_at is substituted too, not just clock_in_at
+           minutes=240
+  FAIL     P6. an approved correction that makes the clock-out EARLIER than the clock-in is EXCLUDED as a non-positive duration, counted, and pays nothing. The guard has to run on the values actually used or the substitution becomes a route around it
+           excluded={"no_clock_out":0,"no_clock_in":0,"non_positive_duration":0,"outside_period":0,"no_caregiver":0,"no_rate":0,"ambiguous_rate":0} minutes=240
+  FAIL     P7. END TO END through the real api/sd-data.js payroll action: 300 minutes and 10000 cents. The handler's map is UNCHANGED -- it already spreads x.data, so the corrections were always on the row and only the module was not reading them
+           status=200 minutes=240 cents=8000
+  FAIL     P8. api/_lib/sen-payroll.js references effectiveClock at all. fourth measured `grep -c effectiveClock` -> 0 while api/_lib/sen-evv-clock.js:342 claimed the rule was "implemented HERE, in the function payroll reads"
+           no effectiveClock in sen-payroll.js
+  ok       P9. CONTROL -- effectiveClock is still exported, so the substitution has one source rather than a second copy of the rule
+  FAIL     P10. the payroll output DISCLOSES that a corrected clock time was used. A wage that silently differs from the recorded clock time is a figure nobody can reconcile against the EVV record -- and reconciling them is the whole purpose of the trail
+           nothing in the output mentions a correction: ["employee_id","weeks","visits_counted","visits_excluded","minutes","overtime_minutes","gross_cents","is_floor","no_rate_visits"]
+
+3 passed, 8 failed, 0 unproven
+8 ARM(S) FAILED: P1, P2, P4, P5, P6, P7, P8, P10

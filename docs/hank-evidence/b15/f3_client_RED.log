@@ -1,0 +1,21 @@
+b15 / fourth b23 F3. the client must read the EFFECTIVE clock
+
+  FAIL     C1. senEffClock() is not in sairnsenior.html -- the helper the duration and display sites need does not exist
+           missing: senEffClock
+  FAIL     C2. senEffClock() is not in sairnsenior.html -- the helper the duration and display sites need does not exist
+           missing: senEffClock
+  FAIL     C3. senEffClock() is not in sairnsenior.html -- the helper the duration and display sites need does not exist
+           missing: senEffClock
+  FAIL     C4. senEffClock() is not in sairnsenior.html -- the helper the duration and display sites need does not exist
+           missing: senEffClock
+  FAIL     C5. visitHours()/visitClockReversed() could not be extracted with the helper
+           missing: senEffClock
+  FAIL     C6. depends on C5
+           missing: senEffClock
+  ok       C7. CONTROL -- the clock-action gates still read the RAW field. Whether a clock EVENT was recorded is a fact about the raw value, and substituting here would let an approved correction re-enable the Clock In button on a visit that was already clocked
+  ok       C8. CONTROL -- the EVV anomaly checks still read the RAW field, UNTOUCHED. That is fourth's F2 and it is HELD FOR MICHAEL; changing it here would be deciding a question that was explicitly reserved
+  FAIL     C9. senEffClock() is actually CALLED in the page, at least six times (the two delivered-hours sites, visitHours, visitClockReversed and the two display rows). A helper nothing calls is the same zero fourth measured, with an extra function in the file
+           senEffClock( appears 0 time(s)
+
+2 passed, 7 failed, 0 unproven
+7 ARM(S) FAILED: C1, C2, C3, C4, C5, C6, C9

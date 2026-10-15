@@ -2570,8 +2570,10 @@ function senAuthRows(){
   week.forEach(function(v){
     var key = v.client_id || v.client_name || '';
     var b = byClient[key] || (byClient[key] = { delivered: 0, scheduled: 0 });
-    if (v.clock_in_at && v.clock_out_at) {
-      var ms = new Date(v.clock_out_at) - new Date(v.clock_in_at);
+    // F3: DELIVERED hours, so the effective values.
+    var _ci = senEffClock(v, 'clock_in_at'), _co = senEffClock(v, 'clock_out_at');
+    if (_ci && _co) {
+      var ms = new Date(_co) - new Date(_ci);
       if (isFinite(ms) && ms > 0) { b.delivered += ms / 3600000; return; }
     }
     // Not clocked (or unusable clock times). Counted as still-scheduled only
@@ -3120,8 +3122,13 @@ function renderClockView(){
     return '<div class="card"><div class="cb">'+
       '<div style="font-weight:700;margin-bottom:4px">'+H(v.client_name||v.client_id||'Client')+'</div>'+
       '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">Scheduled '+H(v.scheduled_start||'--')+' - '+H(v.scheduled_end||'--')+'</div>'+
-      (v.clock_in_at?'<div class="srow"><span class="slbl">Clocked in</span><span class="sval">'+new Date(v.clock_in_at).toLocaleTimeString()+'</span></div>':'')+
-      (v.clock_out_at?'<div class="srow"><span class="slbl">Clocked out</span><span class="sval">'+new Date(v.clock_out_at).toLocaleTimeString()+'</span></div>':'')+
+      // F3 DISPLAY, AND BOTH VALUES ARE SHOWN WHEN THEY DIFFER. The effective
+      // time is what a reader should SEE, and api/_lib/sen-evv-clock.js's own
+      // rule is that a screen showing ONLY the corrected value has quietly
+      // become the overwrite the trail exists to avoid. So: the effective
+      // time, and the recorded one beside it marked as corrected.
+      (v.clock_in_at?'<div class="srow"><span class="slbl">Clocked in</span><span class="sval">'+new Date(senEffClock(v,'clock_in_at')).toLocaleTimeString()+(senEffClock(v,'clock_in_at')!==v.clock_in_at?' <span style="color:var(--muted);font-size:11px">(corrected &mdash; recorded '+new Date(v.clock_in_at).toLocaleTimeString()+')</span>':'')+'</span></div>':'')+
+      (v.clock_out_at?'<div class="srow"><span class="slbl">Clocked out</span><span class="sval">'+new Date(senEffClock(v,'clock_out_at')).toLocaleTimeString()+(senEffClock(v,'clock_out_at')!==v.clock_out_at?' <span style="color:var(--muted);font-size:11px">(corrected &mdash; recorded '+new Date(v.clock_out_at).toLocaleTimeString()+')</span>':'')+'</span></div>':'')+
       // Told on the row, not only in a toast the caregiver has already
       // dismissed. A record sitting on one phone is not yet with the agency,
       // and the times shown are the real ones -- which is what makes it safe
@@ -4141,9 +4148,53 @@ function renderReadyToBill(){
 // AND 0 IS AMBIGUOUS ON PURPOSE, WHICH IS WHY THE PREDICATE BELOW EXISTS.
 // A visit nobody clocked also yields 0. The two are different facts and the
 // one caller that must not collapse them is the one that bills.
+// ── THE EFFECTIVE CLOCK, CLIENT SIDE (2026-10-15, fourth's b23 F3) ───────
+// This page read the raw clock about twenty times and used `effective_clock`
+// ZERO times, so every figure derived from a clock ignored an APPROVED
+// correction -- delivered hours, the authorisation burn-down, the hours a
+// claim is built from. The server read branch has been attaching
+// `effective_clock` to every corrected visit since b13 and nothing consumed
+// it. Same defect as the payroll one (F1), one layer up.
+//
+// TWO SOURCES, IN THIS ORDER, AND THE SECOND IS NOT OPTIONAL. The server's
+// `effective_clock` is authoritative when present; a row that has not
+// round-tripped yet -- a visit this device just created or just clocked --
+// does not have it, and a helper that only worked after a hydrate would
+// report the raw time on exactly the rows a caregiver is looking at.
+//
+// ONLY AN APPROVED CORRECTION MOVES THE VALUE. The local branch reads
+// `status`, and an entry with NO status is approved -- every correction
+// written before 2026-10-14 was effective the moment it was filed. That is
+// api/_lib/sen-evv-clock.js's rule and this is a deliberate second copy of it
+// in a file that cannot require() the module; if they ever disagree the
+// server's is the one that counts, which is why it is consulted first.
+//
+// WHAT DOES NOT USE THIS, ON PURPOSE: the clock-action gates below
+// (`canClockIn`, `canClockOut`) and the EVV anomaly checks. Whether a clock
+// EVENT was recorded is a fact about the raw field -- substituting there would
+// let an approved correction re-enable the Clock In button on a visit that was
+// already clocked. The EVV anomaly half is fourth's F2 and is HELD FOR
+// MICHAEL, so it is left exactly as it was rather than decided here.
+function senEffClock(v,field){
+  if(!v||typeof v!=='object')return null;
+  var ec=v.effective_clock&&v.effective_clock[field];
+  if(ec&&ec.corrected&&ec.value)return ec.value;
+  var raw=(v[field]===undefined||v[field]===null)?null:v[field];
+  var list=Array.isArray(v.clock_corrections)?v.clock_corrections:[];
+  var val=raw;
+  for(var i=0;i<list.length;i++){
+    var c=list[i];
+    if(!c||c.field!==field)continue;
+    if(c.status!==undefined&&c.status!==null&&c.status!=='approved')continue;
+    if(c.proposed_at)val=c.proposed_at;
+  }
+  return val;
+}
 function visitHours(v){
-  if(!v||!v.clock_in_at||!v.clock_out_at)return 0;
-  var h=Math.round(((new Date(v.clock_out_at)-new Date(v.clock_in_at))/3600000)*100)/100;
+  // F3: the EFFECTIVE values, because this figure reaches a claim.
+  var ci=senEffClock(v,'clock_in_at'),co=senEffClock(v,'clock_out_at');
+  if(!v||!ci||!co)return 0;
+  var h=Math.round(((new Date(co)-new Date(ci))/3600000)*100)/100;
   if(!isFinite(h)||h<0)return 0;
   return h;
 }
@@ -4152,8 +4203,12 @@ function visitHours(v){
 // and an unparseable timestamp is false too, because "I cannot read this" is
 // not the same claim as "this is backwards".
 function visitClockReversed(v){
-  if(!v||!v.clock_in_at||!v.clock_out_at)return false;
-  var a=new Date(v.clock_in_at).getTime(), b=new Date(v.clock_out_at).getTime();
+  // F3: the EFFECTIVE values, so an approved correction that INVERTS a visit
+  // is detected as reversed rather than quietly producing a negative duration
+  // in whatever consumes it next.
+  var ci=senEffClock(v,'clock_in_at'),co=senEffClock(v,'clock_out_at');
+  if(!v||!ci||!co)return false;
+  var a=new Date(ci).getTime(), b=new Date(co).getTime();
   if(!isFinite(a)||!isFinite(b))return false;
   return b<a;
 }
@@ -5219,8 +5274,10 @@ function azBurnDown(a){
   visits().forEach(function(v){
     if(!v||v.client_id!==a.client_id)return;
     if(!hrIsDate(v.scheduled_date)||v.scheduled_date<a.start_on||v.scheduled_date>a.end_on)return;
-    if(v.clock_in_at&&v.clock_out_at){
-      var ms=new Date(v.clock_out_at)-new Date(v.clock_in_at);
+    // F3: the authorisation burn-down is delivered hours, so effective.
+    var _aci=senEffClock(v,'clock_in_at'),_aco=senEffClock(v,'clock_out_at');
+    if(_aci&&_aco){
+      var ms=new Date(_aco)-new Date(_aci);
       if(isFinite(ms)&&ms>0){deliveredH+=ms/3600000;return;}
     }
     var s=_senHhmmToMin(v.scheduled_start),e=_senHhmmToMin(v.scheduled_end);

@@ -87,6 +87,13 @@
 
 'use strict';
 
+// THE ONLY require IN THIS FILE, and it does not break the purity the header
+// claims: api/_lib/sen-evv-clock.js is itself pure -- no fetch, no I/O -- and
+// what is imported is the single function that decides which clock value is in
+// effect. The alternative was a second copy of the approval rule in a file
+// that computes wages, which is the shape this platform keeps paying for.
+const senEvvClock = require('./sen-evv-clock');
+
 const MINUTES_PER_HOUR = 60;
 const FLSA_WEEKLY_HOURS = 40;
 // 1.5x total, i.e. the PREMIUM is an extra half of the regular rate. Expressed
@@ -185,6 +192,11 @@ function computePayroll(input) {
       byCaregiver[id] = {
         employee_id: id, weeks: Object.create(null),
         visits_counted: 0, visits_excluded: 0, no_rate_visits: 0,
+        // F1, 2026-10-15. Counted per caregiver so a wage that differs from
+        // the recorded clock times can be RECONCILED against the EVV record
+        // -- which is the whole purpose of keeping the trail. A figure that
+        // silently disagrees with the clock is one nobody can check.
+        corrected_clock_visits: 0,
       };
     }
     return byCaregiver[id];
@@ -197,8 +209,45 @@ function computePayroll(input) {
     if (!emp) { excluded.no_caregiver += 1; return; }
     const b = bucket(emp);
 
-    const inMs = instant(row.clock_in_at);
-    const outMs = instant(row.clock_out_at);
+    // ── THE APPROVED CORRECTION IS THE TIME THAT GETS PAID (2026-10-15, F1)
+    // These two lines read `row.clock_in_at` and `row.clock_out_at` RAW, and
+    // `grep -c effectiveClock` over this file returned 0 -- while
+    // api/_lib/sen-evv-clock.js says of effectiveClock() that the approval
+    // rule is "implemented HERE, in the function payroll reads". Payroll was
+    // not reading it. AN APPROVED CLOCK CORRECTION REACHED NOTHING: fourth's
+    // b23 repro measured one visit with one approved correction at 240
+    // minutes / 8000 cents, against 300 / 10000 with the correction applied.
+    // SIXTY MINUTES AND 2000 CENTS UNPAID, per visit, per correction.
+    //
+    // IT IS THE MIRROR OF THE THING THAT WAS VERIFIED SAFE in the same
+    // review: a PENDING correction also reached nothing, which was the
+    // correct answer. Both came from one cause -- this module never looked at
+    // `clock_corrections` at all -- and only one direction was harmless.
+    //
+    // THE SUBSTITUTION IS HERE AND NOT IN THE CALLER'S MAP. api/sd-data.js's
+    // payroll branch already spreads `x.data`, so the corrections were always
+    // on the row; fixing the map would fix ONE caller, and this module is the
+    // authority for pay. Same lesson as the self-approval rule: a rule
+    // enforced in one branch of one endpoint is a rule the next caller does
+    // not get.
+    //
+    // ONE SOURCE FOR THE RULE. effectiveClock() decides what "approved"
+    // means, including that an entry with NO `status` is approved -- every
+    // correction written before 2026-10-14 was effective the moment it was
+    // filed, and reading a missing status as pending here would silently
+    // un-pay all of them. A second copy of that condition in this file is a
+    // second thing to drift on a wage.
+    //
+    // AND THE GUARDS BELOW RUN ON THE EFFECTIVE VALUES, which is why the
+    // substitution happens before them rather than after: an approved
+    // correction that inverts a visit must be EXCLUDED as a non-positive
+    // duration, not paid as a huge number. A substitution applied after the
+    // ordering check would be a route around it.
+    const effIn = senEvvClock.effectiveClock(row, 'clock_in_at');
+    const effOut = senEvvClock.effectiveClock(row, 'clock_out_at');
+    const inMs = instant(effIn.corrected ? effIn.value : row.clock_in_at);
+    const outMs = instant(effOut.corrected ? effOut.value : row.clock_out_at);
+    const usedCorrection = !!(effIn.corrected || effOut.corrected);
     if (inMs === null) { excluded.no_clock_in += 1; b.visits_excluded += 1; return; }
     if (outMs === null) { excluded.no_clock_out += 1; b.visits_excluded += 1; return; }
     if (outMs <= inMs) {
@@ -242,6 +291,7 @@ function computePayroll(input) {
     w.straight_cents += Math.round(rateCents * minutes / MINUTES_PER_HOUR);
     w.visits += 1;
     b.visits_counted += 1;
+    if (usedCorrection) b.corrected_clock_visits += 1;
   });
 
   const caregivers = Object.keys(byCaregiver).sort().map((id) => {
@@ -276,6 +326,7 @@ function computePayroll(input) {
       weeks: weeks,
       visits_counted: b.visits_counted,
       visits_excluded: b.visits_excluded,
+      corrected_clock_visits: b.corrected_clock_visits,
       minutes: weeks.reduce((s, w) => s + w.minutes, 0),
       overtime_minutes: weeks.reduce((s, w) => s + w.overtime_minutes, 0),
       gross_cents: weeks.reduce((s, w) => s + w.gross_cents, 0),

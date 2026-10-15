@@ -1,0 +1,22 @@
+SAIRNsenior EVV capture + payroll wiring -- the fields must round-trip and the engine must be reached
+
+  ok   0a. a call that exists ONLY in a comment does NOT count as wired
+  ok   0b. ...and a real call DOES count
+  ok   0c. ...and a `//` inside a string does not eat the line
+  ok   service_type is captured, saved AND read back on edit
+  ok   member_id is captured, saved AND read back on edit
+  ok   state_caregiver_id is captured, saved AND read back on edit
+  ok   4. service_type is a SCHEDULING field server-side, never an EVV one
+  ok   5. the payroll verb is REGISTERED
+  ok   6. the handler branch CALLS the engine
+  ok   7. sairnsenior.html actually CALLS it (not in a comment)
+  ok   8. a FLOOR reaches the screen as "at least", not as a total
+  ok   9. a failed call is NOT rendered as a period in which nobody earned anything
+  ok   10. dropping the service_type control is REFUSED
+  ok   11. saving member_id but never reading it back is REFUSED
+  ok   12. moving service_type into the EVV field set is REFUSED
+  ok   13. reverting the client payroll call to a comment is REFUSED
+  ok   14. removing the handler branch is REFUSED
+  ok   15. presenting a FLOOR as a total is REFUSED
+
+0 failure(s)
