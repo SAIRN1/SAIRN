@@ -3841,6 +3841,29 @@
         "docs/batch-manifest-fourth-b22.json",
         "tools/sf_events_anchor_check.py"
       ]
+    },
+    {
+      "id": "fourth-1792065614",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "b23: (1) discharge Tier A obligations assigned to fourth -- cc 2026-10-15T01:13:35Z tools/citation_anchor_rot_check.py and hank 2026-10-15T01:21:13Z alf_staff/leg_cases/sen_visits; cody 2026-10-15T01:18:14Z leg_aftercare DEFERRED BY MICHAEL'S DECISION, not discharged, waits for hank's key fix to land and both claims to release. (2) hank b13 Tier A review, leg_aftercare EXCLUDED, key question whether any consumer reads clock_in_at or clock_corrections directly starting with the payroll action on sen_visits. (3) measure the 69 and 151 branch shapes in api/sd-data.js, classify defect vs not by driving a sample of each, route to hank with file:line. (4) reproduce cody's other four sabotage mutants and ablate tools/sf_events_anchor_check.py. (5) re-derive the 373 bare-citation upper bound to an actual count. (6) push without force, confirm landed, re-check the leg_aftercare claims. HOOKS STAY CLEARED, settings.json NEVER committed, no SAIRN_SEED_GATE override, no auditor clone entered, nothing written under .claude/skills/sairn-hover-auditor/. CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: api/ and sql/ files are hank's and are READ-ONLY here; tests/ files are cody's and READ-ONLY; tools/citation_anchor_rot_check.py is cc's and READ-ONLY -- I review it, I do not edit it. FILES: docs/tier-a-reviews.json docs/batch-manifest-fourth-b23.json docs/2026-10-15-fourth-b23-hank-b13-tier-a-discharge.md docs/2026-10-15-fourth-b23-cc-anchor-rot-discharge.md docs/2026-10-15-fourth-b23-notprovisioned-branch-census.md docs/2026-10-15-fourth-b23-mutants-ablation-and-citations.md tools/sf_events_anchor_check.py SAIRN-handoff-fourth-b23.md SAIRN-report-fourth-b23.txt SAIRN-digest-fourth-b23.txt SAIRN-latest-fourth.md",
+      "claimed_at": "2026-10-15T12:00:14Z",
+      "claimed_at_epoch": 1792065614.7300835,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b23.txt",
+        "SAIRN-handoff-fourth-b23.md",
+        "SAIRN-latest-fourth.md",
+        "SAIRN-report-fourth-b23.txt",
+        "docs/2026-10-15-fourth-b23-cc-anchor-rot-discharge.md",
+        "docs/2026-10-15-fourth-b23-hank-b13-tier-a-discharge.md",
+        "docs/2026-10-15-fourth-b23-mutants-ablation-and-citations.md",
+        "docs/2026-10-15-fourth-b23-notprovisioned-branch-census.md",
+        "docs/batch-manifest-fourth-b23.json",
+        "docs/tier-a-reviews.json",
+        "tools/sf_events_anchor_check.py"
+      ]
     }
   ],
   "refusals": [
