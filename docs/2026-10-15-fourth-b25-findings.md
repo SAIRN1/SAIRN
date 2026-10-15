@@ -1,7 +1,13 @@
 # fourth b25 — the two 400 observations, six citations re-derived, and a figure of my own withdrawn
 
-**2026-10-15. HEAD `12ffa069`.** Every figure below names the command that
-produced it. Re-derive anything you mean to quote, including out of this file.
+**2026-10-15.** Every figure below names the command that produced it.
+**MEASURED AT `1727fde6` and `12ffa069`; this file LANDED at `3b5fabb5`**
+-- stated as two shas on purpose, because convention 35's third clause is
+that a count is a function of the commit it was taken at. `api/sd-data.js`,
+`sairnsenior.html` and `stonedesk.html` are byte-identical across all three
+(`git rev-parse <sha>:<path>`), so every line number below holds at the
+landing sha too. **Re-derive anything you mean to quote, including out of
+this file.**
 
 **THE ONE THING TO READ IF YOU READ NOTHING ELSE:** b24's **25** class-B
 write-guarded branches is **WRONG and is withdrawn here. The number is 22**, and
