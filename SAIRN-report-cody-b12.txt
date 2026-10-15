@@ -1,0 +1,434 @@
+REPORT cody b12
+
+DATE 2026-10-14
+CLONE C:\Users\marsh\Documents\SAIRN-cody
+BRANCH main
+HEAD 37c649fc243c219de8dfb42761e4bc8a80adc9bd
+ORIGIN/MAIN 37c649fc243c219de8dfb42761e4bc8a80adc9bd  (identical, 0 ahead / 0 behind)
+TREE one expected residue at the time of writing: docs/scrutiny-flags.json, the
+     gate's own ledger rows from the final push, committed with these artefacts
+COMMITTER IDENTITY on every b12 commit: fx <fx@example.invalid>, author AND
+     committer, from this clone's LOCAL config. Unchanged by this batch.
+
+ALL SIX DISPATCHED ITEMS DONE. Nothing half-finished.
+
+NOTHING OVERRIDDEN. No SAIRN_SEED_GATE and no SAIRN_GATE_EXEMPT, in any form.
+No hook added or restored. settings.json never committed. NO api/, sql/, tools/
+or CLAUDE.md FILE EDITED. No auditor clone entered. No --force at any point.
+
+THE HEADLINE: not one of the six suites I was sent at had a defect in its
+SUBJECT. Five carried stale anchors or stale expectations in tests/, and one
+needed a finding written down rather than fixed.
+
+THE SECOND FINDING, AND THE ONE WORTH CARRYING FORWARD: three of my own new or
+tightened arms went red on their first run, and every one of those reds was the
+ARM's defect rather than the subject's -- a comment matched as code, a range
+STRING read as a revision walk, a LOCAL sha treated as needing a remote-existence
+guard, and a file:line computed against a comment-stripped copy. Each was found
+by reading the subject after the arm accused it, which is the direction a
+tightened arm is supposed to fail in, and the reason none reached a routing
+document.
+
+----------------------------------------------------------------------
+COMMITS, EACH TESTED AS AN ANCESTOR OF origin/main
+----------------------------------------------------------------------
+44fad1f9  fix(tests): the tripwire list is DERIVED, and the pre-fix counterfactual is RETIRED
+7b8f00c0  fix(tests): cc's widened universe closes two arms -- arm 6 guards BETWEEN source and sink
+f0c85a0c  test(b12): four findings, each RED against current source, ablation 3 of 3, routed to hank
+3a5d4640  fix(tests): the two SAIRNcash entitlement mutations were ANCHOR-0, not a coverage gap
+f8baf814  fix(tests,known-red): 56 encoding sites closed, footers derived, five register rows moved
+11ee9668  fix(tests): E1 asserted a TEMPORARY state unconditionally -- symmetric now
+22ad7800  chore(derived): regenerate docs/traceability-matrix.md and the gate's scrutiny ledger
+37c649fc  chore(derived,tier-a): regenerate MASTER-PLAN and record the Tier A review obligation
+
+All eight verified with `git merge-base --is-ancestor <sha> origin/main`.
+Pushed WITHOUT --force. Four gate refusals, all repaired at cause.
+
+----------------------------------------------------------------------
+ITEM 1  tests/run_cross_tenant_dispatchers_sabotage_probe.py
+----------------------------------------------------------------------
+RED FIRST: exit 1, two tripwire arms, both "a session gate arrived on this
+branch and the arm STAYED GREEN".
+
+THE TWO NAMES WERE HARDCODED AND THAT WAS THE DEFECT. grd_boq_rates and
+grd_rounds stopped being `app: null` DELIBERATELY --
+api/sd-data-cross-tenant-dispatchers.test.js:647-654 sends a real sairngrounds
+session and its comment at :633-646 states the trade in its own words: the
+tripwire is given up for those six resources so the arms test TENANT ISOLATION
+again, with the gate's arrival held by a dedicated suite. The section was
+asserting a property the suite no longer has, by design.
+
+FIX: derive_tripwires() reads every `{ map: ... app: null ... }` unit out of the
+suite text and drives a real tripwire for each, taking the FIRST member so the
+once-per-unit [L-rev] arm is expected red too. Today it derives ZERO and the
+count is PRINTED, so that is a disclosure rather than a silent clean line.
+
+THE ARMS WERE NOT DELETED. What makes an empty list honest is REPLACEMENT
+COVERAGE, which is a FAILURE when it does not hold: tests/sd_data_grd_session_gate.js
+must exist, must name every grd_* member the suite traded away -- DERIVED from
+the unit, so a seventh resource needs gate coverage too -- and must assert a real
+401 NO_SESSION. Measured: all 6 covered, refusal present, control name absent.
+
+CONTROL, 5 OF 5 MUTANTS CAUGHT: gate suite missing entirely; gate suite dropping
+one traded resource (named in the failure); gate suite with no 401 NO_SESSION; a
+gate suite containing an INVENTED grd_ name, which must make the arm declare its
+own name test non-evidence. AND M1 -- a GRD unit set back to `app: null` -- ends
+at exit 2 COULD NOT RUN, "the baseline is not green (14 failing)". THE
+EXPECTATION WAS CHANGED TO WHAT THE MUTANT PROVES, which is stronger than what it
+was written to prove: THE TRADE CANNOT BE UNDONE, so replacement coverage is the
+only thing that can hold the property.
+
+MEASURED: exit 0, 15 filter mutations all landing in the branch their label
+names with no foreign arm red, 0 tripwires derived.
+
+THE PRE-FIX COUNTERFACTUAL IS RETIRED, AND RE-BASE WAS RULED OUT BY MEASUREMENT.
+Three candidate pre-repair copies of tests/app_session_isolation.js driven
+against current source:
+  79854387^  the anchor the control used            33 ok, exit 1
+  4f757c3f^  the `!== 401` repair's parent          33 ok, exit 1
+  2efe796f^  the LATEST pre-repair boundary         33 ok, exit 1
+ALL THREE FAIL AT THE SAME ARM AND IT IS NOT THE PREDICATE: `sairngrounds:
+measured SOME, recorded NONE`. That gate landed 2026-10-07 in 6a2690be and NO
+historical copy can know it, because the posture map is a HAND-WRITTEN record of
+the world when it was written. A later pre-repair commit is still before
+2026-10-07, so moving the anchor forward buys nothing.
+
+THE PREMISE WAS WRONG, WHICH IS THE FINDING: a suite carrying a hand-written
+record of its subject cannot be replayed against a later subject. THE COST IS
+NAMED, NOT WRITTEN OFF -- the same-reason mutations are no longer SHOWN to have
+been invisible to the old `!== 401` predicate, and the file header says so at the
+top. counterfactual_retired() is not a stub: it asserts the retirement reason
+still holds (18 literal posture rows, no derivation) and exits 3 COULD NOT TELL
+naming the premise if the table ever becomes derived. old_form_is_blind() is kept
+as DEAD CODE on purpose -- the only written account of how to replay correctly.
+CONTROL, 3 OF 3: a derived table and an absent table both give exit 3; the real
+file through the same redirection still passes.
+MEASURED: exit 0, ALL 13 ARMS PASS (8 mutations).
+
+----------------------------------------------------------------------
+ITEM 2  blob coverage, arm 6, and the coverage re-pin
+----------------------------------------------------------------------
+RED FIRST: exit 1, 4 passed 1 failed, S2 reporting api/_lib/sd-store.js:166 and
+api/sairndental/public-complaint-submit.js:136 as unclassified `data:` writes
+outside the universe.
+
+MEASURED BEFORE CLAIMING, AND THE DISPATCHED FIGURE DOES NOT REPRODUCE. The
+universe is 179 non-test api/**/*.js files, 0 outside, and BOTH named sites are
+IN SCOPE -- cc widened api_files(). 129 IS NOT THE NEW UNIVERSE: it is the size
+of the OLD GAP, confirmed by restoring the flat walk in the control, which
+leaves exactly 129 files outside with 20 non-storedBlob `data:` writes among
+them. The tool reports 265 sites across api/ by shape.
+
+S2 now asserts the UNSCANNED REGION IS EMPTY, derived from the same walk S1
+uses, with no hardcoded paths and no hardcoded line numbers -- the property is
+membership and a line number is drift waiting to happen. S2b keeps the two sites
+as a REGRESSION PIN: they must be INSIDE the universe, so re-narrowing
+api_files() fails and NAMES them. S2c is the control -- an invented api/ path
+must NOT be in the scanned set.
+CONTROL, 2 OF 2 CAUGHT.
+MEASURED: exit 0, 7 passed, 0 failed, NO FINDINGS.
+
+docs/blob-conversion-coverage.json RE-PINNED WITH THE TOOL, not by hand:
+`python tools/blob_conversion_coverage.py --repin`, unconverted 64 -> 58,
+converted 33 -> 34, BUILT 159 -> 171. The tool printed IMPROVED and the re-pin
+command itself. 58 sites still hand a raw payload to the store and the tool says
+so on every run: a ratchet is not a pass.
+
+ARM 6 OF tests/run_scope_gate_unfetched_base_probe.py IS NOW POSITIONAL. It
+detected the guard PER FILE -- anywhere in the text -- and its own comment
+admitted it would miss a file that guards one path and leaves another unguarded.
+It now requires a guard BETWEEN the binding of the remote sha and its first use
+in a revision walk, in the same function, following the sha ONE HOP by name so
+`rng = '%s..%s'` is followed to the git call that executes it.
+THREE STATES, AND THE THIRD IS NOT A PASS: a binding that RETURNS the sha is
+printed by name as COULD NOT TELL, and ARM 6c requires each such file to still
+carry the weaker per-file guard, so the tightening cannot be a net loss.
+THE TIGHTENED ARM WENT RED FIRST AND BOTH REDS WERE ITS OWN DEFECTS:
+  a range STRING is not a sink. `'%s..%s' % (rsha, lsha)` is built at
+    hover_auditor_scope_gate.py:426 and `_have_commit(rsha)` is checked at :427,
+    before anything executes it.
+  only the REMOTE sha needs a guard. The 4th ref field is the remote tip; the
+    local sha is always an object here. Tracking both reported the new-branch
+    branch at :424, which walks `lsha` alone, as unguarded.
+  and COMMENTS are stripped -- register_feed_gate.py was reported unguarded
+    because a comment 26 lines below says "merge-base(origin/main, tip) is WHAT
+    THIS PUSH ADDS". Prose about the mechanism read as the mechanism.
+CONTROL, 4 OF 4, against synthetic tools whose answer is known by hand -- and F2
+is the case the old rule PASSED: a guard present in the file but AFTER the sink
+is now reported unguarded with both line numbers.
+MEASURED: exit 0, 13/13 arms, population 3, 4 could-not-tell all with a per-file
+guard present.
+
+----------------------------------------------------------------------
+ITEM 3  T16, T17, T18, N1-N4 -- failing-first, ablation proven, ROUTED
+----------------------------------------------------------------------
+tests/run_b12_routed_findings_probe.py, NEW: exit 1, 8 arms, 4 holding, 4
+findings. RED ON PURPOSE and registered as such, because every finding is in
+api/, which is hank's.
+
+T16  api/sd-data.js:7179, sen_visits action=write. The caregiver branch copies
+     SEN_VISIT_EVV_FIELDS straight over `visitData`, which starts as a copy of
+     the stored row, so a SECOND write carrying clock_in_at REPLACES the
+     caregiver's recorded time with NO trail. checkClockEvent() refuses only the
+     impossible and explicitly ALLOWS and stores a PAST time (the offline replay
+     path), so an earlier clock_in_at is accepted. The file's own comment states
+     the rule it breaks: "a state audit that finds an edited time with no trail
+     cannot tell a typo correction from a fabrication."
+T17  api/sen-auth.js:263, action=setup. It upserts with
+     on_conflict=license_hash,employee_id and resolution=merge-duplicates, so it
+     REWRITES an existing employee's role, gated only on
+     `caller.role !== "owner"`. PROVISIONING_ROLES is ['owner'], so an owner can
+     demote the last owner and nobody can call setup again -- provisioning
+     becomes unrecoverable from inside the app. CLAUDE.md requires the
+     recoverability guard, two safe end states and only two.
+T18  api/_lib/compliance-rules.js, DRIVEN not read. `mappable` accepts ANY
+     non-empty applies_to_positions array without checking its contents against
+     STAFF_POSITIONS, while the very next leg of the SAME expression validates
+     `audience` against it. A requirement declaring ['rn'] is counted MAPPED,
+     left out of unmapped_requirements_caveat, and matchAudience() then returns a
+     DECIDED applies=false for every real position. A training requirement that
+     applies to nobody, reported as a decision rather than a gap.
+N4   api/sd-data-cross-tenant-dispatchers.test.js:577 claims the GRD gate's
+     arrival is "held by api/sd-data-grd-session-gate.test.js", which does not
+     exist. The coverage DOES exist at tests/sd_data_grd_session_gate.js,
+     verified in item 1 -- true in substance, wrong in its citation.
+
+N1/N2/N3 ARE WHY EACH T ARM IS AN ASYMMETRY and all three hold: the append-only
+propose_clock_correction route writes no clock field; set_active in the SAME FILE
+does carry the last-admin guard through lifecycle.setActive() over
+PROVISIONING_ROLES; the same `mappable` expression does validate `audience`.
+Each defect is one branch missing what its neighbour has.
+
+ABLATION, 3 OF 3: each T arm re-run against a COPY carrying its own obvious fix
+goes GREEN, so each follows the guard it names rather than a constant. The
+failure mode an arm like this really has is not a false positive, it is a
+MISATTRIBUTED one. The clone is never written and that is asserted.
+
+N4's POPULATION IS MEASURED AND PRINTED: 314 coverage claims in comment blocks
+citing an api/, tests/ or tools/ path. N4b fails if the sweep ever looks at fewer
+than 100. THREE FALSE POSITIVES WERE REMOVED STRUCTURALLY, NOT BY A NAME
+BLOCKLIST: comments only (the first five hits were fixture payloads inside STRING
+literals); comment BLOCKS not lines (the real finding spans two lines);
+create-then-remove and self-disclosed citations.
+
+AND T17 FIRST PASSED BECAUSE OF A COMMENT: the guard regex matched `lifecycle.`
+inside "Both run through api/_lib/employee-lifecycle.js". A MISREPORTED file:line
+was caught the same way -- comment-stripping moved T16's citation from :7179 to
+:7137, and a file:line that points at the wrong line is worse than none.
+
+NO docs/ ROUTING FILE WAS WRITTEN, because docs/ is fourth's. The findings live
+in the commit message, in the arms and in docs/known-red-suites.json.
+
+----------------------------------------------------------------------
+ITEM 4  SAIRNcash entitlement, ARM B first
+----------------------------------------------------------------------
+RED FIRST: exit 1, 2 arms, both `ANCHOR-0 in sairncash.html`. The harness was
+RIGHT to fail them -- a mutation that never applied proves nothing, and counting
+it as a coverage gap would have sent the fix into the suite instead of the table.
+A STALE ANCHOR AND A MISSING ARM LOOK IDENTICAL IN A SUMMARY LINE AND HAVE
+OPPOSITE FIXES.
+
+ARM B FIRST, deliberately -- it is the STRUCTURAL property, does the gate still
+ask the server at all, and arm A only means anything once the round-trip is known
+to happen.
+ARM B (mutation 5): the anchor ended `body: JSON.stringify({subscriptionId:
+s.subscriptionId})});` and the request has since gained `customerId:
+s.customerId`, added when api/sairncash/verify.js stopped minting a Firebase
+token without an ownership precondition. Re-anchored on the full current request
+line, measured unique. Caught now by the suite's own "the fetch double is wired"
+arm, which asserts __calls.length === 1.
+ARM A (mutation 3): the branch was a one-liner and is now a multi-line block
+carrying the firebaseTokenWithheld disclosure. THE ONE-LINER SPELLING STILL
+EXISTS TWICE -- the trial path at :863 and the post-checkout path at :990 -- so an
+anchor loosened until it matched again would have planted in the WRONG BRANCH,
+which is worse than ANCHOR-0 because it reports a verdict about a function
+nobody chose. Re-anchored on the two-line opening of the reverify branch only,
+measured unique at 1.
+
+MEASURED: exit 0, ALL 12 ARMS PASS, 8 mutations, every planted defect refused,
+sairncash.html byte-identical. The other three entitlement suites were driven in
+the same pass and are green: sairncash_entitlement_gate.js 19 passed,
+sairncash_entitlement_fault_probe.py 0 failures,
+entitlement_freshness_control.py 0 failures.
+sairncash.html was READ ONLY -- an app file and not mine.
+
+----------------------------------------------------------------------
+ITEM 5  methodology -- measure the population before claiming
+----------------------------------------------------------------------
+THE 56 DECODE SITES, MEASURED BOTH WAYS. `python
+tools/subprocess_decode_check.py` reported 56 text-mode subprocess sites with no
+explicit encoding across 33 tests/ files and 0 tools/ files -- reproducing cc's
+b9 routed figure exactly (docs/2026-10-14-cc-b9-subprocess-decode-tests-routed-to-cody.md
+said tools/: 13 -> 0, tests/: 56 -> 56). BY TOOL: all 56 belong to
+tools/subprocess_decode_check.py; no other checker contributes a site.
+FIXED with the tool's own AST-based --fix: "added the encoding argument at 56
+call site(s) in 33 file(s)". RE-RUN MEASURED 0, "CLEAN. Every text-mode
+subprocess names its encoding." Every modified path is under tests/ -- asserted,
+not assumed -- and all 33 parse (ast.parse, 0 broken).
+A SAMPLE WAS DRIVEN, NOT JUST COMPILED: run_unproven_arm_probe exit 0,
+run_required_write_permission_probe exit 0, run_reseat_fixed_point_probe exit 0.
+run_two_axis_tier_parser_probe exits 1 -- AND DID BEFORE THE CHANGE, confirmed by
+stashing and re-running: PRE-FIX EXIT=1, same failing arm. Stated rather than
+folded in, because "I changed 33 files and one is red" needs the before number.
+
+THREE STANDING `EXPECTED RED` FOOTERS, WHERE TWO WERE NAMED. Driving every suite
+that carries one found FOUR:
+  tests/sd_data_clock_flags_merge.test.js       green, footer + E1 fixed
+  tests/sairncare_office_manager_role.test.js   green, footer + E1 fixed
+  tests/mar_billing_grant.test.js               green, footer + E1 fixed, and a
+    SIXTH stale register row the dispatch did not name
+  tests/run_alf_scope_mutation_probe.py:220     NOT a defect, LEFT ALONE -- it is
+    a PER-MUTATION message inside working logic, not a standing footer. The
+    distinction is why the count is four and the fix is three.
+Each footer is DERIVED from the run now, keeping the routing history for the day
+a regression brings it back.
+
+AND THAT FIX EXPOSED ARM E1. Moving the rows made E1 fail in all three: it
+asserted UNCONDITIONALLY that the suite IS in `entries` -- "while it is
+deliberately red". Same defect class one layer in, and worse, because it turns
+correct bookkeeping into a test failure. E1 IS SYMMETRIC NOW: red requires an
+entries row, GREEN REQUIRES ITS ABSENCE, either direction fails loudly, and the
+could-not-read branch still exits 3. In mar_billing_grant the fixed arm CAUGHT
+ITS OWN ROW on the first run -- "this suite is GREEN but still has an `entries`
+row, which will swallow the next real failure of this file."
+
+FIVE STALE `entries` ROWS MOVED TO `recovered`, every one DRIVEN, plus the sixth
+above:
+  run_cross_tenant_dispatchers_sabotage_probe  fixed in this batch
+  run_blob_coverage_scope_sabotage             fixed in this batch
+  run_citation_anchor_hop_sabotage             NOTHING EDITED. cc fixed the four
+    defects in tools/ and the probe went green by itself -- 6 passed, "the hop
+    graph survives both attack points". It stayed red while its subject was
+    broken and cleared when the subject was repaired, which is the design
+    working rather than a lucky pass.
+  sd_data_clock_flags_merge.test.js            hank landed, footer derived here
+  sairncare_office_manager_role.test.js        hank landed, footer derived here
+  mar_billing_grant.test.js                    hank landed, found by measuring
+THE DISPATCH CALLED THE CITATION-ANCHOR ROW A `recovered` ROW TO DELETE.
+MEASURED: it was in `entries`, there was no duplicate, and entries / recovered /
+not_red share no file at all. So it is a MOVE, which the register's own rule
+requires, and not a deletion.
+ONE ROW ADDED: tests/run_b12_routed_findings_probe.py at exit 1, so this batch's
+deliberate red is ATTRIBUTABLE rather than read as a regression.
+ONE not_red ROW RESOLVED: tests/app_session_isolation_probe.py is exit 0 with all
+13 arms passing, and the b11 exit-3 counterfactual is recorded as RETIRED with
+the three-commit measurement that ruled out re-basing.
+entries 69 -> 64, recovered 31 -> 37, not_red 4 with one row updated in place.
+Rebuilt whole with json.dump (PR 2.1) and verified structurally: the untouched
+entries, the pre-existing recovered rows and the untouched not_red rows are
+byte-identical objects; the only new top-level key is _b12_2026_10_14_cody.
+
+----------------------------------------------------------------------
+ITEM 6  PUSH -- four refusals, all repaired at cause
+----------------------------------------------------------------------
+LANDED without --force at 37c649fc. HEAD == origin/main, 0 ahead / 0 behind.
+1 REGISTER FEED -- one commit lacked a `no-defect-record:` trailer. Added by
+  `git rebase --exec`; no published history rewritten, it had never landed. The
+  other four were accepted on the first attempt.
+2 GENERATED DOCUMENT -- docs/traceability-matrix.md. Regenerated with the one
+  command the gate printed. Five counter lines changed, chiefly `no subject
+  binding either` 175 -> 176, because this batch adds a probe bound to no module
+  and no requirement row. An accurate reading, not something to tidy away.
+3 GENERATED DOCUMENT -- docs/MASTER-PLAN.md. Same, 148 lines.
+4 TIER A REVIEW -- the gate reads grd_boq_rates and grd_rounds out of my probe,
+  and those ARE Tier A. They appear only as a REGRESSION PIN and no api/ or sql/
+  file was touched -- BUT "my change is harmless" is exactly the judgement the
+  rule takes away from the author, so the obligation was OPENED rather than
+  reasoned away. `tools/tier_a_review_gate.py --open`, ASSIGNED TO FOURTH, with
+  the three things a reviewer should check named in the record.
+Then a rebase conflict in two GENERATED documents and one append-only record,
+resolved the right way for each: regenerate traceability-matrix.md and
+MASTER-PLAN.md, take THEIRS for docs/tier-a-reviews.json and RE-RUN --open so my
+obligation appends onto the current file rather than being hand-merged.
+
+----------------------------------------------------------------------
+UNVERIFIED / NOT MEASURED -- stated, not folded into the green
+----------------------------------------------------------------------
+T16 and T17 are read from SOURCE STRUCTURE, not driven through the handler. Each
+names the exact lines and the exact absent guard and the ablation shows the arm
+follows the guard rather than a constant, but neither PROVES the defect is
+reachable for a particular caller. T18 IS driven. The suite's own header says so
+rather than leaving a reader to assume the three are equal evidence.
+
+tests/run_two_axis_tier_parser_probe.py is RED (1 arm) and was NOT diagnosed
+here. Confirmed red before my change, so it is outside the 33-file blast radius.
+
+tools/red_suite_register_check.py was NOT run -- it re-drives every registered
+suite and took over an hour without finishing in b11. No verdict from it is
+claimed; every register row written here is an individual drive, which that
+file's own rule calls the authority.
+
+No live deployed-URL verification was done and none applies: this batch changed
+no api/, sql/ or app file, so there is nothing deployed to verify.
+
+ARM 6's residual limit is textual order inside one function, not dataflow: a
+guard on a different branch of the same function still counts, and a sha renamed
+through an intermediate variable is followed only ONE HOP by name.
+
+N4 is phrase-gated. Its claim list is a named set of phrases, and a coverage
+claim phrased some other way is invisible to it. The population (314) is printed
+every run so the narrowness is visible rather than silent.
+
+----------------------------------------------------------------------
+OPEN, WITH THE EXACT NEXT STEP
+----------------------------------------------------------------------
+1 T16 / T17 / T18 -> HANK. api/sd-data.js:7179, api/sen-auth.js:263,
+  api/_lib/compliance-rules.js. Each has a RED arm in
+  tests/run_b12_routed_findings_probe.py that goes green on its own when fixed;
+  `--ablate` shows which fix each one measures. A partial fix leaves the suite
+  red with FEWER findings, which is the intended reading.
+2 N4 -> HANK. api/sd-data-cross-tenant-dispatchers.test.js:577 cites
+  api/sd-data-grd-session-gate.test.js; the real path is
+  tests/sd_data_grd_session_gate.js. A one-line comment correction.
+3 THE TIER A OBLIGATION -> FOURTH, assigned, in docs/tier-a-reviews.json. 48h
+  before anyone may --takeover.
+4 THE RETIRED COUNTERFACTUAL'S REPLACEMENT -> CODY. Do NOT replay the suite.
+  Apply the OLD predicate to the mutant's own refusal -- assert `!== 401` accepts
+  a 500 and `=== 403 && FORBIDDEN` refuses it -- which needs no historical copy
+  and no world-state.
+5 tests/run_two_axis_tier_parser_probe.py is RED and PRE-EXISTING, one arm. Its
+  register row should be checked against that arm. Not touched in b12.
+6 tests/run_scope_gate_unfetched_base_probe.py carries `# OWNER: cc` while living
+  in tests/, which the register's own path rule makes cody's. Tightened as
+  dispatched, header left alone. A ROUTING QUESTION, not a code change.
+7 58 unconverted blob sites remain (docs/blob-conversion-coverage.json). A
+  ratchet, not a target; the tool refuses to let the number rise.
+8 b11's items that are NOT mine and were not re-verified here: MIN_TEST_FILES 370
+  vs 796 (cc); tools/sairn_push_gate_hook.py:988-991 contradicting its own code
+  (cc); CLAUDE.md's "SAIRN_SEED_GATE=off still works" line;
+  tests/push_gate/check4_probe.py and check7_probe.py (not_red, exit 3); the 17
+  .git-sentinel suites.
+
+----------------------------------------------------------------------
+CLEANUP
+----------------------------------------------------------------------
+Scratch files under the session scratchpad are removed. `git worktree list`
+shows ONLY the live clone. Evidence lives in docs/known-red-suites.json and in
+the commit messages, never in a temp path.
+
+FILES WRITTEN BY THIS BATCH
+  tests/run_cross_tenant_dispatchers_sabotage_probe.py
+  tests/app_session_isolation_probe.py
+  tests/run_blob_coverage_scope_sabotage.py
+  tests/run_scope_gate_unfetched_base_probe.py
+  tests/run_b12_routed_findings_probe.py          (new)
+  tests/sairncash_entitlement_gate_probe.py
+  tests/sd_data_clock_flags_merge.test.js
+  tests/sairncare_office_manager_role.test.js
+  tests/mar_billing_grant.test.js
+  33 tests/*.py files, one keyword each, by the owning tool's --fix
+  docs/known-red-suites.json
+  docs/blob-conversion-coverage.json              (re-pinned by its own tool)
+  docs/traceability-matrix.md, docs/MASTER-PLAN.md (gate-demanded generators)
+  docs/tier-a-reviews.json, docs/scrutiny-flags.json (gate tools' own records)
+  SAIRN-handoff-cody-b12.md, SAIRN-report-cody-b12.txt,
+  SAIRN-digest-cody-b12.txt, SAIRN-latest-cody.md
+
+TRANSCRIPT
+C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cody\ec3355ad-083b-4402-a518-3d4e79072c4c.jsonl
+
+HANDOFF
+SAIRN-handoff-cody-b12.md, written BEFORE this report
+
+SHA256 SAIRN-handoff-cody-b12.md = f6c5e6a2862387a51627a34a86456c1e3bcb5de7e6b96a5f25b2943d637fcfee
+END-OF-REPORT

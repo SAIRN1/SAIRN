@@ -1,0 +1,113 @@
+DIGEST cody b12  2026-10-14
+
+STATUS
+  ALL SIX DISPATCHED ITEMS DONE. On origin/main at 37c649fc, 0 ahead / 0 behind,
+  8 commits all verified as ancestors. Pushed WITHOUT --force; four gate
+  refusals, all repaired at cause, NOTHING OVERRIDDEN -- no SAIRN_SEED_GATE and
+  no SAIRN_GATE_EXEMPT in any form, no hook added or restored, settings.json
+  never committed, no api/, sql/, tools/ or CLAUDE.md file edited, no auditor
+  clone entered.
+  NOT ONE OF THE SIX SUITES I WAS SENT AT HAD A DEFECT IN ITS SUBJECT. Five
+  carried stale anchors or stale expectations in tests/; one needed a finding
+  written down rather than fixed.
+  Committer identity on every b12 commit: fx <fx@example.invalid>, author and
+  committer, from this clone's LOCAL config. Unchanged.
+
+DECISION-NEEDED
+  NOTHING FOR MICHAEL. One thing is assigned rather than asked: the push gate
+  opened a Tier A review obligation on grd_boq_rates and grd_rounds, ASSIGNED TO
+  FOURTH, because those names appear in my probe. They are there only as a
+  REGRESSION PIN and no api/ or sql/ file was touched -- but "my change is
+  harmless" is exactly the judgement the rule takes away from the author, so the
+  obligation was OPENED rather than reasoned away.
+
+CHANGED
+  tests/run_cross_tenant_dispatchers_sabotage_probe.py  tripwire list DERIVED from the suite's own app:null units; REPLACEMENT COVERAGE arm
+  tests/app_session_isolation_probe.py                  pre-fix counterfactual RETIRED, re-base ruled out by measurement
+  tests/run_blob_coverage_scope_sabotage.py             S2 re-aimed at the property; S2b regression pin; S2c control
+  tests/run_scope_gate_unfetched_base_probe.py          arm 6 guards BETWEEN source and sink, three states
+  tests/run_b12_routed_findings_probe.py                NEW, red on purpose: T16 T17 T18 N1-N4, ablation 3 of 3
+  tests/sairncash_entitlement_gate_probe.py             ARM B then ARM A re-anchored, both were ANCHOR-0
+  tests/sd_data_clock_flags_merge.test.js               footer DERIVED, E1 symmetric
+  tests/sairncare_office_manager_role.test.js           footer DERIVED, E1 symmetric
+  tests/mar_billing_grant.test.js                       footer DERIVED, E1 symmetric, row moved
+  33 tests/*.py                                         one encoding keyword each, by the owning tool's --fix
+  docs/known-red-suites.json                            entries 69->64, recovered 31->37, not_red 4 (one resolved)
+  docs/blob-conversion-coverage.json                    re-pinned BY THE TOOL, 64 -> 58
+  docs/traceability-matrix.md, docs/MASTER-PLAN.md      gate-demanded generators, run with the commands it printed
+  docs/tier-a-reviews.json, docs/scrutiny-flags.json    the gate tools' own records
+  SAIRN-handoff-cody-b12.md / -report- / -digest- / SAIRN-latest-cody.md
+
+  THE DECLARED EXCEPTION TO tests/-ONLY SCOPE: four docs/ files that are a
+  generator's output the gate refused without, or a gate tool's own record. No
+  document was hand-edited and no generator was touched.
+
+EVIDENCE-path
+  docs/known-red-suites.json -- six rows moved to `recovered`, one row added for
+  this batch's deliberate red, one not_red row resolved. Each carries its exit
+  code, its failing arm names and the file:line that produced the exit.
+  Commit messages 44fad1f9, 7b8f00c0, f0c85a0c, 3a5d4640, f8baf814, 11ee9668,
+  22ad7800, 37c649fc.
+  THE SCRATCHPAD IS EMPTY ON PURPOSE: a digest pointing at a temp directory is a
+  citation that expires.
+  Transcript: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cody\ec3355ad-083b-4402-a518-3d4e79072c4c.jsonl
+
+UNVERIFIED
+  T16 and T17 are read from SOURCE STRUCTURE, not driven through the handler.
+  Each names the exact lines and the absent guard, and the ablation shows the arm
+  follows the guard rather than a constant -- but neither PROVES the defect is
+  reachable for a particular caller. T18 IS driven. The suite's own header says
+  so rather than leaving the three to look like equal evidence.
+  tests/run_two_axis_tier_parser_probe.py is RED (1 arm) and was NOT diagnosed
+  here. Confirmed red BEFORE my change by stashing and re-running, so it is
+  outside the 33-file blast radius.
+  tools/red_suite_register_check.py was NOT run -- it re-drives every registered
+  suite and did not finish in an hour in b11. No verdict from it is claimed;
+  every register row here is an individual drive, which that file's own rule
+  calls the authority.
+  No live deployed-URL check: this batch changed no api/, sql/ or app file.
+  ARM 6's residual limit is textual order inside one function, not dataflow, and
+  the sha is followed ONE HOP by name.
+  N4 is phrase-gated: a coverage claim phrased outside its named phrase set is
+  invisible to it. The population (314) is printed every run so that narrowness
+  is visible rather than silent.
+
+NEXT
+  1 HANK: T16 api/sd-data.js:7179 (a second EVV write replaces clock_in_at with
+    no trail), T17 api/sen-auth.js:263 (setup can demote the last owner, so
+    provisioning becomes unrecoverable), T18 api/_lib/compliance-rules.js
+    (applies_to_positions contents unvalidated, so an unmatchable list decides
+    "does not apply"). Each has a RED arm that goes green on its own when fixed;
+    `--ablate` shows which fix each one measures.
+  2 HANK: N4 -- api/sd-data-cross-tenant-dispatchers.test.js:577 cites
+    api/sd-data-grd-session-gate.test.js; the real path is
+    tests/sd_data_grd_session_gate.js. A one-line comment correction.
+  3 FOURTH: the Tier A review obligation in docs/tier-a-reviews.json, assigned.
+    48h before anyone may --takeover.
+  4 CODY: the retired counterfactual's replacement. Do NOT replay the suite --
+    apply the OLD predicate to the mutant's own refusal, asserting `!== 401`
+    accepts a 500 and `=== 403 && FORBIDDEN` refuses it. No historical copy and
+    no world-state needed.
+  5 CODY: tests/run_two_axis_tier_parser_probe.py, red and pre-existing. Check
+    its register row against the one failing arm.
+  6 ROUTING QUESTION, not a code change: tests/run_scope_gate_unfetched_base_probe.py
+    carries `# OWNER: cc` while living in tests/, which the register's own path
+    rule makes cody's. Tightened as dispatched, header left alone.
+  7 58 unconverted blob sites remain. A ratchet, not a target; the tool refuses
+    to let the number rise.
+  8 UNCHANGED AND STILL ROUTED, not re-verified here: MIN_TEST_FILES 370 vs 796
+    (cc); tools/sairn_push_gate_hook.py:988-991 contradicting its own code 390
+    lines below (cc); CLAUDE.md's "SAIRN_SEED_GATE=off still works" line;
+    tests/push_gate/check4_probe.py and check7_probe.py (not_red, exit 3); the 17
+    .git-sentinel suites.
+
+CONTEXT 64% used of 1,000,000 (Opus 5 1M)
+  MEASURED, not estimated: 644,254 input tokens on the last request recorded in
+  this session's own transcript. Taken as this digest was written, so the figure
+  at release is slightly higher. The dispatch asked for a handoff at about 60%
+  real context; this is that point.
+  WHY IT IS NOT FROM THE TOOL: tools/sairn_status_line.py answers
+  `ctx ??% (no model in payload)` from inside a turn and /context is a user-side
+  command an agent cannot invoke. The number comes from the transcript's own
+  usage records, which is a DIFFERENT SOURCE from the tool and the reason it can
+  be quoted at all.
