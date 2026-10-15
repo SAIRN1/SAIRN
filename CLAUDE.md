@@ -244,20 +244,44 @@ Full detail in **PR §3**. The short form:
    written the exemption does not apply and the check denies as normal, because
    a broken store must produce more checking, never less.
 
-   **`SAIRN_SEED_GATE=off` still works and is still the WRONG first reach.**
-   It is one flag read before any check runs and it disables *every* check in
-   the hook, not just the seed gate. It bit the session that built the scoped
-   form: on 2026-09-25 hank needed the seed check skipped, the blanket flag was
-   the only route, and the other thirteen checks went with it and had to be
-   re-run by hand afterwards to find out whether any of them would have denied.
-   One intended exemption, thirteen unintended. Keep it for a real incident
-   where the scoped form itself is broken — and **say so out loud whichever one
-   you use** (PR §3.3).
+   **There is a WIDER scoped form, and the gate's own refusal recommends it
+   over the one above:** `SAIRN_SKIP=<gate> SAIRN_SKIP_WHY="<what this gate
+   would have refused and why that is acceptable>"`. It covers **eight** named
+   gates where `SAIRN_GATE_EXEMPT` covers one, and the reason is required
+   rather than optional. Get the list from `python tools/gate_skip.py --gates`
+   — never from this paragraph.
 
-   Only `seed` is exemptable today. That is a decision per check, not a
-   limitation to route around: a wildcard would be the blanket flag wearing a
-   better name. Re-read `EXEMPTABLE` in `tools/sairn_push_gate_hook.py` rather
-   than trusting this paragraph for the list.
+   **`SAIRN_SEED_GATE=off` NO LONGER WORKS. Corrected 2026-10-14; this
+   paragraph said "still works" for a day after it stopped.** Since
+   2026-10-13 both entry points — a Bash `git push` and the `--pre-push` git
+   hook — record the attempt and then **refuse the push, exit 1**. Measured,
+   not read:
+
+       echo "" | SAIRN_SEED_GATE=off python tools/sairn_push_gate_hook.py --pre-push
+       # -> exit 1, "REFUSED: SAIRN_SEED_GATE=off is the BLANKET form and it
+       #    no longer works."
+
+   It is still *parsed* and still *logged* with `honoured: false`, on purpose:
+   a flag that is silently ignored looks exactly like a flag that worked. Why
+   it was retired at all — on 2026-09-25 hank needed the seed check skipped,
+   the blanket flag was the only route, the other thirteen checks went with it
+   and had to be re-run by hand to find out whether any would have denied; and
+   **80 of the 94 rows in `docs/BYPASS-LOG.jsonl` are that shape**, taken
+   because it was the only thing available rather than chosen. **Say so out
+   loud whichever form you use** (PR §3.3).
+
+   Only `seed` is exemptable through `SAIRN_GATE_EXEMPT`. That is a decision
+   per check, not a limitation to route around: a wildcard would be the
+   blanket flag wearing a better name. Re-read `EXEMPTABLE` in
+   `tools/sairn_push_gate_hook.py`, and `GATES` in `tools/gate_skip.py`,
+   rather than trusting this paragraph for either list.
+
+   **Three documents and two code comments all said the blanket form worked,
+   and the fix in one did not reach the others** — `OVERRIDE_HINT` was
+   corrected in b11 to a state that had already been superseded. The hint is
+   now *derived* from `gate_skip` rather than written out, and its selftest has
+   arms that fail on the b11 text. If you are about to write this mechanism
+   down a sixth time, don't: cite the tool.
 4. **SQL that writes credential rows** must carry the recoverability guard — two
    end states are safe and only two. Read the app's own `PROVISIONING_ROLES`;
    SAIRNcode's is `admin`, not `owner` (PR §3.4).

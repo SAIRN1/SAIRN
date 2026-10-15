@@ -226,6 +226,57 @@ MODE = 'pretooluse'
 # a registry entry with the same four fields, and a test with no real defect
 # behind it does not belong here -- it belongs in the report-only runner.
 GUARD_TESTS = [
+    # ── TWO OF HANK'S FOUR, WIRED 2026-10-14 (cc b12 item 3) ───────────────
+    # b11 wired the first two of hank's suites and routed the other two with
+    # the registry's own admission bar quoted back: a SEAM test with a
+    # RECORDED DEFECT. These two meet both halves and were measured against
+    # them rather than taken on the dispatch's word:
+    #
+    #   sv-role-matrix        docs/defect-density-register.json, CRITICAL,
+    #                         commit 9841e14a5eaa, found by independent-review
+    #   ai-provenance         same register, HIGH, commit 44abebb30bf5
+    #
+    # Both run green here before wiring -- 31/0/0 and 18/0/0 by `node <file>`,
+    # exit 0 each. A suite wired red denies every push until somebody turns
+    # the gate off, which is the failure mode this list has already survived
+    # once.
+    #
+    # STILL NOT WIRED, and the reason is unchanged from b11: hank's
+    # sql-run-order-agreement.test.js is the strongest seam of the four and is
+    # one defect-register row away from qualifying -- it is waiting on hank to
+    # file that row, not on a judgment here. rf-settings-tier.test.js is one
+    # handler's authorization and names no two independently-maintained sides,
+    # so it is the author-runs-it class.
+    ('api/sd-data-sv-role-matrix.test.js',
+     'the per-resource role matrix in api/sd-data.js and SAIRNvet\'s own role '
+     'vocabulary still agree, resource by resource, and an unknown sv_ '
+     'resource is DENIED rather than defaulted open',
+     'Recorded CRITICAL (commit 9841e14a5eaa, independent-review): 41 of '
+     'SAIRNvet\'s 42 resources had NO per-resource role check at all. '
+     'MEASURED rather than asserted -- `grep -nE "SV_[A-Z_]*ROLES" '
+     'api/sd-data.js` returned NOTHING -- so a `frontdesk` token read and '
+     'wrote sv_soapnotes, sv_labresults, sv_surgery, sv_imaging and '
+     'sv_invoicing exactly as the owner did. THE SEAM IS THE REASON IT IS '
+     'HERE and not the severity: the handler\'s matrix and the app\'s role '
+     'vocabulary are maintained in two different files by two different '
+     'changes, and a resource added to one without a row in the other is '
+     'invisible in review. Arm D3 is the load-bearing one -- it adds a 43rd '
+     'resource with no row and requires DENY, so the default direction is '
+     'pinned rather than assumed.'),
+    ('api/ai-provenance-client-sites.test.js',
+     'every client save site that stores model output on a high-risk resource '
+     'stamps the provenance field the server\'s approval gate reads',
+     'Recorded HIGH (commit 44abebb30bf5, independent-review): six client '
+     'save sites stored model output with no provenance field, and THE SERVER '
+     'COULD NOT KNOW. api/_lib/ai-safeguards.js landed in b9 stating its own '
+     'limit out loud -- `ai_source` is a CLAIM BY THE WRITER, so "a client '
+     'that does not stamp it gets no gate" -- and no production client '
+     'stamped it on a high-risk resource. The approval gate was reachable and '
+     'never reached, which is a gate passing while guarding nothing. A SEAM '
+     'between the client that writes and the server that gates, with no '
+     'server-side test able to see the client half; arm F4 is the control '
+     'that keeps the three NOT-high-risk sites gate-free, so the four '
+     'positive arms cannot have switched a refusal on by accident.'),
     ('api/_lib/stripe-config.test.js',
      'the ONLY unhealthy Stripe state visible without calling Stripe still '
      'produces a signal, and still produces it in exactly one environment',
@@ -908,20 +959,69 @@ def prepush_base():
 # the list. Both forms go at the FRONT of the push command for the same
 # reason: as a PreToolUse hook this runs inside Claude Code's process and
 # inherits ITS environment, not the environment of the command it inspects.
-OVERRIDE_HINT = (
-    "Override, SCOPED FORM FIRST: if it is the SEED check that denied you, "
-    "`SAIRN_GATE_EXEMPT=seed git push ...` skips ONLY that check and leaves "
-    "the other thirteen able to deny. It takes two pushes on purpose -- the "
-    "first is refused and pins a 15-minute exemption to that exact tip sha, "
-    "and that refusal is the thing you are meant to read. Only `seed` is "
-    "exemptable today; re-read EXEMPTABLE in tools/sairn_push_gate_hook.py "
-    "rather than trusting this line for the list. "
-    "BLANKET FORM, and it is the wrong first reach: `SAIRN_SEED_GATE=off git "
-    "push ...` disables EVERY check in this hook, not just the one that "
-    "denied you -- on 2026-09-25 that cost thirteen unintended exemptions "
-    "and a manual re-run to find out what had been skipped. "
-    "Either form goes at the FRONT of the push command itself, not in a "
-    "separate export. Say so out loud whichever you use.")
+# ── CORRECTED AGAIN 2026-10-14 (cc b12 item 5), ROUTED BY cody b11 ─────────
+# b11 fixed this line to name `SAIRN_GATE_EXEMPT=seed` before
+# `SAIRN_SEED_GATE=off`, and it was ALREADY SUPERSEDED when it landed. On
+# 2026-10-13 the blanket form stopped working: both entry points -- the Bash
+# command path and the `--pre-push` env path -- now RECORD the attempt and
+# then REFUSE it, exit 1. MEASURED here rather than read:
+#
+#     echo "" | SAIRN_SEED_GATE=off python tools/sairn_push_gate_hook.py \
+#         --pre-push      ->  exit 1, "REFUSED: ... it no longer works."
+#
+# So the sentence b11 "fixed" was still wrong in two ways at once. It said the
+# blanket form "disables EVERY check", which it does not -- it disables
+# nothing and denies the push. And it named `SAIRN_GATE_EXEMPT=seed` as THE
+# scoped form while the gate's own refusal text recommends a different
+# mechanism entirely: `SAIRN_SKIP=<gate> SAIRN_SKIP_WHY="..."`, which covers
+# EIGHT named gates where EXEMPTABLE covers one.
+#
+# THE LESSON IS NOT "THE TEXT WAS WRONG AGAIN", it is that a hand-written
+# sentence about a moving mechanism is wrong by default. So the gate list and
+# the variable name come FROM gate_skip, the tool that owns them, and this
+# file restates neither. If gate_skip cannot be imported the hint says so and
+# points at it -- it does not fall back to a remembered list, because a
+# confident list of the wrong gates is worse than an admission.
+def _override_hint():
+    head = ("Override, SCOPED FORM FIRST and derived from the tool that owns "
+            "the list: ")
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import gate_skip
+        gates = ', '.join('`%s`' % g for g in sorted(gate_skip.GATES))
+        scoped = (
+            "`%s=<gate> %s_WHY=\"<what this gate would have refused and why "
+            "that is acceptable on this push>\" git push ...` skips ONE named "
+            "gate and leaves every other able to deny. The gates are: %s -- "
+            "read `python tools/gate_skip.py --gates` rather than trusting "
+            "this line, because that list is what moves. "
+            % (gate_skip.ENV_GATE, gate_skip.ENV_GATE, gates))
+    except Exception as exc:                            # noqa: BLE001
+        scoped = (
+            "tools/gate_skip.py would not import (%s), so the scoped form "
+            "CANNOT BE NAMED HERE. Read that file, or `python "
+            "tools/gate_skip.py --gates`. Nothing is guessed in its place: a "
+            "confident list of the wrong gates is worse than this sentence. "
+            % str(exc)[:80])
+    return (
+        head + scoped +
+        "SECOND SCOPED FORM, narrower: `SAIRN_GATE_EXEMPT=seed git push ...` "
+        "is the two-push exemption -- the first push is refused and pins a "
+        "15-minute exemption to that exact tip sha, and that refusal is the "
+        "thing you are meant to read. Only `seed` is exemptable through it; "
+        "re-read EXEMPTABLE in tools/sairn_push_gate_hook.py for that list. "
+        "BLANKET FORM, and it no longer works at all: `SAIRN_SEED_GATE=off "
+        "git push ...` is RECORDED and then REFUSED, exit 1, on both the Bash "
+        "path and the --pre-push path, since 2026-10-13. It is the wrong "
+        "first reach and it is also not a reach -- 80 of the 94 rows in "
+        "docs/BYPASS-LOG.jsonl are that shape, taken because it was the only "
+        "thing available rather than because anybody chose to switch off "
+        "every check. "
+        "Any of these goes at the FRONT of the push command itself, not in a "
+        "separate export. Say so out loud whichever you use.")
+
+
+OVERRIDE_HINT = _override_hint()
 
 OVERRIDE_RE = re.compile(
     r"""(?:^|[;&|\n]|\bexport\s+)\s*SAIRN_SEED_GATE\s*=\s*(['"]?)off\1(?=\s|$|[;&|])""",
@@ -1062,10 +1162,24 @@ def command_pushes(cmd):
 # cannot be read or written, the exemption does NOT apply and the check denies
 # as normal. A broken store must produce MORE checking, never less.
 #
-# THE BLANKET FORM STILL WORKS and is deliberately not removed -- removing the
-# only escape hatch mid-incident is its own failure mode. What changed is that
-# it is no longer the only one, and its refusal text now names the scoped form
-# first.
+# ── THIS COMMENT SAID "THE BLANKET FORM STILL WORKS" UNTIL 2026-10-14 ──────
+# It stopped being true on 2026-10-13, when both entry points started
+# RECORDING the attempt and then REFUSING it, and it went on asserting
+# otherwise for a day. Routed by cody b11, which read this comment against the
+# refusal site and reported the contradiction. MEASURED before correcting:
+#
+#     echo "" | SAIRN_SEED_GATE=off python tools/sairn_push_gate_hook.py \
+#         --pre-push      ->  exit 1, "REFUSED: ... it no longer works."
+#
+# THE BLANKET FORM IS REFUSED. Its regex and its recognition are deliberately
+# NOT removed: a flag that is silently ignored looks like a flag that worked,
+# so it is still parsed, still logged, and then denied with `honoured: false`.
+# That field is the only thing that distinguishes an attempt from a bypass in
+# docs/BYPASS-LOG.jsonl, where 80 of 94 rows are the blanket shape.
+#
+# The escape hatch it used to be is now `SAIRN_SKIP=<gate>` in
+# tools/gate_skip.py, eight named gates with a required reason, plus the
+# narrower two-push `SAIRN_GATE_EXEMPT=seed` below.
 EXEMPT_RE = re.compile(
     r"""(?:^|[;&|\n]|\bexport\s+)\s*SAIRN_GATE_EXEMPT\s*=\s*(['"]?)([a-z-]+)\1(?=\s|$|[;&|])""",
     re.IGNORECASE)
@@ -3992,6 +4106,44 @@ def selftest():
        'code cannot exempt would be the same class of defect',
        sorted(EXEMPTABLE) == ['seed'], True)
 
+    # ── ADDED 2026-10-14 (cc b12 item 5), ROUTED BY cody b11 ───────────────
+    # The arms above were all GREEN while the hint was wrong, because they
+    # only ever asked about the ORDER of two variable names. They could not
+    # see that the blanket form had stopped working on 2026-10-13 or that the
+    # gate's own refusal recommends a THIRD mechanism the hint never named.
+    # These arms ask about the CLAIMS the sentence makes.
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import gate_skip as _gs
+        _gs_ok, _gs_env, _gs_gates = True, _gs.ENV_GATE, sorted(_gs.GATES)
+    except Exception:                                   # noqa: BLE001
+        _gs_ok, _gs_env, _gs_gates = False, '', []
+    ck('tools/gate_skip.py imports, so the hint\'s gate list is DERIVED and '
+       'not remembered. If this arm is red the hint says so itself rather '
+       'than guessing a list', _gs_ok)
+    if _gs_ok:
+        ki = h.find(_gs_env)
+        ck('the gate_skip scoped form (%s) is named at all -- it is the form '
+           'the gate\'s OWN refusal text recommends, and the hint did not '
+           'mention it for a day after the blanket form was refused' % _gs_env,
+           ki != -1)
+        ck('...and it is named BEFORE the narrower SAIRN_GATE_EXEMPT, because '
+           'it covers %d gates where EXEMPTABLE covers one'
+           % len(_gs_gates), ki != -1 and si != -1 and ki < si)
+        ck('CROSS-CHECK: every gate the hint lists is a real key in '
+           'gate_skip.GATES, and every key is listed -- a hint naming a gate '
+           'the tool cannot skip is the same defect as naming a check the '
+           'code cannot exempt',
+           all(('`%s`' % g) in h for g in _gs_gates) and len(_gs_gates) > 0)
+    ck('the hint says the blanket form NO LONGER WORKS. It said "disables '
+       'EVERY check in this hook" for a day after both entry points started '
+       'refusing it -- measured by `echo "" | SAIRN_SEED_GATE=off python '
+       'tools/sairn_push_gate_hook.py --pre-push`, exit 1',
+       'no longer works' in h.lower())
+    ck('...and it does NOT still claim the blanket form disables every check, '
+       'which is the specific false sentence b11 left behind',
+       'disables every check' not in h.lower())
+
     # ── THE ABLATION. Restore the pre-fix hint and require the arms to go
     # red. Without this, an arm asserting `si != -1` would also pass on any
     # string that happens to mention the variable anywhere.
@@ -4007,6 +4159,34 @@ def selftest():
        'already true -- the blanket form is named and it says FRONT. An '
        'ablation that fails everything proves nothing about which arm caught '
        'the defect', (o_bi != -1, 'FRONT' in old), (True, True))
+
+    # ── SECOND ABLATION: THE b11 HINT, which passed every arm above it ─────
+    # This is the one worth having. The text below is what this constant
+    # actually said between b11 and b12, and it satisfied all eight of the
+    # original arms -- scoped form present, named first, blanket named,
+    # marked wrong-first-reach, scope stated, EXEMPTABLE cited, FRONT, out
+    # loud. It was still false in two ways, and the arms added in b12 are
+    # exactly the two that catch it.
+    b11 = ("Override, SCOPED FORM FIRST: if it is the SEED check that denied "
+           "you, `SAIRN_GATE_EXEMPT=seed git push ...` skips ONLY that check. "
+           "Only `seed` is exemptable today; re-read EXEMPTABLE in "
+           "tools/sairn_push_gate_hook.py. BLANKET FORM, and it is the wrong "
+           "first reach: `SAIRN_SEED_GATE=off git push ...` disables EVERY "
+           "check in this hook. Either form goes at the FRONT of the push "
+           "command. Say so out loud whichever you use.")
+    b_si, b_bi = b11.find('SAIRN_GATE_EXEMPT'), b11.find('SAIRN_SEED_GATE')
+    ck('ABLATION CONTROL 2: the b11 hint passes the scoped-form-first arm, '
+       'which is why that arm reported a clean lock over a false sentence '
+       'for a day', b_si != -1 and b_bi != -1 and b_si < b_bi, True)
+    ck('ABLATION 2: ...and FAILS the no-longer-works arm',
+       'no longer works' in b11.lower(), False)
+    ck('ABLATION 2: ...and FAILS the not-still-claiming arm',
+       'disables every check' not in b11.lower(), False)
+    if _gs_ok:
+        ck('ABLATION 2: ...and FAILS the gate_skip-form-present arm, which is '
+           'the whole finding: the hint named neither the mechanism the gate '
+           'recommends nor the fact the one it did name had been refused',
+           _gs_env in b11, False)
 
     print('  %d/%d arm(s) pass' % (total - bad, total))
     if bad:

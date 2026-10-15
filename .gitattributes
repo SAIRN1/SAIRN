@@ -151,6 +151,22 @@ docs/skill-backups/** -text
 # is mixed (11 CRLF, the rest LF); frozen and mixed beats churning forever.
 docs/sources/** -text
 
+# ── Patches are byte-exact or they do not apply (added 2026-10-14, cc b12) ──
+# docs/unlanded/ holds `git stash show -p` output preserved as a patch rather
+# than dropped. A patch is a byte-level description of a diff: its hunk headers
+# count lines and its context lines must match the target exactly, so a CRLF
+# checkout of an LF-authored patch can fail to apply against an LF working
+# tree -- and `git apply` reports that as a corrupt patch rather than as a
+# line-ending problem, which is the same mis-diagnosis the whole file above
+# exists to prevent.
+#
+# `git add` warned "LF will be replaced by CRLF the next time Git touches it"
+# on the first one, which is the only reason this rule exists before rather
+# than after the first failure. `-text` freezes both directions, same standard
+# as the byte-exact archives.
+*.patch -text
+*.diff  -text
+
 # ── Executable text that MUST check out LF, restated narrowly ────────────────
 # Already covered by *.sh above, kept explicit because the cost of getting these
 # two wrong is a hook or script that fails in a way that does not look like a

@@ -28,15 +28,19 @@
 # in tools/register_feed_gate.py both pointed at the blanket flag while a
 # design comment claimed otherwise. The sweep that found this one is the open
 # item that handoff left for this batch.
-#   SAIRN_GATE_EXEMPT=seed git push ...   skips ONLY the seed check; takes two
-#                                         pushes on purpose, the first refused
-#   SAIRN_SEED_GATE=off git push ...      disables EVERY check -- the wrong
-#                                         first reach, kept for a real
-#                                         incident where the scoped form is
-#                                         itself broken
-# Only `seed` is exemptable today; re-read EXEMPTABLE in
-# tools/sairn_push_gate_hook.py rather than trusting this comment for the
-# list. Say so out loud whichever you use.
+#   SAIRN_SKIP=<gate> SAIRN_SKIP_WHY="..."   skips ONE named gate, reason
+#                                            required. Eight gates; read
+#                                            `python tools/gate_skip.py
+#                                            --gates`, never this comment
+#   SAIRN_GATE_EXEMPT=seed git push ...      the narrower two-push exemption;
+#                                            first push refused on purpose
+#   SAIRN_SEED_GATE=off git push ...         REFUSED since 2026-10-13, exit 1
+#                                            on both the Bash path and this
+#                                            one. Still parsed and still
+#                                            LOGGED, with honoured:false --
+#                                            a flag silently ignored looks
+#                                            like a flag that worked
+# Say so out loud whichever you use.
 
 command -v python >/dev/null 2>&1 && PY=python || PY=python3
 ROOT=$(git rev-parse --show-toplevel)

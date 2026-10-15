@@ -794,16 +794,38 @@ route around, since a wildcard would be the blanket flag wearing a better name.
 **Re-read `EXEMPTABLE` in `tools/sairn_push_gate_hook.py` for the list** rather
 than trusting this paragraph, which is the kind of sentence that goes stale.
 
-**`SAIRN_SEED_GATE=off` still works and is deliberately not removed — and it is
-the WRONG first reach.** It is one flag, read before any check runs, and it
-disables *every* check in the hook. It bit the session that later built the
-scoped form: on 2026-09-25 hank needed the seed check skipped — three WV rules
-that cannot load until they are in the repo — the blanket flag was the only
-route, so the other thirteen checks went with it and had to be re-run **by hand
-afterwards** to discover whether any of them would have denied. One intended
-exemption, thirteen unintended, and a manual reconstruction to find out what
-was skipped. Keep it for a real incident in which the scoped form is itself
-broken.
+**THE WIDER SCOPED FORM, and the one the gate's own refusal text recommends:**
+`SAIRN_SKIP=<gate> SAIRN_SKIP_WHY="<what this gate would have refused and why
+that is acceptable on this push>"`. Eight named gates, reason required. The
+list lives in `GATES` in `tools/gate_skip.py` and is read with
+`python tools/gate_skip.py --gates` — not from here.
+
+**`SAIRN_SEED_GATE=off` NO LONGER WORKS. Corrected 2026-10-14 (cc b12, routed
+by cody b11); this paragraph said "still works" for a day after it stopped.**
+Since 2026-10-13 both entry points — a Bash `git push` and the `--pre-push`
+git hook — record the attempt and then **refuse the push, exit 1**. Measured
+rather than read:
+
+    echo "" | SAIRN_SEED_GATE=off python tools/sairn_push_gate_hook.py --pre-push
+    # -> exit 1, "REFUSED: ... the BLANKET form and it no longer works."
+
+It is still *parsed* and still *logged*, with `honoured: false`, and that is
+deliberate: a flag silently ignored looks exactly like a flag that worked, and
+that field is the only thing separating an attempt from a bypass in
+`docs/BYPASS-LOG.jsonl`. Why it was retired: on 2026-09-25 hank needed the
+seed check skipped — three WV rules that cannot load until they are in the
+repo — the blanket flag was the only route, so the other thirteen checks went
+with it and had to be re-run **by hand afterwards** to discover whether any of
+them would have denied. One intended exemption, thirteen unintended. And
+**80 of the 94 rows in `docs/BYPASS-LOG.jsonl` are that shape** — nobody chose
+to switch off fourteen checks; it was the only thing available.
+
+**This mechanism has now been written down in five places and corrected in
+four of them separately.** `OVERRIDE_HINT` was "fixed" in b11 to a state that
+had already been superseded, and the fix did not reach this file, `CLAUDE.md`,
+or `.githooks/pre-push`. The hint is now *derived* from `gate_skip` rather than
+restated, and its selftest carries arms that fail on the b11 text. If you are
+about to write it down a sixth time: cite the tool instead.
 
 Either form goes at the FRONT of the push command, not in a separate `export`
 line. The hook reads the assignment out of the command text, because as a

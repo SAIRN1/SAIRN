@@ -1,0 +1,366 @@
+diff --git a/tools/dispatch_state.py b/tools/dispatch_state.py
+index 02511f0e..ae3b98d7 100644
+--- a/tools/dispatch_state.py
++++ b/tools/dispatch_state.py
+@@ -87,6 +87,41 @@ DONE_WORDS = ('CLOSED', 'BUILT', 'FIXED', 'MEASURED', 'RESOLVED', 'DONE',
+ STRIKE = re.compile(r'^\s*~~')
+ 
+ 
++
++# ── READS THE SHARDS, NOT THE 2.38MB INDEX (2026-10-13, cc b6 item 5) ──────
++# docs/SAIRN-OPEN-WORK-INDEX.md is 2,380,170 bytes and this tool only ever
++# wanted its rows. tools/open_work_shard.py assembles the same rows from
++# docs/open-work/*.md -- byte for byte, with `--check` proving it and exiting 1
++# if that ever stops being true -- so the parsing below is UNCHANGED and only
++# the source of the text moved.
++#
++# IT FALLS BACK TO THE INDEX RATHER THAN RETURNING NOTHING. A clone that has
++# not fetched since the shards landed has no docs/open-work/, and a tool that
++# answered "zero rows" there would report every row as absent -- which for a
++# duplicate or orphan check reads as CLEAN. A silent zero is the one answer
++# worse than being slow, so the fallback is loud: `source` says which was used.
++def _open_work_text():
++    """-> (text, source). source is 'shards', 'index' or 'unreadable'."""
++    import os as _os
++    import sys as _sys
++    _sys.path.insert(0, _os.path.join(
++        _os.path.dirname(_os.path.abspath(__file__))))
++    try:
++        import open_work_shard as _ows
++        return _ows.index_text()
++    except Exception:                                   # noqa: BLE001
++        # The shard reader itself is missing or broken. Read the real file --
++        # slow and correct beats fast and silent.
++        try:
++            import io as _io
++            p = _os.path.join(_os.path.dirname(_os.path.dirname(
++                _os.path.abspath(__file__))), 'docs',
++                'SAIRN-OPEN-WORK-INDEX.md')
++            return _io.open(p, encoding='utf-8', errors='replace').read(), \
++                'index (open_work_shard unavailable)'
++        except OSError:
++            return '', 'unreadable'
++
+ def strip_md(s):
+     s = re.sub(r'&[a-z]+;|&#\d+;', ' ', s)
+     s = re.sub(r'[*`~]', '', s)
+@@ -170,7 +205,7 @@ def live_claims():
+ def rows():
+     """[(app, item, status, owner)] for every table row with 7 columns."""
+     try:
+-        src = read(INDEX)
++        src, _ow_src = _open_work_text()
+     except OSError as exc:
+         return None, str(exc)
+     out = []
+diff --git a/tools/independence_check.py b/tools/independence_check.py
+index 38d4be72..6df8e514 100644
+--- a/tools/independence_check.py
++++ b/tools/independence_check.py
+@@ -88,6 +88,41 @@ SAME_METHOD = (
+ )
+ 
+ 
++
++# ── READS THE SHARDS, NOT THE 2.38MB INDEX (2026-10-13, cc b6 item 5) ──────
++# docs/SAIRN-OPEN-WORK-INDEX.md is 2,380,170 bytes and this tool only ever
++# wanted its rows. tools/open_work_shard.py assembles the same rows from
++# docs/open-work/*.md -- byte for byte, with `--check` proving it and exiting 1
++# if that ever stops being true -- so the parsing below is UNCHANGED and only
++# the source of the text moved.
++#
++# IT FALLS BACK TO THE INDEX RATHER THAN RETURNING NOTHING. A clone that has
++# not fetched since the shards landed has no docs/open-work/, and a tool that
++# answered "zero rows" there would report every row as absent -- which for a
++# duplicate or orphan check reads as CLEAN. A silent zero is the one answer
++# worse than being slow, so the fallback is loud: `source` says which was used.
++def _open_work_text():
++    """-> (text, source). source is 'shards', 'index' or 'unreadable'."""
++    import os as _os
++    import sys as _sys
++    _sys.path.insert(0, _os.path.join(
++        _os.path.dirname(_os.path.abspath(__file__))))
++    try:
++        import open_work_shard as _ows
++        return _ows.index_text()
++    except Exception:                                   # noqa: BLE001
++        # The shard reader itself is missing or broken. Read the real file --
++        # slow and correct beats fast and silent.
++        try:
++            import io as _io
++            p = _os.path.join(_os.path.dirname(_os.path.dirname(
++                _os.path.abspath(__file__))), 'docs',
++                'SAIRN-OPEN-WORK-INDEX.md')
++            return _io.open(p, encoding='utf-8', errors='replace').read(), \
++                'index (open_work_shard unavailable)'
++        except OSError:
++            return '', 'unreadable'
++
+ def classify(text):
+     t = re.sub(r'[*`~]', '', text or '').lower()
+     if any(p in t for p in DIFFERENT_METHOD):
+@@ -129,7 +164,8 @@ def rows():
+     out = []
+     if not os.path.exists(INDEX):
+         return out
+-    for line in io.open(INDEX, encoding='utf-8'):
++    _ow_text, _ow_src = _open_work_text()
++    for line in _ow_text.split(chr(10)):
+         if not line.startswith('|'):
+             continue
+         cells = line.split('|')
+diff --git a/tools/index_duplicate_check.py b/tools/index_duplicate_check.py
+index 96c56bb7..1a071d10 100644
+--- a/tools/index_duplicate_check.py
++++ b/tools/index_duplicate_check.py
+@@ -58,6 +58,41 @@ THRESHOLD = 0.92
+ ACCEPTED = {}
+ 
+ 
++
++# ── READS THE SHARDS, NOT THE 2.38MB INDEX (2026-10-13, cc b6 item 5) ──────
++# docs/SAIRN-OPEN-WORK-INDEX.md is 2,380,170 bytes and this tool only ever
++# wanted its rows. tools/open_work_shard.py assembles the same rows from
++# docs/open-work/*.md -- byte for byte, with `--check` proving it and exiting 1
++# if that ever stops being true -- so the parsing below is UNCHANGED and only
++# the source of the text moved.
++#
++# IT FALLS BACK TO THE INDEX RATHER THAN RETURNING NOTHING. A clone that has
++# not fetched since the shards landed has no docs/open-work/, and a tool that
++# answered "zero rows" there would report every row as absent -- which for a
++# duplicate or orphan check reads as CLEAN. A silent zero is the one answer
++# worse than being slow, so the fallback is loud: `source` says which was used.
++def _open_work_text():
++    """-> (text, source). source is 'shards', 'index' or 'unreadable'."""
++    import os as _os
++    import sys as _sys
++    _sys.path.insert(0, _os.path.join(
++        _os.path.dirname(_os.path.abspath(__file__))))
++    try:
++        import open_work_shard as _ows
++        return _ows.index_text()
++    except Exception:                                   # noqa: BLE001
++        # The shard reader itself is missing or broken. Read the real file --
++        # slow and correct beats fast and silent.
++        try:
++            import io as _io
++            p = _os.path.join(_os.path.dirname(_os.path.dirname(
++                _os.path.abspath(__file__))), 'docs',
++                'SAIRN-OPEN-WORK-INDEX.md')
++            return _io.open(p, encoding='utf-8', errors='replace').read(), \
++                'index (open_work_shard unavailable)'
++        except OSError:
++            return '', 'unreadable'
++
+ def normalise(cell):
+     t = cell
+     t = re.sub(r'&[a-z]+;', ' ', t)          # &mdash; &amp; and friends
+@@ -71,7 +106,8 @@ def normalise(cell):
+ 
+ def rows():
+     out = []
+-    for n, line in enumerate(io.open(INDEX, encoding='utf-8'), 1):
++    _ow_text, _ow_src = _open_work_text()
++    for n, line in enumerate(_ow_text.split(chr(10)), 1):
+         if not line.startswith('|'):
+             continue
+         cells = line.rstrip('\n').split('|')
+diff --git a/tools/open_work_shard.py b/tools/open_work_shard.py
+index 6667b765..c9a84165 100644
+--- a/tools/open_work_shard.py
++++ b/tools/open_work_shard.py
+@@ -148,6 +148,83 @@ def read_index():
+     return io.open(INDEX, encoding='utf-8', errors='replace').read(), ''
+ 
+ 
++# ── THE ONE READER EVERY ROW PARSER SHOULD CALL (2026-10-13, b6 item 5) ─────
++# Fourteen tools each open docs/SAIRN-OPEN-WORK-INDEX.md -- 2,380,170 bytes --
++# and walk it for pipe rows. Every one of them pays the whole file to get the
++# rows, and every one of them re-implements the same three decisions: where the
++# table starts, which lines are separators, and how many cells a row needs.
++#
++# THIS IS THAT, ONCE. It reads the SHARDS, which are the same rows byte for
++# byte (`--check` proves it and exits 1 if it ever stops being true), and it
++# returns them with the shard and line number attached so a caller can point a
++# reader at the row rather than at the monolith.
++#
++# WHY IT FALLS BACK TO THE INDEX RATHER THAN FAILING: a clone that has not
++# fetched since the shards landed has no docs/open-work/, and a tool that
++# started returning zero rows there would report every row as absent -- which
++# for index_duplicate_check or orphan_register_check reads as CLEAN. A silent
++# zero is the one answer worse than being slow, so the fallback is loud: the
++# `source` field says which it used, and callers print it.
++def index_text(prefer_shards=True):
++    """-> (text, source): the ROWS as a document, for a tool that walks lines.
++
++    ── WHY A SYNTHETIC DOCUMENT AND NOT A REWRITE OF SEVEN PARSERS ─────────
++    Seven tools walk the index line by line with their own cell-count rules,
++    their own idea of where the table starts, and in two cases their own regex
++    for a separator. Rewriting all seven onto all_rows() would be the better
++    shape and would also mean seven simultaneous behaviour changes in tools
++    that gate pushes and feed the traceability matrix.
++    So this returns what they already expect -- a header, a separator, and the
++    rows -- assembled from the shards instead of read from a 2,380,170-byte
++    file. Each tool's own parsing is UNCHANGED, which is why the migration is
++    verifiable one tool at a time: same rows in, same findings out.
++    The prose sections of the index are NOT included, and that is the one
++    behaviour difference. It matters for exactly one caller --
++    md_table_check.py, whose subject IS the file's own pipe shape -- which is
++    therefore deliberately NOT migrated.
++    """
++    rows, source = all_rows(prefer_shards)
++    header = '| App | Item | Status | Owner | Blocked by | Next action | Sz |'
++    body = [header, '|---|---|---|---|---|---|---|']
++    body.extend(r['line'] for r in rows)
++    return NL.join(body) + NL, source
++
++
++def all_rows(prefer_shards=True):
++    """-> (rows, source). Each row: {'line', 'app', 'shard', 'lineno'}.
++
++    `source` is 'shards' or 'index', and a caller that does not print it is
++    hiding which one answered.
++    """
++    if prefer_shards and os.path.isdir(SHARD_DIR):
++        rows = []
++        for fn in sorted(os.listdir(SHARD_DIR)):
++            if not fn.endswith('.md') or fn == 'ACTIVE.md':
++                continue
++            p = os.path.join(SHARD_DIR, fn)
++            try:
++                text = io.open(p, encoding='utf-8', errors='replace').read()
++            except OSError:
++                continue
++            for i, line in enumerate(text.split(NL), start=1):
++                if (line.startswith('|') and not SEPARATOR_RE.match(line)
++                        and not HEADER_RE.match(line)):
++                    rows.append({'line': line, 'app': app_of(line),
++                                 'shard': fn, 'lineno': i})
++        if rows:
++            return rows, 'shards'
++    src, err = read_index()
++    if err:
++        return [], 'unreadable'
++    collected, _header, _stats = collect(src)
++    rows = []
++    for s in sorted(collected):
++        for line in collected[s]:
++            rows.append({'line': line, 'app': app_of(line),
++                         'shard': None, 'lineno': None})
++    return rows, 'index'
++
++
+ def collect(src):
+     """-> (rows_by_slug, header_line, stats). Rows are whole lines, verbatim."""
+     rows, header, in_table, stats = {}, None, False, {
+diff --git a/tools/stale_row_sweep.py b/tools/stale_row_sweep.py
+index 44bf9285..bea9ad44 100644
+--- a/tools/stale_row_sweep.py
++++ b/tools/stale_row_sweep.py
+@@ -127,6 +127,41 @@ PATH_RE = re.compile(r'`([A-Za-z0-9_][A-Za-z0-9_./-]*\.'
+ HEADER_CELL = 'App'
+ 
+ 
++
++# ── READS THE SHARDS, NOT THE 2.38MB INDEX (2026-10-13, cc b6 item 5) ──────
++# docs/SAIRN-OPEN-WORK-INDEX.md is 2,380,170 bytes and this tool only ever
++# wanted its rows. tools/open_work_shard.py assembles the same rows from
++# docs/open-work/*.md -- byte for byte, with `--check` proving it and exiting 1
++# if that ever stops being true -- so the parsing below is UNCHANGED and only
++# the source of the text moved.
++#
++# IT FALLS BACK TO THE INDEX RATHER THAN RETURNING NOTHING. A clone that has
++# not fetched since the shards landed has no docs/open-work/, and a tool that
++# answered "zero rows" there would report every row as absent -- which for a
++# duplicate or orphan check reads as CLEAN. A silent zero is the one answer
++# worse than being slow, so the fallback is loud: `source` says which was used.
++def _open_work_text():
++    """-> (text, source). source is 'shards', 'index' or 'unreadable'."""
++    import os as _os
++    import sys as _sys
++    _sys.path.insert(0, _os.path.join(
++        _os.path.dirname(_os.path.abspath(__file__))))
++    try:
++        import open_work_shard as _ows
++        return _ows.index_text()
++    except Exception:                                   # noqa: BLE001
++        # The shard reader itself is missing or broken. Read the real file --
++        # slow and correct beats fast and silent.
++        try:
++            import io as _io
++            p = _os.path.join(_os.path.dirname(_os.path.dirname(
++                _os.path.abspath(__file__))), 'docs',
++                'SAIRN-OPEN-WORK-INDEX.md')
++            return _io.open(p, encoding='utf-8', errors='replace').read(), \
++                'index (open_work_shard unavailable)'
++        except OSError:
++            return '', 'unreadable'
++
+ def rows_of(text):
+     """Every data row of the index as a list of cells, with its line number.
+ 
+@@ -598,7 +633,7 @@ def main(argv):
+ 
+     try:
+         tracked = tracked_set()
+-        text = io.open(args.index, encoding='utf-8', errors='replace').read()
++        text, _ow_src = _open_work_text()
+     except (RuntimeError, OSError) as e:
+         print('COULD NOT RUN: %s' % e)
+         return EXIT_COULD_NOT_RUN
+diff --git a/tools/traceability_matrix.py b/tools/traceability_matrix.py
+index 77aa3600..b1e084d8 100644
+--- a/tools/traceability_matrix.py
++++ b/tools/traceability_matrix.py
+@@ -83,6 +83,41 @@ TEST_RE = re.compile(r'(?:tests?/[\w/.-]+\.(?:js|py)|api/[\w/.-]+\.test\.js)')
+ 
+ # App attribution is DERIVED from the app files git knows about, so a new app
+ # is covered the day it lands rather than the day somebody remembers this list.
++
++# ── READS THE SHARDS, NOT THE 2.38MB INDEX (2026-10-13, cc b6 item 5) ──────
++# docs/SAIRN-OPEN-WORK-INDEX.md is 2,380,170 bytes and this tool only ever
++# wanted its rows. tools/open_work_shard.py assembles the same rows from
++# docs/open-work/*.md -- byte for byte, with `--check` proving it and exiting 1
++# if that ever stops being true -- so the parsing below is UNCHANGED and only
++# the source of the text moved.
++#
++# IT FALLS BACK TO THE INDEX RATHER THAN RETURNING NOTHING. A clone that has
++# not fetched since the shards landed has no docs/open-work/, and a tool that
++# answered "zero rows" there would report every row as absent -- which for a
++# duplicate or orphan check reads as CLEAN. A silent zero is the one answer
++# worse than being slow, so the fallback is loud: `source` says which was used.
++def _open_work_text():
++    """-> (text, source). source is 'shards', 'index' or 'unreadable'."""
++    import os as _os
++    import sys as _sys
++    _sys.path.insert(0, _os.path.join(
++        _os.path.dirname(_os.path.abspath(__file__))))
++    try:
++        import open_work_shard as _ows
++        return _ows.index_text()
++    except Exception:                                   # noqa: BLE001
++        # The shard reader itself is missing or broken. Read the real file --
++        # slow and correct beats fast and silent.
++        try:
++            import io as _io
++            p = _os.path.join(_os.path.dirname(_os.path.dirname(
++                _os.path.abspath(__file__))), 'docs',
++                'SAIRN-OPEN-WORK-INDEX.md')
++            return _io.open(p, encoding='utf-8', errors='replace').read(), \
++                'index (open_work_shard unavailable)'
++        except OSError:
++            return '', 'unreadable'
++
+ def apps():
+     r = subprocess.run(['git', 'ls-files', '*.html'], cwd=REPO,
+                        capture_output=True, text=True, encoding='utf-8', errors='replace')
+@@ -248,7 +283,8 @@ def all_tests():
+ def rows_citing_tests():
+     """(requirement, [tests], status) for every index row that names a test."""
+     out = []
+-    for line in io.open(os.path.join(REPO, INDEX), encoding='utf-8').read().split('\n'):
++    _ow_text, _ow_src = _open_work_text()
++    for line in _ow_text.split('\n'):
+         if not line.startswith('|') or line.startswith('|---') or '| App |' in line:
+             continue
+         cells = re.split(r'(?<!\\)\|', line)

@@ -261,7 +261,147 @@ def release_lock():
 # It then happened AGAIN on the next push attempt -- a second rebase, five
 # more commits, one more test file -- which is how 313 became 314. Two
 # rebases, two stale numbers, inside one hour.
-MIN_TEST_FILES = 370
+#
+# ── AND THE CADENCE NEVER HAPPENED. 370 AGAINST 802 (cc b12, 2026-10-14) ───
+# Routed by cody b11: the pin was 370 while `discover()` returned 796, so
+# **426 test files could have been deleted with this guard silent.** Measured
+# again here before changing anything: js 378 + py 424 = 802, unrun 2. The
+# comment above asked for a human cadence and predicted its own decay twice in
+# one hour; the cadence is what did not exist, and re-pinning to 802 restarts
+# exactly the same decay from a higher number.
+#
+# SO IT IS A RATCHET NOW, not a pin. The floor lives in
+# docs/test-file-floor.json, this tool RAISES it whenever the real count
+# exceeds it, and the raise is ANNOUNCED. The literal below stays as the floor
+# of last resort: the ratchet can never put the floor below it, so a deleted
+# or corrupt ratchet file degrades to the old behaviour rather than to zero.
+#
+# IT ONLY EVER RISES, and that asymmetry is the whole design. A tool that
+# could lower its own floor to match reality is a detector blessing its own
+# fix -- it would absorb a mass deletion as the new normal and report clean.
+# Lowering is a human edit to the JSON with a reason in it, and the tool says
+# so when it refuses.
+_MIN_TEST_FILES_FLOOR = 370
+_FLOOR_PATH = os.path.join(REPO, 'docs', 'test-file-floor.json')
+
+
+def _read_floor():
+    """(floor, note). Never raises -- an unreadable ratchet degrades to the
+    literal floor and SAYS it did, because a silent fallback to 370 against a
+    real count of 802 is the defect this replaces."""
+    try:
+        with io.open(_FLOOR_PATH, encoding='utf-8') as fh:
+            d = json.load(fh)
+        v = int(d.get('floor'))
+        if v < _MIN_TEST_FILES_FLOOR:
+            return _MIN_TEST_FILES_FLOOR, (
+                'docs/test-file-floor.json says %d, which is BELOW the '
+                'last-resort floor %d in tools/run_all_tests.py. Using the '
+                'higher one: a ratchet that can be edited downward is not a '
+                'ratchet.' % (v, _MIN_TEST_FILES_FLOOR))
+        return v, ''
+    except Exception as exc:                                     # noqa: BLE001
+        return _MIN_TEST_FILES_FLOOR, (
+            'docs/test-file-floor.json could not be read (%s), so the floor '
+            'is the last-resort literal %d rather than the ratcheted value. '
+            'That is a WEAKER guard than intended and this line is the only '
+            'thing that says so.' % (str(exc)[:80], _MIN_TEST_FILES_FLOOR))
+
+
+def _tracked_test_files(paths=None):
+    """How many of the DISCOVERED test files git actually tracks.
+    (count or None, why).
+
+    THE RATCHET'S BASIS, AND NOT discover(). Found by running cody's
+    tests/run_all_tests_floor_probe.py against the first version of this
+    ratchet: the probe writes five fixture files into the real tests/
+    directory, discover() walks the working tree and counted them, and the
+    floor ratcheted to 807 against a real 802 -- so running the probe RAISED
+    the floor above the tree and the next clean run reported a shrunken suite.
+    A detector a fixture can drive upward is a detector that fails on correct
+    code tomorrow.
+
+    An untracked file is also not a guard: it is on one person's disk and in
+    nobody's clone. So the thing the floor protects is the COMMITTED count,
+    which is both the honest subject and the one a fixture cannot move.
+    """
+    # INTERSECTED WITH discover()'S OWN LIST rather than counted off a
+    # directory. A first version counted `git ls-files tests` and reported 688
+    # against a real 802, because discover() also picks up `api/*.test.js` --
+    # so the ratchet would have been pinned 114 below the tree for ever by a
+    # basis that looked principled. The subject is "a discovered test file
+    # that is also committed", and that is what this computes.
+    if paths is None:
+        js, py, _unrun = discover()
+        paths = list(js) + list(py)
+    try:
+        out = subprocess.check_output(
+            ['git', '-C', REPO, 'ls-files'],
+            stderr=subprocess.STDOUT).decode('utf-8', 'replace')
+    except Exception as exc:                                     # noqa: BLE001
+        return None, 'git ls-files failed: %s' % str(exc)[:80]
+    tracked = set(l.strip().replace('\\', '/') for l in out.split('\n')
+                  if l.strip())
+    n = 0
+    for p in paths:
+        rel = str(p).replace('\\', '/')
+        if rel in tracked:
+            n += 1
+    return n, ''
+
+
+def raise_floor(count):
+    """Ratchet the floor up. (raised_to or None, note).
+
+    `count` is the working-tree count the caller measured; the floor is
+    raised only as far as the TRACKED count, which is the number a fixture
+    cannot inflate. Called from a reporting path, never from a check's
+    verdict: the ratchet records what it has seen, it does not decide
+    anything.
+    """
+    cur, _note = _read_floor()
+    tracked, why = _tracked_test_files()
+    if tracked is None:
+        return None, ('the floor was NOT ratcheted because the tracked test '
+                      'count could not be measured (%s). It is not raised '
+                      'from the working-tree count alone -- an untracked '
+                      'fixture would push it above the real tree.' % why)
+    count = min(count, tracked)
+    if count <= cur:
+        return None, ''
+    try:
+        with io.open(_FLOOR_PATH, 'w', encoding='utf-8', newline='\n') as fh:
+            json.dump({
+                'floor': int(count),
+                'raised_on': time.strftime('%Y-%m-%d'),
+                'previous': int(cur),
+                'how': 'tools/run_all_tests.py raise_floor(), from '
+                       'discover() on this tree',
+                'why_it_only_rises':
+                    'a tool that could lower its own floor would absorb a '
+                    'mass deletion as the new normal and report clean. '
+                    'Lowering is a human edit to this file with a reason, '
+                    'and run_all_tests.py refuses a value below its own '
+                    'last-resort literal.',
+            }, fh, indent=2, sort_keys=True)
+            fh.write('\n')
+    except Exception as exc:                                     # noqa: BLE001
+        return None, ('could not raise the test-file floor to %d (%s), so the '
+                      'guard stays at %d' % (count, str(exc)[:70], cur))
+    return int(count), ''
+
+
+# ONE DEFINITION LINE, DELIBERATELY. tests/run_all_tests_floor_probe.py arm 7
+# counts the assignment of this constant in this file's RAW SOURCE -- comments
+# included, which it declares -- and requires exactly one, because the defect
+# it was written for was two copies of one idea with the check in only one of
+# them. Two things here were shaped by that arm rather than by preference, and
+# both were found by RUNNING it: a tuple unpack counts zero, and an earlier
+# version of this very comment quoted the assignment and counted as a second
+# one. tests/ is cody's and is not edited here; where the arm is right, the
+# tool is what moves.
+MIN_TEST_FILES = _read_floor()[0]
+_FLOOR_NOTE = _read_floor()[1]
 
 def discover():
     js, py, unrun = [], [], []
@@ -436,7 +576,14 @@ def _hook_body():
     # `retried` breaks the silence too. A file that needed a second attempt
     # is news; staying quiet about it is how the retry becomes a place to
     # hide, which is the one way this mechanism could make things worse.
-    if not failures and not skipped and not retried and not shrunk:
+    # `behind` IS PART OF THE SILENCE-BREAKING CONDITION, not just a line
+    # further down. Appending it to `lines` alone would have made it
+    # unreachable on exactly the run where it matters -- a clean tree whose
+    # floor has gone stale returns here before any line is built, which is how
+    # the 370-against-802 pin stayed quiet for weeks in the first place.
+    behind = (len(js) + len(py)) > MIN_TEST_FILES
+    if not failures and not skipped and not retried and not shrunk \
+            and not behind:
         return 0
     lines = []
     if shrunk:
@@ -444,8 +591,15 @@ def _hook_body():
             'THE SUITE HAS SHRUNK: %d test files discovered, %d expected at '
             'minimum. Files were DELETED or moved out of tests/ -- possibly not '
             'by you, since a rebase carries another clone\'s deletion in '
-            'silently. Do not raise MIN_TEST_FILES to clear this; find out '
+            'silently. Do not lower the floor to clear this; find out '
             'which guards left.' % (len(js) + len(py), MIN_TEST_FILES))
+    elif behind:
+        # REPORTED, NOT WRITTEN, from the unattended path. See raise_floor().
+        lines.append(
+            'the test-file floor is BEHIND: %d discovered, floor %d. Run '
+            '`python tools/run_all_tests.py` by hand to ratchet it -- this '
+            'hook deliberately does not edit a tracked file after a push.'
+            % (len(js) + len(py), MIN_TEST_FILES))
     if failures:
         lines.append('%d test file(s) FAILING after this push:' % len(failures))
         lines += ['  %s -- %s' % (rel, tail) for _, rel, tail in failures[:12]]
@@ -1302,7 +1456,31 @@ def _main_body(quiet, excluded=None):
               'below this line')
         print('    would be a true sentence about a suite that has lost guards. If the '
               'removal')
-        print('    was deliberate, lower MIN_TEST_FILES in the same commit and say why.')
+        print('    was deliberate, lower the floor in docs/test-file-floor.json in the')
+        print('    same commit and say why -- the tool will never lower it for you.')
+    else:
+        # ── THE RATCHET, AND ONLY FROM THE BY-HAND PATH ────────────────────
+        # The unattended hook copy below REPORTS that the floor is behind and
+        # writes nothing: a hook that edits a tracked file after every push
+        # changes the tree where nobody is reading the output. Raising it is a
+        # visible act on a run somebody is watching.
+        _raised, _why = raise_floor(len(js) + len(py))
+        if _raised:
+            print('')
+            print('TEST-FILE FLOOR RAISED to %d (was %d). The guard was '
+                  'stale: it is a' % (_raised, MIN_TEST_FILES))
+            print('    RATCHET now, in docs/test-file-floor.json, because the '
+                  'hand-maintained')
+            print('    pin sat at 370 against a real 802 -- 432 files could '
+                  'have gone silently.')
+            print('    Commit docs/test-file-floor.json: it is a record, not '
+                  'dirt.')
+        elif _why:
+            print('')
+            print('TEST-FILE FLOOR NOT RAISED: %s' % _why)
+    if _FLOOR_NOTE:
+        print('')
+        print('FLOOR SOURCE: %s' % _FLOOR_NOTE)
     # ── THE THIRD STATE, AND IT REACHES THE EXIT CODE ──────────────────────
     # Before 2026-10-07 an unreadable tree produced an EMPTY residue list and
     # this section printed nothing. A run that broke the clone reported clean.
