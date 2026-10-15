@@ -366,6 +366,307 @@ def counterfactual_retired():
     return 0
 
 
+def old_predicate_is_blind(force=None, quiet=False):
+    """THE REPLACEMENT for the retired replay. Written 2026-10-14 (cody b13).
+
+    WHAT THE RETIRED CONTROL WAS FOR, because the replacement has to keep it.
+    run_probe() proves the CURRENT suite refuses mutations 6, 7 and 9. On its
+    own that says nothing about whether the 2026-09-16 repair addressed the
+    CAUSE -- a suite can catch a mutation for a reason unrelated to the thing
+    that was fixed. The evidence is the other direction: the OLD predicate must
+    have been BLIND to the same mutation. `counterfactual_retired()` records why
+    replaying the historical suite can no longer produce that evidence, and it
+    is worth reading before this function.
+
+    THIS DOES NOT REPLAY ANYTHING, WHICH IS THE WHOLE DESIGN. The retired
+    control ran a historical COPY OF THE SUITE against current source, so it
+    dragged in every unrelated thing that copy asserted -- and it died on a
+    hand-written posture row that cannot know about a gate landing in 2026-10.
+    The property actually under test is much smaller than a suite: it is ONE
+    EXPRESSION. `out.code !== 401` versus `out.code === 403 && ... FORBIDDEN`.
+    So the two predicates are applied DIRECTLY to the refusal shape each
+    mutation produces. No worktree, no historical suite, no world-state, and
+    nothing that a later gate landing somewhere else can invalidate.
+
+    EVERY INPUT IS DERIVED, AND THAT IS NOT A FLOURISH -- a retyped predicate
+    or a retyped status code is the second-copy defect this file has already
+    paid for twice:
+      * the NEW predicates come out of tests/app_session_isolation.js, from the
+        two `ok(` expressions the arms actually use;
+      * the OLD predicate comes out of HISTORY, from the same DERIVED commit
+        the retired control located -- the one that introduced PHASE_2_GATED --
+        and only ONE EXPRESSION is read from it, never the file to run;
+      * each mutant status code comes out of the MUTATION TABLE above, from the
+        replacement text of the mutation itself.
+    Anything that cannot be derived is exit 3 UNPROVEN with the reason named,
+    never a pass. A control that cannot find its own inputs has not run.
+
+    TWO CONTROLS, BOTH DIRECTIONS, because each arm below is satisfiable by a
+    broken predicate on its own:
+      * "the new predicate refuses everything" would satisfy every REFUSED arm,
+        so the new predicate must ACCEPT the HEALTHY shape.
+      * "the old predicate accepts everything" would satisfy every BLIND arm,
+        so the old predicate must REFUSE a 401 shape -- the one code it could
+        see, which is why 401 was never a legitimate mutation here.
+
+    MUTATION 6 IS NOT APPLICABLE AND IS SAID SO RATHER THAN COUNTED. It changes
+    an app NAME, not a status code, and the arm it trips -- the expectedApp arm
+    -- DID NOT EXIST before the repair. That is the exact trap the first version
+    of the retired control fell into: hand-reverting a predicate does not remove
+    an arm. There is no pre-repair predicate to apply, so this control reports it
+    as out of scope instead of pretending to measure it.
+    """
+    print('')
+    print('OLD-PREDICATE CONTROL -- the replacement for the retired replay.')
+    print('Each same-reason mutation\'s own refusal shape, put through BOTH')
+    print('predicates. No historical suite is run.')
+
+    repo = _git('rev-parse', '--show-toplevel').stdout.strip()
+    bad, unrun, ran = [], [], 0
+
+    def cannot(which, why):
+        print('  CANNOT %s' % which[:92])
+        print('         %s' % why)
+        unrun.append(which)
+
+    # ── 1. THE NEW PREDICATES, OUT OF THE SUITE ─────────────────────────────
+    # The gate arm and the oracle arm assert different codes, so both are read
+    # rather than one being assumed to stand for the other.
+    try:
+        suite_src = io.open(os.path.join(repo, SUITE), encoding='utf-8').read()
+    except OSError as exc:                                       # noqa: BLE001
+        print('  COULD NOT RUN: %s is unreadable (%s), so no predicate can be '
+              'derived. Exit 3.' % (SUITE, exc))
+        return 3
+    m_gate = re.search(r'ok\(out\.code === (\d{3}) && out\.body && out\.body\.error'
+                       r"\s*&& out\.body\.error\.code === '([A-Z_]+)'", suite_src)
+    m_oracle = re.search(r'ok\(out\.code === (\d{3}),\s*\n\s*\'\.\.\.and it is the '
+                         r'LICENCE boundary', suite_src)
+    if not m_gate or not m_oracle:
+        cannot('the NEW predicates', 'one of the two positive `ok(out.code === '
+               'NNN ...)` expressions is no longer in %s, so this control cannot '
+               'say what the repair produced. gate=%s oracle=%s'
+               % (SUITE, bool(m_gate), bool(m_oracle)))
+        print('')
+        print('UNPROVEN: the new predicate could not be derived. Exit 3.')
+        return 3
+    GATE_OK_CODE, GATE_OK_ERR = int(m_gate.group(1)), m_gate.group(2)
+    ORACLE_OK_CODE = int(m_oracle.group(1))
+    # ── THE ONE INJECTION POINT THE ABLATION USES ───────────────────────────
+    # `force` overrides a DERIVED constant and nothing else. It exists so the
+    # ablation below can break exactly one input at a time without editing this
+    # file, copying it, or touching the suite -- and because an arm whose
+    # failure path has never been driven is an assertion, not a check. It is
+    # never set on an ordinary run.
+    _f = force or {}
+    # THE SHAPE'S error code and the PREDICATE'S expected error code are two
+    # names, and the ablation is what forced that apart. With one name,
+    # overriding it moved the predicate AND the healthy shape together, they
+    # still agreed, and CONTROL A could not fail -- a control that cannot fail
+    # is the thing this file exists to refuse. Found by driving A3, not by
+    # reading.
+    GATE_SHAPE_ERR = GATE_OK_ERR
+    GATE_OK_CODE = _f.get('GATE_OK_CODE', GATE_OK_CODE)
+    GATE_OK_ERR = _f.get('GATE_OK_ERR', GATE_OK_ERR)
+    ORACLE_OK_CODE = _f.get('ORACLE_OK_CODE', ORACLE_OK_CODE)
+    if not quiet:
+        print('  derived from %s: gate arm demands %d %s, oracle arm demands %d'
+              % (SUITE, GATE_OK_CODE, GATE_OK_ERR, ORACLE_OK_CODE))
+
+    # ── 2. THE OLD PREDICATE, OUT OF HISTORY -- ONE EXPRESSION, NOT A FILE ──
+    # The commit is DERIVED the same way the retired control derived it: the
+    # OLDEST commit introducing PHASE_2_GATED, whose parent is the pre-repair
+    # file. A pinned sha would rot on the next rebase, and this repo rebases.
+    gsuite = SUITE.replace(os.sep, '/')
+    log = [l for l in _git('-C', repo, 'log', '--format=%H', '-S',
+                           'PHASE_2_GATED', '--', gsuite).stdout.split('\n')
+           if l.strip()]
+    intro = log[-1] if log else ''
+    old_src = ''
+    if intro:
+        before = _git('-C', repo, 'show', '%s^:%s' % (intro, gsuite))
+        if before.returncode == 0:
+            old_src = before.stdout
+    m_old = re.search(r'ok\((?:own|out)\.code !== (\d{3})', old_src)
+    if not m_old:
+        cannot('the OLD predicate', 'no `ok(<x>.code !== NNN` expression could be '
+               'read out of %s^:%s, so the counterfactual predicate is not '
+               'available. This control refuses to retype it -- a hand-written '
+               'pre-fix predicate is a guess about history, which is the defect '
+               'the retired replay was built to avoid.'
+               % ((intro or 'NO-COMMIT')[:12], gsuite))
+        print('')
+        print('UNPROVEN: the old predicate could not be derived. Exit 3.')
+        return 3
+    # DERIVED_OLD is kept apart from OLD_BLIND_TO for the same reason, and the
+    # ablation found this one too: CONTROL B asked whether the predicate refuses
+    # OLD_BLIND_TO, which is whatever OLD_BLIND_TO happens to be -- true by
+    # construction for every value, so A4 could not fail it. The property is
+    # that the predicate refuses the code HISTORY recorded.
+    DERIVED_OLD = int(m_old.group(1))
+    OLD_BLIND_TO = _f.get('OLD_BLIND_TO', DERIVED_OLD)
+    if not quiet:
+        print('  derived from %s^: the pre-repair predicate is `code !== %d`'
+              % (intro[:12], OLD_BLIND_TO))
+
+    # ── 3. THE PREDICATES AS FUNCTIONS, each applied to a refusal shape ─────
+    def old_accepts(shape):
+        """The pre-repair form: a negation of ONE refusal code."""
+        return shape['code'] != OLD_BLIND_TO
+
+    def new_accepts(shape, kind):
+        if kind == 'oracle':
+            return shape['code'] == ORACLE_OK_CODE
+        return (shape['code'] == GATE_OK_CODE
+                and (shape.get('error') == GATE_OK_ERR))
+
+    # ── 4. THE MUTANT SHAPES, OUT OF THE MUTATION TABLE ─────────────────────
+    # The status code each mutation installs is read from its own replacement
+    # text, so editing the table moves this control with it.
+    SHAPES = {
+        '7. SAME-REASON TEST': ('gate', r'res\.status\((\d{3})\)',
+                                r'res\.status\((\d{3})\)'),
+        '9. SAME-REASON TEST': ('oracle', r'status: (\d{3}),',
+                                r'status: (\d{3}),'),
+    }
+    for name, rel, old, new in MUTATIONS:
+        key = next((k for k in SAME_REASON if name.startswith(k)), None)
+        if key is None:
+            continue
+        if key not in SHAPES:
+            cannot(name, 'this same-reason mutation changes no STATUS CODE -- it '
+                         'changes an app name -- and the arm it trips did not '
+                         'exist before the repair, so there is no pre-repair '
+                         'predicate to apply. OUT OF SCOPE for this control, '
+                         'reported rather than counted. (The retired replay fell '
+                         'into exactly this: hand-reverting a predicate does not '
+                         'remove an arm.)')
+            continue
+        kind, old_rx, new_rx = SHAPES[key]
+        m_h = re.search(old_rx, old if isinstance(old, str) else '')
+        m_m = re.search(new_rx, new if isinstance(new, str) else '')
+        if not m_h or not m_m:
+            cannot(name, 'the status code could not be read out of this '
+                         'mutation\'s own text, so the shape it produces is '
+                         'unknown. healthy=%s mutant=%s' % (bool(m_h), bool(m_m)))
+            continue
+        healthy_code, mutant_code = int(m_h.group(1)), int(m_m.group(1))
+        if healthy_code == mutant_code:
+            cannot(name, 'the mutation installs the SAME status code it replaces '
+                         '(%d), so it changes nothing this control can see and '
+                         'BLIND would be meaningless.' % healthy_code)
+            continue
+        healthy = {'code': healthy_code, 'error': GATE_SHAPE_ERR}
+        mutant = {'code': mutant_code, 'error': GATE_SHAPE_ERR}
+        ran += 1
+
+        blind = old_accepts(mutant)
+        caught = not new_accepts(mutant, kind)
+        label = '%s (%d -> %d)' % (key, healthy_code, mutant_code)
+        if blind and caught:
+            print('  BLIND  %s  -- old `!== %d` ACCEPTS it, new predicate '
+                  'REFUSES it' % (label, OLD_BLIND_TO))
+        elif not blind:
+            bad.append('%s: the OLD predicate ALSO refuses %d, so this mutation '
+                       'is not evidence that the repair mattered'
+                       % (label, mutant_code))
+            print('  SEEN   %s  -- the old form caught it too' % label)
+        else:
+            bad.append('%s: the NEW predicate ACCEPTS %d, so the repair does not '
+                       'catch this mutation at all' % (label, mutant_code))
+            print('  MISS   %s  -- the new predicate accepts it' % label)
+
+        # CONTROL A: the new predicate must ACCEPT the healthy shape, or
+        # "refuses everything" satisfies the arm above.
+        if not new_accepts(healthy, kind):
+            bad.append('%s CONTROL: the NEW predicate refuses the HEALTHY shape '
+                       '%d too, so "it refuses the mutant" is not evidence'
+                       % (label, healthy_code))
+            print('  FAIL   %s  CONTROL: new predicate refuses the healthy shape'
+                  % label)
+
+    # CONTROL B: the old predicate must REFUSE the one code it could see.
+    # Without this, "accepts everything" satisfies every BLIND line above -- and
+    # it is also why 401 was never a legitimate mutation in this table.
+    if old_accepts({'code': DERIVED_OLD, 'error': GATE_SHAPE_ERR}):
+        bad.append('CONTROL: the OLD predicate in use accepts %d, the one code '
+                   'history records it could see, so it is not the negation this '
+                   'control thinks it is and every BLIND line above is vacuous.'
+                   % DERIVED_OLD)
+        print('  FAIL   CONTROL: the old predicate accepts %d' % DERIVED_OLD)
+    else:
+        print('  ok     CONTROL: the old predicate really does refuse %d, the '
+              'code history records, so BLIND is not "accepts anything"'
+              % DERIVED_OLD)
+
+    print('')
+    if unrun:
+        print('%d same-reason mutation(s) COULD NOT be put through this control, '
+              'named above.' % len(unrun))
+    if bad:
+        for b in bad:
+            print('  ! %s' % b)
+        print('EXIT 1 -- the repair is NOT shown to have addressed the cause.')
+        return 1
+    if ran == 0:
+        print('UNPROVEN: no same-reason mutation reached this control, so '
+              'nothing was measured. Exit 3, not a pass.')
+        return 3
+    print('  -- %d same-reason mutation(s) are INVISIBLE to the pre-repair '
+          'predicate and REFUSED by the current one.' % ran)
+    print('  THAT is the repair, measured, with no historical suite replayed.')
+    return 0
+
+
+def ablate_old_predicate_control():
+    """Drive old_predicate_is_blind()'s own failure paths. Nothing is written.
+
+    FAILING-FIRST, AND THE RED IS THE STATE THIS REPLACED. Before b13 the
+    property was UNVERIFIED and this file said so at the top: "what is no longer
+    shown is that the OLD predicate was blind to it." The retired replay could
+    not produce it, run_probe cannot produce it, and the suite exited 0 with the
+    gap written down. That is the red.
+
+    So the new arms are not merely green -- each one is driven to its FAILURE,
+    by breaking exactly ONE derived input through `force` and requiring the
+    verdict to change. An arm whose failure path has never been driven is an
+    assertion rather than a check, and this control exists to catch a predicate
+    that cannot discriminate.
+    """
+    print('')
+    print('ABLATION of the old-predicate control -- one derived input broken per')
+    print('case, and the verdict must change. The clone is never written.')
+    CASES = [
+        ('A1 the NEW predicate accepts the mutant code -> MISS, not BLIND',
+         {'GATE_OK_CODE': 500}, 1),
+        ('A2 the OLD predicate also refuses the mutant -> SEEN, so the mutation '
+         'is not evidence', {'OLD_BLIND_TO': 500}, 1),
+        ('A3 CONTROL A -- the new predicate refuses the HEALTHY shape too',
+         {'GATE_OK_ERR': 'NOT_THE_CODE'}, 1),
+        ('A4 CONTROL B -- the old predicate accepts the one code it could see',
+         {'OLD_BLIND_TO': 599}, 1),
+    ]
+    bad = 0
+    base = old_predicate_is_blind(quiet=True)
+    if base != 0:
+        print('  COULD NOT RUN: the control is not green unmutated (exit %d), so '
+              'a changed verdict below would mean nothing. Exit 3.' % base)
+        return 3
+    print('  ok     BASELINE: the control is green unmutated, so every changed '
+          'verdict below is the mutation')
+    for label, force, want in CASES:
+        got = old_predicate_is_blind(force=force, quiet=True)
+        okd = got == want
+        if not okd:
+            bad += 1
+        print('  %s %s  -- exit %d, wanted %d'
+              % ('ok    ' if okd else 'FAIL  ', label, got, want))
+    print('')
+    print('  %d of %d ablation case(s) changed the verdict'
+          % (len(CASES) - bad, len(CASES)))
+    return 1 if bad else 0
+
+
 def old_form_is_blind():
     """DEAD CODE, KEPT ON PURPOSE -- see counterfactual_retired().
 
@@ -519,4 +820,13 @@ if __name__ == '__main__':
               'and must no longer report a 403 as "reachable"',
         stage=[SUITE])
     rc2 = counterfactual_retired()
-    sys.exit(rc or rc2)
+    # THE REPLACEMENT RUNS AFTER THE RETIREMENT NOTE, deliberately: the note
+    # explains why a replay is gone, and this measures the same property
+    # without one. `max` rather than `or` -- a 1 must outrank a 3, because a
+    # failure is a finding and a could-not-run is not.
+    rc3 = old_predicate_is_blind()
+    # ABLATION IS OPT-IN because it runs the control five times. `--ablate`
+    # drives each new arm to its own failure; the ordinary run does not need to.
+    rc4 = ablate_old_predicate_control() if '--ablate' in sys.argv else 0
+    codes = [c for c in (rc, rc2, rc3, rc4) if c]
+    sys.exit(1 if 1 in codes else (max(codes) if codes else 0))
