@@ -3648,6 +3648,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9c453ae1f4d089c7ae26e88cf086bfdff77aec5f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/sd-data-scp-session-gate.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -4173,6 +4181,14 @@
     }
    ],
    "sha": "a53650cdff72c14af11a328f782ac780b626886b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_drive_upload_verify_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a6296d2af3f2a69a90be32776e02c2bfe6903958",
    "criteria_version": "2026-10-06.1"
   },
   {
