@@ -30832,6 +30832,105 @@
         }
       ],
       "recurrence_open": "The new check covers ONE cell and ONE app file. The other 390 rows of docs/CRITICALITY-TIERS.md still carry citations with no enforcement, and 373 of the register's 571 line citations are bare :NNNN that cannot be mechanically checked at all. Nothing closes that until cc's general anchor-rot tool lands. Nor does any check establish that a resolving anchor's surrounding CLAIM is true -- that half is still a human reading the cell, and the tool prints that limit every run rather than letting a clean exit stand in for a verdict."
+    },
+    {
+      "commit": "7082f2d5942e",
+      "date": "2026-10-15",
+      "subject": "fix(board): two readings of one frozen directory is one reading",
+      "files": [
+        "tools/sairn_board_publish.py"
+      ],
+      "lines_added": 367,
+      "lines_removed": 31,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "hover-audit",
+      "summary": "the board chain-tip cell reported a frozen Drive mirror as the current audit-chain tip, and its lag detector could not see it. b12 compared the TIP-BEACON seq against the newest chain-tip-seq file BESIDE IT -- both inside the same mirror -- so when the directory stopped being refreshed they went stale together and the comparison reported no lag. Found by H2 b36 adversarially checking cc b12, in its own words: \"silently stale by 111 entries/6 days due to a frozen Drive-mount mirror the lag-detector cannot see\". MEASURED: hover-chain-h2 every file dated 2026-10-08, beacon seq 778, while h2 own digest said 893 -- 115 behind, 154h old; hover-chain-h1 newest chain-tip file seq 1185 against a digest saying 1435. Fixed with an INDEPENDENT source (the agent own newest digest, a different artefact written by a different action), mtime-based freshness on the mirror directory itself, and both numbers printed when they disagree.",
+      "rules": [
+        "1.9"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "commit": "46128d86a4fd",
+        "date": "2026-10-14",
+        "subject": "feat(drive board): the status bridge publishes itself, and two defects it found",
+        "lag_days": 1
+      },
+      "citation_note": "a checker must answer the same on identical input: both halves of the lag comparison lived in one directory, so a frozen mirror and a current one produced the same verdict",
+      "contributing_factors": [
+        {
+          "factor": "the two sources compared against each other were not independent -- both were files in the same published mirror directory",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "the agent own newest digest is now the primary source; the within-mirror comparison is KEPT and relabelled INTERNALLY INCONSISTENT MIRROR, because it catches a forgotten beacon and can never catch a frozen mirror"
+        },
+        {
+          "factor": "nothing aged the mirror directory, so staleness could only be inferred from a comparison blind to it",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "mirror_age_hours() reads the newest mtime in the directory -- an mtime is what the filesystem observed, where published_at is a string the publisher wrote"
+        },
+        {
+          "factor": "the first fix printed a frozen mirror seq under the sentence \"which is why the tip above comes from the digest\" -- a false sentence over a number from the other source",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "a frozen mirror with no digest tip now returns UNKNOWN -- NEITHER SOURCE IS CURRENT, because a frozen number is not a tip"
+        }
+      ],
+      "recurrence_open": "whether the hover-chain-h2 mirror is refreshed or retired is H2 call and a build agent does not write into an auditor published chain directory. While it sits there at 154h it is a tamper-evidence artefact a casual reader takes as current. And h1 mirror is currently AHEAD of its own digest, which the board reports and deliberately does not resolve."
+    },
+    {
+      "commit": "998c43a48b69",
+      "date": "2026-10-15",
+      "subject": "fix(router): a dead session owned two paths for eighteen days, and that is the fourth tool with this defect",
+      "files": [
+        "tools/route_suite_failures.py"
+      ],
+      "lines_added": 99,
+      "lines_removed": 17,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "tools/route_suite_failures.py decided who ACTIVELY owns a path from the stored claim status field rather than from sairn_claim.is_active(), so a session that died holding a claim kept owning its declared paths for ever -- and this tool whole job is routing a suite failure to its owner. MEASURED before and after: 27 paths carried an ACTIVE attribution and TWO named cloud, last claimed 2026-09-27 and gone eighteen days; after, 25 paths and zero naming cloud. THE FOURTH TOOL WITH THIS DEFECT -- claim_activity_check.py 2026-09-28, sairn_claim own audit and sairn_claim_doc_freshness.py in cc b13 -- and the first one found by looking rather than by accident.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "grep over *.py and *.js for the raw status field",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "load_claim_files has selected on the raw status field since it was written and is_active grew its liveness half later, on 2026-09-23; naming either as the injection would be a guess"
+      },
+      "citation_note": "a check that stopped checking: ACTIVE ownership was read from a field written once and never revisited, so a dead session kept owning its paths",
+      "contributing_factors": [
+        {
+          "factor": "liveness is computed at display time while the stored status field is never revisited, so the two spellings of active can only diverge",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the selector imports is_active and the tool DIES naming the module if that import fails -- a router that silently reverts to the raw field is the defect wearing a fallback"
+        },
+        {
+          "factor": "eleven grep hits needed eleven separate judgements: one real defect, one in an auditor scope cc may not write, four in probes that may be CORRECT as written, five that are prose or not claims at all",
+          "kind": "process",
+          "action_status": "done",
+          "action": "each of the eleven is recorded in docs/2026-10-14-cc-b14-routed.md with its verdict and reason, so the next sweep does not re-flag the five dismissed ones"
+        },
+        {
+          "factor": "the arm was first proved only in a scratch script, which is a demonstration and not a record",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the pre-fix selector is restored inside the criteria lock on every run, with a control"
+        }
+      ],
+      "recurrence_open": "four tools found across three batches and the fifth is routed to H2 in an auditor-scope file cc cannot write. Nothing enumerates the consumers of this field as a standing check -- the sweep was a grep run once, by hand, and will go stale the next time somebody writes the pattern."
     }
   ],
   "started": "2026-09-09",
