@@ -5514,6 +5514,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c75c56a944dd45e5055cf1188a551ffb7f28a036",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": ".githooks/pre-push",
    "class": "CI / hook configuration",
    "level": "CHANGE",
@@ -5634,6 +5642,19 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "cb1849a775431bf8e24a9aa72661d20133782518",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "assertions NET REMOVED",
+     "detail": "1 removed, 0 added; first removed: ck('ABLATION: the PRE-FIX message asserted the platform cause and carried '"
+    }
+   ],
+   "sha": "cc4f7ebe094ab0e7ca28830e4792d26fd3d8557d",
    "criteria_version": "2026-10-06.1"
   },
   {
