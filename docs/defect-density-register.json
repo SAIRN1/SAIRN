@@ -29092,7 +29092,7 @@
       "factors_unknown_reason": "Found and fixed in one sitting (h1 b31) without a deeper five-whys pass; the immediate technical cause (display truncation vs full-string comparison) is understood and fixed, but no RCA was done on why the mismatch between display and comparison went unnoticed across multiple prior batches that hit it."
     },
     {
-      "commit": "6838cfdd367a",
+      "commit": "0d33f65917d7",
       "date": "2026-10-14",
       "subject": "fix(claims,citation): the audit counted a session eighteen days gone, and a citation pointed at the wrong function",
       "files": [
@@ -29600,7 +29600,7 @@
       "recurrence_open": "yes"
     },
     {
-      "commit": "9c453ae1f4d0",
+      "commit": "10209464ad20",
       "date": "2026-10-14",
       "subject": "feat(gate driver): hank's three new seams wired, and the exit-3 channel stopped inventing a reason",
       "files": [
