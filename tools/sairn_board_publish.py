@@ -265,44 +265,259 @@ def git_tip():
         return '', 'git would not run: %s' % str(exc)[:90]
 
 
-def chain_tip(token, ddir):
-    """The audit-chain tip for an auditor, read from its published beacon.
+# ── THE LAG DETECTOR COULD NOT SEE A FROZEN MIRROR (fixed 2026-10-14, b14) ─
+# b12 compared the beacon's `seq` against the newest `chain-tip-seq<N>` file
+# BESIDE IT, in the same directory, and called that a lag detector. BOTH
+# SOURCES LIVE IN THE SAME MIRROR, so when the whole directory stops being
+# refreshed they go stale together and the detector reports no lag at all.
+# Two readings of one frozen thing is one reading.
+#
+# ROUTED BY H2 b36, which diagnosed it in its own words: the chain-tip cell
+# was "silently stale by 111 entries/6 days due to a frozen Drive-mount mirror
+# the lag-detector cannot see". MEASURED HERE BEFORE CHANGING ANYTHING:
+#
+#   G:\My Drive\SAIRN-status\hover-chain-h2\   every file dated 2026-10-08
+#     TIP-BEACON.md CHECKPOINT  seq 778, published_at 2026-10-08T15:08:48Z
+#   SAIRN-digest-h2-b36.txt (refreshed every batch)   chain tip 889
+#                                                     -> 111 behind
+#   hover-chain-h1\  newest chain-tip-seq file  seq 1185, dated 2026-10-08
+#   SAIRN-digest-h1-b36.txt   "Chain tip 1435"        -> 250 behind
+#
+# SO THE FIX IS A SOURCE THAT MOVES, plus freshness on the mirror itself:
+#
+#   1. THE DIGEST IS THE INDEPENDENT SOURCE. Each auditor uploads a fresh
+#      digest every batch, into the same folder, and states its own chain tip
+#      there. It is a different artefact written by a different action, which
+#      is what the old second source was not.
+#   2. THE MIRROR IS AGE-CHECKED DIRECTLY, by the newest mtime in its own
+#      directory, so a frozen mirror is reported as FROZEN with its age rather
+#      than inferred from a comparison that cannot see it.
+#   3. BOTH NUMBERS ARE PRINTED WHEN THEY DISAGREE and the digest wins as the
+#      reported tip, because the beacon is a checkpoint CLAIM and the digest
+#      is the agent's own current statement.
+#
+# MIRROR_STALE_HOURS IS NOT A TUNED NUMBER and the margin is printed rather
+# than trusted: auditor batches land several times a day (h1 and h2 both
+# published b36 today) and this mirror is six days old, so anything from a day
+# to several classifies today's data identically. Erring tight is the safe
+# direction -- a mirror reported stale when it is merely quiet costs a line of
+# output, where the opposite cost six days of a wrong number.
+MIRROR_STALE_HOURS = 48.0
 
-    -> text. Reports the beacon's OWN published_at and how far it lags the
-    newest chain-tip-seq file beside it, because a beacon is a checkpoint
-    claim and a stale one is the exact thing a reader would otherwise take as
-    current. Both numbers or neither.
+# ── THE REAL SENTENCES, READ RATHER THAN SPECIFIED ─────────────────────────
+# A first version of this carried three tidy format-shaped patterns and
+# matched NEITHER auditor, which would have been a parser that reports "the
+# agent published no tip" about agents publishing it in every digest -- a
+# silent zero dressed as a finding. What they actually write, measured:
+#
+#   h1 b36  "Chain tip 1435 (9 new entries this batch)"
+#   h1 b37  "hover_log.py seq1436-1440"
+#   h2 b36  "Chain hover_log.py --verify -> 893 entries, CHAIN INTACT
+#            (888->893 this batch)"  and  "TIP-BEACON.md refreshed
+#            seq838->seq889"
+#
+# So: find every number inside a CHAIN-CONTEXT sentence and take the MAXIMUM,
+# then QUOTE the sentence it came from. The max is right because a chain only
+# grows and a digest naturally names both the old tip and the new one. The
+# quote is what makes it checkable -- a number with no sentence behind it is
+# the thing this whole cell got wrong for six days.
+_CHAIN_CONTEXT = re.compile(r'[^.;\n]*(?:chain|seq)[^.;\n]*', re.IGNORECASE)
+# `seq838->seq889` GLUES THE NUMBER TO THE WORD, and a lookbehind excluding
+# \w therefore matched neither end of it -- found by arm A22 driving the real
+# sentence rather than a specified one. The word is separated from its number
+# before scanning instead of widening the lookbehind, which would also admit
+# the digits inside identifiers like `sha256`.
+_SEQ_GLUE = re.compile(r'\b(seq|entry|entries|#)\s*(\d)', re.IGNORECASE)
+# ONE DIGIT IS ALLOWED, deliberately. A chain legitimately has a tip of 5 early
+# on, and arm A20 needs exactly that case to make the mirror AHEAD of the
+# digest. The guards against noise are that a number must sit inside a
+# chain-context sentence, that the MAXIMUM wins so a stray small number cannot
+# beat a real tip, and that the sentence is QUOTED so a reader can check.
+_NUM = re.compile(r'(?<![\w.])(\d{1,6})(?![\w.])')
+# Numbers that are not chain sequences however they appear beside one. Years
+# and batch numbers are the two that really occur in these sentences.
+_NOT_A_SEQ = re.compile(r'^(?:19|20)\d{2}$')
+
+
+def digest_chain_tip(token, ddir):
+    """(seq, batch, why) -- the tip the agent states in its OWN newest digest.
+
+    THE INDEPENDENT SOURCE. A digest is written by a different action from the
+    mirror publish, so the two cannot freeze together -- which is the entire
+    defect this replaces. Returns (None, batch, why) when the digest exists
+    and says nothing about a chain, because "the agent published no tip" and
+    "there is no digest" are different facts.
+    """
+    batch, path = newest_digest(token, ddir)
+    if not path:
+        return None, batch, 'no digest for %s on the Drive' % token
+    try:
+        with io.open(path, encoding='utf-8', errors='replace') as fh:
+            text = fh.read()
+    except OSError as exc:
+        return None, batch, 'digest b%s unreadable: %s' % (batch,
+                                                           str(exc)[:60])
+    best, best_sentence = None, ''
+    for sm in _CHAIN_CONTEXT.finditer(text):
+        sentence = sm.group(0).strip()
+        scan = _SEQ_GLUE.sub(lambda m: m.group(1) + ' ' + m.group(2), sentence)
+        for nm in _NUM.finditer(scan):
+            raw = nm.group(1)
+            if _NOT_A_SEQ.match(raw):
+                continue
+            n = int(raw)
+            if best is None or n > best:
+                best, best_sentence = n, sentence
+    if best is None:
+        return None, batch, ('digest b%s mentions no chain or seq number at '
+                             'all' % batch)
+    return best, batch, ('from b%s: %s'
+                         % (batch, ' '.join(best_sentence.split())[:150]))
+
+
+def mirror_age_hours(cdir):
+    """(hours, newest_mtime_name) for the freshest file in the mirror, or
+    (None, '').
+
+    THE MIRROR IS AGED BY ITS OWN NEWEST FILE and not by the beacon's
+    `published_at`. A published_at is a string the publisher wrote; an mtime is
+    what the filesystem observed. When a mirror is abandoned they agree, and
+    when somebody hand-edits the beacon they do not -- and the filesystem is
+    the one that cannot be talked into a date.
+    """
+    best, name = None, ''
+    for fn in _listdir(cdir):
+        try:
+            mt = os.path.getmtime(os.path.join(cdir, fn))
+        except OSError:
+            continue
+        if best is None or mt > best:
+            best, name = mt, fn
+    if best is None:
+        return None, ''
+    return max(0.0, (time.time() - best) / 3600.0), name
+
+
+def chain_tip(token, ddir):
+    """The audit-chain tip for an auditor. -> text.
+
+    Reads THREE things and says which it is reporting: the agent's own newest
+    digest (independent, refreshed every batch), the published beacon
+    checkpoint, and the age of the mirror directory itself. See the comment
+    above for the frozen-mirror defect this shape exists to stop.
     """
     cdir = os.path.join(ddir, 'hover-chain-%s' % token)
+    d_seq, d_batch, d_why = digest_chain_tip(token, ddir)
+
     if not os.path.isdir(cdir):
-        return 'UNKNOWN -- no %s directory on the Drive' % os.path.basename(cdir)
+        # NO MIRROR IS NOT NO ANSWER. The digest alone is a real reading and
+        # is reported as such, labelled, rather than discarded because the
+        # mirror that used to be preferred is absent.
+        if d_seq is not None:
+            return ('seq %d, from %s\'s OWN digest b%s -- NO MIRROR at %s, so '
+                    'there is no beacon to cross-check it against'
+                    % (d_seq, token, d_batch, os.path.basename(cdir)))
+        return ('UNKNOWN -- no %s directory on the Drive, and %s'
+                % (os.path.basename(cdir), d_why))
+
+    age_h, age_file = mirror_age_hours(cdir)
     beacon = os.path.join(cdir, 'TIP-BEACON.md')
     seqs = [int(m.group('n')) for m in
             (SEQ_RE.match(fn) for fn in _listdir(cdir)) if m]
     newest_seq = max(seqs) if seqs else None
-    if not os.path.isfile(beacon):
-        return ('UNKNOWN -- no TIP-BEACON.md; newest chain-tip file is seq %s'
-                % (newest_seq if newest_seq is not None else 'none'))
-    try:
-        with io.open(beacon, encoding='utf-8', errors='replace') as fh:
-            text = fh.read()
-    except OSError as exc:
-        return 'UNKNOWN -- TIP-BEACON.md unreadable: %s' % str(exc)[:70]
-    m = re.search(r'^CHECKPOINT:\s*(\{.*\})\s*$', text, re.M)
-    if not m:
-        return 'UNKNOWN -- TIP-BEACON.md carries no CHECKPOINT line'
-    try:
-        cp = json.loads(m.group(1))
-    except Exception as exc:                                     # noqa: BLE001
-        return 'UNKNOWN -- CHECKPOINT line does not parse: %s' % str(exc)[:70]
-    seq = cp.get('seq')
-    bits = ['seq %s' % seq,
-            'hash %s' % str(cp.get('hash') or '')[:12],
-            'beacon published %s' % (cp.get('published_at') or 'UNKNOWN')]
-    if newest_seq is not None and isinstance(seq, int) and newest_seq > seq:
-        bits.append('BEACON IS %d BEHIND the newest chain-tip file (seq %d) -- '
-                    'the beacon is a checkpoint claim, not the live tip'
-                    % (newest_seq - seq, newest_seq))
+
+    cp, b_seq = None, None
+    if os.path.isfile(beacon):
+        try:
+            with io.open(beacon, encoding='utf-8', errors='replace') as fh:
+                text = fh.read()
+            m = re.search(r'^CHECKPOINT:\s*(\{.*\})\s*$', text, re.M)
+            if m:
+                cp = json.loads(m.group(1))
+                b_seq = cp.get('seq')
+        except Exception:                                        # noqa: BLE001
+            cp = None
+
+    # The mirror's own best claim is the higher of its two internal readings;
+    # they are NOT independent of each other and are no longer treated as if
+    # they were.
+    mirror_seq = max([s for s in (b_seq, newest_seq)
+                      if isinstance(s, int)] or [None])
+
+    frozen = age_h is not None and age_h > MIRROR_STALE_HOURS
+
+    bits = []
+    if d_seq is not None:
+        bits.append('seq %d (%s\'s own digest b%s -- THE REPORTED TIP; %s)'
+                    % (d_seq, token, d_batch, d_why))
+    elif mirror_seq is not None and not frozen:
+        bits.append('seq %s (the MIRROR, and the digest gives no tip: %s)'
+                    % (mirror_seq, d_why))
+    elif mirror_seq is not None:
+        # ── NEITHER SOURCE IS USABLE, AND THAT IS A THIRD STATE ───────────
+        # A first version of this printed the frozen mirror's seq and then
+        # said "which is why the tip above comes from the digest" -- a false
+        # sentence under a number from the other source. If the digest gives
+        # no tip AND the mirror is frozen, there is nothing current to report
+        # and saying so is the only honest output.
+        return ('UNKNOWN -- NEITHER SOURCE IS CURRENT. The mirror at %s is '
+                'FROZEN (newest file %s, %.0fh old, past the %.0fh line) and '
+                'its last claim was seq %s; and %s. A frozen mirror\'s number '
+                'is not reported as a tip, because that is exactly how this '
+                'cell was wrong by 111 entries for six days.'
+                % (os.path.basename(cdir), age_file, age_h,
+                   MIRROR_STALE_HOURS, mirror_seq, d_why))
+    else:
+        return ('UNKNOWN -- neither source gives a tip. %s; and the mirror at '
+                '%s carries no CHECKPOINT and no chain-tip-seq file.'
+                % (d_why, os.path.basename(cdir)))
+
+    if cp:
+        bits.append('beacon claims seq %s, hash %s, published %s'
+                    % (b_seq, str(cp.get('hash') or '')[:12],
+                       cp.get('published_at') or 'UNKNOWN'))
+    elif os.path.isfile(beacon):
+        bits.append('TIP-BEACON.md is present but carries no parseable '
+                    'CHECKPOINT line')
+    else:
+        bits.append('no TIP-BEACON.md in the mirror')
+
+    # ── THE THREE THINGS THE OLD VERSION COULD NOT SAY ────────────────────
+    if frozen:
+        bits.append('MIRROR IS FROZEN: its newest file (%s) is %.0fh old, past '
+                    'the %.0fh line -- the margin is printed rather than '
+                    'trusted. A mirror this old cannot cross-check anything, '
+                    'so nothing above rests on it'
+                    % (age_file, age_h, MIRROR_STALE_HOURS))
+    elif age_h is not None:
+        bits.append('mirror last written %.1fh ago (%s)' % (age_h, age_file))
+
+    # ── THE WITHIN-MIRROR COMPARISON IS KEPT, AND DEMOTED ─────────────────
+    # b12 called this the lag detector and it was the whole detector. It is a
+    # real signal -- a beacon behind its own directory is a stale checkpoint
+    # claim -- but both halves live in one mirror, so it can only ever catch a
+    # publisher that wrote the files and forgot the beacon. It can never catch
+    # the mirror freezing, which is what actually happened. Reported as what it
+    # is: an INTERNAL inconsistency, not a tip comparison.
+    if (isinstance(b_seq, int) and newest_seq is not None
+            and newest_seq > b_seq):
+        bits.append('INTERNALLY INCONSISTENT MIRROR: the beacon is %d behind '
+                    'the newest chain-tip file beside it (seq %d) -- both are '
+                    'in the same directory, so this catches a forgotten beacon '
+                    'and never a frozen mirror'
+                    % (newest_seq - b_seq, newest_seq))
+
+    if d_seq is not None and mirror_seq is not None and d_seq > mirror_seq:
+        bits.append('THE MIRROR IS %d ENTRIES BEHIND the digest (%s vs %d) -- '
+                    'two readings of one frozen directory is one reading, '
+                    'which is the defect this cell carried for six days'
+                    % (d_seq - mirror_seq, mirror_seq, d_seq))
+    elif d_seq is not None and mirror_seq is not None and mirror_seq > d_seq:
+        bits.append('the MIRROR is AHEAD of the digest (%d vs %d), so the '
+                    'digest is the stale one here -- reported rather than '
+                    'resolved, because which is right is the auditor\'s call'
+                    % (mirror_seq, d_seq))
+
     return '; '.join(bits)
 
 
@@ -932,13 +1147,119 @@ def _a2(sdir, ddir):
     return ('UNKNOWN -- the agent has set no context_pct' in txt), txt
 
 
-@arm('A3-stale-beacon', 'a TIP-BEACON checkpoint behind the real chain is '
+@arm('A3-stale-beacon', 'a TIP-BEACON checkpoint behind its own directory is '
                         'printed as the current tip')
 def _a3(sdir, ddir):
+    # ANCHOR UPDATED 2026-10-14 (b14). The message this arm matched said
+    # "BEACON IS 89 BEHIND the newest chain-tip file", and that comparison was
+    # DEMOTED rather than deleted: both of its halves live in one mirror, so it
+    # can catch a publisher who forgot the beacon and can never catch the
+    # mirror freezing -- which is what actually happened for six days. The
+    # signal is kept and relabelled as an INTERNAL inconsistency, and this arm
+    # now asserts that wording, so the arm and the sentence cannot drift apart
+    # without one of them failing.
     cd = os.path.join(ddir, 'hover-chain-h2')
     _write(os.path.join(cd, 'chain-tip-seq99.msg'), 'x')
     txt = _board_for(sdir, ddir)[0]
-    return ('BEACON IS 89 BEHIND' in txt), txt
+    return ('INTERNALLY INCONSISTENT MIRROR' in txt
+            and '89 behind' in txt), txt
+
+
+@arm('A17-frozen-mirror', 'a mirror whose beacon and chain-tip files AGREE '
+                          'while the whole directory is six days old is '
+                          'reported as current -- the defect H2 b36 routed, '
+                          'where two readings of one frozen thing read as a '
+                          'clean cross-check')
+def _a17(sdir, ddir):
+    # The digest carries a tip so the run reaches the reporting path. With no
+    # digest tip AND a frozen mirror there is nothing current at all, which is
+    # A19's case and a different sentence.
+    _write(os.path.join(ddir, 'SAIRN-digest-h2-b7.txt'),
+           'DIGEST h2 b7\nSTATUS: Chain tip 893 this batch.\n'
+           'NEXT: n.\nCONTEXT 40% used\n')
+    cd = os.path.join(ddir, 'hover-chain-h2')
+    old = time.time() - 154 * 3600
+    for fn in _listdir(cd):
+        os.utime(os.path.join(cd, fn), (old, old))
+    txt = _board_for(sdir, ddir)[0]
+    return ('MIRROR IS FROZEN' in txt and '154h old' in txt
+            and '48h line' in txt), txt
+
+
+@arm('A18-digest-is-the-source', 'the tip comes from the mirror even when the '
+                                 'agent states a newer one in its own digest')
+def _a18(sdir, ddir):
+    _write(os.path.join(ddir, 'SAIRN-digest-h2-b7.txt'),
+           'DIGEST h2 b7\nSTATUS: Chain hover_log.py --verify -> 893 '
+           'entries, CHAIN INTACT (888->893 this batch).\n'
+           'NEXT: n.\nCONTEXT 40% used\n')
+    txt = _board_for(sdir, ddir)[0]
+    return ('seq 893' in txt and 'own digest b7' in txt
+            and 'THE REPORTED TIP' in txt
+            and 'MIRROR IS 883 ENTRIES BEHIND' in txt), txt
+
+
+@arm('A19-frozen-and-silent', 'a frozen mirror\'s number is reported as a tip '
+                              'when the digest gives none -- there is nothing '
+                              'current and the only honest output is UNKNOWN')
+def _a19(sdir, ddir):
+    cd = os.path.join(ddir, 'hover-chain-h2')
+    old = time.time() - 200 * 3600
+    for fn in _listdir(cd):
+        os.utime(os.path.join(cd, fn), (old, old))
+    txt = _board_for(sdir, ddir)[0]
+    return ('NEITHER SOURCE IS CURRENT' in txt
+            and 'is not reported as a tip' in txt), txt
+
+
+@arm('A20-mirror-ahead', 'a mirror AHEAD of the digest is silently resolved '
+                         'one way instead of reported')
+def _a20(sdir, ddir):
+    _write(os.path.join(ddir, 'SAIRN-digest-h2-b7.txt'),
+           'DIGEST h2 b7\nSTATUS: chain tip 5 after a rollback.\n'
+           'NEXT: n.\nCONTEXT 40% used\n')
+    txt = _board_for(sdir, ddir)[0]
+    return ('MIRROR is AHEAD of the digest' in txt
+            and 'the auditor\'s call' in txt), txt
+
+
+@arm('A21-tip-quotes-its-sentence', 'a chain tip is printed as a bare number '
+                                    'with no sentence behind it, which is how '
+                                    'this cell was wrong for six days')
+def _a21(sdir, ddir):
+    _write(os.path.join(ddir, 'SAIRN-digest-h1-b7.txt'),
+           'DIGEST h1 b7\nSTATUS: Chain tip 1435 (9 new entries this batch).\n'
+           'NEXT: n.\nCONTEXT 40% used\n')
+    txt = _board_for(sdir, ddir)[0]
+    return ('seq 1435' in txt
+            and 'Chain tip 1435 (9 new entries this batch)' in txt), txt
+
+
+@arm('A22-real-sentence-shapes', 'the parser matches NEITHER auditor\'s real '
+                                 'wording, so it reports "no tip published" '
+                                 'about agents who publish one every batch')
+def _a22(sdir, ddir):
+    # THE MEASURED TEXT, not a specified format. A first version of this
+    # parser carried three tidy patterns and matched none of these.
+    cases = [
+        ('Chain tip 1435 (9 new entries this batch), verified genesis-to-tip',
+         1435),
+        ('Chain hover_log.py --verify -> 893 entries, CHAIN INTACT '
+         '(888->893 this batch)', 893),
+        ('hover-audit-log.jsonl +5 entries (seq889-893: b35 closeout)', 893),
+        ('TIP-BEACON.md refreshed seq838->seq889', 889),
+        ('chain entries #1436-#1440', 1440),
+    ]
+    bad = []
+    for sentence, want in cases:
+        d = tempfile.mkdtemp(prefix='tipsent-', dir=ddir)
+        _write(os.path.join(d, 'SAIRN-digest-h2-b1.txt'),
+               'DIGEST h2 b1\nSTATUS: %s\n' % sentence)
+        got = digest_chain_tip('h2', d)[0]
+        if got != want:
+            bad.append((sentence[:48], want, got))
+    return (not bad), ('%d of %d real sentences mis-parsed: %s'
+                       % (len(bad), len(cases), bad))
 
 
 @arm('A4-unlisted-agent', 'a seventh agent with a status row is silently '
@@ -1246,6 +1567,21 @@ _ABLATIONS = (
      'chain_tip reports how far the beacon lags the real chain',
      lambda: _patch('chain_tip',
                     lambda token, ddir: 'seq 10; hash abc; beacon published x')),
+    ('mirror-freshness',
+     'chain_tip ages the mirror DIRECTORY by its own newest mtime, so a frozen '
+     'mirror is reported as frozen instead of inferred from a comparison whose '
+     'two halves are both inside it',
+     lambda: _patch('mirror_age_hours', lambda cdir: (None, ''))),
+    ('digest-tip-source',
+     'chain_tip reads the agent\'s own newest digest as an INDEPENDENT source '
+     '-- a different artefact written by a different action, which is what the '
+     'within-mirror second source never was',
+     lambda: _patch('digest_chain_tip',
+                    lambda token, ddir: (None, None, 'ablated'))),
+    ('seq-glue',
+     'the tip parser separates `seq838` into word and number before scanning, '
+     'which is the shape H2 actually writes',
+     lambda: _patch('_SEQ_GLUE', re.compile(r'(?!x)x'))),
     ('unlisted-agent',
      'collect names an agent the board does not cover',
      lambda: _patch_board_extra()),
