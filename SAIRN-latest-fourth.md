@@ -1,34 +1,40 @@
-# SAIRN — latest from `fourth` (ted) — batch b21, 2026-10-14
+# SAIRN — latest from `fourth` (ted) — batch b22, 2026-10-15
 
-**CHAIN TIP** `b6904bf2` *(handoff commit; report/digest land after it — re-derive with `git rev-parse HEAD`)*
-**STATE** `HEAD == origin/main`, 0/0, clean, **not forced — proved by ancestry** (`git merge-base --is-ancestor <pre-push tip> HEAD` → ANCESTOR), not by grepping git's wording.
-**CONTEXT** 73% of 1000k, measured by `tools/sairn_status_line.py` on this session's transcript. Batch stopped at 70% by instruction after the item in flight reached a clean point.
+**CHAIN TIP** `4a103abc` *(handoff commit; report/digest land after it — re-derive with `git rev-parse HEAD`)*
+**STATE** `HEAD == origin/main`, 0/0, clean, **not forced — proved by ancestry on both pushes** (`git merge-base --is-ancestor <pre-push tip> HEAD` → ANCESTOR), not by grepping git's wording.
+**MANIFEST** 5 done, **1 BLOCKED with its reason**. No `SAIRN_SEED_GATE`, no `SAIRN_GATE_EXEMPT`, no `SAIRN_SKIP`; `settings.json` untouched; neither auditor clone entered.
+**CONTEXT** 24% of 1000k, measured by `tools/sairn_status_line.py` on this session's transcript.
 
 ## DIGEST
-**Both Tier A obligations discharged INSIDE the 24h deadline** — second batch running. **And the strong-basis re-seat is REFUSED**, on a measurement: the one candidate the b19 census found was **authored three minutes AFTER** the obligation was opened, and its exact-file-set match succeeded only because the recorded `files` list is one path while hank's own text says the push was four. `reseated=None` verified on origin.
 
-**Four findings. The two that matter are both "the control works and the thing it was for does not":**
-1. **F3 — the new MAR grant is bypassable, silently.** `ALF_MANAGEMENT_ROLES` includes `billing`, and the `alf_clients` write path lets it self-assign a resident; the assignment tier then admits it **with no grant row and no audit row**.
-2. **F4 — the `rf_photos` gate fires and the record carries no claim at all.** The handler rebuilds its record from three named fields and drops `ai_source`/`ai_approved_by`, so `aiFooter()` returns `''` — **not even the "not reviewed" line renders.**
+**Item 2 is ZERO-DONE and that is the headline.** `sairn_claim.py check` returned **BLOCKED** on `leg_aftercare` and `t17`, and it is **two live claims, not one** — hank's b13 is fixing the delimiter collision and cody's b14 is arming it, concurrently. Per PR §4.3 the task string was **not reworded** to slip past the matcher; the item was dropped from my claim. The other half, the census SQL, is hank's own b12 F1 and **hank already fixed it** in `4f69facd`.
 
-**Surface 2 (42 `sv_` resources) is CLEAN** on all three of hank's hardest-checks, with no widening establishable from a 56-insertion / 0-deletion diff.
+**cody's two obligations are ONE change recorded twice** — the `what` text is **byte-identical, 987 chars, `sha256 599ff05bfc1a3756`** on both; only `opened_at` (1m46s apart) and `opened_at_sha` differ. One review body was recorded on both. **And neither recorded sha points at the change:** `bc24af59f3db` does not resolve, `f8baf814bfd9` resolves and is a **36-file encoding sweep** whose entire hunk on the named path adds `encoding='utf-8'` — **and it reads FRESH.** The real change is `44fad1f9`.
 
-**Michael ran all six run-order blocks (Oct 14 19:38 ET). That UNVERIFIED is CLOSED** and will not be raised again — and b20's "a gate nobody can populate" is now false.
+**M1 driven independently: 405 passed, 14 failed — exactly the claimed 14**, in a `tempfile` copy, live tree never written. The derivation self-heals. **But the REPLACEMENT COVERAGE arm did not generalise with it** — hardcoded to `{ map: 'GRD ` and one gate-suite path, against 20 units of which **0** are `app: null`.
 
-**Three corrections to my own record, two reducing findings:** "roughly twelve" 503-folding branches → **63 across 22 resources** (242 raw, H1 re-ran my command); my citation loose pass's **14 "provably stale" were my own attribution error** → **0**; my b20 "not forced" claim **grepped git's prose** → fixed by ancestry.
+**The 400→503 count is wrong in both directions it has been counted.** Measured from source: **331** raw guard lines → **88** rewritten, **69** still folding a 400 into 503 with no body read, **151** read branches folding a 400 into `ok: true, data: []`, 23 other. **The population is 157**, not hank's 98 and not my b21 63 — **and the cause is one identifier: 99 of the 157 use a response variable literally named `r`.**
 
-## OPEN — mine
-* **b22 items 1 and 2 — two FRESH `cody` obligations**, `2026-10-15T00:00:41Z` and `00:02:27Z`, 0.4h old, 2 resources each, **both on `tests/run_cross_tenant_dispatchers_sabotage_probe.py`**. **Read the records first: 1m46s apart on one file may be ONE change recorded twice** — if so, say that rather than writing two verdicts. Discharge in `opened_at` order; check both shas resolve first. ~23.5h runway each.
+**The `sd_photos` size fix holds, and T17 is genuinely on the row** — the clean counter-example to my own b21 F4. Suite 26/0/0. The 64 KB cap is **per row**, so the 44,000-char budget does not compound; it would have blown at photo two had the collection been blob-wrapped.
 
-## ROUTED
-* **hank** — **F3 and F4 first**: refuse on the role in `family_mar` before the scope tier, and carry the three provenance fields into the rebuilt `rf_photos` record. Then F1/F2 (billing not refused by default; the existence oracle). **The `sd_photos` SIZE fix with T17 landing with or before it.** The 400→503 misattribution is **63 branches across 22 resources, not twelve** — one shared helper, not 63 edits. No revoke action exists for a live MAR grant. **b18's N1 remains open.** Plus b20's aftercare key and canonicalisation findings.
-* **cody** — the F3 bypass arm; **the F4 end-to-end arm routing `rf_photos` THROUGH `api/sd-data.js` and asserting `aiFooter()` on the STORED record** — the existing arms drive the helper in isolation, which is why F4 shipped; a rebuilt ordering arm (the current one reads only a status code); the absent fail-closed arm. All failing-first.
-* **cc** — the re-seat **author-time guard**; the **step-4a generator line** (prose written and ready to paste; **not hand-edited because the doc is generated and `--check` exits 0**); the anchor rot check with **R3 reframed** so bare citations are reported **UNASSESSABLE** rather than folded in; b19 census asks 1 and 4; `batch_manifest.py:386`.
-* **hover2 / hover** — four `# OWNER: hover2` lines; which tree is canonical for the four shared basenames.
-* **Michael** — nothing outstanding from me. **hank owes one design call**: the granted MAR read yields only date/time/status, never medication names, so it cannot serve the coding work it was built for.
+**The sf_events anchor: the instruction said the seventh, measured it is the SIXTH.** Anchor 7 resolves exactly once and needed nothing. Re-anchored, pipe count asserted 7 → 7, `criticality_tier_check.py` **PROBLEMS:0**.
 
-## UNVERIFIED
-The 63/242 figures are H1's re-run, not mine this batch. "37 likely stale" of 196 explicit citations is not 37 stale; **0 are provably stale**; **355 of 551 are bare and mechanically unassessable — the real finding is the FORM, not the rate.** No suite run; F3 and F4 are **traced from source, not driven**. cc b12 not graded (active claim). The step-4a edit is routed, not made. hank's live probe not re-run; its valid-session half still unverified. No deployment fetched — nothing here is a code change.
+**b21's citation figures do not reproduce.** 571 / 198 / 373 / 0 provably stale / 39 likely, against b21's 551 / 196 / 355 / 0 / 37 — **on a byte-identical file** (`git diff --stat 7a5e6a11 HEAD` empty). The delta is **entirely predicate**.
+
+## DECISIONS WAITING
+
+1. **ITEM 2** — strike it from fourth's queue, or have **hank and cody both** release it and re-issue. Do not hand it to a third agent while two claims are live.
+2. **The 151 read branches** fold a 400 into `ok: true, data: [], provisioned: false` — a silent failure strictly worse than the wrong 503 the reviewed commit fixed. **It is in nobody's open work.**
+
+## OPEN, BY OWNER
+
+* **hank** — helper **F1** (branch on `23514`, not class `23`) and **F2** (drop the bare `/does not exist/i`) **first**, because 88 branches now depend on that code; then the 69; then the 151. Plus the two `sd_photos` caller findings — the failed-downscale branch stores **and syncs** the original while the toast says it will not be backed up, and the 21,536-byte margin is counted in UTF-16 characters while `octet_length` counts bytes.
+* **cody** — a REPLACEMENT COVERAGE generalisation arm (flip a **non-GRD** unit to `app: null` and back), and a per-resource refusal arm that **fails** a gate suite naming six resources and driving one.
+* **cc** — print the touched-file count beside the `file-set` basis; the anchor-rot check's first three false positives (prose spans with empty parentheses); the b21 re-seat author-time guard, still open.
+* **Michael** — the two decisions above.
 
 ## METHOD NOTE
-**Verify the outcome on the artefact that survives, not on the step that ran** — three times this batch a control ran correctly and what it was for did not. And **print the command AND the raw count, not just the conclusion**: "roughly twelve" travelled three documents unchallenged, while "242 raw / 63 narrowed" is a sentence nobody can mis-carry.
+
+**Three times in this batch a measurement was taken with a predicate narrower than the population, and every time the output read like a population.** b21's clause — *print the command and the raw count* — is necessary and not sufficient: all three would have printed a command. **When a predicate names an identifier, say which identifier**; and when a figure is carried into a second document, carry the predicate with it or re-derive it. **And: a list long enough to need an ordinal is long enough to need a program** — the instruction's own ordinal was wrong, and hand-counting would have hidden it.
+
+*Full detail: `SAIRN-report-fourth-b22.txt`, `SAIRN-handoff-fourth-b22.md`. Every figure names the command that produced it — re-derive anything you mean to quote, including out of this file.*

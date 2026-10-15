@@ -1,0 +1,566 @@
+REPORT fourth b22
+
+SAIRN batch report -- session fourth (ted), batch b22, 2026-10-15.
+Working directory C:\Users\marsh\Documents\SAIRN-fourth, branch main.
+Model Opus 5 (1M context). Context at close: 24% of 1000k.
+
+EVERY FIGURE BELOW NAMES THE COMMAND THAT PRODUCED IT. Re-derive anything you
+mean to quote, including out of this file. Where a number differs from a number
+in an earlier document, the predicate that explains the difference is printed
+beside it rather than the difference being asserted as drift.
+
+
+== 0. STATE ==
+
+  HEAD                      4a103abc          git rev-parse --short HEAD
+  origin/main               4a103abc          git rev-parse --short origin/main
+  behind / ahead            0 / 0             git rev-list --left-right --count origin/main...HEAD
+  forced?                   NO, PROVED BY ANCESTRY, not by grepping git's
+                            wording: pre-push tips 86a27458e05e and 4a103abc
+                            recorded in scratchpad pre_push_tip_b22.txt and
+                            pre_push_tip_b22b.txt, then
+                            git merge-base --is-ancestor <tip> HEAD -> ANCESTOR
+                            on both, i.e. two fast-forwards.
+  SAIRN_SEED_GATE           not used, any form
+  SAIRN_GATE_EXEMPT         not used
+  SAIRN_SKIP                not used
+  .claude/settings.json     not edited, not committed
+  hooks                     untouched, never re-added
+  auditor clones            not entered; 0 files under
+                            .claude/skills/sairn-hover-auditor/
+  files outside docs/       0, plus my own root deliverables
+  manifest                  5 done, 1 BLOCKED with its reason
+                            batch_manifest.py --check --agent fourth --batch b22
+  git stash                 0
+  worktrees                 5 total, NONE mine
+  session lock              arrived DEAD (CLAUDE_PID 3444, the b18-b21 session,
+                            263m idle), reclaimed by session_lock_check.py
+                            guard -- a reclaim, NOT an rm. Now SELF, PID 15120.
+
+ONE PUSH WAS DENIED AND IT WAS NOT ABOUT MY COMMITS. The first attempt was
+refused by register_feed_gate, which got no ref lines from git because the clone
+was 1 ahead / 4 behind -- a non-fast-forward git was about to refuse itself.
+`git pull --rebase origin main` exit 0, then the push went clean. Said here
+because "my push was denied" and "a gate found something in my work" look
+identical in a log and are not the same event.
+
+
+== 1. THE SIX ITEMS ==
+
+  1  cody's two obligations: one change or two, discharge accordingly   DONE
+  2  hank's obligations F3/F4 then F1/F2 (leg_aftercare, census SQL)    NOT
+                                                                        STARTED
+  3  hank's sd_photos size fix with T17: Tier A review                  DONE
+  4  hank's 400->503 helper: Tier A review                              DONE
+  5  the sf_events seventh anchor + re-count staleness from source      DONE
+  6  push without force, confirm landed                                 DONE
+  -  the handoff, written BEFORE this report                            DONE
+
+Nothing was consolidated. Items 3, 4 and 5 each got their own document, which is
+the thing b21 could not do.
+
+
+== 2. ITEM 2 -- ZERO-DONE, BY A TOOL'S REFUSAL, AND IT NEEDS MICHAEL ==
+
+`python tools/sairn_claim.py check fourth "<the b22 task string>"` returned
+BLOCKED:
+
+    session   : hank
+    task      : b13 ... fourth F4 F5 leg_aftercare key ambiguity ...
+    claimed   : 2026-10-15T00:22:44Z (0.3h ago)
+    blocked by: same file or resource: leg_aftercare
+    also share: aftercare, fourth, hank, leg, t17
+    DO NOT start this. Flag it back to the coordinating chat session.
+
+AND IT IS TWO LIVE CLAIMS, NOT ONE. cody's b14 claim independently reads
+"leg_aftercare key-collision arm" and lists tests/run_b14_leg_aftercare_probe.py
+in its FILES. So hank is fixing the delimiter collision and cody is arming it,
+concurrently. A third session editing that subject is the state the claim record
+exists to prevent.
+
+PER PR 4.3 THE TASK STRING WAS NOT REWORDED TO SLIP PAST THE MATCHER. The item
+was dropped from my claim, and the claim I did take says so in its own text.
+
+THE OTHER HALF OF THE ITEM IS ALREADY DONE BY SOMEBODY ELSE. The census SQL is
+hank's own b12 F1, fixed in 4f69facd: sql/legacy_ciphertext_census.sql and
+sql/sd_encryption_key_revoke_2026-09-24.sql now walk jsonb_each(data) instead of
+assuming a top-level `enc` key, part 2 reports WHICH service key is legacy, and
+a new part 0 separates the flat and nested shapes so both-zero reads as "no
+credential exists" rather than as the step-4 precondition. So there is nothing
+for me on that half even if the first half were free.
+
+EXACT NEXT STEP, and it is Michael's: either strike item 2 from fourth's queue
+and leave leg_aftercare with hank and cody, or have both release it and re-issue
+it. Do not hand it to a third agent while two claims are live. If re-issued, the
+subject is my own b20 F4/F5 and the starting point is
+docs/2026-10-14-fourth-b20-leg-role-matrix-discharge.md.
+
+
+== 3. ITEM 1 -- ONE OBLIGATION RECORDED TWICE, AND BOTH SHAS ARE WRONG ==
+
+THE DUPLICATE IS MEASURED, NOT INFERRED. cody 2026-10-15T00:00:41Z and cody
+2026-10-15T00:02:27Z, compared field by field: author_session,
+opened_at_sha_basis, resources (grd_boq_rates, grd_rounds), rules, irreversible,
+files, what and reviewer_owner are IDENTICAL, and the `what` is BYTE-IDENTICAL
+at 987 characters, sha256 599ff05bfc1a3756 on both. Only opened_at (1m46s apart)
+and opened_at_sha differ. One review body was recorded on BOTH records rather
+than split into two half-reviews or closed on one and left open on the other --
+which is what the b21 handoff asked for if this turned out to be one change.
+
+NEITHER RECORDED SHA POINTS AT THE RECORDED CHANGE:
+
+    bc24af59f3db  git cat-file -t -> could not get object info (rebased away;
+                  the tool correctly reports COULD-NOT-TELL)
+    f8baf814bfd9  RESOLVES -- and is a 36-FILE repo-wide encoding sweep whose
+                  ENTIRE hunk on the named path is
+                    -  capture_output=True, text=True)
+                    +  capture_output=True, text=True, encoding='utf-8',
+                       errors='replace'
+    44fad1f9      the REAL change, 2 files, "the tripwire list is DERIVED, and
+                  the pre-fix counterfactual is RETIRED with its finding"
+
+subject_sha() (tools/tier_a_review_gate.py:1570-1590) seats a record on THE LAST
+COMMIT TOUCHING the named files and stamps basis `file-set`. That rule is
+working exactly as written. The finding is what it produced: a record that reads
+FRESH -- the strongest provenance the tool has -- while pointing at a one-line
+encoding argument, so a reviewer who follows the stamp concludes the obligation
+is about nothing. ROUTED TO cc: print the touched-file count beside the basis,
+e.g. "file-set (36 files touched; this record names 1)". This is the SIBLING of
+the b21 author-time finding, not a repeat of it: that one was --reseat-shas
+offering a candidate authored AFTER opened_at; this is the ORIGINAL stamp
+landing on a later unrelated commit.
+
+THE REVIEW -- the three checks the author asked for, each driven:
+
+(1) "Deriving the list cannot silently reach zero tripwires without the
+    replacement-coverage arm failing." PARTLY TRUE, AND THE GAP IS NAMED.
+    python -u tests/run_cross_tenant_dispatchers_sabotage_probe.py -> EXIT=0,
+    baseline 419 passed / 0 failed, 15/15 line-targeted mutations refused each
+    in the branch its label names and no other branch disturbed, and
+    "derived 0 `app: null` unit(s) ... none". So the list is ALREADY at zero and
+    the suite is green; the NOTE block fires and says REPORTED, NOT PASSED, and
+    the REPLACEMENT COVERAGE arm is what stands in for the property. That much
+    is honest and is a real improvement on a hardcoded list.
+    BUT THE REPLACEMENT REQUIREMENT DID NOT GENERALISE WITH THE DERIVATION.
+    derive_tripwires reads EVERY `{ map: ... app: null ... }` unit; the arm that
+    makes an empty list honest is hardcoded to re.match(r"\s*\{ map: 'GRD ") and
+    to tests/sd_data_grd_session_gate.js. Measured on the live suite: 20 units,
+    0 of them app: null. Any of the other 19 can trade the tripwire property
+    away with NO replacement asserted, and at a derived count of zero that drop
+    is invisible. The hardcoded list was removed from the tripwires and left in
+    place one layer up, in the arm whose whole purpose is to catch a traded-away
+    property. NEXT STEP: key the requirement off the unit, not off the string
+    'GRD' -- a per-unit replacement_suite field in the suite's own unit literal.
+    AND, smaller, same family: the arm's two quality gates are FILE-GLOBAL where
+    the property is per-resource -- `m not in _gate_src` is substring-anywhere
+    (a name in a comment satisfies it) and `'NO_SESSION' in src and '401' in
+    src` is one test for the whole file. A gate suite that drove ONE resource to
+    401 and listed the other five in a comment would pass.
+
+(2) "M1, a GRD unit set back to app:null, really does make the suite's own
+    baseline red (14 failing)." CONFIRMED, INDEPENDENTLY DRIVEN, EXACT. Not read
+    off the claim: the GRD unit header at
+    api/sd-data-cross-tenant-dispatchers.test.js:648 was set to
+    `app: null, role: null` in a tempfile.mkdtemp() copy of api/ and the suite
+    run with node (scratchpad m1_drive_b22.py, m1_b22.log) -> SUITE EXIT=1,
+    405 passed, 14 FAILED, exactly the claimed 14: the 6 GRD members x {[L]
+    tenant isolation, [W] write-lands-under-A} = 12, plus the once-per-unit
+    [L-rev] and [Winj] arms. git status --porcelain api/ empty afterwards; the
+    live file was never written.
+    AND THE DERIVATION SELF-HEALS, also driven on the live text: the same regex
+    returns [] on the unmutated suite and exactly
+    [('grd_boq_rates', 'GRD (named-set pre-dispatch gate, api/sd-data.js:4353)')]
+    on the M1 text -- the FIRST member, which the [L-rev] comment requires.
+
+(3) "The replacement suite genuinely covers grd_boq_rates and grd_rounds rather
+    than merely naming them." CONFIRMED, AND IT HOLDS MORE STRONGLY THAN THE ARM
+    CHECKING IT. tests/sd_data_grd_session_gate.js:69-72 declares its own GRD
+    array and lines 129-150 LOOP over it, driving every resource/action pair and
+    asserting r.statusCode === 401 && r.body.error.code === 'NO_SESSION', plus
+    that no grd_ or msb_ request was issued at all. All 6 traded members appear
+    exactly once each, as array members rather than comments; the array is a
+    superset (it also carries grd_ecosystem_reports and grd_vendors). The
+    property really was relocated rather than dropped -- by the gate suite's
+    construction, NOT because the arm proved it.
+
+NOT CORROBORATED, said rather than implied: cody's "5 of 5 mutants driven and
+caught, including a gate suite containing an INVENTED grd_ name" was not
+reproduced. Four of the five mutate tests/sd_data_grd_session_gate.js, which the
+probe reads from ROOT and not from its sandbox, so driving them means writing a
+file in the live clone that is inside another session's read-only zone for this
+batch. M1 was the one needing no live write; it matches exactly. The other four
+remain the author's measurement.
+
+Both records discharged exit 0, in opened_at order, as the ASSIGNED owner and
+neither by --takeover. Register open owned by fourth: 2 -> 0; register total
+open 15.
+
+
+== 4. ITEM 3 -- THE sd_photos SIZE FIX AND T17 ==
+
+docs/2026-10-15-fourth-b22-sd-photos-size-t17-review.md. Subject e9d9c8192620,
+5 files, 938 insertions / 92 deletions. Suite 26 passed / 0 failed / 0 unproven
+(node api/sd-photos-size-and-provenance.test.js -> exit 0, scratchpad
+sdphotos_suite_b22.log). node --check clean on api/sd-data.js,
+api/_lib/ai-safeguards.js and api/_lib/ai-scan-redaction.js.
+
+WHAT HOLDS, AND THE ONE ASSUMPTION EVERYTHING RESTS ON. The 64KB constraint is
+PER ROW: sdSyncCollection() pushes sdData('write', key, r) one row per photo
+(stonedesk.html:2101) and skips rows whose JSON did not change (:2100), so the
+44,000-character image budget is a per-photograph budget and does not compound
+across the 200 locally-held photos. HAD THE COLLECTION BEEN BLOB-WRAPPED --
+which is exactly what SD_SYNCED_OBJECT does for sd_negotiated_prices and
+sd_pricing_rules twenty lines earlier (:2060-2071) -- THE BUDGET WOULD HAVE
+BLOWN AT PHOTO TWO. It is not, and that is the single assumption the whole
+ladder rests on, so it is the one I checked first.
+
+The ladder measures rather than predicting: 11 rungs from [1600, 0.72] to
+[320, 0.4], each rung's own toDataURL length tested against the budget
+(:26025-26040), and a no-fit returns null rather than the original. That is the
+opposite of the sibling slab path, which budgeted the DECODED byte size and let
+an oversized photo through -- recorded in that path's own history at :8780-8789.
+
+T17 IS ON THE ROW, and it is the clean counter-example to my own b21 F4.
+p.ai_source = 'claude:photo-qc' is set on the row object immediately before
+saveSD3Data() (:26191-26192), so it reaches the server copy. rf_photos drops its
+equivalent because the handler REBUILDS the record from three named fields;
+nothing rebuilds sd_photos. Only aiAnalysis is in the redaction partition
+(api/_lib/ai-scan-redaction.js:96) -- `data` is deliberately absent, because
+redacting a base64 payload corrupts the image. Correct, and for the stated
+reason. The NOT-HIGH-RISK classification records its own dissent in full and in
+the order the argument runs (api/_lib/ai-safeguards.js:131-146): the content
+would justify high-risk, sd_photos is not in SD_SESSION_GATED so an approval
+gate would 403 every analysed photo on an app with no sign-in, and promoting the
+row is A SESSION DECISION FIRST.
+
+TWO FINDINGS, both in the caller rather than the mechanism:
+
+F1  THE FAILED-DOWNSCALE BRANCH STORES AND SYNCS THE ORIGINAL.
+    stonedesk.html:26078 is `data: small ? small.data : e.target.result`, and
+    eighteen lines above it the function's own comment states the rule this
+    line breaks: "a downscaler that silently returns the original is how an
+    oversized row reaches the server looking like a downscaled one." The
+    downscaler is innocent -- it returns null. The caller passes the original
+    through, and sdSyncCollection then hands that row to the server like any
+    other. It is NOT silent (downscaled: null, dims: null, src_bytes recorded),
+    and that mitigation holds. But: the toast's claim is the one thing that can
+    be false -- "Photo kept on this device only" is asserted BEFORE the write
+    that would make it true, on a row up to ~13.3 MB of base64 for a 10 MB
+    input against a typical 5-10 MB whole-origin localStorage quota. st()
+    carries zero silent catches and reports that failure honestly, so the user
+    gets two messages for one photograph and they disagree. The server also
+    receives a request that cannot succeed; after this commit that refusal is a
+    400 ROW_REFUSED, better than the old 503, plus a second toast from
+    sdDataFailed's burst. And photoAiAnalyze() sets aiAnalysis and ai_source on
+    the same row and re-saves, so the row has changed and is refused a SECOND
+    time. NEXT STEP: skip the row in the sync set (an explicit backup:false,
+    the same shape as the idless-row skip already at :2098) or keep a thumbnail
+    and say so. Today the code keeps the version that CANNOT be backed up while
+    its own comment at :26073-26077 argues the opposite. NOT THEORETICAL:
+    small === null is also img.onerror, a null 2D context and any toDataURL
+    throw -- mobile Safari has historically capped canvas area, which makes the
+    failure most likely on exactly the device this feature is for.
+
+F2  THE MARGIN IS COUNTED IN CHARACTERS AND THE CONSTRAINT COUNTS OCTETS.
+    out.length is UTF-16 code units; octet_length(data::text) is bytes. For the
+    base64 data URL those are the same -- base64 is ASCII. They are not the
+    same for the rest of the row, which is what the margin is for: 65,536 -
+    44,000 = 21,536 bytes, carrying aiAnalysis (which may be non-ASCII) and
+    `name: file.name`, a filename that is arbitrary Unicode and UNBOUNDED. A
+    bounded risk, not a defect: the margin is roughly 30x the expected need.
+    But nothing measures it, and the one field inside it with no length limit is
+    the one supplied by the operating system. NEXT STEP, if anything: cap `name`
+    on the row.
+
+NOT CHECKED, said rather than left implicit: the downscale was not driven in a
+browser -- sdDownscalePhoto needs a real Image, canvas and toDataURL -- so
+"an 11-rung ladder gets a phone photo under 44,000 characters" remains hank's
+measurement, uncorroborated here. What I verified is that the code CHECKS rather
+than assumes, which is the property that makes the claim self-correcting.
+stonedesk.html was not re-extracted block by block; I did not change it.
+
+
+== 5. ITEM 4 -- THE 400->503 HELPER, AND A COUNT ANCHORED ON A VARIABLE NAME ==
+
+docs/2026-10-15-fourth-b22-not-provisioned-helper-review.md.
+
+THE INSTRUCTION SAID "63 branches across 22 resources" -- MY OWN b21 FIGURE.
+hank re-derived it as 98. BOTH ARE LOW. Measured from source at HEAD with the
+predicate printed beside the result -- a single line matching
+
+    (\w+)\.status === 404 \|\| \1\.status === 400
+
+over api/sd-data.js (18,503 lines), comment lines excluded:
+
+    RAW matching lines                                             331
+    A  rewritten -- notProvisioned() within 5 lines                 88
+    B  NOT rewritten -- res.status(503) NOT_PROVISIONED inline      69
+    C  res.status(200) { ok:true, data:[], provisioned:false }      151
+       other handling                                               23
+       A + B + C + other                                           331
+    plus guards on 404 ALONE answering NOT_PROVISIONED (correct)     10
+
+SO THE 503-ANSWERING POPULATION IS 157, not 98 and not 63. Counted a second way,
+by call site rather than by guard (scratchpad np_shapes_b22.py): 89
+notProvisioned() call sites, 89/89 awaited, 89/89 with control provably stopping
+afterwards, 0 that may continue, and 5 passing a preread body (lines 2769, 2988,
+3331, 3434, 8486). The A=88 / 89 difference is one site whose guard and call are
+more than 5 lines apart; the two methods agree to within that.
+
+THE CAUSE IS ONE IDENTIFIER, AND IT IS MEASURED. Of the 157, counted by the name
+of the response variable in the guard:
+
+    r 99 | existingR 10 | w 7 | cur 4 | cr 4 | sr 3 | existingPhoto 2 | jr 2
+    rr 2 | exq 2 | sfoRows 1 | wr 1
+
+99 OF THE 157 USE A RESPONSE VARIABLE LITERALLY NAMED `r`, and hank's 98 is
+within one of that. A predicate written as `r.status === 404 || r.status === 400`
+READS LIKE A SHAPE AND IS ACTUALLY A NAME; it finds the 99 and is blind to the
+other 58, and nothing in its output says so -- it reports a population, not a
+sample. MINE WAS THE SAME DEFECT IN THE OTHER DIRECTION FOUR DAYS AGO: "roughly
+twelve", which H1 re-ran and got 63. ONE MORE CLAUSE FOR THE HOUSE CONVENTION:
+when a predicate names an identifier, SAY WHICH IDENTIFIER.
+
+THE HELPER ITSELF IS SOUND AND THE PREREAD PARAMETER IS THE PART THAT SHOWS IT
+WAS REVIEWED RATHER THAN SCRIPTED. api/sd-data.js:18416-18447. Four answers:
+a preread body classifies without touching the stream; 400 + pg class 23xx ->
+400 ROW_REFUSED; 404 or a body matching the missing-relation patterns -> 503
+NOT_PROVISIONED with the caller's message; anything else -> 400 UPSTREAM_REJECTED
+which says the reason COULD NOT BE CLASSIFIED and explicitly not "run the
+migration". A Response body is readable once and five call sites consume it
+before the guard; without preread the helper's own r.text() returns '' on a
+consumed stream and all five classify a real 404 as unclassifiable. The first
+draft broke exactly those five, hank found it by READING two rewritten sites in
+context after the mechanical pass, and said so in the commit message. That is
+the standard.
+
+FOUR FINDINGS, ROUTED TO hank, F1 AND F2 FIRST BECAUSE 88 BRANCHES NOW DEPEND ON
+THE HELPER:
+
+F1  pgCode.slice(0, 2) === '23' IS THE WHOLE INTEGRITY CLASS AND ONLY 23514 IS
+    THE ROW CAP. api/sd-data.js:18431. Class 23 covers 23505 unique violation,
+    23503 foreign key, 23502 not-null and 23514 check. Only the CHECK is
+    octet_length(data::text) <= 65536. So a duplicate-id upsert collision now
+    tells the operator the record "most often" exceeded a 64KB row cap. A NEW
+    misattribution created by the fix -- strictly narrower and less damaging
+    than the one it replaced, since every 23xx really does mean the table exists
+    and nothing was saved, but it names a SPECIFIC WRONG CAUSE, which is the
+    defect class this whole change exists to end. NEXT STEP: branch on 23514 for
+    the cap sentence and give the rest of class 23 a sentence naming the real
+    class. pgCode is already in hand; two lines.
+
+F2  THE 503 ARM'S BARE /does not exist/i IS TESTED AGAINST THE WHOLE RAW BODY.
+    PostgREST error bodies carry message, details and hint, and details echoes
+    offending values. A 400 that is genuinely about a value -- 22P02 invalid
+    input syntax, say -- whose echoed value contains those three words is
+    classified as a missing table and the operator is told to run a migration.
+    Low probability, named because it is the exact shape being fixed, and it is
+    the alternative with the least evidence behind it: PGRST205 and
+    "relation ... does not exist" are specific, and the bare third alternative
+    subsumes both and is what actually fires. NEXT STEP: drop the bare form.
+
+F3  69 BRANCHES OF THE SAME SHAPE WERE NOT REWRITTEN, with no body read before
+    deciding -- the exact condition the commit says was eliminated. Sampled and
+    confirmed at :2239 (SAIRNfreedom data tables), :2605 (supplier lead times),
+    :4123 (slab lineage sync), :10129 (SAIRNroofing settings), :18205
+    (SAIRNcode, via scNotProvisionedMessage). Full list in
+    np_population_b22.log. The commit's "nine branches were LEFT ALONE because
+    they already read the body and discriminate" DOES NOT DESCRIBE THESE: these
+    do not read the body. NEXT STEP: re-run the rewrite with the predicate
+    widened to take the response variable's own name from the match.
+
+F4  THE 151 READ BRANCHES ARE A WORSE FOLD AND NOTHING IN THIS CHANGE REACHED
+    THEM. On a 404, { ok: true, data: [], provisioned: false } is a deliberate
+    and reasonable product choice -- an unprovisioned table renders as an empty
+    panel rather than an error. ON A 400 IT IS A SILENT FAILURE IN THE STRICT
+    SENSE: ok: true, no error code, an empty list, and a provisioned:false flag
+    asserting a cause the server did not establish. A malformed select=, a bad
+    filter, a column PostgREST cannot find -- every one renders as "there is no
+    data". THAT IS STRICTLY WORSE THAN THE WRONG 503 THIS COMMIT SET OUT TO FIX,
+    because a 503 at least tells somebody something happened. The 503 paths got
+    a helper with four answers; the read paths kept one answer for two causes.
+    NEXT STEP: the same helper with a fifth answer for the read case. THIS IS
+    THE LARGER OF THE TWO REMAINING POPULATIONS AND IT IS IN NOBODY'S OPEN WORK.
+
+
+== 6. ITEM 5 -- THE ANCHOR WAS THE SIXTH, AND b21'S CITATION FIGURES DO NOT
+      REPRODUCE ==
+
+docs/2026-10-15-fourth-b22-sf-events-reanchor-and-citation-recount.md.
+
+(a) THE INSTRUCTION SAID THE SEVENTH ANCHOR. MEASURED, IT IS THE SIXTH.
+Enumerated from the sf_events cell's OWN backticked spans rather than by hand
+(scratchpad sf_events_allspans_b22.py / .log), because hand-numbering a 22-span
+table cell is how an off-by-one becomes a confident edit to the wrong anchor:
+
+    anchor 1  function eventRefusals(e){                               count 1
+    anchor 2  function sfSessionRefusals(c, excludeId){                count 1
+    anchor 3  function sfScheduleEvent(){                              count 1
+    anchor 4  (r.alcohol?'<span class="tag warn">Alcohol</span>':'--')  count 1
+    anchor 5  alcohol:e.alcohol, id:e.id, removable:true               count 1
+    anchor 6  if(ev && ev.sessionId) st(K_SESSIONS, getSessions().filter(  count 0
+    anchor 7  if(getEvents().some(function(e){ return e.sessionId===s.id; })) return;  count 1
+
+ANCHOR 7 RESOLVES EXACTLY ONCE AND NEEDED NOTHING. Anchor 6 had gone to ZERO
+because hank b12's F6 rewrote sfDeleteEvent() (sairnfreedom.html:5222-5254) to
+COUNT the rows it removes instead of choosing its toast on the pointer being
+truthy -- the old line announced a removal that had not happened whenever a
+stale pointer existed. Replaced with two anchors, BOTH VERIFIED TO RESOLVE
+EXACTLY ONCE BEFORE THE WRITE:
+`var after = before.filter(function(s){ return s.id!==ev.sessionId; });` for the
+stored-id match, and `removedSessions = before.length - after.length;` for the
+count. The cell now carries EIGHT anchors, not seven, and says so in itself.
+The row's integrity argument is unchanged and better evidenced: the delete still
+matches on the stored id alone -- the whole basis for sf_events being Tier A on
+INTEGRITY -- and it can now distinguish a pointer that resolved from one that
+resolved to nothing, which was the invisible third outcome.
+
+EDIT METHOD, because the row is one 4,292-character table line: NO SPLIT ON THE
+PIPE. scratchpad reanchor_sf_events_b22.py locates the single row by its
+`| `sf_events` |` prefix, refuses unless the substring to replace occurs EXACTLY
+ONCE, refuses if the replacement contains a pipe, asserts the line's pipe count
+is identical before and after (7 -> 7), and verifies both new anchors in the app
+before writing anything. docs/CRITICALITY-TIERS.md is 487 KB and over the
+standing-document read ceiling, so it was never opened wholesale. After the
+write: all 8 anchors count 1, and python tools/criticality_tier_check.py reports
+PROBLEMS:0 with RESOURCE_ROWS:391, TIER_A:275,
+ROWS_MIGRATED_TWO_AXIS:391 of 391.
+
+(b) THE CITATION TOTAL, RE-COUNTED FROM SOURCE. Predicate printed with the
+result: ([A-Za-z0-9_./-]*):(\d{1,5}) not followed by a digit or a dot.
+
+                                          b22 measured    b21 as written
+    TOTAL line citations                       571              551
+    EXPLICIT, path resolves to a real file     198              196
+    path-shaped but the file is absent           0                -
+    BARE :NNNN -- UNASSESSABLE                 373              355
+    PROVABLY STALE (line beyond EOF)        0 of 198         0 of 196
+    LIKELY STALE (blank/pure-comment line) 39 of 198 (20%) 37 of 196 (19%)
+    EXPLICIT + absent + BARE                   571 (adds up)
+
+THE DELTA IS ENTIRELY PREDICATE, AND THAT IS PROVED RATHER THAN ASSUMED.
+`git diff --stat 7a5e6a11 HEAD -- docs/CRITICALITY-TIERS.md` is EMPTY, and the
+same script gives 571 / 198 / 373 against BOTH `git show
+HEAD:docs/CRITICALITY-TIERS.md` and the working tree -- so my own re-anchor edit
+added zero citations too. THE FILE IS BYTE-IDENTICAL AND THE NUMBERS ARE
+DIFFERENT; therefore b21's 551 / 196 / 355 were not re-derivable. CARRY THE b22
+FIGURES, WITH THE PREDICATE ATTACHED. The standing conclusion is unchanged and
+is the one that matters: 0 provably stale, and 65% (373 of 571) cannot be
+mechanically checked at all because the citation names a line and not a file.
+That is a FORM problem, not a staleness problem, and converting a cell to
+quoted-string anchors -- which is what sf_events already is -- removes the whole
+class.
+
+ONE THING FOUND AND NOT FIXED: the cell also carries the bare prose spans
+`eventRefusals()`, `liquorServiceCheck()` and `sc_auth`, each counting 0 in
+sairnfreedom.html -- not because the functions are missing (eventRefusals and
+liquorServiceCheck both exist; the latter at :4582) but because the register
+writes them with empty parentheses and the source writes them with arguments.
+They are prose references, not anchors, and the cell's rule is scoped to
+anchors. Named so the next reader does not count them as three more rotted
+citations -- and ROUTED TO cc, because if the anchor-rot check treats every
+backticked span as an anchor these are its first three false positives.
+
+
+== 7. WHAT IS OPEN ==
+
+hank      the four helper findings above, F1 and F2 first (two-line changes
+          inside the thing 88 branches depend on); the two sd_photos caller
+          findings; and still open and NOT re-verified this batch: b18's N1, the
+          MAR grant bypass via alf_clients with no audit row (my b21 F3), the
+          rf_photos record rebuild dropping ai_source (my b21 F4), license_hash
+          never re-verified in memory, and no revoke action for a live grant.
+          Plus the unanswered DESIGN question: the granted MAR read yields only
+          date/time/status and never medication names, so an office_manager
+          grant admits a billing clerk to a list that cannot serve coding work.
+
+cody      a REPLACEMENT COVERAGE generalisation arm -- flip a NON-GRD unit to
+          app: null and back and assert the suite notices the trade; today it
+          only notices for GRD. A per-resource refusal arm: a gate suite that
+          drives ONE resource to 401 and lists the other five in a comment must
+          FAIL, and currently passes. Plus the b20 aftercare-collision arm (now
+          in cody's own b14 claim), the b21 F3/F4 arms, and b19's four.
+
+cc        the subject_sha() disclosure (print the touched-file count beside the
+          file-set basis); the anchor-rot check's first three false positives;
+          the b21 re-seat author-time guard, still open; b19's census asks 1 and
+          4; batch_manifest.py:386, still worked around with
+          PYTHONIOENCODING=utf-8 on every call; the b20 drive-verify findings.
+
+Michael   ITEM 2, and it is the only thing I am waiting on -- strike it or have
+          hank and cody release it. And F4 of section 5: the 151 read branches
+          are the largest un-owned population I found this batch.
+
+hover2    unchanged from b21: four `# OWNER: hover2` lines, and which tree is
+          canonical for the four basenames existing in both with different
+          contents.
+
+
+== 8. UNVERIFIED, AND WHY ==
+
+* ITEM 2 WAS NOT ATTEMPTED AT ALL. No part of it was measured, so nothing in
+  this report says anything about the leg_aftercare delimiter collision beyond
+  quoting the claim refusal and locating hank's already-landed census fix.
+* The 23xx and /does not exist/ findings are READ FROM SOURCE, NOT DRIVEN. I did
+  not POST a duplicate id and observe a 64KB-cap message, and I did not
+  manufacture a PostgREST body echoing "does not exist". Both are traced paths,
+  not observed outcomes.
+* The sd_photos downscale was NOT driven in a browser. No canvas, no Image, no
+  toDataURL. Every statement about rung behaviour is about the code's shape.
+* THE 151 AND 69 FIGURES ARE COUNTS OF A SHAPE, NOT OF CONFIRMED DEFECTS. Each
+  of the 151 is correct on a 404 and wrong only on a 400; I did not establish
+  that any specific one of them can actually receive a 400 in production.
+* cody's other four mutants were not reproduced, for the reason stated in
+  section 3: driving them means writing a live-clone file in another session's
+  read-only zone.
+* "39 LIKELY STALE" IS NOT 39 STALE. Landing on a blank or comment line is
+  strong evidence, not proof. The 159 citations landing on a code line are NOT
+  verified correct either: they exist and are not blank, and whether each holds
+  the construct its cell names needs the cell read. The 373 bare citations are
+  UNASSESSED BY DESIGN, because assessing them needs the attribution heuristic
+  that produced three false findings in b21.
+* NO LIVE DEPLOYMENT WAS FETCHED, because nothing in this batch is a code
+  change: six docs/ files and my root deliverables.
+* The register check reports PROBLEMS:0, which says every registered resource in
+  a re-tiered app has a tier and every Tier A carries evidence. IT DOES NOT SAY
+  ANY TIER IS RIGHT -- the tool prints that limit itself and I am repeating it
+  rather than letting a 0 stand in for a verdict.
+* The Drive upload is verified MOUNT-SIDE with matching bytes and sha256. The
+  Drive-side API read is the thing that closes it, and the first attempt on the
+  handoff came back EMPTY -- which b19, b20 and b21 all saw and which was a lag,
+  not a missing file. Whatever state that read is in at the end of this batch is
+  recorded in the digest rather than assumed.
+
+
+== 9. METHOD NOTE ==
+
+THREE TIMES IN THIS BATCH A MEASUREMENT WAS TAKEN WITH A PREDICATE NARROWER THAN
+THE POPULATION, AND EVERY TIME THE OUTPUT READ LIKE A POPULATION.
+
+  * hank's 98 against 157, because `r.status` is a NAME and reads like a SHAPE.
+  * my own b19 "roughly twelve" against 63, four days ago, same class.
+  * b21's 551/196/355 against 571/198/373 on a BYTE-IDENTICAL FILE -- the
+    numbers were not re-derivable at all.
+
+The b21 clause was "print the command AND the raw count". It is necessary and it
+is not sufficient: all three of these would have printed a command. THE CLAUSE
+THAT WOULD HAVE CAUGHT ALL THREE IS NARROWER -- when a predicate names an
+identifier, say which identifier; and when a figure is carried into a second
+document, carry the predicate with it or re-derive it.
+
+AND ONE MORE, FROM THE ANCHOR: THE INSTRUCTION'S OWN ORDINAL WAS WRONG, AND
+HAND-COUNTING WOULD HAVE HIDDEN IT. "The seventh anchor" was a reasonable
+description of a cell with seven anchors; the seventh was fine and the sixth had
+rotted. The only reason the right one was edited is that the anchors were
+enumerated from the document's own markup rather than counted by eye. A list
+long enough to need an ordinal is long enough to need a program.
+
+DEFINITION the hash below is sha256 over every byte of this file up to and NOT
+including the final hash line, CRLF normalised to LF, taking the LAST occurrence
+of the marker. Reproduce:
+    import io, hashlib
+    s = io.open('SAIRN-report-fourth-b22.txt', 'rb').read().decode('utf-8').replace('\r\n','\n')
+    body = s.rsplit('SHA' + '256 ', 1)[0]
+    print(hashlib.sha256(body.encode('utf-8')).hexdigest())
+SHA256 993aaa611ccf22ddcfebcd311424491b2813ee301bd2cdd9613b219c67d63b98
+END-OF-REPORT
