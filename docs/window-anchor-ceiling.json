@@ -1,0 +1,17 @@
+{
+ "ceiling": 42,
+ "what_this_is": "The number of fixed-size character windows ({0,N}, N>=2 digits) in tests/ that carry NO `WINDOW-OK: <reason>` justification within 6 lines. tests/run_window_anchor_ratchet_probe.py refuses an INCREASE and lowers this number itself when the count drops.",
+ "why_it_only_falls": "A ceiling that rose by itself would absorb every new window as the new normal, which is the shape docs/test-file-floor.json's own note describes in the other direction. An increase is a REFUSAL with the sites named; a decrease is written back here so the gain cannot be given back silently.",
+ "measured": "2026-10-15",
+ "measured_by": "cody b18, item 5",
+ "why_it_exists": "Nine probe failures were read to cause across cody b16, b17 and b18 and SIX of them named the SUBJECT in the failure line while the cause was in the PROBE. The fixed-size window is the one sub-shape of that class a grep can find: tests/server_wins_hydration.js asserted a call within 200 characters of its guard, and sairnlegacy's transport had grown to 311 because of a correctness fix, so the arm reported the most careful of seven apps as the broken one.",
+ "what_it_does_NOT_claim": "That the counted windows are wrong. Several are bounded between two adjacent lines of one statement, which is a different risk from spanning a block. It claims only that a NEW one has to be argued for in writing, at the site.",
+ "history": [
+  {
+   "lowered_to": 42,
+   "from": 43,
+   "by": "tests/run_window_anchor_ratchet_probe.py",
+   "why": "cody b18 justified its own new window in tests/run_audit_event_type_probe.py with WINDOW-OK, which is the mechanism working in the direction it is meant to work"
+  }
+ ]
+}

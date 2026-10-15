@@ -27,6 +27,7 @@ mean the comparison is never tested.
 import io
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -83,6 +84,41 @@ def main():
     entries = reg['entries']
     arm('the real registry has entries to drive against', len(entries) > 0,
         len(entries))
+
+    # ── A PRECONDITION ON THE FIXTURE'S OWN SHAPE. 2026-10-15 (cody b18) ───
+    # synth_log() builds its log FROM these rows, so a row that cannot be
+    # rendered as a parseable FAIL line makes the whole fixture
+    # self-contradictory: the stated count is len(entries) while the tool can
+    # only parse the lines that match, and known_red_check REFUSES a log whose
+    # two numbers disagree. It is right to refuse. But the refusal is about the
+    # LOG, so seven arms below went red reading "the log says 66 FAILING TEST
+    # FILE(S) and 64 FAIL lines were parsed" -- which sounds like the tool's
+    # parser and was two bad rows.
+    #
+    # MEASURED: two rows carried kind 'js', which tools/run_all_tests.py never
+    # emits (it prints `node` or `py`, and FAIL_RE accepts only those two), and
+    # one carried a NEWLINE inside its `tail`, which split the line so the
+    # remainder was not a FAIL line at all.
+    #
+    # NAMED AT THE ROW, which is the whole point: a defect in one row must not
+    # present as a refusal about the log.
+    _FAIL_RE = re.compile(r'^\s{2}FAIL\s+(node|py)\s+(\S+)\s*(.*)$')
+    _unrenderable = []
+    for _e in entries:
+        _line = '  FAIL %-5s %-52s %s' % (_e.get('kind'), _e.get('file'),
+                                          _e.get('tail'))
+        if '\n' in _line:
+            _unrenderable.append('%s -- NEWLINE in its `tail`, so the '
+                                 'synthesised line splits in two'
+                                 % _e.get('file'))
+        elif not _FAIL_RE.match(_line):
+            _unrenderable.append('%s -- kind %r is not one of (node, py), '
+                                 'which are the only two the runner emits'
+                                 % (_e.get('file'), _e.get('kind')))
+    arm('every registry row renders as a FAIL line the tool can parse -- '
+        'otherwise the fixture contradicts its own stated count and the '
+        'refusal lands on the LOG instead of on the row',
+        not _unrenderable, '\n        ' + '\n        '.join(_unrenderable))
 
     # ── 0. THE BASELINE: the registry against its own measured run ─────────
     rc, out = run(synth_log(entries))

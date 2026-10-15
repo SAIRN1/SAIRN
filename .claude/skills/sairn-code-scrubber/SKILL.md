@@ -429,6 +429,80 @@ red arm discovered while you are already in the file is a two-minute fix; the
 same arm discovered by somebody else in a week is a day of archaeology and a
 suite nobody trusts.
 
+### 26a. AND THE FAILURE LINE NAMES THE *SUBJECT*, SO IT GETS ROUTED AS A LIVE DEFECT
+
+**Added 2026-10-15, cody b18. This is the consequence 26 above does not state,
+and it is the expensive one.**
+
+A rotted anchor does not fail saying "my anchor moved." It fails in the words
+of the arm, and the arm is named after the **property of the subject**. So the
+failure line reads as a defect in shipped code:
+
+> `8. app_id is taken from the client again`
+> `6. the gate WIDENS to sf_officers and sf_tickets, which nobody approved`
+> `C1. the role gate must precede the consent check`
+> `[sairnlegacy] the transport records an id when a WRITE really lands`
+
+**MEASURED across cody b16, b17 and b18: nine probe failures were read to
+cause and SIX of them named the subject while the cause was in the probe.** The
+first of those was triaged as an urgent multi-tenancy leak. **Twice the subject
+had moved because of a SECURITY FIX** — a role set deliberately narrowed so
+`billing` could not read a medication record, and a session gate that grew when
+a role table and an append-only check landed inside it — **so the arm was
+reporting the fix as the defect.** Once it was a correctness fix for duplicate
+grief-support calls to a bereaved family, and the arm named the most carefully
+written of seven apps as the one missing its guard.
+
+**THE RULE: A FAILURE LINE THAT NAMES SHIPPED CODE IS A HYPOTHESIS, NOT A
+VERDICT.** Before routing it to the owner of that code:
+
+1. **Open the subject and measure the thing the line claims.** Count the
+   occurrences, read the branch, diff the identifier. Three of the six were
+   settled by one `grep -c` and one `sed -n`.
+2. **Ask whether the subject moved for a good reason.** Read the comment at the
+   site. In two of the six the file said, in its own words, exactly why it had
+   changed — and in one case the arm's own comment had already *predicted* the
+   class it then fell to.
+3. **Check whether the mutation was even APPLIED.** A sabotage arm prints its
+   label whether or not its anchor matched. `ANCHOR-0` means the defect was
+   never planted, so the label is a description of something that did not
+   happen. Item 17 is this one level down.
+4. **Re-derive the PROPERTY, not the text.** Assert that a role set is
+   consulted, that a call is inside a guard's consequent, that an sha touches a
+   file set — never the current spelling of any of those.
+
+**A WIDER WINDOW, A LONGER QUOTED BLOCK OR A SECOND LITERAL IS THE SAME DEFECT
+WITH A LATER DATE.** b16 re-derived a sabotage anchor by quoting a bigger block;
+b17 found the same anchor rotted again when the block grew from 6 lines to ~68;
+b18 found a 200-character window that had itself replaced a one-line anchor for
+exactly this reason. **Each widening bought under a month.**
+
+#### The two sub-shapes worth naming separately
+
+**A FIXED-SIZE CHARACTER WINDOW** — `{0,200}`, `.{0,40}`, `[\s\S]{0,1200}?` —
+asserts that its subject stays a certain number of characters long. Measured
+distances for one such arm across seven apps: 53, 53, 53, 78 … and **311**,
+because one transport gained a correctness fix. **Prefer the structural form:
+the balanced block, or the single statement up to its `;`. There is no budget
+to outgrow.**
+**Detection, and it is mechanical:**
+`python tests/run_window_anchor_ratchet_probe.py` counts every unjustified
+fixed-size window in `tests/`, refuses an **increase**, lowers its own ceiling
+when the count drops, and requires a new one to carry `WINDOW-OK: <why>` at the
+site. The pin is `docs/window-anchor-ceiling.json` — one integer, so there is no
+second list to disagree with the first.
+
+**AN ASSERTION THAT COMPARES A RECORDED HISTORICAL VALUE TO A RE-DERIVED
+CURRENT ONE** is not stale — it is **impossible to hold**. An arm required a
+ledger record's `opened_at_sha` to still be `git log -1` over its own file set;
+that is true for the instant the record is written and decays as soon as anyone
+touches those files. **Measured over 26 records: 3 matched, 11 had been
+overtaken, 8 named a commit a rebase had deleted outright, 4 named an abandoned
+pre-rebase commit.** 23 of 26 could never pass.
+**The fix is membership, not recency** — the sha must *touch* the file set — and
+a rewritten sha is a **COULD NOT TELL**, counted and printed, never folded into
+a pass or a failure.
+
 ## 27. A cap on a ratio that turns an OVERRUN into COMPLETION
 
 **Found 2026-09-27 in SAIRNbuild's WIP schedule, and the cap was not the

@@ -256,6 +256,13 @@ def main(argv):
         if not listed:
             by_app = re.search(r'const AUDIT_TABLE_BY_APP = \{([^}]*)\}',
                                audit_js)
+            # The structural form is not available here: there is no brace to
+            # balance from that does not also swallow the rest of the module,
+            # and the property IS the adjacency of those two lines. If the
+            # loop ever gains a body this must become a parse rather than a
+            # wider number -- see tests/run_window_anchor_ratchet_probe.py.
+            # WINDOW-OK: 120 chars spans ONE three-line statement, the forEach
+            # and the assignment inside it, not a block that is free to grow.
             derived = re.search(
                 r'Object\.keys\(AUDIT_TABLE_BY_APP\)[\s\S]{0,120}?'
                 r'AUDIT_TABLES\[AUDIT_TABLE_BY_APP\[\w+\]\]\s*=\s*true',
