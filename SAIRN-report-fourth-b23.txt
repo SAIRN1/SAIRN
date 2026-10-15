@@ -1,0 +1,505 @@
+REPORT fourth b23
+
+SAIRN batch report -- session fourth (ted), batch b23, 2026-10-15.
+Working directory C:\Users\marsh\Documents\SAIRN-fourth, branch main.
+Model Opus 5 (1M context). Context at close: 61% of 1000k.
+
+EVERY FIGURE BELOW NAMES THE COMMAND THAT PRODUCED IT. Re-derive anything you
+mean to quote, including out of this file. THREE FIGURES I PUBLISHED EARLIER ARE
+CORRECTED HERE, and in each case the predicate that explains the difference is
+printed beside the new number rather than the difference being asserted as drift.
+
+
+== 0. STATE ==
+
+  HEAD                      80d86329          git rev-parse --short HEAD
+  origin/main               80d86329          git rev-parse --short origin/main
+  behind / ahead            0 / 0             git rev-list --left-right --count origin/main...HEAD
+  forced?                   NO, PROVED BY ANCESTRY on both pushes, not by
+                            grepping git's wording: pre-push tips in scratchpad
+                            pre_push_tip_b23.txt and _b23b.txt, then
+                            git merge-base --is-ancestor <tip> HEAD -> ANCESTOR.
+  pushes denied first       3, and NONE was about my commits -- register_feed_gate
+                            got no ref lines because the clone was behind, which
+                            is a non-fast-forward git was about to refuse itself.
+  LEDGER CONFLICT           1, docs/tier-a-reviews.json. Resolved with
+                            tools/sairn_rebase_resolve.py, the tool the gate's
+                            own hint names: 259 ancestor + 2 upstream-only,
+                            merged and validated.
+  the merge VERIFIED        It reported "0 local-only", which is correct and
+                            alarming-looking: a DISCHARGE MUTATES AN EXISTING
+                            RECORD rather than adding one. So both verdicts were
+                            read back from origin/main rather than trusted --
+                            9,134 and 13,429 characters (section 1).
+  SAIRN_SEED_GATE           not used, any form
+  SAIRN_GATE_EXEMPT         not used
+  SAIRN_SKIP                not used
+  .claude/settings.json     not edited, not committed
+  hooks                     untouched, never re-added
+  auditor clones            not entered; 0 files under
+                            .claude/skills/sairn-hover-auditor/
+  api/ sql/ tests/ tools/   0 files written -- all read-only here by claim
+  files outside docs/       0, plus my own root deliverables
+  manifest                  6 of 6 done
+                            batch_manifest.py --check --agent fourth --batch b23
+  git stash                 0
+  session lock              mine and live; not reaped or removed this batch
+
+
+== 1. THE SIX ITEMS ==
+
+  1  --list; discharge every obligation assigned to me                DONE, 2/3
+  2  hank b13 Tier A: alf_staff, leg_cases, sen_visits                 DONE
+  3  measure the 69 and 151, classify, route with file:line            DONE
+  4  reproduce cody's other four mutants; ablate my anchor check       DONE
+  5  re-derive the 373 bare citations to an actual count               DONE
+  6  push without force, confirm landed; check the leg_aftercare claims DONE
+  -  the handoff, written BEFORE this report                           DONE
+
+VERIFIED ON origin/main AND NOT LOCALLY, by reading
+origin/main:docs/tier-a-reviews.json:
+
+  cc   2026-10-15T01:13:35Z  status=reviewed  verdict 9,134 chars
+  hank 2026-10-15T01:21:13Z  status=reviewed  verdict 13,429 chars
+  cody 2026-10-15T01:18:14Z  status=OPEN      verdict 0 chars  <- the deferral,
+                                                                  not a loss
+
+
+== 2. ITEM 1 -- THE DISPATCH'S PREMISE DID NOT HOLD, AND ONE RECORD WAS
+      DELIBERATELY LEFT OPEN ==
+
+THE ITEM SAID "oldest past-deadline first (14 are past the 24h deadline
+queue-wide)". Fifteen were past it queue-wide, and NONE OF THEM WAS MINE: all
+three obligations assigned to fourth were 11h old. So the ordering rule did not
+apply and the order was opened_at. Said rather than silently reinterpreted,
+because a report that adopts a premise it did not test is the shape this
+platform keeps paying for.
+
+cody 2026-10-15T01:18:14Z (leg_aftercare, tests/run_b14_leg_aftercare_probe.py)
+IS NOT DISCHARGED, BY MICHAEL'S STANDING DECISION. Discharging it would have
+recorded a review nobody did, which is worse than an open row.
+
+AND hank's RECORD NAMES leg_aftercare AMONG FOUR RESOURCES. It was discharged
+with the carve-out WRITTEN INTO THE VERDICT BODY -- leg_aftercare and leg_cases
+are listed there as NOT REVIEWED with Michael's reason quoted -- so the closed
+record cannot be read as covering them. leg_cases is in that resource list only
+because the aftercare key derives from case_id; no other path in the diff
+touches it.
+
+
+== 3. ITEM 6 SECOND HALF -- THE leg_aftercare CONDITION IS NOW MET ==
+
+python tools/sairn_claim.py list  (scratchpad claims_b23.log)
+
+  active claims, total                    : 2  -- mine and cody's b16
+  hank active claims                      : 0
+  cody's b16 names leg_aftercare?         : NO, and it says "NO api/ FILE (hank)"
+  only active claim mentioning it         : my own b23 deferral clause
+  hank's key fix on origin?               : YES
+      git cat-file -e origin/main:api/leg-aftercare-key-unambiguous.test.js
+
+BOTH CONDITIONS MICHAEL SET ARE SATISFIED: the fix has landed and both claims
+are released. THE leg_aftercare TIER A REVIEW IS UNBLOCKED AND IS STILL MINE. It
+was not handed to anyone and it was NOT STARTED -- the batch was six items and
+the handoff is the stopping point.
+
+EXACT NEXT STEP, b24 item 1, and both questions were written by their authors:
+
+  hank's   -- prove NO ROW ANY SHIPPED BUILD COULD HAVE WRITTEN CHANGES KEY,
+              because a changed key ORPHANS the row rather than updating it.
+              hank's evidence is the preservation arm F4d, which tests the
+              shapes hank BELIEVES exist, so the review is of the shape list and
+              not of the arm. And legAdoptServerId MERGES onto an existing
+              canonical row, which DROPS a local row -- check the dropped row can
+              never carry data the kept one lacks.
+  cody's   -- that the probe asserts the PROPERTY and not the agreement between
+              the two key derivations: arm E4 of
+              api/sd-data-leg-role-matrix.test.js PASSES on the colliding pair
+              because both copies agree on the wrong answer. That neither
+              expression is retyped. That docs/known-red-suites.json names ARM 1
+              ONLY as the expected red. Reviewer must not be cody.
+
+
+== 4. ITEM 2 -- sen_visits: THE QUESTION IS ANSWERED NO, SAFELY, AND THE MIRROR
+      IMAGE IS MONEY ON A FEDERALLY MANDATED RECORD ==
+
+The record asked: find any consumer that reads clock_in_at or clock_corrections
+directly and would therefore see an UNAPPROVED time as recorded; the payroll
+action on sen_visits is the first place to look.
+
+DRIVEN, NOT READ. node scratchpad/payroll_clock_repro_b23.js requires the REAL
+api/_lib/sen-payroll.js and api/_lib/sen-evv-clock.js. One visit, clock-in
+13:00Z, clock-out 17:00Z, one correction to 12:00Z, 20/hour, week start monday.
+
+  PENDING correction -- the direction asked about:
+      effectiveClock().value = 13:00Z  corrected=false  pending=true
+      payroll minutes        = 240     identical to no correction at all
+      SAFE. AN UNAPPROVED TIME DOES NOT REACH PAYROLL.
+
+  APPROVED correction -- the direction nobody asked about:
+      effectiveClock().value = 12:00Z  corrected=true
+      row.clock_in_at        = 13:00Z  SEN_CLOCK_IMMUTABLE, by design
+      PAYROLL AS SHIPPED                       : 240 minutes,  8000 cents
+      PAYROLL IF effectiveClock() WERE APPLIED : 300 minutes, 10000 cents
+      ** 60 MINUTES AND 2000 CENTS UNPAID, ONE VISIT, ONE APPROVED CORRECTION **
+
+F1 -- HIGH. api/_lib/sen-payroll.js:200-201 reads row.clock_in_at and
+row.clock_out_at raw. The module does not require api/_lib/sen-evv-clock.js at all
+(grep -c effectiveClock api/_lib/sen-payroll.js -> 0). And
+api/sd-data.js:7678-7679 builds the rows it hands over as a spread of x.data
+with no substitution anywhere on the path.
+
+AND api/_lib/sen-evv-clock.js:342-344 ASSERTS THE OPPOSITE IN ITS OWN WORDS:
+"'A scheduler approves it before payroll uses it' is implemented HERE, in the
+function payroll reads." THE FUNCTION PAYROLL READS IS instant(row.clock_in_at).
+That is the single sentence this review existed to test, and it is false.
+
+THE SHAPE IS SILENT AND THE TWO SCREENS DISAGREE. The read path at
+api/sd-data.js:6993-7003 DOES apply effectiveClock and attaches it under
+effective_clock, deliberately not replacing the raw field -- "a screen that
+shows only the corrected value has quietly become the overwrite this module
+exists to avoid". So a scheduler approves a correction, the record carries the
+approval, and payroll pays the uncorrected hours with no error anywhere.
+NEXT STEP: apply effectiveClock in ONE place -- the payroll action's map -- so
+sen-payroll.js stays pure and keeps no second copy of the rule. DO NOT change
+SEN_CLOCK_IMMUTABLE: the raw field staying raw is correct and is not the defect.
+
+F2 -- api/_lib/sen-evv-readiness.js:302-303 and :310 also read raw, reached from
+api/sd-data.js:7632 via the same spread at :7603-7604. THERE IS A REAL ARGUMENT
+FOR RAW HERE and I am not overruling it -- that file's own comment says "EVV
+verifies what happened, not what was planned", and a human-approved correction
+is an assertion rather than a verification. THE DEFECT IS THAT THE DIVERGENCE IS
+UNDECLARED: nothing in that file says it deliberately ignores approved
+corrections, and the sibling module claims every reader goes through
+effectiveClock. An undeclared divergence is indistinguishable from F1. A
+DECISION, not a fix.
+
+F3 -- grep -c effective_clock sairnsenior.html -> 0, against roughly twenty
+sites reading clock_in_at raw, including the duration calculation at
+sairnsenior.html:2540-2541 and the "Clocked in" row at :2980. The server returns
+both numbers on purpose and the ONE client shows only the uncorrected one, so
+THE CORRECTED VALUE IS CURRENTLY REACHABLE BY NOBODY.
+
+(b) THE STATUS-LESS ENTRY DEFAULT IS SOUND BY CONSTRUCTION AND IT FAILS OPEN.
+entryIsApproved (api/_lib/sen-evv-clock.js:116-118) treats undefined, null and
+'approved' as approved. Checked against the WRITERS rather than the argument:
+proposeCorrection stamps status 'pending' (:288) and approveCorrection stamps
+'approved' (:324), so every entry the current code writes carries an explicit
+status and a status-less entry can only be a pre-T16 row -- exactly the
+compatibility case claimed. I COULD NOT CHECK IT AGAINST THE REAL ROWS; I have
+no production read. The residual is the DIRECTION of the default: a future
+writer that forgets a status gets APPROVED, silently. NEXT STEP, small: refuse a
+status-less entry at WRITE time and keep the permissive read for legacy rows.
+
+(c) THE MARKED SELF-APPROVAL -- ACCEPTABLE, with the marking, and I am recording
+a VIEW rather than an approval. A one-person agency has no second person, and
+refusing would close the caregiver's only route to fix a typo. CONDITION: the
+self_approved flag must survive into whatever is submitted to the state, which
+is what F2 is about.
+
+(d) NO STRANDED LATE_REPLAY FLAG. api/sd-data.js:7349-7358 states the rule and
+its exception: a field this payload re-reported has been re-checked so its old
+flag is stale, BUT a field appended as a CORRECTION leaves the original on the
+row, so the original's LATE_REPLAY is still a true finding and is NOT superseded.
+The superseded set is taken from the payload and excludes the submitted fields.
+READ, NOT DRIVEN -- the two-write sequence against this handler is
+tests/sd_data_clock_flags_merge.test.js, which is cody's. (d) IS THE
+WEAKEST-EVIDENCED ITEM IN THE VERDICT.
+
+
+== 5. ITEM 2 -- alf_staff: RIGHT DIRECTION, ONE BRANCH SHORT ==
+
+THE DIRECTION IS CONFIRMED AND I WOULD NOT CHANGE IT. matchAudience
+(api/_lib/compliance-rules.js:503-558) withholds a FALSE while any
+applies_to_positions token is unreadable, and a TRUE stays TRUE because an
+unreadable token can only widen an audience. For a regulated training finding,
+over-inclusion is the safe direction, and T18's own case -- ['caregiver','rn']
+against a nursing hire -- is the one a confident false got exactly wrong.
+
+NO CONSUMER TREATS applies === null AS false. All three test explicitly:
+api/sd-data.js:14010 (=== true), compliance-rules.js:1057 (=== null),
+compliance-rules.js:1081 (=== false). The question as asked is ANSWERED.
+
+F4 -- MODERATE, AND IT IS THE SAME WITHHOLDING ARRIVING AS UNDER-INCLUSION.
+s.applies_to is built at api/sd-data.js:14009-14010 as a strict `applies ===
+true` WHITELIST. compliance-rules.js:899-901 then filters
+    applicable = normRows.filter(r => !s.applies_to
+                                 || s.applies_to.indexOf(r.who) !== -1)
+so an UNDECIDED requirement is dropped from `applicable` -- the same bucket as a
+decided false -- and its annual_hours are absent from required_annual_hours
+(:1102-1105).
+
+THE DISCLOSURE ONLY FIRES WHEN NOTHING MATCHED. anyUnmapped (:1056-1058) does
+detect the null, but it is consulted only at :1156, INSIDE the emptyApplicable
+branch. And excluded_by_position (:1079-1086) collects applies === false ONLY.
+So:
+    nothing matched + one undecided -> the correct message. GOOD.
+    SOME matched   + one undecided -> required_annual_hours is a CONFIDENT
+                                      NUMBER with the undecided row's hours
+                                      missing, `meets` is computed against it,
+                                      and NO key on the finding says a
+                                      requirement's audience could not be read
+                                      for this person.
+That is the exact case T18 was written for. hank's self-flag was "it changes
+meets_unknown_reason text a surveyor reads"; the sharper problem is the text a
+surveyor DOESN'T get. NEXT STEP: collect the nulls the way excluded_by_position
+collects the falses, and require a TWO-SIDED arm -- one true + one null must NOT
+report a settled figure, and one true + one false must still report one.
+
+
+== 6. ITEM 3 -- THE TRUE COUNTS, AND MY OWN b22 SEVERITY WAS WRONG ==
+
+docs/2026-10-15-fourth-b23-notprovisioned-branch-census.md.
+332 guards at 18,770 lines (b22: 331 at 18,503). Shapes unchanged: A 88, B 70,
+C 151, other 23.
+
+THE CLASSIFIER, and it is the right axis: a fold is harmless EXACTLY when the
+guarded request cannot return 400 for any reason other than the table being
+absent. A WRITE can return class 23xxx -- 23514 is the 64KB row CHECK every sd_*
+table carries -- and a GET can return PGRST100, 42703 or a 22P02 on a filter
+VALUE. So each branch is classified on two MEASURED facts: the HTTP method of
+the fetch it guards, and what that URL interpolates.
+
+  A 88 branches  : 88 WRITE-guarded. hank's rewrite hit EXACTLY the write class.
+  B 22 branches  : WRITE-guarded -> REAL DEFECT, HIGH. api/sd-data.js
+                   2644, 3206, 3567, 4123, 4182, 4431, 4513, 4588, 8231, 9029,
+                   9224, 10553, 10700, 10899, 11018, 11188, 11265, 11516, 11595,
+                   13660, 13791, 14348.
+                   :3206 and :11018 ALREADY READ THE BODY FIRST, so those two
+                   want the existing 4-argument preread form; the other 20 want
+                   the ordinary 3-argument call.
+  B 13 branches  : GET interpolating a CALLER value -> REAL DEFECT, MODERATE.
+                   4786, 6119, 6475, 6646, 7036, 7139, 7452, 8312, 8483, 8951,
+                   9075, 11242, 11886. A malformed payload id yields 22P02 ->
+                   400 -> 503 "run the migration" for a bad request.
+  B 33 branches  : GET, server-computed filters only -> not caller-reachable.
+                   NOT a fix; UNTESTED, which is a different thing.
+  B 2 branches   : UNCLASSIFIED -- :13503 and :17127, fetch not locatable within
+                   60 lines. COULD-NOT-TELL, reported and not folded.
+  C 151 branches : ALL GET. 0 interpolate a caller value, 1 interpolates a
+                   SESSION value (:3604), 150 server-only.
+
+MY b22 CLAIM THAT THE 151 WERE "the largest un-owned population" AND "strictly
+worse than the wrong 503" IS WITHDRAWN AS TO REACHABILITY. The shape claim
+stands. A CALLER CANNOT PROVOKE A NON-MISSING-TABLE 400 ON ANY OF THEM.
+
+WHAT IS STILL REAL THERE IS DEPLOY-REACHABLE, NOT CALLER-REACHABLE. Every one of
+the 151 is a GET carrying a select= list. A table that exists with a RENAMED OR
+DROPPED COLUMN answers 42703 as 400, and these branches render that as
+{ok:true, data:[], provisioned:false} -- an empty panel, no error, and a
+provisioned:false flag asserting a cause the server never established. That is a
+PARTIAL-MIGRATION failure mode, which is the state this platform is in most
+often. LOW on likelihood, HIGH on diagnosability, and it is one helper change
+rather than 151 edits.
+
+DRIVEN: notProvisionedDecide is not exported, so it was EXTRACTED BY TEXT from
+the shipped file (18 lines) and run in a vm context -- the same method hank's own
+b12 suite adopted after an ablation showed a source grep could not see an early
+return. Four inputs, the bodies PostgREST really returns:
+
+  400 + 23514     (the 64KB CHECK, a write refusal)   -> 400 ROW_REFUSED
+  400 + PGRST100  (unparseable query param)           -> 400 UPSTREAM_REJECTED
+  400 + 42703     (column does not exist)             -> 503 NOT_PROVISIONED
+  404             (the table really is absent)        -> 503 NOT_PROVISIONED
+
+So routing one of the 22 through the helper changes its answer on a 23514 from
+"run the migration" to "the row was refused, most often the 64KB cap" -- the
+exact fix, demonstrated on the real function. And the third line CONFIRMS MY b22
+F2 CONCRETELY: 42703, a missing COLUMN, is classified 503 by the bare
+/does not exist/i alternative.
+
+
+== 7. ITEM 4 -- 5 OF 5 MUTANTS CAUGHT, AND EVERY ABLATED LAYER LOAD-BEARING ==
+
+docs/2026-10-15-fourth-b23-mutants-ablation-and-citations.md sections 1-2.
+
+cody's OTHER FOUR, which b22 left as "the author's measurement, uncorroborated":
+driven by COPYING the tree the probe needs into a tempdir and running the COPIED
+probe, so its ROOT is the copy -- the route b22 could not take because the four
+mutate a file the probe reads from ROOT and not from its sandbox.
+
+  BASELINE FIRST, because without it no mutant means anything:
+      exit 0, 419 passed, 0 failed, "ok grd replacement ... covers all 6 traded
+      grd_* resources and asserts 401 NO_SESSION; control name absent"
+
+  M2 the named gate suite DOES NOT EXIST            CAUGHT exit 1
+  M3 the gate suite no longer names grd_boq_rates   CAUGHT exit 1
+  M4 the gate suite asserts no 401 NO_SESSION       CAUGHT exit 1
+  M5 the gate suite contains the invented control   CAUGHT exit 1
+  M1 the GRD unit set back to `app: null`           CAUGHT exit 2
+
+M1's EXIT 2 IS THE RIGHT THIRD STATE AND IT CONFIRMS b22 FROM A SECOND
+DIRECTION. The probe refuses and names why: "COULD NOT RUN: the baseline is not
+green (14 failing). A sabotage control on a red baseline cannot distinguish its
+own mutation from the pre-existing failure" -- printing 405 passed, 14 failed,
+which is exactly the figure b22 obtained by driving the suite directly.
+
+THE ABLATION OF tools/sf_events_anchor_check.py, BOTH FORMS:
+
+  PART A, the instruction's words, driven on the REAL rows and the REAL app:
+      FIX REMOVED  (the row at 7a5e6a11)  7 anchors, 1 finding  ARM FAILS
+      FIX RESTORED (the row at HEAD)      8 anchors, 0 findings ARM PASSES
+  The ablation is meaningful only because the two directions differ.
+
+  PART B, per layer per arm over the 10-arm lock, unablated 0 failing:
+      L1 the `anchor ` keyword restriction   breaks 2 arms
+      L2 markdown entity unescaping          breaks 1 arm
+      L3 the AMBIGUOUS half of count != 1    breaks 2 arms AND the lock RAISES
+      L4 the NO-ANCHOR finding               breaks 2 arms AND the lock RAISES
+  EVERY LAYER IS LOAD-BEARING. The two that RAISE are captured as failures
+  rather than allowed to abort the sweep: a first version stopped at L3 and
+  reported L4 as untested, which reads as "not measured" when the truth is
+  "broke the lock outright".
+
+  L5 IS A FINDING ABOUT MY OWN TOOL. The fail-closed guard lives in main() and
+  not in check(), SO NO FIXTURE ARM CAN SEE IT -- the 10-arm lock would pass
+  with the guard deleted. Driven directly instead, both directions and a
+  control: app absent -> exit 2; register absent -> exit 2; both present ->
+  exit 0. NEXT STEP: an arm for L5.
+
+WHAT THE ABLATION DOES NOT ESTABLISH: Part B is per-arm over SYNTHETIC fixtures
+and shows nothing about the real register. Part A is the only measurement on
+real text and it exercises ONE layer on ONE document. THREE OF THE FIVE LAYERS
+HAVE NO REAL-DATA EVIDENCE AT ALL.
+
+
+== 8. ITEM 5 -- THE 373 UPPER BOUND IS AN ACTUAL 371 ==
+
+python <scratchpad>/bare_citations_b23.py (log bare_citations_b23.log).
+Every occurrence of :(\d{1,5}) not followed by a digit or dot, CLASSIFIED
+rather than narrowed with one regex -- 571 in total:
+
+  QUALIFIED file.ext:NNN                           198
+  BARE code citation, backticked `:NNNN`           323
+  BARE code citation, a backticked RANGE           48
+  REGULATION (OAC 4301:1-1-49)                     1
+  CLOCK TIME inside an ISO timestamp               1
+                                                   ---
+                                                   571
+
+THE ACTUAL COUNT OF BARE CODE CITATIONS IS 371 -- 323 single lines plus 48
+ranges. b22's 373 WAS HIGH BY EXACTLY TWO and both are named: one Ohio
+Administrative Code chapter number and one ...T15:18:11Z obligation timestamp.
+
+AND cc's 323 IS NOT LOW BY A PREDICATE ERROR -- it is the single-line form only.
+THE 48 RANGES ARE THE DIFFERENCE, and they are real citations cc's regex cannot
+see.
+
+THE 48 ARE THE INTERESTING ONES. A range -- `:25115-25116` -- cannot be checked
+by ANY single-line lookup, so no line-drift tool and no anchor tool in this repo
+can assess them. They are unassessable BY FORM rather than by inference, and
+they are 13% of the bare population. CARRY 371, WITH THE SPLIT: of 571 line
+citations, 198 are mechanically checkable, 323 need their target inferred from
+prose, and 48 cannot be checked by a line lookup at all.
+
+
+== 9. WHAT IS OPEN ==
+
+hank      F1 FIRST -- apply effectiveClock in the payroll action's map; it is
+          money on a federally mandated record. Then the 22 write branches, then
+          the 13 caller-interpolated GETs, then read :13503 and :17127 by hand,
+          then decide the read-case fifth answer before touching the 151. Plus
+          F2 (declare the EVV divergence or substitute), F3 (the client reads
+          effective_clock), F4 (alf_staff's undecided disclosure) and the
+          status-less-entry write guard. STILL OPEN AND NOT RE-VERIFIED THIS
+          BATCH: b18's N1; the MAR grant bypass via alf_clients with no audit
+          row; the rf_photos rebuild dropping ai_source; license_hash never
+          re-verified in memory; no revoke action for a live grant; the two
+          sd_photos caller findings from b22.
+
+cc        WIRE ONE ANCHOR-ROT TOOL INTO A GATE. Both citation_anchor_rot_check.py
+          and my sf_events_anchor_check.py are UNWIRED per the inventory's own
+          first column, and cc's A7b CANNOT FAIL ON A REAL ROT by design -- M7
+          and M8 both pass it. So the chain has no live link, which is rule 1.1
+          one level out from the defect the tool was built for. THEN DELETE MINE,
+          per its own header. Also: A7b's floor is per-TARGET rather than
+          per-ROW -- latent, not reachable today, measured so it is not guessed
+          (1 declaration, 8 anchors, all on line 358). R3 should count the 48
+          ranges so the second class is 371 and not 323. And from b22, still
+          open: the subject_sha() touched-file disclosure and the re-seat
+          author-time guard; b19's census asks 1 and 4; batch_manifest.py:386.
+
+cody      A failing-first arm driving a 23514 through one of the 22, and a 42703
+          through one of the 151. NOTHING IN THE REPO DRIVES EITHER TODAY. Plus
+          the REPLACEMENT COVERAGE generalisation arm and the per-resource
+          refusal arm from b22, b22's F3/F4 arms, and b19's four.
+
+Michael   NOTHING BLOCKING. Two decisions when convenient: F2, whether the state
+          aggregator should receive the device clock or the approved correction;
+          and (c), whether a marked self_approved is acceptable on an EVV record
+          -- I recorded a view (yes, with the marking) rather than an approval.
+
+fourth    The leg_aftercare Tier A, now UNBLOCKED (section 3), and an arm for L5
+          of my own anchor check.
+
+hover2    Unchanged: four `# OWNER: hover2` lines; which tree is canonical for
+          the four basenames that exist in both.
+
+
+== 10. UNVERIFIED, AND WHY ==
+
+* NO SUITE WAS RUN. The three test files named on hank's record
+  (t16-clock-correction-record, t18-positions-vocabulary,
+  leg-aftercare-key-unambiguous) are hank's own evidence and I drove none of
+  them. F1 was driven against the REAL modules instead, which is stronger for
+  that one finding and says nothing about the others.
+* F2, F3, F4 and (b) are READ FROM SOURCE with their grep counts quoted. (d) is
+  READ ONLY and is the weakest item in the hank verdict.
+* THE 22 AND THE 13 ARE STATIC CLASSIFICATION PLUS A DRIVEN COUNTERFACTUAL ON
+  THE HELPER. I did not POST a duplicate id through any of the 22 and observe a
+  64KB-cap message, and I did not provoke a 42703 through any of the 151. The
+  class verdicts are about REACHABILITY, not about an observed failure.
+* THE 33 SERVER-ONLY GETS IN CLASS B ARE NOT "no defect" -- they are "not
+  caller-reachable AND untested". No arm anywhere drives a 400 on them.
+* THE caller/session/server-only CLASSIFICATION IS A HEURISTIC OVER THE URL
+  EXPRESSION. It cannot see a value that reaches the URL through a variable
+  assigned earlier, so CALLER is a lower bound.
+* PART B OF THE ABLATION IS SYNTHETIC. Three of the five layers have no
+  real-data evidence.
+* leg_aftercare AND leg_cases WERE NOT REVIEWED. Nothing in this report says
+  anything about the two-form key beyond quoting the open questions.
+* NO LIVE DEPLOYMENT WAS FETCHED and no table was touched -- this batch is four
+  docs/ files plus my root deliverables.
+* The Drive upload is verified MOUNT-SIDE with bytes and sha256 matching. The
+  Drive-side API read is what closes it; b19 through b22 all saw an empty first
+  read, which was a lag and not a missing file. Whatever state that read is in
+  at close is recorded in the digest rather than assumed.
+
+
+== 11. METHOD NOTE ==
+
+TWO OF MY OWN PREDICATES FAILED INSIDE THIS BATCH, AND BOTH FAILURES WERE
+POSITIONAL RATHER THAN LEXICAL.
+
+  * The caller-influence test flagged 68 of 151 because its select= clause
+    matched the trailing `'), { headers }` of essentially every URL. Caught by
+    spot-reading two of the flagged branches, :5120 and :3604, both of which
+    interpolate nothing but the server's own licHash. CORRECTED TO 0.
+  * The body-read detector reported "reads the body first: YES" for all eight
+    samples because it searched the lines AFTER the guard and matched
+    `code: 'NOT_PROVISIONED'` INSIDE THE ANSWER. Re-measured positionally --
+    is there a .json()/.text() on that variable BETWEEN the fetch and the guard
+    -- it is 7 of 332, not hank's nine, and four of the seven are already
+    preread sites.
+
+b22's clause was "when a predicate names an identifier, say which identifier".
+THIS BATCH ADDS THE SIBLING: SAY WHERE THE PREDICATE LOOKS. Neither of these was
+a wrong token; both were the right token found in the wrong place, and both
+produced a confident number. A predicate has a span as well as a pattern, and
+the span is the half nobody writes down.
+
+AND THE THIRD CORRECTION IS THE ONE THAT MATTERS MOST, because it was a SEVERITY
+and not a count: my b22 F4 called the 151 read branches "strictly worse" and
+"the largest un-owned population". The shape was worse; the reachability was
+near zero. A SHAPE COUNT READS AS A DEFECT COUNT unless the report says which it
+is, and b22's did not.
+
+DEFINITION the hash below is sha256 over every byte of this file up to and NOT
+including the final hash line, CRLF normalised to LF, taking the LAST occurrence
+of the marker. Reproduce:
+    import io, hashlib
+    s = io.open('SAIRN-report-fourth-b23.txt', 'rb').read().decode('utf-8').replace('\r\n','\n')
+    body = s.rsplit('SHA' + '256 ', 1)[0]
+    print(hashlib.sha256(body.encode('utf-8')).hexdigest())
+SHA256 132d6a9986e90b12be7387bcbcf5a69b34936b7556eb1e6dfeb2fee391af72f6
+END-OF-REPORT
