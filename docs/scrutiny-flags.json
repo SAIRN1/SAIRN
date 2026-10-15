@@ -3651,6 +3651,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b16-evv-pay-agreement.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "883ad0bc24789f0b2fe6c2627092864ecd6baeb4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/role-picker-vs-check-constraint.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -4146,6 +4154,51 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "9a1514fa278be8006d3855a1c872fa3ec8b97c47",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/sen-evv-clock.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9a70365b5a21b52ca76b7b2077462f68bb70db21",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b16-app-id-tenancy.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9a70365b5a21b52ca76b7b2077462f68bb70db21",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b16-id-shadow.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9a70365b5a21b52ca76b7b2077462f68bb70db21",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b16-paid-period-freeze.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "const sk = (out.adjustments_skipped || [])[0];"
+    }
+   ],
+   "sha": "9a70365b5a21b52ca76b7b2077462f68bb70db21",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-law-trusttx-session.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9a70365b5a21b52ca76b7b2077462f68bb70db21",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -4979,6 +5032,38 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "a93a3e8576fb47315eafab5ba8182520f934e295",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/sairnsenior-authorizations.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "aac69e6acf7db5f7e86f4f5fb0aef49c06609565",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/sairnsenior-branches.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "aac69e6acf7db5f7e86f4f5fb0aef49c06609565",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/sairnsenior-pay-rates.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "aac69e6acf7db5f7e86f4f5fb0aef49c06609565",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b16-slice-window-check.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "aac69e6acf7db5f7e86f4f5fb0aef49c06609565",
    "criteria_version": "2026-10-06.1"
   },
   {
