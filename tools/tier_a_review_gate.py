@@ -1567,12 +1567,53 @@ def head_sha():
 # real answer; `head` is the honest fallback when there are no files to go on;
 # and a git failure yields None, never a guess, for the reason head_sha()'s own
 # callers already state -- a wrong sha reports a confident FRESH or STALE.
+def _extra_file_count(sha, paths):
+    """How many files that commit changed BEYOND the record's set, or None.
+
+    NONE IS NOT ZERO. If git cannot answer, writing 0 would publish "this
+    commit changed exactly the record's files" -- a claim nobody checked -- and
+    that is the whole shape PR 1.11 is about. A merge commit with an empty
+    --name-only is the same case.
+    """
+    try:
+        out = git('show', '--name-only', '--format=', sha)
+    except Exception:                                            # noqa: BLE001
+        return None
+    touched = set(x.strip().replace(chr(92), '/')
+                  for x in out.split(chr(10)) if x.strip())
+    if not touched:
+        return None
+    return len(touched - set(p.replace(chr(92), '/') for p in paths))
+
+
 def subject_sha(files):
     """(sha, basis) for the commit a review is really about.
 
     basis is 'file-set' when the sha is the last commit touching the named
     files, 'head' when the record names no files, and the sha is None with
     basis 'could-not-tell' when git cannot answer.
+
+    ── THE SHA'S COMMIT IS USUALLY WIDER THAN THE RECORD (disclosed b15) ──
+    `git log -1 -- <paths>` answers "the last commit that touched ANY of
+    these", and that commit almost always touched other files too. The record
+    then names N files and is anchored to a commit changing N+M, so a reviewer
+    reading `opened_at_sha` and running `git show` sees a diff wider than the
+    obligation they were given, with nothing in the record saying how much of
+    it to ignore. (`code_staleness()` is UNAFFECTED -- it scopes its own `git
+    diff` to the record's `files`. Checked, not assumed.)
+    THIS IS NOT FIXED BY NARROWING THE SHA. There is no commit that changed
+    exactly the record's file set in the general case, and inventing one by
+    filtering the diff would be a sha that is not in the history. So the WIDTH
+    IS DISCLOSED, as a THIRD RETURN VALUE and a separate record field rather
+    than smuggled into the basis string: `tests/run_tier_a_open_basis_probe.py`
+    pins `BASES = ('file-set', 'head', 'could-not-tell')` and a `file-set+3`
+    would have been refused by cody's probe as an unknown basis. That probe is
+    cody's and is not edited here. The reseat path already printed this for its
+    weak basis -- *"that commit changed those AND more"* -- and the open path
+    was the half that said nothing.
+
+    -> (sha, basis, extra_file_count). extra is None when git could not say,
+    which is a third answer and is not written as 0.
     """
     paths = sorted({f for f in (files or []) if f})
     if paths:
@@ -1581,13 +1622,13 @@ def subject_sha(files):
         except Exception:
             out = ''
         if out:
-            return (out, 'file-set')
+            return (out, 'file-set', _extra_file_count(out, paths))
         # No commit has ever touched them -- a brand-new untracked file. HEAD is
         # then the only honest anchor and the basis says so.
     try:
-        return (head_sha(), 'head')
+        return (head_sha(), 'head', None)
     except CouldNotTell:
-        return (None, 'could-not-tell')
+        return (None, 'could-not-tell', None)
 
 
 def code_staleness(rec, head=None):
@@ -2149,7 +2190,7 @@ def _open_record(why, hits, rule_hits, irr_hits=None):
     _files = sorted(set(list(f for fs in hits.values() for f in fs)
                         + list(f for fs in rule_hits.values() for f in fs)
                         + list(f for fs in (irr_hits or {}).values() for f in fs)))
-    opened_sha, opened_basis = subject_sha(_files)
+    opened_sha, opened_basis, opened_extra = subject_sha(_files)
     rec = {
         'author_session': author,
         'opened_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
@@ -2158,6 +2199,17 @@ def _open_record(why, hits, rule_hits, irr_hits=None):
         # answer, 'head' the honest fallback when a record names no files, and
         # 'could-not-tell' a refusal rather than a guess.
         'opened_at_sha_basis': opened_basis,
+        # ── HOW MUCH WIDER THE SHA'S COMMIT IS THAN THIS RECORD (b15) ──────
+        # `git log -1 -- <paths>` answers "the last commit touching ANY of
+        # these", and that commit almost always changed other files too. A
+        # reviewer who runs `git show opened_at_sha` therefore sees a diff
+        # WIDER than the obligation, with no way to tell from the record how
+        # much of it to ignore. (code_staleness() is NOT affected -- it scopes
+        # its `git diff` to `*files`, which was checked rather than assumed.)
+        # ALWAYS PRESENT, for the same reason `rules` is; and None when git
+        # could not say, because 0 would publish an unchecked claim that the
+        # commit changed exactly these files.
+        'opened_at_sha_extra_files': opened_extra,
         'resources': sorted(hits),
         # ── ALWAYS PRESENT, EVEN WHEN EMPTY (2026-09-24) ───────────────────
         # A field that appears only when non-empty is a field every reader has
@@ -2338,6 +2390,22 @@ def cmd_list():
         if id(r) in stale and stale[id(r)][0] != 'UNSTAMPED':
             st, detail = stale[id(r)]
             print('           %-16s %s' % ('** %s **' % st, detail[:150]))
+        # ── HOW MUCH OF THE SHA'S DIFF IS NOT THIS OBLIGATION (b15) ───────
+        # Printed only when there IS extra, and only for a file-set basis.
+        # A reviewer who runs `git show <opened_at_sha>` otherwise has no way
+        # to tell how much of what they are looking at they were asked about.
+        if r.get('opened_at_sha_basis') == 'file-set':
+            _ex = r.get('opened_at_sha_extra_files')
+            if isinstance(_ex, int) and _ex > 0:
+                print('           WIDER THAN THE OBLIGATION: the commit this '
+                      'is anchored to also changed %d other file(s). `git '
+                      'show` on it shows more than you were asked to review.'
+                      % _ex)
+            elif _ex is None and r.get('opened_at_sha'):
+                print('           WIDTH UNKNOWN: whether the anchored commit '
+                      'touched files beyond this record was not recorded -- '
+                      'opened before b15, or git could not say. Not the same '
+                      'answer as "exactly these files".')
         print('           %s' % (r.get('what') or '')[:110])
     moved = [k for k, (s, _) in stale.items() if s == 'STALE']
     unknown = [k for k, (s, _) in stale.items() if s != 'STALE']
@@ -3071,6 +3139,30 @@ def selftest_roster():
         # 500 commits in this clone: 102 of 200 have the two times differing
         # at all, and 13 of 500 differ by more than the 6h window -- worst
         # 13.4h at d0ec2d57.
+        # ── THE SUBJECT SHA'S WIDTH IS DISCLOSED (b15) ─────────────────────
+        # Driven against THIS repo, because the point is a real commit that
+        # touched more than one file. `_extra_file_count` is the layer.
+        _s, _b, _x = subject_sha(['tools/tier_a_review_gate.py'])
+        ck('subject_sha returns a THIRD value: how many files beyond the '
+           'record\'s set its commit also changed. `git log -1 -- <paths>` '
+           'answers "the last commit touching ANY of these", and a reviewer '
+           'running `git show` on it sees a diff wider than the obligation',
+           _b == 'file-set' and isinstance(_x, int))
+        ck('...and the basis string is UNCHANGED, because '
+           'tests/run_tier_a_open_basis_probe.py pins BASES to exactly three '
+           'values and a `file-set+3` would have been refused as unknown. '
+           'That probe is cody\'s and is not edited here',
+           _b in ('file-set', 'head', 'could-not-tell'))
+        ck('...and a commit git cannot read is None and NOT 0 -- writing 0 '
+           'would publish "this commit changed exactly the record\'s files", '
+           'a claim nobody checked',
+           _extra_file_count('0' * 40, ['x']) is None)
+        _w = subject_sha([])
+        ck('...and a record naming NO files still returns three values, so no '
+           'caller unpacks a 2-tuple',
+           len(_w) == 3 and _w[1] in ('head', 'could-not-tell')
+           and _w[2] is None)
+
         # DRIVEN THROUGH _file_set_index AGAINST A REAL REPO, not by stuffing
         # _PER_SHA. The first version of these arms injected the row directly
         # and the ablation reported the layer UNPROVEN -- correctly: the arms

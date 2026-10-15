@@ -88,6 +88,19 @@ CASES = (
      'cases 1, 6 and 10 -- 10 is the one that matters: a notice must never '
      'hide a real finding'),
 
+    ('subject-sha-width-none-not-zero',
+     'tools/tier_a_review_gate.py', ['--selftest'],
+     "    except Exception:                                            "
+     "# noqa: BLE001" + NL + "        return None",
+     "    except Exception:                                            "
+     "# noqa: BLE001" + NL + "        return 0",
+     '_extra_file_count returns None, never 0, when git cannot say how many '
+     'files beyond the record\'s set the anchored commit touched. Writing 0 '
+     'would publish "this commit changed exactly the record\'s files" -- a '
+     'claim nobody checked, which is PR 1.11 in a JSON field',
+     'the None-not-0 arm, and the --list render that prints WIDTH UNKNOWN '
+     'rather than nothing'),
+
     ('reseat-window-author-time',
      'tools/tier_a_review_gate.py', ['--selftest'],
      "            + chr(31) + '%aI' + chr(31) + '%cI', '--name-only']",
