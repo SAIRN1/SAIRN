@@ -29987,6 +29987,35 @@
       "factors_unknown_reason": "not investigated this batch -- the fix (os.walk plus a universe lock with an ablation arm) is verified; root-cause factor analysis was not done"
     },
     {
+      "commit": "b12a763103e9",
+      "date": "2026-10-14",
+      "subject": "fix(blob coverage): api_files() walks api/ recursively -- the universe was a third of it",
+      "files": [
+        "tools/blob_conversion_coverage.py"
+      ],
+      "lines_added": 152,
+      "lines_removed": 7,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": "tools/blob_conversion_coverage.py has a narrow proximity-window measurement bug: a 2026-10-15 explanatory comment hank added at api/_lib/sd-store.js:171-187 pushes the real storedBlob() conversion call outside the tool's proximity window while a quoted phrase inside that same comment is miscounted as a phantom BUILT site. Confirmed live by hank's writeSlab conversion now showing CONVERTED 44 against a pinned 45 on re-run (h1 b42). The code is correct; the tool's pin is stale against a live rerun. Routed to cc (tools/ owner); not yet acted on as of h1 b43.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "b12a763103e9",
+        "date": "2026-10-14",
+        "subject": "fix(blob coverage): api_files() walks api/ recursively -- the universe was a third of it",
+        "lag_days": 0
+      },
+      "citation_note": "a measurement/scope-detection bug in a coverage tool, not a violation of a named standing rule",
+      "factors_unknown_reason": "root-caused only to the proximity-window mechanism; process/detection contributors not investigated"
+    },
+    {
       "commit": "b7aa45b22766",
       "date": "2026-10-14",
       "subject": "fix(tier a review gate): save_reviews stops losing a writer on Windows, with the failing-first probe that caught it",
@@ -30152,6 +30181,52 @@
         }
       ],
       "recurrence_open": "the ratchet cannot distinguish a deliberate mass deletion from an accidental one -- it refuses both and asks a human. That is the intended direction and it means a legitimate removal still costs a manual edit."
+    },
+    {
+      "commit": "c7c758ed4356",
+      "date": "2026-10-14",
+      "subject": "fix(push gate,floor): the override hint was corrected in b11 to a state that was already wrong",
+      "files": [
+        ".gitattributes",
+        ".githooks/pre-push",
+        "CLAUDE.md",
+        "docs/2026-10-14-cc-b12-routed.md",
+        "docs/BYPASS-LOG.jsonl",
+        "docs/SAIRN-PROCESS-RULES.md",
+        "docs/fmea/api__lib_sv-roles.js.json",
+        "docs/fmea/api__resources_sairncare.js.json",
+        "docs/fmea/api_ai-provenance-client-sites.test.js.json",
+        "docs/fmea/api_alf-append-only-read-order.test.js.json",
+        "docs/fmea/api_sd-data-sv-role-matrix.test.js.json",
+        "docs/fmea/sairnroofing.html.json",
+        "docs/fmea/sql_2026-10-14-hank-b11-mar-grant.sql.json",
+        "docs/fmea/sql_2026-10-14-michael-run-order.sql.json",
+        "docs/fmea/sql_sairncare_mar_access_grants_schema.sql.json",
+        "docs/test-file-floor.json",
+        "docs/unlanded/2026-10-13-cc-b6-open-work-shard-read-rows.patch",
+        "docs/unlanded/README.md",
+        "tools/run_all_tests.py",
+        "tools/sairn_push_gate_hook.py"
+      ],
+      "lines_added": 3447,
+      "lines_removed": 55,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "git rebase replay of a picked commit does not invoke .githooks/pre-commit the way a plain git commit does -- confirmed by direct reproduction in an isolated scratch repo (h1 b41). An out-of-scope commit created via --no-verify, then rebased onto a divergent branch, lands with no refusal even though a plain commit of the same content is correctly refused before and after. --pre-push's own range-diff was not exercised. Routed to cc (owner of .githooks/ and tools/hover_auditor_scope_gate.py) with a suggested push-time second guard in routing/2026-10-15-h1-b41-scope-gate-rebase-replay-confirmed.md; no commit has touched either file since the routing doc landed, confirmed again at h1 b43.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "unknown",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "structural gap present since the scope gate's original design, not traceable to one commit"
+      },
+      "citation_note": "this is a gap in hook coverage for a git mechanic (rebase replay) rather than a violation of a named standing rule; closest in spirit to PR 1.11's fail-closed discipline but not a direct citation",
+      "phase_note": "the gate has never had rebase-replay coverage since it was first built; no single commit introduced this as a regression, it was an absent case from the start",
+      "factors_unknown_reason": "root-caused only to the mechanism (git rebase bypasses the commit-time hook); the process/detection contributors have not been investigated"
     },
     {
       "commit": "ca131d983903",
