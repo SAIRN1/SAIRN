@@ -504,6 +504,17 @@
       "status": "released",
       "released_at": "2026-10-14T23:43:19Z",
       "files": null
+    },
+    {
+      "id": "hover2-1792022712",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "hover2 b35 batch",
+      "claimed_at": "2026-10-15T00:05:12Z",
+      "claimed_at_epoch": 1792022712.488769,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
@@ -600,6 +611,19 @@
       ],
       "source": "status-registry",
       "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-15T00:04:58Z",
+      "my_subject": "hover2",
+      "my_task": "hover2 b35 -- (1) deep-verify fourth b20 (HEAD d1cd5b1a): leg_aftercare key collision CS-7+1-Week vs CS-7-1+Week, 7 quoted-text anchors in sf_events row resolve exactly once in sairnfreedom.html. H1 b36 covers cody b12/cc b12/weakening-flag cody rows, skip those. (2) land-check hank b12 once closed (skip if active): b33-routed edits (run-order Block2 header, api/sd-data.js:1352, SAIRN-handoff-hank-b11.md HEAD correction), sd_photos client-side downscale, mar-grant.sql upload to Drive status folder. Deep-verify what is closed. (3) check WEAKENING-FLAGS.md Flag 1 sign-off state, report only, no re-route. (4) check cody reservation_lock fix once cody b12 closes (tests/sairnlegacy_reservation_lock.js:330 leg_clergybookings arm or explicit 35/36 accept), route to cody if still open. (5) methodology: re-derive b33/b34 chain entries 873-882, token seq, gap, from the log itself with the command named; list any figure not re-derivable. (6) push no force confirm landed. AUDIT ROLE ONLY -- platform repo read-only, no api/sql/tools/tests file edited or committed, writes only to this role's own external hover-audit-log/ repo plus claim/release commits. Record: Michael ran/verified all six blocks of sql/2026-10-14-michael-run-order.sql 2026-10-14T19:38 ET, block2 verify-2c UNPROVEN now closed. FILES: hover-audit-log/ (external repo only)",
+      "other_session": "cc",
+      "other_subject": "cc",
+      "other_task": "b12 drive status bridge; runbook-constant guard; wire 2 hank suites; fmea drafts; cody b11 followups. FILES: tools/sairn_status.py tools/sairn_board_publish.py tools/sairn_claim.py tools/sairn_push_gate_hook.py tools/runbook_constant_agreement.py tools/drive_upload_verify.py docs/fmea/ docs/TOOLING-INVENTORY.md docs/2026-10-14-cc-b12-routed.md SAIRN-handoff-cc-b12.md SAIRN-report-cc-b12.txt SAIRN-digest-cc-b12.txt SAIRN-latest-cc.md",
+      "other_claimed_at": "2026-10-14T23:22:21Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"drive status\"",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
