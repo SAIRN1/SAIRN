@@ -28766,7 +28766,7 @@
       "factors_unknown_reason": "not investigated this batch -- the three fixes (comment stripping with block state, string-contents blanking for the identifier branch only, brace-matched body) are verified; root-cause factor analysis was not done"
     },
     {
-      "commit": "3e590fc6deff",
+      "commit": "c7c758ed4356",
       "date": "2026-10-14",
       "subject": "fix(push gate,floor): the override hint was corrected in b11 to a state that was already wrong",
       "files": [
@@ -28836,7 +28836,7 @@
       "recurrence_open": "nothing mechanically compares a prose copy of this rule to gate_skip. tools/runbook_constant_agreement.py now does exactly that for the secrets rotation runbook and its registry could carry this rule as a second entry; it does not yet."
     },
     {
-      "commit": "3e590fc6deff",
+      "commit": "c7c758ed4356",
       "date": "2026-10-14",
       "subject": "fix(push gate,floor): the override hint was corrected in b11 to a state that was already wrong",
       "files": [
@@ -29691,7 +29691,7 @@
       "factors_unknown_reason": "cody measured the behaviour and routed the fix; why MoveFileEx semantics were not considered when the atomic write was added has not been investigated by anybody and inventing a cause here would be a guess"
     },
     {
-      "commit": "bf20843ed0e6",
+      "commit": "46128d86a4fd",
       "date": "2026-10-14",
       "subject": "feat(drive board): the status bridge publishes itself, and two defects it found",
       "files": [
