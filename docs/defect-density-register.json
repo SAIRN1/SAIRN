@@ -28766,143 +28766,6 @@
       "factors_unknown_reason": "not investigated this batch -- the three fixes (comment stripping with block state, string-contents blanking for the identifier branch only, brace-matched body) are verified; root-cause factor analysis was not done"
     },
     {
-      "commit": "c7c758ed4356",
-      "date": "2026-10-14",
-      "subject": "fix(push gate,floor): the override hint was corrected in b11 to a state that was already wrong",
-      "files": [
-        ".gitattributes",
-        ".githooks/pre-push",
-        "CLAUDE.md",
-        "docs/2026-10-14-cc-b12-routed.md",
-        "docs/BYPASS-LOG.jsonl",
-        "docs/SAIRN-PROCESS-RULES.md",
-        "docs/fmea/api__lib_sv-roles.js.json",
-        "docs/fmea/api__resources_sairncare.js.json",
-        "docs/fmea/api_ai-provenance-client-sites.test.js.json",
-        "docs/fmea/api_alf-append-only-read-order.test.js.json",
-        "docs/fmea/api_sd-data-sv-role-matrix.test.js.json",
-        "docs/fmea/sairnroofing.html.json",
-        "docs/fmea/sql_2026-10-14-hank-b11-mar-grant.sql.json",
-        "docs/fmea/sql_2026-10-14-michael-run-order.sql.json",
-        "docs/fmea/sql_sairncare_mar_access_grants_schema.sql.json",
-        "docs/test-file-floor.json",
-        "docs/unlanded/2026-10-13-cc-b6-open-work-shard-read-rows.patch",
-        "docs/unlanded/README.md",
-        "tools/run_all_tests.py",
-        "tools/sairn_push_gate_hook.py"
-      ],
-      "lines_added": 3447,
-      "lines_removed": 55,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "summary": "OVERRIDE_HINT named a blanket override that no longer works and omitted the scoped form the gate itself recommends. MEASURED: SAIRN_SEED_GATE=off with --pre-push exits 1 REFUSED, so the hint claim that it \"disables EVERY check in this hook\" was false in both directions -- it disables nothing and denies the push. The hint also named SAIRN_GATE_EXEMPT=seed as THE scoped form while the gate own refusal recommends SAIRN_SKIP per gate, eight gates against EXEMPTABLE one. b11 corrected this constant to a state that had been retired on 2026-10-13, one day earlier, and all eight selftest arms were green over it.",
-      "rules": [
-        "2.3"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "0e6607e0709e",
-        "date": "2026-10-14",
-        "subject": "fix(push gate): the refusal text names the scoped exemption first, as :990 already claimed",
-        "lag_days": 0
-      },
-      "citation_note": "a fact with a tense: the refusal text asserted a mechanism that had been retired the day before, and the arms over it only ever checked the ORDER of two variable names",
-      "contributing_factors": [
-        {
-          "factor": "the refusal text was hand-written rather than derived from the tool that owns the gate list",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "OVERRIDE_HINT is now built from gate_skip.GATES and gate_skip.ENV_GATE; if that import fails the hint says so rather than falling back to a remembered list"
-        },
-        {
-          "factor": "all eight selftest arms asked only about the ORDER of two variable names, so they stayed green over a false sentence",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "four arms added that ask about the CLAIMS the sentence makes, plus a second ablation using the b11 text, which passes all eight original arms and fails exactly the four new ones"
-        },
-        {
-          "factor": "the same mechanism is written down in five places and a fix in one does not reach the others",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "corrected in .githooks/pre-push, the hook own comment, CLAUDE.md section 3 and docs/SAIRN-PROCESS-RULES.md section 3.3, each ending with the instruction not to write it down a sixth time"
-        }
-      ],
-      "recurrence_open": "nothing mechanically compares a prose copy of this rule to gate_skip. tools/runbook_constant_agreement.py now does exactly that for the secrets rotation runbook and its registry could carry this rule as a second entry; it does not yet."
-    },
-    {
-      "commit": "c7c758ed4356",
-      "date": "2026-10-14",
-      "subject": "fix(push gate,floor): the override hint was corrected in b11 to a state that was already wrong",
-      "files": [
-        ".gitattributes",
-        ".githooks/pre-push",
-        "CLAUDE.md",
-        "docs/2026-10-14-cc-b12-routed.md",
-        "docs/BYPASS-LOG.jsonl",
-        "docs/SAIRN-PROCESS-RULES.md",
-        "docs/fmea/api__lib_sv-roles.js.json",
-        "docs/fmea/api__resources_sairncare.js.json",
-        "docs/fmea/api_ai-provenance-client-sites.test.js.json",
-        "docs/fmea/api_alf-append-only-read-order.test.js.json",
-        "docs/fmea/api_sd-data-sv-role-matrix.test.js.json",
-        "docs/fmea/sairnroofing.html.json",
-        "docs/fmea/sql_2026-10-14-hank-b11-mar-grant.sql.json",
-        "docs/fmea/sql_2026-10-14-michael-run-order.sql.json",
-        "docs/fmea/sql_sairncare_mar_access_grants_schema.sql.json",
-        "docs/test-file-floor.json",
-        "docs/unlanded/2026-10-13-cc-b6-open-work-shard-read-rows.patch",
-        "docs/unlanded/README.md",
-        "tools/run_all_tests.py",
-        "tools/sairn_push_gate_hook.py"
-      ],
-      "lines_added": 3447,
-      "lines_removed": 55,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "independent-review",
-      "summary": "MIN_TEST_FILES was pinned at 370 while discover() returned 802 (js 378 + py 424), so 432 test files could have been deleted with the shrinking-suite guard silent. The guard was not broken; it was measuring against a number nobody owned. Replaced with a ratchet in docs/test-file-floor.json that only ever rises, with the literal 370 kept as the floor of last resort so a corrupt ratchet file degrades to the old behaviour rather than to zero.",
-      "rules": [
-        "2.3"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "the constant has been hand-bumped repeatedly since 307; no single commit introduced the staleness, the maintenance model did, and picking one bump as the injection would be a guess"
-      },
-      "citation_note": "a number with no single source: the floor was a hand-maintained literal and the comment above it predicted its own decay twice inside one hour",
-      "contributing_factors": [
-        {
-          "factor": "the floor was a hand-maintained literal with a requested human cadence that never existed",
-          "kind": "process",
-          "action_status": "done",
-          "action": "the floor is a ratchet raised by the tool itself, and lowering it is a human edit with a reason"
-        },
-        {
-          "factor": "the first ratchet raised the floor ABOVE the tree (807 against 802) because cody probe writes five fixture files into the real tests/ directory and discover() walks the working tree",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "the ratchet basis is the discovered list INTERSECTED with git ls-files; an untracked file is on one person disk and in nobody clone, so it is not a guard. Found by running the probe, not by reading."
-        },
-        {
-          "factor": "a clean tree whose floor had gone stale produced no output at all, because the unattended copy returns before building its report",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "the floor-is-behind condition is part of the silence-breaking test rather than a line further down"
-        }
-      ],
-      "recurrence_open": "the ratchet cannot distinguish a deliberate mass deletion from an accidental one -- it refuses both and asks a human. That is the intended direction and it means a legitimate removal still costs a manual edit."
-    },
-    {
       "commit": "44abebb30bf5",
       "date": "2026-10-14",
       "subject": "feat(ai-safeguards): the client half -- six save sites that stored model output unflagged",
@@ -28959,6 +28822,60 @@
         }
       ],
       "recurrence_open": "yes"
+    },
+    {
+      "commit": "46128d86a4fd",
+      "date": "2026-10-14",
+      "subject": "feat(drive board): the status bridge publishes itself, and two defects it found",
+      "files": [
+        ".githooks/pre-push",
+        "docs/TOOLING-INVENTORY.md",
+        "tools/report_only_checks.py",
+        "tools/runbook_constant_agreement.py",
+        "tools/sairn_board_publish.py",
+        "tools/sairn_status.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 2053,
+      "lines_removed": 12,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "sairn_status.payload built a FRESH row dict and cmd_set wrote it whole, so the three keys publish_claims owns -- claims, claims_updated, claims_heartbeat -- survived only until the next status change. A session claims and then sets working, in that order, so the cross-clone early warning was erased within seconds of being written, every time. Nothing said so and nothing could have: an absent claims key is also exactly what a session running an older sairn_claim.py looks like, which read_claims documents as the ordinary state during a rollout. Also: the new board read a claim subject from the key app where sairn_claim writes subject, so every claim rendered as a question mark.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/sairn_board_publish.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "publish_claims and payload were written at different times by different batches and neither commit is identifiable as the one that introduced the conflict; naming one would be a guess"
+      },
+      "citation_note": "a check that stopped checking: the mirrored claims were the early warning other clones read without a fetch, and they were being erased seconds after every claim",
+      "contributing_factors": [
+        {
+          "factor": "payload rebuilt the whole row instead of carrying forward the keys another function owns",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the three claim keys are carried forward explicitly, and claims_heartbeat deliberately does NOT advance on a status write -- it is the claim tool heartbeat and re-stamping it would make a stale claim look freshly touched"
+        },
+        {
+          "factor": "the erased state was indistinguishable from the one benign case the code documents, so no reader could have told them apart",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the board prints the distinction in the cell rather than printing 0 bare, and arm A14 drives sairn_status.payload directly against the pre-fix shape"
+        },
+        {
+          "factor": "nothing consumed the field, so no behaviour changed when it vanished",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "the Drive board consumes it on every status, claim and context change, which is what surfaced it"
+        }
+      ],
+      "recurrence_open": "five of the six agents still show zero mirrored claims until their clones pull this fix and re-claim. Nothing re-mirrors an existing claim automatically; the row repopulates on the next claim or release."
     },
     {
       "commit": "4f69facd93b3",
@@ -29173,6 +29090,56 @@
       },
       "citation_note": "No PR section describes a logging tool's own staleness-guard comparing a truncated-for-display sha as if it were the full string; this is a code-level comparison bug in hover's own tooling, not a platform process violation.",
       "factors_unknown_reason": "Found and fixed in one sitting (h1 b31) without a deeper five-whys pass; the immediate technical cause (display truncation vs full-string comparison) is understood and fixed, but no RCA was done on why the mismatch between display and comparison went unnoticed across multiple prior batches that hit it."
+    },
+    {
+      "commit": "6838cfdd367a",
+      "date": "2026-10-14",
+      "subject": "fix(claims,citation): the audit counted a session eighteen days gone, and a citation pointed at the wrong function",
+      "files": [
+        "docs/2026-10-14-cc-b11-routed.md",
+        "tools/sairn_claim.py",
+        "tools/sairn_claim_doc_freshness.py"
+      ],
+      "lines_added": 222,
+      "lines_removed": 7,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "sairn_claim.py audit counted a session gone eighteen days as holding an active claim. The stored `status` field is written once and never revisited; liveness is COMPUTED by is_active(), which `list` applies and the raw JSON cannot. Measured across the real 1,373-claim record: 5 rows store active, is_active() is true for 4, and the difference is `cloud` (claimed 2026-09-27, released_at null). One record, three answers -- the file says active, list omits it, list --all says EXPIRED. Today the inflation is 1 and does not cross MANY_ACTIVE=4, so the verdict was unchanged and nothing would have said so until a session held three live claims plus one dead row. THE SAME DEFECT IN A THIRD TOOL was fixed in the same commit: sairn_claim_doc_freshness.py built its FILES-convention denominator from the raw field, reporting 5 where 4 was true. Also in this commit: a citation in docs/2026-10-14-cc-b11-routed.md pointed at sairngrounds.html:4771-4779, which is the brand-legibility guard rather than the cost arithmetic it quoted -- the real sites are :4788 and :4810.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the raw-status selection has been in cmd_audit since the command was written and no single commit introduced the divergence -- is_active() grew the liveness half later, on 2026-09-23, and naming either as the injection would be a guess"
+      },
+      "citation_note": "a check that stopped checking: the audit section about phantom blocks computed its own count from the phantom field",
+      "contributing_factors": [
+        {
+          "factor": "liveness is computed at display time and the stored status field is never revisited, so the two spellings of \"active\" can only diverge",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the audit selection is extracted into audit_active_by() and uses is_active(); the gap is PRINTED beside the count as audit_expired_but_stored_active() rather than silently removed from it"
+        },
+        {
+          "factor": "the defect was silent because the inflation did not cross the reporting threshold on the day it was looked at",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "five arms plus an ablation and an ablation control on FIXTURES, not on the live record -- an arm whose verdict depends on whether cloud is dead today goes green on its own when somebody tidies the record"
+        },
+        {
+          "factor": "claim_activity_check.py had already paid for this exact defect on 2026-09-28 and wrote the distinction up at its own line 68, and the fix did not reach the tool that OWNS is_active() or a third consumer",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "both remaining consumers now import is_active and fail CLOSED on an import error rather than falling back to the raw field"
+        }
+      ],
+      "recurrence_open": "nothing enumerates the consumers of the raw `status` field. Three have been found one at a time, across three batches, each by accident while doing something else. A sweep for `get('status') == 'active'` outside sairn_claim.py would be the mechanical answer and was not built here."
     },
     {
       "commit": "73b4c0d03800",
@@ -29633,6 +29600,66 @@
       "recurrence_open": "yes"
     },
     {
+      "commit": "9c453ae1f4d0",
+      "date": "2026-10-14",
+      "subject": "feat(gate driver): hank's three new seams wired, and the exit-3 channel stopped inventing a reason",
+      "files": [
+        "docs/fmea/api__lib_ai-safeguards.js.json",
+        "docs/fmea/api__lib_ai-scan-redaction.js.json",
+        "docs/fmea/api__lib_compliance-rules.js.json",
+        "docs/fmea/api_n1-n4-and-sf-delete.test.js.json",
+        "docs/fmea/api_role-picker-vs-check-constraint.test.js.json",
+        "docs/fmea/api_sd-photos-size-and-provenance.test.js.json",
+        "docs/fmea/api_sen-auth.js.json",
+        "docs/fmea/sql_legacy_ciphertext_census.sql.json",
+        "docs/fmea/sql_sd_encryption_key_revoke_2026-09-24.sql.json",
+        "tools/sairn_push_gate_hook.py"
+      ],
+      "lines_added": 1883,
+      "lines_removed": 5,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "the push gate GUARD_TESTS runner reported every exit-3 test as \"SKIPPED as not applicable on this platform\", with the reason falling back to the literal string \"exit 3\" when the test said nothing. That was written for ONE test whose 3 really is a platform skip. api/role-picker-vs-check-constraint.test.js, wired in this commit, exits 3 on EVERY platform because 11 of 17 apps have no `check (role in (...))` to compare their role picker against -- a missing other side, not an OS. The label asserted a cause nothing established, about a test whose own output says \"NOT a pass: an app whose constraint cannot be found is exactly the app whose picker nobody has checked\". The reason now comes from the test or is admitted absent.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "0e6607e0709e",
+        "date": "2026-10-14",
+        "subject": "fix(push gate): the refusal text names the scoped exemption first, as :990 already claimed",
+        "lag_days": 0
+      },
+      "citation_note": "the confident line printed after the error: a could-not-run that states the wrong reason sends the reader away from the problem",
+      "contributing_factors": [
+        {
+          "factor": "a channel built for one instance had that instance's explanation hardcoded as its label",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "exit3_reason() quotes the test's own SKIPPED/UNPROVEN/COULD NOT RUN line and attributes it to the test, or states that no reason was given and names the missing reason as the thing to fix"
+        },
+        {
+          "factor": "nothing exercised the channel with a non-platform exit 3, because until this commit there was not one",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "nine arms including one that requires the platform claim to be GONE for a non-platform 3 and one that requires a genuine platform skip to still read correctly -- a fix that loses the case the channel was built for is a worse trade than the defect"
+        },
+        {
+          "factor": "exit 3 is one code carrying at least two different meanings, and only the test can say which",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "splitting exit 3 into two codes -- \"not applicable here\" and \"the other side is missing\" -- is NOT done here and is deliberately left as planned: entries in the registry already rely on 3, and redefining a shared exit code is a cross-session decision rather than a cc one. What IS done is that the runner no longer guesses which meaning applied."
+        }
+      ],
+      "recurrence_open": "exit 3 still means both \"not applicable on this platform\" and \"the other side of the seam is missing\", and the runner can only report whichever the test chose to say. Nothing requires an exit-3 test to print a reason at all -- the runner now names that absence, which is a report and not a gate."
+    },
+    {
       "commit": "b12a763103e9",
       "date": "2026-10-14",
       "subject": "fix(blob coverage): api_files() walks api/ recursively -- the universe was a third of it",
@@ -29691,58 +29718,141 @@
       "factors_unknown_reason": "cody measured the behaviour and routed the fix; why MoveFileEx semantics were not considered when the atomic write was added has not been investigated by anybody and inventing a cause here would be a guess"
     },
     {
-      "commit": "46128d86a4fd",
+      "commit": "c7c758ed4356",
       "date": "2026-10-14",
-      "subject": "feat(drive board): the status bridge publishes itself, and two defects it found",
+      "subject": "fix(push gate,floor): the override hint was corrected in b11 to a state that was already wrong",
       "files": [
+        ".gitattributes",
         ".githooks/pre-push",
-        "docs/TOOLING-INVENTORY.md",
-        "tools/report_only_checks.py",
-        "tools/runbook_constant_agreement.py",
-        "tools/sairn_board_publish.py",
-        "tools/sairn_status.py",
-        "tools/tooling_inventory.py"
+        "CLAUDE.md",
+        "docs/2026-10-14-cc-b12-routed.md",
+        "docs/BYPASS-LOG.jsonl",
+        "docs/SAIRN-PROCESS-RULES.md",
+        "docs/fmea/api__lib_sv-roles.js.json",
+        "docs/fmea/api__resources_sairncare.js.json",
+        "docs/fmea/api_ai-provenance-client-sites.test.js.json",
+        "docs/fmea/api_alf-append-only-read-order.test.js.json",
+        "docs/fmea/api_sd-data-sv-role-matrix.test.js.json",
+        "docs/fmea/sairnroofing.html.json",
+        "docs/fmea/sql_2026-10-14-hank-b11-mar-grant.sql.json",
+        "docs/fmea/sql_2026-10-14-michael-run-order.sql.json",
+        "docs/fmea/sql_sairncare_mar_access_grants_schema.sql.json",
+        "docs/test-file-floor.json",
+        "docs/unlanded/2026-10-13-cc-b6-open-work-shard-read-rows.patch",
+        "docs/unlanded/README.md",
+        "tools/run_all_tests.py",
+        "tools/sairn_push_gate_hook.py"
       ],
-      "lines_added": 2053,
-      "lines_removed": 12,
+      "lines_added": 3447,
+      "lines_removed": 55,
       "app": "tooling",
       "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "static-checker",
-      "summary": "sairn_status.payload built a FRESH row dict and cmd_set wrote it whole, so the three keys publish_claims owns -- claims, claims_updated, claims_heartbeat -- survived only until the next status change. A session claims and then sets working, in that order, so the cross-clone early warning was erased within seconds of being written, every time. Nothing said so and nothing could have: an absent claims key is also exactly what a session running an older sairn_claim.py looks like, which read_claims documents as the ordinary state during a rollout. Also: the new board read a claim subject from the key app where sairn_claim writes subject, so every claim rendered as a question mark.",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "OVERRIDE_HINT named a blanket override that no longer works and omitted the scoped form the gate itself recommends. MEASURED: SAIRN_SEED_GATE=off with --pre-push exits 1 REFUSED, so the hint claim that it \"disables EVERY check in this hook\" was false in both directions -- it disables nothing and denies the push. The hint also named SAIRN_GATE_EXEMPT=seed as THE scoped form while the gate own refusal recommends SAIRN_SKIP per gate, eight gates against EXEMPTABLE one. b11 corrected this constant to a state that had been retired on 2026-10-13, one day earlier, and all eight selftest arms were green over it.",
       "rules": [
-        "1.1"
+        "2.3"
       ],
       "citation_confidence": "arguable",
       "injection_phase": "coding",
       "phase_confidence": "stated",
-      "found_by_tool": "tools/sairn_board_publish.py",
+      "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "unknown_reason": "publish_claims and payload were written at different times by different batches and neither commit is identifiable as the one that introduced the conflict; naming one would be a guess"
+        "commit": "0e6607e0709e",
+        "date": "2026-10-14",
+        "subject": "fix(push gate): the refusal text names the scoped exemption first, as :990 already claimed",
+        "lag_days": 0
       },
-      "citation_note": "a check that stopped checking: the mirrored claims were the early warning other clones read without a fetch, and they were being erased seconds after every claim",
+      "citation_note": "a fact with a tense: the refusal text asserted a mechanism that had been retired the day before, and the arms over it only ever checked the ORDER of two variable names",
       "contributing_factors": [
         {
-          "factor": "payload rebuilt the whole row instead of carrying forward the keys another function owns",
+          "factor": "the refusal text was hand-written rather than derived from the tool that owns the gate list",
           "kind": "technical",
           "action_status": "done",
-          "action": "the three claim keys are carried forward explicitly, and claims_heartbeat deliberately does NOT advance on a status write -- it is the claim tool heartbeat and re-stamping it would make a stale claim look freshly touched"
+          "action": "OVERRIDE_HINT is now built from gate_skip.GATES and gate_skip.ENV_GATE; if that import fails the hint says so rather than falling back to a remembered list"
         },
         {
-          "factor": "the erased state was indistinguishable from the one benign case the code documents, so no reader could have told them apart",
+          "factor": "all eight selftest arms asked only about the ORDER of two variable names, so they stayed green over a false sentence",
           "kind": "detection",
           "action_status": "done",
-          "action": "the board prints the distinction in the cell rather than printing 0 bare, and arm A14 drives sairn_status.payload directly against the pre-fix shape"
+          "action": "four arms added that ask about the CLAIMS the sentence makes, plus a second ablation using the b11 text, which passes all eight original arms and fails exactly the four new ones"
         },
         {
-          "factor": "nothing consumed the field, so no behaviour changed when it vanished",
+          "factor": "the same mechanism is written down in five places and a fix in one does not reach the others",
           "kind": "latent-condition",
           "action_status": "done",
-          "action": "the Drive board consumes it on every status, claim and context change, which is what surfaced it"
+          "action": "corrected in .githooks/pre-push, the hook own comment, CLAUDE.md section 3 and docs/SAIRN-PROCESS-RULES.md section 3.3, each ending with the instruction not to write it down a sixth time"
         }
       ],
-      "recurrence_open": "five of the six agents still show zero mirrored claims until their clones pull this fix and re-claim. Nothing re-mirrors an existing claim automatically; the row repopulates on the next claim or release."
+      "recurrence_open": "nothing mechanically compares a prose copy of this rule to gate_skip. tools/runbook_constant_agreement.py now does exactly that for the secrets rotation runbook and its registry could carry this rule as a second entry; it does not yet."
+    },
+    {
+      "commit": "c7c758ed4356",
+      "date": "2026-10-14",
+      "subject": "fix(push gate,floor): the override hint was corrected in b11 to a state that was already wrong",
+      "files": [
+        ".gitattributes",
+        ".githooks/pre-push",
+        "CLAUDE.md",
+        "docs/2026-10-14-cc-b12-routed.md",
+        "docs/BYPASS-LOG.jsonl",
+        "docs/SAIRN-PROCESS-RULES.md",
+        "docs/fmea/api__lib_sv-roles.js.json",
+        "docs/fmea/api__resources_sairncare.js.json",
+        "docs/fmea/api_ai-provenance-client-sites.test.js.json",
+        "docs/fmea/api_alf-append-only-read-order.test.js.json",
+        "docs/fmea/api_sd-data-sv-role-matrix.test.js.json",
+        "docs/fmea/sairnroofing.html.json",
+        "docs/fmea/sql_2026-10-14-hank-b11-mar-grant.sql.json",
+        "docs/fmea/sql_2026-10-14-michael-run-order.sql.json",
+        "docs/fmea/sql_sairncare_mar_access_grants_schema.sql.json",
+        "docs/test-file-floor.json",
+        "docs/unlanded/2026-10-13-cc-b6-open-work-shard-read-rows.patch",
+        "docs/unlanded/README.md",
+        "tools/run_all_tests.py",
+        "tools/sairn_push_gate_hook.py"
+      ],
+      "lines_added": 3447,
+      "lines_removed": 55,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "MIN_TEST_FILES was pinned at 370 while discover() returned 802 (js 378 + py 424), so 432 test files could have been deleted with the shrinking-suite guard silent. The guard was not broken; it was measuring against a number nobody owned. Replaced with a ratchet in docs/test-file-floor.json that only ever rises, with the literal 370 kept as the floor of last resort so a corrupt ratchet file degrades to the old behaviour rather than to zero.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the constant has been hand-bumped repeatedly since 307; no single commit introduced the staleness, the maintenance model did, and picking one bump as the injection would be a guess"
+      },
+      "citation_note": "a number with no single source: the floor was a hand-maintained literal and the comment above it predicted its own decay twice inside one hour",
+      "contributing_factors": [
+        {
+          "factor": "the floor was a hand-maintained literal with a requested human cadence that never existed",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the floor is a ratchet raised by the tool itself, and lowering it is a human edit with a reason"
+        },
+        {
+          "factor": "the first ratchet raised the floor ABOVE the tree (807 against 802) because cody probe writes five fixture files into the real tests/ directory and discover() walks the working tree",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the ratchet basis is the discovered list INTERSECTED with git ls-files; an untracked file is on one person disk and in nobody clone, so it is not a guard. Found by running the probe, not by reading."
+        },
+        {
+          "factor": "a clean tree whose floor had gone stale produced no output at all, because the unattended copy returns before building its report",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the floor-is-behind condition is part of the silence-breaking test rather than a line further down"
+        }
+      ],
+      "recurrence_open": "the ratchet cannot distinguish a deliberate mass deletion from an accidental one -- it refuses both and asks a human. That is the intended direction and it means a legitimate removal still costs a manual edit."
     },
     {
       "commit": "ca131d983903",
