@@ -845,6 +845,22 @@
       "status": "released",
       "released_at": "2026-10-15T15:37:40Z",
       "files": null
+    },
+    {
+      "id": "hover-1792079842",
+      "session": "hover",
+      "subject": "hover",
+      "task": "b45: chain+token check; land-check hank b17/cody b18/fourth b26 if closed; verify hank claims released, cody arm-8 roster fix, sd-data census :8328; hank b17 pay-period close drive; 30-suite fresh sample + cody b17 hypotheses read; board accuracy sweep; push. AUDIT-ONLY: every platform file is READ or RUN, never edited. FILES: SAIRN-handoff-H1-b45.md SAIRN-report-H1-b45.txt SAIRN-digest-H1-b45.txt SAIRN-latest-H1.md",
+      "claimed_at": "2026-10-15T15:57:22Z",
+      "claimed_at_epoch": 1792079842.1816785,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-H1-b45.txt",
+        "SAIRN-handoff-H1-b45.md",
+        "SAIRN-latest-H1.md",
+        "SAIRN-report-H1-b45.txt"
+      ]
     }
   ],
   "refusals": [
@@ -1093,6 +1109,45 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "same file or resource: docs/criticality-tiers.md",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-15T15:56:42Z",
+      "my_subject": "hover",
+      "my_task": "b45: chain+token check; land-check hank b17/cody b18/fourth b26 if closed; verify hank claims released, cody arm-8 roster fix, sd-data census :8328; hank b17 pay-period close drive; 30-suite fresh sample + cody b17 hypotheses read; board accuracy sweep; push",
+      "other_session": "cody",
+      "other_subject": "tests",
+      "other_task": "cody b18: (1) tests/server_wins_hydration.js 1-of-179 to cause plus the blocked baseline of run_server_wins_hydration_sabotage_probe.py. (2) run_fail_open_probe.py, run_register_feed_gate_probe.py, run_audit_event_type_probe.py control/precondition failures to cause, and CONVERT THE THREE HOOK PROBES TO EXIT 3 COULD NOT RUN on Michael's confirmation -- hooks stay cleared, settings.json never committed. (3) run_tier_a_open_basis_probe.py 9/30 to cause, failing-first. (4) the run_known_red_probe.py fixture blocker, then a full-tree run, then the 16 CHANGED register rows before the 9 RECOVERED, then the floor raise. (5) methodology -- read the tests/-owned routed hypotheses to cause and add the failure-line-vs-cause divergence class to the recurring bug classes with a permanent check. (6) push without force and confirm landed. CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: api/ and sql/ are hank's and are READ-ONLY here, mutated only inside the sabotage harness's own worktrees which assert byte-identical restoration; tools/ is cc's and is RUN not edited; docs/ re-derivation is fourth's. FILES: tests/server_wins_hydration.js tests/run_server_wins_hydration_sabotage_probe.py tests/run_fail_open_probe.py tests/run_register_feed_gate_probe.py tests/run_audit_event_type_probe.py tests/hook_command_anchoring_probe.py tests/run_conflict_preflight_hook_probe.py tests/run_tooling_inventory_probe.py tests/run_tier_a_open_basis_probe.py tests/run_known_red_probe.py docs/known-red-suites.json docs/test-file-floor.json docs/2026-10-15-cody-b18-triage.md SAIRN-handoff-cody-b18.md SAIRN-report-cody-b18.txt SAIRN-digest-cody-b18.txt SAIRN-latest-cody-b18.md",
+      "other_claimed_at": "2026-10-15T15:29:55Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"b18 cody\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-15T15:56:42Z",
+      "my_subject": "hover",
+      "my_task": "b45: chain+token check; land-check hank b17/cody b18/fourth b26 if closed; verify hank claims released, cody arm-8 roster fix, sd-data census :8328; hank b17 pay-period close drive; 30-suite fresh sample + cody b17 hypotheses read; board accuracy sweep; push",
+      "other_session": "fourth",
+      "other_subject": "fourth",
+      "other_task": "b26: (1) Tier A review of hank's a1c22397 obligation (law_optx, law_trusttx, sd_hr_certs, sd_hr_employees, sen_pay_rates, sen_settings, sen_visits) -- change (3) law_trusttx vs api/_lib/law-roles.js:87 first; Michael decided adjustment-posts-next-period and EVV-reads-effective-clock; I decide the straight-time floor and the reopen rule. (2) re-derive the 22-branch list at HEAD and review hank's ten blob conversions as a change. (3) drive (d) LATE_REPLAY live. (4) reclassify the 33 server-only GETs and extend the branch census to follow variables. (5) methodology -- mechanical span recount so a branch count cannot drift, failing-first with ablation. (6) push. CONFLICTS DECLARED PER PR 4.3: api/ and sql/ are hank's and READ-ONLY here; tests/ is cody's and READ-ONLY here; tools/ is cc's and READ-ONLY (RUN not edited). FILES: docs/tier-a-reviews.json docs/2026-09-13-cross-domain-disciplines.md docs/2026-10-15-fourth-b26-*.md docs/batch-manifest-fourth-b26.json SAIRN-handoff-fourth-b26.md SAIRN-report-fourth-b26.txt SAIRN-digest-fourth-b26.txt SAIRN-latest-fourth-b26.md. HOOKS STAY CLEARED, settings.json NEVER committed, no SAIRN_SEED_GATE override, no auditor clone entered.",
+      "other_claimed_at": "2026-10-15T15:28:08Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"b26 fourth\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-15T15:56:42Z",
+      "my_subject": "hover",
+      "my_task": "b45: chain+token check; land-check hank b17/cody b18/fourth b26 if closed; verify hank claims released, cody arm-8 roster fix, sd-data census :8328; hank b17 pay-period close drive; 30-suite fresh sample + cody b17 hypotheses read; board accuracy sweep; push",
+      "other_session": "hank",
+      "other_subject": "hank",
+      "other_task": "b15: (1) fourth b23 F1 payroll money bug -- effectiveClock in api/_lib/sen-payroll.js and the sd-data payroll map, plus F3 sairnsenior.html raw-clock reads. (2) legacy Stedi ciphertext backfill STEP for Michael via the app write path, Drive file. (3) hydrate before rendering the corrections tab + a mechanical slice(x,x+N) check for *.test.js. (4) run-order Block 2 precondition + api/sd-data.js:1352, b13 report citation corrections, cody b15's 3 failing api/ suites and the sairnlegacy app_id tenancy question driven live. (5) the 22 write branches folding 23514 into run-the-migration + helper F1/F2, the SD_LINEAGE/SD_HR id-shadow pick, and ablation records for b14-b15 arms. (6) push. FILES: api/sd-data.js api/_lib/sen-payroll.js api/_lib/sen-evv-clock.js sairnsenior.html sql/2026-10-14-michael-run-order.sql sql/append_only_grant_audit.sql plus my own b15 api/*.test.js and docs/hank-evidence/b15/. CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: tests/ is cody's -- tests/sairnlegacy_fault_probe.py is RUN not edited and nothing else under tests/ is touched; tools/ is cc's and is RUN not edited; docs/ triage and routing docs are cody's and fourth's and are READ not edited. HOOKS STAY CLEARED, settings.json NEVER committed, no SAIRN_SEED_GATE override, no auditor clone entered. F2 EVV-readiness raw clock and the one-person-agency exception are HELD FOR MICHAEL and NOT BUILT.",
+      "other_claimed_at": "2026-10-15T13:04:18Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: sd-data",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
