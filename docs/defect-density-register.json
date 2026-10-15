@@ -31328,7 +31328,7 @@
       "recurrence_open": "Nothing sweeps committed suites for fixed-width source windows or for generic loops over a list with a known exception. Both were found by running the suites and reading the output, which is not a control."
     },
     {
-      "commit": "c059443620c6",
+      "commit": "da16a9b84917",
       "date": "2026-10-15",
       "subject": "test(api): three b15-broken fixtures repaired, and the slice(x, x+N) gate b14 asked for",
       "files": [
@@ -31498,7 +31498,7 @@
       "recurrence_open": "four tools found across three batches and the fifth is routed to H2 in an auditor-scope file cc cannot write. Nothing enumerates the consumers of this field as a standing check -- the sweep was a grep run once, by hand, and will go stale the next time somebody writes the pattern."
     },
     {
-      "commit": "caa3cb3e0e28",
+      "commit": "434146223f48",
       "date": "2026-10-15",
       "subject": "fix(sairnsenior): F2 -- the EVV checks read the SAME effective clock pay uses",
       "files": [
@@ -31670,7 +31670,7 @@
       "recurrence_open": "The anniversary boundary is now driven for ONE state's rule shape (WV) and one hire date. Nothing drives a facility-wide window, and the claim corrected here is about the hire-anchored one only."
     },
     {
-      "commit": "dc61bfd9060e",
+      "commit": "a1c223977727",
       "date": "2026-10-15",
       "subject": "fix(sairnsenior,sd-data): paid periods are FROZEN -- a later approval is paid forward, not backdated",
       "files": [
@@ -31733,7 +31733,7 @@
       "recurrence_open": "THE ADJUSTMENT IS STRAIGHT TIME AND IS A FLOOR, NOT A TOTAL: if its minutes push the already-paid workweek past 40 hours there is an FLSA overtime premium owed on top, and computing it means reopening the frozen week. Named in not_computed, NOT computed. AND AN ADJUSTMENT POSTS IN THE PERIOD CONTAINING ITS APPROVAL, so a period that is never run never pays its adjustments and nothing sweeps for unposted ones. AND no agency has a payroll_closed_periods row, so the mechanism has never run against real data -- only fixtures and the real handler with a stubbed upstream. The Tier A obligation over sen_pay_rates and sen_visits is OPEN and assigned to fourth, with five named things to attack in docs/2026-10-15-hank-b16-to-fourth-tier-a.md."
     },
     {
-      "commit": "dc61bfd9060e",
+      "commit": "a1c223977727",
       "date": "2026-10-15",
       "subject": "fix(sairnsenior,sd-data): paid periods are FROZEN -- a later approval is paid forward, not backdated",
       "files": [
@@ -31796,7 +31796,7 @@
       "recurrence_open": "NO OTHER REGISTRY WAS SWEPT. b14's measurement covered ten sites and named these two as the un-stripped shadowing shape; nothing in b16 re-enumerated the rest of api/sd-data.js for the same Object.assign ordering, and the coverage tool's BUILT bucket still hides any site whose payload variable is not named `payload` (b14's finding, routed to cc, not closed)."
     },
     {
-      "commit": "dc61bfd9060e",
+      "commit": "a1c223977727",
       "date": "2026-10-15",
       "subject": "fix(sairnsenior,sd-data): paid periods are FROZEN -- a later approval is paid forward, not backdated",
       "files": [
