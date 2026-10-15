@@ -526,6 +526,23 @@
       "status": "released",
       "released_at": "2026-10-15T01:00:47Z",
       "files": null
+    },
+    {
+      "id": "hover2-1792071860",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "hover audit b40: log b39 to chain + RFC3161 republish; deep-verify hank b14/cody b15/fourth b23 from source; payroll repro; claim_collision_scan.py liveness fix; citation re-checks; push; handoff/report/digest/latest b40. FILES: .claude/skills/sairn-hover-auditor/tools-hover2/claim_collision_scan.py SAIRN-handoff-H2-b40.md SAIRN-report-h2-b40.txt SAIRN-digest-h2-b40.txt SAIRN-latest-H2.md",
+      "claimed_at": "2026-10-15T13:44:20Z",
+      "claimed_at_epoch": 1792071860.2961874,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools-hover2/claim_collision_scan.py",
+        "SAIRN-digest-h2-b40.txt",
+        "SAIRN-handoff-H2-b40.md",
+        "SAIRN-latest-H2.md",
+        "SAIRN-report-h2-b40.txt"
+      ]
     }
   ],
   "refusals": [
