@@ -1,0 +1,411 @@
+REPORT cody b15
+
+DATE 2026-10-15
+CLONE C:\Users\marsh\Documents\SAIRN-cody
+BRANCH main
+CHAIN TIP 2139321d -- origin/main identical, 0 ahead / 0 behind, ancestry
+  verified with `git merge-base --is-ancestor`
+WORK COMMIT 9f04ad39 -- the six items; 2139321d is the handoff on top of it
+PUSHED WITHOUT --force. `grep -ci force` over the successful push log: 0.
+COMMITTER fx <fx@example.invalid>, this clone's LOCAL config, unchanged.
+
+ALL SIX ITEMS DONE AND LANDED. NOTHING IS HALF-FINISHED.
+
+NOTHING OVERRIDDEN. No SAIRN_SKIP, no SAIRN_GATE_EXEMPT, no SAIRN_SEED_GATE, in
+  any form. NO api/, sql/ OR tools/ FILE EDITED -- api/ was COPIED twice for
+  counterfactuals and never written. No CLAUDE.md edit. No hook added or
+  restored. .claude/settings.json never committed. No auditor clone entered.
+  THREE gates refused this push; all three were true and all three were
+  answered at cause.
+
+ONE DEVIATION, STATED FIRST BECAUSE IT IS THE PART SOMEBODY ELSE PAYS FOR:
+  I HELD NO CLAIM FOR THIS BATCH. See the section CLAIMS below.
+
+
+ITEM 1 -- THE FULL-TREE RUN, AND WHY ITS 99 FAILURES WERE NOT REPORTED AS 99
+
+  python tools/run_all_tests.py --pinned --out <log>  ->  EXIT 1
+  RAN: 385 JS + 426 PY = 811 files. 3 skipped, 2 SQL fixtures not run, 1
+  EXCLUDED (run_selftest_independence_probe.py, pinning-incompatible by the
+  runner's own record). 99 failures.
+
+  --pinned MAKES A REAL `git clone --local`, SO .git IS A DIRECTORY. A git
+  worktree leaves .git as a FILE and the clone sentinel several probes resolve
+  cannot resolve in that shape -- that produced TWO FALSE RED VERDICTS on this
+  platform in b9. The distinction is why any number here can be read.
+
+  THE RUN WARNED THAT ITS OWN FAILURE LIST MIGHT BE FICTION, verbatim:
+    THE SUITE DIRTIED THE TREE (1 path(s)) -- a probe did not clean up:
+         M docs/report-only-reachability.json
+        Results above may be CASCADE, not real: a modified tracked file
+        fails every clean-tree probe after it. Restore with git and re-run
+        before believing any failure. Nothing was restored for you.
+
+  SO NOTHING WAS REPORTED AS A FINDING YET. known_red_check --from-run split
+  the 99 against the register FIRST:
+    KNOWN      37   already registered, unchanged
+    CHANGED    16   registered red, now failing on a DIFFERENT arm
+    NEW        46   red and not recorded
+    RECOVERED   9   registered red and GREEN in this run -- the row is stale
+
+  THEN EVERY ONE OF THE 46 NEW WAS RE-DRIVEN ALONE ON A GENUINELY CLEAN TREE,
+  in an isolated real clone, with `git checkout -- .` BEFORE each file and
+  `git status --porcelain` after it:
+    STILL RED          39   real
+    GREEN ALONE         1   the sweep's failure was CASCADE
+    COULD NOT RUN       6   a third state, never folded into either
+
+  tests/run_save_reviews_retry_probe.py WAS 9/10 IN THE SWEEP AND 10/10 ALONE.
+  Reporting the 99 as printed would have FABRICATED that regression. That one
+  file is the whole justification for the re-run.
+
+  AND THE RE-RUN NAMED THE SECOND TREE-DIRTIER THE SWEEP COULD NOT ATTRIBUTE:
+  tests/run_capa_fields_probe.py leaves docs/_capa_probe_tmp.json behind and
+  TIMES OUT at 180s.
+
+  TWO OF THE 39 ARE FIXED AT CAUSE, both in tests/, both now green:
+
+  tests/run_criticality_tier_probe.py -- `NameError: name '_rm_ro' is not
+    defined`. WHERE IS THE FINDING: it was defined about twenty lines BELOW the
+    module-level `finally:` that calls it. Python resolves a name when the line
+    RUNS, and that `finally` runs during module execution -- so the error landed
+    IN THE CLEANUP PATH, after every arm had already reached its verdict, and
+    DISCARDED ALL OF THEM. THE PROBE HAD BEEN FULLY PASSING AND SAYING SO TO
+    NOBODY. Fix: the definition moved above its first use, with the reason
+    written at the new site. Now EXIT 0, 0 failed.
+
+  tests/gated_resource_direct_fetch_header.js -- ANCHOR ROT, AND THE SUITE'S
+    OWN GUARD IS WHAT CAUGHT IT: `only 17 gated resources parsed out of
+    api/sd-data.js -- the anchor moved and this suite would sweep for almost
+    nothing`. THE CAUSE: it sliced between indexOf('SD_SESSION_GATED') and
+    indexOf('SD_GATE_APP') on the RAW source, and both identifiers are
+    DISCUSSED IN COMMENTS long before they are declared -- the first
+    SD_SESSION_GATED mention is a comment at :99 and the declaration is at
+    :859 -- so indexOf found the comments and the slice spanned 58,800
+    characters of the wrong region. Fix: anchor on `const <NAME> = {` and slice
+    the COMMENT-STRIPPED source, which this file already imported via
+    tests/lib/strip_comments.js and was not using at this one site. Measured
+    after: 66 names, not 17. EXIT 0, 5 passed. NO api/ FILE EDITED.
+
+  THE OTHER 34 tests/ FAILURES ARE TRIAGED AND NOT FIXED, each with an owner
+  and an exact next step, in docs/2026-10-15-cody-b15-fulltree-triage.md. FIVE
+  CLUSTERS are named there so they are not read as 34 independent problems:
+    - a refused session-name argument, 3 files, ONE diagnosis
+    - `active-credential re-check DID NOT RUN`, 2 files, cause in api/
+    - three sabotage probes blocked by THEIR OWN BASELINE (exit 2). These are
+      COULD-NOT-RUN, not failures, and they recover BY THEMSELVES when the
+      baseline is fixed. Do not touch the probes.
+    - the sairnbuild backup/fault pair: the suite now CRASHES where the fault
+      probe expects it to catch a planted defect
+    - two session-gate sabotage probes reporting a WIDENED gate -- statements
+      about api/ that must be verified before routing
+  SAID PLAINLY: 34 test files is not one batch's work, and the alternative to
+  saying so is a silent partial sweep that reads as a complete one.
+
+  OWNERS: api/ 3 -> hank. tests/ 36 -> cody (2 fixed here). tools/ 0. docs/ 0.
+  Several probes make claims ABOUT tools/ code; NONE is routed to cc on the
+  strength of a probe's own wording.
+
+
+ITEM 2 -- THE check4_probe WRITE-UP: CONFIRMED, AND NARROWER THAN "NO"
+
+  THE NUMBER 3 -> 4 REPRODUCES EXACTLY. THE THING IT COUNTS IS NOT NAMED ARMS.
+
+    named ARM labels     3 -> 4   AS PUBLISHED      WRONG AS DESCRIBED
+    distinct named arms  2 -> 2   re-measured       the probe has always had 2
+    "ARM <n>" mentions   3 -> 4   re-measured       what the number really is
+    `if not` conditions  3 -> 5   re-measured       REPRODUCES
+    outcome-flag assigns 1 -> 2   re-measured       REPRODUCES (`ok`)
+    assert 2->2, raise 1->1, sys.exit 7->7, 568->678 lines, print() 26->24
+                                                    ALL REPRODUCE
+
+  tests/push_gate/check4_probe.py defines ARM 1 and ARM 2 in BOTH revisions.
+  Three of the four mentions in the new revision are SECTION COMMENTS (:413,
+  :463, :529, :637) and one of the three in the old is a print() (:564).
+
+  WHY THE WRONG DESCRIPTION IS WORSE THAN A WRONG NUMBER: an arm count rising
+  3 -> 4 reads as ADDED COVERAGE, which is the one direction a weakening-flag
+  resolution most wants to show, and it is the claim a reviewer is least likely
+  to re-derive because it looks like a count somebody already ran.
+
+  A FALSE ALARM OF MY OWN IS RECORDED RATHER THAN DROPPED. My first
+  re-measurement of outcome-flag assignments matched any assignment whose NAME
+  CONTAINED ok/pass/fail/arm and returned 1 -> 9, which would have made the
+  report wrong a second time. THE HEURISTIC WAS WRONG, NOT THE REPORT.
+  Restricted to the flag the probe's own comment at :637 names -- `ok` -- it is
+  1 -> 2, at :553 old and :629/:675 new.
+
+  THE VERDICT IS NOT REOPENED: the signal was and remains print()-only.
+  SAIRN-report-cody-b7.txt KEEPS ITS ORIGINAL SENTENCE with a dated
+  >>> CORRECTION block beneath it. A published report is not rewritten to look
+  as though it never said the wrong thing. AND ITS OWN SHA256 LINE WAS
+  RE-DERIVED per the hash rule the report itself states at the top, with the
+  superseded hash recorded in the correction. The rule was VERIFIED TO HOLD
+  BEFORE the edit and HOLDS AGAIN after -- a self-verifying document left
+  failing its own check is worse than one that never had the check.
+  Full account: docs/2026-10-15-cody-b15-check4-probe-correction.md
+
+
+ITEM 3 -- THE TEN BLOB SITES: CITATIONS BECAME ARMS
+
+  tests/sd_data_blob_scope_ten_routed_sites.js  NEW, EXIT 1, 3 passed 13 failed.
+
+  b14 routed these ten unconverted stored-blob write sites to hank with a
+  branch, a table and a paired read per site, and the document said in its own
+  words that every one was a CITATION stamped to a sha rather than a test
+  result. This is the other half: each is DRIVEN through the real handler with
+  licence, session and fetch mocked, and the arm asserts on THE BODY ACTUALLY
+  POSTED UPSTREAM -- the response is not where the defect lives.
+
+  MEASURED: all ten store a forged license_hash, app_id and p_license_hash
+  inside the row's `data` jsonb, VERBATIM. The scope-key list is READ OUT OF
+  api/_lib/blob.js NEVER_STORED, never typed, so a fourth scope key is asserted
+  absent the day it is added.
+
+  THREE THINGS IT DELIBERATELY DOES NOT ASSERT:
+    - that every site NEEDS converting. The coverage tool says in its own
+      header that it cannot tell a harmless RAW site from a harmful one, and
+      this suite does not overrule it.
+    - that `id` should be stripped. THE OPPOSITE IS ARM Z: sd_slabs' read
+      returns `x.data` WHOLE, so a fix stripping `id` would be a
+      correct-looking scope fix that silently emptied the id off every record.
+      Without arm Z, "strip everything" satisfies every A arm.
+    - the per-table column list, which is the converter's judgement.
+
+  A CONTROL DRIVES AN ALREADY-CONVERTED BRANCH (sdn_projects) THROUGH THE SAME
+  ARM, so thirteen red arms cannot be a harness that is unable to read a clean
+  blob at all.
+
+  COUNTERFACTUAL DRIVEN, api/ COPIED AND NEVER WRITTEN:
+    cf0 unmodified              -> EXIT 1, 13 A arms red, every PRECONDITION
+                                   and CONTROL arm green
+    cf1 all ten converted       -> EXIT 0, all 14 A arms GREEN, 16 passed
+  So each arm measures its own site's conversion and is not red for an
+  unrelated reason.
+
+  TWO HARNESS DEFECTS WERE FOUND BY DRIVING IT, both recorded in the file:
+    - the session header was typed `x-sd-session` when tokenFromRequest()
+      reads `x-sd-auth`. Every gated site failed its PRECONDITION arm, which is
+      EXACTLY the shape of a suite reporting ten defects and measuring none.
+      The header name is read out of auth.js now.
+    - the mocked modules were resolved from the repo rather than from the
+      handler under test, so the counterfactual's copied api/ tree loaded its
+      OWN licence module and answered "invalid licence" -- which would have
+      read as "the conversion does not fix the arm".
+
+
+ITEM 4 -- X1 AND X2 RE-DERIVED, AND THE b14 CITATIONS HAD ALREADY ROTTED
+
+  Both arms were still red for the same two reasons, and both had TYPED their
+  evidence: the claim sentence, the field name, and prose citing :658, :663 and
+  :943.
+
+  THOSE LINE NUMBERS WERE ALREADY WRONG WITHIN A DAY. Re-measured in b15: the
+  two assignments are at :736 and :741, and the "every consumer" comment is at
+  :1021 -- they moved when hank landed work in the same file. A CITATION IS NOT
+  EVIDENCE, which is the exact defect X1 reports, arriving inside the arm that
+  reports it.
+
+  X1 NOW PARSES ITS OWN SUBJECT. It reads the hand-driven comment for the
+  scenario the comment itself states (hire date, hours, completion date) AND
+  for every `evaluated <date> -> <verdict>` claim it makes, drives the module on
+  each of those dates, and compares. Nothing about the scenario or the
+  expectation is typed in the test.
+    IT FOUND AND CHECKED TWO CLAIMS, NOT THE ONE I HAD NOTICED: the 2026-11-02
+    half is CORRECT, and the 2026-11-03 half says NON-COMPLIANT while the module
+    returns meets === null.
+    It goes green if the comment is CORRECTED or if the BEHAVIOUR changes to
+    match it, and rewording cannot fake either -- the comparison is between two
+    things both read at runtime.
+    A PAIRED CONTROL asserts at least one claim was actually read and driven,
+    so "the comment makes no readable claim" and "every claim agrees" are not
+    the same green.
+
+  X2 NOW READS THE FIELD IDENTIFIERS OUT OF THE WITHHOLDING MESSAGE at runtime
+  and asserts the finding carries each one, and it PRINTS the assignment line
+  numbers it finds on every run instead of citing them. The citation cannot rot
+  again. Its CONTROL asserts the message really does name a field identifier,
+  so X2 cannot be satisfied by the message simply stopping.
+
+  A THIRD STATE WAS ADDED. If the comment is ever reworded past recognition, X1
+  is UNPROVEN at EXIT 3, never a pass, and the suite's exit code reports it:
+  "nothing to compare" must not look like "they agree".
+
+
+ITEM 5 -- THE ABLATIONS STOPPED BEING SCRATCH SCRIPTS
+
+  tests/run_b13_b14_ablation_record.py  NEW. EXIT 0, ALL 10 ABLATIONS BEHAVE.
+
+  b13 and b14 DID drive a counterfactual per arm, and both reports list them.
+  EVERY ONE OF THOSE RUNS HAPPENED IN A THROWAWAY SCRATCHPAD SCRIPT, so the
+  claim "this arm's failure path was driven" rested on a report sentence and on
+  a file in a temp directory. 51 of those files were still sitting in that
+  directory when b15 started and the permission layer would not let b15 delete
+  them. THAT IS A REAL ACTIVITY THAT LEFT NO ARTEFACT -- the same shape as the
+  hand-driven compliance comment X1 reports.
+
+  Each entry states the fix it removes, the arm it expects to change state, and
+  THE DIRECTION, and both directions are real ablations:
+    GREEN-ARM  the arm passes today, so REMOVING the fix must make it FAIL.
+    RED-ARM    the arm is red ON PURPOSE because its defect is routed to
+               another session. There is no fix to remove, so the only honest
+               equivalent is to APPLY the fix and require the arm to go GREEN.
+
+  THE TEN, with the measured transition:
+    b14.1a  two-axis probe, HEADLINE exclusion removed      ok   -> FAIL
+    b14.1b  two-axis probe, fixture given a headline        ok   -> FAIL
+    b14.3a  reservation lock, hardcoded name restored       ok   -> FAIL
+    b14.3b  reservation lock, SPECS emptied                 ok   -> FAIL
+    b14.4a  compliance, anniversary made inclusive          ok   -> FAIL
+    b14.4b  compliance, leap normalisation removed          ok   -> FAIL
+    b14.4c  compliance, day-zero withholding removed        ok   -> FAIL
+    b15.1a  _rm_ro dropped back below its use               exit 0 -> 1
+    b15.1b  anchor reverted to the bare identifier          exit 0 -> 1
+    b15.3   one blob site CONVERTED (RED-arm direction)     FAIL -> ok
+
+  WHAT MAKES IT A RECORD RATHER THAN A SCRIPT:
+    - it REFUSES to run on a dirty tree, because a modified tracked file fails
+      clean-tree probes after it and every arm would be measuring the dirt.
+      VERIFIED LIVE: run with one modified tracked file and it exits 3 with
+      "COULD NOT RUN: the working tree has MODIFIED TRACKED FILES".
+    - a mutation whose anchor is not found is UNPROVEN, never a pass -- the fix
+      it removes may have been reworded.
+    - it checks the arm's BASELINE state first, so an ablation cannot be
+      measuring an arm that is already in the state it expects to produce.
+    - it RESTORES and RE-CONFIRMS each suite, and asserts the live clone has no
+      modified tracked file afterwards.
+    - every mutation is applied to a COPY: api/ is copied whole, tests are
+      copied with their REPO/ROOT constant pinned back at the live clone.
+
+
+ITEM 6 -- PUSHED, LANDED, CONFIRMED, AND THREE GATES WERE TRUE
+
+  9f04ad39 (the work) and 2139321d (the handoff), both tested as ancestors of
+  origin/main. 0 ahead / 0 behind. NO --force.
+
+  copy-exactly REFUSED and the answer is a MEASUREMENT, not a plea. It flagged
+    `def _rm_ro` in tests/run_criticality_tier_probe.py against
+    tests/claims/run_freshness_probe.py. THIS PUSH PROPAGATES NOTHING: the
+    function already existed in this file at the parent commit (line 508) and
+    exists now at line 96, and the body is BYTE-IDENTICAL before and after --
+    verified by extracting it from `git show 040cbfd9:<path>` and from the
+    working copy and comparing. The duplication between the two files was
+    introduced by fa1f22d2 on 2026-10-08, which is not this batch. Answered
+    `copy-exactly-none` with that measurement.
+    AND THE GATE WAS POINTING AT SOMETHING TRUE ANYWAY: _rm_ro IS duplicated
+    across at least two tests/ files, which is a real copy-exactly exposure. It
+    is recorded as an open item rather than bundled in, because de-duplicating
+    it changes tests/claims/run_freshness_probe.py too.
+
+  tier-a REFUSED and was RIGHT about something precise: an existing obligation
+    covering `quotes` DOES NOT COVER sd_hr_employees, sd_hr_certs and
+    sdn_projects, which the new blob suite also touches. Its own words: "An
+    obligation covers the RESOURCES IT NAMES, not every resource a later change
+    happens to touch alongside them." RECORDED with tier_a_review_gate.py
+    --open naming all four, ASSIGNED TO FOURTH; cody cannot discharge its own.
+    The obligation names four things to check hardest, including that sd_hr_*
+    is PERSON DATA whose tier must be re-qualified BEFORE hank converts it.
+
+  derived-docs REFUSED because this push adds two test files. REGENERATED with
+    their own generators, never hand-edited. The whole diff is this batch's:
+    test files on disk 966 -> 968, and BOTH new suites are TRACED -- declared
+    citations 336 -> 338, traced 747 -> 749 of 968, 77.3% -> 77.4%. Both were
+    written with a REQUIREMENT: header from the start, so this batch ADDS to
+    that ratio instead of adding debt.
+
+  FINAL RE-RUN AT THE LANDED SHA, each exit code read from `echo "EXIT=$?"` on
+  its own line, never from a pipeline whose status is its last element:
+    EXIT=0  python tests/run_criticality_tier_probe.py
+    EXIT=0  node   tests/gated_resource_direct_fetch_header.js
+    EXIT=0  python tests/run_two_axis_tier_parser_probe.py
+    EXIT=0  node   tests/sairnlegacy_reservation_lock.js
+    EXIT=1  node   tests/sd_data_blob_scope_ten_routed_sites.js   A arms only
+    EXIT=1  node   tests/sairncare_compliance_window_boundary.test.js  X1, X2
+    EXIT=0  python tests/run_b13_b14_ablation_record.py           (clean tree)
+
+
+THE REGISTER -- docs/known-red-suites.json
+
+  entries 66, recovered 41, not_red 4.
+    run_criticality_tier_probe.py          -> recovered, exit 0, FIXED AT CAUSE
+    gated_resource_direct_fetch_header.js  -> recovered, exit 0, FIXED AT CAUSE
+    sd_data_blob_scope_ten_routed_sites.js -> entries, exit 1, RED ON PURPOSE,
+                                              expected_red_scope: THE A ARMS ONLY
+    sairncare_compliance_window_boundary   -> entries row UPDATED with the
+                                              re-derivation and the rotted citations
+  NOT TOUCHED, and said rather than quietly skipped: the 9 stale RECOVERED rows
+  and the 16 CHANGED rows. Each needs driving ALONE first, and the CHANGED ones
+  should be taken FIRST -- an entry that absorbs a different failure reports
+  coverage it has not got, which is worse than no entry.
+
+
+CLAIMS -- NONE, AND THAT IS THE DEVIATION
+
+  I HELD NO CLAIM FOR b15. The `sairn_claim.py claim tests ...` call was
+  DECLINED AT THE PERMISSION PROMPT, and the instruction that followed was
+  `continue`, so I continued without one. EVERY OTHER SESSION ON THIS MACHINE
+  WAS THEREFORE UNABLE TO SEE THIS WORK THROUGH THE CLAIM RECORD for its whole
+  duration. The status registry row was not updated either, for the same
+  reason.
+
+  WHAT MAKES THAT ACCEPTABLE RATHER THAN RECKLESS, stated so the next session
+  can check it rather than take my word: `python tools/sairn_status.py` at
+  session start showed cc on tools/, hank on api/, fourth on docs/
+  re-derivation, and hover/hover2 on their own logs. This batch wrote tests/
+  plus four docs/ files and one root report, and edited no api/, sql/ or tools/
+  file at all, so the declared file sets did not overlap.
+
+  THAT IS A RECONSTRUCTION AFTER THE FACT, NOT A CLAIM-RECORD CHECK, AND IT IS
+  WEAKER. NEXT SESSION: CLAIM FIRST.
+
+
+UNVERIFIED, AND SAID RATHER THAN LEFT OUT
+
+  NO LIVE DEPLOYED-URL CHECK APPLIES. No api/, sql/ or app file changed, so
+  there is nothing deployed this batch could have altered. A step with no
+  subject, not a skipped step.
+
+  THE 37 KNOWN REGISTER ROWS WERE NOT RE-DRIVEN. Nor were the 16 CHANGED or the
+  9 RECOVERED. ONLY THE 46 NEW were re-driven alone on a clean tree, and no
+  claim is made about the others.
+
+  THE 34 TRIAGED FAILURES ARE DIAGNOSED FROM THEIR OWN LAST LINE, not from
+  reading each subject. Every probe claim ABOUT api/ or tools/ code is marked
+  "verify first" in the triage document and NONE is routed on its wording. In
+  particular tests/sairnlegacy_fault_probe.py's "app_id is taken from the client
+  again" is a LEAD, not a finding -- if true it is a tenancy defect and hank's,
+  urgently, and it was not verified here.
+
+  THE TEN BLOB SITES ARE STILL UNCONVERTED. The arms prove the defect; the fix
+  is hank's. docs/blob-conversion-coverage.json stays at unconverted: 58.
+
+  THE TIER A REVIEW IS OPEN, NOT DISCHARGED. Recorded and assigned to fourth.
+  Recording an obligation is not having been reviewed.
+
+  X1 AND X2 ARE STILL MY OWN DIAGNOSES OF api/ COMMENTS AND FIELDS, and have
+  not been reviewed by anyone else. What changed in b15 is that a reviewer no
+  longer has to trust my reading: both arms re-derive their subject from source
+  and both have a committed ablation.
+
+  docs/test-file-floor.json IS NOT RAISED TO 811. The run raised it in the
+  throwaway pinned clone, so this clone's copy is unchanged. Deliberately not
+  done: a ratchet set from a run whose failures were still being triaged is a
+  floor set on an unfinished measurement.
+
+  THE SCRATCHPAD WAS NOT CLEARED, for the third time across two batches. `rm`
+  inside the session temp directory is REFUSED by the permission layer. 95
+  files, 247 MB, every name listed in the handoff -- including the two
+  DIRECTORIES (a 455-file copy of api/, and a full git clone) that are nearly
+  all of the volume and are the two worth deleting by hand.
+
+
+HANDOFF
+SAIRN-handoff-cody-b15.md, written BEFORE this report and uploaded first.
+  `python tools/drive_upload_verify.py --agent cody --batch b15` PASSED it at
+  21677 bytes with a matching first line, in folder
+  14Xc5oT0xzSLa_rTSOSXWVK3Kko1Fbx09. The tool's two findings on that run were
+  the report and digest not existing yet, which was true at the time and is
+  what this file and the digest close.
+
+SHA256 SAIRN-handoff-cody-b15.md = c6350da0b5bdf313690338f29992708bc9cf6e57c42f7ad3208bad0349b7ba17
+END-OF-REPORT

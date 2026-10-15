@@ -3907,6 +3907,25 @@
         "tests/run_two_axis_tier_parser_probe.py",
         "tests/sairnlegacy_reservation_lock.js"
       ]
+    },
+    {
+      "id": "cody-1792067786",
+      "session": "cody",
+      "subject": "tests",
+      "task": "b16: the 34 triaged tests/ failures cluster by cluster, cc b14 routed test-file-floor layer arms + raw-status probe reads + exit-3 reason line, re-drive the 16 CHANGED and 9 RECOVERED register rows, the sairnlegacy app_id tenancy claim driven with a counterfactual, run_capa_fields_probe cleanup, _rm_ro de-duplicated into tests/lib/, ablation records for b14-b15 arms, push. FILES: tests/ docs/b16-logs/ docs/known-red-suites.json docs/2026-10-15-cody-b16-fulltree-cluster-triage.md docs/2026-10-15-cody-b16-app-id-tenancy.md SAIRN-handoff-cody-b16.md SAIRN-report-cody-b16.txt SAIRN-digest-cody-b16.txt SAIRN-latest-cody.md. NO api/ FILE (hank), NO tools/ FILE (cc), NO sql/ FILE, NO auditor clone entered.",
+      "claimed_at": "2026-10-15T12:36:26Z",
+      "claimed_at_epoch": 1792067786.1920083,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-cody-b16.txt",
+        "SAIRN-handoff-cody-b16.md",
+        "SAIRN-latest-cody.md",
+        "SAIRN-report-cody-b16.txt",
+        "docs/2026-10-15-cody-b16-app-id-tenancy.md",
+        "docs/2026-10-15-cody-b16-fulltree-cluster-triage.md",
+        "docs/known-red-suites.json"
+      ]
     }
   ],
   "refusals": [
