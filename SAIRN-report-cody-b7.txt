@@ -338,6 +338,42 @@ count alone would not settle it, so its REAL mechanism was counted too: named
 ARM labels 3 -> 4, `if not` conditions 3 -> 5, outcome-flag assignments 1 -> 2.
 THE ONLY COUNT THAT FELL IS print(), 26 -> 24, which is the entire signal.
 
+  >>> CORRECTION 2026-10-15 (cody b15). THE SENTENCE ABOVE IS LEFT AS WRITTEN
+  >>> because it was published and a reader lands here, but "named ARM labels
+  >>> 3 -> 4" IS WRONG AND MUST NOT BE QUOTED. Found by h1, routed by cc b13.
+  >>> RE-MEASURED from both revisions read out of git, never retyped:
+  >>>   named ARM labels (distinct)        2 -> 2   THE PROBE HAS ALWAYS HAD TWO
+  >>>   "ARM <n>" MENTIONS                 3 -> 4   <- what 3 -> 4 really counts
+  >>> The probe defines ARM 1 and ARM 2 in BOTH revisions. The figure 3 -> 4 is
+  >>> the count of TEXT MENTIONS of "ARM <n>": three of the four in the new
+  >>> revision are SECTION COMMENTS (:413, :463, :529, :637) and one of the
+  >>> three in the old is a print() (:564). So the NUMBER reproduces and the
+  >>> DESCRIPTION does not -- it was never a count of arms, and an arm count
+  >>> that rose from 3 to 4 would have been evidence of added coverage this
+  >>> probe never gained.
+  >>> THE OTHER TWO FIGURES IN THAT SENTENCE BOTH REPRODUCE EXACTLY:
+  >>>   `if not` conditions                3 -> 5
+  >>>   outcome-flag assignments           1 -> 2   (assignments to `ok`:
+  >>>                                               :553 old; :629, :675 new)
+  >>> AND SO DOES EVERY FIGURE IN THE SENTENCE BEFORE IT: assert 2 -> 2, raise
+  >>> 1 -> 1, sys.exit 7 -> 7, 568 -> 678 lines, print() 26 -> 24.
+  >>> ONE FALSE ALARM OF MY OWN, RECORDED SO NOBODY "RE-CORRECTS" A CORRECT
+  >>> FIGURE: a first re-measurement of outcome-flag assignments matched any
+  >>> assignment whose NAME CONTAINED ok/pass/fail/arm and returned 1 -> 9.
+  >>> That heuristic was wrong, not the report. Restricted to the real flag --
+  >>> the one the probe's own comment at :637 names, `ok` -- it is 1 -> 2.
+  >>> THE VERDICT IS NOT REOPENED. The signal was and remains print()-only.
+  >>> Full account, with the command per figure:
+  >>> docs/2026-10-15-cody-b15-check4-probe-correction.md
+  >>> AND THIS REPORT'S OWN SHA256 LINE WAS RE-DERIVED, because the rule it
+  >>> states at the top ("the BODY is every byte from line 2 through the line
+  >>> immediately before the SHA line") covers this correction block too.
+  >>> Verified before editing: the committed line matched the committed body
+  >>> exactly. SUPERSEDED BODY SHA256 (b7, as published):
+  >>>   4d32d6c58aa77a2dd87e416bcf1cac251fc3d63ee798cdb9cdabd7c72e8ebe46
+  >>> A self-verifying document left failing its own check is worse than one
+  >>> that never had the check.
+
 AND I MAY NOT SIGN THAT OFF. cody wrote c465743b. A verdict by the author is
 the same self-review tools/tier_a_review_gate.py refuses at write time, and this
 control exists precisely because an agent must not quietly weaken what checks
@@ -508,5 +544,5 @@ reuse rather than nineteen separate investigations.
   - One register record (f9a4e5a0032b) is external and unverified in this clone.
   - The 2026-09-27 Tier A record is UNREVIEWED and UNRESEATABLE from here.
   - The sairnbuild Draw Requests panel is still not role-gated client-side.
-SHA256 4d32d6c58aa77a2dd87e416bcf1cac251fc3d63ee798cdb9cdabd7c72e8ebe46
+SHA256 ac52ec11cb0005ef0ae59dd4ebc4f8ae53e5ec72e820c4a35c4dc0c33a49d15b
 END-OF-REPORT
