@@ -381,7 +381,22 @@ def _pin_repo(text, ext):
     a = "const ROOT = path.join(__dirname, '..');"
     if a in text:
         return text.replace(a, 'const ROOT = ' + lit + ';', 1), None
-    return text, 'no ROOT constant of the expected shape'
+    # ── THE __dirname SHAPE, ADDED 2026-10-15 (cody b17) ───────────────────
+    # Not every JS suite declares a ROOT. tests/sairnbuild_backup_pending.js
+    # reaches its subject directly -- `path.join(__dirname, '..',
+    # 'sairnbuild.html')` -- so this function reported "no ROOT constant of
+    # the expected shape" and the arm went UNPROVEN, which is the honest
+    # answer and a silent loss of coverage.
+    #
+    # In a COPY, `__dirname` means the temp directory; for a pinned copy it
+    # must mean the live tests/ directory. Substituting the literal is exactly
+    # that, it covers the ROOT shape and this one and any other path built
+    # from __dirname, and it is checked rather than assumed: a file with no
+    # __dirname at all still refuses below.
+    dirlit = json.dumps(os.path.join(REPO, 'tests').replace(os.sep, '/'))
+    if '__dirname' in text:
+        return text.replace('__dirname', dirlit), None
+    return text, 'no ROOT constant and no __dirname of the expected shape'
 
 
 def drive_suite(path_abs, env=None, cwd=None):
