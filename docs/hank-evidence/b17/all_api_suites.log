@@ -23,6 +23,7 @@
 0 api/b17-one-person-agency.test.js
 0 api/b17-practitioner-role-maps.test.js
 0 api/b17-straight-time-floor.test.js
+0 api/b17-tier-a-count-agreement.test.js
 0 api/b17-trust-lock-hard.test.js
 0 api/bridge-push-auth.test.js
 0 api/claude-cost-controls.test.js
@@ -110,7 +111,7 @@
 0 api/sd-data-sen-caregiver-pii-scope.test.js
 0 api/sd-data-sen-caregiver-read-paths.test.js
 0 api/sd-data-sen-evv-clock.test.js
-1 api/sd-data-sen-role-asymmetry.test.js
+0 api/sd-data-sen-role-asymmetry.test.js
 0 api/sd-data-sen-self-correction-flag.test.js
 0 api/sd-data-sen-settings-isolation.test.js
 0 api/sd-data-session-gate.test.js
@@ -141,7 +142,7 @@
 0 api/_lib/ai-usage.test.js
 0 api/_lib/alf-family-mar.test.js
 0 api/_lib/anon-rate-limit.test.js
-1 api/_lib/auth-roleset-seam.test.js
+0 api/_lib/auth-roleset-seam.test.js
 0 api/_lib/auth.test.js
 0 api/_lib/biometric-consent.test.js
 0 api/_lib/calendar-date.test.js

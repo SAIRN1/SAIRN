@@ -1,0 +1,64 @@
+=== Check 0a: checkblocks ===
+TOTAL_BLOCKS:3
+FAILED_BLOCKS:0
+TOTAL_BLOCKS:4
+FAILED_BLOCKS:0
+=== node --check on every changed JS in b17 ===
+OK   api/_lib/leg-roles.js
+OK   api/_lib/sen-evv-clock.js
+OK   api/_lib/sen-evv-readiness.js
+OK   api/_lib/sen-payroll.js
+OK   api/_lib/sv-roles.js
+OK   api/_resources/sairnsenior.js
+OK   api/b14-clock-approval-two-person.test.js
+OK   api/b16-evv-pay-agreement.test.js
+OK   api/b17-closed-period-write-path.test.js
+OK   api/b17-evv-closed-period-asof.test.js
+OK   api/b17-freeze-reopen.test.js
+OK   api/b17-lift-list-check.test.js
+OK   api/b17-one-person-agency.test.js
+OK   api/b17-practitioner-role-maps.test.js
+OK   api/b17-straight-time-floor.test.js
+OK   api/b17-tier-a-count-agreement.test.js
+OK   api/b17-trust-lock-hard.test.js
+OK   api/sd-auth.js
+OK   api/sd-data-leg-session-gate.test.js
+OK   api/sd-data-sen-role-asymmetry.test.js
+OK   api/sd-data-sv-role-matrix.test.js
+OK   api/sd-data-sv-session-gate.test.js
+OK   api/sd-data.js
+OK   api/sen-auth.js
+=== Check 31 tools ===
+C:\Python314\python.exe: can't open file 'C:\\Users\\marsh\\Documents\\SAIRN-hank\\tools\\sairn_code_scrubber.py': [Errno 2] No such file or directory
+=== citation_line_drift_check ===
+--app and --prefix are both required. Neither is guessed from the other: an app file and a resource prefix do not follow one rule, and a guess would measure the wrong file.
+=== literal_drift_check ===
+COULD NOT RUN: no input given. Nothing was checked.
+usage: python tools/literal_drift_check.py <file>
+  Finds duplicated literals that have DIVERGED between copies.
+=== citation_line_drift_check sairnsenior ===
+  ANCHORED     : 0 -- the cited line names the resource, or reaches it in <=2 hops. This OUTRANKS distance: proximity to a write is a proxy, and on sd_comms the proxy inverted.
+  SOUND        : 0 -- no direct reference, but within the window of a write site. The old rule, now a FALLBACK.
+  DRIFTED      : 12
+  INCONCLUSIVE : 6 -- no write site to point at, so NOT reported as drifted
+
+DRIFTED means NOT ANCHORED TO A WRITE SITE. It does NOT mean the citation has moved, and the arrow is a CANDIDATE, not a correction to apply.
+Before repointing any line above, read the register cell's own prose against the `cited line reads:` text. A cell may cite a render or field-construction site DELIBERATELY -- to prove a field is only rendered, or to show which fields are stored -- and this tool resolves write sites only, so it cannot tell those from a stale citation.
+Measured both ways: sairnfreedom 32/32 were genuine drift (one uniform +825/+834 shift); sairngrounds 4/4 were deliberate read-site citations and repointing them would have broken four correct cells. Nothing here edits the document.
+=== literal_drift sen-payroll / readiness ===
+
+GATED FINDINGS:0 -- the gated set is the entity name and section C.
+Anything printed above under another heading is a TRIAGE SIGNAL and
+was deliberately not gated: demo phone numbers and demo city names
+dominate it, and a checker that cries wolf is one nobody reads.
+
+GATED FINDINGS:0 -- the gated set is the entity name and section C.
+Anything printed above under another heading is a TRIAGE SIGNAL and
+was deliberately not gated: demo phone numbers and demo city names
+dominate it, and a checker that cries wolf is one nobody reads.
+  none
+
+GATED FINDINGS:0 -- the gated set is the entity name and section C.
+Anything printed above under another heading is a TRIAGE SIGNAL and
+was deliberately not gated: demo phone numbers and demo city names
+dominate it, and a checker that cries wolf is one nobody reads.

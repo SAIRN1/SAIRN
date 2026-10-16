@@ -8060,6 +8060,80 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b14-clock-approval-two-person.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f67e1ca869640cec15edc9f0bb0e28990c0789e3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b17-closed-period-write-path.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "&& /limited to/.test(String(got.body && got.body.error && got.body.error.message"
+    }
+   ],
+   "sha": "f67e1ca869640cec15edc9f0bb0e28990c0789e3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b17-lift-list-check.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "'L2. no lifting suite was skipped silently: ' + unreadable.length"
+    }
+   ],
+   "sha": "f67e1ca869640cec15edc9f0bb0e28990c0789e3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b17-one-person-agency.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f67e1ca869640cec15edc9f0bb0e28990c0789e3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b17-practitioner-role-maps.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f67e1ca869640cec15edc9f0bb0e28990c0789e3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-leg-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f67e1ca869640cec15edc9f0bb0e28990c0789e3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-sv-role-matrix.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f67e1ca869640cec15edc9f0bb0e28990c0789e3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-sv-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f67e1ca869640cec15edc9f0bb0e28990c0789e3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_gh_push_argv_probe.py",
    "class": "test file",
    "level": "CHANGE",
