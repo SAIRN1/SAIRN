@@ -33149,6 +33149,260 @@
         }
       ],
       "recurrence_open": "the second guard DETECTS and cannot refuse, so a replayed violation still reaches local history -- it is now named at the rewrite instead of only at the push. Nothing closes the commit-time miss itself, because git will not call pre-commit on a replay. And the eight arms cover the gate in a SANDBOX: no arm runs in the auditor's real clone, which a build agent must not enter."
+    },
+    {
+      "commit": "136579b64931",
+      "date": "2026-10-16",
+      "subject": "fix(claims): self_hits WAS wired to a refusal -- to a different input, which is worse than not being wired",
+      "files": [
+        "docs/TOOLING-INVENTORY.md",
+        "tools/sairn_claim.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 307,
+      "lines_removed": 14,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "tools/sairn_claim.py asked one question -- does this session already hold an\noverlapping claim -- from TWO DIFFERENT SOURCES, and a comment in the file said\nthey were the same set. cmd_check built self_hits from\nload_all(from_origin=True) filtered to me, which is ORIGIN/MAIN ONLY because\nload_all REPLACES its source when it can read origin rather than merging; so\n`check`, the advisory read every agent runs first every batch, was structurally\nblind to this session own UNPUBLISHED claim. cmd_claim refused from\nmy_active_overlaps(doc, task) where doc is load_mine(), THIS CLONE LOCAL FILE\nONLY; so the refusal was blind to a claim on origin that is not in this working\ncopy. Each was blind to exactly what the other could see. The session own\nregistry row was read by neither, because registry_claims builds rows for every\nsession EXCEPT me.",
+      "rules": [
+        "1.10"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "commit": "1f25f8bf6613",
+        "date": "2026-09-17",
+        "subject": "fix(claims): the duplicate this tool could not see was your own claim",
+        "lag_days": 29
+      },
+      "citation_note": "A computed answer is only as current as its oldest input, and here there were\nthree inputs where the code used one -- a different one at each call site. The\nunion now reads all three and tags every row with where it was seen, so an\nunpushed claim can be told from a published one instead of being reduced to a\ncount.",
+      "contributing_factors": [
+        {
+          "factor": "two call sites computed one verdict from different inputs, and a comment asserted they were the same set",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "one function over the UNION of origin/main, the working tree and the status registry, merged INSIDE my_active_overlaps so there is a single verdict path"
+        },
+        {
+          "factor": "the session own status-registry row was read by nothing, because the registry reader excludes me by design",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "registry_rows_for(session) is the same shaping with one parameter, so there is still one code path"
+        },
+        {
+          "factor": "a source that cannot be read was indistinguishable from a source with no claim in it",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "an unreadable source is NAMED and the answer is called INCOMPLETE; in `claim` it prints and proceeds, because refusing every claim when the network is down is the shape people learn to talk past"
+        },
+        {
+          "factor": "the third state had no label -- an `expired` self-overlap printed as [same app] because the report had two labels for three kinds",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "it prints [EXPIRED] with its own paragraph, so the question is asked at check time rather than only in `audit`"
+        },
+        {
+          "factor": "the first refactor BROKE two sabotage anchors in a probe under tests/, which is another session directory",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the union moved inside my_active_overlaps so both anchors survive verbatim and the probe needed no edit; the probe was right that a second copy of a mutated line is a mutation that cannot be caught"
+        }
+      ],
+      "recurrence_open": "Two of the three routed symptoms are NOT defects in this file and are reported\nrather than fixed. hank double-active-claims is real -- 10 after-guard same-work\npairs concurrent for 0.6h to 33.7h -- and is the documented disagreement\nbetween is_active() expiry and the real held span, not a missing refusal; the\ndefect underneath is claims held 14-34 hours without release and nothing here\ncloses it. The hover/hover2 claim-name collision does not reproduce in this\nfile and if it exists it is inside the auditor own tooling, a clone a build\nagent must not enter."
+    },
+    {
+      "commit": "4b54e7c81071",
+      "date": "2026-10-16",
+      "subject": "fix(matcher): the exemption is derived from the live corpus, so a phrase crossing three sessions silently retired a live incident",
+      "files": [
+        "docs/claim-matcher-pinned-phrases.json",
+        "tools/sairn_claim.py"
+      ],
+      "lines_added": 273,
+      "lines_removed": 24,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "tools/sairn_claim.py common_phrases() exempts any bigram or identifier used by\nCOMMON_PHRASE_SESSIONS (3) or more distinct sessions, and the exemption set is\nDERIVED FROM THE LIVE CLAIM CORPUS -- so it is a moving line and the matcher\ngets weaker every time a phrase crosses it. The bigram \"rebase resolve\" reached\nexactly 3 sessions (cc 2 claims, cody 2, fourth 3) because\ntools/sairn_rebase_resolve.py is a standard move every build agent names in its\nown claims. It became exempt, and THE FOURTH LIVE INCIDENT -- one of the two\nthe own-claim guard was built for -- silently stopped being caught:\nself_overlap() on its real task strings returned kind=None where it must return\nrefuse, and that bigram is the ONLY overlap between the two strings. No shared\nidentifier, no shared path. Nothing announced it; two probe arms are the only\nthing that noticed.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "run_own_claim_overlap_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "a0e6bdfc4d25",
+        "date": "2026-09-29",
+        "subject": "fix(claim): a disclosure of disjointness is not a claim, and common vocabulary is not a subject",
+        "lag_days": 17
+      },
+      "citation_note": "A check that stopped checking. The exemption was correct when written and is\nstill correct in general -- it exists for 110 real false blocks -- but it is\ncomputed from data that grows, so it retires blocks over time with no signal.\nThe incident it retired was one of the two the guard above it exists for.",
+      "contributing_factors": [
+        {
+          "factor": "the exemption threshold is applied to a corpus that grows, so coverage decays with use and nothing reported the decay",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "phrases a recorded incident rests on are PINNED from docs/claim-matcher-pinned-phrases.json and subtracted from the exemption; `audit` now prints exempt, pinned, at-threshold and one-session-away so the next crossing is visible first"
+        },
+        {
+          "factor": "the question was answered by reasoning about the policy change rather than by running the matcher on the real incidents",
+          "kind": "process",
+          "action_status": "done",
+          "action": "PR 2.7 applied: 23 of 23 historical pairs re-run, plus the decisive disjoint-files arm, which is how the third cause was found instead of choosing between the two offered readings"
+        },
+        {
+          "factor": "a pin list is itself a thing that drifts from the incidents it is about",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "it is a committed record read at run time, not a literal in code, and each entry names the incident, the probe arm that holds it and the session count when it was pinned"
+        },
+        {
+          "factor": "pinning broadly would reinstate all 110 false blocks the exemption exists for",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "exactly one phrase is pinned and two OVER-PINNING control arms require `html tests` and `push gate` to stay exempt"
+        },
+        {
+          "factor": "an unreadable pin file could silently restore the full exemption",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "it yields no pins and says so on stderr -- the weaker direction, chosen deliberately, and it proved itself when the first draft called io.open in a module with no io import"
+        }
+      ],
+      "recurrence_open": "856 phrases sit EXACTLY at the threshold and 2,931 are ONE SESSION AWAY from\nit. Each of those is a block that will retire the moment one more session\nwrites it, and only the ones an incident is known to rest on are pinned --\nwhich means the mechanism is now visible but is NOT closed. Nobody has swept\nthe other historical incidents to find which of their blocking phrases are\nalready exempt."
+    },
+    {
+      "commit": "59e313d005ad",
+      "date": "2026-10-16",
+      "subject": "fix(blob coverage): the scope window was a seven-line count, and a line count cannot see a write body",
+      "files": [
+        "docs/TOOLING-INVENTORY.md",
+        "docs/blob-conversion-coverage.json",
+        "tools/blob_conversion_coverage.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 402,
+      "lines_removed": 21,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/blob_conversion_coverage.py decided whether a `data:` site was a\nlicence-scoped write by asking whether `license_hash` appeared in\n`lines[i-4:i+3]` -- a flat seven-line window, three either side. For a RATCHET\nthat is wrong in the direction that matters: a write body the window cannot see\nis a site the coverage ratio never divides by, so the ratio OVERSTATES\nconversion. Measured over the real api/ tree: of 81 `data:` sites whose\nexpression is a WRITE shape, 62 fell inside the window and 19 fell OUTSIDE.\napi/sd-data.js:16001 is `body: JSON.stringify({ data: payload, ... })` on a\nleg_merch_units PATCH -- `data: payload` RAW, the exact thing this tool counts\n-- and its license_hash is six lines up in the rest() URL, not in the body at\nall. api/sd-data.js:8880 is an rf_cert_rules upsert whose `license_hash:\nlicHash` is four lines up, one line outside the window.",
+      "rules": [
+        "1.7"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "944a5faadae5",
+        "date": "2026-09-26",
+        "subject": "fix(blob): item 94 was reported COMPLETE by a grep that could not match the sites it left -- 11 converted, 64 still raw, and now measured",
+        "lag_days": 20
+      },
+      "citation_note": "A sampling window silently exempts what it does not reach, and this one was a\nLINE COUNT over a structure: a seven-line window over multi-line write bodies\nin a file whose nearest-key distance distribution runs to 53 lines. The\nexemption was invisible in both directions -- it dropped real write bodies and\nit bled 129 read responses in.",
+      "contributing_factors": [
+        {
+          "factor": "the scope test was a proximity rule over a STRUCTURE -- a line count cannot see where a write body begins or ends",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "S1 bounds the body by brace balance, S2 reads the URL of the fetch WHOSE CALL CONTAINS that body, S3 makes an unboundable body its own third state UNRESOLVED-SCOPE. No line count anywhere."
+        },
+        {
+          "factor": "widening the window was the obvious fix and would have been the same mistake -- at any wider setting a read response gets scoped by the write above it",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "re-qualified against THIS target per discipline 7 rather than copying the census R1 rule: the distance distribution was measured first and has no gap to cut at"
+        },
+        {
+          "factor": "the first draft of S2 took the nearest PRECEDING fetch regardless of containment, which is a proximity rule wearing a structural one",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the fetch call span is balanced and the body must lie INSIDE it; the draft reported 593 sites against the window 266 and the inflation was reads. The arm that caught it is kept"
+        },
+        {
+          "factor": "the ratchet could be re-pinned UPWARD with a generic one-sentence note, so a measurement change and a quiet retreat looked identical",
+          "kind": "process",
+          "action_status": "done",
+          "action": "--repin REFUSES an upward re-pin without --why, 40 characters minimum, written into the pin with previous_unconverted and a direction field. A downward re-pin needs none"
+        },
+        {
+          "factor": "a `data:` inside a regex or string literal cannot be bounded by a brace walk",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "reported as UNRESOLVED-SCOPE rather than guessed; the one real instance is the data-URI regex at api/_lib/dental-photo-validation.js:14"
+        }
+      ],
+      "recurrence_open": "The pin rose 48 to 49 and that is the first honest figure, not a better state\n-- 48 was an undercount of the gap and the one newly visible RAW site is still\nunconverted. Nothing converts it here. The UNRESOLVED-SCOPE state is reported\nand nothing refuses on it. And the same seven-line-window shape was not swept\nfor across the other 350 tools: it was found in this one because somebody was\nsent at it."
+    },
+    {
+      "commit": "6fd762ea8620",
+      "date": "2026-10-16",
+      "subject": "fix(sweep): the log was ZERO BYTES whenever the run was killed, which is every run that matters",
+      "files": [
+        "docs/TOOLING-INVENTORY.md",
+        "tools/report_only_checks.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 43,
+      "lines_removed": 4,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/report_only_checks.py is the longest-running program on the platform and\nit carries a budget precisely because it gets cut off. Its only real use is\nredirected, and stdout is BLOCK-buffered when redirected, so a run killed at\nthe ceiling wrote a ZERO-BYTE log -- indistinguishable from a sweep that never\nstarted. Measured: 68 print() calls in the file and zero flushes. Ablated with\nthe same kill on the same tree: 0 bytes without the flushes, 704 bytes with\nthem, the surviving log naming entry_point_scope_check.py as the last checker\nstarted.",
+      "rules": [
+        "1.13"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "408df81878b1",
+        "date": "2026-09-10",
+        "subject": "feat(tools): a report-only promotion path for the 28 checkers nothing ran",
+        "lag_days": 36
+      },
+      "citation_note": "A waiter whose only terminal state is success cannot report the answer that\nmatters. This sweep is bounded BECAUSE it is expected to be cut off, and the\ncut-off run was the one that produced no output at all -- so the only outcome\nit could report was completion.",
+      "contributing_factors": [
+        {
+          "factor": "stdout is block-buffered when redirected and the program printed nothing until the end",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "a flush per entry, with the tool name printed and flushed BEFORE its checker runs, so a kill during entry N leaves N visible as the last thing STARTED"
+        },
+        {
+          "factor": "output printed outside the sweep loop was equally lost",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "line buffering set in main(), with a named stderr note if reconfigure() is unavailable rather than a silent loss"
+        },
+        {
+          "factor": "a zero-byte log reads as a sweep that never ran, so a killed run and an absent run had the same evidence",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the surviving prefix names the last checker started, which converts a silent kill into a stated unknown"
+        },
+        {
+          "factor": "the same shape exists in at least three other programs on this platform",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "tests/run_capa_fields_probe.py was fixed by cody; tests/push_gate/check3_probe.py and tools/route_suite_failures.py are named with their owner and not edited -- all three are cody's by the directory rule or by an OWNER line"
+        }
+      ],
+      "recurrence_open": "Only this program is fixed. No sweep was run for the same shape across the\nother 350 tools, and three known instances remain open in cody's files. There\nis also no detector for it: nothing on this platform notices a program that\nprints only at the end, so the next one is found the same way this was -- by\nsomebody killing a run and looking at the file."
     }
   ],
   "started": "2026-09-09",
