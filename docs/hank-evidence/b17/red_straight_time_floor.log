@@ -1,0 +1,27 @@
+api/b17-straight-time-floor.test.js
+  an adjustment is never negative; an overpayment is surfaced, never netted
+  FAIL     A1. a DOWNWARD correction posts NO adjustment line and deducts nothing
+           adjustment_cents=-2000 adjustments=1
+  FAIL     A2. INVARIANT total_payable_cents >= gross_cents on the downward case
+           total_payable=-2000 gross=0
+  FAIL     A3. overpayments[] names employee, visit, service date, minutes and cents
+           []
+  FAIL     A4. the overpayment is reported and NOT netted, at both levels
+           period adj=-2000 period overpaid=undefined cg total=-2000 cg gross=0
+  ok       A5. CONTROL -- the UPWARD correction still pays 2000 cents forward
+  FAIL     A6. premium_may_be_owed is TRUE when the as-paid week SEEN already crosses 40h
+           {}
+  FAIL     A7. premium_may_be_owed is null and NEVER false when the week cannot be ruled out
+           {"hasFalse":false}
+  FAIL     A8. not_computed states that no overpayment is recovered and why
+           Taxes, withholding and net pay. This is GROSS only. | Travel time between clients, which is generally compensable under 29 C.F.R. §785.38 and is not inferable from visit records alone. | Live-in arrangements and sleep-time exclusions. | Paid leave, holiday premiums, shift differentials and bonuses, none of which this app records. | State overtime rules that are more generous than the FLSA. | THE O
+  FAIL     A9. the invariant holds over 6 shapes, including two caregivers and a reversed clock
+           shape 0 E1 total=-2000 gross=0 ; shape 0 E1 NEGATIVE adjustment_cents=-2000 ; shape 0 period adjustment_cents=-2000 ; shape 1 E1 total=-2000 gross=0 ; shape 1 E1 NEGATIVE adjustment_cents=-2000 ; shape 1 E2 total=-2000 gross=0 ; shape 1 E2 NEGATIVE adjustment_cents=-2000 ; shape 1 period adjustment_cents=-4000
+  UNPROVEN A10. ABLATION -- without the sign guard the deduction returns
+           anchor occurs 0 times, not 1
+  FAIL     A11. CONTROL -- with no closed_periods there is no adjustment and no overpayment
+           {"adj":0}
+
+  1 passed, 9 failed, 1 unproven
+  FAILED: A1, A2, A3, A4, A6, A7, A8, A9, A11
+  UNPROVEN: A10

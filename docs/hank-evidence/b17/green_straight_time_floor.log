@@ -1,0 +1,15 @@
+api/b17-straight-time-floor.test.js
+  an adjustment is never negative; an overpayment is surfaced, never netted
+  ok       A1. a DOWNWARD correction posts NO adjustment line and deducts nothing
+  ok       A2. INVARIANT total_payable_cents >= gross_cents on the downward case
+  ok       A3. overpayments[] names employee, visit, service date, minutes and cents
+  ok       A4. the overpayment is reported and NOT netted, at both levels
+  ok       A5. CONTROL -- the UPWARD correction still pays 2000 cents forward
+  ok       A6. premium_may_be_owed is TRUE when the as-paid week SEEN already crosses 40h
+  ok       A7. premium_may_be_owed is null and NEVER false when the week cannot be ruled out
+  ok       A8. not_computed states that no overpayment is recovered and why
+  ok       A9. the invariant holds over 6 shapes, including two caregivers and a reversed clock
+  ok       A10. ABLATION -- without the sign guard the deduction returns (-2000, total < gross)
+  ok       A11. CONTROL -- with no closed_periods there is no adjustment and no overpayment
+
+  11 passed, 0 failed, 0 unproven

@@ -1,11 +1,26 @@
 // api/_lib/sen-evv-readiness.js
 // SAIRNsenior EVV submission-readiness engine. 2026-08-27.
 //
-// PURE -- no I/O, no database, no network. Takes a visit plus the client and
-// caregiver it references, returns whether that visit carries the data an EVV
-// submission would need and NAMES what is missing. Same shape as
-// api/_lib/payer-routing.js and api/_lib/compliance-rules.js, for the same
-// reason: the rules can be tested without infrastructure.
+// ── "PURE" MEANS NO I/O. IT NO LONGER MEANS NO DEPENDENCIES. ─────────────
+// CORRECTED 2026-10-16 (b17), on fourth's b26 Q(c): this header said "PURE --
+// no I/O, no database, no network" at a time when the sentence was doing TWO
+// jobs -- claiming no side effects AND claiming the file stood alone -- and
+// only the first is still true. b16 added a require of api/_lib/sen-evv-clock.js
+// and b17 adds one of api/_lib/sen-payroll.js, both deliberately, because one
+// copy of a rule beats three. fourth: "the headers are now misleading, and
+// THAT is the defect, not the require()". hank's own line that not editing
+// them "may itself be the defect" was right.
+//
+// WHAT IT MEANS NOW, exactly: NO I/O -- no fetch, no database, no filesystem,
+// no clock-of-the-wall except through values passed in -- and TWO IMPORTS,
+// both themselves I/O-free, named at their require() sites with the reason.
+// The testability this claim exists to promise is intact: the rules can still
+// be driven without infrastructure.
+//
+// Takes a visit plus the client and caregiver it references, returns whether
+// that visit carries the data an EVV submission would need and NAMES what is
+// missing. Same shape as api/_lib/payer-routing.js and
+// api/_lib/compliance-rules.js, for the same reason.
 //
 // ── WHAT THIS IS FOR, AND WHAT IT DELIBERATELY IS NOT ────────────────────
 // This REPORTS. It does not transmit, does not persist, and does not modify a
@@ -152,14 +167,28 @@ const FEDERAL_SOURCE = {
   ]
 };
 
-// THE ONLY require IN THIS FILE (2026-10-15, b16 -- F2). It does not break the
-// purity this module keeps: api/_lib/sen-evv-clock.js is itself pure -- no
-// fetch, no I/O -- and what is imported is the single function that decides
+// ── IMPORT 1 of 2 (2026-10-15, b16 -- F2) ────────────────────────────────
+// NOT "the only require in this file" any more -- it said that until b17 added
+// the second one below, and a header that counts its own imports is a sentence
+// that goes stale the next time somebody adds one. api/_lib/sen-evv-clock.js
+// is itself I/O-free, and what is imported is the single function that decides
 // which clock value is in effect. api/_lib/sen-payroll.js carries the same
-// import for the same reason and says so in the same words; the whole point of
-// F2 is that these two files ask ONE function rather than each holding a copy
-// of the approval rule.
+// import for the same reason: these files ask ONE function rather than each
+// holding a copy of the approval rule.
 const senEvvClock = require('./sen-evv-clock');
+// ── IMPORT 2 of 2 (2026-10-16, b17 -- fourth's b26 Q(b)2) ────────────────
+// "Which closing contains this service date" and "what instant was it paid
+// at" are PAYROLL facts, and this check now needs both: Michael decided an
+// EVV export and a pay run must not disagree about the same visit, and for a
+// CLOSED period pay reads the clock as at `paid_at` while this file read NOW.
+// Threading the as-of through needs the closing, and the closing lookup lives
+// in api/_lib/sen-payroll.js where the closed-period list already lived.
+//
+// THE DIRECTION IS readiness -> payroll AND NOT THE REVERSE, which is why
+// there is no cycle: sen-payroll imports only sen-evv-clock. It is also the
+// right direction on the merits -- the EVV check is the CONSUMER of a payroll
+// fact, not the other way round.
+const senPayroll = require('./sen-payroll');
 
 // A visit is only worth checking once it is finished. An in-progress or
 // scheduled visit is not "not ready" -- it is not done, which is a different
@@ -187,7 +216,9 @@ function isIsoInstant(v) {
 // visit    -- a sen_visits row, flattened the way the client holds it
 // client   -- the sen_clients row this visit references, or null if unresolved
 // caregiver-- the sen_caregivers row for assigned_employee_id, or null
-// options  -- { state } from sen_settings.evv_config, optional
+// options  -- { state } from sen_settings.evv_config, optional, plus
+//             { closed_periods } from sen_settings.payroll_closed_periods as
+//             of b17 -- optional, and omitting it reproduces b16 exactly
 //
 // Returns:
 //   {
@@ -209,7 +240,19 @@ function checkVisit(visit, client, caregiver, options) {
     missing: [],
     warnings: [],
     state_rules: opts.state ? 'not_verified' : 'none_configured',
-    federal_source: FEDERAL_SOURCE
+    federal_source: FEDERAL_SOURCE,
+    // ── b17. WHICH INSTANT THIS VISIT'S CLOCK WAS READ AS OF ──────────────
+    // null means NOW, which is every caller that passes no closed_periods and
+    // every visit in an open period. When it is set, this verdict is about
+    // the visit AS AT THE MOMENT ITS PERIOD WAS PAID, which is the same basis
+    // the pay run used -- and a verdict on a different basis than the money
+    // is the disagreement this field exists to make visible.
+    read_as_of: null,
+    // THE THIRD STATE, never folded into the other two: a closed-period list
+    // was supplied and could not be dated, so there IS a freeze and this
+    // check does not know its instant. It must not read NOW in that case.
+    read_as_of_unavailable: false,
+    period_closed: null
   };
 
   // Not an error and not a failure -- just not finished. Callers filter on
@@ -336,8 +379,49 @@ function checkVisit(visit, client, caregiver, options) {
   // a LOCATION, so an approved correction clearing "no GPS on clock-out" would
   // be asserting a coordinate that does not exist. Elements 4 and 5 keep
   // reading the raw `clock_*_lat`/`clock_*_lng` fields.
-  const effIn = senEvvClock.effectiveClock(v, 'clock_in_at').value;
-  const effOut = senEvvClock.effectiveClock(v, 'clock_out_at').value;
+  //
+  // ── AND AS AT THE RIGHT INSTANT, NOT JUST THROUGH THE RIGHT FUNCTION ───
+  // b17, on fourth's b26 Q(b)2. b16 made this read effectiveClock() and left
+  // the ARGUMENT behind: pay reads a closed period's clock as at `paid_at`
+  // and this read NOW, so a correction approved after a period was paid made
+  // the visit submittable here while the pay run paid nothing for it. That is
+  // the half-landing of F2, and it is worse than the original disagreement
+  // because both halves now point at the same function and look settled.
+  //
+  // THE LOOKUP IS THE PAYROLL MODULE'S, not a second copy of it.
+  // `normalizeClosedPeriods` is the same validation computePayroll refuses a
+  // run on, so the two cannot disagree about which list is usable either.
+  const closedIn = opts.closed_periods;
+  let asOf = null;
+  if (Array.isArray(closedIn) && closedIn.length) {
+    const norm = senPayroll.normalizeClosedPeriods(closedIn);
+    if (!norm.ok) {
+      // FAILS CLOSED. A list that exists and cannot be dated is NOT "nothing
+      // is closed" -- computePayroll refuses the whole run on this, and
+      // reading NOW here instead would reintroduce the disagreement by a
+      // route nobody is watching. The visit is reported unverifiable.
+      out.read_as_of_unavailable = true;
+      miss('time_span', 'Time the service begins and ends',
+        'This visit is in a closed pay period whose paid-at instant cannot be '
+        + 'dated, so the clock could not be read as of the moment the period '
+        + 'was paid. An EVV verdict read as of NOW would disagree with the '
+        + 'wage that was actually paid. Fix the closed-period record in '
+        + 'agency settings.', 'visit');
+      out.ready = out.missing.length === 0;
+      return out;
+    }
+    const closing = senPayroll.closedPeriodFor(norm.periods,
+      typeof v.scheduled_date === 'string' ? v.scheduled_date.trim() : '');
+    if (closing) {
+      asOf = closing.paid_at;
+      out.read_as_of = closing.paid_at;
+      out.period_closed = { period_start: closing.period_start,
+                            period_end: closing.period_end,
+                            paid_at: closing.paid_at };
+    }
+  }
+  const effIn = senEvvClock.effectiveClockAsOf(v, 'clock_in_at', asOf).value;
+  const effOut = senEvvClock.effectiveClockAsOf(v, 'clock_out_at', asOf).value;
   const inOk = isIsoInstant(effIn);
   const outOk = isIsoInstant(effOut);
   if (!inOk && !outOk) {

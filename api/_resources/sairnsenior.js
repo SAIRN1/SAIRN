@@ -66,6 +66,21 @@ module.exports = {
   // tables ended up unmeasurable -- see docs/SAIRN-OPEN-WORK-INDEX.md.
   // Bespoke branch below.
     'sen_settings',
+  // SAIRNsenior pay-period freeze ledger (2026-10-16, b17) -- see
+  // sql/sairnsenior_period_closings_schema.sql. APPEND-ONLY: one row per
+  // closing, one row per reopening, never updated and never deleted, and the
+  // effective set of frozen periods is DERIVED by replaying them. It replaces
+  // the `sen_settings.payroll_closed_periods` key, which the generic settings
+  // write path now refuses BY NAME -- that path upserts with
+  // resolution=merge-duplicates, so a shorter list silently un-froze wages
+  // already paid with no record it had ever been longer (fourth's b26 FINDING
+  // H3, driven through the real endpoint).
+  // READ is management; WRITE is api/sen-auth.js's SEN_PERIOD_CLOSE_ROLES,
+  // which is NARROWER by decision even though the two are equal today.
+  // REGISTERED IN THE SAME EDIT AS THE HANDLER, for the reason the
+  // 'approve_clock_correction' note below gives: an implemented-and-undeclared
+  // resource is unreachable and its 400 looks exactly like a client bug.
+    'sen_period_closings',
   // SAIRNsenior referral-source CRM (2026-09-02, competitive-gap audit A7) --
   // see sql/sairnsenior_referrals_schema.sql. sen_referral_sources is the
   // hospital / SNF / discharge-planner / physician-practice relationship;

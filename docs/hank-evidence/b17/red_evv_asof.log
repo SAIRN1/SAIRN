@@ -1,0 +1,25 @@
+api/b17-evv-closed-period-asof.test.js
+  a CLOSED period's EVV check reads the clock as at paid_at, like pay does
+  FAIL     R1. a correction approved AFTER paid_at does not make a CLOSED visit submittable
+           {"spans":[],"ready":false}
+  ok       R2. AGREEMENT -- pay pays 0 minutes and EVV calls it not ready, on one visit
+  FAIL     R3. AGREEMENT -- a correction approved BEFORE paid_at leaves the visit ready AND paid 240 minutes, so R1 is not "every closed visit is refused"
+           evvSpans=0 ready=false payMinutes=240
+  FAIL     R4. CONTROL -- with NO closed_periods the answer is b16's, and read_as_of is null
+           {"aReady":false,"bReady":false}
+  FAIL     R5. FAILS CLOSED -- an undatable closed period makes the visit not ready and SAYS the clock could not be read as of anything
+           {"ready":false,"spans":[]}
+  FAIL     R6. the readiness check CONSUMES the payroll helpers and carries no second copy of "which closing contains this service date"
+           usesHelper=false ownCopy=false
+  FAIL     R7. GPS did not move -- a corrected clock-out with no coordinate is still a location exception under the as-of read
+           []
+  FAIL     R8. summarize() passes closed_periods through to every visit
+           {"ready":0,"not_ready":1}
+  UNPROVEN R9. ABLATION -- the no-as-of read put back flips R1
+           anchor occurs 0 times, not 1
+  UNPROVEN R9b. ABLATION -- the no-as-of clock-OUT read put back flips R1
+           anchor occurs 0 times, not 1
+
+  1 passed, 7 failed, 2 unproven
+  FAILED: R1, R3, R4, R5, R6, R7, R8
+  UNPROVEN: R9, R9b

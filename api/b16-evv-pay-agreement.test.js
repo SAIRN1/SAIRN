@@ -32,13 +32,24 @@
 // arms did NOT move, because a sweep that moved them all would be the easier
 // change and the wrong one.
 //
-// ── AND A FROZEN PERIOD IS A DELIBERATE DISAGREEMENT (E8) ────────────────
-// b16's freeze means a run of a CLOSED period reads the clock AS AT paid_at,
+// ── E8 WAS A DELIBERATE DISAGREEMENT AND IT IS NOW CLOSED (b17) ──────────
+// AS WRITTEN IN b16: "a run of a CLOSED period reads the clock AS AT paid_at,
 // while an EVV export reads it as at now. Those two CAN differ, and that
-// difference is the restatement trail rather than a bug -- so the one thing
-// that must hold is that payroll's OPEN-period answer and the EVV answer come
-// from the same function with the same argument. Stated rather than left to be
-// discovered.
+// difference is the restatement trail rather than a bug."
+//
+// THAT WAS WRONG, and fourth's b26 Q(b)2 is why: it was not a trail, it was
+// F2 HALF-LANDED. Both sides called effectiveClock() -- the same function, as
+// b16 required -- and only payroll passed the as-of ARGUMENT. So a correction
+// approved after a period was paid made a visit submittable in the export
+// while the register paid nothing for it, and because both halves pointed at
+// one function it LOOKED settled.
+//
+// b17 threads the as-of through (api/_lib/sen-evv-readiness.js now takes
+// `options.closed_periods`), and api/b17-evv-closed-period-asof.test.js
+// drives the agreement in BOTH directions. E8 below is kept and RE-AIMED: it
+// now pins the ONE case where the two still differ, which is a caller that
+// does not tell the readiness check about the freeze at all -- and that is a
+// caller-side omission rather than a rule.
 //
 // Exit: 0 all arms passed · 1 an arm FAILED · 3 an arm is UNPROVEN
 
@@ -342,16 +353,17 @@ function main() {
     is(timeSpanMissing(res).length === 0
        && (!b || b.minutes === 0) && !!pay.period_closed
        && pay.period_closed.paid_at === DAY + 'T18:30:00.000Z',
-       'E8. the ONE remaining disagreement is deliberate and ATTRIBUTABLE -- '
-     + 'a frozen period pays as at paid_at (0 minutes, the correction was '
-     + 'approved after it) while the EVV check reads now (ready), and the '
-     + 'output names period_closed with the instant so the difference can be '
-     + 'explained rather than discovered',
+       'E8. RE-AIMED b17 -- the disagreement survives ONLY for a caller that '
+     + 'passes NO closed_periods (this arm passes null): pay says 0 minutes, '
+     + 'the EVV check reads now, and period_closed names the instant so the '
+     + 'difference is attributable. When the caller DOES pass the list the two '
+     + 'agree -- api/b17-evv-closed-period-asof.test.js arms R1-R3 drive it',
        'evv time_span=' + timeSpanMissing(res).length
      + ' paidMinutes=' + (b && b.minutes)
      + ' period_closed=' + JSON.stringify(pay.period_closed));
   } catch (e) {
-    bad('E8. the remaining frozen-period disagreement is attributable', e && e.stack);
+    bad('E8. RE-AIMED b17 -- the disagreement survives only without closed_periods',
+        e && e.stack);
   }
 
   // ── E9: ABLATION -- put the raw read back, E1 must flip ──────────────

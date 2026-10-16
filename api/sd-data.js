@@ -7749,6 +7749,382 @@ module.exports = async (req, res) => {
     //
     // Management + coordinator/scheduler. A caregiver seeing their own visit flagged
     // non-compliant is a supervisory conversation, not a field notification.
+    // ── THE CLOSED-PERIOD LIST, READ ONCE FOR TWO BRANCHES (b17) ────────────
+    // Both the EVV readiness report and the pay run need it, for the same
+    // reason: Michael decided they must not disagree about the same visit, so
+    // they must read the same clock AS AT THE SAME INSTANT. Written as one
+    // helper rather than copied into both, because the 503-vs-honest-empty
+    // distinction below is the thing that must not drift -- a second copy that
+    // treated a failed read as "nothing is closed" would silently unfreeze
+    // every paid period on whichever branch held it.
+    //
+    // IT DOES NOT WRITE THE REFUSAL. Each caller owes its own user a different
+    // sentence about the same bad read -- a pay run says wages, a readiness
+    // report says verdicts -- so this returns the state and they write the
+    // message. Same split as api/_lib/sen-payroll.js's normalizeClosedPeriods.
+    // ── AND IT IS A UNION OF TWO SOURCES AS OF b17 (fourth's H3) ──────────
+    // SOURCE 1, the APPEND-ONLY LEDGER `sen_period_closings`, which is the one
+    // that matters: one row per closing, one row per reopening, never updated
+    // and never deleted, replayed in creation order to derive the effective
+    // set. A reopen names the closing it reverses, so un-freezing a period is
+    // an act with a row behind it instead of a settings overwrite with nothing.
+    //
+    // SOURCE 2, the LEGACY `sen_settings.payroll_closed_periods` row. No agency
+    // has one -- measured 2026-10-16, the mechanism has never fired in
+    // production -- and it is read anyway, because "nobody has one" is a fact
+    // about today and silently dropping a freeze is unrecoverable. THE UNION IS
+    // THE MIGRATION, in code, where it can be tested. A legacy period can also
+    // be reopened: its synthetic id is `legacy:<start>..<end>`.
+    //
+    // A FAILED READ OF EITHER SOURCE REFUSES. Same asymmetry as before:
+    // treating a failed read as "nothing is closed" unfreezes every paid
+    // period, and that is the louder of the two failures.
+    const senReadClosedPeriods = async () => {
+      // SOURCE 1 first, because it is the authority.
+      const lr = await fetch(rest('sen_period_closings?license_hash=eq.' + enc(licHash)
+        + '&select=closing_id,data,created_at&order=created_at.asc'), { headers });
+      let events = [];
+      if (lr.status !== 404 && lr.status !== 400) {
+        if (!lr.ok) {
+          let up = null;
+          try { const e = await lr.json(); up = e && e.message ? e.message : null; }
+          catch (e) { up = null; }
+          return { ok: false, periods: [], source: 'sen_period_closings', upstream: up };
+        }
+        events = (await lr.json()) || [];
+      }
+      const sr = await fetch(rest('sen_settings?license_hash=eq.' + enc(licHash)
+        + '&setting_key=eq.payroll_closed_periods&select=data'), { headers });
+      // A 404/400 -- the table genuinely not provisioned -- IS an honest
+      // empty: an agency with no sen_settings table has never closed a period
+      // through this app. A failed READ is not, and says so.
+      let legacy = [];
+      if (sr.status !== 404 && sr.status !== 400) {
+        if (!sr.ok) {
+          let up = null;
+          try { const e = await sr.json(); up = e && e.message ? e.message : null; }
+          catch (e) { up = null; }
+          return { ok: false, periods: [], source: 'sen_settings', upstream: up };
+        }
+        const rows = await sr.json();
+        const data = Array.isArray(rows) && rows[0] ? rows[0].data : null;
+        if (data && Array.isArray(data.periods)) legacy = data.periods;
+      }
+      // ── THE REPLAY. Closings in, reopenings out, in creation order. ─────
+      // Order matters and is not decoration: close -> reopen -> close is a
+      // period that IS frozen, and reopen -> close is not the same history.
+      const open = Object.create(null);   // closing_id -> period
+      legacy.forEach((p) => {
+        if (!p || typeof p !== 'object') return;
+        // THE SYNTHETIC ID IS ON THE PERIOD AND NOT ONLY IN THE MAP KEY. A
+        // legacy closing has no `closing_id` of its own, and without one it
+        // could be read but never REOPENED -- the reopen path looks the target
+        // up by `closing_id`, so an un-named period is a freeze with no exit.
+        // Named `legacy:<start>..<end>` so it is obvious where it came from.
+        const synthetic = 'legacy:' + String(p.period_start) + '..' + String(p.period_end);
+        open[synthetic] = Object.assign({}, p, { closing_id: synthetic,
+                                                 source: 'sen_settings_legacy' });
+      });
+      const reopened = [];
+      events.forEach((row) => {
+        const d = (row && row.data) || {};
+        if (d.kind === 'close') {
+          open[row.closing_id] = { period_start: d.period_start,
+            period_end: d.period_end, paid_at: d.paid_at,
+            closing_id: row.closing_id };
+        } else if (d.kind === 'reopen') {
+          const target = String(d.reverses || '');
+          if (target && open[target]) {
+            reopened.push({ closing_id: target, reversed_by: row.closing_id,
+                            reason: d.reason || null });
+            delete open[target];
+          }
+        }
+      });
+      return { ok: true, periods: Object.keys(open).map((k) => open[k]),
+               events: events, reopened: reopened };
+    };
+
+    // ══ SAIRNSENIOR: sen_period_closings -- THE APPEND-ONLY FREEZE LEDGER ══
+    // 2026-10-16, b17, closing fourth's b26 FINDING H3 (HIGH, on money).
+    //
+    // WHAT H3 WAS: the closed-period list lived as ONE `sen_settings` row, and
+    // that endpoint REPLACES a key's `data`. A billing session -- the same role
+    // that runs payroll -- could POST `{"periods":[]}`, get a 200, and the next
+    // pay run would report a period already paid at $80.00 as $100.00 with
+    // `period_closed: null`, with no record that the list had ever been longer.
+    //
+    // THIS IS THE REPLACEMENT, AND THE DIFFERENCE IS STRUCTURAL RATHER THAN A
+    // STRICTER CHECK. One row per EVENT, never updated, never deleted:
+    //   kind 'close'   freezes a period
+    //   kind 'reopen'  reverses a named closing, with a reason, as a NEW ROW
+    // The effective set is DERIVED by replaying them (senReadClosedPeriods
+    // above), so un-freezing a period is an act with a row behind it. The
+    // grants in sql/sairnsenior_period_closings_schema.sql hold SELECT and
+    // INSERT only, so a handler bug cannot rewrite history either.
+    //
+    // REOPENING IS ALLOWED ON PURPOSE. A payroll error found after the run has
+    // to be fixable; what must not happen is fixing it invisibly. fourth's
+    // rule, in one sentence: "a paid period is reopened only by an APPENDED
+    // correction record. Never a silent replace."
+    if (resource === 'sen_period_closings' && (action === 'read' || action === 'write')) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+
+      // ── READ: MANAGEMENT. WRITE: THE NARROWER CLOSE SET. ────────────────
+      // Reading WHICH periods are frozen is back-office information -- a
+      // coordinator looking at a pay run needs to be able to see why a total
+      // is a restatement. Writing one freezes wages already paid, which is
+      // Michael's owner-plus-payroll decision and lives in api/sen-auth.js's
+      // SEN_PERIOD_CLOSE_ROLES. The two sets are EQUAL today and are asked
+      // separately for the reason that constant's own note gives: the day
+      // MANAGEMENT_ROLES widens, closing a pay period must not widen with it.
+      if (action === 'read') {
+        if (!senAuth.MANAGEMENT_ROLES[session.role]) {
+          res.status(403).json({ error: { code: 'FORBIDDEN',
+            message: 'The pay-period freeze record is available to management' } });
+          return;
+        }
+        const rr = await fetch(rest('sen_period_closings?license_hash=eq.' + enc(licHash)
+          + '&select=closing_id,data,created_by,created_role,created_at&order=created_at.asc'),
+          { headers });
+        if (rr.status === 404 || rr.status === 400) {
+          res.status(200).json({ ok: true, data: [], provisioned: false,
+            message: 'The pay-period freeze record is not set up yet -- run '
+              + 'sql/sairnsenior_period_closings_schema.sql in Supabase.' });
+          return;
+        }
+        const rrows = await rr.json();
+        if (!rr.ok) return upstream(res, rrows);
+        // THE EVENTS *AND* THE DERIVED SET, in one answer. A caller given only
+        // the rows would have to replay them itself, which is a second copy of
+        // the rule; a caller given only the derived set could not audit it.
+        const eff = await senReadClosedPeriods();
+        if (!eff.ok) {
+          res.status(503).json({ error: { code: 'CLOSED_PERIODS_UNREADABLE',
+            message: 'The freeze record could not be replayed, so this answer '
+              + 'would not say which periods are actually frozen. Source: '
+              + eff.source + '.', upstream: eff.upstream || undefined } });
+          return;
+        }
+        res.status(200).json({ ok: true, provisioned: true, data: rrows || [],
+          effective_closed_periods: eff.periods, reopened: eff.reopened });
+        return;
+      }
+
+      // ── WRITE ───────────────────────────────────────────────────────────
+      if (!senAuth.SEN_PERIOD_CLOSE_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN',
+          message: 'Closing or reopening a pay period changes whether wages '
+            + 'already paid can be restated, so it is limited to '
+            + senAuth.SEN_PERIOD_CLOSE_LABEL + '.' } });
+        return;
+      }
+      const cp = (payload && typeof payload === 'object') ? payload : {};
+      const kind = String(cp.kind || '');
+      const closingId = (typeof cp.closing_id === 'string') ? cp.closing_id.trim() : '';
+      const reason = (typeof cp.reason === 'string') ? cp.reason.trim() : '';
+      const probs = [];
+      const isCal = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v.trim())
+        && !isNaN(Date.parse(v.trim() + 'T00:00:00Z'));
+      if (kind !== 'close' && kind !== 'reopen') {
+        probs.push('kind must be "close" or "reopen"');
+      }
+      // THE ID IS THE APPEND-ONLY KEY. It is client-supplied so a retried
+      // request is refused rather than producing two closings for one act, and
+      // it is bounded because it goes in a unique index.
+      if (!closingId || closingId.length > 128) {
+        probs.push('closing_id is required (max 128 chars) and must be unique for this agency');
+      }
+      if (kind === 'close') {
+        if (!isCal(cp.period_start)) probs.push('period_start must be YYYY-MM-DD');
+        if (!isCal(cp.period_end)) probs.push('period_end must be YYYY-MM-DD');
+        if (isCal(cp.period_start) && isCal(cp.period_end)
+            && String(cp.period_end).trim() < String(cp.period_start).trim()) {
+          probs.push('the period ends before it starts');
+        }
+        // paid_at is the FREEZE INSTANT. api/_lib/sen-payroll.js REFUSES a pay
+        // run on a closed period it cannot date, so a bad value stored today
+        // breaks every pay run from then on. Refusing the WRITE is the only
+        // place the person who made the mistake is still present.
+        if (typeof cp.paid_at !== 'string' || !Number.isFinite(Date.parse(cp.paid_at))) {
+          probs.push('paid_at must be a readable instant (ISO) -- it is what '
+            + 'every correction approval time is compared against');
+        }
+      }
+      if (kind === 'reopen') {
+        if (typeof cp.reverses !== 'string' || !cp.reverses.trim()) {
+          probs.push('reverses must name the closing_id this reopens');
+        }
+        // REQUIRED, and not for tidiness. A reopening restates wages already
+        // paid; the row is the only thing that will ever explain why, and an
+        // unexplained reopening is the silent restatement in slow motion.
+        if (!reason) {
+          probs.push('reason is REQUIRED on a reopen -- it is the only record '
+            + 'of why a paid period was un-frozen');
+        }
+      }
+      if (probs.length) {
+        res.status(400).json({ error: { code: 'INVALID_CLOSING',
+          message: 'sen_period_closings: ' + probs.join('; ') + '. Nothing was written.' } });
+        return;
+      }
+
+      // ── APPEND-ONLY, ENFORCED BEFORE THE INSERT ─────────────────────────
+      // Read the ledger, then decide. A FAILED READ IS NOT AN EMPTY LEDGER:
+      // treating it as one would let a closing be silently replaced, which is
+      // H3 arriving by the new door. Same direction as the pay run's 503.
+      const existing = await senReadClosedPeriods();
+      if (!existing.ok) {
+        res.status(503).json({ error: { code: 'CLOSED_PERIODS_UNREADABLE',
+          message: 'The existing freeze record could not be read, so this write '
+            + 'cannot be checked against it. Nothing was written. Treating a '
+            + 'failed read as an empty record would let a closing be replaced '
+            + 'silently, which is the defect this ledger exists to prevent. '
+            + 'Source: ' + existing.source + '.',
+          upstream: existing.upstream || undefined } });
+        return;
+      }
+      const events = existing.events || [];
+      if (events.some((e) => e && e.closing_id === closingId)) {
+        res.status(409).json({ error: { code: 'CLOSING_IMMUTABLE',
+          message: 'A freeze record with closing_id "' + closingId + '" already '
+            + 'exists and this ledger is append-only: a closing is never edited '
+            + 'and never removed, because un-closing one restates wages already '
+            + 'paid. To reverse it, write a new row with kind "reopen", '
+            + 'reverses "' + closingId + '" and a reason. Nothing was written.' } });
+        return;
+      }
+      if (kind === 'close') {
+        // THE SAME PERIOD MUST NOT BE CLOSED TWICE while it is still closed.
+        // Two closings for one period means two paid_at instants, and the
+        // replay would have to pick one -- which is a wrong answer available
+        // for free. A period that was closed, REOPENED, and is being closed
+        // again is a different thing and is allowed.
+        const clash = existing.periods.filter((p) => p
+          && String(p.period_start).trim() === String(cp.period_start).trim()
+          && String(p.period_end).trim() === String(cp.period_end).trim());
+        if (clash.length) {
+          res.status(409).json({ error: { code: 'PERIOD_ALREADY_CLOSED',
+            message: cp.period_start + '..' + cp.period_end + ' is already '
+              + 'closed (paid at ' + clash[0].paid_at + '). Closing it twice '
+              + 'would give one period two freeze instants and the pay run '
+              + 'would have to choose between them. Reopen the existing closing '
+              + 'first if the instant was wrong. Nothing was written.',
+            existing_closing_id: clash[0].closing_id || null } });
+          return;
+        }
+      }
+      if (kind === 'reopen') {
+        // THE CLOSING BEING REVERSED MUST BE CURRENTLY IN EFFECT. Reversing a
+        // closing that was never made, or one already reversed, is a row that
+        // changes nothing -- and a ledger that accepts no-op rows is a ledger
+        // whose replay nobody can follow.
+        const target = String(cp.reverses).trim();
+        const live = existing.periods.some((p) => p
+          && String(p.closing_id || '') === target);
+        if (!live) {
+          const already = (existing.reopened || []).filter((r) => r.closing_id === target);
+          res.status(409).json({ error: { code: 'NOTHING_TO_REOPEN',
+            message: already.length
+              ? 'Closing "' + target + '" was already reopened by "'
+                + already[0].reversed_by + '". Nothing was written.'
+              : 'No closing "' + target + '" is currently in effect for this '
+                + 'agency, so there is nothing to reopen. Read '
+                + 'sen_period_closings first. Nothing was written.' } });
+          return;
+        }
+      }
+
+      // ── THE AUDIT ROW MUST LAND, SAME DEPARTURE AS THE CLOSE PATH HAD ───
+      // api/_lib/audit.js is deliberately best-effort for credential grants,
+      // because a logging outage must never lock somebody out of their own
+      // app. THE TRADE IS THE OTHER WAY HERE: freezing or un-freezing wages is
+      // not urgent, it is retryable a minute later, and the entire reason it is
+      // audited is that it moves money. An unattributed reopening is a wage
+      // un-frozen by nobody.
+      //
+      // NOTE sql/sairnsenior_audit_log_schema.sql MAY NOT HAVE BEEN RUN. Its
+      // own header says so, so a 503 naming it is the EXPECTED answer today.
+      const closeAudit = require('./_lib/audit');
+      const audited = await closeAudit.writeAuditLog(SUPABASE_URL, SERVICE_KEY, {
+        license_hash: licHash,
+        employee_id: session.employee_id,
+        role: session.role,
+        event_type: kind === 'close' ? 'pay_period_closed' : 'pay_period_reopened',
+        detail: { closing_id: closingId, kind: kind,
+                  period_start: cp.period_start || null,
+                  period_end: cp.period_end || null,
+                  paid_at: cp.paid_at || null,
+                  reverses: cp.reverses || null, reason: reason || null },
+        table: closeAudit.AUDIT_TABLE_BY_APP.sairnsenior
+      });
+      if (!audited) {
+        res.status(503).json({ error: { code: 'AUDIT_UNAVAILABLE',
+          message: 'The audit row for this pay-period ' + kind + ' could not be '
+            + 'written, so it was REFUSED and nothing was written. This changes '
+            + 'whether wages already paid can be restated; a change nobody is '
+            + 'recorded as having made is worse than one that has to be '
+            + 'retried. If this is a new agency, run '
+            + 'sql/sairnsenior_audit_log_schema.sql in Supabase first.' } });
+        return;
+      }
+
+      // INSERT, not upsert. No `on_conflict`, no `merge-duplicates`: the
+      // unique index on (license_hash, closing_id) must be allowed to REFUSE,
+      // because an upsert here is exactly the replace H3 was.
+      const ir = await fetch(rest('sen_period_closings'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairnsenior', closing_id: closingId,
+          data: { kind: kind,
+                  period_start: cp.period_start || null,
+                  period_end: cp.period_end || null,
+                  paid_at: cp.paid_at || null,
+                  reverses: (typeof cp.reverses === 'string') ? cp.reverses.trim() : null,
+                  reason: reason || null },
+          // SERVER-SIDE, from the VERIFIED session, never from the payload. A
+          // forged name on the record of who froze a wage is the one thing an
+          // audit of this table exists to answer.
+          created_by: session.employee_id, created_role: session.role
+        })
+      });
+      if (ir.status === 404 || ir.status === 400) {
+        const it = await ir.text();
+        if (/relation .* does not exist|PGRST205|does not exist/i.test(it)) {
+          res.status(503).json({ error: { code: 'NOT_PROVISIONED',
+            message: 'The pay-period freeze record is not set up yet -- run '
+              + 'sql/sairnsenior_period_closings_schema.sql in Supabase first.' } });
+          return;
+        }
+        if (/duplicate key|unique constraint|23505/i.test(it)) {
+          res.status(409).json({ error: { code: 'CLOSING_IMMUTABLE',
+            message: 'A freeze record with closing_id "' + closingId + '" already '
+              + 'exists and this ledger is append-only. Nothing was written.' } });
+          return;
+        }
+        if (/senpc_kind|check constraint/i.test(it)) {
+          res.status(400).json({ error: { code: 'INVALID_CLOSING',
+            message: 'The database refused this row kind. Nothing was written.' } });
+          return;
+        }
+        console.error('sen_period_closings write error (status ' + ir.status + '):', it);
+        res.status(502).json({ error: { message: 'Data store error -- try again' } });
+        return;
+      }
+      const irows = await ir.json();
+      if (!ir.ok) return upstream(res, irows);
+      // THE DERIVED SET IS RE-READ AND RETURNED, so the caller sees the state
+      // its own write produced rather than the state it assumed it would.
+      const after = await senReadClosedPeriods();
+      res.status(200).json({ ok: true,
+        data: Array.isArray(irows) && irows[0] ? irows[0] : null,
+        effective_closed_periods: after.ok ? after.periods : null,
+        effective_unreadable: after.ok ? undefined : true });
+      return;
+    }
+
     if (resource === 'sen_visits' && action === 'readiness') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
@@ -7786,9 +8162,35 @@ module.exports = async (req, res) => {
         if (Array.isArray(srows) && srows[0] && srows[0].data) evvState = srows[0].data.state || null;
       }
 
+      // ── AND THE FREEZE (2026-10-16, b17 -- fourth's b26 Q(b)2) ───────────
+      // THE READINESS VERDICT IS NOW READ AS AT THE INSTANT THE VISIT'S
+      // PERIOD WAS PAID, which is the basis the pay run already used. b16
+      // made both sides call the same function and left the ARGUMENT behind,
+      // so a correction approved after a period was paid made a visit
+      // submittable here while payroll paid nothing for it -- and a state EVV
+      // programme reconciling the export against the register finds exactly
+      // that. Same source as the pay run, never the payload.
+      //
+      // A FAILED READ REFUSES THE REPORT. It is the same asymmetry the pay run
+      // refuses on: reading NOW when a freeze exists produces a verdict that
+      // disagrees with the wage actually paid, and nothing downstream can tell
+      // that from a verdict computed correctly.
+      const evvClosed = await senReadClosedPeriods();
+      if (!evvClosed.ok) {
+        res.status(503).json({ error: { code: 'CLOSED_PERIODS_UNREADABLE',
+          message: 'The list of already-paid pay periods could not be read, so '
+            + 'this readiness report cannot tell which visits are frozen. '
+            + 'Nothing was computed. A verdict read as of NOW on a visit whose '
+            + 'period was already paid would disagree with the wage that was '
+            + 'actually paid, and the disagreement would not be visible on '
+            + 'either document.',
+          upstream: evvClosed.upstream || undefined } });
+        return;
+      }
       res.status(200).json({
         ok: true, provisioned: true,
-        data: senEvvReadiness.summarize(visitList, clientsById, caregiversById, { state: evvState })
+        data: senEvvReadiness.summarize(visitList, clientsById, caregiversById,
+          { state: evvState, closed_periods: evvClosed.periods })
       });
       return;
     }
@@ -7853,24 +8255,21 @@ module.exports = async (req, res) => {
       // A 404/400 -- the table genuinely not provisioned -- IS an honest empty,
       // because an agency with no sen_settings table has never closed a period
       // through this app.
-      let closedPeriods = [];
-      const cpr = await fetch(rest('sen_settings?license_hash=eq.' + enc(licHash)
-        + '&setting_key=eq.payroll_closed_periods&select=data'), { headers });
-      if (cpr.status !== 404 && cpr.status !== 400) {
-        if (!cpr.ok) {
-          const cperr = await cpr.json();
-          res.status(503).json({ error: { code: 'CLOSED_PERIODS_UNREADABLE',
-            message: 'The list of already-paid pay periods could not be read, so '
-              + 'this run cannot tell which periods are frozen. Nothing was '
-              + 'computed. Treating the failed read as "no period is closed" '
-              + 'would silently restate wages already paid.',
-            upstream: cperr && cperr.message ? cperr.message : undefined } });
-          return;
-        }
-        const cprows = await cpr.json();
-        const cpdata = Array.isArray(cprows) && cprows[0] ? cprows[0].data : null;
-        if (cpdata && Array.isArray(cpdata.periods)) closedPeriods = cpdata.periods;
+      // THE READ IS senReadClosedPeriods(), SHARED WITH THE READINESS BRANCH
+      // as of b17. The 25 lines that used to sit here are that helper, byte
+      // for byte in behaviour: 404/400 is an honest empty, a failed read
+      // refuses. The refusal MESSAGE stays here, because it is about wages.
+      const cp = await senReadClosedPeriods();
+      if (!cp.ok) {
+        res.status(503).json({ error: { code: 'CLOSED_PERIODS_UNREADABLE',
+          message: 'The list of already-paid pay periods could not be read, so '
+            + 'this run cannot tell which periods are frozen. Nothing was '
+            + 'computed. Treating the failed read as "no period is closed" '
+            + 'would silently restate wages already paid.',
+          upstream: cp.upstream || undefined } });
+        return;
       }
+      const closedPeriods = cp.periods;
       const payOut = senPayroll.computePayroll({
         visits: (pvrows || []).map((x) => Object.assign(
           { id: x.visit_id, assigned_employee_id: x.assigned_employee_id || '' }, x.data)),
@@ -8416,146 +8815,52 @@ module.exports = async (req, res) => {
           res.status(400).json({ error: { code: 'INVALID_SETTING', message: 'sen_settings agency_profile: agency_name is too long (max 200)' } }); return;
         }
       }
-      // ══ CLOSING A PAY PERIOD (2026-10-15, b17 -- MICHAEL'S DECISION) ══════
-      // b16 built the freeze and left it INERT: nothing could write
-      // `payroll_closed_periods`, so there were no closed periods anywhere and
-      // api/_lib/sen-payroll.js's freeze was code that could not fire. This is
-      // the write path, and it is the narrowest branch in this file after the
-      // wage itself, because what it writes FREEZES WAGES ALREADY PAID.
+      // ══ `payroll_closed_periods` IS REFUSED HERE BY NAME (b17, fourth H3)
+      // b17's first attempt stored the closed-period list as ONE row under
+      // this key, with an append-only check in this branch. fourth's b26
+      // review drove the hole through the real endpoint: `sen_settings`
+      // upserts with `resolution=merge-duplicates`, so the WRITE IS A FULL
+      // REPLACE OF THAT KEY'S `data` -- a billing session POSTs
+      // `{"periods":[]}`, gets a 200, and the next pay run reports $100.00 for
+      // a period already paid at $80.00 with `period_closed: null`, and no
+      // record anywhere that the list ever contained anything.
       //
-      // FOUR THINGS, AND NONE OF THEM IS THE GENERIC SETTINGS PATH:
-      //   1. a NARROWER ROLE GATE than the branch's own management gate
-      //   2. VALIDATION by the same rules the payroll engine refuses on
-      //   3. APPEND-ONLY -- an existing closed period may not be removed or
-      //      moved, because un-closing one silently restates paid wages
-      //   4. AN AUDIT ROW THAT MUST LAND, and the write is REFUSED if it does
-      //      not -- see the note on that below, it is a departure
+      // THE CHECK IN THIS BRANCH WAS NOT THE FIX, AND THAT IS THE LESSON. It
+      // read the previous value and compared -- which is a patch on a store
+      // whose own comment four lines above says it does not validate anything,
+      // and whose UPDATE privilege exists precisely so settings can be
+      // overwritten. fourth: "A control erasable by the same role that runs
+      // payroll, through an endpoint whose own comment disclaims validating
+      // it, with the prior value overwritten, is not a control -- it is a
+      // convention."
+      //
+      // SO IT IS A NAMED REFUSAL AND NOT AN ALLOWLIST. An allowlist of keys
+      // this path may write would be a list the NEXT payroll control also has
+      // to be remembered into -- and the one thing proven about this file is
+      // that a policy which has to be remembered is a policy that gets missed.
+      // Naming the key here means a caller reaching for the old route is told
+      // where the new one is, rather than succeeding quietly.
       if (key === 'payroll_closed_periods') {
-        // 1. THE ROLE. Michael: owner plus office manager / payroll person
-        // only. api/sen-auth.js's SEN_PERIOD_CLOSE_ROLES is the one source and
-        // its own note says why it is not MANAGEMENT_ROLES even though the two
-        // are equal today.
-        if (!senAuth.SEN_PERIOD_CLOSE_ROLES[session.role]) {
-          res.status(403).json({ error: { code: 'FORBIDDEN',
-            message: 'Closing a pay period freezes wages already paid, so it is '
-              + 'limited to ' + senAuth.SEN_PERIOD_CLOSE_LABEL + '. A scheduler '
-              + 'or coordinator changing agency settings cannot close one.' } });
-          return;
-        }
-        // 2. SHAPE AND DATES. Validated HERE as well as in the engine, and
-        // that is not a second copy of the rule: the engine REFUSES A PAY RUN
-        // on a bad record (UNDATED_CLOSED_PERIOD), which means a bad write
-        // stored today breaks every pay run from then on. Refusing the WRITE
-        // is the only place the person who made the mistake is still present.
-        const periods = value && Array.isArray(value.periods) ? value.periods : null;
-        if (!periods) {
-          res.status(400).json({ error: { code: 'INVALID_SETTING',
-            message: 'sen_settings payroll_closed_periods: value.periods must be '
-              + 'an array. An absent array would read as "nothing is closed", '
-              + 'which unfreezes every paid period.' } });
-          return;
-        }
-        const pProblems = [];
-        const isCal = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v.trim())
-          && !isNaN(Date.parse(v.trim() + 'T00:00:00Z'));
-        periods.forEach((p, i) => {
-          const at = 'periods[' + i + ']';
-          if (!p || typeof p !== 'object') { pProblems.push(at + ' is not an object'); return; }
-          if (!isCal(p.period_start)) pProblems.push(at + '.period_start must be YYYY-MM-DD');
-          if (!isCal(p.period_end)) pProblems.push(at + '.period_end must be YYYY-MM-DD');
-          if (isCal(p.period_start) && isCal(p.period_end)
-              && String(p.period_end).trim() < String(p.period_start).trim()) {
-            pProblems.push(at + ' ends before it starts');
-          }
-          // paid_at is the FREEZE INSTANT. The engine compares every
-          // correction's approved_at_server to it, so an unreadable one makes
-          // the whole run refuse.
-          if (typeof p.paid_at !== 'string' || !Number.isFinite(Date.parse(p.paid_at))) {
-            pProblems.push(at + '.paid_at must be a readable instant (ISO) -- it '
-              + 'is what every correction\'s approval time is compared against');
-          }
-        });
-        if (pProblems.length) {
-          res.status(400).json({ error: { code: 'INVALID_SETTING',
-            message: 'sen_settings payroll_closed_periods: ' + pProblems.join('; ')
-              + '. Nothing was written.' } });
-          return;
-        }
-        // 3. APPEND-ONLY. THE MIRROR OF THE DEFECT b16 CLOSED. A correction
-        // approved after a pay run must not restate a closed total -- and
-        // DELETING the closed period, or moving its paid_at later, does
-        // exactly that by a different door, with no trail at all. So an
-        // existing entry may not disappear or change; new ones may be added.
-        //
-        // READ-THEN-COMPARE, and the read failing is NOT "nothing was closed".
-        const prevR = await fetch(rest('sen_settings?license_hash=eq.' + enc(licHash)
-          + '&setting_key=eq.payroll_closed_periods&select=data'), { headers });
-        let prevPeriods = [];
-        if (prevR.status !== 404 && prevR.status !== 400) {
-          if (!prevR.ok) {
-            res.status(503).json({ error: { code: 'CLOSED_PERIODS_UNREADABLE',
-              message: 'The existing closed-period list could not be read, so this '
-                + 'write cannot be checked for a removal. Nothing was written. '
-                + 'Treating a failed read as an empty list would let a closed '
-                + 'period be dropped silently.' } });
-            return;
-          }
-          const prevRows = await prevR.json();
-          const prevData = Array.isArray(prevRows) && prevRows[0] ? prevRows[0].data : null;
-          if (prevData && Array.isArray(prevData.periods)) prevPeriods = prevData.periods;
-        }
-        const keyOf = (p) => String(p.period_start).trim() + ' '
-          + String(p.period_end).trim() + ' ' + String(p.paid_at);
-        const incoming = {};
-        periods.forEach((p) => { incoming[keyOf(p)] = true; });
-        const lost = prevPeriods.filter((p) => p && !incoming[keyOf(p)]);
-        if (lost.length) {
-          res.status(409).json({ error: { code: 'CLOSED_PERIOD_IMMUTABLE',
-            message: lost.length + ' already-closed pay period(s) would be removed '
-              + 'or changed by this write, and a closed period is append-only: '
-              + 'un-closing one restates wages already paid, which is the defect '
-              + 'the freeze exists to prevent. Nothing was written. '
-              + 'Affected: ' + lost.map((p) => p.period_start + '..' + p.period_end
-                + ' paid ' + p.paid_at).join(', ') } });
-          return;
-        }
-        // 4. THE AUDIT ROW MUST LAND, AND THIS DEPARTS FROM THE PLATFORM'S
-        //    BEST-EFFORT AUDIT POSTURE ON PURPOSE -- stated, not slipped in.
-        // api/_lib/audit.js's auditPinSetup is deliberately best-effort,
-        // because "a logging outage must never block a legitimate grant" --
-        // locking somebody out of their own app is worse than an unattributed
-        // grant. THE TRADE IS THE OTHER WAY HERE. Closing a pay period is not
-        // urgent, it is retryable a minute later, and the entire reason it is
-        // audited is that it freezes money: an unattributed freeze is a wage
-        // locked by nobody. So a failed audit write REFUSES the close.
-        //
-        // NOTE THE TABLE MAY NOT EXIST YET. sql/sairnsenior_audit_log_schema.sql
-        // says in its own header that it has NOT been run, so this refusal is
-        // the EXPECTED answer today and names the file to run. That is the
-        // honest state and it is in the Michael SQL package for b17.
-        const closeAudit = require('./_lib/audit');
-        const added = periods.filter((p) => {
-          const k = keyOf(p);
-          return !prevPeriods.some((q) => q && keyOf(q) === k);
-        });
-        const audited = await closeAudit.writeAuditLog(SUPABASE_URL, SERVICE_KEY, {
-          license_hash: licHash,
-          employee_id: session.employee_id,
-          role: session.role,
-          event_type: 'pay_period_closed',
-          detail: { added: added, total_after: periods.length },
-          table: closeAudit.AUDIT_TABLE_BY_APP.sairnsenior
-        });
-        if (!audited) {
-          res.status(503).json({ error: { code: 'AUDIT_UNAVAILABLE',
-            message: 'The audit row for this pay-period close could not be written, '
-              + 'so the close was REFUSED and nothing was written. Closing a period '
-              + 'freezes wages already paid; a freeze nobody is recorded as having '
-              + 'made is worse than a close that has to be retried. If this is a '
-              + 'new agency, run sql/sairnsenior_audit_log_schema.sql in Supabase '
-              + 'first.' } });
-          return;
-        }
+        res.status(409).json({ error: { code: 'CLOSED_PERIODS_NOT_A_SETTING',
+          message: 'Closing a pay period is not a settings write and cannot be '
+            + 'done here. This endpoint REPLACES a settings key, so a write '
+            + 'with a shorter list would un-freeze wages already paid and '
+            + 'leave no record that the list had ever been longer. Use '
+            + 'resource "sen_period_closings" instead: it is append-only, one '
+            + 'row per closing, and reopening a period is a NEW row naming the '
+            + 'closing it reverses and why. Nothing was written.',
+          use_instead: { resource: 'sen_period_closings',
+                         close: { action: 'write',
+                                  payload: { closing_id: '<unique>', kind: 'close',
+                                             period_start: 'YYYY-MM-DD',
+                                             period_end: 'YYYY-MM-DD',
+                                             paid_at: '<ISO instant>',
+                                             reason: '<why>' } },
+                         reopen: { action: 'write',
+                                   payload: { closing_id: '<unique>', kind: 'reopen',
+                                              reverses: '<the closing_id>',
+                                              reason: '<why, required>' } } } } });
+        return;
       }
       const r = await fetch(rest('sen_settings?on_conflict=license_hash,setting_key'), {
         method: 'POST',

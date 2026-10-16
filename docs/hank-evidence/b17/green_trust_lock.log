@@ -1,0 +1,20 @@
+api/b17-trust-lock-hard.test.js
+  fourth b26 H1: the trust hard-lock gets arms, and the 2x2 is re-run
+  ok       T1. LAW_TRUST_LOCKED holds EXACTLY law_bankstatements and law_trusttx
+  ok       T2. the lock is FROZEN -- a caller cannot add a resource to it at runtime
+  ok       T3. ARM B -- with the TABLE opened to paralegal: 'r' the LOCK still DENIES, which is the only condition under which it is reachable
+  ok       T4. denyMessage names TRUST for both locked resources and does NOT for an unlocked one, so the message is the lock speaking
+  ok       T5. law_bankstatements: paralegal DENIED both verbs, owner and attorney not
+  ok       T6. a signed-in paralegal reading law_bankstatements gets 403, no data array, and the TRUST message
+  ok       T7. CONTROL -- the same paralegal token CAN read law_optx
+    BASELINE -> mine=0 trusttx-suite=0
+    ARM B  lock intact,  table permissive -> mine=3 trusttx-suite=0
+    ARM C  lock emptied, table permissive -> mine=1 trusttx-suite=1
+    ARM A  lock emptied, table shipped -> mine=1 trusttx-suite=0
+  ok       T8a. BASELINE -- the shipped tree is green in both suites
+  ok       T8b. ARM B -- lock intact, table permissive: the trusttx suite is GREEN (the lock saved a permissive row, fourth's measurement) and this file reports COULD NOT RUN (exit 3) because T3's own anchor is the thing ARM B mutated -- the third state, not a pass
+  ok       T8c. ARM C -- lock emptied AND table permissive fails the trusttx suite, exactly as fourth measured
+  ok       T8d. ARM A IS NOW RED HERE -- emptying LAW_TRUST_LOCKED with the shipped table fails THIS file, which is fourth's H1 closed. It stays green in the trusttx suite and that is the original finding, not a regression
+  ok       T8e. and ARM A STILL passes the trusttx suite -- stated rather than quietly fixed, because nothing in b17 touches that file's arms
+
+  12 passed, 0 failed, 0 unproven

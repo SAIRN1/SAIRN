@@ -122,7 +122,22 @@ const SEN_INTAKE_WRITE_ROLES = roleSet({ owner: true, billing: true,
 // gets a 500 WRITE_MAP_MISSING rather than inheriting whichever set happens to
 // be nearest in the file. That inheritance is exactly how the broad-read set
 // came to decide a write.
-const SEN_REFERRAL_WRITE_ROLES = {
+//
+// NULL-PROTOTYPE, AND api/_lib/auth-roleset-seam.test.js FOUND IT (2026-10-16,
+// b17). This was a bare `{}` literal, so `SEN_REFERRAL_WRITE_ROLES[resource]`
+// was TRUTHY for 'constructor', 'toString' and 'valueOf' -- and `resource`
+// comes from the caller's payload. The lookup would have returned a function
+// instead of a role set, and the 500 WRITE_MAP_MISSING below -- which exists
+// precisely so a resource with no policy is refused rather than defaulted --
+// would NOT have fired. The next test `senRefAllowed[session.role]` is
+// undefined on a function, so the request was refused 403 anyway; the defect
+// is that it was refused BY ACCIDENT, with the wrong code and the wrong
+// message, through a branch built to be the one that catches this.
+//
+// roleSet() is the wrong wrapper here: this is a map of RESOURCE -> role set,
+// not a role set. Object.create(null) is the right one, and it is the same fix
+// LAW_TRUST_LOCKED and the leg_* maps already carry.
+const SEN_REFERRAL_WRITE_ROLES = Object.assign(Object.create(null), {
   // Intake proper. A referral IS the phone call, and a coordinator taking a
   // call from a hospital that is not yet on file must be able to record the
   // SOURCE too -- otherwise the decision is defeated by its own prerequisite
@@ -138,7 +153,7 @@ const SEN_REFERRAL_WRITE_ROLES = {
   sen_applicants: MANAGEMENT_ROLES,
   sen_training_records: MANAGEMENT_ROLES,
   sen_training_rules: MANAGEMENT_ROLES
-};
+});
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {

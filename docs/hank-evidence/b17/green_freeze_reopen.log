@@ -1,0 +1,17 @@
+api/b17-freeze-reopen.test.js
+  the settings route is refused by name; a reopen is an appended row
+  ok       P1. a BILLING session POSTing payroll_closed_periods as a settings key is 409 CLOSED_PERIODS_NOT_A_SETTING, writes NOTHING, and is told the append-only resource to use instead -- this is fourth's H3 repro, refused
+  ok       P2. CONTROL -- the SAME settings path still writes evv_config, so P1 is a named refusal and not a broken branch
+  ok       P3. a reopen with no reason is 400 and writes nothing -- the reason is the only record of why a paid period was un-frozen
+  ok       P4. a reopen naming a closing that does not exist is 409 NOTHING_TO_REOPEN -- a ledger that accepts no-op rows is a ledger whose replay nobody can follow
+  ok       P5. reopening an already-reopened closing is 409 and NAMES the row that reversed it, rather than saying "not found" about something that is plainly in the ledger
+  ok       P6. a reopen with a reason is 200: ONE appended row naming what it reverses and why, attributed to the VERIFIED session, and the derived set no longer holds the period
+  ok       P6b. the ledger write carries NO on_conflict and NO merge-duplicates, so the unique index can refuse -- an upsert here IS H3
+  ok       P7. the reopen is audited as pay_period_reopened, naming who, what it reverses and why -- a close and a reopen are different events and sharing one event_type would make the log unreadable
+  ok       P8. THE MONEY -- frozen: 240 minutes / 8000 cents with period_closed set; after the reopen: 300 / 10000 with period_closed null. fourth's exact section-B figures. What changed is that the second one now needs an appended row naming who reopened it and why
+  ok       P9. close -> reopen -> close replays to FROZEN at the NEW instant, with all three rows still present and the reopening still reported. The history is the record; the derived set is the answer
+  ok       P10. a LEGACY sen_settings period is in the derived set and can be reopened by its synthetic id (legacy:2026-09-01..2026-09-15) -- the union is the migration, in code, where it can be tested
+  ok       P11. a caregiver reading the freeze ledger is 403 -- the READ is management and the WRITE is narrower still
+  ok       P12. ABLATION -- with the named refusal removed the same request is 200 and writes `{"periods":[]}` to the settings row, which is H3 exactly. So P1 is testing the refusal and not something else
+
+  13 passed, 0 failed, 0 unproven

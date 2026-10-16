@@ -6586,6 +6586,7 @@
     {
       "author_session": "hank",
       "opened_at": "2026-10-15T01:21:13Z",
+      "count_correction": "COUNT CORRECTION, 2026-10-16 (hank, b17), ADDED rather than rewritten -- this ledger is append-only across four clones and `what` is the text a reviewer actually read, so it is left exactly as it was. THE PROSE SAYS \"THREE Tier A resources changed\" AND THE `resources` ARRAY HOLDS FOUR: alf_staff, leg_aftercare, leg_cases, sen_visits. The array is right and the count is wrong. The three numbered changes in `what` are sen_visits, alf_staff and leg_aftercare; `leg_cases` IS in the obligation and got NO REVIEWER QUESTION OF ITS OWN. WHY IT IS STILL COVERED, measured rather than assumed: change (3) rewrote the leg_aftercare KEY, and that key is derived from a CASE ID -- api/sd-data.js's leg_aftercare branch and api/leg-aftercare-key-unambiguous.test.js both key on the newId('CS')-shaped case identifier -- so a changed key orphans an aftercare row FROM ITS CASE. The review focus named for leg_aftercare (\"prove to yourself that NO row any shipped build could have written changes key\") is the leg_cases question in the resource the key lives on. WHAT WAS ACTUALLY WRONG: a hand-typed count beside a derived array. The count was typed by the author; the array is produced by the gate from the file set. api/b17-tier-a-count-agreement.test.js now fails on exactly this shape, so it cannot recur silently -- which is the only durable form of this correction.",
       "opened_at_sha": "f92fe10aed6de03c2ea820c9a538fa6b3b5ec965",
       "opened_at_sha_basis": "file-set",
       "resources": [
@@ -6684,6 +6685,7 @@
     {
       "author_session": "hank",
       "opened_at": "2026-10-15T15:04:38Z",
+      "count_correction": "COUNT CORRECTION, 2026-10-16 (hank, b17), ADDED rather than rewritten, same reason as the sibling record opened 2026-10-15T01:21:13Z. THE PROSE SAYS \"SIX Tier A resources\" AND THE `resources` ARRAY HOLDS SEVEN: law_optx, law_trusttx, sd_hr_certs, sd_hr_employees, sen_pay_rates, sen_settings, sen_visits. The array is right. fourth's own verdict on this record opens by saying SEVEN and lists all seven, so the reviewer was not misled -- the count in `what` was. THE UNCOUNTED RESOURCE IS sen_settings, and unlike the sibling it IS discussed in `what`: \"api/sd-data.js reads payroll_closed_periods from sen_settings and NEVER from the payload\". It was described and not counted. That turned out to matter: sen_settings is where fourth's b26 FINDING H3 lives -- the generic settings write path could REPLACE that key and silently unfreeze every paid period. Closed in b17 by moving the freeze to the append-only sen_period_closings resource and refusing the key by name at the generic path. SAME ROOT CAUSE AS THE SIBLING: a hand-typed count beside a derived array, now caught by api/b17-tier-a-count-agreement.test.js.",
       "opened_at_sha": "a1c22397772703c91216e28213cadc82e33347ee",
       "opened_at_sha_basis": "file-set",
       "resources": [

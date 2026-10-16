@@ -1,20 +1,25 @@
 api/b17-closed-period-write-path.test.js
   closing a pay period: who may, what is refused, and what is logged
-  ok       W1. an OWNER closes a pay period: 200, the row is written with the period, and updated_by comes from the verified session
-  ok       W2. the BILLING (office-manager/payroll) role closes a pay period: 200. Michael named owner PLUS the payroll person, so a suite that only drove owner would not have tested the decision
+  ok       W1. an OWNER closes a pay period: 200, ONE appended row carrying the period and its paid_at, no upsert, and the derived set comes back
+  ok       W2. the BILLING (office-manager/payroll) role closes a pay period: 200. Michael named "owner plus office manager / payroll person" and billing IS this app's back-office/payroll tier
   ok       W3. a scheduler is REFUSED 403 and writes NO row
   ok       W3. a coordinator is REFUSED 403 and writes NO row
   ok       W3. a caregiver is REFUSED 403 and writes NO row
-  ok       W5. ABLATION -- with MANAGEMENT_ROLES widened to include scheduler, a scheduler passes the OUTER management gate and is STILL refused 403 by SEN_PERIOD_CLOSE_ROLES. Without this arm the new gate cannot fire and is indistinguishable from dead code
-  ok       W6. a write that DROPS an already-closed period is 409 CLOSED_PERIOD_IMMUTABLE, names the affected period, and writes nothing. Un-closing a period restates wages already paid -- the same defect the freeze exists to prevent, by a different door and with no trail at all
-  ok       W7. CONTROL -- ADDING a period while keeping the existing one is 200 with both. Append-only is append-ONLY, not freeze-forever
-  ok       W8. a period whose paid_at cannot be read is 400 INVALID_SETTING at the WRITE, naming paid_at, and nothing is stored. Stored, it would refuse every pay run from then on with the author long gone
-  ok       W9. value.periods missing is 400, not an empty list -- an absent array read as "nothing is closed" would unfreeze every paid period
+  ok       W5. ABLATION -- with MANAGEMENT_ROLES widened to include scheduler, a scheduler is STILL refused the close. SEN_PERIOD_CLOSE_ROLES is the gate, not the general back-office bucket, and this is the only arm under which the difference is observable
+  ok       W6. re-writing an existing closing_id (here: moving its paid_at later, which would make an owed adjustment vanish) is 409 CLOSING_IMMUTABLE, writes nothing, and the message names the reopen route
+  ok       W7. CONTROL -- appending a SECOND closing alongside the first is 200, so W6 is the immutability rule and not a branch that refuses everything
+  ok       W7b. closing the SAME period under a new closing_id is 409 PERIOD_ALREADY_CLOSED -- one period, one freeze instant
+  ok       W8. a closing whose paid_at cannot be read is 400 INVALID_CLOSING at the WRITE, not a pay run that refuses forever afterwards
+  ok       W9. a missing closing_id is 400 and is NOT generated server-side -- the id is what makes a retried request a refusal instead of a duplicate
+  ok       W9b. kind "delete" is 400 in the handler -- the senpc_kind CHECK in the schema is the second defence, not the first
 audit log write failed: pay_period_closed 400 violates check constraint "sairnsenior_audit_log_event_type_check"
-  ok       W10. a FAILED audit write REFUSES the close (503 AUDIT_UNAVAILABLE) and nothing is stored. This is the OPPOSITE of auditPinSetup's best-effort posture and the trade is the other way: a grant blocked by a logging outage locks somebody out of their own app, while a pay-period close is retryable and is audited precisely because it freezes money
-  ok       W11. the audit row names the event, the employee, the role AND the period(s) ADDED with their paid_at -- "settings changed" would not tell an auditor which wages got frozen
-  ok       W12. a FAILED read of the existing list is 503 and writes nothing -- treating it as empty would let an already-closed period be dropped silently, which is W6 defeated by a transport blip
-  ok       W13. the event_type this branch emits is INSIDE the audit table's CHECK constraint. An event_type missing from a CHECK is a silently dropped audit row everywhere else on this platform; here it is a refusal, so it would be loud -- but it would still block every close
+  ok       W10. a FAILED audit write REFUSES the close (503 AUDIT_UNAVAILABLE) and writes NO closing. api/_lib/audit.js is best-effort for credential grants on purpose -- a logging outage must not lock somebody out of their own app -- and the trade is the OTHER WAY for a wage freeze, which is retryable a minute later. The message names the file to run
+  ok       W11. the audit row names the event, the employee, the role AND the period and instant that were frozen -- "settings changed" would not let anybody reconstruct which wage stopped being restatable
+  ok       W12. a FAILED read of the existing ledger is 503 and writes nothing -- treating it as empty would let a closing be replaced silently, which is the defect this ledger exists to prevent
+  ok       W12b. a FAILED read of the LEGACY settings row also refuses, and the message names which of the two sources could not be read
+  ok       W12c. with the table absent the READ is an honest empty and the INSERT answers 503 NOT_PROVISIONED naming the schema file -- today's expected live answer, since neither SQL file has been run
+  ok       W13. BOTH event types this branch emits are INSIDE the audit table's CHECK constraint. An event_type missing from a CHECK is a silently dropped audit row everywhere else on this platform; here it is a refusal, so it would be loud -- but it would still block every close
   ok       W14. SEN_PERIOD_CLOSE_ROLES is { owner, billing } and is a SEPARATE object from MANAGEMENT_ROLES, declared with its own roleSet() call. Aliasing it would reintroduce exactly the silent widening W5 drives
+  ok       W15. sen_period_closings is REGISTERED in api/_resources/sairnsenior.js, so the provisioning probe can see it and the dispatcher can reach it
 
-  passed 15  failed 0  unproven 0
+  20 passed, 0 failed, 0 unproven

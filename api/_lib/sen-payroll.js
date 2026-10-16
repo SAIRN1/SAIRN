@@ -5,6 +5,15 @@
 // api/_lib/law-trust-reconcile.js and api/_lib/sairncode-kx-accumulator.js:
 // the gate, the read and the 503 live in the caller.
 //
+// ── "PURE" HERE MEANS NO I/O AND NOT "NO DEPENDENCIES" ───────────────────
+// CLARIFIED 2026-10-16 (b17), on fourth's b26 Q(c). This file imports
+// api/_lib/sen-evv-clock.js, deliberately, because one copy of the approval
+// rule beats three -- and the word above was doing two jobs at a time when
+// only one was still true. fourth: "the headers are now misleading, and THAT
+// is the defect, not the require()." The import is itself I/O-free, so the
+// testability this claim promises is intact: computePayroll still takes a
+// `resolveRate` function and a visit array and touches nothing.
+//
 // ── THE GAP, MEASURED BEFORE IT WAS BUILT ─────────────────────────────────
 // SAIRNsenior captures REAL verified visits: GPS at clock-in and clock-out,
 // ISO timestamps, a positive-duration check, an offline queue that replays the
@@ -206,35 +215,29 @@ function computePayroll(input) {
   // EVERY FIELD IS VALIDATED AND AN UNREADABLE paid_at REFUSES THE RUN. A
   // freeze that cannot say what instant it froze against would silently pick
   // one of the two answers, and both are wrong half the time.
-  const closedPeriods = [];
-  for (let ci = 0; ci < closedIn.length; ci += 1) {
-    const c = closedIn[ci] || {};
-    const cs = calendarDate(c.period_start);
-    const ce = calendarDate(c.period_end);
-    const paidMs = instant(c.paid_at);
-    if (!cs || !ce || paidMs === null) {
-      return refusal('UNDATED_CLOSED_PERIOD', 'A closed pay period was supplied '
-        + 'that this engine cannot date: period_start=' + JSON.stringify(c.period_start)
-        + ', period_end=' + JSON.stringify(c.period_end)
-        + ', paid_at=' + JSON.stringify(c.paid_at) + '. Nothing was computed. '
-        + 'A paid period is frozen as at the instant it was paid, so without '
-        + 'that instant there is no way to tell which corrections were in the '
-        + 'figure that was actually paid -- and guessing either way restates '
-        + 'somebody\'s wages or withholds money they are owed.');
-    }
-    closedPeriods.push({ period_start: cs, period_end: ce, paid_at: c.paid_at,
-                         paid_at_ms: paidMs });
+  // ── NORMALISED BY THE SHARED HELPER AS OF b17, NOT INLINE HERE ──────────
+  // The loop that used to sit here is now `normalizeClosedPeriods` below, and
+  // `closedFor` is `closedPeriodFor`. Both are exported, because
+  // api/_lib/sen-evv-readiness.js needs the SAME two answers to honour
+  // Michael's "EVV reads the same effective clock pay uses" on a CLOSED
+  // period -- and a second copy of "which closing contains this service date"
+  // is the shape of the defect F1 already was. The REFUSAL MESSAGE STAYS HERE
+  // because it is about a pay run; the helper only reports which entry it
+  // could not date.
+  const norm = normalizeClosedPeriods(closedIn);
+  if (!norm.ok) {
+    const c = norm.bad;
+    return refusal('UNDATED_CLOSED_PERIOD', 'A closed pay period was supplied '
+      + 'that this engine cannot date: period_start=' + JSON.stringify(c.period_start)
+      + ', period_end=' + JSON.stringify(c.period_end)
+      + ', paid_at=' + JSON.stringify(c.paid_at) + '. Nothing was computed. '
+      + 'A paid period is frozen as at the instant it was paid, so without '
+      + 'that instant there is no way to tell which corrections were in the '
+      + 'figure that was actually paid -- and guessing either way restates '
+      + 'somebody\'s wages or withholds money they are owed.');
   }
-  // The closed period a SERVICE DATE falls in, or null. Service date and not
-  // the clock instant, for the same reason the period bounds use it: it is
-  // what the rate resolves against and what a payer matches on.
-  const closedFor = (serviceDate) => {
-    for (let k = 0; k < closedPeriods.length; k += 1) {
-      const c = closedPeriods[k];
-      if (serviceDate >= c.period_start && serviceDate <= c.period_end) return c;
-    }
-    return null;
-  };
+  const closedPeriods = norm.periods;
+  const closedFor = (serviceDate) => closedPeriodFor(closedPeriods, serviceDate);
   // The period BEING RUN is reported as closed when it falls inside one, so a
   // caller showing a total can say whether it is a live computation or a
   // restatement of a frozen one.
@@ -250,6 +253,23 @@ function computePayroll(input) {
   };
   const adjustments = [];
   const adjustmentsSkipped = [];
+  // ── b17, fourth's FINDING H2. AN ADJUSTMENT IS NEVER NEGATIVE. ──────────
+  // A downward correction on an already-paid visit is not an adjustment; it
+  // is a WAGE DEDUCTION TO RECOVER AN OVERPAYMENT, which is a separate
+  // regulated act -- permitted under the FLSA, but not where the deduction
+  // takes a workweek below the minimum wage, and many states additionally
+  // require the employee's written authorisation. A pay run must not perform
+  // one as a side effect of an approval, in a period the employee has not
+  // been told about. So it is SURFACED here and never netted anywhere.
+  const overpayments = [];
+  let overpaymentTotal = 0;
+  // ── AND THE AS-PAID WEEK TALLY, for `premium_may_be_owed` ──────────────
+  // Keyed employee -> week-start -> as-paid minutes, accumulated over every
+  // visit in a CLOSED period regardless of whether it is in THIS run. It is
+  // deliberately named "seen": it is only as complete as the visit set the
+  // caller passed, which is why the flag it feeds can be true or null and
+  // never false. See the annotation pass after the loop.
+  const asPaidClosedWeeks = Object.create(null);
   let undatableTotal = 0;
   let pendingTotal = 0;
   const byCaregiver = Object.create(null);
@@ -278,6 +298,11 @@ function computePayroll(input) {
         // so rather than handing over a figure the caregiver is contesting.
         pending_corrections: 0,
         pending_correction_visits: 0,
+        // b17, H2. Money this caregiver was OVERPAID on an already-paid
+        // period, reported and NEVER netted against what is payable.
+        overpayments: 0,
+        overpayment_cents: 0,
+        overpayment_minutes: 0,
       };
     }
     return byCaregiver[id];
@@ -374,6 +399,17 @@ function computePayroll(input) {
       pendingTotal += pendingHere;
     }
 
+    // ── THE AS-PAID WEEK TALLY (b17). Every closed-period visit, in or out
+    //    of this run, on the AS-PAID basis -- which is the basis the frozen
+    //    week was paid on and therefore the only one a premium question about
+    //    that week can be asked against.
+    if (inClosed && inMs !== null && outMs !== null && outMs > inMs) {
+      const wkKey = weekStartKey(inMs, dayIdx);
+      if (!asPaidClosedWeeks[emp]) asPaidClosedWeeks[emp] = Object.create(null);
+      asPaidClosedWeeks[emp][wkKey] = (asPaidClosedWeeks[emp][wkKey] || 0)
+        + Math.round((outMs - inMs) / 60000);
+    }
+
     // ── THE CARRY-FORWARD. A visit in a CLOSED period carrying an approval
     //    that landed AFTER that period was paid is money owed and not yet
     //    paid. It is posted here as an adjustment rather than added to the
@@ -411,25 +447,63 @@ function computePayroll(input) {
           const asPaidMinutes = Math.round((outMs - inMs) / 60000);
           const nowMinutes = Math.round((nOut - nIn) / 60000);
           const dMin = nowMinutes - asPaidMinutes;
-          if (dMin !== 0) {
-            const dCents = Math.round(rateACents * dMin / MINUTES_PER_HOUR);
-            adjustments.push({
-              employee_id: emp,
-              visit_id: row.id || row.visit_id || null,
-              service_date: serviceDate,
-              closed_period_start: inClosed.period_start,
-              closed_period_end: inClosed.period_end,
-              paid_at: inClosed.paid_at,
-              as_paid_minutes: asPaidMinutes,
-              corrected_minutes: nowMinutes,
-              minutes_delta: dMin,
-              rate_cents_per_hour: rateACents,
-              cents_delta: dCents,
-              approved_at_server: notYet.map((e) => e.approved_at_server)
-            });
+          const dCents = Math.round(rateACents * dMin / MINUTES_PER_HOUR);
+          const common = {
+            employee_id: emp,
+            visit_id: row.id || row.visit_id || null,
+            service_date: serviceDate,
+            closed_period_start: inClosed.period_start,
+            closed_period_end: inClosed.period_end,
+            paid_at: inClosed.paid_at,
+            as_paid_minutes: asPaidMinutes,
+            corrected_minutes: nowMinutes,
+            // THE WEEK THE PREMIUM QUESTION IS ABOUT, named rather than left
+            // for a reader to re-derive from the service date and a
+            // week_start_day they would have to guess.
+            as_paid_week_start: weekStartKey(inMs, dayIdx),
+            minutes_delta: dMin,
+            rate_cents_per_hour: rateACents,
+            cents_delta: dCents,
+            approved_at_server: notYet.map((e) => e.approved_at_server)
+          };
+          // ── THE SIGN GUARD (b17, fourth's H2). `if (dMin > 0)`, not
+          //    `if (dMin !== 0)`, AND THAT ONE CHARACTER IS THE FIX.
+          // It was `!== 0` and `b.adjustment_cents += dCents` had no guard,
+          // so `total_payable_cents = gross + adjustment_cents` went NEGATIVE:
+          // fourth drove -2000 cents on a 60-minute downward correction, i.e.
+          // a scheduler approving a correction silently deducted $20 from a
+          // later period's wages. It is the mirror of the harm F1 closed --
+          // F1 was minutes unpaid by OMISSION, this is minutes removed by
+          // COMMISSION, which is worse because somebody chose it.
+          if (dMin > 0) {
+            // `premium_may_be_owed` is filled in by the annotation pass after
+            // the visit loop, because the as-paid week tally is not complete
+            // until every visit has been seen. Declared here as null so the
+            // key always exists -- an absent key and a cannot-tell read the
+            // same to a consumer, and only one of them is honest.
+            adjustments.push(Object.assign({}, common, {
+              premium_may_be_owed: null,
+              as_paid_week_minutes_seen: null,
+              premium_threshold_minutes: FLSA_WEEKLY_HOURS * MINUTES_PER_HOUR
+            }));
             b.adjustments += 1;
             b.adjustment_minutes += dMin;
             b.adjustment_cents += dCents;
+          } else if (dMin < 0) {
+            // NOT AN ADJUSTMENT AND NOT A ZERO. Reported with everything a
+            // human needs to act on it, and counted in its own total so a
+            // caller cannot present a pay run as settled while an overpayment
+            // sits on it. `requires_human_act` is stated rather than implied
+            // because the one thing this list must not read as is "handled".
+            overpayments.push(Object.assign({}, common, {
+              cents_overpaid: -dCents,
+              minutes_overpaid: -dMin,
+              requires_human_act: true
+            }));
+            b.overpayments += 1;
+            b.overpayment_minutes += -dMin;
+            b.overpayment_cents += -dCents;
+            overpaymentTotal += -dCents;
           }
         }
       }
@@ -473,6 +547,40 @@ function computePayroll(input) {
     w.visits += 1;
     b.visits_counted += 1;
     if (usedCorrection) b.corrected_clock_visits += 1;
+  });
+
+  // ── `premium_may_be_owed`: TRUE OR null, NEVER false (b17) ──────────────
+  // fourth's condition on accepting the straight-time floor: "A disclosure
+  // that names a class is a note; a flag that names a person is payable." So
+  // each adjustment says whether an FLSA premium may be owed on ITS minutes,
+  // rather than leaving it to the class note in `not_computed`.
+  //
+  // THE ASYMMETRY IS A MEASUREMENT, NOT A HEDGE. The as-paid week tally is
+  // only as complete as the visit set the CALLER passed -- a run over an open
+  // period has no obligation to include the closed period's visits at all. An
+  // unseen visit in the same week can only ADD minutes. So:
+  //
+  //   seen >= 40h, or seen + delta > 40h  ->  true   (more visits only add)
+  //   otherwise                           ->  null   (CANNOT TELL)
+  //
+  // `false` would be a fabricated clearance on somebody's overtime and is
+  // never produced. Arm A7 of api/b17-straight-time-floor.test.js requires
+  // that the string does not appear in the output at all.
+  //
+  // IT DOES NOT REOPEN THE FROZEN WEEK and does not compute a premium: what
+  // the premium is WORTH needs the frozen week's regular rate recomputed with
+  // the new minutes in it, which is the thing the freeze exists to prevent.
+  // This says a person may be owed one. That is the whole claim.
+  const PREMIUM_THRESHOLD_MINUTES = FLSA_WEEKLY_HOURS * MINUTES_PER_HOUR;
+  adjustments.forEach((a) => {
+    const seen = (asPaidClosedWeeks[a.employee_id]
+      && asPaidClosedWeeks[a.employee_id][a.as_paid_week_start]);
+    if (typeof seen !== 'number') return;        // stays null: nothing seen
+    a.as_paid_week_minutes_seen = seen;
+    if (seen >= PREMIUM_THRESHOLD_MINUTES
+        || seen + a.minutes_delta > PREMIUM_THRESHOLD_MINUTES) {
+      a.premium_may_be_owed = true;
+    }
   });
 
   const caregivers = Object.keys(byCaregiver).sort().map((id) => {
@@ -520,7 +628,13 @@ function computePayroll(input) {
       adjustment_cents: b.adjustment_cents,
       adjustment_minutes: b.adjustment_minutes,
       adjustments: b.adjustments,
+      // b17, H2. `b.adjustment_cents` can no longer be negative, which is
+      // what makes `total_payable_cents >= gross_cents` an invariant rather
+      // than a hope. The overpayment numbers sit BESIDE this, never inside it.
       total_payable_cents: weeks.reduce((s, w) => s + w.gross_cents, 0) + b.adjustment_cents,
+      overpayments: b.overpayments,
+      overpayment_cents: b.overpayment_cents,
+      overpayment_minutes: b.overpayment_minutes,
       undatable_corrections: b.undatable_corrections,
       pending_corrections: b.pending_corrections,
       pending_correction_visits: b.pending_correction_visits,
@@ -554,6 +668,13 @@ function computePayroll(input) {
     // visit whose as-paid or corrected basis is unusable is something a human
     // has to look at, and a 0 would say the opposite.
     adjustments_skipped: adjustmentsSkipped,
+    // ── b17, H2. THE OVERPAYMENTS, BESIDE THE TOTALS AND NEVER IN THEM ────
+    // A downward correction on an already-paid visit lands here instead of
+    // deducting from a later period. Nothing in this module recovers one, and
+    // `not_computed` says so in its own entry -- a list of overpayments with
+    // no such statement reads as "handled".
+    overpayments: overpayments,
+    overpayment_cents: overpaymentTotal,
     undatable_corrections: undatableTotal,
     // b17. Period-level, same reason as the per-caregiver pair: the person
     // looking at a total must be able to see that N corrections are waiting on
@@ -584,6 +705,22 @@ function computePayroll(input) {
       'AN ADJUSTMENT POSTS IN THE PERIOD CONTAINING ITS APPROVAL, so a period '
         + 'that is never run never pays its adjustments. Nothing here sweeps '
         + 'for unposted ones.',
+      'RECOVERY OF AN OVERPAYMENT. A downward correction on an already-paid '
+        + 'visit is reported in `overpayments` and NOTHING HERE RECOVERS IT. '
+        + 'Recouping an overpayment is a separate regulated act: it is '
+        + 'permitted under the FLSA but not where the deduction takes a '
+        + 'workweek below the minimum wage, and many states additionally '
+        + 'require the employee\'s written authorisation. A pay run must not '
+        + 'perform one as a side effect of an approval, in a period the '
+        + 'employee has not been told about, so each entry carries '
+        + '`requires_human_act: true` and no total is reduced.',
+      'WHAT AN FLSA PREMIUM ON AN ADJUSTMENT IS WORTH. `premium_may_be_owed` '
+        + 'says a premium MAY be owed on an adjustment\'s minutes and never '
+        + 'what it amounts to -- that needs the frozen week\'s regular rate '
+        + 'recomputed with the new minutes in it, which is the reopening this '
+        + 'mechanism exists to prevent. It is true or null and NEVER false, '
+        + 'because the as-paid week tally is only as complete as the visit '
+        + 'set passed in and an unseen visit can only add minutes.',
     ],
   };
 }
@@ -653,6 +790,50 @@ function resolveRateFrom(rates) {
   };
 }
 
+// ── THE CLOSED-PERIOD LIST, NORMALISED ONCE FOR EVERY CONSUMER (b17) ──────
+// Extracted from computePayroll, unchanged in behaviour, because
+// api/_lib/sen-evv-readiness.js now needs the same two answers: WHICH closing
+// contains a service date, and WHAT INSTANT that closing was paid at. Michael
+// decided an EVV export and a pay run must not disagree about the same visit,
+// so the EVV check has to read a closed visit's clock AS AT paid_at -- and the
+// only way to do that without a second copy of this rule is to share it.
+//
+// THE DEPENDENCY RUNS readiness -> payroll AND NOT THE OTHER WAY, which is the
+// right direction even though it looks odd at first: "which pay period was
+// this visit paid in" is a PAYROLL fact, and the EVV check is the consumer of
+// it. payroll requires only sen-evv-clock, so there is no cycle.
+//
+// IT REPORTS THE UNDATABLE ENTRY AND DOES NOT WRITE THE MESSAGE. The refusal
+// text belongs to whoever is refusing -- a pay run and a readiness check owe
+// their callers different sentences about the same bad row.
+function normalizeClosedPeriods(list) {
+  const src = Array.isArray(list) ? list : [];
+  const periods = [];
+  for (let i = 0; i < src.length; i += 1) {
+    const c = src[i] || {};
+    const cs = calendarDate(c.period_start);
+    const ce = calendarDate(c.period_end);
+    const paidMs = instant(c.paid_at);
+    if (!cs || !ce || paidMs === null) return { ok: false, bad: c, periods: [] };
+    periods.push({ period_start: cs, period_end: ce, paid_at: c.paid_at,
+                   paid_at_ms: paidMs });
+  }
+  return { ok: true, bad: null, periods: periods };
+}
+
+// The closed period a SERVICE DATE falls in, or null. Service date and not the
+// clock instant, for the same reason the period bounds use it: it is what the
+// rate resolves against and what a payer matches on.
+function closedPeriodFor(periods, serviceDate) {
+  const ps = Array.isArray(periods) ? periods : [];
+  if (typeof serviceDate !== 'string' || !serviceDate) return null;
+  for (let k = 0; k < ps.length; k += 1) {
+    const c = ps[k];
+    if (serviceDate >= c.period_start && serviceDate <= c.period_end) return c;
+  }
+  return null;
+}
+
 function refusal(code, message) {
   return {
     refused: { code: code, message: message },
@@ -670,4 +851,8 @@ module.exports = {
   weekStartKey,
   DAY_NAMES,
   FLSA_WEEKLY_HOURS,
+  // b17. ONE implementation of the closed-period list, shared with
+  // api/_lib/sen-evv-readiness.js. See the note above normalizeClosedPeriods.
+  normalizeClosedPeriods,
+  closedPeriodFor,
 };

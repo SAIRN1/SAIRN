@@ -1,0 +1,14 @@
+api/b17-evv-closed-period-asof.test.js
+  a CLOSED period's EVV check reads the clock as at paid_at, like pay does
+  ok       R1. a correction approved AFTER paid_at does not make a CLOSED visit submittable
+  ok       R2. AGREEMENT -- pay pays 0 minutes and EVV reports the clock-out missing, on one visit
+  ok       R3. AGREEMENT -- a correction approved BEFORE paid_at leaves the clock COMPLETE and paid 240 minutes, so R1 is not "every closed visit is refused"
+  ok       R4. CONTROL -- with NO closed_periods the answer is b16's: the clock-out is present, read_as_of is null and nothing claims a freeze
+  ok       R5. FAILS CLOSED -- an undatable closed period makes the visit not ready and SAYS the clock could not be read as of anything
+  ok       R6. the readiness check CONSUMES the payroll helpers and carries no second copy of "which closing contains this service date"
+  ok       R7. GPS did not move -- the location verdict on a clock-out with no coordinate is BYTE-IDENTICAL with and without the freeze
+  ok       R8. summarize() passes closed_periods through to every visit
+  ok       R9a. ABLATION -- neutering the clock_IN as-of leaves R1 unchanged, so R1 is about the clock-OUT read
+  ok       R9b. ABLATION -- with the clock-OUT as-of removed the frozen visit's clock-out comes BACK, so R1 is testing THAT argument and not something else (`ready` is not asserted -- see the note on why)
+
+  10 passed, 0 failed, 0 unproven

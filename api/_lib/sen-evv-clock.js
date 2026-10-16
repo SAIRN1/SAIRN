@@ -1,8 +1,18 @@
 // api/_lib/sen-evv-clock.js
 // SAIRNsenior EVV clock integrity. 2026-09-26.
 //
-// PURE -- no I/O. Same shape and the same reason as api/_lib/sen-evv-readiness.js
-// and api/_lib/compliance-rules.js: the rules are testable without a database.
+// PURE -- no I/O, AND no imports either, which is the stronger claim and is
+// still true of THIS file. Same shape and the same reason as
+// api/_lib/compliance-rules.js: the rules are testable without a database.
+//
+// ── THE SAME SENTENCE IN THE TWO FILES THAT IMPORT THIS ONE MEANS LESS ───
+// CLARIFIED 2026-10-16 (b17), on fourth's b26 Q(c). api/_lib/sen-evv-readiness.js
+// and api/_lib/sen-payroll.js both say "pure" and both now carry imports --
+// including this file -- so in those two the word means NO I/O only. fourth:
+// "the headers are now misleading, and THAT is the defect, not the require()."
+// Here it still means both, and that is worth keeping true: this module is the
+// one place the approval rule lives, and a leaf with no dependencies is what
+// lets the other two share it instead of each holding a copy.
 //
 // ── THE TWO THINGS THIS EXISTS FOR ────────────────────────────────────────
 // VERIFIED IN api/sd-data.js BEFORE ANY OF THIS WAS WRITTEN, because both were

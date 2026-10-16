@@ -48,7 +48,15 @@ create table if not exists public.sairnsenior_audit_log (
     -- missing from a CHECK constraint is a SILENTLY DROPPED audit row
     -- everywhere else on this platform; here it is a refusal, which is the
     -- one place that failure mode is visible.
-    'pay_period_closed'
+    'pay_period_closed',
+    -- b17, 2026-10-16. REOPENING a closed period is the other half of the
+    -- same control and is audited for a stronger reason: a close freezes a
+    -- figure, a REOPEN un-freezes one, and an un-freeze nobody is recorded as
+    -- having made is the silent restatement the whole mechanism exists to
+    -- prevent. The handler refuses the reopen (503 AUDIT_UNAVAILABLE) if this
+    -- row cannot be written, same as the close. One row per event, in
+    -- public.sen_period_closings, and this is its audit trail.
+    'pay_period_reopened'
   )),
   detail jsonb,
   created_at timestamptz not null default now()

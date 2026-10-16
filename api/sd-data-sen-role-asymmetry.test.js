@@ -249,14 +249,66 @@ console.log('SAIRNsenior -- three read/write asymmetries, closed without '
           + 'WRITE');
   const REFERRAL = ['sen_referral_sources', 'sen_referrals', 'sen_training_rules',
                     'sen_training_records', 'sen_applicants'];
-  for (const resource of REFERRAL) {
+  // ── CORRECTED 2026-10-16 (b17): THE WRITE SET IS NO LONGER UNIFORM ──────
+  // THIS BLOCK USED TO ASSERT THAT A COORDINATOR COULD NOT WRITE ANY OF THE
+  // FIVE. That was right for b9 and is a STALE EXPECTATION now rather than a
+  // defect found. MICHAEL, 2026-10-15: "a home-care coordinator taking a phone
+  // referral may write intake without a manager -- retire Option B for that
+  // role." The per-resource write map b9's own comment asked for is
+  // api/sen-auth.js's SEN_REFERRAL_WRITE_ROLES, and this suite's own closing
+  // note ("if intake is a coordinator's job the fix is a per-resource write
+  // map in ONE place") is exactly what was built.
+  //
+  // SO THE ARMS SPLIT, AND THE SPLIT IS THE POINT. Two of the five are INTAKE
+  // and a coordinator may write them; the other three are a person's
+  // employment data, a named caregiver's compliance standing, and the RULE
+  // that decides whether a caregiver may work at all -- none of which
+  // Michael's decision touches, and all three stay management-only. A uniform
+  // expectation either way would now be wrong in one direction.
+  //
+  // SCHEDULER IS STILL REFUSED ON ALL FIVE. fourth's Option A was
+  // "+ coordinator, scheduler"; Michael named the COORDINATOR. An access
+  // decision is read at its narrowest, and these arms are what go red if
+  // somebody widens it later without a decision.
+  const REFERRAL_INTAKE = ['sen_referral_sources', 'sen_referrals'];
+  const REFERRAL_MGMT_ONLY = ['sen_training_rules', 'sen_training_records',
+                              'sen_applicants'];
+  for (const resource of REFERRAL_MGMT_ONLY) {
     for (const role of ['coordinator', 'scheduler']) {
       const r = await call(h, { action: 'write', resource: resource,
         token: tok(role), payload: { id: 'X-1' } });
       ok(r.code === 403 && eCode(r) === 'FORBIDDEN' && r.calls.length === 0,
-         resource + ': a ' + role + ' can no longer write -- ' + r.code
+         resource + ': a ' + role + ' still cannot write -- NOT intake, so '
+         + 'Michael\'s decision does not reach it -- ' + r.code
          + ', ' + r.calls.length + ' call(s)');
     }
+  }
+  for (const resource of REFERRAL_INTAKE) {
+    const r = await call(h, { action: 'write', resource: resource,
+      token: tok('coordinator'), payload: { id: 'X-1' },
+      replies: [{ status: 201, rows: [{ data: {} }] }] });
+    ok(r.code === 200,
+       resource + ': a COORDINATOR CAN write it (Michael 2026-10-15, intake) -- '
+       + r.code);
+    const s2 = await call(h, { action: 'write', resource: resource,
+      token: tok('scheduler'), payload: { id: 'X-1' } });
+    ok(s2.code === 403 && eCode(s2) === 'FORBIDDEN' && s2.calls.length === 0,
+       resource + ': a SCHEDULER is STILL refused -- the grant was to the '
+       + 'coordinator by name, not to the broad-read tier -- ' + s2.code);
+  }
+  {
+    // AND THE MAP REFUSES A RESOURCE IT HAS NO ROW FOR, rather than inheriting
+    // whichever set is nearest. That inheritance is how a broad-READ set came
+    // to decide a WRITE in the first place.
+    const names = Object.keys(senAuth.SEN_REFERRAL_WRITE_ROLES);
+    ok(names.length === 5 && REFERRAL.every((x) => names.indexOf(x) !== -1),
+       'the write map has a row for all five and nothing else -- a resource '
+       + 'with no row gets 500 WRITE_MAP_MISSING, not a default. rows: '
+       + names.join(','));
+    ok(senAuth.SEN_REFERRAL_WRITE_ROLES.constructor === undefined,
+       'and the map is NULL-PROTOTYPE, so a payload resource of "constructor" '
+       + 'cannot resolve to a truthy non-policy '
+       + '(api/_lib/auth-roleset-seam.test.js found that one)');
   }
   for (const resource of REFERRAL) {
     // READ IS DELIBERATELY UNCHANGED. Without these arms the change above is
@@ -285,10 +337,14 @@ console.log('SAIRNsenior -- three read/write asymmetries, closed without '
   }
 
   console.log('\n' + n + ' passed, ' + bad + ' failed');
-  console.log('\nWHAT THIS DOES NOT SETTLE: whether a coordinator SHOULD be able to log a\n'
-              + 'referral. The write set is management-only because that is the\n'
-              + 'instruction; if intake is a coordinator\'s job the fix is a per-resource\n'
-              + 'write map in ONE place, not a return to the broad set. Named in the\n'
-              + 'handoff rather than left in a comment.');
+  console.log('\nSETTLED 2026-10-15 (Michael), and this suite was corrected for it in\n'
+              + 'b17: a home-care coordinator taking a phone referral MAY write intake\n'
+              + '-- sen_referrals and sen_referral_sources -- and the other three stay\n'
+              + 'management-only. It landed the way the old note here asked for it: a\n'
+              + 'per-resource write map in ONE place (api/sen-auth.js\n'
+              + 'SEN_REFERRAL_WRITE_ROLES), not a return to the broad-read set.\n'
+              + 'STILL NOT SETTLED: whether a SCHEDULER should have it too. fourth\n'
+              + 'proposed coordinator+scheduler; Michael named the coordinator, so\n'
+              + 'that is all that was granted.');
   process.exit(bad ? 1 : 0);
 })();
