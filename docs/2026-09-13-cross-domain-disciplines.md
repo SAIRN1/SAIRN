@@ -2160,9 +2160,140 @@ from "my predicate changed".
 
 ---
 
+## 36. A CHECK'S OWN ROT IS NOT BIASED TOWARD RED — and the exit code it answers with must be chosen by OWNERSHIP, not by convenience
+
+**The rule, in two halves.**
+
+1. **WHEN A CHECK'S ANCHOR STOPS MATCHING, THE VERDICT YOU GET IS NOT "FAIL".**
+   It is one of three answers, and **two of them read as good news.** An arm
+   whose assertion was folded into its population predicate **vanishes**; a
+   probe whose extraction anchor rotted **exits 3**, which no sweep prints a
+   FAIL line for; and a precondition arm whose span overran **reports the
+   defect already fixed**. Item **8** says nothing announces the day a check
+   stops testing anything. This is the missing half: when it does stop, it
+   does not announce it by going red.
+2. **SO THE CHECK MUST OWN ITS OWN ANCHOR, AND THE EXIT CODE IS DECIDED BY WHO
+   OWNS WHAT.** A subject file that will not read, a tool that is absent, a
+   credential that is missing — those are external and are **exit 2/3, COULD
+   NOT RUN**, per PR §1.11. **An anchor that no longer matches a file that
+   reads perfectly well is a defect in the CHECK**, actionable by the check's
+   owner, and it must be **exit 1 with the anchor named** so a sweep surfaces
+   it. Folding the two into one COULD NOT RUN is how a dead probe becomes
+   invisible. And the arm that proves the rot is detectable has to be
+   **driven** — rename the anchor in a COPY of the subject and require exit 1,
+   with an **unmutated-copy control first**, because *"it exits 1"* is
+   satisfied for ever by a probe that is red anyway.
+
+### The three instances, each measured, all three in cody b19 on findings fourth made
+
+**(a) AN ARM THAT DISAPPEARED INSTEAD OF FAILING.**
+`tests/sd_data_blob_scope_ten_routed_sites.js:347` read
+`if (d.id !== undefined && s.idMustSurvive) { ok(...) }` with **no `else`**, so
+the one state the arm exists to catch — `id` absent — emitted neither `ok` nor
+`bad`. Ablated against a copy, one layer removed:
+
+    PRE-FIX  BASELINE  EXIT=0  16 passed, 0 failed   arm Z ok:1 FAIL:0
+    PRE-FIX  ABLATED   EXIT=0  15 passed, 0 failed   arm Z ok:0 FAIL:0  SILENT
+    POST-FIX BASELINE  EXIT=0  16 passed, 0 failed   arm Z ok:1 FAIL:0
+    POST-FIX ABLATED   EXIT=1  15 passed, 1 failed   arm Z ok:0 FAIL:1  CAUGHT
+
+**A scope fix that stripped `id` off every stored record would have been exit 0
+both ways.** The fix is not an `else` bolted on: it is **splitting the
+predicate** — the population test selects *which sites the arm applies to*, the
+assertion tests *the property* — because folding them together is what made a
+failing assertion indistinguishable from a row the arm does not cover.
+
+**(b) A PROBE THAT HAD NOT RUN FOR TWO DAYS, AND A REGISTER THAT COULD NOT SAY
+SO.** `tests/run_b14_leg_aftercare_probe.py` anchored its server-half
+extraction on `const acKey = ('AC-'...`. A correctness fix replaced the
+derivation, the anchor stopped matching, and the probe exited **3 COULD NOT
+RUN** — correctly, and invisibly. Meanwhile
+`docs/known-red-suites.json` recorded the file as `exit_code: 1` with
+`expected_red_scope: "ARM 1 ONLY. Any other failure in this suite is NEW"`, and
+**an exit 3 is neither of those.** So the only arm measuring a silent-overwrite
+defect on a bereaved family's records was off, and the register read as *known
+red, scope understood*. **A ROW'S `exit_code` IS A VALUE, NOT A CLASS:** a
+registered exit 1 that becomes an exit 3 has left the register's vocabulary
+entirely, and no field in the row can express it.
+
+**(c) A PRECONDITION ARM THAT DECLARED ITS OWN SUBJECT ALREADY FIXED.** This is
+the sharpest of the three, because it is **35 clause 2 recurring inside the
+work that was citing 35.** `tests/sd_data_not_provisioned_misclass.js` slices
+the branch under test out of `api/sd-data.js`, and `branchOf()` first bounded
+it at the next `\n    if (resource === `. That terminator is a long way below:
+the slice came back **23,575 characters for a branch of about 180 lines — an
+overrun by a factor of 130** — so it contained *other* branches that **do**
+call the correct helper. Arm **P5**, whose entire job is to assert *the defect
+has NOT already been fixed*, then reported that it had been: **a precondition
+arm telling the suite to retire itself, over a defect that is still shipped.**
+Bounded by **balanced braces** it is 11,146 characters, and a new arm **P1b**
+asserts neither slice names the other branch's resource — because a counter
+that started in the wrong place still produces a span that is *balanced*.
+
+**A TERMINATOR IS A GUESS ABOUT WHAT COMES NEXT; A BALANCED BRACE IS A PROPERTY
+OF THE BRANCH ITSELF.** 35 clause 2 says a fixed line count will reach into the
+next construct. **A terminator pattern is the same defect wearing a structural
+costume** — it looks like a boundary and it is a search for one — and it fails
+further, because a line count overruns by a bounded amount and a missing
+terminator overruns until the next match anywhere in the file.
+
+### Scope, and what this does NOT say
+
+**Not that COULD NOT RUN is being weakened.** PR §1.11 stands unchanged: a
+check that depends on an absent tool must fail closed and say so, and "could
+not run" is never folded into "passed". 36 is about a *different* question —
+**whose fault is it** — and it only ever moves a verdict from the quieter state
+to the louder one.
+
+**Not that every anchor needs a sabotage arm.** The one that needs it is the
+anchor a check **extracts its subject through**, because that is the one whose
+rot silences the whole file rather than one arm.
+
+**Not that an exit 3 is wrong.** The aftercare probe's exit 3 was the honest
+answer to the question it asked. The defect is that nothing asked a different
+question — *is this file's own anchor still live* — and that question has a
+red answer available.
+
+**Relationship to the neighbours, said rather than left to be inferred.**
+**8** is the cadence rule; 36 is what you find when the cadence lapses, and it
+says the lapse is not self-announcing. **20** covers an arm that cannot fire;
+(a) is a member of it and is cited here for the *ablation discipline* — the arm
+does not count until the ablation comes back RED — rather than re-litigated.
+**35** is this item's parent for (c): same cause, different consequent. 35 is
+about a predicate producing a wrong **COUNT**; 36 is about a check producing a
+wrong **VERDICT**, including a false clean. **11** (human-gated
+auto-remediation) is why (c) matters more than it looks: a precondition arm
+that can declare its own subject fixed is a detector blessing a repair nobody
+made.
+
+**Cause tag:**
+`verification/anchor-rot/verdict-not-biased-toward-red-and-exit-code-not-chosen-by-ownership`.
+
 ---
 
-## The failure mode ELEVEN of the thirty-five share
+---
+
+## The failure mode TWELVE of the thirty-six share
+
+*(Denominator moved 2026-10-16 when cody's 36 was landed, and the membership
+question was asked rather than assumed. **36 IS A TWELFTH MEMBER**, and the
+argument is in its own section. The group is A CHECK THAT READS AS COVERAGE AND
+STRUCTURALLY CANNOT FIRE, and 36's whole subject is the three ways a check
+answers once its own anchor has rotted — an arm that emits neither `ok` nor
+`bad`, a probe that exits 3 where no sweep prints a FAIL line, and a
+precondition arm whose overrun span reports the defect already fixed. **None of
+the three can turn a defective subject red**, and in all three the printed
+output reads as coverage: 16 passed, a registered known-red row, a green
+precondition. **The hard case is instance (c)**, which FIRED and produced a
+false clean, and that is the shape of **35** — a measurement fault, which stays
+outside the group. 36 is admitted on (a) and (b) rather than on (c), and
+(c) is carried inside it as 35's consequent for verdicts; said plainly, because
+admitting an item on its strongest instance while quietly counting its weakest
+is how this denominator would stop meaning anything. **Beside 34**, which was
+the first member whose trigger is a COMMIT rather than elapsed time — 36's
+trigger is also a commit, somebody else's, in a file the check only reads.
+**The heading's denominator was changed from "thirty-five" to "thirty-six"
+rather than left to drift, and the ELEVEN became a TWELVE.**)*
 
 *(Denominator moved 2026-10-15 when fourth's 35 was landed, and the membership
 question was asked rather than assumed. **35 IS NOT A MEMBER; the group stays at

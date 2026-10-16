@@ -6732,6 +6732,32 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-16T12:24:12Z",
+      "opened_at_sha": "14bb1764fd2db62b62540525582e6fa12be5345e",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 3,
+      "resources": [
+        "alf_facility",
+        "alf_op_audits",
+        "leg_aftercare",
+        "mech_site_assets"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tests/run_b14_leg_aftercare_probe.py",
+        "tests/sd_data_not_provisioned_misclass.js"
+      ],
+      "what": "cody b19, FOUR Tier A resources across TWO test files and NO api/ or sql/ change. (1) tests/sd_data_not_provisioned_misclass.js is NEW and failing-first: it turns fourth's two b25 section-1 observations into arms. A1 drives an injected PostgREST 400 + {\"code\":\"23514\"} through the alf_op_audits upsert guard `if (w.status === 404 || w.status === 400)` at api/sd-data.js:14445 and measures HTTP 503 NOT_PROVISIONED -- a row refused ON CONTENT reported as a missing table, on an append-only care-observation log, with the operator told to run a migration that is already applied. B1 drives a 42703 through the mech_site_assets read guard at :2851 and measures HTTP 200 {\"ok\":true,\"data\":[],\"provisioned\":false}, BYTE-IDENTICAL to a genuine 404, so a dropped or renamed column is indistinguishable from a table that was never created and nothing in the answer is an error. alf_facility appears because the suite MOCKS its threshold read so the alf_op_audits branch reaches its guard; no assertion is made about alf_facility. (2) tests/run_b14_leg_aftercare_probe.py is RE-ANCHORED on leg_aftercare: hank's two-form key fix moved the server derivation, the old extraction anchor stopped matching, and the probe had been exiting 3 COULD NOT RUN while the register recorded it at exit 1 with expected_red_scope \"ARM 1 ONLY\". WHAT A REVIEWER SHOULD CHECK, HARDEST FIRST: (1) that A2 and A3 really do prove the fix is a CALL-SITE change and nothing more -- A2 rewrites ONE guard in a COPY of api/ to `await notProvisioned(res, w, <the same message>)` and gets 400 ROW_REFUSED, A3 shows a genuine 404 in that same copy still gets 503, and if either is wrong then the routing to hank names a fix that does not work; (2) that B1's assertion is as NARROW as it claims -- the branch's own comment at :2846-2850 argues correctly that a registry predating the AIM Act columns should be told to re-run the idempotent migration, and B1 asserts ONLY that the two states differ in the answer, not that an error status is owed, so a reviewer should check the arm cannot be read as overruling that comment; (3) that the measured population (318 guards: 88 via notProvisioned(), 67 raw 503, 151 raw 200 provisioned:false) is a real census and not a regex that half-matched -- arm P3 refuses unless all three answers are represented and P4 asserts both subjects are MEMBERS, and the 151 independently reproduces the figure the dispatch named; (4) that P5 is sound now -- its FIRST version overran its branch slice by a factor of 130 and REPORTED THE DEFECT ALREADY FIXED, a precondition arm telling the suite to retire itself, and it is bounded by balanced braces with new arm P1b asserting neither slice names the other branch resource; (5) that the leg_aftercare re-anchor extracts the real derivation -- the server half is the BALANCED BLOCK of the leg_aftercare guard from the acEsc helper to the closing brace, both halves now extract their escape helper, and arm 3 renames each anchor in a COPY and requires exit 1 with an unmutated-copy control first; (6) that alf_op_audits remains APPEND-ONLY in every arm -- no arm writes a second observation under an existing entry_id and the suite never reaches a real store. NO api/, sql/ OR tools/ FILE IS EDITED: api/ is copied to a temp tree for the counterfactual and the live tree holds no modification to it. No production row read, no live deployment fetched, no table touched. Reviewer must not be cody.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-16T12:24:12Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

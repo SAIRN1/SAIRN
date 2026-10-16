@@ -90,6 +90,7 @@ than an empty row — it would look exactly like the handover having worked.
 | **2026-10-11** | **33.** a contamination warning makes every result in its scope unfalsifiable, so it must ship with the isolation method | **CHAT-ADOPTED by direct instruction**, **derived by cody** | cody's own full-text section in this file, landed in `7ae272cc` and corrected by `ffe43d70`, carrying its own status line *"ROUTED to fourth for a number, NOT self-promoted."* **The number was the only thing missing and the only thing this promotion added** -- the rule, the 76/7/3-of-86 isolation figures, the three-part operational form and the *where it does not transfer* paragraph are cody's and were carried as written. **Counted before assigning:** 32 `## <n>.` headings at `263f736f`, 1-32 with no gap and no duplicate, and no existing use of a convention 33 anywhere under `docs/ tools/ tests/`. One cross-reference was added at promotion and is marked as mine rather than cody's: 33 is **29's mirror** -- 29 distrusts a blanket PASS, 33 distrusts a blanket DOUBT, and neither mechanism can distinguish its cases. **Asked and NOT folded into the cannot-fire group:** 33's warning fired correctly and loudly, so the group stays at TEN and the heading's denominator moved to thirty-three |
 | **2026-10-13** | **34.** a checker's universe must exclude the artefacts that describe its own findings -- and a change that moves a pattern behind a shared helper must extend the checker keyed to the old shape, in the same push | **CHAT-ADOPTED by direct instruction**, **derived by hank** | the `CONVENTION CANDIDATE` section of `SAIRN-report-hank-b4.txt`, text only, which routed the number rather than self-promoting it: *"that file's numbering has been wrong twice from two sessions adding an item within the same hour, and the file has an owner. ROUTED."* **The number was the only thing missing and the only thing this promotion added** -- the rule, the three b4 instances (a probe's own planted payloads entering the universe it tests; a `.json` write-up of that finding doing the same through an extension the `*.md` rule missed; and fourteen files leaving `audit_event_type_check.py`'s field of view while its printed total stayed the same) and the argument against folding it into 8 are hank's and are carried as written. **Counted before assigning:** 33 `## <n>.` headings, 1-33, no gap and no duplicate, and no existing use of a convention 34 under `docs/ tools/ tests/`. **Asked and FOLDED IN:** 34 IS a member of the cannot-fire group, so that group moved from TEN to ELEVEN and the heading's denominator from thirty-three to thirty-four -- it is the first member whose trigger is a COMMIT rather than elapsed time, which is why it sits beside 8 instead of inside it |
 | **2026-10-15** | **35.** a predicate has a SPAN as well as a PATTERN -- and a re-count that disagrees with a published count is a predicate disagreement until the SUBJECT is proved to have moved | **CHAT-ADOPTED by direct instruction**, **derived by fourth**, and **SELF-NUMBERED, which this table otherwise refuses** | the rule was stated in `SAIRN-report-fourth-b23.txt:485-489` and in b23's digest METHOD-NOTE and was carried in no standing document for two batches; b25's dispatch instructed it be written in, so the number was assigned by its own deriver rather than routed. **Said plainly because convention 11 is the reason the column exists:** promoting a rule out of one's own defects is the detector-blessing-its-own-fix shape, and the mitigation here is not the instruction -- it is that the third instance b25 added **WITHDRAWS its own b24 figure** (25 class-B write branches reduced to 22) rather than confirming it, which is the opposite of self-flattery. **Counted before assigning:** 34 `## <n>.` headings at `1727fde6`, 1-34 with no gap and no duplicate, and no existing use of a convention 35 anywhere under `docs/ tools/ tests/` -- the one `convention 35` hit in this file (`:680`) is generic prose using the number as an example. **A COLLISION WORTH NAMING AND NOT A BLOCKER:** `item 35` ALREADY means the hash-chained tamper-evident audit log in the open-work queue (`docs/2026-09-14-hash-chained-audit-logs-scoping.md`, `docs/2026-09-14-nightly-backup-design.md`, `docs/2026-09-14-first-article-inspection.md`), so this convention must be cited as **convention 35** or **cross-domain-disciplines item 35**, never as a bare *item 35*. **Asked and NOT folded into the cannot-fire group:** every instance behind 35 fired and produced a confident number -- the fault is WHERE the predicate looked -- so it sits beside 21 and 22 and the group stays at ELEVEN, with the heading's denominator moved from thirty-four to thirty-five |
+| **2026-10-16** | **36.** a check's own rot is not biased toward RED -- and the exit code it answers with must be chosen by OWNERSHIP, not by convenience | **derived by cody**, b19, on three findings fourth made in b24 and b25 | **THREE INSTANCES, ALL MEASURED, AND TWO OF THE THREE READ AS GOOD NEWS.** (a) `tests/sd_data_blob_scope_ten_routed_sites.js` arm Z folded its assertion into its population predicate -- `if (d.id !== undefined && s.idMustSurvive)`, no `else` -- so the one state it exists to catch emitted neither `ok` nor `bad`. Ablated both ways in one session: PRE-FIX the ablation is **exit 0, 15 passed, arm Z simply ABSENT**; POST-FIX it is **exit 1, 15 passed / 1 failed, arm Z RED**. A scope fix stripping `id` off every record would have been exit 0 either way. (b) `tests/run_b14_leg_aftercare_probe.py` extracted its subject through `const acKey = ('AC-'...`; a correctness fix replaced the derivation and the probe exited **3 COULD NOT RUN** for two days, which no sweep prints a FAIL line for -- while `docs/known-red-suites.json` recorded it as `exit_code: 1, expected_red_scope: "ARM 1 ONLY"`, and **an exit 3 is neither**. A row's `exit_code` is a VALUE, not a CLASS. (c) **the sharpest, because it is 35 clause 2 recurring inside work that was citing 35:** a precondition arm whose job is to assert *the defect has NOT already been fixed* bounded its branch slice at the next `if (resource === ` terminator, **overran by a factor of 130** -- 23,575 characters for a 180-line branch -- swallowed other branches that DO call the correct helper, and **reported the defect already fixed.** A terminator is a guess about what comes next; a balanced brace is a property of the branch itself. **THE REMEDY IS AN OWNERSHIP RULE:** an absent tool or an unreadable subject stays exit 2/3 COULD NOT RUN per PR 1.11, but an anchor that no longer matches a file that reads perfectly well is a defect in the CHECK and must be **exit 1 with the anchor named** -- plus a driven arm that renames the anchor in a COPY and requires exit 1, with an unmutated-copy control first. **Asked and ADMITTED to the cannot-fire group as the TWELFTH member, on (a) and (b) rather than on (c)** -- (c) fired and produced a false clean, which is 35's shape -- and that distinction is stated in the group's own note rather than counted quietly |
 
 **18 AND 19 WERE ADOPTED IN CHAT, NOT SELF-PROMOTED, and that distinction is
 the reason the column says so.** Promoting a convention out of one's own
@@ -328,6 +329,38 @@ with `re.match(r'^## (\d+)\.')` over the file plus a duplicate count and a gap
 scan -- not by eye and not by `grep -c`. **Do not take 33 from this page
 either.** It was 30 at `7ae272cc`, 32 within the hour at `2290bd45`, and 32 at
 `263f736f` when this edit began. Count the headings.
+
+---
+
+## Count at the close of this edit, 2026-10-16 (cody, b19)
+
+**36 `## <n>.` headings in `docs/2026-09-13-cross-domain-disciplines.md`, numbers
+1-36 with no gap and no duplicate**, measured with
+`re.finditer(r'(?m)^## (\d+)\.')`, a `Counter` for duplicates and a gap scan over
+`1..max`. The denominator heading reads **"TWELVE of the thirty-six"** and agrees
+with `max`. **No other session added a 36 while b19 ran** — checked rather than
+assumed, and the rebase that brought in 17 commits from the other clones
+happened BEFORE this heading was written.
+
+**AND THE PROMOTION-ROW COUNT IN THE BLOCK BELOW IS WRONG, CORRECTED HERE BY ITS
+OWN CONVENTION RATHER THAN SILENTLY.** That block says *"18 promotion rows in the
+table above"*. **The table has 24 rows now and had 23 when that block was
+written** — and convention 35 clause 3 is what settles whether that is drift:
+
+    # rows between "## Promotions made from this file's queue" and the next "## ",
+    # excluding the header and the |---| separator
+    3b5fabb50 -> 23 rows        # the commit that introduced the 2026-10-15 block
+    HEAD       -> 23 rows       # before this edit added the 36 row
+
+**The subject did not move, so the two numbers are two predicates over the same
+bytes and the published one is the wrong one.** It is a counting slip in a
+figure nothing reads, which is exactly the kind 28 exists to make checkable and
+exactly the kind that survives for months. Said out loud instead of overwritten.
+**Do not take 36 or 24 from this page. Count them.**
+
+*(The 2026-10-15 block is carried below unchanged, including its wrong 18, per
+the numbering note at the end of the disciplines file: a published figure needs
+a correction and not a silent edit.)*
 
 ---
 
