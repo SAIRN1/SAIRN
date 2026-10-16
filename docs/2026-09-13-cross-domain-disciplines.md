@@ -2271,9 +2271,133 @@ made.
 
 ---
 
+## 37. A TWO-SOURCE CONFLICT IS UNDER-DETERMINED — the resolving source is the one the quantity is USED on, and when both sides turn out correct the error was in your MODEL of the subject
+
+**The rule, in two halves.**
+
+1. **A DEFINING SOURCE AND A DESCRIBING SOURCE CANNOT SETTLE EACH OTHER.** When
+   a published figure disagrees with the authority that defines it, you have two
+   sources and no arbiter: the definition says what the number *should be*, the
+   description says what somebody *published*, and **neither says which
+   POPULATION the number applies to.** The source that settles it is the
+   **operational artefact — the form, the config file, the table the value is
+   actually read out of** — because that artefact has to name the population to
+   be usable at all. **Go to the thing that USES the quantity, not to a third
+   thing that defines it again.**
+2. **AND IF BOTH SIDES OF YOUR DOCUMENTED CONFLICT TURN OUT TO BE CORRECT, THE
+   DEFECT WAS NEVER IN EITHER SOURCE.** It was in the model you compared them
+   against. That is the harder failure to see, because **writing the conflict
+   down carefully is what makes it feel resolved** — both sides quoted, both
+   dated, the disagreement explicit. A well-documented conflict reads as
+   understood. **A conflict can be documented perfectly and diagnosed wrongly.**
+
+### The instance, and it is this session's own earlier finding
+
+**WHAT WAS PUBLISHED IN cody b20, correctly as far as it went.** §45B(b)(1)(B)
+freezes the FICA tip credit's wage floor at the minimum wage *"as in effect on
+January 1, 2007"* — **$5.15**, confirmed by **IR-2007-155**. The IRS's live
+*FICA Tip Credit for employers* page, last reviewed **16-Aug-2026**, says
+**"$7.25 per hour, the federal minimum wage rate in effect on July 24, 2009"**,
+twice, verbatim. Recorded as a documented disagreement between a statute and a
+guidance page, with both quoted and dated, and routed as a one-line question.
+
+**WHAT READING FORM 8846 SHOWED.** The form — the artefact the credit is
+actually claimed on — carries **TWO floors, one per limb of §45B(b)(2):**
+
+> **Food or beverage employers.** These employers cannot claim the credit for
+> taxes on any tips that are used to meet the federal minimum wage rate **in
+> effect on January 1, 2007, of $5.15 an hour.**
+
+> **Beauty service employers.** These employers cannot claim the credit for
+> taxes on any tips that are used to meet the federal minimum wage rate
+> **currently in effect, of $7.25 an hour.**
+
+**SO $7.25 IS A REAL §45B FIGURE.** The 2025 expansion of §45B(b)(2) to
+barbering, hair care, nail care, esthetics and body/spa treatments brought its
+own **unfrozen** floor with it. **The guidance page's error is a MISPLACED
+LIMB, not a wrong number** — it states the beauty-service floor without its
+population and then attaches a 2009 date the form does not use.
+
+**AND THE DIAGNOSIS WAS WRONG FOR A REASON WORTH NAMING: BOTH SIDES OF THE
+CONFLICT I DOCUMENTED WERE CORRECT.** The statute quotation was right. The page
+quotation was right. **The model was one amendment out of date** — it held
+"§45B has A floor", and §45B has had two since tax years beginning after 2024.
+The earlier sections even recorded the expansion: §7.4 of the tips document
+lists the beauty-service limb explicitly. **It knew the limb existed and did not
+ask whether the limb had its own floor**, which is the whole distance between
+having the fact and having the model.
+
+### What this does NOT say
+
+**Not that guidance pages are reliable.** The page is still wrong, and the
+correction is still that a food-and-beverage employer uses $5.15. What changed
+is **what kind of wrong**, and therefore what a reader should take from it: not
+*"distrust that page"* but *"the figure needs its population"*.
+
+**Not that a third source is always available.** When no operational artefact
+exists — a pure definitional conflict with nothing downstream — the conflict
+genuinely is a question for someone outside, which is what b20 did and was
+right to do. **37 says look for the artefact first, not that one always
+exists.**
+
+**Not a licence to stop documenting conflicts.** The documentation is what made
+the correction cheap: because both quotations were recorded verbatim with
+dates, the Form 8846 text slotted straight in and the misdiagnosis was visible
+in one read. **A conflict you did not write down cannot be re-diagnosed at
+all.**
+
+### The checkable form, since a convention nobody can apply is an essay
+
+Before publishing *"source A and source B disagree"*:
+
+1. **Name the POPULATION each source is talking about.** If either source does
+   not state one, that is the finding, and it is a different finding from
+   disagreement.
+2. **Find the artefact the quantity is read out of** — form, schema, config,
+   lookup table — and check whether it carries **more than one** value for what
+   you assumed was one.
+3. **Ask what would have to be true for BOTH sources to be correct.** If that
+   state is possible, the conflict is not established and your model is the
+   first suspect.
+
+**Relationship to the neighbours, said rather than left to be inferred.**
+**35** is a predicate looking in the wrong PLACE; **37** is a quantity read for
+the wrong POPULATION — 35's sibling one level up, about the subject's structure
+rather than the search's extent. **28** requires a figure to carry its
+denominator; **37 is why that is load-bearing**, because a denominator IS a
+population and the page omitted one. **13** says verify an edit by reading the
+file; 37 says verify a CONFLICT by reading the artefact. **NOT a member of the
+cannot-fire group** — nothing here failed to fire. Both sources spoke, loudly
+and correctly; the reader's model was the defect, which puts it beside **35**
+and **21** as a measurement fault rather than a dead check.
+
+**Cause tag:**
+`measurement/conflict/two-sources-under-determined-population-omitted-and-model-one-amendment-stale`.
+
 ---
 
-## The failure mode TWELVE of the thirty-six share
+---
+
+
+---
+
+---
+
+## The failure mode TWELVE of the thirty-seven share
+
+*(Denominator moved 2026-10-16, SECOND TIME THAT DAY, when cody's 37 was
+landed, and the membership question was asked rather than assumed. **37 IS NOT
+A MEMBER; the group stays at TWELVE.** The group is A CHECK THAT READS AS
+COVERAGE AND STRUCTURALLY CANNOT FIRE, and **nothing in 37 failed to fire** —
+both sources spoke, loudly, and **both were correct**; the defect was in the
+reader's model of a subject that had grown a second floor. That is a
+measurement fault, which puts 37 beside **35**, **21** and **22** and outside
+the group for the same reason all three are outside it. **The heading's
+denominator was changed from "thirty-six" to "thirty-seven" rather than left to
+drift, and the TWELVE is untouched.** Two conventions landing on one day is
+also why this note says which: 36 was asked the membership question and
+ADMITTED, 37 was asked and REFUSED, and reading the pair together is the
+clearest statement of where the group's boundary actually is.)*
 
 *(Denominator moved 2026-10-16 when cody's 36 was landed, and the membership
 question was asked rather than assumed. **36 IS A TWELFTH MEMBER**, and the

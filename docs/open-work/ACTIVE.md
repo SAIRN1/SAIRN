@@ -231,7 +231,7 @@ closed-ish word. Every row, open or not, is in its shard in full.
 | SAIRNcash        | Gate 4 on the paywall &mdash; and my own stated reason for one of its g~ | BUILT 2026-09-15 (Hank) &md~ | Hank         | `open-work/sairncash.md:9` |
 | SAIRNcash        | Gate 4 on the app that takes money &mdash; and the webhook HTTP handler~ | BUILT 2026-09-15 (Hank) &md~ | Hank (the e~ | `open-work/sairncash.md:11` |
 | SAIRNcash        | 🚫 SAIRNcash's AI ASSISTANT IS DOWN ON PRODUCTION RIGHT NOW, because it ~ | Introduced 2026-09-05 (Cody~ | Michael — H~ | `open-work/sairncash.md:12` |
-| SAIRNcash        | Stripe not configured — api/sairncash/checkout.js returns {"error":"Str~ | Open                         | Michael      | `open-work/sairncash.md:13` |
+| SAIRNcash        | &#9888; CODE-COMPLETE, BLOCKED ON BUSINESS SETUP &mdash; NOT &ldquo;inc~ | BLOCKED ON LLC, by Michael ~ | Michael &md~ | `open-work/sairncash.md:13` |
 | SAIRNcash        | &#128993; Item 100 second half: the billing-portal token design &mdash;~ | SCOPED 2026-09-26 (cc), 8c9~ | Michael &md~ | `open-work/sairncash.md:14` |
 | SAIRNcode        | &#128993; sc-denial-reconcile.js reports a NEGATIVE aggregate count und~ | FOUND 2026-09-29 (hank) whi~ | cody &mdash~ | `open-work/sairncode.md:9` |
 | SAIRNcode        | &#128993; The GP therapy-discipline modifier rule now exists, and NOTHI~ | BUILT 2026-09-24 (CC) in 98~ | unassigned   | `open-work/sairncode.md:10` |
@@ -249,7 +249,7 @@ closed-ish word. Every row, open or not, is in its shard in full.
 | SAIRNfreedom     | &#9989; A FUNCTION NAME THAT NEVER EXISTED SURVIVED FOUR PASSES AND ONE~ | SOURCE CORRECTED 2026-10-06~ | &mdash;      | `open-work/sairnfreedom.md:9` |
 | SAIRNfreedom     | &#128993; sf_district_known_keys is the TRUST ANCHOR and its INTEGRITY ~ | NAMED CORRECTLY 2026-09-30 ~ | unassigned   | `open-work/sairnfreedom.md:10` |
 | SAIRNfreedom     | &#128993; sf_district_keypair holds an EXTRACTABLE ECDSA P-256 PRIVATE ~ | FOUND 2026-09-29 (hank), CO~ | unassigned   | `open-work/sairnfreedom.md:11` |
-| SAIRNfreedom     | &#128993; NEEDS OUTSIDE COUNSEL &mdash; one tax question, already writt~ | OPEN. RESEARCH FINISHED 202~ | Michael (it~ | `open-work/sairnfreedom.md:13` |
+| SAIRNfreedom     | &#9989; ANSWERED IN PRINCIPLE 2026-10-16 (Cody) by Rev. Rul. 2003-64 &m~ | ANSWERED IN PRINCIPLE 2026-~ | The post&rs~ | `open-work/sairnfreedom.md:13` |
 | SAIRNfreedom     | A recorded NEGATIVE with an expiry measured in hours, being set by its ~ | NOTED 2026-09-21 (Cody), NO~ | hank         | `open-work/sairnfreedom.md:14` |
 | SAIRNfreedom     | &#9989; The general ledger, the chart of accounts and vendor pricing we~ | BUILT 2026-09-21 (Hank) &md~ | Hank         | `open-work/sairnfreedom.md:15` |
 | SAIRNfreedom     | &#128308; The session gate CANNOT be wired yet &mdash; four pieces of e~ | INVESTIGATED 2026-09-21 (Ha~ | unassigned   | `open-work/sairnfreedom.md:16` |

@@ -1,13 +1,28 @@
 # SAIRNcash billing flow — re-derived against the code and the live deployment, 2026-10-16 (Cody, b20)
 
-**The standing status is "incomplete". THAT IS NOW WRONG IN ONE DIRECTION AND
-STILL RIGHT IN ANOTHER, and the two halves have different owners.**
+> ## STATUS DECIDED BY MICHAEL, 2026-10-16: **CODE-COMPLETE, BLOCKED ON BUSINESS SETUP.**
+>
+> **NOT "incomplete".** The LLC is not yet situated. **All three remaining
+> items are ON HOLD BY DECISION, NOT BY OVERSIGHT, and NO FURTHER STRIPE WORK
+> IS TO BE DONE until Michael says go** — that includes reading the Vercel
+> environment, testing the key, and the billing-portal token design.
+>
+> **WHY THE WORD MATTERS AND IS NOT A LABEL.** "Incomplete" points an engineer
+> at the repo, and **the repo is finished** — twelve suites green, three of
+> them mutation probes that plant defects and require refusal. A status that
+> sends somebody to look for missing code costs a session every time it is
+> read, and this row has been read at least three times across b19 and b20.
+> **"Blocked on business setup" points at the thing that is actually blocking,
+> and tells the next session to stop rather than start.**
+
+**The standing status WAS "incomplete". THAT WAS WRONG IN ONE DIRECTION AND
+RIGHT IN ANOTHER, and the two halves have different owners.**
 
 | | verdict |
 |---|---|
-| **The CODE** | **COMPLETE and tested.** Nine suites, 130 assertions, every one green at this commit. Nothing is missing in the repo. |
-| **The DEPLOYMENT** | **STILL NOT COMPLETE**, and narrower than the record says: `STRIPE_SECRET_KEY` is **PRESENT in production**, measured live today. |
-| **The one design decision** | **STILL OPEN and still Michael's** — the billing-portal token. Unchanged. |
+| **The CODE** | **COMPLETE and tested.** Twelve suites, every one green at this commit. Nothing is missing in the repo. |
+| **The DEPLOYMENT** | **BLOCKED ON THE LLC**, and narrower than the record said: `STRIPE_SECRET_KEY` is **PRESENT in production**, measured live today. |
+| **The one design decision** | **ON HOLD, Michael's** — the billing-portal token. Not to be pursued. |
 
 **WHAT THE STANDING RECORD SAYS, and the exact words that have gone stale.**
 `docs/open-work/sairncash.md` carries: *"Stripe not configured —
@@ -151,11 +166,14 @@ mine to do; this section is the caveat and it cites that document by name.
 
 ## 4. So what is actually missing — three items, three owners
 
-| # | what | owner | next step |
+**ALL THREE ARE ON HOLD AS OF 2026-10-16. The "next step" column records what
+the step WOULD be when the hold lifts; it is not a queue to work.**
+
+| # | what | owner | next step WHEN THE HOLD LIFTS |
 |---|---|---|---|
-| 1 | **`STRIPE_PRICE_ID` presence in the Vercel project is UNKNOWN** and cannot be determined from outside without creating a Stripe object | **Michael** | Read the Vercel env list for the project. One look settles it; no probe can. |
-| 2 | **Whether the present `STRIPE_SECRET_KEY` actually authenticates.** Present ≠ working — it was an expired `sk_test_` once already | **Michael** | A single Stripe dashboard look, or one authenticated API call from outside this platform. |
-| 3 | **The billing-portal token design.** `docs/2026-09-26-presigned-remedy-scoping.md`, scoped by cc, nothing built | **Michael** | Decide: mint a token, or keep `sub_...` plus a rate limit. **A single-use token is ruled OUT on customer-harm grounds** — that scoping already ran. |
+| 1 | **`STRIPE_PRICE_ID` presence in the Vercel project is UNKNOWN** and cannot be determined from outside without creating a Stripe object | **Michael** | Read the Vercel env list for the project. One look settles it; no probe can. **HELD.** |
+| 2 | **Whether the present `STRIPE_SECRET_KEY` actually authenticates.** Present ≠ working — it was an expired `sk_test_` once already | **Michael** | A single Stripe dashboard look, or one authenticated API call from outside this platform. **HELD.** |
+| 3 | **The billing-portal token design.** `docs/2026-09-26-presigned-remedy-scoping.md`, scoped by cc, nothing built | **Michael** | Decide: mint a token, or keep `sub_...` plus a rate limit. **A single-use token is ruled OUT on customer-harm grounds** — that scoping already ran. **HELD.** |
 
 **NONE OF THE THREE IS A CODE DEFECT**, and that is the change from the standing
 record. The code half of this feature is finished and has mutation-tested

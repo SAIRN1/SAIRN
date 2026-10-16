@@ -811,15 +811,118 @@ credit SMALLER.** A post following that page would **understate** its credit. It
 is not a trap that costs a penalty; it is one that costs money quietly, which is
 the harder kind to notice.
 
-**WHAT THIS IS AND IS NOT.** It is a documented disagreement between a live IRS
-web page and the statute, with both quoted and both dated. **It is NOT a
-determination that the page is wrong** — a Treasury position in guidance is not
-something this platform overrules from a statute reading, and there may be an
-amendment I have not found. **It is a NARROW QUESTION FOR THE SAME PROFESSIONAL
-§9 was already going to:** *"§45B(b)(1)(B) says January 1, 2007 and the IRS's
-FICA Tip Credit page says July 24, 2009 — which figure do we use?"* That is a
-one-line question with two citations attached, which is the shape §9 said it
-wanted.
+### 12.6a DECIDED 2026-10-16 BY MICHAEL: THE FLOOR IS $5.15, AND THE IRS PAGE IS RECORDED AS THE ERROR
+
+**§12.6 was written as a question. It is answered, and by the person whose call
+it is.**
+
+> **THE FIGURE THIS PLATFORM USES IS $5.15/hour**, the FLSA minimum wage as in
+> effect on **January 1, 2007**, per **§45B(b)(1)(B)** and **IR-2007-155**.
+> **The IRS FICA Tip Credit page's "$7.25 per hour / July 24, 2009" is
+> recorded as THAT PAGE'S ERROR and is not followed.**
+
+**WHAT CHANGED AND WHAT DID NOT.** §12.6 as first written declined to call the
+page wrong, on the ground that *"a Treasury position in guidance is not
+something this platform overrules from a statute reading."* **That caution was
+right as a research posture and it is not the same thing as a decision.**
+Michael has made the decision; the research is unchanged and still says what
+it said. **The old paragraph is carried below rather than overwritten**, because
+the reasoning for the caution is the reason the decision is safe to make — the
+disagreement was documented with both sides quoted and dated before anybody
+chose between them.
+
+**THE RESIDUAL RISK, STATED PLAINLY RATHER THAN BURIED IN THE DECISION.**
+$5.15 produces a **LARGER** credit than $7.25. Following the statute against a
+live IRS web page is the position with more exposure if the page turns out to
+reflect an amendment neither this document nor its searches found. **Three
+things reduce that, and they are the whole basis:**
+
+1. **§45B(b)(1)(B)'s date is in the statute**, not inferred — and Rev. Rul.
+   2003-64 quotes the subsection in its **pre-freeze** form, with no date at
+   all, which independently places the freeze after 2003 rather than leaving
+   the quotation unplaceable.
+2. **IR-2007-155 is the IRS's own release** and says employers use **$5.15**
+   even after the federal minimum rose. So the conflict is not
+   statute-versus-IRS; it is **IRS-page-versus-IRS-release**, and the release
+   is the one that agrees with the statute.
+3. **The page's figure is internally anomalous**: it names *"the federal
+   minimum wage rate in effect on July 24, 2009"* — a real date for the $7.25
+   rate, but **not the date §45B names**. That reads as a page describing the
+   CURRENT federal minimum rather than the statute's frozen reference.
+
+### 12.6b FORM 8846 SETTLES IT, AND THE IRS PAGE'S ERROR IS NOT THE ONE I NAMED
+
+**§12.6a listed one cheap check still outstanding — read Form 8846's own wage
+line — and said it would be decisive either way. IT WAS RUN, and the answer is
+better than "the page is wrong": THE PAGE APPLIES A REAL NUMBER TO THE WRONG
+LIMB.**
+
+`irs.gov/pub/irs-pdf/f8846.pdf`, **Form 8846 (2025)**, 71,290 bytes, verbatim —
+**two paragraphs, two different floors:**
+
+> **Food or beverage employers.** These employers cannot claim the credit for
+> taxes on any tips that are used to meet the federal minimum wage rate **in
+> effect on January 1, 2007, of $5.15 an hour.**
+
+> **Beauty service employers.** These employers cannot claim the credit for
+> taxes on any tips that are used to meet the federal minimum wage rate
+> **currently in effect, of $7.25 an hour.**
+
+**SO §45B HAS TWO FLOORS, ONE PER LIMB OF §45B(b)(2), AND NOTHING ABOVE KNEW
+THAT.** §7.4 recorded the freeze and §12.6 recorded the conflict; **neither
+noticed that the 2025 expansion to barbering, nail care, esthetics and body and
+spa treatments brought its own, UNFROZEN floor with it.** The food-and-beverage
+limb is frozen at $5.15; the beauty limb tracks the current federal minimum,
+$7.25 today.
+
+**THE IRS PAGE'S $7.25 IS THEREFORE A REAL §45B FIGURE STATED WITHOUT ITS
+LIMB.** Its sentence — *"the federal minimum wage rate in effect on July 24,
+2009"* — even mislabels it: Form 8846 calls the $7.25 floor *"currently in
+effect"*, not fixed to a 2009 date, and $7.25 is the beauty-service number
+rather than a date-frozen one. **The page collapses two floors into one and
+attaches the wrong one to a date.** That is a more specific and more useful
+finding than "the page contradicts the statute", and it is also why the
+collapse is easy to make.
+
+**MICHAEL'S DECISION IS CONFIRMED BY AN EMPLOYER-FACING IRS FORM, not only by
+the statute.** A post canteen is a **food or beverage** employer, so its floor
+is **$5.15**, and Form 8846's own instruction text says so in the same words
+§45B(b)(1)(B) uses. **The residual risk §12.6a described is gone**: this is no
+longer the platform preferring a statute reading over live IRS guidance, it is
+the platform following the form the credit is claimed on.
+
+**AND THE ONE PLACE THIS COULD STILL BITE, named because it is the shape that
+recurs:** if SAIRNfreedom ever computes a §45B figure, **the floor is a function
+of WHICH LIMB the tipped service falls in, not a constant.** A single hardcoded
+`5.15` is correct for a canteen and silently wrong for any beauty-service
+employer — and this platform has fifteen other apps. **Nothing computes a §45B
+figure today** and §7.3's warning against building toward the credit is
+unchanged; this is a precondition recorded where the number will be read.
+
+**WHAT IS STILL NOT CHECKED:** Form 8846's *instructions* document (as distinct
+from the form's own instruction text quoted above) returned **HTTP 404** at
+`irs.gov/instructions/i8846` this session, so it was not read. The form text is
+the stronger source for this question and the 404 is recorded rather than
+quietly skipped.
+
+**STILL NOT TAX ADVICE, and the decision does not make it so.** It is an
+operating convention for what this platform's own documents and any future
+calculation will use, with the conflict disclosed. A post's return is its
+CPA's.
+
+---
+
+*The paragraph §12.6 originally closed with, carried unchanged:*
+
+> **WHAT THIS IS AND IS NOT.** It is a documented disagreement between a live
+> IRS web page and the statute, with both quoted and both dated. **It is NOT a
+> determination that the page is wrong** — a Treasury position in guidance is
+> not something this platform overrules from a statute reading, and there may
+> be an amendment I have not found. **It is a NARROW QUESTION FOR THE SAME
+> PROFESSIONAL §9 was already going to:** *"§45B(b)(1)(B) says January 1, 2007
+> and the IRS's FICA Tip Credit page says July 24, 2009 — which figure do we
+> use?"* That is a one-line question with two citations attached, which is the
+> shape §9 said it wanted.
 
 ### 12.7 TD 10044 does not touch any of this, said once more because the pairing keeps recurring
 
@@ -848,10 +951,17 @@ available and does not make it more desirable.**
 
 **What does change:** the `docs/SAIRN-OPEN-WORK-INDEX.md` row filed by §9 should
 be re-worded from *"needs outside counsel"* to **"answered in principle by Rev.
-Rul. 2003-64; two narrow questions remain — the (c)(19)-versus-(c)(7) fact, and
-the $5.15-versus-$7.25 figure in 12.6."* **NOT DONE HERE, deliberately:** that
-row is §9's and re-wording somebody else's open-work row to say my answer is
-the edit this platform has least tolerance for. Routed, not taken.
+Rul. 2003-64."* **ROUTED AND NOT TAKEN WHEN THIS SECTION WAS WRITTEN**, because
+re-wording somebody else's open-work row to carry my own answer is the edit
+this platform has least tolerance for — **and then DONE 2026-10-16 on Michael's
+instruction**, since the finding is mine. The old headline, status, owner and
+next action are all **struck through and kept inside the row** rather than
+deleted, which is that file's own convention for a resolved row.
+
+**AND THE SECOND OF THE TWO RESIDUALS IS GONE.** §12.8 first said *"two narrow
+questions go to the post's CPA"*. Michael decided the wage figure (§12.6a) and
+Form 8846 then confirmed it (§12.6b), so **one** residual remains: whether the
+canteen is held under (c)(19) or a companion (c)(7).
 
 **ANSWER TO THE QUESTION AS ASKED, in one paragraph, because the sections above
 are long.** **Yes — §45B applies to tip income reported by VFW/Legion canteen
@@ -862,9 +972,13 @@ the credit is nonrefundable and the post must first owe tax it can offset** —
 in practice §511 UBIT on Form 990-T — so a post with no UBTI gets nothing now
 and only a §39 carryforward (1 back, 20 forward). **TD 10044 is irrelevant to
 the employer credit; it governs the employee's §224 deduction.** **Pub. 3386
-does not address §45B at all** and routes the tip question to Pub. 531. **Two
-narrow questions go to the post's CPA:** whether the canteen is held under
-(c)(19) or a companion (c)(7), and which minimum-wage figure to use given 12.6.
+does not address §45B at all** and routes the tip question to Pub. 531. **The
+floor for a canteen is $5.15** — the food-and-beverage limb's frozen
+January 1, 2007 rate, decided by Michael and confirmed on the face of Form
+8846, which carries **a second, UNFROZEN $7.25 floor for the beauty-service
+limb** and is why the IRS web page's $7.25 is a real figure attached to the
+wrong limb (§12.6a, §12.6b). **ONE narrow question goes to the post's CPA:**
+whether the canteen is held under §501(c)(19) or a companion §501(c)(7).
 
 **NOT TAX ADVICE.** Internal research on statutory structure and one published
 ruling, written so a professional can be asked a narrow question instead of an
