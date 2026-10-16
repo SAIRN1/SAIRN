@@ -493,6 +493,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_sairnbuild_server_wins_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0ef5447b263158909c89283dbe48c548c24f89f3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnbuild_server_wins.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0ef5447b263158909c89283dbe48c548c24f89f3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/sairn_push_gate_hook.py",
    "class": "push-gate logic",
    "level": "CHANGE",
