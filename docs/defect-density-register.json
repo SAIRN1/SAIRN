@@ -31886,6 +31886,341 @@
         }
       ],
       "recurrence_open": "The anniversary boundary is now driven for ONE state's rule shape (WV) and one hire date. Nothing drives a facility-wide window, and the claim corrected here is about the hire-anchored one only."
+    },
+    {
+      "commit": "1a5a47c0e22e",
+      "date": "2026-10-16",
+      "subject": "fix(report-only): a probe's 20-second fixture had overwritten the shared reachability measurement, and two batches read it as a real sweep",
+      "files": [
+        "docs/2026-10-15-cc-b15-report-only-sweep.log",
+        "docs/report-only-reachability.json",
+        "tools/report_only_checks.py"
+      ],
+      "lines_added": 438,
+      "lines_removed": 160,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "report_only_checks.py _write_reachability() wrote the TRACKED docs/report-only-reachability.json on a --budget override, so tests/run_report_only_checks_probe.py:783's 20-second fixture replaced the real sweep's numbers. Two batches then read 'reached 6 of 78 at a 20.0s budget' as a measurement of the real run, and b14 used it to call the 36-of-73 / 540s figure stale in both terms when only the denominator had moved.",
+      "rules": [
+        "1.4"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "ff2671c5af02",
+        "date": "2026-10-05",
+        "subject": "fix(registry+push-retry): a registered-and-dead checker is now visible where sessions read, and push_retry can print its own usage",
+        "lag_days": 11
+      },
+      "citation_note": "the probe run that mutated this document is read-only-sounding by name -- it exercises an overrun path -- and its side effect landed in a tracked file that two batches then quoted as a measurement",
+      "contributing_factors": [
+        {
+          "factor": "_write_reachability() had no way to tell a fixture budget from the hook cap, so every run that produced numbers also published them",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "it now REFUSES to write at all when --budget was passed, and prints why; keeping the last real measurement beats replacing it with a fixtures"
+        },
+        {
+          "factor": "the document carried a bare measured_budget_seconds, so a hook number, a fallback and a fixture were the same number on the page",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "a budget_source field is written beside it, and in this clone it says fallback-300 with the reason the hooks are cleared"
+        },
+        {
+          "factor": "a probe exercising the overrun path runs the real tool at the real repo root without --quiet, so its side effects land in tracked files",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "tests/ is codys by the directory rule; routed as part of the b15 triage rather than edited here"
+        },
+        {
+          "factor": "a sweep measurement and a sweep fixture share one output path by construction",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "the path is referenced by the tool, the probe and two documents; narrowing it is a larger change than this fix and the refusal closes the harm"
+        }
+      ],
+      "recurrence_open": "only the reachability document is guarded. Any other write this tool reaches on a fixture run is still unguarded, and the probe half -- a non-quiet run against the live repo root -- is unchanged and lives in codys tree."
+    },
+    {
+      "commit": "31711f8d09b1",
+      "date": "2026-10-16",
+      "subject": "fix(suite lock): a probe inside the suite was deleting the live run's lock, and the ceiling was sized against the wrong timeout",
+      "files": [
+        "docs/2026-10-15-cc-b15-sweep-triage.md",
+        "docs/ablation/b15_arms.py",
+        "docs/report-only-reachability.json",
+        "docs/scrutiny-flags.json",
+        "docs/sweep-2026-10-15.log",
+        "docs/test-file-floor.json",
+        "tools/run_all_tests.py"
+      ],
+      "lines_added": 1571,
+      "lines_removed": 106,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/run_all_tests.py release_lock() unlinked the shared suite lock without checking who owned it, so tests/run_suite_lock_probe.py:81 -- a probe that is itself part of the suite -- deleted the LIVE run's lock. Observed directly: the lock vanished at ~10:45 on a run that started 08:12 and exited 12:07, roughly 80 minutes of a 235-minute run with no lock at all, during which any git push hook would have started a second concurrent suite and reinstated the 2026-09-09 snapshot corruption the lock exists to prevent. acquire_lock() separately decided staleness from mtime alone, and the ceiling was sized against the wrong timeout.",
+      "rules": [
+        "1.4"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "5b8570ce0012",
+        "date": "2026-09-09",
+        "subject": "fix(tests): two suite runs at once made every probe restore the wrong file",
+        "lag_days": 37
+      },
+      "citation_note": "a probe whose whole subject is the lock mechanism sounds read-only and was deleting the live runs lock on the real shared path",
+      "contributing_factors": [
+        {
+          "factor": "release_lock() took no owner argument and unlinked unconditionally, so any process could release any other processs lock",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "scoped to the owner; a foreign caller now gets REFUSING to release pid N lock from pid M instead of succeeding"
+        },
+        {
+          "factor": "acquire_lock() treated an old mtime as a dead run, so a live run holding a long-standing lock could be reclaimed out from under it",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "imports session_lock_check.owner_state(); a live pid is never reclaimed, a dead pid is, and an unparseable lock falls back to age"
+        },
+        {
+          "factor": "a probe whose subject IS the lock mechanism ran against the real shared lock path rather than a fixture path",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "routed to cody as C1 with the fixture recipe; tests/ is codys by the directory rule and the conflict is declared rather than overridden"
+        },
+        {
+          "factor": "nothing reported the locks absence during a run -- it was found by watching the lock path, not by any check",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "no detector exists for an unlocked suite run; named here so the gap is recorded rather than implied by the fix"
+        }
+      ],
+      "recurrence_open": "the tool half is fixed and the probe half is not. While tests/run_suite_lock_probe.py:81 still points at the shared path it keeps attacking it -- it now gets refused instead of succeeding, which is a mitigation, not a fix, and the probes own A1-A3 arms will behave differently until it is pointed at a fixture lock."
+    },
+    {
+      "commit": "8b108f9b35c8",
+      "date": "2026-10-16",
+      "subject": "fix(tier a): the anchored commit is wider than the obligation, and the record never said so",
+      "files": [
+        "docs/ablation/b15_arms.py",
+        "tools/tier_a_review_gate.py"
+      ],
+      "lines_added": 109,
+      "lines_removed": 4,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/tier_a_review_gate.py subject_sha() anchored a Tier A obligation to a whole commit without recording how much of that commit was unrelated to the obligations own subject, so a record anchored to a commit far wider than its subject read exactly like one anchored tightly. A reviewer told to review the anchored commit was pointed at an unbounded amount of unrelated change with nothing saying so.",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "18078d382de8",
+        "date": "2026-10-07",
+        "subject": "fix(tier-a): --open stamped HEAD, and 34 of 63 checkable records anchor an obligation to a commit that never contained its subject",
+        "lag_days": 9
+      },
+      "citation_note": "the sha still resolved and still pointed at a real commit; what it no longer pointed at was the obligations own subject, and nothing measured the difference",
+      "contributing_factors": [
+        {
+          "factor": "no width was ever measured -- the anchor was a sha and the subject was a file set, and nothing compared them",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "_extra_file_count(sha, paths) measures the files in the anchored commit that are NOT in the obligations declared set, and the count is written into the record"
+        },
+        {
+          "factor": "the record printed a sha with no basis, so file-set, head and could-not-tell were indistinguishable on the page",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the basis is recorded beside the sha and could-not-tell is kept as its own third state rather than folded into head"
+        },
+        {
+          "factor": "the three reseat bases were added before anything measured how precise any of them was",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the width measurement lands with the bases rather than after them, and the ablation carries an arm for it"
+        }
+      ],
+      "recurrence_open": "the width is now VISIBLE and nothing REFUSES on it. A very wide anchor is still accepted; it just says how wide it is. Choosing a threshold needs a measured distribution across the existing records, which has not been taken."
+    },
+    {
+      "commit": "a7cc43492ed3",
+      "date": "2026-10-16",
+      "subject": "fix(board) -- a mirror can freeze one file at a time",
+      "files": [
+        "tools/sairn_board_publish.py"
+      ],
+      "lines_added": 572,
+      "lines_removed": 22,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/sairn_board_publish.py read a hover-chain mirror as a single object with a single age, so a mirror whose beacon had been refreshed 0.1h ago while its log and all twelve timestamp files were 166h old reported one number -- mirror last written 10.4h ago -- and a PARTIALLY refreshed mirror was indistinguishable from a fresh one. H2s mirror was 165h old against a digest claiming seq 907, 129 entries behind, and the board said nothing a reader could act on.",
+      "rules": [
+        "1.10"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "46128d86a4fd",
+        "date": "2026-10-14",
+        "subject": "feat(drive board): the status bridge publishes itself, and two defects it found",
+        "lag_days": 2
+      },
+      "citation_note": "the mirrors age was computed from its FRESHEST component, so the oldest input -- the 166h log and twelve timestamp files -- was exactly what the single number hid",
+      "contributing_factors": [
+        {
+          "factor": "one mtime stood for a directory of components with independent write paths",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "per-component freshness, with the family that decides FROZEN named rather than averaged"
+        },
+        {
+          "factor": "the freshest component won the single age, so the stalest -- the one that matters -- was exactly the one made invisible",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "each components age is printed and the deciding family is stated, so a partial refresh reads as partial"
+        },
+        {
+          "factor": "nothing INSIDE a frozen mirror said it was frozen; only an external detector knew, and a reader opening the directory saw no warning",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the publisher writes MIRROR-FRESHNESS.md into each hover-chain directory on every board event, naming each components age and what the agents own digest claims instead"
+        },
+        {
+          "factor": "the publisher is a build-agent tool and the chain is a tamper-evident auditor artefact, so the thing that detects the staleness is structurally barred from fixing it",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "deliberately not addressed: a build agent forging an entry into the chain would destroy the only thing the chain proves. The notice names the auditors own hover_tip_beacon.py --publish command instead"
+        }
+      ],
+      "recurrence_open": "the publisher writes the NOTICE and cannot republish the chain CONTENT -- that is the auditors own command, and it must stay that way. Until H1/H2 run it the mirrors are frozen WITH a notice rather than fresh, which is better than silent and is not fixed."
+    },
+    {
+      "commit": "abbb716fb4b5",
+      "date": "2026-10-16",
+      "subject": "fix(reseat): the 6h window was measured on committer time, which a rebase rewrites",
+      "files": [
+        "docs/ablation/b15_arms.py",
+        "tools/tier_a_review_gate.py"
+      ],
+      "lines_added": 134,
+      "lines_removed": 10,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/tier_a_review_gate.py measured the 6-hour reseat window on COMMITTER time, which a rebase rewrites. Five clones in this repo rebase on almost every push, so the window moved whenever a candidate commit had been replayed, and the reseat could select a sha that was outside the real window when the work was done.",
+      "rules": [
+        "1.9"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "b76d1fee7d66",
+        "date": "2026-09-29",
+        "subject": "feat(gate): queue25 item 8 -- three reseat bases instead of one, and the cross-check that stopped the strongest one writing two wrong shas",
+        "lag_days": 17
+      },
+      "citation_note": "committer time makes the checker answer differently on identical input: the same work replayed by a rebase produces a different window with no change to the work itself",
+      "contributing_factors": [
+        {
+          "factor": "committer time was used where author time is the field a replay preserves",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the window is measured on author time, and the cross-check compares both so a divergence is reported rather than silently preferred"
+        },
+        {
+          "factor": "this repo rebases routinely across five clones, so committer time is rewritten as a matter of course rather than exceptionally",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "the rebase discipline is correct and is not changing; the fix is to stop depending on a field it rewrites"
+        },
+        {
+          "factor": "nothing compared the two timestamps, so a rewritten committer date produced a plausible wrong window with no signal",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the cross-check is what stopped the strongest reseat basis writing two wrong shas, and it has an ablation arm"
+        }
+      ],
+      "recurrence_open": "only the reseat window was re-derived. Any other time window in this gate still measured on committer time is not covered -- nothing swept the file for the field, so this is a known gap and not a cleared one."
+    },
+    {
+      "commit": "da60a08b61dd",
+      "date": "2026-10-16",
+      "subject": "fix(close gate): the child was left on cp1252, and the answer to fourth's three prose spans is a measurement",
+      "files": [
+        "tools/batch_manifest.py",
+        "tools/citation_anchor_rot_check.py"
+      ],
+      "lines_added": 87,
+      "lines_removed": 2,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/batch_manifest.py spawned tools/drive_upload_verify.py without PYTHONIOENCODING or PYTHONUTF8, so the child encoded at cp1252 and died on the first em-dash in the handoff line it quotes. cmd_close then reported that crash as the Drive verification FAILING rather than as a could-not-run, so a batch was told its uploads were unverified when nothing had actually been checked.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "9603441d8bd8",
+        "date": "2026-10-14",
+        "subject": "feat(drive upload verify): one tool every agent runs for its three deliverables, and a batch that cannot close without it",
+        "lag_days": 2
+      },
+      "citation_note": "the conflation runs the OTHER WAY here and is the same defect: could-not-run was folded into FAILED rather than into passed, so a batch was told its uploads were unverified when nothing had been checked at all",
+      "contributing_factors": [
+        {
+          "factor": "this process reconfiguring its OWN streams does nothing for a subprocess, and the spawn inherited the platform default",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "CHILD_ENV passes PYTHONIOENCODING=utf-8 and PYTHONUTF8=1 to every spawn of the verifier"
+        },
+        {
+          "factor": "the childs crash was folded into the verifys pass/fail instead of being its own third state",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "a child that cannot run is reported as could-not-run, which is the PR 1.11 shape arriving inside the close gate"
+        },
+        {
+          "factor": "the ablation had no arm driving a non-ASCII payload through the child, so the layer was unproven",
+          "kind": "process",
+          "action_status": "done",
+          "action": "three CHILD_ENV fixtures; the ablation now reports it LOAD-BEARING at 35/35 baseline and 32/35 ablated"
+        }
+      ],
+      "recurrence_open": "only batch_manifest.pys spawn of drive_upload_verify.py is fixed. No sweep was run over the other subprocess spawns in tools/, so the same cp1252 child is possible anywhere else one exists and nothing here rules that out."
     }
   ],
   "started": "2026-09-09",
