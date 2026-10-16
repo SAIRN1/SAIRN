@@ -32223,7 +32223,7 @@
       "recurrence_open": "only batch_manifest.pys spawn of drive_upload_verify.py is fixed. No sweep was run over the other subprocess spawns in tools/, so the same cp1252 child is possible anywhere else one exists and nothing here rules that out."
     },
     {
-      "commit": "ec7663ec3aa9",
+      "commit": "0ef5447b2631",
       "date": "2026-10-16",
       "subject": "fix(b27 resume): the repair that closed five mutations opened a sixth, and the 26 UNRESOLVED were never inter-procedural",
       "files": [
