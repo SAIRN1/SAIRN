@@ -4653,6 +4653,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b17-tier-a-count-agreement.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9654772e76e6c976124f3809e093d158636fe4e2",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "docs/hank-evidence/b17_live_gate_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "\"first b17 version skipped in silence\"),"
+    }
+   ],
+   "sha": "9654772e76e6c976124f3809e093d158636fe4e2",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/_lib/auth-roleset-seam.test.js",
    "class": "test file",
    "level": "CHANGE",
