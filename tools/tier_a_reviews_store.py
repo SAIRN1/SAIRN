@@ -1,3 +1,4 @@
+# OWNER: fourth
 """APPEND-ONLY, PER-AGENT STORE for the Tier A review ledger.
 
 Michael's decision, 2026-10-16, after `docs/tier-a-reviews.json` blocked the
