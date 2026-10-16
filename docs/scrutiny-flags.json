@@ -7392,6 +7392,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": ".githooks/post-rewrite",
+   "class": "CI / hook configuration",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "e05802cf98dd294e06032fd1f5304870ee8117e1",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/claims/run_registry_claim_probe.py",
    "class": "test file",
    "level": "CHANGE",

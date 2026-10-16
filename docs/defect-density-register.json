@@ -32296,7 +32296,7 @@
       "recurrence_open": "The latent condition is NOT closed. Nothing runs an anchor-rot check over the source-text assertions in tests/, so the next assertion of this shape will rot the same way and will be found only if somebody chooses to ablate it. The routed item that would close it -- wire ONE anchor-rot tool into a gate -- is cc's and is open. Also not closed: nothing compares a suite assertion against the probe arm that is supposed to guard it, which is how both layers were dead at the same time here."
     },
     {
-      "commit": "cfacd71ebdcd",
+      "commit": "64ba232d65d7",
       "date": "2026-10-16",
       "subject": "fix(inventory): hooked() returned {} for four different conditions, and three of the probe's arms had been red against a --check that said the document matched",
       "files": [
@@ -32360,7 +32360,7 @@
       "recurrence_open": "only the hook leg was audited. The other six traverse legs in this generator were not swept for the same bare-except shape, and a widened classify() signature broke a probe in cody's tree on the first attempt -- which means other callers of these helpers exist and were not enumerated."
     },
     {
-      "commit": "9cb57e722d6f",
+      "commit": "e05802cf98dd",
       "date": "2026-10-16",
       "subject": "fix(scope gate): a rebase replay skips commit-time enforcement, and the half H1 left open is answered -- the push gate DOES refuse it",
       "files": [
@@ -32425,7 +32425,7 @@
       "recurrence_open": "the second guard DETECTS and cannot refuse, so a replayed violation still reaches local history -- it is now named at the rewrite instead of only at the push. Nothing closes the commit-time miss itself, because git will not call pre-commit on a replay. And the eight arms cover the gate in a SANDBOX: no arm runs in the auditor's real clone, which a build agent must not enter."
     },
     {
-      "commit": "6589c4f3f971",
+      "commit": "5522cfc8c085",
       "date": "2026-10-16",
       "subject": "fix(claims): `list --all` was 501,182 bytes and nobody had measured it",
       "files": [
