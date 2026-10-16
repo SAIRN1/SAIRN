@@ -3932,8 +3932,8 @@
       "task": "b27: (1) Tier A cody 2026-10-15T15:12:47Z bld_bids -- FIX the assertion in tests/sairnbuild_server_wins.js and the anchor-0 arm in tests/run_sairnbuild_server_wins_sabotage_probe.py to assert against the real BLD_SESSION_REQUIRED object, re-run, ablate. THE DISCHARGE WRITE IS BLOCKED AND NOT CLAIMED: cc claimed docs/tier-a-reviews.json at 2026-10-15T16:55:20Z, three minutes before my first attempt, LIVE in the registry and not yet on origin, and sairn_claim.py refused me on that shared file. That file is deliberately ABSENT from the FILES list below and the verdict goes into my own findings doc until cc releases. (2) census inter-procedural half -- resolve the 26 UNRESOLVED lines, fixtures in BOTH directions. (3) methodology -- every arm/probe/fixture added this batch confirmed to REACH ITS SUBJECT by ablation before it is counted, named per item. (4) clean my own scratchpad once evidence is in the findings doc. (5) handoff to Drive BEFORE the report. (6) push no force, confirm landed by reading back from origin. CONFLICT DECLARED PER PR 4.3, DIRECTORY-RULE, AND MICHAEL DIRECTED IT: tests/ is cody's and item 1 requires editing two files in it. CHECKED BEFORE CLAIMING: cody's ACTIVE b18 FILES covers tests/server_wins_hydration.js and tests/run_server_wins_hydration_sabotage_probe.py -- SIMILARLY NAMED BUT DIFFERENT FILES -- and neither of mine. No other tests/ file touched. api/ and sql/ are hank's and READ-ONLY here; tools/ is cc's and READ-ONLY (RUN not edited). FILES: tests/sairnbuild_server_wins.js tests/run_sairnbuild_server_wins_sabotage_probe.py docs/2026-10-15-fourth-b27-findings.md docs/batch-manifest-fourth-b27.json SAIRN-handoff-fourth-b27.md SAIRN-report-fourth-b27.txt SAIRN-digest-fourth-b27.txt SAIRN-latest-fourth-b27.md. HOOKS STAY CLEARED, settings.json NEVER committed, no SAIRN_SEED_GATE override, no auditor clone entered.",
       "claimed_at": "2026-10-15T16:59:47Z",
       "claimed_at_epoch": 1792083587.0209017,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-16T12:32:17Z",
       "files": [
         "SAIRN-digest-fourth-b27.txt",
         "SAIRN-handoff-fourth-b27.md",
@@ -3953,8 +3953,8 @@
       "task": "b27 resume: bld_bids Tier A suite+probe assertion repair already in my working tree, and the census 26 UNRESOLVED inter-procedural resolution. CONFLICTS DECLARED PER PR 4.3: docs/tier-a-reviews.json is held LIVE by hank b17 as of 2026-10-16T11:17:27Z so the Tier A DISCHARGE WRITE IS EXCLUDED from this claim and is NOT being started -- flagged back, not reworded. sairnbuild.html is READ not edited and every mutation runs against a COPY. tools/ is cc's: branch_census is authored in scratchpad and ROUTED, not installed. FILES: tests/sairnbuild_server_wins.js tests/run_sairnbuild_server_wins_sabotage_probe.py docs/2026-10-16-fourth-b27-findings.md docs/batch-manifest-fourth-b27.json",
       "claimed_at": "2026-10-16T11:18:46Z",
       "claimed_at_epoch": 1792149526.1476254,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-16T12:32:17Z",
       "files": [
         "docs/2026-10-16-fourth-b27-findings.md",
         "docs/batch-manifest-fourth-b27.json",
