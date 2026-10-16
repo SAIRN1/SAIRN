@@ -7582,6 +7582,80 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b14-clock-approval-two-person.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "e968122f143cd3cb9e6b5792f6729c9ee7dc0607",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b17-closed-period-write-path.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "&& /limited to/.test(String(got.body && got.body.error && got.body.error.message"
+    }
+   ],
+   "sha": "e968122f143cd3cb9e6b5792f6729c9ee7dc0607",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b17-lift-list-check.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "'L2. no lifting suite was skipped silently: ' + unreadable.length"
+    }
+   ],
+   "sha": "e968122f143cd3cb9e6b5792f6729c9ee7dc0607",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b17-one-person-agency.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "e968122f143cd3cb9e6b5792f6729c9ee7dc0607",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b17-practitioner-role-maps.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "e968122f143cd3cb9e6b5792f6729c9ee7dc0607",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-leg-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "e968122f143cd3cb9e6b5792f6729c9ee7dc0607",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-sv-role-matrix.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "e968122f143cd3cb9e6b5792f6729c9ee7dc0607",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-sv-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "e968122f143cd3cb9e6b5792f6729c9ee7dc0607",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/sd-photos-size-and-provenance.test.js",
    "class": "test file",
    "level": "CHANGE",
