@@ -32478,6 +32478,483 @@
         }
       ],
       "recurrence_open": "the budget covers this tool's own prints. Nothing sweeps the other 350 tools for the same shape, and  at 501KB was found only because somebody ran it -- there is no detector for an unbounded tool output anywhere on this platform."
+    },
+    {
+      "commit": "4af7db128b9b",
+      "date": "2026-10-16",
+      "subject": "fix(sairnsenior,sairnlaw): a paid period is reopened by an APPENDED row, an adjustment is never negative, and the trust lock finally has arms",
+      "files": [
+        "api/_lib/sen-evv-clock.js",
+        "api/_lib/sen-evv-readiness.js",
+        "api/_lib/sen-payroll.js",
+        "api/_resources/sairnsenior.js",
+        "api/b16-evv-pay-agreement.test.js",
+        "api/b17-closed-period-write-path.test.js",
+        "api/b17-evv-closed-period-asof.test.js",
+        "api/b17-freeze-reopen.test.js",
+        "api/b17-straight-time-floor.test.js",
+        "api/b17-tier-a-count-agreement.test.js",
+        "api/b17-trust-lock-hard.test.js",
+        "api/sd-data-sen-role-asymmetry.test.js",
+        "api/sd-data.js",
+        "api/sen-auth.js",
+        "docs/hank-evidence/b17/all_api_suites.log",
+        "docs/hank-evidence/b17/green_closed_period.log",
+        "docs/hank-evidence/b17/green_evv_asof.log",
+        "docs/hank-evidence/b17/green_freeze_reopen.log",
+        "docs/hank-evidence/b17/green_straight_time_floor.log",
+        "docs/hank-evidence/b17/green_trust_lock.log",
+        "docs/hank-evidence/b17/red_evv_asof.log",
+        "docs/hank-evidence/b17/red_straight_time_floor.log",
+        "docs/tier-a-reviews.json",
+        "sql/sairnsenior_audit_log_schema.sql",
+        "sql/sairnsenior_period_closings_schema.sql"
+      ],
+      "lines_added": 3671,
+      "lines_removed": 732,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "independent-review",
+      "summary": "THE PAID-PERIOD FREEZE WAS ERASABLE BY THE ROLE THAT RUNS PAYROLL, through a 200. b16 stored the closed-period list as ONE sen_settings row and b17's first write path put an append-only comparison in that branch -- on a store whose own comment four lines up says it does not validate anything and whose upsert uses resolution=merge-duplicates. fourth drove the whole chain through the real endpoint with a real signed session: a billing session POSTs {\"periods\":[]}, gets HTTP 200, the stored row becomes empty with the prior value gone, and the next pay run reports a period already paid at $80.00 as $100.00 with period_closed:null stating that nothing is frozen -- and no record anywhere that the list had ever been longer. `billing` is also the role that runs payroll. Fixed by a different SHAPE rather than a stricter check: a new append-only sen_period_closings resource, one row per close and one per REOPEN, SELECT+INSERT grants only, effective set derived by replaying them; and the settings path refuses the key BY NAME.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "9a70365b5a21",
+        "date": "2026-10-15",
+        "subject": "fix(sairnsenior,sd-data): paid periods are FROZEN -- a later approval is paid forward, not backdated",
+        "lag_days": 1
+      },
+      "contributing_factors": [
+        {
+          "factor": "THE CONTROL WAS STORED IN A PLACE WHOSE CONTRACT IS REPLACE. sen_settings exists to be overwritten -- that is what a settings store is for, and it holds the UPDATE privilege to do it. Putting an append-only rule in a handler branch over a replace-by-design store is a convention, not a control, and it only has to be wrong once",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Moved to its own resource with SELECT and INSERT grants and no UPDATE/DELETE, so a handler bug cannot rewrite history even if the lookup is wrong. sql/sairnsenior_period_closings_schema.sql, and its verification block makes the grant check the arm that matters"
+        },
+        {
+          "factor": "I WROTE THE APPEND-ONLY CHECK AND BELIEVED IT. The read-then-compare in the sen_settings branch is correct code that refuses a removal -- it simply was not the only door, and I did not go looking for the second one because the first one worked",
+          "kind": "process",
+          "action_status": "done",
+          "action": "fourth drove the endpoint rather than reading the branch, which is the whole argument for a reviewer who is not the author. The generic path now answers 409 CLOSED_PERIODS_NOT_A_SETTING and names the resource to use, so a caller reaching for the old route is told rather than succeeding"
+        },
+        {
+          "factor": "A NAMED REFUSAL WAS CHOSEN OVER AN ALLOWLIST, and the allowlist is the tempting fix. A list of keys the generic path may write is a list the NEXT payroll control also has to be remembered into, and the one thing proven about this file is that a policy which has to be remembered gets missed",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "`if (key === 'payroll_closed_periods')` refuses by name and returns the exact payload shape for both close and reopen. Arm P12 of api/b17-freeze-reopen.test.js ablates that line and the H3 write succeeds again, so P1 is testing the refusal"
+        },
+        {
+          "factor": "UN-FREEZING HAD TO STAY POSSIBLE. A payroll error found after the run must be fixable, so a design that merely forbade removal would have been unusable and would have been worked around in the database",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A reopen is an APPENDED row naming the closing it reverses with a REQUIRED reason, audited as its own event_type pay_period_reopened, and both rows survive. Arm P8 replays fourth's own figures: 240/8000 frozen, 300/10000 reopened -- the restatement is still reachable and is no longer silent"
+        }
+      ],
+      "recurrence_open": "NEITHER SQL FILE HAS BEEN RUN, so the whole mechanism answers 503 in production today -- sen_period_closings does not exist and neither does the audit table it refuses without. Both are in docs/2026-10-16-hank-b17-michael-sql.md with the order and the grant check. AND THE CLIENT HALF IS NOT BUILT: no UI reaches the close path, and b17 DELETED the senCanClosePeriod() helper it had written rather than ship a role check with no caller. AND THE STRADDLE LABEL IS STILL WRONG (fourth's Q4): a run crossing a closed boundary reports period_closed:null while its in-closed-period visits are individually frozen, so a partly-frozen total is presented as a live one. NOT FIXED HERE and not routed as part of this item."
+    },
+    {
+      "commit": "4af7db128b9b",
+      "date": "2026-10-16",
+      "subject": "fix(sairnsenior,sairnlaw): a paid period is reopened by an APPENDED row, an adjustment is never negative, and the trust lock finally has arms",
+      "files": [
+        "api/_lib/sen-evv-clock.js",
+        "api/_lib/sen-evv-readiness.js",
+        "api/_lib/sen-payroll.js",
+        "api/_resources/sairnsenior.js",
+        "api/b16-evv-pay-agreement.test.js",
+        "api/b17-closed-period-write-path.test.js",
+        "api/b17-evv-closed-period-asof.test.js",
+        "api/b17-freeze-reopen.test.js",
+        "api/b17-straight-time-floor.test.js",
+        "api/b17-tier-a-count-agreement.test.js",
+        "api/b17-trust-lock-hard.test.js",
+        "api/sd-data-sen-role-asymmetry.test.js",
+        "api/sd-data.js",
+        "api/sen-auth.js",
+        "docs/hank-evidence/b17/all_api_suites.log",
+        "docs/hank-evidence/b17/green_closed_period.log",
+        "docs/hank-evidence/b17/green_evv_asof.log",
+        "docs/hank-evidence/b17/green_freeze_reopen.log",
+        "docs/hank-evidence/b17/green_straight_time_floor.log",
+        "docs/hank-evidence/b17/green_trust_lock.log",
+        "docs/hank-evidence/b17/red_evv_asof.log",
+        "docs/hank-evidence/b17/red_straight_time_floor.log",
+        "docs/tier-a-reviews.json",
+        "sql/sairnsenior_audit_log_schema.sql",
+        "sql/sairnsenior_period_closings_schema.sql"
+      ],
+      "lines_added": 3671,
+      "lines_removed": 732,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "independent-review",
+      "summary": "A DOWNWARD CLOCK CORRECTION SILENTLY DEDUCTED WAGES FROM A LATER PERIOD. b16's carry-forward computed a signed delta and did `b.adjustment_cents += dCents` with no sign guard, while total_payable_cents = gross + adjustment_cents. fourth drove it against the real module: a 60-minute downward correction gave adjustment_cents=-2000 and total_payable_cents=-2000, so a scheduler approving a correction removed $20 from a later period's pay with nothing saying so. It is the MIRROR of the harm F1 closed -- F1 was sixty minutes unpaid by omission, this is sixty minutes removed by COMMISSION, which is worse because somebody chose it. And a negative adjustment is not an adjustment: it is a wage deduction to recover an overpayment, which is a separate regulated act.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "9a70365b5a21",
+        "date": "2026-10-15",
+        "subject": "fix(sairnsenior,sd-data): paid periods are FROZEN -- a later approval is paid forward, not backdated",
+        "lag_days": 1
+      },
+      "contributing_factors": [
+        {
+          "factor": "THE DELTA WAS CORRECTLY SIGNED AND THAT WAS THE BUG. nowMinutes - asPaidMinutes is the right arithmetic; what was missing is that the two signs mean two DIFFERENT ACTS -- one pays for work performed, the other recovers money -- and only one of them may happen inside a pay run",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "`if (dMin > 0)` instead of `if (dMin !== 0)`, and the negative branch builds an overpayments[] entry instead. One character of condition and a second branch, with the regulated reason written at the site"
+        },
+        {
+          "factor": "NO INVARIANT EXISTED THAT WOULD HAVE CAUGHT IT WITHOUT KNOWING THE CAUSE. Every b16 arm asserted specific figures for specific fixtures, and the one shape nobody wrote a fixture for was the one that went negative",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "total_payable_cents >= gross_cents is now asserted as an INVARIANT over six shapes including two caregivers and a reversed clock (arm A9), so an adjustment path added later cannot reintroduce a negative total silently"
+        },
+        {
+          "factor": "RECOVERY IS A REGULATED ACT AND THE APP MUST NOT PERFORM ONE AS A SIDE EFFECT. Recoupment is permitted under the FLSA but not where the deduction takes a workweek below the minimum wage, and many states additionally require the employee's written authorisation -- none of which a payroll run can know",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "overpayments[] carries employee, visit, service date, minutes and cents plus requires_human_act:true, is NEVER netted into any total at either level, and not_computed states in its own entry that nothing here recovers one and why"
+        },
+        {
+          "factor": "THE FLSA PREMIUM ON AN ADJUSTMENT STILL CANNOT BE COMPUTED without reopening the frozen week, so fourth accepted the floor ON CONDITION that each adjustment SAYS when a premium may be owed -- a disclosure naming a class is a note, a flag naming a person is payable",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "premium_may_be_owed is TRUE when the as-paid week SEEN already crosses 40h (more visits can only add) and null otherwise, and is NEVER false -- the tally is only as complete as the visits the caller passed, so 'under 40h as far as I can see' is a cannot-tell and not a clearance. Arm A7 asserts the string does not appear in the output at all"
+        }
+      ],
+      "recurrence_open": "NOTHING RECOVERS AN OVERPAYMENT and nothing sweeps for one -- an overpayment sits in the output until a human acts, and no screen shows it yet. AND premium_may_be_owed DOES NOT SAY WHAT THE PREMIUM IS WORTH, which needs the frozen week's regular rate recomputed with the new minutes in it and is the reopening the freeze exists to prevent. Both are in not_computed by name. AND THE WHOLE MECHANISM HAS STILL NEVER RUN ON REAL DATA: no agency has a closed period, so every figure here is a fixture or the real handler with a stubbed upstream."
+    },
+    {
+      "commit": "4af7db128b9b",
+      "date": "2026-10-16",
+      "subject": "fix(sairnsenior,sairnlaw): a paid period is reopened by an APPENDED row, an adjustment is never negative, and the trust lock finally has arms",
+      "files": [
+        "api/_lib/sen-evv-clock.js",
+        "api/_lib/sen-evv-readiness.js",
+        "api/_lib/sen-payroll.js",
+        "api/_resources/sairnsenior.js",
+        "api/b16-evv-pay-agreement.test.js",
+        "api/b17-closed-period-write-path.test.js",
+        "api/b17-evv-closed-period-asof.test.js",
+        "api/b17-freeze-reopen.test.js",
+        "api/b17-straight-time-floor.test.js",
+        "api/b17-tier-a-count-agreement.test.js",
+        "api/b17-trust-lock-hard.test.js",
+        "api/sd-data-sen-role-asymmetry.test.js",
+        "api/sd-data.js",
+        "api/sen-auth.js",
+        "docs/hank-evidence/b17/all_api_suites.log",
+        "docs/hank-evidence/b17/green_closed_period.log",
+        "docs/hank-evidence/b17/green_evv_asof.log",
+        "docs/hank-evidence/b17/green_freeze_reopen.log",
+        "docs/hank-evidence/b17/green_straight_time_floor.log",
+        "docs/hank-evidence/b17/green_trust_lock.log",
+        "docs/hank-evidence/b17/red_evv_asof.log",
+        "docs/hank-evidence/b17/red_straight_time_floor.log",
+        "docs/tier-a-reviews.json",
+        "sql/sairnsenior_audit_log_schema.sql",
+        "sql/sairnsenior_period_closings_schema.sql"
+      ],
+      "lines_added": 3671,
+      "lines_removed": 732,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "MICHAEL'S SAME-CLOCK DECISION WAS HALF-LANDED AND LOOKED SETTLED. b16's F2 made api/_lib/sen-evv-readiness.js read the EFFECTIVE clock that payroll reads, which was the decision -- and it called effectiveClock(v, field), the no-as-of form, while payroll calls effectiveClockAsOf with the period's paid_at. So for an OPEN period the two agreed and for a CLOSED period PAY READ AS AT paid_at WHILE EVV READ NOW: a correction approved after a period was paid made a visit submittable in a federally mandated export while the payroll register paid nothing for it. b16 recorded this as a DELIBERATE disagreement in arm E8; it was not deliberate, it was the argument not being threaded with the function. WORSE THAN THE ORIGINAL GAP because both halves now pointed at one function and read as finished.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "883ad0bc2478",
+        "date": "2026-10-15",
+        "subject": "fix(sairnsenior): F2 -- the EVV checks read the SAME effective clock pay uses",
+        "lag_days": 1
+      },
+      "contributing_factors": [
+        {
+          "factor": "A SHARED FUNCTION WITH AN UNSHARED ARGUMENT IS NOT A SHARED RULE, and the first half of the fix hid the second. 'Both files call effectiveClock' was true and was the thing I checked",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "options.closed_periods threaded into checkVisit and through summarize, with read_as_of / period_closed / read_as_of_unavailable reported so the BASIS of a verdict is visible rather than implied. Arms R9a/R9b ablate each of the two reads separately, so R1 is pinned to the clock-OUT argument and not to some other change"
+        },
+        {
+          "factor": "I WROTE E8 AS A DELIBERATE DISAGREEMENT AND IT WAS A DEFECT WEARING A RATIONALE. The arm passed, said so at length, and made the next reader less likely to look",
+          "kind": "process",
+          "action_status": "done",
+          "action": "E8 is RE-AIMED rather than deleted: it now pins the one case where the two still differ -- a caller that passes no closed_periods at all -- and names the new suite for the agreement arms. A passing arm asserting a resolved defect is worse than no arm"
+        },
+        {
+          "factor": "THE CLOSING LOOKUP COULD EASILY HAVE BEEN COPIED into the readiness module, and a second copy of 'which closing contains this service date' is the exact defect shape F1 already was",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "normalizeClosedPeriods and closedPeriodFor extracted from computePayroll, exported, and CONSUMED by the readiness module -- which also means the two cannot disagree about which list is usable. Arm R6 asserts structurally that the readiness file carries no containment test of its own"
+        },
+        {
+          "factor": "FAILING OPEN WAS AVAILABLE AND WOULD HAVE BEEN INVISIBLE. A closed-period list that cannot be dated could have quietly fallen back to reading NOW, which is the disagreement returning by a route nobody is watching",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Three states: read_as_of_unavailable is its own flag, the visit is reported not-ready with a reason naming the settings record, and api/sd-data.js refuses the whole readiness report 503 on an unreadable list -- the same asymmetry the pay run already refuses on"
+        }
+      ],
+      "recurrence_open": "THE DISAGREEMENT SURVIVES FOR ANY CALLER THAT DOES NOT PASS closed_periods, and that is now a caller-side omission rather than a rule. api/sd-data.js's readiness action passes it; nothing enforces that a future caller does, and the module cannot tell 'no freeze' from 'not told about the freeze'. AND NO LIVE VERIFICATION: every figure is a fixture or the real handler with a stubbed upstream, because no agency has a closed period at all."
+    },
+    {
+      "commit": "4af7db128b9b",
+      "date": "2026-10-16",
+      "subject": "fix(sairnsenior,sairnlaw): a paid period is reopened by an APPENDED row, an adjustment is never negative, and the trust lock finally has arms",
+      "files": [
+        "api/_lib/sen-evv-clock.js",
+        "api/_lib/sen-evv-readiness.js",
+        "api/_lib/sen-payroll.js",
+        "api/_resources/sairnsenior.js",
+        "api/b16-evv-pay-agreement.test.js",
+        "api/b17-closed-period-write-path.test.js",
+        "api/b17-evv-closed-period-asof.test.js",
+        "api/b17-freeze-reopen.test.js",
+        "api/b17-straight-time-floor.test.js",
+        "api/b17-tier-a-count-agreement.test.js",
+        "api/b17-trust-lock-hard.test.js",
+        "api/sd-data-sen-role-asymmetry.test.js",
+        "api/sd-data.js",
+        "api/sen-auth.js",
+        "docs/hank-evidence/b17/all_api_suites.log",
+        "docs/hank-evidence/b17/green_closed_period.log",
+        "docs/hank-evidence/b17/green_evv_asof.log",
+        "docs/hank-evidence/b17/green_freeze_reopen.log",
+        "docs/hank-evidence/b17/green_straight_time_floor.log",
+        "docs/hank-evidence/b17/green_trust_lock.log",
+        "docs/hank-evidence/b17/red_evv_asof.log",
+        "docs/hank-evidence/b17/red_straight_time_floor.log",
+        "docs/tier-a-reviews.json",
+        "sql/sairnsenior_audit_log_schema.sql",
+        "sql/sairnsenior_period_closings_schema.sql"
+      ],
+      "lines_added": 3671,
+      "lines_removed": 732,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "A ROLE-POLICY MAP WAS A BARE OBJECT LITERAL, so a payload-supplied resource name of 'constructor', 'toString' or 'valueOf' resolved TRUTHY through Object.prototype. SEN_REFERRAL_WRITE_ROLES in api/sen-auth.js maps resource -> role set and api/sd-data.js does SEN_REFERRAL_WRITE_ROLES[resource] with resource from the request. The 500 WRITE_MAP_MISSING immediately below exists precisely so a resource with no recorded policy is REFUSED rather than defaulted -- and it would not have fired, because the lookup returned a function. The next test senRefAllowed[session.role] is undefined on a function so the request was refused 403 anyway: THE DEFECT IS THAT IT WAS REFUSED BY ACCIDENT, with the wrong code and the wrong message, through the one branch built to catch exactly this.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "api/_lib/auth-roleset-seam.test.js",
+      "found_by_session": null,
+      "injection": {
+        "commit": "a58cf563bed0",
+        "date": "2026-10-16",
+        "subject": "feat(b17 carry-over): the pay-period close write path, H8 resolved, and the practitioner answers in one place each",
+        "lag_days": 0
+      },
+      "contributing_factors": [
+        {
+          "factor": "THE MAP IS NOT A ROLE SET AND roleSet() WAS THE WRONG WRAPPER, which is why the platform's existing convention did not cover it. A map of resource -> role set needed Object.create(null) and nobody had written that rule down for the map case",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Object.assign(Object.create(null), {...}), the same shape LAW_TRUST_LOCKED and the leg_* maps already use, with the reason written at the site"
+        },
+        {
+          "factor": "A REFUSAL THAT HAPPENS FOR THE WRONG REASON IS NOT A SAFE OUTCOME. The request was denied, so no arm driving the endpoint would have gone red -- and the gate built to report 'no policy recorded' would have stayed silent forever",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "An arm in api/sd-data-sen-role-asymmetry.test.js now asserts SEN_REFERRAL_WRITE_ROLES.constructor === undefined, beside an arm asserting the map has a row for all five resources and nothing else"
+        },
+        {
+          "factor": "IT WAS FOUND BY A SEAM CHECKER THAT WENT RED ON MY OWN COMMIT IN A FULL-TREE SWEEP, not by review. The map was added in this same batch's carry-over and read correct",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Reported here with the tool named, because this is one of the 22 percent of catches that were automated rather than human-read and the split is only meaningful if the tool is recorded"
+        },
+        {
+          "factor": "THE SWEEP THAT CAUGHT IT IS NOT A PUSH GATE, so a batch that did not run the whole api/ tree would have shipped it",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "NOT FIXED: api/_lib/auth-roleset-seam.test.js is run by a full-tree sweep and by nothing automatic. Wiring api/ suites into a gate driver is cc's tools/ work and is open from b16"
+        }
+      ],
+      "recurrence_open": "THE SEAM CHECKER NAMES ITS KNOWN EXCEPTIONS and one remains -- ALF_MANAGEMENT_ROLES is a bare literal with a stated guard, and whether it should contain `caregiver` is a product question the tool says it cannot decide. NOT TOUCHED. AND NOTHING SWEEPS FOR THE NEXT MAP: the fix is one file, the rule is in a comment, and the only thing that will catch the next bare literal is the same suite in a full-tree run."
+    },
+    {
+      "commit": "4af7db128b9b",
+      "date": "2026-10-16",
+      "subject": "fix(sairnsenior,sairnlaw): a paid period is reopened by an APPENDED row, an adjustment is never negative, and the trust lock finally has arms",
+      "files": [
+        "api/_lib/sen-evv-clock.js",
+        "api/_lib/sen-evv-readiness.js",
+        "api/_lib/sen-payroll.js",
+        "api/_resources/sairnsenior.js",
+        "api/b16-evv-pay-agreement.test.js",
+        "api/b17-closed-period-write-path.test.js",
+        "api/b17-evv-closed-period-asof.test.js",
+        "api/b17-freeze-reopen.test.js",
+        "api/b17-straight-time-floor.test.js",
+        "api/b17-tier-a-count-agreement.test.js",
+        "api/b17-trust-lock-hard.test.js",
+        "api/sd-data-sen-role-asymmetry.test.js",
+        "api/sd-data.js",
+        "api/sen-auth.js",
+        "docs/hank-evidence/b17/all_api_suites.log",
+        "docs/hank-evidence/b17/green_closed_period.log",
+        "docs/hank-evidence/b17/green_evv_asof.log",
+        "docs/hank-evidence/b17/green_freeze_reopen.log",
+        "docs/hank-evidence/b17/green_straight_time_floor.log",
+        "docs/hank-evidence/b17/green_trust_lock.log",
+        "docs/hank-evidence/b17/red_evv_asof.log",
+        "docs/hank-evidence/b17/red_straight_time_floor.log",
+        "docs/tier-a-reviews.json",
+        "sql/sairnsenior_audit_log_schema.sql",
+        "sql/sairnsenior_period_closings_schema.sql"
+      ],
+      "lines_added": 3671,
+      "lines_removed": 732,
+      "app": "sairnlaw",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "THE IOLTA TRUST HARD-LOCK HAD NO ARM, AND DELETING IT LEFT EVERY SUITE GREEN. api/_lib/law-roles.js's decide() applies the role TABLE first and re-asserts LAW_TRUST_LOCKED only after the table agrees, so on the shipped table -- where paralegal is '' on both locked resources -- the lock line is unreachable. fourth's 2x2 ablation measured it: lock emptied with the shipped table, exit 0, suite green. The one defence built for the case where the table is WRONG was untested, and the lock also drives the refusal MESSAGE, so emptying it silently downgraded 'Client trust records are available to the firm owner and attorneys only' to a generic sentence. AND law_bankstatements -- the other member of the same lock, rated A on integrity -- had no arm anywhere at all.",
+      "rules": [
+        "1.7"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "fa6a390edbc3",
+        "date": "2026-10-13",
+        "subject": "feat(sairnlaw): role granularity for all 19 resources -- ONE table, ONE function, and the trust lock is a second structure",
+        "lag_days": 3
+      },
+      "contributing_factors": [
+        {
+          "factor": "A SECOND DEFENCE IS INVISIBLE TO BEHAVIOURAL TESTING WHILE THE FIRST ONE WORKS. That is not a flaw in decide()'s order, which is deliberate and correct -- it is a flaw in testing a defence-in-depth layer only through the endpoint",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Arms of TWO kinds: T1-T4 assert the lock structurally (exact membership as a SET, frozen, and the denyMessage shown to be the lock speaking) and T5-T7 behaviourally. T3 is the only arm that can SEE the lock work -- it opens the table to paralegal:'r' and requires the lock to still deny"
+        },
+        {
+          "factor": "THE FINDING WOULD HAVE BEEN CLOSED BY TWO ASSERTIONS AND LEFT UNMEASURED. An assertion added because an ablation found a gap is worth exactly as much as re-running that ablation afterwards",
+          "kind": "process",
+          "action_status": "done",
+          "action": "T8 re-runs fourth's 2x2 as four real ablations on every run, driving both this file and the suite they measured. ARM A is now exit 1 HERE and still exit 0 in the trusttx suite -- which is the original finding and is asserted as such rather than quietly fixed"
+        },
+        {
+          "factor": "law_bankstatements WAS NEVER TESTED BECAUSE THE SUITE WAS NAMED AFTER THE OTHER RESOURCE. api/sd-data-law-trusttx-session.test.js covers law_trusttx; the second member of the same lock has no suite of its own and fell between",
+          "kind": "process",
+          "action_status": "done",
+          "action": "T5 drives decide() on both verbs for all three roles and T6 drives the real handler to 403 with no data array and the TRUST message, paired with T7 -- the same paralegal token reading law_optx at 200 -- so a 403 from the session gate cannot pass as the trust policy refusing"
+        },
+        {
+          "factor": "AN UNPROVEN ARM COULD HAVE BEEN REPORTED AS A PASS. Under ARM B of the 2x2, T3's own ablation anchor is already mutated, so T3 cannot run -- and folding that into 'green' would have been the third-state defect this platform keeps paying for",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "T3 reports COULD NOT RUN and the file exits 3, and T8b ASSERTS that cell is exit 3 rather than 0, with the reason written at the assertion"
+        }
+      ],
+      "recurrence_open": "ARM A STILL PASSES THE trusttx SUITE and that file was deliberately not touched, so the gap fourth found still exists in the suite they measured -- it is now covered by a DIFFERENT file, which is a structurally different method and not a second copy. AND law_trust_reconcile, the third trust surface, is owner-only through its own separate gate and is NOT in LAW_TRUST_LOCKED -- that asymmetry was read and left alone rather than changed without a decision."
+    },
+    {
+      "commit": "4af7db128b9b",
+      "date": "2026-10-16",
+      "subject": "fix(sairnsenior,sairnlaw): a paid period is reopened by an APPENDED row, an adjustment is never negative, and the trust lock finally has arms",
+      "files": [
+        "api/_lib/sen-evv-clock.js",
+        "api/_lib/sen-evv-readiness.js",
+        "api/_lib/sen-payroll.js",
+        "api/_resources/sairnsenior.js",
+        "api/b16-evv-pay-agreement.test.js",
+        "api/b17-closed-period-write-path.test.js",
+        "api/b17-evv-closed-period-asof.test.js",
+        "api/b17-freeze-reopen.test.js",
+        "api/b17-straight-time-floor.test.js",
+        "api/b17-tier-a-count-agreement.test.js",
+        "api/b17-trust-lock-hard.test.js",
+        "api/sd-data-sen-role-asymmetry.test.js",
+        "api/sd-data.js",
+        "api/sen-auth.js",
+        "docs/hank-evidence/b17/all_api_suites.log",
+        "docs/hank-evidence/b17/green_closed_period.log",
+        "docs/hank-evidence/b17/green_evv_asof.log",
+        "docs/hank-evidence/b17/green_freeze_reopen.log",
+        "docs/hank-evidence/b17/green_straight_time_floor.log",
+        "docs/hank-evidence/b17/green_trust_lock.log",
+        "docs/hank-evidence/b17/red_evv_asof.log",
+        "docs/hank-evidence/b17/red_straight_time_floor.log",
+        "docs/tier-a-reviews.json",
+        "sql/sairnsenior_audit_log_schema.sql",
+        "sql/sairnsenior_period_closings_schema.sql"
+      ],
+      "lines_added": 3671,
+      "lines_removed": 732,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "A HAND-TYPED COUNT BESIDE A DERIVED LIST, in the document whose entire job is to say what needs reviewing. Two of hank's own docs/tier-a-reviews.json records open by stating a resource count that disagrees with their own gate-derived `resources` array: 'b13: THREE Tier A resources changed' against four, and 'b16: SIX Tier A resources' against seven. THE SECOND ONE PROVES IT IS NOT COSMETIC: the uncounted resource was sen_settings, which is exactly where fourth's b26 finding H3 turned out to live -- the settings write path could replace the closed-period key and silently unfreeze every paid wage. A reviewer reading SIX and a list of six named changes has been told there are six things to attack.",
+      "rules": [
+        "1.8"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The two records were written on 2026-10-15 in separate batches (b13 and b16) and the count was wrong in each as typed -- there is no commit that INTRODUCED the error into previously-correct text, because the text never had a correct version."
+      },
+      "contributing_factors": [
+        {
+          "factor": "THE COUNT AND THE LIST HAVE DIFFERENT AUTHORS. The array is produced by the push gate from the commit's file set; the sentence is typed by the person writing the obligation, who is counting the changes they just made rather than the resources the gate attributed to them",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "api/b17-tier-a-count-agreement.test.js compares the record's own opening self-summary to len(resources) and fails on a disagreement that is not recorded"
+        },
+        {
+          "factor": "CORRECTING THE PROSE WOULD HAVE BEEN THE WRONG FIX. `what` is the text a reviewer actually read, in a ledger that is append-only across four clones, and rewriting it would change what the review was a review OF",
+          "kind": "process",
+          "action_status": "done",
+          "action": "A `count_correction` field is ADDED to each record, stating which number is right and which resource was uncounted, and `what` is byte-identical. Arm C3 requires the corrected case to report as matched-and-corrected rather than being folded into the clean set -- three states, not two"
+        },
+        {
+          "factor": "THE LOOSE VERSION OF THE CHECK PRODUCED FIVE FALSE POSITIVES ON REAL DATA, every one a count that legitimately describes a named SUBSET. A checker that cries wolf on five correct records is one somebody switches off, after which it tests nothing",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Criteria locked against synthetic fixtures FIRST and in BOTH directions (arms C1/C2, eleven fixtures including all five real false-positive shapes verbatim), narrowed to the anchored opening-self-summary shape, and stamped CRITERIA_VERSION"
+        },
+        {
+          "factor": "A NARROW ANCHORED PATTERN IS EXACTLY THE KIND THAT SILENTLY STOPS MATCHING when the house style for `what` changes, after which the real-data arm prints a clean pass over a file it can no longer read",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Arm C5 fails unless the pattern matches at least TWO records and names them, and C6 ablates the correction field to prove C4 is reading it rather than simply finding nothing"
+        }
+      ],
+      "recurrence_open": "FIVE OTHER RECORDS CARRY A COUNT THAT DISAGREES WITH THEIR ARRAY AND ARE DELIBERATELY NOT FLAGGED, because each names its subset and is correct. They are listed verbatim in the suite's header as the fixtures that must stay silent -- so if one of them ever IS wrong, this check will not say so. AND THE CHECK ONLY READS THE OPENING SENTENCE: a count stated mid-paragraph is out of its reach by design. AND IT IS NOT A PUSH GATE -- it is an api/ suite, caught by a full-tree sweep and by nothing automatic."
     }
   ],
   "started": "2026-09-09",
