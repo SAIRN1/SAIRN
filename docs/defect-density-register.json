@@ -32438,87 +32438,6 @@
       "recurrence_open": "FIVE OTHER RECORDS CARRY A COUNT THAT DISAGREES WITH THEIR ARRAY AND ARE DELIBERATELY NOT FLAGGED, because each names its subset and is correct. They are listed verbatim in the suite's header as the fixtures that must stay silent -- so if one of them ever IS wrong, this check will not say so. AND THE CHECK ONLY READS THE OPENING SENTENCE: a count stated mid-paragraph is out of its reach by design. AND IT IS NOT A PUSH GATE -- it is an api/ suite, caught by a full-tree sweep and by nothing automatic."
     },
     {
-      "commit": "9a0903e690f5",
-      "date": "2026-10-16",
-      "subject": "fix(sairndental): the charge's CDT stamp was written and never read, and the versioning had no way in",
-      "files": [
-        "SAIRN-handoff-fourth-b28.md",
-        "docs/2026-10-16-fourth-b28-tier-a-shards-routed-to-cc.md",
-        "docs/TOOLING-INVENTORY.md",
-        "docs/batch-manifest-fourth-b28.json",
-        "docs/cloud-research/childcare-worldwide-competitive-gap-audit-2026-10-16.md",
-        "docs/tier-a-reviews/cc.jsonl",
-        "docs/tier-a-reviews/cody.jsonl",
-        "docs/tier-a-reviews/fourth.jsonl",
-        "docs/tier-a-reviews/hank.jsonl",
-        "docs/tier-a-reviews/hover2.jsonl",
-        "sairndental.html",
-        "tools/tier_a_reviews_store.py",
-        "tools/tooling_inventory.py"
-      ],
-      "lines_added": 2031,
-      "lines_removed": 19,
-      "app": "sairndental",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "THE CHARGE CDT STAMP WAS WRITTEN AND NEVER READ, AND THE CATALOGUE HAD NO EDIT PATH, so the guarantee the stamping commit stated did not hold and the versioning feature was unreachable for the population it was built for. addChargeEntry() has stamped cdt_code and cdt_version onto every dnt_charges row since 2026-09-17, and its own comment states that the code and edition are STAMPED AT POSTING so a catalogue edit cannot restate history. BOTH readers ignored the stamp and looked the code up live from the mutable procedure-type row: the patient ledger's charges table, and the charges export's Procedure column -- nine lines below its own comment stating the rule it then broke, that a deleted patient still has charges and a name-only export would make those rows unattributable. A deleted or revised procedure type has charges too. The defect is invisible to every structural check because the stamp and the live lookup return the same answer on every row until the day the catalogue is edited, which is the one day the stamp exists for. SECOND HALF: the procedure-type form was ADD-ONLY and the table's only action was Remove, so every row predating the versioning reported 'Not verifiable' permanently with no path to a checked state, and applying a new CDT edition meant Remove-and-re-Add, minting a new row id and orphaning every historical charge -- the exact ledger-integrity failure the stamp was written to prevent, reached by a different door. The stamping fix was therefore written for an edit path that did not exist, which is why its missing read half never surfaced. FIXED: dntChargeCode() is the single reader at both sites, preferring the stamp, falling back to the live row only when there is no stamp and LABELLING that, and saying 'not recorded' when neither exists rather than guessing; three new export columns carry the code and edition as billed and the source of each; and a revise path updates a procedure type in place keeping its row id, appending replaced values to revisions[] rather than overwriting, recording only changed fields, and refusing a no-change, a vanished target and an inverted window. DRIVEN, 22 checks exit 0, first arm being the discriminating case where the catalogue was revised after posting so stamp and lookup disagree. NO TOOL FOUND IT: found by tracing which readers consume a charge's stamped fields after reading addChargeEntry()'s own comment claiming a guarantee; the 22-check driver was written afterwards to prove the fix, not to find the defect.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "8627f4e4c796",
-        "date": "2026-10-15",
-        "subject": "fix(blob): the ten routed conversions, 58 -> 48 exactly, and nine of ten column lists are EMPTY",
-        "lag_days": 1
-      },
-      "citation_note": "No standing rule names 'a field a write path stores that no reader consumes'. It is not a fabricated value (the field is real and correctly computed), not dormant code (the writer runs on every charge), and not a silent failure (nothing fails). The nearest is the fabrication check, which asks whether a displayed number has a function behind it, and this is the mirror of that: a stored value with no display behind it. Recorded as not-citable rather than stretched onto a rule it does not fit.",
-      "phase_note": "Recorded as coding because the 2026-09-17 change was correctly designed and incompletely implemented -- the record field, the stamping call and the stated guarantee are all right, and the two readers were simply not changed. Not a design phase defect: the design is what this commit finished.",
-      "contributing_factors": [
-        {
-          "factor": "The 2026-09-17 change added cdt_code and cdt_version to the charge record and did not change either place that displays a charge's code. The write half shipped, the read half did not, and the commit's own comment asserted the guarantee as though both had.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "dntChargeCode(charge) is now the single reader and is used at both sites -- the patient ledger's charges table and the charges export's Procedure column. It prefers the stamped value, and three new export columns surface the code as billed, the edition as billed, and which source each came from."
-        },
-        {
-          "factor": "The stamp and the live catalogue lookup return the SAME answer on every row until the day the catalogue is edited -- which is the one day the stamp exists for. So no test of present-day data could separate them, and the defect was invisible to every structural check: node --check passed, the HTML parsed with zero findings, every id resolved and no handler was undefined.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "The driver scratchpad/b28_dental_drive.js extracts the functions from the app by name and its first arm is the DISCRIMINATING case -- the catalogue row revised to a different code and edition after the charge was posted, so stamp and lookup disagree. Six arms cover the stamped, unstamped-fallback, neither-available and deleted-row directions. 22 checks, exit 0."
-        },
-        {
-          "factor": "There was no edit path for a procedure type at all -- the form was add-only and the table's only action was Remove. So the stamping fix was written to defend against a catalogue mutation that nobody could actually perform, which is why the absence of its read half never surfaced: the scenario that would have exposed it was unreachable through the UI.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "startProcedureRevise()/cancelProcedureRevise() plus update-or-insert in addProcedureType(). The row keeps its id so posted charges stay attributable, replaced values are appended to revisions[] rather than overwritten, only changed fields are recorded, and a no-change, a vanished target and an inverted window are each refused with a message rather than coerced."
-        },
-        {
-          "factor": "The charges export carries a comment nine lines above the column that broke the rule, stating that rule: 'a deleted patient still has charges, and a name-only export would make those rows unattributable'. The principle was written down, in the right file, next to the code, and the adjacent column did the opposite for the procedure type.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "The Procedure column now goes through dntChargeCode() like the ledger does, so both readers share one implementation of the rule and a future divergence has to be made in one place rather than two."
-        },
-        {
-          "factor": "Every row that existed before the versioning shipped reported 'Not verifiable' and there was no path from that state to a checked one, so the feature's own promise was unreachable for the exact population it was built for. A product that cannot be used on existing data looks identical to one nobody has used yet.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The revise path backfills cdt_version, effective_from, effective_to and superseded_by onto an existing row without changing its identity -- driven as the first F2 arm, which asserts one row, same id, the window recorded, and the previously-empty values kept as history."
-        },
-        {
-          "factor": "Nothing on this platform compares a field that a write path STORES against the set of readers that consume it. A stored-and-never-read field is not a syntax error, not a dead function and not a fabricated value, so neither node --check, nor the HTML parser, nor Guardian's dormant-code check, nor the fabrication check can see it.",
-          "kind": "latent-condition",
-          "action_status": "planned",
-          "action": "OWED, NOT DONE, and nothing in this commit closes it: a check that enumerates the fields each write path puts into a record and reports any that no reader ever references, per app. It is mechanically available -- the write sites are a bounded set of record literals and the readers are greppable by field name -- and it would have found this on the day it was introduced rather than thirteen months later. tools/ is cc's, so this is a routed item and not mine to build.",
-          "note": "Recorded as planned rather than done deliberately. This one field is now read, but the class is open: any other write path on the platform that stamps a field for a future reader has the same exposure and nothing measures it."
-        }
-      ],
-      "recurrence_open": "The CLASS is open and this commit does not close it. Nothing on this platform compares the fields a write path STORES against the readers that consume them, so any other write path that stamps a field for a future reader has the same exposure and nothing measures it. A stored-and-never-read field is not a syntax error, not dormant code and not a fabricated value, so node --check, the HTML parser, Guardian's dormant-code check and its fabrication check are all structurally blind to it. The routed item -- a per-app stored-field-vs-reader sweep -- is cc's and is not built. Also open: sairndental has never been RENDERED in this batch and sairn-visual-review did not run, so the revise form's markup is verified by parser and driver only."
-    },
-    {
       "commit": "2aed3322eb55",
       "date": "2026-10-16",
       "subject": "fix(close gate): the child was left on cp1252, and the answer to fourth's three prose spans is a measurement",
@@ -32856,6 +32775,147 @@
         }
       ],
       "recurrence_open": "THE OTHER 86 CALL SITES STILL READ okWrite AND MOST IGNORE IT, which is unchanged and is the larger problem this does not touch. AND NOTHING HERE WAS DRIVEN IN A BROWSER: the st() seam check loads the wrapper with a stubbed localStorage, so the bldSyncCollection throw path is exercised against a stub and the real retry pass has never been seen to pick one of these up. AND THE PENDING-LIST SENTINEL IS UNVERIFIED end to end -- bldRetryPending() drops an id it cannot resolve to a local row, which is why '__collection__' is visible and self-cleaning by argument rather than by measurement."
+    },
+    {
+      "commit": "9654772e76e6",
+      "date": "2026-10-16",
+      "subject": "fix(b17): the count check caught MY OWN obligation on its first real run, and then could not read the correction",
+      "files": [
+        "api/b17-tier-a-count-agreement.test.js",
+        "docs/hank-evidence/b17/green_tier_a_count.log",
+        "docs/hank-evidence/b17/live_probe.log",
+        "docs/hank-evidence/b17_live_gate_probe.py",
+        "docs/tier-a-reviews.json"
+      ],
+      "lines_added": 257,
+      "lines_removed": 13,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "A CHECKER COULD NOT PARSE A FIGURE IT WAS BUILT TO CHECK, and the unparseable record was SILENTLY NOT EXAMINED rather than reported. api/b17-tier-a-count-agreement.test.js compares a tier-a-reviews record's own opening count to its derived `resources` array. Its number-word map stopped at TWELVE. On its first real run it correctly flagged the b17 obligation opened minutes earlier -- \"SEVEN Tier A resources\" against an array of TWENTY, the same defect class on the same day by the same author -- and then, once the prose was corrected to say TWENTY, the check could not read the correction and the record dropped out of its matched set entirely. A count the check cannot parse produces NO verdict, which is indistinguishable from a clean one. Extended to twenty, fixtured in both directions, CRITERIA_VERSION bumped, and the regex's number alternation DERIVED from the word map rather than retyped.",
+      "rules": [
+        "1.8"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "api/b17-tier-a-count-agreement.test.js",
+      "found_by_session": null,
+      "injection": {
+        "commit": "de09297bbc0c",
+        "date": "2026-10-16",
+        "subject": "chore(defect register): six records for b17",
+        "lag_days": 0
+      },
+      "contributing_factors": [
+        {
+          "factor": "THE WORD LIST AND THE REGEX HELD TWO COPIES OF THE SAME TWELVE NAMES, in a file whose entire subject is a hand-typed figure disagreeing with a derived one. Extending one without the other would have silently done nothing",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The alternation is now Object.keys(WORDS).join('|'), so the pattern and the parser cannot diverge"
+        },
+        {
+          "factor": "A RANGE WAS CHOSEN FROM THE FIXTURES RATHER THAN FROM THE DATA. One..twelve covers every count I wrote while building it; obligations in this register run to hundreds of resources, and the very first live record exceeded it",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Extended to twenty with the ceiling's reason stated: above twenty a record writes DIGITS, which the digit branch already handles. If a word above twenty appears, arm C5's match count drops and names the record"
+        },
+        {
+          "factor": "THE FAILURE WAS A SILENT NON-EXAMINATION, not a wrong answer, which is the harder shape to notice -- the real-data arm went GREEN with one fewer record under it",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Arm C5 counts matched records and fails below two, which is what made the drop visible at all. It was written for a pattern that stops matching and caught a parser that stops parsing -- the same failure one layer in"
+        },
+        {
+          "factor": "AND THE FIRST DRAFT OF THE CORRECTION WAS PUNCTUATED OUT OF THE CHECK'S REACH. It read \"TWENTY Tier A resources -- and\", and the anchored pattern requires a comma or the word \"changed\" after the count, so the fix would have removed the record from the check",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Repunctuated, and the record's own prose says why rather than being quietly fixed -- a correction that removes its subject from the check is worse than no correction"
+        }
+      ],
+      "recurrence_open": "THE CHECK ONLY READS THE OPENING SENTENCE of a record, by design, so a count stated mid-paragraph is out of its reach -- and FIVE existing records carry a count that disagrees with their array and are deliberately not flagged because each names its subset. They are listed verbatim in the suite's header as fixtures that must stay silent, so if one of them is ever genuinely wrong this check will not say so. AND IT IS NOT A PUSH GATE: it is an api/ suite, caught by a full-tree sweep and by nothing automatic -- which is how the b17 obligation's wrong count would have reached cc if I had not run the sweep after the push."
+    },
+    {
+      "commit": "9a0903e690f5",
+      "date": "2026-10-16",
+      "subject": "fix(sairndental): the charge's CDT stamp was written and never read, and the versioning had no way in",
+      "files": [
+        "SAIRN-handoff-fourth-b28.md",
+        "docs/2026-10-16-fourth-b28-tier-a-shards-routed-to-cc.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/batch-manifest-fourth-b28.json",
+        "docs/cloud-research/childcare-worldwide-competitive-gap-audit-2026-10-16.md",
+        "docs/tier-a-reviews/cc.jsonl",
+        "docs/tier-a-reviews/cody.jsonl",
+        "docs/tier-a-reviews/fourth.jsonl",
+        "docs/tier-a-reviews/hank.jsonl",
+        "docs/tier-a-reviews/hover2.jsonl",
+        "sairndental.html",
+        "tools/tier_a_reviews_store.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 2031,
+      "lines_removed": 19,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "THE CHARGE CDT STAMP WAS WRITTEN AND NEVER READ, AND THE CATALOGUE HAD NO EDIT PATH, so the guarantee the stamping commit stated did not hold and the versioning feature was unreachable for the population it was built for. addChargeEntry() has stamped cdt_code and cdt_version onto every dnt_charges row since 2026-09-17, and its own comment states that the code and edition are STAMPED AT POSTING so a catalogue edit cannot restate history. BOTH readers ignored the stamp and looked the code up live from the mutable procedure-type row: the patient ledger's charges table, and the charges export's Procedure column -- nine lines below its own comment stating the rule it then broke, that a deleted patient still has charges and a name-only export would make those rows unattributable. A deleted or revised procedure type has charges too. The defect is invisible to every structural check because the stamp and the live lookup return the same answer on every row until the day the catalogue is edited, which is the one day the stamp exists for. SECOND HALF: the procedure-type form was ADD-ONLY and the table's only action was Remove, so every row predating the versioning reported 'Not verifiable' permanently with no path to a checked state, and applying a new CDT edition meant Remove-and-re-Add, minting a new row id and orphaning every historical charge -- the exact ledger-integrity failure the stamp was written to prevent, reached by a different door. The stamping fix was therefore written for an edit path that did not exist, which is why its missing read half never surfaced. FIXED: dntChargeCode() is the single reader at both sites, preferring the stamp, falling back to the live row only when there is no stamp and LABELLING that, and saying 'not recorded' when neither exists rather than guessing; three new export columns carry the code and edition as billed and the source of each; and a revise path updates a procedure type in place keeping its row id, appending replaced values to revisions[] rather than overwriting, recording only changed fields, and refusing a no-change, a vanished target and an inverted window. DRIVEN, 22 checks exit 0, first arm being the discriminating case where the catalogue was revised after posting so stamp and lookup disagree. NO TOOL FOUND IT: found by tracing which readers consume a charge's stamped fields after reading addChargeEntry()'s own comment claiming a guarantee; the 22-check driver was written afterwards to prove the fix, not to find the defect.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "8627f4e4c796",
+        "date": "2026-10-15",
+        "subject": "fix(blob): the ten routed conversions, 58 -> 48 exactly, and nine of ten column lists are EMPTY",
+        "lag_days": 1
+      },
+      "citation_note": "No standing rule names 'a field a write path stores that no reader consumes'. It is not a fabricated value (the field is real and correctly computed), not dormant code (the writer runs on every charge), and not a silent failure (nothing fails). The nearest is the fabrication check, which asks whether a displayed number has a function behind it, and this is the mirror of that: a stored value with no display behind it. Recorded as not-citable rather than stretched onto a rule it does not fit.",
+      "phase_note": "Recorded as coding because the 2026-09-17 change was correctly designed and incompletely implemented -- the record field, the stamping call and the stated guarantee are all right, and the two readers were simply not changed. Not a design phase defect: the design is what this commit finished.",
+      "contributing_factors": [
+        {
+          "factor": "The 2026-09-17 change added cdt_code and cdt_version to the charge record and did not change either place that displays a charge's code. The write half shipped, the read half did not, and the commit's own comment asserted the guarantee as though both had.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "dntChargeCode(charge) is now the single reader and is used at both sites -- the patient ledger's charges table and the charges export's Procedure column. It prefers the stamped value, and three new export columns surface the code as billed, the edition as billed, and which source each came from."
+        },
+        {
+          "factor": "The stamp and the live catalogue lookup return the SAME answer on every row until the day the catalogue is edited -- which is the one day the stamp exists for. So no test of present-day data could separate them, and the defect was invisible to every structural check: node --check passed, the HTML parsed with zero findings, every id resolved and no handler was undefined.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The driver scratchpad/b28_dental_drive.js extracts the functions from the app by name and its first arm is the DISCRIMINATING case -- the catalogue row revised to a different code and edition after the charge was posted, so stamp and lookup disagree. Six arms cover the stamped, unstamped-fallback, neither-available and deleted-row directions. 22 checks, exit 0."
+        },
+        {
+          "factor": "There was no edit path for a procedure type at all -- the form was add-only and the table's only action was Remove. So the stamping fix was written to defend against a catalogue mutation that nobody could actually perform, which is why the absence of its read half never surfaced: the scenario that would have exposed it was unreachable through the UI.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "startProcedureRevise()/cancelProcedureRevise() plus update-or-insert in addProcedureType(). The row keeps its id so posted charges stay attributable, replaced values are appended to revisions[] rather than overwritten, only changed fields are recorded, and a no-change, a vanished target and an inverted window are each refused with a message rather than coerced."
+        },
+        {
+          "factor": "The charges export carries a comment nine lines above the column that broke the rule, stating that rule: 'a deleted patient still has charges, and a name-only export would make those rows unattributable'. The principle was written down, in the right file, next to the code, and the adjacent column did the opposite for the procedure type.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The Procedure column now goes through dntChargeCode() like the ledger does, so both readers share one implementation of the rule and a future divergence has to be made in one place rather than two."
+        },
+        {
+          "factor": "Every row that existed before the versioning shipped reported 'Not verifiable' and there was no path from that state to a checked one, so the feature's own promise was unreachable for the exact population it was built for. A product that cannot be used on existing data looks identical to one nobody has used yet.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The revise path backfills cdt_version, effective_from, effective_to and superseded_by onto an existing row without changing its identity -- driven as the first F2 arm, which asserts one row, same id, the window recorded, and the previously-empty values kept as history."
+        },
+        {
+          "factor": "Nothing on this platform compares a field that a write path STORES against the set of readers that consume it. A stored-and-never-read field is not a syntax error, not a dead function and not a fabricated value, so neither node --check, nor the HTML parser, nor Guardian's dormant-code check, nor the fabrication check can see it.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "OWED, NOT DONE, and nothing in this commit closes it: a check that enumerates the fields each write path puts into a record and reports any that no reader ever references, per app. It is mechanically available -- the write sites are a bounded set of record literals and the readers are greppable by field name -- and it would have found this on the day it was introduced rather than thirteen months later. tools/ is cc's, so this is a routed item and not mine to build.",
+          "note": "Recorded as planned rather than done deliberately. This one field is now read, but the class is open: any other write path on the platform that stamps a field for a future reader has the same exposure and nothing measures it."
+        }
+      ],
+      "recurrence_open": "The CLASS is open and this commit does not close it. Nothing on this platform compares the fields a write path STORES against the readers that consume them, so any other write path that stamps a field for a future reader has the same exposure and nothing measures it. A stored-and-never-read field is not a syntax error, not dormant code and not a fabricated value, so node --check, the HTML parser, Guardian's dormant-code check and its fabrication check are all structurally blind to it. The routed item -- a per-app stored-field-vs-reader sweep -- is cc's and is not built. Also open: sairndental has never been RENDERED in this batch and sairn-visual-review did not run, so the revise form's markup is verified by parser and driver only."
     },
     {
       "commit": "a382f0ee8be3",
