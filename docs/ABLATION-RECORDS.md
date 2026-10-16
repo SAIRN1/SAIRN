@@ -262,11 +262,28 @@ matching nothing ablates nothing and reports a load-bearing layer.
 | `red-suite-notice-not-couldnotrun` | `red_suite_register_check.py` | **LOAD-BEARING** — 10 cases, 2 failed |
 | `batch-manifest-child-env` | `batch_manifest.py` | **LOAD-BEARING — only after the recipe was corrected.** See Finding 4 |
 
-**Deferred, with its recipe recorded so it is not lost:**
-`sf-events-exactly-once` in `tools/sf_events_anchor_check.py`. fourth holds a
-**live claim** on that file (b23, declared FILES list), so per PR §4.3 the
-conflict is declared and **not overridden** — the swap is written down in
-`DEFERRED` inside the driver and runs after fourth releases.
+**No longer deferred, and no longer deferrable — corrected 2026-10-16 (cc
+b16).** This slot held `sf-events-exactly-once` in
+`tools/sf_events_anchor_check.py`, deferred because fourth held a live b23
+claim on that file. **That file was DELETED on 2026-10-15**:
+`tools/citation_anchor_rot_check.py` supersedes it, and the retirement is an
+agreement between the two tools rather than a guess — both measured 8 anchors,
+8 resolving exactly once, 0 not, on the day of the deletion. Leaving the old
+recipe standing would have published a runnable-looking substring swap against
+a path that no longer exists, which is **item 8** arriving inside the ablation
+record itself.
+
+**The ablation moved and got stronger rather than being lost.** The
+exactly-once rule now sits behind the module-level hook `_COUNT_IS_FINDING` at
+`tools/citation_anchor_rot_check.py:79`, placed there so the layer can be
+**removed** rather than rewritten around, and it is driven per ARM:
+
+    python tools/citation_anchor_rot_check.py --selftest   # 16/16 arms
+    python tools/citation_anchor_rot_check.py --ablation    # per-ARM
+
+`A1-zero-count` and `A2-two-counts` are the two arms the deferred recipe was
+reaching for; `A3-exactly-once` is the over-refusal control beside them, which
+the old one-substring recipe had no equivalent of.
 
 **Arms did NOT land in the range for these six, so they are out of scope here
 and said so rather than counted as clean:** `drive_upload_verify.py`,

@@ -1870,7 +1870,22 @@ PURPOSES = {
         'citation inside the rot checker. First live measurement, the one the '
         'spec said would be the measurement: 7 anchors, 1 rotted, and 521 '
         'surviving file:line citations in that document that nobody had '
-        'counted.'),
+        'counted. IT SUPERSEDED sf_events_anchor_check.py ON 2026-10-15 and '
+        'that tool is DELETED rather than left beside it: the narrow one '
+        'hardcoded one row and one target file, this one reads the target the '
+        'document declares, so two tools answering the same question about '
+        'the same cell is two places for the answer to rot. THE INCIDENT THE '
+        'NARROW TOOL WAS BUILT FOR IS CARRIED HERE, because deleting a tool '
+        'must not delete why it existed: the sf_events cell states its own '
+        'EXACTLY-ONCE rule in prose and NOTHING DROVE IT, so when hank b12 F6 '
+        'legitimately rewrote sfDeleteEvent the anchor fell to ZERO matches '
+        'and the register went on asserting it for a day. Both tools measured '
+        '8 anchors, 8 resolving exactly once, 0 not, on the day of the '
+        'deletion -- so the retirement is an agreement between them and not a '
+        'guess. A7 and A7b are the arms that hold the sf_events row '
+        'specifically, and `r1-anchor-keyword` is the ablation that holds '
+        'the three bare prose spans fourth b22 routed as suspected false '
+        'positives -- they are not, and A8b is where that answer lives.'),
     'citation_line_drift_check.py': ('CHECKER', 'a `:NNNN` line citation in a tier row that no longer points at a WRITE site. The naive form of this check -- does the resource name appear within N lines of the cited number -- is WRONG on any app carrying a sync list or a storage-constant block, because '
         'each of those names EVERY resource on one line, so a citation into one reads as sound for all 36 at once and the offsets it computes are all measured from the same line. This resolves resource -> K_ constant -> `st(K_..., ...)` call site and excludes any line naming two or more prefixed resources. THREE verdicts: SOUND, DRIFTED with the signed correction, and INCONCLUSIVE where no write site can be resolved at all -- never folded into DRIFTED, because a correction to a line that is also wrong is worse than a known gap. CANNOT SEE a resource written only through the generic transport, or one whose constant is built at run time'),
     'staged_parse_check.py': ('CHECKER', 'a source file this PUSH SHIPS that does not parse -- .py through the interpreter own compiler, .js through `node --check`, over tools/, tests/ and api/. The gate checked stonedesk.html script blocks and api/ and NOT tools/, so a '
@@ -1918,7 +1933,6 @@ PURPOSES = {
     # an unwired tool becomes a wired one.
     'conflict_marker_preflight_hook.py': ('CHECKER', 'A CONFLICT RESOLUTION THAT LEAVES NO MARKERS -- reported at the one moment it is cheap to undo. It is a SHIM and the shim is the point: tools/conflict_marker_preflight.py costs 7.10 SECONDS over 2,670 paths (measured 2026-09-28), a PreToolUse hook fires on EVERY Bash call, and .githooks/pre-commit already records in its own words that a hook costing real time on every commit is one somebody eventually turns off. This does four filesystem stats against .git/ and returns -- 0.18s on the no-op path, measured -- and runs the full pre-flight ONLY while a rebase, merge, cherry-pick or revert is in progress. THE EARLY EXIT COULD NOT GO INSIDE THE TOOL: that file is named in another active claim, so the guard lives beside it rather than reaching into a file another session holds. IT WARNS AND NEVER DENIES, deliberately -- a mid-rebase state is a NORMAL state and git status, git diff and git add of a resolved file are all legitimate there, so denying Bash during a rebase makes the tool that helps you finish one unusable inside it, which is the path to the hook being disabled and check C lost entirely. THE PRE-FLIGHT EXIT 1 AND EXIT 2 ARE PRINTED WITH DIFFERENT TEXT AND NEVER FOLDED TOGETHER (PR 1.11). A missing pre-flight during an operation is NAMED rather than silently skipped. Held by tests/run_conflict_preflight_hook_probe.py, 22 arms, including a CONTROL that the three outcomes produce DIFFERENT text -- which replaced a check(..., True) that could not fail'),
     'hover_self_health_shim.py': ('CHECKER', 'a SessionStart hook registered by ABSOLUTE PATH into ONE clone, so a second instance of the same role self-checks the FIRST clone record on every firing while its own is never checked at all. Measured 2026-09-22: the hover self-health hook resolved its log from the SCRIPT location and its clone gate resolved from the CWD, and those two disagree the moment a second auditor exists -- which it does. This derives the per-clone path from CLAUDE_PROJECT_DIR and runs THAT, with THREE outcomes rather than two: silent in a build clone, the hook own output passed straight through in an auditor clone that has one, and a NAMED refusal in one that does not. There is deliberately NO fallback to a neighbouring clone copy, because the fallback IS the defect'),
-    'sf_events_anchor_check.py': ('CHECKER', 'a quoted-string anchor in the sf_events row of docs/CRITICALITY-TIERS.md that no longer resolves in sairnfreedom.html, or resolves more than once -- the cell states that uniqueness rule in its own prose and nothing drove it, so when hank b12 F6 legitimately rewrote sfDeleteEvent the anchor fell to ZERO matches and the register went on asserting it for a day; also catches a cell that has stopped naming any anchor at all, which would otherwise pass by measuring nothing'),
     'sabotage_control_check.py': ('CHECKER', 'a negative control that never verifies its sabotage APPLIED -- when the anchor stops matching, str.replace silently does nothing and the control runs the checker against an unmodified file; the loud outcome is an arm failing against a working tool, the quiet one is an expect-no-findings arm passing forever'),
     # NO PURPOSES ENTRY, DELIBERATELY. As of 2026-09-27 this tool is in
     # report_only_checks.REGISTRY, whose entry already carries `catches`.

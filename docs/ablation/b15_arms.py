@@ -182,11 +182,22 @@ CASES = (
 # Recorded but NOT run here, each with the reason. A deferred ablation named
 # with its recipe is a different thing from one nobody thought of.
 DEFERRED = (
-    ('sf-events-exactly-once', 'tools/sf_events_anchor_check.py',
-     "        if n == 1:" + NL + "            continue",
-     "        if n >= 0:" + NL + "            continue",
-     'fourth holds a LIVE claim on this file (b23, declared FILES list). '
-     'PR 4.3: declared and not overridden. Run it after fourth releases.'),
+    ('sf-events-exactly-once', 'tools/citation_anchor_rot_check.py',
+     '(no substring swap -- see why below)', '(no substring swap)',
+     'NO LONGER DEFERRED AND NO LONGER DEFERRABLE, corrected 2026-10-16 '
+     '(cc b16). The subject of this recipe, tools/sf_events_anchor_check.py, '
+     'was DELETED on 2026-10-15 -- citation_anchor_rot_check.py supersedes '
+     'it, both tools agreeing on 8 anchors / 8 resolving exactly once / 0 '
+     'not on the day of the retirement. Leaving the old recipe here would '
+     'have printed a runnable-looking substring swap against a path that no '
+     'longer exists, which is item 8 (nothing announces the day a check '
+     'stops testing anything) arriving inside the ablation record itself. '
+     'THE ABLATION IS NOT LOST, IT MOVED AND GOT STRONGER: the exactly-once '
+     'rule now lives behind the module-level hook _COUNT_IS_FINDING at '
+     'citation_anchor_rot_check.py:79 precisely so it can be REMOVED rather '
+     'than rewritten, and `python tools/citation_anchor_rot_check.py '
+     '--ablation` drives it per ARM. A1-zero-count and A2-two-counts are '
+     'the two arms this recipe was trying to reach. Run THAT, not this.'),
 )
 
 
