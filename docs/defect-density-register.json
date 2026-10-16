@@ -33151,7 +33151,7 @@
       "recurrence_open": "the second guard DETECTS and cannot refuse, so a replayed violation still reaches local history -- it is now named at the rewrite instead of only at the push. Nothing closes the commit-time miss itself, because git will not call pre-commit on a replay. And the eight arms cover the gate in a SANDBOX: no arm runs in the auditor's real clone, which a build agent must not enter."
     },
     {
-      "commit": "136579b64931",
+      "commit": "331cebe3c7b6",
       "date": "2026-10-16",
       "subject": "fix(claims): self_hits WAS wired to a refusal -- to a different input, which is worse than not being wired",
       "files": [
@@ -33216,7 +33216,7 @@
       "recurrence_open": "Two of the three routed symptoms are NOT defects in this file and are reported\nrather than fixed. hank double-active-claims is real -- 10 after-guard same-work\npairs concurrent for 0.6h to 33.7h -- and is the documented disagreement\nbetween is_active() expiry and the real held span, not a missing refusal; the\ndefect underneath is claims held 14-34 hours without release and nothing here\ncloses it. The hover/hover2 claim-name collision does not reproduce in this\nfile and if it exists it is inside the auditor own tooling, a clone a build\nagent must not enter."
     },
     {
-      "commit": "4b54e7c81071",
+      "commit": "94ec1209e4e1",
       "date": "2026-10-16",
       "subject": "fix(matcher): the exemption is derived from the live corpus, so a phrase crossing three sessions silently retired a live incident",
       "files": [
@@ -33280,7 +33280,7 @@
       "recurrence_open": "856 phrases sit EXACTLY at the threshold and 2,931 are ONE SESSION AWAY from\nit. Each of those is a block that will retire the moment one more session\nwrites it, and only the ones an incident is known to rest on are pinned --\nwhich means the mechanism is now visible but is NOT closed. Nobody has swept\nthe other historical incidents to find which of their blocking phrases are\nalready exempt."
     },
     {
-      "commit": "59e313d005ad",
+      "commit": "aea2d0dbf3ba",
       "date": "2026-10-16",
       "subject": "fix(blob coverage): the scope window was a seven-line count, and a line count cannot see a write body",
       "files": [
@@ -33346,7 +33346,7 @@
       "recurrence_open": "The pin rose 48 to 49 and that is the first honest figure, not a better state\n-- 48 was an undercount of the gap and the one newly visible RAW site is still\nunconverted. Nothing converts it here. The UNRESOLVED-SCOPE state is reported\nand nothing refuses on it. And the same seven-line-window shape was not swept\nfor across the other 350 tools: it was found in this one because somebody was\nsent at it."
     },
     {
-      "commit": "6fd762ea8620",
+      "commit": "b7d44ef070d5",
       "date": "2026-10-16",
       "subject": "fix(sweep): the log was ZERO BYTES whenever the run was killed, which is every run that matters",
       "files": [
