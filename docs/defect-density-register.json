@@ -32438,7 +32438,7 @@
       "recurrence_open": "FIVE OTHER RECORDS CARRY A COUNT THAT DISAGREES WITH THEIR ARRAY AND ARE DELIBERATELY NOT FLAGGED, because each names its subset and is correct. They are listed verbatim in the suite's header as the fixtures that must stay silent -- so if one of them ever IS wrong, this check will not say so. AND THE CHECK ONLY READS THE OPENING SENTENCE: a count stated mid-paragraph is out of its reach by design. AND IT IS NOT A PUSH GATE -- it is an api/ suite, caught by a full-tree sweep and by nothing automatic."
     },
     {
-      "commit": "1a7d105e7642",
+      "commit": "9a0903e690f5",
       "date": "2026-10-16",
       "subject": "fix(sairndental): the charge's CDT stamp was written and never read, and the versioning had no way in",
       "files": [
