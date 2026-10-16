@@ -36,8 +36,59 @@ missing.
     python tools/hover_auditor_scope_gate.py --check       # is it armed here?
     python tools/hover_auditor_scope_gate.py --pre-commit  # hook entry: staged files
     python tools/hover_auditor_scope_gate.py --pre-push    # hook entry: outgoing commits
+    python tools/hover_auditor_scope_gate.py --post-rewrite # hook entry: a rebase's own old->new map
     python tools/hover_auditor_scope_gate.py --worktree    # every modified file, staged or not
     python tools/hover_auditor_scope_gate.py --explain     # print the scope and its source
+    python tools/hover_auditor_scope_gate.py --selftest    # criteria, both directions
+
+THREE ENFORCEMENT POINTS, AND THEY DO NOT ALL COVER THE SAME SHAPE. This used
+to read as one mechanism and it is not; the distinction was MEASURED rather
+than reasoned about, and the measurement is below.
+
+  --pre-commit    REFUSES. Covers a plain `git commit`. DOES NOT FIRE on a
+                  commit replayed by `git rebase` -- confirmed by H1 b41 in an
+                  isolated sandbox, and reconfirmed here.
+  --post-rewrite  DETECTS AND CANNOT REFUSE, by construction: git fires it
+                  AFTER the rebase has completed and ignores its exit status,
+                  so a non-zero exit would undo nothing and print a failure
+                  after a success. It is the loud notice that closes the
+                  silence between the replay and the next push.
+  --pre-push      REFUSES. Covers the outgoing range, which includes a
+                  replayed commit however it got into local history.
+
+H1 b41's OPEN QUESTION, DRIVEN LIVE 2026-10-16 (cc b16) AND ANSWERED. b41
+confirmed the commit-time miss and said of the push-time half: "remains the
+next thing to verify live -- if it also does not fire on a rebase-replayed
+range, the gap is total; if it does, the gate's enforcement moves from
+commit-time to push-time for this one shape, which is weaker than advertised
+but not absent." It is NOT TOTAL. Six arms, in a bare repo plus a work clone
+under a scratchpad, with this file and the real SKILL.md copied in verbatim --
+a real push, no real remote:
+
+  A1  a plain commit of an out-of-scope path            REFUSED, exit 1
+  A2  the same violation enters history via --no-verify  the object exists
+  A3  `git rebase` onto a divergent branch               SUCCEEDS, NO REFUSAL
+                                                         -- pre-commit did not
+                                                         fire on the replay
+  A4  pushing the replayed commit as a NEW branch        REFUSED
+  A5  CONTROL: an in-scope-only range                    PUSH LANDED
+  A6  pushing the replayed commit onto an EXISTING
+      remote branch -- the `rsha..lsha` path a real
+      `git push origin main` takes, which is DIFFERENT
+      CODE from A4's new-branch path                     REFUSED
+
+A5 is why A4 and A6 mean anything: without it a gate that refuses every push
+scores perfectly on both. A5's FIRST DRAFT WAS VOID and is kept in the script
+with the reason -- it pushed a new branch off an orphan base, so the gate
+correctly examined the sandbox's own setup commit, and the refusal said
+nothing about the in-scope file. A1's first draft was also void: it read the
+exit status of `git commit | head`, which is head's, and reported ACCEPTED
+three lines under the gate's own refusal.
+
+SO THE RESIDUAL GAP IS TIME, NOT COVERAGE. A replayed violation sits in local
+history, un-named, until the next push. `--post-rewrite` is the second guard
+that names it at the rewrite, which is the moment a human can still act on it
+cheaply.
 
 WHICH DIRECTION IT FAILS, AND WHY IT IS NOT ONE ANSWER FOR BOTH CLONES.
 
@@ -467,6 +518,113 @@ def changed_outgoing(stdin_text):
     return sorted(set(paths)), '; '.join(notes)
 
 
+def parse_rewrite_map(stdin_text):
+    """git's post-rewrite stdin -> the list of NEW shas, or (None, why).
+
+    One line per rewritten commit, `<old-sha> <new-sha>` (a `rebase` run adds
+    nothing else; `amend` is the same shape with one line). The OLD sha is
+    deliberately discarded: the question is what the rewrite PRODUCED, and the
+    old object may no longer be reachable.
+
+    EMPTY IS NOT CLEAN AND IT IS ALSO NOT A FINDING. git fires this hook only
+    after it rewrote something, so no lines at all means either the hook was
+    run by hand or git behaved unexpectedly -- both are COULD-NOT-TELL, and
+    this returns the reason rather than an empty list that reads as a pass.
+    That distinction is the whole of PR 1.11 and it is the same one the
+    --pre-push reader already makes for its ref lines.
+    """
+    lines = [l for l in (stdin_text or '').split('\n') if l.strip()]
+    if not lines:
+        return None, ('no old->new lines on stdin. git fires post-rewrite only '
+                      'after it rewrote something, so an empty map is a '
+                      'COULD-NOT-TELL about the rewrite, not a clean one.')
+    new = []
+    for line in lines:
+        parts = line.split()
+        if len(parts) < 2:
+            return None, 'unparseable post-rewrite map line: %r' % line
+        sha = parts[1]
+        if not re.match(r'^[0-9a-f]{7,40}$', sha):
+            return None, ('post-rewrite map line %r does not carry a sha in '
+                          'its second field' % line)
+        new.append(sha)
+    return new, ''
+
+
+def changed_rewritten(stdin_text):
+    """The paths every commit a rewrite PRODUCED touches, or (None, why).
+
+    `show --name-only` per commit rather than one range: a rebase's output is
+    a set of commits, not necessarily a contiguous range, and a range built
+    from first..last would silently include anything the rebase did not
+    produce. One commit at a time is slower and answers the question asked.
+    """
+    shas, why = parse_rewrite_map(stdin_text)
+    if shas is None:
+        return None, why
+    paths, missing = [], []
+    for sha in shas:
+        if not _have_commit(sha):
+            # A sha git just WROTE that this clone cannot read is not a
+            # could-not-tell to shrug at -- it is reported by name.
+            missing.append(sha[:12])
+            continue
+        code, out, err = git('show', '--format=', '--name-only', sha)
+        if code != 0:
+            return None, ('could not read the rewritten commit %s: %s'
+                          % (sha[:12], err.strip()))
+        paths.extend(l for l in out.split('\n') if l.strip())
+    if missing:
+        return None, ('git reported %d rewritten commit(s) this clone cannot '
+                      'read: %s. Nothing was examined for them.'
+                      % (len(missing), ', '.join(missing)))
+    return sorted(set(paths)), '%d rewritten commit(s) examined' % len(shas)
+
+
+def notice_rewritten(refused, allowed, count):
+    """The post-rewrite notice. LOUD, and exit 0 -- see the mode's own block
+    in main() for why a refusal here would be a lie about what it can do."""
+    print('')
+    print('  HOVER AUDITOR SCOPE GATE -- OUT-OF-SCOPE PATHS IN A REWRITTEN COMMIT')
+    print('')
+    print('  A rebase or an --amend just REPLAYED %d commit(s) in this clone,'
+          % count)
+    print('  and %d path(s) in them are outside the auditor\'s scope:'
+          % len(refused))
+    print('')
+    for p in refused[:40]:
+        note = ''
+        for d, why in EXPLICITLY_DENIED:
+            if p == d:
+                note = '   <-- named as out of scope: ' + why
+        print('      %s%s' % (p, note))
+    if len(refused) > 40:
+        print('      ... and %d more' % (len(refused) - 40))
+    print('')
+    if allowed:
+        print('  In scope and fine: %s' % ', '.join(allowed[:6]))
+        print('')
+    print('  THIS IS NOT A REFUSAL AND IT CANNOT BE. git runs post-rewrite')
+    print('  AFTER the rewrite and ignores this hook\'s exit status, so a')
+    print('  non-zero exit would undo nothing and print a failure after a')
+    print('  success. What it does is END THE SILENCE: commit-time enforcement')
+    print('  DOES NOT FIRE on a replay (H1 b41, reconfirmed), so without this')
+    print('  notice the first thing to mention these paths would be the push')
+    print('  gate, several steps later.')
+    print('')
+    print('  THE PUSH WILL BE REFUSED. --pre-push reads the outgoing range and')
+    print('  catches a replayed commit however it reached local history --')
+    print('  driven live, both the new-branch and the rsha..lsha path.')
+    print('')
+    print('  WHAT TO DO NOW, while it is still cheap:')
+    print('      git log --name-only --oneline origin/main..HEAD   # see them')
+    print('      git rebase -i origin/main                         # drop them')
+    print('  and report the finding instead: log it to')
+    print('  %s and hand the fix to a build agent.' % REGISTER)
+    print('')
+    return 0
+
+
 def refuse(mode, refused, allowed):
     print('')
     print('  HOVER AUDITOR SCOPE GATE -- REFUSED (%s)' % mode)
@@ -563,6 +721,7 @@ def main(argv):
 
     mode = ('--pre-commit' if '--pre-commit' in args else
             '--pre-push' if '--pre-push' in args else
+            '--post-rewrite' if '--post-rewrite' in args else
             '--worktree' if '--worktree' in args else None)
     if mode is None:
         print(__doc__)
@@ -577,28 +736,58 @@ def main(argv):
 
     ok, why = scope_is_still_the_rule(root)
     if not ok:
+        # ── --post-rewrite CANNOT REFUSE, so it says so HERE TOO ────────────
+        # Every other mode returns 1 on this path and that is right. This mode
+        # returning 1 would be a lie about what it can enforce: git has already
+        # finished the rewrite and ignores the status. The MESSAGE is the
+        # control here, which is the same conclusion .githooks/post-rewrite
+        # reached on 2026-09-29 about its own two fail-open guards.
         print('')
         print('  HOVER AUDITOR SCOPE GATE -- CANNOT VERIFY ITS OWN SCOPE')
         print('  %s' % why)
         print('')
+        if mode == '--post-rewrite':
+            print('  NOTHING WAS EXAMINED in the commits this rewrite just')
+            print('  produced. This mode cannot refuse -- git ignores a')
+            print('  post-rewrite hook\'s exit status -- so this is the whole')
+            print('  signal, and it is a COULD-NOT-RUN rather than a clean')
+            print('  rewrite. --pre-push will still refuse the push for the')
+            print('  same reason.')
+            print('')
+            return 0
         print('  REFUSING rather than passing. A gate that cannot read the rule')
         print('  it enforces has not checked anything, and "could not tell" is')
         print('  not "passed".')
         print('')
         return 1
 
+    stdin_text = sys.stdin.read() if not sys.stdin.isatty() else ''
+    rewritten = 0
     if mode == '--pre-commit':
         paths, err = changed_staged()
     elif mode == '--worktree':
         paths, err = changed_worktree()
+    elif mode == '--post-rewrite':
+        paths, err = changed_rewritten(stdin_text)
+        shas, _w = parse_rewrite_map(stdin_text)
+        rewritten = len(shas or [])
     else:
-        paths, err = changed_outgoing(sys.stdin.read() if not sys.stdin.isatty() else '')
+        paths, err = changed_outgoing(stdin_text)
 
     if paths is None:
         print('')
         print('  HOVER AUDITOR SCOPE GATE -- COULD NOT READ THE CHANGE (%s)' % mode)
         print('  %s' % err)
         print('')
+        if mode == '--post-rewrite':
+            # Same reasoning as the scope-sentence path above: the message is
+            # the control, because the exit code is not read.
+            print('  NOT A REFUSAL -- git ignores this hook\'s exit status, so')
+            print('  there is nothing to refuse with. It is still a')
+            print('  COULD-NOT-RUN and not a clean rewrite, and --pre-push')
+            print('  will refuse the push if these commits carry platform code.')
+            print('')
+            return 0
         print('  REFUSING. Not knowing what is in a change is not the same as')
         print('  knowing it is clean.')
         print('')
@@ -609,13 +798,106 @@ def main(argv):
 
     allowed, refused = violations(paths)
     if refused:
+        if mode == '--post-rewrite':
+            return notice_rewritten(refused, allowed, rewritten)
         return refuse(mode, refused, allowed)
 
     if mode == '--worktree':
         print('hover scope gate: working tree clean of platform code (%d path(s) '
               'checked, all in scope)' % len(allowed))
+    if mode == '--post-rewrite':
+        # SAID OUT LOUD, not silent. A rewrite-time guard whose clean result is
+        # indistinguishable from the hook not running is the shape that put
+        # .githooks/post-rewrite's own two guards on `|| exit 0` with no output
+        # for five days.
+        print('hover scope gate: %d rewritten commit(s), %d path(s), all in '
+              'scope' % (rewritten, len(allowed)))
     return 0
 
 
+CRITERIA_VERSION = '2026-10-16.1'
+
+
+def selftest():
+    """Criteria for the parts that can be driven WITHOUT a repo, both
+    directions.
+
+    WHAT THIS DOES AND DOES NOT COVER, said first so the number below is not
+    read as more than it is. `violations()` and `parse_rewrite_map()` are pure,
+    so they are driven here on invented input -- which is the only way to test
+    the REFUSING direction without committing a violation to find out. The
+    HOOK-FIRING behaviour is not testable from inside one process at all: it
+    needs a real repo, a real rebase and a real push, which is what the b16
+    sandbox did and what the six A-arms in this file's own docstring record.
+    An arm count here is NOT a claim about enforcement.
+    """
+    arms = []
+
+    def arm(name, got, want):
+        arms.append((name, got == want, got, want))
+
+    # ── violations(): the allowlist, both directions ────────────────────────
+    a, r = violations(['README.md'])
+    arm('an out-of-scope path is REFUSED', (a, r), ([], ['README.md']))
+    a, r = violations([SKILL_DIR + 'SKILL.md'])
+    arm('the auditor\'s own skill file is ALLOWED -- the over-refusal control',
+        (a, r), ([SKILL_DIR + 'SKILL.md'], []))
+    a, r = violations(['tools/defect_register.py'])
+    arm('an EXPLICITLY_DENIED path is refused', (a, r),
+        ([], ['tools/defect_register.py']))
+    a, r = violations([])
+    arm('no paths at all is NOT a refusal -- an empty change is in scope',
+        (a, r), ([], []))
+    a, r = violations(['.githooks/pre-push'])
+    arm('.githooks/ is platform code and is refused -- the path the b16 '
+        'sandbox used', (a, r), ([], ['.githooks/pre-push']))
+
+    # ── parse_rewrite_map(): THE THIRD STATE IS THE POINT ───────────────────
+    got, why = parse_rewrite_map('aaaaaaa bbbbbbb\n')
+    arm('one old->new line yields the NEW sha', (got, bool(why)),
+        (['bbbbbbb'], False))
+    got, why = parse_rewrite_map('aaaaaaa bbbbbbb\nccccccc ddddddd\n')
+    arm('two lines yield two NEW shas, old ones discarded', got,
+        ['bbbbbbb', 'ddddddd'])
+    got, why = parse_rewrite_map('')
+    arm('EMPTY stdin is COULD-NOT-TELL, never an empty clean map',
+        (got is None, 'COULD-NOT-TELL' in (why or '')), (True, True))
+    got, why = parse_rewrite_map('onlyonefield\n')
+    arm('a one-field line is unparseable, not skipped', got is None, True)
+    got, why = parse_rewrite_map('aaaaaaa not-a-sha\n')
+    arm('a second field that is not a sha is refused, not trusted',
+        got is None, True)
+    # The over-refusal control for the parser: a full 40-char sha must pass.
+    got, why = parse_rewrite_map('%s %s\n' % ('a' * 40, 'b' * 40))
+    arm('a full 40-char sha pair parses -- the parser\'s own over-refusal '
+        'control', got, ['b' * 40])
+
+    print('SCOPE GATE CRITERIA -- version %s' % CRITERIA_VERSION)
+    print('BOTH DIRECTIONS: 3 arms require a REFUSAL, 3 require an ALLOW, and')
+    print('4 require COULD-NOT-TELL on malformed or absent input. A gate that')
+    print('refuses everything passes the refusal arms and gets switched off.')
+    print('')
+    bad = 0
+    for name, ok, got, want in arms:
+        if not ok:
+            bad += 1
+        print('  %-5s %s' % ('PASS' if ok else 'FAIL', name))
+        if not ok:
+            print('        got  %r' % (got,))
+            print('        want %r' % (want,))
+    print('')
+    print('  %d/%d arm(s) pass' % (len(arms) - bad, len(arms)))
+    print('')
+    print('  NOT COVERED HERE, and it is the half that matters: whether git')
+    print('  FIRES each hook. That needs a real repo, a real rebase and a real')
+    print('  push -- driven in a scratchpad sandbox for b16, six arms, recorded')
+    print('  in this file\'s own docstring as A1-A6. These %d arms are about'
+          % len(arms))
+    print('  the CLASSIFIER, not about enforcement.')
+    return 1 if bad else 0
+
+
 if __name__ == '__main__':
+    if '--selftest' in sys.argv[1:]:
+        sys.exit(selftest())
     sys.exit(main(sys.argv))

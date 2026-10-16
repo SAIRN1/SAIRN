@@ -63,11 +63,15 @@ if ! command -v "$PY" >/dev/null 2>&1; then
   exit 0
 fi
 
-# ── THE MAP IS READ TWICE, BY TWO PROGRAMS, AND IT HAS TO BE ────────────────
-# git hands the old->new map on STDIN exactly once. Two consumers therefore
-# need two copies of it, so it is captured first and fed to each -- piping it
-# straight into the first would leave the second reading an empty stream and
-# reporting, truthfully and uselessly, that no commit moved.
+# ── THE MAP IS READ THREE TIMES, BY THREE PROGRAMS, AND IT HAS TO BE ────────
+# Said TWICE until 2026-10-16, when the scope-gate consumer below was added --
+# a count written in prose beside the thing it counts, which is the defect this
+# platform pays for most often. git hands the old->new map on STDIN exactly
+# once. Each consumer therefore needs its own copy, so it is captured first and
+# fed to each -- piping it straight into the first would leave the others
+# reading an empty stream and reporting, truthfully and uselessly, that no
+# commit moved. Note which direction that fails in for the third consumer: an
+# empty map is its COULD-NOT-TELL, not a clean rewrite.
 MAP=$(cat)
 
 printf '%s\n' "$MAP" | "$PY" "$ROOT/tools/defect_register.py" --post-rewrite || {
@@ -98,5 +102,48 @@ else
     echo "  cite commits this rewrite replaced. Run:" >&2
     echo "  python tools/doc_sha_reseat.py --post-rewrite" >&2
   }
+fi
+
+# ── THE THIRD CONSUMER, ADDED 2026-10-16 (cc b16) -- THE SCOPE GATE'S ───────
+# ── SECOND GUARD, AND IT IS HERE BECAUSE THIS HOOK CANNOT REFUSE ────────────
+# H1 b41 confirmed by direct reproduction that `git rebase`'s replay of a
+# picked commit DOES NOT invoke .githooks/pre-commit, so the hover auditor's
+# commit-time scope enforcement is skipped for that shape -- and `git pull
+# --rebase` is this platform's own standard move, used by every agent every
+# batch. cc b16 drove the half b41 left open: --pre-push DOES refuse the
+# replayed commit, on both the new-branch path and the rsha..lsha path a real
+# `git push origin main` takes. Six arms, bare repo plus work clone in a
+# scratchpad, with an in-scope control so a refuse-everything gate could not
+# have scored.
+#
+# SO THE GAP IS TIME, NOT COVERAGE: the violation sits in local history,
+# un-named, from the rebase until the next push. This closes that silence --
+# it names the paths at the rewrite, which is the moment `git rebase -i` is
+# still a cheap fix.
+#
+# IT CANNOT REFUSE AND IT DOES NOT PRETEND TO. Same contract as the two guards
+# above and for the same reason the 2026-09-29 note gives: git ignores this
+# hook's status, so a non-zero exit undoes nothing and prints a failure after a
+# success. The MESSAGE is the control. The gate's --post-rewrite mode returns 0
+# on every path including its own could-not-run, deliberately, so this line
+# needs no `||` guard of its own for the gate's verdict -- only for the gate
+# being MISSING, which is the one thing that would make it silent.
+#
+# ONLY IN THE AUDITOR'S OWN CLONE. The marker lives in .git/, which is not
+# versioned, so no build clone inherits it and all four pay one file test.
+if [ -f "$ROOT/tools/hover_auditor_scope_gate.py" ]; then
+  GITDIR=$(git rev-parse --git-dir)
+  if [ -f "$GITDIR/sairn-hover-auditor-clone" ]; then
+    printf '%s\n' "$MAP" | "$PY" "$ROOT/tools/hover_auditor_scope_gate.py" --post-rewrite
+  fi
+else
+  # Only reported in the clone where it would have run. Printing this in a
+  # build clone would be noise about a rule that does not apply there.
+  GITDIR=$(git rev-parse --git-dir)
+  if [ -f "$GITDIR/sairn-hover-auditor-clone" ]; then
+    echo "post-rewrite: tools/hover_auditor_scope_gate.py is MISSING, so the" >&2
+    echo "  commits this rewrite produced were NOT checked against the" >&2
+    echo "  auditor's scope. --pre-push still refuses the push." >&2
+  fi
 fi
 exit 0
