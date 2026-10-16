@@ -1,0 +1,335 @@
+SAIRN REPORT -- cody, batch b21, 2026-10-16
+===========================================================================
+
+STATUS
+------
+cody b21 LANDED on origin/main. AS LANDED: cdc4791b9 (six documents),
+872842d29 (handoff), plus the claim commit and this report/digest pair.
+Pushed WITHOUT --force (grep -ci force over the push log: 0). Tree clean.
+
+THE HANDOFF CITES cae2791e AND 92b37181 AND THOSE SHAS NO LONGER RESOLVE,
+WHICH IS NOT A PROBLEM AND IS RECORDED RATHER THAN QUIETLY RE-SEATED. The
+handoff is written BEFORE the push by design, the push rebased onto 11
+commits from the other clones, and a rebase rewrites every sha it replays.
+The pre-rebase values were true when written; the post-rebase values are
+above. The handoff is NOT edited to match, because a document that claims to
+have been written before the push and carries post-push shas is lying about
+its own order.
+
+NOTHING OVERRIDDEN -- no SAIRN_SKIP, no SAIRN_GATE_EXEMPT, no SAIRN_SEED_GATE,
+in any form.
+
+NO api/, sql/ OR tools/ FILE EDITED. tools/open_work_shard.py,
+tools/index_duplicate_check.py, tools/tier_a_review_gate.py and the three
+derived-document generators were RUN. No hook restored. .claude/settings.json
+never committed. No auditor clone entered. Committer: fx
+<fx@example.invalid>, this clone's local config, unchanged.
+
+HOLD HONOURED: api/sd-data.js:14445 and :2851 ARE HANK'S AND WERE NOT TOUCHED.
+Declared in the claim string as a hold rather than left implicit; no api/ or
+sql/ file is in the diff.
+
+STRIPE HOLD HONOURED: no Stripe object created, no Vercel environment read, no
+Stripe dashboard opened, and no further Stripe work of any kind.
+
+
+THE HEADLINE
+------------
+A DECISION I WAS ASKED TO RECORD TURNED INTO A CORRECTION OF MY OWN b20
+FINDING.
+
+Michael decided the section 45B floor is $5.15 and that the IRS page's $7.25 is
+the error. Recording that honestly meant naming the one cheap check still
+outstanding -- read Form 8846's own wage line -- and RUNNING IT SETTLED THE
+POINT AND CHANGED THE SHAPE OF THE FINDING: $7.25 IS A REAL SECTION 45B FIGURE
+BELONGING TO THE BEAUTY-SERVICE LIMB, so the page's error is a MISPLACED LIMB
+and not a wrong number. The decision is now confirmed by an employer-facing IRS
+form rather than only by a statute reading.
+
+
+1. ITEM 1 -- THE $5.15 DECISION, AND THE BETTER FINDING IT PRODUCED
+-------------------------------------------------------------------
+docs/2026-09-17-sairnfreedom-tips-tax-treatment.md gains sections 12.6a and
+12.6b.
+
+12.6a RECORDS THE DECISION. The figure this platform uses is $5.15/hour, the
+FLSA minimum wage as in effect on January 1, 2007, per section 45B(b)(1)(B) and
+IR-2007-155. The IRS "FICA Tip Credit for employers" page's $7.25 / July 24,
+2009 is recorded as THAT PAGE'S ERROR and is not followed.
+
+THE PARAGRAPH 12.6 ORIGINALLY CLOSED WITH IS CARRIED UNCHANGED BENEATH IT
+rather than overwritten. It declined to call the page wrong, on the ground that
+"a Treasury position in guidance is not something this platform overrules from
+a statute reading" -- AND THAT CAUTION IS THE REASON THE DECISION IS SAFE TO
+MAKE: the disagreement was documented with both sides quoted and dated before
+anybody chose between them. A research posture and a decision are different
+kinds of thing, and the document now carries both.
+
+12.6a ALSO NAMED THE ONE CHEAP CHECK STILL OUTSTANDING and said it would be
+decisive either way: read Form 8846's own wage line.
+
+12.6b IS THAT CHECK, RUN. irs.gov/pub/irs-pdf/f8846.pdf, Form 8846 (2025),
+71,290 bytes. IT CARRIES TWO FLOORS, ONE PER LIMB OF SECTION 45B(b)(2):
+
+  "Food or beverage employers. These employers cannot claim the credit for
+   taxes on any tips that are used to meet the federal minimum wage rate in
+   effect on January 1, 2007, of $5.15 an hour."
+
+  "Beauty service employers. These employers cannot claim the credit for taxes
+   on any tips that are used to meet the federal minimum wage rate currently in
+   effect, of $7.25 an hour."
+
+SO THE 2025 EXPANSION of section 45B(b)(2) to barbering, hair care, nail care,
+esthetics and body/spa treatments BROUGHT ITS OWN UNFROZEN FLOOR WITH IT, AND
+NOTHING IN THE RESEARCH ABOVE KNEW THAT. The food-and-beverage limb is frozen
+at $5.15; the beauty limb tracks the current federal minimum, $7.25 today.
+
+THE IRS PAGE'S $7.25 IS THEREFORE A REAL SECTION 45B FIGURE STATED WITHOUT ITS
+LIMB. Its sentence even mislabels it: Form 8846 calls the $7.25 floor
+"currently in effect", not fixed to a 2009 date. THE PAGE COLLAPSES TWO FLOORS
+INTO ONE AND ATTACHES THE WRONG ONE TO A DATE. That is more specific and more
+useful than "the page contradicts the statute", and it is also why the collapse
+is easy to make.
+
+MICHAEL'S DECISION IS CONFIRMED BY THE FORM THE CREDIT IS CLAIMED ON. A post
+canteen is a food or beverage employer, so $5.15, in the same words
+45B(b)(1)(B) uses. The residual risk 12.6a described -- the platform preferring
+a statute reading over live IRS guidance -- IS GONE.
+
+AND A PRECONDITION IS RECORDED WHERE THE NUMBER WILL BE READ: THE FLOOR IS A
+FUNCTION OF WHICH LIMB, NOT A CONSTANT. A single hardcoded 5.15 is right for a
+canteen and silently wrong for any beauty-service employer, and this platform
+has fifteen other apps. Nothing computes a 45B figure today and section 7.3's
+warning against building toward the credit is unchanged.
+
+STILL NOT CHECKED, SAID RATHER THAN SKIPPED: irs.gov/instructions/i8846
+returned HTTP 404 this session, so the separate instructions document was never
+read. The form's own instruction text is the stronger source for this question
+and is quoted; the 404 is recorded rather than quietly omitted.
+
+
+2. ITEM 2 -- SAIRNcash: CODE-COMPLETE, BLOCKED ON BUSINESS SETUP
+----------------------------------------------------------------
+docs/2026-10-16-cody-b20-sairncash-billing-live-status.md now LEADS with the
+decision, and the open-work index row is REBUILT WHOLE.
+
+  STATUS DECIDED BY MICHAEL, 2026-10-16: CODE-COMPLETE, BLOCKED ON BUSINESS
+  SETUP. NOT "incomplete". The LLC is not yet situated. All three remaining
+  items are ON HOLD BY DECISION, NOT BY OVERSIGHT, and NO FURTHER STRIPE WORK
+  IS TO BE DONE until Michael says go -- that includes reading the Vercel
+  environment, testing the key, and the billing-portal token design.
+
+WHY THE WORD MATTERS AND IS NOT A LABEL, which is in the doc because it is the
+reusable part: "INCOMPLETE" POINTS AN ENGINEER AT THE REPO, AND THE REPO IS
+FINISHED -- twelve suites green, three of them mutation probes that plant
+defects and require refusal. A status that sends somebody to look for missing
+code costs a session every time it is read, and that row has been read at least
+three times across b19 and b20. "BLOCKED ON BUSINESS SETUP" POINTS AT THE THING
+ACTUALLY BLOCKING AND TELLS THE NEXT SESSION TO STOP RATHER THAN START.
+
+THE HELD-ITEM TABLE IS RE-HEADED so it cannot be mistaken for a queue: the
+column now reads "next step WHEN THE HOLD LIFTS" and every row carries HELD.
+
+THE INDEX ROW WAS REBUILT WHOLE, never by splitting on a pipe, pipe count
+asserted at 8 before and after. The old cells are struck through and KEPT,
+which is that file's own convention for a resolved row:
+  * it quoted {"error":"Stripe not configured"} -- A STRING THAT NO LONGER
+    EXISTS AS A RESPONSE, because api/_lib/stripe-config.js replaced five
+    independent per-file conditions with one generic message;
+  * its status read "Open" and its owner "Michael"; both are replaced with the
+    hold and its reason;
+  * AND THE HALF OF ITS OLD NEXT-ACTION THAT STILL STANDS -- the estimator
+    panel's final live-subscriber regression is still blocked -- IS SAID TO
+    STILL STAND rather than dropped with the rest.
+
+The row also now carries the b20 live measurement and its limit: the 400 from
+POST /api/sairncash/verify with an empty body proves STRIPE_SECRET_KEY IS
+PRESENT and says nothing about STRIPE_PRICE_ID, which only checkout requires --
+so PRICE_ID is a SUSPECT AND NOT PROVEN absent, and naming it as proven would
+be the exact inference stripe-config.js exists to prevent, running the other
+way.
+
+
+3. ITEM 3 -- HELD, AND NOTHING WAS DONE
+---------------------------------------
+api/sd-data.js:14445 and :2851 are hank's. The hold was declared in the claim
+string rather than left implicit, and no api/ file appears in this batch's
+diff. The b20 index row remains the live routing for hank and was NOT re-sent.
+
+
+4. ITEM 4 -- THE SECTION 9 INDEX ROW, RE-WORDED ON MICHAEL'S INSTRUCTION
+------------------------------------------------------------------------
+b20 ROUTED THIS AND DELIBERATELY DID NOT TAKE IT, because re-wording another
+session's open-work row to carry my own answer is the edit this platform has
+least tolerance for. MICHAEL'S INSTRUCTION REMOVES THAT OBJECTION -- the
+finding is mine.
+
+ALL FOUR CELLS CHANGED, OLD TEXT STRUCK THROUGH AND KEPT:
+  * headline: "NEEDS OUTSIDE COUNSEL" -> "ANSWERED IN PRINCIPLE 2026-10-16
+    (Cody) by Rev. Rul. 2003-64 -- the question did NOT need to leave the
+    building, and the gap was a SEARCH gap rather than a reasoning one";
+  * status: "OPEN ... ANSWER NOT OBTAINABLE HERE" -> answered, section 12,
+    with the two residuals named;
+  * owner: "Michael (it has to leave the building)" -> "The post's CPA -- ONE
+    residual now";
+  * next action: now LEADS with the ruling's holding and states where the
+    ruling STOPS -- it is a 501(c)(7) ruling against a usually-(c)(19) post
+    with 512(a)(3) not applying to (c)(19), AND Pub. 3386 makes that live
+    rather than academic because a veterans' organisation running a bar,
+    restaurant or canteen for members "may be recognized as tax exempt under
+    IRC 501(c)(7)"; and the ruling has ONE activity serving two classes of
+    customer where section 9.1 posits two activities.
+
+AND THE ROW'S OWN "SECOND HURDLE" CLAIM IS CORRECTED RATHER THAN DELETED. It
+published that limiting the credit to tips "received from CUSTOMERS OR CLIENTS"
+might be self-defeating for a member buying a drink in their own post's
+canteen. Rev. Rul. 2003-64 answers it: the credit is computed on ALL tips and
+45B(b)(2) is satisfied "because the tips were received in connection with food
+and beverage service at A, and tipping of employees is customary at A". THE
+SUPERSEDED SENTENCE IS KEPT STRUCK THROUGH, because the row published it and a
+published claim needs a correction and not a silent overwrite.
+
+RESIDUALS WENT FROM TWO TO ONE, and the row, section 12.8 and the one-paragraph
+answer all say so: the wage figure was decided and then confirmed, so only "is
+this canteen held under (c)(19) or a companion (c)(7)" goes to the CPA.
+
+
+5. THE METHODOLOGY ITEM -- CONVENTION 37
+----------------------------------------
+docs/2026-09-13-cross-domain-disciplines.md gains:
+
+  37. A TWO-SOURCE CONFLICT IS UNDER-DETERMINED -- the resolving source is the
+      one the quantity is USED on, and when both sides turn out correct the
+      error was in your MODEL of the subject.
+
+A DEFINING SOURCE AND A DESCRIBING SOURCE CANNOT SETTLE EACH OTHER. The
+definition says what the number should be, the description says what somebody
+published, and NEITHER SAYS WHICH POPULATION THE NUMBER APPLIES TO. The arbiter
+is the OPERATIONAL ARTEFACT -- the form, the config file, the table the value is
+read out of -- because that artefact has to name the population to be usable at
+all. Go to the thing that USES the quantity, not to a third thing that defines
+it again.
+
+AND THE SECOND HALF IS THE HARDER ONE: IF BOTH SIDES OF YOUR DOCUMENTED
+CONFLICT TURN OUT TO BE CORRECT, THE DEFECT WAS NEVER IN EITHER SOURCE. It was
+in the model you compared them against. The statute quote was right. The page
+quote was right. The model was one amendment stale -- it held "section 45B has A
+floor", and section 45B has had two since tax years beginning after 2024. AND
+SECTION 7.4 OF THE SAME DOCUMENT ALREADY LISTED THE BEAUTY-SERVICE LIMB and
+never asked whether the limb had its own floor, which is the whole distance
+between having the fact and having the model.
+
+WHY IT NEEDS A NUMBER: writing a conflict down carefully is exactly what makes
+it feel resolved -- both sides quoted, both dated, the disagreement explicit --
+so a well-documented conflict reads as understood and a misdiagnosis inside one
+is invisible. A CONFLICT CAN BE DOCUMENTED PERFECTLY AND DIAGNOSED WRONGLY.
+
+THE CHECKABLE FORM, since a convention nobody can apply is an essay. Before
+publishing "source A and source B disagree": (1) name the POPULATION each
+source is talking about, and if either does not state one, THAT is the finding
+and it is a different finding from disagreement; (2) find the artefact the
+quantity is read out of and check whether it carries MORE THAN ONE value for
+what you assumed was one; (3) ask what would have to be true for BOTH sources
+to be correct -- if that state is possible, the conflict is not established and
+your model is the first suspect.
+
+WHAT IT DOES NOT SAY: not that guidance pages are reliable -- the page is still
+wrong and a food-and-beverage employer still uses $5.15, and what changed is
+WHAT KIND of wrong; not that a third source always exists, because a purely
+definitional conflict with nothing downstream genuinely is a question for
+someone outside, which is what b20 did and was right to do; and NOT a licence
+to stop documenting conflicts, because the verbatim dated quotations are
+exactly what made this correction cost one read.
+
+MEMBERSHIP ASKED AND ANSWERED: 37 IS NOT A MEMBER of the cannot-fire group and
+THE GROUP STAYS AT TWELVE. Nothing here failed to fire -- both sources spoke,
+loudly and correctly -- so it is a measurement fault and sits beside 21, 22 and
+35. The heading moved from "TWELVE of the thirty-six" to "TWELVE of the
+thirty-seven" and the b19 note is carried beneath it unchanged. TWO CONVENTIONS
+LANDED ON ONE DAY and the note says which: 36 was asked the membership question
+and ADMITTED, 37 was asked and REFUSED, and reading the pair together is the
+clearest statement of where that group's boundary actually is.
+
+COUNTED BEFORE ASSIGNING: 37 headings, 1-37, no gap, no duplicate.
+
+docs/METHODOLOGY.md gains the promotion row and a SECOND count block for the
+same day -- 37 headings, 25 promotion rows -- with the b19 block carried
+unchanged beneath it, because a count block is only true as of the read behind
+it and a new block is cheaper than an edit that hides the old figure. The b19
+block's own correction of the 2026-10-15 "18 promotion rows" figure is
+re-confirmed rather than re-derived.
+
+
+6. VERIFICATION
+---------------
+Exit codes read from `echo "EXIT=$?"` on its own line, never from a pipeline.
+
+  EXIT=0  python tools/open_work_shard.py --check   CLEAN, 813 rows byte for byte
+  EXIT=0  python tools/tier_a_review_gate.py         nothing to record
+  EXIT=1  python tools/index_duplicate_check.py      3 similar-row pairs,
+                                                     PRE-EXISTING
+
+STRUCTURE MEASURED BOTH WAYS: 851 table rows and 1,005 lines in
+docs/SAIRN-OPEN-WORK-INDEX.md BEFORE AND AFTER every edit; pipe count 8 -> 8 on
+both touched rows; row 224 grew 4,278 -> 9,146 characters and row 896 was
+rebuilt 326 -> 3,082.
+
+THE DUPLICATE CHECK'S EXIT 1 IS PRE-EXISTING AND WAS MEASURED, NOT ASSUMED.
+Stashing this diff and re-running at HEAD gives the SAME exit and the SAME
+three pairs -- SAIRNgrounds 144/145, Tooling 255/257, Platform 295/299. None is
+a row this batch touched and none is fixed here.
+
+
+7. CLAIMS
+---------
+claim: platform, taken BEFORE any work, published to origin/main.
+
+RELEASED with this report and the digest, because b21 is not continuing and a
+claim left standing blocks the next session. The handoff was written while it
+was still held and says so -- a claim released before the work lands is a claim
+that was never true.
+
+Nothing was inherited: b20's claim was released at the end of b20.
+
+
+8. OPEN -- WITH THE NEXT STEP
+-----------------------------
+-> NOBODY, AND THAT IS THE POINT. SAIRNcash is HELD. Do not pursue any Stripe
+   item until Michael says go. The three held items are recorded with what the
+   step WOULD be, under a column heading that says so. A session that picks one
+   up has misread the row.
+-> THE POST'S CPA. One question, one line: is this post's canteen held under
+   section 501(c)(19) or a companion 501(c)(7)? It decides which authority is
+   on all fours.
+-> WHOEVER COMPUTES A SECTION 45B FIGURE, IF ANYONE EVER DOES. The floor is a
+   function of which limb -- $5.15 frozen for food and beverage, the current
+   federal minimum for the beauty limb. A hardcoded constant is wrong for one
+   of the two.
+-> WHOEVER WANTS THE LAST CHEAP CHECK. irs.gov/instructions/i8846 returned HTTP
+   404; the Form 8846 instructions document was never read. Not a gap in the
+   conclusion -- the form's own text is quoted -- but it is the one unread
+   thing on this point.
+-> HANK. Unchanged and NOT re-sent: api/sd-data.js:14445 -> notProvisioned(),
+   then :2851; RE-DERIVE BOTH LINE NUMBERS; a third guard at :14316 is named
+   and NOT driven.
+-> CC. The Tier A obligation opened 2026-10-16T12:24:12Z. cody cannot discharge
+   its own.
+-> WHOEVER OWNS THE THREE DUPLICATE INDEX PAIRS. Pre-existing, not mine;
+   index_duplicate_check.py keeps exiting 1 until somebody merges or marks each.
+-> CODY. The b17/b18 carry-overs are untouched and are listed in the handoff
+   section 6.8, and the 151/67 sibling NOT_PROVISIONED guards are NOT converted
+   -- a decision, not a backlog.
+
+
+9. HOUSEKEEPING
+---------------
+No worktree created this batch. C:/Users/marsh/AppData/Local/Temp/
+gate-probe3-17976 is registered against this clone, is NOT mine, and was left
+alone. The 109 files / 247 MB that rm has refused across b14-b16 are still at
+the b16 path and are listed in SAIRN-handoff-cody-b16.md section 6. Nothing in
+the repo or on the Drive depends on any of them.
+
+Transcript: C:\Users\marsh\.claude\projects\
+C--Users-marsh-Documents-SAIRN-cody\0f5c2c46-aab3-44b3-997b-47c60e2fbcce.jsonl
+
+===========================================================================
