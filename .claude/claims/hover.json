@@ -882,8 +882,8 @@
       "task": "b47: read-only audit -- re-drove fourth b26's trust-lock finding H1 from source via sandboxed ablation, found HYPOTHESIS-WRONG, routed urgently to hank; neither cody b18/19 nor hank b17 closed this window; reconfirmed #1498/#1499/#1500/#1501/#1504/#1506 open/status. No api/ file written, sandbox ablation ran against a COPY only. FILES: .claude/claims/hover.json",
       "claimed_at": "2026-10-16T12:24:08Z",
       "claimed_at_epoch": 1792153448.568474,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-16T12:30:09Z",
       "files": [
         ".claude/claims/hover.json"
       ]
