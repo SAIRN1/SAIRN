@@ -861,6 +861,19 @@
         "SAIRN-latest-H1.md",
         "SAIRN-report-H1-b45.txt"
       ]
+    },
+    {
+      "id": "hover-1792150392",
+      "session": "hover",
+      "subject": "hover",
+      "task": "b46: read-only audit -- chain+beacon+token re-verify, land-check fourth b26 close via ancestry, fresh 22-suite sample (1 new red routed hank), reconfirm open items for cc/cody/hank. No api/ sairnbuild/sairnsenior file touched, no fourth or hank file written. FILES: .claude/claims/hover.json",
+      "claimed_at": "2026-10-16T11:33:12Z",
+      "claimed_at_epoch": 1792150392.1048684,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        ".claude/claims/hover.json"
+      ]
     }
   ],
   "refusals": [
@@ -1148,6 +1161,32 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "same file or resource: sd-data",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-16T11:32:50Z",
+      "my_subject": "hover",
+      "my_task": "b46: chain+beacon+token re-verify OK; land-check fourth b26 close (confirmed landed, bld_bids Tier A in progress not abandoned); fresh 22-suite sample found 1 new RED (sd-data-family-contacts stale test, #1504, routed hank); reconfirmed #1498 board defect still open (cc), #1499/1500/1501 still open (cody mid-b19), #1496 hank claim gap PARTIALLY resolved (new sairnsenior claim exists, b15/b16 still unreleased)",
+      "other_session": "fourth",
+      "other_subject": "fourth",
+      "other_task": "b27 resume: bld_bids Tier A suite+probe assertion repair already in my working tree, and the census 26 UNRESOLVED inter-procedural resolution. CONFLICTS DECLARED PER PR 4.3: docs/tier-a-reviews.json is held LIVE by hank b17 as of 2026-10-16T11:17:27Z so the Tier A DISCHARGE WRITE IS EXCLUDED from this claim and is NOT being started -- flagged back, not reworded. sairnbuild.html is READ not edited and every mutation runs against a COPY. tools/ is cc's: branch_census is authored in scratchpad and ROUTED, not installed. FILES: tests/sairnbuild_server_wins.js tests/run_sairnbuild_server_wins_sabotage_probe.py docs/2026-10-16-fourth-b27-findings.md docs/batch-manifest-fourth-b27.json",
+      "other_claimed_at": "2026-10-16T11:18:46Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: bld_bids",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-16T11:32:50Z",
+      "my_subject": "hover",
+      "my_task": "b46: chain+beacon+token re-verify OK; land-check fourth b26 close (confirmed landed, bld_bids Tier A in progress not abandoned); fresh 22-suite sample found 1 new RED (sd-data-family-contacts stale test, #1504, routed hank); reconfirmed #1498 board defect still open (cc), #1499/1500/1501 still open (cody mid-b19), #1496 hank claim gap PARTIALLY resolved (new sairnsenior claim exists, b15/b16 still unreleased)",
+      "other_session": "hank",
+      "other_subject": "sairnsenior",
+      "other_task": "hank b17: (1) fourth b26 routed -- sen-evv-readiness payroll-freeze reopen rule append-only closings resource with named refusal at the generic sen_settings write path, straight-time-floor sign guard on adjustment_cents with overpayments[] and total_payable_cents assertion and premium_may_be_owed, trust-lock hard-lock assert LAW_TRUST_LOCKED directly plus law_bankstatements arm. (2) tier-a-reviews.json three-vs-four resources discrepancy, set_active:343 citation drift, name the table holding probe row ZZ-B12-SIZE-PROBE. (3) SC-PINNACLE-2026 trial extension SQL and the legacy sc_credentials Stedi row owner. (4) remaining funeral and counsel practitioner questions for Michael. (5) methodology. (6) push and confirm landed. CONFLICTS DECLARED PER PR 4.3: tools/ is cc's and is RUN not edited; tests/ is cody's and is RUN not edited; docs/ triage and routing docs by cody and fourth are READ not edited; no auditor clone entered. FILES: api/_lib/sen-evv-readiness.js api/_lib/sen-payroll.js api/_lib/sen-evv-clock.js api/sd-data.js api/sen-auth.js api/sd-auth.js api/_lib/leg-roles.js api/_lib/sv-roles.js api/b17-closed-period-write-path.test.js api/b17-one-person-agency.test.js api/b17-lift-list-check.test.js api/b17-practitioner-role-maps.test.js api/b17-freeze-reopen.test.js api/b17-straight-time-floor.test.js api/b17-trust-lock-hard.test.js sairnsenior.html sairnbuild.html sql/sairnsenior_audit_log_schema.sql docs/tier-a-reviews.json docs/2026-10-16-hank-b17-michael-sql.md docs/2026-10-16-hank-b17-practitioner-questions.md docs/hank-evidence/b17/",
+      "other_claimed_at": "2026-10-16T11:17:27Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same app: sairnsenior",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
