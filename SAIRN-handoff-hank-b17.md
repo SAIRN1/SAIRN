@@ -387,17 +387,33 @@ resolves write sites only. `docs/hank-evidence/b17/guardian_checks.log`.
 
 ## Claims held
 
+**ALL THREE ARE RELEASED. VERIFIED, AND I HAD THIS WRONG EARLIER IN THIS VERY
+FILE.**
+
 **`hank`**, claimed as the first action of this session with a declared file
 set. **The claim entry was committed immediately and did NOT publish for three
 attempts**, each time because the push gate had written
 `docs/scrutiny-flags.json` and `sairn_claim.py` refuses to rebase over an
-unstaged change. **It is published now** — the entry rode out with the batch.
-**Next session: `python tools/sairn_claim.py list` and release it explicitly.**
+unstaged change. It published on the batch push.
 
-    python tools/sairn_claim.py release sairnsenior
+**AND THEN `sairn_claim.py list` SHOWED THREE ACTIVE `hank` CLAIMS, NOT ONE** —
+b15's and b16's as well, 25.2h and 24.3h old. **An earlier draft of this
+paragraph said they "had both expired (4 hours)" and that was wrong.** The
+reason I believed it: at session start `list` printed *"No active claims"* and
+`check` reported *one EXPIRED claim* — because my local claim state had not
+been pushed and the tool reads what is published. Once the batch landed, all
+three were visible and all three were **active**.
 
-**No prior hank claim was still active** — b15's and b16's had both expired
-(4 hours), which closes b16's open item 7.
+**Released explicitly, which closes b16's open item 7 for real:**
+
+    python tools/sairn_claim.py release sairnsenior   -> b17, released
+    python tools/sairn_claim.py release hank          -> b15 AND b16 together
+    python tools/sairn_claim.py list                  -> 0 active hank claims
+
+**b16's handoff worried that `release hank` "would have dropped one of the two
+and the tool does not say which". It dropped BOTH**, measured: the active-hank
+count went from two to zero on one call. That is the answer to b16's question
+and it is recorded here rather than left to be rediscovered.
 
 **Conflicts respected:**
 
