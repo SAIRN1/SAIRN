@@ -37,8 +37,18 @@
     {
       "id": 6,
       "title": "",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "PUSHED WITHOUT FORCE AND CONFIRMED LANDED BY READING THE FILES BACK OFF ORIGIN, not by a clean exit from git push. HEAD == origin/main 3bd460ad, behind/ahead 0/0. NOT FORCED, PROVED BY ANCESTRY: git merge-base --is-ancestor $(cat b28_pre_push_tip.txt) HEAD -> ANCESTOR, and grep -ci force over all four b28 push logs totals 0 -- never by reading git's wording. LANDED VERIFIED ON ORIGIN: git show origin/main: returns the first line of SAIRN-handoff-fourth-b28.md and of the childcare audit, the OWNER line of tools/tier_a_reviews_store.py, 49 lines in docs/tier-a-reviews/fourth.jsonl (48 migrated plus the bld_bids discharge) and 8 occurrences of dntChargeCode in sairndental.html. THE PUSH WAS REFUSED FOUR TIMES AND EVERY REFUSAL WAS READ RATHER THAN OVERRIDDEN: (1) the pre-COMMIT tool-entry check refused twice because tools/tier_a_reviews_store.py had no PURPOSES entry, and it reads PURPOSES from the STAGED copy -- so writing the entry was not enough until tools/tooling_inventory.py was staged too, which is what the refusal says and what I had not done; (2) the push gate's TOOL OWNER HEADER check refused because the new tool carried no OWNER line -- added as a separate commit with the reason, since 21 of the 22 bare-run writers found on 2026-09-30 had no derivable owner and that is why the check exists; (3) and (4) two non-fast-forwards because other sessions pushed, each rebased, the second of which triggered defect_register --reseat and needed its own commit. NO SAIRN_SEED_GATE, NO SAIRN_GATE_EXEMPT, NO SAIRN_SKIP IN ANY FORM. settings.json not edited and not committed; hooks untouched and never re-added; 0 files written under api/ sql/ tests/; docs/tier-a-reviews.json byte-untouched; tools/tier_a_review_gate.py not edited; neither auditor clone entered; git stash list empty. A DEFECT RECORD WAS WRITTEN FOR THE SAIRNDENTAL FIX as the handoff predicted it would be needed -- six contributing factors with the stored-field-vs-reader sweep recorded as action_status planned and OWED to cc, and found_by recorded as a human read rather than a tool because the register refuses a tool name on a code-review finding. AND ONE CORRECTION ON THE RECORD: commit 1a7d105e's subject names only the sairndental fix and it actually carries the whole batch, because the two pre-commit refusals meant everything already staged went in with the retry. Nothing is missing and nothing is duplicated; the note is in the next commit's message rather than by amending a message while five sessions are pushing, and it is in the digest too."
     }
-  ]
+  ],
+  "closed": {
+    "drive_verify": "PASS",
+    "verified_by": "python tools/drive_upload_verify.py --agent fourth --batch b28 --verify-only",
+    "criteria": "2026-10-13.1",
+    "deliverables": [
+      "SAIRN-handoff-fourth-b28.md sha256 e41f29a267fbff07",
+      "SAIRN-report-fourth-b28.txt sha256 9d803288d362dcff",
+      "SAIRN-digest-fourth-b28.txt sha256 c7be6bdcc73c10ac"
+    ]
+  }
 }
