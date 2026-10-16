@@ -6352,6 +6352,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/report_only_checks.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "b7d44ef070d56aee5c72dfc0aaa0ea336871ebfe",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/faults/grd_write_faults.js",
    "class": "test file",
    "level": "CHANGE",
