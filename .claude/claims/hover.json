@@ -900,6 +900,19 @@
       "files": [
         ".claude/claims/hover.json"
       ]
+    },
+    {
+      "id": "hover-1792156429",
+      "session": "hover",
+      "subject": "hover",
+      "task": "b49: read-only audit -- chain+beacon+token republish (gap20/31 -> 0/0, openssl-verified); stop-before-you-start flag routed to hank re: #1512; H1-vs-H3 correct-the-record note; #1499 2/8-fixed/6-unchanged reconfirmed with a citation-path correction; #1498/#1500/#1501 reconfirmed unchanged. FILES: .claude/claims/hover.json",
+      "claimed_at": "2026-10-16T13:13:49Z",
+      "claimed_at_epoch": 1792156429.151398,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        ".claude/claims/hover.json"
+      ]
     }
   ],
   "refusals": [
