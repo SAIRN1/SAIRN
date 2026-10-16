@@ -1,3 +1,14 @@
+# OWNER: cc
+# ── AT THE TOP, NOT UNDER THE DOCSTRING, AND THAT IS NOT A STYLE CHOICE ─────
+# The first placement was below the module docstring, around line 86, and the
+# tool-owner gate reads THE FIRST 40 LINES -- so a declared owner outside that
+# window is an undeclared owner, and the gate refused with "no `# OWNER:
+# <session>` line in the first 40 lines". The window is the contract.
+#
+# IT NAMES cc RATHER THAN fourth DELIBERATELY. fourth wrote the program and
+# routed the source inline; cc owns the file at THIS PATH. The owner is who a
+# defect routes to and who must NOT be its Tier A reviewer -- both questions
+# about the path, not about authorship.
 """BRANCH CENSUS -- the span is BOUNDED MECHANICALLY and a caller value is
 followed THROUGH ITS ASSIGNMENTS, so neither the count nor the CALLER figure is
 a lower bound nobody can see.
@@ -81,10 +92,6 @@ names `census inter-procedural` as its own work, so doing it here would be two
 sessions writing one extension. When it lands it needs a fixture in BOTH
 directions for the parameter case, or it is the same prose problem again.
 """
-# OWNER: cc
-# Installed by cc b16 from fourth b26's routed source. fourth wrote the
-# program; cc owns the file at this path, is who to route a defect in it to,
-# and is who must NOT be its Tier A reviewer.
 import io
 import os
 import re
