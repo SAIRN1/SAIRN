@@ -4093,6 +4093,28 @@ def sweep(show_all=False, quiet=False, shard=None):
             break
         if not quiet:
             print('-- %s --' % entry['tool'])
+            # ── FLUSHED PER ENTRY, BECAUSE THIS RUN GETS KILLED (b16) ───────
+            # stdout is BLOCK-buffered when redirected, which every real use of
+            # this sweep is: `report_only_checks.py > docs/sweep-<date>.log`.
+            # This loop is the longest-running thing on the platform and it is
+            # bounded by a budget precisely because it gets cut off -- so the
+            # one run that most needs a partial log is exactly the run whose
+            # buffer is discarded. A sweep killed at the ceiling wrote a
+            # ZERO-BYTE log, and a zero-byte log is indistinguishable from a
+            # sweep that never started.
+            #
+            # cody b17 triage found the same shape in
+            # tests/run_capa_fields_probe.py (rc 124 at 201s, 0 bytes, fixed
+            # there with a flush per arm) and named
+            # tests/push_gate/check3_probe.py as a third. This is the SWEEP's
+            # copy of it: 68 print() calls in this file and, until now, zero
+            # flushes.
+            #
+            # It is also discipline 10 in the small -- no long run whose first
+            # readable output is at the end. The name is printed and FLUSHED
+            # BEFORE the checker runs, so a kill during entry N leaves N
+            # visible as the last thing started rather than leaving nothing.
+            sys.stdout.flush()
         _t0 = time.time()
         f, u = run_one(entry, show_all, verbose=not quiet)
         _el = time.time() - _t0
@@ -4102,6 +4124,7 @@ def sweep(show_all=False, quiet=False, shard=None):
         unrun += u
         if not quiet:
             print('   %d finding(s), %d could not run   %.1fs' % (len(f), len(u), _el))
+            sys.stdout.flush()
     for tool in skipped:
         unrun.append('%s -- NOT RUN, the sweep reached its %ss cut first to '
                      'stay inside the hook ceiling. This is an UNKNOWN, not a '
@@ -4248,6 +4271,22 @@ def hook_main():
 
 
 def main(argv):
+    # ── LINE-BUFFERED FROM THE FIRST LINE, NOT ONLY IN THE SWEEP LOOP ──────
+    # The per-entry flushes below cover the loop. This covers everything else
+    # this program prints -- the header, the budget note, the findings list --
+    # so a kill at ANY point leaves a readable prefix rather than a truncated
+    # block. Belt and braces on purpose: `reconfigure` is unavailable on some
+    # wrapped streams, and when it is the explicit flushes still carry the
+    # loop, which is the part that takes minutes.
+    try:
+        sys.stdout.reconfigure(line_buffering=True)
+    except Exception:                                            # noqa: BLE001
+        # NAMED, not silent. If this fails the explicit flushes still run, so
+        # the sweep log survives; everything printed outside the loop may not.
+        sys.stderr.write('NOTE: stdout could not be set to line buffering, so '
+                         'output printed OUTSIDE the sweep loop may be lost if '
+                         'this run is killed. The per-entry flushes are '
+                         'unaffected.\n')
     # `--budget N` overrides the sweep's stop-before-the-hook-kills-us cap.
     # It exists so the overrun path is TESTABLE in seconds instead of only
     # reproducible by waiting for the real six-minute run to grow past 300s.
