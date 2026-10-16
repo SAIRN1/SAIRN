@@ -32425,7 +32425,7 @@
       "recurrence_open": "the second guard DETECTS and cannot refuse, so a replayed violation still reaches local history -- it is now named at the rewrite instead of only at the push. Nothing closes the commit-time miss itself, because git will not call pre-commit on a replay. And the eight arms cover the gate in a SANDBOX: no arm runs in the auditor's real clone, which a build agent must not enter."
     },
     {
-      "commit": "af820d1bc658",
+      "commit": "6589c4f3f971",
       "date": "2026-10-16",
       "subject": "fix(claims): `list --all` was 501,182 bytes and nobody had measured it",
       "files": [
