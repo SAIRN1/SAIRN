@@ -812,6 +812,19 @@
       "source": "status-registry",
       "why": "same file or resource: tier-a-reviews.json",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-16T12:51:02Z",
+      "my_subject": "hover2",
+      "my_task": "b46: fourth b27 and cody b18-19 BOTH land-checked live (re-ran their actual new/modified test files, all matched); the two tier-a-reviews.json citations re-checked (idx180 three-vs-four stays settled; set_active:343 is doubly stale -- real line now 372, underlying N2 gap separately fixed in commit 31406a87 -- hank's own b17 task list already queues the citation fix); neither b45 routing doc landed (hover_log.py basename-only check, cmd_release batch-release) -- found a THIRD live instance of the claim-release-ambiguity gap on cody (b18+b19 simultaneously active, self-corrected mid-batch); #1498 reconfirmed open at tools/sairn_board_publish.py:815-834; #1499/#1500/#1501 reconfirmed, #1499 explicitly NOT advanced by cody's closure (its own NEXT line: carry-overs untouched); chain+token republished (gap hit 16, over the 15-entry bound); push. FILES: hover-audit-log/ only (external log repo, outside this clone) plus this role's own claim/release commits. No api/ sql/ tests/ tools/ or other docs/ file touched.",
+      "other_session": "hank",
+      "other_subject": "sairnsenior",
+      "other_task": "hank b17: (1) fourth b26 routed -- sen-evv-readiness payroll-freeze reopen rule append-only closings resource with named refusal at the generic sen_settings write path, straight-time-floor sign guard on adjustment_cents with overpayments[] and total_payable_cents assertion and premium_may_be_owed, trust-lock hard-lock assert LAW_TRUST_LOCKED directly plus law_bankstatements arm. (2) tier-a-reviews.json three-vs-four resources discrepancy, set_active:343 citation drift, name the table holding probe row ZZ-B12-SIZE-PROBE. (3) SC-PINNACLE-2026 trial extension SQL and the legacy sc_credentials Stedi row owner. (4) remaining funeral and counsel practitioner questions for Michael. (5) methodology. (6) push and confirm landed. CONFLICTS DECLARED PER PR 4.3: tools/ is cc's and is RUN not edited; tests/ is cody's and is RUN not edited; docs/ triage and routing docs by cody and fourth are READ not edited; no auditor clone entered. FILES: api/_lib/sen-evv-readiness.js api/_lib/sen-payroll.js api/_lib/sen-evv-clock.js api/sd-data.js api/sen-auth.js api/sd-auth.js api/_lib/leg-roles.js api/_lib/sv-roles.js api/b17-closed-period-write-path.test.js api/b17-one-person-agency.test.js api/b17-lift-list-check.test.js api/b17-practitioner-role-maps.test.js api/b17-freeze-reopen.test.js api/b17-straight-time-floor.test.js api/b17-trust-lock-hard.test.js sairnsenior.html sairnbuild.html sql/sairnsenior_audit_log_schema.sql docs/tier-a-reviews.json docs/2026-10-16-hank-b17-michael-sql.md docs/2026-10-16-hank-b17-practitioner-questions.md docs/hank-evidence/b17/",
+      "other_claimed_at": "2026-10-16T11:17:27Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: set_active, three-vs-four, tier-a-reviews.json",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
 }
