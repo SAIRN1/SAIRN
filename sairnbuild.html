@@ -2161,11 +2161,29 @@ function st(k,v){
     // read this value; changing what it means is a separate decision with a
     // much larger blast radius. The backup failure is now LOUD and QUEUED
     // rather than reflected in a boolean half the callers ignore.
+    // ── ONE MESSAGE, LOGGED ONCE, AND EXACTLY ONE BARE CATCH ─────────────
+    // RESTRUCTURED 2026-10-16 after tests/st_reports_failure.js went red on
+    // this very handler: it counts bare `catch(x){}` inside st() and expects
+    // SAIRNbuild to have exactly TWO -- st()'s own logger guard plus the
+    // `catch(e){}` around bldSyncCollection() that its comment tolerates by
+    // name. b17 REMOVED that tolerated one, which is the improvement, and
+    // then added two logger guards of its own, taking the count to three.
+    //
+    // THE FIX IS HERE AND NOT IN THE TEST, and the test says why in its own
+    // words: "Do not raise a count or relax an assertion to get past this: on
+    // 2026-09-10 the count that looked like an obstacle was the thing that
+    // caught the regression." tests/ is cody's and was RUN, never edited.
+    //
+    // AND THE RESTRUCTURE IS BETTER CODE, not a dodge. The queue failure is
+    // APPENDED to the same message instead of needing a second guarded
+    // console.error, so a reader gets one line carrying both facts -- and it
+    // now also says when bldPendingMark() is ABSENT, which the two-logger
+    // version skipped in silence.
     try{bldSyncCollection(k,v,prev);}
     catch(e){
-      try{ console.error('SAIRNbuild: the server backup for "'+k+
+      var _msg='SAIRNbuild: the server backup for "'+k+
         '" THREW and the record is on this device only -- '+
-        ((e&&e.message)||e)+'. Queued for retry.'); }catch(_e){}
+        ((e&&e.message)||e)+'.';
       try{
         if(typeof bldPendingMark==='function'){
           var _marked=0;
@@ -2178,12 +2196,18 @@ function st(k,v){
           // nothing. bldRetryPending() drops an id it cannot resolve to a
           // local row, so this is visible in the list and is cleaned up on
           // the next pass instead of being a silent no-op here.
-          if(!_marked){bldPendingMark(k,'__collection__');}
+          if(!_marked){bldPendingMark(k,'__collection__');_marked=1;}
+          _msg+=' Queued for retry ('+_marked+' entr'+(_marked===1?'y':'ies')+').';
+        }else{
+          _msg+=' bldPendingMark() is ABSENT, so it could NOT be queued and '+
+            'nothing will retry it.';
         }
       }catch(_e2){
-        try{ console.error('SAIRNbuild: could not even QUEUE the failed '+
-          'backup for "'+k+'" -- '+((_e2&&_e2.message)||_e2)); }catch(_e3){}
+        _msg+=' AND it could not even be QUEUED -- '+((_e2&&_e2.message)||_e2);
       }
+      // THE ONE BARE CATCH, and it is the allowed one: a logger that throws
+      // must not turn a failed backup into an exception out of st().
+      try{ console.error(_msg); }catch(_e){}
     }
   }
   return okWrite;
