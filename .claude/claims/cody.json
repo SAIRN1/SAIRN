@@ -3983,6 +3983,17 @@
         "tests/run_tooling_inventory_probe.py",
         "tests/server_wins_hydration.js"
       ]
+    },
+    {
+      "id": "cody-1792149459",
+      "session": "cody",
+      "subject": "tests",
+      "task": "b19: arm Z else branch + ablation re-run, known-red blob-scope RECOVERED verify, control arm failed.length, b24 F1 re-anchor, failing-first 23514 write-guard and 42703 branch",
+      "claimed_at": "2026-10-16T11:17:39Z",
+      "claimed_at_epoch": 1792149459.5871987,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
