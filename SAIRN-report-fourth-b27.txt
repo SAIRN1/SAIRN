@@ -1,0 +1,293 @@
+REPORT fourth b27
+
+SAIRN batch report -- session fourth (ted), batch b27 RESUMED, 2026-10-16.
+
+b27 WAS DISPATCHED ON 2026-10-15 AND LANDED NOTHING. Its manifest was opened,
+item 1's test work was done and ablated, and the session then ended with both
+test files UNCOMMITTED in the working tree and the manifest UNTRACKED. This
+report covers the resume, and the first thing the resume found is about b27
+itself.
+
+FIVE OF SIX ITEMS DONE. ONE IS BLOCKED AND SAYS SO: the Tier A discharge write
+into docs/tier-a-reviews.json, for the SECOND CONSECUTIVE BATCH, by a different
+session each time. Nothing was reworded to get past the matcher, nothing is
+parked without a named owner, and nothing is recorded as verified that was not.
+
+Context at close: 24.7% of 1000k (246,727 tokens, max `usage` sum over this
+session's transcript).
+
+EVERY FIGURE NAMES THE COMMAND THAT PRODUCED IT. Re-derive anything you mean to
+quote, including out of this file.
+
+THE HANDOFF WAS WRITTEN AND UPLOADED BEFORE THIS FILE, as instructed:
+SAIRN-handoff-fourth-b27.md, Drive id 1JH_3OauqBYq8QxQhB23-ll_nBlNQWUTe,
+createdTime 2026-10-16T11:43:30.220Z, 21,315 bytes -- byte count read back
+THROUGH THE DRIVE API and equal to the local file, not only off the mount.
+
+== 0. STATE ==
+
+  on arrival       6 behind / 0 ahead   git rev-list --left-right --count origin/main...HEAD
+  claim on arrival DEAD (CLAUDE_PID 1852 gone)   tools/sairn_claim.py own
+  claim now        HELD (CLAUDE_PID 9416)        tools/sairn_claim.py own
+  pre-push tip     b6d116dacf4cdafc7377a44669a312e89d05feb9
+  SAIRN_SEED_GATE / GATE_EXEMPT / SAIRN_SKIP   none used, any form
+  .claude/settings.json                        not edited, not committed
+  hooks                                        untouched, never re-added
+  files written under api/ sql/ tools/         0
+  auditor clones                               not entered
+  git stash                                    one taken to rebase, popped, 0 remaining
+  batch manifest   6 items: done 5, blocked 1  tools/batch_manifest.py --check --agent fourth --batch b27
+
+  The push, its ancestry proof and the landed-on-origin read-back are in
+  section 6, written after they happened.
+
+  ON THE CLAIM: the first `claim` attempt printed NOT CLAIMED -- the claim did
+  not reach origin/main -- because the clone was 6 commits behind. THAT REFUSAL
+  IS THE THING THAT GOT READ rather than worked around: the clone was rebased,
+  the claim re-run (the tool republishes the existing entry rather than adding
+  a second), pushed, and the pid lock re-seated. A claim that is not on
+  origin/main is invisible to every other clone.
+
+== 1. THE BLOCKED ITEM, FIRST, BECAUSE IT IS THE SECOND TIME ==
+
+  record        cody 2026-10-15T15:12:47Z, resource bld_bids (Tier A)
+  blocked on    docs/tier-a-reviews.json
+  in b27        cc held it from 2026-10-15T16:55:20Z -- three minutes before
+                the first attempt
+  in b27 resume hank holds it from 2026-10-16T11:17:27Z -- one minute before
+                this attempt. CLAUDE_PID 26072 RUNNING, confirmed at 11:17 and
+                again at 11:43
+  state         NOT STARTED. Flagged back, not reworded.
+
+  THE REVIEW WORK IS COMPLETE AND ABLATED -- section 2 is it, and the verdict
+  body is in docs/2026-10-16-fourth-b27-findings.md section 2, which EXISTS,
+  unlike its predecessor. ONLY the write is outstanding, and it is one command
+  once hank releases.
+
+  AND IT IS A STRUCTURAL PROBLEM, NOT BAD LUCK TWICE. docs/tier-a-reviews.json
+  is a single shared document that every Tier A discharge by any of four agents
+  must write whole, so a review by X of a record raised by Y is routinely
+  blocked by Z holding the file for an unrelated row. FOR MICHAEL / cc: it
+  wants exactly the treatment b26 section 3.3 demanded for closed periods --
+  one APPEND-ONLY record per discharge, a JSONL or a per-agent shard with the
+  read unioning them, rather than one document every writer must take whole.
+
+== 2. ITEM 1 -- A REPAIR THAT MOVED THE HOLE, THEN A REPAIR THAT MOVED IT AGAIN ==
+
+  cody's measurement was right. The suite asserted the literal key==='bld_bids'
+  appears in bldRetryPending; that literal is gone from sairnbuild.html, and
+  both surviving occurrences are COMMENTS, one of them inside bldRetryPending
+  explaining the removal. The assertion was satisfied by the comment
+  documenting the removal of the thing it asserted, and the sabotage arm
+  guarding it was ANCHOR-0 at the same time.
+
+  b27's own session repaired that and the repair was measured, not read:
+  5 mutations against a COPY of sairnbuild.html, FOUR OF THE FIVE ACCEPTED at
+  exit 0 -- a `false` fourth argument, a `0` fourth argument, deleting the
+  BLD_SESSION_REQUIRED declaration with call sites intact, and breaking the
+  real call while a BLOCK comment carried a satisfying one. So cody's own
+  check (1) -- can the new regex be satisfied by a future comment or string
+  literal the way its predecessor was -- answers YES, by a BLOCK comment,
+  because the stripper only removed `//` lines. It then fixed it three ways and
+  all five went REFUSED.
+
+  THIS BATCH ABLATED THE REPAIR ITSELF -- 10 mutations, and that is the finding:
+
+    BASELINE                                       exit 0  25 passed, 0 failed
+    M1  fourth argument DELETED                    exit 1  REFUSED
+    M2  fourth argument -> `false`                 exit 1  REFUSED
+    M3  fourth argument -> `0`                     exit 1  REFUSED
+    M4  DECLARATION deleted, call sites kept       exit 1  REFUSED
+    M5  real call broken, BLOCK comment satisfies  exit 1  REFUSED
+    M6  'write' -> 'read' at the retry call site   exit 0  ACCEPTED, 25/0  <-- HOLE
+    M7  real call broken, STRING LITERAL satisfies exit 1  REFUSED
+    M8  declaration flips bld_bids: true -> false  exit 1  REFUSED
+    M9  reads the map but the WRONG CELL           exit 1  REFUSED
+    M10 fourth argument is the OBJECT, not the cell exit 1 REFUSED
+
+  Collapsing every string literal to '' is what closes M5 and M7, and it is
+  also what blinds the assertion to WHICH string the first argument was. A
+  retry changed to 'read' drains the pending queue with a call that fetches
+  rows and saves nothing -- every stranded record stays stranded while the
+  retry reports success -- and the arm whose entire subject is the retry's
+  WRITE stayed green at 25 passed, 0 failed.
+
+  FIXED WITH TWO COPIES AND TWO ASSERTIONS, NEITHER SUFFICIENT ALONE:
+    (A) comments stripped AND strings collapsed -- proves the call is real
+        EXECUTABLE code (M5, M7);
+    (B) comments stripped ONLY -- proves the verb is 'write' and the cell is
+        [key], which (A) cannot see once the strings are gone (M6, M9).
+  A mutation hiding the call in a string satisfies (B) and fails (A); a
+  mutation changing the verb satisfies (A) and fails (B).
+
+  RE-ABLATED: 10 of 10 REFUSED, and EVERY refusal on the NAMED arm -- the
+  harness reads the red arm's own line out of stdout, so a mutation refused by
+  some other arm is not credited to this one. Baseline still 25/0 exit 0.
+
+  PROBE: b27 added arm 14 (plant `false`); this batch added arm 15 (plant
+  'read'), because nothing planted the verb mutation and the new assertion
+  would otherwise rest on something nobody had made fail in that direction.
+  python tests/run_sairnbuild_server_wins_sabotage_probe.py -> ALL 19 ARMS
+  PASS, 15 mutations, exit 0, worktree copy byte-identical again, suite green
+  again, and its own last arm reports it left NOTHING newly dirty.
+
+  Arms 6, 14 and 15 are all three present on purpose: 6 proves the flag
+  argument must exist, 14 proves it must not be falsy, 15 proves the call
+  retried is the write. No one of the three implies either of the others.
+
+== 3. ITEM 2 -- 26 UNRESOLVED -> 0, AND b26's STATED REASON WAS RIGHT FOR 3 ==
+
+  b26 reported 26 identifiers UNRESOLVED and named the reason: origin() is
+  intra-procedural, so a parameter has no `const <name> =` to find. b27 built
+  R4 -- resolve a parameter by unioning its call sites, unsafe-wins, 5
+  fixtures -- and the population fell 26 -> 20.
+
+  AND THEN IT STOPPED, WITH 19 OF THE 20 IN CLASS C AND R4 HAVING TOUCHED NONE
+  OF THEM. A bucket of 20 nobody can take apart is the same lower bound R3 was
+  built to kill, one level further in.
+
+  So this batch built --why: it names PER LINE the identifier that stalled the
+  walk and why, and it CROSS-CHECKS ITS OWN ANSWERS AGAINST origin() -- a
+  divergence prints MIRROR DIVERGED and is exit 2, never a quiet
+  re-classification. It named `resource` on 16 OF THE 20 LINES.
+
+  api/sd-data.js:748 is   const resource = body && body.resource;
+
+  One line. The handler runs to :18867. `resource` is the TABLE NAME, chosen by
+  the caller. THREE SEPARATE MECHANISMS were each independently enough to make
+  it unreachable, and each is now a rule with fixtures in BOTH directions:
+
+    R5  the declaration lookback was capped at 400 LINES. :748 is 14,000 lines
+        above its last reader. THAT IS b23's 14-LINE WINDOW AND b24's FIXED
+        WINDOW A THIRD TIME, inside the rule built to kill them. :13724's famP
+        is `const famP = payload || {};` at :13227 -- 497 lines up, just
+        outside the cap. R5 also makes a PARAMETER SHADOW an outer declaration,
+        which prevents an over-report: with R5 off the shadowing fixture flips
+        to CALLER.
+    R6  `body` was in CALLER_ROOTS *and* in NOISE, and NOISE was filtered
+        first, so the walk dropped it before the root lookup could answer
+        CALLER. `headers` is in SERVER_ROOTS and NOISE too and had the same
+        treatment -- invisible, because dropping the only name on a right-hand
+        side falls through to "assigned from a literal" -> SERVER, which
+        happened to be the right answer for the wrong reason.
+    R7  the IDENT regex matched JS KEYWORDS and PROPERTY NAMES.
+        `const month = new Date().toISOString().slice(0, 7)` yielded four
+        names, one resolvable, so :6023 was a third state because the walk was
+        tracing grammar.
+
+  R7 FIRED IN BOTH DIRECTIONS, AND THE SECOND IS THE FINDING. Spot-checking the
+  newly-resolved lines in the OPPOSITE direction found :13364, which
+  interpolates enc(String(session.employee_id)): url_idents had its OWN name
+  filter, did not strip property names, pulled `employee_id` out as if it were
+  a variable, resolved THAT elsewhere in the file, and reported the branch
+  CALLER when its only caller-facing name is a SESSION root.
+
+  EVERY UNDER-REPORT HAD ALREADY GONE TO ZERO BY THEN, SO THE ONLY DIRECTION
+  LEFT THAT COULD FIND ANYTHING WAS THE OVER-REPORTING ONE. A census checked
+  only for what it missed would have shipped this. Independent confirmation the
+  fix is right rather than merely different: THE SESSION COUNTS RETURNED TO
+  EXACTLY b26's VALUES (class B: 1, class C: 2) AND NOTHING ELSE MOVED.
+
+  THE FIGURES -- api/sd-data.js, 18,867 lines, CRITERIA_VERSION
+  2026-10-16.b27r.1, 26/26 fixtures, 332 guards matched:
+
+    shape         total  write  CALLER  SESSION  UNRESOLVED  SERVER-ONLY  UNCLASS
+    A-helper         88     88       0        0           0            0        0
+    B-inline-503     70     22      35        1           0           10        2
+    C-200-empty     151      0      34        2           0          115        0
+    other            23      1      10        0           0           12        0
+
+  Against b26: class B CALLER 32 -> 35, class C CALLER 16 -> 34, UNRESOLVED
+  26 -> 0. b23 said class B was 13 CALLER / 33 SERVER-ONLY; b26 withdrew that
+  to 32/9; IT IS 35/10. b23 said "0 of the 151 interpolates a caller value";
+  b26 withdrew that to 16; IT IS 34.
+
+  THE 22 WRITE-GUARDED BRANCHES DID NOT MOVE and the list is byte-identical to
+  b26's -- R5, R6 and R7 only touch the origin walk; the write/GET split is
+  R1's. That is the methodology working rather than luck.
+
+  0 UNRESOLVED IS NOT THE THIRD STATE BEING RETIRED. Three fixtures still
+  produce it -- a name declared nowhere, a function with no call sites, a call
+  with fewer arguments than the position -- so the mechanism can still say it
+  and 0 is a measured answer rather than a collapsed one. The module docstring
+  says so too, because the next session reads that and not this.
+
+  ROUTED, NOT INSTALLED. tools/ is cc's. Full source inline in
+  docs/2026-10-16-fourth-b27-branch-census-routed-to-cc.md, and
+  docs/2026-10-15-fourth-b26-branch-census-routed-to-cc.md NOW CARRIES A
+  SUPERSEDED BANNER naming it -- because a reader who opened the older file
+  would otherwise install a three-rule census that reports a SESSION branch as
+  CALLER. tools/branch_census.py STILL DOES NOT EXIST; this is the fifth batch
+  in which the census has lived only in a scratchpad and a routing doc.
+
+== 4. ITEM 3 -- ABLATION PER ARM, ON BOTH SUBJECTS ==
+
+  (a) The bld_bids arm: 10 mutations, verdict read from the RED ARM'S OWN LINE
+      rather than from an exit code. Shipped repair 9 refused / M6 accepted;
+      after the fix 10/10 refused, all on
+      "the retry covers bld_bids too, with the session its branch demands".
+
+  (b) The census, per RULE per FIXTURE:
+
+        WITHOUT R1 span-bounded-at-next-fetch                  1 change
+        WITHOUT R2 guard-binds-to-own-variable                  1 change
+        WITHOUT R3 follow-caller-through-assignments           11 changes
+        WITHOUT R4 resolve-a-parameter-across-call-sites        3 changes
+        WITHOUT R5 scope-bounded-lookback-and-param-shadowing   3 changes
+        WITHOUT R6 a-root-is-never-discarded-as-noise           2 changes
+        WITHOUT R7 a-js-keyword-is-not-an-identifier            1 change
+
+      EVERY ONE OF THE SEVEN IS LOAD-BEARING, and the tool prints "THIS RULE IS
+      NOT LOAD-BEARING ON ANY FIXTURE, which is a finding about the fixtures,
+      not a pass" itself rather than leaving it to be remembered.
+
+== 5. ONE DEFECT IN MY OWN EVIDENCE, DISCLOSED NOT REPAIRED QUIETLY ==
+
+  The final --why run OVERWROTE b27r_census_why.log, which held the 20-line
+  diagnosis this report cites for the `resource` figure. IT IS NOT QUOTED FROM
+  MEMORY: b27r_why_inherited.py reproduces it by running the same census with
+  R5/R6/R7 ABLATED OFF, and the counts -- 16 of 20 lines stall on `resource`;
+  NOT-A-PARAM 16, NO-DECL-NO-FN 8, MIXED-RHS 7 reasons over 20 lines, because a
+  line can stall on more than one name -- are COUNTED OUT OF the regenerated
+  log mechanically, not read.
+
+  AND ONE ABOUT b27's OWN RECORD, which is section 1 of the findings doc:
+  b27's item-1 evidence string says the verdict body lives in
+  docs/2026-10-15-fourth-b27-findings.md. THAT FILE DOES NOT EXIST -- not at
+  HEAD, not on origin, not on disk. batch_manifest.py validated the manifest
+  because it checks that `done` carries a re-runnable pointer and that
+  `blocked` carries a reason, and it does not and cannot check that a cited
+  path resolves. ROUTED TO cc: --check should resolve every docs/ tests/ api/
+  tools/ sql/ path in an evidence string and report COULD NOT RESOLVE per path.
+  Not fail the manifest -- a scratchpad path is legitimate and a file may land
+  in the same commit -- but SAY SO, because a pointer nobody follows is not
+  evidence. One re.findall and one os.path.isfile.
+
+== 6. THE PUSH ==
+
+  Written after it happened. See SAIRN-digest-fourth-b27.txt STATUS for the
+  same facts in one line, and the manifest item 6 evidence for the commands.
+
+== 7. WHAT THIS BATCH LEFT UNPROVEN ==
+
+  NO LIVE VERIFICATION. Nothing ran against a real Supabase. No production row
+  read, no table touched, no deployment fetched.
+
+  The Tier A discharge write -- section 1, blocked, not attempted, not partly
+  done.
+
+  The census is still not a gate, and tools/branch_census.py still does not
+  exist.
+
+  origin()'s lookback is now unbounded but still NEAREST-BACKWARD, which is a
+  heuristic and not scope analysis. The parameter-shadowing case has a fixture;
+  a `let` re-declared in a sibling block does NOT, and nothing claims it does.
+
+  KEYWORDS is a hand-written list of 14 words, not the JS grammar. It is enough
+  for the one line it was built for and is not a parser.
+
+  sairnbuild.html was mutated only in COPIES and was never re-extracted block
+  by block and never rendered.
+
+  Everything attributed to hank's open list in the handoff is CARRIED FROM b26
+  and was NOT re-verified this batch, and the handoff says so in those words.

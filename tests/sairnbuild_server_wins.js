@@ -437,9 +437,90 @@ test('the retry covers bld_bids too, with the session its branch demands', () =>
   // argument must be passed to bldData() by the retry. Which expression
   // computes it is allowed to change; its absence is not, and a comment can
   // no longer satisfy it.
-  const retryCode = body.replace(/\/\/[^\n]*/g, '');
-  assert.ok(/bldData\('write',\s*key,\s*rec,\s*[^)\s][^)]*\)/.test(retryCode),
-    'the retry sends bld_bids without a session, which its branch refuses');
+  // ── THE REPAIR ABOVE MOVED THE HOLE INSTEAD OF CLOSING IT. 2026-10-15,
+  //    fourth b27, MEASURED BY ABLATION AND NOT BY READING ────────────────
+  // The first version of this assertion was satisfied by a LINE comment. The
+  // repair stripped line comments and then required SOME fourth argument:
+  //
+  //     body.replace(/\/\/[^\n]*/g, '')
+  //     /bldData\('write',\s*key,\s*rec,\s*[^)\s][^)]*\)/
+  //
+  // Five mutations were applied to a COPY of sairnbuild.html and the suite was
+  // re-run against each. FOUR OF THE FIVE WERE ACCEPTED:
+  //
+  //   M1 fourth argument DELETED .................. exit 1  REFUSED
+  //   M2 fourth argument replaced by `false` ...... exit 0  ACCEPTED  <- same defect
+  //   M3 fourth argument replaced by `0` .......... exit 0  ACCEPTED  <- same defect
+  //   M4 the DECLARATION deleted, call sites kept . exit 0  ACCEPTED
+  //   M5 real call broken, a BLOCK comment carries
+  //      a satisfying one ......................... exit 0  ACCEPTED  <- a COMMENT again
+  //
+  // So cody's own question -- "can the new regex be satisfied by a future
+  // comment or string literal the way its predecessor was" -- answers YES: by
+  // a BLOCK comment, because the stripper only removed `//` lines. And a
+  // FALSY fourth argument is the arm's own defect wearing an argument: the
+  // branch in api/sd-data.js refuses a session-required write whose flag is
+  // false exactly as it refuses one with no flag at all.
+  //
+  // THREE CHANGES, AND EACH CLOSES A NAMED MUTATION:
+  //   (a) strip BLOCK comments and STRING LITERALS as well as line comments,
+  //       so no text that is not executable can satisfy anything here (M5);
+  //   (b) require the fourth argument to NAME BLD_SESSION_REQUIRED rather than
+  //       merely to exist, which is the real object and is what makes a falsy
+  //       literal fail (M2, M3);
+  //   (c) assert the DECLARATION carries bld_bids, so the object the whole arm
+  //       is about cannot be deleted out from under the call site (M4).
+  // Which expression computes the flag is still allowed to change -- `!!`, a
+  // helper call, a different coercion -- as long as it reads the map.
+  //
+  // ── AND THAT REPAIR OPENED ONE OF ITS OWN. 2026-10-16, fourth b27 resume,
+  //    MEASURED BY A SECOND ABLATION OF THE REPAIR ITSELF ─────────────────
+  // Ten mutations this time: M1-M5 again, plus five aimed at the shape of the
+  // repair rather than its predecessor. Nine were refused. ONE WAS ACCEPTED:
+  //
+  //   M6 'write' -> 'read' at the retry call site . exit 0  ACCEPTED, 25/0
+  //
+  // Collapsing every string literal to '' is what closes M5 and M7, and it is
+  // also what blinds the assertion to WHICH string the first argument was. So
+  // the retry could be changed to READ instead of WRITE and this arm -- the arm
+  // whose whole subject is the retry's write -- stayed green. That is the same
+  // class of defect as the comment that started this, one layer further in.
+  //
+  // TWO COPIES, TWO ASSERTIONS, AND NEITHER ALONE IS ENOUGH:
+  //   (A) comments stripped AND strings collapsed -- proves the call is real
+  //       EXECUTABLE code, because no comment or string survives to carry it
+  //       (M5, M7);
+  //   (B) comments stripped ONLY -- proves the verb is 'write' and the cell is
+  //       [key], which (A) cannot see once the strings are gone (M6, M9).
+  // A mutation hiding the call in a string satisfies (B) and fails (A); a
+  // mutation changing the verb satisfies (A) and fails (B).
+  const noComments = body
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/\/\/[^\n]*/g, ' ');
+  const retryCode = noComments
+    .replace(/'(?:[^'\\\n]|\\.)*'/g, "''")
+    .replace(/"(?:[^"\\\n]|\\.)*"/g, '""');
+  // (A) structural: it is executable code, not text.
+  assert.ok(/bldData\(\s*''\s*,\s*key\s*,\s*rec\s*,[^)]*BLD_SESSION_REQUIRED\s*\[\s*key\s*\]/
+    .test(retryCode),
+    'the retry must pass the session flag READ FROM BLD_SESSION_REQUIRED. A '
+    + 'fourth argument that merely exists is not enough: a falsy literal sends '
+    + 'bld_bids without a session, which its branch refuses, and that is the '
+    + 'defect this arm is named for');
+  // (B) the verb: it is the WRITE that is being retried, not a read.
+  assert.ok(/bldData\(\s*'write'\s*,\s*key\s*,\s*rec\s*,[^)]*BLD_SESSION_REQUIRED\s*\[\s*key\s*\]/
+    .test(noComments),
+    "the retried call must be the 'write' -- assertion (A) collapses every "
+    + 'string literal to \'\' and therefore cannot tell \'write\' from '
+    + "'read'. Measured: changing this call site to 'read' left the suite at "
+    + '25 passed, 0 failed');
+  // (c). Asserted on the DECLARATION, comment-stripped for the same reason.
+  const sessMap = oneLineVar('BLD_SESSION_REQUIRED')
+    .replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
+  assert.ok(/\bbld_bids\s*:\s*true\b/.test(sessMap),
+    'BLD_SESSION_REQUIRED must still carry bld_bids: true, or the call site '
+    + 'above reads undefined and sends no session while still mentioning the '
+    + 'map. Found: ' + sessMap);
 });
 
 // ═══════════════════════════════════════════════════════════════════════════

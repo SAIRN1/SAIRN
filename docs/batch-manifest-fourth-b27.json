@@ -1,0 +1,44 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "fourth",
+  "batch": "b27",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "",
+      "status": "blocked",
+      "evidence": "THE REVIEW WORK IS DONE AND RE-ABLATED; ONLY THE DISCHARGE WRITE INTO docs/tier-a-reviews.json IS OUTSTANDING AND IT IS BLOCKED FOR THE SECOND CONSECUTIVE BATCH. Blocked on: hank claimed docs/tier-a-reviews.json at 2026-10-16T11:17:27Z, CLAUDE_PID 26072 confirmed RUNNING at 11:17 and again at 11:43; in b27 itself it was cc holding the same file at 2026-10-15T16:55:20Z. Per the standing rule the blocked item stops and waits for a go-ahead -- flagged back, task string NOT reworded to slip the matcher. WHAT IS DONE AND MEASURED: the b27 session's repair of tests/sairnbuild_server_wins.js CLOSED M1-M5 and OPENED M6 -- collapsing every string literal to '' to kill the block-comment mutation also blinded the assertion to WHICH string the first argument was, so changing the retry call site from 'write' to 'read' was ACCEPTED at 25 passed 0 failed. A retry that reads drains the pending queue saving nothing while reporting success. FIXED with two copies and two assertions: (A) comments stripped AND strings collapsed proves the call is executable code (M5, M7); (B) comments stripped ONLY proves the verb is 'write' and the cell is [key] (M6, M9). RE-ABLATED 10 of 10 REFUSED, each on the NAMED arm read out of stdout, baseline still 25/0 exit 0. PROBE: added arm 15 planting the 'read' verb; ALL 19 ARMS PASS, 15 mutations, exit 0, nothing newly dirty. Evidence: scratchpad b27r_bld_ablation2.py with b27r_bld_ablation2_repaired.log (M6 ACCEPTED) and b27r_bld_ablation2_fixed.log (10/10 REFUSED), b27r_probe_fixed.log; narrative docs/2026-10-16-fourth-b27-findings.md section 2"
+    },
+    {
+      "id": 2,
+      "title": "",
+      "status": "done",
+      "evidence": "THE 26 UNRESOLVED LINES ARE 0, AND THE REASON b26 NAMED WAS RIGHT FOR 3 OF THE 26. R4 (parameters across call sites, built in b27) took 26 -> 20 and touched none of the 19 in class C. Built --why, which names PER LINE the identifier that stalled the walk and cross-checks its own answers against origin() -- a divergence prints MIRROR DIVERGED and is exit 2, never a quiet reclassification. It answered 'resource' SIXTEEN TIMES, and api/sd-data.js:748 is 'const resource = body && body.resource;' -- one line, 14,000 lines above its last reader. THREE separate mechanisms were each independently enough to hide it, each now a rule with fixtures BOTH ways: R5 the declaration lookback was 400 LINES (b23's 14-line window a third time, inside the rule built to kill it; :13724's famP is declared 497 lines up) and a parameter now SHADOWS an outer declaration; R6 'body' was in CALLER_ROOTS *and* NOISE and NOISE was filtered first; R7 the IDENT regex traced JS KEYWORDS and PROPERTY NAMES ('new Date().toISOString().slice' yielded four names, one resolvable). R7 FIRED IN BOTH DIRECTIONS: it also removed an OVER-REPORT at :13364, where url_idents pulled 'employee_id' out of session.employee_id and reported a SESSION branch as CALLER -- found only because every under-report had already gone to zero. FIGURES at 18,867 lines, CRITERIA_VERSION 2026-10-16.b27r.1, 26/26 fixtures: class B 22 write / 35 CALLER / 1 SESSION / 0 UNRESOLVED / 10 SERVER-ONLY / 2 UNCLASSIFIED; class C 0 write / 34 CALLER / 2 SESSION / 0 UNRESOLVED / 115 SERVER-ONLY; A-helper 88 write; other 1 write / 10 CALLER / 12 SERVER-ONLY. Against b26: B CALLER 32->35, C CALLER 16->34. THE 22 DID NOT MOVE and the list is byte-identical to b26's. SPOT-CHECKED BOTH DIRECTIONS on the real file: :14886/:18338 CALLER (the caller chooses the table name), :10556 CALLER matching b26's hand resolution, :13724 CALLER via the 497-line declaration, :13364 SESSION after the fix, :6023 SERVER-ONLY, and 4 of the 115 class-C SERVER-ONLY sampled and correct. 0 UNRESOLVED is NOT the third state retired -- three fixtures still produce it. Evidence: scratchpad b27r_branch_census.py, b27r_census.log, b27r_census_why.log, b27r_census_why2.log; routed with full source inline in docs/2026-10-16-fourth-b27-branch-census-routed-to-cc.md and the b26 routing doc now carries a SUPERSEDED banner; narrative docs/2026-10-16-fourth-b27-findings.md section 3"
+    },
+    {
+      "id": 3,
+      "title": "",
+      "status": "done",
+      "evidence": "ABLATION PER ADDED ARM, NOT PER EXIT CODE, ON BOTH SUBJECTS. (a) The bld_bids arm: 10 mutations against a COPY of sairnbuild.html, and the harness reads the RED ARM'S OWN LINE out of stdout so a mutation refused by some other arm is not credited to this one. Shipped repair: 9 refused, M6 ACCEPTED at 25/0. After the fix: 10/10 REFUSED all on 'the retry covers bld_bids too, with the session its branch demands', baseline 25/0 exit 0. (b) The census: per RULE per FIXTURE -- WITHOUT R1 1 change, R2 1, R3 11, R4 3, R5 3, R6 2, R7 1. EVERY ONE OF THE SEVEN IS LOAD-BEARING, and the tool prints 'THIS RULE IS NOT LOAD-BEARING ON ANY FIXTURE, which is a finding about the fixtures, not a pass' itself rather than leaving it to be remembered. R5's ablation changes a fixture in the OVER-report direction too (shadowing flips to CALLER), so it is not only buying reach. Evidence: scratchpad b27r_bld_ablation2_repaired.log, b27r_bld_ablation2_fixed.log, b27r_census_ablate.log"
+    },
+    {
+      "id": 4,
+      "title": "",
+      "status": "done",
+      "evidence": "SCRATCHPAD CLEAN AND THE REPO CARRIES NOTHING THIS BATCH DID NOT MEAN TO LAND. git status --porcelain at this line is exactly 3 modified and 3 untracked, all of them deliverables: tests/sairnbuild_server_wins.js, tests/run_sairnbuild_server_wins_sabotage_probe.py, docs/2026-10-15-fourth-b26-branch-census-routed-to-cc.md (SUPERSEDED banner), docs/2026-10-16-fourth-b27-findings.md, docs/2026-10-16-fourth-b27-branch-census-routed-to-cc.md, docs/batch-manifest-fourth-b27.json. No .py, .log or census artifact was written into the tree: the census lives in the scratchpad and is ROUTED with full source inline, which is the standing rule for tools/. __pycache__ removed. AND ONE REAL DEFECT IN MY OWN EVIDENCE, DISCLOSED RATHER THAN QUIETLY REPAIRED: the final --why run OVERWROTE b27r_census_why.log, which held the 20-line diagnosis the findings doc cites for the 'resource' figure. It is not quoted from memory -- b27r_why_inherited.py REPRODUCES it by ablating R5/R6/R7 off, and the counts (16 of 20 lines stall on resource; NOT-A-PARAM 16, NO-DECL-NO-FN 8, MIXED-RHS 7) are counted out of b27r_census_why_AS_OF_b27_R1toR4.log mechanically, not read. Scratchpad inventory: b27r_bld_ablation2.py + _repaired.log + _fixed.log, b27r_probe_fixed.log, b27r_branch_census.py, b27r_census.log, b27r_census_ablate.log, b27r_census_why.log, b27r_census_why2.log, b27r_why_inherited.py, b27r_census_why_AS_OF_b27_R1toR4.log"
+    },
+    {
+      "id": 5,
+      "title": "",
+      "status": "done",
+      "evidence": "HANDOFF WRITTEN BEFORE THE REPORT AND BEFORE THE PUSH: SAIRN-handoff-fourth-b27.md. It leads with the four things that matter -- b27's manifest citing docs/2026-10-15-fourth-b27-findings.md which does not exist anywhere, the M6 hole my predecessor's repair opened, the Tier A discharge blocked for the second consecutive batch by a different session each time on one shared file, and the 26 UNRESOLVED going to 0 for three reasons none of which was the inter-procedural one b26 named. Carries the full measured tables, names the command behind every figure, discloses that the final --why run overwrote its own evidence log and that the figure is reproduced by ablation rather than memory, and separates what was PROVED from what was LEFT UNPROVEN with NO LIVE VERIFICATION first in the second list. hank's open list is explicitly marked as carried from b26 and NOT re-verified this batch. Narrative: docs/2026-10-16-fourth-b27-findings.md"
+    },
+    {
+      "id": 6,
+      "title": "",
+      "status": "open",
+      "evidence": ""
+    }
+  ]
+}

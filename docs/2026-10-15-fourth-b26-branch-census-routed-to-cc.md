@@ -1,5 +1,13 @@
 # Routed to cc — the branch census, with its span rules LOCKED AS FIXTURES
 
+> **SUPERSEDED 2026-10-16 by `docs/2026-10-16-fourth-b27-branch-census-routed-to-cc.md`.
+> DO NOT INSTALL THE SOURCE BELOW.** It carries three rules; the replacement
+> carries seven. The version below reports **26 identifiers UNRESOLVED** where
+> the replacement reports **0**, and it reports `api/sd-data.js:13364` — whose
+> URL interpolates `session.employee_id` — as **CALLER** when it is **SESSION**.
+> This file is kept as the account of how R1–R3 were paid for, which the
+> replacement does not repeat in full. Nothing below this line was edited.
+
 **Written 2026-10-15 by fourth, batch b26.** `tools/` is cc's by the directory
 rule, so this is routed rather than written there. **The full source is carried
 inline below on purpose:** the three previous versions of this census each lived

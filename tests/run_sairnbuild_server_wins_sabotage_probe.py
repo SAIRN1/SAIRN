@@ -155,6 +155,55 @@ MUTATIONS = [
      "    // ── AND A CATCH, WHICH THIS CHAIN NEVER HAD",
      "  }).then(function(e){\n"
      "    // ── AND A CATCH, WHICH THIS CHAIN NEVER HAD"),
+
+    ("14. [BLOCKER C, THE FALSY HALF] THE RETRY STILL PASSES A FOURTH "
+     "ARGUMENT AND IT IS `false` -- the same defect as arm 6 wearing an "
+     "argument, because the api/sd-data.js branch refuses a session-required "
+     "write whose flag is false exactly as it refuses one with no flag",
+     APP,
+     # ── ADDED 2026-10-15 BY fourth b27, FROM AN ABLATION AND NOT A READING ─
+     # Arm 6 plants the DELETION of the fourth argument and the suite refuses
+     # it. Five mutations were applied to a COPY of sairnbuild.html and the
+     # suite re-run against each; FOUR OF THE FIVE WERE ACCEPTED at exit 0:
+     # a `false` fourth argument, a `0` fourth argument, deleting the
+     # BLD_SESSION_REQUIRED declaration while keeping the call sites, and
+     # breaking the real call while a BLOCK comment carried a satisfying one.
+     # The arm's assertion stripped only `//` comments and required a fourth
+     # argument that merely EXISTED.
+     #
+     # THE SUITE SIDE IS FIXED (tests/sairnbuild_server_wins.js now strips
+     # block comments and string literals and requires the argument to READ
+     # BLD_SESSION_REQUIRED[key], plus asserts the declaration still carries
+     # bld_bids). THIS ARM IS THE PROBE SIDE OF THE SAME FIX: without it,
+     # nothing here plants the falsy form, so the repair would rest on an
+     # assertion nobody had made fail in that direction. Arm 6 and arm 14 are
+     # deliberately BOTH present -- 6 proves the argument must exist, 14 proves
+     # it must be the real flag, and only the pair covers the branch's actual
+     # refusal condition.
+     "      jobs.push(bldData('write',key,rec,!!BLD_SESSION_REQUIRED[key])"
+     ".then(function(saved){",
+     "      jobs.push(bldData('write',key,rec,false).then(function(saved){"),
+
+    ("15. [BLOCKER C, THE VERB] THE RETRY READS INSTEAD OF WRITING -- the "
+     "pending queue is drained by a call that fetches rows and saves nothing, "
+     "so every stranded record stays stranded while the retry reports success",
+     APP,
+     # ── ADDED 2026-10-16 BY fourth b27 resume, FROM THE ABLATION OF THE b27
+     #    REPAIR ITSELF -- a second round of ten mutations, not a reading ────
+     # The b27 suite repair collapses every string literal to '' before
+     # matching, which is what closes the block-comment and string-literal
+     # mutations. It also blinds the assertion to WHICH string the first
+     # argument is: 'write' -> 'read' at this call site was ACCEPTED at
+     # 25 passed, 0 failed. The suite now carries a SECOND assertion over a
+     # comments-stripped-but-strings-intact copy requiring the verb 'write',
+     # and this arm is the probe side of that half. Arms 6, 14 and 15 are all
+     # three present on purpose: 6 proves the flag argument must exist, 14
+     # proves it must not be falsy, 15 proves the call being retried is the
+     # write -- and no one of the three implies either of the others.
+     "      jobs.push(bldData('write',key,rec,!!BLD_SESSION_REQUIRED[key])"
+     ".then(function(saved){",
+     "      jobs.push(bldData('read',key,rec,!!BLD_SESSION_REQUIRED[key])"
+     ".then(function(saved){"),
 ]
 
 sys.exit(run_probe(
