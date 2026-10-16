@@ -37,8 +37,8 @@
     {
       "id": 6,
       "title": "",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "PUSHED WITHOUT FORCE AND CONFIRMED LANDED BY READING THE FILES BACK OFF ORIGIN, not by a clean exit from git push. HEAD == origin/main 1ce94b6b at the verification line, behind/ahead 0/0 (git rev-list --left-right --count origin/main...HEAD). NOT FORCED, PROVED BY ANCESTRY: git merge-base --is-ancestor $(cat b27r_pre_push_tip.txt) HEAD -> ANCESTOR, and grep -ci force over all three push logs (b27r_push.log, b27r_push2.log, b27r_push3.log) -> 0, 0, 0 -- never by reading git's wording. LANDED VERIFIED ON ORIGIN: git show origin/main:docs/2026-10-16-fourth-b27-findings.md returns its first line, git show origin/main:SAIRN-handoff-fourth-b27.md returns its first line, and git show origin/main:tests/sairnbuild_server_wins.js greps 8 occurrences of BLD_SESSION_REQUIRED. THE PUSH WAS REFUSED THREE TIMES FIRST AND EVERY REFUSAL WAS READ RATHER THAN OVERRIDDEN: (1) the register-feed gate denied because no defect record cited the fix commit -- a record was WRITTEN with six contributing factors, the latent condition recorded as action_status planned with the owed action named, and --phase/--layer/--severity corrected against the tool's own vocabularies rather than guessed; (2) a non-fast-forward because another session pushed, rebased, which hit a real conflict in docs/defect-density-register.json where both sides had appended a record -- RESOLVED KEEPING BOTH, validated with json.loads before the file was written, 619 records, and the rebase then moved my fix commit's sha so tools/defect_register.py --reseat rewrote ec7663ec3aa9 -> 0ef5447b2631 rather than leaving a record citing a sha that does not resolve; (3) a second non-fast-forward, rebased again. NO SAIRN_SEED_GATE, NO SAIRN_GATE_EXEMPT, NO SAIRN_SKIP in any form. settings.json not edited and not committed; hooks untouched and never re-added; 0 files under api/ sql/ tools/; neither auditor clone entered; git stash list empty. Push gate ran live via .githooks/pre-push on every attempt and allowed the last one."
     }
   ]
 }
