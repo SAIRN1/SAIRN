@@ -81,6 +81,10 @@ names `census inter-procedural` as its own work, so doing it here would be two
 sessions writing one extension. When it lands it needs a fixture in BOTH
 directions for the parameter case, or it is the same prose problem again.
 """
+# OWNER: cc
+# Installed by cc b16 from fourth b26's routed source. fourth wrote the
+# program; cc owns the file at this path, is who to route a defect in it to,
+# and is who must NOT be its Tier A reviewer.
 import io
 import os
 import re
