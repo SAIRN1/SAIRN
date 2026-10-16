@@ -805,6 +805,80 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b16-evv-pay-agreement.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "144dfb71587eb03e03efde47bf2ad65d20fb4052",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b17-closed-period-write-path.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold CHANGED",
+     "detail": "was: && /limited to/.test(String(got.body && got.body.error && go  now: && /limited to/.test(String(r.body && r.body.error && r.body"
+    }
+   ],
+   "sha": "144dfb71587eb03e03efde47bf2ad65d20fb4052",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b17-evv-closed-period-asof.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "144dfb71587eb03e03efde47bf2ad65d20fb4052",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b17-freeze-reopen.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "144dfb71587eb03e03efde47bf2ad65d20fb4052",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b17-straight-time-floor.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "&& a.premium_threshold_minutes === 2400"
+    }
+   ],
+   "sha": "144dfb71587eb03e03efde47bf2ad65d20fb4052",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b17-tier-a-count-agreement.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "144dfb71587eb03e03efde47bf2ad65d20fb4052",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b17-trust-lock-hard.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "144dfb71587eb03e03efde47bf2ad65d20fb4052",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-sen-role-asymmetry.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "144dfb71587eb03e03efde47bf2ad65d20fb4052",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/hook_command_anchoring_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -5195,6 +5269,80 @@
     }
    ],
    "sha": "9f04ad39aadf3facd377b69c3080fd5a020042f6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b14-clock-approval-two-person.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9f30a3690982886ba3337f8ccb47666fd529069f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b17-closed-period-write-path.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "&& /limited to/.test(String(got.body && got.body.error && got.body.error.message"
+    }
+   ],
+   "sha": "9f30a3690982886ba3337f8ccb47666fd529069f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b17-lift-list-check.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "'L2. no lifting suite was skipped silently: ' + unreadable.length"
+    }
+   ],
+   "sha": "9f30a3690982886ba3337f8ccb47666fd529069f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b17-one-person-agency.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9f30a3690982886ba3337f8ccb47666fd529069f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b17-practitioner-role-maps.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9f30a3690982886ba3337f8ccb47666fd529069f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-leg-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9f30a3690982886ba3337f8ccb47666fd529069f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-sv-role-matrix.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9f30a3690982886ba3337f8ccb47666fd529069f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-sv-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9f30a3690982886ba3337f8ccb47666fd529069f",
    "criteria_version": "2026-10-06.1"
   },
   {
