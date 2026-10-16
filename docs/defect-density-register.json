@@ -31888,7 +31888,7 @@
       "recurrence_open": "The anniversary boundary is now driven for ONE state's rule shape (WV) and one hire date. Nothing drives a facility-wide window, and the claim corrected here is about the hire-anchored one only."
     },
     {
-      "commit": "1a5a47c0e22e",
+      "commit": "af313f897ffc",
       "date": "2026-10-16",
       "subject": "fix(report-only): a probe's 20-second fixture had overwritten the shared reachability measurement, and two batches read it as a real sweep",
       "files": [
@@ -31947,7 +31947,7 @@
       "recurrence_open": "only the reachability document is guarded. Any other write this tool reaches on a fixture run is still unguarded, and the probe half -- a non-quiet run against the live repo root -- is unchanged and lives in codys tree."
     },
     {
-      "commit": "31711f8d09b1",
+      "commit": "334fe3c9acaf",
       "date": "2026-10-16",
       "subject": "fix(suite lock): a probe inside the suite was deleting the live run's lock, and the ceiling was sized against the wrong timeout",
       "files": [
@@ -32010,7 +32010,7 @@
       "recurrence_open": "the tool half is fixed and the probe half is not. While tests/run_suite_lock_probe.py:81 still points at the shared path it keeps attacking it -- it now gets refused instead of succeeding, which is a mitigation, not a fix, and the probes own A1-A3 arms will behave differently until it is pointed at a fixture lock."
     },
     {
-      "commit": "8b108f9b35c8",
+      "commit": "4fb3e3cdad5d",
       "date": "2026-10-16",
       "subject": "fix(tier a): the anchored commit is wider than the obligation, and the record never said so",
       "files": [
@@ -32062,7 +32062,7 @@
       "recurrence_open": "the width is now VISIBLE and nothing REFUSES on it. A very wide anchor is still accepted; it just says how wide it is. Choosing a threshold needs a measured distribution across the existing records, which has not been taken."
     },
     {
-      "commit": "a7cc43492ed3",
+      "commit": "c36cd069bcd5",
       "date": "2026-10-16",
       "subject": "fix(board) -- a mirror can freeze one file at a time",
       "files": [
@@ -32119,7 +32119,7 @@
       "recurrence_open": "the publisher writes the NOTICE and cannot republish the chain CONTENT -- that is the auditors own command, and it must stay that way. Until H1/H2 run it the mirrors are frozen WITH a notice rather than fresh, which is better than silent and is not fixed."
     },
     {
-      "commit": "abbb716fb4b5",
+      "commit": "a382f0ee8be3",
       "date": "2026-10-16",
       "subject": "fix(reseat): the 6h window was measured on committer time, which a rebase rewrites",
       "files": [
@@ -32171,7 +32171,7 @@
       "recurrence_open": "only the reseat window was re-derived. Any other time window in this gate still measured on committer time is not covered -- nothing swept the file for the field, so this is a known gap and not a cleared one."
     },
     {
-      "commit": "da60a08b61dd",
+      "commit": "2aed3322eb55",
       "date": "2026-10-16",
       "subject": "fix(close gate): the child was left on cp1252, and the answer to fourth's three prose spans is a measurement",
       "files": [

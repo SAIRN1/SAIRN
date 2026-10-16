@@ -1333,6 +1333,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/run_all_tests.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "'without waiting out any ceiling -- the pid being gone already '"
+    }
+   ],
+   "sha": "334fe3c9acafd475b99113016f2a3009d510ba71",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/provisioning_attribution.js",
    "class": "test file",
    "level": "CHANGE",
@@ -2167,6 +2180,19 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "4f6f03f903a1e08dd53a688c69d75e65b5511f4e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/tier_a_review_gate.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "it to ignore. (`code_staleness()` is UNAFFECTED -- it scopes its own `git"
+    }
+   ],
+   "sha": "4fb3e3cdad5df5283019566b5588b7fba9e9794a",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -4908,6 +4934,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/tier_a_review_gate.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a382f0ee8be3d2944e42506d7fb3a32ec6ecf95f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/claims/run_freshness_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -5473,6 +5507,19 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "ae872b6c5d3f235da1b76095ba8101d0cea8fe49",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/report_only_checks.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "'budget_source': ('hook' if _hook_timeout()"
+    }
+   ],
+   "sha": "af313f897ffca130d59a3678538042c247ffb286",
    "criteria_version": "2026-10-06.1"
   },
   {
