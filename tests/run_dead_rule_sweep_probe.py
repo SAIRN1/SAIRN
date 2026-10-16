@@ -29,6 +29,61 @@ import tempfile
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
 TOOL = os.path.join(REPO, 'tools', 'dead_rule_sweep.py')
+
+# ── THIS WHOLE PROBE RE-EXECS UNDER THE REAL ISOLATION WRAPPER ─────────────
+# tools/dead_rule_sweep.py calls require_isolation() and exits 2 COULD NOT RUN
+# unless SAIRN_GIT_ISOLATION=1, because it adds a git worktree to the live
+# clone. This probe drives it THREE WAYS -- as a subprocess (`run()`), inside a
+# worktree copy (section F3), and IN-PROCESS via `import dead_rule_sweep as D`
+# (section I calls D.make_sandbox() directly) -- so wrapping the subprocess
+# call sites cannot work: the in-process one has no call site to wrap, and that
+# is where the probe died at exit 2 after printing section I's header.
+#
+# WRAPPING THE CALL SITES WAS ALSO READING THE WRONG NUMBER. The wrapper's own
+# exit code is its verdict on .git/config and .git/worktrees -- 0 UNCHANGED,
+# 1 CHANGED, 2 COULD NOT SNAPSHOT -- and NOT the wrapped command's. It says so
+# in its own output ("whatever the command itself returned"). A `run()` that
+# wrapped and then returned r.returncode substituted "did git admin state
+# change" for "what did the sweep exit", under the same name, in the arms that
+# read rc. One re-exec at the top is both smaller and the only place the
+# in-process path is covered.
+#
+# NOT `os.environ['SAIRN_GIT_ISOLATION'] = '1'`. That is the guard switched off
+# by the thing it guards, and this probe's section G exists because a control
+# doing the thing it checks for is the defect this file was written after.
+# The real wrapper snapshots and restores; the env var only claims someone did.
+_ISO = os.path.join(REPO, 'tools', 'git_config_isolation.py')
+if os.environ.get('SAIRN_GIT_ISOLATION') != '1':
+    if not os.path.isfile(_ISO):
+        print('COULD NOT RUN: tools/git_config_isolation.py is absent, and '
+              'tools/dead_rule_sweep.py refuses to run outside it. Nothing '
+              'was verified.')
+        sys.exit(2)
+    _rcf = os.path.join(tempfile.mkdtemp(prefix='drs-rc-'), 'rc')
+    _w = subprocess.run([sys.executable, _ISO, '--rc-file', _rcf, '--',
+                         sys.executable, os.path.abspath(__file__)]
+                        + sys.argv[1:], cwd=REPO,
+                        env=dict(os.environ, PYTHONIOENCODING='utf-8',
+                                 PYTHONUTF8='1'))
+    _inner = None
+    try:
+        _inner = int(io.open(_rcf, encoding='utf-8').read().strip())
+    except (IOError, OSError, ValueError):
+        pass
+    if _w.returncode == 2 or _inner is None:
+        print('\nCOULD NOT RUN: the isolation wrapper exited %s and the inner '
+              'exit code %s recoverable from --rc-file, so this probe cannot '
+              'say what its own arms did. Not a pass.'
+              % (_w.returncode, 'was not' if _inner is None else 'was'))
+        sys.exit(2)
+    if _w.returncode == 1:
+        print('\nFAIL  this probe CHANGED the live clone\'s .git admin state. '
+              'The wrapper named the differences above and restored them; the '
+              'arms exited %d. A control that mutates what it controls is the '
+              'section G defect, so this is exit 1 whatever the arms said.'
+              % _inner)
+        sys.exit(1)
+    sys.exit(_inner)
 # ── WHAT SECTION A MUTATES: A COPY, OUTSIDE THIS CLONE ─────────────────────
 # Section A has to break the sweep's criteria lock to prove the lock is
 # load-bearing, and until 2026-09-30 it broke the TRACKED file and put it back
@@ -43,7 +98,31 @@ TOOL = os.path.join(REPO, 'tools', 'dead_rule_sweep.py')
 # --fixtures path actually needs, and nothing else.
 _SBX = tempfile.mkdtemp(prefix='drs-sabotage-')
 os.makedirs(os.path.join(_SBX, 'tools'), exist_ok=True)
-for _m in ('dead_rule_sweep.py', 'checker_kit.py'):
+# ── A THIRD MODULE, ADDED 2026-10-15 (cody b18) ───────────────────────────
+# tools/dead_rule_sweep.py:137 loads tools/git_config_isolation.py and exits 2
+# COULD NOT RUN when it is not loadable -- which is correct, and is exactly
+# what happened to every arm in section A once that dependency was added: the
+# copy carried two modules and the subject now needs three, so the sabotage
+# tool died with
+#   FileNotFoundError: ...\drs-sabotage-xxxx\tools\git_config_isolation.py
+# and the probe exited 2. THE FAILURE LINE SAID "A1c. ...and the COPY passes
+# the lock before anything is done to it", which reads as the lock failing;
+# the cause was a missing file in the sandbox.
+#
+# AND THE LIST IS NOW CHECKED RATHER THAN HOPED FOR: the loop below refuses if
+# any named module is absent from the real tools/, so the next dependency
+# added to the subject fails HERE, by name, instead of as a FileNotFoundError
+# inside a mutated copy.
+_NEEDED = ('dead_rule_sweep.py', 'checker_kit.py', 'git_config_isolation.py')
+_absent = [m for m in _NEEDED
+           if not os.path.isfile(os.path.join(REPO, 'tools', m))]
+if _absent:
+    print('COULD NOT RUN: the sabotage sandbox needs %s from tools/ and these '
+          'are absent: %s. Section A would measure an ImportError rather than '
+          'the lock, so nothing was verified.' % (', '.join(_NEEDED),
+                                                  ', '.join(_absent)))
+    sys.exit(2)
+for _m in _NEEDED:
     _s = os.path.join(REPO, 'tools', _m)
     if os.path.isfile(_s):
         io.open(os.path.join(_SBX, 'tools', _m), 'w', encoding='utf-8',
@@ -84,6 +163,12 @@ def run_copy(*args):
 
 
 def run(*args):
+    # A DIRECT CALL, AND IT IS ONLY CORRECT BECAUSE OF THE RE-EXEC AT THE TOP.
+    # SAIRN_GIT_ISOLATION=1 is inherited from the real wrapper, so the sweep's
+    # require_isolation() is satisfied by genuine isolation rather than by a
+    # claim of it -- and rc here is the SWEEP's exit code, which is the
+    # quantity every arm below reads. Arm H0 asserts the inheritance, so this
+    # cannot quietly become a direct unisolated call again.
     r = subprocess.run([sys.executable, TOOL] + list(args), cwd=REPO,
                        capture_output=True, text=True, encoding='utf-8',
                        errors='replace',
@@ -108,6 +193,20 @@ print('DEAD RULE SWEEP -- the control for the sweep')
 # TARGET rather than on the outcome: nothing in this file may open a tracked
 # file for writing, whatever happens afterwards.
 section('G. this control does not write the clone it is controlling')
+
+# G0 IS THE PRECONDITION FOR EVERY ARM THAT DRIVES THE SWEEP. Without the
+# re-exec at the top of this file the sweep answers every section with its own
+# exit-2 refusal, and the refusal banner contains the string `DEAD RULE SWEEP`
+# -- so F2, the paired positive that exists to prove the sweep STARTED, passed
+# on the message saying it would not. An arm satisfied by the refusal of the
+# thing it measures is worse than a red one, so the inheritance is asserted
+# here by name rather than assumed from the fact that arms are printing.
+check('G0. PRECONDITION: this process is running under '
+      'tools/git_config_isolation.py (SAIRN_GIT_ISOLATION=1), so the sweep '
+      'runs instead of refusing -- its refusal banner contains "DEAD RULE '
+      'SWEEP" and satisfies F2 while measuring nothing',
+      os.environ.get('SAIRN_GIT_ISOLATION') == '1',
+      'SAIRN_GIT_ISOLATION=%r' % (os.environ.get('SAIRN_GIT_ISOLATION'),))
 
 _self_src = io.open(os.path.abspath(__file__), encoding='utf-8',
                     newline='').read()
@@ -342,8 +441,16 @@ else:
 
         _logp = os.path.join(_wt, '..', 'drs-kill.log')
         _log = io.open(_logp, 'w', encoding='utf-8', errors='replace')
+        # DIRECT, NOT THROUGH THE WRAPPER, AND THAT IS DELIBERATE. F3 KILLS
+        # this process to prove the reap handles a run that died; killing a
+        # wrapper leaves the sweep it launched running as an orphan, so the
+        # arm would measure an abandoned live process instead of a dead owner.
+        # The sweep does not refuse here: require_isolation() compares the
+        # TARGET against the live clone, this copy's REPO is the worktree, and
+        # SAIRN_GIT_ISOLATION=1 is inherited from the top-level re-exec anyway.
         _p = subprocess.Popen(
-            [sys.executable, os.path.join(_wt, 'tools', 'dead_rule_sweep.py'),
+            [sys.executable,
+             os.path.join(_wt, 'tools', 'dead_rule_sweep.py'),
              '--tool', 'assertion_label_shape_check.py'],
             cwd=_wt, stdout=_log, stderr=subprocess.STDOUT,
             # UNBUFFERED, because this process is going to be KILLED. A buffered
