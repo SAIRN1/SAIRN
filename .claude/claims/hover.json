@@ -869,8 +869,8 @@
       "task": "b46: read-only audit -- chain+beacon+token re-verify, land-check fourth b26 close via ancestry, fresh 22-suite sample (1 new red routed hank), reconfirm open items for cc/cody/hank. No api/ sairnbuild/sairnsenior file touched, no fourth or hank file written. FILES: .claude/claims/hover.json",
       "claimed_at": "2026-10-16T11:33:12Z",
       "claimed_at_epoch": 1792150392.1048684,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-16T11:43:18Z",
       "files": [
         ".claude/claims/hover.json"
       ]
