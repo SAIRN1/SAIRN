@@ -80,18 +80,40 @@ function cannot(l, why) {
 }
 function is(c, l, why) { if (c) ok(l); else bad(l, why); }
 
+// ── THE WORD LIST REACHED TWELVE AND THE REGISTER REACHES TWENTY ────────
+// EXTENDED 2026-10-16, on this check's FIRST real run -- which caught my own
+// b17 obligation claiming SEVEN against an array of twenty, and then could not
+// read the CORRECTION, because `twenty` was not in this map. A count the check
+// cannot parse is a record the check SILENTLY DOES NOT EXAMINE, which is the
+// same failure as a pattern that stops matching rather than a lesser one: C5
+// counts matches for exactly that reason, and it is what showed the gap.
+//
+// WHY TWENTY AND NOT HIGHER: this is a word-form list and any ceiling on it is
+// arbitrary -- obligations in this register run to hundreds of resources. What
+// makes twenty enough is that a record naming more than twenty writes DIGITS,
+// which the `\\d{1,3}` branch already handles. If a word above twenty ever
+// appears, C5 drops by one and names the record rather than going quiet.
 const WORDS = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7,
-                eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12 };
+                eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12,
+                thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16,
+                seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20 };
 
 // THE CRITERIA. Versioned, because a change to them changes what every
-// recorded result means -- cross-domain convention 8's stamping rule.
-const CRITERIA_VERSION = '2026-10-16.1';
+// recorded result means -- cross-domain convention 8's stamping rule. Bumped
+// to .2 when the word list was extended: the .1 results were taken with a map
+// that could not read `twenty`, and quoting them as comparable would be wrong.
+const CRITERIA_VERSION = '2026-10-16.2';
 
 // `<label>: <N> Tier A resources` followed by a comma or "changed", where the
 // label is short and contains no sentence end. The label bound is what stops
 // this matching a count that appears after a clause of its own.
+//
+// THE NUMBER ALTERNATION IS DERIVED FROM `WORDS` AND NOT RETYPED. It was a
+// hand-written list of the same twelve names, which is a second copy of the
+// thing above it -- in a file whose whole subject is a hand-typed figure
+// disagreeing with a derived one.
 const SELF_SUMMARY = new RegExp(
-  '^[^.:]{0,40}:\\s*(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|\\d{1,3})'
+  '^[^.:]{0,40}:\\s*(' + Object.keys(WORDS).join('|') + '|\\d{1,3})'
   + '\\s+Tier A resources?\\s*(?:,|changed\\b)', 'i');
 
 function claimedCount(what) {
@@ -138,12 +160,21 @@ const FIX_SHOULD_FLAG = [
   { author_session: 'fx', opened_at: 'A2', resources: ['a', 'b', 'c', 'd', 'e', 'f', 'g'],
     what: 'b16: SIX Tier A resources, three distinct changes, all money.' },
   { author_session: 'fx', opened_at: 'A3', resources: ['a', 'b'],
-    what: 'b99: 5 Tier A resources, digits rather than a word.' }
+    what: 'b99: 5 Tier A resources, digits rather than a word.' },
+  // THE EXTENDED WORD RANGE, in the flagging direction. Before 2026-10-16
+  // `twenty` was unparseable and this record would have been SKIPPED -- not
+  // passed, not failed, simply not examined.
+  { author_session: 'fx', opened_at: 'A4', resources: new Array(7).fill('x'),
+    what: 'b17: TWENTY Tier A resources, and the array holds seven.' }
 ];
 const FIX_SHOULD_NOT_FLAG = [
   // AGREES -- the ordinary case, and the one that must stay quiet.
   { author_session: 'fx', opened_at: 'B1', resources: ['a', 'b', 'c'],
     what: 'b20: THREE Tier A resources, and they agree.' },
+  // AND THE EXTENDED RANGE AGREEING, so the extension is locked in BOTH
+  // directions rather than only where it flags.
+  { author_session: 'fx', opened_at: 'B1b', resources: new Array(20).fill('x'),
+    what: 'b17: TWENTY Tier A resources, and they agree.' },
   // THE FIVE REAL FALSE-POSITIVE SHAPES, copied from the live file.
   { author_session: 'fx', opened_at: 'B2', resources: new Array(8).fill('x'),
     what: 'batch12 (hank): FOUR Tier A resources gain a server-stamped acting '
@@ -178,10 +209,10 @@ function main() {
   // ── C1: THE CRITERIA FLAG WHAT THEY MUST ──────────────────────────────
   try {
     const r = audit(FIX_SHOULD_FLAG);
-    is(r.disagreeing.length === 3
-       && r.disagreeing.map((x) => x.id).join(',') === 'fx@A1,fx@A2,fx@A3',
-       'C1. FIXTURE LOCK -- all three planted disagreements are flagged, '
-     + 'including the digit form',
+    is(r.disagreeing.length === 4
+       && r.disagreeing.map((x) => x.id).join(',') === 'fx@A1,fx@A2,fx@A3,fx@A4',
+       'C1. FIXTURE LOCK -- all four planted disagreements are flagged, '
+     + 'including the digit form and the word form above twelve',
        JSON.stringify(r.disagreeing.map((x) => x.id + ' ' + x.claim + '/' + x.actual)));
   } catch (e) { bad('C1. FIXTURE LOCK -- planted disagreements are flagged', e && e.stack); }
 
@@ -191,9 +222,10 @@ function main() {
   try {
     const r = audit(FIX_SHOULD_NOT_FLAG);
     is(r.disagreeing.length === 0,
-       'C2. FIXTURE LOCK -- the eight shapes that must NOT flag are silent: an '
-     + 'agreeing count, the five real subset shapes, a count attached to '
-     + '"changes" rather than resources, and a RECORDED disagreement',
+       'C2. FIXTURE LOCK -- the nine shapes that must NOT flag are silent: TWO '
+     + 'agreeing counts (one of them in the extended word range), the five '
+     + 'real subset shapes, a count attached to "changes" rather than '
+     + 'resources, and a RECORDED disagreement',
        JSON.stringify(r.disagreeing));
   } catch (e) { bad('C2. FIXTURE LOCK -- the must-not-flag shapes are silent', e && e.stack); }
 

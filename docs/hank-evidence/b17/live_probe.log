@@ -1,0 +1,20 @@
+ok             function senIsOwner                    <- b17 H8: the owner tier alone, which is NOT senIsManagement() -- billing is management and may not approve somebody else's correction as its own
+ok             mine && !senIsOwner()                  <- ...and the button's disabled state really consults it, rather than keeping a second copy of the rule
+ok             Approve your own                       <- the label says it IS their own, so a self-approval is never an accident
+ok             bldPendingMark(k,'__collection__')     <- b17: a failed server backup whose rows have no id is marked with a sentinel rather than marking nothing
+ok             THREW and the record is on this device <- ...and it SAYS so, which the empty catch did not
+ok             bldPendingMark() is ABSENT             <- the RESTRUCTURED form -- it reports when nothing will retry, which the first b17 version skipped in silence
+ok             ABSENT function senCanClosePeriod      <- the DORMANT role helper b17 deleted. Its presence would mean the deployed page predates the deletion, and a role helper with no caller reads as 'the client enforces this' to anybody grepping for it
+ok             ABSENT try{bldSyncCollection(k,v,prev) <- the SWALLOWING catch -- a failed server backup reported as a saved record. Its presence would mean the fix did not deploy
+ok             ABSENT could not even QUEUE the failed <- the FIRST b17 form, with two guarded loggers. It took the bare-catch count in st() to three and tests/st_reports_failure.js caught it; its presence would mean the DRAFT deployed and the restructure did not
+COULD NOT RUN  api/sd-data.js -- the sen_period_closings resource, read and write (401 before the dispatcher)
+COULD NOT RUN  api/sd-data.js -- the named refusal of payroll_closed_periods at the settings path (401)
+COULD NOT RUN  api/sd-data.js -- senReadClosedPeriods's replay of closings and reopenings (401)
+COULD NOT RUN  api/_lib/sen-payroll.js -- the sign guard, overpayments[] and premium_may_be_owed (not an endpoint)
+COULD NOT RUN  api/_lib/sen-evv-readiness.js -- options.closed_periods and read_as_of (401)
+COULD NOT RUN  api/_lib/law-roles.js -- the trust hard-lock arms (no endpoint; no code changed there)
+COULD NOT RUN  sql/sairnsenior_period_closings_schema.sql -- NOT RUN, so the ledger is 503 NOT_PROVISIONED live
+COULD NOT RUN  sql/sairnsenior_audit_log_schema.sql -- NOT RUN, so every close is 503 AUDIT_UNAVAILABLE live
+
+verified=9  failed=0  could-not-run=8
+A COULD-NOT-RUN IS NOT A PASS. 8 of the 17 legs could not be exercised, and SIX OF THE SEVEN THINGS b17 DID are among them -- including the freeze ledger, which cannot be verified live by anybody until two SQL files are run.

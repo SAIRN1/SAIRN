@@ -1,0 +1,11 @@
+api/b17-tier-a-count-agreement.test.js
+  a hand-typed count beside a derived list -- criteria 2026-10-16.2
+  ok       C1. FIXTURE LOCK -- all four planted disagreements are flagged, including the digit form and the word form above twelve
+  ok       C2. FIXTURE LOCK -- the nine shapes that must NOT flag are silent: TWO agreeing counts (one of them in the extended word range), the five real subset shapes, a count attached to "changes" rather than resources, and a RECORDED disagreement
+  ok       C3. a RECORDED disagreement is reported as matched-and-corrected rather than folded into the clean set -- three states, not two
+  ok       C4. docs/tier-a-reviews.json: every self-summary count agrees with its own resources array, or carries a count_correction saying which number is right
+  ok       C5. the self-summary pattern MATCHED 3 record(s) (2 carrying a recorded correction). A narrow anchored pattern that matched nothing would print C4 green over a file it cannot read, which is the silent-rot shape this arm exists for -- re-aim the pattern if this goes red
+  ok       C6. ABLATION -- dropping ONE count_correction turns the real-data arm red with exactly that record named, so C4 is reading the correction field and the discrepancy is really there
+  ok       C7. every count_correction is substantive -- over 200 chars, naming the `resources` array as the authority. A field that accepted "noted" would make C4 green for free
+
+  7 passed, 0 failed, 0 unproven
