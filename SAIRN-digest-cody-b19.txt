@@ -20,10 +20,14 @@ digest -- b18 was cut off before writing anything, with three commits unpushed
 for 20 hours and TWO FILES UNCOMMITTED, one of which did not work (EXIT=2). So
 b19 finished b18 first. Claim `tests` (cody-1792149459) taken BEFORE any work;
 publishing it took three attempts because sairn_claim.py cannot push with a
-dirty tree and says NOT CLAIMED rather than faking success. b18's claim
-(cody-1792078195) is STILL ACTIVE and deliberately not released -- `release`
-takes a subject, not an id, so releasing `tests` would have dropped the live
-one too.
+dirty tree and says NOT CLAIMED rather than faking success. BOTH CODY CLAIMS
+ARE RELEASED -- b18's cody-1792078195 and b19's cody-1792149459, by name, in
+one commit, "pushed and verified on origin/main". CORRECTED AFTER THIS DIGEST
+WAS FIRST WRITTEN: it said b18's was deliberately left active because
+`release` takes a subject and would take the live one too. Taking both IS the
+desired outcome -- both are cody's and both are finished -- and leaving them
+would have blocked every other clone from tests/ for four hours each. NO
+CLAIMS HELD BY CODY AFTER THIS BATCH.
 
 WHAT THE BATCH FOUND
 --------------------

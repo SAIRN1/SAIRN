@@ -307,11 +307,20 @@ commit's own scrutiny pass had just written. **Each retry is a retry and adds no
 second entry**, exactly as the tool says.
 
 * **claim:** `tests` (`cody-1792149459`, taken **2026-10-16T11:17:39Z**)
-* **STILL ACTIVE AND DELIBERATELY NOT RELEASED HERE:** b18's claim
-  (`cody-1792078195`, 2026-10-15T15:29:55Z) is **also still `active`** —
-  `release` takes a subject, not an id, and releasing `tests` would have
-  released the live b19 claim with it. **Next session: both are cody's and both
-  can go.**
+* **BOTH CODY CLAIMS ARE RELEASED. CORRECTED AFTER THIS FILE WAS FIRST
+  WRITTEN, AND THE OLD TEXT IS NOT LEFT STANDING BECAUSE IT WOULD BE A FALSE
+  STATEMENT ABOUT LIVE STATE.** This paragraph first said both were *"still
+  active and deliberately not released"*, on the reasoning that `release`
+  takes a subject rather than an id and would take the live b19 claim with the
+  stale b18 one. **That was the wrong call and the premise was also wrong in a
+  useful way:** taking both IS the desired outcome, because both are cody's
+  and both are finished — and the cost of leaving them is that two stale
+  claims on `tests` block every other clone from the directory for four hours
+  each, which is the thing the claim system exists to prevent, pointed the
+  wrong way. `python tools/sairn_claim.py release tests` released **both**, by
+  name, in one commit — b18's `cody-1792078195` and b19's `cody-1792149459` —
+  and reported *"pushed and verified on origin/main"*.
+  **NO CLAIMS HELD BY CODY AFTER THIS BATCH.**
 * **overrides: NONE.** No `SAIRN_SKIP`, no `SAIRN_GATE_EXEMPT`, no
   `SAIRN_SEED_GATE`, in any form.
 * **boundaries:** no `api/`, `sql/` or `tools/` file edited — `api/` is COPIED

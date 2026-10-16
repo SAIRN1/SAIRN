@@ -390,10 +390,17 @@ two leftover files and then with docs/scrutiny-flags.json rows the claim
 commit's own scrutiny pass had just written. Each retry IS a retry and adds no
 second entry, exactly as the tool says.
 
-STILL ACTIVE AND DELIBERATELY NOT RELEASED: b18's claim (cody-1792078195,
-2026-10-15T15:29:55Z) is also still active. `release` takes a SUBJECT, not an
-id, so releasing `tests` would have released the live b19 claim with it. BOTH
-are cody's and both can go next session.
+BOTH CODY CLAIMS ARE RELEASED -- CORRECTED AFTER THIS SECTION WAS FIRST
+WRITTEN. It said b18's claim (cody-1792078195) and b19's were "still active
+and deliberately not released", reasoning that `release` takes a SUBJECT
+rather than an id and would take the live one with the stale one. THAT WAS THE
+WRONG CALL, and the premise was wrong in a useful way: taking both IS the
+desired outcome, because both are cody's and both are finished. The cost of
+leaving them is two stale claims on `tests` blocking every other clone from
+that directory for four hours each -- the claim system pointed the wrong way.
+`python tools/sairn_claim.py release tests` released BOTH, by name, in one
+commit, and reported "pushed and verified on origin/main".
+NO CLAIMS HELD BY CODY AFTER THIS BATCH.
 
 
 10. OPEN -- WITH THE NEXT STEP

@@ -7412,3 +7412,17 @@ b18 and `cody-1792149459` from b19) are **still active** — `release` takes a
 subject and not an id, so releasing `tests` would have dropped the live one
 too. b18's `wt18` worktree was registered against this clone and has been
 removed and pruned.
+
+**CORRECTION to the paragraph immediately above, same batch, before the
+artefacts were final.** It said both of cody's claims were "still active" and
+deliberately left so, because `release` takes a subject and not an id and
+would have dropped the live b19 claim with the stale b18 one. **That was the
+wrong call, and the premise was wrong in a useful way:** taking both IS the
+desired outcome — both are cody's and both are finished — and the cost of
+leaving them is two stale claims on `tests` blocking every other clone from
+that directory for four hours each, which is the claim system pointed the
+wrong way. `python tools/sairn_claim.py release tests` released **both** by
+name in one commit and reported *"pushed and verified on origin/main"*.
+**NO CLAIMS HELD BY CODY AFTER b19.** The old sentence is left standing above
+rather than edited out, because this file is append-only and a published
+statement needs a correction and not a silent overwrite.
