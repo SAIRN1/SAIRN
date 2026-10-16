@@ -22,11 +22,21 @@
 // asserts on THE BODY ACTUALLY POSTED UPSTREAM rather than on the response.
 // The response is not where the defect lives.
 //
-// ── ALL TEN ARMS ARE RED UNTIL hank CONVERTS THE SITE ───────────────────────
-// That is the deliverable, not a regression. Each arm goes green ON ITS OWN
-// when its site starts deriving `data` through storedBlob(). Read the row in
-// docs/known-red-suites.json before treating this suite's exit 1 as new, and
-// read `expected_red_scope` there: it names the arms.
+// ── THE TEN ARMS ARE GREEN SINCE 2026-10-15, AND THE PREMISE WAS STALE ──────
+// This header read "ALL TEN ARMS ARE RED UNTIL hank CONVERTS THE SITE" and was
+// never true of a tree this suite was run on: hank's conversion landed in
+// 8627f4e4 at 08:09 and this file was committed in 9f04ad39 at 08:11, on a
+// PARALLEL branch -- `git merge-base --is-ancestor 8627f4e4 9f04ad39` -> NO.
+// The b15 measurement and the b15 isolated-clone diagnosis (sha 040cbfd9, also
+// not a descendant of the fix) were both real; their BASE was old. At HEAD the
+// suite is exit 0, 16 passed, so the greens are MEASUREMENTS of a landed
+// conversion and not an unarmed harness -- which is what the CONTROL arm and
+// arm Z exist to tell apart. Found by fourth b25 F1.
+//
+// THE CHEAP CHECK FOR EVERY FAILING-FIRST SUITE, and it costs one command:
+//   git merge-base --is-ancestor <the fix> <the sha the red was measured at>
+// separates "red because the defect is there" from "red because my base is
+// old". Nothing else in the red verdict distinguishes the two.
 //
 // ── WHAT IS DELIBERATELY NOT ASSERTED, SITE BY SITE ─────────────────────────
 // NOT that every site NEEDS converting. tools/blob_conversion_coverage.py says
@@ -344,10 +354,29 @@ const SITES = [
       notes.push(label + ': payload `' + s.shadows + '` reached `data`, and that '
                  + 'read spreads the blob LAST, so it shadows the real column');
     }
-    if (d.id !== undefined && s.idMustSurvive) {
-      ok('Z (' + label + '): `id` SURVIVES into `data`, which this table\'s read '
-         + 'requires -- it returns `x.data` whole. Without this arm, "strip '
-         + 'everything" would satisfy every A arm above');
+    // ── ARM Z, AND THE `else` IT WAS MISSING (2026-10-15, fourth b25 F1) ──
+    // This read `if (d.id !== undefined && s.idMustSurvive)` and had NO else,
+    // so the one state the arm exists to catch -- `id` absent -- emitted
+    // neither `ok` nor `bad`. IT DID NOT GO RED; IT DISAPPEARED. fourth
+    // ablated it on a copy and measured BASELINE exit 0 / 16 passed / arm Z
+    // present 1 against ABLATED exit 0 / 15 passed / arm Z present 0: a fix
+    // that stripped `id` off every blob would have been exit 0 both ways.
+    // THE PREDICATE SPLIT IS THE FIX: `s.idMustSurvive` selects the
+    // POPULATION, `d.id !== undefined` is the ASSERTION. Folding the two into
+    // one condition is what made a failing assertion indistinguishable from a
+    // site the arm does not apply to.
+    if (s.idMustSurvive) {
+      if (d.id !== undefined) {
+        ok('Z (' + label + '): `id` SURVIVES into `data`, which this table\'s '
+           + 'read requires -- it returns `x.data` whole. Without this arm, '
+           + '"strip everything" would satisfy every A arm above');
+      } else {
+        bad('Z (' + label + '): `id` MUST SURVIVE into `data` and it is ABSENT. '
+            + 'This table\'s read returns `x.data` whole, so every record this '
+            + 'branch writes now has no id -- a correct-looking scope fix that '
+            + 'emptied the id off the row',
+            'data=' + JSON.stringify(d).slice(0, 240));
+      }
     }
   }
 
@@ -365,12 +394,23 @@ const SITES = [
   const rc = await write('sdn_projects', forged(),
                          { app: 'sairndesign', role: 'owner' });
   const dc = storedData();
+  // ── READ OFF failed.length, NOT TYPED (2026-10-15, fourth b25) ──────────
+  // This message said "so the ten failures above" as a literal, and hank's
+  // conversion landed two minutes before this suite was committed -- so it
+  // printed "the ten failures above" on a run with ZERO failures above, in
+  // the one arm whose whole job is to make the count above readable. A
+  // control that describes the result it is qualifying has to measure it.
+  const nAbove = failed.length;
+  const aboveTxt = nAbove === 0
+    ? 'and there are NO failures above, so the A arms\' greens are '
+      + 'measurements rather than a harness that cannot see a blob at all'
+    : 'so the ' + nAbove + ' failure(s) above are about those sites and not '
+      + 'about this harness being unable to see a clean blob';
   if (rc.statusCode === 200 && dc !== null) {
     const leakedC = NEVER_STORED.filter((k) => dc[k] !== undefined);
     if (leakedC.length === 0) {
       ok('CONTROL: an ALREADY-CONVERTED branch (sdn_projects) passes the same '
-         + 'arm, so the ten failures above are about those ten sites and not '
-         + 'about this harness being unable to see a clean blob');
+         + 'arm, ' + aboveTxt);
     } else {
       bad('CONTROL: the already-converted sdn_projects branch leaked '
           + JSON.stringify(leakedC) + ', which means this harness or that '
@@ -395,10 +435,13 @@ const SITES = [
   if (failed.length) {
     console.log(failed.length + ' ARM(S) FAILED:');
     failed.forEach((f) => console.log('  - ' + f));
-    console.log('\nTHE A ARMS ARE EXPECTED RED until hank converts each site to '
-              + 'storedBlob(). If only A arms failed, this suite is in the state '
-              + 'docs/known-red-suites.json records. A failing PRECONDITION or '
-              + 'CONTROL arm is NEW and means the measurement, not the handler.');
+    console.log('\nTHIS SUITE IS GREEN AT HEAD (16 passed, 0 failed, 2026-10-15) '
+              + 'and its row is in docs/known-red-suites.json `recovered`. ANY '
+              + 'failure above is NEW -- an A arm means a conversion was '
+              + 'reverted or a new scope key was added to api/_lib/blob.js '
+              + 'NEVER_STORED and a branch does not derive it; arm Z means a '
+              + 'scope fix stripped `id`; a PRECONDITION or CONTROL arm means '
+              + 'the measurement, not the handler.');
     process.exit(1);
   }
   process.exit(0);
