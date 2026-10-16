@@ -32221,6 +32221,79 @@
         }
       ],
       "recurrence_open": "only batch_manifest.pys spawn of drive_upload_verify.py is fixed. No sweep was run over the other subprocess spawns in tools/, so the same cp1252 child is possible anywhere else one exists and nothing here rules that out."
+    },
+    {
+      "commit": "ec7663ec3aa9",
+      "date": "2026-10-16",
+      "subject": "fix(b27 resume): the repair that closed five mutations opened a sixth, and the 26 UNRESOLVED were never inter-procedural",
+      "files": [
+        "SAIRN-handoff-fourth-b27.md",
+        "SAIRN-report-fourth-b27.txt",
+        "docs/2026-10-15-fourth-b26-branch-census-routed-to-cc.md",
+        "docs/2026-10-16-fourth-b27-branch-census-routed-to-cc.md",
+        "docs/2026-10-16-fourth-b27-findings.md",
+        "docs/batch-manifest-fourth-b27.json",
+        "tests/run_sairnbuild_server_wins_sabotage_probe.py",
+        "tests/sairnbuild_server_wins.js"
+      ],
+      "lines_added": 2265,
+      "lines_removed": 3,
+      "app": "sairnbuild",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "mutation-testing",
+      "summary": "A Tier A guard on bld_bids was green on a comment, and BOTH repairs of it left a hole a mutation could walk through. The suite asserted the literal key==='bld_bids' appears in bldRetryPending; that literal is gone from sairnbuild.html and both surviving occurrences are comments, one of them inside bldRetryPending explaining its own removal. The first repair stripped line comments and required some fourth argument: four of five mutations were still accepted -- false, 0, the declaration deleted, and a BLOCK comment carrying a satisfying call. The second repair collapsed string literals, which closed those and blinded the assertion to which string the first argument was, so 'write' -> 'read' was accepted at 25 passed 0 failed -- a retry that drains the pending queue by reading, saving nothing, while reporting success. Fixed with two derived copies and two assertions, re-ablated 10 of 10 refused on the named arm; probe arms 14 and 15 added so nothing rests on an assertion nobody made fail.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "the ad-hoc mutation harness b27r_bld_ablation2.py in the batch scratchpad -- 10 mutations against a COPY of sairnbuild.html in a tempdir, reading the red arm's own line out of stdout rather than an exit code",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The literal key==='bld_bids' was replaced by BLD_SESSION_REQUIRED in sairnbuild.html in an earlier batch and the suite was not re-anchored at that time; which commit made that replacement was not identified, and naming one without checking would be a guess. The first repair's own injection IS known -- it is the b27 session's edit to tests/sairnbuild_server_wins.js, which never landed as a commit and exists only inside this commit, so there is no prior sha to cite for it either."
+      },
+      "citation_note": "No standing rule names 'an assertion over source text can be satisfied by text that is not code'. The nearest is the staleness convention (nothing announces the day a check stops testing anything), which this is an instance of but which does not name the mechanism. Recorded as not-citable rather than stretched onto a rule it does not fit.",
+      "phase_note": "Recorded as coding because the defect is in the assertion expression itself -- a regex over text that non-code text can satisfy -- and not in what the arm was asked to prove. The vocabulary has no test-code or verification phase; coding is the honest nearest and this note exists so it is not read as a defect in sairnbuild.html, which was NOT changed by this commit.",
+      "contributing_factors": [
+        {
+          "factor": "The assertion matched over SOURCE TEXT, so any text that merely reads like the code could satisfy it. The original form was satisfied by a comment; the first repair stripped // comments and was then satisfied by a BLOCK comment.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The arm now matches over TWO derived copies -- one with block comments, line comments and string literals all removed, which proves the call is executable rather than text, and one with comments removed but strings intact, which proves the verb. Mutations M5 and M7 plant the comment and the string form and both are refused."
+        },
+        {
+          "factor": "The first repair required a fourth argument that merely EXISTED rather than one that reads the real flag, so a falsy literal satisfied it -- which is the very defect the arm is named for, wearing an argument.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The argument must now READ BLD_SESSION_REQUIRED[key], and the declaration is separately asserted to still carry bld_bids: true. Mutations M2, M3, M4, M9 and M10 plant the falsy, zero, deleted-declaration, wrong-cell and whole-object forms; all five are refused."
+        },
+        {
+          "factor": "Collapsing every string literal to '' to close the comment hole blinded the assertion to WHICH string the first argument was, so the retry could be changed from 'write' to 'read' with the suite at 25 passed, 0 failed. The repair introduced this; it was not present before.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A second assertion over a comments-stripped-but-strings-intact copy requires the verb 'write' and the cell [key]. Mutation M6 plants the verb change and probe arm 15 plants it as a standing control."
+        },
+        {
+          "factor": "The sabotage probe arm guarding this assertion was ANCHOR-0 at the same time, so the detect layer reported SILENT while the prevent layer was passing on a comment. Two layers of guard on a Tier A resource, neither guarding, and nothing compared them to each other.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Probe arms 14 and 15 were added so every refusal condition of the assertion has a planted mutation. The probe reports ALL 19 ARMS PASS over 15 mutations and asserts the worktree copy is byte-identical afterwards."
+        },
+        {
+          "factor": "Each repair of this arm was verified by READING the new regex rather than by making it fail. The first repair's author believed it closed the comment hole and it did not; the hole was found only by applying mutations to a copy and reading the exit codes.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Both repairs are now ablated per ARM rather than per exit code -- the harness reads the red arm's own line out of stdout, so a mutation refused by some other arm is not credited to this one. 10 of 10 mutations refused, baseline 25 passed 0 failed, logs kept in the batch scratchpad."
+        },
+        {
+          "factor": "A test assertion over source text has no mechanism that notices the day its anchor stops matching the thing it is about. The literal key==='bld_bids' was removed from sairnbuild.html and both the suite and its probe kept reporting green for an unknown interval.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "OWED, NOT DONE, and nothing in this commit closes it: an anchor-rot check over the source-text assertions in tests/ that fails when an asserted literal no longer occurs in the file it is about, wired into a push gate rather than run by hand. The routed form of this is cc's standing item 'wire ONE anchor-rot tool into a gate' and it is open. Until it exists the next assertion of this shape will rot the same way and will be found only if somebody chooses to ablate it -- which is how this one was found, on a Tier A resource, after an unknown interval of green.",
+          "note": "Recorded as planned rather than done deliberately. This arm's own two layers are now ablated and both bite, but that is one arm; the mechanism that would notice the next one is not built and is not mine to build, so claiming it as addressed would be the thing this field exists to stop."
+        }
+      ],
+      "recurrence_open": "The latent condition is NOT closed. Nothing runs an anchor-rot check over the source-text assertions in tests/, so the next assertion of this shape will rot the same way and will be found only if somebody chooses to ablate it. The routed item that would close it -- wire ONE anchor-rot tool into a gate -- is cc's and is open. Also not closed: nothing compares a suite assertion against the probe arm that is supposed to guard it, which is how both layers were dead at the same time here."
     }
   ],
   "started": "2026-09-09",
