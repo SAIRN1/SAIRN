@@ -1393,6 +1393,168 @@ def registry_claims(me):
     return out
 
 
+# ══ ONE QUESTION, THREE SOURCES, AND IT USED TO BE ASKED TWO DIFFERENT WAYS ══
+# Fixed 2026-10-16 (cc b16), from an H2 b42 finding that `self_hits` is never
+# wired to a refusal. It is wired -- and to a DIFFERENT INPUT, which is worse
+# than not being wired, because the code says the opposite in a comment.
+#
+# MEASURED, by reading both call sites rather than the comment:
+#
+#   cmd_check     self_hits <- load_all(from_origin=True), filtered to me.
+#                 That is ORIGIN/MAIN ONLY. load_all REPLACES its source when
+#                 it can read origin; it does not merge. So `check` -- the
+#                 advisory read every agent runs first, every batch -- is
+#                 STRUCTURALLY BLIND to this session's own UNPUBLISHED claim.
+#   cmd_claim     refusal <- my_active_overlaps(doc, task), and `doc` is
+#                 load_mine(): THIS CLONE'S LOCAL FILE ONLY. So the refusal is
+#                 blind to a claim that is on origin but not in this working
+#                 copy -- which a rebase resolution, a `git checkout -- ` on
+#                 the claims file, or a second clone provisioned with the same
+#                 name all produce.
+#
+# Each one is blind to exactly what the other can see, and the comment above
+# self_hits says "Reported here and REFUSED in cmd_claim" as though they were
+# the same set. THE BLINDNESS IS NOT HYPOTHETICAL FOR THE FIRST HALF: this
+# session started b16 holding a b15 claim that was in the local file and not on
+# origin -- `check` could not see it and `claim`'s separate unpublished-subject
+# guard is what caught it. One of the two guards happening to cover it is not
+# the same as the question being answered once.
+#
+# SO IT IS ONE FUNCTION OVER THE UNION, each row tagged with WHERE IT WAS SEEN.
+# Three sources, because there are three places a claim of mine can exist and
+# all three are real:
+#
+#   origin/main        the authoritative record other clones read
+#   working tree       my own file, including a claim not yet pushed (PR 2.2
+#                      says a claim is not written until committed -- that is
+#                      about other clones seeing it, not about ME forgetting it)
+#   status registry    outside every clone, current without a fetch
+#
+# A claim present in several is ONE claim and is counted once, with every
+# source named. `_sources` is what the output prints, so a reader can tell an
+# unpushed claim from a published one instead of being told a number.
+def registry_rows_for(session):
+    """Pseudo-claims from ONE session's own status row, shaped like a git claim.
+
+    registry_claims() builds these for every session EXCEPT me, which is right
+    for the collision half and is why my own registry row was never read at
+    all. Same shaping, one parameter, so there is still one code path.
+    """
+    if not _in_own_clone():
+        return []
+    try:
+        sys.path.insert(0, os.path.join(REPO, 'tools'))
+        import sairn_status
+        rows = sairn_status.read_claims()
+    except Exception:                                            # noqa: BLE001
+        return []
+    out = []
+    live = None
+    for sess, c in rows:
+        if sess != session:
+            continue
+        if not isinstance(c, dict) or c.get('status') != 'active':
+            continue
+        if live is None:
+            try:
+                live = sairn_status.claim_liveness(sess)
+            except Exception:                                    # noqa: BLE001
+                live = ('UNKNOWN', 'liveness raised', None)
+        state, why, beat = live
+        out.append({
+            '_alive': (True if state == 'ALIVE'
+                       else False if state == 'DEAD' else None),
+            '_alive_why': why,
+            '_heartbeat': beat,
+            'session': sess,
+            'subject': c.get('subject') or '',
+            'task': c.get('task') or '',
+            'claimed_at': c.get('claimed_at'),
+            'claimed_at_epoch': c.get('claimed_at_epoch') or 0,
+            'status': 'active',
+            'released_at': None,
+            'files': c.get('files'),
+            '_registry': True,
+            '_file': '(status registry -- not yet on origin/main)',
+        })
+    return out
+
+
+def my_claims_union(from_origin=True):
+    """Every claim THIS session holds, over all three sources, deduped.
+
+    Each row carries `_sources`, a list. Returns [] only when all three are
+    genuinely empty -- a source that cannot be read is NAMED in `_unread`
+    rather than treated as empty, because "I could not read origin" and "there
+    is no claim on origin" are the two answers this whole file exists to keep
+    apart.
+    """
+    me = session_name()
+    out, index, unread = [], {}, []
+
+    def add(c, src):
+        key = ((c.get('subject') or '').strip(),
+               ' '.join((c.get('task') or '').split()))
+        if key in index:
+            row = index[key]
+            if src not in row['_sources']:
+                row['_sources'].append(src)
+            # A registry row carries liveness a git row cannot. Keep it.
+            for f in ('_alive', '_alive_why', '_heartbeat'):
+                if row.get(f) is None and c.get(f) is not None:
+                    row[f] = c[f]
+            return
+        row = dict(c)
+        row.setdefault('session', me)
+        row['_sources'] = [src]
+        index[key] = row
+        out.append(row)
+
+    try:
+        for c in load_all(from_origin=from_origin):
+            if c.get('session') == me:
+                add(c, 'origin/main' if from_origin else 'working tree')
+    except Exception as e:                                       # noqa: BLE001
+        unread.append('origin/main (%s)' % e)
+    try:
+        for c in load_mine().get('claims', []):
+            add(c, 'working tree')
+    except Exception as e:                                       # noqa: BLE001
+        unread.append('this clone\'s claims file (%s)' % e)
+    try:
+        for c in registry_rows_for(me):
+            add(c, 'status registry')
+    except Exception as e:                                       # noqa: BLE001
+        unread.append('the status registry (%s)' % e)
+    return out, unread
+
+
+def my_overlaps_union(task, from_origin=True):
+    """[(claim, reason, kind)] over the UNION. kind is refuse/report/expired.
+
+    The expired-but-unreleased THIRD ANSWER is preserved exactly as
+    my_active_overlaps() had it, and its reasoning is unchanged: the guard must
+    use expiry or a forgotten row locks a session out for ever, while `audit`
+    uses the real held span because released_at is the ground truth. Both
+    readings are right and they disagree; this reports the disagreement instead
+    of picking one.
+    """
+    rows, unread = my_claims_union(from_origin=from_origin)
+    out = []
+    for c in rows:
+        if c.get('status') != 'active':
+            continue
+        reason, kind = self_overlap(task, c.get('task'))
+        if not kind:
+            continue
+        out.append((c, reason, 'expired' if not is_active(c) else kind))
+    return out, unread
+
+
+def sources_of(c):
+    return '+'.join(c.get('_sources') or ['unknown'])
+
+
 # ── THE SESSION'S OWN VIEW OF ITS OWN CLAIM WAS THE ONLY BLIND ONE ──────────
 # MEASURED 2026-10-08, and the measurement corrects a claim I made about it.
 #
@@ -2100,7 +2262,12 @@ def cmd_check(args, quiet=False):
     # the advisory read and must not start returning 1 for a claim the caller
     # already holds -- that would make `check` before `claim` fail on the
     # legitimate retry path. The gate belongs where the duplicate is created.
-    self_hits = []
+    # MY OWN overlapping claims now come from the UNION of all three sources
+    # rather than from origin/main alone -- see my_claims_union(). Same list,
+    # same reporting, an input that can no longer differ from the one the
+    # refusal in cmd_claim uses.
+    self_hits, _self_unread = my_overlaps_union(task,
+                                               from_origin=not args.no_fetch)
     # THE REGISTRY ROWS JOIN THE SAME LIST rather than getting their own pass.
     # A claim that is on origin appears in both; the de-dup below keeps the git
     # one, because that is the authoritative record and the one whose age and
@@ -2111,10 +2278,6 @@ def cmd_check(args, quiet=False):
             if (c.get('session'), c.get('subject'), c.get('task')) not in _seen]
     for c in _git + _reg:
         if c.get('session') == me:
-            if is_active(c):
-                reason, kind = self_overlap(task, c.get('task'))
-                if kind:
-                    self_hits.append((c, reason, kind))
             continue
         if not is_active(c):
             continue
@@ -2311,19 +2474,34 @@ def cmd_check(args, quiet=False):
                   'and this becomes\n  answerable instead of unknown. It does '
                   'NOT block: a session claiming without\n  a FILES list would '
                   'otherwise be refused by every other session on the machine.')
+        if _self_unread:
+            print('')
+            print('COULD NOT READ %d of the three sources for MY OWN claims: %s'
+                  % (len(_self_unread), '; '.join(_self_unread)))
+            print('  So the self-overlap answer below is INCOMPLETE. It is not '
+                  '"no overlap".')
         if self_hits:
             hard = [x for x in self_hits if x[2] == 'refuse']
             print('')
             print('BUT YOU ALREADY HOLD %d ACTIVE CLAIM(S) THAT OVERLAP THIS WORK.'
                   % len(self_hits))
             for c, reason, kind in self_hits:
-                print('  %-9s %s -- %s' % ('[SAME WORK]' if kind == 'refuse'
-                                           else '[same app]',
-                                           c.get('subject'), c.get('task') or '(no task)'))
+                print('  %-11s %s -- %s'
+                      % ('[SAME WORK]' if kind == 'refuse'
+                         else '[EXPIRED]' if kind == 'expired' else '[same app]',
+                         c.get('subject'), brief(c.get('task')) or '(no task)'))
                 print('            claimed %s, overlaps on: %s' % (age_str(c), reason))
+                # WHERE IT WAS SEEN, because an unpushed claim and a published
+                # one need different answers and a count cannot tell them apart.
+                print('            seen in : %s' % sources_of(c))
             if hard:
                 print('  `claim` will REFUSE this. Either carry on under the claim you')
                 print('  already hold, or release it first so the record says one thing.')
+            if [x for x in self_hits if x[2] == 'expired']:
+                print('  An [EXPIRED] row does NOT block -- the guard uses expiry so a')
+                print('  forgotten claim cannot lock this session out for ever. It is')
+                print('  shown because "you have an expired claim on this; did you')
+                print('  finish it?" is the question, and silence was the wrong answer.')
         if weak:
             # ── TWO KINDS OF WEAK NOW, AND ONE SENTENCE CANNOT COVER BOTH ──
             # (2026-09-22.) This printed "share WORDS ... but no app, file,
@@ -2373,9 +2551,16 @@ def cmd_check(args, quiet=False):
         if stale:
             print('\nNote: %d EXPIRED claim(s) overlap this work (older than '
                   '%g hours, so not blocking):' % (len(stale), STALE_HOURS))
-            for c in stale:
+            # BUDGETED (b16), like the other two context blocks: an expired
+            # claim never blocks, so these rows are background for a judgement
+            # and each carried a 1-2KB paragraph. Three of them were 4.6KB of a
+            # 12KB `check`.
+            _shown, _note = _cap(stale, RECENT_ROW_CAP, 'expired claim(s)')
+            for c in _shown:
                 print('  %s: %s -- %s (%s)' % (c.get('session'), c.get('subject'),
-                                               c.get('task'), age_str(c)))
+                                               brief(c.get('task')), age_str(c)))
+            if _note:
+                print(_note)
             print('An expired claim can mean the session died, or that the work '
                   'was DONE and never released. Check before repeating it.')
         _report_recent_releases(load_all(from_origin=not args.no_fetch),
@@ -2731,7 +2916,23 @@ def cmd_claim(args):
     # the general case they are both special cases of, and it is the one both
     # live incidents took. See self_overlap() for the measurement that set the
     # refuse/report line.
-    mine = my_active_overlaps(doc, task)
+    # ── THE REFUSAL READS THE UNION, NOT JUST THE LOCAL FILE (b16) ────────
+    # This was my_active_overlaps(doc, task), and `doc` is this clone's own
+    # file. See my_claims_union(): the refusal was blind to a claim on
+    # origin/main that is not in this working copy, while cmd_check was blind
+    # to the opposite. Two inputs to one question.
+    mine, _mine_unread = my_overlaps_union(task, from_origin=not args.no_fetch)
+    if _mine_unread:
+        # A SOURCE THAT CANNOT BE READ DOES NOT MAKE THE ANSWER "NO OVERLAP".
+        # It is printed here and the claim still proceeds, deliberately: the
+        # alternative is refusing every claim whenever the network is down,
+        # which this file already records as the shape people learn to talk
+        # past. The disclosure is the control.
+        print('')
+        print('NOTE: %d of the three sources for MY OWN claims could not be '
+              'read: %s' % (len(_mine_unread), '; '.join(_mine_unread)))
+        print('  The self-overlap guard below is therefore INCOMPLETE rather '
+              'than clean.')
     refuse = [x for x in mine if x[2] == 'refuse']
     report = [x for x in mine if x[2] == 'report']
     expired = [x for x in mine if x[2] == 'expired']
@@ -2743,9 +2944,11 @@ def cmd_claim(args):
         print('by the matcher this tool already uses on every other session:')
         print('')
         for c, reason, _k in refuse:
-            print('  already held : %s -- %s' % (c.get('subject'), c.get('task') or '(no task)'))
+            print('  already held : %s -- %s' % (c.get('subject'),
+                                                 c.get('task') or '(no task)'))
             print('  claimed at   : %s (%s)' % (c.get('claimed_at'), age_str(c)))
             print('  overlaps on  : %s' % reason)
+            print('  seen in      : %s' % sources_of(c))
             print('')
         print('  you just typed: %s' % (task or '(no task)'))
         print('')
@@ -3225,6 +3428,96 @@ def selftest():
     ck('B9 under the cap, nothing is withheld and NO note is printed -- the '
        'over-reporting control', (len(kept), note), (3, ''))
     set_full_output(was)
+
+    # ══ THE UNION: ONE QUESTION, THREE SOURCES (b16) ══════════════════════
+    # Driven on FIXTURES rather than on the live record, because the live
+    # record currently agrees across all three sources -- which is exactly the
+    # state in which a two-input bug is invisible. The arms construct the
+    # disagreement.
+    print('')
+    print('  SELF-OVERLAP UNION -- the defect was not a missing refusal, it')
+    print('  was TWO INPUTS to one question: cmd_check read origin/main only,')
+    print('  cmd_claim read the local file only, and each was blind to exactly')
+    print('  what the other could see. SIX arms: U1-U3 require the union to')
+    print('  FIND a claim one source alone cannot, U4 and U6 require it not to')
+    print('  DUPLICATE one, and U5 is the over-reporting control -- a union')
+    print('  that flags everything passes U1-U4 and refuses every claim this')
+    print('  session ever makes. NOT ARM-COVERED HERE: the could-not-read')
+    print('  disclosure, because these arms inject the three sources rather')
+    print('  than failing them. Its code path prints and proceeds; that is')
+    print('  stated rather than counted as tested.')
+
+    def union_of(origin_rows, local_rows, registry_rows, task):
+        """my_claims_union()'s merge, driven on injected sources."""
+        me_ = 'cc'
+        out, index, unread = [], {}, []
+
+        def add(c, src):
+            key = ((c.get('subject') or '').strip(),
+                   ' '.join((c.get('task') or '').split()))
+            if key in index:
+                row = index[key]
+                if src not in row['_sources']:
+                    row['_sources'].append(src)
+                return
+            row = dict(c)
+            row.setdefault('session', me_)
+            row['_sources'] = [src]
+            index[key] = row
+            out.append(row)
+
+        for c in origin_rows:
+            add(c, 'origin/main')
+        for c in local_rows:
+            add(c, 'working tree')
+        for c in registry_rows:
+            add(c, 'status registry')
+        hits = []
+        for c in out:
+            reason, kind = self_overlap(task, c.get('task'))
+            if kind:
+                hits.append((c, reason, kind, '+'.join(c['_sources'])))
+        return out, hits
+
+    T = 'b16 fix tools/branch_census.py and tools/sairn_claim.py'
+    HELD = {'subject': 'cc', 'status': 'active',
+            'task': 'b16 install tools/branch_census.py census', 'files': None}
+    OTHER = {'subject': 'cc', 'status': 'active',
+             'task': 'b9 sairnlaw deadline rules sql only', 'files': None}
+
+    rows, hits = union_of([], [HELD], [], T)
+    ck('U1 a claim ONLY in the working tree -- unpublished -- IS found. '
+       'cmd_check read origin/main alone and could not see this, and it is the '
+       'state this very session started b16 in',
+       (len(hits), hits[0][3] if hits else None), (1, 'working tree'))
+
+    rows, hits = union_of([HELD], [], [], T)
+    ck('U2 a claim ONLY on origin/main IS found. cmd_claim read the local file '
+       'alone and could not see this -- a rebase resolution or a second clone '
+       'with the same name produces it',
+       (len(hits), hits[0][3] if hits else None), (1, 'origin/main'))
+
+    rows, hits = union_of([], [], [HELD], T)
+    ck('U3 a claim ONLY in the status registry IS found -- the source that is '
+       'current without a fetch and that neither call site read for ME',
+       (len(hits), hits[0][3] if hits else None), (1, 'status registry'))
+
+    rows, hits = union_of([HELD], [HELD], [HELD], T)
+    ck('U4 the SAME claim in all three is ONE row with all three named -- not '
+       'three rows, which would read as three claims',
+       (len(rows), len(hits), hits[0][3] if hits else None),
+       (1, 1, 'origin/main+working tree+status registry'))
+
+    rows, hits = union_of([OTHER], [OTHER], [], T)
+    ck('U5 THE OVER-REPORTING CONTROL: a claim of mine on unrelated work is '
+       'in the union and is NOT a hit. A union that flags everything passes '
+       'U1-U4 and refuses every claim this session ever makes',
+       (len(rows), len(hits)), (1, 0))
+
+    ck('U6 whitespace-only differences are the SAME claim, so a re-typed task '
+       'does not become a second row',
+       len(union_of([dict(HELD, task='b16  install   tools/branch_census.py '
+                                   'census')], [HELD], [], T)[0]), 1)
 
     print('')
     print('  %d/%d arm(s) pass' % (total - bad, total))
