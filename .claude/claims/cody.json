@@ -3994,6 +3994,23 @@
       "status": "released",
       "released_at": "2026-10-16T12:38:36Z",
       "files": null
+    },
+    {
+      "id": "cody-1792155139",
+      "session": "cody",
+      "subject": "platform",
+      "task": "b20: arm Z ablation re-verify; SAIRNveterans 45B tips-received research doc (IRS Pub 3386 + TD 10044) for VFW/Legion canteen staff; SAIRNcash billing-flow live status re-derive against code; confirm hank/cc routing already sent; handoff b20. CONFLICTS DECLARED PER PR 4.3: api/ and sql/ are hank's and READ-ONLY here; tools/ is cc's and RUN not edited. FILES: docs/2026-10-16-cody-b20-45b-tips-received-sairnveterans.md docs/2026-10-16-cody-b20-sairncash-billing-status.md SAIRN-handoff-cody-b20.md SAIRN-report-cody-b20.txt SAIRN-digest-cody-b20.txt",
+      "claimed_at": "2026-10-16T12:52:19Z",
+      "claimed_at_epoch": 1792155139.809877,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-cody-b20.txt",
+        "SAIRN-handoff-cody-b20.md",
+        "SAIRN-report-cody-b20.txt",
+        "docs/2026-10-16-cody-b20-45b-tips-received-sairnveterans.md",
+        "docs/2026-10-16-cody-b20-sairncash-billing-status.md"
+      ]
     }
   ],
   "refusals": [
