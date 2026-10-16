@@ -1,0 +1,365 @@
+SAIRN REPORT -- cody, batch b20, 2026-10-16
+===========================================================================
+
+STATUS
+------
+cody b20 LANDED on origin/main. Commits: ef8d6b06 (claim), 7adcd2a6 (the two
+documents + the index row + regenerated shards), 0f9b8ab2 (handoff), and this
+report/digest pair. Pushed WITHOUT --force. Tree clean.
+
+NOTHING OVERRIDDEN -- no SAIRN_SKIP, no SAIRN_GATE_EXEMPT, no SAIRN_SEED_GATE,
+in any form.
+
+NO api/, sql/ OR tools/ FILE EDITED. Twelve suites, tools/sairn_http.py,
+tools/open_work_shard.py and tools/index_duplicate_check.py were RUN. No hook
+restored. .claude/settings.json never committed. No auditor clone entered.
+Committer: fx <fx@example.invalid>, this clone's local config, unchanged.
+
+NO OUTWARD-FACING ACTION WAS TAKEN. No POST to checkout or portal, no Stripe
+object created, no Vercel environment read, no Stripe dashboard opened.
+Section 4 is the reason, and it is the methodology item.
+
+
+THE HEADLINE
+------------
+TWO OF THE SIX ITEMS WERE ALREADY DONE, AND FINDING THAT OUT WAS THE WORK.
+
+Item 1's fix landed in b19 and needed re-verification, not re-implementation.
+Item 2's research question was already answered in this repo by a document the
+app's own source code cites -- and the one part of it that was genuinely open
+turned out to be answered by a 2003 IRS revenue ruling nobody here had found.
+WRITING EITHER FROM SCRATCH WOULD HAVE PRODUCED A DUPLICATE, which is this
+platform's most expensive recurring defect.
+
+
+1. ITEM 1 -- ARM Z, RE-VERIFIED RATHER THAN REDONE
+--------------------------------------------------
+The else branch landed in b19. docs/b19-logs/ablate_arm_z.py re-run at this
+HEAD:
+
+  BASELINE  EXIT=0   16 passed, 0 failed   arm Z ok:1 FAIL:0
+  ABLATED   EXIT=1   15 passed, 1 failed   arm Z ok:0 FAIL:1   CAUGHT
+
+Driver EXIT=0. THE ARM FIRES. Implementing it again would have been a second
+copy of a landed fix, and the ablation is the thing that proves it is not dead
+code -- which is exactly what the dispatch asked for.
+
+
+2. ITEM 2 -- SECTION 45B ON VFW/LEGION CANTEEN TIPS
+---------------------------------------------------
+DELIVERABLE: docs/2026-09-17-sairnfreedom-tips-tax-treatment.md section 12,
+APPENDED TO THE CANONICAL FILE rather than written as a new document.
+
+WHY APPENDED AND NOT NEW: the app's own code cites that file at
+sairnfreedom.html:4418, and sections 7 and 10 already carried Pub. 3386,
+TD 10044, section 45B, the 501(c)(19) chain, the frozen minimum wage and the
+customary-tipping split. CHECKED BEFORE WRITING ANYTHING. A second home for
+the same fact is the defect that document itself warns about.
+
+THE ANSWER, IN ONE PARAGRAPH. YES -- section 45B applies to tips reported by
+VFW/Legion canteen staff, AND MEMBER TIPS COUNT, on Rev. Rul. 2003-64 and the
+face of 45B(b)(2): the tips are received in connection with serving food or
+beverages, and an exempt club's own members are "customers" for that test. BUT
+the credit is NONREFUNDABLE and the post must first owe tax it can offset --
+in practice section 511 UBIT on Form 990-T -- so a post with no UBTI gets
+nothing now and only a section 39 carryforward (1 back, 20 forward). TD 10044
+is IRRELEVANT to the employer credit; it governs the employee's section 224
+deduction. PUB. 3386 DOES NOT ADDRESS 45B at all and routes the tip question to
+Pub. 531.
+
+WHAT WAS GENUINELY OPEN AND IS NOW CLOSED. Section 9 of that document
+escalated ONE question to outside counsel and filed an index row so it would
+get asked: whether FICA paid on EXEMPT-function tips can generate a credit
+usable against UBIT from a DIFFERENT activity. REV. RUL. 2003-64 ANSWERS IT,
+and no section above cited it:
+
+  "Section 45B does not prohibit social clubs described in 501(c)(7) from
+   claiming the credit, nor does it limit the credit to social security taxes
+   paid in connection with a social club's unrelated trade or business.
+   Therefore, A may calculate the 45B credit on the basis of all tips received
+   by its employees, not only the tips received by employees from nonmembers."
+
+THE GAP WAS A SEARCH GAP, NOT A REASONING GAP, and that is the reusable part.
+Sections 7.1 and 10.0 list statute, regulation, DOL and Ohio sources and NOT
+ONE PUBLISHED IRS RULING. A source table with no ruling line cannot find a
+ruling. Both sections reasoned correctly from the statute and both said, in
+terms, that the statute alone could not settle the confinement question.
+
+TWO MORE THINGS THE RULING SETTLES.
+  * MEMBER TIPS COUNT. Section 10 had left 45B(b)(2)'s "customers" wording as
+    a hurdle "against this document's own exempt-function position". The
+    ruling computes the credit on ALL tips and says the test was met "because
+    the tips were received in connection with food and beverage service at A,
+    and tipping of employees is customary at A."
+  * Section 7.3's conclusion -- the credit is reachable only to the extent the
+    canteen produces UBTI -- is now CONFIRMED by an IRS ruling rather than
+    inferred from 38(c).
+
+WHERE IT STOPS, stated because a ruling read too widely is worse than no
+ruling.
+  1. IT IS A 501(c)(7) RULING AND A POST IS USUALLY 501(c)(19). The credit
+     reasoning does not depend on which subsection; the UBTI COMPUTATION does
+     -- 512(a)(3) applies to (c)(7), (c)(9) and (c)(17), NOT to (c)(19). So the
+     FACTS do not transfer even where the HOLDING does. AND THIS IS NOT
+     ACADEMIC: Pub. 3386 says a veterans' organisation running a bar,
+     restaurant or canteen for members "may be recognized as tax exempt under
+     IRC 501(c)(7)", and that such clubs "are often operated in conjunction
+     with IRC 501(c)(4) veterans' organizations". WHICH SUBSECTION THE CANTEEN
+     SITS UNDER IS A FACT ABOUT THE POST and it changes which authority is on
+     all fours. A build must not assume (c)(19).
+  2. THE RULING HAS ONE ACTIVITY SERVING TWO CLASSES OF CUSTOMER; section 9.1
+     posits a canteen with NO UBTI and UBTI from a DIFFERENT activity. The
+     holding's rationale is activity-agnostic -- it rests on an ABSENCE in
+     45B -- but the ruling does not present that pattern. So section 9 narrows
+     from "unanswered" to "answered in principle, not on all fours".
+  3. PUB. 3386 DOES NOT ADDRESS 45B, AND THAT IS A MEASUREMENT WITH A STATED
+     LIMIT. A keyword pass over a text extraction of Pub. 3386 (Rev. 4-2018,
+     Catalog 27489D) found 0 hits for 45B, 8846 and "social security", against
+     73 for 501(c)(19), 52 for "unrelated" and 5 for "canteen". THE ZEROS ARE
+     NOT PROOF OF ABSENCE -- the extraction recovers the publication's prose
+     but not its embedded font streams, and a truncated read is
+     indistinguishable from a complete one. What the pass DOES establish is
+     the prose it recovered: the recordkeeping duty names tip income, and the
+     reference list sends a post to "Publication 531, Reporting Tip Income"
+     and never to the employer credit.
+
+AND THE IRS'S OWN LIVE GUIDANCE PAGE CONTRADICTS THE STATUTE.
+45B(b)(1)(B) freezes the floor at the minimum wage "as in effect on
+January 1, 2007" -- $5.15 -- and IR-2007-155 says so in terms. Rev. Rul.
+2003-64 quotes 45B(b)(1)(B) in its PRE-FREEZE form with no date, which usefully
+dates the freeze to after 2003. The IRS FICA Tip Credit page, PAGE LAST
+REVIEWED OR UPDATED 16-AUG-2026, says verbatim:
+
+  "You can't claim the credit for taxes on any tips used to meet a minimum
+   wage of $7.25 per hour, the federal minimum wage rate in effect on
+   July 24, 2009."
+  "The minimum wage basis for the FICA Tip Credit is $7.25 per hour."
+
+THE DIRECTION OF THE ERROR MATTERS: $7.25 makes the subtraction LARGER and the
+credit SMALLER, so a post following that page UNDERSTATES its credit. Not a
+penalty trap -- a money trap, which is the harder kind to notice. RECORDED AS A
+DOCUMENTED DISAGREEMENT WITH BOTH SIDES QUOTED AND DATED, NOT as a
+determination that the page is wrong: a Treasury position in guidance is not
+something this platform overrules from a statute reading. It becomes a one-line
+question with two citations for the same professional section 9 was already
+going to.
+
+AND THE DISPATCH'S PAIRING IS WRONG IN A SPECIFIC WAY, re-stated because it is
+the natural pairing to make. TD 10044 implements section 224 -- the
+INDIVIDUAL's deduction -- and its occupation list is OCCUPATION-KEYED and
+ESTABLISHMENT-AGNOSTIC. NOTHING ON THE TREASURY TIPPED OCCUPATION CODE LIST
+MAKES AN EMPLOYER ELIGIBLE FOR 45B, AND NOTHING OFF IT MAKES ONE INELIGIBLE.
+The two provisions share the word "tips" and nothing else. One datum added
+since section 10 was written: the final rule ADDS three occupations -- Visual
+Artists (509), Floral Designers (510), Gas Pump Attendant (810) -- and removes
+none.
+
+THE BUILD DOES NOT CHANGE. Section 7.3's warning stands: a field that invites a
+post to chase the credit pushes the decision the wrong way round, because
+reaching 45B requires the post to first be in the UBIT state it is trying to
+stay out of. THE RULING MAKES THE CREDIT MORE CLEARLY AVAILABLE AND NOT MORE
+DESIRABLE.
+
+
+3. ITEM 3 -- SAIRNcash BILLING: THE CODE IS COMPLETE AND THE RECORD IS STALE
+----------------------------------------------------------------------------
+DELIVERABLE: docs/2026-10-16-cody-b20-sairncash-billing-live-status.md.
+
+THE STANDING STATUS IS "INCOMPLETE". IT IS NOW WRONG IN ONE DIRECTION AND
+STILL RIGHT IN ANOTHER, AND THE TWO HALVES HAVE DIFFERENT OWNERS.
+
+THE CODE HALF IS FINISHED AND MUTATION-TESTED. Twelve suites green at this
+commit:
+
+  EXIT=0  node api/sairncash/portal.test.js                  19 passed, 0 failed
+  EXIT=0  node api/sairncash/verify.test.js                   22 passed, 0 failed
+  EXIT=0  node api/sairncash/trial-start.test.js              10 passed, 0 failed
+  EXIT=0  node api/sairncash/trial-renew.test.js               4 passed
+  EXIT=0  node api/sairncash/trial-renew-idempotency.test.js  11 passed, 0 failed
+  EXIT=0  node api/sairncash/stripe-webhook.test.js
+  EXIT=0  node tests/sairncash_entitlement_gate.js            19 passed, 0 failed
+  EXIT=0  node tests/sairncash_plan_label.js                  10 passed, 0 failed
+  EXIT=0  node tests/sairncash_safe_harbor.js                 35 passed, 0 failed
+  EXIT=0  python tests/sairncash_entitlement_fault_probe.py    0 failure(s)
+  EXIT=0  python tests/sairncash_fault_probe.py                0 failure(s)
+  EXIT=0  python tests/sairncash_entitlement_gate_probe.py     12 ARMS, 8
+                                                               mutations refused
+
+THE THREE PYTHON PROBES ARE WHAT MAKE THE NINE JS NUMBERS WORTH ANYTHING --
+they plant defects and require the suites to refuse them. A green suite with no
+mutation arm is a suite nobody has asked a question of. The endpoint set is
+complete for a subscription lifecycle and NOTHING IN IT IS A STUB.
+
+THE STANDING ROW IS STALE ON ITS OWN EVIDENCE. docs/open-work/sairncash.md
+carries: "Stripe not configured -- api/sairncash/checkout.js returns
+{"error":"Stripe not configured"}". THAT STRING NO LONGER EXISTS ANYWHERE AS A
+RESPONSE. api/_lib/stripe-config.js replaced five independent per-file
+conditions with one, and every endpoint now answers the single generic
+"Payments are not configured on this server".
+
+THE LIVE MEASUREMENT, NON-MUTATING BY CONSTRUCTION, via tools/sairn_http.py
+against https://sairn.vercel.app:
+
+  OPTIONS /api/sairncash/checkout       -> 204
+  GET     /api/sairncash/checkout       -> 405
+  GET     /api/sairncash/portal         -> 405 {"error":"POST only"}
+  GET     /api/sairncash/verify         -> 405
+  GET     /api/sairncash/stripe-webhook -> 405 {"error":{"message":"Method not
+                                                 allowed -- POST only"}}
+  GET     /api/sairncash/trial-start    -> 405 {"error":{"message":"POST only"}}
+  POST    /api/sairncash/verify, EMPTY BODY
+                                        -> 400 {"error":"Missing sessionId or
+                                                 subscriptionId"}
+
+THE LAST ROW IS THE MEASUREMENT. verify.js checks configuration at :45 and only
+then validates the payload at :56, so a 400 "Missing sessionId or
+subscriptionId" PROVES THE CONFIG CHECK PASSED -- it is not the 500 "Payments
+are not configured on this server". verify's capability row is
+[STRIPE_SECRET_KEY].
+
+  => STRIPE_SECRET_KEY IS PRESENT IN PRODUCTION as of 2026-10-16.
+
+AND THE EXACT MISTAKE THIS PLATFORM ALREADY PAID FOR IS AVAILABLE HERE IN
+REVERSE, SO IT IS NAMED BEFORE IT IS MADE. stripe-config.js exists because
+checkout's old "Stripe not configured" -- fired by a missing STRIPE_PRICE_ID --
+was read as evidence about the KEY by four separate readers. VERIFY'S 400 IS
+EVIDENCE ABOUT THE KEY AND ABOUT NOTHING ELSE. Only checkout requires
+STRIPE_PRICE_ID, so neither verify nor portal can see it.
+
+SO THE GAP IS NARROWED, NOT CLOSED. On 2026-09-17 a POST to checkout returned
+500, so AT LEAST ONE of the pair was absent then; today the KEY is present;
+neither verify nor portal can see the PRICE ID. THEREFORE STRIPE_PRICE_ID IS
+THE LIVE SUSPECT AND IS NOT PROVEN -- either variable could have changed
+between the two dates. Stated as a narrowing, not a conclusion.
+
+PRESENT IS NOT WORKING, and stripe-config.js says so in its own header:
+production's key on 2026-09-14 was SET and was an EXPIRED sk_test_ key, and
+every call died at Stripe. Today's 400 is a statement about PRESENCE and
+nothing more. AND THAT IS NOT CHECKABLE FROM OUTSIDE EITHER: verify.js catches
+every Stripe failure into one 500 at :204, so an expired key and a
+non-existent subscription land on the same response. That probe was NOT run --
+an outward call for an ambiguous answer is a cost with no finding.
+
+WHAT IS ACTUALLY MISSING -- THREE ITEMS, NONE OF THEM A CODE DEFECT:
+  1. STRIPE_PRICE_ID presence in the Vercel project -- UNKNOWN, and no probe
+     can answer it. MICHAEL: read the Vercel env list.
+  2. Whether the present STRIPE_SECRET_KEY authenticates. MICHAEL: one Stripe
+     dashboard look.
+  3. The billing-portal token design, docs/2026-09-26-presigned-remedy-
+     scoping.md, scoped by cc, nothing built. A single-use token is RULED OUT
+     on customer-harm grounds. MICHAEL: mint a token, or keep sub_... plus a
+     rate limit.
+
+
+4. THE METHODOLOGY ITEM -- IT CAME OUT OF DECLINING TO RUN A COMMAND
+-------------------------------------------------------------------
+  A PROBE WHOSE SAFETY DEPENDS ON THE ANSWER IT IS TRYING TO OBTAIN CANNOT BE
+  RE-RUN TO CHECK WHETHER THE ANSWER HAS CHANGED. The one state in which it is
+  safe is the state it is testing for.
+
+docs/2026-09-17-sairncash-stripe-readiness.md records its live check as
+POST https://sairn.vercel.app/api/sairncash/checkout {"email":"..."}. It was
+safe when it ran, because the configuration guard fired first and NO STRIPE
+OBJECT WAS CREATED.
+
+CHECKOUT.JS VALIDATES NOTHING BEFORE CALLING STRIPE. email is optional at :49
+and the session is created at :60. So the same command, run today:
+  * if STRIPE_PRICE_ID is still absent -> 500, no side effect, THE PROBE WAS
+    SAFE;
+  * if STRIPE_PRICE_ID has since been added -> A REAL STRIPE CHECKOUT SESSION
+    IS CREATED ON A LIVE PAYMENTS ACCOUNT, and the probe was not safe.
+
+THE REMEDY IS DERIVABLE RATHER THAN LUCKY: aim a configuration probe at the
+endpoint with the NARROWEST CAPABILITY ROW and a VALIDATION GATE IN FRONT OF
+ITS OUTWARD CALL. stripe-config.js's capability table is what makes "narrowest"
+a lookup instead of a guess. Hence verify-with-an-empty-body: its refusal sits
+AFTER the config check and BEFORE any outward call, so it discriminates the
+same variable IN BOTH DIRECTIONS with no side effect either way.
+
+ROUTED, NOT TAKEN: the readiness doc's prescribed command should carry this
+warning. Re-writing another session's dated document to add my caveat is not
+mine to do; section 3 of the new status document is the caveat and cites that
+document by name.
+
+
+5. ITEM 4 -- ROUTING CONFIRMED, AND ONE HALF WAS NOT ACTUALLY ROUTED
+--------------------------------------------------------------------
+CC -- CONFIRMED, NOTHING RE-SENT. The Tier A obligation opened
+2026-10-16T12:24:12Z on alf_facility, alf_op_audits, leg_aftercare and
+mech_site_assets reads ASSIGNED TO cc in tier_a_review_gate.py --list, held
+1h. THE GATE IS THE PLACE PEOPLE LOOK for that, so a second copy would be the
+two-lists-must-agree shape rather than a routing.
+
+HANK -- HALF-ROUTED, AND NOW FIXED. The routing document
+docs/2026-10-16-cody-b19-notprovisioned-misclass-routed-to-hank.md is on
+origin/main, 133 lines, naming :14445 and :2851 -- AND IT HAD ZERO ROWS IN
+docs/SAIRN-OPEN-WORK-INDEX.md. THAT IS THE FAILURE SECTION 9 OF THE OTHER
+DOCUMENT IN THIS BATCH NAMES IN ITS OWN WORDS -- "a question that must leave
+the building needs a row in the place people look for work, not a heading in
+the place the research lives" -- committed one batch later by the session that
+wrote the warning.
+
+ONE ROW ADDED: Platform, size S, Hank, naming :14445 and :2851, the 23514 and
+42703 measurements, the A2/A3 counterfactual, the 318/88/67/151 population,
+what B1 does NOT claim, and the undriven third guard at :14316.
+
+THE ROW WAS BUILT WHOLE AND NEVER BY SPLITTING ON A PIPE. Pipe count asserted
+at 8 before and after insertion; the literal double-pipe inside the quoted
+guard is escaped as the numeric entity, which is this file's own convention and
+which THE FIRST ATTEMPT GOT WRONG -- caught by the assertion, not by review.
+8-pipe rows 774 -> 775.
+
+SHARDS REGENERATED AND --check RUN, because writing is not proof:
+  EXIT=0  python tools/open_work_shard.py --write   813 row(s) total, against
+                                                    813 found in the index
+  EXIT=0  python tools/open_work_shard.py --check   CLEAN, every row present
+                                                    byte for byte
+  EXIT=0  python tools/index_duplicate_check.py
+
+
+6. CLAIMS
+---------
+claim: platform (cody-1792155139), taken 2026-10-16T12:52:19Z, BEFORE any work,
+published to origin/main.
+
+RELEASED with this report and the digest, because b20 is not continuing and a
+claim left standing blocks the next session. The handoff was written while it
+was still held, and says so -- a claim released before the work lands is a
+claim that was never true.
+
+b19's two claims were released at the end of b19; nothing was inherited.
+
+
+7. OPEN -- WITH THE NEXT STEP
+-----------------------------
+-> MICHAEL. (1) Is STRIPE_PRICE_ID in the Vercel project? No probe can say.
+   (2) Does the present STRIPE_SECRET_KEY authenticate? Present is not working.
+   (3) The billing-portal token decision, unchanged.
+-> THE POST'S CPA. Two one-line questions: is the canteen held under (c)(19) or
+   a companion (c)(7); and is the 45B floor $5.15 (statute) or $7.25 (the IRS
+   page) -- both quoted and dated in section 12.6.
+-> WHOEVER OWNS SECTION 9'S INDEX ROW. Re-word it from "needs outside counsel"
+   to "answered in principle by Rev. Rul. 2003-64; two narrow questions
+   remain". NOT DONE HERE: re-wording another session's open-work row to carry
+   my own answer is the edit this platform has least tolerance for.
+-> HANK. api/sd-data.js:14445 raw 503 -> await notProvisioned(res, w, <same
+   message>); then decide what distinguishes a 42703 from a 404 at :2851.
+   RE-DERIVE BOTH LINE NUMBERS. A third guard is named and NOT driven: :14316.
+-> CC. The Tier A obligation opened today. cody cannot discharge its own.
+-> CODY. The 151 and 67 sibling guards are NOT converted, and that is a
+   decision rather than a backlog (cross-domain item 7). The b17/b18
+   carry-overs are untouched and are listed in the handoff section 6.7.
+
+
+8. HOUSEKEEPING
+---------------
+No worktree created this batch. C:/Users/marsh/AppData/Local/Temp/
+gate-probe3-17976 is registered against this clone, is NOT mine, and was left
+alone. The 109 files / 247 MB that rm has refused across b14-b16 are still at
+the b16 path and are listed in SAIRN-handoff-cody-b16.md section 6. Nothing in
+the repo or on the Drive depends on any of them.
+
+Transcript: C:\Users\marsh\.claude\projects\
+C--Users-marsh-Documents-SAIRN-cody\0f5c2c46-aab3-44b3-997b-47c60e2fbcce.jsonl
+
+===========================================================================

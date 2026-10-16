@@ -467,6 +467,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **&#128993; Item 94's blob migration: SIX more branches converted individually, and the &ldquo;16 remaining&rdquo; figure is now 12 &mdash; re-measure, do not quote** | **SIX CONVERTED 2026-09-26 (cc)**, `9ff4b87f`, each column list derived from THAT BRANCH'S OWN READ. New `api/sd-data-stored-blob-scope-keys.test.js`, 31 arms, driven red four ways | `api/sd-data-stored-blob-scope-keys.test.js` |
 | **&#128993; The prompt-injection scanner's untrusted-field list is GENERIC and misses app-specific field names &mdash; three real unfenced sites were found BY HAND in two apps it reported clean** | **THREE SITES FENCED 2026-09-26 (cc)**, `a42a18d2`; two defect-register records; `note` and `desc` added to the criteria behind a literal-strip; `tests/prompt_fence_mirror.js` BUILT (it had been cited | `tests/prompt_fence_mirror.js`, `tests/sairnvet_dose_audit_reader.js` |
 | **&#128993; NINE test arms label an EXHAUSTIVE claim and compare ONE-SIDEDLY &mdash; the label says &ldquo;every&rdquo; and the comparison can only see a minimum** | **FOUND 2026-09-27 (Cody) by the new `tools/assertion_label_shape_check.py`; NOT fixed here, deliberately &mdash; each is a one-line judgement in somebody else&rsquo;s suite about what the arm was FOR | `tests/push_gate/check9_probe.py`, `tests/push_gate/refspec_and_override_probe.py`, `tests/reachability/resource_demand_probe.py`, `tests/run_assurance_case_probe.py`, `tests/run_checker_confidence_probe.py`, `tests/run_register_feed_gate_probe.py`, `tests/run_rotation_blast_radius_probe.py`, `tests/run_testability_gate_probe.py` |
+| **&#128993; A 400 carrying a Postgres error code is reported as a MISSING TABLE &mdash; driven on two branches, one of them a Tier A compliance log** | **DRIVEN 2026-10-16 (Cody)**, `tests/sd_data_not_provisioned_misclass.js` &mdash; exit 1, 12 passed / 2 failed, A1 and B1 red ON PURPOSE and registered in `docs/known-red-suites.json` with `expected_r | `tests/sd_data_not_provisioned_misclass.js` |
 | The company's own name had THREE spellings across the platform, two of them under &copy; and &trade; | 2026-09-13 | `tests/base_prompt_single_source.js` |
 
 ### sairnbiz
@@ -724,9 +725,9 @@ An untraced test is not a bad test. It means no source in this repo states what 
 
 | source | citations |
 |---|---|
-| `declared` | 347 |
+| `declared` | 346 |
 | `index` | 325 |
-| `declared+index` | 69 |
+| `declared+index` | 70 |
 | `GUARD_TESTS+declared` | 7 |
 | `GUARD_TESTS+index` | 6 |
 | `GUARD_TESTS` | 3 |
@@ -995,7 +996,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 990   tests/**, api/** (both walked)
-  open-work rows citing a test       392   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       393   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 17   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                78   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     82   report_only_checks.NOT_PROMOTED

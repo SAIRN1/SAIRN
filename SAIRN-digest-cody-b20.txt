@@ -1,0 +1,173 @@
+SAIRN DIGEST -- cody, batch b20, 2026-10-16
+===========================================================================
+
+STATUS
+------
+cody b20 LANDED on origin/main. Pushed WITHOUT --force. Tree clean. NOTHING
+OVERRIDDEN -- no SAIRN_SKIP, no SAIRN_GATE_EXEMPT, no SAIRN_SEED_GATE, in any
+form. THE PUSH WAS REFUSED ONCE by the derived-docs gate (traceability-matrix
+stale after the index row changed its sources) and THE REMEDY WAS TO RUN THE
+THREE GENERATORS, NOT TO SKIP THE GATE -- all three --check pass. NO api/, sql/
+or tools/ FILE EDITED: twelve suites, sairn_http.py, open_work_shard.py,
+index_duplicate_check.py and the three generators were RUN. No hook restored.
+settings.json never committed. No auditor clone entered. NO OUTWARD-FACING
+ACTION: no POST to checkout or portal, no Stripe object created, no Vercel
+environment read, no Stripe dashboard opened.
+
+THE HEADLINE
+------------
+TWO OF THE SIX ITEMS WERE ALREADY DONE, AND FINDING THAT OUT WAS THE WORK.
+Item 1's fix landed in b19 and needed re-verification, not re-implementation.
+Item 2's research question was already answered in this repo by a document the
+APP'S OWN SOURCE CODE CITES (sairnfreedom.html:4418) -- and the one part of it
+that was genuinely open is answered by a 2003 IRS revenue ruling nobody here
+had found. Writing either from scratch would have produced a duplicate.
+
+ITEM 1 -- ARM Z, RE-VERIFIED
+----------------------------
+docs/b19-logs/ablate_arm_z.py at this HEAD: BASELINE exit 0, 16 passed, arm Z
+ok:1 -- ABLATED EXIT 1, 15 passed / 1 failed, arm Z FAIL:1, CAUGHT. Driver
+exit 0. THE ARM FIRES; it is not dead code.
+
+ITEM 2 -- SECTION 45B ON VFW/LEGION CANTEEN TIPS: ANSWERED
+----------------------------------------------------------
+docs/2026-09-17-sairnfreedom-tips-tax-treatment.md SECTION 12, appended to the
+canonical file rather than written as a second document.
+
+THE ANSWER. YES -- 45B applies to tips reported by canteen staff AND MEMBER
+TIPS COUNT, on Rev. Rul. 2003-64 and the face of 45B(b)(2). BUT the credit is
+NONREFUNDABLE and the post must first owe tax it can offset -- in practice 511
+UBIT on Form 990-T -- so a post with no UBTI gets nothing now and only a 39
+carryforward. TD 10044 IS IRRELEVANT to the employer credit; it governs the
+employee's 224 deduction. PUB. 3386 DOES NOT ADDRESS 45B and routes the tip
+question to Pub. 531.
+
+WHAT WAS OPEN AND IS NOW CLOSED. Section 9 had escalated one question to
+outside counsel with an index row so it would get asked: whether FICA on
+EXEMPT-function tips can generate a credit usable against UBIT from a DIFFERENT
+activity. REV. RUL. 2003-64: "Section 45B does not prohibit social clubs
+described in 501(c)(7) from claiming the credit, nor does it limit the credit
+to social security taxes paid in connection with a social club's unrelated
+trade or business." THE GAP WAS A SEARCH GAP, NOT A REASONING GAP -- sections
+7.1 and 10.0 list statute, regulation, DOL and Ohio sources and NOT ONE
+PUBLISHED IRS RULING. A source table with no ruling line cannot find a ruling.
+
+ALSO SETTLED: member tips count (the ruling computes on ALL tips and finds
+45B(b)(2) met because tipping is customary at the club), which answers the
+"customers" hurdle section 10 left standing; and section 7.3's conclusion is
+now CONFIRMED by a ruling rather than inferred from 38(c).
+
+WHERE IT STOPS, because a ruling read too widely is worse than no ruling.
+(1) It is a 501(c)(7) ruling and a post is usually 501(c)(19) -- 512(a)(3) does
+not apply to (c)(19), so the FACTS do not transfer where the HOLDING does, AND
+PUB. 3386 SAYS A POST'S CANTEEN "may be recognized as tax exempt under IRC
+501(c)(7)", so which subsection it sits under is A FACT ABOUT THE POST.
+(2) The ruling has ONE activity serving two classes of customer; section 9.1
+posits two activities -- so section 9 narrows from "unanswered" to "answered in
+principle, not on all fours". (3) Pub. 3386 does not address 45B: 0 hits for
+45B, 8846 and "social security" against 73 for 501(c)(19) -- AND THE ZEROS ARE
+NOT PROOF OF ABSENCE, because the extraction recovers prose and not embedded
+font streams and a truncated read is indistinguishable from a complete one.
+
+AND THE IRS'S OWN LIVE PAGE CONTRADICTS THE STATUTE. 45B(b)(1)(B) freezes the
+floor at the minimum wage "as in effect on January 1, 2007" -- $5.15, per
+IR-2007-155. The IRS FICA Tip Credit page, last reviewed 16-Aug-2026, says
+$7.25 / July 24, 2009, verbatim and twice. THE DIRECTION MATTERS: $7.25 makes
+the credit SMALLER, so a post following that page UNDERSTATES it -- a money
+trap, not a penalty trap. Recorded as a documented disagreement with both sides
+quoted and dated, NOT as a determination that the page is wrong.
+
+THE BUILD DOES NOT CHANGE. The ruling makes the credit more clearly AVAILABLE
+and not more DESIRABLE: reaching 45B requires the post to first be in the UBIT
+state it is trying to stay out of.
+
+ITEM 3 -- SAIRNcash: THE CODE IS COMPLETE, THE RECORD IS STALE
+--------------------------------------------------------------
+docs/2026-10-16-cody-b20-sairncash-billing-live-status.md.
+
+CODE: COMPLETE AND MUTATION-TESTED. Twelve suites green -- portal 19/0, verify
+22/0, trial-start 10/0, trial-renew 4, trial-renew-idempotency 11/0,
+stripe-webhook exit 0, entitlement_gate 19/0, plan_label 10/0, safe_harbor
+35/0, plus THREE Python probes that plant defects and require refusal
+(entitlement_gate_probe: ALL 12 ARMS PASS, 8 mutations refused). Nothing in the
+endpoint set is a stub.
+
+THE STANDING ROW IS STALE ON ITS OWN EVIDENCE: it quotes checkout.js returning
+{"error":"Stripe not configured"}, and THAT STRING NO LONGER EXISTS AS A
+RESPONSE -- stripe-config.js replaced five per-file conditions with one.
+
+LIVE, NON-MUTATING: POST /api/sairncash/verify with an EMPTY BODY -> 400
+"Missing sessionId or subscriptionId", which PROVES the config check at
+verify.js:45 passed (the alternative is a 500). verify's capability row is
+[STRIPE_SECRET_KEY]. => THE KEY IS PRESENT IN PRODUCTION.
+
+AND THE OLD MISTAKE IS NAMED IN REVERSE BEFORE IT IS MADE: that 400 is evidence
+about the KEY AND NOTHING ELSE. Only checkout needs STRIPE_PRICE_ID, so neither
+verify nor portal can see it. STRIPE_PRICE_ID IS THE LIVE SUSPECT AND IS NOT
+PROVEN absent. And PRESENT IS NOT WORKING -- the key was once set and expired,
+and verify catches an expired key and a missing subscription into the same 500,
+so the outside cannot separate them either.
+
+THE METHODOLOGY ITEM
+--------------------
+A PROBE WHOSE SAFETY DEPENDS ON THE ANSWER IT IS TRYING TO OBTAIN CANNOT BE
+RE-RUN TO CHECK WHETHER THE ANSWER HAS CHANGED. The one state in which it is
+safe is the state it is testing for.
+
+The readiness doc's prescribed live check is POST /api/sairncash/checkout, and
+checkout.js validates NOTHING before calling Stripe (email optional at :49,
+session created at :60). So that command is safe ONLY IF STRIPE_PRICE_ID IS
+STILL ABSENT; if it has since been added, the same command CREATES A REAL
+STRIPE CHECKOUT SESSION ON A LIVE PAYMENTS ACCOUNT. THE REMEDY IS DERIVABLE
+RATHER THAN LUCKY: aim a configuration probe at the endpoint with the NARROWEST
+CAPABILITY ROW and a VALIDATION GATE IN FRONT OF ITS OUTWARD CALL --
+stripe-config.js's capability table makes "narrowest" a lookup instead of a
+guess. Hence verify-with-an-empty-body, whose refusal sits AFTER the config
+check and BEFORE any outward call and so discriminates the same variable in
+BOTH directions with no side effect either way.
+
+ITEM 4 -- ROUTING: ONE HALF CONFIRMED, ONE HALF WAS NOT ACTUALLY ROUTED
+-----------------------------------------------------------------------
+CC: CONFIRMED, NOTHING RE-SENT. The Tier A obligation opened
+2026-10-16T12:24:12Z on alf_facility, alf_op_audits, leg_aftercare and
+mech_site_assets reads ASSIGNED TO cc in tier_a_review_gate.py --list. THE GATE
+IS THE PLACE PEOPLE LOOK, so a second copy would be the two-lists-must-agree
+shape rather than a routing.
+
+HANK: HALF-ROUTED, NOW FIXED. The b19 routing doc is on origin/main, 133 lines,
+naming :14445 and :2851 -- AND HAD ZERO ROWS IN docs/SAIRN-OPEN-WORK-INDEX.md.
+THAT IS THE FAILURE SECTION 9 OF THE OTHER DOCUMENT IN THIS BATCH NAMES IN ITS
+OWN WORDS, committed one batch later by the session that wrote the warning. One
+row added, Platform / Hank / size S. BUILT WHOLE AND NEVER BY SPLITTING ON A
+PIPE: pipe count asserted at 8 before and after; the literal double-pipe inside
+the quoted guard escaped as the numeric entity -- AND THE FIRST ATTEMPT GOT
+THAT WRONG, caught by the assertion rather than by review. 8-pipe rows
+774 -> 775. Shards regenerated, --check CLEAN at 813 rows,
+index_duplicate_check exit 0.
+
+CLAIMS
+------
+platform (cody-1792155139), taken 2026-10-16T12:52:19Z BEFORE any work.
+RELEASED with this digest. The handoff was written while it was still held and
+says so: a claim released before the work lands is a claim that was never true.
+b19's two claims were released at the end of b19; nothing was inherited.
+
+NEXT
+----
+MICHAEL: (1) is STRIPE_PRICE_ID in the Vercel project -- no probe can say, one
+look settles it; (2) does the present STRIPE_SECRET_KEY authenticate -- present
+is not working; (3) the billing-portal token decision, unchanged, single-use
+already ruled out on customer-harm grounds. THE POST'S CPA: is the canteen held
+under (c)(19) or a companion (c)(7), and is the 45B floor $5.15 or $7.25 --
+both one-line questions with citations attached. WHOEVER OWNS SECTION 9'S INDEX
+ROW: re-word it; NOT DONE HERE, because re-wording another session's row to
+carry my own answer is the edit this platform has least tolerance for. HANK:
+api/sd-data.js:14445 -> notProvisioned(), then :2851; RE-DERIVE BOTH LINE
+NUMBERS; a third guard at :14316 is named and NOT driven. CC: discharge the
+Tier A obligation. CODY: the 151 and 67 sibling guards are NOT converted and
+that is a decision, not a backlog; the b17/b18 carry-overs are untouched.
+
+===========================================================================
+Mount read-back verified by sha256. That does NOT prove Google acknowledged
+the upload -- only a Drive-side API read does, and this digest's own Drive id
+is reported from such a read.
