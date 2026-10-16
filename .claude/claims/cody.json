@@ -4019,8 +4019,8 @@
       "task": "b21: 45B doc records Michael 5.15 floor decision and flags the IRS page 7.25 as the error; SAIRNcash billing status reworded to code-complete-blocked-on-LLC and NO further Stripe work; re-word the section 9 index row to answered-in-principle by Rev Rul 2003-64; methodology; handoff b21; push. HOLD DECLARED: api/sd-data.js 14445 and 2851 are HANK'S and are NOT touched. CONFLICTS DECLARED PER PR 4.3: api/ and sql/ READ-ONLY here, tools/ is cc's and RUN not edited. FILES: docs/2026-09-17-sairnfreedom-tips-tax-treatment.md docs/2026-10-16-cody-b20-sairncash-billing-live-status.md docs/SAIRN-OPEN-WORK-INDEX.md SAIRN-handoff-cody-b21.md SAIRN-report-cody-b21.txt SAIRN-digest-cody-b21.txt",
       "claimed_at": "2026-10-16T13:27:47Z",
       "claimed_at_epoch": 1792157267.8532152,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-16T14:24:39Z",
       "files": [
         "SAIRN-digest-cody-b21.txt",
         "SAIRN-handoff-cody-b21.md",
