@@ -4020,8 +4020,8 @@
       "task": "b15: (1) full suite sweep logged to docs/sweep-2026-10-15.log + routed triage, (2) run_all_tests.py acquire_lock liveness + release_lock owner-scoping + floor literal, (3) hover-chain mirror component freshness + publisher-owned MIRROR-FRESHNESS.md, (4) four obligations via obligation_surface.py --mine + tools/ routed leftovers, (5) ablation records b12-b14 + CRITICALITY-TIERS citation staleness, (6) push + handoff/report/digest/latest. I WRITE UNDER tools/ ONLY plus docs/ABLATION-RECORDS.md docs/tier-a-reviews.json docs/ablation/ my own b15 docs and root b15 artifacts. CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: tests/ is cody's and run_suite_lock_probe.py is ROUTED not edited; api/ and sql/ and app HTML are hank's; docs/CRITICALITY-TIERS.md is fourth's and is MEASURED read-only; no auditor clone entered or written. FILES: tools/run_all_tests.py tools/sairn_board_publish.py tools/batch_manifest.py tools/citation_anchor_rot_check.py tools/tier_a_review_gate.py tools/secrets_inventory.py docs/ABLATION-RECORDS.md docs/ablation/b15_arms.py docs/tier-a-reviews.json docs/sweep-2026-10-15.log docs/2026-10-15-cc-b15-sweep-triage.md docs/2026-10-15-cc-b15-routed.md",
       "claimed_at": "2026-10-15T16:55:20Z",
       "claimed_at_epoch": 1792083320.0625715,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-16T11:34:05Z",
       "files": [
         "docs/2026-10-15-cc-b15-routed.md",
         "docs/2026-10-15-cc-b15-sweep-triage.md",
