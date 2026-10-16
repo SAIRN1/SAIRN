@@ -2356,10 +2356,17 @@ def cmd_check(args, quiet=False):
                       'app, file, subject or phrase, so they are NOT blocking. '
                       'Shown so you can judge, not because the tool thinks they '
                       'overlap:' % len(plain))
-                for c, shared, _reason in plain:
+                # BUDGETED (b16): non-blocking context, many rows, each
+                # carrying a 1-2KB paragraph. The DEMOTED block above is NOT
+                # budgeted -- those are claims the matcher could not compare,
+                # which is exactly the set a human has to read in full.
+                shown, note = _cap(plain, RECENT_ROW_CAP, 'word-overlap claim(s)')
+                for c, shared, _reason in shown:
                     print('  %s: %s -- %s  (shares only: %s)'
-                          % (c.get('session'), c.get('subject'), c.get('task'),
-                             ', '.join(sorted(shared))))
+                          % (c.get('session'), c.get('subject'),
+                             brief(c.get('task')), ', '.join(sorted(shared))))
+                if note:
+                    print(note)
         stale = [c for c in load_all(from_origin=not args.no_fetch)
                  if c.get('session') != me and c.get('status') == 'active'
                  and not is_active(c) and overlaps(c, subj, task)]
@@ -2376,6 +2383,104 @@ def cmd_check(args, quiet=False):
         for ln in freshness_lines(fetched, ferr, args.no_fetch):
             print(ln)
     return 0 if fetched else STALE_RC
+
+
+# ── OUTPUT BUDGET, ADDED 2026-10-16 (cc b16) FROM H1 b42 ────────────────────
+# H1 b42's compaction diagnosis routed a MEASURED inefficiency here: this tool
+# prints full free-text task strings with no limit, and the auditor hit
+# "11-30KB single-command outputs from this tool repeatedly across b41 and b42,
+# each requiring a truncate-to-file-plus-Read-back round trip". That is real
+# token cost on every agent, every batch -- `check` and `claim` run at the
+# start of every one.
+#
+# RE-MEASURED HERE BEFORE ANYTHING WAS CHANGED, and the worst case is far worse
+# than the one routed:
+#
+#     sairn_claim.py list                          1,837 bytes
+#     sairn_claim.py check <subject> <task>        17,652 bytes
+#        of which the RELEASED-recently block      12,268 bytes  (54%)
+#     sairn_claim.py list --all                   501,182 bytes  (~125k tokens)
+#
+# `list --all` was the one nobody had measured. 500KB does not fit a session
+# window with room to work in, and 54% of a routine `check` is the recency
+# note's full task strings.
+#
+# WHAT IS BUDGETED AND WHAT IS NOT, because this distinction is the whole
+# design and a uniform truncation would break the tool:
+#
+#   NOT BUDGETED -- a BLOCKING claim's task string prints WHOLE, always. It is
+#   one row, and it is the thing the rule says you must read before deciding
+#   the block is real (PR 4.3). Shortening the one output a human is required
+#   to read in full, to save bytes, would be the fix causing the defect.
+#
+#   BUDGETED -- the CONTEXT rows: the released-recently note, the shares-words
+#   note, and `list`. Those are many rows of which most are irrelevant to the
+#   decision, and each carries a 1-2KB paragraph.
+#
+# AND NOTHING IS SILENTLY DROPPED. Every budget prints what it withheld and the
+# exact command that shows it -- `--full`. A truncated read that looks complete
+# is PR 1.7, and a tool doing it to its own output would be this platform's own
+# most expensive defect shape, self-inflicted.
+TASK_BRIEF_CHARS = int(os.environ.get('SAIRN_CLAIM_TASK_CHARS', '220'))
+# Wider than the head on purpose: a FILES list is the part the blocking
+# verdict is computed from, so it is the last thing that should be cut.
+FILES_BRIEF_CHARS = int(os.environ.get('SAIRN_CLAIM_FILES_CHARS', '600'))
+LIST_ROW_CAP = int(os.environ.get('SAIRN_CLAIM_LIST_ROWS', '40'))
+RECENT_ROW_CAP = int(os.environ.get('SAIRN_CLAIM_RECENT_ROWS', '6'))
+_FULL = False
+
+
+def set_full_output(on):
+    """Set by main() from --full. A module global rather than a threaded
+    parameter because every print site would otherwise need the flag passed
+    through, and a site that forgot it would silently keep the old behaviour --
+    which is the failure mode this is replacing."""
+    globals()['_FULL'] = bool(on)
+
+
+def brief(text, chars=None):
+    """A task string shortened to `chars`, WITH the suppression named inline.
+
+    Returns the text unchanged under --full, and unchanged when it already
+    fits. The marker is `[+N chars, --full]` rather than a bare ellipsis: an
+    ellipsis says something was cut and not how much, so a reader cannot tell
+    a 10-character tail from a 2,000-character one.
+
+    ── THE `FILES:` TAIL IS KEPT, AND THE FIRST DRAFT CUT IT ─────────────────
+    Caught by measuring instead of reading: the first version took the first
+    220 characters flat, which dropped `list` from 1,837 bytes to 579 and
+    looked like a win. It is not. A declared FILES list is written at the END
+    of a task string by convention, and it is THE decision-relevant part --
+    this tool's own blocking verdict rests on it, and a session reads `list` to
+    find out whether a path is held. Saving bytes by removing the answer is the
+    fix causing the defect. So the head is budgeted and the FILES segment is
+    carried through, budgeted separately and with its own count, because the
+    two halves answer different questions.
+    """
+    s = '' if text is None else str(text)
+    n = chars or TASK_BRIEF_CHARS
+    if _FULL or len(s) <= n:
+        return s
+    i = s.find('FILES:')
+    if i < 0:
+        return s[:n].rstrip() + ' [+%d chars, --full]' % (len(s) - n)
+    head, files = s[:i], s[i:]
+    kept_head = head if len(head) <= n else head[:n].rstrip()
+    kept_files = (files if len(files) <= FILES_BRIEF_CHARS
+                  else files[:FILES_BRIEF_CHARS].rstrip()
+                  + ' [+%d chars of FILES]' % (len(files) - FILES_BRIEF_CHARS))
+    cut = len(s) - len(kept_head) - len(kept_files)
+    return '%s%s %s [+%d chars cut from the middle, --full]' % (
+        kept_head, '...' if len(head) > n else '', kept_files, max(cut, 0))
+
+
+def _cap(rows, cap, what):
+    """(kept, note). `note` is '' when nothing was withheld."""
+    if _FULL or len(rows) <= cap:
+        return rows, ''
+    return rows[:cap], ('  ... and %d more %s NOT SHOWN. This is a display '
+                        'budget, not a filter -- re-run with --full to see '
+                        'every one.' % (len(rows) - cap, what))
 
 
 def _report_recent_releases(claims, me, subj, task):
@@ -2401,9 +2506,16 @@ def _report_recent_releases(claims, me, subj, task):
     print('\nNote: %d overlapping claim(s) were RELEASED in the last %g hours. '
           'Not blocking -- follow-on work is normal -- but READ THE COMMIT '
           'before repeating any of it:' % (len(recent), RECENT_RELEASE_HOURS))
-    for hrs, c in recent:
+    # MEASURED AT 12,268 BYTES, 54% OF A ROUTINE `check` (b16). These rows are
+    # context for a decision the block itself does not turn on, and each used
+    # to carry a 1-2KB paragraph. Budgeted; the suppression is printed.
+    shown, note = _cap(recent, RECENT_ROW_CAP, 'released claim(s)')
+    for hrs, c in shown:
         print('  %s: %s -- %s  (finished %.1fh ago)'
-              % (c.get('session'), c.get('subject'), c.get('task') or '(no task)', hrs))
+              % (c.get('session'), c.get('subject'),
+                 brief(c.get('task')) or '(no task)', hrs))
+    if note:
+        print(note)
     print('This tool said CLEAR on finished work twice on 2026-09-10, in both '
           'directions. `git log --oneline -15` is the check that caught it both '
           'times; this note is so it does not depend on remembering.')
@@ -2810,12 +2922,28 @@ def cmd_list(args):
         print('No %sclaims.' % ('' if args.all else 'active '))
     else:
         rows.sort(key=lambda c: c.get('claimed_at_epoch', 0), reverse=True)
-        for c in rows:
+        # ── THE 501,182-BYTE COMMAND (measured 2026-10-16, cc b16) ──────────
+        # `list --all` printed every claim ever taken with every full task
+        # string: 501,182 bytes, roughly 125,000 tokens, in one command. H1
+        # b42 routed the 11-30KB `check` case; this one nobody had measured.
+        # ACTIVE rows are NEVER capped -- they are the answer to the question
+        # the command asks, there are never many, and dropping one is how a
+        # session concludes a file is free. Only the released/expired tail is
+        # budgeted, newest first, and the suppression is printed with the
+        # command that lifts it.
+        active_rows = [c for c in rows if is_active(c)]
+        old_rows = [c for c in rows if not is_active(c)]
+        kept_old, note = _cap(old_rows, LIST_ROW_CAP, 'released/expired claim(s)')
+        for c in active_rows + kept_old:
             state = ('active' if is_active(c)
                      else ('EXPIRED' if c.get('status') == 'active' else 'released'))
             print('[%-8s] %-6s %-16s %s  (%s)'
-                  % (state, c.get('session'), c.get('subject'), c.get('task'),
-                     age_str(c)))
+                  % (state, c.get('session'), c.get('subject'),
+                     brief(c.get('task')), age_str(c)))
+        if note:
+            print(note)
+            print('  %d active row(s) were shown IN FULL and are never capped: '
+                  'they are what this command is for.' % len(active_rows))
     for ln in freshness_lines(fetched, ferr, args.no_fetch):
         print(ln)
     return 0 if fetched else STALE_RC
@@ -3055,6 +3183,50 @@ def selftest():
        ('live' in raw, 'gone' not in raw, 'longrun' in raw),
        (True, True, True))
 
+    # ── THE OUTPUT BUDGET'S OWN ARMS (b16), BOTH DIRECTIONS ────────────────
+    # The budget is a display change and it is still a CHECK: it decides what a
+    # reader does and does not see, and the first draft of brief() silently
+    # dropped the FILES list -- the exact field this tool's own blocking
+    # verdict is computed from. These arms exist because that draft measured as
+    # a win (1,837 -> 579 bytes) while removing the answer.
+    print('')
+    print('  OUTPUT BUDGET -- H1 b42 routed 11-30KB outputs; `list --all` was')
+    print('  MEASURED at 501,182 bytes. B2-B5 require a CUT, B1/B6/B7/B9')
+    print('  require the text or the row set UNCHANGED, and B8 requires a row')
+    print('  cap to NAME its remainder. A budget that shortens everything')
+    print('  passes the four cut arms and destroys the tool.')
+    was = _FULL
+    set_full_output(False)
+    short = 'b16: a short task'
+    ck('B1 a task already inside the budget is returned UNCHANGED -- the '
+       'over-truncation control', brief(short), short)
+    long_plain = 'x' * 900
+    b = brief(long_plain)
+    ck('B2 a long task with no FILES segment is cut and SAYS HOW MUCH',
+       (len(b) < 400, '[+680 chars, --full]' in b), (True, True))
+    ck('B3 the cut is never a bare ellipsis -- the character count is in it',
+       '...' == b[-3:], False)
+    withfiles = 'head ' + 'y' * 900 + ' FILES: tools/a.py tools/b.py'
+    b2 = brief(withfiles)
+    ck('B4 THE ONE THE FIRST DRAFT GOT WRONG: a FILES segment SURVIVES the cut',
+       ('FILES: tools/a.py tools/b.py' in b2), True)
+    ck('B5 and the middle cut is counted, not hidden',
+       'cut from the middle' in b2, True)
+    set_full_output(True)
+    ck('B6 --full returns a 900-char task byte-identical -- the escape hatch '
+       'really is one', brief(long_plain), long_plain)
+    ck('B7 --full returns the FILES task byte-identical too',
+       brief(withfiles), withfiles)
+    set_full_output(False)
+    kept, note = _cap(list(range(20)), 6, 'thing(s)')
+    ck('B8 a row cap keeps N and NAMES the remainder -- never a silent drop',
+       (len(kept), '14 more' in note, 'NOT SHOWN' in note), (6, True, True))
+    kept, note = _cap(list(range(3)), 6, 'thing(s)')
+    ck('B9 under the cap, nothing is withheld and NO note is printed -- the '
+       'over-reporting control', (len(kept), note), (3, ''))
+    set_full_output(was)
+
+    print('')
     print('  %d/%d arm(s) pass' % (total - bad, total))
     if bad:
         print('  THE AUDIT IS NOT COUNTING WHAT IT SAYS IT COUNTS.')
@@ -3187,16 +3359,32 @@ def main():
                        help='skip git fetch (offline; the check is then only '
                             'as current as your last fetch)')
 
+    # ── --full, ADDED 2026-10-16 (cc b16) FROM H1 b42 ───────────────────────
+    # Declared PER SUBCOMMAND for the same reason --no-fetch is: a top-level-
+    # only flag silently errors on `list --full`, which is exactly where
+    # somebody will type it. See the OUTPUT BUDGET block for what is budgeted,
+    # what is deliberately NOT (a blocking claim always prints whole), and the
+    # four measurements that set the numbers.
+    def full(x):
+        x.add_argument('--full', action='store_true',
+                       help='print every row and every task string whole. The '
+                            'default budgets CONTEXT rows only -- a BLOCKING '
+                            'claim is always whole -- and names what it '
+                            'withheld. Measured: `list --all` was 501,182 '
+                            'bytes before this existed')
+
     c = sub.add_parser('check', help='is anyone already on this?')
     c.add_argument('subject')
     c.add_argument('task', nargs='*')
     nofetch(c)
+    full(c)
 
     c = sub.add_parser('claim', help='check, then claim, commit and push')
     c.add_argument('subject')
     c.add_argument('task', nargs='*')
     c.add_argument('--no-push', action='store_true')
     nofetch(c)
+    full(c)
 
     c = sub.add_parser('release', help='close your claim')
     c.add_argument('subject', help='subject or claim id')
@@ -3205,6 +3393,7 @@ def main():
     c = sub.add_parser('list', help='show claims')
     c.add_argument('--all', action='store_true', help='include released/expired')
     nofetch(c)
+    full(c)
 
     c = sub.add_parser('audit', help='duplicates and unreleased claims, binned '
                                      'by whether they predate the guard')
@@ -3220,6 +3409,10 @@ def main():
                         'for a caller that wants to block on it')
 
     args = p.parse_args()
+    # Set ONCE, here, rather than threaded through every print site: a site
+    # that forgot the parameter would silently keep the unbudgeted behaviour,
+    # which is the failure mode this change exists to remove.
+    set_full_output(getattr(args, 'full', False))
     if args.cmd == 'own':
         return cmd_own(args)
     if args.cmd == 'check':
