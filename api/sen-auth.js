@@ -360,8 +360,24 @@ module.exports = async (req, res) => {
         return;
       }
       // ── setup COULD DEMOTE THE LAST OWNER (2026-10-14, N2) ───────────────
+      // ── AND THE CITATION THAT ROUTED IT HAS DRIFTED. RE-DERIVED 2026-10-16
+      //    (b17). fourth's b18 verdict in docs/tier-a-reviews.json says
+      //    "while set_active:343 already does this check". `api/sen-auth.js:343`
+      //    is now a PIN/role validation line and `set_active` is at `:439`;
+      //    the guard itself was never in this file at all -- it is the
+      //    `LAST_ADMIN` refusal in `api/_lib/employee-lifecycle.js`, which
+      //    every app's set_active goes through. A citation that lands on a
+      //    validation line reads as verified to anybody who does not open it,
+      //    which is the shape b11 fixed in api/sd-auth.js the same way: cite
+      //    the NAMED THING, never the line number. The register's verdict is
+      //    a discharged review by another session and is left as written; the
+      //    re-derivation is recorded in docs/2026-10-16-hank-b17-michael-sql.md
+      //    and here, where the next reader of this branch will find it.
+      //    N2 ITSELF IS CLOSED -- the guard below is it, and
+      //    api/_lib/setup-demotion-guard.test.js drives it.
       // `set_active` has been guarded against deactivating the last
-      // provisioner since the lifecycle module was written. This branch
+      // provisioner since the lifecycle module was written -- `LAST_ADMIN` in
+      // api/_lib/employee-lifecycle.js. This branch
       // reaches THE SAME END STATE by a different door: it upserts on
       // (license_hash, employee_id) with `role` taken from the body, so an
       // owner calling setup on their OWN employee_id with role 'caregiver'
