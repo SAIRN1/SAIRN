@@ -4263,6 +4263,21 @@
       "source": "status-registry",
       "why": "same file or resource: handoff/report/digest/latest",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-16T11:19:16Z",
+      "my_subject": "cc",
+      "my_task": "b16: install fourth b26 branch census as tools/branch_census.py; H1 b41 scope-gate second guard; H1 b42 sairn_claim unbounded output token cadence; blob_conversion_coverage proximity window; claim self_hits refusal + hank double-active + hover name collision; tooling_inventory --hooked fail-open; 0-byte sweep log buffering; FMEA drafts five files; hank api suites b12-b17 into run_all_tests driver exit 3; citation_anchor_rot_check; tier_a_review_gate --amend. FILES: tools/branch_census.py tools/tooling_inventory.py tools/blob_conversion_coverage.py tools/sairn_claim.py tools/citation_anchor_rot_check.py tools/tier_a_review_gate.py tools/fmea_draft.py tools/run_all_tests.py tools/report_only_checks.py docs/TOOLING-INVENTORY.md docs/report-only-reachability.json docs/tier-a-reviews.json docs/fmea",
+      "other_session": "hank",
+      "other_subject": "sairnsenior",
+      "other_task": "hank b17: (1) fourth b26 routed -- sen-evv-readiness payroll-freeze reopen rule append-only closings resource with named refusal at the generic sen_settings write path, straight-time-floor sign guard on adjustment_cents with overpayments[] and total_payable_cents assertion and premium_may_be_owed, trust-lock hard-lock assert LAW_TRUST_LOCKED directly plus law_bankstatements arm. (2) tier-a-reviews.json three-vs-four resources discrepancy, set_active:343 citation drift, name the table holding probe row ZZ-B12-SIZE-PROBE. (3) SC-PINNACLE-2026 trial extension SQL and the legacy sc_credentials Stedi row owner. (4) remaining funeral and counsel practitioner questions for Michael. (5) methodology. (6) push and confirm landed. CONFLICTS DECLARED PER PR 4.3: tools/ is cc's and is RUN not edited; tests/ is cody's and is RUN not edited; docs/ triage and routing docs by cody and fourth are READ not edited; no auditor clone entered. FILES: api/_lib/sen-evv-readiness.js api/_lib/sen-payroll.js api/_lib/sen-evv-clock.js api/sd-data.js api/sen-auth.js api/sd-auth.js api/_lib/leg-roles.js api/_lib/sv-roles.js api/b17-closed-period-write-path.test.js api/b17-one-person-agency.test.js api/b17-lift-list-check.test.js api/b17-practitioner-role-maps.test.js api/b17-freeze-reopen.test.js api/b17-straight-time-floor.test.js api/b17-trust-lock-hard.test.js sairnsenior.html sairnbuild.html sql/sairnsenior_audit_log_schema.sql docs/tier-a-reviews.json docs/2026-10-16-hank-b17-michael-sql.md docs/2026-10-16-hank-b17-practitioner-questions.md docs/hank-evidence/b17/",
+      "other_claimed_at": "2026-10-16T11:17:27Z",
+      "shared_files": [
+        "docs/tier-a-reviews.json"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
 }
