@@ -612,7 +612,9 @@ label.chk input{width:auto;}
 
       <div class="panel" id="panel-procedures">
         <div class="ph"><div><div class="ptitle">Procedure Types</div><div class="psub">Your practice's own procedure list &mdash; code, description, fee, and default length. Not a bundled CDT code library (real ADA copyright constraint) &mdash; enter your practice's actual codes and fees below.</div></div></div>
-        <div class="card"><div class="ch"><div class="ct">Add Procedure Type</div></div><div class="cb">
+        <div class="card"><div class="ch"><div class="ct" id="pc-form-title">Add Procedure Type</div></div><div class="cb">
+          <input type="hidden" id="pc-edit-id" value="">
+          <div id="pc-edit-banner" class="psub" style="display:none;margin-bottom:10px;padding:8px;border-left:3px solid var(--accent)"></div>
           <div class="fr">
             <div class="fg"><label>CDT Code</label><input type="text" id="pc-add-code" placeholder="e.g. D0120"></div>
             <div class="fg"><label>Description</label><input type="text" id="pc-add-desc" placeholder="e.g. Periodic oral evaluation"></div>
@@ -633,7 +635,8 @@ label.chk input{width:auto;}
             <div class="fg"><label>Recall interval in months (blank if this is not a recall procedure)</label><input type="number" id="pc-add-recall" min="1" step="1" placeholder="leave blank unless you recall on it"></div>
             <div class="fg" style="display:flex;align-items:flex-end"><div class="psub" style="margin:0">Set this only on procedures you actually recall patients for. There is deliberately no default &mdash; see the Recall panel for why six months is not assumed.</div></div>
           </div>
-          <button class="btn bp" onclick="addProcedureType()">Add Procedure Type</button>
+          <button class="btn bp" id="pc-save-btn" onclick="addProcedureType()">Add Procedure Type</button>
+          <button class="btn bo" id="pc-cancel-btn" style="display:none" onclick="cancelProcedureRevise()">Cancel revision</button>
           <div class="psub" style="margin-top:8px">CDT is republished every year and payment ties to the exact code reported, so a code that was right last year can be wrong for a service performed this one. Recording the edition and the effective window is what lets this app check a code against the <strong>date of service</strong> rather than against today. Leave the window blank and the code cannot be checked at all &mdash; it will say so rather than quietly pass.</div>
         </div></div>
         <div id="pc-maintenance"></div>
@@ -2103,7 +2106,11 @@ var DNT_EXPORTS={
     ['Charge ID',function(r){return r.id;}],
     ['Patient',function(r){var p=patients().find(function(x){return x.id===r.patient_id;});return p?p.name:'';}],
     ['Patient ID',function(r){return r.patient_id;}],
-    ['Procedure',function(r){var t=procedureTypes().find(function(x){return x.id===r.procedure_type_id;});return t?(t.cdt_code?t.cdt_code+' '+t.description:t.description):'';}],
+    // READS THE STAMP, not the live catalogue row. See dntChargeCode().
+    ['Procedure',function(r){return dntChargeCode(r).text;}],
+    ['CDT code as billed',function(r){return dntChargeCode(r).code;}],
+    ['CDT edition as billed',function(r){return dntChargeCode(r).edition;}],
+    ['Code source',function(r){return dntChargeCode(r).stamped?'stamped at posting':'live catalogue lookup (no stamp on this row)';}],
     ['Procedure type ID',function(r){return r.procedure_type_id;}],
     ['Appointment ID',function(r){return r.appointment_id||'';}],
     ['Amount',function(r){return r.amount;}],
@@ -2188,6 +2195,50 @@ function operatories(){return ld('dnt_operatories_list',[]);}
 function providerHours(){return ld('dnt_hours_list',[]);}
 function procedureTypes(){return ld('dnt_procedures_list',[]);}
 function coverageRules(){return ld('dnt_coverage_list',[]);}
+
+// ── THE STAMP WAS WRITTEN AND NEVER READ (2026-10-16) ─────────────────────
+// addChargeEntry() has stamped `cdt_code` and `cdt_version` onto every charge
+// since 2026-09-17, and its comment states the guarantee plainly: "the code
+// and the edition are STAMPED AT POSTING", so a catalogue edit cannot restate
+// history. THAT GUARANTEE DID NOT HOLD. Both places that show a charge's code
+// looked it up LIVE from the mutable procedure-type row and ignored the stamp
+// entirely -- the patient ledger's charges table and the `charges` export's
+// "Procedure" column. The field went into the record and nothing consumed it.
+//
+// So the write half shipped, the read half did not, and nothing could tell:
+// the stamp and the lookup agree on every row until the day the catalogue is
+// edited, which is the one day the stamp exists for. A test of today's data
+// passes either way.
+//
+// THE EXPORT'S OWN COMMENT, nine lines above the column this fixes, states the
+// rule it then broke -- "a deleted patient still has charges, and a name-only
+// export would make those rows unattributable". A deleted PROCEDURE TYPE has
+// charges too.
+//
+// THE STAMP WINS WHEN IT IS THERE, AND THE FALLBACK SAYS SO WHEN IT IS NOT.
+// Charges posted before 2026-09-17 carry no stamp; for those the live row is
+// the only source there has ever been, and it is used and LABELLED, because
+// "as the catalogue reads today" and "as billed" are different claims and a
+// ledger that renders them identically is the problem this fixes.
+function dntChargeCode(c){
+  var stamped=c&&c.cdt_code?String(c.cdt_code):'';
+  var proc=procedureTypes().find(function(p){return p.id===(c&&c.procedure_type_id);});
+  if(stamped){
+    return {code:stamped, edition:(c.cdt_version?String(c.cdt_version):''),
+            description:proc?proc.description:'', stamped:true,
+            text:stamped+(proc&&proc.description?' -- '+proc.description:'')};
+  }
+  if(proc){
+    return {code:proc.cdt_code||'', edition:proc.cdt_version||'',
+            description:proc.description||'', stamped:false,
+            text:(proc.cdt_code?proc.cdt_code+' -- ':'')+proc.description+
+                 ' (as the catalogue reads today — not stamped at posting)'};
+  }
+  // NEITHER. No stamp and the row is gone, so the code this was billed under
+  // is not recoverable from anything on this device. Said, not guessed.
+  return {code:'', edition:'', description:'', stamped:false,
+          text:'(not recorded — posted before the code was stamped, and the procedure type has since been removed)'};
+}
 
 function fillDentalSelects(){
   // activeProviders(), not providers(): a deactivated provider must stay
@@ -3230,13 +3281,72 @@ function rProcedures(){
       '<td>'+cdtWindowText(p)+'</td>'+
       '<td><span class="badge '+meta.cls+'" title="'+H(s.message)+'">'+H(meta.label)+'</span>'+
       (s.state==='retired'&&s.supersededBy?'<div style="font-size:11px;color:var(--muted);margin-top:3px">replaced by '+H(s.supersededBy)+'</div>':'')+'</td>'+
-      '<td><button class="btn bo bs" onclick="removeProcedureType(\''+p.id+'\')">Remove</button></td></tr>';
+      '<td><button class="btn bo bs" onclick="startProcedureRevise(\''+p.id+'\')">Revise</button> '+
+      '<button class="btn bo bs" onclick="removeProcedureType(\''+p.id+'\')">Remove</button>'+
+      (p.revisions&&p.revisions.length?'<div style="font-size:11px;color:var(--muted);margin-top:3px">revised '+p.revisions.length+'&times;, last '+H(p.revised_at||'')+'</div>':'')+
+      '</td></tr>';
   }).join('')||'<tr><td colspan="8" style="color:var(--muted);text-align:center">No procedure types on file yet -- enter your practice\'s own codes and fees above</td></tr>';
   rCdtMaintenance();
   fillDentalSelects();
   if(typeof rRecall==='function')rRecall();
 }
+// ── THE VERSIONING HAD NO WAY IN (2026-10-16) ─────────────────────────────
+// CDT_STATUS, cdtStatusFor(), the effective window, the supersession and the
+// maintenance panel all shipped and are right. The form that records them was
+// ADD-ONLY, and the table's only action was Remove. So:
+//
+//   * every procedure type that predates the versioning carries no window and
+//     reports "Not verifiable" FOREVER -- which is the population the feature
+//     was built for, and there was no path from that state to a checked one;
+//   * applying a new CDT edition meant Remove-and-re-Add, which mints a NEW
+//     row id, and every historical charge points at the old one.
+//
+// The maintenance block's own comment describes the event it defends against
+// as the practice "changes cdt_version, closes an effective_to, or revises a
+// cdt_code outright". NOTHING IN THE APP COULD DO ANY OF THOSE THINGS. The
+// charge-stamping fix of 2026-09-17 was written for an edit path that did not
+// exist, which is also why its read half was never noticed as missing.
+//
+// UPDATE IN PLACE, SAME ROW ID, so charges keep resolving -- and the previous
+// values are APPENDED to `revisions` rather than overwritten, because a
+// catalogue that silently forgets which edition a code used to be filed under
+// cannot answer an audit about a service performed under the old one. The
+// charge stamp protects the CHARGE; this protects the CATALOGUE.
+function startProcedureRevise(id){
+  var p=procedureTypes().find(function(x){return x.id===id;});
+  if(!p){toast('That procedure type is no longer on file');return;}
+  $('pc-edit-id').value=id;
+  $('pc-add-code').value=p.cdt_code||'';
+  $('pc-add-desc').value=p.description||'';
+  $('pc-add-fee').value=(p.default_fee===0||p.default_fee)?p.default_fee:'';
+  $('pc-add-length').value=p.default_length_minutes||'';
+  $('pc-add-version').value=p.cdt_version||'';
+  $('pc-add-efffrom').value=p.effective_from||'';
+  $('pc-add-effto').value=p.effective_to||'';
+  $('pc-add-superseded').value=p.superseded_by||'';
+  $('pc-add-recall').value=p.recall_months?p.recall_months:'';
+  $('pc-form-title').textContent='Revise '+(p.cdt_code||p.description);
+  $('pc-save-btn').textContent='Save revision';
+  $('pc-cancel-btn').style.display='';
+  var b=$('pc-edit-banner');
+  b.style.display='';
+  b.innerHTML='Revising <strong>'+H(p.cdt_code||p.description)+'</strong> in place. '
+    +'The row keeps its identity, so charges already posted against it stay attributable. '
+    +(p.revisions&&p.revisions.length?'It has been revised '+p.revisions.length+' time(s) before. ':'')
+    +'The values being replaced are kept in the row’s revision history.';
+  if(typeof window!=='undefined'&&window.scrollTo)try{$('pc-add-version').focus();}catch(e){}
+}
+function cancelProcedureRevise(){
+  $('pc-edit-id').value='';
+  ['pc-add-code','pc-add-desc','pc-add-fee','pc-add-length','pc-add-version','pc-add-efffrom','pc-add-effto','pc-add-superseded','pc-add-recall'].forEach(function(id){$(id).value='';});
+  $('pc-form-title').textContent='Add Procedure Type';
+  $('pc-save-btn').textContent='Add Procedure Type';
+  $('pc-cancel-btn').style.display='none';
+  $('pc-edit-banner').style.display='none';
+  $('pc-edit-banner').innerHTML='';
+}
 async function addProcedureType(){
+  var editId=$('pc-edit-id').value;
   var code=$('pc-add-code').value.trim(),desc=$('pc-add-desc').value.trim();
   var fee=parseFloat($('pc-add-fee').value),length=parseInt($('pc-add-length').value,10);
   var version=$('pc-add-version').value.trim();
@@ -3249,15 +3359,51 @@ async function addProcedureType(){
   // Refused rather than stored and silently ignored: an inverted window makes
   // every date-of-service check on this code meaningless in both directions.
   if(effFrom&&effTo&&effTo<effFrom){toast('The retirement date is before the effective date -- that window cannot be checked against any date of service',5000);return;}
-  var rec={id:newId('PC'),cdt_code:code,description:desc,default_fee:isNaN(fee)?0:fee,
-    default_length_minutes:isNaN(length)?30:length,cdt_version:version,
-    effective_from:effFrom,effective_to:effTo,superseded_by:superseded,
-    recall_months:(isNaN(recallMonths)||recallMonths<1)?0:recallMonths,created_at:dntLocalToday()};
-  var list=procedureTypes();list.push(rec);st('dnt_procedures_list',list);
+  var list=procedureTypes();
+  var rec, revising=false;
+  if(editId){
+    var i=list.findIndex(function(x){return x.id===editId;});
+    if(i<0){
+      // REFUSED, not silently turned into an insert. A revision whose target
+      // vanished mid-edit would otherwise mint a second row under the same
+      // code and leave the charges pointing at neither.
+      toast('That procedure type is no longer on file, so there is nothing to revise. Nothing was saved.',7000);
+      cancelProcedureRevise();rProcedures();return;
+    }
+    var prev=list[i];
+    // ONLY THE FIELDS THAT ACTUALLY CHANGED, so the history is a record of
+    // revisions and not of every time somebody opened the form.
+    var before={},changed=false;
+    [['cdt_code',code],['description',desc],['default_fee',isNaN(fee)?0:fee],
+     ['default_length_minutes',isNaN(length)?30:length],['cdt_version',version],
+     ['effective_from',effFrom],['effective_to',effTo],['superseded_by',superseded],
+     ['recall_months',(isNaN(recallMonths)||recallMonths<1)?0:recallMonths]
+    ].forEach(function(pair){
+      var was=(prev[pair[0]]===undefined||prev[pair[0]]===null)?'':prev[pair[0]];
+      if(String(was)!==String(pair[1])){before[pair[0]]=was;changed=true;}
+    });
+    if(!changed){toast('Nothing changed, so no revision was recorded');cancelProcedureRevise();return;}
+    rec=JSON.parse(JSON.stringify(prev));
+    rec.cdt_code=code;rec.description=desc;rec.default_fee=isNaN(fee)?0:fee;
+    rec.default_length_minutes=isNaN(length)?30:length;rec.cdt_version=version;
+    rec.effective_from=effFrom;rec.effective_to=effTo;rec.superseded_by=superseded;
+    rec.recall_months=(isNaN(recallMonths)||recallMonths<1)?0:recallMonths;
+    rec.revisions=(prev.revisions||[]).concat([{revised_at:dntLocalToday(),replaced:before}]);
+    rec.revised_at=dntLocalToday();
+    list[i]=rec;revising=true;
+  }else{
+    rec={id:newId('PC'),cdt_code:code,description:desc,default_fee:isNaN(fee)?0:fee,
+      default_length_minutes:isNaN(length)?30:length,cdt_version:version,
+      effective_from:effFrom,effective_to:effTo,superseded_by:superseded,
+      recall_months:(isNaN(recallMonths)||recallMonths<1)?0:recallMonths,created_at:dntLocalToday()};
+    list.push(rec);
+  }
+  st('dnt_procedures_list',list);
+  cancelProcedureRevise();
   rProcedures();
-  ['pc-add-code','pc-add-desc','pc-add-fee','pc-add-length','pc-add-version','pc-add-efffrom','pc-add-effto','pc-add-superseded','pc-add-recall'].forEach(function(id){$(id).value='';});
   var syncResult=await sdnData('write','dnt_procedure_types',rec);
-  toast(syncResult?'Procedure type added':dntWriteFailText('dnt_procedure_types','Saved on this device only -- the server did not accept it, so it is not on any other workstation'),syncResult?3000:7000);
+  toast(syncResult?(revising?'Revision saved — the row kept its identity, so posted charges stay attributable':'Procedure type added')
+    :dntWriteFailText('dnt_procedure_types','Saved on this device only -- the server did not accept it, so it is not on any other workstation'),syncResult?3000:7000);
 }
 function removeProcedureType(id){
   // Local-only -- see removePatient()'s comment for why.
@@ -5072,12 +5218,14 @@ function rBilling(){
     '<div class="kpi"><div class="klbl">Payments</div><div class="kval">'+fmt(bal.totalPayments)+'</div></div>'+
     '<div class="kpi"><div class="klbl">Balance Due</div><div class="kval" style="color:'+(bal.balanceDue>0?'var(--danger)':'var(--ok)')+'">'+fmt(bal.balanceDue)+'</div></div>';
 
-  var procs2=procedureTypes();
   var myCharges=charges().filter(function(c){return c.patient_id===patientId;});
   $('charges-tbody').innerHTML=myCharges.map(function(c){
-    var pc=procs2.find(function(p){return p.id===c.procedure_type_id;});
+    // READS THE STAMP, not the live catalogue row. See dntChargeCode().
+    var cc=dntChargeCode(c);
     var resp=(Number(c.amount)||0)-(Number(c.estimated_insurance_portion)||0);
-    return '<tr><td>'+H(c.date)+'</td><td>'+H(pc?(pc.cdt_code+' -- '+pc.description):'(unknown)')+'</td><td>'+fmt(c.amount)+'</td><td>'+fmt(c.estimated_insurance_portion)+'</td><td>'+fmt(resp)+'</td></tr>';
+    return '<tr><td>'+H(c.date)+'</td><td>'+H(cc.text)+
+      (cc.stamped&&cc.edition?' <span style="font-size:11px;color:var(--muted)">'+H(cc.edition)+'</span>':'')+
+      '</td><td>'+fmt(c.amount)+'</td><td>'+fmt(c.estimated_insurance_portion)+'</td><td>'+fmt(resp)+'</td></tr>';
   }).join('')||'<tr><td colspan="5" style="color:var(--muted);text-align:center">No charges yet</td></tr>';
 
   var myPayments=payments().filter(function(p){return p.patient_id===patientId;});
