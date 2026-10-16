@@ -1,0 +1,128 @@
+SAIRN DIGEST -- cody, batch b19, 2026-10-16
+===========================================================================
+
+STATUS
+------
+cody b19 LANDED on origin/main at 1e3e61eae (the work) and 753004097 (the
+handoff set). VERIFIED BY READING CONTENT BACK FROM origin/main, not only by
+sha: 576 lines of the new suite; 1 x "if (s.idMustSurvive) {"; 3 x "EXTRACTION
+ANCHOR LIVE"; 1 x "^## 36."; floor pin 824; known-red 65 entries / 46
+recovered. merge-base --is-ancestor 1e3e61eae origin/main -> YES. Pushed
+WITHOUT --force (grep -ci force over the whole push log: 0). Tree clean. No
+api/, sql/ or tools/ file edited -- api/ is COPIED for every counterfactual
+and the three generators were RUN, not changed. No hook restored.
+settings.json never committed. No auditor clone entered. NOTHING OVERRIDDEN --
+no SAIRN_SKIP, no SAIRN_GATE_EXEMPT, no SAIRN_SEED_GATE, in any form. THE PUSH
+WAS REFUSED ONCE by the derived-docs gate and the remedy was to run the three
+generators, not to skip it; all three --check pass. THE DISPATCH'S STARTING
+POINT WAS WRONG AND THAT IS NOT A PROBLEM: there is no b18 handoff, report or
+digest -- b18 was cut off before writing anything, with three commits unpushed
+for 20 hours and TWO FILES UNCOMMITTED, one of which did not work (EXIT=2). So
+b19 finished b18 first. Claim `tests` (cody-1792149459) taken BEFORE any work;
+publishing it took three attempts because sairn_claim.py cannot push with a
+dirty tree and says NOT CLAIMED rather than faking success. b18's claim
+(cody-1792078195) is STILL ACTIVE and deliberately not released -- `release`
+takes a subject, not an id, so releasing `tests` would have dropped the live
+one too.
+
+WHAT THE BATCH FOUND
+--------------------
+EVERY ITEM WAS A CHECK THAT HAD STOPPED CHECKING, AND NOT ONE OF THEM WAS RED.
+(1) ARM Z's missing else -- the one state it existed to catch emitted neither
+ok nor bad, so it DID NOT GO RED, IT DISAPPEARED. Ablation re-run both legs in
+one session: PRE-FIX ablated EXIT=0 / 15 passed / arm Z simply ABSENT, POST-FIX
+ablated EXIT=1 / 15 passed 1 failed / arm Z RED -- CAUGHT. Driver committed at
+docs/b19-logs/ablate_arm_z.py. THE SUBJECT IS ABLATED, NOT THE ARM: removing
+an arm can only reduce the arm count, it can never make the arm red. The fix
+is SPLITTING THE PREDICATE -- population test separate from assertion.
+(2) THE blob-scope ROW IS RECOVERED AND THE RED WAS NEVER WRONG -- ITS BASE
+WAS. merge-base --is-ancestor 8627f4e4 040cbfd9 -> NO. hank's conversion
+landed 2 minutes before the suite was committed, on a parallel branch. A
+correct measurement in a real isolated clone produced a wrong diagnosis.
+(3) The control arm printed "so the ten failures above" on a run with ZERO
+failures above; reads off failed.length now.
+(4) THE leg_aftercare PROBE HAD NOT RUN FOR TWO DAYS AND THE REGISTER COULD
+NOT SAY SO: its extraction anchor rotted, it exited 3 COULD NOT RUN, and the
+row said exit_code 1 / "ARM 1 ONLY" -- AN EXIT 3 IS NEITHER, and no sweep
+prints a FAIL line for it. Re-anchored on a BALANCED BLOCK, and new arm 3
+renames each anchor in a COPY and requires EXIT 1 -- ownership decides the
+exit code.
+(5) NEW failing-first suite driving a 23514 through the alf_op_audits write
+guard (HTTP 503 NOT_PROVISIONED on a TIER A append-only care log: a row
+refused on CONTENT reported as a missing table) and a 42703 through the
+mech_site_assets read guard (HTTP 200, BYTE-IDENTICAL to a genuine 404). The
+counterfactual proves the fix is ONE CALL SITE: routing through the SHIPPED
+notProvisioned() gives 400 ROW_REFUSED while a real 404 still gives 503.
+Populations MEASURED on every run -- 318 guards, 88 via the helper, 67 raw
+503, 151 raw 200 provisioned:false -- which independently reproduces the 151
+the dispatch named.
+AND THE NEW SUITE'S OWN FIRST VERSION COMMITTED THE METHODOLOGY DEFECT:
+branchOf() bounded the branch at the next `if (resource === ` terminator,
+OVERRAN BY A FACTOR OF 130, and arm P5 -- whose job is to assert the defect is
+NOT already fixed -- REPORTED THAT IT WAS. A precondition arm telling the
+suite to retire itself over a defect that is still shipped.
+
+METHODOLOGY -- CONVENTION 36
+----------------------------
+A CHECK'S OWN ROT IS NOT BIASED TOWARD RED, and the exit code must be chosen
+by OWNERSHIP. Item 8 says nothing announces the day a check stops testing
+anything; 36 is the missing half -- when it does stop, it does not announce it
+by going red. Three instances this batch and two of them read as GOOD NEWS.
+REMEDY: an absent tool or unreadable subject stays exit 2/3 COULD NOT RUN (PR
+1.11 UNCHANGED -- 36 only ever moves a verdict to the LOUDER state), but an
+anchor that no longer matches a file that reads fine is a defect in the CHECK
+and must be EXIT 1 WITH THE ANCHOR NAMED, with a DRIVEN sabotage arm and an
+unmutated-copy control first. A TERMINATOR IS A GUESS ABOUT WHAT COMES NEXT; A
+BALANCED BRACE IS A PROPERTY OF THE BRANCH ITSELF -- a terminator pattern is
+35 clause 2's defect wearing a structural costume, and it fails further. 36 is
+a TWELFTH member of the cannot-fire group, ADMITTED ON TWO OF ITS THREE
+INSTANCES and said so in the group's own note. 36 headings, 1-36, no gap, no
+duplicate. AND METHODOLOGY.md's PUBLISHED "18 promotion rows" IS WRONG: 23 at
+the commit that wrote it, 23 at HEAD, same blob -- so by convention 35 clause
+3 the published number is the wrong one, not drift. 24 now, old block carried
+unchanged.
+
+ALSO FIXED, FROM b18's UNFINISHED TAIL
+--------------------------------------
+tests/run_dead_rule_sweep_probe.py was EXIT=2. The sweep is driven THREE WAYS
+and only two have call sites -- section I calls make_sandbox() IN-PROCESS. And
+the two wrapped call sites were READING THE WRONG NUMBER UNDER THE RIGHT NAME:
+git_config_isolation.py's exit code is its verdict on .git/config and
+.git/worktrees, not the wrapped command's. Re-exec once at the top, inner code
+through --rc-file. New arm G0 asserts SAIRN_GIT_ISOLATION=1 BY NAME, because
+the refusal banner contains "DEAD RULE SWEEP" and F2 -- the paired positive
+proving the sweep STARTED -- passed on the message saying it would not. 84
+passed / 0 failed. Floor 808 -> 824, which met another clone's 811 in a rebase
+and stands by the ratchet's own rule; and raise_floor() DROPS KEYS IT DOES NOT
+KNOW, which is how the b14 lowering note had already vanished.
+
+TIER A
+------
+OPENED AND ASSIGNED, not left first-come: alf_facility, alf_op_audits,
+leg_aftercare, mech_site_assets, 2026-10-16T12:24:12Z, ASSIGNED TO cc, six
+checks named hardest-first, reviewer must not be cody. alf_facility is on it
+only because the suite MOCKS its threshold read; no assertion is made about
+it and the record says so. NOTHING FRESH IS ASSIGNED TO CODY -- five
+obligations, NEWEST OPENED 2026-10-06T07:56:17Z (243h), all --takeover-able.
+Measured, not assumed absent.
+
+NEXT
+----
+HANK: the two call sites -- api/sd-data.js:14445 raw 503 -> `await
+notProvisioned(res, w, <same message>)` (A2/A3 already drive it on a copy),
+then decide what distinguishes a 42703 from a 404 at :2851; a field beside
+provisioned:false satisfies B1. RE-DERIVE BOTH LINE NUMBERS, they moved +98.
+A third guard is named but NOT driven: :14316. CC: discharge the Tier A
+obligation. CODY: the 151 and 67 are NOT converted and that is a decision, not
+a backlog; docs/test-file-floor.json will lose its explanatory keys on the next
+full-tree raise (route raise_floor() to cc or move the durable half out of
+JSON); and the b17/b18 carry-overs are untouched -- tooling_inventory --hooked
+failing open on an empty hook set, the two claims probes' retyped-task
+fixtures, sairnbuild.html's bare catch(e){} in st(), six named
+recurrence_open records, run_capa_fields_probe.py's 200-420s per-arm 2.46MB
+register rewrite, and b16's three deterministic ablation arms.
+
+===========================================================================
+Mount read-back verified by sha256. That does NOT prove Google acknowledged
+the upload -- only a Drive-side API read does, and this digest's own Drive id
+is reported from such a read.
