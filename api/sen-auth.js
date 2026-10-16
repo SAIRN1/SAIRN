@@ -73,6 +73,73 @@ const PROVISIONING_LABEL = 'an Owner';
 // app's MANAGEMENT_ROLES split this session.
 const MANAGEMENT_ROLES = roleSet({ owner: true, billing: true });
 
+// ── WHO MAY CLOSE A PAY PERIOD (2026-10-15, b17 -- MICHAEL'S DECISION) ─────
+// "Pay periods may be closed by owner plus office manager / payroll person
+// only." SAIRNsenior's role vocabulary is owner / scheduler / coordinator /
+// billing / caregiver -- there is no 'office manager' or 'payroll' role, and
+// 'billing' IS this app's back-office/claims/payroll tier, which is the same
+// reading MANAGEMENT_ROLES above already records in its own words.
+//
+// SO THIS SET IS { owner, billing } AND IT IS A SEPARATE CONSTANT ANYWAY.
+// It equals MANAGEMENT_ROLES TODAY BY COINCIDENCE, and `senAuth.MANAGEMENT_ROLES`
+// must NOT be substituted for it: MANAGEMENT_ROLES is a general back-office
+// bucket that has widened before on this platform, and the day it gains a role,
+// CLOSING A PAY PERIOD WOULD WIDEN WITH IT SILENTLY. Closing a period freezes
+// wages already paid -- the narrowest thing in the app after the wage itself --
+// so it gets its own name and its own decision.
+//
+// CLAUDE.md's own rule for this shape: "Per-app role vocabulary still needs an
+// explicit judgment call each time, not a silent copy."
+const SEN_PERIOD_CLOSE_ROLES = roleSet({ owner: true, billing: true });
+const SEN_PERIOD_CLOSE_LABEL = 'an Owner or the billing/payroll role';
+
+// ── INTAKE: THE COORDINATOR MAY LOG A PHONE REFERRAL (b17, MICHAEL) ───────
+// "A home-care coordinator taking a phone referral may write intake without a
+// manager -- retire Option B for that role."
+//
+// THE HISTORY, because this is the second reversal on the same gate and the
+// next reader deserves to know it was deliberate both times. On 2026-10-14
+// (b9) the write on all five referral/applicant/training resources was
+// narrowed from SEN_CLIENT_BROAD_READ_ROLES to MANAGEMENT_ROLES -- correctly:
+// a set defined for a BROAD READ was deciding a WRITE, so a scheduler could
+// change sen_training_rules, the rule that decides whether a caregiver is
+// compliant to work. b9's own comment named the consequence rather than
+// discovering it: "a coordinator can no longer LOG a referral ... If intake is
+// genuinely a coordinator's job then the fix is a per-resource write set here,
+// not a return to the broad one." docs/2026-10-14-fourth-b17-sen-rf-write-map.md
+// measured the operational cost. This is that per-resource set.
+//
+// COORDINATOR ONLY, NOT SCHEDULER. fourth's Option A was "+ coordinator,
+// scheduler"; Michael named the home-care COORDINATOR, so that is what is
+// granted. An access decision is read at its narrowest, and adding scheduler
+// later is one word here -- whereas removing it is a conversation with an
+// agency that has been using it.
+const SEN_INTAKE_WRITE_ROLES = roleSet({ owner: true, billing: true,
+                                         coordinator: true });
+
+// PER RESOURCE, AND A MISSING ROW IS A REFUSAL. The whole point of the map is
+// that a resource added later has NO policy until somebody writes one, and
+// gets a 500 WRITE_MAP_MISSING rather than inheriting whichever set happens to
+// be nearest in the file. That inheritance is exactly how the broad-read set
+// came to decide a write.
+const SEN_REFERRAL_WRITE_ROLES = {
+  // Intake proper. A referral IS the phone call, and a coordinator taking a
+  // call from a hospital that is not yet on file must be able to record the
+  // SOURCE too -- otherwise the decision is defeated by its own prerequisite
+  // and the coordinator is back at a manager's desk.
+  sen_referrals: SEN_INTAKE_WRITE_ROLES,
+  sen_referral_sources: SEN_INTAKE_WRITE_ROLES,
+  // NOT INTAKE, and left management-only on purpose. These are the three b9
+  // narrowed for reasons Michael's decision does not touch:
+  //   sen_applicants       employment data about somebody who is not yet staff
+  //   sen_training_records a named caregiver's compliance standing
+  //   sen_training_rules   the RULE a caregiver is measured against -- the one
+  //                        that decides whether they may work at all
+  sen_applicants: MANAGEMENT_ROLES,
+  sen_training_records: MANAGEMENT_ROLES,
+  sen_training_rules: MANAGEMENT_ROLES
+};
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     res.status(405).json({ error: { message: 'Method not allowed — POST only' } });
@@ -430,6 +497,14 @@ function upstream(res, detail) {
 // and the sen_claims gate). Retrofitting them is a separate change with its own
 // blast radius and is deliberately NOT bundled here -- logged instead.
 module.exports.MANAGEMENT_ROLES = MANAGEMENT_ROLES;
+// b17. Exported so api/sd-data.js's payroll_closed_periods gate asks ONE
+// source. See the constant's own note for why it is not MANAGEMENT_ROLES.
+module.exports.SEN_PERIOD_CLOSE_ROLES = SEN_PERIOD_CLOSE_ROLES;
+module.exports.SEN_PERIOD_CLOSE_LABEL = SEN_PERIOD_CLOSE_LABEL;
+// b17. ONE PLACE for the intake write policy -- api/sd-data.js's referral
+// branch reads the map rather than testing a role itself.
+module.exports.SEN_INTAKE_WRITE_ROLES = SEN_INTAKE_WRITE_ROLES;
+module.exports.SEN_REFERRAL_WRITE_ROLES = SEN_REFERRAL_WRITE_ROLES;
 
 // ── Exported for api/provisioner-health.js, added 2026-09-21 ───────────────
 // The trapdoor is a licence with credential rows and no way back to an active

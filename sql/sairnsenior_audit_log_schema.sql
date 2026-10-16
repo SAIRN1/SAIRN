@@ -33,7 +33,22 @@ create table if not exists public.sairnsenior_audit_log (
     'pin_setup',
     'credential_deactivated',
     'credential_reactivated',
-    'credential_change_refused'
+    'credential_change_refused',
+    -- ── b17, 2026-10-15. CLOSING A PAY PERIOD FREEZES WAGES ALREADY PAID,
+    -- so the endpoint REFUSES the close when this row cannot be written
+    -- (503 AUDIT_UNAVAILABLE) rather than closing unattributed. That is a
+    -- deliberate departure from this platform's best-effort audit posture
+    -- and api/sd-data.js's branch states why: a grant blocked by a logging
+    -- outage locks somebody out of their own app, whereas a pay-period close
+    -- is retryable a minute later and is audited precisely because it moves
+    -- money.
+    --
+    -- SO THIS LINE IS LOAD-BEARING. Until this file is RUN, every attempt to
+    -- close a pay period answers 503 and names this file. An event_type
+    -- missing from a CHECK constraint is a SILENTLY DROPPED audit row
+    -- everywhere else on this platform; here it is a refusal, which is the
+    -- one place that failure mode is visible.
+    'pay_period_closed'
   )),
   detail jsonb,
   created_at timestamptz not null default now()

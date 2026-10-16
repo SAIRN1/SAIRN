@@ -292,14 +292,42 @@ function proposeCorrection(visitData, proposal, actor, atISO) {
   };
 }
 
-// approveCorrection(entry, approver, atISO) -> verdict
+// approveCorrection(entry, approver, atISO, approverRole) -> verdict
 //
 // MUTATES NOTHING. Returns the approved entry for the caller to store in place
 // of the pending one -- the array is append-only in LENGTH, and an approval is
 // a transition on an entry already in it, not a second entry. Two records for
 // one decision is the double-count shape, and an auditor counting corrections
 // would see twice as many as were filed.
-function approveCorrection(entry, approver, atISO) {
+//
+// ── `approverRole` IS THE H8 RESOLUTION (2026-10-15, b17, MICHAEL) ─────────
+// "A one-person agency is just the owner with full access; the owner may
+// approve their own visit."
+//
+// IT IS A ROLE AND NOT A HEADCOUNT, deliberately. The alternative that was
+// NOT built is "permit self-approval when the agency has one employee", and it
+// is the worse design in a way worth writing down: it is a rule that deletes
+// itself the moment somebody is hired, it needs a roster COUNT at approval
+// time (an extra query, on a path that currently needs none), and a miscounted
+// roster would silently re-open self-approval for a ten-person agency. An
+// OWNER is an owner whether the agency has one employee or fifty, and the
+// authority Michael described is the owner's authority.
+//
+// SO A ONE-PERSON AGENCY NEEDS NO SPECIAL CASE AT ALL -- which is the whole
+// point of the resolution. It is the owner, the owner may self-approve, and
+// nothing anywhere has to know the agency is one person.
+//
+// THE TRAIL STILL SAYS SO. A self-approved entry carries `self_approved: true`
+// and `self_approval_basis: 'owner'`, because b13's `self_approved: true`
+// marking was the right half of the wrong answer: marking it and allowing
+// EVERYONE was wrong, and allowing the owner without marking it would lose the
+// one fact an auditor needs -- that this correction had no second party.
+//
+// BACKWARD COMPATIBLE. `approverRole` undefined behaves exactly as before:
+// self-approval refused. Every existing caller that does not pass it keeps the
+// b16 behaviour, which is what arm S11 of api/b14-clock-approval-two-person.test.js
+// already asserts and which must not move.
+function approveCorrection(entry, approver, atISO, approverRole) {
   if (!entry || typeof entry !== 'object') {
     return refuse('NO_ENTRY', 'There is no correction at that position to approve.');
   }
@@ -330,7 +358,9 @@ function approveCorrection(entry, approver, atISO) {
   // the assigned caregiver and there is now NO route to make any correction
   // effective. That is the decided trade and it is a workflow change, not a
   // side effect.
-  if (String(entry.proposed_by) === String(approver)) {
+  const isSelf = String(entry.proposed_by) === String(approver);
+  const ownerSelf = isSelf && String(approverRole) === 'owner';
+  if (isSelf && !ownerSelf) {
     return refuse('SELF_APPROVAL_REFUSED',
       'This correction was submitted by '
       + JSON.stringify(String(entry.proposed_by))
@@ -338,6 +368,8 @@ function approveCorrection(entry, approver, atISO) {
       + 'manager has to approve it before payroll or an EVV export uses it -- '
       + 'an edited EVV time with no second party cannot be told from a '
       + 'fabricated one, which is the whole reason the submission is pending. '
+      + 'THE ONE EXCEPTION IS THE OWNER, who may approve their own (2026-10-15, '
+      + 'Michael): a one-person agency is the owner with full access. '
       + 'Nothing was written.');
   }
   if (parseISO(atISO) === null) {
@@ -345,8 +377,16 @@ function approveCorrection(entry, approver, atISO) {
       'The receiving server did not supply its own time, so the approval '
       + 'cannot be dated and is refused rather than dated by the caller.');
   }
-  return { ok: true, entry: Object.assign({}, entry, {
-    status: 'approved', approved_by: approver, approved_at_server: atISO }) };
+  // b17: `self_approved` is stamped ONLY when it really was a self-approval,
+  // and it is stamped rather than inferred later -- the entry is the record,
+  // and "was there a second party" is the one question an auditor asks of a
+  // corrected EVV time. `approved_at_server` is set on BOTH paths, which b16's
+  // freeze depends on: an approval with no instant lands in the undatable
+  // bucket, and for a one-person agency that would be EVERY correction.
+  return { ok: true, entry: Object.assign({}, entry, ownerSelf
+    ? { status: 'approved', approved_by: approver, approved_at_server: atISO,
+        self_approved: true, self_approval_basis: 'owner' }
+    : { status: 'approved', approved_by: approver, approved_at_server: atISO }) };
 }
 
 // ── A CORRECTION IS APPROVED **AS AT** A MOMENT (2026-10-15, b16) ──────────

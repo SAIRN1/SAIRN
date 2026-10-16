@@ -158,7 +158,86 @@ const NOT_LEG = 'NOT_LEG';
  * exists, which is a database question. `isAppendOnly()` answers "does this
  * resource have the rule", the handler answers "is this an edit".
  */
-function decide(resource, role, action) {
+// ══ THE PRACTITIONER ANSWERS, 2026-10-15 (b17) ════════════════════════════
+// Michael's answers to two of the funeral questions, recorded HERE because
+// this file is the one place that owns SAIRNlegacy role policy.
+//
+// ── ANSWER 1: "funeral prep gets a licensed-embalmer tier." ───────────────
+// RECORDED AND IT CHANGES NO ROW TODAY, and that is a measurement rather than
+// a hedge: there is NO PREPARATION-ROOM RESOURCE in this app. The 36 rows above
+// are the whole table and none of them is the embalming/preparation record a
+// licensure tier would gate. `sairnlegacy.html:974` carries a "Staff
+// Certifications / Licensing" panel describing "Funeral director/embalmer
+// licenses, expiration tracking" and it is a placeholder with no resource
+// behind it.
+//
+// SO A TIER THAT GRANTED SOMETHING TODAY WOULD BE DORMANT CODE -- Guardian
+// Check 0d's exact shape, a policy nothing reaches that goes live with no
+// warning the day somebody wires it up. What is built instead is a LIVE
+// CHECK: LEG_PREP_ROOM_RESOURCES is empty, and the matrix suite fails if a
+// preparation-room resource is ever added without a tier decision on it. The
+// decision cannot be forgotten and nothing unreachable was written.
+//
+// THE ROLE VOCABULARY IS ALSO NOT HERE YET. api/_lib/auth.js's ROLES_BY_APP
+// gives sairnlegacy owner/director/arranger/prep/office/apprentice/livery/
+// staff -- there is no `embalmer`. Adding one is a live CHECK-constraint
+// change on sairnlegacy_employee_auth, so it is in the b17 SQL package for
+// Michael rather than written here where it would make
+// api/role-picker-vs-check-constraint.test.js red against the real database.
+const LEG_EMBALMER_TIER = Object.freeze({
+  // The tier as Michael described it: a licensed embalmer, distinct from the
+  // unlicensed preparation-room helper the `prep` role currently covers.
+  tier: 'licensed_embalmer',
+  // The role name this tier WOULD use. Not in ROLES_BY_APP yet -- see above.
+  role: 'embalmer',
+  // What the tier is for, so a future implementer does not have to re-derive
+  // it: write on the preparation-room record, where `prep` has read only.
+  grants: 'rw on the preparation/embalming record; `prep` keeps r',
+  recorded: '2026-10-15 (b17), Michael'
+});
+// EMPTY, AND MEASURED EMPTY. If a preparation-room resource is added, put it
+// here WITH its tier decision -- the matrix suite fails while a resource whose
+// name looks like the prep room is absent from this map.
+const LEG_PREP_ROOM_RESOURCES = Object.freeze(Object.create(null));
+
+// ── ANSWER 2: livery is blocked from leg_dispatches and leg_custodylog ────
+//    "...unless access is granted by personnel above them."
+//
+// THE BLOCK ALREADY HELD. Both rows are REGULATED and the band gives
+// `livery: NO`, so livery was already refused on both -- verified against the
+// table rather than assumed, which is why no row changed. What did NOT exist
+// is the EXCEPTION: a route for personnel above them to grant it.
+//
+// THE POLICY IS COMPLETE AND CALLABLE HERE; THE STORAGE IS NOT BUILT AND IS
+// NAMED. decide() takes an optional `grants` object, so a caller that has a
+// grant can present it and the answer is computed in ONE place. Nothing
+// persists a grant yet -- that needs a table and a grant/revoke path with its
+// own audit, which is a feature and not a role-map entry. Stated in the b17
+// handoff with its exact next step.
+//
+// NARROW ON PURPOSE, THREE WAYS:
+//   * only these two resources are grantable at all
+//   * only owner and director may grant -- "personnel above them", and in this
+//     app's matrix those are the two roles with RW on REGULATED
+//   * a grant yields READ, never write. leg_custodylog is append-only for
+//     EVERY role including the owner, so a write grant would be a route around
+//     LEG_APPEND_ONLY, and leg_dispatches records who was sent to collect a
+//     body -- livery needing to SEE their own dispatch is the operational
+//     case, and nothing in it requires changing the record.
+const LEG_LIVERY_GRANTABLE = Object.freeze(Object.assign(Object.create(null), {
+  leg_dispatches: true,
+  leg_custodylog: true
+}));
+const LEG_LIVERY_GRANTOR_ROLES = Object.freeze(Object.assign(Object.create(null), {
+  owner: true, director: true
+}));
+
+/**
+ * @param {object} [grants] OPTIONAL per-employee grants, shape
+ *   { <resource>: true }. Only consulted for role 'livery' and only for the
+ *   two resources in LEG_LIVERY_GRANTABLE, and only ever yields READ.
+ */
+function decide(resource, role, action, grants) {
   if (!resource || !Object.prototype.hasOwnProperty.call(LEG_ROLE_MATRIX, resource)) {
     return (String(resource || '').indexOf('leg_') === 0)
       ? DENY        // a NEW leg_ resource nobody added to the table: fail closed
@@ -170,7 +249,15 @@ function decide(resource, role, action) {
     : '';
   const wantsWrite = (action !== 'read');
   const allowed = wantsWrite ? (grant === 'rw') : (grant === 'rw' || grant === 'r');
-  return allowed ? ALLOW : DENY;
+  if (allowed) return ALLOW;
+  // b17: the granted exception, and it is the LAST thing consulted so it can
+  // only ever widen a refusal and never narrow an allowance.
+  if (!wantsWrite && role === 'livery'
+      && LEG_LIVERY_GRANTABLE[resource]
+      && grants && grants[resource] === true) {
+    return ALLOW;
+  }
+  return DENY;
 }
 
 /** Does this resource carry the append-only rule? */
@@ -212,5 +299,10 @@ function appendOnlyMessage(resource) {
 module.exports = {
   LEG_ROLE_MATRIX, LEG_APPEND_ONLY,
   ALLOW, DENY, NOT_LEG,
-  decide, isAppendOnly, resources, denyMessage, appendOnlyMessage
+  decide, isAppendOnly, resources, denyMessage, appendOnlyMessage,
+  // b17, Michael's funeral practitioner answers. Exported so a suite can
+  // assert them and a future implementer reads the decision rather than
+  // re-deriving it.
+  LEG_EMBALMER_TIER, LEG_PREP_ROOM_RESOURCES,
+  LEG_LIVERY_GRANTABLE, LEG_LIVERY_GRANTOR_ROLES
 };

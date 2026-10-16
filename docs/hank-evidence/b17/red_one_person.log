@@ -1,0 +1,25 @@
+RED EVIDENCE -- api/b17-one-person-agency.test.js at the PRE-CHANGE tree (c011a287f)
+
+api/b17-one-person-agency.test.js
+  H8 resolved: the owner may approve their own, and the stranded state is gone
+  FAIL     O1. an OWNER approving their OWN correction is ALLOWED, and the entry carries self_approved:true with basis 'owner' plus a real approved_at_server
+           {"ok":false,"error":{"code":"SELF_APPROVAL_REFUSED","message":"This correction was submitted by \"E1\" and cannot be approved by the same person. ANOTHER scheduler or manager has to approve it before payroll or an EVV export uses it -- an edited EVV time with no second party cannot be told from a fabricated one, which is the whole reason the submission is pending. Nothing was written."}}
+  ok       O2. CONTROL -- a scheduler approving their OWN is still refused SELF_APPROVAL_REFUSED. The exception is the OWNER, not self-approval
+  ok       O2. CONTROL -- a coordinator approving their OWN is still refused SELF_APPROVAL_REFUSED. The exception is the OWNER, not self-approval
+  ok       O2. CONTROL -- a billing approving their OWN is still refused SELF_APPROVAL_REFUSED. The exception is the OWNER, not self-approval
+  ok       O2. CONTROL -- a caregiver approving their OWN is still refused SELF_APPROVAL_REFUSED. The exception is the OWNER, not self-approval
+  ok       O3. an OWNER approving SOMEBODY ELSE'S correction is approved and is NOT marked self_approved. The mark identifies entries with no second party, not entries an owner handled
+  ok       O4. BACKWARD COMPATIBLE -- called with no approverRole (the b16 three-argument form, which arm S11 of api/b14-clock-approval-two-person.test.js still uses) self-approval is refused exactly as before
+  FAIL     O5. THE STRANDED STATE IS GONE, end to end through the real handler: the owner self-approves (200), payroll pays the visit 240 minutes and 8000 cents, and the EVV readiness check reports NO time-span gap. Before b17 the same visit was unpayable AND un-submittable forever
+           status=403 minutes=0 cents=0 time_span=["No clock-out time recorded."] body={"code":"SELF_APPROVAL_REFUSED","message":"This correction was submitted by \"OWN1\" and cannot be approved by the same person. ANOTHER scheduler or manager has to approve it before payroll or an EVV export uses it -- an edited EVV time with no second party cannot be told from a fabricated one, which is the whole reason the submission is pending. Nothing was written."}
+  FAIL     O6. the page defines senIsOwner(), the queue's disabled state is `mine && !senIsOwner()`, the unconditional `mine` gate is GONE, and a self-approval is labelled "Approve your own" so it is never an accident
+           senIsOwner=false gateUsesOwner=false oldGateStillThere=true labelled=false
+  UNPROVEN O7. ABLATION -- removing the owner condition flips O1
+           O1 did not succeed, so there is nothing to ablate
+  FAIL     O8. docs/2026-10-15-hank-b16-h8-self-approval.md now records H8 as RESOLVED and names b17. Leaving a standing document saying "RECORDED, NOT BUILT" is the staleness class that costs the next session real time
+           mentions RESOLVED=false mentions b17=false
+
+  passed 6  failed 4  unproven 1
+  FAILING ARMS: O1 O5 O6 O8
+  UNPROVEN ARMS: O7
+exit=1

@@ -133,7 +133,22 @@ function load() {
 // would test that control's shape, not this one's. sv_controlled gets its
 // own dedicated arm below instead, scoped to what this suite actually adds:
 // the READ path, which the witness lock does not touch at all.
-const RESOURCES = ['sv_patients', 'sv_soapnotes', 'sv_billing'];
+//
+// ── sv_audit_log ADDED 2026-10-15 (b17, routed by fourth/H1) ─────────────
+// It was absent and it is the one resource in this app whose ABSENCE from a
+// session-gate suite matters most: it is the DOSING TRAIL, append-only for
+// every role including the owner, and the record a DEA inspector reads. The
+// append-only lock is well covered (api/sd-data-sv-role-matrix.test.js arm
+// V6 drives it for owner AND dvm) and NOTHING asserted that a licence key
+// alone could not READ it -- so the loudest control in the app sat on top of
+// an unasserted one.
+//
+// APPEND-ONLY DOES NOT MAKE IT SAFE TO READ. A trail nobody may edit is still
+// a trail that names every controlled-substance administration, the patient
+// and the person who gave it. The write half of this suite's arms expects the
+// SESSION refusal (401) to come first, which it does: the gate runs before the
+// append-only check, and arm 1 asserts zero queries were issued to prove it.
+const RESOURCES = ['sv_patients', 'sv_soapnotes', 'sv_billing', 'sv_audit_log'];
 
 (async function () {
   console.log('SV_RESOURCES require an employee session -- read AND write');
@@ -164,10 +179,35 @@ const RESOURCES = ['sv_patients', 'sv_soapnotes', 'sv_billing'];
       assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
       assert.strictEqual(res.body.ok, true, JSON.stringify(res.body));
     });
-    await test(resource + ' write with a session -> 200', async () => {
+    // ── ASK THE MODULE WHICH RESOURCES ARE APPEND-ONLY (2026-10-15, b17) ──
+    // A generic "write with a session -> 200" loop is wrong for an
+    // append-only resource, and adding sv_audit_log to RESOURCES surfaced it
+    // immediately: the handler answers 409 APPEND_ONLY and the arm wanted 200.
+    //
+    // THE REPLACEMENT IS STRICTLY STRONGER, not an exemption -- the same shape
+    // and the same wording as api/sd-data-leg-session-gate.test.js, which hit
+    // this on leg_custodylog. For an append-only resource the arm asserts the
+    // SESSION GATE WAS PASSED and then the append-only rule refused: 409 with
+    // the code, never 401 or 403. A 401 here would mean the gate rejected a
+    // good session, which is what this suite exists to catch, and a loop
+    // expecting 200 could not tell those apart.
+    //
+    // isAppendOnly() IS ASKED, NOT RE-LISTED. api/_lib/sv-roles.js owns
+    // SV_APPEND_ONLY; a hand-written copy here is the drift its own header
+    // names ("SAIRNsenior paid for the re-listed copy").
+    const svRolesForGate = require('./_lib/sv-roles');
+    const svAppendOnly = svRolesForGate.isAppendOnly(resource);
+    await test(resource + ' write with a session -> '
+             + (svAppendOnly ? '409 APPEND_ONLY (and the GATE was passed to get there)'
+                             : '200'), async () => {
       const { handler } = load();
       const res = mockRes();
       await handler(withSession('write', resource, { id: 'X-1' }), res);
+      if (svAppendOnly) {
+        assert.strictEqual(res.statusCode, 409, JSON.stringify(res.body));
+        assert.strictEqual(res.body.error.code, 'APPEND_ONLY', JSON.stringify(res.body));
+        return;
+      }
       assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
       assert.strictEqual(res.body.ok, true, JSON.stringify(res.body));
     });

@@ -32,15 +32,33 @@
 // nothing cannot be gated on. So there is no migration tier in this table and
 // no row exists to carry one.
 //
-// ── THE TWO [CONFIRM]s THE SPEC LEFT OPEN ARE IMPLEMENTED AS THE SPEC'S OWN
-//    PROPOSED ANSWER, AND NEITHER IS SETTLED ────────────────────────────────
-//   * `manager` reads clinical records but writes none. The spec calls this
-//     "the least-surprising answer, and the one most likely to be wrong".
-//   * `tech` may NOT record a controlled-substance administration. In many
-//     states a technician administers under direct supervision and the record
-//     is the technician's -- changing this is a legal reading, not a
-//     preference, and the witnessing lock is where a co-signature would go.
-// Both are named in the handoff rather than buried here.
+// ── THE TWO [CONFIRM]s ARE NOW ANSWERED (2026-10-15, b17, MICHAEL) ────────
+// They were implemented as the spec's own proposed answer and flagged as
+// unsettled. Michael has settled both:
+//
+//   * `manager` GETS ACCESS TO CLINICAL RECORDS -- CONFIRMED AS BUILT. The
+//     spec called `manager: R` on REGULATED "the least-surprising answer, and
+//     the one most likely to be wrong"; it was right. Read, not write: a
+//     practice manager runs the office and is not a clinician, which is the
+//     same sentence api/sv-witness.js uses to exclude manager from witnessing.
+//     NO ROW CHANGED, and that is the point of recording it -- the next reader
+//     finds a settled decision instead of an open [CONFIRM] and does not
+//     re-open it. Arm V-M of api/b17-practitioner-role-maps.test.js pins it.
+//
+//   * `tech` MAY RECORD A CONTROLLED SUBSTANCE, "like a med-pass log" --
+//     CHANGED. See SV_CONTROLLED_RECORD_ROLES below for the whole design; the
+//     short form is that the recorder widened to include tech and the WITNESS
+//     did not, so a licensed veterinarian still has to countersign before the
+//     entry is filed.
+//
+// ── AND A THIRD ANSWER, WHICH IS NOT A ROLE AT ALL ───────────────────────
+// "No HIPAA claim for animals; treat confidentiality as good practice."
+// HIPAA protects individually identifiable health information of a HUMAN. A
+// veterinary record is not PHI and claiming otherwise in a product would be a
+// false compliance claim -- the class sairn-decision-gate exists for. The
+// confidentiality posture in this table is unchanged and is GOOD PRACTICE,
+// not a statutory obligation: that is why `frontdesk` reads two resources and
+// not twenty-three. Arm V-H asserts no HIPAA claim exists in this app's files.
 
 'use strict';
 
@@ -92,10 +110,45 @@ const REGULATED_FRONTDESK = Object.assign({}, REGULATED, { frontdesk: R });
 // seventh role added to ROLES_BY_APP.sairnvet is refused here by construction
 // rather than by somebody remembering to add a column.
 const PRESCRIBER_ROLES = require('../sv-auth').PRESCRIBER_ROLES;
+
+// ── MICHAEL'S ANSWER TO THE SECOND [CONFIRM] (2026-10-15, b17) ────────────
+// "A vet tech may record controlled substances like a med-pass log."
+//
+// THE SPEC'S OPEN QUESTION, AS THIS FILE STATED IT: "`tech` may NOT record a
+// controlled-substance administration. In many states a technician administers
+// under direct supervision and the record is the technician's -- changing this
+// is a legal reading, not a preference, and the witnessing lock is where a
+// co-signature would go." Answered: the technician records it.
+//
+// "LIKE A MED-PASS LOG" IS THE WHOLE DESIGN AND IT IS WHY THIS IS SAFE. In a
+// med-pass log the person who ADMINISTERS writes the entry and a licensed
+// party CO-SIGNS. Both halves are needed and only the first one changes here:
+//
+//   WRITE   owner, dvm, tech          <- this constant
+//   WITNESS owner, dvm  (UNCHANGED)   <- api/sv-witness.js, PRESCRIBER_ROLES
+//
+// api/sv-witness.js's LOCKED_RESOURCES still contains sv_controlled, and its
+// `countersign` still requires a DIFFERENT prescriber. So a tech-recorded
+// entry cannot be FILED without a licensed veterinarian countersigning it --
+// the co-signature the spec said the witnessing lock was where it would go.
+// api/sv-witness.js IS NOT TOUCHED by this change, deliberately: widening the
+// recorder and widening the witness are two different decisions and Michael
+// made one of them.
+//
+// DERIVED FROM PRESCRIBER_ROLES, STILL NOT RE-LISTED. Rule 1 of the spec and
+// cross-domain convention 7: `{ owner, dvm }` is not retyped here. This is
+// that set PLUS one named role, so if the prescriber pair ever changes, this
+// follows it.
+const SV_CONTROLLED_RECORD_ROLES = Object.freeze(Object.assign(
+  Object.create(null),
+  PRESCRIBER_ROLES,
+  { tech: true }
+));
+
 const CONTROLLED = (function () {
   const o = {};
   Object.keys(REGULATED).forEach(function (role) {
-    o[role] = PRESCRIBER_ROLES[role] ? RW : NO;
+    o[role] = SV_CONTROLLED_RECORD_ROLES[role] ? RW : NO;
   });
   return o;
 })();
@@ -115,7 +168,7 @@ const SV_ROLE_MATRIX = Object.freeze(Object.assign(Object.create(null), {
   sv_coggins:      row(REGULATED, 'REGULATED', null, 'Coggins tests -- an EIA certificate is a state-reportable equine record'),
   sv_compliance:   row(REGULATED, 'REGULATED', null, 'the practice compliance record: what was checked and when'),
   // RULE 1: NOT a band row. Derived from api/sv-auth.js's PRESCRIBER_ROLES.
-  sv_controlled:   row(CONTROLLED, 'REGULATED', null, 'the DEA-relevant controlled-substance register -- owner/dvm only, DERIVED from PRESCRIBER_ROLES, and the witnessing lock on top of it is untouched by this table'),
+  sv_controlled:   row(CONTROLLED, 'REGULATED', null, 'the DEA-relevant controlled-substance register -- owner/dvm/tech, DERIVED from SV_CONTROLLED_RECORD_ROLES (= PRESCRIBER_ROLES + tech, 2026-10-15 b17: a vet tech may RECORD like a med-pass log). The witnessing lock on top of it is UNCHANGED and still requires a licensed prescriber to countersign, which is the co-signature half of a med-pass log'),
   sv_dental:       row(REGULATED, 'REGULATED', null, 'dental charting under anaesthesia -- a clinical procedure record'),
   sv_documents:    row(REGULATED, 'REGULATED', null, 'the clinical document set: records released, referrals, lab reports'),
   sv_equinedental: row(REGULATED, 'REGULATED', null, 'equine dental floating -- a procedure record, separate table from sv_dental'),
@@ -265,5 +318,9 @@ function appendOnlyMessage(resource) {
 module.exports = {
   SV_ROLE_MATRIX, SV_APPEND_ONLY,
   ALLOW, DENY, NOT_SV,
-  decide, isAppendOnly, resources, denyMessage, appendOnlyMessage
+  decide, isAppendOnly, resources, denyMessage, appendOnlyMessage,
+  // b17. Exported so a suite can assert the recorder set is PRESCRIBER_ROLES
+  // plus tech and nothing else, and so a future reader finds the decision
+  // rather than inferring it from the sv_controlled row.
+  SV_CONTROLLED_RECORD_ROLES
 };

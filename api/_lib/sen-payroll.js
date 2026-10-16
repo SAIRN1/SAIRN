@@ -251,6 +251,7 @@ function computePayroll(input) {
   const adjustments = [];
   const adjustmentsSkipped = [];
   let undatableTotal = 0;
+  let pendingTotal = 0;
   const byCaregiver = Object.create(null);
 
   const bucket = (id) => {
@@ -273,6 +274,10 @@ function computePayroll(input) {
         // they cannot be placed on either side of the freeze. Counted, never
         // silent.
         undatable_corrections: 0,
+        // b17. A pending correction is a DISPUTE, counted so a pay run says
+        // so rather than handing over a figure the caregiver is contesting.
+        pending_corrections: 0,
+        pending_correction_visits: 0,
       };
     }
     return byCaregiver[id];
@@ -345,6 +350,28 @@ function computePayroll(input) {
     if (undatableHere) {
       b.undatable_corrections += undatableHere;
       undatableTotal += undatableHere;
+    }
+    // ── THE PENDING FIELDS REACH THE OUTPUT (2026-10-15, b17) ─────────────
+    // ROUTED BY fourth/H1: effectiveClock() must KEEP pending, pending_count
+    // and pending_entries. It does -- api/_lib/sen-evv-clock.js's own note
+    // says a submission no screen shows is a submission nobody will ever
+    // approve -- and until now THIS MODULE THREW THEM AWAY. It read `.value`,
+    // `.corrected` and `.undatable` and nothing else.
+    //
+    // WHY THAT MATTERS ON A PAY RUN SPECIFICALLY: a pending correction means
+    // the caregiver has SAID the recorded clock is wrong and nobody has ruled
+    // on it. Payroll correctly pays the recorded time -- a self-asserted time
+    // must not reach a wage -- but a run that does not SAY so hands over a
+    // figure the caregiver is already disputing, and the dispute is invisible
+    // on the only document anybody looks at. That is the whole shape of F1
+    // again: the data was on the row and the consumer did not read it.
+    //
+    // COUNTED, NOT APPLIED. Nothing about what gets PAID changes here.
+    const pendingHere = (effIn.pending_count || 0) + (effOut.pending_count || 0);
+    if (pendingHere) {
+      b.pending_corrections += pendingHere;
+      b.pending_correction_visits += 1;
+      pendingTotal += pendingHere;
     }
 
     // ── THE CARRY-FORWARD. A visit in a CLOSED period carrying an approval
@@ -495,6 +522,8 @@ function computePayroll(input) {
       adjustments: b.adjustments,
       total_payable_cents: weeks.reduce((s, w) => s + w.gross_cents, 0) + b.adjustment_cents,
       undatable_corrections: b.undatable_corrections,
+      pending_corrections: b.pending_corrections,
+      pending_correction_visits: b.pending_correction_visits,
       // Rule 2 and rule 3, as two separate facts. A caregiver may be a floor
       // because a clock-out is missing (fixable on the visit) or because no
       // rate is on file (fixable on the rate table), and the two go to
@@ -526,6 +555,10 @@ function computePayroll(input) {
     // has to look at, and a 0 would say the opposite.
     adjustments_skipped: adjustmentsSkipped,
     undatable_corrections: undatableTotal,
+    // b17. Period-level, same reason as the per-caregiver pair: the person
+    // looking at a total must be able to see that N corrections are waiting on
+    // a scheduler's decision and are NOT in these figures.
+    pending_corrections: pendingTotal,
     // Rule 2 at the period level: ANY exclusion anywhere makes the whole run
     // provisional, because a caller showing a period total has no way to know
     // which caregiver the missing row belonged to.

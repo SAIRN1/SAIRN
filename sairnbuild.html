@@ -2137,7 +2137,54 @@ function st(k,v){
   // Only after the local write succeeded. A failed localStorage write must not
   // push a value the device does not itself hold.
   if(okWrite&&typeof bldSyncCollection==='function'){
-    try{bldSyncCollection(k,v,prev);}catch(e){}
+    // ── THE BACKUP ERROR WAS SWALLOWED (2026-10-15, b17, routed) ─────────
+    // This was `catch(e){}`. The empty catch is the same silence the catch
+    // twenty lines ABOVE was fixed for in 2026-09-04 -- and it is worse here,
+    // because that one at least returned `false` to whichever callers read it,
+    // while this one discarded a FAILED SERVER BACKUP and still returned
+    // `okWrite === true`. The local write had succeeded, so `st()` answered
+    // "saved" and the record existed on one device only, with nothing in the
+    // console and nothing in the pending list.
+    //
+    // TWO THINGS, BOTH ROUTED BY NAME: say it, and MARK THE COLLECTION
+    // PENDING so bldRetryPending() picks it up. The pending list is the
+    // mechanism this file already has for exactly this -- a record that did
+    // not reach the server -- and a throw inside the hook was the one route
+    // into "not backed up" that never reached it.
+    //
+    // MARKED PER RECORD WHERE THERE IS AN id, because that is what the list
+    // holds and what bldRetryPending() resolves back to a row. A collection
+    // whose rows have no id is marked with a sentinel instead: the list must
+    // not silently hold nothing for a failure that really happened.
+    //
+    // STILL RETURNS okWrite. The LOCAL write did succeed, and 86 call sites
+    // read this value; changing what it means is a separate decision with a
+    // much larger blast radius. The backup failure is now LOUD and QUEUED
+    // rather than reflected in a boolean half the callers ignore.
+    try{bldSyncCollection(k,v,prev);}
+    catch(e){
+      try{ console.error('SAIRNbuild: the server backup for "'+k+
+        '" THREW and the record is on this device only -- '+
+        ((e&&e.message)||e)+'. Queued for retry.'); }catch(_e){}
+      try{
+        if(typeof bldPendingMark==='function'){
+          var _marked=0;
+          if(Array.isArray(v)){
+            v.forEach(function(r){
+              if(r&&r.id!=null){bldPendingMark(k,String(r.id));_marked++;}
+            });
+          }
+          // NO id ANYWHERE: mark the collection itself rather than marking
+          // nothing. bldRetryPending() drops an id it cannot resolve to a
+          // local row, so this is visible in the list and is cleaned up on
+          // the next pass instead of being a silent no-op here.
+          if(!_marked){bldPendingMark(k,'__collection__');}
+        }
+      }catch(_e2){
+        try{ console.error('SAIRNbuild: could not even QUEUE the failed '+
+          'backup for "'+k+'" -- '+((_e2&&_e2.message)||_e2)); }catch(_e3){}
+      }
+    }
   }
   return okWrite;
 }

@@ -2666,8 +2666,11 @@ module.exports = async (req, res) => {
         body: JSON.stringify(body)
       });
       if (w.status === 404 || w.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Supplier lead times table is not set up — run sql/sd_supplier_lead_times_schema.sql' } });
-        return;
+        // b17: this answered 503 NOT_PROVISIONED for EVERY 400, so a 23514
+      // CHECK violation on a row the table existed and refused was reported
+      // as "run the migration". notProvisioned() classifies the pg class
+      // first and keeps the 404 / missing-relation answer unchanged.
+        return notProvisioned(res, w, 'Supplier lead times table is not set up — run sql/sd_supplier_lead_times_schema.sql');
       }
       const wRows = await w.json();
       if (!w.ok) return upstream(res, wRows);
@@ -2841,14 +2844,51 @@ module.exports = async (req, res) => {
       if (action === 'read') {
         const r = await fetch(rest('mech_site_assets?license_hash=eq.' + enc(licHash) +
           '&select=' + cols + '&order=created_at.desc'), { headers });
-        // A registry provisioned BEFORE the three AIM Act columns existed
-        // lands here too -- PostgREST 400s on a select naming a column the
-        // table does not have -- and the UI's answer is "run
-        // sql/mech_site_assets_schema.sql", which is exactly right: that file
-        // now carries an idempotent ALTER and is safe to re-run. It fails
-        // CLOSED, showing nothing, rather than dropping the AIM columns and
-        // showing a board whose second rule silently found nothing.
-        if (r.status === 404 || r.status === 400) {
+        // ── A MISSING COLUMN IS NOT A MISSING TABLE (2026-10-15, b17) ──────
+        // THE DEFECT, routed by fourth/H1: this folded BOTH 400s into
+        // `provisioned: false, data: []`. The comment below was right that a
+        // registry provisioned before the three AIM Act columns existed lands
+        // here, and wrong that showing nothing is the honest answer for it:
+        //
+        //   404, or 400 "relation does not exist"  -> the table is NOT THERE.
+        //       `provisioned: false, data: []` is TRUE. Nothing to show.
+        //   400 with 42703 / undefined_column      -> the table IS THERE and
+        //       MAY BE FULL. Reporting an empty registry is AFFIRMATIVE FALSE
+        //       SUCCESS: a compliance board for a refrigerant registry that
+        //       says "no assets on file" while the table holds fifty of them,
+        //       with `provisioned: false` as the only hint, and an operator
+        //       who reads "not set up yet" has no reason to look further.
+        //
+        // The two now answer differently and the second NAMES THE FIX. It is a
+        // 503 and not a 200, because "I could not read this" is not "there is
+        // nothing to read" -- PR 1.11 on a read path.
+        //
+        // IT STILL FAILS CLOSED. Nothing drops the AIM columns to get a
+        // partial board; the old comment's instinct was correct and only its
+        // STATUS was wrong.
+        if (r.status === 400) {
+          const mechBody = await r.text().catch(function () { return ''; });
+          if (/42703|undefined_column/i.test(mechBody)) {
+            res.status(503).json({ error: { code: 'SCHEMA_OUTDATED',
+              message: 'The refrigerant asset registry exists but is missing '
+                + 'columns this board reads, so it could not be loaded. It has '
+                + 'NOT been reported as empty, because it may hold assets. Run '
+                + 'sql/mech_site_assets_schema.sql in Supabase -- it carries an '
+                + 'idempotent ALTER and is safe to re-run.' } });
+            return;
+          }
+          if (/relation .* does not exist|PGRST205|does not exist/i.test(mechBody)) {
+            res.status(200).json({ ok: true, data: [], provisioned: false });
+            return;
+          }
+          // A 400 this cannot classify is NOT folded into either answer.
+          console.error('mech_site_assets read: unclassified 400:', mechBody);
+          res.status(502).json({ error: { code: 'UPSTREAM_UNCLASSIFIED',
+            message: 'The asset registry could not be read and the reason was '
+              + 'not recognised. It has NOT been reported as empty.' } });
+          return;
+        }
+        if (r.status === 404) {
           res.status(200).json({ ok: true, data: [], provisioned: false });
           return;
         }
@@ -3589,8 +3629,11 @@ module.exports = async (req, res) => {
         })
       });
       if (w.status === 404 || w.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Style profiles table is not set up — run sql/sairn_style_profiles_schema.sql' } });
-        return;
+        // b17: this answered 503 NOT_PROVISIONED for EVERY 400, so a 23514
+      // CHECK violation on a row the table existed and refused was reported
+      // as "run the migration". notProvisioned() classifies the pg class
+      // first and keeps the 404 / missing-relation answer unchanged.
+        return notProvisioned(res, w, 'Style profiles table is not set up — run sql/sairn_style_profiles_schema.sql');
       }
       const wRows = await w.json();
       if (!w.ok) return upstream(res, wRows);
@@ -4174,8 +4217,11 @@ module.exports = async (req, res) => {
         body: JSON.stringify(row)
       });
       if (w.status === 404 || w.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Slab ' + cfg.label + ' sync is not set up yet — run sql/sd_slab_lineage_schema.sql in Supabase first.' } });
-        return;
+        // b17: this answered 503 NOT_PROVISIONED for EVERY 400, so a 23514
+      // CHECK violation on a row the table existed and refused was reported
+      // as "run the migration". notProvisioned() classifies the pg class
+      // first and keeps the 404 / missing-relation answer unchanged.
+        return notProvisioned(res, w, 'Slab ' + cfg.label + ' sync is not set up yet — run sql/sd_slab_lineage_schema.sql in Supabase first.');
       }
       const wrows = await w.json();
       if (!w.ok) return upstream(res, wrows);
@@ -4238,8 +4284,11 @@ module.exports = async (req, res) => {
         body: JSON.stringify(hrRow)
       });
       if (hw.status === 404 || hw.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'HR ' + cfg.label + ' storage is not set up yet — run sql/sd_hr_schema.sql in Supabase first.' } });
-        return;
+        // b17: this answered 503 NOT_PROVISIONED for EVERY 400, so a 23514
+      // CHECK violation on a row the table existed and refused was reported
+      // as "run the migration". notProvisioned() classifies the pg class
+      // first and keeps the 404 / missing-relation answer unchanged.
+        return notProvisioned(res, hw, 'HR ' + cfg.label + ' storage is not set up yet — run sql/sd_hr_schema.sql in Supabase first.');
       }
       const hwrows = await hw.json();
       if (!hw.ok) return upstream(res, hwrows);
@@ -4487,9 +4536,12 @@ module.exports = async (req, res) => {
           body: JSON.stringify(bbody)
         });
         if (bw.status === 404 || bw.status === 400) {
+          // b17: this answered 503 NOT_PROVISIONED for EVERY 400, so a 23514
+        // CHECK violation on a row the table existed and refused was reported
+        // as "run the migration". notProvisioned() classifies the pg class
+        // first and keeps the 404 / missing-relation answer unchanged.
           const berr = await bw.json().catch(function () { return null; });
-          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The customer table is not set up', detail: berr } });
-          return;
+          return notProvisioned(res, bw, 'The customer table is not set up', berr);
         }
         if (!bw.ok) {
           const berr = await bw.json().catch(function () { return null; });
@@ -4569,8 +4621,11 @@ module.exports = async (req, res) => {
         })
       });
       if (w.status === 404 || w.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Customer records are not set up on the server yet - run sql/stonedesk_public_surface_schema.sql in Supabase first.' } });
-        return;
+        // b17: this answered 503 NOT_PROVISIONED for EVERY 400, so a 23514
+      // CHECK violation on a row the table existed and refused was reported
+      // as "run the migration". notProvisioned() classifies the pg class
+      // first and keeps the 404 / missing-relation answer unchanged.
+        return notProvisioned(res, w, 'Customer records are not set up on the server yet - run sql/stonedesk_public_surface_schema.sql in Supabase first.');
       }
       const wrows = await w.json();
       if (!w.ok) return upstream(res, wrows);
@@ -4644,8 +4699,11 @@ module.exports = async (req, res) => {
         })
       });
       if (w.status === 404 || w.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The public catalog tables are not set up yet - run sql/stonedesk_public_surface_schema.sql in Supabase first.' } });
-        return;
+        // b17: this answered 503 NOT_PROVISIONED for EVERY 400, so a 23514
+      // CHECK violation on a row the table existed and refused was reported
+      // as "run the migration". notProvisioned() classifies the pg class
+      // first and keeps the 404 / missing-relation answer unchanged.
+        return notProvisioned(res, w, 'The public catalog tables are not set up yet - run sql/stonedesk_public_surface_schema.sql in Supabase first.');
       }
       if (w.status === 409) {
         res.status(409).json({ error: { code: 'SLUG_TAKEN', message: 'Another shop already uses that public address - choose a different one.' } });
@@ -6485,7 +6543,20 @@ module.exports = async (req, res) => {
           return;
         }
         console.error('bld_release_retainage_atomic error (status 400):', msg);
-        res.status(502).json({ error: { message: 'Data store error — try again', detail: msg } });
+        // ── A 23xxx IS NOT "TRY AGAIN" (2026-10-15, b17) ──────────────────
+        // This was a 502 'Data store error -- try again' for every 400 the
+        // branch above did not recognise. A 23514 CHECK violation or a 23502
+        // NOT NULL means the table EXISTS and refused THIS ROW, and retrying
+        // is the one thing that cannot work -- so the caller is told to do
+        // exactly that, forever.
+        //
+        // THE CLASSIFIER GOES HERE AND NOT AT THE TOP OF THE BRANCH. Putting
+        // it at the top short-circuited the branch's own 409 DUPLICATE_ENTRY
+        // and its named CHECK-constraint answers -- measured: five *-endpoint
+        // suites went red with '400 !== 409' on the first attempt at this.
+        // Specific answers first, the classifier last.
+        console.error('unclassified msg (status ' + r.status + '):', msg);
+        return notProvisionedText(res, r, 'This table is not set up yet', msg);
         return;
       }
       if (!w.ok) { const rows = await w.json().catch(() => null); return upstream(res, rows); }
@@ -6842,12 +6913,40 @@ module.exports = async (req, res) => {
       // READ IS UNCHANGED and deliberately still broad: these records are
       // limited to management, coordinators and schedulers, which is what the
       // role set was built for.
-      if (!senAuth.MANAGEMENT_ROLES[session.role]) {
+      // ── PER RESOURCE AS OF b17, AND THE MAP IS THE DECISION ──────────────
+      // MICHAEL: a home-care coordinator taking a phone referral may write
+      // intake without a manager. b9's own comment above said this is how the
+      // fix should land if intake turned out to be a coordinator's job -- "a
+      // per-resource write set here, not a return to the broad one, and it is
+      // ONE map". The map is api/sen-auth.js's SEN_REFERRAL_WRITE_ROLES and
+      // the policy lives THERE, not in this branch: a role test here is a
+      // second copy of the answer the day a sixth resource joins.
+      //
+      // A RESOURCE WITH NO ROW IS A 500, NOT A DEFAULT. A new resource added
+      // to SEN_REFERRAL_RESOURCES and not to the write map has NO policy, and
+      // inheriting whichever set is nearest in the file is exactly how
+      // SEN_CLIENT_BROAD_READ_ROLES came to decide a write.
+      const senRefAllowed = senAuth.SEN_REFERRAL_WRITE_ROLES[resource];
+      if (!senRefAllowed) {
+        res.status(500).json({ error: { code: 'WRITE_MAP_MISSING',
+          message: 'No write policy is recorded for ' + resource
+            + ' in api/sen-auth.js SEN_REFERRAL_WRITE_ROLES. Refusing rather '
+            + 'than guessing which role set applies. Nothing was written.' } });
+        return;
+      }
+      if (!senRefAllowed[session.role]) {
+        const intake = senAuth.SEN_REFERRAL_WRITE_ROLES.sen_referrals === senRefAllowed;
         res.status(403).json({
           error: {
             code: 'FORBIDDEN',
-            message: 'Only management can change referral, applicant or '
-              + 'training records. Coordinators and schedulers can read them.'
+            message: intake
+              ? 'Logging a referral is open to management and to coordinators, '
+                + 'who take the intake call. Schedulers and caregivers can read '
+                + 'the pipeline but not change it.'
+              : 'Only management can change applicant or training records -- an '
+                + 'applicant record is employment data about somebody who is not '
+                + 'yet staff, and a training rule decides whether a caregiver may '
+                + 'work at all. Coordinators and schedulers can read them.'
           }
         });
         return;
@@ -7529,8 +7628,11 @@ module.exports = async (req, res) => {
           corrections: arList.length } });
         return;
       }
+      // b17: the ROLE goes to the module, which is where the H8 exception
+      // lives. From the VERIFIED session, never the payload -- a payload role
+      // would make "I am the owner" a claim the caller gets to make.
       const aVerdict = senEvvClock.approveCorrection(
-        arList[idx], session.employee_id, nowISO());
+        arList[idx], session.employee_id, nowISO(), session.role);
       if (!aVerdict.ok) {
         // THREE STATUSES FOR THREE DIFFERENT REFUSALS, and they are not
         // interchangeable to a caller.
@@ -8314,6 +8416,147 @@ module.exports = async (req, res) => {
           res.status(400).json({ error: { code: 'INVALID_SETTING', message: 'sen_settings agency_profile: agency_name is too long (max 200)' } }); return;
         }
       }
+      // ══ CLOSING A PAY PERIOD (2026-10-15, b17 -- MICHAEL'S DECISION) ══════
+      // b16 built the freeze and left it INERT: nothing could write
+      // `payroll_closed_periods`, so there were no closed periods anywhere and
+      // api/_lib/sen-payroll.js's freeze was code that could not fire. This is
+      // the write path, and it is the narrowest branch in this file after the
+      // wage itself, because what it writes FREEZES WAGES ALREADY PAID.
+      //
+      // FOUR THINGS, AND NONE OF THEM IS THE GENERIC SETTINGS PATH:
+      //   1. a NARROWER ROLE GATE than the branch's own management gate
+      //   2. VALIDATION by the same rules the payroll engine refuses on
+      //   3. APPEND-ONLY -- an existing closed period may not be removed or
+      //      moved, because un-closing one silently restates paid wages
+      //   4. AN AUDIT ROW THAT MUST LAND, and the write is REFUSED if it does
+      //      not -- see the note on that below, it is a departure
+      if (key === 'payroll_closed_periods') {
+        // 1. THE ROLE. Michael: owner plus office manager / payroll person
+        // only. api/sen-auth.js's SEN_PERIOD_CLOSE_ROLES is the one source and
+        // its own note says why it is not MANAGEMENT_ROLES even though the two
+        // are equal today.
+        if (!senAuth.SEN_PERIOD_CLOSE_ROLES[session.role]) {
+          res.status(403).json({ error: { code: 'FORBIDDEN',
+            message: 'Closing a pay period freezes wages already paid, so it is '
+              + 'limited to ' + senAuth.SEN_PERIOD_CLOSE_LABEL + '. A scheduler '
+              + 'or coordinator changing agency settings cannot close one.' } });
+          return;
+        }
+        // 2. SHAPE AND DATES. Validated HERE as well as in the engine, and
+        // that is not a second copy of the rule: the engine REFUSES A PAY RUN
+        // on a bad record (UNDATED_CLOSED_PERIOD), which means a bad write
+        // stored today breaks every pay run from then on. Refusing the WRITE
+        // is the only place the person who made the mistake is still present.
+        const periods = value && Array.isArray(value.periods) ? value.periods : null;
+        if (!periods) {
+          res.status(400).json({ error: { code: 'INVALID_SETTING',
+            message: 'sen_settings payroll_closed_periods: value.periods must be '
+              + 'an array. An absent array would read as "nothing is closed", '
+              + 'which unfreezes every paid period.' } });
+          return;
+        }
+        const pProblems = [];
+        const isCal = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v.trim())
+          && !isNaN(Date.parse(v.trim() + 'T00:00:00Z'));
+        periods.forEach((p, i) => {
+          const at = 'periods[' + i + ']';
+          if (!p || typeof p !== 'object') { pProblems.push(at + ' is not an object'); return; }
+          if (!isCal(p.period_start)) pProblems.push(at + '.period_start must be YYYY-MM-DD');
+          if (!isCal(p.period_end)) pProblems.push(at + '.period_end must be YYYY-MM-DD');
+          if (isCal(p.period_start) && isCal(p.period_end)
+              && String(p.period_end).trim() < String(p.period_start).trim()) {
+            pProblems.push(at + ' ends before it starts');
+          }
+          // paid_at is the FREEZE INSTANT. The engine compares every
+          // correction's approved_at_server to it, so an unreadable one makes
+          // the whole run refuse.
+          if (typeof p.paid_at !== 'string' || !Number.isFinite(Date.parse(p.paid_at))) {
+            pProblems.push(at + '.paid_at must be a readable instant (ISO) -- it '
+              + 'is what every correction\'s approval time is compared against');
+          }
+        });
+        if (pProblems.length) {
+          res.status(400).json({ error: { code: 'INVALID_SETTING',
+            message: 'sen_settings payroll_closed_periods: ' + pProblems.join('; ')
+              + '. Nothing was written.' } });
+          return;
+        }
+        // 3. APPEND-ONLY. THE MIRROR OF THE DEFECT b16 CLOSED. A correction
+        // approved after a pay run must not restate a closed total -- and
+        // DELETING the closed period, or moving its paid_at later, does
+        // exactly that by a different door, with no trail at all. So an
+        // existing entry may not disappear or change; new ones may be added.
+        //
+        // READ-THEN-COMPARE, and the read failing is NOT "nothing was closed".
+        const prevR = await fetch(rest('sen_settings?license_hash=eq.' + enc(licHash)
+          + '&setting_key=eq.payroll_closed_periods&select=data'), { headers });
+        let prevPeriods = [];
+        if (prevR.status !== 404 && prevR.status !== 400) {
+          if (!prevR.ok) {
+            res.status(503).json({ error: { code: 'CLOSED_PERIODS_UNREADABLE',
+              message: 'The existing closed-period list could not be read, so this '
+                + 'write cannot be checked for a removal. Nothing was written. '
+                + 'Treating a failed read as an empty list would let a closed '
+                + 'period be dropped silently.' } });
+            return;
+          }
+          const prevRows = await prevR.json();
+          const prevData = Array.isArray(prevRows) && prevRows[0] ? prevRows[0].data : null;
+          if (prevData && Array.isArray(prevData.periods)) prevPeriods = prevData.periods;
+        }
+        const keyOf = (p) => String(p.period_start).trim() + ' '
+          + String(p.period_end).trim() + ' ' + String(p.paid_at);
+        const incoming = {};
+        periods.forEach((p) => { incoming[keyOf(p)] = true; });
+        const lost = prevPeriods.filter((p) => p && !incoming[keyOf(p)]);
+        if (lost.length) {
+          res.status(409).json({ error: { code: 'CLOSED_PERIOD_IMMUTABLE',
+            message: lost.length + ' already-closed pay period(s) would be removed '
+              + 'or changed by this write, and a closed period is append-only: '
+              + 'un-closing one restates wages already paid, which is the defect '
+              + 'the freeze exists to prevent. Nothing was written. '
+              + 'Affected: ' + lost.map((p) => p.period_start + '..' + p.period_end
+                + ' paid ' + p.paid_at).join(', ') } });
+          return;
+        }
+        // 4. THE AUDIT ROW MUST LAND, AND THIS DEPARTS FROM THE PLATFORM'S
+        //    BEST-EFFORT AUDIT POSTURE ON PURPOSE -- stated, not slipped in.
+        // api/_lib/audit.js's auditPinSetup is deliberately best-effort,
+        // because "a logging outage must never block a legitimate grant" --
+        // locking somebody out of their own app is worse than an unattributed
+        // grant. THE TRADE IS THE OTHER WAY HERE. Closing a pay period is not
+        // urgent, it is retryable a minute later, and the entire reason it is
+        // audited is that it freezes money: an unattributed freeze is a wage
+        // locked by nobody. So a failed audit write REFUSES the close.
+        //
+        // NOTE THE TABLE MAY NOT EXIST YET. sql/sairnsenior_audit_log_schema.sql
+        // says in its own header that it has NOT been run, so this refusal is
+        // the EXPECTED answer today and names the file to run. That is the
+        // honest state and it is in the Michael SQL package for b17.
+        const closeAudit = require('./_lib/audit');
+        const added = periods.filter((p) => {
+          const k = keyOf(p);
+          return !prevPeriods.some((q) => q && keyOf(q) === k);
+        });
+        const audited = await closeAudit.writeAuditLog(SUPABASE_URL, SERVICE_KEY, {
+          license_hash: licHash,
+          employee_id: session.employee_id,
+          role: session.role,
+          event_type: 'pay_period_closed',
+          detail: { added: added, total_after: periods.length },
+          table: closeAudit.AUDIT_TABLE_BY_APP.sairnsenior
+        });
+        if (!audited) {
+          res.status(503).json({ error: { code: 'AUDIT_UNAVAILABLE',
+            message: 'The audit row for this pay-period close could not be written, '
+              + 'so the close was REFUSED and nothing was written. Closing a period '
+              + 'freezes wages already paid; a freeze nobody is recorded as having '
+              + 'made is worse than a close that has to be retried. If this is a '
+              + 'new agency, run sql/sairnsenior_audit_log_schema.sql in Supabase '
+              + 'first.' } });
+          return;
+        }
+      }
       const r = await fetch(rest('sen_settings?on_conflict=license_hash,setting_key'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -8953,11 +9196,24 @@ module.exports = async (req, res) => {
         const bodyText = await r.text();
         let bodyJson = null; try { bodyJson = JSON.parse(bodyText); } catch (e) {}
         const msg = (bodyJson && (bodyJson.message || bodyJson.details || bodyJson.hint)) || bodyText || '';
-        if (/relation .* does not exist|does not exist/i.test(msg)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Certification tracking is not set up yet — run sql/sairnroofing_certifications_schema.sql in Supabase first.' } }); return; }
+        if (/relation .* does not exist|PGRST205|does not exist/i.test(msg)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Certification tracking is not set up yet — run sql/sairnroofing_certifications_schema.sql in Supabase first.' } }); return; }
         if (/duplicate key|unique constraint/i.test(msg)) { res.status(409).json({ error: { code: 'DUPLICATE_ENTRY', message: 'A certification record with this id already exists. Records are append-only — write a new record to supersede, do not reuse an id.' } }); return; }
         if (/rfcd_expiry_check/i.test(msg)) { res.status(400).json({ error: { code: 'EXPIRY_UNSPECIFIED', message: 'Set expires_on, or set has_expiry:false for a credential that genuinely does not expire' } }); return; }
         console.error('rf_certifications write error (status ' + r.status + '):', msg);
-        res.status(502).json({ error: { message: 'Data store error — try again', detail: msg } });
+        // ── A 23xxx IS NOT "TRY AGAIN" (2026-10-15, b17) ──────────────────
+        // This was a 502 'Data store error -- try again' for every 400 the
+        // branch above did not recognise. A 23514 CHECK violation or a 23502
+        // NOT NULL means the table EXISTS and refused THIS ROW, and retrying
+        // is the one thing that cannot work -- so the caller is told to do
+        // exactly that, forever.
+        //
+        // THE CLASSIFIER GOES HERE AND NOT AT THE TOP OF THE BRANCH. Putting
+        // it at the top short-circuited the branch's own 409 DUPLICATE_ENTRY
+        // and its named CHECK-constraint answers -- measured: five *-endpoint
+        // suites went red with '400 !== 409' on the first attempt at this.
+        // Specific answers first, the classifier last.
+        console.error('unclassified msg (status ' + r.status + '):', msg);
+        return notProvisionedText(res, r, 'Certification tracking is not set up yet — run sql/sairnroofing_certifications_schema.sql in Supabase first.', msg);
         return;
       }
       const rows = await r.json();
@@ -9126,10 +9382,23 @@ module.exports = async (req, res) => {
       if (r.status === 404 || r.status === 400) {
         const bt = await r.text(); let bj = null; try { bj = JSON.parse(bt); } catch (e) {}
         const msg = (bj && (bj.message || bj.details || bj.hint)) || bt || '';
-        if (/relation .* does not exist|does not exist/i.test(msg)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Claims are not set up yet — run sql/sairnroofing_claims_schema.sql in Supabase first.' } }); return; }
+        if (/relation .* does not exist|PGRST205|does not exist/i.test(msg)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Claims are not set up yet — run sql/sairnroofing_claims_schema.sql in Supabase first.' } }); return; }
         if (/rfclm_status_check/i.test(msg)) { res.status(400).json({ error: { message: 'status must be one of: ' + roofingClaims.CLAIM_STATUSES.join(', ') } }); return; }
         console.error('rf_claims write error (status ' + r.status + '):', msg);
-        res.status(502).json({ error: { message: 'Data store error — try again', detail: msg } });
+        // ── A 23xxx IS NOT "TRY AGAIN" (2026-10-15, b17) ──────────────────
+        // This was a 502 'Data store error -- try again' for every 400 the
+        // branch above did not recognise. A 23514 CHECK violation or a 23502
+        // NOT NULL means the table EXISTS and refused THIS ROW, and retrying
+        // is the one thing that cannot work -- so the caller is told to do
+        // exactly that, forever.
+        //
+        // THE CLASSIFIER GOES HERE AND NOT AT THE TOP OF THE BRANCH. Putting
+        // it at the top short-circuited the branch's own 409 DUPLICATE_ENTRY
+        // and its named CHECK-constraint answers -- measured: five *-endpoint
+        // suites went red with '400 !== 409' on the first attempt at this.
+        // Specific answers first, the classifier last.
+        console.error('unclassified msg (status ' + r.status + '):', msg);
+        return notProvisionedText(res, r, 'Claims are not set up yet — run sql/sairnroofing_claims_schema.sql in Supabase first.', msg);
         return;
       }
       const rows = await r.json();
@@ -9207,11 +9476,24 @@ module.exports = async (req, res) => {
       if (r.status === 400 || r.status === 409 || r.status === 413) {
         const bt = await r.text(); let bj = null; try { bj = JSON.parse(bt); } catch (e) {}
         const msg = (bj && (bj.message || bj.details || bj.hint)) || bt || '';
-        if (/relation .* does not exist|does not exist/i.test(msg)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Claims are not set up yet — run sql/sairnroofing_claims_schema.sql in Supabase first.' } }); return; }
+        if (/relation .* does not exist|PGRST205|does not exist/i.test(msg)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Claims are not set up yet — run sql/sairnroofing_claims_schema.sql in Supabase first.' } }); return; }
         if (/duplicate key|unique constraint/i.test(msg)) { res.status(409).json({ error: { code: 'DUPLICATE_ENTRY', message: 'A photo with this id already exists. Evidence is append-only — capture a new photo, do not reuse an id.' } }); return; }
         if (/rfcph_data_size/i.test(msg)) { res.status(413).json({ error: { code: 'PAYLOAD_TOO_LARGE', message: 'This photo is over the 1.5MB limit — recompress before upload' } }); return; }
         console.error('rf_claim_photos write error (status ' + r.status + '):', msg);
-        res.status(502).json({ error: { message: 'Data store error — try again', detail: msg } });
+        // ── A 23xxx IS NOT "TRY AGAIN" (2026-10-15, b17) ──────────────────
+        // This was a 502 'Data store error -- try again' for every 400 the
+        // branch above did not recognise. A 23514 CHECK violation or a 23502
+        // NOT NULL means the table EXISTS and refused THIS ROW, and retrying
+        // is the one thing that cannot work -- so the caller is told to do
+        // exactly that, forever.
+        //
+        // THE CLASSIFIER GOES HERE AND NOT AT THE TOP OF THE BRANCH. Putting
+        // it at the top short-circuited the branch's own 409 DUPLICATE_ENTRY
+        // and its named CHECK-constraint answers -- measured: five *-endpoint
+        // suites went red with '400 !== 409' on the first attempt at this.
+        // Specific answers first, the classifier last.
+        console.error('unclassified msg (status ' + r.status + '):', msg);
+        return notProvisionedText(res, r, 'Claims are not set up yet — run sql/sairnroofing_claims_schema.sql in Supabase first.', msg);
         return;
       }
       const rows = await r.json();
@@ -10649,7 +10931,7 @@ module.exports = async (req, res) => {
       });
       if (r.status === 404 || r.status === 400 || r.status === 409) {
         const bt = await r.text();
-        if (/relation .* does not exist|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Proposals are not set up yet — run sql/sairnroofing_billing_schema.sql in Supabase first.' } }); return; }
+        if (/relation .* does not exist|PGRST205|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Proposals are not set up yet — run sql/sairnroofing_billing_schema.sql in Supabase first.' } }); return; }
         if (/duplicate key|unique/i.test(bt)) { res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'A proposal with that id already exists — append-only, ids are never reused' } }); return; }
         res.status(400).json({ error: { message: 'Data store rejected the proposal', detail: bt } }); return;
       }
@@ -10796,7 +11078,7 @@ module.exports = async (req, res) => {
         });
         if (r.status === 404 || r.status === 400) {
           const bt = await r.text();
-          if (/relation .* does not exist|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Invoicing is not set up yet — run sql/sairnroofing_billing_schema.sql in Supabase first.' } }); return; }
+          if (/relation .* does not exist|PGRST205|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Invoicing is not set up yet — run sql/sairnroofing_billing_schema.sql in Supabase first.' } }); return; }
           if (/rfinv_issued_needs_number/i.test(bt)) { res.status(400).json({ error: { message: 'An invoice cannot leave draft without a number — use the issue action, which allocates one.' } }); return; }
           res.status(400).json({ error: { message: 'Data store rejected the invoice', detail: bt } }); return;
         }
@@ -10995,7 +11277,7 @@ module.exports = async (req, res) => {
       });
       if (r.status === 404 || r.status === 400) {
         const bt = await r.text();
-        if (/relation .* does not exist|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Programmes are not set up yet — run sql/sairnroofing_programs_schema.sql in Supabase first.' } }); return; }
+        if (/relation .* does not exist|PGRST205|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Programmes are not set up yet — run sql/sairnroofing_programs_schema.sql in Supabase first.' } }); return; }
         if (/rfprg_expiry_coherent/i.test(bt)) { res.status(400).json({ error: { message: 'A programme recorded as held needs either a renewal date or an explicit "does not expire" — the two cases must stay distinguishable.' } }); return; }
         res.status(400).json({ error: { message: 'Data store rejected the programme', detail: bt } }); return;
       }
@@ -11112,7 +11394,12 @@ module.exports = async (req, res) => {
         });
         const saved = await w.json();
         if (!w.ok) {
-          if (w.status === 404 || w.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Entities are not set up yet — run sql/sairnroofing_entities_schema.sql in Supabase first.' } }); return; }
+          // b17: the eleventh write site. Same unclassified 400 as the other
+          // ten -- a 23514 on an entity row was reported as "run the
+          // migration". notProvisioned() classifies the pg class first.
+          if (w.status === 404 || w.status === 400) {
+            return notProvisioned(res, w, 'Entities are not set up yet — run sql/sairnroofing_entities_schema.sql in Supabase first.');
+          }
           return upstream(res, saved);
         }
         res.status(200).json({ ok: true, data: Array.isArray(saved) ? saved[0] : saved });
@@ -11285,7 +11572,7 @@ module.exports = async (req, res) => {
       if (r.status === 404 || r.status === 400) {
         const bt = await r.text();
         if (/entity_id/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Entities are not set up yet — run sql/sairnroofing_entities_schema.sql in Supabase first. The branch itself was NOT saved.' } }); return; }
-        if (/relation .* does not exist|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Locations are not set up yet — run sql/sairnroofing_locations_schema.sql in Supabase first.' } }); return; }
+        if (/relation .* does not exist|PGRST205|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Locations are not set up yet — run sql/sairnroofing_locations_schema.sql in Supabase first.' } }); return; }
         res.status(400).json({ error: { message: 'Data store rejected the location', detail: bt } }); return;
       }
       const rows = await r.json();
@@ -11361,7 +11648,7 @@ module.exports = async (req, res) => {
       });
       if (r.status === 404 || r.status === 400) {
         const bt = await r.text();
-        if (/relation .* does not exist|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Scheduling is not set up yet — run sql/sairnroofing_locations_schema.sql in Supabase first.' } }); return; }
+        if (/relation .* does not exist|PGRST205|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Scheduling is not set up yet — run sql/sairnroofing_locations_schema.sql in Supabase first.' } }); return; }
         res.status(400).json({ error: { message: 'Data store rejected the schedule entry', detail: bt } }); return;
       }
       const rows = await r.json();
@@ -11612,7 +11899,7 @@ module.exports = async (req, res) => {
       });
       if (r.status === 404 || r.status === 400) {
         const bt = await r.text();
-        if (/relation .* does not exist|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Contingency rules are not set up yet — run sql/sairnroofing_agreements_schema.sql in Supabase first.' } }); return; }
+        if (/relation .* does not exist|PGRST205|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Contingency rules are not set up yet — run sql/sairnroofing_agreements_schema.sql in Supabase first.' } }); return; }
         res.status(400).json({ error: { message: 'Data store rejected the rule', detail: bt } });
         return;
       }
@@ -11691,7 +11978,7 @@ module.exports = async (req, res) => {
       });
       if (r.status === 404 || r.status === 400 || r.status === 409) {
         const bt = await r.text();
-        if (/relation .* does not exist|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Contingency agreements are not set up yet — run sql/sairnroofing_agreements_schema.sql in Supabase first.' } }); return; }
+        if (/relation .* does not exist|PGRST205|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Contingency agreements are not set up yet — run sql/sairnroofing_agreements_schema.sql in Supabase first.' } }); return; }
         if (/duplicate key|rfagr_license_hash_agreement_id_key|unique/i.test(bt)) { res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'An agreement with that id already exists — append-only, ids are never reused' } }); return; }
         res.status(400).json({ error: { message: 'Data store rejected the agreement', detail: bt } });
         return;
@@ -12145,7 +12432,20 @@ module.exports = async (req, res) => {
           return;
         }
         console.error('alf_check_and_insert_mar_entry error (status 400):', msg);
-        res.status(502).json({ error: { message: 'Data store error — try again', detail: msg } });
+        // ── A 23xxx IS NOT "TRY AGAIN" (2026-10-15, b17) ──────────────────
+        // This was a 502 'Data store error -- try again' for every 400 the
+        // branch above did not recognise. A 23514 CHECK violation or a 23502
+        // NOT NULL means the table EXISTS and refused THIS ROW, and retrying
+        // is the one thing that cannot work -- so the caller is told to do
+        // exactly that, forever.
+        //
+        // THE CLASSIFIER GOES HERE AND NOT AT THE TOP OF THE BRANCH. Putting
+        // it at the top short-circuited the branch's own 409 DUPLICATE_ENTRY
+        // and its named CHECK-constraint answers -- measured: five *-endpoint
+        // suites went red with '400 !== 409' on the first attempt at this.
+        // Specific answers first, the classifier last.
+        console.error('unclassified msg (status ' + r.status + '):', msg);
+        return notProvisionedText(res, r, 'This table is not set up yet', msg);
         return;
       }
       if (!r.ok) { const rows = await r.json().catch(() => null); return upstream(res, rows); }
@@ -13755,13 +14055,11 @@ module.exports = async (req, res) => {
           body: JSON.stringify([grantRow])
         });
         if (gw.status === 404 || gw.status === 400) {
-          // NOT a silent success. Until the migration is run this is the honest
-          // answer, and it names the file -- a 200 here would report a grant
-          // that no read path can ever find.
-          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message:
-            'MAR access grants are not set up - run '
-            + 'sql/2026-10-14-hank-b11-mar-grant.sql' } });
-          return;
+          // b17: this answered 503 NOT_PROVISIONED for EVERY 400, so a 23514
+        // CHECK violation on a row the table existed and refused was reported
+        // as "run the migration". notProvisioned() classifies the pg class
+        // first and keeps the 404 / missing-relation answer unchanged.
+          return notProvisioned(res, gw, 'MAR access grants are not set up - run ' + 'sql/2026-10-14-hank-b11-mar-grant.sql');
         }
         const gwrows = await gw.json().catch(function () { return null; });
         if (!gw.ok) return upstream(res, gwrows);
@@ -13886,9 +14184,12 @@ module.exports = async (req, res) => {
         body: JSON.stringify(famRow)
       });
       if (fw.status === 404 || fw.status === 400) {
+        // b17: this answered 503 NOT_PROVISIONED for EVERY 400, so a 23514
+      // CHECK violation on a row the table existed and refused was reported
+      // as "run the migration". notProvisioned() classifies the pg class
+      // first and keeps the 404 / missing-relation answer unchanged.
         const fe = await fw.json().catch(function () { return null; });
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Family contacts are not set up - run sql/sairncare_family_contacts_schema.sql', detail: fe } });
-        return;
+        return notProvisioned(res, fw, 'Family contacts are not set up - run sql/sairncare_family_contacts_schema.sql', fe);
       }
       const fwrows = await fw.json();
       if (!fw.ok) return upstream(res, fwrows);
@@ -14443,8 +14744,11 @@ module.exports = async (req, res) => {
         body: JSON.stringify(body)
       });
       if (w.status === 404 || w.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The operational audit log is not set up yet — run sql/sairncare_op_audit_schema.sql in Supabase first.' } });
-        return;
+        // b17: this answered 503 NOT_PROVISIONED for EVERY 400, so a 23514
+      // CHECK violation on a row the table existed and refused was reported
+      // as "run the migration". notProvisioned() classifies the pg class
+      // first and keeps the 404 / missing-relation answer unchanged.
+        return notProvisioned(res, w, 'The operational audit log is not set up yet — run sql/sairncare_op_audit_schema.sql in Supabase first.');
       }
       const wrows = await w.json();
       if (!w.ok) return upstream(res, wrows);
@@ -17587,7 +17891,20 @@ module.exports = async (req, res) => {
           return;
         }
         console.error('dnt_appointments write error (status ' + r.status + '):', msg);
-        res.status(502).json({ error: { message: 'Data store error — try again', detail: msg } });
+        // ── A 23xxx IS NOT "TRY AGAIN" (2026-10-15, b17) ──────────────────
+        // This was a 502 'Data store error -- try again' for every 400 the
+        // branch above did not recognise. A 23514 CHECK violation or a 23502
+        // NOT NULL means the table EXISTS and refused THIS ROW, and retrying
+        // is the one thing that cannot work -- so the caller is told to do
+        // exactly that, forever.
+        //
+        // THE CLASSIFIER GOES HERE AND NOT AT THE TOP OF THE BRANCH. Putting
+        // it at the top short-circuited the branch's own 409 DUPLICATE_ENTRY
+        // and its named CHECK-constraint answers -- measured: five *-endpoint
+        // suites went red with '400 !== 409' on the first attempt at this.
+        // Specific answers first, the classifier last.
+        console.error('unclassified msg (status ' + r.status + '):', msg);
+        return notProvisionedText(res, r, 'This table is not set up yet', msg);
         return;
       }
       const rows = await r.json();
@@ -17735,7 +18052,7 @@ module.exports = async (req, res) => {
         const bodyText = await r.text();
         let bodyJson = null; try { bodyJson = JSON.parse(bodyText); } catch (e) {}
         const msg = (bodyJson && (bodyJson.message || bodyJson.details || bodyJson.hint)) || bodyText || '';
-        if (/relation .* does not exist|does not exist/i.test(msg)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdental credentialing tables are not set up yet — run sql/sairndental_credentials_schema.sql in Supabase first.' } }); return; }
+        if (/relation .* does not exist|PGRST205|does not exist/i.test(msg)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdental credentialing tables are not set up yet — run sql/sairndental_credentials_schema.sql in Supabase first.' } }); return; }
         if (/duplicate key|unique constraint/i.test(msg)) { res.status(409).json({ error: { code: 'DUPLICATE_ENTRY', message: 'A credential record with this id already exists. Records are append-only — write a new record to supersede, do not reuse an id.' } }); return; }
         // THE DATABASE HAS ITS OWN LIST OF RECORD TYPES AND IT IS NOT THE
         // ENGINE'S. dntcd_type_check enumerates the four original types, so a
@@ -17752,7 +18069,20 @@ module.exports = async (req, res) => {
           return;
         }
         console.error('dnt_credentials write error (status ' + r.status + '):', msg);
-        res.status(502).json({ error: { message: 'Data store error — try again', detail: msg } });
+        // ── A 23xxx IS NOT "TRY AGAIN" (2026-10-15, b17) ──────────────────
+        // This was a 502 'Data store error -- try again' for every 400 the
+        // branch above did not recognise. A 23514 CHECK violation or a 23502
+        // NOT NULL means the table EXISTS and refused THIS ROW, and retrying
+        // is the one thing that cannot work -- so the caller is told to do
+        // exactly that, forever.
+        //
+        // THE CLASSIFIER GOES HERE AND NOT AT THE TOP OF THE BRANCH. Putting
+        // it at the top short-circuited the branch's own 409 DUPLICATE_ENTRY
+        // and its named CHECK-constraint answers -- measured: five *-endpoint
+        // suites went red with '400 !== 409' on the first attempt at this.
+        // Specific answers first, the classifier last.
+        console.error('unclassified msg (status ' + r.status + '):', msg);
+        return notProvisionedText(res, r, 'SAIRNdental credentialing tables are not set up yet — run sql/sairndental_credentials_schema.sql in Supabase first.', msg);
         return;
       }
       const rows = await r.json();
@@ -18076,7 +18406,7 @@ module.exports = async (req, res) => {
           const bodyText = await r.text();
           let bodyJson = null; try { bodyJson = JSON.parse(bodyText); } catch (e) {}
           const msg = (bodyJson && bodyJson.message) || bodyText || '';
-          if (/relation .* does not exist|function .* does not exist/i.test(msg)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlaw data tables are not set up yet — run sql/sairnlaw_data_schema.sql and sql/sairnlaw_deposit_void_balance_guard.sql in Supabase first.' } }); return; }
+          if (/relation .* does not exist|PGRST205|does not exist/i.test(msg)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlaw data tables are not set up yet — run sql/sairnlaw_data_schema.sql and sql/sairnlaw_deposit_void_balance_guard.sql in Supabase first.' } }); return; }
           if (/^ALREADY_VOIDED/.test(msg)) { res.status(409).json({ error: { code: 'ALREADY_VOIDED', message: 'This transaction has already been voided.' } }); return; }
           if (/^NOT_FOUND/.test(msg)) { res.status(409).json({ error: { code: 'NOT_FOUND', message: 'This transaction could not be found on the server.' } }); return; }
           const balMatch = /VOID_WOULD_NEGATIVE_BALANCE: void of (-?[\d.]+) would leave balance (-?[\d.]+)/.exec(msg);
@@ -18086,7 +18416,20 @@ module.exports = async (req, res) => {
             return;
           }
           console.error('law_check_and_void_deposit error (status 400):', msg);
-          res.status(502).json({ error: { message: 'Data store error — try again', detail: msg } });
+          // ── A 23xxx IS NOT "TRY AGAIN" (2026-10-15, b17) ──────────────────
+          // This was a 502 'Data store error -- try again' for every 400 the
+          // branch above did not recognise. A 23514 CHECK violation or a 23502
+          // NOT NULL means the table EXISTS and refused THIS ROW, and retrying
+          // is the one thing that cannot work -- so the caller is told to do
+          // exactly that, forever.
+          //
+          // THE CLASSIFIER GOES HERE AND NOT AT THE TOP OF THE BRANCH. Putting
+          // it at the top short-circuited the branch's own 409 DUPLICATE_ENTRY
+          // and its named CHECK-constraint answers -- measured: five *-endpoint
+          // suites went red with '400 !== 409' on the first attempt at this.
+          // Specific answers first, the classifier last.
+          console.error('unclassified msg (status ' + r.status + '):', msg);
+          return notProvisionedText(res, r, 'SAIRNlaw data tables are not set up yet — run sql/sairnlaw_data_schema.sql and sql/sairnlaw_deposit_void_balance_guard.sql in Supabase first.', msg);
           return;
         }
         if (!r.ok) { const rows = await r.json().catch(() => null); return upstream(res, rows); }
@@ -18122,7 +18465,7 @@ module.exports = async (req, res) => {
           const bodyText = await r.text();
           let bodyJson = null; try { bodyJson = JSON.parse(bodyText); } catch (e) {}
           const msg = (bodyJson && bodyJson.message) || bodyText || '';
-          if (/relation .* does not exist|function .* does not exist/i.test(msg)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlaw data tables are not set up yet — run sql/sairnlaw_data_schema.sql and sql/sairnlaw_trust_disbursement_atomic_check.sql in Supabase first.' } }); return; }
+          if (/relation .* does not exist|PGRST205|does not exist/i.test(msg)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlaw data tables are not set up yet — run sql/sairnlaw_data_schema.sql and sql/sairnlaw_trust_disbursement_atomic_check.sql in Supabase first.' } }); return; }
           const balMatch = /INSUFFICIENT_TRUST_BALANCE: disbursement (-?[\d.]+) exceeds balance (-?[\d.]+)/.exec(msg);
           if (balMatch) {
             const reqAmount = Number(balMatch[1]), realBalance = Number(balMatch[2]);
@@ -18147,7 +18490,20 @@ module.exports = async (req, res) => {
             return;
           }
           console.error('law_check_and_insert_disbursement error (status 400):', msg);
-          res.status(502).json({ error: { message: 'Data store error — try again', detail: msg } });
+          // ── A 23xxx IS NOT "TRY AGAIN" (2026-10-15, b17) ──────────────────
+          // This was a 502 'Data store error -- try again' for every 400 the
+          // branch above did not recognise. A 23514 CHECK violation or a 23502
+          // NOT NULL means the table EXISTS and refused THIS ROW, and retrying
+          // is the one thing that cannot work -- so the caller is told to do
+          // exactly that, forever.
+          //
+          // THE CLASSIFIER GOES HERE AND NOT AT THE TOP OF THE BRANCH. Putting
+          // it at the top short-circuited the branch's own 409 DUPLICATE_ENTRY
+          // and its named CHECK-constraint answers -- measured: five *-endpoint
+          // suites went red with '400 !== 409' on the first attempt at this.
+          // Specific answers first, the classifier last.
+          console.error('unclassified msg (status ' + r.status + '):', msg);
+          return notProvisionedText(res, r, 'SAIRNlaw data tables are not set up yet — run sql/sairnlaw_data_schema.sql and sql/sairnlaw_trust_disbursement_atomic_check.sql in Supabase first.', msg);
           return;
         }
         if (!r.ok) { const rows = await r.json().catch(() => null); return upstream(res, rows); }
@@ -18241,9 +18597,22 @@ module.exports = async (req, res) => {
         const bodyText = await r.text();
         let bodyJson = null; try { bodyJson = JSON.parse(bodyText); } catch (e) {}
         const msg = (bodyJson && (bodyJson.message || bodyJson.details || bodyJson.hint)) || bodyText || '';
-        if (/relation .* does not exist|does not exist/i.test(msg)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlaw data tables are not set up yet — run sql/sairnlaw_data_schema.sql in Supabase first.' } }); return; }
+        if (/relation .* does not exist|PGRST205|does not exist/i.test(msg)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlaw data tables are not set up yet — run sql/sairnlaw_data_schema.sql in Supabase first.' } }); return; }
         console.error('law_trusttx write error (status 400):', msg);
-        res.status(502).json({ error: { message: 'Data store error — try again', detail: msg } });
+        // ── A 23xxx IS NOT "TRY AGAIN" (2026-10-15, b17) ──────────────────
+        // This was a 502 'Data store error -- try again' for every 400 the
+        // branch above did not recognise. A 23514 CHECK violation or a 23502
+        // NOT NULL means the table EXISTS and refused THIS ROW, and retrying
+        // is the one thing that cannot work -- so the caller is told to do
+        // exactly that, forever.
+        //
+        // THE CLASSIFIER GOES HERE AND NOT AT THE TOP OF THE BRANCH. Putting
+        // it at the top short-circuited the branch's own 409 DUPLICATE_ENTRY
+        // and its named CHECK-constraint answers -- measured: five *-endpoint
+        // suites went red with '400 !== 409' on the first attempt at this.
+        // Specific answers first, the classifier last.
+        console.error('unclassified msg (status ' + r.status + '):', msg);
+        return notProvisionedText(res, r, 'SAIRNlaw data tables are not set up yet — run sql/sairnlaw_data_schema.sql in Supabase first.', msg);
         return;
       }
       const rows = await r.json();
@@ -18786,6 +19155,32 @@ async function notProvisioned(res, r, message, preread) {
     return notProvisionedDecide(res, r, message, raw, body);
   }
   try { raw = await r.text(); } catch (e) { raw = ''; }
+  try { body = JSON.parse(raw); } catch (e) { body = null; }
+  return notProvisionedDecide(res, r, message, raw, body);
+}
+
+// ── THE TEXT-PREREAD SIBLING (2026-10-15, b17) ────────────────────────────
+// `notProvisioned`'s `preread` takes a PARSED value, because the five sites it
+// was built for had already done `await r.json()`. Fourteen OTHER write
+// branches had already done `await r.text()` instead, and those were the ones
+// still folding 23514 into "run the migration" -- so the helper that fixes the
+// defect could not be called from the places that still have it.
+//
+// PASSING THE TEXT TO `preread` DIRECTLY DOES NOT WORK AND WOULD HAVE LOOKED
+// LIKE IT DID. `notProvisioned` does `JSON.stringify(preread)` for `raw` and
+// reads `preread.code` for the pg class, so a STRING body yields
+// `pgCode === ''` -- every 23xxx would fall through to the "does not exist"
+// test, miss, and land in UPSTREAM_REJECTED. Better than the old 503, and
+// still the wrong answer, and silently so.
+//
+// So this parses the text itself and keeps the TEXT as `raw`, which is also
+// the better input for the "does not exist" test: a non-JSON PostgREST body
+// still carries the phrase, and JSON.stringify of a failed parse would not.
+// ONE function, fourteen identical call sites, and the classification stays
+// in exactly one place.
+function notProvisionedText(res, r, message, text) {
+  const raw = typeof text === 'string' ? text : '';
+  let body = null;
   try { body = JSON.parse(raw); } catch (e) { body = null; }
   return notProvisionedDecide(res, r, message, raw, body);
 }

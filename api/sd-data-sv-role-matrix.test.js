@@ -207,16 +207,42 @@ console.log('SAIRNvet role matrix -- 42 resources, 6 roles, criteria '
   // to the literal names { owner, dvm }: that is the re-listing this arm is
   // here to prevent. If somebody changes PRESCRIBER_ROLES, this row must move
   // with it, and this arm is what says so.
+  // ── UPDATED 2026-10-15 (b17): THE AUTHORITY MOVED ONE LEVEL, NOT AWAY ───
+  // Michael: a vet tech may RECORD a controlled substance, like a med-pass
+  // log. So the row is no longer PRESCRIBER_ROLES; it is
+  // SV_CONTROLLED_RECORD_ROLES, which api/_lib/sv-roles.js DERIVES from
+  // PRESCRIBER_ROLES plus one named role rather than re-listing anything.
+  //
+  // THIS ARM IS STRICTLY STRONGER THAN IT WAS, NOT RELAXED. It now pins TWO
+  // facts where it pinned one:
+  //   A5  the row agrees with the recorder set role by role, as before
+  //   A5b the recorder set is PRESCRIBER_ROLES plus EXACTLY {tech} -- so the
+  //       widening is one role and a second one cannot be added without this
+  //       arm going red. Dropping A5 to "the row matches the constant" would
+  //       have let the constant become anything.
   const ctl = svRoles.SV_ROLE_MATRIX.sv_controlled;
+  const RECORD = svRoles.SV_CONTROLLED_RECORD_ROLES || {};
   const ctlDisagree = ROLES.filter(function (role) {
-    const wantRW = !!PRESCRIBER_ROLES[role];
+    const wantRW = !!RECORD[role];
     return (ctl[role] === 'rw') !== wantRW;
   });
   is(ctlDisagree.length === 0,
-     'A5. sv_controlled\'s row is DERIVED from api/sv-auth.js\'s '
-   + 'PRESCRIBER_ROLES and agrees with it role by role, so the DEA register\'s '
-   + 'pair is named in exactly one place',
+     'A5. sv_controlled\'s row is DERIVED from api/_lib/sv-roles.js\'s '
+   + 'SV_CONTROLLED_RECORD_ROLES and agrees with it role by role, so the DEA '
+   + 'register\'s recorder set is named in exactly one place',
      'disagree: ' + ctlDisagree.join(', '));
+  const ctlExtras = ROLES.filter(function (role) {
+    return !!RECORD[role] && !PRESCRIBER_ROLES[role];
+  });
+  const ctlLost = ROLES.filter(function (role) {
+    return !!PRESCRIBER_ROLES[role] && !RECORD[role];
+  });
+  is(ctlExtras.length === 1 && ctlExtras[0] === 'tech' && ctlLost.length === 0,
+     'A5b. SV_CONTROLLED_RECORD_ROLES is PRESCRIBER_ROLES plus EXACTLY one '
+   + 'named role, `tech`, and loses no prescriber. The med-pass reading widens '
+   + 'the RECORDER by one role; a second addition, or a prescriber dropping '
+   + 'out, fails here',
+     'extras=' + JSON.stringify(ctlExtras) + ' lost=' + JSON.stringify(ctlLost));
 
   // THE `why` FIELD HAS A CONSUMER. b10's equivalent arm failed on first run
   // because one row's reason was a noun restating the resource name, which is
@@ -267,19 +293,64 @@ console.log('SAIRNvet role matrix -- 42 resources, 6 roles, criteria '
   await refuses('V2', 'sv_labresults', 'write', 'assistant',
                 'an assistant token writing a lab result');
 
+  // ── V3 REVERSED BY DECISION, 2026-10-15 (b17) ───────────────────────────
+  // This arm required a tech writing the controlled register to be 403 with a
+  // message naming the licensed-practitioner requirement, on the argument
+  // that "widening their role would not change the answer". MICHAEL WIDENED
+  // IT: a vet tech may record a controlled substance, like a med-pass log.
+  //
+  // SO THE EXPECTED ANSWER MOVES FROM 403 TO THE WITNESSING LOCK, which is
+  // the STRONGER of the two and is the co-signature half of a med-pass log.
+  // api/sv-witness.js's LOCKED_RESOURCES still contains sv_controlled and its
+  // countersign still requires a licensed prescriber, so a tech-recorded entry
+  // cannot be FILED without one. The arm now pins that:
+  //
+  //   NOT 403 FORBIDDEN   the role gate no longer refuses a tech
+  //   WITNESS_REQUIRED    and the entry still does not land unwitnessed
+  //
+  // IT IS NOT WEAKER. The old arm proved an entry could not be written; this
+  // one proves it cannot be FILED without a licensed countersignature, which
+  // is the property that matters on a DEA register. V3b is the control: the
+  // roles Michael did NOT widen are still refused by the role gate, so
+  // "everybody reaches the witness lock" cannot pass.
   {
     const { res } = await call('sv_controlled', 'write', 'tech');
-    const named = /licensed veterinarian/i.test(eMsg(res));
-    if (res.statusCode === 403 && eCode(res) === 'FORBIDDEN' && named) {
-      ok('V3. a tech token writing the controlled register is 403 AND the '
-       + 'message names the licensed-practitioner requirement -- a technician '
-       + 'told only "forbidden" asks for their role to be widened, and '
-       + 'widening it would not change the answer');
+    const code = eCode(res);
+    if (code !== 'FORBIDDEN' && code === 'WITNESS_REQUIRED') {
+      ok('V3. a tech token writing the controlled register is NO LONGER role-'
+       + 'refused (Michael, b17: a tech may record like a med-pass log) and is '
+       + 'stopped by the WITNESSING LOCK instead -- WITNESS_REQUIRED, so the '
+       + 'entry cannot be filed without a licensed prescriber countersigning. '
+       + 'The co-signature half of a med-pass log is what makes the recorder '
+       + 'half safe');
     } else {
-      bad('V3. the sv_controlled refusal must name the licensed-practitioner '
-        + 'requirement', 'status=' + res.statusCode + ' code=' + eCode(res)
+      bad('V3. a tech writing the controlled register must reach the '
+        + 'WITNESSING LOCK, not the role gate',
+          'status=' + res.statusCode + ' code=' + code
         + ' msg=' + eMsg(res).slice(0, 160));
     }
+  }
+  {
+    // THE CONTROL FOR V3. Michael widened ONE role. These two must still be
+    // refused by the ROLE gate and must never reach the witness lock --
+    // otherwise V3 would pass for "the witness lock catches everybody", which
+    // would mean the DEA register had no role gate at all.
+    const stillRefused = [];
+    for (const role of ['assistant', 'frontdesk']) {
+      const { res } = await call('sv_controlled', 'write', role);
+      const code = eCode(res);
+      const named = /licensed veterinarian/i.test(eMsg(res));
+      stillRefused.push(role + '=' + res.statusCode + '/' + code
+        + (named ? '/named' : '/unnamed'));
+      if (!(res.statusCode === 403 && code === 'FORBIDDEN' && named)) {
+        stillRefused.push('!! ' + role + ' was not role-refused');
+      }
+    }
+    is(!stillRefused.some((x) => /^!!/.test(x)),
+       'V3b. CONTROL -- assistant and frontdesk are STILL 403 FORBIDDEN on the '
+     + 'controlled register, with the message naming the licensed-practitioner '
+     + 'requirement. The widening is one role, and the role gate still exists',
+       stillRefused.join(' '));
   }
 
   await refuses('V4', 'sv_surgery', 'write', 'manager',

@@ -1,0 +1,35 @@
+RED EVIDENCE -- api/b17-practitioner-role-maps.test.js at the PRE-CHANGE tree (c011a287f)
+
+api/b17-practitioner-role-maps.test.js
+  Michael's b17 practitioner answers, one place each, driven
+  FAIL     S-I1. a COORDINATOR writes sen_referrals: 200 and the row lands. Michael: a home-care coordinator taking a phone referral may write intake without a manager
+           status=403 code=FORBIDDEN writes=0
+  FAIL     S-I2. a COORDINATOR writes sen_referral_sources too -- a referral from a hospital not yet on file would otherwise be defeated by its own prerequisite and send the coordinator back to a manager's desk
+           status=403 code=FORBIDDEN
+  ok       S-I3. CONTROL -- a coordinator is STILL refused on sen_applicants. The decision was about intake; an applicant record is employment data about somebody not yet staff and a training rule decides whether a caregiver may work at all
+  ok       S-I3. CONTROL -- a coordinator is STILL refused on sen_training_records. The decision was about intake; an applicant record is employment data about somebody not yet staff and a training rule decides whether a caregiver may work at all
+  ok       S-I3. CONTROL -- a coordinator is STILL refused on sen_training_rules. The decision was about intake; an applicant record is employment data about somebody not yet staff and a training rule decides whether a caregiver may work at all
+  ok       S-I4. CONTROL -- a SCHEDULER is still refused on sen_referrals. fourth's Option A was "+ coordinator, scheduler" and Michael named the COORDINATOR, so an access decision is read at its narrowest
+  ok       S-I5. CONTROL -- a CAREGIVER is refused: a referral names a PROSPECTIVE client and the reason they were referred
+  FAIL     S-I6. all 5 SEN_REFERRAL_RESOURCES have a row in SEN_REFERRAL_WRITE_ROLES, and a resource with NO row gets a 500 WRITE_MAP_MISSING rather than inheriting whichever set is nearest in the file -- which is how a broad-READ set came to decide a WRITE
+           resources=["sen_referral_sources","sen_referrals","sen_training_rules","sen_training_records","sen_applicants"] uncovered=["sen_referral_sources","sen_referrals","sen_training_rules","sen_training_records","sen_applicants"] refusesUnmapped=false
+  FAIL     S-I7. the referral branch READS the map and no longer tests a role itself. A role test in the branch is a second copy of the answer the day a sixth resource joins
+           readsMap=false oldLocalTestGone=false
+  FAIL     L-E1. the licensed-embalmer tier is RECORDED in api/_lib/leg-roles.js with the role name it would use and what it would grant, so a future implementer reads the decision instead of re-deriving it
+           {}
+  ok       L-E2. no preparation-room resource exists in SAIRNlegacy's 36 rows (measured, not assumed), so the embalmer tier grants nothing today and no dormant policy was written. If one is added it must carry a tier decision in LEG_PREP_ROOM_RESOURCES or this arm fails
+  ok       L-L1. livery is DENIED read and write on leg_dispatches and leg_custodylog with no grant present. The REGULATED band already gave livery NO, so no row changed -- which is exactly why it is pinned
+  FAIL     L-L2. WITH a grant, livery may READ leg_dispatches and still may NOT write it. A grant yields read only: leg_custodylog is append-only for every role including the owner, so a write grant would be a route around that lock
+           read=DENY write=DENY
+  ok       L-L3. CONTROL -- a grant opens ONLY the two grantable resources and ONLY for livery. Without this arm the grant could be "any resource named in an object the caller controls", which is worse than the block it replaces
+  FAIL     L-L4. "personnel above them" is owner and director -- the two roles with RW on REGULATED -- and the grantable set is exactly the two resources Michael named. Livery cannot grant itself
+           grantors={} grantable=[]
+  ok       V-M. the practice MANAGER reads clinical records and writes none, on all 3 driven. Michael CONFIRMED the spec's own proposed answer, which it had called "the one most likely to be wrong" -- so nothing changed and the [CONFIRM] is now closed
+  FAIL     V-T. a vet TECH may write sv_controlled, and assistant and frontdesk still may not. "Like a med-pass log" widened the RECORDER by one role
+           tech=DENY assistant=DENY frontdesk=DENY
+  ok       V-W. the WITNESSING LOCK still covers sv_controlled and PRESCRIBER_ROLES still excludes tech -- so a tech-recorded entry cannot be FILED without a licensed veterinarian countersigning. Widening the recorder and widening the witness are two decisions and Michael made one
+  ok       V-H. no file in SAIRNvet CLAIMS HIPAA coverage. HIPAA protects a HUMAN's identifiable health information; a veterinary record is not PHI, and claiming otherwise is a false compliance claim. Confidentiality here is GOOD PRACTICE and is stated as such
+
+  passed 11  failed 8  unproven 0
+  FAILING ARMS: S-I1 S-I2 S-I6 S-I7 L-E1 L-L2 L-L4 V-T
+exit=1

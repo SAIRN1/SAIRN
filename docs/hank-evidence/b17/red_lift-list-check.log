@@ -1,0 +1,31 @@
+RED EVIDENCE -- api/b17-lift-list-check.test.js at the PRE-CHANGE tree (c011a287f)
+
+api/b17-lift-list-check.test.js
+  a lifted function's page-level callees must be lifted too
+  ok       L1. NO NEW unlifted page-level callee, and no stale baseline entry. 57 tolerated pair(s) across 6 suite(s), 57 in the baseline, over 11 lifting suite(s) scanned
+  ok       L2. no lifting suite was skipped silently: 0 named a page that could not be read, and 1 read no HTML at all and are OUT OF SCOPE with their name printed below
+           OUT OF SCOPE  api/_lib/style-profile.test.js -- reads no .html, so its 3 pattern match(es) are not page lifts
+  ok       L3. the scan is over a real population: 11 lifting suite(s) and 79 lifted name(s). An empty discovery would pass L1 and L2 over nothing, forever
+  ok       L4. the detector flags a PLANTED miss (`outer` lifted, `inner` called and not lifted). Without this arm a broken regex passes L1 forever
+  ok       L5. the blind spot is MEASURED, not described -- sairnfreedom.html: 314 declarations, 0 var-assigned function expressions (INVISIBLE to L1) | sairnsenior.html: 249 declarations, 0 var-assigned function expressions (INVISIBLE to L1). A callee declared `var f = function(){}` is not matched by the page-function scanner and L1 cannot see it
+  FAIL     L6. the FREE-VARIABLE gap is stated and is live: this check covers CALLEES, and api/b14-clock-approval-two-person.test.js also needed the page VARIABLE `prole` stubbed, which L1 would not have caught. That suite now stubs it with a comment saying so; the general check is owed work and is named in the b17 handoff
+           b14 readable=true stubs prole=false
+  FAIL     L7. BOTH real incidents replayed: removing the callee from the lift list produces a NEW pair that L1's baseline would FAIL on. api/b14-clock-approval-two-person.test.js: MISSED (b17 added senIsOwner to _renderCorrectionsRows) live=["_renderCorrectionsRows -> vsRenderKpis"] | api/b15-client-effective-clock.test.js: CAUGHT (b15 added senEffClock to visitHours) live=["visitHours -> senEffClock","visitClockReversed -> senEffClock"]
+           api/b14-clock-approval-two-person.test.js: MISSED (b17 added senIsOwner to _renderCorrectionsRows) live=["_renderCorrectionsRows -> vsRenderKpis"]
+           api/b15-client-effective-clock.test.js: CAUGHT (b15 added senEffClock to visitHours) live=["visitHours -> senEffClock","visitClockReversed -> senEffClock"]
+
+  scanned  api/_lib/sairnsenior-appeals.test.js  <- sairnsenior.html  (9 lifted, 0 missing)
+  scanned  api/_lib/sairnsenior-authorizations.test.js  <- sairnsenior.html  (13 lifted, 13 missing)
+  scanned  api/_lib/sairnsenior-branches.test.js  <- sairnsenior.html  (10 lifted, 12 missing)
+  scanned  api/_lib/sairnsenior-franchise.test.js  <- sairnsenior.html  (9 lifted, 10 missing)
+  scanned  api/_lib/sairnsenior-hiring.test.js  <- sairnsenior.html  (6 lifted, 0 missing)
+  scanned  api/_lib/sairnsenior-pay-rates.test.js  <- sairnsenior.html  (12 lifted, 16 missing)
+  scanned  api/_lib/sairnsenior-payer-contracts.test.js  <- sairnsenior.html  (6 lifted, 5 missing)
+  scanned  api/b14-clock-approval-two-person.test.js  <- sairnsenior.html  (5 lifted, 1 missing)
+  scanned  api/b15-client-effective-clock.test.js  <- sairnsenior.html  (3 lifted, 0 missing)
+  scanned  api/b16-evv-pay-agreement.test.js  <- sairnsenior.html  (2 lifted, 0 missing)
+  scanned  api/n1-n4-and-sf-delete.test.js  <- sairnfreedom.html  (4 lifted, 0 missing)
+
+  passed 5  failed 2  unproven 0
+  FAILING ARMS: L6 L7
+exit=1

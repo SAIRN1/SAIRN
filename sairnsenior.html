@@ -1896,6 +1896,22 @@ function nav(id){
 // (api/sen-auth.js's 'roster' action refuses non-management server-side
 // regardless of what this cache holds).
 function senIsManagement(){return prole==='owner'||prole==='billing';}
+// b17, H8. The owner tier alone, which is NOT senIsManagement(): 'billing' is
+// in management and may not approve somebody else's clock correction as if it
+// were their own. Michael's resolution names the OWNER.
+function senIsOwner(){return prole==='owner';}
+// ── THERE IS NO senCanClosePeriod() HERE, AND ITS ABSENCE IS DELIBERATE ───
+// b17 wrote one. It had NO CALLER, because there is no close-a-pay-period
+// control in this file -- the server write path exists (api/sd-data.js, key
+// `payroll_closed_periods`, gated on api/sen-auth.js's SEN_PERIOD_CLOSE_ROLES)
+// and nothing in the UI reaches it. A role helper with no caller is Guardian
+// Check 0d dormant code: it reads as "the client enforces this" to anybody
+// grepping for it, and it would go live silently the day somebody wires a
+// button to a panel without re-deciding the policy. Removed 2026-10-16 rather
+// than left as a placeholder. The client half is named as open in the b17
+// handoff with its exact next step; api/_lib/leg-roles.js's
+// LEG_PREP_ROOM_RESOURCES is the same decision made the other way, where an
+// EMPTY map plus a live check was cheaper than a dormant grant.
 // Broad-read tier (2026-08-20): coordinator/scheduler get agency-wide READ
 // visibility on clients (approved scope: "coordinator = broad caseload
 // visibility" -- applied to scheduler too, same judgment call, since
@@ -3026,9 +3042,15 @@ function _renderCorrectionsRows(el,reached){
         +'<td>'+H(e.original_at)+'</td><td>'+H(e.proposed_at)+'</td>'
         +'<td>'+H(e.reason_label||e.reason_code||'')+(e.note?(' — '+H(e.note)):'')+'</td>'
         +'<td>'+H(e.proposed_by)+'</td>'
-        +'<td>'+(mine
+        // b17, H8 RESOLVED (Michael): the OWNER may approve their own. The
+        // disabled state was the client half of the stranded one-person
+        // agency -- the owner IS the assigned caregiver there, so this button
+        // was the last thing standing between them and a payable visit, and
+        // the server would have allowed it. The label says it is their own, so
+        // a self-approval is never an accident.
+        +'<td>'+(mine && !senIsOwner()
           ? '<button class="btn sm" disabled title="You submitted it">You submitted this one</button>'
-          : '<button class="btn sm bp" onclick="vsApproveCorrection('+JSON.stringify(String(r.visit.id)).replace(/"/g,'&quot;')+','+r.index+')">Approve</button>')
+          : '<button class="btn sm bp" onclick="vsApproveCorrection('+JSON.stringify(String(r.visit.id)).replace(/"/g,'&quot;')+','+r.index+')">'+(mine?'Approve your own':'Approve')+'</button>')
         +'</td></tr>';
     }).join('')
     +'</tbody></table></div>'

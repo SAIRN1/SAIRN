@@ -360,8 +360,13 @@ module.exports = async (req, res) => {
       // ── WHO GRANTED THE ACCESS WAS NOT RECORDED (2026-10-07) ─────────────
       // Same fix and same reasoning as api/sc-auth.js's `setup`, and the
       // PREMISE is re-checked here rather than carried over: StoneDesk has its
-      // own audit table (`stonedesk_audit_log`, allowlisted in
-      // api/_lib/audit.js:40), `set_active` in this file already audits every
+      // own audit table (`stonedesk_audit_log`, in AUDIT_TABLE_BY_APP in
+      // api/_lib/audit.js -- cited as `:40` when this was written and now at
+      // `:74`, so the citation is to the NAMED CONSTANT and not to a line
+      // number, which is the form that does not rot. Corrected 2026-10-15,
+      // b17: `:40` had drifted onto a comment banner, and a citation that
+      // lands on a comment reads as verified to anybody who does not open it),
+      // `set_active` in this file already audits every
       // outcome including refusals, and `setup` audited nothing while writing
       // no `created_by`. So revoking access here was reconstructible and
       // granting it was not.

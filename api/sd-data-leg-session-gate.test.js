@@ -167,8 +167,20 @@ const RESOURCES = ['leg_deathrecords', 'leg_custodylog', 'leg_cremations', 'leg_
     // append-only rule refused -- 409 with the code, not 401/403. A 401 here
     // would mean the gate rejected a good session, which is what this suite
     // exists to catch, and the old arm could not tell those apart.
-    const APPEND_ONLY_WRITE = { leg_custodylog: 'APPEND_ONLY' };
-    const expectCode = APPEND_ONLY_WRITE[resource];
+    // ── ASK THE MODULE, DO NOT RE-LIST IT (2026-10-15, b17) ──────────────
+    // This was a hand-written `{ leg_custodylog: 'APPEND_ONLY' }` -- a SECOND
+    // copy of the append-only list, in a suite whose job is to check the
+    // first one. api/_lib/leg-roles.js owns LEG_APPEND_ONLY and exports
+    // isAppendOnly() for exactly this, and api/_lib/sv-roles.js's header
+    // names the cost of the re-listed copy in its own words: "SAIRNsenior
+    // paid for the re-listed copy (cross-domain convention 7)."
+    //
+    // THE FAILURE MODE IT REMOVES IS SPECIFIC: the day a SECOND leg_ resource
+    // becomes append-only, the handler answers 409 and this suite still
+    // expects 200 -- so a correct lock would be reported as a regression, and
+    // the fix would look like relaxing the suite.
+    const legRolesForGate = require('./_lib/leg-roles');
+    const expectCode = legRolesForGate.isAppendOnly(resource) ? 'APPEND_ONLY' : null;
     if (expectCode) {
       await test(resource + ' write with a session -> 409 ' + expectCode
                + ' (append-only, and the GATE was passed to get there)', async () => {

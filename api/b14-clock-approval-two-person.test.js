@@ -147,9 +147,24 @@ console.log('b14. no self-approval: the approver must differ from the submitter\
     // THE SUBMITTER IS S1 AND S1 IS A SCHEDULER, so the role gate passes and
     // the ONLY thing that can refuse is the identity rule. Without this
     // framing the arm would pass on the 403 it already had.
+    //
+    // ── THE ROLE ARGUMENT WAS 'owner' AND THE COMMENT SAID SCHEDULER, FROM
+    //    THE DAY THIS ARM WAS WRITTEN (corrected 2026-10-15, b17).
+    // It did not matter until b17: `approveCorrection` took no role, so every
+    // self-approval was refused and the arm passed whichever role it sent.
+    // Michael's H8 resolution makes the OWNER the one role that MAY
+    // self-approve, so the mismatch stopped being cosmetic and this arm went
+    // red -- correctly, on a request that is now allowed.
+    //
+    // FIXED BY MAKING THE CALL MATCH ITS OWN COMMENT, not by relaxing the
+    // assertion: the role is 'scheduler', which is what the arm always claimed
+    // to be driving, and the decision it pins -- an approval by the submitter
+    // is not an approval -- is still true for every role but the owner. S1b
+    // below is the new paired arm for the exception, so the pair covers both
+    // directions rather than one of them moving quietly.
     VISIT = visitWithPendingFrom('S1');
     const r = await call('approve_clock_correction',
-                         { id: 'V1', correction_index: 0 }, 'owner', 'S1');
+                         { id: 'V1', correction_index: 0 }, 'scheduler', 'S1');
     is(r.res.statusCode === 403 && r.writes.length === 0,
        'S1. THE ARM THE DECISION IS -- a scheduler cannot approve a correction '
      + 'THEY submitted: 403 and NOTHING written. b13 marked this '
@@ -167,6 +182,30 @@ console.log('b14. no self-approval: the approver must differ from the submitter\
        'S3. ...and the message says what to do next. A refusal that does not '
      + 'name the route gets worked around',
        JSON.stringify(msg.slice(0, 160)));
+
+    // ── S1b. THE ONE EXCEPTION, PAIRED WITH S1 (added 2026-10-15, b17) ────
+    // Michael's H8 resolution: a one-person agency is just the owner with full
+    // access, and the owner may approve their own visit. The SAME request S1
+    // drives, from an OWNER, is ALLOWED -- and is marked, because "was there a
+    // second party" is the question an auditor asks of a corrected EVV time.
+    //
+    // THE PAIR IS THE POINT. S1 alone would now read as "self-approval is
+    // refused", which is no longer true; S1b alone would read as
+    // "self-approval is fine", which is the b13 defect. Only both together
+    // state the rule.
+    VISIT = visitWithPendingFrom('S1');
+    const ow = await call('approve_clock_correction',
+                          { id: 'V1', correction_index: 0 }, 'owner', 'S1');
+    const owEntry = ((stored(ow.writes) || {}).clock_corrections || [])[0] || {};
+    is(ow.res.statusCode === 200 && owEntry.status === 'approved'
+       && owEntry.self_approved === true
+       && owEntry.self_approval_basis === 'owner'
+       && typeof owEntry.approved_at_server === 'string',
+       'S1b. THE ONE EXCEPTION -- an OWNER approving a correction THEY '
+     + 'submitted is ALLOWED (200), marked self_approved with basis \'owner\', '
+     + 'and carries a real approved_at_server so b16\'s freeze can date it',
+       'status=' + ow.res.statusCode
+     + ' entry=' + JSON.stringify(owEntry).slice(0, 220));
   }
   {
     VISIT = visitWithPendingFrom('E1');
@@ -278,9 +317,17 @@ console.log('b14. no self-approval: the approver must differ from the submitter\
   // ReferenceError, which this suite reported as a hard error rather than as
   // an arm, and that is the honest signal: the fixture had stopped matching
   // the code.
+  // b17: `senIsOwner` added because _renderCorrectionsRows now calls it --
+  // H8's resolution means the OWNER's own entry gets an ENABLED control, so
+  // the row render asks the role. WITHOUT IT THIS SUITE DIED AT
+  // "ReferenceError: senIsOwner is not defined", a HARD ERROR with no arm
+  // name, which is the SAME failure that killed three api/_lib/sairnsenior-*
+  // suites for a whole batch after b15 added senEffClock and not the lift.
+  // That is twice now, so b17 also builds the mechanical check for it:
+  // api/b17-lift-list-check.test.js.
   const NEEDED = ['senPendingCorrections', 'renderCorrectionsView',
                   '_renderCorrectionsRows', '_corrFreshness',
-                  'vsCorrectionsBadgeText'];
+                  'vsCorrectionsBadgeText', 'senIsOwner'];
   const missing = NEEDED.filter((n) => lift(n) === null);
   if (HTML === null) {
     cannot('U1. sairnsenior.html is not readable', 'ENOENT');
@@ -305,6 +352,18 @@ console.log('b14. no self-approval: the approver must differ from the submitter\
       $: el,
       H: function (s) { return String(s == null ? '' : s); },
       senSession: { employee_id: 'S1', role: 'owner', token: 't' },
+      // b17: `prole` is the page-level role variable senIsOwner() reads. It is
+      // a VARIABLE and not a function, so the lift-list check built this batch
+      // (api/b17-lift-list-check.test.js) would NOT have caught it -- that
+      // check covers callees, and this is a free identifier. Named here rather
+      // than left as a surprise for the next person who lifts a role helper.
+      //
+      // 'scheduler' AND NOT 'owner', deliberately: U1-U5 are about the queue
+      // rendering an ENABLED control for SOMEBODY ELSE'S entry, which is the
+      // two-person case. The owner-self case is S1b on the server and O6 in
+      // api/b17-one-person-agency.test.js on the page. Setting 'owner' here
+      // would make U-arms pass for the wrong reason.
+      prole: 'scheduler',
       senIsScheduler: function () { return true; },
       VISITS: [],
       visits: function () { return sandbox.VISITS; },
