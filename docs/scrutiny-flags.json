@@ -818,6 +818,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/report_only_checks.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "'budget_source': ('hook' if _hook_timeout()"
+    }
+   ],
+   "sha": "1a5a47c0e22e7007cbcac9b4cbf8e3767d659e73",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/sd-data-leg-overlap.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -1291,6 +1304,19 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "315800a7143a37d84865a234d1ae28dccdb9ba66",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/run_all_tests.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "'without waiting out any ceiling -- the pid being gone already '"
+    }
+   ],
+   "sha": "31711f8d09b1dcd037b27781aef63605c4d58020",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -3775,6 +3801,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/tier_a_review_gate.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "it to ignore. (`code_staleness()` is UNAFFECTED -- it scopes its own `git"
+    }
+   ],
+   "sha": "8b108f9b35c86e694df1d529b9e02d2c65f17f71",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/sd-data-sen-caregiver-read-paths.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -5269,6 +5308,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "ab919080da74207947a258834713c8a5f9c74d30",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/tier_a_review_gate.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "abbb716fb4b54498e7549d7ab098e73e307fe5c4",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -6907,6 +6954,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/tier_a_review_gate.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "it to ignore. (`code_staleness()` is UNAFFECTED -- it scopes its own `git"
+    }
+   ],
+   "sha": "dbdc85cda2c5d6b76e9c0ea6a9a1a5c32b2f40b6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/tier_a_review_gate.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "dc314fad03eb972c5787e6d8704318c3a9220898",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/_lib/sen-evv-clock.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -8153,27 +8221,6 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "ff0d6778f3f72a2996ad7c27a905855fc4704f3c",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tools/tier_a_review_gate.py",
-   "class": "push-gate logic",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "it to ignore. (`code_staleness()` is UNAFFECTED -- it scopes its own `git"
-    }
-   ],
-   "sha": "dbdc85cda2c5d6b76e9c0ea6a9a1a5c32b2f40b6",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tools/tier_a_review_gate.py",
-   "class": "push-gate logic",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "dc314fad03eb972c5787e6d8704318c3a9220898",
    "criteria_version": "2026-10-06.1"
   }
  ],
