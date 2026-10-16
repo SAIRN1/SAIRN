@@ -32480,7 +32480,7 @@
       "recurrence_open": "the budget covers this tool's own prints. Nothing sweeps the other 350 tools for the same shape, and  at 501KB was found only because somebody ran it -- there is no detector for an unbounded tool output anywhere on this platform."
     },
     {
-      "commit": "3e5b85b535bd",
+      "commit": "144dfb71587e",
       "date": "2026-10-16",
       "subject": "fix(sairnsenior,sairnlaw): a paid period is reopened by an APPENDED row, an adjustment is never negative, and the trust lock finally has arms",
       "files": [
@@ -32560,7 +32560,7 @@
       "recurrence_open": "NEITHER SQL FILE HAS BEEN RUN, so the whole mechanism answers 503 in production today -- sen_period_closings does not exist and neither does the audit table it refuses without. Both are in docs/2026-10-16-hank-b17-michael-sql.md with the order and the grant check. AND THE CLIENT HALF IS NOT BUILT: no UI reaches the close path, and b17 DELETED the senCanClosePeriod() helper it had written rather than ship a role check with no caller. AND THE STRADDLE LABEL IS STILL WRONG (fourth's Q4): a run crossing a closed boundary reports period_closed:null while its in-closed-period visits are individually frozen, so a partly-frozen total is presented as a live one. NOT FIXED HERE and not routed as part of this item."
     },
     {
-      "commit": "3e5b85b535bd",
+      "commit": "144dfb71587e",
       "date": "2026-10-16",
       "subject": "fix(sairnsenior,sairnlaw): a paid period is reopened by an APPENDED row, an adjustment is never negative, and the trust lock finally has arms",
       "files": [
@@ -32640,7 +32640,7 @@
       "recurrence_open": "NOTHING RECOVERS AN OVERPAYMENT and nothing sweeps for one -- an overpayment sits in the output until a human acts, and no screen shows it yet. AND premium_may_be_owed DOES NOT SAY WHAT THE PREMIUM IS WORTH, which needs the frozen week's regular rate recomputed with the new minutes in it and is the reopening the freeze exists to prevent. Both are in not_computed by name. AND THE WHOLE MECHANISM HAS STILL NEVER RUN ON REAL DATA: no agency has a closed period, so every figure here is a fixture or the real handler with a stubbed upstream."
     },
     {
-      "commit": "3e5b85b535bd",
+      "commit": "144dfb71587e",
       "date": "2026-10-16",
       "subject": "fix(sairnsenior,sairnlaw): a paid period is reopened by an APPENDED row, an adjustment is never negative, and the trust lock finally has arms",
       "files": [
@@ -32720,7 +32720,7 @@
       "recurrence_open": "THE DISAGREEMENT SURVIVES FOR ANY CALLER THAT DOES NOT PASS closed_periods, and that is now a caller-side omission rather than a rule. api/sd-data.js's readiness action passes it; nothing enforces that a future caller does, and the module cannot tell 'no freeze' from 'not told about the freeze'. AND NO LIVE VERIFICATION: every figure is a fixture or the real handler with a stubbed upstream, because no agency has a closed period at all."
     },
     {
-      "commit": "3e5b85b535bd",
+      "commit": "144dfb71587e",
       "date": "2026-10-16",
       "subject": "fix(sairnsenior,sairnlaw): a paid period is reopened by an APPENDED row, an adjustment is never negative, and the trust lock finally has arms",
       "files": [
@@ -32800,7 +32800,7 @@
       "recurrence_open": "THE SEAM CHECKER NAMES ITS KNOWN EXCEPTIONS and one remains -- ALF_MANAGEMENT_ROLES is a bare literal with a stated guard, and whether it should contain `caregiver` is a product question the tool says it cannot decide. NOT TOUCHED. AND NOTHING SWEEPS FOR THE NEXT MAP: the fix is one file, the rule is in a comment, and the only thing that will catch the next bare literal is the same suite in a full-tree run."
     },
     {
-      "commit": "3e5b85b535bd",
+      "commit": "144dfb71587e",
       "date": "2026-10-16",
       "subject": "fix(sairnsenior,sairnlaw): a paid period is reopened by an APPENDED row, an adjustment is never negative, and the trust lock finally has arms",
       "files": [
@@ -32880,7 +32880,7 @@
       "recurrence_open": "ARM A STILL PASSES THE trusttx SUITE and that file was deliberately not touched, so the gap fourth found still exists in the suite they measured -- it is now covered by a DIFFERENT file, which is a structurally different method and not a second copy. AND law_trust_reconcile, the third trust surface, is owner-only through its own separate gate and is NOT in LAW_TRUST_LOCKED -- that asymmetry was read and left alone rather than changed without a decision."
     },
     {
-      "commit": "3e5b85b535bd",
+      "commit": "144dfb71587e",
       "date": "2026-10-16",
       "subject": "fix(sairnsenior,sairnlaw): a paid period is reopened by an APPENDED row, an adjustment is never negative, and the trust lock finally has arms",
       "files": [
@@ -32957,7 +32957,7 @@
       "recurrence_open": "FIVE OTHER RECORDS CARRY A COUNT THAT DISAGREES WITH THEIR ARRAY AND ARE DELIBERATELY NOT FLAGGED, because each names its subset and is correct. They are listed verbatim in the suite's header as the fixtures that must stay silent -- so if one of them ever IS wrong, this check will not say so. AND THE CHECK ONLY READS THE OPENING SENTENCE: a count stated mid-paragraph is out of its reach by design. AND IT IS NOT A PUSH GATE -- it is an api/ suite, caught by a full-tree sweep and by nothing automatic."
     },
     {
-      "commit": "b9d42b754578",
+      "commit": "74be8ec8383c",
       "date": "2026-10-16",
       "subject": "fix(sairnbuild): one message, logged once, and exactly one bare catch in st()",
       "files": [
