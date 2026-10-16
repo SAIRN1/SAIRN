@@ -2640,6 +2640,62 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/hook_command_anchoring_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6369b911fad2d4296319dd69efe1bc80527e703d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_audit_event_type_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6369b911fad2d4296319dd69efe1bc80527e703d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_conflict_preflight_hook_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6369b911fad2d4296319dd69efe1bc80527e703d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_fail_open_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6369b911fad2d4296319dd69efe1bc80527e703d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_register_feed_gate_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6369b911fad2d4296319dd69efe1bc80527e703d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_tooling_inventory_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6369b911fad2d4296319dd69efe1bc80527e703d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/server_wins_hydration.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6369b911fad2d4296319dd69efe1bc80527e703d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/sd-data-dental-ledger-validation.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -6328,6 +6384,35 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_audit_event_type_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c51728b4bda339abe95873304a555eda4212ba26",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_known_red_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c51728b4bda339abe95873304a555eda4212ba26",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_window_anchor_ratchet_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "PIN = os.path.join(ROOT, 'docs', 'window-anchor-ceiling.json')"
+    }
+   ],
+   "sha": "c51728b4bda339abe95873304a555eda4212ba26",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_drive_upload_verify_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -6526,6 +6611,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "cc6d3c525262bba301ba2bddcd1b93e963f99ddb",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_dead_rule_sweep_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "cc8966e42b7862494ceec45e124e10e179ed85b1",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -7328,6 +7421,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "e9d9c8192620b3b3fe017507ca9a1069b2d1ca0f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_tier_a_open_basis_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "eaa9d51627d8826fe7581c95a475dc990d8c7078",
    "criteria_version": "2026-10-06.1"
   },
   {
