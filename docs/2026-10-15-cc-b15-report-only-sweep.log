@@ -1,0 +1,198 @@
+NOTE: no report_only_checks.py hook entry found in C:\Users\marsh\Documents\SAIRN-cc\.claude\settings.json, so the sweep budget below is a FALLBACK.
+-- hover_routing_gap_check.py --
+   1 finding(s), 0 could not run   3.5s
+-- pattern_enumeration_sweep.py --
+   1 finding(s), 0 could not run   5.6s
+-- runbook_constant_agreement.py --
+   1 finding(s), 0 could not run   0.2s
+-- unproven_arm_check.py --
+   1 finding(s), 0 could not run   1.4s
+-- py_guard_check.py --
+   1 finding(s), 0 could not run   2.1s
+-- sql_column_exists_check.py --
+   0 finding(s), 0 could not run   0.4s
+-- assertion_label_shape_check.py --
+   1 finding(s), 0 could not run   10.7s
+-- entry_point_scope_check.py --
+   1 finding(s), 0 could not run   8.2s
+-- parse_zero_third_state_check.py --
+   1 finding(s), 0 could not run   2.1s
+-- fact_sheet_regenerates.py --
+   1 finding(s), 0 could not run   1.0s
+-- verification_owed_report.py --
+   0 finding(s), 0 could not run   2.3s
+-- ai_action_approval_audit.py --
+   1 finding(s), 0 could not run   2.6s
+-- defect_budget_policy.py --
+   0 finding(s), 0 could not run   0.1s
+-- accepted_risk_expiry_audit.py --
+   0 finding(s), 0 could not run   0.4s
+-- flaky_checker_quarantine.py --
+   1 finding(s), 0 could not run   4.7s
+-- testability_gate.py --
+   1 finding(s), 0 could not run   0.2s
+-- subprocess_decode_check.py --
+   0 finding(s), 0 could not run   3.6s
+-- completeness_check.py --
+   0 finding(s), 0 could not run   1.0s
+-- secrets_inventory.py --
+   0 finding(s), 0 could not run   1.0s
+-- dependency_graph.py --
+   1 finding(s), 0 could not run   0.6s
+-- vercel_config_check.py --
+   0 finding(s), 0 could not run   0.1s
+-- sairn_dead_button_audit.py --
+   (not scanned: 106 non-root .html file(s) -- not routed by vercel.json, e.g. archive/branch-lucid-ptolemy-b73vu0/.github/scripts/biz.html, archive/)
+   0 finding(s), 0 could not run   59.4s
+-- nav_panel_check.py --
+   (not scanned: 106 non-root .html file(s) -- not routed by vercel.json, e.g. archive/branch-lucid-ptolemy-b73vu0/.github/scripts/biz.html, archive/)
+   0 finding(s), 0 could not run   8.2s
+-- cleanup_confirm_check.py --
+   0 finding(s), 0 could not run   0.1s
+-- md_table_check.py --
+   0 finding(s), 0 could not run   0.2s
+-- div_balance_check.py --
+   (not scanned: 106 non-root .html file(s) -- not routed by vercel.json, e.g. archive/branch-lucid-ptolemy-b73vu0/.github/scripts/biz.html, archive/)
+   0 finding(s), 0 could not run   1.7s
+-- duplicate_global_check.py --
+   (not scanned: 106 non-root .html file(s) -- not routed by vercel.json, e.g. archive/branch-lucid-ptolemy-b73vu0/.github/scripts/biz.html, archive/)
+   0 finding(s), 0 could not run   3.4s
+-- panel_nesting_check.py --
+   (not scanned: 106 non-root .html file(s) -- not routed by vercel.json, e.g. archive/branch-lucid-ptolemy-b73vu0/.github/scripts/biz.html, archive/)
+   0 finding(s), 0 could not run   2.5s
+-- fail_open_check.py --
+   0 finding(s), 0 could not run   1.9s
+-- discarded_verdict_check.py --
+   0 finding(s), 0 could not run   2.2s
+-- discarded_verdict_crossfile.py --
+   0 finding(s), 0 could not run   1.7s
+-- literal_drift_check.py --
+   (not scanned: 106 non-root .html file(s) -- not routed by vercel.json, e.g. archive/branch-lucid-ptolemy-b73vu0/.github/scripts/biz.html, archive/)
+   0 finding(s), 0 could not run   14.4s
+-- orphan_register_check.py --
+   0 finding(s), 0 could not run   9.7s
+-- key_collision_check.py --
+   1 finding(s), 0 could not run   2.1s
+-- sairn_strict_args_check.py --
+   0 finding(s), 0 could not run   1.1s
+-- write_without_readback_check.py --
+   0 finding(s), 0 could not run   30.9s
+-- traceability_matrix.py --
+   0 finding(s), 0 could not run   1.0s
+-- master_plan.py --
+   0 finding(s), 0 could not run   2.3s
+-- invisible_in_pattern_check.py --
+   0 finding(s), 0 could not run   9.0s
+-- checkblocks.py --
+   (not scanned: 106 non-root .html file(s) -- not routed by vercel.json, e.g. archive/branch-lucid-ptolemy-b73vu0/.github/scripts/biz.html, archive/)
+   0 finding(s), 0 could not run   20.5s
+-- comment_sensitivity_check.py --
+   0 finding(s), 0 could not run   92.8s
+NOTE: no report_only_checks.py hook entry found in C:\Users\marsh\Documents\SAIRN-cc\.claude\settings.json, so the sweep budget below is a FALLBACK.
+
+SWEEP TOOK 317s of a 300s budget.
+
+37 CHECKER(S) NEVER RAN, and that is the point of printing this:
+    metamorphic_check.py
+    criticality_tier_check.py
+    soup_register_check.py
+    committer_identity_check.py
+    hover_process_pass_freshness.py
+    install_git_hooks.py
+    tooling_inventory.py
+    schema_snapshot_freshness.py
+    index_duplicate_check.py
+    gate_column_check.py
+    mutation_anchor_check.py
+    comment_quote_check.py
+    defect_register.py
+    npm_audit_check.py
+    control_char_check.py
+    truthy_sum_check.py
+    removal_path_check.py
+    bypassed_constant_check.py
+    ownership_evidence_drift.py
+    eaten_substitution_check.py
+    register_freshness_check.py
+    temporary_state_check.py
+    export_coverage_check.py
+    hover_separation_audit.py
+    advisory_lock_isolation_check.py
+    log_cluster.py
+    allan_deviation_check.py
+    response_shape_check.py
+    check_precedence.py
+    service_role_tier_a_gate_check.py
+    register_feed_gate.py
+    claim_activity_check.py
+    checker_denominator.py
+    overrun_inversion_scan.py
+    probe_anchor_freshness.py
+    gap_ledger.py
+    gate1_verify.py
+A sweep that runs out of time reports an UNKNOWN for these, not
+a clean pass. Raise the budget, or cap whichever checker below
+grew -- but do not read the silence as nothing found.
+Slowest, because a sweep that grew and a checker that hangs are
+different problems and one number cannot tell them apart:
+    92.8s  comment_sensitivity_check.py
+    59.4s  sairn_dead_button_audit.py
+    30.9s  write_without_readback_check.py
+    20.5s  checkblocks.py
+    14.4s  literal_drift_check.py
+
+COULD NOT RUN (37) -- not a pass:
+    metamorphic_check.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    criticality_tier_check.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    soup_register_check.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    committer_identity_check.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    hover_process_pass_freshness.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    install_git_hooks.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    tooling_inventory.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    schema_snapshot_freshness.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    index_duplicate_check.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    gate_column_check.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    mutation_anchor_check.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    comment_quote_check.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    defect_register.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    npm_audit_check.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    control_char_check.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    truthy_sum_check.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    removal_path_check.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    bypassed_constant_check.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    ownership_evidence_drift.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    eaten_substitution_check.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    register_freshness_check.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    temporary_state_check.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    export_coverage_check.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    hover_separation_audit.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    advisory_lock_isolation_check.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    log_cluster.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    allan_deviation_check.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    response_shape_check.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    check_precedence.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    service_role_tier_a_gate_check.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    register_feed_gate.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    claim_activity_check.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    checker_denominator.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    overrun_inversion_scan.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    probe_anchor_freshness.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    gap_ledger.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+    gate1_verify.py -- NOT RUN, the sweep reached its 270.0s cut first to stay inside the hook ceiling. This is an UNKNOWN, not a clean result.
+FINDINGS (14):
+    hover_routing_gap_check.py  -- exit 1
+    pattern_enumeration_sweep.py  -- exit 1
+    runbook_constant_agreement.py  -- exit 1
+    unproven_arm_check.py  -- exit 1
+    py_guard_check.py  -- exit 1
+    assertion_label_shape_check.py  -- exit 1
+    entry_point_scope_check.py  -- exit 1
+    parse_zero_third_state_check.py  -- exit 1
+    fact_sheet_regenerates.py  -- exit 1
+    ai_action_approval_audit.py  -- exit 1
+    flaky_checker_quarantine.py  -- exit 1
+    testability_gate.py  -- exit 1
+    dependency_graph.py  -- exit 1
+    key_collision_check.py  -- exit 1
+
+REPORT ONLY. Nothing here blocked anything. Read each one before acting -- these checkers have run against real code exactly once.

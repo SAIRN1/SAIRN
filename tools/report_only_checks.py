@@ -2775,7 +2775,35 @@ REGISTRY = [
 # was checked live before anything moved; none of their files is touched.
 #
 # THE COST IS DERIVED FROM THE MEASUREMENT, NOT ASSUMED TO BE ZERO.
-# docs/report-only-reachability.json, full sweep, 600s budget / 540s cutoff:
+#
+# ── THE FIGURE BELOW IS STILL RIGHT, AND b14 CALLED IT STALE ON BAD DATA ───
+# Corrected 2026-10-15 (cc b15), because b14's open item 6 asked where the
+# 20-second budget in docs/report-only-reachability.json came from and the
+# answer changes what this paragraph means. It is NOT this machine and NOT
+# the missing hook entry: `tests/run_report_only_checks_probe.py:783` runs
+# this tool with `--budget 20` to exercise the overrun path in seconds, that
+# run was not `--quiet`, and `_write_reachability()` overwrote the tracked
+# document with the fixture's numbers -- `reached 6 of 78` at a 20.0s budget.
+# b14 read those as a real sweep and concluded "36 of 73 ... 540s" was stale
+# in both terms. **IT IS NOT.** The registry really did grow 73 -> 78, so the
+# DENOMINATOR has moved; the 36 and the 540 were measured under the real
+# 600s hook cap and nothing has re-measured them under that cap since.
+#
+# WHAT IS TRUE IN THIS CLONE, AND IT IS A DIFFERENT STATEMENT: there is no
+# report_only_checks.py entry in `.claude/settings.json` -- the hooks are
+# deliberately cleared -- so `_hook_timeout()` returns None, the budget falls
+# back to this tool's own 300, and the arithmetic below describes a cap
+# nothing here enforces. The file now carries a `budget_source` field so that
+# a hook number, a fallback and a fixture can never again be read as the same
+# number, and `_write_reachability()` REFUSES to overwrite the document on a
+# `--budget` override at all.
+#
+# SO: the 540s arithmetic stands for the HOOK-PRESENT case, which is the
+# production condition, and b12/b13's `_FRONT` placement conclusion stands
+# with it. Re-measure before quoting the 36 again.
+#
+# docs/report-only-reachability.json, full sweep, 600s budget / 540s cutoff,
+# as measured when a hook entry existed:
 #
 #     reached 36 of 73, never reached 37
 #     entry 35  comment_sensitivity_check.py   215.4s, cumulative 548.7s
@@ -3878,12 +3906,45 @@ def _last_durations():
 REACHABILITY_FILE = os.path.join(REPO, 'docs', 'report-only-reachability.json')
 
 
+_BUDGET_OVERRIDDEN = False
+
+
 def _write_reachability(reach, budget):
-    """Persist (tool, seconds, cumulative, reached) from a real full sweep."""
+    """Persist (tool, seconds, cumulative, reached) from a REAL full sweep.
+
+    REFUSES on a `--budget` override, and says so. See the comment in main():
+    a probe's 20-second fixture overwrote this document and its numbers were
+    then read as the platform's real reachability for two batches. Keeping the
+    last real measurement is strictly better than replacing it with a
+    fixture's -- and an absent write is visible in the file's mtime, where a
+    wrong write is not.
+    """
+    if _BUDGET_OVERRIDDEN:
+        print('NOT WRITING docs/report-only-reachability.json: this run used '
+              '--budget %s, which is a FIXTURE budget and not the cap the '
+              'hook enforces. The last REAL measurement is left in place. '
+              'A fixture\'s reach numbers under a measurement\'s filename is '
+              'how 20.0s and "reached 6 of 78" were read as the real sweep '
+              'for two batches.' % budget)
+        return
     try:
         payload = {
             'measured_budget_seconds': budget,
             'effective_cutoff_seconds': (budget * 0.9) if budget else None,
+            # ── WHERE THE BUDGET CAME FROM, in the file (b15) ────────────
+            # A bare number cannot be told from a fallback or a fixture, and
+            # all three were read as the same thing. 'hook' means a
+            # report_only_checks.py entry was found in .claude/settings.json
+            # and its timeout is the number above; 'fallback-300' means no
+            # such entry exists in this clone -- which is TRUE HERE, because
+            # the hooks are deliberately cleared -- so the number is this
+            # tool's own default and NOT what any hook enforces.
+            'budget_source': ('hook' if _hook_timeout()
+                              else 'fallback-%d -- NO report_only_checks.py '
+                                   'hook entry in this clone\'s '
+                                   '.claude/settings.json, so this budget is '
+                                   'this tool\'s default and not a cap '
+                                   'anything enforces' % 300),
             'registry_size': len(REGISTRY),
             'reached': sum(1 for r in reach if r[3]),
             'never_reached': sum(1 for r in reach if not r[3]),
@@ -4192,6 +4253,24 @@ def main(argv):
     # reproducible by waiting for the real six-minute run to grow past 300s.
     if '--budget' in argv:
         globals()['SWEEP_BUDGET_SECONDS'] = float(argv[argv.index('--budget') + 1])
+        # ── AND IT MUST NOT BE ABLE TO REWRITE THE SHARED MEASUREMENT ─────
+        # Found 2026-10-15 chasing cc b14's open item 6, which asked where
+        # the 20-second budget in docs/report-only-reachability.json came
+        # from -- "this machine, or the missing hook entry in this clone".
+        # NEITHER. tests/run_report_only_checks_probe.py:783 runs this tool
+        # with `--budget 20` to exercise the overrun path in seconds, that
+        # run is not --quiet, and _write_reachability() therefore OVERWROTE
+        # the tracked document with its fixture's numbers:
+        #
+        #     measured_budget_seconds 20.0, effective_cutoff 18.0,
+        #     registry_size 78, reached 6, never_reached 72
+        #
+        # b14 then read `reached 7 of 78` off that file and treated it as a
+        # measurement of the real sweep, and used it to call the 540s figure
+        # in the comment below stale "in both terms". A FIXTURE'S OUTPUT
+        # WEARING A MEASUREMENT'S FILENAME, which is this tool's own subject
+        # arriving in its own output path.
+        globals()['_BUDGET_OVERRIDDEN'] = True
     _shard = None
     if '--shard' in argv:
         _shard = argv[argv.index('--shard') + 1]
