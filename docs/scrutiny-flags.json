@@ -339,6 +339,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_tier_a_open_basis_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "056d1d2a08df3b24071fcb610490b291795bcc8d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/app_session_isolation.js",
    "class": "test file",
    "level": "WEAKENING",
@@ -794,6 +802,62 @@
     }
    ],
    "sha": "13bd13d8c1c223543ee327a9ea4645ffe475dd26",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/hook_command_anchoring_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "1594cbb29034066b1f82f704fce0e1a005b28996",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_audit_event_type_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "1594cbb29034066b1f82f704fce0e1a005b28996",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_conflict_preflight_hook_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "1594cbb29034066b1f82f704fce0e1a005b28996",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_fail_open_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "1594cbb29034066b1f82f704fce0e1a005b28996",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_register_feed_gate_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "1594cbb29034066b1f82f704fce0e1a005b28996",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_tooling_inventory_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "1594cbb29034066b1f82f704fce0e1a005b28996",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/server_wins_hydration.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "1594cbb29034066b1f82f704fce0e1a005b28996",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -2401,6 +2465,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_dead_rule_sweep_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "53e02d5cd4ae69b94267d7537eb548eaf167aad0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_drive_upload_verify_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -2582,6 +2654,22 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "5bb0950a51b6225a793e9fb2394b3f2afbd835cc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_b14_leg_aftercare_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "5be828bf7b4ed7b2d0aecfe23ac52aa767c7bc75",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_blob_scope_ten_routed_sites.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "5be828bf7b4ed7b2d0aecfe23ac52aa767c7bc75",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -4201,6 +4289,23 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sd_data_not_provisioned_misclass.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "json: async () => [{ data: { food_thresholds: {} } }] };"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'allowlist (' + JSON.stringify(OPA_TYPE) + '), never typed -- a payload '"
+    }
+   ],
+   "sha": "94b35f817fcd7e2dfd1f5e5f37ae709f6b0ec83a",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_tier_a_review_gate_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -5616,6 +5721,35 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "b0e1f146bb0f7cb5395f80dc271b95a5ac5612e1",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_audit_event_type_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "b1294b4774937e00f7d7660a371b9e2fbe188227",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_known_red_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "b1294b4774937e00f7d7660a371b9e2fbe188227",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_window_anchor_ratchet_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "PIN = os.path.join(ROOT, 'docs', 'window-anchor-ceiling.json')"
+    }
+   ],
+   "sha": "b1294b4774937e00f7d7660a371b9e2fbe188227",
    "criteria_version": "2026-10-06.1"
   },
   {

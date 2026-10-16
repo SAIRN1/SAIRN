@@ -7347,3 +7347,68 @@ recorded under `c465743b34b0` in `docs/scrutiny-flags.json`. This landing did
 not discharge it. **Nothing mechanical gates this clone any more** -- hook
 entries are 0 by Michael's decision, so `--preflight` IS the gate here and
 skipping it is silent.
+
+---
+
+## b19 — 2026-10-16. LANDED at `1e3e61eae` on `origin/main`, read back by content, no `--force`
+
+**b19 began by finishing b18, because b18 had been cut off before writing
+anything.** No b18 handoff, report or digest exists on the Drive; three b18
+commits sat unpushed for 20 hours with **two files still uncommitted**, and the
+b18 claim was still `active`. One of those two files **did not work**:
+`tests/run_dead_rule_sweep_probe.py` was EXIT=2, dying after section I's
+header, because the sweep is driven THREE ways and only two have call sites —
+section I calls `make_sandbox()` **in-process**. Fixed by re-execing the whole
+probe under `tools/git_config_isolation.py` once. **And the two wrapped call
+sites were reading the wrong number under the right name:** the wrapper's exit
+code is its verdict on `.git/config` and `.git/worktrees`, not the wrapped
+command's, so every arm reading `rc` had silently changed quantity. The inner
+code comes back through `--rc-file` now. New arm **G0** asserts
+`SAIRN_GIT_ISOLATION=1` by name, because the refusal banner contains the string
+`DEAD RULE SWEEP` and **F2 — the paired positive proving the sweep STARTED —
+passed on the message saying it would not.** 84 passed / 0 failed.
+
+**Floor 808 → 824, and it met another clone's 811 in a rebase.** 824 > 811, the
+ratchet only rises, 824 is what a triaged full-tree run measured. **The real
+finding is next to it:** the 811 version arrived with `lowered_from_813_why`
+**absent** — dropped by `raise_floor()`, which rewrites the file from its own
+fixed key set — so every hand-written key here survives only to the next raise.
+Restored, with the hazard written into the file.
+
+**The five items.** Arm Z's missing `else`, with the **ablation re-run and it
+came back RED** (PRE-FIX ablated: exit 0, arm simply absent; POST-FIX ablated:
+exit 1, arm Z FAIL) — driver committed at `docs/b19-logs/ablate_arm_z.py`. The
+blob-scope and leg_aftercare rows moved `entries` → `recovered` with the
+**superseded row quoted inside each rather than deleted**, because in both
+cases the row was a faithful record of a real run and the diagnosis around it
+was wrong. The control arm's typed *"ten failures above"* reads off
+`failed.length`. The b24 F1 re-anchor onto a **balanced block** plus **arm 3**,
+which renames the anchor in a COPY of each subject and requires **exit 1, not
+exit 3** — ownership decides the exit code. And a new failing-first suite
+driving a **23514 through the `alf_op_audits` write guard** (503
+NOT_PROVISIONED, on a Tier A log) and a **42703 through the `mech_site_assets`
+read guard** (HTTP 200, byte-identical to a 404), with the **151 and 67
+populations measured by the suite on every run** rather than quoted.
+
+**Convention 36** — *a check's own rot is not biased toward RED, and the exit
+code must be chosen by OWNERSHIP*. Twelfth member of the cannot-fire group,
+admitted on two of its three instances and said so. **And `METHODOLOGY.md`'s
+"18 promotion rows" was wrong** — 23 then, 24 now, same blob at both commits,
+so convention 35 clause 3 says the published number is the wrong one.
+
+**Tier A:** obligation opened 2026-10-16T12:24:12Z on `alf_facility`,
+`alf_op_audits`, `leg_aftercare`, `mech_site_assets`, **assigned to cc**.
+**Nothing FRESH is assigned to cody** — five obligations, newest **243h** old,
+all `--takeover`-able. Measured, not assumed absent.
+
+**NO OVERRIDE OF ANY KIND.** No `SAIRN_SKIP`, no `SAIRN_GATE_EXEMPT`, no
+`SAIRN_SEED_GATE`. **The push WAS refused once** — the `derived-docs` gate, on
+three generated documents b18 and b19 had made stale — and the remedy was to
+run their generators, not to skip the gate. No `api/`, `sql/` or `tools/` file
+edited; `api/` is COPIED for every counterfactual.
+
+**Left for the next session:** both of cody's claims (`cody-1792078195` from
+b18 and `cody-1792149459` from b19) are **still active** — `release` takes a
+subject and not an id, so releasing `tests` would have dropped the live one
+too. b18's `wt18` worktree was registered against this clone and has been
+removed and pruned.
