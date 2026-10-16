@@ -536,7 +536,115 @@ def fire_rates():
     return len(files), hits
 
 
+def selftest():
+    """The three SAVE paths, driven against a throwaway FMEA_DIR.
+
+    ── WHY THIS EXISTS AND WHY IT IS HERE AND NOT IN tests/ ─────────────────
+    `--save` used to OVERWRITE an existing draft, which silently converts a
+    MISSED verdict in tools/fmea_prediction_check.py into an unscoreable
+    "DRAFT NEWER" one -- a negative result laundered by a filename. The two
+    probes that cover this tool live under tests/ and are cody's by the
+    directory rule, so the control for a change in THIS file goes in this file.
+    MEASURED on the real case rather than asserted: superseding
+    sairnsenior.html's 2026-09-14 draft while KEEPING it leaves
+    `missed (drafted, not predicted)` at 144; removing the kept copy drops it
+    to 139 and raises DRAFT NEWER from 221 to 228. Five real MISSES, preserved
+    or laundered, depending on one rename.
+    """
+    import shutil
+    import tempfile
+    bad = total = 0
+
+    def ck(label, got, want=True):
+        nonlocal bad, total
+        total += 1
+        if got != want:
+            bad += 1
+            print('  FAIL  %s' % label)
+            print('        wanted %r, got %r' % (want, got))
+        else:
+            print('  ok    %s' % label)
+
+    print('FMEA DRAFT -- the SAVE paths, NINE arms. S1 requires a write; S2-S4')
+    print('require a refusal that leaves the existing draft BYTE-IDENTICAL and')
+    print('creates no copy; S5-S8 require the superseded draft to survive with')
+    print('its bytes and its `target` intact while the new one is dated today;')
+    print('S9 requires two supersedes on one date not to collide. The REFUSAL')
+    print('is enforced by NOT WRITING, not by an exit code -- this tool exits 0')
+    print('by contract -- so S3 is the arm that matters. A --save that always')
+    print('writes passes S1 and launders every MISSED verdict in the')
+    print('prediction check.')
+
+    tmp = tempfile.mkdtemp(prefix='fmea-save-')
+    global FMEA_DIR
+    real = FMEA_DIR
+    try:
+        FMEA_DIR = tmp
+        target = 'tools/fmea_draft.py'
+        slug = target.replace('/', '_').replace(chr(92), '_')
+        path = os.path.join(tmp, slug + '.json')
+
+        rc = main([target, '--save'])
+        ck('S1 a NEW draft is written', (rc, os.path.isfile(path)), (0, True))
+        first = io.open(path, encoding='utf-8').read()
+        # Back-date it so the supersede has a distinct name to keep, which is
+        # also the real case: the draft being superseded is always older.
+        d = json.loads(first)
+        d['drafted_on'] = '2026-01-01'
+        io.open(path, 'w', encoding='utf-8', newline=chr(10)).write(
+            json.dumps(d, indent=1, sort_keys=True))
+        before = io.open(path, encoding='utf-8').read()
+
+        rc = main([target, '--save'])
+        ck('S2 a re-save WITHOUT --supersede is REFUSED', rc, 0)
+        ck('S3 ...and the existing draft is BYTE-IDENTICAL afterwards -- the '
+           'arm that matters, because a refusal that still wrote would be the '
+           'defect with a message on top',
+           io.open(path, encoding='utf-8').read(), before)
+        ck('S4 ...and no superseded copy was created either',
+           [n for n in os.listdir(tmp) if 'superseded' in n], [])
+
+        rc = main([target, '--save', '--supersede'])
+        kept = [n for n in os.listdir(tmp) if 'superseded' in n]
+        ck('S5 --supersede KEEPS the old draft under its own date', kept,
+           ['%s.superseded-2026-01-01.json' % slug])
+        ck('S6 ...with its bytes unchanged, so the verdicts it scores are the '
+           'ones it always scored',
+           io.open(os.path.join(tmp, kept[0]), encoding='utf-8').read(), before)
+        ck('S7 ...and the kept copy still carries `target`, which is what '
+           'fmea_prediction_check keys on -- a kept file it cannot attribute '
+           'would be the same laundering by another route',
+           json.loads(io.open(os.path.join(tmp, kept[0]),
+                              encoding='utf-8').read()).get('target'), target)
+        ck('S8 ...and the NEW draft is in place and dated today',
+           json.loads(io.open(path, encoding='utf-8').read()).get('drafted_on')
+           == _today(), True)
+
+        # Two supersedes on one date must not collide.
+        d = json.loads(io.open(path, encoding='utf-8').read())
+        d['drafted_on'] = '2026-01-01'
+        io.open(path, 'w', encoding='utf-8', newline=chr(10)).write(
+            json.dumps(d, indent=1, sort_keys=True))
+        main([target, '--save', '--supersede'])
+        kept2 = sorted(n for n in os.listdir(tmp) if 'superseded' in n)
+        ck('S9 a SECOND supersede on the same date does not overwrite the '
+           'first -- it is suffixed, because two kept copies colliding is the '
+           'laundering this whole change is about',
+           len(kept2), 2)
+    finally:
+        FMEA_DIR = real
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    print('')
+    print('  %d/%d arm(s) pass' % (total - bad, total))
+    print('  NOT COVERED HERE: whether the risks a draft contains are any '
+          'good. These arms are about the RECORD being append-only.')
+    return 1 if bad else 0
+
+
 def main(argv):
+    if '--selftest' in argv:
+        return selftest()
     if '--rates' in argv:
         n, hits = fire_rates()
         print('DETECTOR FIRE RATES over %d files in tools/ and tests/' % n)
@@ -609,6 +717,72 @@ def main(argv):
             # right on a defect that had already happened is the fabrication
             # shape fmea_draft.py's own docstring is written against, arriving
             # through the TIMESTAMP instead of through the generator.
+            # ── A PREDICTION RECORD MUST BE APPEND-ONLY (b16) ───────────────
+            # `--save` OVERWROTE an existing draft, and that is how a negative
+            # result gets laundered. tools/fmea_prediction_check.py buckets a
+            # defect as MISSED when a draft for its file predates it and named
+            # nothing like it, and as DRAFT NEWER -- unscoreable BY
+            # CONSTRUCTION -- when the only draft postdates it. So replacing a
+            # dated draft with a fresh one silently converts every MISSED
+            # verdict against it into an unscoreable one.
+            #
+            # MEASURED ON THE REAL CASE: sairnsenior.html carries a draft dated
+            # 2026-09-14 and FIFTEEN defects landed in that file afterwards,
+            # none predicted. A bare `--save` would have turned fifteen honest
+            # MISSES into fifteen "needs time", improved the headline, and
+            # changed nothing about the prediction. That is the 38%-from-false-
+            # positives shape this file's own docstring is written against,
+            # arriving through the FILENAME instead of the matcher.
+            #
+            # So an existing draft is REFUSED unless --supersede is given, and
+            # --supersede KEEPS it: it is renamed to
+            # <slug>.superseded-<drafted_on>.json, which load_drafts() still
+            # reads (it globs every *.json and keys on the `target` field), so
+            # the old draft goes on covering the defects it was contemporary
+            # with while the new one covers what happens next. Both verdicts
+            # stay derivable, which is the only reason a re-draft is honest.
+            if os.path.isfile(p) and '--supersede' not in argv:
+                try:
+                    _old = json.load(io.open(p, encoding='utf-8'))
+                    _when = _old.get('drafted_on') or '(no drafted_on)'
+                    _nr = len(_old.get('risks') or [])
+                except Exception:                                # noqa: BLE001
+                    _when, _nr = '(unreadable)', 0
+                print('\nNOT SAVED (%s): a draft already exists, dated %s with '
+                      '%d risk(s).' % (a['target'], _when, _nr))
+                print('  Overwriting it would convert every MISSED verdict '
+                      'against it into')
+                print('  "DRAFT NEWER -- unscoreable", which improves the '
+                      'headline and predicts')
+                print('  nothing. Pass --supersede to keep the old draft '
+                      'beside the new one:')
+                print('      python tools/fmea_draft.py %s --save --supersede'
+                      % a['target'])
+                continue
+            if os.path.isfile(p):
+                try:
+                    _old = json.load(io.open(p, encoding='utf-8'))
+                    _when = _old.get('drafted_on') or 'undated'
+                except Exception:                                # noqa: BLE001
+                    _when = 'unreadable'
+                _keep = os.path.join(FMEA_DIR,
+                                     '%s.superseded-%s.json' % (slug, _when))
+                _n = 1
+                while os.path.isfile(_keep):
+                    _keep = os.path.join(
+                        FMEA_DIR, '%s.superseded-%s.%d.json' % (slug, _when, _n))
+                    _n += 1
+                os.rename(p, _keep)
+                print('\nKEPT the previous draft as %s'
+                      % os.path.relpath(_keep, REPO).replace(os.sep, '/'))
+                print('  It stays LIVE in tools/fmea_prediction_check.py, which '
+                      'globs every')
+                print('  *.json and keys on the `target` field -- so it goes on '
+                      'covering the')
+                print('  defects it was contemporary with, and the new draft '
+                      'covers what')
+                print('  happens next. A superseded prediction is not a deleted '
+                      'one.')
             a['drafted_on'] = _today()
             io.open(p, 'w', encoding='utf-8', newline='\n').write(
                 json.dumps(a, indent=1, sort_keys=True))
