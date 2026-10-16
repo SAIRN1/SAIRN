@@ -1563,7 +1563,7 @@ PURPOSES = {
     'known_red_check.py': ('CHECKER', 'a test suite that has gone red and is NOT already recorded as known-red -- the one failure a reader cannot otherwise find. 33 of 390 files were red on origin/main with nothing recording which 33, so a genuinely new regression was indistinguishable from the existing set and "some suites are just red" became the reading. Reports four answers rather than two: NEW, KNOWN, CHANGED (recorded as red but now failing on a DIFFERENT arm, so a second defect is hiding inside an entry that says the file is expected to fail) and RECOVERED (recorded and now green -- reported as loudly as NEW, because a stale entry SWALLOWS the next real failure of that file). Refuses a truncated run log rather than reading it as a clean platform'),
     'red_suite_register_check.py': ('CHECKER', 'a docs/known-red-suites.json entry that is no longer true -- a registered suite that now PASSES, which is the worse of the two failures: while a stale entry stands, it absorbs the next real failure of the one file somebody already decided not to look at, and known_red_check.py will call that failure KNOWN. Also catches a red suite no entry covers, when given a run log. NOT A DUPLICATE OF known_red_check.py and neither should be deleted believing it is the other: that one answers NEW / KNOWN / CHANGED / RECOVERED but needs a WHOLE-TREE run log (738 files) and never gates, so between full runs nobody runs it and the register rots. This one drives only the registered suites -- thirteen files -- prints each exit code on its own line, and EXITS NON-ZERO. Without a run log it reports COULD NOT RUN for the unregistered half rather than claiming none, because "no unregistered reds" from a population of zero is not a finding'),
     'hover_separation_ci.py': ('CHECKER', 'a commit that touches the HOVER AUDITOR\'s own skill directory AND code outside its scope, checked on GitHub\'s side of the push where a local hook cannot be switched off. The ENFORCE layer under the existing PREVENT (hover_auditor_scope_gate.py, a per-clone hook that is silent whenever its marker is absent, --no-verify is used, or the clone was never armed) and DETECT (hover_separation_audit.py). Keys on COMMIT SHAPE, not on attribution: its first version asked "is this the auditor\'s commit and did it leave scope", which could never fire, because a commit in which the auditor also touches platform code is unattributable by construction -- the exact commit the gate exists to refuse was the one it could not see. Catches the boundary in both directions, including a build agent reaching into the auditor\'s directory. Cannot see a commit that touches ONLY platform code and says so on every run'),
-    'hover_auditor_scope_gate.py': ('CHECKER', 'a commit, push or working tree in the HOVER AUDITOR\'s clone that touches platform code -- the role reviews the four build agents and is reviewed by nobody, and its own skill forbids it writing platform code in terms. Armed per-clone by a marker under .git/, so no build clone can inherit it by pulling and each pays one shell file-test per commit. Fails OPEN where the marker is absent (a scope condition: not that clone\'s rule) and CLOSED everywhere else, including when the core-rule sentence is no longer in the skill file -- a gate enforcing a repealed rule reads as coverage'),
+    'hover_auditor_scope_gate.py': ('CHECKER', 'a commit, push or working tree in the HOVER AUDITOR\'s clone that touches platform code -- the role reviews the four build agents and is reviewed by nobody, and its own skill forbids it writing platform code in terms. Armed per-clone by a marker under .git/, so no build clone can inherit it by pulling and each pays one shell file-test per commit. Fails OPEN where the marker is absent (a scope condition: not that clone\'s rule) and CLOSED everywhere else, including when the core-rule sentence is no longer in the skill file -- a gate enforcing a repealed rule reads as coverage. THREE ENFORCEMENT POINTS AND THEY DO NOT COVER THE SAME SHAPE, which read as one mechanism until it was MEASURED: --pre-commit REFUSES a plain commit and DOES NOT FIRE on a commit replayed by `git rebase` (H1 b41, confirmed by direct reproduction in an isolated sandbox); --pre-push REFUSES the outgoing range and catches a replayed commit however it reached local history; --post-rewrite (added 2026-10-16, cc b16) DETECTS and CANNOT REFUSE, because git fires it after the rebase completes and ignores its exit status -- a non-zero exit would undo nothing and print a failure after a success, so the MESSAGE is the control, the same conclusion `.githooks/post-rewrite` reached about its own two guards on 2026-09-29. H1 b41 LEFT THE PUSH-TIME HALF OPEN -- "if it also does not fire on a rebase-replayed range, the gap is total" -- AND IT IS NOT TOTAL: driven live in a bare repo plus a work clone under a scratchpad, eight arms, a real push and no real remote. A1 a plain out-of-scope commit REFUSED; A2 the same violation entered history via --no-verify; A3 `git rebase` SUCCEEDED WITH NO REFUSAL, reconfirming the commit-time miss; A4 pushing the replayed commit as a NEW branch REFUSED; A5 CONTROL an in-scope-only range PUSHED; A6 the same replayed commit onto an EXISTING remote branch -- the `rsha..lsha` path a real `git push origin main` takes, DIFFERENT CODE from A4 -- REFUSED; A7 the new post-rewrite notice FIRED and named the path; A8 CONTROL an in-scope rewrite printed its clean line rather than being silent. A5 and A8 are why the rest mean anything: without them a gate that refuses everything scores perfectly. TWO ARMS WERE VOID ON THEIR FIRST DRAFT AND ARE KEPT WITH THE REASON -- A1 read the exit status of `git commit | head`, which is head\'s, and reported ACCEPTED three lines under the gate\'s own refusal; A5 pushed a new branch off an orphan base so the gate correctly examined the sandbox\'s own setup commit. SO THE RESIDUAL GAP IS TIME, NOT COVERAGE: a replayed violation sat in local history un-named from the rebase until the next push, and --post-rewrite closes that silence at the moment `git rebase -i` is still cheap. `--selftest` is 11 arms over the PURE parts -- violations() and the post-rewrite map parser, both directions, including an empty map as COULD-NOT-TELL rather than a clean one -- and says out loud that it covers the CLASSIFIER and not whether git fires any hook'),
     'redaction_check.py': ('CHECKER', 'credential shapes in what is about to be written, and in what a push ships'),
     'html_script_check.py': ('CHECKER', 'a script block that no longer parses, after a Write or Edit'),
     'push_failure_reason.py': ('TOOL',
@@ -2326,7 +2326,7 @@ PURPOSES = {
         'the cc pair by 22) and zero in the ~150 claims since. It also counts, '
         'APART, the shape that IS live: claims never released, which is not a '
         'duplicate and needs the opposite fix. It refuses to decide that two '
-        'DIFFERENT task strings are the same work -- exact means exact'),
+        'DIFFERENT task strings are the same work -- exact means exact. OUTPUT BUDGET ADDED 2026-10-16 (cc b16) FROM H1 b42, WHICH ROUTED A MEASURED COST RATHER THAN AN OPINION: this tool printed full free-text task strings with no limit, and the auditor hit 11-30KB single-command outputs repeatedly across two batches, each needing a truncate-to-file-and-read-back round trip. Re-measured before anything changed, and the worst case was far worse than the one routed -- `list` 1,837 bytes, `check` 17,652-22,583 of which the released-recently note was 12,268 (54%%), and `list --all` 501,182 BYTES, roughly 125,000 tokens in one command, which nobody had measured. After: `list --all` 20,986 and `check` 12,552, with `--full` returning the original byte for byte. WHAT IS NOT BUDGETED IS THE DESIGN: a BLOCKING claim prints WHOLE, always, because it is the one output PR 4.3 requires a human to read in full, and shortening it to save bytes would be the fix causing the defect. ACTIVE rows in `list` are never capped either -- dropping one is how a session concludes a file is free. Only CONTEXT rows are budgeted: the released-recently note, the word-overlap note, and the released/expired tail of `list --all`. NOTHING IS SILENTLY DROPPED -- every cut names its own character count and every cap names its remainder and the command that lifts it, because a truncated output that looks complete is PR 1.7 and a tool doing it to itself would be this platform\'s worst defect shape self-inflicted. THE FIRST DRAFT FAILED THAT TEST AND THE ARM THAT CAUGHT IT IS KEPT: a flat 220-character head dropped `list` from 1,837 to 579 bytes and looked like a win, while cutting the `FILES:` segment -- the field this tool\'s OWN blocking verdict is computed from, written last by convention. brief() now carries the FILES tail through with its own allowance. 9 budget arms, both directions: four require a cut, four require the text or row set byte-identical, one requires a cap to name its remainder'),
     'gh_push.py': ('LIBRARY',
         'a push that reaches origin/main having passed NO gate, and content that '
         'existed in no commit. It pushes through the GitHub REST API, so git is '
@@ -2813,19 +2813,107 @@ def tool_files():
     return sorted(set(out))
 
 
-def hooked():
-    """{tool: [event, ...]} from .claude/settings.json."""
+DISARMED_RECORD = os.path.join('docs', 'hooks-disabled-2026-10-13.json')
+
+
+def _hook_map_from(doc):
+    """{tool: [event, ...]} out of a settings-shaped `hooks` object."""
     out = {}
-    try:
-        d = json.load(io.open(os.path.join(REPO, SETTINGS), encoding='utf-8'))
-    except Exception:
-        return out
-    for ev, lst in (d.get('hooks') or {}).items():
-        for entry in lst:
-            for hk in entry.get('hooks', []):
-                for m in re.finditer(r'tools/([\w.\-]+)', hk.get('command', '') or ''):
+    for ev, lst in (doc.get('hooks') or {}).items():
+        for entry in lst or []:
+            for hk in entry.get('hooks', []) or []:
+                for m in re.finditer(r'tools/([\w.\-]+)',
+                                     hk.get('command', '') or ''):
                     out.setdefault(m.group(1), []).append(ev)
     return out
+
+
+def hooked():
+    """({tool: [event, ...]}, source, why) -- THREE STATES, NEVER AN EMPTY DICT
+    STANDING FOR ALL OF THEM.
+
+    ── THIS FAILED OPEN, AND tests/run_tooling_inventory_probe.py SAID SO ────
+    Fixed 2026-10-16 (cc b16). The old body was six lines with
+    `except Exception: return out`, and that one `{}` meant FOUR different
+    things which the caller could not tell apart:
+
+        the file is absent            -> {}
+        the file will not parse       -> {}
+        `hooks` is deliberately EMPTY -> {}      <- TRUE IN THIS CLONE
+        `hooks` is half-wired         -> partial
+
+    The classifier then derived the whole hook dimension from that `{}` and
+    exited 0. The consequences were not subtle and were being reported as
+    measurements: ADVISORY came out EMPTY (0 tools), the PUSH GATE ITSELF was
+    classified SUITE-ONLY, and a SessionStart hook was classified DECIDED.
+    Three of the probe's arms had been failing on exactly those three facts,
+    and the generator said `OK: matches the repo` beside them -- a document
+    agreeing with its own generator while the generator read nothing.
+
+    THE DECISION RECORD EXISTED AND WAS NOT READ, which is the SAME root cause
+    as the NOT_PROMOTED lesson written out in `not_promoted()` forty lines
+    below. `docs/hooks-disabled-2026-10-13.json` carries all 23 hook commands
+    VERBATIM -- 19 tools across PreToolUse, PostToolUse, SessionStart,
+    UserPromptSubmit and PreCompact -- committed on purpose when Michael
+    cleared the live hooks on 2026-10-11. So the wiring is not unknown. It is
+    recorded, and this now reads it.
+
+    FOUR SOURCES, AND THE TWO BAD ONES REFUSE RATHER THAN RETURN EMPTY:
+
+      'settings'        live entries exist; the map is the live wiring.
+      'disarmed-record' `hooks` is present and empty AND the decision record
+                        is there -- hook_integrity_check.intentionally_disarmed
+                        decides this, not a guess. The map comes from the
+                        RECORD, and every caller is told so, because a
+                        recorded wiring is not a live one and labelling it
+                        live would be the fabrication this file exists to
+                        stop.
+      'settings-empty'  no entries, and NOT the recorded decision. Half-wired
+                        or a `hooks` key gone missing -- the 2026-10-11 shape.
+                        COULD NOT RUN.
+      'unreadable'      absent or unparseable. COULD NOT RUN.
+    """
+    path = os.path.join(REPO, SETTINGS)
+    try:
+        doc = json.load(io.open(path, encoding='utf-8'))
+    except Exception as exc:                                     # noqa: BLE001
+        return {}, 'unreadable', '%s could not be read: %s' % (SETTINGS, exc)
+    live = _hook_map_from(doc)
+    if live:
+        return live, 'settings', ''
+    disarmed = False
+    try:
+        sys.path.insert(0, os.path.join(REPO, 'tools'))
+        import hook_integrity_check as _hic
+        disarmed = _hic.intentionally_disarmed(REPO)
+    except Exception:                                            # noqa: BLE001
+        # A could-not-tell about the DISARM is not a disarm. Falls through to
+        # 'settings-empty', which refuses -- the safe direction.
+        disarmed = False
+    if not disarmed:
+        return ({}, 'settings-empty',
+                '%s has no tools/ hook entries, and this is NOT the recorded '
+                'disarm: hook_integrity_check.intentionally_disarmed() says no, '
+                'which means either the `hooks` key is absent entirely (a '
+                'different file, not a disarmed one) or it is half-wired. That '
+                'is the 2026-10-11 shape -- {"SessionStart": []} against 23 '
+                'commands -- and it must never read as zero-by-decision.'
+                % SETTINGS)
+    rec = os.path.join(REPO, DISARMED_RECORD)
+    try:
+        recdoc = json.load(io.open(rec, encoding='utf-8'))
+    except Exception as exc:                                     # noqa: BLE001
+        return ({}, 'unreadable',
+                'the hooks are the recorded disarm, but %s -- the record of '
+                'what was removed -- could not be read: %s. The wiring is '
+                'therefore UNKNOWN, not empty.' % (DISARMED_RECORD, exc))
+    recmap = _hook_map_from(recdoc)
+    if not recmap:
+        return ({}, 'unreadable',
+                '%s parsed but yielded no tools/ hook entries. A record of a '
+                'disarm that records nothing cannot stand in for the wiring.'
+                % DISARMED_RECORD)
+    return recmap, 'disarmed-record', DISARMED_RECORD
 
 
 def gate_invokes():
@@ -3094,8 +3182,33 @@ def probe_cell(suite, t):
 
 
 def classify():
+    """(tools, cls, hk, gi, reg, suite) -- SIX, DELIBERATELY UNCHANGED.
+
+    The b16 fix needed the hook SOURCE at the render site, and the obvious move
+    was to widen this tuple. It was widened, and that broke
+    tests/run_tooling_inventory_probe.py:57, which unpacks six --
+    `ValueError: too many values to unpack`. tests/ is cody's by the directory
+    rule, so per PR 4.3 the conflict is declared and NOT overridden: the
+    signature is put back and build() asks hooked() for the source itself.
+
+    THAT TURNED OUT TO BE THE BETTER SHAPE ANYWAY, not just the polite one.
+    Two independent reads of the same wiring can be COMPARED, and build() does
+    compare them -- a disagreement between them refuses the generation rather
+    than picking one. A widened tuple could not have checked anything.
+    """
     tools = tool_files()
-    hk = hooked()
+    hk, hook_source, hook_why = hooked()
+    if hook_source in ('settings-empty', 'unreadable'):
+        # ── FAIL CLOSED, PR 1.11 ────────────────────────────────────────────
+        # The hook dimension decides BLOCKING, REPORT-ONLY and ADVISORY. With
+        # it unreadable, the classifier would silently push every hook-only
+        # tool into SUITE-ONLY or UNWIRED and the document would report that
+        # as a measurement. An exception rather than a degraded answer: the
+        # generator catches it and refuses to write, which is what "could not
+        # run is a third state" means for a GENERATOR.
+        raise closing_error.EmptyLeg(
+            'the hook wiring could not be determined, so NO classification '
+            'was produced. %s' % hook_why)
     gi = set(gate_invokes())
     reg = dict((t, (p, c)) for t, p, c in registry())
     suite = suite_refs(tools)
@@ -3294,6 +3407,18 @@ def missing_purposes(tools, reg):
 
 def build():
     tools, cls, hk, gi, reg, suite = classify()
+    # ── THE SECOND READ, AND IT IS A CHECK RATHER THAN A CONVENIENCE ────────
+    # classify() keeps its six-tuple so tests/run_tooling_inventory_probe.py
+    # (cody's file) still unpacks it; the hook SOURCE is asked for here. Two
+    # reads of one source are usually a smell, and here they are the only thing
+    # that can catch the source MOVING between them -- so they are compared,
+    # and a disagreement REFUSES rather than picking a winner.
+    hk2, hook_source, hook_why = hooked()
+    if hk2 != hk:
+        return None, ('REFUSING to generate -- two reads of the hook wiring '
+                      'disagreed within one run (%d tool(s) vs %d). That is a '
+                      'source changing underneath the generator, and either '
+                      'answer could be the stale one.' % (len(hk), len(hk2)))
 
     # ── THE TRAVERSE MUST CLOSE BEFORE ANYTHING IS WRITTEN ──────────────────
     # `--check` compares this document to what this generator produces TODAY --
@@ -3304,39 +3429,40 @@ def build():
     # throughout. The diff caught it; the check never could have.
     tv = closing_error.Traverse(DOC)
     tv.leg('tools on disk', len(tools), 'git ls-files tools/')
-    # ── THE HOOK LEG IS OPTIONAL IN A CLONE WHOSE HOOKS ARE OFF ON PURPOSE ──
-    # Michael disabled every hook on 2026-10-11 because they were causing agent
-    # compaction, and on 2026-10-13 the empty object was COMMITTED so no
-    # checkout could put them back. This generator then refused to run at all
-    # -- correctly, by its own rule: "a zero here is a BROKEN READER or a MOVED
-    # SOURCE, not an empty repo". In a disarmed clone it is neither, and the
-    # refusal froze every unrelated correction behind it, which is the cost
-    # closing_error.py's own text warns about.
+    # ── THE HOOK LEG IS A HARD LEG AGAIN, AND IT IS A STRONGER ONE ─────────
+    # It was OPTIONAL from 2026-10-13 to 2026-10-16, and the allowance was the
+    # right call at the time for the wrong reason. Michael disabled every hook
+    # on 2026-10-11 (they were causing agent compaction) and the empty object
+    # was COMMITTED on 2026-10-13, so this generator refused to run at all --
+    # correctly, by its own rule that "a zero here is a BROKEN READER or a
+    # MOVED SOURCE, not an empty repo". optional_leg() unfroze every unrelated
+    # correction stuck behind that refusal, which was worth doing.
     #
-    # optional_leg() IS THE MECHANISM THIS REPO ALREADY BUILT for exactly this
-    # and it REQUIRES a reason, so the allowance cannot become a silence.
+    # WHAT IT ALSO DID WAS LET A ZERO THROUGH, AND THE ZERO WAS NOT HARMLESS.
+    # The hook dimension decides BLOCKING, REPORT-ONLY and ADVISORY, so with
+    # it empty the document reported ADVISORY as 0 tools, classified the PUSH
+    # GATE ITSELF as SUITE-ONLY, and classified a SessionStart hook as
+    # DECIDED. Three arms of tests/run_tooling_inventory_probe.py had been red
+    # on exactly those three facts while `--check` said the document matched
+    # the repo -- which it did, because both ends came from the same blind
+    # reader.
     #
-    # THE CONDITION IS THE SAME ONE hook_integrity_check USES, deliberately --
-    # the `hooks` key must EXIST and be EMPTY and the decision record must be
-    # PRESENT. A half-wired or absent `hooks` key is still a hard leg and still
-    # refuses, which is the 2026-10-11 shape and the one that must never pass.
-    _disarmed = False
-    try:
-        import hook_integrity_check as _hic
-        _disarmed = _hic.intentionally_disarmed(REPO)
-    except Exception:                                            # noqa: BLE001
-        _disarmed = False
-    if _disarmed:
-        tv.optional_leg(
-            'hook entries', len(hk), SETTINGS,
-            'this clone\'s hooks are intentionally EMPTY -- Michael disabled '
-            'them 2026-10-11 because they were causing agent compaction, and '
-            'docs/hooks-disabled-2026-10-13.json records all 23 verbatim. A '
-            'zero here is the DECISION, not a broken reader. A half-wired or '
-            'absent `hooks` key does NOT reach this branch and is still a hard '
-            'leg.')
-    else:
-        tv.leg('hook entries', len(hk), SETTINGS)
+    # THE WIRING WAS NEVER UNKNOWN. docs/hooks-disabled-2026-10-13.json
+    # carries all 23 commands verbatim, 19 tools across five event types,
+    # committed on purpose so no checkout could put them back silently.
+    # hooked() now reads it when -- and only when --
+    # hook_integrity_check.intentionally_disarmed() says the live emptiness is
+    # the recorded decision, and it RETURNS THE SOURCE so nothing downstream
+    # can mistake a recorded wiring for a live one. A half-wired or absent
+    # `hooks` key reaches neither branch: it is 'settings-empty', and
+    # classify() refuses outright.
+    #
+    # So the leg is hard again and its SOURCE is named rather than assumed.
+    tv.leg('hook entries', len(hk),
+           SETTINGS if hook_source == 'settings'
+           else '%s (RECORDED wiring -- this clone\'s live hooks are the '
+                'committed disarm, and the record is read rather than the '
+                'zero being believed)' % DISARMED_RECORD)
     tv.leg('push-gate invocations', len(gi), GATE)
     tv.leg('report-only registry', len(reg), 'report_only_checks.REGISTRY')
     tv.leg('tools invoked by tests/', len(suite), 'tests/**/*.py, *.js')
@@ -3490,6 +3616,33 @@ def build():
     for k in order:
         A('| **%s** | %d | %s |' % (k, counts[k], MEAN[k]))
     A('')
+    # ── WHERE THE HOOK DIMENSION CAME FROM, IN THE DOCUMENT (b16) ──────────
+    # BLOCKING, REPORT-ONLY and ADVISORY are all partly hook-derived, so a
+    # reader who does not know whether that wiring is LIVE or RECORDED cannot
+    # use the three counts above. Until 2026-10-16 the generator read an empty
+    # live hook set, said nothing, and published ADVISORY 0 with the push gate
+    # in SUITE-ONLY. Stating the source is the half that stops a recorded
+    # wiring being read as a live one.
+    if hook_source == 'disarmed-record':
+        A('**THE HOOK-DERIVED HALF OF THE TABLE ABOVE IS THE RECORDED WIRING, '
+          'NOT THE LIVE ONE.** This clone\'s `.claude/settings.json` carries '
+          'an EMPTY `hooks` object, committed on 2026-10-13 after Michael '
+          'disabled every hook on 2026-10-11 because they were causing agent '
+          'compaction. The 19 tool wirings behind BLOCKING / REPORT-ONLY / '
+          'ADVISORY are read from `%s`, which records all 23 commands '
+          'verbatim. **A tool shown as ADVISORY here is wired as a '
+          'SessionStart or prompt hook in that record and is NOT running in '
+          'this clone today.** The alternative was believing the zero, and '
+          'that is what the generator did until 2026-10-16: ADVISORY came out '
+          'empty, the push gate itself came out SUITE-ONLY, and three arms of '
+          '`tests/run_tooling_inventory_probe.py` were red against a '
+          '`--check` that said the document matched the repo -- both ends of '
+          'that comparison came from the same blind reader.' % DISARMED_RECORD)
+        A('')
+    elif hook_source == 'settings':
+        A('The hook-derived half of the table above is the LIVE wiring in '
+          '`%s`.' % SETTINGS)
+        A('')
     A('By what they are, independent of wiring:')
     A('')
     A('| Kind | Count |')
