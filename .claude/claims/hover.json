@@ -895,8 +895,8 @@
       "task": "b48: read-only audit -- land-checked cody b18/19 (closed); re-drove fourth b26 H3 (reopen rule), CONFIRMED still live via a driven sandbox; confirmed hank has not built #1512's duplicate; reconfirmed #1498 open; #1499 2/8 correctly fixed (independent discovery), 6/8 + #1500/#1501 unchanged. No api/ file written, H3 ablation ran against a COPY only. FILES: .claude/claims/hover.json",
       "claimed_at": "2026-10-16T12:53:11Z",
       "claimed_at_epoch": 1792155191.9043663,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-16T12:58:50Z",
       "files": [
         ".claude/claims/hover.json"
       ]
