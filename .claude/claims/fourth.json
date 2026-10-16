@@ -3969,8 +3969,8 @@
       "task": "b28: (1) convert the Tier A review ledger to APPEND-ONLY PER-AGENT SHARDS -- Michael's decision, and the store/migration/union-reader are built as NEW files because tools/tier_a_review_gate.py is held LIVE by cc from 2026-10-16T11:34:50Z and docs/tier-a-reviews.json is held LIVE by hank from 2026-10-16T11:17:27Z; the two writer call-sites are ROUTED to cc with full diffs, NOT edited, and item 1 is reported PARTIAL for exactly that reason. (2) discharge the bld_bids Tier A review -- BLOCKED on the same two holds, carried from b27 where it was blocked twice. (3) sairndental.html CDT code-catalogue versioning: orphaned tbody, unfinished JS, HTML-corruption check. (4) worldwide competitive-gap audit for a vertical with NO existing doc -- the dispatch says four audits exist and there are twenty covering all eighteen products, so the only non-vacuous reading is a vertical SAIRN HAS NOT BUILT FOR; stated as a correction, not acted on silently. (5) handoff before the report. (6) push no force, confirm landed by reading back from origin. CONFLICTS DECLARED PER PR 4.3: docs/tier-a-reviews.json and tools/tier_a_review_gate.py are NOT in my FILES and are NOT edited -- flagged back. tests/ is cody's and is not touched. FILES: sairndental.html docs/tier-a-reviews/ tools/tier_a_reviews_store.py docs/cloud-research/sairnchildcare-worldwide-competitive-gap-audit-2026-10-16.md docs/2026-10-16-fourth-b28-tier-a-shards-routed-to-cc.md docs/2026-10-16-fourth-b28-findings.md docs/batch-manifest-fourth-b28.json SAIRN-handoff-fourth-b28.md SAIRN-report-fourth-b28.txt SAIRN-digest-fourth-b28.txt SAIRN-latest-fourth-b28.md",
       "claimed_at": "2026-10-16T12:54:49Z",
       "claimed_at_epoch": 1792155289.9044483,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-16T14:14:12Z",
       "files": [
         "SAIRN-digest-fourth-b28.txt",
         "SAIRN-handoff-fourth-b28.md",
