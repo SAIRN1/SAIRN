@@ -1,0 +1,18 @@
+{
+  "_what_this_is": "Phrases and identifiers that tools/sairn_claim.py's common-phrase EXEMPTION may never clear, each pinned to the real incident that depends on it. Read by common_phrases(); a phrase listed here is subtracted from the exemption set no matter how many sessions use it.",
+  "_why_it_exists": "MEASURED 2026-10-16 (cc b16), answering the question cody b17 triage section 9 routed to cc under PR 2.7 -- run the tool on the real incidents rather than reasoning about the policy. The exemption set is DERIVED FROM THE LIVE CLAIM CORPUS: any bigram or identifier used by COMMON_PHRASE_SESSIONS (3) or more distinct sessions is exempted, because a word pair everybody writes is not evidence of shared work -- 110 real false blocks, `shared phrase: \"html tests\"` among them, is why that exemption is right. THE COST IS THAT THE MATCHER GETS WEAKER AS THE CORPUS GROWS, and nothing announced it. `rebase resolve` reached exactly 3 sessions (cc 2 claims, cody 2, fourth 3), crossed the threshold, became exempt, and the FOURTH LIVE INCIDENT -- one of the two incidents the own-claim guard was built for -- silently stopped being caught: self_overlap() on its real task strings now returns kind=None where it must return 'refuse'. That is cross-domain discipline item 8 arriving inside the matcher, and the two failing arms of tests/claims/run_own_claim_overlap_probe.py are the only thing that noticed.",
+  "_what_it_is_NOT": "NOT a general allowlist and not a way to make the matcher stricter by taste. An entry is admissible only when a RECORDED incident or a probe arm depends on that exact phrase still blocking. The exemption is 1,428 of 32,715 distinct corpus phrases (4.4%) and is not the problem; retiring a phrase an incident rests on is.",
+  "_fail_direction": "If this file cannot be read, common_phrases() returns the FULL exemption set and SAYS SO on stderr. That is deliberate and it is the weaker direction, chosen because the alternative -- exempting nothing -- would reinstate all 110 false blocks at once over a missing file. A named degradation beats a silent reinstatement of a known-bad behaviour.",
+  "pinned": [
+    {
+      "phrase": ["rebase", "resolve"],
+      "kind": "bigram",
+      "incident": "fourth live incident, 2026-09-14. Held: \"LAW_RECONCILE_ROLES missing role mapping, sd-agent callClaude loop breaker, G5 controls, G7 factors, rebase resolve tool\". Retyped under the SAME subject: \"rebase resolve semantic merge for the two json registers\". The only overlap between the two strings is this bigram -- there is no shared identifier and no shared path -- so this phrase IS the block.",
+      "held_by": "tests/claims/run_own_claim_overlap_probe.py, arms 'fourth incident: same subject, PUBLISHED earlier claim -> REFUSED' and 'a shared phrase refuses'",
+      "pinned_at": "2026-10-16",
+      "pinned_by": "cc",
+      "session_count_when_pinned": 3,
+      "why": "It crossed COMMON_PHRASE_SESSIONS because tools/sairn_rebase_resolve.py is a standard move every build agent names in its own claims -- so the phrase became common for a reason that has nothing to do with the incident, and retired it."
+    }
+  ]
+}

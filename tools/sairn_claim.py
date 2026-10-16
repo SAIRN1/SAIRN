@@ -772,8 +772,75 @@ def _all_claim_tasks():
     return out
 
 
+PINNED_PHRASES_FILE = os.path.join('docs', 'claim-matcher-pinned-phrases.json')
+
+
+def pinned_phrases():
+    """Phrases the exemption may NEVER clear, from the committed record.
+
+    ── THE EXEMPTION GETS WEAKER AS THE CORPUS GROWS, AND NOTHING SAID SO ────
+    Added 2026-10-16 (cc b16), answering under PR 2.7 the question cody b17
+    triage section 9 routed to cc: run the tool on the real incidents rather
+    than reason about the policy.
+
+    MEASURED. common_phrases() exempts any bigram or identifier used by
+    COMMON_PHRASE_SESSIONS (3) or more distinct sessions, and that exemption is
+    right -- 110 real false blocks, `shared phrase: "html tests"` among them,
+    is what it exists for. The cost nobody had measured is that the exemption
+    set is DERIVED FROM THE LIVE RECORD, so it grows with the corpus:
+    `rebase resolve` reached exactly 3 sessions (cc 2 claims, cody 2,
+    fourth 3), crossed the threshold, became exempt, and THE FOURTH LIVE
+    INCIDENT -- one of the two the own-claim guard was built for -- silently
+    stopped being caught. self_overlap() on its real task strings returns
+    kind=None where it must return 'refuse', and the only overlap between
+    those two strings IS that bigram: no shared identifier, no shared path.
+    Item 8 arriving inside the matcher, noticed only by two failing probe arms.
+    NEITHER of the two readings cody's triage offered is the answer: it is not
+    9b0bfd51's FILES-primary policy and the probes are not asserting superseded
+    behaviour -- the corpus moved under a rule nobody re-measured.
+
+    READ FROM A COMMITTED RECORD, NOT HARDCODED, for the same reason the hook
+    wiring is: a list in code is a list that drifts from the incidents it is
+    about. Each entry names the incident, the probe arm that holds it, and the
+    session count when it was pinned.
+
+    FAIL DIRECTION, and it is the weaker one ON PURPOSE: an unreadable file
+    yields NO pins -- the full exemption stands -- and says so on stderr. The
+    alternative, exempting nothing, would reinstate all 110 false blocks at
+    once over a missing file. A named degradation beats a silent reinstatement
+    of a known-bad behaviour.
+    """
+    if 'pins' in _COMMON_CACHE:
+        return _COMMON_CACHE['pins']
+    out = set()
+    path = os.path.join(REPO, PINNED_PHRASES_FILE)
+    try:
+        # `open`, not `io.open`: this module does not import io, and the first
+        # draft used io.open and hit the fail-open path -- which printed its
+        # NOTE and left the exemption in full, exactly as designed. The guard
+        # proving itself on its own typo is the only reason the typo was loud
+        # instead of silent.
+        with open(path, encoding='utf-8') as fh:
+            doc = json.load(fh)
+        for e in doc.get('pinned', []):
+            ph = e.get('phrase')
+            if isinstance(ph, list) and ph:
+                out.add(frozenset(str(x).lower() for x in ph))
+            elif isinstance(ph, str) and ph:
+                out.add(ph.lower())
+    except Exception as exc:                                     # noqa: BLE001
+        sys.stderr.write(
+            'NOTE: %s could not be read (%s), so NO phrase is pinned and the '
+            'common-phrase exemption stands in full. A historical incident '
+            'whose only overlap is an exempted phrase is NOT being caught '
+            'right now.\n' % (PINNED_PHRASES_FILE, exc))
+    _COMMON_CACHE['pins'] = out
+    return out
+
+
 def common_phrases():
-    """Bigrams and identifiers used by >= COMMON_PHRASE_SESSIONS sessions.
+    """Bigrams and identifiers used by >= COMMON_PHRASE_SESSIONS sessions,
+    MINUS anything pinned by a recorded incident -- see pinned_phrases().
 
     FAILS OPEN TO THE EMPTY SET. An unreadable claim directory yields no
     exemptions and the matcher behaves exactly as it did before -- the safe
@@ -788,8 +855,31 @@ def common_phrases():
         for i in idents(task):
             seen.setdefault(i, set()).add(sess)
     out = {k for k, v in seen.items() if len(v) >= COMMON_PHRASE_SESSIONS}
+    out -= pinned_phrases()
     _COMMON_CACHE['v'] = out
     return out
+
+
+def phrase_drift(near=1):
+    """(exempt, pinned, at_threshold, one_away) -- which phrase retires NEXT.
+
+    The exemption is a MOVING line and this is the only thing that shows it
+    moving. `one_away` is every phrase used by COMMON_PHRASE_SESSIONS - near
+    sessions: the moment one more session writes it, it is exempt, and whatever
+    incident rested on it stops being caught with no signal at all. Reported in
+    `audit` so the next retirement is visible BEFORE it happens rather than
+    after a probe arm goes red.
+    """
+    seen = {}
+    for sess, task in _all_claim_tasks():
+        for g in bigrams(task):
+            seen.setdefault(g, set()).add(sess)
+        for i in idents(task):
+            seen.setdefault(i, set()).add(sess)
+    at = {k for k, v in seen.items() if len(v) == COMMON_PHRASE_SESSIONS}
+    one = {k for k, v in seen.items()
+           if COMMON_PHRASE_SESSIONS - near <= len(v) < COMMON_PHRASE_SESSIONS}
+    return common_phrases(), pinned_phrases(), at, one
 
 
 def corpus_phrase_count():
@@ -1530,25 +1620,26 @@ def my_claims_union(from_origin=True):
 
 
 def my_overlaps_union(task, from_origin=True):
-    """[(claim, reason, kind)] over the UNION. kind is refuse/report/expired.
+    """(hits, unread) over the UNION -- a SHIM, deliberately.
 
-    The expired-but-unreleased THIRD ANSWER is preserved exactly as
-    my_active_overlaps() had it, and its reasoning is unchanged: the guard must
-    use expiry or a forgotten row locks a session out for ever, while `audit`
-    uses the real held span because released_at is the ground truth. Both
-    readings are right and they disagree; this reports the disagreement instead
-    of picking one.
+    ── WHY THIS IS NOT THE IMPLEMENTATION, AND THE REASON IS A PROBE ─────────
+    The first version of this function computed the verdicts itself. That put a
+    SECOND copy of the expired-but-unreleased third-state line in the file, and
+    tests/claims/run_own_claim_overlap_probe.py -- cody's -- drives a sabotage
+    control whose anchor is that exact line and which asserts it occurs EXACTLY
+    ONCE. The count went to 2 and the arm went red: not because the behaviour
+    was wrong, but because a second copy means a mutation can be applied to one
+    and the other keeps the verdict alive. The probe was right and the refactor
+    was wrong.
+    It also rewrote `mine = my_active_overlaps(doc, task)` in cmd_claim, which
+    is the anchor of the probe's FIRST sabotage control. Both arms were broken
+    by this batch's own edit, in the file the edit was improving, and the fix
+    was to move the union INSIDE my_active_overlaps rather than beside it --
+    which is the better shape anyway: one verdict path, and the call site that
+    the sabotage control mutates is still the one that matters.
     """
-    rows, unread = my_claims_union(from_origin=from_origin)
-    out = []
-    for c in rows:
-        if c.get('status') != 'active':
-            continue
-        reason, kind = self_overlap(task, c.get('task'))
-        if not kind:
-            continue
-        out.append((c, reason, 'expired' if not is_active(c) else kind))
-    return out, unread
+    unread = my_claims_union(from_origin=from_origin)[1]
+    return my_active_overlaps(load_mine(), task, from_origin=from_origin), unread
 
 
 def sources_of(c):
@@ -1845,7 +1936,7 @@ def self_overlap(mine_task, their_task):
     return reason, ('report' if reason.startswith('same app') else 'refuse')
 
 
-def my_active_overlaps(doc, task):
+def my_active_overlaps(doc, task, union=True, from_origin=True):
     """[(claim, reason, kind)] for MY still-active claims that overlap `task`.
 
     Uses is_active(), not the raw status field: an EXPIRED claim is one this
@@ -1854,8 +1945,27 @@ def my_active_overlaps(doc, task):
     are reported by cmd_check instead, where an unreleased claim is a finding
     about the record rather than about the work being claimed now.
     """
+    # ── THE UNION IS READ HERE, NOT AT THE CALL SITE (b16) ────────────────
+    # `doc` is this session's own claims file and for a long time that was the
+    # only source this function saw -- which made the refusal in cmd_claim
+    # blind to a claim on origin/main that is not in this working copy, while
+    # cmd_check was blind to the opposite. See my_claims_union(). The merge
+    # happens INSIDE so there is exactly ONE place that turns a claim into a
+    # verdict: a second copy is a second thing to drift, and it is also what a
+    # sabotage control mutating one copy cannot catch.
+    rows = list(doc.get('claims', []))
+    if union:
+        _u, _unread = my_claims_union(from_origin=from_origin)
+        _have = {((c.get('subject') or '').strip(),
+                  ' '.join((c.get('task') or '').split())) for c in rows}
+        for c in _u:
+            k = ((c.get('subject') or '').strip(),
+                 ' '.join((c.get('task') or '').split()))
+            if k not in _have:
+                rows.append(c)
+                _have.add(k)
     out = []
-    for c in doc.get('claims', []):
+    for c in rows:
         if c.get('status') != 'active':
             continue
         reason, kind = self_overlap(task, c.get('task'))
@@ -2921,7 +3031,8 @@ def cmd_claim(args):
     # file. See my_claims_union(): the refusal was blind to a claim on
     # origin/main that is not in this working copy, while cmd_check was blind
     # to the opposite. Two inputs to one question.
-    mine, _mine_unread = my_overlaps_union(task, from_origin=not args.no_fetch)
+    _mine_unread = my_claims_union(from_origin=not args.no_fetch)[1]
+    mine = my_active_overlaps(doc, task)
     if _mine_unread:
         # A SOURCE THAT CANNOT BE READ DOES NOT MAKE THE ANSWER "NO OVERLAP".
         # It is printed here and the claim still proceeds, deliberately: the
@@ -3519,6 +3630,52 @@ def selftest():
        len(union_of([dict(HELD, task='b16  install   tools/branch_census.py '
                                    'census')], [HELD], [], T)[0]), 1)
 
+    # ══ THE PINNED PHRASE, BOTH DIRECTIONS (b16) ══════════════════════════
+    # The answer to cody b17 triage section 9, under PR 2.7: run the tool on
+    # the real incidents. Neither of its two readings was right.
+    print('')
+    print('  PINNED PHRASES -- the exemption is DERIVED FROM THE LIVE CORPUS,')
+    print('  so it gets weaker as the corpus grows. `rebase resolve` reached')
+    print('  exactly COMMON_PHRASE_SESSIONS (3) distinct sessions, became')
+    print('  exempt, and retired the FOURTH LIVE INCIDENT. SEVEN arms: P1-P3')
+    print('  require the pin to restore that incident and to come from the')
+    print('  committed record; P4-P5 are the OVER-PINNING control, requiring')
+    print('  the exemption to STILL clear a real false block, because a pin')
+    print('  list that grew would reinstate all 110; P6 requires the drift to')
+    print('  be a number; P7 requires one set rather than two that can')
+    print('  disagree.')
+    F_HELD = ('LAW_RECONCILE_ROLES missing role mapping, sd-agent callClaude '
+              'loop breaker, G5 controls, G7 factors, rebase resolve tool')
+    F_RETYPED = 'rebase resolve semantic merge for the two json registers'
+    _r, _k = self_overlap(F_RETYPED, F_HELD)
+    ck('P1 THE FOURTH LIVE INCIDENT refuses again -- its real task strings, '
+       'and the ONLY overlap between them is the bigram "rebase resolve": no '
+       'shared identifier, no shared path', _k, 'refuse')
+    ck('P2 ...and the reason NAMES the phrase rather than something else',
+       'rebase resolve' in (_r or ''), True)
+    ck('P3 the pin is read from the committed record, not hardcoded -- exactly '
+       'the phrase the record lists is pinned and nothing else',
+       sorted(sorted(x) for x in pinned_phrases()), [['rebase', 'resolve']])
+    _r2, _k2 = self_overlap('html tests for the roofing panel',
+                            'html tests for the dental intake')
+    ck('P4 THE OVER-PINNING CONTROL: `html tests` is still exempt, so the '
+       'exemption that exists for 110 real false blocks still works. A pin '
+       'list that grew would reinstate every one of them',
+       _k2, None)
+    _r3, _k3 = self_overlap('push gate work on the seed check',
+                            'push gate work on the register feed')
+    ck('P5 ...and so is `push gate`, the phrase every agent writes',
+       _k3, None)
+    _ex, _pin, _at, _one = phrase_drift()
+    ck('P6 the drift is MEASURABLE, which is the half that stops the next '
+       'silent retirement: exempt, pinned, at-threshold and one-away are all '
+       'real numbers rather than an assurance',
+       (len(_ex) > 0, len(_pin) > 0, len(_at) > 0, len(_one) > 0),
+       (True, True, True, True))
+    ck('P7 a pinned phrase is SUBTRACTED from the exemption rather than added '
+       'to a second list -- one set, so the two cannot disagree',
+       bool(pinned_phrases() & common_phrases()), False)
+
     print('')
     print('  %d/%d arm(s) pass' % (total - bad, total))
     if bad:
@@ -3549,7 +3706,30 @@ def cmd_audit(args):
     # comment for the measurement and for why `cloud` is the row it is about.
     active_by = audit_active_by(claims)
     phantom = audit_expired_but_stored_active(claims)
-    hoarders = {s: v for s, v in active_by.items() if len(v) >= MANY_ACTIVE}
+    # ── TWO QUESTIONS, AND ONE PREDICATE WAS ANSWERING BOTH (b16) ──────────
+    # `hoarders` was built from active_by -- is_active() -- and that is right
+    # for "who is HOLDING too much right now" and WRONG for the question the
+    # paragraph under it actually asks: "who is leaving rows OPEN in the
+    # record". is_active() expires a row after four hours, so the worst cases
+    # of the open-row shape -- an eighteen-day-old `status: active` with no
+    # released_at, which is the `cloud` row this file already names -- were
+    # exactly the ones it dropped. The audit said "no session is holding 4 or
+    # more" over a record full of them.
+    #
+    # MEASURED BY A PROBE, NOT BY READING: two arms of
+    # tests/claims/run_claim_audit_probe.py (cody's) have been red on this --
+    # it plants MANY_ACTIVE rows with OLD timestamps and `status: active`, and
+    # the headline never appeared. cody b17 triage routed it to cc. The probe
+    # was right: it is asking about open rows and the fixture is the shape.
+    #
+    # SO THERE ARE TWO COUNTS NOW AND THEY ARE LABELLED. An open row is not a
+    # held claim and conflating them is what produced both wrong answers.
+    open_by = {}
+    for c in claims:
+        if c.get('status') == 'active' and not c.get('released_at'):
+            open_by.setdefault(c.get('session'), []).append(c)
+    hoarders = {s: v for s, v in open_by.items() if len(v) >= MANY_ACTIVE}
+    holding = {s: v for s, v in active_by.items() if len(v) >= MANY_ACTIVE}
 
     print('CLAIM RECORD AUDIT -- %d claim(s) across %d session file(s)'
           % (len(claims), len({c.get('session') for c in claims})))
@@ -3569,6 +3749,35 @@ def cmd_audit(args):
         print('    AFTER THE GUARD  x%d  %-7s %s  %s'
               % (len(v), k[0], v[0].get('claimed_at'), (k[2] or '(empty)')[:40]))
     print('')
+    # ── THE EXEMPTION IS A MOVING LINE AND THIS IS WHERE IT IS REPORTED ───
+    # The common-phrase exemption is derived from the live corpus, so the
+    # matcher gets weaker every time a phrase reaches COMMON_PHRASE_SESSIONS
+    # distinct sessions -- and NOTHING announced it until a probe arm went red.
+    # `rebase resolve` crossed at exactly 3 and retired the fourth live
+    # incident. These four numbers make the next crossing visible BEFORE it
+    # happens, which is the only form of item 8 that costs nothing.
+    try:
+        _ex, _pin, _at, _one = phrase_drift()
+        print('  THE MATCHER\'S EXEMPTION, WHICH MOVES WITH THE CORPUS:')
+        print('    exempted phrases/identifiers      %5d   (>= %d sessions)'
+              % (len(_ex), COMMON_PHRASE_SESSIONS))
+        print('    pinned, never exempted            %5d   %s'
+              % (len(_pin), PINNED_PHRASES_FILE))
+        print('    sitting EXACTLY AT the threshold  %5d   already exempt'
+              % len(_at))
+        print('    ONE session away from it          %5d   <- the next ones to '
+              'retire, silently, unless pinned' % len(_one))
+        if not _pin:
+            print('    NO PHRASE IS PINNED. If %s could not be read, the full'
+                  % PINNED_PHRASES_FILE)
+            print('    exemption stands and a historical incident resting on an')
+            print('    exempted phrase is NOT being caught. Check that file.')
+        print('')
+    except Exception as _e:                                      # noqa: BLE001
+        print('  THE MATCHER\'S EXEMPTION: could not be measured (%s). That is '
+              'a COULD-NOT-TELL about how weak the matcher currently is, not a '
+              'clean reading.' % _e)
+        print('')
     print('  THE OTHER SHAPE, COUNTED APART BECAUSE IT NEEDS THE OPPOSITE FIX:')
     print('  claims never RELEASED. Not a duplicate -- each is different work --')
     print('  but it makes `list` noisy and another session reads a phantom block.')
@@ -3576,8 +3785,30 @@ def cmd_audit(args):
         for s, v in sorted(hoarders.items(), key=lambda x: -len(x[1])):
             oldest = sorted(v, key=lambda c: c.get('claimed_at_epoch') or 0)[0]
             print('    %-8s %2d active, oldest %s' % (s, len(v), oldest.get('claimed_at')))
+        print('    ^ OPEN ROWS: `status: active` with no released_at, counted')
+        print('      WITHOUT the four-hour expiry, because the oldest unreleased')
+        print('      row is the worst case of this shape and expiry drops it.')
     else:
-        print('    no session is holding %d or more.' % MANY_ACTIVE)
+        print('    no session has %d or more rows left OPEN in the record.'
+              % MANY_ACTIVE)
+    # THE OTHER READING, PRINTED BESIDE IT RATHER THAN INSTEAD OF IT. "held
+    # right now" and "left open in the record" are different facts and a reader
+    # needs both; one number standing for both is how this block was wrong in
+    # two directions at once.
+    if holding:
+        for s, v in sorted(holding.items(), key=lambda x: -len(x[1])):
+            print('    %-8s %2d HELD RIGHT NOW by is_active() -- liveness and '
+                  'the 4h expiry applied' % (s, len(v)))
+    else:
+        # LOWER CASE "holding" ON PURPOSE. tests/claims/run_claim_audit_probe.py
+        # -- cody's -- asserts `'no session is holding' in out` as its
+        # bar-is-a-bar control, and that control belongs on THIS reading: it is
+        # the one about claims held right now. The first branch above is about
+        # rows left OPEN and must not call that "holding", which is the
+        # conflation this block was fixed for. So the phrase the probe anchors
+        # on now sits on the reading it is actually about.
+        print('    no session is holding %d or more right now -- is_active(), '
+              'so liveness and the 4h expiry are applied.' % MANY_ACTIVE)
     # ── THE PHANTOM, NAMED (cc b13) ────────────────────────────────────────
     # The paragraph above is about a session reading a phantom block, and the
     # count under it was itself built from the phantom's own field until this
