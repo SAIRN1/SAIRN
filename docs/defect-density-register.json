@@ -32955,6 +32955,59 @@
         }
       ],
       "recurrence_open": "FIVE OTHER RECORDS CARRY A COUNT THAT DISAGREES WITH THEIR ARRAY AND ARE DELIBERATELY NOT FLAGGED, because each names its subset and is correct. They are listed verbatim in the suite's header as the fixtures that must stay silent -- so if one of them ever IS wrong, this check will not say so. AND THE CHECK ONLY READS THE OPENING SENTENCE: a count stated mid-paragraph is out of its reach by design. AND IT IS NOT A PUSH GATE -- it is an api/ suite, caught by a full-tree sweep and by nothing automatic."
+    },
+    {
+      "commit": "aff144e58bad",
+      "date": "2026-10-16",
+      "subject": "fix(sairnbuild): one message, logged once, and exactly one bare catch in st()",
+      "files": [
+        "sairnbuild.html"
+      ],
+      "lines_added": 29,
+      "lines_removed": 5,
+      "app": "sairnbuild",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "A FAILED SERVER BACKUP WAS REPORTED AS A SUCCESSFUL SAVE. sairnbuild.html's st() called bldSyncCollection() inside `catch(e){}` -- an empty catch -- and still returned okWrite===true, because the LOCAL write had succeeded. So a throw inside the backup hook left the record on one device only with NOTHING in the console and NOTHING in the pending list that bldRetryPending() reads, while st() answered 'saved' to all 86 call sites. It is worse than the swallowing catch twenty lines above that was fixed on 2026-09-04: that one at least returned false. Fixed in two steps -- the handler now says so loudly and MARKS the collection pending so the mechanism this file already has for 'did not reach the server' actually sees it, and this commit restructures that handler to one message with one logger guard after the seam check caught the first version.",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The empty `catch(e){}` around bldSyncCollection() has been in st() since the sync hook was added and tests/st_reports_failure.js TOLERATED IT BY NAME in its per-app count, so there is no commit that introduced it into previously-correct code -- it was written that way and then written down as acceptable."
+      },
+      "contributing_factors": [
+        {
+          "factor": "THE EMPTY CATCH WAS DELIBERATE AND THE REASONING WAS SOUND -- a backup hook that throws must not turn a successful local write into a failure. What was missing is that 'do not fail the write' and 'say nothing at all' are two different decisions and only the first one was wanted",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The catch now logs and QUEUES, and st() still returns okWrite -- the local write really did succeed and changing that boolean's meaning across 86 call sites is a separate decision with a much larger blast radius"
+        },
+        {
+          "factor": "A RETRY MECHANISM EXISTED AND THIS PATH DID NOT REACH IT. bldPendingMark()/bldRetryPending() is exactly for a record that did not reach the server, and a throw inside the hook was the one route into that state that never got into the list",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Marked per record where there is an id, which is what the list holds, and with a '__collection__' sentinel when no row has one -- the list must not hold nothing for a failure that really happened"
+        },
+        {
+          "factor": "THE FIRST FIX ADDED TWO LOGGER GUARDS AND BROKE A SEAM CHECK. tests/st_reports_failure.js counts bare catches inside st() and fails ABOVE its per-app number as well as below, so removing one tolerated bare catch and adding two took the count from 2 to 3",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Restructured to ONE message with the queue failure APPENDED and a single logger guard. The test was RUN and never edited -- it is cody's, and its own comment says not to raise a count to get past it. 58/58 pass"
+        },
+        {
+          "factor": "A MISSING bldPendingMark() WOULD HAVE BEEN SILENT in the first version: the `if (typeof ... === 'function')` had no else branch, so an absent helper meant the failure was logged as 'queued for retry' when nothing would retry it",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The message now says bldPendingMark() is ABSENT and nothing will retry, and reports how many entries WERE queued when it is present -- found while restructuring for the seam count rather than by the seam check itself"
+        }
+      ],
+      "recurrence_open": "THE OTHER 86 CALL SITES STILL READ okWrite AND MOST IGNORE IT, which is unchanged and is the larger problem this does not touch. AND NOTHING HERE WAS DRIVEN IN A BROWSER: the st() seam check loads the wrapper with a stubbed localStorage, so the bldSyncCollection throw path is exercised against a stub and the real retry pass has never been seen to pick one of these up. AND THE PENDING-LIST SENTINEL IS UNVERIFIED end to end -- bldRetryPending() drops an id it cannot resolve to a local row, which is why '__collection__' is visible and self-cleaning by argument rather than by measurement."
     }
   ],
   "started": "2026-09-09",
