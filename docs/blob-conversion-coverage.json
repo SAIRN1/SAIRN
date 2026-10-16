@@ -1,11 +1,15 @@
 {
-  "unconverted": 48,
-  "converted": 45,
+  "unconverted": 49,
+  "converted": 49,
   "by_kind": {
-    "CONVERTED": 45,
-    "BUILT": 171,
-    "RAW": 48,
-    "NESTED": 2
+    "CONVERTED": 49,
+    "UNRESOLVED-SCOPE": 1,
+    "BUILT": 42,
+    "RAW": 49,
+    "NESTED": 14
   },
-  "note": "A RATCHET, not a target. unconverted must never rise. Lower it by converting a site and re-pinning with --repin, never to make a run pass."
+  "previous_unconverted": 48,
+  "direction": "UP",
+  "why": "RISEN BY ONE FOR A MEASUREMENT REASON, NOT A NEW WRITE: cc b16 replaced the seven-line proximity window with a structural scope rule (S1 body-bounded by braces, S2 the containing fetch URL, S3 an unresolvable body as its own third state). api/sd-data.js:16001 -- body: JSON.stringify({ data: payload, updated_at: nowISO() }) on a leg_merch_units PATCH -- has been RAW the whole time; its license_hash sits six lines up in the rest() URL, outside the old window, so the site was never in the denominator. The ablation measures the change exactly: 1 unconverted site gained, 0 lost, 129 false BUILT includes dropped (read responses the window bled in), 5 CONVERTED and 12 NESTED real write sites gained, 1 UNRESOLVED-SCOPE surfaced. So 49 is the first honest figure and 48 was an undercount of the gap.",
+  "note": "A RATCHET, not a target. unconverted must never rise. Lower it by converting a site and re-pinning with --repin, never to make a run pass. An UPWARD re-pin is REFUSED without --why and the reason is kept in this file; a downward one needs none."
 }

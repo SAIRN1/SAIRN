@@ -176,9 +176,160 @@ def classify(expr, at, bound_kind):
     return 'BUILT'
 
 
+# ── THE SCOPE WINDOW WAS A LINE COUNT, AND A LINE COUNT CANNOT SEE A BODY ───
+# Fixed 2026-10-16 (cc b16). `scan_one` decided whether a `data:` site was a
+# LICENCE-SCOPED WRITE by asking whether `license_hash` appeared in
+# `lines[i-4:i+3]` -- a flat seven-line window, three either side. That is the
+# b24 bug from fourth's branch census arriving in a different tool, and it is
+# wrong in the direction that matters for a RATCHET: a write body the window
+# cannot see is a site the coverage ratio never divides by, so the ratio
+# OVERSTATES conversion.
+#
+# MEASURED BEFORE THE FIX, over the real api/ tree: of 81 `data:` sites whose
+# expression is a WRITE shape (storedBlob(, payload, mPayload, a payload
+# spread, payload.<field>), 62 fell inside the seven-line window and 19 FELL
+# OUTSIDE IT. Two were read by hand and both are real write bodies:
+#
+#   api/sd-data.js:16001  body: JSON.stringify({ data: payload, ... })
+#                         a PATCH on leg_merch_units. `data: payload` RAW --
+#                         the exact thing this tool counts -- and the
+#                         license_hash is at :15995, SIX LINES UP, in the
+#                         rest() URL rather than in the body at all.
+#   api/sd-data.js:8880   data: payload.data || {} inside an rf_cert_rules
+#                         upsert whose `license_hash: licHash` is at :8876,
+#                         FOUR lines up. One line outside the window.
+#
+# WIDENING THE WINDOW IS NOT THE FIX AND WOULD BE THE SAME MISTAKE. A wider
+# count bleeds across adjacent bodies: `api/sd-data.js` has handlers packed
+# three to a dozen lines, so at +-10 a `data:` in a READ response would be
+# scoped by the WRITE above it. That is item 7 -- a fix re-qualified against
+# the target rather than copied -- and the target here is a file where the
+# distance distribution runs to +-53 with no gap to cut at.
+#
+# SO THE BOUND IS STRUCTURAL, the same shape as the census's R1 and
+# re-qualified for this subject rather than copied:
+#
+#   S1  the BODY is the object literal the `data:` sits inside, found by
+#       walking braces backward to the enclosing `{` and forward to its match.
+#       No line count anywhere.
+#   S2  the URL is the argument span of the `await fetch(` that body belongs
+#       to, read by balancing parens -- because licence scoping is frequently
+#       expressed ONLY in the URL (`?license_hash=eq.` + enc(licHash)), which
+#       is what :16001 is.
+#   S3  a site whose body CANNOT be bounded is its own THIRD STATE,
+#       UNRESOLVED-SCOPE. It is never silently included and never silently
+#       excluded, because either default is a number nobody can check.
+#
+# A `data:` on a comment line is not a site at all, which removes the prose
+# hits the old window counted (`data: payload` inside an explanatory sentence
+# at :1064 and :17271 among them).
+SCOPE_BODY_BOUNDED = True       # ablation toggle; False restores the 7-line window
+
+
+def _enclosing_body(src, off):
+    """(start, end) of the object literal containing `off`, or None.
+
+    Backward to the `{` that is not closed before `off`, then forward to its
+    match. Returns None rather than a guess when either walk runs out -- S3.
+    """
+    depth = 0
+    start = None
+    i = off - 1
+    while i >= 0:
+        c = src[i]
+        if c == '}':
+            depth += 1
+        elif c == '{':
+            if depth == 0:
+                start = i
+                break
+            depth -= 1
+        i -= 1
+    if start is None:
+        return None
+    depth = 0
+    j = start
+    while j < len(src):
+        c = src[j]
+        if c == '{':
+            depth += 1
+        elif c == '}':
+            depth -= 1
+            if depth == 0:
+                return (start, j + 1)
+        j += 1
+    return None                 # unbalanced to EOF -- S3
+
+
+def _fetch_url_span(src, body_start, back=6000):
+    """The argument text of the `await fetch(` whose CALL CONTAINS `body_start`.
+
+    S2, and the containment test is the whole of it. The first draft took the
+    nearest PRECEDING fetch regardless of whether the body was inside it, and
+    that is a proximity rule wearing a structural one: a READ response body
+    (`res.json({ ok: true, data: rows })`) sits a few lines AFTER a licence-
+    scoped fetch, so every read in the file became a licence-scoped write site.
+    Measured: that draft reported 593 sites against the old window's 266, and
+    the inflation was reads.
+
+    So the fetch's full call span is balanced and the body must lie INSIDE it.
+    Empty string otherwise -- an ordinary condition, not a could-not-tell: not
+    every `data:` belongs to a fetch. S3 is decided by the caller, which only
+    reaches here once the body DID bound.
+    """
+    lo = max(0, body_start - back)
+    best = ''
+    for m in re.finditer(r'await\s+fetch\s*\(', src[lo:body_start]):
+        k = lo + m.end()
+        depth = 1
+        j = k
+        while j < len(src) and depth:
+            if src[j] == '(':
+                depth += 1
+            elif src[j] == ')':
+                depth -= 1
+            j += 1
+        if depth:
+            continue                 # unbalanced to EOF; not a usable span
+        if k <= body_start < j:
+            best = src[k:j]          # the innermost containing call wins
+    return best
+
+
+def _line_offsets(src):
+    """offset of the start of each 1-based line, index 0 unused."""
+    offs = [0, 0]
+    for ln in src.split('\n')[:-1]:
+        offs.append(offs[-1] + len(ln) + 1)
+    return offs
+
+
+def scope_state(src, lines, offs, i, col, bounded=None):
+    """'IN' | 'OUT' | 'UNRESOLVED' for one `data:` site.
+
+    `bounded` None means use the module toggle; False is the ablation's
+    seven-line window, kept so --ablate can measure what S1-S3 buy.
+    """
+    use = SCOPE_BODY_BOUNDED if bounded is None else bounded
+    if not use:
+        window = '\n'.join(lines[max(0, i - 4):i + 3])
+        return 'IN' if SCOPE_NEAR.search(window) else 'OUT'
+    off = offs[i] + col
+    span = _enclosing_body(src, off)
+    if span is None:
+        return 'UNRESOLVED'
+    body = src[span[0]:span[1]]
+    if SCOPE_NEAR.search(body):
+        return 'IN'
+    if SCOPE_NEAR.search(_fetch_url_span(src, span[0])):
+        return 'IN'
+    return 'OUT'
+
+
 def scan_one(path):
     src = io.open(path, encoding='utf-8', errors='replace').read()
     lines = src.split('\n')
+    offs = _line_offsets(src)
     # Names bound to a storedBlob() result, so `data: custData` is recognised as
     # converted. WITHOUT THIS THE TOOL UNDERCOUNTS CONVERSIONS -- the platform's
     # own convention is to bind the blob to a name one line above the write, so a
@@ -233,19 +384,29 @@ def scan_one(path):
         return best[1] if best else None
 
     rows = []
+    rel = os.path.relpath(path, REPO).replace('\\', '/')
     for i, line in enumerate(lines, 1):
+        # A `data:` inside an explanatory sentence is not a write site. The
+        # seven-line window counted several, including `data: payload` in prose
+        # at api/sd-data.js:1064 and :17271.
+        if line.lstrip().startswith(('//', '*', '/*')):
+            continue
         for m in DATA_AT.finditer(line):
             expr = _expr_at(line, m.end())
             if not expr:
                 continue
-            # The scope key may sit on the same line (the common one-line body)
-            # or a line or two away in a multi-line body literal.
-            window = '\n'.join(lines[max(0, i - 4):i + 3])
-            if not SCOPE_NEAR.search(window):
+            st = scope_state(src, lines, offs, i, m.start())
+            if st == 'OUT':
+                continue
+            if st == 'UNRESOLVED':
+                # NOT dropped and NOT counted as a site. Carried as its own
+                # kind so `--list` can print it and the ratchet can refuse to
+                # improve on the back of one (S3).
+                rows.append({'file': rel, 'line': i, 'expr': expr,
+                             'kind': 'UNRESOLVED-SCOPE'})
                 continue
             kind = classify(expr, i, bound_kind)
-            rows.append({'file': os.path.relpath(path, REPO).replace('\\', '/'),
-                         'line': i, 'expr': expr, 'kind': kind})
+            rows.append({'file': rel, 'line': i, 'expr': expr, 'kind': kind})
     return rows
 
 
@@ -381,6 +542,124 @@ def run_selftest():
         API = real_api
         shutil.rmtree(tmp, ignore_errors=True)
 
+    # ========== THE SCOPE RULE, FIXTURES IN BOTH DIRECTIONS (b16) ==========
+    # Locked here rather than measured on the real file, because the rule they
+    # hold was found BY measuring the real file and a criterion tuned on its
+    # own subject is not a criterion. Each fixture is one synthetic handler.
+    print('')
+    print('  SCOPE RULE S1-S3 -- 13 arms. 4 require IN (one of them twice in')
+    print('  one body), 4 require OUT, 1 requires UNRESOLVED, 1 requires NO')
+    print('  SITE AT ALL, and 3 are the ablation with its own control.')
+    print('  A rule that says IN to everything passes the four IN arms and')
+    print('  turns every read in api/ into a licence-scoped write -- which is')
+    print('  what the first draft of S2 did: 593 sites against the window 266.')
+
+    def scope_of(body):
+        lines = body.split(chr(10))
+        offs = _line_offsets(body)
+        out = []
+        for i, line in enumerate(lines, 1):
+            if line.lstrip().startswith(('//', '*', '/*')):
+                continue
+            for m in DATA_AT.finditer(line):
+                if not _expr_at(line, m.end()):
+                    continue
+                out.append(scope_state(body, lines, offs, i, m.start()))
+        return out
+
+    def scope_of_window(body):
+        lines = body.split(chr(10))
+        offs = _line_offsets(body)
+        out = []
+        for i, line in enumerate(lines, 1):
+            for m in DATA_AT.finditer(line):
+                if not _expr_at(line, m.end()):
+                    continue
+                out.append(scope_state(body, lines, offs, i, m.start(),
+                                       bounded=False))
+        return out
+
+    DEEP = (
+        "      const r = await fetch(rest('t?on_conflict=license_hash'), {\n"
+        "        method: 'POST',\n"
+        "        headers: headers,\n"
+        "        body: JSON.stringify({\n"
+        "          license_hash: licHash,\n"
+        "          a: 1,\n          b: 2,\n          c: 3,\n"
+        "          d: 4,\n          e: 5,\n          f: 6,\n"
+        "          data: payload\n"
+        "        })\n      });\n")
+    URLONLY = (
+        "      const r = await fetch(rest(\n"
+        "        'leg_merch_units?license_hash=eq.' + enc(licHash) +\n"
+        "        '&merch_unit_id=eq.' + enc(String(payload.id))\n"
+        "      ), {\n"
+        "        method: 'PATCH',\n"
+        "        headers: headers,\n"
+        "        body: JSON.stringify({ data: payload, updated_at: nowISO() })\n"
+        "      });\n")
+    READ_AFTER = (
+        "      const r = await fetch(rest('t?license_hash=eq.' + enc(licHash)), { headers });\n"
+        "      const rows = await r.json();\n"
+        "      res.status(200).json({ ok: true, data: rows });\n")
+    READ_ADJACENT = (
+        "      const r = await fetch(rest('t?license_hash=eq.' + enc(licHash)), { headers });\n"
+        "      res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data) });\n")
+    NO_KEY = "      const cache = { data: payload, at: nowISO() };\n"
+    AFTER_CLOSE = (
+        "      const r = await fetch(rest('t?license_hash=eq.' + enc(licHash)), { headers });\n"
+        "      const later = { data: payload };\n")
+    ONELINE = (
+        "      await fetch(rest('t'), { body: JSON.stringify({ license_hash: licHash,"
+        " data: storedBlob(payload, []) }) });\n")
+    TWO_SITES = (
+        "      await fetch(rest('t'), { body: JSON.stringify({\n"
+        "        license_hash: licHash,\n"
+        "        data: payload,\n"
+        "        meta: { data: storedBlob(payload, []) }\n"
+        "      }) });\n")
+    REGEX = "const RE = /data: image/;\n"
+    COMMENT = ("        // body: JSON.stringify({ license_hash: licHash,"
+               " data: payload })\n")
+
+    check('S1 IN: license_hash in the SAME body, eleven lines above the '
+          '`data:` -- outside any seven-line window', scope_of(DEEP), ['IN'])
+    check('S2 IN: the key is ONLY in the rest() URL and not in the body at '
+          'all -- the real api/sd-data.js:16001 shape the window missed',
+          scope_of(URLONLY), ['IN'])
+    check('S2 OUT: a READ response body a few lines AFTER a licence-scoped '
+          'fetch is NOT a write site -- the arm that caught the first draft '
+          'of S2 taking the nearest preceding fetch regardless of containment',
+          scope_of(READ_AFTER), ['OUT'])
+    check('S2 OUT: ...and still OUT when the read response is immediately '
+          'adjacent, which is where a line-count rule is least able to tell',
+          scope_of(READ_ADJACENT), ['OUT'])
+    check('OUT: a body with no license_hash anywhere and no enclosing fetch '
+          'is not a licence-scoped write', scope_of(NO_KEY), ['OUT'])
+    check('OUT: a licence-scoped fetch that CLOSED before this body -- the '
+          'test is containment, not proximity', scope_of(AFTER_CLOSE), ['OUT'])
+    check('S1 IN: a one-line body, the common case, must not regress',
+          scope_of(ONELINE), ['IN'])
+    check('S1 IN: TWO sites in one body are both IN -- the walk is per site, '
+          'not per body', scope_of(TWO_SITES), ['IN', 'IN'])
+    check('S3 UNRESOLVED: a `data:` with no enclosing brace at all is its own '
+          'third state, never IN and never OUT. The one real instance is the '
+          'data-URI REGEX at api/_lib/dental-photo-validation.js:14',
+          scope_of(REGEX), ['UNRESOLVED'])
+    check('a `data:` on a COMMENT line is NOT A SITE -- the seven-line window '
+          'counted prose at api/sd-data.js:1064 and :17271',
+          scope_of(COMMENT), [])
+
+    check('ABLATION: with the seven-line window back, the eleven-line body '
+          'reads OUT -- so S1 is what finds it and nothing else',
+          scope_of_window(DEEP), ['OUT'])
+    check('ABLATION: with the window back, the adjacent READ response reads '
+          'IN -- so S2 containment is what excludes it',
+          scope_of_window(READ_ADJACENT), ['IN'])
+    check('ABLATION CONTROL: the one-line body reads IN under BOTH rules, '
+          'which is exactly why the window looked like it worked',
+          scope_of_window(ONELINE), ['IN'])
+
     print('  %d/%d arm(s) pass' % (total - bad, total))
     if bad:
         print('  THE UNIVERSE LOCK IS BROKEN. Every coverage figure this tool '
@@ -397,6 +676,11 @@ def main(argv=None):
     ap.add_argument('--repin', action='store_true',
                     help='rewrite the pin to the CURRENT numbers. Only correct '
                          'after a real conversion, never to make a run pass')
+    ap.add_argument('--why', metavar='TEXT', default='',
+                    help='REQUIRED with --repin when `unconverted` RISES: what '
+                         'rose and why that is acceptable, 40 characters '
+                         'minimum. Written into the pin and read by the next '
+                         'session. A downward re-pin needs none.')
     ap.add_argument('--selftest', action='store_true',
                     help='the universe lock: arms over api_files() discovery, '
                          'including an ablation that restores the old flat '
@@ -441,16 +725,61 @@ def main(argv=None):
     print('')
 
     if args.repin:
-        io.open(PIN, 'w', encoding='utf-8', newline='\n').write(json.dumps({
+        # -- AN UPWARD RE-PIN NEEDS A REASON, A DOWNWARD ONE DOES NOT (b16) --
+        # The note this used to write was the same sentence every time, which
+        # is a field that means nothing -- the shape the defect register
+        # refused for `not-citable` and the push gate refused for a bare
+        # override. A ratchet re-pinned UPWARD with no recorded reason is the
+        # ratchet being switched off one notch at a time, and nothing
+        # downstream can tell that from a real measurement change. Going DOWN
+        # is the ratchet working and needs nothing.
+        #
+        # FOUND BY DOING IT, TWICE, WHILE WRITING THIS GUARD. Two patch
+        # attempts failed on backslash escaping in their own match pattern,
+        # left the OLD code in place, and the `--repin` run meant to test the
+        # new refusal cheerfully raised the pin 48 -> 49 with the generic note
+        # and exit 0. Both times the pin was restored from git. That is the
+        # whole argument for this guard, made by accident, in the file it is
+        # being added to.
+        prev = None
+        try:
+            prev = load_pin().get('unconverted')
+        except CouldNotTell:
+            prev = None
+        rising = isinstance(prev, int) and unconverted > prev
+        why = (args.why or '').strip()
+        if rising and len(why) < 40:
+            sys.stderr.write(
+                'REFUSING to re-pin UPWARD (%s -> %d) without --why.'
+                % (prev, unconverted) + chr(10))
+            sys.stderr.write(
+                'A ratchet that can be raised silently is not a ratchet. Say '
+                'what rose and why that is acceptable, in at least 40 '
+                'characters -- it is written into the pin and read by the next '
+                'session, which is the only thing standing between a real '
+                'measurement change and a quiet retreat.' + chr(10))
+            return 2
+        direction = 'LEVEL'
+        if isinstance(prev, int):
+            direction = 'UP' if unconverted > prev else (
+                'DOWN' if unconverted < prev else 'LEVEL')
+        io.open(PIN, 'w', encoding='utf-8', newline=chr(10)).write(json.dumps({
             'unconverted': unconverted,
             'converted': t.get('CONVERTED', 0),
             'by_kind': t,
+            'previous_unconverted': prev,
+            'direction': direction,
+            'why': why or None,
             'note': 'A RATCHET, not a target. unconverted must never rise. '
                     'Lower it by converting a site and re-pinning with '
-                    '--repin, never to make a run pass.'
-        }, indent=2) + '\n')
-        print('RE-PINNED to unconverted=%d converted=%d'
-              % (unconverted, t.get('CONVERTED', 0)))
+                    '--repin, never to make a run pass. An UPWARD re-pin is '
+                    'REFUSED without --why and the reason is kept in this '
+                    'file; a downward one needs none.'
+        }, indent=2) + chr(10))
+        print('RE-PINNED %s to unconverted=%d converted=%d'
+              % (direction, unconverted, t.get('CONVERTED', 0)))
+        if why:
+            print('  why: %s' % why)
         return 0
 
     try:
