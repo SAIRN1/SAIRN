@@ -211,11 +211,29 @@ a conflict in one is "both sides added lines" and keeping both is correct.
 ## How to check it
 
 ```
-python tools/tier_a_reviews_store.py --selftest     # 22 fixtures, exit 0
+python tools/tier_a_reviews_store.py --selftest     # 25 fixtures, exit 0
 python tools/tier_a_reviews_store.py --validate     # identity drift, bad lines
 python tools/tier_a_reviews_store.py --read         # union + provenance counts
-python tools/tier_a_reviews_store.py --migrate      # dry run, idempotent
+python tools/tier_a_reviews_store.py --migrate      # dry run, own shard only
+python tools/tier_a_reviews_store.py --migrate --apply --all-authors   # one-time
 ```
+
+**`--migrate` writes only the INVOKING SESSION's own records unless
+`--all-authors` is passed**, and it names what it declined to write. That guard
+was added minutes after the first migration, from an observation rather than a
+design: a rebase brought 14 commits and **hank had appended one new record to
+the legacy file during the batch** (266 records, hank 76 → 77). The union read
+it correctly from the base layer with no action needed — but a casual
+`--migrate --apply` would then have written a line into
+`docs/tier-a-reviews/hank.jsonl`, and **this module's own rule is that a session
+appends only to its own shard.** A tool that forges lines in another agent's
+shard while stating that rule is the contradiction it exists to prevent.
+Fixtures cover both directions, including that the other author's record is
+**still read, from the base layer** — declined is not dropped.
+
+**`SAIRN_SESSION` is how it knows who it is.** Unset, it migrates nothing and
+says so rather than guessing — which is what happens if you run it from a cron
+or a hook without the variable.
 
 `--selftest` failing is **exit 2 COULD NOT RUN**, never a result with a caveat.
 Every other mode runs the fixtures first and refuses to report if they fail.

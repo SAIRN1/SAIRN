@@ -63,7 +63,7 @@ THAT, SHARDS ARE ADDITIVE AND NOT AUTHORITATIVE, and this module says so in
 
   python tools/tier_a_reviews_store.py --selftest
   python tools/tier_a_reviews_store.py --read [--json] [--open-only]
-  python tools/tier_a_reviews_store.py --migrate [--apply]
+  python tools/tier_a_reviews_store.py --migrate [--apply] [--all-authors]
   python tools/tier_a_reviews_store.py --append <session> --record '<json>'
   python tools/tier_a_reviews_store.py --validate
 """
@@ -224,15 +224,27 @@ def append(session, record, shard_dir=None):
     return 0, 'appended to docs/tier-a-reviews/%s.jsonl' % session
 
 
-def migrate(apply_it=False, legacy_path=None, shard_dir=None):
+def migrate(apply_it=False, legacy_path=None, shard_dir=None,
+            all_authors=False):
     """Write the legacy records into per-author shards. IDEMPOTENT.
 
-    The legacy file is NOT touched, NOT emptied and NOT deleted. It stays the
-    base layer, so every existing reader keeps working while the writers move
-    over one at a time -- and it was held by a live session when this shipped.
-    Because the reader unions by identity, a record present in both layers is
-    ONE record, not two.
+    ── IT IS A ONE-TIME BULK MOVE AND IT NEEDS --all-authors TO SAY SO ──────
+    Found by observation, 2026-10-16, minutes after the first migration: a
+    rebase brought 14 commits and hank had appended ONE new record to the
+    legacy file during the batch (266 records, hank 76 -> 77). The union read
+    it correctly from the base layer with no action needed -- but a casual
+    `--migrate --apply` would then have written a line into
+    `docs/tier-a-reviews/hank.jsonl`, and this module's own rule is that a
+    session appends ONLY to its own shard.
+
+    A tool that forges lines in another agent's shard while claiming that rule
+    is the same contradiction as a detector blessing its own fix. So the bulk
+    move across every author is now EXPLICIT (`--all-authors`), and the default
+    migrates only the invoking session's own records. Records belonging to
+    others stay readable in the base layer -- they are not lost, they are just
+    not written by me.
     """
+
     legacy, note = read_legacy(legacy_path)
     if legacy is None:
         return 2, ['COULD NOT RUN: %s' % note], {}
@@ -247,6 +259,19 @@ def migrate(apply_it=False, legacy_path=None, shard_dir=None):
     lines = ['%s' % note,
              'authors: %s' % ', '.join('%s=%d' % (k, len(v))
                                        for k, v in sorted(by.items()))]
+    me = os.environ.get('SAIRN_SESSION', '').strip()
+    if not all_authors:
+        skipped = {k: len(v) for k, v in by.items() if k != me}
+        by = {k: v for k, v in by.items() if k == me}
+        if skipped:
+            lines.append('OWN SHARD ONLY (session %r). NOT writing %s -- a '
+                         'session appends only to its own shard, and those '
+                         'records stay readable in the legacy base layer. Pass '
+                         '--all-authors for the ONE-TIME bulk move.'
+                         % (me or '(SAIRN_SESSION unset)',
+                            ', '.join('%s=%d' % kv for kv in sorted(skipped.items()))))
+        if not by:
+            lines.append('Nothing to migrate for this session.')
     if unknown:
         # NOT DROPPED SILENTLY. A record whose author is not a known session
         # has no shard to go in, and migrating it into somebody else's would
@@ -436,13 +461,42 @@ def selftest(verbose=True):
         io.open(lp, 'w', encoding='utf-8', newline='\n').write(
             json.dumps(base, indent=2) + '\n')
         sd2 = os.path.join(tmp, 'shards2')
-        rc, lines1, _ = migrate(True, lp, sd2)
+        rc, lines1, _ = migrate(True, lp, sd2, all_authors=True)
         n1 = len(read_shards(sd2)[0])
-        rc2, lines2, _ = migrate(True, lp, sd2)
+        rc2, lines2, _ = migrate(True, lp, sd2, all_authors=True)
         n2 = len(read_shards(sd2)[0])
-        bad += chk('migrate --apply is IDEMPOTENT -- a second run writes nothing',
+        bad += chk('migrate --apply --all-authors is IDEMPOTENT -- a second run '
+                   'writes nothing',
                    rc == 0 and rc2 == 0 and n1 == 2 and n2 == 2,
                    '%d then %d' % (n1, n2))
+
+        # ── THE --all-authors GUARD, BOTH DIRECTIONS ──────────────────────
+        # Found by observation: a rebase brought one new hank record into the
+        # legacy file mid-batch, and a casual `--migrate --apply` would have
+        # written a line into hank.jsonl while this module's own rule says a
+        # session appends only to its own shard.
+        sd4 = os.path.join(tmp, 'shards4')
+        was = os.environ.get('SAIRN_SESSION')
+        os.environ['SAIRN_SESSION'] = 'cody'
+        try:
+            rc, lines4, _ = migrate(True, lp, sd4)
+            names = sorted(os.listdir(sd4)) if os.path.isdir(sd4) else []
+            bad += chk('WITHOUT --all-authors only the invoking session OWN '
+                       'shard is written', rc == 0 and names == ['cody.jsonl'],
+                       str(names))
+            bad += chk('...and the records it did NOT write are NAMED, not '
+                       'silently dropped',
+                       any('OWN SHARD ONLY' in l and 'hank=1' in l
+                           for l in lines4), ' | '.join(lines4))
+            r4 = read_all(lp, sd4)
+            bad += chk('...and the OTHER author record is still read, from '
+                       'the legacy base layer', len(r4['records']) == 2,
+                       str(len(r4['records'])))
+        finally:
+            if was is None:
+                os.environ.pop('SAIRN_SESSION', None)
+            else:
+                os.environ['SAIRN_SESSION'] = was
         bad += chk('migrate leaves the legacy file byte-identical',
                    json.load(io.open(lp, encoding='utf-8'))['records'][0]['status']
                    == 'open')
@@ -499,7 +553,8 @@ def main(argv):
         return rc
 
     if '--migrate' in argv:
-        rc, lines, _ = migrate('--apply' in argv)
+        rc, lines, _ = migrate('--apply' in argv,
+                                all_authors='--all-authors' in argv)
         print('TIER A REVIEW STORE -- migrate, criteria %s' % CRITERIA_VERSION)
         for l in lines:
             print('  %s' % l)

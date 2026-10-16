@@ -31888,341 +31888,6 @@
       "recurrence_open": "The anniversary boundary is now driven for ONE state's rule shape (WV) and one hire date. Nothing drives a facility-wide window, and the claim corrected here is about the hire-anchored one only."
     },
     {
-      "commit": "af313f897ffc",
-      "date": "2026-10-16",
-      "subject": "fix(report-only): a probe's 20-second fixture had overwritten the shared reachability measurement, and two batches read it as a real sweep",
-      "files": [
-        "docs/2026-10-15-cc-b15-report-only-sweep.log",
-        "docs/report-only-reachability.json",
-        "tools/report_only_checks.py"
-      ],
-      "lines_added": 438,
-      "lines_removed": 160,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "report_only_checks.py _write_reachability() wrote the TRACKED docs/report-only-reachability.json on a --budget override, so tests/run_report_only_checks_probe.py:783's 20-second fixture replaced the real sweep's numbers. Two batches then read 'reached 6 of 78 at a 20.0s budget' as a measurement of the real run, and b14 used it to call the 36-of-73 / 540s figure stale in both terms when only the denominator had moved.",
-      "rules": [
-        "1.4"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "ff2671c5af02",
-        "date": "2026-10-05",
-        "subject": "fix(registry+push-retry): a registered-and-dead checker is now visible where sessions read, and push_retry can print its own usage",
-        "lag_days": 11
-      },
-      "citation_note": "the probe run that mutated this document is read-only-sounding by name -- it exercises an overrun path -- and its side effect landed in a tracked file that two batches then quoted as a measurement",
-      "contributing_factors": [
-        {
-          "factor": "_write_reachability() had no way to tell a fixture budget from the hook cap, so every run that produced numbers also published them",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "it now REFUSES to write at all when --budget was passed, and prints why; keeping the last real measurement beats replacing it with a fixtures"
-        },
-        {
-          "factor": "the document carried a bare measured_budget_seconds, so a hook number, a fallback and a fixture were the same number on the page",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "a budget_source field is written beside it, and in this clone it says fallback-300 with the reason the hooks are cleared"
-        },
-        {
-          "factor": "a probe exercising the overrun path runs the real tool at the real repo root without --quiet, so its side effects land in tracked files",
-          "kind": "process",
-          "action_status": "planned",
-          "action": "tests/ is codys by the directory rule; routed as part of the b15 triage rather than edited here"
-        },
-        {
-          "factor": "a sweep measurement and a sweep fixture share one output path by construction",
-          "kind": "latent-condition",
-          "action_status": "not-actionable",
-          "note": "the path is referenced by the tool, the probe and two documents; narrowing it is a larger change than this fix and the refusal closes the harm"
-        }
-      ],
-      "recurrence_open": "only the reachability document is guarded. Any other write this tool reaches on a fixture run is still unguarded, and the probe half -- a non-quiet run against the live repo root -- is unchanged and lives in codys tree."
-    },
-    {
-      "commit": "334fe3c9acaf",
-      "date": "2026-10-16",
-      "subject": "fix(suite lock): a probe inside the suite was deleting the live run's lock, and the ceiling was sized against the wrong timeout",
-      "files": [
-        "docs/2026-10-15-cc-b15-sweep-triage.md",
-        "docs/ablation/b15_arms.py",
-        "docs/report-only-reachability.json",
-        "docs/scrutiny-flags.json",
-        "docs/sweep-2026-10-15.log",
-        "docs/test-file-floor.json",
-        "tools/run_all_tests.py"
-      ],
-      "lines_added": 1571,
-      "lines_removed": 106,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "tools/run_all_tests.py release_lock() unlinked the shared suite lock without checking who owned it, so tests/run_suite_lock_probe.py:81 -- a probe that is itself part of the suite -- deleted the LIVE run's lock. Observed directly: the lock vanished at ~10:45 on a run that started 08:12 and exited 12:07, roughly 80 minutes of a 235-minute run with no lock at all, during which any git push hook would have started a second concurrent suite and reinstated the 2026-09-09 snapshot corruption the lock exists to prevent. acquire_lock() separately decided staleness from mtime alone, and the ceiling was sized against the wrong timeout.",
-      "rules": [
-        "1.4"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "5b8570ce0012",
-        "date": "2026-09-09",
-        "subject": "fix(tests): two suite runs at once made every probe restore the wrong file",
-        "lag_days": 37
-      },
-      "citation_note": "a probe whose whole subject is the lock mechanism sounds read-only and was deleting the live runs lock on the real shared path",
-      "contributing_factors": [
-        {
-          "factor": "release_lock() took no owner argument and unlinked unconditionally, so any process could release any other processs lock",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "scoped to the owner; a foreign caller now gets REFUSING to release pid N lock from pid M instead of succeeding"
-        },
-        {
-          "factor": "acquire_lock() treated an old mtime as a dead run, so a live run holding a long-standing lock could be reclaimed out from under it",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "imports session_lock_check.owner_state(); a live pid is never reclaimed, a dead pid is, and an unparseable lock falls back to age"
-        },
-        {
-          "factor": "a probe whose subject IS the lock mechanism ran against the real shared lock path rather than a fixture path",
-          "kind": "process",
-          "action_status": "planned",
-          "action": "routed to cody as C1 with the fixture recipe; tests/ is codys by the directory rule and the conflict is declared rather than overridden"
-        },
-        {
-          "factor": "nothing reported the locks absence during a run -- it was found by watching the lock path, not by any check",
-          "kind": "detection",
-          "action_status": "planned",
-          "action": "no detector exists for an unlocked suite run; named here so the gap is recorded rather than implied by the fix"
-        }
-      ],
-      "recurrence_open": "the tool half is fixed and the probe half is not. While tests/run_suite_lock_probe.py:81 still points at the shared path it keeps attacking it -- it now gets refused instead of succeeding, which is a mitigation, not a fix, and the probes own A1-A3 arms will behave differently until it is pointed at a fixture lock."
-    },
-    {
-      "commit": "4fb3e3cdad5d",
-      "date": "2026-10-16",
-      "subject": "fix(tier a): the anchored commit is wider than the obligation, and the record never said so",
-      "files": [
-        "docs/ablation/b15_arms.py",
-        "tools/tier_a_review_gate.py"
-      ],
-      "lines_added": 109,
-      "lines_removed": 4,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "tools/tier_a_review_gate.py subject_sha() anchored a Tier A obligation to a whole commit without recording how much of that commit was unrelated to the obligations own subject, so a record anchored to a commit far wider than its subject read exactly like one anchored tightly. A reviewer told to review the anchored commit was pointed at an unbounded amount of unrelated change with nothing saying so.",
-      "rules": [
-        "1.3"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "18078d382de8",
-        "date": "2026-10-07",
-        "subject": "fix(tier-a): --open stamped HEAD, and 34 of 63 checkable records anchor an obligation to a commit that never contained its subject",
-        "lag_days": 9
-      },
-      "citation_note": "the sha still resolved and still pointed at a real commit; what it no longer pointed at was the obligations own subject, and nothing measured the difference",
-      "contributing_factors": [
-        {
-          "factor": "no width was ever measured -- the anchor was a sha and the subject was a file set, and nothing compared them",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "_extra_file_count(sha, paths) measures the files in the anchored commit that are NOT in the obligations declared set, and the count is written into the record"
-        },
-        {
-          "factor": "the record printed a sha with no basis, so file-set, head and could-not-tell were indistinguishable on the page",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "the basis is recorded beside the sha and could-not-tell is kept as its own third state rather than folded into head"
-        },
-        {
-          "factor": "the three reseat bases were added before anything measured how precise any of them was",
-          "kind": "process",
-          "action_status": "done",
-          "action": "the width measurement lands with the bases rather than after them, and the ablation carries an arm for it"
-        }
-      ],
-      "recurrence_open": "the width is now VISIBLE and nothing REFUSES on it. A very wide anchor is still accepted; it just says how wide it is. Choosing a threshold needs a measured distribution across the existing records, which has not been taken."
-    },
-    {
-      "commit": "c36cd069bcd5",
-      "date": "2026-10-16",
-      "subject": "fix(board) -- a mirror can freeze one file at a time",
-      "files": [
-        "tools/sairn_board_publish.py"
-      ],
-      "lines_added": 572,
-      "lines_removed": 22,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "tools/sairn_board_publish.py read a hover-chain mirror as a single object with a single age, so a mirror whose beacon had been refreshed 0.1h ago while its log and all twelve timestamp files were 166h old reported one number -- mirror last written 10.4h ago -- and a PARTIALLY refreshed mirror was indistinguishable from a fresh one. H2s mirror was 165h old against a digest claiming seq 907, 129 entries behind, and the board said nothing a reader could act on.",
-      "rules": [
-        "1.10"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "46128d86a4fd",
-        "date": "2026-10-14",
-        "subject": "feat(drive board): the status bridge publishes itself, and two defects it found",
-        "lag_days": 2
-      },
-      "citation_note": "the mirrors age was computed from its FRESHEST component, so the oldest input -- the 166h log and twelve timestamp files -- was exactly what the single number hid",
-      "contributing_factors": [
-        {
-          "factor": "one mtime stood for a directory of components with independent write paths",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "per-component freshness, with the family that decides FROZEN named rather than averaged"
-        },
-        {
-          "factor": "the freshest component won the single age, so the stalest -- the one that matters -- was exactly the one made invisible",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "each components age is printed and the deciding family is stated, so a partial refresh reads as partial"
-        },
-        {
-          "factor": "nothing INSIDE a frozen mirror said it was frozen; only an external detector knew, and a reader opening the directory saw no warning",
-          "kind": "process",
-          "action_status": "done",
-          "action": "the publisher writes MIRROR-FRESHNESS.md into each hover-chain directory on every board event, naming each components age and what the agents own digest claims instead"
-        },
-        {
-          "factor": "the publisher is a build-agent tool and the chain is a tamper-evident auditor artefact, so the thing that detects the staleness is structurally barred from fixing it",
-          "kind": "latent-condition",
-          "action_status": "declined",
-          "note": "deliberately not addressed: a build agent forging an entry into the chain would destroy the only thing the chain proves. The notice names the auditors own hover_tip_beacon.py --publish command instead"
-        }
-      ],
-      "recurrence_open": "the publisher writes the NOTICE and cannot republish the chain CONTENT -- that is the auditors own command, and it must stay that way. Until H1/H2 run it the mirrors are frozen WITH a notice rather than fresh, which is better than silent and is not fixed."
-    },
-    {
-      "commit": "a382f0ee8be3",
-      "date": "2026-10-16",
-      "subject": "fix(reseat): the 6h window was measured on committer time, which a rebase rewrites",
-      "files": [
-        "docs/ablation/b15_arms.py",
-        "tools/tier_a_review_gate.py"
-      ],
-      "lines_added": 134,
-      "lines_removed": 10,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "tools/tier_a_review_gate.py measured the 6-hour reseat window on COMMITTER time, which a rebase rewrites. Five clones in this repo rebase on almost every push, so the window moved whenever a candidate commit had been replayed, and the reseat could select a sha that was outside the real window when the work was done.",
-      "rules": [
-        "1.9"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "b76d1fee7d66",
-        "date": "2026-09-29",
-        "subject": "feat(gate): queue25 item 8 -- three reseat bases instead of one, and the cross-check that stopped the strongest one writing two wrong shas",
-        "lag_days": 17
-      },
-      "citation_note": "committer time makes the checker answer differently on identical input: the same work replayed by a rebase produces a different window with no change to the work itself",
-      "contributing_factors": [
-        {
-          "factor": "committer time was used where author time is the field a replay preserves",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "the window is measured on author time, and the cross-check compares both so a divergence is reported rather than silently preferred"
-        },
-        {
-          "factor": "this repo rebases routinely across five clones, so committer time is rewritten as a matter of course rather than exceptionally",
-          "kind": "latent-condition",
-          "action_status": "not-actionable",
-          "note": "the rebase discipline is correct and is not changing; the fix is to stop depending on a field it rewrites"
-        },
-        {
-          "factor": "nothing compared the two timestamps, so a rewritten committer date produced a plausible wrong window with no signal",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "the cross-check is what stopped the strongest reseat basis writing two wrong shas, and it has an ablation arm"
-        }
-      ],
-      "recurrence_open": "only the reseat window was re-derived. Any other time window in this gate still measured on committer time is not covered -- nothing swept the file for the field, so this is a known gap and not a cleared one."
-    },
-    {
-      "commit": "2aed3322eb55",
-      "date": "2026-10-16",
-      "subject": "fix(close gate): the child was left on cp1252, and the answer to fourth's three prose spans is a measurement",
-      "files": [
-        "tools/batch_manifest.py",
-        "tools/citation_anchor_rot_check.py"
-      ],
-      "lines_added": 87,
-      "lines_removed": 2,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "tools/batch_manifest.py spawned tools/drive_upload_verify.py without PYTHONIOENCODING or PYTHONUTF8, so the child encoded at cp1252 and died on the first em-dash in the handoff line it quotes. cmd_close then reported that crash as the Drive verification FAILING rather than as a could-not-run, so a batch was told its uploads were unverified when nothing had actually been checked.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "9603441d8bd8",
-        "date": "2026-10-14",
-        "subject": "feat(drive upload verify): one tool every agent runs for its three deliverables, and a batch that cannot close without it",
-        "lag_days": 2
-      },
-      "citation_note": "the conflation runs the OTHER WAY here and is the same defect: could-not-run was folded into FAILED rather than into passed, so a batch was told its uploads were unverified when nothing had been checked at all",
-      "contributing_factors": [
-        {
-          "factor": "this process reconfiguring its OWN streams does nothing for a subprocess, and the spawn inherited the platform default",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "CHILD_ENV passes PYTHONIOENCODING=utf-8 and PYTHONUTF8=1 to every spawn of the verifier"
-        },
-        {
-          "factor": "the childs crash was folded into the verifys pass/fail instead of being its own third state",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "a child that cannot run is reported as could-not-run, which is the PR 1.11 shape arriving inside the close gate"
-        },
-        {
-          "factor": "the ablation had no arm driving a non-ASCII payload through the child, so the layer was unproven",
-          "kind": "process",
-          "action_status": "done",
-          "action": "three CHILD_ENV fixtures; the ablation now reports it LOAD-BEARING at 35/35 baseline and 32/35 ablated"
-        }
-      ],
-      "recurrence_open": "only batch_manifest.pys spawn of drive_upload_verify.py is fixed. No sweep was run over the other subprocess spawns in tools/, so the same cp1252 child is possible anywhere else one exists and nothing here rules that out."
-    },
-    {
       "commit": "0ef5447b2631",
       "date": "2026-10-16",
       "subject": "fix(b27 resume): the repair that closed five mutations opened a sixth, and the 26 UNRESOLVED were never inter-procedural",
@@ -32294,190 +31959,6 @@
         }
       ],
       "recurrence_open": "The latent condition is NOT closed. Nothing runs an anchor-rot check over the source-text assertions in tests/, so the next assertion of this shape will rot the same way and will be found only if somebody chooses to ablate it. The routed item that would close it -- wire ONE anchor-rot tool into a gate -- is cc's and is open. Also not closed: nothing compares a suite assertion against the probe arm that is supposed to guard it, which is how both layers were dead at the same time here."
-    },
-    {
-      "commit": "64ba232d65d7",
-      "date": "2026-10-16",
-      "subject": "fix(inventory): hooked() returned {} for four different conditions, and three of the probe's arms had been red against a --check that said the document matched",
-      "files": [
-        "docs/TOOLING-INVENTORY.md",
-        "tools/tooling_inventory.py"
-      ],
-      "lines_added": 235,
-      "lines_removed": 89,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "static-checker",
-      "summary": "tools/tooling_inventory.py hooked() was six lines whose entire error path was \"except Exception: return out\", so one empty dict stood for four states a caller cannot tell apart -- settings.json absent, settings.json unparseable, the hooks key deliberately EMPTY (true in this clone since 2026-10-13), and half-wired. The classifier derived the whole hook dimension from that empty dict and exited 0, publishing ADVISORY as 0 tools, the PUSH GATE ITSELF as SUITE-ONLY and a SessionStart hook as DECIDED. The wiring was never unknown: docs/hooks-disabled-2026-10-13.json carries all 23 commands verbatim, 19 tools across five event types, and nothing read it. CORRECTED 2026-10-16, SAME DAY: this summary was first written through a shell command body containing backtick-quoted code, and the shell EXECUTED the backticked span and substituted its empty output -- the record read \"six lines with , so\". Restored here with the quotation in plain double quotes. Use the --summary-file route for any body carrying code.",
-      "rules": [
-        "1.8"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": "run_tooling_inventory_probe.py",
-      "found_by_session": null,
-      "injection": {
-        "commit": "9a5b81aa68b0",
-        "date": "2026-09-12",
-        "subject": "feat(tools,docs): the tooling inventory, GENERATED, because the last one was stale in three days",
-        "lag_days": 34
-      },
-      "citation_note": "a generated artefact is safe to generate and a generated GATE is not: --check compared the document to its own generator, both ends read the hook wiring through the same blind reader, and it printed OK beside three arms that were red on exactly what the reader had missed",
-      "contributing_factors": [
-        {
-          "factor": "a bare except returning an empty dict collapsed four conditions into one, three of which are could-not-tell and one of which is a recorded decision",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "hooked() returns (map, source, why) with four named sources; classify() raises on settings-empty and unreadable so the generator refuses to write rather than publishing a degraded classification"
-        },
-        {
-          "factor": "the decision record existed and was not read -- the SAME root cause as this files own NOT_PROMOTED lesson, written out forty lines below the defect",
-          "kind": "process",
-          "action_status": "done",
-          "action": "the recorded wiring is read when, and only when, hook_integrity_check.intentionally_disarmed() says the live emptiness IS the committed decision"
-        },
-        {
-          "factor": "--check compared the document to its own generator, so a blind reader produced a document that agreed with itself",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "the hook leg is a HARD traverse leg again and names its source; the document states in the document that the hook-derived half is the RECORDED wiring and is not running in this clone today"
-        },
-        {
-          "factor": "three probe arms had been red on exactly these three facts and the suite was neither fixed nor registered as known-red",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "3 failures -> 0; the probe was listed in ccs own b15 sweep triage and is NOT in docs/known-red-suites.json, so it was a real open failure rather than an accepted one"
-        },
-        {
-          "factor": "optional_leg() was applied to the hook leg in October to unfreeze unrelated corrections stuck behind a correct refusal",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "that was the right call for the wrong reason and is reversed: the leg is hard again now that the wiring can be read, and the reasoning is left in place rather than deleted"
-        }
-      ],
-      "recurrence_open": "only the hook leg was audited. The other six traverse legs in this generator were not swept for the same bare-except shape, and a widened classify() signature broke a probe in cody's tree on the first attempt -- which means other callers of these helpers exist and were not enumerated."
-    },
-    {
-      "commit": "e05802cf98dd",
-      "date": "2026-10-16",
-      "subject": "fix(scope gate): a rebase replay skips commit-time enforcement, and the half H1 left open is answered -- the push gate DOES refuse it",
-      "files": [
-        ".githooks/post-rewrite",
-        "docs/2026-10-16-cc-b16-scope-gate-rebase-replay-sandbox.sh",
-        "tools/hover_auditor_scope_gate.py"
-      ],
-      "lines_added": 555,
-      "lines_removed": 6,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "hover-audit",
-      "summary": "tools/hover_auditor_scope_gate.py advertised COMMIT-TIME enforcement of the hover auditor's core rule, and .githooks/pre-commit does not fire on a commit replayed by git rebase. H1 b41 confirmed that by direct reproduction. So any commit touching platform code that reached local history by any route -- --no-verify or otherwise -- could be carried onto main by git pull --rebase with no second chance for the gate to catch it at commit time. Driven live in b16: the push-time leg DOES refuse it, on both the new-branch path and the rsha..lsha path, so the gap is TIME rather than coverage -- the violation sat in local history un-named from the rebase until the next push.",
-      "rules": [
-        "1.7"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover",
-      "injection": {
-        "commit": "792117dd16e6",
-        "date": "2026-09-15",
-        "subject": "feat(process): the hover auditor's separation becomes mechanical -- and both alleged breaches did not happen",
-        "lag_days": 31
-      },
-      "citation_note": "pre-commit's sampling window is the staged files of a plain commit, and it silently exempted every commit that reached history by a rebase replay -- which is this platform's standard move, used by every agent every batch",
-      "contributing_factors": [
-        {
-          "factor": "git does not invoke pre-commit on a rebase replay, and nothing in the gate or the hook said so",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "a --post-rewrite mode reads gits own old->new map and names any out-of-scope path in a replayed commit, wired as the third consumer of .githooks/post-rewrite"
-        },
-        {
-          "factor": "the three enforcement points read as ONE mechanism in the gates own docstring, so the difference between them was invisible",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "the docstring now states what each point covers and which shape each misses, with the eight measured arms beside it"
-        },
-        {
-          "factor": "the push-time leg was never driven, so whether the gap was total or partial was unknown for two batches",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "eight arms in a bare-repo sandbox with two in-scope controls; the script is committed as docs/2026-10-16-cc-b16-scope-gate-rebase-replay-sandbox.sh so it can be re-run rather than quoted"
-        },
-        {
-          "factor": "post-rewrite CANNOT refuse -- git ignores its exit status -- so the second guard is a notice and not an enforcement point",
-          "kind": "latent-condition",
-          "action_status": "not-actionable",
-          "note": "this is a property of git and not a shortcut. The notice says so in its own output rather than implying it refused; --pre-push is what refuses"
-        },
-        {
-          "factor": "the gate had no selftest at all, so none of its pure classification could be driven",
-          "kind": "process",
-          "action_status": "done",
-          "action": "11 arms, both directions, including an empty rewrite map as COULD-NOT-TELL rather than a clean one"
-        }
-      ],
-      "recurrence_open": "the second guard DETECTS and cannot refuse, so a replayed violation still reaches local history -- it is now named at the rewrite instead of only at the push. Nothing closes the commit-time miss itself, because git will not call pre-commit on a replay. And the eight arms cover the gate in a SANDBOX: no arm runs in the auditor's real clone, which a build agent must not enter."
-    },
-    {
-      "commit": "5522cfc8c085",
-      "date": "2026-10-16",
-      "subject": "fix(claims): `list --all` was 501,182 bytes and nobody had measured it",
-      "files": [
-        "tools/sairn_claim.py"
-      ],
-      "lines_added": 201,
-      "lines_removed": 8,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "hover-audit",
-      "summary": "tools/sairn_claim.py printed full free-text task strings with no limit on list, check and claim. Measured: list --all 501,182 bytes -- roughly 125,000 tokens in ONE command -- and a routine check 17,652-22,583 bytes of which the released-recently note was 12,268 (54%). Every build agent runs check and claim at the start of every batch, and H1 hit 11-30KB outputs from this tool repeatedly across two batches, each needing a truncate-to-file-and-read-back round trip. Not a wrong answer: real, avoidable cost on every session. NOTE ON THIS RECORD ITSELF, 2026-10-16: it was first written through a shell command body containing backtick-quoted code spans, and the shell executed two of them and substituted their empty output. Every figure above was re-read against the measurements after the fact and is intact; the lesson is that a CLI body carrying code belongs in --summary-file, not inline.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover",
-      "injection": {
-        "commit": "0addefa44dd4",
-        "date": "2026-09-10",
-        "subject": "fix(claims): a released claim gave no signal, so check said CLEAR on work another session had just finished",
-        "lag_days": 36
-      },
-      "citation_note": "no standing rule is about a tool's own token cost. PR 1.7 is the nearest -- a truncated read is indistinguishable from a complete one -- and it is about the OPPOSITE direction: the defect here is printing everything, and the FIX is the one that had to be built not to violate 1.7. Citing 1.7 would make the FMEA scorer match on manufactured agreement, which is the 38% arriving through the data instead of the matcher.",
-      "contributing_factors": [
-        {
-          "factor": "every print site rendered the whole task string, and task strings grew from a sentence to a 1-2KB paragraph carrying a declared FILES list",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "a display budget on CONTEXT rows only; list --all 501,182 -> 20,986 bytes and check -> 12,552, with --full returning the original byte for byte"
-        },
-        {
-          "factor": "nobody had measured list --all, so the routed figure (11-30KB) understated the worst case by more than an order of magnitude",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "all four sizes measured BEFORE anything was changed and recorded in the tool, the inventory and the commit, so the next reader does not re-derive them"
-        },
-        {
-          "factor": "a uniform truncation would have broken the tool, because one of these outputs is one a human is REQUIRED to read in full",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "a BLOCKING claim and the demoted could-not-compare block are never budgeted, and active rows in list are never capped; only the three context blocks are"
-        },
-        {
-          "factor": "the first draft of the budget cut the FILES segment -- the field this tools own blocking verdict is computed from",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "caught by reading the OUTPUT rather than the diff; brief() carries the FILES tail with its own allowance and B4 is the arm that holds it"
-        }
-      ],
-      "recurrence_open": "the budget covers this tool's own prints. Nothing sweeps the other 350 tools for the same shape, and  at 501KB was found only because somebody ran it -- there is no detector for an unbounded tool output anywhere on this platform."
     },
     {
       "commit": "144dfb71587e",
@@ -32957,6 +32438,373 @@
       "recurrence_open": "FIVE OTHER RECORDS CARRY A COUNT THAT DISAGREES WITH THEIR ARRAY AND ARE DELIBERATELY NOT FLAGGED, because each names its subset and is correct. They are listed verbatim in the suite's header as the fixtures that must stay silent -- so if one of them ever IS wrong, this check will not say so. AND THE CHECK ONLY READS THE OPENING SENTENCE: a count stated mid-paragraph is out of its reach by design. AND IT IS NOT A PUSH GATE -- it is an api/ suite, caught by a full-tree sweep and by nothing automatic."
     },
     {
+      "commit": "1a7d105e7642",
+      "date": "2026-10-16",
+      "subject": "fix(sairndental): the charge's CDT stamp was written and never read, and the versioning had no way in",
+      "files": [
+        "SAIRN-handoff-fourth-b28.md",
+        "docs/2026-10-16-fourth-b28-tier-a-shards-routed-to-cc.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/batch-manifest-fourth-b28.json",
+        "docs/cloud-research/childcare-worldwide-competitive-gap-audit-2026-10-16.md",
+        "docs/tier-a-reviews/cc.jsonl",
+        "docs/tier-a-reviews/cody.jsonl",
+        "docs/tier-a-reviews/fourth.jsonl",
+        "docs/tier-a-reviews/hank.jsonl",
+        "docs/tier-a-reviews/hover2.jsonl",
+        "sairndental.html",
+        "tools/tier_a_reviews_store.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 2031,
+      "lines_removed": 19,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "THE CHARGE CDT STAMP WAS WRITTEN AND NEVER READ, AND THE CATALOGUE HAD NO EDIT PATH, so the guarantee the stamping commit stated did not hold and the versioning feature was unreachable for the population it was built for. addChargeEntry() has stamped cdt_code and cdt_version onto every dnt_charges row since 2026-09-17, and its own comment states that the code and edition are STAMPED AT POSTING so a catalogue edit cannot restate history. BOTH readers ignored the stamp and looked the code up live from the mutable procedure-type row: the patient ledger's charges table, and the charges export's Procedure column -- nine lines below its own comment stating the rule it then broke, that a deleted patient still has charges and a name-only export would make those rows unattributable. A deleted or revised procedure type has charges too. The defect is invisible to every structural check because the stamp and the live lookup return the same answer on every row until the day the catalogue is edited, which is the one day the stamp exists for. SECOND HALF: the procedure-type form was ADD-ONLY and the table's only action was Remove, so every row predating the versioning reported 'Not verifiable' permanently with no path to a checked state, and applying a new CDT edition meant Remove-and-re-Add, minting a new row id and orphaning every historical charge -- the exact ledger-integrity failure the stamp was written to prevent, reached by a different door. The stamping fix was therefore written for an edit path that did not exist, which is why its missing read half never surfaced. FIXED: dntChargeCode() is the single reader at both sites, preferring the stamp, falling back to the live row only when there is no stamp and LABELLING that, and saying 'not recorded' when neither exists rather than guessing; three new export columns carry the code and edition as billed and the source of each; and a revise path updates a procedure type in place keeping its row id, appending replaced values to revisions[] rather than overwriting, recording only changed fields, and refusing a no-change, a vanished target and an inverted window. DRIVEN, 22 checks exit 0, first arm being the discriminating case where the catalogue was revised after posting so stamp and lookup disagree. NO TOOL FOUND IT: found by tracing which readers consume a charge's stamped fields after reading addChargeEntry()'s own comment claiming a guarantee; the 22-check driver was written afterwards to prove the fix, not to find the defect.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "8627f4e4c796",
+        "date": "2026-10-15",
+        "subject": "fix(blob): the ten routed conversions, 58 -> 48 exactly, and nine of ten column lists are EMPTY",
+        "lag_days": 1
+      },
+      "citation_note": "No standing rule names 'a field a write path stores that no reader consumes'. It is not a fabricated value (the field is real and correctly computed), not dormant code (the writer runs on every charge), and not a silent failure (nothing fails). The nearest is the fabrication check, which asks whether a displayed number has a function behind it, and this is the mirror of that: a stored value with no display behind it. Recorded as not-citable rather than stretched onto a rule it does not fit.",
+      "phase_note": "Recorded as coding because the 2026-09-17 change was correctly designed and incompletely implemented -- the record field, the stamping call and the stated guarantee are all right, and the two readers were simply not changed. Not a design phase defect: the design is what this commit finished.",
+      "contributing_factors": [
+        {
+          "factor": "The 2026-09-17 change added cdt_code and cdt_version to the charge record and did not change either place that displays a charge's code. The write half shipped, the read half did not, and the commit's own comment asserted the guarantee as though both had.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "dntChargeCode(charge) is now the single reader and is used at both sites -- the patient ledger's charges table and the charges export's Procedure column. It prefers the stamped value, and three new export columns surface the code as billed, the edition as billed, and which source each came from."
+        },
+        {
+          "factor": "The stamp and the live catalogue lookup return the SAME answer on every row until the day the catalogue is edited -- which is the one day the stamp exists for. So no test of present-day data could separate them, and the defect was invisible to every structural check: node --check passed, the HTML parsed with zero findings, every id resolved and no handler was undefined.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The driver scratchpad/b28_dental_drive.js extracts the functions from the app by name and its first arm is the DISCRIMINATING case -- the catalogue row revised to a different code and edition after the charge was posted, so stamp and lookup disagree. Six arms cover the stamped, unstamped-fallback, neither-available and deleted-row directions. 22 checks, exit 0."
+        },
+        {
+          "factor": "There was no edit path for a procedure type at all -- the form was add-only and the table's only action was Remove. So the stamping fix was written to defend against a catalogue mutation that nobody could actually perform, which is why the absence of its read half never surfaced: the scenario that would have exposed it was unreachable through the UI.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "startProcedureRevise()/cancelProcedureRevise() plus update-or-insert in addProcedureType(). The row keeps its id so posted charges stay attributable, replaced values are appended to revisions[] rather than overwritten, only changed fields are recorded, and a no-change, a vanished target and an inverted window are each refused with a message rather than coerced."
+        },
+        {
+          "factor": "The charges export carries a comment nine lines above the column that broke the rule, stating that rule: 'a deleted patient still has charges, and a name-only export would make those rows unattributable'. The principle was written down, in the right file, next to the code, and the adjacent column did the opposite for the procedure type.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The Procedure column now goes through dntChargeCode() like the ledger does, so both readers share one implementation of the rule and a future divergence has to be made in one place rather than two."
+        },
+        {
+          "factor": "Every row that existed before the versioning shipped reported 'Not verifiable' and there was no path from that state to a checked one, so the feature's own promise was unreachable for the exact population it was built for. A product that cannot be used on existing data looks identical to one nobody has used yet.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The revise path backfills cdt_version, effective_from, effective_to and superseded_by onto an existing row without changing its identity -- driven as the first F2 arm, which asserts one row, same id, the window recorded, and the previously-empty values kept as history."
+        },
+        {
+          "factor": "Nothing on this platform compares a field that a write path STORES against the set of readers that consume it. A stored-and-never-read field is not a syntax error, not a dead function and not a fabricated value, so neither node --check, nor the HTML parser, nor Guardian's dormant-code check, nor the fabrication check can see it.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "OWED, NOT DONE, and nothing in this commit closes it: a check that enumerates the fields each write path puts into a record and reports any that no reader ever references, per app. It is mechanically available -- the write sites are a bounded set of record literals and the readers are greppable by field name -- and it would have found this on the day it was introduced rather than thirteen months later. tools/ is cc's, so this is a routed item and not mine to build.",
+          "note": "Recorded as planned rather than done deliberately. This one field is now read, but the class is open: any other write path on the platform that stamps a field for a future reader has the same exposure and nothing measures it."
+        }
+      ],
+      "recurrence_open": "The CLASS is open and this commit does not close it. Nothing on this platform compares the fields a write path STORES against the readers that consume them, so any other write path that stamps a field for a future reader has the same exposure and nothing measures it. A stored-and-never-read field is not a syntax error, not dormant code and not a fabricated value, so node --check, the HTML parser, Guardian's dormant-code check and its fabrication check are all structurally blind to it. The routed item -- a per-app stored-field-vs-reader sweep -- is cc's and is not built. Also open: sairndental has never been RENDERED in this batch and sairn-visual-review did not run, so the revise form's markup is verified by parser and driver only."
+    },
+    {
+      "commit": "2aed3322eb55",
+      "date": "2026-10-16",
+      "subject": "fix(close gate): the child was left on cp1252, and the answer to fourth's three prose spans is a measurement",
+      "files": [
+        "tools/batch_manifest.py",
+        "tools/citation_anchor_rot_check.py"
+      ],
+      "lines_added": 87,
+      "lines_removed": 2,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/batch_manifest.py spawned tools/drive_upload_verify.py without PYTHONIOENCODING or PYTHONUTF8, so the child encoded at cp1252 and died on the first em-dash in the handoff line it quotes. cmd_close then reported that crash as the Drive verification FAILING rather than as a could-not-run, so a batch was told its uploads were unverified when nothing had actually been checked.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "9603441d8bd8",
+        "date": "2026-10-14",
+        "subject": "feat(drive upload verify): one tool every agent runs for its three deliverables, and a batch that cannot close without it",
+        "lag_days": 2
+      },
+      "citation_note": "the conflation runs the OTHER WAY here and is the same defect: could-not-run was folded into FAILED rather than into passed, so a batch was told its uploads were unverified when nothing had been checked at all",
+      "contributing_factors": [
+        {
+          "factor": "this process reconfiguring its OWN streams does nothing for a subprocess, and the spawn inherited the platform default",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "CHILD_ENV passes PYTHONIOENCODING=utf-8 and PYTHONUTF8=1 to every spawn of the verifier"
+        },
+        {
+          "factor": "the childs crash was folded into the verifys pass/fail instead of being its own third state",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "a child that cannot run is reported as could-not-run, which is the PR 1.11 shape arriving inside the close gate"
+        },
+        {
+          "factor": "the ablation had no arm driving a non-ASCII payload through the child, so the layer was unproven",
+          "kind": "process",
+          "action_status": "done",
+          "action": "three CHILD_ENV fixtures; the ablation now reports it LOAD-BEARING at 35/35 baseline and 32/35 ablated"
+        }
+      ],
+      "recurrence_open": "only batch_manifest.pys spawn of drive_upload_verify.py is fixed. No sweep was run over the other subprocess spawns in tools/, so the same cp1252 child is possible anywhere else one exists and nothing here rules that out."
+    },
+    {
+      "commit": "334fe3c9acaf",
+      "date": "2026-10-16",
+      "subject": "fix(suite lock): a probe inside the suite was deleting the live run's lock, and the ceiling was sized against the wrong timeout",
+      "files": [
+        "docs/2026-10-15-cc-b15-sweep-triage.md",
+        "docs/ablation/b15_arms.py",
+        "docs/report-only-reachability.json",
+        "docs/scrutiny-flags.json",
+        "docs/sweep-2026-10-15.log",
+        "docs/test-file-floor.json",
+        "tools/run_all_tests.py"
+      ],
+      "lines_added": 1571,
+      "lines_removed": 106,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/run_all_tests.py release_lock() unlinked the shared suite lock without checking who owned it, so tests/run_suite_lock_probe.py:81 -- a probe that is itself part of the suite -- deleted the LIVE run's lock. Observed directly: the lock vanished at ~10:45 on a run that started 08:12 and exited 12:07, roughly 80 minutes of a 235-minute run with no lock at all, during which any git push hook would have started a second concurrent suite and reinstated the 2026-09-09 snapshot corruption the lock exists to prevent. acquire_lock() separately decided staleness from mtime alone, and the ceiling was sized against the wrong timeout.",
+      "rules": [
+        "1.4"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "5b8570ce0012",
+        "date": "2026-09-09",
+        "subject": "fix(tests): two suite runs at once made every probe restore the wrong file",
+        "lag_days": 37
+      },
+      "citation_note": "a probe whose whole subject is the lock mechanism sounds read-only and was deleting the live runs lock on the real shared path",
+      "contributing_factors": [
+        {
+          "factor": "release_lock() took no owner argument and unlinked unconditionally, so any process could release any other processs lock",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "scoped to the owner; a foreign caller now gets REFUSING to release pid N lock from pid M instead of succeeding"
+        },
+        {
+          "factor": "acquire_lock() treated an old mtime as a dead run, so a live run holding a long-standing lock could be reclaimed out from under it",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "imports session_lock_check.owner_state(); a live pid is never reclaimed, a dead pid is, and an unparseable lock falls back to age"
+        },
+        {
+          "factor": "a probe whose subject IS the lock mechanism ran against the real shared lock path rather than a fixture path",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "routed to cody as C1 with the fixture recipe; tests/ is codys by the directory rule and the conflict is declared rather than overridden"
+        },
+        {
+          "factor": "nothing reported the locks absence during a run -- it was found by watching the lock path, not by any check",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "no detector exists for an unlocked suite run; named here so the gap is recorded rather than implied by the fix"
+        }
+      ],
+      "recurrence_open": "the tool half is fixed and the probe half is not. While tests/run_suite_lock_probe.py:81 still points at the shared path it keeps attacking it -- it now gets refused instead of succeeding, which is a mitigation, not a fix, and the probes own A1-A3 arms will behave differently until it is pointed at a fixture lock."
+    },
+    {
+      "commit": "4fb3e3cdad5d",
+      "date": "2026-10-16",
+      "subject": "fix(tier a): the anchored commit is wider than the obligation, and the record never said so",
+      "files": [
+        "docs/ablation/b15_arms.py",
+        "tools/tier_a_review_gate.py"
+      ],
+      "lines_added": 109,
+      "lines_removed": 4,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/tier_a_review_gate.py subject_sha() anchored a Tier A obligation to a whole commit without recording how much of that commit was unrelated to the obligations own subject, so a record anchored to a commit far wider than its subject read exactly like one anchored tightly. A reviewer told to review the anchored commit was pointed at an unbounded amount of unrelated change with nothing saying so.",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "18078d382de8",
+        "date": "2026-10-07",
+        "subject": "fix(tier-a): --open stamped HEAD, and 34 of 63 checkable records anchor an obligation to a commit that never contained its subject",
+        "lag_days": 9
+      },
+      "citation_note": "the sha still resolved and still pointed at a real commit; what it no longer pointed at was the obligations own subject, and nothing measured the difference",
+      "contributing_factors": [
+        {
+          "factor": "no width was ever measured -- the anchor was a sha and the subject was a file set, and nothing compared them",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "_extra_file_count(sha, paths) measures the files in the anchored commit that are NOT in the obligations declared set, and the count is written into the record"
+        },
+        {
+          "factor": "the record printed a sha with no basis, so file-set, head and could-not-tell were indistinguishable on the page",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the basis is recorded beside the sha and could-not-tell is kept as its own third state rather than folded into head"
+        },
+        {
+          "factor": "the three reseat bases were added before anything measured how precise any of them was",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the width measurement lands with the bases rather than after them, and the ablation carries an arm for it"
+        }
+      ],
+      "recurrence_open": "the width is now VISIBLE and nothing REFUSES on it. A very wide anchor is still accepted; it just says how wide it is. Choosing a threshold needs a measured distribution across the existing records, which has not been taken."
+    },
+    {
+      "commit": "5522cfc8c085",
+      "date": "2026-10-16",
+      "subject": "fix(claims): `list --all` was 501,182 bytes and nobody had measured it",
+      "files": [
+        "tools/sairn_claim.py"
+      ],
+      "lines_added": 201,
+      "lines_removed": 8,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "tools/sairn_claim.py printed full free-text task strings with no limit on list, check and claim. Measured: list --all 501,182 bytes -- roughly 125,000 tokens in ONE command -- and a routine check 17,652-22,583 bytes of which the released-recently note was 12,268 (54%). Every build agent runs check and claim at the start of every batch, and H1 hit 11-30KB outputs from this tool repeatedly across two batches, each needing a truncate-to-file-and-read-back round trip. Not a wrong answer: real, avoidable cost on every session. NOTE ON THIS RECORD ITSELF, 2026-10-16: it was first written through a shell command body containing backtick-quoted code spans, and the shell executed two of them and substituted their empty output. Every figure above was re-read against the measurements after the fact and is intact; the lesson is that a CLI body carrying code belongs in --summary-file, not inline.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "0addefa44dd4",
+        "date": "2026-09-10",
+        "subject": "fix(claims): a released claim gave no signal, so check said CLEAR on work another session had just finished",
+        "lag_days": 36
+      },
+      "citation_note": "no standing rule is about a tool's own token cost. PR 1.7 is the nearest -- a truncated read is indistinguishable from a complete one -- and it is about the OPPOSITE direction: the defect here is printing everything, and the FIX is the one that had to be built not to violate 1.7. Citing 1.7 would make the FMEA scorer match on manufactured agreement, which is the 38% arriving through the data instead of the matcher.",
+      "contributing_factors": [
+        {
+          "factor": "every print site rendered the whole task string, and task strings grew from a sentence to a 1-2KB paragraph carrying a declared FILES list",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "a display budget on CONTEXT rows only; list --all 501,182 -> 20,986 bytes and check -> 12,552, with --full returning the original byte for byte"
+        },
+        {
+          "factor": "nobody had measured list --all, so the routed figure (11-30KB) understated the worst case by more than an order of magnitude",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "all four sizes measured BEFORE anything was changed and recorded in the tool, the inventory and the commit, so the next reader does not re-derive them"
+        },
+        {
+          "factor": "a uniform truncation would have broken the tool, because one of these outputs is one a human is REQUIRED to read in full",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "a BLOCKING claim and the demoted could-not-compare block are never budgeted, and active rows in list are never capped; only the three context blocks are"
+        },
+        {
+          "factor": "the first draft of the budget cut the FILES segment -- the field this tools own blocking verdict is computed from",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "caught by reading the OUTPUT rather than the diff; brief() carries the FILES tail with its own allowance and B4 is the arm that holds it"
+        }
+      ],
+      "recurrence_open": "the budget covers this tool's own prints. Nothing sweeps the other 350 tools for the same shape, and  at 501KB was found only because somebody ran it -- there is no detector for an unbounded tool output anywhere on this platform."
+    },
+    {
+      "commit": "64ba232d65d7",
+      "date": "2026-10-16",
+      "subject": "fix(inventory): hooked() returned {} for four different conditions, and three of the probe's arms had been red against a --check that said the document matched",
+      "files": [
+        "docs/TOOLING-INVENTORY.md",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 235,
+      "lines_removed": 89,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "tools/tooling_inventory.py hooked() was six lines whose entire error path was \"except Exception: return out\", so one empty dict stood for four states a caller cannot tell apart -- settings.json absent, settings.json unparseable, the hooks key deliberately EMPTY (true in this clone since 2026-10-13), and half-wired. The classifier derived the whole hook dimension from that empty dict and exited 0, publishing ADVISORY as 0 tools, the PUSH GATE ITSELF as SUITE-ONLY and a SessionStart hook as DECIDED. The wiring was never unknown: docs/hooks-disabled-2026-10-13.json carries all 23 commands verbatim, 19 tools across five event types, and nothing read it. CORRECTED 2026-10-16, SAME DAY: this summary was first written through a shell command body containing backtick-quoted code, and the shell EXECUTED the backticked span and substituted its empty output -- the record read \"six lines with , so\". Restored here with the quotation in plain double quotes. Use the --summary-file route for any body carrying code.",
+      "rules": [
+        "1.8"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "run_tooling_inventory_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "9a5b81aa68b0",
+        "date": "2026-09-12",
+        "subject": "feat(tools,docs): the tooling inventory, GENERATED, because the last one was stale in three days",
+        "lag_days": 34
+      },
+      "citation_note": "a generated artefact is safe to generate and a generated GATE is not: --check compared the document to its own generator, both ends read the hook wiring through the same blind reader, and it printed OK beside three arms that were red on exactly what the reader had missed",
+      "contributing_factors": [
+        {
+          "factor": "a bare except returning an empty dict collapsed four conditions into one, three of which are could-not-tell and one of which is a recorded decision",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "hooked() returns (map, source, why) with four named sources; classify() raises on settings-empty and unreadable so the generator refuses to write rather than publishing a degraded classification"
+        },
+        {
+          "factor": "the decision record existed and was not read -- the SAME root cause as this files own NOT_PROMOTED lesson, written out forty lines below the defect",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the recorded wiring is read when, and only when, hook_integrity_check.intentionally_disarmed() says the live emptiness IS the committed decision"
+        },
+        {
+          "factor": "--check compared the document to its own generator, so a blind reader produced a document that agreed with itself",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the hook leg is a HARD traverse leg again and names its source; the document states in the document that the hook-derived half is the RECORDED wiring and is not running in this clone today"
+        },
+        {
+          "factor": "three probe arms had been red on exactly these three facts and the suite was neither fixed nor registered as known-red",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "3 failures -> 0; the probe was listed in ccs own b15 sweep triage and is NOT in docs/known-red-suites.json, so it was a real open failure rather than an accepted one"
+        },
+        {
+          "factor": "optional_leg() was applied to the hook leg in October to unfreeze unrelated corrections stuck behind a correct refusal",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "that was the right call for the wrong reason and is reversed: the leg is hard again now that the wiring can be read, and the reasoning is left in place rather than deleted"
+        }
+      ],
+      "recurrence_open": "only the hook leg was audited. The other six traverse legs in this generator were not swept for the same bare-except shape, and a widened classify() signature broke a probe in cody's tree on the first attempt -- which means other callers of these helpers exist and were not enumerated."
+    },
+    {
       "commit": "74be8ec8383c",
       "date": "2026-10-16",
       "subject": "fix(sairnbuild): one message, logged once, and exactly one bare catch in st()",
@@ -33008,6 +32856,239 @@
         }
       ],
       "recurrence_open": "THE OTHER 86 CALL SITES STILL READ okWrite AND MOST IGNORE IT, which is unchanged and is the larger problem this does not touch. AND NOTHING HERE WAS DRIVEN IN A BROWSER: the st() seam check loads the wrapper with a stubbed localStorage, so the bldSyncCollection throw path is exercised against a stub and the real retry pass has never been seen to pick one of these up. AND THE PENDING-LIST SENTINEL IS UNVERIFIED end to end -- bldRetryPending() drops an id it cannot resolve to a local row, which is why '__collection__' is visible and self-cleaning by argument rather than by measurement."
+    },
+    {
+      "commit": "a382f0ee8be3",
+      "date": "2026-10-16",
+      "subject": "fix(reseat): the 6h window was measured on committer time, which a rebase rewrites",
+      "files": [
+        "docs/ablation/b15_arms.py",
+        "tools/tier_a_review_gate.py"
+      ],
+      "lines_added": 134,
+      "lines_removed": 10,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/tier_a_review_gate.py measured the 6-hour reseat window on COMMITTER time, which a rebase rewrites. Five clones in this repo rebase on almost every push, so the window moved whenever a candidate commit had been replayed, and the reseat could select a sha that was outside the real window when the work was done.",
+      "rules": [
+        "1.9"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "b76d1fee7d66",
+        "date": "2026-09-29",
+        "subject": "feat(gate): queue25 item 8 -- three reseat bases instead of one, and the cross-check that stopped the strongest one writing two wrong shas",
+        "lag_days": 17
+      },
+      "citation_note": "committer time makes the checker answer differently on identical input: the same work replayed by a rebase produces a different window with no change to the work itself",
+      "contributing_factors": [
+        {
+          "factor": "committer time was used where author time is the field a replay preserves",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the window is measured on author time, and the cross-check compares both so a divergence is reported rather than silently preferred"
+        },
+        {
+          "factor": "this repo rebases routinely across five clones, so committer time is rewritten as a matter of course rather than exceptionally",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "the rebase discipline is correct and is not changing; the fix is to stop depending on a field it rewrites"
+        },
+        {
+          "factor": "nothing compared the two timestamps, so a rewritten committer date produced a plausible wrong window with no signal",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the cross-check is what stopped the strongest reseat basis writing two wrong shas, and it has an ablation arm"
+        }
+      ],
+      "recurrence_open": "only the reseat window was re-derived. Any other time window in this gate still measured on committer time is not covered -- nothing swept the file for the field, so this is a known gap and not a cleared one."
+    },
+    {
+      "commit": "af313f897ffc",
+      "date": "2026-10-16",
+      "subject": "fix(report-only): a probe's 20-second fixture had overwritten the shared reachability measurement, and two batches read it as a real sweep",
+      "files": [
+        "docs/2026-10-15-cc-b15-report-only-sweep.log",
+        "docs/report-only-reachability.json",
+        "tools/report_only_checks.py"
+      ],
+      "lines_added": 438,
+      "lines_removed": 160,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "report_only_checks.py _write_reachability() wrote the TRACKED docs/report-only-reachability.json on a --budget override, so tests/run_report_only_checks_probe.py:783's 20-second fixture replaced the real sweep's numbers. Two batches then read 'reached 6 of 78 at a 20.0s budget' as a measurement of the real run, and b14 used it to call the 36-of-73 / 540s figure stale in both terms when only the denominator had moved.",
+      "rules": [
+        "1.4"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "ff2671c5af02",
+        "date": "2026-10-05",
+        "subject": "fix(registry+push-retry): a registered-and-dead checker is now visible where sessions read, and push_retry can print its own usage",
+        "lag_days": 11
+      },
+      "citation_note": "the probe run that mutated this document is read-only-sounding by name -- it exercises an overrun path -- and its side effect landed in a tracked file that two batches then quoted as a measurement",
+      "contributing_factors": [
+        {
+          "factor": "_write_reachability() had no way to tell a fixture budget from the hook cap, so every run that produced numbers also published them",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "it now REFUSES to write at all when --budget was passed, and prints why; keeping the last real measurement beats replacing it with a fixtures"
+        },
+        {
+          "factor": "the document carried a bare measured_budget_seconds, so a hook number, a fallback and a fixture were the same number on the page",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "a budget_source field is written beside it, and in this clone it says fallback-300 with the reason the hooks are cleared"
+        },
+        {
+          "factor": "a probe exercising the overrun path runs the real tool at the real repo root without --quiet, so its side effects land in tracked files",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "tests/ is codys by the directory rule; routed as part of the b15 triage rather than edited here"
+        },
+        {
+          "factor": "a sweep measurement and a sweep fixture share one output path by construction",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "the path is referenced by the tool, the probe and two documents; narrowing it is a larger change than this fix and the refusal closes the harm"
+        }
+      ],
+      "recurrence_open": "only the reachability document is guarded. Any other write this tool reaches on a fixture run is still unguarded, and the probe half -- a non-quiet run against the live repo root -- is unchanged and lives in codys tree."
+    },
+    {
+      "commit": "c36cd069bcd5",
+      "date": "2026-10-16",
+      "subject": "fix(board) -- a mirror can freeze one file at a time",
+      "files": [
+        "tools/sairn_board_publish.py"
+      ],
+      "lines_added": 572,
+      "lines_removed": 22,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/sairn_board_publish.py read a hover-chain mirror as a single object with a single age, so a mirror whose beacon had been refreshed 0.1h ago while its log and all twelve timestamp files were 166h old reported one number -- mirror last written 10.4h ago -- and a PARTIALLY refreshed mirror was indistinguishable from a fresh one. H2s mirror was 165h old against a digest claiming seq 907, 129 entries behind, and the board said nothing a reader could act on.",
+      "rules": [
+        "1.10"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "46128d86a4fd",
+        "date": "2026-10-14",
+        "subject": "feat(drive board): the status bridge publishes itself, and two defects it found",
+        "lag_days": 2
+      },
+      "citation_note": "the mirrors age was computed from its FRESHEST component, so the oldest input -- the 166h log and twelve timestamp files -- was exactly what the single number hid",
+      "contributing_factors": [
+        {
+          "factor": "one mtime stood for a directory of components with independent write paths",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "per-component freshness, with the family that decides FROZEN named rather than averaged"
+        },
+        {
+          "factor": "the freshest component won the single age, so the stalest -- the one that matters -- was exactly the one made invisible",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "each components age is printed and the deciding family is stated, so a partial refresh reads as partial"
+        },
+        {
+          "factor": "nothing INSIDE a frozen mirror said it was frozen; only an external detector knew, and a reader opening the directory saw no warning",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the publisher writes MIRROR-FRESHNESS.md into each hover-chain directory on every board event, naming each components age and what the agents own digest claims instead"
+        },
+        {
+          "factor": "the publisher is a build-agent tool and the chain is a tamper-evident auditor artefact, so the thing that detects the staleness is structurally barred from fixing it",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "deliberately not addressed: a build agent forging an entry into the chain would destroy the only thing the chain proves. The notice names the auditors own hover_tip_beacon.py --publish command instead"
+        }
+      ],
+      "recurrence_open": "the publisher writes the NOTICE and cannot republish the chain CONTENT -- that is the auditors own command, and it must stay that way. Until H1/H2 run it the mirrors are frozen WITH a notice rather than fresh, which is better than silent and is not fixed."
+    },
+    {
+      "commit": "e05802cf98dd",
+      "date": "2026-10-16",
+      "subject": "fix(scope gate): a rebase replay skips commit-time enforcement, and the half H1 left open is answered -- the push gate DOES refuse it",
+      "files": [
+        ".githooks/post-rewrite",
+        "docs/2026-10-16-cc-b16-scope-gate-rebase-replay-sandbox.sh",
+        "tools/hover_auditor_scope_gate.py"
+      ],
+      "lines_added": 555,
+      "lines_removed": 6,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "hover-audit",
+      "summary": "tools/hover_auditor_scope_gate.py advertised COMMIT-TIME enforcement of the hover auditor's core rule, and .githooks/pre-commit does not fire on a commit replayed by git rebase. H1 b41 confirmed that by direct reproduction. So any commit touching platform code that reached local history by any route -- --no-verify or otherwise -- could be carried onto main by git pull --rebase with no second chance for the gate to catch it at commit time. Driven live in b16: the push-time leg DOES refuse it, on both the new-branch path and the rsha..lsha path, so the gap is TIME rather than coverage -- the violation sat in local history un-named from the rebase until the next push.",
+      "rules": [
+        "1.7"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "792117dd16e6",
+        "date": "2026-09-15",
+        "subject": "feat(process): the hover auditor's separation becomes mechanical -- and both alleged breaches did not happen",
+        "lag_days": 31
+      },
+      "citation_note": "pre-commit's sampling window is the staged files of a plain commit, and it silently exempted every commit that reached history by a rebase replay -- which is this platform's standard move, used by every agent every batch",
+      "contributing_factors": [
+        {
+          "factor": "git does not invoke pre-commit on a rebase replay, and nothing in the gate or the hook said so",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "a --post-rewrite mode reads gits own old->new map and names any out-of-scope path in a replayed commit, wired as the third consumer of .githooks/post-rewrite"
+        },
+        {
+          "factor": "the three enforcement points read as ONE mechanism in the gates own docstring, so the difference between them was invisible",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the docstring now states what each point covers and which shape each misses, with the eight measured arms beside it"
+        },
+        {
+          "factor": "the push-time leg was never driven, so whether the gap was total or partial was unknown for two batches",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "eight arms in a bare-repo sandbox with two in-scope controls; the script is committed as docs/2026-10-16-cc-b16-scope-gate-rebase-replay-sandbox.sh so it can be re-run rather than quoted"
+        },
+        {
+          "factor": "post-rewrite CANNOT refuse -- git ignores its exit status -- so the second guard is a notice and not an enforcement point",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "this is a property of git and not a shortcut. The notice says so in its own output rather than implying it refused; --pre-push is what refuses"
+        },
+        {
+          "factor": "the gate had no selftest at all, so none of its pure classification could be driven",
+          "kind": "process",
+          "action_status": "done",
+          "action": "11 arms, both directions, including an empty rewrite map as COULD-NOT-TELL rather than a clean one"
+        }
+      ],
+      "recurrence_open": "the second guard DETECTS and cannot refuse, so a replayed violation still reaches local history -- it is now named at the rewrite instead of only at the push. Nothing closes the commit-time miss itself, because git will not call pre-commit on a replay. And the eight arms cover the gate in a SANDBOX: no arm runs in the auditor's real clone, which a build agent must not enter."
     }
   ],
   "started": "2026-09-09",
