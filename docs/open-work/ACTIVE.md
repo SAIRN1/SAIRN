@@ -394,4 +394,4 @@ closed-ish word. Every row, open or not, is in its shard in full.
 | Tooling          | A PROBE fixture commit reached origin/main three hours after check 8 sh~ | CHECK 10 ADDED 2026-09-10 (~ | Cody         | `open-work/tooling.md:145` |
 | Tooling          | A 35-table migration is 35 chances to half-run, and a half-run one is i~ | BUILT AND RUN 2026-09-10 (C~ | CC           | `open-work/tooling.md:154` |
 
-367 open row(s) of 812 total.
+367 open row(s) of 813 total.
