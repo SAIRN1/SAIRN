@@ -937,6 +937,17 @@
       "status": "released",
       "released_at": "2026-10-17T14:24:01Z",
       "files": null
+    },
+    {
+      "id": "hover-1792247303",
+      "session": "hover",
+      "subject": "hover",
+      "task": "b51: H2 nonzero-adjustment fixture retry; #1499 re-poll; fourth b26 H2 re-drive from source; methodology item; handoff+push",
+      "claimed_at": "2026-10-17T14:28:23Z",
+      "claimed_at_epoch": 1792247303.8472674,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
