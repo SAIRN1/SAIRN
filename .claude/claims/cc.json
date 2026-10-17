@@ -4075,6 +4075,28 @@
         "SAIRN-report-cc-b16.txt",
         "docs/batch-manifest-cc-b16.json"
       ]
+    },
+    {
+      "id": "cc-1792249526",
+      "session": "cc",
+      "subject": "cc",
+      "task": "b17: (1) gate refusal-hint text names the real two-step, Michael DECIDED keep two-step and NO auto-grant-from-environment; (2) TIER 0 #1 status/board bridge LIVE write + read-back evidence for H1/H2; (3) methodology item; (4) docs/SAIRN-OPEN-WORK-INDEX.md rows 355 and 356 repaired in ONE pass, both hank's, 10 pipes where 8 are needed. CONFLICT DECLARED PER PR 4.3, NOT OVERRIDDEN: hank b18 holds api/sd-data.js, so cody's SAIRNscape customers gating fix is NOT in this batch and stays routed. No auditor clone entered or written. FILES: tools/gate_skip.py tools/sairn_push_gate_hook.py tools/sairn_status.py tools/sairn_board_publish.py docs/SAIRN-OPEN-WORK-INDEX.md docs/batch-manifest-cc-b17.json SAIRN-handoff-cc-b17.md SAIRN-report-cc-b17.txt SAIRN-digest-cc-b17.txt SAIRN-ACTIVE-WORK-cc.md",
+      "claimed_at": "2026-10-17T15:05:26Z",
+      "claimed_at_epoch": 1792249526.1791532,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-cc.md",
+        "SAIRN-digest-cc-b17.txt",
+        "SAIRN-handoff-cc-b17.md",
+        "SAIRN-report-cc-b17.txt",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/batch-manifest-cc-b17.json",
+        "tools/gate_skip.py",
+        "tools/sairn_board_publish.py",
+        "tools/sairn_push_gate_hook.py",
+        "tools/sairn_status.py"
+      ]
     }
   ],
   "refusals": [
