@@ -16,12 +16,30 @@
 //
 // Exit: 0 every arm passed · 1 an arm FAILED · 3 COULD NOT RUN
 //
-// ── TWO ARMS ARE RED ON PURPOSE AND THE FIX IS hank's ───────────────────────
-// A1 and B1 are failing-first. Read the row in docs/known-red-suites.json
-// before treating this suite's exit 1 as new, and read `expected_red_scope`
-// there: it names the arms. Every PRECONDITION, CONTROL and COUNTERFACTUAL arm
-// is expected GREEN, and one of those going red means the measurement rather
-// than the handler.
+// ── RE-AIMED 2026-10-17: hank LANDED BOTH FIXES, SO A1 AND B1 ARE NOW ───────
+// ── REGRESSION ARMS, AND ONE ARM IS RED ON PURPOSE: C1 ─────────────────────
+// A1 (23514 -> ROW_REFUSED) and B1 (42703 distinguishable from 404) were
+// failing-first when written in b19 and are GREEN now. They are kept as
+// regression guards, and the arms that make a green A1 mean something came
+// with the re-aim:
+//
+//   P5  asserts the FIXED CALL SITE IS STILL THERE, on comment-stripped
+//       source, so a revert is named before A1 reports its symptom.
+//   A2  is an ABLATION now rather than a counterfactual: it REVERTS hank's
+//       call site in a COPY of api/ and requires A1 **and** P5 to go RED. An
+//       arm that cannot be made to fail is not evidence, and this is what
+//       proves A1 still can.
+//   A3  moved out of the counterfactual child into the parent, because in the
+//       ABLATED copy it would pass VACUOUSLY -- a raw 503 answers 503 for
+//       every input, including a real 404.
+//
+// C1 IS THE ONE RED ARM AND IT IS RED ON PURPOSE. It drives the guard b19's
+// own routing document named and never drove: the alf_op_audits APPEND-ONLY
+// EXISTENCE CHECK, one guard earlier than the one hank fixed, still raw.
+// Read the row in docs/known-red-suites.json before treating this suite's
+// exit 1 as new, and read `expected_red_scope` there: it names the arm. Every
+// PRECONDITION, CONTROL, REGRESSION and ABLATION arm is expected GREEN, and
+// one of those going red means the measurement rather than the handler.
 //
 // ── THESE TWO WERE OBSERVED BY fourth AND NEVER DRIVEN BY ANYTHING ──────────
 // docs/2026-10-15-fourth-b25-findings.md §1 made both observations with a
@@ -214,13 +232,39 @@ if (opaHasShape && mechHasShape) {
   bad('P4. both subjects must be members of the measured population',
       'alf_op_audits: ' + opaHasShape + ', mech_site_assets: ' + mechHasShape);
 }
-if (OPA_BRANCH.indexOf('notProvisioned(') < 0) {
-  ok('P5. ...and the alf_op_audits branch does NOT already route through '
-     + 'notProvisioned(), so A1 below is measuring the shipped answer');
+// ── P5 IS INVERTED, 2026-10-17, BECAUSE THE FIX LANDED ─────────────────────
+// It read "the branch does NOT already route through notProvisioned(), so A1
+// is measuring the shipped answer", and it went RED when hank landed the fix
+// -- which is the arm doing its job: it told this suite that its subject had
+// changed and it needed re-aiming rather than letting A1 go quietly green and
+// read as a defect that had never existed. A1 and B1 are REGRESSION arms now,
+// not failing-first ones, and P5 is the precondition that says which.
+// ── AND IT TESTS THE CALL, NOT THE STRING. FOUND BY THE ABLATION. ──────────
+// The first inverted spelling was `OPA_BRANCH.indexOf('notProvisioned(') >= 0`,
+// and the A2 ablation CAUGHT IT: with the call reverted in the copy, A1 went
+// red and **P5 stayed green**, because the branch still contains the words
+// `notProvisioned()` inside hank's own explanatory COMMENT describing what the
+// call does. A precondition satisfied by a comment ABOUT the code it is
+// checking for is this repo's b17 defect exactly -- an assertion satisfied by
+// a comment documenting the removal of the thing it asserted -- and it
+// recurred in my own file one batch after convention 36 was written about it.
+// Line comments are stripped before the test, and the test requires an
+// invocation WITH ARGUMENTS rather than a bare name.
+const OPA_CODE = OPA_BRANCH.split('\n')
+  .map((l) => l.replace(/\/\/.*$/, ''))
+  .join('\n');
+if (/notProvisioned\(\s*res\s*,/.test(OPA_CODE)) {
+  ok('P5. the alf_op_audits upsert guard DOES route through '
+     + '`notProvisioned(res, …)` -- hank\'s fix is present, so A1 below is a '
+     + 'REGRESSION arm. If this ever reverts, P5 goes red before A1 does and '
+     + 'names why. MEASURED ON COMMENT-STRIPPED SOURCE, because the branch '
+     + 'carries a comment naming the helper and a substring test passed on it '
+     + 'after the call was removed');
 } else {
-  bad('P5. the alf_op_audits branch already calls notProvisioned() -- A1 is '
-      + 'no longer measuring the shipped defect and this suite needs '
-      + 're-aiming or retiring', OPA_BRANCH.slice(0, 300));
+  bad('P5. the alf_op_audits branch no longer CALLS notProvisioned(res, …) '
+      + '-- THE FIX HAS BEEN REVERTED. A1 is about to fail for a real reason '
+      + 'and this arm is the one that says so',
+      OPA_CODE.slice(-400));
 }
 
 // ── THE HARNESS. licence, session and fetch mocked; nothing real is reached ─
@@ -361,6 +405,12 @@ const PG_23514 = { code: '23514', message: 'new row for relation '
 const PG_42703 = { code: '42703',
   message: 'column mech_site_assets.site_state does not exist',
   details: null, hint: null };
+// The same class on the alf_op_audits existence SELECT. Named after a column
+// that select actually asks for, so the fixture is a state the store can
+// really be in rather than a plausible-looking string.
+const PG_42703_OPA = { code: '42703',
+  message: 'column alf_op_audits.reviewed_by does not exist',
+  details: null, hint: null };
 const PG_404 = { code: 'PGRST205',
   message: 'Could not find the table \'public.alf_op_audits\' in the schema '
   + 'cache', details: null, hint: null };
@@ -390,47 +440,63 @@ const PG_404 = { code: 'PGRST205',
     { inject: { table: 'alf_op_audits?on_conflict', method: 'POST',
                 status: 400, body: PG_23514 } });
   if (a1.statusCode === 503 || code(a1) === 'NOT_PROVISIONED') {
-    bad('A1 (RED ON PURPOSE, FIX ROUTED TO hank): a 400 carrying Postgres '
-        + '23514 on the alf_op_audits upsert must NOT be reported as a '
-        + 'missing table -- the operator is told to run a migration that is '
-        + 'already applied, on a Tier A append-only compliance log',
+    bad('A1 (REGRESSION since 2026-10-17): a 400 carrying Postgres 23514 on '
+        + 'the alf_op_audits upsert must NOT be reported as a missing table. '
+        + 'THIS WAS FIXED BY hank AND HAS COME BACK -- the operator is being '
+        + 'told to run a migration that is already applied, on a Tier A '
+        + 'append-only compliance log',
         'got status=' + a1.statusCode + ' code=' + JSON.stringify(code(a1))
         + '\n         ' + JSON.stringify(a1.body).slice(0, 300)
-        + '\n         THE FIX IS A CALL-SITE CHANGE AND NOTHING ELSE: replace '
-        + 'the raw 503 at the `w.status === 404 || w.status === 400` guard '
-        + 'with `await notProvisioned(res, w, <the same message>)`. The helper '
-        + 'already answers correctly -- arm A2 drives it.');
+        + '\n         THE FIX WAS `return notProvisioned(res, w, <the same '
+        + 'message>)` at the `w.status === 404 || w.status === 400` guard. '
+        + 'Check P5 first -- it says whether the call site is still there.');
   } else {
     ok('A1. a 400 carrying Postgres 23514 on the alf_op_audits upsert is NOT '
        + 'reported as a missing table (status=' + a1.statusCode + ' code='
-       + JSON.stringify(code(a1)) + ')');
+       + JSON.stringify(code(a1)) + '). FIXED BY hank, landed before '
+       + '2026-10-17; this arm is now the regression guard');
   }
 
-  // ── A2: THE COUNTERFACTUAL, ON A COPY. api/ IS NEVER WRITTEN. ───────────
-  // A failing-first arm with no counterfactual cannot say whether the fix it
-  // names would work, and this one names a specific call-site change. The copy
-  // applies exactly that change and nothing else.
+  // ── A2 IS AN ABLATION NOW, NOT A COUNTERFACTUAL, 2026-10-17 ─────────────
+  // It used to rewrite the raw 503 into notProvisioned() in a COPY and require
+  // A1 to go GREEN -- the right arm while the defect was shipped. hank landed
+  // that exact change, so the pattern it anchored on no longer exists and A2
+  // went red with "the raw 503 block could not be matched". **THAT IS THE ARM
+  // WORKING**: an anchored counterfactual whose anchor is the DEFECT must stop
+  // matching the day the defect is fixed, and the honest response is to invert
+  // it rather than loosen the pattern.
+  //
+  // IT NOW RUNS THE OTHER WAY: the COPY has hank's fix REVERTED to the old raw
+  // 503, and A1 must come back RED. That is strictly stronger than what it
+  // replaced -- the old form proved the fix WOULD work, this one proves A1 CAN
+  // STILL FAIL, which is the only thing that makes a green A1 evidence.
+  // api/ is never written; the mutation lands in a temp copy.
   if (process.env.SAIRN_B19_SD_DATA) {
-    ok('A2. (not run: this IS the counterfactual child)');
+    ok('A2. (not run: this IS the ablation child)');
   } else {
-    const RAW_503 = OPA_BRANCH.match(
-      /if \(w\.status === 404 \|\| w\.status === 400\) \{\n(\s+)res\.status\(503\)\.json\(\{ error: \{ code: 'NOT_PROVISIONED', message: '([^']*)' \} \}\);\n\s+return;\n\s+\}/);
-    if (!RAW_503) {
-      bad('A2. PRECONDITION: the raw 503 block could not be matched inside the '
-          + 'alf_op_audits branch, so the counterfactual could not be built. '
-          + 'Re-anchor it on the branch rather than loosening the pattern',
+    const FIXED_CALL = OPA_BRANCH.match(
+      /if \(w\.status === 404 \|\| w\.status === 400\) \{[\s\S]*?return notProvisioned\(res, w, '([^']*)'\);[\s\S]*?\n(\s+)\}/);
+    if (!FIXED_CALL) {
+      bad('A2. PRECONDITION: the `return notProvisioned(res, w, ...)` call '
+          + 'could not be matched inside the alf_op_audits branch, so the '
+          + 'ablation could not be built. Re-anchor it on the branch rather '
+          + 'than loosening the pattern -- and read P5, which answers whether '
+          + 'the call site is there at all',
           OPA_BRANCH.slice(-600));
     } else {
-      const fixed = RAW_503[0].replace(
-        /res\.status\(503\)\.json\(\{[\s\S]*?\}\);/,
-        "await notProvisioned(res, w, '" + RAW_503[2] + "');");
+      // THE REVERT: back to the shape b19 measured, verbatim, so the ablation
+      // reproduces the historical defect rather than inventing a new one.
+      const fixed = FIXED_CALL[0].replace(
+        /return notProvisioned\(res, w, '[^']*'\);/,
+        "res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: '"
+        + FIXED_CALL[1] + "' } }); return;");
       const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'b19-notprov-'));
       const copyDir = path.join(tmp, 'api');
       fs.cpSync(path.join(ROOT, 'api'), copyDir, { recursive: true });
       const copy = path.join(copyDir, 'sd-data.js');
       fs.writeFileSync(copy,
         fs.readFileSync(copy, 'utf8').replace(/\r\n/g, '\n')
-          .replace(RAW_503[0], fixed), 'utf8');
+          .replace(FIXED_CALL[0], fixed), 'utf8');
       const { execFileSync } = require('child_process');
       let out = '';
       let childCode = null;
@@ -445,47 +511,106 @@ const PG_404 = { code: 'PGRST205',
         out = (e.stdout || '') + (e.stderr || '');
         childCode = e.status;
       }
-      const a1Green = /^  ok   A1\. /m.test(out);
-      const rowRefused = /ROW_REFUSED/.test(out);
-      if (a1Green && rowRefused) {
-        ok('A2. COUNTERFACTUAL on a COPY of api/, one call site changed and '
-           + 'nothing else: routing that guard through the shipped '
-           + 'notProvisioned() makes A1 GREEN and answers 400 ROW_REFUSED. So '
-           + 'A1 measures this specific call site and the fix needs no new '
-           + 'helper, no new status code and no decision (child exit '
+      const a1Red = /^  FAIL A1 /m.test(out);
+      const p5Red = /^  FAIL P5\. /m.test(out);
+      if (a1Red && p5Red) {
+        ok('A2. ABLATION on a COPY of api/, ONE call site reverted and nothing '
+           + 'else: putting the raw 503 back makes A1 go RED **and** P5 go RED '
+           + '-- so A1 CAN still fail, and P5 names the reverted call site '
+           + 'before A1 reports the symptom. A green A1 on the real tree is '
+           + 'therefore evidence and not a vacuous pass (child exit '
            + childCode + ')');
       } else {
-        bad('A2. COUNTERFACTUAL: with the guard routed through '
-            + 'notProvisioned() in a copy, A1 must go green and the answer '
-            + 'must be ROW_REFUSED', 'child exit ' + childCode
-            + ' A1 green: ' + a1Green + ' ROW_REFUSED seen: ' + rowRefused
-            + '\n         ' + out.slice(-600));
-      }
-      const a3 = /^  ok   A3\. /m.test(out);
-      if (a3) {
-        ok('A3. ...and in that same copy a GENUINE missing table still '
-           + 'answers 503 NOT_PROVISIONED, so the fix does not trade one '
-           + 'wrong answer for another');
-      } else {
-        bad('A3. the counterfactual copy must still answer 503 '
-            + 'NOT_PROVISIONED for a real missing relation', out.slice(-600));
+        bad('A2. ABLATION: with hank\'s call site reverted to the raw 503 in a '
+            + 'copy, A1 must go RED and P5 must go RED. If neither does, A1 '
+            + 'is no longer measuring this call site and a green A1 means '
+            + 'nothing', 'child exit ' + childCode
+            + ' A1 red: ' + a1Red + ' P5 red: ' + p5Red
+            + '\n         ' + out.slice(-700));
       }
       fs.rmSync(tmp, { recursive: true, force: true });
     }
   }
 
-  // A3 is asserted BY THE CHILD, which is the only process where the fix is
-  // applied. In the parent it is reported through the child's output above.
-  if (process.env.SAIRN_B19_SD_DATA) {
-    const a3r = await call('write', 'alf_op_audits', observation(),
-      { inject: { table: 'alf_op_audits?on_conflict', method: 'POST',
-                  status: 404, body: PG_404 } });
-    if (a3r.statusCode === 503 && code(a3r) === 'NOT_PROVISIONED') {
-      ok('A3. a GENUINE missing table still answers 503 NOT_PROVISIONED');
-    } else {
-      bad('A3. a genuine missing table must still answer 503 NOT_PROVISIONED',
-          'status=' + a3r.statusCode + ' code=' + JSON.stringify(code(a3r)));
-    }
+  // ── A3 MOVED TO THE PARENT, 2026-10-17 ─────────────────────────────────
+  // It used to be asserted inside the counterfactual child, because the child
+  // was the only process where the fix existed. The fix is on the real tree
+  // now, so A3 belongs here -- and in the ABLATED child it would pass
+  // VACUOUSLY, since a raw 503 answers 503 for every input including a real
+  // 404. An arm that cannot distinguish the fixed case from the reverted one
+  // is not an arm; it was moved rather than left to pass for the wrong reason.
+  const a3r = await call('write', 'alf_op_audits', observation(),
+    { inject: { table: 'alf_op_audits?on_conflict', method: 'POST',
+                status: 404, body: PG_404 } });
+  if (a3r.statusCode === 503 && code(a3r) === 'NOT_PROVISIONED') {
+    ok('A3. ...and a GENUINE missing table on the same guard STILL answers 503 '
+       + 'NOT_PROVISIONED, so the fix did not trade one wrong answer for '
+       + 'another. A1 and A3 together are the pair: 23514 -> ROW_REFUSED, '
+       + '404 -> NOT_PROVISIONED');
+  } else {
+    bad('A3. a genuine missing table must still answer 503 NOT_PROVISIONED -- '
+        + 'if A1 is green and A3 is red, the classifier has been pointed the '
+        + 'wrong way rather than fixed',
+        'status=' + a3r.statusCode + ' code=' + JSON.stringify(code(a3r)));
+  }
+
+  // ── C: THE GUARD b19 NAMED AND NEVER DROVE, AND IT IS STILL UNCONVERTED ──
+  // b19's routing document said, in terms: "The existing-row read two guards
+  // earlier has the same shape and is not driven here. It is the append-only
+  // existence check, so a 23xxx there would also render as 'not set up yet'.
+  // Named rather than asserted." hank converted the UPSERT guard and left this
+  // one. So this arm is the half of that routing that was never checkable --
+  // written now, failing-first, on the same Tier A compliance log.
+  //
+  // THE INJECTED CODE IS 42703, NOT 23514, AND THAT IS NOT A SOFTENING. A
+  // CHECK-constraint violation fires on a WRITE; this guard sits on a SELECT
+  // naming entry_id, record_type, observed_on, passed, data and recorded_by,
+  // so the plausible 400 here is an UNDEFINED COLUMN -- a dropped or renamed
+  // column, which is the same partial-migration state mech_site_assets' B1
+  // covers. Driving 23514 through a read would be a fixture nothing produces.
+  section('C. alf_op_audits -- the EXISTENCE-CHECK guard, still raw');
+  const c1 = await call('write', 'alf_op_audits', observation(),
+    { inject: { table: 'alf_op_audits?license_hash', method: 'GET',
+                status: 400, body: PG_42703_OPA } });
+  if (c1.statusCode === 503 && code(c1) === 'NOT_PROVISIONED') {
+    bad('C1 (RED ON PURPOSE, ROUTED TO hank): a 400 carrying Postgres 42703 on '
+        + 'the alf_op_audits APPEND-ONLY EXISTENCE CHECK must not be reported '
+        + 'as a missing table. A dropped or renamed column on that select is '
+        + 'reported as "run the migration", on the read whose whole job is to '
+        + 'refuse an overwrite of a recorded care observation',
+        'got status=' + c1.statusCode + ' code=' + JSON.stringify(code(c1))
+        + '\n         THE SAME ONE-LINE FIX AS A1, one guard earlier: route it '
+        + 'through notProvisioned(res, existingR, <the same message>). '
+        + 'notProvisionedDecide() needs no change. b19 named this guard and '
+        + 'did not drive it; this arm is that gap closed.');
+  } else {
+    ok('C1. a 400 carrying Postgres 42703 on the alf_op_audits existence check '
+       + 'is NOT reported as a missing table (status=' + c1.statusCode
+       + ' code=' + JSON.stringify(code(c1)) + ')');
+  }
+  const c2 = await call('write', 'alf_op_audits', observation(),
+    { inject: { table: 'alf_op_audits?license_hash', method: 'GET',
+                status: 404, body: PG_404 } });
+  if (c2.statusCode === 503 && code(c2) === 'NOT_PROVISIONED') {
+    ok('C2. CONTROL: a GENUINE missing table on that same existence check '
+       + 'answers 503 NOT_PROVISIONED -- the paired positive, so C1 is a '
+       + 'comparison between two real answers and not a guard the harness '
+       + 'never reached');
+  } else {
+    bad('C2. CONTROL: a genuine missing table on the existence check must '
+        + 'answer 503 NOT_PROVISIONED, or C1 has measured nothing',
+        'status=' + c2.statusCode + ' code=' + JSON.stringify(code(c2)));
+  }
+  const cSame = c1.statusCode === c2.statusCode
+    && JSON.stringify(c1.body) === JSON.stringify(c2.body);
+  if (cSame) {
+    notes.push('alf_op_audits existence check: 42703 and 404 are BYTE-IDENTICAL'
+               + ' -- status ' + c1.statusCode + ' body '
+               + JSON.stringify(c1.body));
+  } else {
+    notes.push('alf_op_audits existence check: 42703 ' + c1.statusCode + ' '
+               + JSON.stringify(c1.body) + ' vs 404 ' + c2.statusCode + ' '
+               + JSON.stringify(c2.body));
   }
 
   // ── SECTION B: a 42703 through a class-C READ guard ─────────────────────
@@ -563,13 +688,14 @@ const PG_404 = { code: 'PGRST205',
   if (failed.length) {
     console.log(failed.length + ' ARM(S) FAILED:');
     failed.forEach((f) => console.log('  - ' + f));
-    console.log('\nA1 AND B1 ARE EXPECTED RED until the two call sites are '
-              + 'changed; the row in docs/known-red-suites.json names them. '
-              + 'ANY OTHER failure here is NEW and means the measurement '
-              + 'rather than the handler -- a P arm means an anchor or an '
-              + 'allowlist moved, A0/B0/B2 mean the branch was not reached, '
-              + 'and A2/A3 mean the named fix no longer produces the answer '
-              + 'this file claims for it.');
+    console.log('\nC1 ALONE IS EXPECTED RED, since 2026-10-17: the '
+              + 'alf_op_audits APPEND-ONLY EXISTENCE CHECK is still raw. The '
+              + 'row in docs/known-red-suites.json names it. ANY OTHER '
+              + 'failure here is NEW -- A1 or B1 means a LANDED FIX HAS BEEN '
+              + 'REVERTED and P5 says which call site; a P arm means an anchor '
+              + 'or the ALF_OPA_TYPES allowlist moved; A0/B0/B2/C2 mean the '
+              + 'branch was not reached; and A2 means the ablation can no '
+              + 'longer make A1 fail, which makes a green A1 worthless.');
     process.exit(1);
   }
   process.exit(0);

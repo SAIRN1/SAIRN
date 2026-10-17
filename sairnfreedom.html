@@ -317,7 +317,21 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
             <div><label>Organisation type</label><select id="pp-orgtype"></select></div>
             <div><label>Charter / founding date</label><input type="date" id="pp-founded"></div>
             <div><label>Entity ID</label><input id="pp-entity" placeholder="e.g. ENT-0001"></div>
+            <div><label>Which exempt entity holds the canteen?</label><select id="pp-taxentity"></select></div>
           </div>
+          <div class="note"><strong>The canteen&rsquo;s exempt entity is NOT
+            assumed.</strong> Pub. 3386 says a veterans&rsquo; organisation
+            running a bar, restaurant or canteen for members <em>&ldquo;may be
+            recognized as tax exempt under IRC 501(c)(7)&rdquo;</em>, and that
+            such clubs <em>&ldquo;are often operated in conjunction with IRC
+            501(c)(4) veterans&rsquo; organizations&rdquo;</em> &mdash; so a
+            post, a companion club, or <strong>both at once</strong> are all
+            real shapes, and <strong>both at once means two possible
+            employers</strong> for the same tipped worker. Left blank this
+            reads UNKNOWN rather than defaulting to 501(c)(19), because a
+            defaulted answer is the assumption this field exists to remove.
+            <strong>Nothing here computes a tax figure.</strong></div>
+          <div id="pp-taxfacts"></div>
           <div class="note">Entity and location are separate keys (spec 1b). An
           auxiliary that meets in this building is a <strong>separate entity</strong>
           with its own treasury and officers &mdash; never merged into this one.
@@ -2307,6 +2321,95 @@ var ORG_TYPES = [
 ];
 function orgType(id){ for(var i=0;i<ORG_TYPES.length;i++){ if(ORG_TYPES[i].id===id) return ORG_TYPES[i]; } return null; }
 
+/* ---- TAX ENTITY STRUCTURE (2026-10-17) --------------------------------------
+   WHICH EXEMPT ENTITY ACTUALLY HOLDS THE CANTEEN IS A FACT ABOUT THE POST, AND
+   IT WAS BEING ASSUMED. docs/2026-09-17-sairnfreedom-tips-tax-treatment.md
+   reasoned throughout as though a post is a single IRC 501(c)(19), and Rev.
+   Rul. 2003-64 -- the ruling that answers its own section 9 -- is a 501(c)(7)
+   ruling. Pub. 3386 says in terms that a veterans' organisation whose
+   activities are social and recreational, "such as operating a bar, restaurant,
+   canteen or casino for members, may be recognized as tax exempt under IRC
+   501(c)(7)", and that such clubs "are often operated in conjunction with IRC
+   501(c)(4) veterans' organizations". So the three real shapes are:
+
+     c19      the post itself holds the canteen under 501(c)(19)
+     c7       a separate 501(c)(7) companion club holds it
+     both     both exist and BOTH MAY EMPLOY TIPPED STAFF SIMULTANEOUSLY
+
+   `both` is not a formality. It is the shape where the question "whose employee
+   received this tip" has two possible answers, and the answer decides which
+   return the employer-side figures land on. A design that stores one entity
+   cannot represent it at all.
+
+   WHAT THIS DOES **NOT** DO, and the restraint is deliberate. It does NOT
+   compute a section 45B credit, and nothing in this app does. Section 7.3 of
+   that document is explicit that a field inviting a post to chase the credit
+   pushes the decision the wrong way round, because reaching 45B requires the
+   post to first be in the UBIT state it is trying to stay out of. What is
+   configurable here is the ENTITY STRUCTURE -- a fact the post knows and that
+   several unrelated questions already need -- and `taxEntityFacts()` reports
+   WHICH AUTHORITY AND WHICH FLOOR WOULD APPLY, with its unknowns named, rather
+   than producing a number.
+
+   THE DEFAULT IS '' AND NOT 'c19'. An unset structure must read as UNKNOWN,
+   because a defaulted (c)(19) is a silent assumption of exactly the thing this
+   block exists to stop assuming -- and ORC 2915.09(D)(1) compensation checks,
+   UBIT exposure and the canteen's exempt-function basis all branch on it. */
+var TAX_ENTITIES = [
+  { id:'c19',  label:'The post itself, under IRC 501(c)(19)',
+    irc:['501(c)(19)'], ubtiRule:'512(a)(1)',
+    note:'Member bar and canteen use is an exempt social/recreational activity for members; non-member use is where UBIT arises.' },
+  { id:'c7',   label:'A separate IRC 501(c)(7) companion club holds the canteen',
+    irc:['501(c)(7)'], ubtiRule:'512(a)(3)',
+    note:'Pub. 3386 names this arrangement explicitly. Rev. Rul. 2003-64 is on all fours with it.' },
+  { id:'both', label:'Both -- a 501(c)(19) post AND a 501(c)(7) companion club',
+    irc:['501(c)(19)','501(c)(7)'], ubtiRule:'512(a)(1) and 512(a)(3), one each',
+    note:'TWO EMPLOYERS ARE POSSIBLE. Which entity employs a tipped worker decides whose return the employer-side figures land on, and this app does not record that per worker.' }
+];
+function taxEntity(id){ for(var i=0;i<TAX_ENTITIES.length;i++){ if(TAX_ENTITIES[i].id===id) return TAX_ENTITIES[i]; } return null; }
+
+/* IRC 45B(b)(2) HAS TWO LIMBS AND THEY HAVE DIFFERENT WAGE FLOORS. Read off
+   Form 8846 (2025) verbatim, not from the IRS "FICA Tip Credit for employers"
+   web page, which states the beauty-service number without its limb and
+   attaches a date the form does not use -- see section 12.6a/12.6b of the tips
+   document. A canteen is food-and-beverage, so $5.15; the constant is NOT
+   hardcoded at one value anywhere, because a hardcoded floor is right for one
+   limb and silently wrong for the other. */
+var SEC45B_LIMBS = [
+  { id:'food_bev', label:'Providing, delivering or serving food or beverages',
+    floor:5.15, floorBasis:'the federal minimum wage rate in effect on January 1, 2007 (Form 8846, "Food or beverage employers")', frozen:true },
+  { id:'beauty',   label:'Barbering, hair care, nail care, esthetics, body and spa treatments',
+    floor:7.25, floorBasis:'the federal minimum wage rate currently in effect (Form 8846, "Beauty service employers")', frozen:false }
+];
+function sec45bLimb(id){ for(var i=0;i<SEC45B_LIMBS.length;i++){ if(SEC45B_LIMBS[i].id===id) return SEC45B_LIMBS[i]; } return null; }
+
+/* taxEntityFacts() -> what the configured structure DETERMINES, and what it
+   leaves open. Reports; never computes a credit. Every `unknown` is a question
+   for the post's CPA stated so it can be asked verbatim. */
+function taxEntityFacts(){
+  var p=getPost();
+  var e=taxEntity(p.taxEntity);
+  var limb=sec45bLimb('food_bev');   /* the canteen's limb, and it is named */
+  var out={ configured:!!e, id:(p.taxEntity||''), entity:e,
+            limb:limb.id, floor:limb.floor, floorBasis:limb.floorBasis,
+            unknowns:[] };
+  if(!e){
+    out.unknowns.push('WHICH ENTITY HOLDS THE CANTEEN IS NOT RECORDED. Nothing below is determined, and it is not defaulted to 501(c)(19) on purpose.');
+    return out;
+  }
+  out.irc=e.irc.slice();
+  out.ubtiRule=e.ubtiRule;
+  out.rulingOnAllFours = (e.id==='c7' || e.id==='both');
+  out.rulingNote = out.rulingOnAllFours
+    ? 'Rev. Rul. 2003-64 is a 501(c)(7) ruling and is on all fours with this structure.'
+    : 'Rev. Rul. 2003-64 is a 501(c)(7) ruling. Its HOLDING rests on 45B containing no entity limitation, so it transfers; its FACTS run through 512(a)(3), which does NOT apply to a (c)(19). Answered in principle, not on all fours.';
+  if(e.id==='both'){
+    out.unknowns.push('TWO EMPLOYERS: this app does not record which entity employs each tipped worker, and that decides whose return the employer-side figures land on.');
+  }
+  out.unknowns.push('Whether tipping is "customary" for this canteen is a factual test 45B(b)(2) supplies no criteria for.');
+  return out;
+}
+
 /* Capabilities are the enum. Officer titles are display, mapped per org type. */
 var CAPABILITIES = [
   { id:'post.govern',        label:'Govern the post',            sole:true,  provisioning:true },
@@ -2367,7 +2470,7 @@ var K_POST='sf_post', K_OFFICERS='sf_officers', K_MEMBERS='sf_members',
     K_ACCOUNTS='sf_accounts', K_SESSIONS='sf_sessions',
     K_GEXPENSES='sf_gaming_expenses', K_OPERATORS='sf_operators';
 
-function getPost(){ return ld(K_POST, { name:'', orgType:'', founded:'', entityId:'', locationId:'', city:'', state:'OH', liquor:'', bingo:'' }); }
+function getPost(){ return ld(K_POST, { name:'', orgType:'', taxEntity:'', founded:'', entityId:'', locationId:'', city:'', state:'OH', liquor:'', bingo:'' }); }
 function getOfficers(){ return ld(K_OFFICERS, []); }
 function getMembers(){ return ld(K_MEMBERS, []); }
 function getFees(){ return ld(K_FEES, { initiation:0, dues:0, perCapita:0, perCapitaDue:'' }); }
@@ -2819,6 +2922,12 @@ function sfRenderPost(){
     sel.innerHTML='<option value="">Select organisation type</option>' + ORG_TYPES.map(function(o){
       return '<option value="'+H(o.id)+'"'+(o.id===p.orgType?' selected':'')+'>'+H(o.label)+'</option>'; }).join('');
   }
+  var te=$('pp-taxentity');
+  if(te){
+    te.innerHTML='<option value="">Not recorded -- NOT assumed to be 501(c)(19)</option>' + TAX_ENTITIES.map(function(t){
+      return '<option value="'+H(t.id)+'"'+(t.id===p.taxEntity?' selected':'')+'>'+H(t.label)+'</option>'; }).join('');
+  }
+  sfRenderTaxFacts();
   var lq=$('pp-liquor');
   if(lq) lq.innerHTML = LIQUOR_CLASSES.map(function(c){
     return '<option value="'+H(c)+'"'+(c===p.liquor?' selected':'')+'>'+H(c||'Not recorded')+'</option>'; }).join('');
@@ -2857,6 +2966,39 @@ function fifteenYearTest(){
   return { applies:true, known:true, passes: today >= elig, eligibleFrom: elig };
 }
 
+/* sfRenderTaxFacts() -- THE SURFACE FOR taxEntityFacts(). It exists because the
+   function without it is dormant code: a configurable structure whose
+   consequences are invisible is the assumption this field was added to remove,
+   one step later. Found by running Guardian 0d against my own change in the
+   same batch that wrote the field, which is the only reason it is wired rather
+   than quarantined.
+
+   IT RENDERS THE UNKNOWNS AS PROMINENTLY AS THE DETERMINATIONS, and when
+   nothing is configured the unknown is the WHOLE output -- never a blank box,
+   because a blank box reads as "no issue here". Still computes no tax figure:
+   the floor is printed with the LIMB that licenses it and the Form 8846
+   sentence it came from, never alone. */
+function sfRenderTaxFacts(){
+  var box=$('pp-taxfacts'); if(!box) return;
+  var f=taxEntityFacts(), out='';
+  if(!f.configured){
+    out = '<div class="flagbox"><strong>Exempt entity not recorded.</strong> '+
+      H(f.unknowns[0])+'</div>';
+  } else {
+    out = '<div class="flagbox" style="border-left-color:var(--ok);background:#F0FDF4">'+
+      '<strong>'+H(f.entity.label)+'</strong><br>'+
+      'IRC '+H(f.irc.join(' and '))+' &middot; unrelated business income under &sect;'+H(f.ubtiRule)+'.<br>'+
+      H(f.entity.note)+'<br>'+H(f.rulingNote)+'</div>';
+    out += '<div class="note"><strong>&sect;45B(b)(2) limb for a canteen: '+H(f.limb)+
+      '</strong> &mdash; wage floor $'+H(f.floor.toFixed(2))+', being '+H(f.floorBasis)+
+      '. <strong>Reported, not computed:</strong> nothing in this app calculates the credit, '+
+      'and the other limb carries a different floor.</div>';
+    out += '<div class="note"><strong>Still open, and each one is a question for the post&rsquo;s CPA:</strong><ul>'+
+      f.unknowns.map(function(u){ return '<li>'+H(u)+'</li>'; }).join('')+'</ul></div>';
+  }
+  box.innerHTML=out;
+}
+
 function sfRenderPostFlags(){
   var box=$('post-flags'); if(!box) return;
   var p=getPost(); var out='';
@@ -2883,6 +3025,7 @@ function sfSavePost(){
   var p=getPost();
   p.name=($('pp-name').value||'').trim();
   p.orgType=$('pp-orgtype').value;
+  if($('pp-taxentity')) p.taxEntity=$('pp-taxentity').value;
   p.founded=$('pp-founded').value;
   p.entityId=($('pp-entity').value||'').trim();
   p.locationId=($('pp-locid').value||'').trim();

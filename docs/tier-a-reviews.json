@@ -6716,7 +6716,7 @@
     {
       "author_session": "cody",
       "opened_at": "2026-10-15T15:12:47Z",
-      "opened_at_sha": "d47880d3700bb5e8fec3281de28d5f7e7d7361b8",
+      "opened_at_sha": "a3ce49f556d85d91505394f78856d385c26a97db",
       "opened_at_sha_basis": "file-set",
       "resources": [
         "bld_bids"
@@ -6733,7 +6733,10 @@
       "owner_assigned_at": "2026-10-15T15:12:47Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "opened_at_sha_was": "d47880d3700bb5e8fec3281de28d5f7e7d7361b8",
+      "opened_at_sha_reseated": true,
+      "opened_at_sha_reseat_basis": "SUBJECT TWIN"
     },
     {
       "author_session": "cody",

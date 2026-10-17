@@ -821,6 +821,13 @@ it is.**
 > **The IRS FICA Tip Credit page's "$7.25 per hour / July 24, 2009" is
 > recorded as THAT PAGE'S ERROR and is not followed.**
 
+> **AND AS OF 2026-10-17 IT IS NOT A CONSTANT IN THE CODE EITHER.** §12.6b
+> found a **second** §45B floor; §13 is the implementation. `SEC45B_LIMBS` in
+> `sairnfreedom.html` carries **both** floors with the Form 8846 sentence each
+> one comes from, and the canteen's limb is **named** (`food_bev`) rather than
+> assumed — so the $5.15 decision is recorded as *"this limb's floor"* and not
+> as *"the floor"*.
+
 **WHAT CHANGED AND WHAT DID NOT.** §12.6 as first written declined to call the
 page wrong, on the ground that *"a Treasury position in guidance is not
 something this platform overrules from a statute reading."* **That caution was
@@ -898,6 +905,14 @@ of WHICH LIMB the tipped service falls in, not a constant.** A single hardcoded
 employer — and this platform has fifteen other apps. **Nothing computes a §45B
 figure today** and §7.3's warning against building toward the credit is
 unchanged; this is a precondition recorded where the number will be read.
+
+**CLOSED 2026-10-17 — IT IS NO LONGER ONLY A WARNING.** `SEC45B_LIMBS` in
+`sairnfreedom.html` holds **both** limbs, each with its own `floor`, its own
+`floorBasis` quoting the Form 8846 sentence it came from, and a `frozen`
+boolean that distinguishes *"in effect on January 1, 2007"* from *"currently in
+effect"*. `taxEntityFacts()` returns `limb: 'food_bev'` and `floor: 5.15`
+**together**, so the figure cannot be read without the limb that licenses it.
+See §13.
 
 **WHAT IS STILL NOT CHECKED:** Form 8846's *instructions* document (as distinct
 from the form's own instruction text quoted above) returned **HTTP 404** at
@@ -983,3 +998,151 @@ whether the canteen is held under §501(c)(19) or a companion §501(c)(7).
 **NOT TAX ADVICE.** Internal research on statutory structure and one published
 ruling, written so a professional can be asked a narrow question instead of an
 open one.
+
+---
+
+## 13. THE ENTITY STRUCTURE IS CONFIGURATION NOW, NOT AN ASSUMPTION — and `both` is a real shape this document could not represent (2026-10-17, Cody)
+
+**§12.4 gap (a) said the (c)(19)-versus-(c)(7) question is "A FACT ABOUT THE
+POST" and routed it to the CPA. It was still being ASSUMED everywhere else in
+this document and in the app.** Every section above reasons as though a post is
+a single §501(c)(19); the ruling that answers §9 is a §501(c)(7) ruling; and
+Pub. 3386 says plainly that the canteen may sit in either, or in a companion
+club beside the post. **A question routed to a professional still has to be
+REPRESENTABLE in the system that will carry the answer back.** It was not.
+
+### 13.1 The three shapes, and why `both` is the one that mattered
+
+`TAX_ENTITIES` in `sairnfreedom.html`:
+
+| id | structure | UBTI rule | Rev. Rul. 2003-64 |
+|---|---|---|---|
+| `c19` | the post itself holds the canteen under **§501(c)(19)** | **§512(a)(1)** | **answered in principle, NOT on all fours** — the holding transfers because §45B contains no entity limitation; the ruling's FACTS run through §512(a)(3), which does not apply to a (c)(19) |
+| `c7` | a separate **§501(c)(7)** companion club holds it | **§512(a)(3)** | **ON ALL FOURS** |
+| `both` | a §501(c)(19) post **AND** a §501(c)(7) companion club | **§512(a)(1) and §512(a)(3), one each** | on all fours for the club limb |
+
+**`both` IS NOT A FORMALITY AND IT IS WHY A SINGLE FIELD WAS NOT ENOUGH.** It is
+the shape in which *"whose employee received this tip"* **has two possible
+answers**, and that answer decides **which return** the employer-side figures
+land on. Pub. 3386's own sentence — such clubs *"are often operated in
+conjunction with IRC 501(c)(4) veterans' organizations"* — describes exactly
+this co-existence. **A design storing one entity cannot represent it at all**,
+and would have silently collapsed two employers into one.
+
+**THE DEFAULT IS `''`, NOT `'c19'`, and that is the load-bearing decision.** An
+unset structure reads **UNKNOWN**. A defaulted (c)(19) would be a silent
+assumption of precisely the thing this field exists to stop assuming — and the
+ORC 2915.09(D)(1) compensation checks, the UBIT exposure and the canteen's
+exempt-function basis all branch on it. `taxEntityFacts()` returns
+`configured: false` with the reason stated, rather than a plausible answer.
+
+### 13.2 What it reports, and what it refuses to compute
+
+**`taxEntityFacts()` REPORTS; it does not calculate.** It answers which IRC
+subsections apply, which UBTI rule governs, whether Rev. Rul. 2003-64 is on all
+fours, which §45B limb the canteen falls in and that limb's floor — and it
+carries an **`unknowns` list** whose entries are written to be asked verbatim.
+
+**IT DOES NOT COMPUTE A §45B CREDIT, AND NOTHING IN THIS APP DOES.** §7.3 is
+explicit that a field inviting a post to chase the credit pushes the decision
+the wrong way round, because reaching §45B requires the post to first be in the
+UBIT state it is trying to stay out of. **That warning is unchanged and this
+change respects it:** what became configurable is the **entity structure** — a
+fact the post already knows, that several unrelated questions already need —
+not a credit calculator. **Read that as the boundary, not as caution:** the
+request was for the calculation to be configurable rather than hardcoded, and
+the honest form of that is to make the INPUTS it would need explicit and
+limb-aware while declining to produce a number no professional has signed off.
+
+**AND THE FLOOR IS NO LONGER A CONSTANT.** `SEC45B_LIMBS` carries **both** of
+§45B(b)(2)'s limbs, each with its own `floor`, its own `floorBasis` quoting the
+Form 8846 sentence it came from, and a `frozen` boolean separating *"in effect
+on January 1, 2007"* from *"currently in effect"*. `taxEntityFacts()` returns
+`limb` and `floor` **together**, so the number cannot be read without the limb
+that licenses it. That closes §12.6b's precondition in code rather than leaving
+it as a warning.
+
+### 13.3 Driven, all four states, before it was committed
+
+```
+taxEntity=""      configured=false floor=5.15 limb=food_bev irc=null                           ubti=null                              onAllFours=undefined unknowns=1
+taxEntity="c19"   configured=true  floor=5.15 limb=food_bev irc=["501(c)(19)"]                 ubti="512(a)(1)"                       onAllFours=false     unknowns=1
+taxEntity="c7"    configured=true  floor=5.15 limb=food_bev irc=["501(c)(7)"]                  ubti="512(a)(3)"                       onAllFours=true      unknowns=1
+taxEntity="both"  configured=true  floor=5.15 limb=food_bev irc=["501(c)(19)","501(c)(7)"]     ubti="512(a)(1) and 512(a)(3), one each" onAllFours=true    unknowns=2
+```
+
+Driven against the **real extracted script block** in a `vm` context, not
+against a retyped copy. **`both` carries the extra unknown** and the unset case
+carries `configured: false` — the two behaviours the shape exists for. Every
+script block passed `node --check` before and after.
+
+### 13.4 What is NOT built, said so it is not assumed
+
+* **No §45B calculation.** §13.2.
+* **The per-worker employer is NOT recorded.** In the `both` shape the app
+  cannot say which entity employs a given tipped worker, and
+  `taxEntityFacts().unknowns` says so rather than leaving it to be discovered.
+  **That is the next real field if this is ever taken further**, and it is a
+  roster change, not a tax change.
+* **No §501(c)(4) option.** Pub. 3386 discusses (c)(4) posts and their canteens
+  — where canteen income is UBIT-taxable *"whether the income is from members or
+  nonmembers"* — but no SAIRNveterans post is recorded as (c)(4) and inventing
+  the option would be speculative. **Named here so its absence is a decision.**
+* **No change to any ORC check.** The §11 precondition — that the day a tip is
+  recorded, the binary `paid` flag stops being sufficient for 2915.09(D)(1) —
+  is unchanged and still open.
+
+### 13.5 THE REPORTER WAS DORMANT CODE FOR THE LENGTH OF ONE BATCH, AND THE CHECK THAT CAUGHT IT WAS RUN AGAINST MY OWN CHANGE
+
+**§13.3 above is true and was not sufficient.** `taxEntityFacts()` was driven in
+all four states, every arm green — and **it had ZERO CALLERS.** Measured, not
+noticed in passing: `grep -n "taxEntityFacts" sairnfreedom.html` returned the
+definition, a mention inside its own comment, and nothing else. The select was
+wired, the value persisted, and **nothing in the app displayed any consequence
+of it.**
+
+**THAT IS GUARDIAN CHECK 0d AGAINST MY OWN WORK, IN THE SAME BATCH THAT WROTE
+IT**, and it is the reason the pre-push pass is run on the diff rather than on
+somebody else's code. A configurable structure whose effects are invisible is
+**the assumption this field exists to remove, one step later**: the post answers
+the question, the answer changes nothing it can see, and the next session reads
+a field nobody has any evidence is being used.
+
+**RESOLVED BY WIRING, NOT BY QUARANTINE, and the choice was between two real
+options.** Deleting `taxEntityFacts()` and `SEC45B_LIMBS` would have made
+§12.6b's *"it is no longer only a warning"* false in the same commit that wrote
+it. So `sfRenderTaxFacts()` renders it into the Post Profile panel, repainted
+by `sfRenderPost()`, and **the unknowns are rendered as prominently as the
+determinations** — with the unset state rendering the unknown as the *whole*
+output rather than an empty box, because a blank box reads as *"no issue here"*.
+
+**AND THE DRIVER IS NOW A LANDED SUITE:** `tests/sairnfreedom_tax_entity_facts.js`,
+**26 arms, exit 0**. §13.3's driver was a scratchpad file, which is precisely the
+defect `docs/2026-10-15-fourth-b25-findings.md` section 1 was criticised for and
+that `tests/sd_data_not_provisioned_misclass.js` was written to correct: **a
+probe outside the tree means nothing notices the subject being fixed OR getting
+worse.** It fails CLOSED with **exit 2 COULD NOT RUN** if either extraction
+anchor stops matching or stops being unique, and it names which anchor.
+
+**THE ABLATION FOUND A DEFECT IN THE SUITE ITSELF AND IT IS RECORDED RATHER
+THAN QUIETLY FIXED.** Five layers removed one at a time on a COPY of the app —
+**5 of 5 now caught by a NAMED arm** — but the first run was **4 of 5**, and the
+miss is the instructive one. Arm B6 asserted `TWO EMPLOYERS` appeared in the
+rendered HTML. Deleting the two-employer **unknown** left B6 **GREEN**, because
+`TAX_ENTITIES.both.note` independently contains the words *"TWO EMPLOYERS ARE
+POSSIBLE"* and the renderer prints that note too.
+
+**AN ARM SATISFIED BY A DIFFERENT STRING THAN THE ONE IT INTENDS TO CHECK IS
+THE SAME DEFECT AS A PRECONDITION SATISFIED BY A COMMENT ABOUT THE CODE IT IS
+CHECKING FOR** — which is arm P5 of the not-provisioned suite, found by ablation
+in this same batch, one file over. **Twice in one batch, in two files, by the
+same mechanism.** B6 now asserts against the `unknowns` list, requires the entry
+to reach the rendered unknowns block, and **B6b requires the two single-entity
+shapes NOT to carry it**, so a disclosure pushed unconditionally fails as well.
+
+**WHAT THE ABLATION PROVES, PER ARM:** L1 the two-employer disclosure → B6;
+L2 the UNSET branch's *not defaulted* sentence → A3; L3 the limb travelling
+with the floor → C[c19], C[c7], C[both], D2; L4 the two limbs' floors made
+equal → P2, P3; L5 the frozen/unfrozen distinction collapsed → P2, P3.
+**Every layer this feature depends on has a named arm that fails when it is
+removed**, which is what makes the green run evidence rather than a shape.
