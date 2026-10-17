@@ -269,6 +269,37 @@ to make a 2.4MB index readable by app, and **the platform shard has itself grown
 past the ceiling the sharding was meant to solve.** Not mine to fix; named so it
 is not discovered again.
 
+**THE DERIVED-DOCS GATE REFUSED THE FIRST PUSH AND IT WAS RIGHT.** The new suite
+is a test file, so `docs/traceability-matrix.md` and `docs/MASTER-PLAN.md` no
+longer matched their sources. Both regenerated with their own generators — **run,
+not edited; `tools/` is cc's.** The measured delta: **990 → 991** test files on
+disk, **219 → 220** traced to no stated requirement, 77.9% → 77.8%.
+
+**MY SUITE IS ONE OF THE 220 AND I DID NOT BIND IT, DELIBERATELY.** The only
+binding path open to me is the open-work index, and my row there is about
+multi-location scoping — **putting the suite's filename into it to move a number
+is precisely the measure-gaming that document's own text warns about**
+(*"counting it as traced would move 40 files across overnight with not one more
+requirement written down anywhere"*). The other path, `GUARD_TESTS`, lives in
+`tools/sairn_push_gate_hook.py`, which is **cc's and a push gate** — editing it
+is both a boundary crossing and the self-checking class. **So the honest state is
+one more file on a 220-deep platform backlog, said rather than quietly
+absorbed.** The requirement it covers IS written down — §12.6b and §13.5 of
+`docs/2026-09-17-sairnfreedom-tips-tax-treatment.md` — just not anywhere the
+matrix reads.
+
+**AND THE PUSH'S CLAIM READ `DEAD`, WHICH IS A LIVENESS ARTEFACT OF THIS RESUME
+AND NOT AN UNCLAIMED PUSH.** `tools/sairn_claim.py own` reports
+`state: DEAD, because: CLAUDE_PID 22036 no longer exists` — the claim was taken
+at `2026-10-17T11:22:11Z` by the session that started b22, and **this session
+resumed the same batch under a new pid**. The record still names `platform` and
+the same task string. `claim` **refuses** to re-take it (*"carry on under the
+claim you already hold, or release it first so the record says one thing"*), and
+**rewording the task string to get a fresh claim is the move PR §4.3 forbids** —
+so the batch carried on under the held record and it is released with the report.
+**Every other clone saw it HELD the whole time**; the DEAD reading is visible only
+to its own session.
+
 ---
 
 ## 5. Claims held
