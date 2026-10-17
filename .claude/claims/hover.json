@@ -967,8 +967,8 @@
       "task": "b53: poll hank b18/cody b22 (no land-check); H2 cross-instance provenance validation (H2 verified idle/released, not b51-active -- premise corrected); undirected sweep next category; #1512 re-verify; handoff+push",
       "claimed_at": "2026-10-17T15:24:24Z",
       "claimed_at_epoch": 1792250664.148544,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-17T15:32:37Z",
       "files": null
     }
   ],
