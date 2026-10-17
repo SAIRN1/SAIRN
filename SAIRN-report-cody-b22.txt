@@ -1,0 +1,381 @@
+===========================================================================
+SAIRN REPORT -- cody, batch b22, 2026-10-17
+===========================================================================
+
+STATUS ---- cody b22 LANDED on origin/main. Confirmed by querying the REMOTE
+and not by reading the push command's own success: `git ls-remote origin
+refs/heads/main` returns 89fbac189192e684a1abf59bfd825ce6d2af5a65, byte-equal
+to `git rev-parse HEAD`, and all three commits are ancestors of it --
+cfedf8dca (the work), ede864ef9 (the handoff), 89fbac189 (the derived-doc
+regeneration the push gate correctly demanded). Every one of the eight files
+was then confirmed present in the landed tree with `git cat-file -e <sha>:<path>`
+rather than assumed to have travelled with the commit. Pushed WITHOUT --force.
+Tree clean except docs/scrutiny-flags.json, which the gate itself wrote during
+the successful push and which is committed with this report.
+
+NOTHING OVERRIDDEN -- no SAIRN_SKIP, no SAIRN_GATE_EXEMPT, no SAIRN_SEED_GATE,
+in any form. THE PUSH WAS REFUSED TWICE AND BOTH REFUSALS WERE OBEYED RATHER
+THAN ROUTED AROUND: twice by the non-fast-forward state as other clones landed
+work (rebased, then every gate re-run), and once by the derived-docs gate
+because the new test file moved the test-file census. The fix was to run the
+two generators, not to skip the gate.
+
+NO api/, sql/ OR tools/ FILE EDITED. api/sd-data.js:14445, :2851 and :14316 ARE
+HANK'S AND WERE READ ONLY -- no api/ file is in the diff, and the suite COPIES
+api/ for its ablation, asserted by `git status --porcelain` identical before and
+after. Fourteen tools were RUN: open_work_shard, known_red_check,
+tier_a_review_gate, index_duplicate_check, md_table_check, sairn_app_map_check,
+nav_panel_check, div_balance_check, sairn_reachability_check,
+sairn_strict_args_check, sairn_dead_button_audit, tooling_inventory,
+traceability_matrix, master_plan. No hook restored. .claude/settings.json never
+committed. No auditor clone entered. AND NO STRIPE WORK OF ANY KIND -- SAIRNcash
+is HELD and was not touched: no object created, no Vercel environment read, no
+dashboard opened.
+
+THE CLAIM READ `DEAD` TO THE PUSH GATE AND THAT IS A LIVENESS ARTEFACT OF THIS
+RESUME, NOT AN UNCLAIMED PUSH. `sairn_claim.py own` reports `CLAUDE_PID 22036 no
+longer exists`; the claim was taken at 2026-10-17T11:22:11Z by the session that
+started b22, and this session resumed the same batch under a new pid. The record
+still names `platform` and the same task string, `claim` REFUSES to re-take it,
+and rewording the task string to get a fresh one is the move PR 4.3 forbids --
+so the batch carried on under the held record. Every other clone saw it HELD the
+whole time. RELEASED with this report.
+
+THE HANDOFF'S COMMIT SHAS NO LONGER RESOLVE AND THAT IS NOT A PROBLEM. It names
+c2f8c94f and 949decefe; the push rebased three times onto 24, then 2, then 2
+more commits from the other clones. The handoff is written BEFORE the push by
+design, and the real shas are in this file.
+
+===========================================================================
+THE HEADLINE: TWO ARMS IN TWO FILES WERE SATISFIED BY SOMETHING OTHER THAN
+THE THING THEY WERE CHECKING, AND BOTH FELL OUT OF ABLATION IN ONE BATCH
+===========================================================================
+
+  file                                        arm   what satisfied it instead
+  ------------------------------------------  ----  -------------------------
+  tests/sd_data_not_provisioned_misclass.js   P5    hank's explanatory COMMENT
+                                                    naming notProvisioned(),
+                                                    after the call was reverted
+  tests/sairnfreedom_tax_entity_facts.js      B6    TAX_ENTITIES.both.note,
+                                                    which independently contains
+                                                    "TWO EMPLOYERS ARE POSSIBLE",
+                                                    after the two-employer
+                                                    UNKNOWN was deleted
+
+BOTH ARMS WERE GREEN ON THE REAL TREE AND BOTH WERE WORTHLESS. Neither was
+visible by reading the assertion, because in each case the assertion is TRUE --
+of a different string than the one the arm exists to check. The second one is in
+a file I wrote hours after fixing the first, ONE BATCH AFTER convention 36 was
+written about exactly this shape. Writing the convention down did not stop it.
+The ablation did.
+
+WHAT SEPARATED THEM IS IDENTICAL IN BOTH: remove the layer, see whether the
+NAMED arm goes red. Not "does the suite still pass" -- that would have cleared
+both. And the fix shape is identical too: assert on the STRUCTURE the thing
+lives in, never on rendered or concatenated text. P5 strips line comments and
+requires an invocation WITH ARGUMENTS. B6 asserts on the `unknowns` LIST,
+requires the entry to reach the rendered unknowns block, and B6b requires the
+two single-entity shapes NOT to carry it -- so a disclosure pushed
+unconditionally fails as well.
+
+===========================================================================
+WHAT LANDED
+===========================================================================
+
+1. SAIRNFREEDOM: THE CANTEEN'S EXEMPT ENTITY IS CONFIGURATION, NOT AN ASSUMPTION
+
+   TAX_ENTITIES carries three real shapes -- c19, c7, both. The research was
+   already done and recorded; what was missing is that NOTHING IN THE APP OR THE
+   DOCUMENT COULD REPRESENT THE ANSWER. Pub. 3386 says a veterans' organisation
+   running a bar, restaurant or canteen for members "may be recognized as tax
+   exempt under IRC 501(c)(7)" and that such clubs "are often operated in
+   conjunction with IRC 501(c)(4) veterans' organizations".
+
+   `both` IS THE SHAPE THAT MATTERED. It is where "whose employee received this
+   tip" has TWO answers, and that answer decides WHICH RETURN the employer-side
+   figures land on. A design storing one entity collapses two employers into one
+   silently.
+
+   THE DEFAULT IS '' AND NOT 'c19'. An unset structure reads UNKNOWN, because a
+   defaulted (c)(19) is a silent assumption of precisely the thing the field
+   exists to stop assuming.
+
+   AND THE 45B FLOOR IS NO LONGER A CONSTANT, which closes 12.6b's precondition
+   in CODE rather than leaving it as a warning. SEC45B_LIMBS carries BOTH limbs
+   of 45B(b)(2) -- $5.15 frozen at "in effect on January 1, 2007" for food and
+   beverage, the CURRENT federal minimum ($7.25 today) for beauty service --
+   each with the Form 8846 sentence it came from and a `frozen` boolean.
+   taxEntityFacts() returns limb and floor TOGETHER so the figure cannot be read
+   without the population it applies to. NOTHING COMPUTES A CREDIT and section
+   7.3's warning against building toward one is unchanged.
+
+2. THE REPORTER WAS DORMANT CODE, AND GUARDIAN 0d AGAINST MY OWN DIFF FOUND IT
+
+   taxEntityFacts() was driven in all four states, every arm green, and
+   `grep -n "taxEntityFacts" sairnfreedom.html` returned the definition, a
+   mention inside its own comment, and NOTHING ELSE. Zero callers.
+
+   A CONFIGURABLE STRUCTURE WHOSE EFFECTS ARE INVISIBLE IS THE ASSUMPTION IT
+   EXISTS TO REMOVE, ONE STEP LATER: the post answers the question, nothing it
+   can see changes, and the next session reads a field with no evidence anybody
+   uses it.
+
+   RESOLVED BY WIRING, AND THE CHOICE WAS REAL. Deleting it would have made
+   12.6b's "it is no longer only a warning" FALSE IN THE SAME COMMIT THAT WROTE
+   IT. So sfRenderTaxFacts() paints it into Post Profile from sfRenderPost(),
+   the unknowns as prominently as the determinations, and the unset state
+   renders the unknown as the WHOLE output -- never a blank box, because a blank
+   box reads as "no issue here".
+
+3. THE NOT-PROVISIONED SUITE'S SUBJECT WAS FIXED, SO THE SUITE SAID SO
+
+   hank landed BOTH routed call sites AND TEN MORE. Measured by the suite on
+   every run, never quoted: 318 guards / 88 via notProvisioned() / 67 raw 503
+   -> 319 / 99 / 57. Eleven guards converted where two were routed.
+
+   WHAT WENT RED WHEN THE FIX LANDED WAS THE RIGHT THING. Arm P5 existed to
+   assert "the branch does NOT already route through notProvisioned(), so A1 is
+   measuring the shipped answer", and it failed the moment the fix landed --
+   telling the suite its subject had changed instead of letting A1 go green and
+   read as a defect that never existed.
+
+   A2 IS AN ABLATION NOW, NOT A COUNTERFACTUAL, AND IT IS STRICTLY STRONGER. It
+   REVERTS hank's call site in a COPY and requires A1 AND P5 to come back RED.
+   The old form proved the fix WOULD work; this one proves A1 CAN STILL FAIL,
+   which is the only thing that makes a green A1 evidence.
+
+   A3 MOVED FROM THE CHILD TO THE PARENT, because in the ablated copy it passes
+   VACUOUSLY: a raw 503 answers 503 for every input including a real 404. An arm
+   that cannot distinguish the fixed case from the reverted one is not an arm.
+
+   C1 IS THE NEW RED ARM AND IT CLOSES A GAP b19's OWN ROUTING NAMED AND NEVER
+   DROVE. The injected code is 42703 and not 23514 ON PURPOSE and that is not a
+   softening: a CHECK violation fires on a WRITE and this guard sits on a SELECT,
+   so the plausible 400 here is an UNDEFINED COLUMN.
+
+4. THE REGISTER ROW HAD A SECOND DEFECT, OLDER THAN THIS BATCH, IN THE FIELD
+   THE TOOL ACTUALLY COMPARES
+
+   run_all_tests.py builds a FAIL line's tail from out[-1] -- THE SUITE'S LAST
+   PRINTED LINE. known_red_check.py classifies a row by comparing that,
+   digit-normalised, against the row's own `tail`. This row's tail has been an
+   ARM LIST since b19 and this suite's last line is its closing expected-red
+   paragraph. THEY NEVER MATCHED.
+
+   MEASURED, NOT REASONED: a fixture log carrying the real FAIL line reported
+   CHANGED (1) before the fix and KNOWN (1) after.
+
+   A ROW REGISTERED WITH A TAIL THE RUNNER CANNOT PRODUCE IS WORSE THAN AN
+   ABSENT ROW. Absent reads NEW and gets looked at. CHANGED reads as "a second
+   defect is hiding inside an entry that says this file is expected to fail" --
+   and the ENTRY is the thing that is wrong.
+
+5. THE MULTI-LOCATION/MULTI-BRAND DESIGN ALREADY EXISTED, AND THE ROW I READ
+   SAYS NOT STARTED
+
+   docs/2026-10-17-cody-b22-multi-location-brand-data-model.md. I claimed a
+   scoping task on the strength of open-work row 356, which says item 4 is NOT
+   STARTED. It landed 2026-09-16 and ROW 355 -- ONE ROW BELOW THE ONE I READ --
+   SAYS SO. The design is the 65-line comment header of
+   api/_lib/location-scope.js and it is better than a fresh pass would have
+   been, because it was written against a measurement rather than an item name.
+
+   That cost me the premise of this batch's claim, which is the only reason it
+   is written down rather than shrugged at.
+
+   RE-DERIVED AT HEAD RATHER THAN QUOTED, AND THREE FIGURES HAD MOVED:
+   dnt-rollup 27 -> 30 arms; the 'LOC-DEFAULT' literal at 40 sites while the JS
+   constant is defined in exactly ONE module; brandId/brand_id 0 times in all 22
+   *.html files. 112 arms green across the six location suites.
+
+   THREE ROLL-UP SHAPES NOW, NOT TWO, and the third is named nowhere including in
+   the module comment: sairnfreedom's buildDistrictReport() buckets per ENTITY
+   ACROSS AN INSTALL BOUNDARY by signed JSON, where the other two cross a
+   `group by`. It exists because a district does not own its posts' rows -- so
+   THE ROLL-UP SHAPE IS A FUNCTION OF WHO OWNS THE ROWS, not of how many axes
+   there are.
+
+   AND THE BRAND HALF REALLY IS UNBUILT. The LOCATION half is built and tested;
+   the BRAND/ENTITY half has two disagreeing implementations and no shared
+   anything, and location-scope.test.js arm D FORBIDS the shared module from
+   growing one. The precondition is a SECOND app that needs an entity layer, not
+   a session with time -- the same precondition location-scope.js consolidated
+   on, and the reason it is a good module rather than a guess.
+
+6. cc's TIER A OBLIGATION ANCHOR SHA, RESEATED. Orphaned by a rebase; the old
+   value is kept as `opened_at_sha_was` with `opened_at_sha_reseat_basis`
+   SUBJECT TWIN, rather than overwritten.
+
+===========================================================================
+VERIFICATION -- exit codes from `echo "EXIT=$?"` on its own line, never a
+pipeline. EVERY LINE RE-RUN AFTER EACH OF THE THREE REBASES.
+===========================================================================
+
+EXIT=0  node tests/sairnfreedom_tax_entity_facts.js        26 arms, 0 failed
+EXIT=1  node tests/sd_data_not_provisioned_misclass.js     15 passed, 1 failed
+                                                           -- C1 ON PURPOSE
+EXIT=0  Check 0a, sairnfreedom.html    2/2 blocks, PARSER-based extraction
+EXIT=0  node --check on both suites
+EXIT=0  python tools/open_work_shard.py --check      CLEAN, 814 rows byte for byte
+EXIT=0  python tools/tier_a_review_gate.py           obligation OPEN and covering
+EXIT=0  python tools/md_table_check.py               0 malformed, 0 uncheckable
+EXIT=0  python tools/known_red_check.py --from-run   KNOWN (1), was CHANGED (1)
+EXIT=0  python tests/run_known_red_probe.py          0 failures
+EXIT=0  python tools/sairn_app_map_check.py          17 files, 17 rows
+EXIT=0  python tools/nav_panel_check.py              sairnfreedom.html
+EXIT=0  python tools/div_balance_check.py            sairnfreedom.html
+EXIT=0  python tools/sairn_reachability_check.py     clean
+EXIT=0  python tools/sairn_strict_args_check.py      sairnfreedom.html
+EXIT=0  python tools/sairn_dead_button_audit.py      A/B/C1/C2/D1/E all 0
+EXIT=0  python tools/traceability_matrix.py          regenerated
+EXIT=0  python tools/master_plan.py                  regenerated
+EXIT=1  python tools/index_duplicate_check.py        3 pairs -- PRE-EXISTING
+EXIT=1  python tools/tooling_inventory.py --standing-doc-sizes  8 -- PRE-EXISTING
+
+THE ABLATION, 5 OF 5 CAUGHT BY A NAMED ARM, per arm and not per exit code:
+
+  L1  the two-employer disclosure                 -> B6
+  L2  the UNSET branch's "not defaulted" sentence -> A3
+  L3  the limb travelling with the floor          -> C[c19], C[c7], C[both], D2
+  L4  the two limbs' floors made equal            -> P2, P3
+  L5  the frozen/unfrozen distinction collapsed   -> P2, P3
+
+Driven on a COPY of sairnfreedom.html in a temp directory, each removed in a
+`finally`. `git status --porcelain` identical before and after -- the live tree
+was never written, and that is ASSERTED rather than intended. The first run was
+4 of 5; L1 is the miss that found B6.
+
+STRUCTURE MEASURED BOTH WAYS: docs/SAIRN-OPEN-WORK-INDEX.md 851 -> 852 table
+rows and 1,006 -> 1,007 lines; the new row is 8 pipes like every other row and
+ONE physical line; line 355 and the row that followed it BYTE-IDENTICAL
+afterwards, asserted in the inserter rather than checked by eye.
+
+AND THE 114-LINE CHURN IN docs/open-work/ACTIVE.md WAS PROVEN A REFLOW, NOT
+SWEPT-IN WORK. Normalising the `platform.md:NN` citations and the counts leaves
+0 lines only-removed and exactly 1 only-added -- mine. One inserted line
+renumbers every subsequent citation. Checked BEFORE committing, per Verification
+Discipline 4, rather than explained afterwards.
+
+THE TWO EXIT-1s ARE PRE-EXISTING AND MEASURED. index_duplicate_check names the
+same three pairs b21 measured -- SAIRNgrounds 144/145, Tooling 255/257, Platform
+295/299 -- and the index was not modified at HEAD by anybody else this batch, so
+the result is unchanged by construction. --standing-doc-sizes names EIGHT
+documents over the ceiling, up from the seven CLAUDE.md records.
+
+AND ONE OF THOSE EIGHT IS A GENERATED SHARD: docs/open-work/platform.md is
+844,983 bytes. The shards exist to make a 2.4MB index readable by app, and THE
+PLATFORM SHARD HAS ITSELF GROWN PAST THE CEILING THE SHARDING WAS MEANT TO
+SOLVE. Not mine to fix; named so it is not discovered again.
+
+GUARDIAN CHECK 8 REPORTS A DUPLICATE ID AND IT IS A FALSE POSITIVE, CHECKED
+RATHER THAN DISMISSED. `ac-name` appears twice in sairnfreedom.html: once as a
+real input at :395 and once inside an HTML COMMENT at :1468 documenting the fix
+of that very collision. Pre-existing at HEAD (408 ids, same single pair), not in
+my diff, and not a real duplicate as far as getElementById is concerned.
+
+THE NEW SUITE IS ONE OF THE 220 UNTRACED TEST FILES AND I DID NOT BIND IT,
+DELIBERATELY. The only binding path open to me is the open-work index, and my
+row there is about multi-location scoping -- putting the suite's filename into
+it to move a number is precisely the measure-gaming that document's own text
+warns about. The other path, GUARD_TESTS, lives in
+tools/sairn_push_gate_hook.py, which is cc's AND a push gate, so editing it is
+both a boundary crossing and the self-checking class. One more file on a
+220-deep platform backlog, said rather than quietly absorbed. The requirement it
+covers IS written down -- 12.6b and 13.5 of the tips document -- just not
+anywhere the matrix reads.
+
+===========================================================================
+DECISION-NEEDED
+===========================================================================
+
+NOTHING IS BLOCKED ON MICHAEL THIS BATCH. One item is a judgement call somebody
+has to make and it is small:
+
+  api/_lib/roofing-locations -- isDefaultLocation() was added to the shared
+  module with its reason stated in the code: "sairnroofing.html asks this
+  question inline twice... a UI that hardcodes the sentinel is the next place
+  the constant drifts." BOTH SITES STILL HARDCODE IT (:3292, :3298) AND THEY
+  CANNOT STOP -- the module is CommonJS, the app is a single HTML file with no
+  loader and no build step. There is no path from that UI to that function. Arm
+  E passes and proves the function WORKS, not that anything USES it.
+
+  Either (a) accept the two client literals permanently and say so in a comment
+  at both sites, or (b) return an `is_default` boolean per row from the
+  locations endpoint so the client never compares the sentinel. (b) is the one
+  that makes arm E's stated reason true. Not taken here: api/ is hank's.
+
+And SAIRNcash remains HELD by Michael's decision. Nothing in this batch touched
+it and no session should pick up a Stripe item until he says go.
+
+===========================================================================
+NEXT -- by owner, with the exact step
+===========================================================================
+
+HANK -- api/sd-data.js, the alf_op_audits APPEND-ONLY EXISTENCE guard. C1 is red
+  on purpose and the fix is THE SAME ONE LINE AS A1, one guard earlier: route it
+  through notProvisioned(res, existingR, <the same message>).
+  notProvisionedDecide() needs no change. Re-derive the line number; measured,
+  the branch holds exactly one raw 503 and it is that guard. C2 is the paired
+  positive. AND THANK YOU FOR A1 AND B1, which is not a courtesy: the conversion
+  is what let the suite become a regression guard, and eleven guards moved where
+  two were routed. :14316 is still named and not driven.
+
+WHOEVER OWNS OPEN-WORK ROW 356 -- ONE CLAUSE, NOT A REWRITE. Its item-4 sentence
+  says the shared multi-location architecture is NOT STARTED; row 355, written
+  the next day by the same session, says it is DESIGNED AND FIRST-MIGRATED. Both
+  were true when written. 356 IS READ FIRST AND 355's CORRECTION IS INVISIBLE
+  FROM IT. I did not edit it -- re-wording another session's row to carry my own
+  answer is the edit this platform has least tolerance for.
+
+CC -- ROW 449's MEASUREMENT IS NOW FALSE. It records "dnt_rollup appears 0 times
+  in sairndental.html and 0 times in every .html file in the repo -- NO PANEL,
+  NO NAV TARGET, NOTHING SENDS IT." That was true then. Re-derived at HEAD:
+  sairndental.html:2543 is `await sdnData('read','dnt_rollup',{})` with
+  dntLastErrText('dnt_rollup') beside it at :2549. The row's "NEEDS A DECISION
+  -- either a panel or a written deferral" was answered by somebody building the
+  panel. NOT CLAIMED: that the panel is reachable from the nav or complete. I
+  checked the call site, not the route.
+
+WHOEVER WANTS THE EXPENSIVE HALF OF ITEM 4 -- how many of the other 64 known-red
+  rows carry a `tail` the runner cannot produce is NOT MEASURED and it is not
+  cheap: each registered suite has to be driven ALONE and its out[-1] compared
+  to its row, and several of those suites WRITE WHEN RUN. The arm belongs in
+  tests/run_known_red_probe.py, which already builds its fixture log FROM these
+  rows and is the one place that could assert the inverse -- but it would have
+  to drive them to know. ROUTED rather than estimated.
+
+NOBODY, FOR THE BRAND AXIS, AND THAT IS THE SCOPING CALL. The precondition is a
+  SECOND app that needs an entity layer. AND DO NOT BUILD
+  location-as-access-boundary -- recorded decision 2026-08-25 (Michael) at
+  api/_lib/roofing-locations.js:20: "It deserves a real multi-location customer
+  to design against rather than a guess now." A session that picks it up has
+  misread it. DO NOT fold the roll-ups -- location-scope.test.js arm D pins that
+  boundary on purpose.
+
+SAIRNFREEDOM, IF A POST EVER REPORTS `both` WITH TIPPED STAFF -- add an
+  `employerEntity` to the MEMBER/OFFICER record, NOT a second scalar on the
+  post, because the question is per worker and a post-level field answers it
+  wrongly for every post that has both. taxEntityFacts().unknowns already says
+  the app does not record it, so the gap is disclosed to the post that has it.
+  Nothing should be built until a real post reports that shape.
+
+THE POST'S CPA -- one question, one line, unchanged from b21: is this post's
+  canteen held under 501(c)(19), a companion 501(c)(7), or both? IT IS NOW A
+  FIELD rather than only a question, with '' meaning UNKNOWN, so the answer has
+  somewhere to land when it arrives.
+
+WHOEVER OWNS THE THREE DUPLICATE INDEX PAIRS -- SAIRNgrounds 144/145, Tooling
+  255/257, Platform 295/299. Pre-existing, not mine, measured rather than
+  inherited as a claim.
+
+CODY -- the b17/b18 carry-overs are untouched, exactly as b19-b21 left them, and
+  the 151/57 sibling NOT_PROVISIONED guards are NOT converted: A DECISION, NOT A
+  BACKLOG (cross-domain item 7). The population moved from 151/67 to 151/57
+  because hank converted eleven; the decision is unchanged. And
+  irs.gov/instructions/i8846 is still unread -- HTTP 404 at b21, not retried.
+
+===========================================================================
+CLAIM -- RELEASED with this report. `platform`, taken BEFORE any work, held
+through the whole batch including the three rebases, and released only after
+the push was confirmed PRESENT ON THE REMOTE rather than reported successful.
+===========================================================================

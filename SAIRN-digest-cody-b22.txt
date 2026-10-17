@@ -1,0 +1,150 @@
+cody b22 -- 2026-10-17 -- DIGEST
+===========================================================================
+
+CONTEXT: ~28% used at the time this digest is written.
+
+------ cody b22 LANDED on origin/main -- 89fbac189192e684a1abf59bfd825ce6d2af5a65,
+three commits: cfedf8dca (the work), ede864ef9 (the handoff), 89fbac189 (the
+derived-doc regeneration the push gate correctly demanded). CONFIRMED BY
+QUERYING THE REMOTE, not by reading the push command: `git ls-remote origin
+refs/heads/main` is byte-equal to `git rev-parse HEAD`, all three commits are
+ancestors of it, and each of the eight files was confirmed present in the landed
+tree with `git cat-file -e <sha>:<path>`. Pushed WITHOUT --force. NOTHING
+OVERRIDDEN -- no SAIRN_SKIP, no SAIRN_GATE_EXEMPT, no SAIRN_SEED_GATE, in any
+form. THE PUSH WAS REFUSED THREE TIMES AND EVERY REFUSAL WAS OBEYED: twice
+non-fast-forward as other clones landed work (rebased, every gate re-run each
+time), once by the derived-docs gate because the new test file moved the
+test-file census -- fixed by RUNNING the two generators, not by skipping the
+gate. NO api/, sql/ OR tools/ FILE EDITED: api/sd-data.js:14445, :2851 and
+:14316 ARE HANK'S AND WERE READ ONLY, and the suite COPIES api/ for its ablation
+with `git status --porcelain` asserted identical before and after. Fourteen tools
+RUN, not edited. No hook restored. settings.json never committed. No auditor
+clone entered. AND NO STRIPE WORK OF ANY KIND -- SAIRNcash is HELD and was not
+touched. THE CLAIM READ `DEAD` TO THE GATE AND THAT IS A LIVENESS ARTEFACT OF
+THIS RESUME, NOT AN UNCLAIMED PUSH: CLAUDE_PID 22036 belonged to the session that
+started b22, this session resumed the same batch, the record still names
+`platform` and the same task string, `claim` REFUSES to re-take it, and rewording
+the task string to get a fresh one is the move PR 4.3 forbids -- so the batch
+carried on under the held record and every other clone saw it HELD the whole
+time. RELEASED with the report.
+
+===========================================================================
+THE HEADLINE -- TWO ARMS, TWO FILES, ONE BATCH, SAME MECHANISM: each was
+satisfied by something other than the thing it was checking, and BOTH were
+green on the real tree and worthless. P5 in
+tests/sd_data_not_provisioned_misclass.js passed on hank's explanatory COMMENT
+naming notProvisioned() after the call itself was reverted. B6 in
+tests/sairnfreedom_tax_entity_facts.js -- MY OWN NEW FILE, written hours later
+-- passed on TAX_ENTITIES.both.note, which independently contains "TWO EMPLOYERS
+ARE POSSIBLE", after the two-employer UNKNOWN was deleted. Neither was visible by
+reading, because in each case the assertion is TRUE of a different string than
+the one the arm exists to check. IT RECURRED ONE BATCH AFTER CONVENTION 36 WAS
+WRITTEN ABOUT EXACTLY THIS SHAPE -- writing it down did not stop it, the ablation
+did. What separated them is identical: remove the layer, see whether the NAMED
+arm goes red; "does the suite still pass" would have cleared both. So is the fix:
+assert on the STRUCTURE the thing lives in, never on rendered or concatenated
+text. P5 now strips line comments and requires an invocation WITH ARGUMENTS; B6
+asserts on the `unknowns` LIST, requires it to reach the rendered block, and B6b
+requires the two single-entity shapes NOT to carry it.
+
+AND THE SECOND HEADLINE IS THAT MY OWN CLAIM'S PREMISE WAS FALSE. I claimed a
+"shared multi-location multi-brand data model scoping doc" on the strength of
+open-work row 356, which says item 4 is NOT STARTED. IT LANDED 2026-09-16 AND ROW
+355 -- ONE ROW BELOW THE ONE I READ -- SAYS SO. The design is the 65-line comment
+header of api/_lib/location-scope.js and it is better than a fresh pass would
+have been, because it was written against a measurement rather than an item name.
+
+===========================================================================
+LANDED: (1) SAIRNfreedom's canteen exempt entity is CONFIGURATION -- TAX_ENTITIES
+c19/c7/both, default '' meaning UNKNOWN and never 'c19', because a defaulted
+(c)(19) is a silent assumption of the thing the field exists to stop assuming;
+`both` is the shape where "whose employee received this tip" has TWO answers and
+a one-entity design collapses two employers silently. (2) THE 45B FLOOR IS NO
+LONGER A CONSTANT -- SEC45B_LIMBS carries BOTH limbs of 45B(b)(2), $5.15 frozen
+at 2007-01-01 for food and beverage and the CURRENT federal minimum ($7.25 today)
+for beauty service, each with the Form 8846 sentence it came from, and
+taxEntityFacts() returns limb and floor TOGETHER so the figure cannot be read
+without its population. NOTHING COMPUTES A CREDIT; 7.3 is unchanged. (3) THE
+REPORTER WAS DORMANT CODE and Guardian 0d against my OWN diff found it -- zero
+callers, wired to sfRenderTaxFacts() rather than quarantined, because deleting it
+would have made 12.6b's "no longer only a warning" false in the same commit that
+wrote it; the unknowns render as prominently as the determinations and the unset
+state renders the unknown as the WHOLE output, never a blank box. (4) THE
+NOT-PROVISIONED SUITE RE-AIMED because hank landed BOTH routed call sites AND TEN
+MORE -- measured 318/88/67 -> 319/99/57, A1 and B1 are green REGRESSION arms, C1
+is the new red arm on the guard b19 NAMED and never drove, A2 is an ABLATION
+instead of a counterfactual and is strictly stronger (it proves A1 CAN STILL
+FAIL), A3 moved from child to parent because it would pass VACUOUSLY in the
+ablated copy. (5) THE REGISTER ROW HAD A SECOND DEFECT, OLDER THAN THIS BATCH --
+run_all_tests builds a FAIL tail from out[-1], the suite's LAST PRINTED LINE, and
+this row's tail has been an ARM LIST since b19, so it has classified as CHANGED
+rather than KNOWN for its whole existence; measured with a fixture log, CHANGED(1)
+before and KNOWN(1) after. A ROW WITH A TAIL THE RUNNER CANNOT PRODUCE IS WORSE
+THAN AN ABSENT ROW: absent reads NEW and gets looked at. (6) THE SCOPING DOC,
+re-derived at HEAD rather than quoted -- three figures had moved: dnt-rollup 27
+-> 30 arms, 'LOC-DEFAULT' at 40 sites with the JS constant defined in exactly
+ONE module, brandId/brand_id 0 times in all 22 html files; 112 arms green across
+six location suites; THREE roll-up shapes now, not two, the third being
+sairnfreedom's buildDistrictReport() per ENTITY across an INSTALL boundary by
+signed JSON because a district does not own its posts' rows -- so the roll-up
+shape is a function of WHO OWNS THE ROWS. (7) cc's Tier A anchor sha reseated,
+old value kept rather than overwritten.
+
+VERIFIED: 26 arms exit 0 on the new suite; 15 passed / 1 failed exit 1 on the
+re-aimed one, C1 ON PURPOSE; Check 0a 2/2 blocks by PARSER-based extraction;
+open_work_shard --check CLEAN at 814 rows byte for byte; known_red_check KNOWN(1);
+nav, div-balance, reachability, strict-args, dead-button, app-map, md-table and
+tier-a all exit 0; traceability and master-plan regenerated. ABLATION 5 OF 5
+CAUGHT BY A NAMED ARM, per arm and not per exit code -- and the first run was 4
+of 5, which is how B6 was found. Index 851 -> 852 rows and 1,006 -> 1,007 lines,
+the new row 8 pipes and ONE physical line, line 355 and its follower
+BYTE-IDENTICAL afterwards and asserted in the inserter. The 114-line churn in
+ACTIVE.md PROVEN a reflow: normalising the platform.md:NN citations leaves 0
+only-removed and exactly 1 only-added, mine. TWO exit-1s are PRE-EXISTING --
+index_duplicate_check's same three pairs, and --standing-doc-sizes at EIGHT docs
+up from CLAUDE.md's seven, ONE OF WHICH IS A GENERATED SHARD: open-work/
+platform.md at 844,983 bytes has itself grown past the ceiling the sharding was
+meant to solve. Guardian Check 8's duplicate `ac-name` is a FALSE POSITIVE,
+checked rather than dismissed -- the second occurrence is inside an HTML COMMENT
+documenting the fix of that very collision, pre-existing at HEAD, not in my diff.
+The new suite is one of the 220 untraced test files and I DID NOT BIND IT,
+deliberately: the only path open was my own index row, and putting a test
+filename there to move a number is the measure-gaming the matrix's own text warns
+about; GUARD_TESTS lives in cc's push-gate hook, which is both a boundary and the
+self-checking class.
+
+---- DECISION-NEEDED: NOTHING IS BLOCKED ON MICHAEL. One small judgement call for
+whoever owns api/_lib/roofing-locations: isDefaultLocation() was added for two
+sairnroofing.html sites that CANNOT reach it -- CommonJS module, single-file app,
+no loader, no build step -- so arm E proves the function WORKS, not that anything
+USES it. Either accept the two client literals permanently with a comment at both
+sites, or return an `is_default` boolean per row so the client never compares the
+sentinel; the second is the one that makes arm E's stated reason true. Not taken:
+api/ is hank's. AND SAIRNcash STAYS HELD -- no session should pick up a Stripe
+item until Michael says go.
+
+---- NEXT: HANK -- C1's fix is THE SAME ONE LINE AS A1, one guard earlier: route
+the alf_op_audits existence SELECT through notProvisioned(res, existingR, <the
+same message>); notProvisionedDecide() needs no change; re-derive the line
+number; :14316 still named and not driven. WHOEVER OWNS ROW 356 -- one clause
+pointing at row 355, not a rewrite; both rows were true when written and 356 is
+read first. CC -- row 449's "dnt_rollup appears 0 times in every .html" is now
+FALSE: sairndental.html:2543 is a real sdnData('read','dnt_rollup',{}) call with
+its error path at :2549; NOT CLAIMED that the panel is nav-reachable or complete,
+I checked the call site and not the route. WHOEVER WANTS THE EXPENSIVE HALF --
+how many of the other 64 known-red rows carry a tail the runner cannot produce is
+NOT MEASURED and is not cheap: each suite driven ALONE, out[-1] compared to its
+row, and several WRITE WHEN RUN; the arm belongs in run_known_red_probe.py.
+NOBODY FOR THE BRAND AXIS, and that is the scoping call -- the precondition is a
+SECOND app needing an entity layer; DO NOT build location-as-access-boundary
+(recorded decision 2026-08-25, Michael, at roofing-locations.js:20) and DO NOT
+fold the roll-ups (arm D pins that boundary on purpose). SAIRNFREEDOM, IF A POST
+REPORTS `both` WITH TIPPED STAFF -- add employerEntity to the MEMBER record, not
+a second scalar on the post, because the question is per worker. THE POST'S CPA
+-- one line, unchanged: 501(c)(19), a companion 501(c)(7), or both? It is now a
+FIELD rather than only a question. WHOEVER OWNS THE THREE DUPLICATE INDEX PAIRS
+-- SAIRNgrounds 144/145, Tooling 255/257, Platform 295/299, pre-existing and not
+mine. CODY -- the b17/b18 carry-overs are untouched, and the 151/57 sibling
+NOT_PROVISIONED guards are NOT converted: a DECISION, not a backlog; the
+population moved 151/67 -> 151/57 because hank converted eleven.
+irs.gov/instructions/i8846 is still unread, HTTP 404 at b21, not retried.
