@@ -926,6 +926,17 @@
       "files": [
         ".claude/claims/hover.json"
       ]
+    },
+    {
+      "id": "hover-1792246909",
+      "session": "hover",
+      "subject": "hover",
+      "task": "b51 audit rotation: resume from stale b50 premise, poll #1499/#1498/#1500/#1501 drift, fast-pass hank b18",
+      "claimed_at": "2026-10-17T14:21:49Z",
+      "claimed_at_epoch": 1792246909.479277,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
