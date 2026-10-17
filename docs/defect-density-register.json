@@ -32842,78 +32842,6 @@
       "recurrence_open": "THE OTHER 86 CALL SITES STILL READ okWrite AND MOST IGNORE IT, which is unchanged and is the larger problem this does not touch. AND NOTHING HERE WAS DRIVEN IN A BROWSER: the st() seam check loads the wrapper with a stubbed localStorage, so the bldSyncCollection throw path is exercised against a stub and the real retry pass has never been seen to pick one of these up. AND THE PENDING-LIST SENTINEL IS UNVERIFIED end to end -- bldRetryPending() drops an id it cannot resolve to a local row, which is why '__collection__' is visible and self-cleaning by argument rather than by measurement."
     },
     {
-      "commit": "b6a2d572c6e2",
-      "date": "2026-10-16",
-      "subject": "fmea(drafts): seven files drafted, and --save could overwrite a prediction -- which launders a MISSED verdict",
-      "files": [
-        "docs/fmea/sairnsenior.html.json",
-        "docs/fmea/sairnsenior.html.superseded-2026-09-14.json",
-        "docs/fmea/tools_batch_manifest.py.json",
-        "docs/fmea/tools_blob_conversion_coverage.py.json",
-        "docs/fmea/tools_citation_anchor_rot_check.py.json",
-        "docs/fmea/tools_hover_auditor_scope_gate.py.json",
-        "docs/fmea/tools_sairn_board_publish.py.json",
-        "docs/fmea/tools_sairn_claim.py.json",
-        "docs/fmea/tools_tier_a_review_gate.py.json",
-        "tools/fmea_draft.py"
-      ],
-      "lines_added": 13082,
-      "lines_removed": 12,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "tools/fmea_draft.py --save OVERWROTE an existing draft for the same target.\ntools/fmea_prediction_check.py buckets a defect MISSED when a draft for its\nfile predates it and named nothing like it, and DRAFT NEWER -- unscoreable BY\nCONSTRUCTION -- when the only draft postdates it. So replacing a dated draft\nwith a fresh one silently converted MISSED verdicts into unscoreable ones: a\nbetter headline, an identical prediction, and no trace of the prediction that\nfailed. MEASURED on the real case: sairnsenior.html carries a draft dated\n2026-09-14 and fifteen register rows name that file afterwards, none\npredicted. Superseding it while KEEPING the old draft leaves `missed` at 144;\nremoving the kept copy drops it to 139 and raises DRAFT NEWER from 221 to 228.\nFive real MISSES, preserved or laundered, on one rename. NOTE ON THIS RECORD, 2026-10-16: one factor lost the word \"target\" to shell command substitution -- an UNQUOTED heredoc delimiter let the shell expand a backtick-quoted field name inside the body. THIRD instance in this batch, after two summaries in the first feed. The fix is not care, it is the --<flag>-file route plus a QUOTED heredoc delimiter whenever the body carries code; restored here.",
-      "rules": [
-        "1.8"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "927c7948b4f4",
-        "date": "2026-09-13",
-        "subject": "feat(process,tools): history-seeded FMEA, and a scorer that refuses to invent a number",
-        "lag_days": 33
-      },
-      "citation_note": "A generated artefact is safe to generate; a generated GATE is not. The FMEA\nprediction record is the measurement substrate for the whole risk loop, and\n--save could rewrite a dated entry in it with no record of what it replaced --\nso the scorer would go on reporting a rate computed over a record that had\nbeen edited underneath it.",
-      "contributing_factors": [
-        {
-          "factor": "--save wrote unconditionally, so a dated prediction could be replaced by an undated-against-history one",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "an existing draft is REFUSED with its date and risk count named, and --supersede keeps it as <slug>.superseded-<drafted_on>.json"
-        },
-        {
-          "factor": "the kept copy has to stay ATTRIBUTABLE or the fix is the same laundering by another route",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "load_drafts() globs every *.json and keys on the \"target\" field, so a superseded draft stays LIVE and goes on covering the defects it was contemporary with"
-        },
-        {
-          "factor": "the prediction record is the measurement substrate for the risk loop, so an edit to it is invisible in the rate it produces",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "the counterfactual was MEASURED rather than argued -- missed 144 with the kept copy, 139 without it -- and the number is in the commit and the inventory"
-        },
-        {
-          "factor": "two supersedes on one date would have collided and lost one",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "the kept name is suffixed, and S9 is the arm that holds it"
-        },
-        {
-          "factor": "the two probes covering this tool are under tests/, another session's directory, so a control for a change here had nowhere obvious to go",
-          "kind": "process",
-          "action_status": "done",
-          "action": "9 arms added as a --selftest in the tool itself; S3 requires the refused re-save to leave the existing draft BYTE-IDENTICAL, because the refusal is enforced by not writing rather than by an exit code"
-        }
-      ],
-      "recurrence_open": "Only fmea_draft.py is fixed. Nothing sweeps the OTHER generated records on\nthis platform for the same overwrite-a-dated-entry shape, and the existing\nsuperseded copies are preserved only from now on -- any draft overwritten\nbefore 2026-10-16 is already gone and the verdicts it would have scored are\nnot recoverable. Nobody has measured how many that is."
-    },
-    {
       "commit": "94ec1209e4e1",
       "date": "2026-10-16",
       "subject": "fix(matcher): the exemption is derived from the live corpus, so a phrase crossing three sessions silently retired a live incident",
@@ -33296,6 +33224,78 @@
       "recurrence_open": "only the reachability document is guarded. Any other write this tool reaches on a fixture run is still unguarded, and the probe half -- a non-quiet run against the live repo root -- is unchanged and lives in codys tree."
     },
     {
+      "commit": "b6a2d572c6e2",
+      "date": "2026-10-16",
+      "subject": "fmea(drafts): seven files drafted, and --save could overwrite a prediction -- which launders a MISSED verdict",
+      "files": [
+        "docs/fmea/sairnsenior.html.json",
+        "docs/fmea/sairnsenior.html.superseded-2026-09-14.json",
+        "docs/fmea/tools_batch_manifest.py.json",
+        "docs/fmea/tools_blob_conversion_coverage.py.json",
+        "docs/fmea/tools_citation_anchor_rot_check.py.json",
+        "docs/fmea/tools_hover_auditor_scope_gate.py.json",
+        "docs/fmea/tools_sairn_board_publish.py.json",
+        "docs/fmea/tools_sairn_claim.py.json",
+        "docs/fmea/tools_tier_a_review_gate.py.json",
+        "tools/fmea_draft.py"
+      ],
+      "lines_added": 13082,
+      "lines_removed": 12,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/fmea_draft.py --save OVERWROTE an existing draft for the same target.\ntools/fmea_prediction_check.py buckets a defect MISSED when a draft for its\nfile predates it and named nothing like it, and DRAFT NEWER -- unscoreable BY\nCONSTRUCTION -- when the only draft postdates it. So replacing a dated draft\nwith a fresh one silently converted MISSED verdicts into unscoreable ones: a\nbetter headline, an identical prediction, and no trace of the prediction that\nfailed. MEASURED on the real case: sairnsenior.html carries a draft dated\n2026-09-14 and fifteen register rows name that file afterwards, none\npredicted. Superseding it while KEEPING the old draft leaves `missed` at 144;\nremoving the kept copy drops it to 139 and raises DRAFT NEWER from 221 to 228.\nFive real MISSES, preserved or laundered, on one rename. NOTE ON THIS RECORD, 2026-10-16: one factor lost the word \"target\" to shell command substitution -- an UNQUOTED heredoc delimiter let the shell expand a backtick-quoted field name inside the body. THIRD instance in this batch, after two summaries in the first feed. The fix is not care, it is the --<flag>-file route plus a QUOTED heredoc delimiter whenever the body carries code; restored here.",
+      "rules": [
+        "1.8"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "927c7948b4f4",
+        "date": "2026-09-13",
+        "subject": "feat(process,tools): history-seeded FMEA, and a scorer that refuses to invent a number",
+        "lag_days": 33
+      },
+      "citation_note": "A generated artefact is safe to generate; a generated GATE is not. The FMEA\nprediction record is the measurement substrate for the whole risk loop, and\n--save could rewrite a dated entry in it with no record of what it replaced --\nso the scorer would go on reporting a rate computed over a record that had\nbeen edited underneath it.",
+      "contributing_factors": [
+        {
+          "factor": "--save wrote unconditionally, so a dated prediction could be replaced by an undated-against-history one",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "an existing draft is REFUSED with its date and risk count named, and --supersede keeps it as <slug>.superseded-<drafted_on>.json"
+        },
+        {
+          "factor": "the kept copy has to stay ATTRIBUTABLE or the fix is the same laundering by another route",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "load_drafts() globs every *.json and keys on the \"target\" field, so a superseded draft stays LIVE and goes on covering the defects it was contemporary with"
+        },
+        {
+          "factor": "the prediction record is the measurement substrate for the risk loop, so an edit to it is invisible in the rate it produces",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the counterfactual was MEASURED rather than argued -- missed 144 with the kept copy, 139 without it -- and the number is in the commit and the inventory"
+        },
+        {
+          "factor": "two supersedes on one date would have collided and lost one",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the kept name is suffixed, and S9 is the arm that holds it"
+        },
+        {
+          "factor": "the two probes covering this tool are under tests/, another session's directory, so a control for a change here had nowhere obvious to go",
+          "kind": "process",
+          "action_status": "done",
+          "action": "9 arms added as a --selftest in the tool itself; S3 requires the refused re-save to leave the existing draft BYTE-IDENTICAL, because the refusal is enforced by not writing rather than by an exit code"
+        }
+      ],
+      "recurrence_open": "Only fmea_draft.py is fixed. Nothing sweeps the OTHER generated records on\nthis platform for the same overwrite-a-dated-entry shape, and the existing\nsuperseded copies are preserved only from now on -- any draft overwritten\nbefore 2026-10-16 is already gone and the verdicts it would have scored are\nnot recoverable. Nobody has measured how many that is."
+    },
+    {
       "commit": "b7d44ef070d5",
       "date": "2026-10-16",
       "subject": "fix(sweep): the log was ZERO BYTES whenever the run was killed, which is every run that matters",
@@ -33475,6 +33475,180 @@
         }
       ],
       "recurrence_open": "the second guard DETECTS and cannot refuse, so a replayed violation still reaches local history -- it is now named at the rewrite instead of only at the push. Nothing closes the commit-time miss itself, because git will not call pre-commit on a replay. And the eight arms cover the gate in a SANDBOX: no arm runs in the auditor's real clone, which a build agent must not enter."
+    },
+    {
+      "commit": "bf63824c9eab",
+      "date": "2026-10-17",
+      "subject": "fix(sairndental): three defects nothing could see, because nothing had ever rendered this app",
+      "files": [
+        "docs/2026-09-13-cross-domain-disciplines.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/batch-manifest-fourth-b29.json",
+        "docs/cloud-research/behavioral-health-worldwide-competitive-gap-audit-2026-10-17.md",
+        "sairndental.html",
+        "tools/tooling_inventory.py",
+        "tools/wcag_contrast_check.py"
+      ],
+      "lines_added": 883,
+      "lines_removed": 15,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "live-verification",
+      "summary": "var(--accent) IS NOT A TOKEN IN sairndental.html AND NEVER WAS -- one occurrence, defined nowhere in :root and not a house token in any other app. Written on 2026-10-16 by the b28 F2 revise path, it made the whole border-left shorthand invalid at computed-value time, so the revise banner's 3px accent stripe rendered at 0px rather than in a fallback colour. Found by reading computed style in a real browser on the live deployment (scratchpad b29_segC_f1f2_live.py), measured before the fix as borderLeftWidth 0px with borderLeftColor rgb(100,116,139) inherited from currentcolor, and ablated red-on-HEAD green-on-fix in b29_segF_verify_fixes.py. b28's verification of this exact feature was 22 arms, exit 0, every one sound and every one still passing -- and NONE of them could ever have gone red for it, because the harness extracted the functions BY NAME and ran them against stubs and never rendered the markup.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "9a0903e690f5",
+        "date": "2026-10-16",
+        "subject": "fix(sairndental): the charge's CDT stamp was written and never read, and the versioning had no way in",
+        "lag_days": 1
+      },
+      "citation_note": "Convention 38 was written by this same batch and is the rule this defect produced rather than one it broke; citing it would be citing the lesson as the standard it violated.",
+      "contributing_factors": [
+        {
+          "factor": "A CSS custom property was referenced that is defined nowhere in the file and is not a house token in any of the other sixteen apps, and var() with no fallback invalidates the whole declaration silently rather than falling back",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The reference now names a real token (--p) and the markup carries the measured before-state so the next reader does not re-derive it"
+        },
+        {
+          "factor": "The feature was verified by extracting its functions BY NAME and running them against stubs, which cannot instantiate a cascade, so no arm of a 22-arm green run could ever have failed on it",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tools/wcag_contrast_check.py renders the app and sweeps every panel; cross-domain convention 38 states the general rule and is cited from the markup"
+        },
+        {
+          "factor": "b28 recorded NOTHING RENDERED THIS FILE in its own LEFT UNPROVEN section and the batch closed on that disclosure rather than on closing it",
+          "kind": "process",
+          "action_status": "done",
+          "action": "b29 item 1 was exactly that gap, dispatched from b28 own NEXT line; the disclosure worked as a handoff and the lesson is that an UNPROVEN entry is a queue item, not a caveat"
+        },
+        {
+          "factor": "No code-level check on this platform reads computed style, so the entire class was invisible rather than this one instance being missed",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The new tool is the first instrument of its kind here; it is NOT yet wired into any gate"
+        }
+      ],
+      "recurrence_open": "The new tool is not wired into a push gate and covers one app (sairndental) by profile, so the same defect class remains undetectable in the other sixteen until a profile is added for each and something runs it on a cadence."
+    },
+    {
+      "commit": "bf63824c9eab",
+      "date": "2026-10-17",
+      "subject": "fix(sairndental): three defects nothing could see, because nothing had ever rendered this app",
+      "files": [
+        "docs/2026-09-13-cross-domain-disciplines.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/batch-manifest-fourth-b29.json",
+        "docs/cloud-research/behavioral-health-worldwide-competitive-gap-audit-2026-10-17.md",
+        "sairndental.html",
+        "tools/tooling_inventory.py",
+        "tools/wcag_contrast_check.py"
+      ],
+      "lines_added": 883,
+      "lines_removed": 15,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "live-verification",
+      "summary": "41 DISTINCT WCAG 2.2 AA CONTRAST FAILURES across all 23 panels of sairndental, measured on the live deployment by tools/wcag_contrast_check.py -- including EVERY primary button in the app (white on #0EA5E9, 2.77:1 against a 4.5 requirement, 11 panels), every active sidebar item (#0284C7 on #E0F2FE, 3.57:1, 23 rows), the header pills (3.29:1 on all 23 panels), the success-green badges at 11-13px (#22C55E, 2.28:1) and the error red (#EF4444, 3.76:1). Ablation through the shipped tool on identical code paths: HEAD 41 failures exit 1, fixed tree 0 failures exit 0, same 23 panels.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The palette predates the batch record for this app and no commit introduced the failure as a change -- #0EA5E9 under white text was the token set at birth, so there is no injection commit to cite rather than one that is unknown to me."
+      },
+      "citation_note": "No standing SAIRN rule names accessibility conformance; sairn-visual-review asks for real ratios and this is the first batch that could produce them.",
+      "contributing_factors": [
+        {
+          "factor": "The brand token used as a surface under white text is sky-500 (#0EA5E9), which is 2.77:1 -- a palette chosen for hue without a ratio ever being computed",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "--pd darkened to #0369A1 for every surface white text sits on, --pdd added for hover so the state change stays visible, --ok/--danger/--muted darkened to the nearest shade of the same hue clearing 4.5:1"
+        },
+        {
+          "factor": "No instrument on this platform could compute a rendered contrast ratio, so nineteen apps shipped with the question unanswerable rather than unanswered",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tools/wcag_contrast_check.py, 19 fixtures, exits 2 COULD NOT RUN rather than sweeping a signed-out app"
+        },
+        {
+          "factor": "sairn-visual-review has required real ratios since 2026-07-27 and the requirement sat unexecutable for nearly three months because nothing implemented it",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "The tool exists and is committed; wiring it into a gate or a cadence is explicitly NOT done and is carried in the b29 handoff as open work with an owner named"
+        },
+        {
+          "factor": "The failure is invisible to a developer with normal vision on a good monitor, which is why a human pass over the same screens never raised it",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Inherent to the defect class -- it is exactly why the ratio must be computed rather than judged"
+        }
+      ],
+      "recurrence_open": "Sixteen other apps have never been measured and no gate runs this. The fix is one app wide; the class is platform wide."
+    },
+    {
+      "commit": "bf63824c9eab",
+      "date": "2026-10-17",
+      "subject": "fix(sairndental): three defects nothing could see, because nothing had ever rendered this app",
+      "files": [
+        "docs/2026-09-13-cross-domain-disciplines.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/batch-manifest-fourth-b29.json",
+        "docs/cloud-research/behavioral-health-worldwide-competitive-gap-audit-2026-10-17.md",
+        "sairndental.html",
+        "tools/tooling_inventory.py",
+        "tools/wcag_contrast_check.py"
+      ],
+      "lines_added": 883,
+      "lines_removed": 15,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "live-verification",
+      "summary": "A SHAREABLE PUBLIC BOOKING LINK THAT CANNOT WORK, AND BOTH SCREENS STAYED SILENT. The live dnt_settings row lists publicly_bookable_procedure_type_ids = [PC-1786416376504-314] while the catalogue holds PC-DEMO-1..5, so api/sd-data.js correctly returns procedure_types: [] and the public page tells every patient 'Online booking is not yet available for this practice.' The owner's Booking Settings panel showed a Public link preview and five unticked boxes and said nothing about either fact, so a practice could hand out a dead link indefinitely. Driven live on sairn.vercel.app/sairndental-book?slug=verify-test-slug (b29 segment E) and ablated red-on-HEAD green-on-fix.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The dangling id was created by removing a procedure type that the settings row still referenced; no commit introduced the silence as a change, the panel never had the disclosure."
+      },
+      "citation_note": "The COULD-NOT-TELL shape: the app held both halves of the answer -- a configured id that no longer resolves, and a public link that therefore cannot work -- and reported neither, which is the same silence as a check that could not run reporting a pass.",
+      "contributing_factors": [
+        {
+          "factor": "publicly_bookable_procedure_type_ids was rendered by intersecting it with the live catalogue, so an id that no longer resolves simply fell out of the list instead of being named",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "rBookingSettings() now computes the unresolved ids and names them, and separately says the public link is dead when nothing resolves"
+        },
+        {
+          "factor": "The public booking page had never been loaded by any verification pass in this app history, so the owner-side and patient-side views had never been compared",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "b29 segment E drove sairndental-book live and that comparison is what produced the finding"
+        },
+        {
+          "factor": "The server resolves the list correctly and fails safe, which made the defect purely a reporting gap and therefore invisible to every server-side test",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Correct server behaviour is what made the two screens disagree silently rather than break loudly"
+        }
+      ],
+      "recurrence_open": "The same owner-view-versus-public-view divergence can exist in any app with a public surface; only sairndental was checked.",
+      "single_factor_note": "not applicable -- three factors"
     }
   ],
   "started": "2026-09-09",
