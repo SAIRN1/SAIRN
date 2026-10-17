@@ -40,5 +40,15 @@
       "status": "done",
       "evidence": "tools/tooling_inventory.py --check OK exit 0 (64ba232d); tools/report_only_checks.py zero-byte log b7d44ef0; tools/fmea_draft.py --save refusal + seven docs/fmea drafts b6a2d572; GUARD_TESTS 17->35 afd17c86; tools/tier_a_review_gate.py --selftest 10/10 exit 0, f17973ab"
     }
-  ]
+  ],
+  "closed": {
+    "drive_verify": "PASS",
+    "verified_by": "python tools/drive_upload_verify.py --agent cc --batch b16 --verify-only",
+    "criteria": "2026-10-13.1",
+    "deliverables": [
+      "SAIRN-handoff-cc-b16.md sha256 3f4954fe047c2822",
+      "SAIRN-report-cc-b16.txt sha256 1ebb80fe65b303eb",
+      "SAIRN-digest-cc-b16.txt sha256 00daf7a5c2d2860e"
+    ]
+  }
 }
