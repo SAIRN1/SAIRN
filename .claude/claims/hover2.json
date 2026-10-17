@@ -580,8 +580,8 @@
       "task": "b50 audit: hank b17 reverify, cody b20 land-check, branch_census.py deep-verify",
       "claimed_at": "2026-10-17T14:27:48Z",
       "claimed_at_epoch": 1792247268.388475,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-17T14:54:17Z",
       "files": null
     }
   ],
