@@ -583,6 +583,17 @@
       "status": "released",
       "released_at": "2026-10-17T14:54:17Z",
       "files": null
+    },
+    {
+      "id": "hover2-1792250633",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "b52: this role's own coverage-ledger undirected-sweep pick and rolling re-scan draw; poll hank b18/cody b22 status only, no land-check; confirm hank sairncash finding not duplicated in own queue; one new queue item if available; handoff+push",
+      "claimed_at": "2026-10-17T15:23:53Z",
+      "claimed_at_epoch": 1792250633.6639068,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
@@ -913,6 +924,58 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "same file or resource: set_active",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-17T15:07:18Z",
+      "my_subject": "hover2",
+      "my_task": "b51: this role's OWN coverage-ledger undirected-sweep depth (hover2_coverage_ledger_own.md section 3, this role's own picks, lowest-mention-count within THIS role's own sweep history -- a separate artifact from H1's own undirected-sweep backlog, not the same queue); parity-tool pickup against H1 only if a real spec exists in this clone; rolling re-scan draw; handoff+push. NOT doing: hank b18/cody b22 poll, #1498/#1500/#1501 re-verify -- explicitly dropped, H1 b52 covers both. FILES: none in the platform repo -- all writes this batch are under this role's own external hover-audit-log/ directory (hover2_coverage_ledger_own.md, hover-audit-log.jsonl, SAIRN-handoff-H2-b51-part2.md), outside this repo entirely",
+      "other_session": "cc",
+      "other_subject": "cc",
+      "other_task": "b17: (1) gate refusal-hint text names the real two-step, Michael DECIDED keep two-step and NO auto-grant-from-environment; (2) TIER 0 #1 status/board bridge LIVE write + read-back evidence for H1/H2; (3) methodology item; (4) docs/SAIRN-OPEN-WORK-INDEX.md rows 355 and 356 repaired in ONE pass, both hank's, 10 pipes where 8 are needed. CONFLICT DECLARED PER PR 4.3, NOT OVERRIDDEN: hank b18 holds api/sd-data.js, so cody's SAIRNscape customers gating fix is NOT in this batch and stays routed. No auditor clone entered or written. FILES: tools/gate_skip.py tools/sairn_push_gate_hook.py tools/sairn_status.py tools/sairn_board_publish.py docs/SAIRN-OPEN-WORK-INDEX.md docs/batch-manifest-cc-b17.json SAIRN-handoff-cc-b17.md SAIRN-report-cc-b17.txt SAIRN-digest-cc-b17.txt SAIRN-ACTIVE-WORK-cc.md",
+      "other_claimed_at": "2026-10-17T15:05:26Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"b18 hank\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-17T15:07:18Z",
+      "my_subject": "hover2",
+      "my_task": "b51: this role's OWN coverage-ledger undirected-sweep depth (hover2_coverage_ledger_own.md section 3, this role's own picks, lowest-mention-count within THIS role's own sweep history -- a separate artifact from H1's own undirected-sweep backlog, not the same queue); parity-tool pickup against H1 only if a real spec exists in this clone; rolling re-scan draw; handoff+push. NOT doing: hank b18/cody b22 poll, #1498/#1500/#1501 re-verify -- explicitly dropped, H1 b52 covers both. FILES: none in the platform repo -- all writes this batch are under this role's own external hover-audit-log/ directory (hover2_coverage_ledger_own.md, hover-audit-log.jsonl, SAIRN-handoff-H2-b51-part2.md), outside this repo entirely",
+      "other_session": "hank",
+      "other_subject": "platform",
+      "other_task": "b18: trust-lock hard-lock reachability (LAW_TRUST_LOCKED consulted before the table); Grant App Login Access stuck-on-Granting; Passkey + Employee Profile E2E; F1/C2 countersignature lock leg_cremations + law_trusttx two-stage; F2 livery billing per-home setting; F3 apprentice permission config; C1 bookkeeper role; C3 bar-admitted-acts constant. FILES: api/_lib/law-roles.js api/_lib/leg-roles.js api/_lib/auth.js api/sd-data.js api/law-auth.js api/leg-auth.js sairnlaw.html sairnlegacy.html stonedesk.html sql/sairnlaw_bookkeeper_role.sql docs/2026-10-17-hank-b18-practitioner-answers.md SAIRN-handoff-hank-b18.md SAIRN-report-hank-b18.txt SAIRN-digest-hank-b18.txt",
+      "other_claimed_at": "2026-10-17T14:20:15Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"b18 hank\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-17T15:07:18Z",
+      "my_subject": "hover2",
+      "my_task": "b51: this role's OWN coverage-ledger undirected-sweep depth (hover2_coverage_ledger_own.md section 3, this role's own picks, lowest-mention-count within THIS role's own sweep history -- a separate artifact from H1's own undirected-sweep backlog, not the same queue); parity-tool pickup against H1 only if a real spec exists in this clone; rolling re-scan draw; handoff+push. NOT doing: hank b18/cody b22 poll, #1498/#1500/#1501 re-verify -- explicitly dropped, H1 b52 covers both. FILES: none in the platform repo -- all writes this batch are under this role's own external hover-audit-log/ directory (hover2_coverage_ledger_own.md, hover-audit-log.jsonl, SAIRN-handoff-H2-b51-part2.md), outside this repo entirely",
+      "other_session": "hover",
+      "other_subject": "hover",
+      "other_task": "b52: continue undirected sweep backlog oldest-first; land tool-provenance methodology item; poll hank b18/cody b22 (no land-check); re-verify #1498/#1500/#1501; route sairncash finding to hank's queue; handoff+push",
+      "other_claimed_at": "2026-10-17T14:56:25Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: b18/cody",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-17T15:07:31Z",
+      "my_subject": "hover2",
+      "my_task": "b51: this role's OWN coverage-ledger section-3 undirected-sweep depth, lowest-mention-count within this role's own sweep history, a separate artifact from any other session's sweep queue; parity-tool pickup against the other auditor only if a real spec already exists in this clone; rolling re-scan draw; handoff+push. All writes this batch stay under this role's own external log directory, outside the platform repo.",
+      "other_session": "hover",
+      "other_subject": "hover",
+      "other_task": "b52: continue undirected sweep backlog oldest-first; land tool-provenance methodology item; poll hank b18/cody b22 (no land-check); re-verify #1498/#1500/#1501; route sairncash finding to hank's queue; handoff+push",
+      "other_claimed_at": "2026-10-17T14:56:25Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"sweep undirected\"",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
