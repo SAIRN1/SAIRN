@@ -1,0 +1,355 @@
+REPORT cc b16
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-17
+HEAD      a8efd38a  ==  origin/main  (git rev-list --left-right --count
+          origin/main...HEAD  ->  0  0), tree clean
+FORCE     none, in any spelling
+OVERRIDE  ONE, SCOPED, and it is the only one. docs/BYPASS-LOG.jsonl holds
+          100 rows; exactly THREE fall inside b16's window, all session cc,
+          all "blanket": false, all the same SCOPED tier-a grant --
+          2026-10-16T13:04:58Z, 13:06:03Z, 13:07:32Z -- one grant honoured
+          across three push attempts. The reason names two PROSE matches
+          inside tools/branch_census.py: alf_op_audits in a fixture string
+          (the R1 counter-fixture's sample JavaScript) and rf_jobs in the
+          module docstring. NO blanket form in any spelling and NO row at
+          all dated 2026-10-17. That is an audit rather than an assertion:
+          the gate records an override ATTEMPT before deciding whether to
+          honour it, so an unused override is an absent row and not a
+          silence
+HOOKS     none added or restored. .claude/settings.json never committed
+TRANSCRIPT
+          TWO, ONE BATCH. The b16 WORKING session is
+          C--Users-marsh-Documents-SAIRN-cc\67ca63b0-7721-4454-9bca-
+          55978f4c8cf5.jsonl, 4,701,177 bytes, last usage record 692,299
+          tokens (69.2% of the 1M window), last written 2026-10-17 10:13.
+          THIS WRAP session is 4d4f63b1-1aa9-48c9-b832-ddd1c2674580.jsonl at
+          145,338 tokens. Measured by tools/sairn_status_line.used_tokens()
+          against each transcript, not estimated
+
+B16'S CODE LANDED AND ITS ARTEFACTS DID NOT. The working session ended after
+b6d20411 and before the wrap, so this report, the handoff, the digest and the
+manifest close were written in a FRESH session from the landed commits,
+docs/2026-10-16-cc-b16-routed.md, and a re-run of every selftest cited below.
+Nothing here is reconstructed from the earlier session's narration: where a
+figure could only have come from that transcript it is named unrecoverable
+rather than quoted. The push-attempt count in particular is given as what the
+gate RECORDED (three bypass-log rows, one grant) and not as a tally.
+
+
+================================================================================
+WHAT LANDED
+================================================================================
+
+  9edf2ae9  install(branch census): fourth b26's census becomes a tool,
+            because three scratchpad versions each reintroduced a bug the
+            last one fixed
+  5522cfc8  fix(claims): `list --all` was 501,182 bytes and nobody had
+            measured it
+  e05802cf  fix(scope gate): a rebase replay skips commit-time enforcement,
+            and the half H1 left open is answered -- the push gate DOES
+            refuse it
+  64ba232d  fix(inventory): hooked() returned {} for four different
+            conditions, and three of the probe's arms had been red against a
+            --check that said the document matched
+  75f10079  record(defects): three b16 fixes fed the register, and two of
+            the summaries were damaged by backticks in a CLI body
+  7290e9cc  reseat(register): the rebase rewrote five commits and two
+            register citations followed them
+  76a78236  reseat(register): the amended commit's record was dangling,
+            because the rewrite map does not carry an --amend that preceded
+            the rebase
+  830f3cd1  chore(owner): branch_census.py declares its owner
+  6b6360cd  fix(owner): the OWNER line was outside the 40-line window the
+            gate reads
+  d19498ba  record(bypass+owner+ledger): the SCOPED tier-a skip, the new
+            tool's owner row, and the scrutiny flags for this push
+  3fc1b8ae  reseat(register)+record: the three b16 citations follow the shas
+            that actually landed, and the push's own bypass and scrutiny rows
+  aea2d0db  fix(blob coverage): the scope window was a seven-line count, and
+            a line count cannot see a write body
+  331cebe3  fix(claims): self_hits WAS wired to a refusal -- to a different
+            input, which is worse than not being wired
+  94ec1209  fix(matcher): the exemption is derived from the live corpus, so a
+            phrase crossing three sessions silently retired a live incident
+  b7d44ef0  fix(sweep): the log was ZERO BYTES whenever the run was killed,
+            which is every run that matters
+  6921b68c  record(defects): four more b16 fixes fed the register, every body
+            through --<flag>-file this time
+  1b53ad4f  reseat(register): the rebase rewrote four b16 commits and their
+            citations followed
+  a60aa1e1  record(scrutiny): the ledger rows for the four b16 fixes
+  b6a2d572  fmea(drafts): seven files drafted, and --save could overwrite a
+            prediction -- which launders a MISSED verdict
+  afd17c86  gate(guard tests): eighteen of hank's b14-b17 api suites wired,
+            every one run to a known exit code first
+  f17973ab  gate(tier a): --amend, because a recorded file set can be wrong
+            and there was no way to say so
+  65d4d5d8  record(defects)+route(b16): the fmea_draft overwrite recorded,
+            and the batch's routing list
+  eab1cc67  reseat(register): the rebase rewrote this batch's commits and the
+            citations followed
+  b6d20411  regen(derived): the traceability matrix and master plan follow
+            the eighteen wired guard tests
+  a8efd38a  handoff+manifest(cc b16): the code landed in one session and the
+            artefacts in another  <- AS LANDED. The local commit was
+            99e03bd9 and a concurrent push rebased it; this report cites the
+            landed sha, and says so rather than leaving the handoff's own
+            number to be discovered as wrong
+
+  30 distinct files. 10 under tools/, 1 .githooks/post-rewrite, the rest
+  docs/ records and generated documents. NO api/, NO sql/, NO app HTML and
+  NO tests/ file was written -- the eighteen api suites were REGISTERED, not
+  edited.
+
+
+================================================================================
+THE SIX ITEMS
+================================================================================
+
+1  BRANCH CENSUS INSTALLED -- tools/branch_census.py, from fourth b26.
+   --selftest 10/10 fixtures, exit 0. Reproduced. The criteria version is
+   DELIBERATELY NOT BUMPED and the inter-procedural walk fourth's b27 claim
+   names is NOT done here and is fourth's. Its OWNER line had to move: the
+   push gate's tool-owner check reads a 40-line window and the line sat
+   outside it (6b6360cd), which is the sort of thing only a real push finds.
+
+2  THE SCOPE GATE'S RESIDUAL GAP IS TIME, NOT COVERAGE -- H1 b41's open
+   question answered in both directions. Eight arms, bare repo plus work
+   clone in a scratchpad, real push and no real remote, script committed as
+   docs/2026-10-16-cc-b16-scope-gate-rebase-replay-sandbox.sh:
+
+     A1  plain commit of an out-of-scope path        REFUSED, exit 1
+     A2  same violation via --no-verify              the object exists
+     A3  git rebase onto a divergent branch          SUCCEEDS, no refusal
+                                                     (H1's finding, reconfirmed)
+     A4  push the replayed commit as a NEW branch    REFUSED
+     A5  CONTROL, an in-scope-only range             PUSH LANDED
+     A6  the same commit onto an EXISTING remote
+         branch -- the rsha..lsha path a real
+         `git push origin main` takes, DIFFERENT
+         CODE from A4                                REFUSED
+     A7  the new --post-rewrite notice               FIRED, named the path
+     A8  CONTROL, an in-scope rewrite                CLEAN, and said so
+
+   Two of the eight were VOID ON THEIR FIRST DRAFT and are kept with the
+   reason: A1 read the exit status of `git commit | head`, which is head's;
+   A5 pushed a new branch off an orphan base, so the gate correctly examined
+   the sandbox's own setup commit. --post-rewrite CANNOT REFUSE AND DOES NOT
+   PRETEND TO -- git fires it after the operation and ignores the exit
+   status. tools/hover_auditor_scope_gate.py --selftest 11/11, exit 0; those
+   arms are about the CLASSIFIER, and A1-A6 above are about ENFORCEMENT.
+
+3  sairn_claim.py's UNBOUNDED OUTPUT -- H1 b42 measured 11-30KB per command.
+   Re-measured before anything changed:
+
+     list                        1,837 bytes
+     check                      17,652 - 22,583, of which the
+                                released-recently note was 12,268 (54%)
+     list --all                501,182 BYTES, about 125,000 tokens, ONE
+                                command
+
+   After: list --all 20,986, check 12,552, and --full returns the original
+   BYTE FOR BYTE. A BLOCKING claim still prints whole -- it is the one output
+   PR 4.3 requires a human to read in full. H1 b42's token-cadence spec says
+   itself there is nothing to build, and that is RECORDED so the routing
+   closes rather than looking open. tools/sairn_claim.py selftest 29/29,
+   exit 0.
+
+4  A LINE COUNT CANNOT SEE A WRITE BODY -- blob_conversion_coverage.py
+   decided whether a data: site was a licence-scoped write by a SEVEN-LINE
+   PROXIMITY COUNT. The real window is 266 sites; the count gave 593, which
+   is what the first draft of its own S2 arm did. --selftest 23/23, exit 0.
+
+5  self_hits WAS WIRED TO A REFUSAL, TO A DIFFERENT INPUT, which is worse
+   than not being wired. Measured by reading both call sites: cmd_check built
+   self_hits from load_all(from_origin=True) -- ORIGIN/MAIN ONLY, because
+   load_all replaces its source rather than merging -- so `check` was blind
+   to this session's own unpublished claim. cmd_claim refused from
+   my_active_overlaps(doc, task) -- THIS CLONE'S LOCAL FILE ONLY -- so the
+   refusal was blind to a claim on origin not in the working copy. Each
+   blind to exactly what the other could see, with a comment asserting they
+   were the same set. One function over the union of all three sources now,
+   every row tagged with where it was seen.
+
+   THE MATCHER'S EXEMPTION IS DERIVED FROM THE LIVE CORPUS, so it weakens as
+   the corpus grows. common_phrases() exempts any bigram used by
+   COMMON_PHRASE_SESSIONS (3) or more distinct sessions; `rebase resolve`
+   reached exactly 3 (cc 2 claims, cody 2, fourth 3) because
+   tools/sairn_rebase_resolve.py is a standard move everyone names, and that
+   SILENTLY RETIRED a live incident whose two task strings overlap in nothing
+   else. Pinned from docs/claim-matcher-pinned-phrases.json. 23 of 23
+   historical same-work pairs STILL REFUSE, a retyped task over disjoint
+   declared files STILL REFUSES, and 7 of 8 exact-duplicate groups still
+   refuse on the identical pair -- so 9b0bfd51 re-opened NOTHING, and cody's
+   two readings were both wrong in the same direction.
+
+   hoarders was computed with is_active(), which EXPIRES A ROW AT FOUR HOURS
+   and therefore dropped the WORST cases of the open-row shape the question
+   was about -- so cody's "a session holding many ACTIVE claims is reported"
+   arm was asserting correct behaviour against drifted code. Both of cody's
+   failing arms were right and the tool was wrong. No fixture needed
+   re-deriving. tests/claims/run_own_claim_overlap_probe.py exit 0;
+   tests/claims/run_claim_audit_probe.py ALL ARMS PASS, exit 0.
+
+   THE hover/hover2 CLAIM-NAME COLLISION DOES NOT REPRODUCE, and that is
+   stated rather than fixed by invention: tokens('hover') is ['hover'] and
+   tokens('hover2') is ['hover2']; ZERO prefix or suffix matches on a session
+   name anywhere in sairn_claim.py, sairn_status.py or
+   sairn_board_publish.py; no glob is built from a session name; both claim
+   files exist separately. The refuse verdict in a hover-vs-hover2 test came
+   from the shared phrase "chain log". If it exists it is inside the
+   auditor's own tooling, which is H2's scope and a clone a build agent must
+   not enter.
+
+6  THE REMAINDER, each a real defect with its own register record:
+   - tooling_inventory.hooked() returned {} for FOUR different conditions,
+     and three of the probe's arms had been red against a --check that said
+     the document matched. --check now OK, exit 0.
+   - The sweep log was ZERO BYTES whenever the run was KILLED, which is every
+     run that matters -- report_only_checks.py is the longest-running program
+     on the platform.
+   - fmea_draft.py --save OVERWROTE an existing draft for the same target,
+     and that LAUNDERS A MISSED VERDICT. Measured: superseding
+     sairnsenior.html's 2026-09-14 draft while KEEPING the old file leaves
+     `missed` at 144; removing the kept copy drops it to 139 and raises DRAFT
+     NEWER from 221 to 228. FIVE REAL MISSES on one rename. The seven new
+     drafts moved NO DRAFT AT ALL from 242 to 198 with `predicted` unchanged
+     at 72 -- pure bookkeeping, visible only because
+     fmea_prediction_check.py prints DRAFT NEWER as its own bucket and keeps
+     both unscoreable buckets in the denominator. The honest rate did not
+     move: 11%.
+   - GUARD_TESTS 17 -> 35 (31 api/, 4 tests/), wiring EIGHTEEN of hank's
+     b14-b17 api suites. Every one RUN to a known exit code first -- exit 0,
+     zero failed, zero unproven -- total added cost to every code push 4.83s,
+     slowest api/b17-trust-lock-hard.test.js at 1.63s. THE DISPATCH SAID
+     "b12-b17" AND THERE ARE NO b12 OR b13 SUITES: ls api/ gives b14 (1),
+     b15 (3), b16 (5), b17 (9), so the range was wrong by two batches and the
+     MEASURED list is what is wired.
+   - tier_a_review_gate.py --amend, because a recorded file set can be wrong
+     and there was no way to say so. It REFUSES a REVIEWED record: widening a
+     file set after a verdict makes that discharge cover files nobody read.
+     That is why cc b15's own routing item C5 recommended a fix that is NOT
+     AVAILABLE, and the refusal is right. --selftest 10/10, exit 0.
+
+
+================================================================================
+CHECKS RE-DRIVEN IN THE WRAP SESSION, WITH REAL EXIT CODES
+================================================================================
+
+  tools/branch_census.py --selftest                  10/10            exit 0
+  tools/blob_conversion_coverage.py --selftest        23/23 arms       exit 0
+  tools/tier_a_review_gate.py --selftest              10/10 arms       exit 0
+  tools/hover_auditor_scope_gate.py --selftest        11/11 arms       exit 0
+  tools/sairn_claim.py selftest                       29/29 arms       exit 0
+  tests/claims/run_own_claim_overlap_probe.py         0 failures       exit 0
+  tests/claims/run_claim_audit_probe.py               ALL ARMS PASS    exit 0
+  tools/tooling_inventory.py --check                  matches repo     exit 0
+  tools/defect_register.py --check                    636 records      exit 0
+  tools/scrutiny_ledger_check.py                      CLEAN, 533 named
+                                                      as uncheckable   exit 0
+  tools/batch_manifest.py --fixtures                  35/35            exit 0
+  tools/drive_upload_verify.py --fixtures             36/36            exit 0
+
+  EIGHT register records cite a b16 commit: 331cebe3, 5522cfc8, 64ba232d,
+  b6a2d572, 94ec1209, aea2d0db, b7d44ef0, e05802cf.
+
+  NOT A SKIP, SAID OUT LOUD: tools/tooling_inventory.py --selftest WRITES
+  docs/TOOLING-INVENTORY.md when run. It was run in this wrap session and
+  regenerated the file BYTE-IDENTICAL -- git status clean, numstat empty --
+  so nothing was committed from it. A write-when-run tool in a live clone is
+  the thing the house rule warns about, and it is reported rather than
+  trusted to have been harmless.
+
+
+================================================================================
+UNVERIFIED
+================================================================================
+
+  THE B16 WORKING SESSION'S OWN NARRATION IS NOT RECOVERABLE. How many push
+  attempts it made, which gate refusals it satisfied and in what order, and
+  what it read and discarded are in a transcript this session did not run.
+  What IS recoverable is in git and in the records: 24 commits, four
+  reseat/record commits that only exist because a rebase moved shas, three
+  bypass-log rows for one SCOPED grant. The count of push attempts is
+  therefore NOT given.
+
+  THE hover/hover2 COLLISION is a NEGATIVE result from outside the auditor's
+  clone, not a clearance of the auditor's own tooling. Next step is a command
+  and an output from H2.
+
+  WHETHER A TIER A WIDENING IS CORRECT is not covered by --amend's ten arms.
+  That is a judgement and --why is where it lives.
+
+  856 CLAIM PHRASES SIT EXACTLY AT THE EXEMPTION THRESHOLD and 2,931 are one
+  session away. Nobody has swept the other historical incidents to find which
+  of their blocking phrases are ALREADY exempt. Each is a block that has
+  retired with no signal.
+
+  THREE B12 TEST-FILE-FLOOR LAYERS REMAIN UNARMED, carried from b14 and b15
+  unchanged. tracked-intersection is the urgent one -- unarmed in-run and
+  DESTRUCTIVE across runs. tests/ is cody's.
+
+  NO LIVE DEPLOYED-URL CHECK. This batch changed no api/, sql/ or app file,
+  so there is nothing deployed to verify. A structural answer, not a skipped
+  step.
+
+  THE BRANCH CENSUS'S INTER-PROCEDURAL WALK is not done and its criteria
+  version is deliberately not bumped.
+
+
+================================================================================
+METHOD NOTES THAT BELONG TO EVERYONE
+================================================================================
+
+  A BACKTICK IN A CLI BODY IS EXECUTED, and it happened THREE times in one
+  batch -- two defect-register summaries landed damaged. The fix is not care:
+  tools/defect_register.py supports --<flag>-file and that is the route.
+
+  A COUNT WRITTEN IN PROSE BESIDE THE THING IT COUNTS goes stale. Four
+  instances in b16, ALL cc's own, all caught by re-reading rather than by a
+  check: .githooks/post-rewrite said "THE MAP IS READ TWICE, BY TWO PROGRAMS"
+  while three read it; a selftest header said "five arms require IN" where
+  four did; another said "2 arms require the pin" where three did; a third
+  said "1 requires an unreadable source to be NAMED" for an arm about
+  whitespace dedup. Each harmless alone. The shape is not: every one is a
+  sentence a future reader would have trusted instead of counting. THERE IS
+  NO DETECTOR FOR IT, and that is the note.
+
+  RE-DRAFTING AN FMEA PREDICTION LAUNDERS A MISSED VERDICT -- the strongest
+  argument in this batch for append-only records, with the numbers in item 6.
+
+  A BLOCKED PUSH IS NOT A NO-OP (cody's, and general): a push blocked by the
+  generated-document gate leaves an INTERACTIVE REBASE IN PROGRESS, after
+  which --amend rewrites the commit being replayed onto rather than yours,
+  and a commit you believe landed silently has not. Read `git status` first,
+  not last.
+
+
+================================================================================
+CLAIMS AND STATE
+================================================================================
+
+  THE B16 WORKING CLAIM (2026-10-16T11:34:50Z) EXPIRED RATHER THAN BEING
+  RELEASED, because the session ended before the wrap. Said out loud: an
+  expired claim is indistinguishable from a dead session and the next reader
+  should not have to guess which it was.
+
+  THE WRAP CLAIM (2026-10-17T14:23:57Z) declared only SAIRN-handoff-cc-b16.md,
+  SAIRN-report-cc-b16.txt, SAIRN-digest-cc-b16.txt, SAIRN-ACTIVE-WORK-cc.md
+  and docs/batch-manifest-cc-b16.json, and is released at the end of the wrap.
+
+  ONE CONFLICT DECLARED AND NOT OVERRIDDEN: hank b17 held
+  docs/tier-a-reviews.json, so it was DROPPED from b16's FILES and no record
+  was opened or edited in it. tier_a_review_gate.py --amend is the TOOL,
+  which is cc's; the ledger is hank's.
+
+  CODY APPENDED ONE RECORD TO docs/defect-density-register.json WHILE CC HELD
+  IT, deliberately, and said so (af7309ba). Union-by-identity is that file's
+  declared merge policy, a concurrent append is the operation it is built
+  for, and sairn_rebase_resolve.py merges it from the common ancestor. cc
+  agrees and is NOT reverting it.
+
+  NO AUDITOR CLONE ENTERED OR WRITTEN at any point in this batch.
+
+END-OF-REPORT
