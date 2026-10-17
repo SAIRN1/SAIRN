@@ -570,6 +570,84 @@ GUARD_TESTS = [
      'from an absent check and is the only reason this registry exists. '
      'Flagged by hank. The loop below now de-duplicates and SAYS SO, so a '
      'third entry costs a disclosure rather than a silent second run.'),
+    # ── HANK'S EIGHTEEN b14-b17 SUITES, WIRED 2026-10-16 (cc b16) ──────────
+    # ROUTED AS "b12-b17" AND THERE ARE NO b12 OR b13 SUITES: `ls api/` gives
+    # b14 (1), b15 (3), b16 (5), b17 (9) -- eighteen files, earliest b14. The
+    # range in the dispatch was wrong by two batches and the measured list is
+    # what is wired, because a registry that silently covers a different set
+    # than its comment claims is this platform's most frequent defect.
+    #
+    # EVERY ONE RUN TO A KNOWN EXIT CODE FIRST, which is the admission bar the
+    # b13 entries above set and the reason it exists: "a suite wired red
+    # denies every push on the platform until somebody turns the gate off,
+    # which this list has already survived once." All 18 exit 0 with zero
+    # failed and zero unproven, measured 2026-10-16. Total added cost to every
+    # code push: 4.83s across the eighteen, the slowest being
+    # b17-trust-lock-hard.test.js at 1.63s -- measured, not estimated.
+    #
+    # EXIT 3 IS ALREADY A FIRST-CLASS CHANNEL HERE and needs nothing added:
+    # exit3_reason() above quotes the suite's OWN could-not-run line, says the
+    # reason is ABSENT when it gives none, and never asserts a platform cause
+    # the runner cannot know. None of these eighteen exits 3 today; if one
+    # starts to, it leaves the required set for that run WITH its reason
+    # printed, which is not a pass.
+    #
+    # hank's files, RUN and not edited -- PR 4.3, declared rather than
+    # overridden. The wiring is in cc's file and touches none of theirs.
+    ('api/b14-clock-approval-two-person.test.js',
+     'a caregiver clock correction cannot be approved by the person who submitted it',
+     'Run to a known exit code BEFORE wiring, which is this list\'s own\n     admission bar: exit 0, 0.17s, "19 passed, 0 failed, 0 unproven". hank b14-b17.'),
+    ('api/b15-client-effective-clock.test.js',
+     'the client-side read of a visit uses the same EFFECTIVE clock the pay path does, so a corrected visit does not show one time and pay another',
+     'Run to a known exit code BEFORE wiring, which is this list\'s own\n     admission bar: exit 0, 0.06s, "10 passed, 0 failed, 0 unproven". hank b14-b17.'),
+    ('api/b15-corrections-hydrate.test.js',
+     'the corrections tab hydrates before it renders, so a pending correction is not invisible to the approver',
+     'Run to a known exit code BEFORE wiring, which is this list\'s own\n     admission bar: exit 0, 0.07s, "4 passed, 0 failed, 0 unproven". hank b14-b17.'),
+    ('api/b15-payroll-effective-clock.test.js',
+     'payroll reads the effective clock rather than the raw one -- the b23 F1 money bug',
+     'Run to a known exit code BEFORE wiring, which is this list\'s own\n     admission bar: exit 0, 0.14s, "11 passed, 0 failed, 0 unproven". hank b14-b17.'),
+    ('api/b16-app-id-tenancy.test.js',
+     'a memApp or safety row cannot be read or written across an app_id boundary',
+     'Run to a known exit code BEFORE wiring, which is this list\'s own\n     admission bar: exit 0, 0.33s, "passed 8  failed 0  unproven 0". hank b14-b17.'),
+    ('api/b16-evv-pay-agreement.test.js',
+     'the EVV readiness read and the pay read agree on one clock, so a state submission and a paycheque cannot disagree',
+     'Run to a known exit code BEFORE wiring, which is this list\'s own\n     admission bar: exit 0, 0.10s, "passed 9  failed 0  unproven 0". hank b14-b17.'),
+    ('api/b16-id-shadow.test.js',
+     'an id kept INSIDE a stored blob cannot shadow the real mapped column on a read that spreads the blob last',
+     'Run to a known exit code BEFORE wiring, which is this list\'s own\n     admission bar: exit 0, 0.29s, "passed 6  failed 0  unproven 0". hank b14-b17.'),
+    ('api/b16-paid-period-freeze.test.js',
+     'a PAID period is frozen -- a later approval posts as an adjustment in the next period instead of silently restating a historical total',
+     'Run to a known exit code BEFORE wiring, which is this list\'s own\n     admission bar: exit 0, 0.20s, "passed 17  failed 0  unproven 0". hank b14-b17.'),
+    ('api/b16-slice-window-check.test.js',
+     'a source-window slice(x, x+N) in a test reads the lines it claims to read',
+     'Run to a known exit code BEFORE wiring, which is this list\'s own\n     admission bar: exit 0, 0.14s, "passed 6  failed 0  unproven 0". hank b14-b17.'),
+    ('api/b17-closed-period-write-path.test.js',
+     'the generic settings write path cannot reopen a closed period -- the refusal is NAMED rather than being an absent branch',
+     'Run to a known exit code BEFORE wiring, which is this list\'s own\n     admission bar: exit 0, 0.25s, "20 passed, 0 failed, 0 unproven". hank b14-b17.'),
+    ('api/b17-evv-closed-period-asof.test.js',
+     'an EVV figure for a closed period is reported AS OF that period and not recomputed from today',
+     'Run to a known exit code BEFORE wiring, which is this list\'s own\n     admission bar: exit 0, 0.14s, "10 passed, 0 failed, 0 unproven". hank b14-b17.'),
+    ('api/b17-freeze-reopen.test.js',
+     'a frozen period can only be reopened through the append-only closings resource, and the reopen is a row rather than an edit',
+     'Run to a known exit code BEFORE wiring, which is this list\'s own\n     admission bar: exit 0, 0.31s, "13 passed, 0 failed, 0 unproven". hank b14-b17.'),
+    ('api/b17-lift-list-check.test.js',
+     'the lift list a caregiver is shown is the one the client record authorises',
+     'Run to a known exit code BEFORE wiring, which is this list\'s own\n     admission bar: exit 0, 0.36s, "passed 7  failed 0  unproven 0". hank b14-b17.'),
+    ('api/b17-one-person-agency.test.js',
+     'a one-person agency cannot approve its own submission by being the only role present -- the owner self-approval hole',
+     'Run to a known exit code BEFORE wiring, which is this list\'s own\n     admission bar: exit 0, 0.18s, "passed 11  failed 0  unproven 0". hank b14-b17.'),
+    ('api/b17-practitioner-role-maps.test.js',
+     'every practitioner role a picker offers maps to a role the server will accept',
+     'Run to a known exit code BEFORE wiring, which is this list\'s own\n     admission bar: exit 0, 0.18s, "passed 19  failed 0  unproven 0". hank b14-b17.'),
+    ('api/b17-straight-time-floor.test.js',
+     'an adjustment cannot push a period below its straight-time floor, and an overpayment is reported rather than netted away',
+     'Run to a known exit code BEFORE wiring, which is this list\'s own\n     admission bar: exit 0, 0.11s, "11 passed, 0 failed, 0 unproven". hank b14-b17.'),
+    ('api/b17-tier-a-count-agreement.test.js',
+     'the Tier A resource count the register states and the count the gate derives agree',
+     'Run to a known exit code BEFORE wiring, which is this list\'s own\n     admission bar: exit 0, 0.08s, "7 passed, 0 failed, 0 unproven". hank b14-b17.'),
+    ('api/b17-trust-lock-hard.test.js',
+     'LAW_TRUST_LOCKED is asserted directly rather than inferred, so a trust write cannot land through a path that never read the lock',
+     'Run to a known exit code BEFORE wiring, which is this list\'s own\n     admission bar: exit 0, 1.64s, "12 passed, 0 failed, 0 unproven". hank b14-b17.'),
 ]
 
 
