@@ -921,8 +921,8 @@
       "task": "b50: read-only audit -- live-drove hank's landed 144dfb71 on H3+H2, independent from-scratch re-drive confirms H3 fix (exact b48 attack now refused); #1498/#1500/#1501 re-polled no drift; corrected a stale dispatch premise -- trust-lock test WAS built, re-confirmed not a duplicate; chain+beacon+token republished. FILES: .claude/claims/hover.json",
       "claimed_at": "2026-10-17T11:27:42Z",
       "claimed_at_epoch": 1792236462.5124838,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-17T11:31:57Z",
       "files": [
         ".claude/claims/hover.json"
       ]
