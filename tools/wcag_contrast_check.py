@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# OWNER: fourth
 """tools/wcag_contrast_check.py -- WCAG 2.2 AA contrast, measured in the
 RENDERED page, on every panel of a SAIRN app.
 
