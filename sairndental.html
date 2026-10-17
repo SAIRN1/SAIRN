@@ -5,7 +5,21 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>SAIRNdental - Dental Practice Operations</title>
 <style>
-:root{--p:#0EA5E9;--pd:#0284C7;--pt:#E0F2FE;--pb:#BAE6FD;--bg:#F8FAFC;--card:#fff;--border:#E2E8F0;--text:#0F172A;--muted:#64748B;--danger:#EF4444;--warn:#F59E0B;--ok:#22C55E;--sh:0 1px 4px rgba(0,0,0,.08);}
+/* COLOUR TOKENS CARRY A MEASURED CONTRAST RATIO, not a taste judgement.
+   Every value below was computed against the surface it is actually painted
+   on, in the rendered page, by tools/wcag_contrast_check.py -- which is the
+   only way any of this was ever going to be known: the whole palette was
+   WCAG-AA-failing in 41 distinct places and no code-level check had ever
+   looked, because none of them render.
+     --p   stays the bright brand sky: borders, focus rings, accents. It is
+           NEVER a surface under white text -- 2.77:1 when it was.
+     --pd  is the one white text and tinted surfaces sit against: 5.93:1 on
+           white, 5.17:1 for the active sidebar item on --pt.
+     --pdd exists only so :hover stays a VISIBLE state change now that --pd
+           is the resting colour. 7.56:1.
+   --ok/--danger/--muted are darkened to the nearest shade of the same hue
+   that clears 4.5:1 at the 11-13px sizes this app actually uses them at. */
+:root{--p:#0EA5E9;--pd:#0369A1;--pdd:#075985;--pt:#E0F2FE;--pb:#BAE6FD;--bg:#F8FAFC;--card:#fff;--border:#E2E8F0;--text:#0F172A;--muted:#556070;--danger:#DC2626;--warn:#F59E0B;--ok:#15803D;--sh:0 1px 4px rgba(0,0,0,.08);}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Segoe UI','Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
 /* GATE */
@@ -39,11 +53,16 @@ body{font-family:'Segoe UI','Apple Color Emoji','Segoe UI Emoji','Noto Color Emo
 #app.on{display:flex;flex-direction:column;height:100vh;}
 header{height:56px;background:var(--pd);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
 .hlogo{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.5px;}
-.hbadge{background:rgba(255,255,255,.15);color:#fff;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;}
+/* The header pills DARKEN the bar rather than lightening it. A white veil at
+   .15 composites to rgb(41,128,175) and puts white text at 4.40:1 -- under AA,
+   and raising the veil makes it WORSE, not better: .25 reads 3.63:1. Both
+   figures from `python tools/wcag_contrast_check.py --selftest`, which carries
+   this exact composite as a fixture. */
+.hbadge{background:rgba(0,0,0,.14);color:#fff;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;}
 .hr{margin-left:auto;display:flex;align-items:center;gap:10px;}
 .huser{color:rgba(255,255,255,.85);font-size:13px;}
-.hbtn{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;}
-.hbtn:hover{background:rgba(255,255,255,.25);}
+.hbtn{background:rgba(0,0,0,.14);border:none;color:#fff;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;}
+.hbtn:hover{background:rgba(0,0,0,.26);}
 .wrap{display:flex;flex:1;overflow:hidden;}
 /* SIDEBAR */
 aside{width:220px;background:#fff;border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column;}
@@ -62,10 +81,10 @@ main{flex:1;overflow-y:auto;padding:24px;}
 .psub{color:var(--muted);font-size:13px;margin-top:2px;}
 .pa{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
 .btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;}
-.bp{background:var(--p);color:#fff;}
-.bp:hover{background:var(--pd);}
+.bp{background:var(--pd);color:#fff;}
+.bp:hover{background:var(--pdd);}
 .bo{background:#fff;border:1px solid var(--border);color:var(--text);}
-.bo:hover{border-color:var(--p);color:var(--p);}
+.bo:hover{border-color:var(--p);color:var(--pd);}
 .bs{padding:6px 12px;font-size:12px;}
 /* KPIs */
 .krow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
@@ -614,7 +633,16 @@ label.chk input{width:auto;}
         <div class="ph"><div><div class="ptitle">Procedure Types</div><div class="psub">Your practice's own procedure list &mdash; code, description, fee, and default length. Not a bundled CDT code library (real ADA copyright constraint) &mdash; enter your practice's actual codes and fees below.</div></div></div>
         <div class="card"><div class="ch"><div class="ct" id="pc-form-title">Add Procedure Type</div></div><div class="cb">
           <input type="hidden" id="pc-edit-id" value="">
-          <div id="pc-edit-banner" class="psub" style="display:none;margin-bottom:10px;padding:8px;border-left:3px solid var(--accent)"></div>
+          <!-- var(--accent) IS NOT A TOKEN IN THIS APP AND NEVER WAS. It was
+               written here on 2026-10-16 (9a0903e6, the F2 revise path) and the
+               whole border-left shorthand was therefore invalid at computed-value
+               time: the stripe rendered at 0px, not in a fallback colour, so the
+               banner shipped with no accent edge at all. Nothing could see it --
+               the b28 verification drove the four functions BY NAME against
+               stubs and never rendered the markup. Measured in the live browser
+               2026-10-17: borderLeftWidth "0px", borderLeftColor rgb(100,116,139)
+               inherited from currentcolor. -->
+          <div id="pc-edit-banner" class="psub" style="display:none;margin-bottom:10px;padding:8px;border-left:3px solid var(--p)"></div>
           <div class="fr">
             <div class="fg"><label>CDT Code</label><input type="text" id="pc-add-code" placeholder="e.g. D0120"></div>
             <div class="fg"><label>Description</label><input type="text" id="pc-add-desc" placeholder="e.g. Periodic oral evaluation"></div>
@@ -1051,7 +1079,7 @@ label.chk input{width:auto;}
         <div class="card"><div class="cb">
           <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px">
             <span style="font-size:16px;font-weight:800;color:var(--text)" id="v-name"></span>
-            <a id="v-website" href="#" target="_blank" style="font-size:12px;color:var(--p)"></a>
+            <a id="v-website" href="#" target="_blank" style="font-size:12px;color:var(--pd)"></a>
           </div>
           <div style="font-size:12px;color:var(--muted)" id="v-desc"></div>
           <div style="font-size:12px;margin-top:8px" id="v-contact"></div>
@@ -3546,6 +3574,30 @@ function rBookingSettings(){
     var isChecked=checked.indexOf(p.id)!==-1;
     return '<label class="chk"><input type="checkbox" data-proc-id="'+p.id+'" '+(isChecked?'checked':'')+'> '+H(p.cdt_code)+' -- '+H(p.description)+'</label>';
   }).join('<br>'):'<span style="color:var(--muted)">Add procedure types first</span>';
+  // ── A SHAREABLE LINK THAT CANNOT WORK USED TO SAY NOTHING (2026-10-17) ──
+  // Found by loading the PUBLIC page, which no pass had ever done. The live
+  // settings row lists a publicly-bookable procedure type that has since been
+  // removed from the catalogue. api/sd-data.js resolves the list against the
+  // real catalogue and correctly returns procedure_types: [] -- it fails SAFE
+  // and no patient is offered a procedure that no longer exists, which is the
+  // right server behaviour and is not what this fixes.
+  //
+  // What this fixes is that BOTH screens then stayed silent. The owner saw a
+  // "Public link: ..." preview and five unticked boxes; every patient who
+  // followed that link saw "Online booking is not yet available for this
+  // practice." The app held both halves and reported neither, so the practice
+  // could hand out a dead link indefinitely. An id that no longer resolves is
+  // named, not quietly dropped.
+  var gone=checked.filter(function(id){return !procs.some(function(p){return p.id===id;});});
+  var live=checked.length-gone.length;
+  var warn='';
+  if(gone.length)
+    warn='<div style="margin-top:10px;color:var(--danger)">'+gone.length+' procedure type'+(gone.length===1?'':'s')+
+         ' marked bookable '+(gone.length===1?'is':'are')+' no longer in your catalogue ('+H(gone.join(', '))+
+         '), so '+(gone.length===1?'it':'they')+' cannot be booked. Tick what you do offer and save to clear this.</div>';
+  if(s.booking_slug&&live===0)
+    warn+='<div style="margin-top:6px;color:var(--danger)">Nothing on your public link is bookable right now &mdash; a patient opening it is told online booking is not available. Tick at least one procedure type and save.</div>';
+  $('bs-procedure-checks').innerHTML+=warn;
 }
 // ── ONE MERGE BASE AND ONE WRITER FOR dnt_settings (2026-09-04) ──────────
 // Three panels write this single record -- Booking Settings, the Good Faith

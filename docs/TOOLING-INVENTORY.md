@@ -21,7 +21,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**355 files in `tools/`.** By what actually invokes them:
+**356 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -30,7 +30,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 5 | session-start or prompt hooks, informational |
 | **DECIDED** | 79 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 80 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 89 | nothing runs these at all |
+| **UNWIRED** | 90 | nothing runs these at all |
 
 **THE HOOK-DERIVED HALF OF THE TABLE ABOVE IS THE RECORDED WIRING, NOT THE LIVE ONE.** This clone's `.claude/settings.json` carries an EMPTY `hooks` object, committed on 2026-10-13 after Michael disabled every hook on 2026-10-11 because they were causing agent compaction. The 19 tool wirings behind BLOCKING / REPORT-ONLY / ADVISORY are read from `docs\hooks-disabled-2026-10-13.json`, which records all 23 commands verbatim. **A tool shown as ADVISORY here is wired as a SessionStart or prompt hook in that record and is NOT running in this clone today.** The alternative was believing the zero, and that is what the generator did until 2026-10-16: ADVISORY came out empty, the push gate itself came out SUITE-ONLY, and three arms of `tests/run_tooling_inventory_probe.py` were red against a `--check` that said the document matched the repo -- both ends of that comparison came from the same blind reader.
 
@@ -49,7 +49,7 @@ By what they are, independent of wiring:
 | REPORT | 1 |
 | REPORT-ONLY | 1 |
 | REPORTER | 8 |
-| TOOL | 15 |
+| TOOL | 16 |
 | UNWIRED | 1 |
 
 **79 tool(s) are DECIDED -- deliberately not promoted, with the reason
@@ -501,7 +501,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (89)
+## UNWIRED (90)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -598,6 +598,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `verify-session-token-app-scope.js` | LIBRARY | the semgrep rule body for the app-scope check | &mdash; |
 | `verify_citator_feedback.py` | CHECKER | Guardian Check 29's missing half for cl_feedback_log: a REAL write through the real table, read back, in both directions -- with an employee and without one. Written 2026-10-13 because b4 closed hover2 seq 951 at the application and schema layers with no database access, so the suite asserts the row that WOULD be written and nothing has proved the stored value. RUN IT AFTER Michael runs sql/sairnlaw_citator_schema.sql, never before. Refuses to write without --write, because the rows it leaves are indistinguishable from an attorney's real feedback in the table whose whole subject is attribution. Every arm reads the row back by id rather than trusting a 201, since the defect being closed was a 200 with no employee on the row. COULD-NOT-TELL is a third state throughout. | &mdash; |
 | `wait_for.py` | CHECKER | a watcher that outlives its subject -- it catches the case where the thing being waited on DIES and the wait continues for ever. Measured cost: on 2026-09-25 an inline `until grep` loop polled for FOURTEEN HOURS after the process producing its sentinel was killed, because the loop's only terminal state was the happy path. Exits 3 WATCHED PID GONE -- explicitly NOT 0 -- when the pid exits without the condition being met, 4 on timeout, 2 on bad arguments, and re-checks the condition once after seeing the pid gone so a subject's final write is not discarded as a failure. An unreadable process table is UNKNOWN rather than dead, counted and reported | &mdash; |
+| `wcag_contrast_check.py` | TOOL | a contrast ratio does not exist in a file, so for nineteen apps nothing on this platform could check one. sairn-visual-review has said since 2026-07-27 to compute real WCAG ratios rather than judge them by eye, and no instrument existed to do it; the first run, against SAIRNdental live, found 41 distinct AA failures including EVERY primary button in the app (white on #0EA5E9, 2.77:1) and every active sidebar item (3.57:1). It CATCHES: text under AA on any panel the app can navigate to, at the real composited background rather than the first opaque ancestor -- the draft that took the first ancestor over alpha 0.1 read rgba(255,255,255,.15) on a blue header as OPAQUE WHITE and fabricated a 1.00 ratio on all 23 panels, which is now a fixture in both directions. It also catches the large-text threshold being applied on the wrong side of 24px/18.66px-bold, and a colour string it cannot parse is REFUSED rather than guessed. It exits 2 COULD NOT RUN -- never 0 -- when playwright is absent, when chromium will not launch, when the demo credential row cannot be read, or when sign-in does not land in the app, because a signed-out app renders a licence gate and almost nothing else and would sweep clean. Every mode runs the 19 fixtures first and refuses to report if they do not classify. What it does NOT catch: any panel the sweep does not visit, any state it does not put a panel into, and anything about colour that is not a text-contrast ratio. | &mdash; |
 
 ---
 
@@ -631,7 +632,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      355   git ls-files tools/
+  tools on disk                      356   git ls-files tools/
   hook entries                        19   docs\hooks-disabled-2026-10-13.json (RECORDED wiring -- this clone's live hooks are the committed disarm, and the record is read rather than the zero being believed)
   push-gate invocations               13   tools\sairn_push_gate_hook.py
   report-only registry                78   report_only_checks.REGISTRY

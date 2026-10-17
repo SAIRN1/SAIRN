@@ -1,0 +1,44 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "fourth",
+  "batch": "b29",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "",
+      "status": "done",
+      "evidence": "sairn-visual-review run for real on the live deployment, signed in with the DNT-PINNACLE-2026 demo owner against real Supabase: 23 panels x 2 viewports = 46 screenshots; literal-markup assertion 0 hits with a 4-arm ablation proving it can fire; F1/F2 driven end to end 18/19 (one harness defect disclosed); 3 defects found and fixed, 5-arm ablation red-on-HEAD green-on-fix. scratchpad b29_shots/, b29_visual_findings.json, b29_f1f2_live.json, b29_fix_ablation.json"
+    },
+    {
+      "id": 2,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/cloud-research/behavioral-health-worldwide-competitive-gap-audit-2026-10-17.md -- outpatient behavioral health; two FR citations pulled from the primary API (89 FR 12472 doc 2024-02544; 90 FR 61301 doc 2025-24123); platform fit measured n of 17 with the command; universe re-derived and corrects b28's eighteen to seventeen"
+    },
+    {
+      "id": 3,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/2026-09-13-cross-domain-disciplines.md convention 38 -- a unit check cannot see a composition defect; denominator moved to thirty-eight and the cannot-fire group to THIRTEEN with the membership question answered on both halves; plus tools/wcag_contrast_check.py 19/19 fixtures, which is the instrument the convention is about"
+    },
+    {
+      "id": 4,
+      "title": "",
+      "status": "open",
+      "evidence": ""
+    },
+    {
+      "id": 5,
+      "title": "",
+      "status": "open",
+      "evidence": ""
+    },
+    {
+      "id": 6,
+      "title": "",
+      "status": "open",
+      "evidence": ""
+    }
+  ]
+}

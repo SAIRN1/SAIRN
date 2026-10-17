@@ -2376,6 +2376,83 @@ and **21** as a measurement fault rather than a dead check.
 
 ---
 
+## 38. A UNIT CHECK CANNOT SEE A COMPOSITION DEFECT — verify at the layer where the layers actually combine
+
+**Paid for twice on 2026-10-17, by the app and then by the checker built to
+look at it, which is why it is here rather than in a skill.**
+
+**THE APP HALF.** b28's F2 work shipped this markup:
+
+    <div id="pc-edit-banner" class="psub"
+         style="...;border-left:3px solid var(--accent)"></div>
+
+`--accent` is not a token in `sairndental.html`, is not in `:root`, and is not
+a house token in any other app — one occurrence in the file, defined nowhere. A
+`var()` that resolves to nothing makes the declaration **invalid at
+computed-value time**, so the whole `border-left` shorthand is dropped: the
+stripe rendered at **0px**, not in a fallback colour. Measured in the live
+browser before the fix: `borderLeftWidth "0px"`, `borderLeftColor
+rgb(100,116,139)` — inherited `currentcolor`, which is the muted text colour and
+not an accent at all.
+
+**b28's verification of that same feature was 22 checks, exit 0.** It extracted
+`startProcedureRevise`, `cancelProcedureRevise` and `addProcedureType` **by
+name** out of the 430KB file and ran them against stubs, including five refusal
+directions and the discriminating stamp-vs-lookup case. Every one of those
+arms was sound and every one still passes. **Not one of them could ever have
+gone red for this defect**, because the defect does not exist until a cascade
+resolves a custom property — a layer the harness never instantiated. That is
+the cannot-fire shape exactly: a run that reads as coverage of the feature,
+structurally unable to observe the layer the feature is broken in.
+
+**THE CHECKER HALF, same day, in the tool written to catch the first half.** The
+WCAG contrast sweep resolved each text node's background by walking up to the
+first ancestor whose `background-color` alpha was above 0.1 and treating it as
+opaque. `.hbadge` and `.hbtn` are `rgba(255,255,255,.15)` **on a blue bar**, so
+the check reported **white on white, ratio 1.00, on all 23 panels** — a
+confident false positive on elements that render as white on pale blue at 3.29.
+The real background does not exist in any one element's computed style; it
+exists only **after the compositor combines the layers**, and a checker that
+reads one layer is reading a thing the user never sees. Fixed by compositing
+the stack with real alpha, which moved those rows from a fabricated 1.00 to a
+true 3.29 — still a failure, but **the true one**.
+
+**The rule.** When correctness depends on a runtime COMBINING things — the CSS
+cascade, a template engine, a query planner, a middleware chain, a migration
+applied over a prior migration — a check that calls the unit directly has not
+checked the composition, **and will report green on a defect that only exists
+after composition**. Verify at the layer where the combining happens, with the
+combined output as the subject. The same applies to the check itself: a derived
+measurement that models one layer of a stack the system renders as many is not
+a conservative approximation, it is a wrong number with a confident face.
+
+**How to tell you are in it, before it costs anything:** ask what the artefact
+LOOKS LIKE to its consumer, then ask whether anything in the run ever produced
+that. For `sairndental` the answer was *"nothing in this batch has ever rendered
+this file"* — it is in b28's own §8 under LEFT UNPROVEN, written honestly and
+then not acted on for a batch. **The disclosure was already correct; what was
+missing was treating it as a gap to close rather than a caveat to carry.**
+
+**Relationship to the neighbours.** **19** says object existence is not
+reachability — 38 is one floor up: reaching the code is not reaching the
+COMPOSITION. **20** says an arm counts only after an ablation shows it can
+fail, and 38 is what you find when you ask *which defects this arm could never
+fail on*, rather than whether it can fail at all. **16** wants proof the probe
+arrived; here the probe arrived and the defect was not in the room it arrived
+in. **9** sets rigour by what the artefact IS — a rendered app IS its rendering,
+so a stub harness is the cheap stand-in and is not the deep check. **25** is the
+checker half's neighbour but was not triggered: one false-positive class, not
+three. **MEMBER of the cannot-fire group on the app half** — 22/22 green that no
+mutation of this defect could have reddened. The checker half is a measurement
+fault and stays outside, beside **35**, **21**, **22** and **37**; admitting the
+whole item on its strongest half while quietly counting its weakest is the thing
+the denominator notes below exist to stop.
+
+**Cause tag:**
+`coverage/unit-check-blind-to-composition-layer-and-measurement-modelled-one-layer-of-a-composited-stack`.
+
+---
+
 ---
 
 
@@ -2383,7 +2460,21 @@ and **21** as a measurement fault rather than a dead check.
 
 ---
 
-## The failure mode TWELVE of the thirty-seven share
+## The failure mode THIRTEEN of the thirty-eight share
+
+*(Denominator moved 2026-10-17 when fourth's 38 was landed, and the membership
+question was asked rather than assumed. **38 IS A THIRTEENTH MEMBER, on its app
+half only.** The group is A CHECK THAT READS AS COVERAGE AND STRUCTURALLY CANNOT
+FIRE, and b28's 22-arm harness for the SAIRNdental revise path is the purest
+instance yet recorded: every arm sound, every arm still passing, and **no
+mutation of the shipped defect could have reddened any of them**, because the
+defect only exists once a CSS cascade resolves an undefined custom property and
+the harness never rendered. **It is admitted on that half and explicitly not on
+the other** — the contrast checker's white-on-white 1.00 was a measurement
+fault, which puts that half beside **35**, **21**, **22** and **37** and outside
+the group, the same way 36 was admitted on (a) and (b) and not on (c). **The
+heading's denominator was changed from "thirty-seven" to "thirty-eight" rather
+than left to drift, and the TWELVE became a THIRTEEN.**)*
 
 *(Denominator moved 2026-10-16, SECOND TIME THAT DAY, when cody's 37 was
 landed, and the membership question was asked rather than assumed. **37 IS NOT
