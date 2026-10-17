@@ -572,6 +572,17 @@
       "files": [
         ".claude/claims/hover2.json"
       ]
+    },
+    {
+      "id": "hover2-1792247268",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "b50 audit: hank b17 reverify, cody b20 land-check, branch_census.py deep-verify",
+      "claimed_at": "2026-10-17T14:27:48Z",
+      "claimed_at_epoch": 1792247268.388475,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
