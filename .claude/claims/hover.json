@@ -948,6 +948,17 @@
       "status": "released",
       "released_at": "2026-10-17T14:41:29Z",
       "files": null
+    },
+    {
+      "id": "hover-1792248985",
+      "session": "hover",
+      "subject": "hover",
+      "task": "b52: continue undirected sweep backlog oldest-first; land tool-provenance methodology item; poll hank b18/cody b22 (no land-check); re-verify #1498/#1500/#1501; route sairncash finding to hank's queue; handoff+push",
+      "claimed_at": "2026-10-17T14:56:25Z",
+      "claimed_at_epoch": 1792248985.034677,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
