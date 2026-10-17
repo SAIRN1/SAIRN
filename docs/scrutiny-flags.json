@@ -6189,6 +6189,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "afd17c863cb6c0ae1d65966208ba4801ac863b29",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sf_role_matrix_driven.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -8403,6 +8411,19 @@
     }
    ],
    "sha": "f0c85a0c8ef5c34380bcd5674fcd5207b708bd8f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/tier_a_review_gate.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(tmp, ignore_errors=True)"
+    }
+   ],
+   "sha": "f17973ab22d30af9f759fbc4166c82ca90d7eae9",
    "criteria_version": "2026-10-06.1"
   },
   {

@@ -29,6 +29,24 @@ Source: `GUARD_TESTS` in `tools/sairn_push_gate_hook.py`. These are the only tes
 | PLATFORM | every disclosed coverage gap is actually disclosed, in the channel that was decided on | `api/_lib/deadline-coverage-contract.test.js` | JURISDICTION_COVERAGE is the single channel for a disclosed gap, by Michael's decision of 2026-09-01. Two jurisdictions previously asserted their gaps were row-level and an audit measured that claim false -- 2 of Utah's 9 rows and 2 of Nevada's 10 carried any omission note -- so a caller was told through neither channel. |
 | PLATFORM | not one of the role membership sets in api/ is a plain object literal, so an inherited Object.prototype name can never index truthy as a role | `tests/role_maps_have_no_prototype.js` | FOUND IN api/rf-auth.js AND REPRODUCED LIVE 2026-09-24: MANAGEMENT_ROLES was `{ owner: true, admin: true }`, so MANAGEMENT_ROLES['constructor'] was TRUTHY and a session carrying that role passed seesAllRows() and every direct-index gate -- cross-assignee read and write on rf_claims and rf_claim_photos, both Tier A. The shape was then COUNTED at 48 literals across 19 files, which is the platform rather than one app. ALL 48 WERE INERT FOR THE SAME DISTANT REASON: api/_lib/auth.js's verifySessionToken() re-validates payload.role against ROLES_BY_APP on every verification, so no session with an inherited name reached any of them. That is ONE function 48 authorisation gates silently depended on, with nothing at either end saying so -- narrowing that vocabulary, or adding one caller that builds a session another way, opens all 48 at once. THIS ENTRY IS HERE RATHER THAN LEFT REPORT-ONLY because the defect is invisible by construction: a new plain literal looks exactly like the 48 that were already there, reads correctly, and fails only on names nobody writes. The suite uses two structurally different methods -- a SOURCE scan (the only way to see the 25 maps declared inside functions in api/sd-data.js, which are never exported) and a RUNTIME check on the exported maps (the only way to catch one built correctly and mutated after) -- and each carries a negative control, because a regex that stopped matching produces exactly the same clean output as a clean repo. |
 | sairncode | SAIRNcode's Tier A write gate and soft-delete list still equal the Tier A sc_* rows in docs/CRITICALITY-TIERS.md, in both directions | `tests/sairncode_gates.js` | THE PUREST CASE THIS REGISTRY HAS, BECAUSE THE MECHANISM WORKED AND NOBODY WAS REQUIRED TO LOOK. Both gates derive from ONE array in api/_resources/sairncode.js, and this suite pins that array against the tier register. Sixteen sc_* resources were re-tiered A between 2026-09-15 and 2026-09-23 and the array did not move, so for EIGHT DAYS every one of them accepted a write carrying the LICENCE KEY ALONE and could be HARD-DELETED -- including sc_hcc (a named patient joined to a diagnosis grouping and its dollar value), sc_eligibility (a named patient joined to payer and plan) and sc_providers (the QP status that selects between two CMS conversion factors, so a licence-key write changed what every unit billed under that provider is worth). THIS SUITE WAS RED FOR ALL EIGHT DAYS SAYING EXACTLY THAT. It was not in this registry and not in report_only_checks.py either, so literally nothing in the repo ran it and its red never cost anybody anything -- a different failure from an absent check, and the one the author of the fix (cc, 5c781b99) named as still open because a blocking-registry entry was not theirs to add unilaterally. ADDED 2026-09-25 while discharging that review obligation, with the objection MEASURED rather than argued: the wall-time cost is 0.40s, which is the cheapest entry in this registry. It is a SEAM by the registry's own definition -- the tier register and the resource array are maintained by different sessions for different reasons, and the register moving alone is how this arrived. A second seam rides along: the WRITE_GATED role table is hand-written from the posture and compared against the roles parsed out of api/sd-data.js, so a silently widened SC_TIER_A_WRITE_ROLES_BY_RESOURCE fails here and nowhere else. REGISTERED TWICE UNTIL 2026-09-26, and the duplicate is folded in here rather than deleted. Two entries for this one file were added two days apart -- 2026-09-23 on Michael's call after the eight days were measured, and 2026-09-25 while discharging the review of the fix -- each written without the other in view, so the list ran this suite TWICE on every code push and a reader got two accounts of one seam, believing whichever they found first. Neither was wrong. The earlier one named the thing this one did not: THE MECHANISM WORKED AND THE REQUIREMENT TO READ IT DID NOT EXIST, which is a different failure from an absent check and is the only reason this registry exists. Flagged by hank. The loop below now de-duplicates and SAYS SO, so a third entry costs a disclosure rather than a silent second run. |
+| PLATFORM | a caregiver clock correction cannot be approved by the person who submitted it | `api/b14-clock-approval-two-person.test.js` | Run to a known exit code BEFORE wiring, which is this list's own admission bar: exit 0, 0.17s, "19 passed, 0 failed, 0 unproven". hank b14-b17. |
+| PLATFORM | the client-side read of a visit uses the same EFFECTIVE clock the pay path does, so a corrected visit does not show one time and pay another | `api/b15-client-effective-clock.test.js` | Run to a known exit code BEFORE wiring, which is this list's own admission bar: exit 0, 0.06s, "10 passed, 0 failed, 0 unproven". hank b14-b17. |
+| PLATFORM | the corrections tab hydrates before it renders, so a pending correction is not invisible to the approver | `api/b15-corrections-hydrate.test.js` | Run to a known exit code BEFORE wiring, which is this list's own admission bar: exit 0, 0.07s, "4 passed, 0 failed, 0 unproven". hank b14-b17. |
+| PLATFORM | payroll reads the effective clock rather than the raw one -- the b23 F1 money bug | `api/b15-payroll-effective-clock.test.js` | Run to a known exit code BEFORE wiring, which is this list's own admission bar: exit 0, 0.14s, "11 passed, 0 failed, 0 unproven". hank b14-b17. |
+| PLATFORM | a memApp or safety row cannot be read or written across an app_id boundary | `api/b16-app-id-tenancy.test.js` | Run to a known exit code BEFORE wiring, which is this list's own admission bar: exit 0, 0.33s, "passed 8 failed 0 unproven 0". hank b14-b17. |
+| PLATFORM | the EVV readiness read and the pay read agree on one clock, so a state submission and a paycheque cannot disagree | `api/b16-evv-pay-agreement.test.js` | Run to a known exit code BEFORE wiring, which is this list's own admission bar: exit 0, 0.10s, "passed 9 failed 0 unproven 0". hank b14-b17. |
+| PLATFORM | an id kept INSIDE a stored blob cannot shadow the real mapped column on a read that spreads the blob last | `api/b16-id-shadow.test.js` | Run to a known exit code BEFORE wiring, which is this list's own admission bar: exit 0, 0.29s, "passed 6 failed 0 unproven 0". hank b14-b17. |
+| PLATFORM | a PAID period is frozen -- a later approval posts as an adjustment in the next period instead of silently restating a historical total | `api/b16-paid-period-freeze.test.js` | Run to a known exit code BEFORE wiring, which is this list's own admission bar: exit 0, 0.20s, "passed 17 failed 0 unproven 0". hank b14-b17. |
+| PLATFORM | a source-window slice(x, x+N) in a test reads the lines it claims to read | `api/b16-slice-window-check.test.js` | Run to a known exit code BEFORE wiring, which is this list's own admission bar: exit 0, 0.14s, "passed 6 failed 0 unproven 0". hank b14-b17. |
+| PLATFORM | the generic settings write path cannot reopen a closed period -- the refusal is NAMED rather than being an absent branch | `api/b17-closed-period-write-path.test.js` | Run to a known exit code BEFORE wiring, which is this list's own admission bar: exit 0, 0.25s, "20 passed, 0 failed, 0 unproven". hank b14-b17. |
+| PLATFORM | an EVV figure for a closed period is reported AS OF that period and not recomputed from today | `api/b17-evv-closed-period-asof.test.js` | Run to a known exit code BEFORE wiring, which is this list's own admission bar: exit 0, 0.14s, "10 passed, 0 failed, 0 unproven". hank b14-b17. |
+| PLATFORM | a frozen period can only be reopened through the append-only closings resource, and the reopen is a row rather than an edit | `api/b17-freeze-reopen.test.js` | Run to a known exit code BEFORE wiring, which is this list's own admission bar: exit 0, 0.31s, "13 passed, 0 failed, 0 unproven". hank b14-b17. |
+| PLATFORM | the lift list a caregiver is shown is the one the client record authorises | `api/b17-lift-list-check.test.js` | Run to a known exit code BEFORE wiring, which is this list's own admission bar: exit 0, 0.36s, "passed 7 failed 0 unproven 0". hank b14-b17. |
+| PLATFORM | a one-person agency cannot approve its own submission by being the only role present -- the owner self-approval hole | `api/b17-one-person-agency.test.js` | Run to a known exit code BEFORE wiring, which is this list's own admission bar: exit 0, 0.18s, "passed 11 failed 0 unproven 0". hank b14-b17. |
+| PLATFORM | every practitioner role a picker offers maps to a role the server will accept | `api/b17-practitioner-role-maps.test.js` | Run to a known exit code BEFORE wiring, which is this list's own admission bar: exit 0, 0.18s, "passed 19 failed 0 unproven 0". hank b14-b17. |
+| PLATFORM | an adjustment cannot push a period below its straight-time floor, and an overpayment is reported rather than netted away | `api/b17-straight-time-floor.test.js` | Run to a known exit code BEFORE wiring, which is this list's own admission bar: exit 0, 0.11s, "11 passed, 0 failed, 0 unproven". hank b14-b17. |
+| PLATFORM | the Tier A resource count the register states and the count the gate derives agree | `api/b17-tier-a-count-agreement.test.js` | Run to a known exit code BEFORE wiring, which is this list's own admission bar: exit 0, 0.08s, "7 passed, 0 failed, 0 unproven". hank b14-b17. |
+| PLATFORM | LAW_TRUST_LOCKED is asserted directly rather than inferred, so a trust write cannot land through a path that never read the lock | `api/b17-trust-lock-hard.test.js` | Run to a known exit code BEFORE wiring, which is this list's own admission bar: exit 0, 1.64s, "12 passed, 0 failed, 0 unproven". hank b14-b17. |
 
 ## 2. Mechanically enforced at the push gate
 
@@ -713,24 +731,24 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 232 test files are traced to no stated requirement
+### 219 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 758 of 990 traced, 76.6%.
+For context and not as the headline: 771 of 990 traced, 77.9%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 758 citations come from
+### Where the 771 citations come from
 
 | source | citations |
 |---|---|
-| `declared` | 346 |
+| `declared` | 341 |
 | `index` | 325 |
 | `declared+index` | 70 |
-| `GUARD_TESTS+declared` | 7 |
+| `GUARD_TESTS` | 16 |
+| `GUARD_TESTS+declared` | 12 |
 | `GUARD_TESTS+index` | 6 |
-| `GUARD_TESTS` | 3 |
 | `GUARD_TESTS+declared+index` | 1 |
 
 **One source carries almost all of it.** That is a concentration, not a defect -- but it means the traced figure moves with how diligently the open-work index is written, not with how well tested this repo is, and if that habit lapsed nothing here would say so.
@@ -740,7 +758,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | kind | count | what it means | the fix |
 |---|---|---|---|
 | **bound to a subject, tied to no requirement** | 40 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 192 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **no subject binding either** | 179 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
 **These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 40 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
@@ -753,19 +771,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/_lib/sen-evv-clock.test.js`
 - `api/agent/enqueue.test.js`
 - `api/ai-safeguards.test.js`
-- `api/b14-clock-approval-two-person.test.js`
-- `api/b15-client-effective-clock.test.js`
-- `api/b15-corrections-hydrate.test.js`
-- `api/b15-payroll-effective-clock.test.js`
-- `api/b16-evv-pay-agreement.test.js`
-- `api/b16-paid-period-freeze.test.js`
-- `api/b17-closed-period-write-path.test.js`
-- `api/b17-evv-closed-period-asof.test.js`
-- `api/b17-freeze-reopen.test.js`
-- `api/b17-one-person-agency.test.js`
-- `api/b17-straight-time-floor.test.js`
-- `api/b17-tier-a-count-agreement.test.js`
-- `api/b17-trust-lock-hard.test.js`
 - `api/leg-aftercare-key-unambiguous.test.js`
 - `api/provisioner-health-rate-limit.test.js`
 - `api/sairndental/complaint-race.test.js`
@@ -997,7 +1002,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
   app files                           22   git ls-files '*.html'
   test files on disk                 990   tests/**, api/** (both walked)
   open-work rows citing a test       393   docs\SAIRN-OPEN-WORK-INDEX.md
-  GUARD_TESTS entries                 17   sairn_push_gate_hook.GUARD_TESTS
+  GUARD_TESTS entries                 35   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                78   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     82   report_only_checks.NOT_PROMOTED
   numbered gate checks                17   sairn_push_gate_hook.py
