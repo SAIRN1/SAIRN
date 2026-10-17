@@ -2251,6 +2251,187 @@ def _open_record(why, hits, rule_hits, irr_hits=None):
     return 0
 
 
+# ══ --amend: A RECORDED FILE SET CAN BE WRONG, AND THERE WAS NO WAY TO SAY SO ══
+# Added 2026-10-16 (cc b16). The case it exists for is cc b15 routing item C5,
+# measured rather than hypothetical:
+#
+#   docs/tier-a-reviews.json, author cody, opened_at_sha b384a513, resources
+#   ["sen_caregivers"]. Its `files` list is
+#   ["api/sd-data-sen-caregiver-pii-scope.test.js"] -- THE TEST ONLY.
+#   api/sd-data.js, where the handler change actually landed, is not in it.
+#   The gate matched on RESOURCES so it did not fail open and the obligation is
+#   real; but a reviewer who reads that file set is pointed at the test and not
+#   at the changed code.
+#
+# Until now the only routes were to open a SECOND obligation for the same work
+# -- two records for one review, which is the duplication this whole ledger is
+# built to avoid -- or to hand-edit the JSON, which leaves no trace of what the
+# record said before.
+#
+# FOUR REFUSALS, AND EACH ONE IS THE POINT RATHER THAN A SAFETY RAIL:
+#
+#   1. IT CAN ONLY WIDEN. A removal is refused by name. Narrowing a recorded
+#      obligation is how an obligation gets quietly shrunk to fit whatever was
+#      actually reviewed, and nothing downstream could tell that from a record
+#      that was always narrow.
+#   2. A `reviewed` RECORD IS REFUSED. The verdict was reached against the
+#      recorded set; widening it afterwards would make a discharge cover files
+#      nobody read. The route for that is a NEW obligation, and the refusal
+#      says so.
+#   3. --why IS REQUIRED, 40 characters. An amendment with no reason is a field
+#      that means nothing -- the same decision the defect register made for
+#      `not-citable` and the push gate made for a bare override.
+#   4. IT IS A DRY RUN WITHOUT --apply, and prints exactly what it would add.
+#
+# AND IT IS APPEND-ONLY: the original `files` and `resources` are preserved in
+# an `amendments` entry with the amending session and the reason, so what the
+# record said before is still derivable. An amendment that erased the previous
+# state would be the laundering shape, one ledger over.
+AMEND_WHY_MIN = 40
+
+
+def cmd_amend(argv):
+    sha = None
+    i = argv.index('--amend')
+    if len(argv) > i + 1 and not argv[i + 1].startswith('--'):
+        sha = argv[i + 1].strip()
+    add_files = _amend_list(argv, '--add-files')
+    add_resources = _amend_list(argv, '--add-resources')
+    why = ''
+    if '--why' in argv:
+        j = argv.index('--why')
+        if len(argv) > j + 1:
+            why = argv[j + 1]
+    # --body-file works here too, which is the habit this batch learned the
+    # expensive way: two defect-register summaries lost backtick-quoted spans
+    # to shell command substitution because they were passed inline.
+    try:
+        why = body_from_file_or(argv, why)
+    except CouldNotTell as e:
+        sys.stderr.write('COULD NOT TELL: %s\n' % e)
+        return 2
+    apply_it = '--apply' in argv
+
+    if not sha:
+        sys.stderr.write(
+            'usage: --amend <opened_at_sha> --add-files "a.js b.js" '
+            '[--add-resources "x y"] --why "<reason>" [--apply]\n'
+            'It can only WIDEN a record. Removal is refused, a reviewed record '
+            'is refused, and --why is required.\n')
+        return 2
+    if not add_files and not add_resources:
+        sys.stderr.write('--amend needs --add-files and/or --add-resources. '
+                         'Nothing to add is not an amendment.\n')
+        return 2
+    if len((why or '').strip()) < AMEND_WHY_MIN:
+        sys.stderr.write(
+            'REFUSING: --why is %d character(s) and the floor is %d. An '
+            'amendment with no reason is a field that means nothing -- say '
+            'WHAT the recorded set missed and HOW that was established, '
+            'because the next reader has only this sentence.\n'
+            % (len((why or '').strip()), AMEND_WHY_MIN))
+        return 2
+
+    try:
+        data = load_reviews()
+    except CouldNotTell as e:
+        sys.stderr.write('COULD NOT TELL: %s\n' % e)
+        return 2
+    hits = [r for r in data.get('records', [])
+            if str(r.get('opened_at_sha') or '').startswith(sha)
+            or str(r.get('opened_at') or '') == sha]
+    if not hits:
+        sys.stderr.write(
+            'no record matches %r by opened_at_sha prefix or opened_at. '
+            '`--list` names them; an amendment to a record this tool cannot '
+            'find is not applied silently.\n' % sha)
+        return 2
+    if len(hits) > 1:
+        sys.stderr.write(
+            '%d records match %r. Give more of the sha: amending the wrong '
+            'record is worse than not amending, because the widening lands on '
+            'an obligation nobody was talking about.\n' % (len(hits), sha))
+        for r in hits:
+            sys.stderr.write('    %s  %s  %s\n'
+                             % (r.get('opened_at_sha'), r.get('author_session'),
+                                ', '.join(r.get('resources') or [])[:60]))
+        return 2
+    rec = hits[0]
+
+    if rec.get('status') == 'reviewed':
+        sys.stderr.write(
+            'REFUSING: this record is REVIEWED (by %s at %s). The verdict was '
+            'reached against the file set as it was recorded, so widening it '
+            'now would make that discharge cover files nobody read. Open a NEW '
+            'obligation for the code the review missed -- `--open` -- and say '
+            'in it that it exists because this one was narrow.\n'
+            % (rec.get('reviewer_session'), rec.get('reviewed_at')))
+        return 2
+
+    cur_files = list(rec.get('files') or [])
+    cur_res = list(rec.get('resources') or [])
+    new_files = [f for f in add_files if f not in cur_files]
+    new_res = [r for r in add_resources if r not in cur_res]
+    if not new_files and not new_res:
+        print('NOTHING TO DO: every name given is already on the record.')
+        print('  files     : %s' % (', '.join(cur_files) or '(none)'))
+        print('  resources : %s' % (', '.join(cur_res) or '(none)'))
+        return 0
+
+    print('AMEND %s  (author %s, status %s)'
+          % (rec.get('opened_at_sha'), rec.get('author_session'),
+             rec.get('status')))
+    print('  files     now %d, adding %d: %s'
+          % (len(cur_files), len(new_files), ', '.join(new_files) or '-'))
+    print('  resources now %d, adding %d: %s'
+          % (len(cur_res), len(new_res), ', '.join(new_res) or '-'))
+    print('  NOTHING IS REMOVED -- this mode can only widen, and a removal is')
+    print('  refused rather than performed, because narrowing a recorded')
+    print('  obligation is how one gets shrunk to fit what was reviewed.')
+    me = session_name()
+    if me and me != rec.get('author_session'):
+        print('  AMENDING ANOTHER SESSION\'S RECORD: you are %s and %s opened '
+              'it.' % (me, rec.get('author_session')))
+        print('  That is allowed and it is ATTRIBUTED -- the amendment carries')
+        print('  your session name, so the correction has an author.')
+    if not apply_it:
+        print('')
+        print('DRY RUN -- nothing was written. Add --apply to record it.')
+        return 0
+
+    stamp = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+    rec.setdefault('amendments', []).append({
+        'at': stamp,
+        'by': me or 'unattributed',
+        'added_files': new_files,
+        'added_resources': new_res,
+        'files_before': cur_files,
+        'resources_before': cur_res,
+        'why': why.strip(),
+    })
+    rec['files'] = cur_files + new_files
+    rec['resources'] = cur_res + new_res
+    save_reviews(data)
+    print('')
+    print('AMENDED. The previous file and resource sets are kept in the')
+    print('`amendments` entry, so what this record said before is still')
+    print('derivable -- an amendment that erased it would be the laundering')
+    print('shape one ledger over.')
+    print('Commit docs/tier-a-reviews.json.')
+    return 0
+
+
+def _amend_list(argv, flag):
+    """Whitespace- or comma-separated names after `flag`."""
+    if flag not in argv:
+        return []
+    i = argv.index(flag)
+    if len(argv) <= i + 1:
+        return []
+    raw = argv[i + 1].replace(',', ' ')
+    return [x.strip() for x in raw.split() if x.strip()]
+
+
 def cmd_open(why, rng=None, named=None):
     resources = tier_a_resources()
     rules = coding_rules()
@@ -3000,6 +3181,166 @@ def cmd_discharge(author, verdict, opened_at=None, takeover=False):
 # Fixtures over a FAKE claims directory, so the arms are about the rule and
 # not about whichever sessions happen to be running today. Nothing here reads
 # or writes the real register.
+def selftest_amend():
+    """--amend, on a FIXTURE ledger. 10 arms, both directions.
+
+    ── WHY A FIXTURE AND NOT THE REAL LEDGER ────────────────────────────────
+    docs/tier-a-reviews.json is held on a LIVE claim by hank b17, and cc's own
+    b16 claim says no record in it is opened or edited this batch. These arms
+    point REVIEWS at a temp file, so the mode is driven in both directions
+    without touching a record anybody holds. The three REFUSAL arms were ALSO
+    driven against the real ledger read-only, which is how the C5 answer below
+    was established.
+
+    AND THE REAL CASE TURNED OUT TO NEED A DIFFERENT FIX, which is the most
+    useful thing this mode has produced so far. cc b15 routing item C5 says the
+    `sen_caregivers` obligation at b384a513 names only
+    api/sd-data-sen-caregiver-pii-scope.test.js and should also name
+    api/sd-data.js. Driven: that record is ALREADY `reviewed`, by hank at
+    2026-10-13T06:32:55Z. So amending it is REFUSED and correctly -- the
+    verdict was reached against the narrow set, and widening it afterwards
+    would make a discharge cover a file nobody read. C5's recommended fix was
+    wrong and the refusal is what establishes that; the route is a NEW
+    obligation naming why it exists.
+    """
+    import shutil
+    import tempfile
+    bad = total = 0
+
+    def ck(label, got, want=True):
+        nonlocal bad, total
+        total += 1
+        if got != want:
+            bad += 1
+            print('  FAIL ' + label)
+            print('       wanted %r, got %r' % (want, got))
+        else:
+            print('  ok   ' + label)
+
+    print('')
+    print('TIER A REVIEW GATE -- --amend, on a FIXTURE ledger')
+    print('  TEN arms. A1-A3 require a widening to happen and to be recorded')
+    print('  append-only; A4-A8 are the five REFUSALS -- narrowing, a reviewed')
+    print('  record, a short reason, an unknown sha, an ambiguous sha; A9-A10')
+    print('  are the dry-run and the no-op. A mode that always writes passes')
+    print('  A1-A3 and lets any obligation be shrunk to fit.')
+
+    WHY = ('the recorded file set named only the test and the handler change '
+           'landed in another file, established by reading the diff')
+    tmp = tempfile.mkdtemp(prefix='tier-a-amend-')
+    global REVIEWS
+    real = REVIEWS
+    try:
+        REVIEWS = os.path.join(tmp, 'tier-a-reviews.json')
+
+        def fresh(status='open'):
+            io.open(REVIEWS, 'w', encoding='utf-8', newline=chr(10)).write(
+                json.dumps({'records': [{
+                    'opened_at': '2026-10-01T00:00:00Z',
+                    'opened_at_sha': 'aaaaaaaabbbbbbbbccccccccdddddddd',
+                    'author_session': 'cody',
+                    'files': ['api/t.test.js'],
+                    'resources': ['sen_caregivers'],
+                    'rules': [], 'irreversible': [],
+                    'status': status,
+                    'reviewer_session': 'hank' if status == 'reviewed' else None,
+                    'reviewed_at': ('2026-10-02T00:00:00Z'
+                                    if status == 'reviewed' else None),
+                    'verdict': 'SOUND' if status == 'reviewed' else None,
+                    'what': 'fixture',
+                }]}, indent=2) + chr(10))
+
+        def rec():
+            return json.loads(io.open(REVIEWS, encoding='utf-8').read()
+                              )['records'][0]
+
+        fresh()
+        rc = cmd_amend(['--amend', 'aaaaaaaa', '--add-files', 'api/sd-data.js',
+                        '--why', WHY, '--apply'])
+        r = rec()
+        ck('A1 a widening is APPLIED and the new file is on the record',
+           (rc, r['files']), (0, ['api/t.test.js', 'api/sd-data.js']))
+        ck('A2 ...and the PREVIOUS file set is kept in `amendments`, so what '
+           'the record said before is still derivable -- an amendment that '
+           'erased it would be the laundering shape one ledger over',
+           r['amendments'][0]['files_before'], ['api/t.test.js'])
+        ck('A3 ...and the amendment is ATTRIBUTED and carries its reason',
+           (bool(r['amendments'][0]['by']),
+            r['amendments'][0]['why'] == WHY), (True, True))
+
+        fresh()
+        rc = cmd_amend(['--amend', 'aaaaaaaa', '--add-files', 'api/t.test.js',
+                        '--why', WHY, '--apply'])
+        ck('A4 THE NARROWING REFUSAL, by construction: a name already on the '
+           'record is a NO-OP and nothing can be removed at all -- there is no '
+           'flag for it, which is stronger than refusing one',
+           (rc, rec()['files'], 'amendments' in rec()),
+           (0, ['api/t.test.js'], False))
+
+        fresh('reviewed')
+        rc = cmd_amend(['--amend', 'aaaaaaaa', '--add-files', 'api/sd-data.js',
+                        '--why', WHY, '--apply'])
+        ck('A5 a REVIEWED record is REFUSED -- the real C5 case. Widening '
+           'after a verdict makes a discharge cover files nobody read',
+           (rc, rec()['files']), (2, ['api/t.test.js']))
+
+        fresh()
+        rc = cmd_amend(['--amend', 'aaaaaaaa', '--add-files', 'api/sd-data.js',
+                        '--why', 'too short', '--apply'])
+        ck('A6 a reason under the floor is REFUSED and nothing is written',
+           (rc, rec()['files']), (2, ['api/t.test.js']))
+
+        fresh()
+        rc = cmd_amend(['--amend', 'ffffffff', '--add-files', 'api/sd-data.js',
+                        '--why', WHY, '--apply'])
+        ck('A7 an unknown sha is REFUSED rather than applied to the nearest '
+           'record', rc, 2)
+
+        io.open(REVIEWS, 'w', encoding='utf-8', newline=chr(10)).write(
+            json.dumps({'records': [
+                {'opened_at': '2026-10-01T00:00:00Z',
+                 'opened_at_sha': 'aaaaaaaa1111', 'author_session': 'cody',
+                 'files': ['a.js'], 'resources': ['sen_caregivers'],
+                 'rules': [], 'irreversible': [], 'status': 'open',
+                 'reviewer_session': None, 'reviewed_at': None,
+                 'verdict': None, 'what': 'f1'},
+                {'opened_at': '2026-10-01T00:00:01Z',
+                 'opened_at_sha': 'aaaaaaaa2222', 'author_session': 'cody',
+                 'files': ['b.js'], 'resources': ['sen_caregivers'],
+                 'rules': [], 'irreversible': [], 'status': 'open',
+                 'reviewer_session': None, 'reviewed_at': None,
+                 'verdict': None, 'what': 'f2'}]}, indent=2) + chr(10))
+        rc = cmd_amend(['--amend', 'aaaaaaaa', '--add-files', 'api/sd-data.js',
+                        '--why', WHY, '--apply'])
+        ck('A8 an AMBIGUOUS sha prefix is REFUSED and both candidates are '
+           'named -- widening the wrong obligation is worse than not widening',
+           rc, 2)
+
+        fresh()
+        rc = cmd_amend(['--amend', 'aaaaaaaa', '--add-files', 'api/sd-data.js',
+                        '--why', WHY])
+        ck('A9 WITHOUT --apply it is a DRY RUN and writes nothing',
+           (rc, rec()['files'], 'amendments' in rec()),
+           (0, ['api/t.test.js'], False))
+
+        fresh()
+        rc = cmd_amend(['--amend', 'aaaaaaaa', '--add-resources',
+                        'sen_caregivers', '--why', WHY, '--apply'])
+        ck('A10 THE OVER-WRITING CONTROL: a resource already on the record '
+           'adds nothing and records no amendment, so a repeated run cannot '
+           'grow the `amendments` list with empty entries',
+           (rc, 'amendments' in rec()), (0, False))
+    finally:
+        REVIEWS = real
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    print('')
+    print('  %d/%d arm(s) pass' % (total - bad, total))
+    print('  NOT COVERED HERE: whether a widening is CORRECT. That is a '
+          'judgement and --why is where it lives.')
+    return 1 if bad else 0
+
+
 def selftest_roster():
     import shutil
     import tempfile
@@ -3341,7 +3682,9 @@ def cmd_reassign_dead(session, apply_changes=False):
 
 def main(argv):
     if '--selftest' in argv:
-        return selftest_roster()
+        _r = selftest_roster()
+        _a = selftest_amend()
+        return 1 if (_r or _a) else 0
     if '--reassign-dead' in argv:
         return cmd_reassign_dead(session_name(), apply_changes='--apply' in argv)
     if '--roster' in argv:
@@ -3369,6 +3712,8 @@ def main(argv):
                   % (max(h for _n, h, _no in el),
                      min(h for _n, h, _no in ex)))
         return 0 if eligible_reviewers() else 1
+    if '--amend' in argv:
+        return cmd_amend(argv)
     if '--open' in argv:
         i = argv.index('--open')
         why = argv[i + 1] if len(argv) > i + 1 else ''
