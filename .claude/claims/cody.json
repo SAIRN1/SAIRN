@@ -4037,8 +4037,8 @@
       "task": "b22: SAIRNveterans per-post entity structure config (c19 direct / c7 companion / both) in sairnfreedom.html + 12.6a-b update; shared multi-location multi-brand DATA MODEL scoping doc (no implementation); re-aim tests/sd_data_not_provisioned_misclass.js now that hank landed BOTH call sites and ten more, and move its known-red row to recovered; re-flag cc Tier A obligation 2026-10-16T12:24:12Z including its ORPHANED anchor sha; handoff b22; push. HOLD HONOURED: api/sd-data.js is HANK'S and is READ ONLY here. CONFLICTS DECLARED PER PR 4.3: api/ and sql/ READ-ONLY, tools/ is cc's and RUN not edited. FILES: sairnfreedom.html tests/sd_data_not_provisioned_misclass.js docs/known-red-suites.json docs/2026-09-17-sairnfreedom-tips-tax-treatment.md docs/2026-10-17-cody-b22-multi-location-brand-data-model.md SAIRN-handoff-cody-b22.md SAIRN-report-cody-b22.txt SAIRN-digest-cody-b22.txt",
       "claimed_at": "2026-10-17T11:22:11Z",
       "claimed_at_epoch": 1792236131.648517,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-17T15:28:27Z",
       "files": [
         "SAIRN-digest-cody-b22.txt",
         "SAIRN-handoff-cody-b22.md",
