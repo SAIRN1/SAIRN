@@ -3983,6 +3983,23 @@
         "sairndental.html",
         "tools/tier_a_reviews_store.py"
       ]
+    },
+    {
+      "id": "fourth-1792247213",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "b29: sairndental live render + sairn-visual-review pass with real Supabase (sairndental.html screenshots, DOM assertion); next unaudited worldwide competitive-gap vertical; methodology item. FILES: sairndental.html docs/cloud-research/ docs/batch-manifest-fourth-b29.json SAIRN-handoff-fourth-b29.md SAIRN-report-fourth-b29.txt SAIRN-digest-fourth-b29.txt",
+      "claimed_at": "2026-10-17T14:26:53Z",
+      "claimed_at_epoch": 1792247213.3334796,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b29.txt",
+        "SAIRN-handoff-fourth-b29.md",
+        "SAIRN-report-fourth-b29.txt",
+        "docs/batch-manifest-fourth-b29.json",
+        "sairndental.html"
+      ]
     }
   ],
   "refusals": [
