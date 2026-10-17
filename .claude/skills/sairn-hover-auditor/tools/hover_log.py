@@ -1525,6 +1525,117 @@ def run_staleness_fixtures():
     return fail_count[0] == 0
 
 
+def run_rotation_gate_fixtures():
+    """rotation_gate() is a pure function (no I/O) and --selftest never
+    exercised it at all -- found 2026-10-17 (h1 b52) while hover_self_health.py
+    was flagging the real adjacent-repeat count it enforces against. Every
+    other guard in this file earns a fixture before it is trusted; this one
+    had shipped and run for a month with none. Pure function, no tmpdir, no
+    git, no LOG_PATH monkeypatch needed -- call it directly with a hand-built
+    `prior` list."""
+    ok_count = [0]
+    fail_count = [0]
+
+    def ck(name, cond):
+        if cond:
+            ok_count[0] += 1
+            print('  ok   ' + name)
+        else:
+            fail_count[0] += 1
+            print('  FAIL ' + name)
+
+    def entry(etype, target, seq, ts=None):
+        e = {'type': etype, 'target': target, 'seq': seq}
+        if ts is not None:
+            e['ts'] = ts
+        return e
+
+    # --- no prior rotation entry at all: allowed ---
+    ck('empty prior: no repeat to refuse', rotation_gate([], 'check', 'hank', '') is None)
+
+    # --- the LAST rotation entry targeted someone else: allowed ---
+    prior = [entry('check', 'cc', 1)]
+    ck('different target last time: allowed',
+       rotation_gate(prior, 'check', 'hank', '') is None)
+
+    # --- THE REAL GATE: same target twice in a row, no reason: REFUSED ---
+    prior = [entry('check', 'hank', 1)]
+    err = rotation_gate(prior, 'check', 'hank', '')
+    ck('adjacent repeat, same type, no reason: REFUSED',
+       err is not None and 'ROTATION GATE' in err)
+    ck('the refusal names the repeated target and the blocking seq',
+       err is not None and "'hank'" in err and 'seq 1' in err)
+
+    # --- THE ESCAPE HATCH: same repeat, WITH a declared reason: allowed ---
+    ck('adjacent repeat, WITH --same-target-reason: allowed',
+       rotation_gate(prior, 'check', 'hank', 'forced re-verify of a fix just flagged') is None)
+    ck('a reason that is only whitespace does NOT count as declared',
+       rotation_gate(prior, 'check', 'hank', '   ') is not None)
+
+    # --- SAME-EVENT PAIR: check->finding on the same target, inside the gap:
+    #     allowed with NO reason, because it is one review producing two rows ---
+    now_ts = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    prior = [entry('check', 'hank', 1, now_ts)]
+    ck('check->finding, same target, inside SAME_EVENT_MAX_GAP_S: allowed, no reason needed',
+       rotation_gate(prior, 'finding', 'hank', '') is None)
+
+    # --- the mirror case: check->finding, same target, but the check is OLD
+    #     (gap far exceeds SAME_EVENT_MAX_GAP_S): the same-event exemption
+    #     must NOT apply, and with no reason this must be REFUSED ---
+    old_ts = '2020-01-01T00:00:00Z'
+    prior = [entry('check', 'hank', 1, old_ts)]
+    ck('check->finding, same target, OLD check (gap >> 2s): REFUSED without a reason',
+       rotation_gate(prior, 'finding', 'hank', '') is not None)
+    ck('...and the same old pair WITH a reason is allowed',
+       rotation_gate(prior, 'finding', 'hank', 'escalated the moment the check landed') is None)
+
+    # --- FAIL CLOSED: an unparseable/missing timestamp on the prior check
+    #     must NOT be read as "inside the gap" -- falls through to requiring
+    #     a reason, same discipline as every other staleness ambiguity in
+    #     this file (COULD-NOT-VERIFY never silently becomes a pass) ---
+    prior = [entry('check', 'hank', 1, 'not-a-real-timestamp')]
+    ck('check->finding, same target, UNPARSEABLE prior timestamp: fails CLOSED (refused)',
+       rotation_gate(prior, 'finding', 'hank', '') is not None)
+    prior_no_ts = [entry('check', 'hank', 1)]  # ts key absent entirely
+    ck('check->finding, same target, MISSING prior timestamp: fails CLOSED (refused)',
+       rotation_gate(prior_no_ts, 'finding', 'hank', '') is not None)
+
+    # --- target == 'self' is exempt outright, repeat or not ---
+    prior = [entry('check', 'self', 1)]
+    ck("target == 'self', even immediately repeated: never gated",
+       rotation_gate(prior, 'check', 'self', '') is None)
+
+    # --- a 'self' entry sandwiched between two real picks of the SAME agent
+    #     must not reset the gate -- _prev_rotation_entry skips target=='self'
+    #     on purpose, so this is still an adjacent repeat of 'hank' ---
+    prior = [entry('check', 'hank', 1), entry('check', 'self', 2)]
+    err = rotation_gate(prior, 'check', 'hank', '')
+    ck("a 'self' entry in between does NOT launder an adjacent repeat",
+       err is not None and 'ROTATION GATE' in err)
+
+    # --- a non-rotation type (e.g. no-report) is never gated ---
+    prior = [entry('check', 'hank', 1)]
+    ck("etype 'no-report' is exempt from the rotation gate entirely",
+       rotation_gate(prior, 'no-report', 'hank', '') is None)
+
+    # --- the refusal's own "eligible instead" list excludes None/self/target ---
+    prior = [entry('check', 'hank', 1), entry('finding', 'cc', 2),
+             entry('check', 'self', 3), entry('check', 'cody', 4)]
+    err = rotation_gate(prior, 'check', 'cody', '')
+    eligible_line = err.split('Eligible instead:')[1].split('\n')[0] if err else ''
+    # FIXTURE CORRECTION (caught on first run): the eligible list prints
+    # bare comma-separated names ("cc, hank"), not quoted like the target
+    # name earlier in the message. The assertion was wrong, not the code --
+    # corrected here rather than loosening the check to pass either way.
+    ck("eligible-list names the OTHER real targets seen, not self and not the repeated one",
+       err is not None and 'cc' in eligible_line and 'hank' in eligible_line
+       and 'cody' not in eligible_line and 'self' not in eligible_line)
+
+    print()
+    print('%d ok, %d failed' % (ok_count[0], fail_count[0]))
+    return fail_count[0] == 0
+
+
 def cmd_verify(argv):
     try:
         rows = read_all()
@@ -1583,8 +1694,10 @@ def cmd_tail(argv):
 
 def main(argv):
     if '--selftest' in argv:
-        ok = run_staleness_fixtures()
-        return EXIT_CLEAN if ok else EXIT_FINDING_OR_BROKEN
+        ok_stale = run_staleness_fixtures()
+        print()
+        ok_rotation = run_rotation_gate_fixtures()
+        return EXIT_CLEAN if (ok_stale and ok_rotation) else EXIT_FINDING_OR_BROKEN
     # ── THE TWO h1 b32 GUARDS, BEFORE ANY REAL DISPATCH ────────────────────
     # Skipped only for --selftest above, which monkeypatches LOG_PATH itself
     # in an isolated tmpdir and never relies on either check.
