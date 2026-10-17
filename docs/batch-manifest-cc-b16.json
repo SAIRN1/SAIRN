@@ -1,0 +1,44 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "cc",
+  "batch": "b16",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "",
+      "status": "done",
+      "evidence": "tools/branch_census.py --selftest 10/10 exit 0; installed 9edf2ae9, OWNER line 830f3cd1+6b6360cd; criteria version deliberately NOT bumped, docs/2026-10-16-cc-b16-routed.md F1"
+    },
+    {
+      "id": 2,
+      "title": "",
+      "status": "done",
+      "evidence": "tools/hover_auditor_scope_gate.py --selftest 11/11 exit 0 plus the new --post-rewrite notice, e05802cf; eight-arm sandbox docs/2026-10-16-cc-b16-scope-gate-rebase-replay-sandbox.sh, verdict in docs/2026-10-16-cc-b16-routed.md A1"
+    },
+    {
+      "id": 3,
+      "title": "",
+      "status": "done",
+      "evidence": "tools/sairn_claim.py selftest 29/29 exit 0, 5522cfc8; list --all 501182 -> 20986 bytes, check 12552, --full byte-identical; docs/2026-10-16-cc-b16-routed.md A2 and A3"
+    },
+    {
+      "id": 4,
+      "title": "",
+      "status": "done",
+      "evidence": "tools/blob_conversion_coverage.py --selftest 23/23 exit 0, aea2d0db; proximity window 266 sites against the 593 a line count gave"
+    },
+    {
+      "id": 5,
+      "title": "",
+      "status": "done",
+      "evidence": "tests/claims/run_own_claim_overlap_probe.py exit 0 and tests/claims/run_claim_audit_probe.py ALL ARMS PASS exit 0; 331cebe3 + 94ec1209 + docs/claim-matcher-pinned-phrases.json; hover/hover2 collision DOES NOT REPRODUCE, docs/2026-10-16-cc-b16-routed.md A4 A5 C3 C4"
+    },
+    {
+      "id": 6,
+      "title": "",
+      "status": "done",
+      "evidence": "tools/tooling_inventory.py --check OK exit 0 (64ba232d); tools/report_only_checks.py zero-byte log b7d44ef0; tools/fmea_draft.py --save refusal + seven docs/fmea drafts b6a2d572; GUARD_TESTS 17->35 afd17c86; tools/tier_a_review_gate.py --selftest 10/10 exit 0, f17973ab"
+    }
+  ]
+}
