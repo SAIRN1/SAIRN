@@ -4178,6 +4178,28 @@
         "tools/gate_skip.py",
         "tools/sairn_push_gate_hook.py"
       ]
+    },
+    {
+      "id": "cc-1792427765",
+      "session": "cc",
+      "subject": "cc",
+      "task": "b22 wcag product_files hyphenated stems so sairndental-book and sairndental-complaint load into the contrast baseline; status_board_bridge_check case-insensitive --agent so an uppercase H1 no longer skips the nonce check while printing CLEAN, plus the never-written-nonce negative control as a permanent regression arm; preflight probe RED 3/13 root cause and fix; re-drive H1 b61 bridge claim through the corrected tool. FILES: tools/wcag_contrast_check.py docs/wcag-contrast-baseline.json tools/status_board_bridge_check.py tests/run_push_gate_preflight_probe.py tests/run_status_board_bridge_probe.py docs/2026-10-19-cc-b22-case-and-stems.md docs/batch-manifest-cc-b22.json SAIRN-handoff-cc-b22.md SAIRN-report-cc-b22.txt SAIRN-digest-cc-b22.txt",
+      "claimed_at": "2026-10-19T16:36:05Z",
+      "claimed_at_epoch": 1792427765.1385267,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-cc-b22.txt",
+        "SAIRN-handoff-cc-b22.md",
+        "SAIRN-report-cc-b22.txt",
+        "docs/2026-10-19-cc-b22-case-and-stems.md",
+        "docs/batch-manifest-cc-b22.json",
+        "docs/wcag-contrast-baseline.json",
+        "tests/run_push_gate_preflight_probe.py",
+        "tests/run_status_board_bridge_probe.py",
+        "tools/status_board_bridge_check.py",
+        "tools/wcag_contrast_check.py"
+      ]
     }
   ],
   "refusals": [
