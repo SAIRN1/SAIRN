@@ -25,20 +25,30 @@
     {
       "id": 4,
       "title": "",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "SAIRN-handoff-fourth-b29.md written AFTER the push landed and after live re-verification, so it is a post-push state and not a plan (b28's was a pre-push snapshot and was misread as mid-flight); uploaded to Drive folder 14Xc5oT0xzSLa_rTSOSXWVK3Kko1Fbx09 as file 15XUJ70ZPSdmLTxKnIW6uhTVT5SrfZN8K and API-verified at 20623 bytes, equal to the local byte count"
     },
     {
       "id": 5,
       "title": "",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "pushed without force after two rebases onto other sessions' work; origin/main...HEAD = 0 0; fix commit 730a078c on origin/main; all b29 files read back OFF origin/main (not off the working tree); live deployment re-fetched and its bytes equal the working tree (445,714), --pdd present, no live var(--accent) reference; post-push live re-verification python tools/wcag_contrast_check.py --app sairndental = 0 failures exit 0, and a 46-screenshot re-sweep of the deployed app"
     },
     {
       "id": 6,
       "title": "",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "SAIRN-report-fourth-b29.txt (18031 bytes, REPORT first line / SHA256 second-to-last / END-OF-REPORT last) and SAIRN-digest-fourth-b29.txt (5651 bytes, STATUS DECISION-NEEDED CHANGED EVIDENCE-path UNVERIFIED NEXT + CONTEXT 34.1%); both uploaded to Drive 14Xc5oT0xzSLa_rTSOSXWVK3Kko1Fbx09 as 1JQE_QokSG0gG-bed_ENHwYro87r48ntK and 1YD2BS8ueC1P0keVTAnWYD2GWP63bufCH, API-verified at byte sizes equal to local, alongside the handoff 15XUJ70ZPSdmLTxKnIW6uhTVT5SrfZN8K"
     }
-  ]
+  ],
+  "closed": {
+    "drive_verify": "PASS",
+    "verified_by": "python tools/drive_upload_verify.py --agent fourth --batch b29 --verify-only",
+    "criteria": "2026-10-13.1",
+    "deliverables": [
+      "SAIRN-handoff-fourth-b29.md sha256 d835ce83567cf093",
+      "SAIRN-report-fourth-b29.txt sha256 4c8cf45ded24de60",
+      "SAIRN-digest-fourth-b29.txt sha256 8c8b1984124446ea"
+    ]
+  }
 }

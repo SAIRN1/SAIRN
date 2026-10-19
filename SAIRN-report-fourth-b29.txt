@@ -1,0 +1,325 @@
+REPORT fourth b29 2026-10-17 -- sairndental rendered for the first time, a behavioral-health audit, and convention 38
+
+================================================================================
+WHAT WAS ASKED, AND WHAT CAME BACK
+================================================================================
+
+The dispatch had five items. All five closed; the sixth manifest item is this
+report. The first item was b28's own LEFT UNPROVEN entry turned into work:
+"sairndental.html has never actually been rendered. F1/F2 were only driven
+through functions extracted by name against stubs (22/22, exit 0) -- that's the
+gap most likely hiding a defect the stub harness can't see."
+
+IT WAS. THREE DEFECTS, ONE OF THEM PUT THERE BY b28 ITSELF.
+
+================================================================================
+1. THE RENDER PASS -- REAL BROWSER, REAL GATE, REAL SUPABASE
+================================================================================
+
+Driven against the LIVE deployment at https://sairn.vercel.app/sairndental,
+signed in through the real licence gate and the real PIN gate with the
+documented demo owner (DNT-PINNACLE-2026 / sairn-demo-owner), loading real
+Supabase rows: 5 patients, 3 providers, 5 procedure types, 0 charges.
+
+  23 panels x 2 viewports (1440x900 and 390x844) = 46 screenshots, twice:
+  once before the fixes and once against the deployed app after them.
+
+F1 AND F2 HOLD ON REAL DATA. 19 checks, 18 pass.
+
+  - a charge posted THROUGH THE UI carries cdt_code "D0120"; the server
+    re-read confirms it
+  - the catalogue row was then revised IN PLACE to D0150: same row id, no new
+    row (5 -> 5), one revision APPENDED; after the restore the server shows
+    revisions: 2
+  - THE DISCRIMINATING CASE: the ledger still reads D0120 while the Add Charge
+    dropdown reads D0150. That is the whole point of the stamp and it is now
+    proved on real rows rather than on stubs. Screenshot:
+    b29_shots/C5-billing-after-revision-DISCRIMINATING.png
+  - dntChargeCode() on the real posted row returns stamped: true
+
+  THE ONE FAILURE WAS MY HARNESS, NOT THE APP. Check C1 asserted "the charges
+  list grew by exactly 1" and read 1 -> 1, because an empty charges table
+  renders ONE placeholder row saying "No charges yet" with colspan=5. The app
+  was right; the outcome check must exclude the empty-state row. This is the
+  second batch running in which my own harness produced the only red.
+
+  WRITES TO THE DEMO TENANT, DISCLOSED: api/sd-data.js has no delete verb, so
+  the charge CH-1792248288879-870 ($65, PT-DEMO-1) is permanent. Two revisions
+  of PC-DEMO-1, the second restoring the original code. Demo licence only.
+
+--------------------------------------------------------------------------------
+F3 (HIGH INTEREST, MODERATE SEVERITY) -- A b28 REGRESSION NO GREEN RUN COULD SEE
+--------------------------------------------------------------------------------
+
+  <div id="pc-edit-banner" ... style="...border-left:3px solid var(--accent)">
+
+var(--accent) appears EXACTLY ONCE in sairndental.html, is not in :root, and is
+not a house token in any of the other sixteen apps. A var() that resolves to
+nothing makes the declaration invalid at computed-value time, so the WHOLE
+border-left shorthand is dropped -- not fallen back, dropped.
+
+  MEASURED IN THE BROWSER BEFORE THE FIX:
+    borderLeftWidth  "0px"
+    borderLeftColor  rgb(100,116,139)   <- currentcolor, the muted text colour
+
+The stripe was not the wrong colour. It was not there.
+
+It was written by b28's own commit 9a0903e6, in the same change whose
+verification was 22 arms, exit 0. EVERY ONE OF THOSE ARMS IS SOUND AND EVERY
+ONE STILL PASSES. None of them could have gone red for this, in principle,
+because the defect does not exist until a cascade resolves a custom property
+and the harness extracted the functions BY NAME and ran them against stubs.
+
+  FIXED to var(--p). Ablated: 0px -> 3px, rgb(100,116,139) -> rgb(14,165,233).
+
+--------------------------------------------------------------------------------
+F4 -- 41 WCAG 2.2 AA CONTRAST FAILURES, ACROSS ALL 23 PANELS
+--------------------------------------------------------------------------------
+
+Computed, not judged. The distinct failures, worst first:
+
+  ratio  need  what                                                   reach
+  -----  ----  ----------------------------------------------------   ----------
+  2.28   4.5   --ok green badges at 11-13px ("On file", "Active")     12 panels
+  2.77   4.5   white on --p #0EA5E9 -- EVERY PRIMARY BUTTON           22 panels
+  3.29   4.5   header pills, white on the composited bar              23 panels
+  3.57   4.5   the ACTIVE SIDEBAR ITEM, --pd on --pt                  23 rows
+  3.76   4.5   --danger red ("Not linked", "No email on file")         6 panels
+  4.10   4.5   --pd body text; #huser at 85% opacity                  23 panels
+  4.15   4.5   --muted on the pale-blue empty-state cell               2 panels
+  4.48   4.5   --muted on the amber notice background                  1 panel
+
+This had never been measurable on this platform. sairn-visual-review has
+required real ratios since 2026-07-27 and nothing implemented it, so for
+nineteen apps the question was unanswerable rather than unanswered.
+
+  FIXED BY MOVING TOKENS, NOT BY REDESIGNING:
+    --p   #0EA5E9  unchanged -- borders, focus, accents; never again a
+                   surface under white text
+    --pd  #0284C7 -> #0369A1   5.93:1 white-on, 5.17:1 sidebar-on-tint
+    --pdd            NEW #075985, so :hover is still a visible state change
+    --ok  #22C55E -> #15803D   5.02:1
+    --danger #EF4444 -> #DC2626   4.83:1
+    --muted  #64748B -> #556070   6.38:1 on white, 5.56:1 on the tint
+    .hbadge/.hbtn  rgba(255,255,255,.15) -> rgba(0,0,0,.14)
+
+  The header pills now DARKEN the bar because a white veil composites the
+  wrong way: at .15 it is 4.40:1 and raising it to .25 makes it 3.63:1. The
+  intuitive fix was the wrong direction and only the arithmetic says so.
+
+  ABLATION, SAME TOOL, SAME 23 PANELS, SAME CODE PATH:
+    HEAD bytes          41 distinct failures   exit 1
+    fixed working tree   0                     exit 0
+    LIVE after the push  0                     exit 0
+
+--------------------------------------------------------------------------------
+F5 -- A PUBLIC BOOKING LINK THAT COULD NOT WORK, AND BOTH SCREENS STAYED QUIET
+--------------------------------------------------------------------------------
+
+The live dnt_settings row lists publicly_bookable_procedure_type_ids =
+["PC-1786416376504-314"]. The catalogue holds PC-DEMO-1..5.
+
+  THE SERVER IS RIGHT AND FAILS SAFE. api/sd-data.js resolves the list against
+  the real catalogue, returns procedure_types: [], and the public page tells
+  every patient "Online booking is not yet available for this practice."
+  Driven live on /sairndental-book?slug=verify-test-slug -- the patient-facing
+  surface, which no pass in this app's history had ever loaded.
+
+What was wrong is that the owner's Booking Settings panel showed a "Public
+link: ..." preview and five unticked boxes and SAID NOTHING ABOUT EITHER FACT.
+The app held both halves of the answer and reported neither, so a practice
+could hand out a dead link indefinitely. That is rule 1.11's shape on a screen
+instead of in a check.
+
+  FIXED: unresolved ids are named, and when nothing resolves the panel says
+  the public link is dead. Ablated red-on-HEAD, green-on-fix.
+
+--------------------------------------------------------------------------------
+WHAT THE SWEEP FOUND NOTHING ON -- AND WHY THAT IS WORTH SOMETHING
+--------------------------------------------------------------------------------
+
+  - The rendered-DOM literal-markup assertion returned [] on all 23 panels in
+    both viewports. THAT IS ONLY MEANINGFUL BECAUSE IT WAS ABLATED: a tag built
+    by ['<','div',' class="x">'].join('') WAS CAUGHT, removing it went clean
+    again, and the same string inside <code> was correctly IGNORED. A checker
+    that has only ever returned clean is unproven, not proven.
+  - No clipped horizontal overflow on any panel at 390px.
+  - One console error on every load: _vercel/insights/script.js 404s. Cosmetic,
+    not mine, NOT FIXED, and named rather than dropped.
+
+================================================================================
+2. THE BEHAVIORAL-HEALTH AUDIT -- THE NEXT UNAUDITED VERTICAL
+================================================================================
+
+docs/cloud-research/behavioral-health-worldwide-competitive-gap-audit-2026-10-17.md
+
+THE UNIVERSE WAS RE-DERIVED AND IT CORRECTS b28. That document, written one day
+earlier, said "all eighteen real products". Derived at HEAD:
+
+  git ls-files '*.html' | grep -E '^(sairn[a-z]+|stonedesk)\.html$'   -> 17
+
+Every denominator in the new audit is stated as n of 17 with its command.
+
+WHY THIS VERTICAL: outpatient mental health bills on a code set republished
+annually (CPT) against a DATE OF SERVICE, under rules that vary BY STATE AND BY
+PAYER with an effective window -- the same problem sairndental solves for CDT
+editions and the one piece of this platform with a driven implementation of it.
+
+THE CENTRAL FINDING: the market is split between two solo/small-group products
+(SimplePractice, reported at 250,000+ practitioners; TherapyNotes) and an
+agency tier (Qualifacts, 2,200+ agencies; Netsmart; Oracle; Epic). THE GAP SITS
+ON THE SEAM -- the group practice employing PRE-LICENSED ASSOCIATE CLINICIANS.
+Supervision-hour tracking is not a standard EHR feature (an entire cottage
+industry of standalone trackers is the market saying so); incident-to is a
+narrow Medicare mechanism being withdrawn by some commercial payers; and
+Headway does not support it at all. The layer that decides whether an
+associate's session is BILLABLE is the layer nobody holds.
+
+TWO PRIMARY-SOURCE REGULATORY CITATIONS, pulled from the Federal Register API
+rather than from a secondary summary:
+
+  89 FR 12472   doc 2024-02544   42 CFR Part 2 final rule
+                COMPLIANCE DATE 2026-02-16 -- ALREADY PASSED, HIPAA-level
+                penalties, OCR enforcement open
+  90 FR 61301   doc 2025-24123   DEA fourth telemedicine extension
+                FLEXIBILITIES LAPSE 2026-12-31, and the special-registration
+                final rule was still at OIRA as of 2026-09-21
+
+METHODOLOGICAL GAIN WORTH KEEPING: b28 recorded that a redirect blocked the
+Federal Register fetch and cited by document number with an instruction to
+re-derive. WebFetch is STILL blocked -- federalregister.gov 302s to
+unblock.federalregister.gov -- BUT THE FEDERAL REGISTER JSON API ANSWERS 200
+THROUGH tools/sairn_http.py, because that module sends a browser User-Agent.
+Use that route for any regulatory citation on this platform.
+
+PLATFORM FIT, MEASURED AND READ PESSIMISTICALLY:
+
+  supervisory co-signature   2 of 17   sairncare, sairnvet
+  date-of-service concept    4 of 17   sairncode, sairndental, sairnlegacy,
+                                       sairnsenior
+  effective_from window      4 of 17   sairncare, sairndental, sairnlaw,
+                                       sairnsenior
+  credential expiry field    6 of 17
+  CPT code                   1 of 17   sairncode
+
+  AND IN NO SINGLE APP TOGETHER. Three proven halves in three different
+  products, not a reusable behavioral-health core.
+
+NOT A BUILD RECOMMENDATION. Section 7 of that document lists what would have to
+be true first: a driven trial account on two competitors, one real group-
+practice owner interviewed, and AN OWNER FOR A 50-STATE SUPERVISION AND COMPACT
+MATRIX. TWO AUDITS HAVE NOW NAMED THAT SAME MISSING ROLE. That is a finding
+about SAIRN rather than about the market.
+
+================================================================================
+3. THE METHODOLOGY ITEM -- CONVENTION 38
+================================================================================
+
+docs/2026-09-13-cross-domain-disciplines.md section 38:
+
+  A UNIT CHECK CANNOT SEE A COMPOSITION DEFECT -- verify at the layer where
+  the layers actually combine.
+
+Paid for TWICE in one day, which is why it is a convention and not a note:
+
+  THE APP HALF. b28's 22 arms, all sound, all still passing, none of which
+  could ever have gone red for F3, because the defect does not exist until a
+  cascade resolves a custom property.
+
+  THE CHECKER HALF. My own contrast sweep's first draft resolved a text node's
+  background by taking the first ancestor whose alpha exceeded 0.1 as OPAQUE.
+  .hbadge and .hbtn are rgba(255,255,255,.15) on a blue bar, so it reported
+  WHITE ON WHITE, RATIO 1.00, ON ALL 23 PANELS -- a fabricated figure on
+  elements that really render at 3.29. The real surface exists only after the
+  compositor combines the layers.
+
+The denominator moved from thirty-seven to thirty-eight and the cannot-fire
+group from TWELVE to THIRTEEN, WITH THE MEMBERSHIP QUESTION ASKED AND ANSWERED
+ON BOTH HALVES: admitted on the app half, REFUSED on the checker half, which is
+a measurement fault and belongs beside 35, 21, 22 and 37.
+
+THE INSTRUMENT: tools/wcag_contrast_check.py, owner fourth, 19 fixtures in both
+directions. Every mode runs the fixtures first and refuses to report if they do
+not classify. It exits 2 COULD NOT RUN -- never 0 -- when playwright is absent,
+when chromium will not launch, when the demo credential row cannot be read, or
+when sign-in does not land in the app, BECAUSE A SIGNED-OUT APP RENDERS A
+LICENCE GATE AND WOULD SWEEP CLEAN. It reads its credential out of
+docs/2026-09-03-demo-credentials.md rather than becoming a second place a PIN
+lives and goes stale. Its own fixtures caught two defects in it before it was
+committed: the composite above, and a parser that refused rgb(1 2 3 / .5).
+
+================================================================================
+4. THE PUSH
+================================================================================
+
+  git rev-list --left-right --count origin/main...HEAD   ->   0   0
+
+  730a078c  fix(sairndental): three defects nothing could see ...
+  14ca5638  chore(defect register): three b29 records ...
+  327bd001  chore(tools): wcag_contrast_check.py declares its owner
+  d81d79d1  chore(register): the sha re-seat the rebase required
+  b7d8ed5a  chore(register): the sha re-seat the second rebase required
+
+No force. Two rebases onto other sessions' work, each of which rewrote my shas,
+so the three defect-register records were re-seated twice
+(bf63824c -> a52a6135 -> ce26270a -> 730a078c as published).
+
+THE OWNER LINE WENT IN AS A SEPARATE COMMIT RATHER THAN AN AMEND, ON PURPOSE:
+the register records cited the fix commit and defect_register.py --check
+requires every cited commit to resolve. Amending to satisfy a push gate would
+have broken the ledger that documents the push.
+
+NO OVERRIDE OF ANY KIND WAS USED -- no SAIRN_SEED_GATE, no SAIRN_GATE_EXEMPT,
+no SAIRN_SKIP. The push gate refused once, for a real reason (a new tools/ file
+with no OWNER line), and the refusal was answered rather than skipped.
+
+POST-PUSH LIVE VERIFICATION, not a clean git exit:
+  - the deployment was re-fetched: 445,714 bytes, EQUAL to the working tree,
+    --pdd present, no live var(--accent) reference
+  - python tools/wcag_contrast_check.py --app sairndental   ->   0 failures,
+    exit 0, against the LIVE deployment
+  - all 23 panels re-swept and re-screenshotted against the deployed app
+
+================================================================================
+5. WHAT IS LEFT UNPROVEN -- NONE OF IT RECORDED AS CHECKED
+================================================================================
+
+  - THE CONTRAST CHECK IS NOT WIRED INTO ANY GATE and carries ONE app profile.
+    The other sixteen apps have NEVER been measured and the palette is shared,
+    so the finding almost certainly generalises. This is a `planned` action in
+    the F4 register record and is therefore owed, not forgotten.
+  - NO REAL DEVICE. 46 screenshots at two emulated viewports is not a phone.
+  - NO keyboard-navigation, focus-order or screen-reader pass. AA contrast is
+    one criterion of many; the rest were not attempted.
+  - ONLY THE STATES THE SWEEP PUT EACH PANEL INTO were seen. 13 of the 23
+    panels hold no data at all on the demo tenant, so their populated and
+    error states are unexamined.
+  - THE BEHAVIORAL-HEALTH AUDIT drove no competitor product and interviewed
+    nobody. No market-share table exists for that vertical and the two vendor
+    counts were deliberately NOT combined into one figure.
+  - tests/ FINDINGS (2) AND (4) FROM b28 ARE STILL OPEN AND UNTOUCHED, by
+    instruction. bld_bids can still lose its pending tracking with the suite
+    green, and bld_draws still has no arm. Both are cody's.
+  - EVERYTHING ATTRIBUTED TO cc AND hank in the handoff is carried from b26/b28
+    and was not re-verified this batch.
+
+================================================================================
+EVIDENCE
+================================================================================
+
+  repo        sairndental.html, tools/wcag_contrast_check.py,
+              docs/2026-09-13-cross-domain-disciplines.md section 38,
+              docs/cloud-research/behavioral-health-worldwide-competitive-gap-audit-2026-10-17.md,
+              docs/defect-density-register.json (3 records at 730a078c),
+              docs/batch-manifest-fourth-b29.json
+  scratchpad  C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\b621dce3-b1b4-4681-a633-54da35b654a4\scratchpad\
+              b29_contrast_before.json (41), b29_contrast_live_after.json (0),
+              b29_f1f2_live.json, b29_probes.json, b29_fix_ablation.json,
+              b29_public.json, b29_shots/ (pre-fix), b29_shots_after/ (deployed)
+  transcript  C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\b621dce3-b1b4-4681-a633-54da35b654a4.jsonl
+
+CONTEXT AT THIS LINE: 34.1% of 1000k (340,655 tokens, max usage sum over this
+session's transcript).
+
+SHA256 (SAIRN-handoff-fourth-b29.md): d835ce83567cf093
+END-OF-REPORT

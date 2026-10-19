@@ -1,0 +1,93 @@
+DIGEST fourth b29 2026-10-17
+
+STATUS
+  6 of 6 closed, pushed, landed and live-verified. origin/main...HEAD = 0 0.
+  Fix commit 730a078c, no force, no override of any kind.
+  sairndental.html was RENDERED FOR THE FIRST TIME -- b28's own LEFT UNPROVEN
+  entry turned into work -- against the live deployment, through the real
+  licence and PIN gates, on real Supabase rows.
+  F1 AND F2 HOLD ON REAL DATA, discriminating case included: a charge posted
+  under D0120, the catalogue row revised in place to D0150, and the ledger
+  still reads D0120 while the dropdown reads D0150. 19 checks, 18 pass; the
+  one red was my own harness counting an empty-state placeholder row as data.
+  THREE DEFECTS FOUND THAT NO STUB HARNESS COULD SEE, one of them b28's own.
+
+DECISION-NEEDED
+  1. THE BRAND SURFACE IS A SHADE DARKER EVERYWHERE and that is a visible
+     change you did not ask for in those words. It was an accessibility fix,
+     not a design preference: white on #0EA5E9 is 2.77:1 against a 4.5
+     requirement, on every primary button in the app. --p is untouched for
+     borders and accents so it still reads as the same product. The revert is
+     three token values in :root; reverting restores 41 measured AA failures.
+  2. THE BEHAVIORAL-HEALTH VERTICAL IS NOT RECOMMENDED by its own section 7 --
+     no driven competitor account, nobody interviewed, and no owner for a
+     50-state supervision and compact matrix. TWO AUDITS HAVE NOW NAMED THAT
+     SAME MISSING ROLE, which is a finding about SAIRN rather than the market.
+  3. WHETHER THE CONTRAST CHECK GETS WIRED IN. It runs only when somebody runs
+     it and knows one app of seventeen. Gate, cadence, or left manual -- your
+     call; it is recorded as an owed `planned` action either way.
+
+CHANGED
+  sairndental.html
+    F3  var(--accent) -> var(--p) on the b28 revise banner. The token does not
+        exist in this app, so the whole border-left shorthand was invalid and
+        the stripe rendered at 0px. b28's 22 green arms could not have caught
+        it in principle.
+    F4  41 WCAG AA failures -> 0. --pd #0284C7 -> #0369A1, --pdd #075985 added
+        for hover, --ok -> #15803D, --danger -> #DC2626, --muted -> #556070,
+        header pills darken instead of lighten.
+    F5  Booking Settings now names a publicly-bookable procedure type that no
+        longer exists, and says the public link is dead when nothing resolves.
+        The server already failed safe; both SCREENS were silent.
+  tools/wcag_contrast_check.py              NEW, owner fourth, 19 fixtures
+  docs/2026-09-13-cross-domain-disciplines.md   convention 38; denominator 37
+                                            -> 38, cannot-fire group 12 -> 13
+  docs/cloud-research/behavioral-health-worldwide-competitive-gap-audit-2026-10-17.md  NEW
+  docs/defect-density-register.json         3 records at 730a078c
+  docs/batch-manifest-fourth-b29.json       6 of 6
+  NOT TOUCHED: api/, sql/, tests/, .claude/settings.json, hooks, auditor clones.
+
+EVIDENCE-path
+  C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\b621dce3-b1b4-4681-a633-54da35b654a4\scratchpad\
+    b29_contrast_before.json      41 distinct AA failures, live, pre-fix
+    b29_contrast_live_after.json  0, live, post-push
+    b29_f1f2_live.json            the 19 F1/F2 checks on real Supabase
+    b29_fix_ablation.json         5 arms, red on HEAD and green on the fix
+    b29_probes.json               the markup-assertion ablation, 4 arms
+    b29_public.json               the patient-facing booking page
+    b29_shots/        46 pre-fix screenshots + 8 driven states
+    b29_shots_after/  46 screenshots of the DEPLOYED app
+  transcript  C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\b621dce3-b1b4-4681-a633-54da35b654a4.jsonl
+
+UNVERIFIED
+  - The contrast check is in NO gate and carries ONE app profile. The other
+    SIXTEEN apps have never been measured and the palette is shared, so the
+    finding almost certainly generalises and nobody has looked.
+  - No real device; 46 emulated-viewport screenshots are not a phone.
+  - No keyboard, focus-order or screen-reader pass. AA contrast is one
+    criterion of many and the rest were not attempted.
+  - Only the panel states the sweep produced were seen; 13 of 23 panels hold
+    no data on the demo tenant.
+  - The audit drove no competitor product and interviewed nobody; no
+    market-share table exists for that vertical and the two vendor counts were
+    deliberately NOT combined into one figure.
+  - b28's tests/ findings (2) and (4) are STILL OPEN AND UNTOUCHED, by
+    instruction -- bld_bids can lose its pending tracking with the suite green
+    and bld_draws has no arm. Both cody's.
+  - Everything attributed to cc and hank is carried from b26/b28 unverified.
+  - DISCLOSED WRITES: one permanent charge (CH-1792248288879-870, $65) and two
+    revisions of PC-DEMO-1 on the DEMO tenant. api/sd-data.js has no delete
+    verb, so the charge cannot be removed.
+
+NEXT
+  1. Add an APPS profile per app to tools/wcag_contrast_check.py and measure
+     the other sixteen. Expect findings: sairndental's palette is the house
+     palette, and its primary button failed on 22 panels.
+  2. Decide gate vs cadence for that check before it rots -- a tool nobody
+     runs is convention 8's subject, written by the batch that wrote 38.
+  3. cc still owes the two routed Tier A function bodies (fourth batch) and
+     tools/branch_census.py (seventh batch); until the first lands, b28's
+     bld_bids discharge is recorded but not authoritative.
+
+CONTEXT 34.1% of 1000k (340,655 tokens, max usage sum over this session's
+transcript)
