@@ -86,6 +86,22 @@ GATE = os.path.join('tools', 'sairn_push_gate_hook.py')
 # LIVE means it makes a real network or database request, so it cannot be wired
 # into a hook without making every push talk to the outside world.
 PURPOSES = {
+    'status_board_bridge_check.py': ('CHECKER',
+        'a published SAIRN-board.md that renders an OLDER status write than '
+        'the live registry row it claims to show -- the failure that is '
+        'silent by construction, because a stale board is complete, '
+        'well-formed and plausible and looks exactly like a current one. '
+        'Compares, per agent, the board section and SAIRN-latest-<agent>.md '
+        'against the row\'s state, its own `updated` stamp (the only field '
+        'that distinguishes one write from the next), its task text, and the '
+        'published file\'s age; with --nonce it requires a token deliberately '
+        'written into the row to appear at BOTH ends, which is the only check '
+        'that proves THIS write crossed rather than that some write once did. '
+        'Fails CLOSED per PR 1.11: an unreadable mount, a missing board file '
+        'or an unreadable registry is exit 2 COULD NOT RUN, never folded into '
+        'a pass. It CANNOT prove Google acknowledged the bytes -- the mount is '
+        'a sync directory -- and prints the board\'s Drive file id so a chat '
+        'turn can close that through the API instead.'),
     'digest_lint.py': ('CHECKER',
         'a batch digest that is over 150 words or missing one of its six '
         'schema fields -- STATUS, DECISION-NEEDED, CHANGED, EVIDENCE-path, '
