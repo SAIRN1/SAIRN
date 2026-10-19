@@ -3063,3 +3063,46 @@ truncation.
 
 Full account: `SAIRN-handoff-hank-b20.md`, `SAIRN-report-hank-b20.txt`,
 `SAIRN-digest-hank-b20.txt`.
+
+## b21 — 2026-10-19 — the 522h review, the bridge fall-through, and the attestation design
+
+**The item worth remembering:** `api/bridge.js`'s dispatch ended
+`return handlePush(body, res, req)` with nothing between it and the proxy_get
+branch, so **every `?action=` value the endpoint did not know became a push
+attempt** — and three live call sites land there today. All three were answered
+*401 NO_LICENCE*. So a caller asking for an action that **has never existed**
+was told its credentials were wrong: the wrong diagnosis pointed at the wrong
+layer, which is the shape Guardian check 30 records costing a session a hunt
+for a `RESEND_API_KEY` that was present and correct the whole time.
+
+**Discharged the platform's oldest review obligation — 522h, fourth's, opened
+2026-09-28.** ACCEPTED with two findings. The ablation claim was **re-driven**
+in an isolated copy rather than trusted (28/0 baseline → 23/5 with the
+`ALF_MANAGEMENT_ROLES` guard cut, control arm green). **The author's own attack
+point on `caregiver` is half wrong**: `caregiver` IS in `ROLES_BY_APP.sairncare`
+(driven), so the 403 comes from the management gate and the reason is *right* —
+what is true is weaker, that it has zero `roleSet()` hits and so cannot
+discriminate this gate from a universal refusal. **And the finding the record
+does not name:** `office_manager` is a real sairncare role, in both dropdowns,
+with zero `roleSet()` hits, and it is **not** in `ALF_NON_MGMT` — five of seven
+roles are excluded from the gate and only four are asserted. Routed.
+
+**Item 3 SKIPPED, correctly.** `sairn_claim.py check` BLOCKED by name —
+`session: fourth`, `blocked by: same app: stonedesk` (b34). The Field Map
+premise was confirmed live first (both actions 401 pre-deploy) so the routed
+spec is accurate, and the endpoint half of the same problem was fixed instead.
+
+**Both b18 items re-derived and LANDED** at `144dfb715`, an ancestor of
+origin/main: the straight-time-floor sign guard (11/0, with arm A10 ablating
+the guard and A11 the control) and the trust-lock hard-lock (14/0, T8d closing
+fourth's H1). **Live proof is NOT obtainable** — all three deployed probes
+answer 401, which is evidence about the licence gate and none about either fix.
+Said as a third state, not folded into a pass.
+
+**The attestation design note names the question it cannot answer** rather than
+guessing: under `MODE_ALWAYS` a **solo practitioner cannot attest at all**,
+because there is no second bar-admitted signer. Three answers, not equivalent.
+
+Full account: `SAIRN-handoff-hank-b21.md`, `SAIRN-report-hank-b21.txt`,
+`SAIRN-digest-hank-b21.txt`, `SAIRN-sql-hank-b21.txt` (Drive
+`1j0bFg1rVn-d4VpaHEXIxPvFhX3Ja2k93`).
