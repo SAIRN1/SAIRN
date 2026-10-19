@@ -218,6 +218,88 @@ def discovery_rate(entries):
     return (100.0 * n / total), n, total
 
 
+# ── PER-RESOURCE KEYING, b69 ─────────────────────────────────────────────
+# b68 keyed the repeat-target metric on FILE PATHS and measured its own
+# verdict: uninformative on this codebase, because ~17 single-file apps plus
+# 2 shared hubs mean almost any second finding in an app re-cites that app's
+# one file. Raw 81%, ex-hubs 70%, and no threshold fixes it. b68 named the
+# next step in its own output -- key on the per-resource identity the tier
+# register already carries -- and this is that step.
+#
+# THE VOCABULARY IS DERIVED FROM THE REAL REGISTER, never a regex guess and
+# never a hand list. docs/CRITICALITY-TIERS.md is the platform's own record
+# of which resources exist; a token not in it is not treated as a resource.
+# That matters in a way a looser regex would not: it means a typo, an
+# invented table name or a prose word shaped like a resource cannot become
+# a key and manufacture a repeat. If the register cannot be read, this
+# keying is UNAVAILABLE and the caller is told -- never silently degraded
+# back to path keying while still reporting a resource rate.
+RESOURCE_RE = re.compile(
+    r'\b((?:sd|sb|sc|sdn|rf|leg|law|dnt|alf|sf|bld|grd|msb|scp|sen|mech|rt|cl|sv|grounds)'
+    r'_[a-z][a-z0-9_]{2,})\b')
+
+
+def resource_vocabulary(register_path):
+    """The set of resource identifiers the platform's own tier register
+    actually names. Fails CLOSED: a missing or unreadable register raises,
+    because a resource rate computed against an empty vocabulary would be a
+    confident zero rather than a measurement."""
+    if not os.path.isfile(register_path):
+        raise CouldNotRun('tier register not found at %s -- per-resource '
+                          'keying is unavailable, and is reported as '
+                          'unavailable rather than silently falling back to '
+                          'path keying' % register_path)
+    try:
+        with io.open(register_path, encoding='utf-8', errors='replace') as f:
+            text = f.read()
+    except OSError as e:
+        raise CouldNotRun('tier register unreadable: %s' % e)
+    vocab = set(RESOURCE_RE.findall(text))
+    if not vocab:
+        raise CouldNotRun('tier register at %s names no resource-shaped '
+                          'identifier -- refusing to compute a rate against '
+                          'an empty vocabulary' % register_path)
+    return vocab
+
+
+def cited_resources(entry, vocab):
+    """The real resources a finding names, intersected with the register's
+    own vocabulary. Reads ref AND summary, because this platform's findings
+    routinely name the resource in prose while citing a file in ref."""
+    blob = ' '.join([str(entry.get('ref') or ''),
+                     str(entry.get('summary') or '')])
+    return {t for t in RESOURCE_RE.findall(blob) if t in vocab}
+
+
+def repeat_resource_stats(entries, vocab):
+    """Same shape as repeat_target_stats, keyed on resource identity rather
+    than file path. A finding naming no known resource is UNCOVERED and
+    excluded from the denominator -- never counted as a non-repeat."""
+    seen = set()
+    repeats = covered = uncovered = 0
+    severe_repeats = severe_covered = 0
+    for e in entries:
+        if not is_finding(e):
+            continue
+        res = cited_resources(e, vocab)
+        if not res:
+            uncovered += 1
+            continue
+        covered += 1
+        severe = (e.get('severity') or '').lower() in SEVERE
+        if severe:
+            severe_covered += 1
+        if res & seen:
+            repeats += 1
+            if severe:
+                severe_repeats += 1
+        seen |= res
+    pct = (100.0 * repeats / covered) if covered else None
+    severe_pct = (100.0 * severe_repeats / severe_covered) if severe_covered else None
+    return (pct, repeats, covered, uncovered, severe_pct, severe_repeats,
+            severe_covered, len(seen))
+
+
 def hub_paths(entries, share_pct=HUB_SHARE_PCT):
     """(hubs, counts, covered) -- paths cited by more than `share_pct` of
     findings that cite any resolvable path. Measured from the entries given,
@@ -352,11 +434,30 @@ def trend(values):
     return 'rising' if b > a else 'falling'
 
 
-def analyse(entries, window=DEFAULT_WINDOW):
+DEFAULT_REGISTER = os.path.join(os.path.expanduser('~'), 'Documents',
+                                 'SAIRN-hover', 'docs', 'CRITICALITY-TIERS.md')
+
+
+def analyse(entries, window=DEFAULT_WINDOW, register_path=DEFAULT_REGISTER):
     overall_rate, n_findings, n_entries = discovery_rate(entries)
     r_pct, r_rep, r_cov, r_unc, s_pct, s_rep, s_cov = repeat_target_stats(entries)
     c_pct, c_n, c_findings = self_contradiction_stats(entries)
     cur_streak, max_streak = clean_streaks(entries)
+
+    # PER-RESOURCE KEYING is now the PRIMARY repeat metric (b69). Path
+    # keying is kept alongside it purely so the improvement is measurable
+    # rather than asserted -- b68's own measured verdict was that path
+    # keying is uninformative here, and the honest way to show a fix is to
+    # print both numbers from the same data.
+    res_stats = None
+    res_unavailable = None
+    try:
+        vocab = resource_vocabulary(register_path)
+        res_stats = repeat_resource_stats(entries, vocab)
+        res_vocab_size = len(vocab)
+    except CouldNotRun as e:
+        res_unavailable = str(e)
+        res_vocab_size = 0
 
     hubs, path_counts, hub_denom = hub_paths(entries)
     h_pct, h_rep, h_cov, h_unc, hs_pct, hs_rep, hs_cov = repeat_target_stats(
@@ -379,19 +480,41 @@ def analyse(entries, window=DEFAULT_WINDOW):
         })
 
     alarms = []
+    # b69: THE ALARM NOW FIRES ON THE PER-RESOURCE RATE when it is
+    # available, because that is the keying b68's own measured verdict
+    # called for. The ex-hubs path rate keeps its alarm only as a fallback
+    # for when the register cannot be read -- so losing the register
+    # degrades to a noisier alarm rather than to no alarm at all.
+    if res_stats and res_stats[0] is not None:
+        if res_stats[0] > REPEAT_BENCHMARK_PCT:
+            alarms.append(
+                'per-resource repeat rate %.1f%% of %d covered finding(s) is '
+                'above the published RAFR benchmark of %.0f%% -- READ THE '
+                'REPEATS. This is the PRIMARY keying as of b69; it is still a '
+                'proxy (same resource re-examined), not proof the same root '
+                'cause recurred'
+                % (res_stats[0], res_stats[2], REPEAT_BENCHMARK_PCT))
+        if res_stats[4] is not None and res_stats[4] > REPEAT_BENCHMARK_SEVERE_PCT:
+            alarms.append(
+                'per-resource repeat rate among critical/high findings is '
+                '%.1f%% of %d -- above the published %.0f%% benchmark for '
+                'Critical/Major' % (res_stats[4], res_stats[6],
+                                     REPEAT_BENCHMARK_SEVERE_PCT))
     # THE ALARM FIRES ON THE EX-HUBS RATE, not the raw one -- the raw rate
     # was measured at 81% on this platform purely because two shared files
     # are touched by a third of all findings, which says nothing about
     # recurrence. The raw figure is still reported, never hidden; it is just
     # not what triggers.
-    if h_pct is not None and h_pct > REPEAT_BENCHMARK_PCT:
+    if (not res_stats or res_stats[0] is None) \
+            and h_pct is not None and h_pct > REPEAT_BENCHMARK_PCT:
         alarms.append(
             'repeat-target rate EXCLUDING hub files is %.1f%% of %d covered '
             'finding(s) -- above the published RAFR benchmark of %.0f%%. READ '
             'THE REPEATS: this is still a proxy (same file re-cited), not '
             'proof the same root cause recurred'
             % (h_pct, h_cov, REPEAT_BENCHMARK_PCT))
-    if hs_pct is not None and hs_pct > REPEAT_BENCHMARK_SEVERE_PCT:
+    if (not res_stats or res_stats[4] is None) \
+            and hs_pct is not None and hs_pct > REPEAT_BENCHMARK_SEVERE_PCT:
         alarms.append(
             'repeat-target rate among critical/high findings, excluding hub '
             'files, is %.1f%% of %d -- above the published %.0f%% benchmark '
@@ -427,6 +550,16 @@ def analyse(entries, window=DEFAULT_WINDOW):
         'repeat_target_severe_pct_ex_hubs': None if hs_pct is None else round(hs_pct, 2),
         'repeat_target_severe_repeats_ex_hubs': hs_rep,
         'repeat_target_severe_covered_ex_hubs': hs_cov,
+        'resource_keying_unavailable': res_unavailable,
+        'resource_vocabulary_size': res_vocab_size,
+        'repeat_resource_pct': (None if not res_stats or res_stats[0] is None
+                                 else round(res_stats[0], 2)),
+        'repeat_resource_repeats': res_stats[1] if res_stats else None,
+        'repeat_resource_covered': res_stats[2] if res_stats else None,
+        'repeat_resource_uncovered': res_stats[3] if res_stats else None,
+        'repeat_resource_severe_pct': (None if not res_stats or res_stats[4] is None
+                                        else round(res_stats[4], 2)),
+        'repeat_resource_distinct': res_stats[7] if res_stats else None,
         'hub_paths': sorted(hubs),
         'hub_share_pct': HUB_SHARE_PCT,
         'hub_denominator': hub_denom,
@@ -467,6 +600,55 @@ def render(res):
              'still effort)' % (res['discovery_rate_per_100'], res['entries']))
     L.append('  trend across windows: %s' % (res['discovery_rate_trend'] or
                                               'n/a (need 2+ windows)'))
+    L.append('')
+    L.append('REPEAT RATE, KEYED ON PER-RESOURCE IDENTITY (b69 -- the '
+             'PRIMARY keying; benchmark <=%.0f%%, <=%.0f%% critical/high)'
+             % (res['benchmarks']['repeat_pct'],
+                res['benchmarks']['repeat_severe_pct']))
+    if res['resource_keying_unavailable']:
+        L.append('  UNAVAILABLE: %s' % res['resource_keying_unavailable'])
+    elif res['repeat_resource_pct'] is None:
+        L.append('  COULD NOT MEASURE: no finding names a resource that the '
+                 'tier register recognises')
+    else:
+        L.append('  %.2f%% -- %d repeat(s) of %d finding(s) naming at least '
+                 'one resource the register recognises'
+                 % (res['repeat_resource_pct'], res['repeat_resource_repeats'],
+                    res['repeat_resource_covered']))
+        L.append('  %d finding(s) name no known resource: UNCOVERED, excluded '
+                 'from that denominator rather than counted as non-repeats'
+                 % res['repeat_resource_uncovered'])
+        L.append('  %d distinct resource(s) touched, out of a register '
+                 'vocabulary of %d -- the vocabulary is DERIVED from '
+                 'docs/CRITICALITY-TIERS.md, so a typo or an invented table '
+                 'name cannot become a key and manufacture a repeat'
+                 % (res['repeat_resource_distinct'],
+                    res['resource_vocabulary_size']))
+        if res['repeat_resource_severe_pct'] is not None:
+            L.append('  critical/high: %.2f%%' % res['repeat_resource_severe_pct'])
+        L.append('  MEASURED VERDICT ON THE RE-KEYING, b69 -- it did NOT '
+                 'work, and that is reported rather than spun. b68 predicted '
+                 'per-resource identity would fix the path-keyed proxy; '
+                 'measured on real data it is WORSE (%.1f%% vs %.1f%% raw '
+                 'path, %.1f%% ex-hubs). The reason is visible in the '
+                 'coverage number above: %s of %s known resources have been '
+                 'touched, so "was this target seen before" is almost always '
+                 'true and the metric is measuring COVERAGE SATURATION, not '
+                 'recurrence. Finer granularity cannot fix that -- a '
+                 'target-identity proxy saturates on any platform audited '
+                 'this thoroughly, whatever the key.'
+                 % (res['repeat_resource_pct'] or 0.0,
+                    res['repeat_target_pct'] or 0.0,
+                    res['repeat_target_pct_ex_hubs'] or 0.0,
+                    res['repeat_resource_distinct'],
+                    res['resource_vocabulary_size']))
+        L.append('  WHAT REAL RAFR WOULD ACTUALLY NEED, since two keyings '
+                 'have now failed: closure state. RAFR is "the same issue '
+                 'recurred AFTER being marked fixed", and this log records '
+                 'findings but not fix-and-verify transitions, so the '
+                 'denominator RAFR requires does not exist here. That is a '
+                 'missing FIELD, not a missing key, and no third re-keying '
+                 'will produce it.')
     L.append('')
     L.append('REPEAT-TARGET RATE (proxy for internal-audit RAFR; benchmark '
              '<=%.0f%%, <=%.0f%% critical/high)'
@@ -767,6 +949,89 @@ def _selftest():
     hub_text = render(res_hub_small)
     ck('H9 render names the real hub path(s) so the correction is auditable',
        'docs/HUB.md' in hub_text and 'EXCLUDING HUB FILES' in hub_text)
+
+    # ── b69: PER-RESOURCE KEYING, the step b68's own verdict called for ──
+    import tempfile as _tf
+    import io as _io
+    regdir = _tf.mkdtemp(prefix='hover_reg_fx_')
+    try:
+        reg = os.path.join(regdir, 'CRITICALITY-TIERS.md')
+        with _io.open(reg, 'w', encoding='utf-8') as fh:
+            fh.write('| `law_trusttx` | A |\n| `sd_approvals` | B |\n'
+                     '| `leg_monuments` | B |\n')
+        vocab = resource_vocabulary(reg)
+        ck('RK1 the vocabulary is DERIVED from the register file, not guessed',
+           vocab == {'law_trusttx', 'sd_approvals', 'leg_monuments'})
+
+        def rentry(seq, text, sev='high'):
+            return {'seq': seq, 'type': 'finding', 'severity': sev,
+                    'ref': '', 'summary': text, 'target': 'cc',
+                    'ts': '2026-10-19T00:00:00Z'}
+
+        ck('RK2 a resource named in prose is extracted (this platform names '
+           'the resource in the summary and the file in ref)',
+           cited_resources(rentry(1, 'the law_trusttx write site'), vocab)
+           == {'law_trusttx'})
+        ck('RK3 KNOWN-BAD CONTROL: a resource-SHAPED token that the register '
+           'does NOT name is ignored -- a typo or an invented table cannot '
+           'become a key and manufacture a repeat',
+           cited_resources(rentry(1, 'the sd_notarealtable write site'), vocab)
+           == set())
+
+        rows = [rentry(1, 'law_trusttx disbursement'),
+                rentry(2, 'sd_approvals gate'),
+                rentry(3, 'law_trusttx again, different defect')]
+        st = repeat_resource_stats(rows, vocab)
+        ck('RK4 a genuine per-resource repeat is counted (1 of 3) and the '
+           'first mention of a resource is not its own repeat',
+           st[1] == 1 and st[2] == 3)
+        ck('RK5 distinct resources touched is reported (2), so coverage and '
+           'repetition can be read separately', st[7] == 2)
+        ck('RK6 a finding naming no known resource is UNCOVERED, not a '
+           'silent non-repeat',
+           repeat_resource_stats([rentry(1, 'no resource here')], vocab)[3] == 1)
+        ck('RK7 a rate over zero covered findings is None, never 0.0',
+           repeat_resource_stats([rentry(1, 'nothing')], vocab)[0] is None)
+
+        res_rk = analyse(rows, window=100, register_path=reg)
+        ck('RK8 analyse reports the per-resource rate and the register '
+           'vocabulary size it was computed against',
+           res_rk['repeat_resource_pct'] is not None
+           and res_rk['resource_vocabulary_size'] == 3)
+        ck('RK9 the ALARM now fires on the per-resource rate (33.3% of 3 is '
+           'over the 5% benchmark) and names it as the primary keying',
+           any('per-resource repeat rate' in a for a in res_rk['alarms']))
+        txt_rk = render(res_rk)
+        ck('RK10 render prints the per-resource section with its own '
+           'denominator and says the vocabulary is derived',
+           'KEYED ON PER-RESOURCE IDENTITY' in txt_rk and 'DERIVED from' in txt_rk)
+
+        missing_reg = os.path.join(regdir, 'nope.md')
+        raised_rk = False
+        try:
+            resource_vocabulary(missing_reg)
+        except CouldNotRun:
+            raised_rk = True
+        ck('RK11 FAIL-CLOSED: a missing register raises rather than yielding '
+           'an empty vocabulary that would score every finding as uncovered',
+           raised_rk)
+        res_fb = analyse(rows, window=100, register_path=missing_reg)
+        ck('RK12 when the register is unavailable the tool SAYS SO and falls '
+           'back to the noisier path-keyed alarm rather than to no alarm',
+           res_fb['resource_keying_unavailable']
+           and 'UNAVAILABLE' in render(res_fb))
+        empty_reg = os.path.join(regdir, 'empty.md')
+        _io.open(empty_reg, 'w', encoding='utf-8').write('no resources here\n')
+        raised_rk2 = False
+        try:
+            resource_vocabulary(empty_reg)
+        except CouldNotRun:
+            raised_rk2 = True
+        ck('RK13 FAIL-CLOSED: a register naming no resource raises rather '
+           'than computing a rate against an empty vocabulary', raised_rk2)
+    finally:
+        import shutil as _sh
+        _sh.rmtree(regdir, ignore_errors=True)
 
     # --- self-contradiction ---
     cpct, cn, cf = self_contradiction_stats(

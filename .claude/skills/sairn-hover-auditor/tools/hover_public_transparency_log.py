@@ -334,6 +334,72 @@ def verify_published(row, out_dir=HERE):
                    'PENDING, not yet on-chain -- %s' % kinds)
 
 
+def try_upgrade(row, out_dir=HERE, http_get=None, timeout=20):
+    """(state, detail) where state is 'confirmed' | 'still-pending' |
+    'could-not-tell'. Asks the REAL calendar whether a Bitcoin attestation
+    now exists for this proof's pending commitment, via the OTS
+    GET <calendar>/timestamp/<commitment-hex> endpoint.
+
+    A 404 is the calendar's way of saying "nothing newer yet" and is
+    reported as STILL-PENDING, never as confirmed and never as an error. A
+    network failure is COULD-NOT-TELL. Neither is ever folded into
+    'confirmed' -- the whole value of this record is that a pending receipt
+    is never described as on-chain proof."""
+    expected = digest_for(row['seq'], row['finding_hash'], row['ts'])
+    path = row.get('proof_path') or os.path.join(
+        out_dir, 'finding-seq%s.ots' % row['seq'])
+    if not os.path.isfile(path):
+        return 'could-not-tell', 'proof file missing at %s' % path
+    with open(path, 'rb') as f:
+        proof = f.read()
+    try:
+        atts, _ = replay_proof(proof, expected)
+    except CouldNotTell as e:
+        return 'could-not-tell', 'existing proof does not replay: %s' % e
+    if any(a['kind'] == 'bitcoin' for a in atts):
+        return 'confirmed', 'already carries a Bitcoin attestation'
+    pending = [a for a in atts if a['kind'] == 'pending']
+    if not pending:
+        return 'could-not-tell', 'no pending attestation to upgrade'
+    commitment = pending[0]['commitment']
+    calendar = (row.get('calendar_url') or DEFAULT_CALENDAR).rstrip('/')
+    url = '%s/timestamp/%s' % (calendar, commitment)
+    if http_get is not None:
+        status, body = http_get(url)
+    else:
+        req = urllib.request.Request(
+            url, headers={'Accept': 'application/vnd.opentimestamps.v1',
+                           'User-Agent': 'sairn-hover-auditor/1.0'})
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                status, body = resp.status, resp.read()
+        except urllib.error.HTTPError as e:
+            status, body = e.code, b''
+        except Exception as e:
+            return 'could-not-tell', 'calendar unreachable: %s: %s' % (
+                type(e).__name__, e)
+    if status == 404:
+        return 'still-pending', ('the calendar has nothing newer for this '
+                                  'commitment yet (HTTP 404 is its "not aggregated '
+                                  'into a block yet" answer, not an error)')
+    if status != 200:
+        return 'could-not-tell', 'calendar returned HTTP %d' % status
+    if len(body) < 8:
+        return 'could-not-tell', 'calendar returned an implausibly short body'
+    # The upgrade response continues the timestamp FROM the commitment, so
+    # it replays from the commitment bytes rather than from the digest.
+    try:
+        up_atts, _ = replay_proof(body, bytes.fromhex(commitment))
+    except CouldNotTell as e:
+        return 'could-not-tell', 'upgrade response did not replay: %s' % e
+    if any(a['kind'] == 'bitcoin' for a in up_atts):
+        detail = ', '.join('%s (%s)' % (a['kind'], a['detail']) for a in up_atts)
+        return 'confirmed', 'calendar returned a Bitcoin attestation: %s' % detail
+    return 'still-pending', ('the calendar answered but its response carries '
+                             'no Bitcoin attestation yet -- %s'
+                             % ', '.join(a['kind'] for a in up_atts))
+
+
 def save_proof(seq, proof_bytes, out_dir):
     """Writes the binary .ots proof AND a plain-text sidecar documenting
     exactly what was submitted -- seq, hash, ts, calendar URL, digest hex
@@ -616,6 +682,34 @@ def main(argv):
                           % {'seq': row['seq'], 'finding_hash': row['finding_hash'][:12],
                              'ts': row['ts'], 'proof_path': row['proof_path']})
         return 0
+
+    if '--upgrade' in argv:
+        if not os.path.isfile(RECORD_PATH):
+            print('COULD NOT RUN: no publications recorded at %s' % RECORD_PATH)
+            return 2
+        rows, seen = [], set()
+        with open(RECORD_PATH, encoding='utf-8') as f:
+            for line in f:
+                if line.strip():
+                    r = json.loads(line)
+                    if r['seq'] not in seen:
+                        seen.add(r['seq'])
+                        rows.append(r)
+        counts = {'confirmed': 0, 'still-pending': 0, 'could-not-tell': 0}
+        for row in sorted(rows, key=lambda r: r['seq']):
+            state, detail = try_upgrade(row)
+            counts[state] = counts.get(state, 0) + 1
+            print('%-15s seq=%-5s %s' % (state.upper(), row['seq'], detail))
+        print()
+        print('%d confirmed, %d still pending, %d could-not-tell.'
+              % (counts['confirmed'], counts['still-pending'],
+                 counts['could-not-tell']))
+        print('STILL-PENDING IS RECORDED AS PENDING. A 404 from the calendar '
+              'means the commitment has not been aggregated into a Bitcoin '
+              'block yet; it is not an error and it is never reported as '
+              'confirmation. Nothing here claims on-chain proof it does not '
+              'have.')
+        return 0 if counts['could-not-tell'] == 0 else 1
 
     if '--verify' in argv:
         if not os.path.isfile(RECORD_PATH):

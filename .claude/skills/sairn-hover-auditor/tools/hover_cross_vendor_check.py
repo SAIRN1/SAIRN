@@ -108,9 +108,109 @@ MAX_OUTPUT_TOKENS = 1024
 # cap rather than riding the exact edge of it.
 TOKEN_SAFETY_MARGIN = 500
 
+# ── TIER SCOPE, set b69: Tier 1 AND Tier 2. Tier 3 excluded. ─────────────
+# HONEST BEFORE-STATE, because "widened from Tier 1" would misdescribe it:
+# there was NO tier gate in this file at all. b68's --seq mode admitted any
+# entry of type 'finding', and "Tier 1 only" was a selection this role made
+# by hand when choosing which seqs to run. So b69 does not relax a gate, it
+# INSTALLS the first one -- and installing it at Tier 1 + Tier 2 is still
+# strictly narrower than the unrestricted behaviour it replaces.
+#
+# THE MAPPING IS THE PLATFORM'S OWN VOCABULARY, not a new one: the severity
+# vector already carries T:A / T:B / T:C as asset criticality (SKILL.md,
+# Severity Scoring). Tier 1 = T:A (financial, health, legal, regulated).
+# Tier 2 = T:B, the data-integrity band this batch admits. Tier 3 = T:C,
+# excluded.
+#
+# AN ENTRY WITH NO VECTOR IS A COULD-NOT-TELL ABOUT ITS TIER, AND IS
+# REFUSED rather than guessed from severity. Severity and tier are
+# deliberately separate axes on this platform (a LOW-severity finding can
+# sit on a Tier A asset -- seq 1343 is exactly that), so inferring one from
+# the other would manufacture a tier the entry never declared. The log is
+# append-only so a missing vector cannot be backfilled; the escape is an
+# explicit --tier-override A|B, which is RECORDED IN THE LOG ENTRY as an
+# operator-declared tier rather than a derived one, so a later reader can
+# see which gate decisions rested on a judgment call.
+TIER_ADMITTED = ('A', 'B')
+TIER_EXCLUDED = ('C',)
+_TIER_RE = re.compile(r'\bT:\s*([ABC])\b')
+
+# ── ADJUDICATION VOCABULARY, constrained b69 ─────────────────────────────
+# b68 accepted free text here, which is how a yield figure stops being
+# countable: three batches of prose cannot be summed. The dispatch requires
+# every check logged as exactly one of these three, and there is no drop
+# cutoff -- yield is judged on the numbers, so the numbers have to exist.
+ADJUDICATIONS = ('REAL-CATCH', 'AGREE', 'FALSE-ALARM')
+
 
 class CouldNotTell(Exception):
     pass
+
+
+def tier_of(entry):
+    """(tier_letter_or_None, why). Reads the T: field out of the entry's own
+    severity vector. None means the entry declares no tier -- a third state,
+    never silently treated as admissible or as excluded."""
+    vec = entry.get('vector') or ''
+    m = _TIER_RE.search(vec)
+    if not m:
+        return None, ('entry declares no T: tier in its severity vector '
+                       '(vector=%r)' % (vec or ''))
+    return m.group(1), ''
+
+
+def tier_gate(entry, override=None):
+    """(admitted_bool, tier_letter, why). The one place scope is decided.
+
+    override is an explicit operator-declared tier for an entry that
+    predates vectors; it is honoured ONLY for a tier in TIER_ADMITTED, so
+    the override cannot be used to smuggle a Tier 3 item in, and it is
+    reported in `why` so the log records that this decision was a judgment
+    rather than a reading."""
+    tier, why = tier_of(entry)
+    if tier is None:
+        if override:
+            o = str(override).strip().upper()
+            if o in TIER_EXCLUDED:
+                return (False, o, 'operator-declared tier %s is EXCLUDED '
+                                   '(Tier 3 is out of scope this batch)' % o)
+            if o not in TIER_ADMITTED:
+                return (False, None, 'operator-declared tier %r is not one of '
+                                      '%s' % (override, TIER_ADMITTED + TIER_EXCLUDED))
+            return (True, o, 'tier %s was OPERATOR-DECLARED via --tier-override, '
+                              'not read from the entry (the entry declares no '
+                              'vector and the log is append-only, so this gate '
+                              'decision rests on a judgment call and says so)' % o)
+        return (False, None, why + ' -- REFUSED rather than inferred from '
+                 'severity, which is a separate axis on this platform. Pass '
+                 '--tier-override A|B to admit it on an explicit, recorded '
+                 'judgment.')
+    if tier in TIER_EXCLUDED:
+        return (False, tier, 'tier T:%s is EXCLUDED -- this mode covers Tier 1 '
+                 '(T:A) and Tier 2 (T:B) only; Tier 3 stays out' % tier)
+    if tier not in TIER_ADMITTED:
+        return (False, tier, 'tier T:%s is not a recognised tier' % tier)
+    return (True, tier, 'tier T:%s read from the entry\'s own vector' % tier)
+
+
+def normalise_adjudication(raw):
+    """(canonical, detail) or raises CouldNotTell. Requires the free-text
+    adjudication to BEGIN with one of the three countable verdicts, so the
+    reasoning can still be as long as it needs to be while the countable
+    part stays machine-readable."""
+    if not raw or not str(raw).strip():
+        raise CouldNotTell('an adjudication is required, and must start with '
+                            'one of %s' % (ADJUDICATIONS,))
+    text = str(raw).strip()
+    upper = text.upper()
+    for a in ADJUDICATIONS:
+        if upper.startswith(a):
+            return a, text
+    raise CouldNotTell(
+        'adjudication %r does not start with one of %s. b69 constrains this '
+        'on purpose: free-text adjudications cannot be summed into a yield '
+        'figure, and the dispatch judges yield on the numbers.'
+        % (text[:60], ADJUDICATIONS))
 
 
 def _force_utf8_stdout():
@@ -473,6 +573,264 @@ def ask_groq(diff_text, api_key, http_post=None):
                         '-- finish_reason=%r' % data.get('choices', [{}])[0].get('finish_reason'))
 
 
+# ── TIEBREAK MODE, b69 ───────────────────────────────────────────────────
+# WHAT IT IS FOR: two finding records about the SAME item that overlap or
+# disagree -- chat supplies both. The question is not "which is better
+# written" but the narrower, checkable one: WHICH RECORD DOES A CONCRETE
+# TRIGGER AND AN EXACT LINE IN THE DIFF ACTUALLY SUPPORT. Either, neither,
+# or both is a real answer; "neither" is the one that matters most, because
+# two confident records can both be unsupported by the diff in front of
+# them, and a tiebreaker that must pick a winner would bury that.
+#
+# THIS MODE GETS THE DIFF, unlike the finding-review mode. That is the
+# point of it: the adjudication is against real changed lines, not against
+# which prose reads better. Still DIFF-ONLY -- no whole files.
+#
+# WHY NO IDENTITY IS GIVEN: the records are labelled A and B with no author,
+# no seq and no severity, deliberately. If the reviewer knew one came from
+# this role it could defer to it, which is the anchoring failure the
+# independence-ordering rule in SKILL.md exists to prevent -- and here it
+# would be self-serving rather than merely sloppy.
+TIEBREAK_SYSTEM_PROMPT = (
+    "You are adjudicating between two competing finding records about the "
+    "same code change. You are shown the git diff and both records, "
+    "labelled A and B, with no information about who wrote either. Decide "
+    "which record -- if either -- is supported by a CONCRETE TRIGGER and an "
+    "EXACT LINE that actually appears in this diff. Do not pick a winner on "
+    "writing quality, confidence, detail or length. If a record's claim "
+    "cannot be tied to a real changed line in this diff, it is not "
+    "supported, however plausible it sounds. Answering 'neither' is a "
+    "correct and expected outcome when neither record's claim is grounded "
+    "in the diff, and 'both' is correct when both are independently "
+    "grounded. You MUST quote the exact diff line you relied on, and cite "
+    "its new-file line number from the @@ hunk headers. Always call the "
+    "adjudicate_records tool."
+)
+
+TIEBREAK_TOOL = {
+    'type': 'function',
+    'function': {
+        'name': 'adjudicate_records',
+        'description': 'Record which competing finding record the diff actually supports.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'supported': {
+                    'type': 'string',
+                    'enum': ['A', 'B', 'both', 'neither'],
+                    'description': "Which record the diff supports via a concrete trigger and an exact line.",
+                },
+                'confidence': {'type': 'string', 'enum': ['low', 'medium', 'high']},
+                'cited_line_number': {
+                    'type': 'integer',
+                    'description': 'The exact new-file line number from the diff that your decision rests on. Use -1 if your answer is "neither" and no line applies.',
+                },
+                'quoted_diff_line': {
+                    'type': 'string',
+                    'description': 'The exact text of that diff line, copied verbatim. Empty string only if "neither".',
+                },
+                'trigger': {
+                    'type': 'string',
+                    'description': 'The concrete input or state that reaches the supported claim. Empty string only if "neither".',
+                },
+                'reasoning': {'type': 'string'},
+            },
+            'required': ['supported', 'confidence', 'cited_line_number',
+                         'quoted_diff_line', 'trigger', 'reasoning'],
+        },
+    },
+}
+
+
+def build_tiebreak_payload(diff_text, record_a, record_b):
+    """The exact text sent. Records are stripped to their claim text and
+    labelled A/B -- no author, no seq, no severity, no vector. Assembled in
+    one function so what crosses the boundary is auditable by reading it."""
+    return '\n'.join([
+        'GIT DIFF UNDER REVIEW:', diff_text, '',
+        'RECORD A:', str(record_a).strip(), '',
+        'RECORD B:', str(record_b).strip(), '',
+        'Which record does a concrete trigger and an exact line in the diff '
+        'above actually support? A, B, both, or neither.'])
+
+
+def adjudicate_records(payload_text, api_key, http_post=None):
+    """(verdict_dict, real_total_tokens). Same transport, caps, throttle
+    and could-not-tell discipline as every other mode here."""
+    body = json.dumps({
+        'model': MODEL,
+        'messages': [{'role': 'system', 'content': TIEBREAK_SYSTEM_PROMPT},
+                     {'role': 'user', 'content': payload_text}],
+        'tools': [TIEBREAK_TOOL],
+        'tool_choice': {'type': 'function',
+                         'function': {'name': 'adjudicate_records'}},
+        'max_tokens': MAX_OUTPUT_TOKENS,
+        'temperature': 0,
+        'reasoning_effort': 'low',
+    }).encode('utf-8')
+    headers = {'Authorization': 'Bearer ' + api_key,
+               'Content-Type': 'application/json',
+               'User-Agent': 'sairn-hover-auditor/1.0'}
+    if http_post is not None:
+        status, data = http_post(GROQ_URL, headers, body)
+    else:
+        req = urllib.request.Request(GROQ_URL, data=body, headers=headers,
+                                      method='POST')
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                status = resp.status
+                data = json.loads(resp.read().decode('utf-8'))
+        except urllib.error.HTTPError as e:
+            raise CouldNotTell('Groq API HTTP %d: %s'
+                                % (e.code, e.read().decode('utf-8', 'replace')[:300]))
+        except Exception as e:
+            raise CouldNotTell('Groq API call failed: %s: %s'
+                                % (type(e).__name__, e))
+    if status != 200:
+        raise CouldNotTell('Groq API returned HTTP %d' % status)
+    usage = data.get('usage') or {}
+    toks = int(usage.get('total_tokens') or 0)
+    try:
+        message = data['choices'][0]['message']
+    except (KeyError, IndexError, TypeError):
+        raise CouldNotTell('Groq response had no choices[0].message')
+    for call in (message.get('tool_calls') or []):
+        fn = call.get('function') or {}
+        if fn.get('name') == 'adjudicate_records':
+            try:
+                return json.loads(fn.get('arguments') or '{}'), toks
+            except ValueError as e:
+                raise CouldNotTell('adjudicate_records arguments did not parse: %s' % e)
+    raise CouldNotTell('Groq did not return the forced adjudicate_records '
+                        'tool call -- finish_reason=%r'
+                        % data.get('choices', [{}])[0].get('finish_reason'))
+
+
+def validate_tiebreak(verdict, added_lines):
+    """(ok, reason). The same line-validation discipline the diff mode uses,
+    applied to the tiebreaker's own citation: a decision for A or B must
+    rest on a line that is REALLY in the diff. A 'neither' needs no line and
+    is accepted without one -- that is the whole point of allowing it."""
+    choice = (verdict or {}).get('supported')
+    if choice not in ('A', 'B', 'both', 'neither'):
+        return False, 'supported=%r is not one of A/B/both/neither' % choice
+    if choice == 'neither':
+        return True, 'neither -- no line citation required'
+    line = verdict.get('cited_line_number')
+    if not isinstance(line, int):
+        return False, 'a decision for %r cites no integer line number' % choice
+    real = set()
+    for s in added_lines.values():
+        real |= s
+    if line not in real:
+        return False, ('a decision for %r cites line %r, which is NOT an added '
+                        'line anywhere in this diff -- the decision is dropped '
+                        'rather than trusted' % (choice, line))
+    return True, 'cited line %d is a real added line in the diff' % line
+
+
+# ── PRE-FLIGHT CITATION CHECK, b69, built because the controls FAILED ────
+# MEASURED, not anticipated. b69 added the two negative-control shapes the
+# dispatch asked for and the evidence-only finding-review mode FAILED BOTH,
+# plus a third shape found along the way:
+#
+#   * a line number BEYOND END OF FILE (cited :801 in a 321-line file)
+#     -> AGREED, medium confidence.
+#   * false CONTENT attributed to a real path and a real line, including a
+#     fabricated quotation of an internal comment -> AGREED, HIGH.
+#   * a FABRICATED PATH that does not exist in the repo at all -> AGREED,
+#     HIGH, and it stated "The cited line directly shows the
+#     implementation uses an in-memory plain object", claiming to have read
+#     a line in a file that has never existed.
+#
+# That is not a reviewer being lenient, it is a reviewer with no way to
+# check -- the mode gives it the finding's text and no repository, so every
+# citation is unverifiable by construction and a confident fabrication
+# reads exactly like a confident fact.
+#
+# THE FIX IS DETERMINISTIC AND LOCAL, NOT A BETTER PROMPT: verify every
+# citation against the real repo BEFORE the call. Then the fabricated-path
+# and beyond-EOF shapes cannot reach the vendor at all, and no amount of
+# model credulity matters for them. This is the same discipline the diff
+# mode already applies to the model's OWN citations, turned around to apply
+# to the finding's citations on the way in -- and the same check
+# hover_log.py's citation guard performs at write time, which refused this
+# role's own b68 entry twice for exactly this class of imprecision.
+#
+# WHAT IT STILL CANNOT CATCH, stated rather than implied: false CONTENT at
+# a real path and a real in-range line, where no quoted string is given to
+# check against. That shape remains reachable and the mode's verdicts must
+# not be read as evidence against it. Named in the output every run.
+
+def _repo_root():
+    return os.path.join(os.path.expanduser('~'), 'Documents', 'SAIRN-hover')
+
+
+def _file_line_count(path, repo=None, ref='HEAD'):
+    """(count_or_None, why). Reads the file from git at `ref` so the check
+    is against a committed state rather than a dirty working tree."""
+    repo = repo or _repo_root()
+    r = subprocess.run(['git', 'show', '%s:%s' % (ref, path)], cwd=repo,
+                        capture_output=True, text=True, encoding='utf-8',
+                        errors='replace')
+    if r.returncode != 0:
+        return None, 'not present at %s in %s (%s)' % (
+            ref, repo, (r.stderr or '').strip()[:80])
+    return len(r.stdout.splitlines()), ''
+
+
+_CITE_RE = re.compile(r'([A-Za-z0-9_./\\-]+\.(?:js|py|html|json|sql|md|jsonl|ts))\s*:\s*(\d+)')
+
+
+def preflight_citations(entry, repo=None, ref='HEAD'):
+    """(ok, problems, checked) -- verifies, against the real repository:
+      * every path in source_shas exists at `ref`;
+      * every `path:line` citation anywhere in ref/summary names a path
+        that exists AND a line within that file's real line count.
+    `problems` is a list of strings; `checked` counts what was actually
+    verified, so a finding citing nothing reports zero rather than passing
+    silently as if it had been checked."""
+    problems = []
+    checked = 0
+    paths = set()
+    shas = entry.get('source_shas')
+    if isinstance(shas, dict):
+        paths |= {str(p).replace('\\', '/') for p in shas if p}
+    counts = {}
+
+    for p in sorted(paths):
+        n, why = _file_line_count(p, repo=repo, ref=ref)
+        checked += 1
+        if n is None:
+            problems.append('cited FILE does not exist: %s -- %s' % (p, why))
+        else:
+            counts[p] = n
+
+    blob = ' '.join([str(entry.get('ref') or ''), str(entry.get('summary') or '')])
+    seen_pairs = set()
+    for m in _CITE_RE.finditer(blob):
+        p, ln = m.group(1).replace('\\', '/'), int(m.group(2))
+        if (p, ln) in seen_pairs:
+            continue
+        seen_pairs.add((p, ln))
+        if p not in counts:
+            n, why = _file_line_count(p, repo=repo, ref=ref)
+            checked += 1
+            if n is None:
+                problems.append('cited FILE does not exist: %s:%d -- %s'
+                                 % (p, ln, why))
+                continue
+            counts[p] = n
+        checked += 1
+        if ln > counts[p]:
+            problems.append('cited LINE is beyond end of file: %s:%d but the '
+                             'file has %d line(s) at %s'
+                             % (p, ln, counts[p], ref))
+        elif ln < 1:
+            problems.append('cited LINE is not a real line number: %s:%d' % (p, ln))
+    return (not problems), problems, checked
+
+
 def load_finding(seq, log_path=LOG_PATH):
     """The real log entry for `seq`, or CouldNotTell. Reads the whole entry
     (unlike the transparency log, which deliberately narrows to seq/hash/ts)
@@ -585,7 +943,7 @@ def judge_finding(evidence_text, api_key, http_post=None):
 
 
 def log_finding_review(seq, entry, verdict, adjudication, note,
-                        log_path_override=None):
+                        log_path_override=None, canonical=None, tier=None):
     """Logs the cross-vendor verdict against one finding, with the three
     things b68 requires on the evidence trail: the PROVIDER by name, whether
     it AGREED with this role's own review, and this role's own ADJUDICATION
@@ -614,6 +972,14 @@ def log_finding_review(seq, entry, verdict, adjudication, note,
         lines.append('evidence it attached its judgment to: %s'
                       % verdict['quoted_evidence'].strip())
     lines.append('')
+    # The COUNTABLE verdict first, on its own machine-readable line, then
+    # the full text. b68 logged free text only, which cannot be summed into
+    # a yield figure across batches.
+    if canonical:
+        lines.append('ADJUDICATION (countable): %s' % canonical)
+    if tier:
+        lines.append('TIER (scope gate): T:%s -- Tier 1 (T:A) and Tier 2 '
+                      '(T:B) are in scope this batch; Tier 3 (T:C) is not.' % tier)
     lines.append('ADJUDICATION BY THIS ROLE: %s' % adjudication)
     lines.append('why: %s' % note)
     lines.append('')
@@ -624,12 +990,61 @@ def log_finding_review(seq, entry, verdict, adjudication, note,
                  'underlying facts.')
 
     # A disagreement is a finding in its own right; an agreement is a check.
-    etype = 'check' if agrees and adjudication.startswith('AGREE') else 'finding'
+    # The ADJUDICATION decides the entry type, not the vendor's verdict:
+    # an AGREE logs as a check, a REAL-CATCH or FALSE-ALARM is a finding in
+    # its own right even when the vendor happened to agree.
+    canon_for_type = canonical or (adjudication or '').strip().upper()
+    etype = 'check' if (agrees and canon_for_type.startswith('AGREE')) else 'finding'
     hover_log_script = _hover_log_script_path()
     if hover_log_script is None:
         return 2, '', 'COULD NOT RUN: no hover_log.py found', etype
     argv = [sys.executable, hover_log_script, '--add', '--type', etype,
             '--target', 'self', '--ref', 'seq=%d' % seq,
+            '--summary', '\n'.join(lines)]
+    if etype == 'finding':
+        argv += ['--severity', 'low']
+    env = dict(os.environ)
+    if log_path_override:
+        env['HOVER_LOG_PATH_OVERRIDE'] = log_path_override
+    r = subprocess.run(argv, cwd=HERE, capture_output=True, text=True,
+                        encoding='utf-8', env=env)
+    return r.returncode, r.stdout, r.stderr, etype
+
+
+def log_tiebreak(range_, verdict, cite_ok, cite_why, canonical, adj_text,
+                  note, log_path_override=None):
+    """Logs a tiebreak adjudication. An INVALID citation makes this a
+    finding regardless of the adjudication word, because a tiebreaker that
+    picked a record it could not ground in the diff is itself a defect
+    worth a standing record."""
+    lines = [
+        'CROSS-VENDOR TIEBREAK -- provider: Groq / %s (a different vendor '
+        'from this role and from the Anthropic second-opinion path).' % MODEL,
+        'range (diff-only): %s' % range_,
+        'supported: %s (confidence %s)' % (verdict.get('supported'),
+                                            verdict.get('confidence')),
+        'cited line: %s' % verdict.get('cited_line_number'),
+        'quoted diff line: %s' % (verdict.get('quoted_diff_line') or '-'),
+        'trigger: %s' % (verdict.get('trigger') or '-'),
+        'its reasoning: %s' % (verdict.get('reasoning') or '-'),
+        'citation check against the real diff: %s -- %s'
+        % ('VALID' if cite_ok else 'INVALID', cite_why),
+        '',
+        'ADJUDICATION (countable): %s' % canonical,
+        'ADJUDICATION BY THIS ROLE: %s' % adj_text,
+        'why: %s' % (note or '(no note given)'),
+        '',
+        'BLINDING, stated so it is auditable: the two records were sent '
+        'labelled A and B with no author, seq, severity or vector, so the '
+        'reviewer could not defer to whichever came from this role. '
+        '"neither" was an allowed and expected answer.',
+    ]
+    etype = 'check' if (cite_ok and canonical == 'AGREE') else 'finding'
+    hover_log_script = _hover_log_script_path()
+    if hover_log_script is None:
+        return 2, '', 'COULD NOT RUN: no hover_log.py found', etype
+    argv = [sys.executable, hover_log_script, '--add', '--type', etype,
+            '--target', 'self', '--ref', 'range=%s' % range_,
             '--summary', '\n'.join(lines)]
     if etype == 'finding':
         argv += ['--severity', 'low']
@@ -1066,6 +1481,259 @@ def run_fixtures():
     finally:
         shutil.rmtree(tmp3, ignore_errors=True)
 
+    # ── b69 (b): THE TIER GATE, locked in every direction ────────────────
+    def tiered(vec):
+        return {'seq': 1, 'type': 'finding', 'severity': 'high', 'vector': vec,
+                'target': 'cc', 'summary': 's'}
+
+    ck('TG1 Tier 1 (T:A) is ADMITTED',
+       tier_gate(tiered('T:A/EX:M/IM:H/SC:S'))[0] is True)
+    ck('TG2 Tier 2 (T:B) is ADMITTED -- the b69 widening',
+       tier_gate(tiered('T:B/EX:M/IM:M/SC:C'))[0] is True)
+    ck('TG3 KNOWN-BAD CONTROL: Tier 3 (T:C) is REFUSED, and the reason says '
+       'Tier 3 is out of scope rather than giving a generic refusal',
+       tier_gate(tiered('T:C/EX:L/IM:L/SC:C'))[0] is False
+       and 'Tier 3' in tier_gate(tiered('T:C/EX:L/IM:L/SC:C'))[2])
+    ck('TG4 FAIL-CLOSED: an entry with NO vector is REFUSED, not inferred '
+       'from severity (severity and tier are separate axes here)',
+       tier_gate({'seq': 1, 'type': 'finding', 'severity': 'critical',
+                   'vector': '', 'summary': 's'})[0] is False)
+    ck('TG5 KNOWN-BAD CONTROL: a CRITICAL-severity entry with no vector is '
+       'still refused -- high severity must not smuggle in an undeclared '
+       'tier, which is exactly what inferring tier from severity would do',
+       tier_gate({'seq': 1, 'type': 'finding', 'severity': 'critical',
+                   'vector': None, 'summary': 's'})[0] is False)
+    ok_ov, tier_ov, why_ov = tier_gate(
+        {'seq': 1, 'type': 'finding', 'severity': 'high', 'vector': '',
+         'summary': 's'}, override='B')
+    ck('TG6 --tier-override admits an untiered entry AND records that the '
+       'tier was operator-declared rather than read',
+       ok_ov is True and tier_ov == 'B' and 'OPERATOR-DECLARED' in why_ov)
+    ck('TG7 KNOWN-BAD CONTROL: --tier-override C cannot smuggle Tier 3 in',
+       tier_gate({'seq': 1, 'type': 'finding', 'vector': '', 'summary': 's'},
+                  override='C')[0] is False)
+    ck('TG8 KNOWN-BAD CONTROL: a nonsense override is refused, not accepted '
+       'as some default tier',
+       tier_gate({'seq': 1, 'type': 'finding', 'vector': '', 'summary': 's'},
+                  override='Z')[0] is False)
+    ck('TG9 a declared T:A vector WINS over an override (the entry\'s own '
+       'declaration is not overridable by a flag)',
+       tier_gate(tiered('T:A/EX:M/IM:H/SC:S'), override='C')[0] is True)
+    # TG10 locks a property MEASURED by sabotage during b69 rather than
+    # assumed: Tier 3 is refused by TWO independent guards (the explicit
+    # TIER_EXCLUDED test, which runs first, and the TIER_ADMITTED
+    # membership test after it). Planting 'C' into TIER_ADMITTED alone was
+    # a NO-OP -- zero fixtures moved -- and removing 'C' from
+    # TIER_EXCLUDED alone was also insufficient; only changing BOTH
+    # admitted Tier 3, and that was caught. This asserts the redundancy
+    # directly so a future refactor collapsing the two guards into one
+    # loses a fixture instead of losing the property silently.
+    ck('TG10 DEFENSE IN DEPTH, sabotage-measured: C is named in BOTH '
+       'TIER_EXCLUDED and absent from TIER_ADMITTED, so no single-constant '
+       'edit can admit Tier 3',
+       'C' in TIER_EXCLUDED and 'C' not in TIER_ADMITTED)
+
+    # ── b69: the countable adjudication vocabulary ───────────────────────
+    ck('AD1 REAL-CATCH normalises', normalise_adjudication('REAL-CATCH -- x')[0] == 'REAL-CATCH')
+    ck('AD2 AGREE normalises', normalise_adjudication('AGREE, nothing new')[0] == 'AGREE')
+    ck('AD3 FALSE-ALARM normalises',
+       normalise_adjudication('false-alarm -- answered by evidence')[0] == 'FALSE-ALARM')
+    raised_adj = False
+    try:
+        normalise_adjudication('it seemed basically fine to me')
+    except CouldNotTell:
+        raised_adj = True
+    ck('AD4 KNOWN-BAD CONTROL: free-text prose with no countable verdict is '
+       'REFUSED -- b68 accepted this and the result could not be summed',
+       raised_adj)
+    raised_adj2 = False
+    try:
+        normalise_adjudication('')
+    except CouldNotTell:
+        raised_adj2 = True
+    ck('AD5 FAIL-CLOSED: an empty adjudication is refused', raised_adj2)
+
+    # ── b69 (a): THE TIEBREAK MODE ───────────────────────────────────────
+    tb_diff = ('--- a/app.js\n+++ b/app.js\n@@ -10,2 +10,4 @@\n'
+               ' const a = 1;\n'
+               '+const t = req.body.token;\n'
+               '+exec(t);\n'
+               ' return a;\n')
+    tb_added = added_lines_with_numbers(tb_diff)
+    ck('TB1 the tiebreak diff parses to its real added line numbers',
+       tb_added.get('app.js') == {11, 12})
+
+    payload = build_tiebreak_payload(tb_diff, 'Record A text', 'Record B text')
+    ck('TB2 the payload carries the diff and BOTH records',
+       'Record A text' in payload and 'Record B text' in payload
+       and 'exec(t)' in payload)
+    ck('TB3 BLINDING: the payload carries no author, seq, severity or vector',
+       'seq' not in payload and 'severity' not in payload
+       and 'T:A' not in payload and 'hover' not in payload.lower())
+
+    ok_v, why_v = validate_tiebreak(
+        {'supported': 'A', 'cited_line_number': 12,
+         'quoted_diff_line': 'exec(t);', 'trigger': 'a crafted token'}, tb_added)
+    ck('TB4 a decision citing a REAL added line is accepted', ok_v is True)
+    ck('TB5 KNOWN-BAD CONTROL -- SUBTLY WRONG LINE NUMBER: a decision citing '
+       'line 13, one past the last real added line, is DROPPED. This is the '
+       'first of the two shapes b69 adds, and it is the dangerous one '
+       'precisely because 13 looks plausible next to 11 and 12',
+       validate_tiebreak({'supported': 'A', 'cited_line_number': 13,
+                           'quoted_diff_line': 'x', 'trigger': 't'},
+                          tb_added)[0] is False)
+    ck('TB6 KNOWN-BAD CONTROL: a decision citing a line from the ORIGINAL '
+       'file numbering (10, a context line) is also dropped -- off-by-a-hunk '
+       'is the same class of error as off-by-one',
+       validate_tiebreak({'supported': 'B', 'cited_line_number': 10,
+                           'quoted_diff_line': 'x', 'trigger': 't'},
+                          tb_added)[0] is False)
+    ck('TB7 "neither" is ACCEPTED with no line citation -- the answer that '
+       'matters most must not require a line it has no business having',
+       validate_tiebreak({'supported': 'neither', 'cited_line_number': -1,
+                           'quoted_diff_line': '', 'trigger': ''},
+                          tb_added)[0] is True)
+    ck('TB8 "both" still requires a real line',
+       validate_tiebreak({'supported': 'both', 'cited_line_number': 11,
+                           'quoted_diff_line': 'x', 'trigger': 't'},
+                          tb_added)[0] is True
+       and validate_tiebreak({'supported': 'both', 'cited_line_number': 99,
+                               'quoted_diff_line': 'x', 'trigger': 't'},
+                              tb_added)[0] is False)
+    ck('TB9 KNOWN-BAD CONTROL: an out-of-enum verdict is refused',
+       validate_tiebreak({'supported': 'maybe-A', 'cited_line_number': 11},
+                          tb_added)[0] is False)
+    ck('TB10 KNOWN-BAD CONTROL: a non-integer line number is refused rather '
+       'than coerced',
+       validate_tiebreak({'supported': 'A', 'cited_line_number': '12',
+                           'quoted_diff_line': 'x', 'trigger': 't'},
+                          tb_added)[0] is False)
+
+    def fake_tb(url, headers, body):
+        return 200, {'usage': {'total_tokens': 400},
+                      'choices': [{'finish_reason': 'tool_calls', 'message': {
+                          'tool_calls': [{'function': {
+                              'name': 'adjudicate_records',
+                              'arguments': json.dumps({
+                                  'supported': 'A', 'confidence': 'high',
+                                  'cited_line_number': 12,
+                                  'quoted_diff_line': 'exec(t);',
+                                  'trigger': 'a crafted token reaches exec',
+                                  'reasoning': 'r'})}}]}}]}
+
+    tbv, tbt = adjudicate_records(payload, 'fake-key', http_post=fake_tb)
+    ck('TB11 adjudicate_records parses the forced tool call and real tokens',
+       tbv['supported'] == 'A' and tbt == 400)
+
+    def fake_tb_no_tool(url, headers, body):
+        return 200, {'usage': {'total_tokens': 5},
+                      'choices': [{'finish_reason': 'stop', 'message': {}}]}
+
+    raised_tb = False
+    try:
+        adjudicate_records(payload, 'fake-key', http_post=fake_tb_no_tool)
+    except CouldNotTell:
+        raised_tb = True
+    ck('TB12 no forced tool call is COULD-NOT-TELL, never a fabricated tie',
+       raised_tb)
+
+    tmp4 = tempfile.mkdtemp(prefix='hover_cv_tb_fx_')
+    try:
+        tblog = os.path.join(tmp4, 'tb.jsonl')
+        rc_tb, _, _, et_tb = log_tiebreak(
+            'a..b', tbv, True, 'ok', 'AGREE', 'AGREE -- matches my read', 'n',
+            log_path_override=tblog)
+        rows_tb = [json.loads(l) for l in open(tblog, encoding='utf-8') if l.strip()]
+        ck('TB13 a valid-citation AGREE tiebreak logs as a check',
+           et_tb == 'check' and rows_tb[-1]['type'] == 'check')
+        ck('TB14 the entry records the blinding and the citation check',
+           'BLINDING' in rows_tb[-1]['summary']
+           and 'citation check against the real diff: VALID' in rows_tb[-1]['summary'])
+        rc_tb2, _, _, et_tb2 = log_tiebreak(
+            'a..b', tbv, False, 'cited a line not in the diff', 'AGREE',
+            'AGREE -- ...', 'n', log_path_override=tblog)
+        ck('TB15 KNOWN-BAD CONTROL: an INVALID citation logs as a FINDING '
+           'even when adjudicated AGREE -- a tiebreaker that could not '
+           'ground its pick is itself a defect worth a standing record',
+           et_tb2 == 'finding')
+    finally:
+        shutil.rmtree(tmp4, ignore_errors=True)
+
+    # ── b69 (c): FABRICATED-CITATION control for the FINDING-REVIEW mode ──
+    # The second of the two shapes. A finding whose cited FILE does not
+    # exist in the diff at all is the fabricated-citation case; the
+    # diff-mode validator already drops it, and this locks that the drop is
+    # by FILE as well as by line, since a fabricated citation usually
+    # invents a path rather than a number.
+    fab_added = added_lines_with_numbers(tb_diff)
+    fab = [{'file': 'api/does-not-exist.js', 'line': 11,
+            'trigger': 't', 'description': 'd'}]
+    v_fab, d_fab, r_fab = validate_findings(fab, fab_added)
+    ck('FAB1 KNOWN-BAD CONTROL -- FABRICATED CITATION: a finding naming a '
+       'file absent from the diff is DROPPED, not kept because its line '
+       'number happens to exist in a different file',
+       len(v_fab) == 0 and d_fab == 1)
+    mixed_fab = [{'file': 'app.js', 'line': 11, 'trigger': 't', 'description': 'real'},
+                 {'file': 'api/invented.js', 'line': 11, 'trigger': 't',
+                  'description': 'fabricated'}]
+    v_mix, d_mix, _ = validate_findings(mixed_fab, fab_added)
+    ck('FAB2 the real finding survives while the fabricated one is dropped '
+       '-- the filter is not all-or-nothing',
+       len(v_mix) == 1 and v_mix[0]['file'] == 'app.js' and d_mix == 1)
+    ck('FAB3 KNOWN-BAD CONTROL -- SUBTLY WRONG LINE in finding-review mode: '
+       'a real file with a line one past the real added set is dropped',
+       validate_findings([{'file': 'app.js', 'line': 13, 'trigger': 't',
+                            'description': 'd'}], fab_added)[1] == 1)
+
+    # ── b69: PRE-FLIGHT CITATION CHECK, the deterministic answer to the
+    # two control shapes the vendor FAILED. Driven against the REAL repo,
+    # because the whole point is that it checks real files -- a synthetic
+    # fixture here would be testing my idea of the repo, not the repo.
+    real_entry = {'seq': 1, 'type': 'finding', 'severity': 'high',
+                   'vector': 'T:A/EX:M/IM:H/SC:C',
+                   'ref': 'api/stonedesk-track.js:101',
+                   'source_shas': {'api/stonedesk-track.js':
+                                    {'sha': 'x' * 40, 'source': 'explicit'}},
+                   'summary': 'the token regex at api/stonedesk-track.js:101'}
+    ok_pf, probs_pf, n_pf = preflight_citations(real_entry)
+    ck('PF1 a REAL path and a REAL in-range line pass pre-flight (%d checked)'
+       % n_pf, ok_pf is True and n_pf > 0)
+
+    fabpath_entry = dict(real_entry)
+    fabpath_entry['ref'] = 'api/_lib/session-replay-guard.js:88'
+    fabpath_entry['source_shas'] = {'api/_lib/session-replay-guard.js':
+                                     {'sha': 'e' * 40, 'source': 'explicit'}}
+    fabpath_entry['summary'] = 'claim about api/_lib/session-replay-guard.js:88'
+    ok_fp, probs_fp, _ = preflight_citations(fabpath_entry)
+    ck('PF2 KNOWN-BAD CONTROL -- FABRICATED PATH: a file that does not exist '
+       'in the repo is REFUSED by pre-flight, which is what makes the shape '
+       'the vendor agreed with at HIGH confidence unreachable',
+       ok_fp is False and any('does not exist' in p for p in probs_fp))
+
+    eof_entry = dict(real_entry)
+    eof_entry['ref'] = 'api/stonedesk-track.js:801'
+    eof_entry['summary'] = 'claim about api/stonedesk-track.js:801'
+    ok_eof, probs_eof, _ = preflight_citations(eof_entry)
+    ck('PF3 KNOWN-BAD CONTROL -- BEYOND-EOF LINE: :801 in a 321-line file is '
+       'REFUSED, naming the real line count rather than a generic failure',
+       ok_eof is False and any('beyond end of file' in p for p in probs_eof))
+
+    zero_entry = {'seq': 2, 'type': 'finding', 'severity': 'high',
+                   'vector': 'T:A/EX:M/IM:H/SC:C', 'ref': 'b15,b16',
+                   'summary': 'no checkable citation here'}
+    ok_z, probs_z, n_z = preflight_citations(zero_entry)
+    ck('PF4 a finding citing nothing checkable reports ZERO verified rather '
+       'than passing as if it had been checked (n=%d)' % n_z,
+       ok_z is True and n_z == 0)
+    ck('PF5 HONEST LIMIT, asserted so it cannot be forgotten: false CONTENT '
+       'at a real path and a real in-range line still PASSES pre-flight -- '
+       'this check verifies that citations RESOLVE, never that the claim '
+       'about them is true',
+       preflight_citations({'seq': 3, 'type': 'finding',
+                             'ref': 'api/stonedesk-track.js:101',
+                             'summary': 'a completely false claim about '
+                                        'api/stonedesk-track.js:101'})[0] is True)
+
     lines_after = 0
     if os.path.isfile(real_log):
         with open(real_log, encoding='utf-8') as f:
@@ -1100,6 +1768,39 @@ def main(argv):
             return 2
         try:
             entry = load_finding(seq)
+            # TIER GATE, b69. Runs BEFORE the token estimate and before any
+            # network call, so an out-of-scope entry costs nothing.
+            admitted, tier, tier_why = tier_gate(entry, override=opt('--tier-override'))
+            print('TIER    : %s -- %s'
+                  % ('ADMITTED' if admitted else 'REFUSED', tier_why))
+            if not admitted:
+                raise CouldNotTell('tier gate refused seq=%d: %s' % (seq, tier_why))
+            # Validate the adjudication BEFORE spending a call, if one was
+            # given: discovering a malformed verdict word after the tokens
+            # are gone is the b68 UnicodeEncodeError lesson in a different
+            # costume.
+            if opt('--adjudication'):
+                normalise_adjudication(opt('--adjudication'))
+            # PRE-FLIGHT CITATIONS, b69. Runs before the call, so a
+            # fabricated path or a beyond-EOF line never reaches a reviewer
+            # that provably cannot detect either.
+            cite_ok, cite_problems, cite_checked = preflight_citations(entry)
+            print('CITATIONS: %d checked against the real repo at HEAD -- %s'
+                  % (cite_checked, 'all resolve' if cite_ok else 'PROBLEMS'))
+            for p in cite_problems:
+                print('           - %s' % p)
+            if not cite_ok:
+                raise CouldNotTell(
+                    'pre-flight citation check refused seq=%d: %d problem(s) '
+                    'above. The evidence-only reviewer cannot verify a '
+                    'citation (measured in b69: it AGREED at high confidence '
+                    'with a fabricated path), so an unresolvable citation is '
+                    'refused here rather than sent to be rubber-stamped.'
+                    % (seq, len(cite_problems)))
+            if cite_checked == 0:
+                print('           NOTE: this finding cites no checkable '
+                      'path:line, so zero citations were verified -- that is '
+                      'a not-run, not a pass.')
             evidence = build_finding_evidence(entry)
             est = estimate_tokens(FINDING_SYSTEM_PROMPT) + estimate_tokens(evidence)
             if est + MAX_OUTPUT_TOKENS + TOKEN_SAFETY_MARGIN > TPM_BUDGET_CEILING:
@@ -1170,11 +1871,96 @@ def main(argv):
         full_note = note or '(no note given)'
         if consistency:
             full_note = full_note + ' | ' + consistency
+        canon, adjudication = normalise_adjudication(adjudication)
+        full_note = full_note + (' | tier gate: %s' % tier_why)
+        print('ADJUDICATION (countable): %s' % canon)
         rc, out, err, etype = log_finding_review(seq, entry, verdict,
-                                                  adjudication, full_note)
+                                                  adjudication, full_note,
+                                                  canonical=canon, tier=tier)
         print()
         print('LOGGED as type=%s: %s' % (etype, (out or err).strip()))
         return 0 if verdict.get('agrees') else 1
+
+    # ── TIEBREAK MODE: --tiebreak --range R --record-a F --record-b F ────
+    if '--tiebreak' in argv:
+        rng = opt('--range')
+        pa, pb = opt('--record-a'), opt('--record-b')
+        cwd = opt('--cwd', os.getcwd())
+        key_path = opt('--key-path', DEFAULT_KEY_PATH)
+        if not rng or not pa or not pb:
+            print('usage: --tiebreak --range <git-range> --record-a <file> '
+                  '--record-b <file> [--cwd DIR] [--adjudication ... --note ...]')
+            print('  The two records are supplied by chat as files, read '
+                  'verbatim. They are sent labelled A and B with no author, '
+                  'seq or severity attached.')
+            return 2
+        try:
+            for p in (pa, pb):
+                if not os.path.isfile(p):
+                    raise CouldNotTell('record file not found: %s' % p)
+            rec_a = open(pa, encoding='utf-8').read()
+            rec_b = open(pb, encoding='utf-8').read()
+            diff_text = strip_boilerplate(get_diff(rng, cwd))
+            added = added_lines_with_numbers(diff_text)
+            payload = build_tiebreak_payload(diff_text, rec_a, rec_b)
+            est = estimate_tokens(TIEBREAK_SYSTEM_PROMPT) + estimate_tokens(payload)
+            if est + MAX_OUTPUT_TOKENS + TOKEN_SAFETY_MARGIN > TPM_BUDGET_CEILING:
+                raise CouldNotTell(
+                    'estimated %d prompt tokens + %d capped output + %d margin '
+                    'exceeds the %d TPM ceiling -- the diff plus both records '
+                    'is too large for one call under the free cap'
+                    % (est, MAX_OUTPUT_TOKENS, TOKEN_SAFETY_MARGIN,
+                       TPM_BUDGET_CEILING))
+            gate = RateGate()
+            ok_gate, why = gate.wait_or_refuse(est)
+            if not ok_gate:
+                raise CouldNotTell('rate-limited: %s' % why)
+            if not os.path.isfile(key_path):
+                raise CouldNotTell('no Groq key at %s' % key_path)
+            api_key = open(key_path, encoding='utf-8').read().strip()
+            verdict, toks = adjudicate_records(payload, api_key)
+            gate.record_call(toks)
+        except CouldNotTell as e:
+            print('COULD NOT RUN: %s' % e)
+            return 2
+
+        ok_cite, cite_why = validate_tiebreak(verdict, added)
+        print('PROVIDER : Groq / %s' % MODEL)
+        print('RANGE    : %s  (diff-only, %d file(s) with added lines)'
+              % (rng, len(added)))
+        print('SUPPORTED: %s' % verdict.get('supported'))
+        print('CONF     : %s' % verdict.get('confidence'))
+        print('LINE     : %s' % verdict.get('cited_line_number'))
+        print('QUOTED   : %s' % (verdict.get('quoted_diff_line') or '')[:200])
+        print('TRIGGER  : %s' % (verdict.get('trigger') or '')[:300])
+        print('REASON   : %s' % (verdict.get('reasoning') or '')[:600])
+        print('CITATION : %s -- %s' % ('VALID' if ok_cite else 'INVALID', cite_why))
+        print('TOKENS   : %d (real, from the API usage object)' % toks)
+        if not ok_cite:
+            print()
+            print('DECISION DROPPED: the tiebreaker chose a record but could '
+                  'not tie it to a real added line in this diff. That is not '
+                  'a tie broken, it is an unsupported pick, and it is '
+                  'reported as such rather than recorded as a verdict.')
+
+        adjudication = opt('--adjudication')
+        if not adjudication:
+            print()
+            print('NOT LOGGED -- no --adjudication given. Re-run with '
+                  '--adjudication "<AGREE|REAL-CATCH|FALSE-ALARM -- ...>" '
+                  '--note "<why>" once this role has judged the verdict.')
+            return 0 if ok_cite else 1
+        try:
+            canon, adj_text = normalise_adjudication(adjudication)
+        except CouldNotTell as e:
+            print('COULD NOT RUN: %s' % e)
+            return 2
+        rc, out, err, etype = log_tiebreak(rng, verdict, ok_cite, cite_why,
+                                            canon, adj_text, opt('--note'))
+        print()
+        print('ADJUDICATION (countable): %s' % canon)
+        print('LOGGED as type=%s: %s' % (etype, (out or err).strip()))
+        return 0 if ok_cite else 1
 
     # ── log an already-printed verdict with this role's adjudication ─────
     if '--log-review' in argv:
