@@ -199,17 +199,69 @@ test('the rf_claims write path no longer keeps its own role booleans', () => {
 // ---------------------------------------------------------------------------
 section('what was deliberately NOT unified');
 
+// ── RE-ANCHORED 2026-10-19 (cody b26), AND THE OLD ARM WAS SATISFIED BY THE
+//    WRONG OCCURRENCE FOR AS LONG AS IT HAS EXISTED ─────────────────────────
+// It sliced `src.slice(i).slice(0, 1400)` -- A FIXED 1400-CHARACTER WINDOW --
+// and asserted `/NOT_PROVISIONED/` inside it. The rf_claim_photos WRITE branch
+// is 5,470 characters, and the literal that satisfied the window was the one
+// in the CLAIM-EXISTENCE guard at the top of the branch, NOT the photo write's
+// own refusal 34 lines further down. b26 routed that first guard through
+// notProvisioned() -- behaviour unchanged, the literal gone -- and the arm
+// went red while the policy it names was fully intact at three sites.
+//
+// SO IT WAS NEVER TESTING WHAT IT SAID. A FIXED-SIZE WINDOW IS A GUESS ABOUT
+// HOW LONG THE BRANCH IS; A BALANCED BRACE IS A PROPERTY OF THE BRANCH. Both
+// halves are sliced by balanced brace now, and the assertion is on the POLICY
+// rather than on one spelling of it -- a loud refusal is a 503
+// NOT_PROVISIONED whether the branch writes that literal itself or calls the
+// helper that answers it.
+function branchOf(guard) {
+  const i = src.indexOf(guard);
+  if (i < 0) return '';
+  let j = src.indexOf('{', i);
+  if (j < 0) return '';
+  let depth = 0;
+  for (; j < src.length; j += 1) {
+    if (src[j] === '{') depth += 1;
+    else if (src[j] === '}') {
+      depth -= 1;
+      if (depth === 0) return src.slice(i, j + 1);
+    }
+  }
+  return '';
+}
+
 test('each branch keeps its own not-provisioned policy', () => {
   // A read degrading to an empty list and a write refusing with 503 are both
   // correct and are not the same answer. If a later change makes them
   // identical, that is a decision to make on purpose, not a side effect.
   assert.match(src, /rf_claim_photos read requires payload\.claim_id/);
-  const photoRead = src.slice(src.indexOf("resource === 'rf_claim_photos' && action === 'read'"));
-  assert.match(photoRead.slice(0, 1400), /ok: true, data: \[\], provisioned: false/,
+
+  const photoRead = branchOf("resource === 'rf_claim_photos' && action === 'read'");
+  assert.ok(photoRead.length > 0, 'the photo READ branch could not be sliced');
+  assert.ok(photoRead.indexOf("resource === 'rf_claim_photos' && action === 'write'") < 0,
+    'the READ slice has OVERRUN into the write branch, so this arm is reading '
+    + 'the wrong code -- which is what the 1400-character window was doing in '
+    + 'the other direction');
+  assert.match(photoRead, /ok: true, data: \[\], provisioned: false/,
     'the photo READ no longer degrades to an empty list');
-  const photoWrite = src.slice(src.indexOf("resource === 'rf_claim_photos' && action === 'write'"));
-  assert.match(photoWrite.slice(0, 1400), /NOT_PROVISIONED/,
-    'the photo WRITE no longer refuses loudly');
+
+  const photoWrite = branchOf("resource === 'rf_claim_photos' && action === 'write'");
+  assert.ok(photoWrite.length > 0, 'the photo WRITE branch could not be sliced');
+  assert.ok(photoWrite.indexOf("resource === 'rf_claim_photos' && action === 'read'") < 0,
+    'the WRITE slice has OVERRUN into the read branch');
+  // THE POLICY, not the literal: a 503 NOT_PROVISIONED answered directly, or
+  // answered by the helper that exists to answer it. Either is a loud refusal.
+  assert.ok(/NOT_PROVISIONED/.test(photoWrite)
+            || /notProvisioned(Text)?\s*\(\s*res\s*,/.test(photoWrite),
+    'the photo WRITE no longer refuses loudly -- it neither answers 503 '
+    + 'NOT_PROVISIONED itself nor routes through notProvisioned()');
+  // AND THE TWO HALVES MUST STILL DIFFER, which is the arm's actual subject
+  // and was never asserted: a read that degrades and a write that refuses.
+  assert.ok(!/ok: true, data: \[\], provisioned: false/.test(photoWrite),
+    'the photo WRITE now degrades to an empty list like the read does -- the '
+    + 'two policies have been unified, which is a decision to make on purpose '
+    + 'and not a side effect');
 });
 
 test('the fifteen ROLE-ONLY sites are still there and still counted', () => {
