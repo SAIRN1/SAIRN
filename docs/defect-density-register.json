@@ -33834,6 +33834,60 @@
       },
       "citation_note": "same root cause as 9a7f73da (h1 b55): naive sentence-boundary splitting around abbreviation periods, independently duplicated in a second file -- no existing cross-domain-disciplines section names this shape",
       "factors_unknown_reason": "duplicate-copy follow-up to an already-registered defect (9a7f73da); the fix and its own regression coverage are the record, no separate RCA factor pass run"
+    },
+    {
+      "commit": "4b6d3d3633c9",
+      "date": "2026-10-19",
+      "subject": "fix(board)+harden(bridge): a figure cell now contains a figure, and the render claim is confirmed against GitHub itself",
+      "files": [
+        "docs/2026-10-19-cc-b18-github-render-confirmation.py",
+        "tools/sairn_board_publish.py",
+        "tools/status_board_bridge_check.py"
+      ],
+      "lines_added": 463,
+      "lines_removed": 5,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/sairn_board_publish.py rendered the CONTEXT cell as the first 120\ncharacters of whatever followed a digest's CONTEXT label, and the glance table\nas the first 40 of that. For two of six agents the label is followed by a\nfigure and then by unlabelled prose, so digest_fields() returned a context body\nof 4,673 characters (hank b17) and 10,717 (cody b22) and the published cell read\n`46% WHAT LANDED -- fourth's b26, four ro` -- a real measured figure welded to a\nparagraph and cut mid-word, in the one column a reader scans to compare six\nagents' remaining capacity. A figure column that can contain prose cannot be\nread at a glance, which is the only thing that column is for. Fixed by parsing\nthe first percentage in range 0-100 out of the body and printing the figure\nalone, naming the source length when it was cut out of a paragraph; a body with\nno parseable percentage renders UNKNOWN with the reason rather than a plausible\n0%, and the glance column renders the bare word UNKNOWN rather than a 40-char\nslice of the reason.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The cell has rendered the digest fallback this way since context_for() was written; it only became visible when agents began writing digests whose CONTEXT line is followed by their own unlabelled headings, which is a change in the INPUT rather than a commit to this file."
+      },
+      "citation_note": "No standing rule names a figure column fed from free text; the nearest in spirit is the fabricated-KPI shape Guardian 0b covers, which is about a number with no function behind it rather than a real number with a paragraph welded to it.",
+      "contributing_factors": [
+        {
+          "factor": "a figure column was filled from a free-text field with no requirement that the text be a figure",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "context_figure() parses the first in-range percentage and the cell prints that alone; arms A29 and A30 in tools/sairn_board_publish.py --selftest, both driven failing-first"
+        },
+        {
+          "factor": "truncation made the defect look like a value -- 120 characters in the section and 40 in the table turned a paragraph into something cell-shaped",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the glance column renders the bare word UNKNOWN rather than a 40-character slice of an UNKNOWN sentence, so a non-figure is visibly a non-figure"
+        },
+        {
+          "factor": "the board is a READER of six other agents' files and its parse assumed they carry only the nine labels it knows",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "nothing requires a digest to use only the known labels, and a renderer that is only correct on perfect input is the renderer's problem -- the STATUS and NEXT fields swallow the same way and are merely bounded by their own 900-character slices, so they degrade quietly rather than wrongly"
+        },
+        {
+          "factor": "the cell had no arm at all before this batch -- A2-unknown-context covered the absent case and nothing covered the prose case",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "two arms added, each failing-first against the pre-fix renderer, with the real hank and cody shapes as fixtures rather than invented text"
+        }
+      ],
+      "recurrence_open": "The STATUS and NEXT fields are parsed the same way and still swallow unlabelled prose; they are bounded by their own 900-character slices, so they degrade quietly rather than wrongly, and nothing here changes that. Nothing requires a digest to use only the nine labels the board knows. And the fix is in a SHARED publisher that every clone runs its own copy of -- measured during this batch, fourth's clone republished the board 20 minutes after cc's corrected version with its own pre-fix copy, so the platform-wide effect of this fix only arrives as each clone fetches."
     }
   ],
   "started": "2026-09-09",

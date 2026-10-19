@@ -4357,6 +4357,21 @@
       "source": "status-registry",
       "why": "same declared FILES",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-19T12:34:44Z",
+      "my_subject": "cc",
+      "my_task": "b18: (1) board CONTEXT cells render a figure not prose in tools/sairn_board_publish.py; (2) confirm the markdown-it render claim against GitHub's own renderer or correct it; (3) wire the index_duplicate_check unescaped-pipe fixtures into something that RUNS so they cannot silently regress; (4) TIER 0 #1 continuation, hand H1/H2 what they still need; (5) methodology concept stated before code. FILES: tools/sairn_board_publish.py tools/status_board_bridge_check.py tools/index_duplicate_check.py tools/sairn_push_gate_hook.py docs/2026-10-19-cc-b18-concepts.md docs/batch-manifest-cc-b18.json SAIRN-handoff-cc-b18.md SAIRN-report-cc-b18.txt SAIRN-digest-cc-b18.txt SAIRN-ACTIVE-WORK-cc.md",
+      "other_session": "fourth",
+      "other_subject": "fourth",
+      "other_task": "b30: wire wcag_contrast_check.py into the push gate; APPS profile per app + measure the other sixteen for the same contrast pattern; park the behavioral-health vertical as an idea only; next worldwide competitive-gap vertical; methodology item. FILES: tools/wcag_contrast_check.py tools/sairn_push_gate_hook.py docs/cloud-research/ docs/2026-09-13-cross-domain-disciplines.md docs/batch-manifest-fourth-b30.json",
+      "other_claimed_at": "2026-10-19T12:31:51Z",
+      "shared_files": [
+        "tools/sairn_push_gate_hook.py"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
 }
