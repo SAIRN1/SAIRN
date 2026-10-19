@@ -9094,6 +9094,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "'silent skip. Run to a known exit code BEFORE wiring: exit 0, 1.38s, '"
+    }
+   ],
+   "sha": "e6227220222ed7a2fc42fb6cff5f42291d89692d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sf_role_matrix_driven.test.js",
    "class": "test file",
    "level": "CHANGE",
