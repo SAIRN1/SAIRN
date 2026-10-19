@@ -1,0 +1,103 @@
+DIGEST fourth b30 2026-10-19
+
+STATUS
+  6 of 6 closed, pushed, landed, live-verified. origin/main...HEAD = 0 0.
+  Five commits: e8a59093 static half, dbcb6b11 gate wiring, 2806e774 parked
+  verticals, 766f0bcb trucking audit, e9aa7e29 convention 39. No force, NO
+  override of any kind.
+  THE CONTRAST CHECK IS IN THE PUSH GATE (CHECK 5b) and was ABLATED THROUGH
+  THE REAL --pre-push HOOK: a comment-only commit produced no contrast block,
+  a new failing rule produced "2.77:1 (need 4.5)", an undefined token produced
+  "undefined var(--b30nosuchtoken)". Arm A's silence only counts because B and
+  C fired on the same path.
+  ITEM 4 WAS DONE DIFFERENTLY FROM THE WAY IT WAS PHRASED -- see
+  DECISION-NEEDED 1. The sixteen apps were measured, but not with sixteen
+  rendered profiles.
+  153 FINDINGS ACROSS 14 OF 17 PRODUCTS. 87 AA failures, 66 undefined tokens.
+  The failing pattern IS the house pattern: nearly every app's .gbtn/.bp is
+  white on that app's brand colour, from 1.98:1 to 4.47:1.
+
+DECISION-NEEDED
+  1. I DID NOT BUILD SIXTEEN RENDERED PROFILES, and you asked for them. The
+     plan was mine and it does not survive the platform: seven of seventeen
+     products have no licence-gate element, five no panel switcher, three no
+     panels at all, so a rendered gate exits 2 COULD NOT RUN -- which is DENY
+     -- on most of the platform. The gate runs a STATIC half instead and the
+     sixteen were measured with that. If you want rendered profiles anyway,
+     nine products have the right shape and seven cannot have one.
+  2. THE 153 ARE MEASURED AND NOT FIXED, deliberately. Changing a brand
+     surface in fourteen customer-facing apps is your call, not a sweep I run
+     overnight. Say the word and I will bring a per-app before/after ratio
+     table and fix only what you approve.
+  3. stonedesk's 56 undefined-token findings are the one part of the 153 that
+     is a DEFECT rather than a preference: --surface and --surface-2 are
+     referenced 56 times and defined NOWHERE, so 56 background declarations
+     are being dropped entirely. Want me to investigate whether a :root block
+     was deleted?
+  4. THE AUDIT SERIES HAS HIT THE SAME WALL THREE TIMES. Each vertical was
+     blocked by a standing COMPANY capability, not by its market -- two on the
+     same missing role (nobody owns a regulatory matrix), the third on SAIRN
+     never having sold an administered service. A fourth audit measures the
+     same wall from a new angle. Settle those two questions first?
+
+CHANGED
+  tools/wcag_contrast_check.py     NEW static mode: --gate/--static/--all,
+                                   --baseline ratchet, --baseline-write. 41
+                                   fixtures both directions. Catches (A) a CSS
+                                   rule or style ATTRIBUTE with an opaque pair
+                                   below AA, (B) a var(--token) defined nowhere
+                                   with no fallback, which DROPS the whole
+                                   declaration. Its first draft read <style>
+                                   blocks only and missed b28's inline
+                                   var(--accent) on the real bytes.
+  tools/sairn_push_gate_hook.py    CHECK 5b, runs on any push changing HTML.
+                                   Missing checker / exit 2 / exception all DENY.
+  tools/gate_skip.py               `contrast` gate id (9 skippable now)
+  docs/wcag-contrast-baseline.json NEW -- the 153, recorded as debt
+  sairndental.html                 .gbtn 2.77:1 -> --pd. b29 MISSED THIS: the
+                                   rendered sweep only visits SIGNED-IN panels
+                                   and .gbtn is the Activate/Sign In button.
+  docs/cloud-research/PARKED-VERTICALS.md                       NEW
+  docs/cloud-research/trucking-dot-compliance-...-2026-10-19.md NEW
+  docs/2026-09-13-cross-domain-disciplines.md   convention 39; 38 -> 39, the
+                                   cannot-fire group stays THIRTEEN
+  NOT TOUCHED: api/, sql/, tests/, .claude/settings.json, .githooks/, auditor
+  clones. Nothing built for behavioral health -- no schema, no app file, no
+  API route, no panel.
+
+EVIDENCE-path
+  C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\b621dce3-b1b4-4681-a633-54da35b654a4\scratchpad\b30\
+    b30_static_all.json            the 153, per app and per finding
+    b30_rendered_live_after.json   0 AA failures, live, post-push
+    armA.log / armB.log / armC.log the gate ablation, full --pre-push output
+    pre_b29_sairndental.html       the known-bad bytes the gate was proven on
+    shots/G1-licence-gate.png, shots/G2-sign-in.png
+  transcript  C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\b621dce3-b1b4-4681-a633-54da35b654a4.jsonl
+
+UNVERIFIED
+  - MY OWN GATE DID NOT GATE MY OWN PUSH. The gate's own freshness notice said
+    so: the hook that ran predates the one I added. The ablation stands in for
+    it; the first real exercise is the next session's push.
+  - The static half CANNOT see ancestor-dependent pairs at all: 4,439
+    UNRESOLVED across the platform, which is the majority of every app's text.
+    That is the honest size of what this gate does not check.
+  - The rendered mode still covers ONE app of seventeen.
+  - The 153 are measured, not fixed. Fourteen apps still ship them.
+  - No keyboard, focus-order or screen-reader pass, in any app.
+  - The trucking audit drove no product and interviewed nobody. Six of its
+    eight regulatory claims are unverified secondary sources and are labelled
+    separately; only the two FR citations are primary. No market-share figure
+    exists for that vertical and none was invented.
+  - Everything attributed to cc and hank in the handoff is carried from
+    b26/b28 and was NOT re-verified this batch.
+
+NEXT
+  1. Bring the per-app contrast decision to you as a before/after ratio table
+     (14 apps), and fix only what is approved.
+  2. Investigate stonedesk's --surface / --surface-2: 56 dropped background
+     declarations is a defect, not a preference.
+  3. Watch the next push that changes HTML -- it is the first one my gate
+     actually governs, and a gate's first real firing is the one worth reading.
+
+CONTEXT 48.0% of 1000k (479,864 tokens, max usage sum over this session's
+transcript -- the same session as b29)

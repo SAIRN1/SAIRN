@@ -1,0 +1,317 @@
+REPORT fourth b30 2026-10-19 -- the contrast check is in the push gate, the platform is measured, and a third audit says stop auditing
+
+================================================================================
+WHAT WAS DECIDED, AND WHAT CAME BACK
+================================================================================
+
+Six items. All six closed, pushed and landed. Two of them were decisions to
+record rather than work to do; one was done DIFFERENTLY from the way it was
+phrased and that is reported first rather than last.
+
+  1  keep the b29 contrast fix, no revert       recorded, nothing reverted
+  2  behavioral health: park it, build nothing  PARKED-VERTICALS.md, nothing built
+  3  wire the check into the PUSH GATE          CHECK 5b, ablated through the hook
+  4  APPS profile per app, measure the other 16 MEASURED -- but NOT with profiles
+  5  next worldwide competitive-gap vertical    small-fleet DOT/FMCSA compliance
+  6  methodology + handoff before the report    convention 39, handoff landed
+
+================================================================================
+1. ITEM 4 FIRST, BECAUSE IT IS A DEPARTURE FROM THE INSTRUCTION
+================================================================================
+
+THE INSTRUCTION WAS AN APPS PROFILE PER APP. I DID NOT BUILD SIXTEEN PROFILES.
+
+The profile plan was mine -- it was b29's own NEXT line -- and it does not
+survive contact with the platform. Surveyed rather than assumed, across the
+seventeen root products:
+
+    SEVEN   have no #gkey licence gate
+    FIVE    have no nav() panel switcher
+    THREE   have no panel-* elements at all
+
+A rendered profile needs all of those PLUS playwright, a chromium binary,
+network reach, a live Supabase and a demo PIN. Wired into a gate, that exits
+2 COULD NOT RUN on most of the platform -- and under this repo's fail-closed
+rule COULD NOT RUN means DENY. Every push from a clone without a browser would
+have been blocked by a check about button colours.
+
+So the sixteen apps were measured with a STATIC half that reads the file and
+needs nothing, and that same half is what went into the gate. The coverage
+this gives up is stated in the gate's own comment rather than absorbed
+quietly, and it is quantified in section 5.
+
+================================================================================
+2. ITEM 3 -- THE GATE
+================================================================================
+
+CHECK 5b in tools/sairn_push_gate_hook.py. It runs on any push that CHANGES
+HTML -- the same trigger the reachability check already uses -- so an ordinary
+push costs nothing.
+
+TWO CLASSES, BOTH SOUND WITHOUT A DOM:
+
+  A  a CSS rule or a style="" ATTRIBUTE declaring both a colour and an OPAQUE
+     background below WCAG 2.2 AA. This is where the worst of b29 lived:
+     .bp at 2.77:1 was every primary button in SAIRNdental and .sb.on at
+     3.57:1 was every active sidebar row.
+
+  B  a var(--token) defined nowhere with no fallback. This one is not a style
+     question. An unresolvable custom property makes the whole declaration
+     invalid at computed-value time, so the property is DROPPED rather than
+     falling back -- b28 shipped border-left:3px solid var(--accent) and the
+     stripe rendered at 0px, with 22 passing unit arms behind it.
+
+THE FIRST DRAFT READ <style> BLOCKS ONLY, AND RUNNING IT AGAINST THE KNOWN-BAD
+BYTES IS WHAT SAID SO. Against the exact file b29 repaired it reported five
+real contrast failures and NOT the undefined var(--accent) -- because that one
+sits in a style attribute on a div. A gate that misses the defect it was built
+from is worth nothing. Inline attributes are parsed now, and a fixture asserts
+that element by name:
+
+    inline <div#pc-edit-banner>   undefined var(--accent) in `border-left`
+
+ABLATION OF THE GATE ITSELF -- through the REAL --pre-push hook in an isolated
+worktree, three commits differing by one line each:
+
+  ARM A  an HTML comment, no style change
+         -> NO contrast block. (The push was blocked by an unrelated
+            derived-docs gate, which is a different check.)
+  ARM B  .b30gateprobe{background:#0EA5E9;color:#fff;font-size:13px}
+         -> Blocked: "2.77:1 (need 4.5)  #fff on #0EA5E9", NEW FINDINGS: 1
+  ARM C  border-left:3px solid var(--b30nosuchtoken)
+         -> Blocked: "undefined var(--b30nosuchtoken) in `border-left`"
+
+ARM A'S SILENCE ONLY MEANS SOMETHING BECAUSE B AND C FIRED ON THE SAME PATH.
+That is why the ablation was run against the hook rather than against the
+checker.
+
+FAIL-CLOSED IS UNCHANGED: a missing checker DENIES, exit 2 from the checker
+DENIES, an exception DENIES. Skippable as `contrast` through gate_skip (nine
+ids now), which requires a written reason -- deliberately not in the
+unskippable three, because a new gate's first false positive should cost one
+scoped skip rather than a blanket one.
+
+AND ONE THING THE PUSH ITSELF TOLD ME, NOT HIDDEN: the gate's own check-10
+freshness notice fired -- "the push gate that just ran is NOT the one on
+origin/main". That is expected for a push whose subject IS the gate. MY NEW
+CHECK DID NOT GATE MY OWN PUSH. It gates every push after it, and the ablation
+is what stands in for that until the next session's push exercises it.
+
+================================================================================
+3. ITEM 4 -- THE PLATFORM MEASUREMENT: 153 FINDINGS, 14 OF 17 PRODUCTS
+================================================================================
+
+  python tools/wcag_contrast_check.py --static --all
+  (every product derived from `git ls-files`, not from a list)
+
+                           AA   undefined token
+  stonedesk                31   56   (--surface-2 x49, --surface x7)
+  sairnmechanical          14    0
+  sairncash                10    0
+  sairncode                 6    0
+  sairnscape                6    0
+  sairndesign               5    2
+  sairngrounds              5    0
+  sairnbiz                  4    0
+  sairnbuild                3    0
+  sairncare                 2    1
+  sairnroofing              0    3
+  sairnlegacy               0    2
+  sairnsenior               0    2
+  sairnvet                  1    0
+  TOTAL                    87   66      = 153
+
+  CLEAN: sairndental (after this batch), sairnfreedom, sairnlaw.
+
+THE PATTERN IS THE HOUSE PATTERN, NOT SIXTEEN UNRELATED BUGS. Nearly every
+app's .gbtn and .bp is white text on that app's own brand colour:
+
+  sairnmechanical 1.98:1   sairnbuild 2.15:1   sairnscape 2.28:1
+  sairnbiz 2.49:1          sairndental 2.77:1  sairngrounds 3.30:1
+  sairncare 3.74:1         sairndesign 4.47:1
+
+One design decision, repeated seventeen times.
+
+AND IT FOUND ONE b29 MISSED, IN THE APP b29 FIXED. .gbtn -- the Activate and
+Sign In buttons -- was still white on #0EA5E9 at 2.77:1. The rendered sweep
+could never have found it: those two screens come BEFORE sign-in and it only
+ever visits signed-in panels. NEITHER HALF OF THIS TOOL WOULD HAVE CAUGHT IT
+ALONE. Fixed to --pd and verified on the live deployment at rgb(3,105,161) on
+both screens.
+
+WHY IT LANDED AS A RATCHET RATHER THAN A CLIFF. A gate denying on any finding
+in a changed file would have blocked every push touching FOURTEEN apps on the
+day it landed. This platform already knows how that ends: 80 of the 94 rows in
+docs/BYPASS-LOG.jsonl are an override taken because it was the only thing
+available. So docs/wcag-contrast-baseline.json records the 153, the gate denies
+only on findings NOT in it, and three things stop the baseline becoming an
+amnesty:
+
+  - every run PRINTS the outstanding debt per app, in front of whoever is
+    pushing rather than in a file nobody opens;
+  - the baseline grows ONLY by an explicit --baseline-write, which is a commit
+    a reviewer can refuse;
+  - the key is the FINDING, not the line number, so an unrelated edit
+    thousands of lines above does not re-present old debt as new work -- and a
+    SECOND copy of an accepted finding is still NEW, because adding another
+    failing button where one already sat is a regression.
+
+Ablated on a real baselined file: untouched stonedesk -> 87 accepted, 0 new,
+exit 0. Same file plus one new rule -> 87 accepted, exactly 1 new, exit 1.
+
+================================================================================
+4. ITEMS 1, 2 AND 5
+================================================================================
+
+ITEM 1 -- the b29 contrast fix stays. Nothing was reverted.
+
+ITEM 2 -- docs/cloud-research/PARKED-VERTICALS.md. Behavioral health is
+recorded as a decided NO. NOTHING WAS BUILT: no schema, no app file, no API
+route, no panel; the audit document is the whole artefact. The row carries why
+it was a candidate, why the answer was no, and THE FOUR CONDITIONS THAT WOULD
+MAKE IT A DIFFERENT QUESTION -- because "no, because X is unknown" becomes a
+different answer the day X is known, and nobody will remember what X was. It
+also flags the three perishable regulatory facts for re-derivation. Childcare
+is listed as AUDITED-NOT-DECIDED rather than parked, because no decision was
+recorded for it and a tidy list is the easiest place to invent one.
+
+ITEM 5 -- small-fleet DOT/FMCSA compliance.
+docs/cloud-research/trucking-dot-compliance-worldwide-competitive-gap-audit-2026-10-19.md
+
+CHOSEN ON A TEST, NOT A HUNCH: does this vertical fail for a DIFFERENT reason
+than the first two? It does. One federal regime instead of a 50-state matrix --
+the most tractable regulatory surface of the three. It fails on something else
+entirely: WHAT A SMALL CARRIER BUYS IS AN ADMINISTERED SERVICE. Foley is a
+certified third-party administrator with software attached. SAIRN has never
+sold a service relationship and nothing in the platform administers anything on
+a customer's behalf.
+
+  PRIMARY, from the Federal Register API:
+    90 FR 46509  doc 2025-18869  IFR,   published and effective 2025-09-29
+    91 FR 7044   doc 2026-02965  FINAL, published 2026-02-13, eff 2026-03-16
+    -- non-domiciled CDL/CLP eligibility, which is a WORKFORCE event wearing a
+       licensing rule's clothes: a carrier finds out when a credential fails
+       to renew.
+
+  REPORTED AND SEPARATELY LABELLED AS UNVERIFIED: the annual Clearinghouse
+  query and its January 5 deadline, 24-hour employer reporting, the 60-day CDL
+  downgrade under Clearinghouse-II, English-language-proficiency violations as
+  out-of-service, ~$16,000 per occurrence, and ~12,000 compliance reviews in
+  Q1-Q2 2026 at a reported 40% increase. THE 40% IS A VENDOR-MARKETING NUMBER
+  IN EVERY SOURCE SEEN and is the one most likely to be repeated.
+
+  PLATFORM FIT, THE WEAKEST OF THE THREE AUDITS:
+    CDL / USDOT                 0 of 17
+    hours-of-service / ELD      0 of 17
+    screening (MVR, drug, DAC)  0 of 17
+    credential expiry field     6 of 17
+    vehicle identity            2 of 17
+  Childcare shared a credential-expiry primitive. Behavioral health shared the
+  code-edition-against-date-of-service engine. THIS SHARES A FILE-UPLOAD BOX.
+
+  TWO MEASUREMENT ARTEFACTS FOUND BEFORE THEY SHIPPED. The screening row first
+  read 1 of 17 on sairncode -- every hit a HEALTHCARE CLAIMS clearinghouse, a
+  homograph of the FMCSA Drug & Alcohol Clearinghouse. And loose patterns for
+  "vehicle" and "hours of service" both came back 17 of 17, which is what a
+  wrong measurement looks like: \bhos\b without the boundary was matching
+  "those" and "hostile". Both re-measured with boundaries before anything was
+  written down.
+
+  THE RECOMMENDATION IS ABOUT THE SERIES, NOT THE VERTICAL. Three audits, three
+  non-recommendations, each blocked by a standing COMPANY capability rather
+  than by anything about the market -- and TWO OF THE THREE ON THE SAME MISSING
+  ROLE. A fourth would measure the same wall from a new angle.
+
+================================================================================
+5. ITEM 6 -- CONVENTION 39, AND WHAT THE GATE DOES NOT CHECK
+================================================================================
+
+docs/2026-09-13-cross-domain-disciplines.md section 39:
+
+  A CHECK IS WORTH WHERE IT RUNS -- choose the enforcement point by where it
+  CAN run, and land a new gate with a BASELINE or it lands as a bypass.
+
+Both halves were paid for by this batch before the gate ran once: the 7/5/3
+survey that ruled out a rendered gate, and the 153 pre-existing findings that
+ruled out a cliff. Denominator moved 38 -> 39, and the cannot-fire membership
+question was asked and ANSWERED: 39 is NOT a member, because a rendered gate on
+a browserless clone would have failed LOUDLY. Its failure mode is a gate people
+route around, not a check that reads as coverage and silently cannot fire. The
+THIRTEEN is untouched.
+
+WHAT THE GATE CANNOT SEE, QUANTIFIED RATHER THAN HAND-WAVED: an
+ancestor-dependent pair -- a rule with a colour and no background, or a
+translucent background -- is reported UNRESOLVED and is NEVER folded into a
+pass. Across the platform that is 4,439 UNRESOLVED, which is the majority of
+every app's text. THAT NUMBER IS THE HONEST SIZE OF WHAT THIS GATE DOES NOT
+CHECK, and guessing at it is precisely the mistake b29's rendered half made
+when it read rgba(255,255,255,.15) over a blue bar as opaque white and
+fabricated a 1.00.
+
+================================================================================
+6. THE PUSH
+================================================================================
+
+  git rev-list --left-right --count origin/main...HEAD   ->   0   0
+
+  e8a59093  feat(contrast): a STATIC half that reads the file ...
+  dbcb6b11  feat(push gate): the contrast check is WIRED ...
+  2806e774  docs(parked): behavioral health is a decided no ...
+  766f0bcb  research(trucking): the third audit ...
+  e9aa7e29  convention 39: a check is worth where it RUNS ...
+  (then the handoff and the scrutiny-ledger rows, fb8ecf84)
+
+No force. NO OVERRIDE OF ANY KIND -- no SAIRN_SEED_GATE, no SAIRN_GATE_EXEMPT,
+no SAIRN_SKIP. Nothing was written under api/, sql/ or tests/, and no auditor
+clone was entered.
+
+POST-PUSH LIVE VERIFICATION, not a clean git exit:
+  - the deployment was re-fetched: 446,081 bytes, EQUAL to the working tree,
+    with the .gbtn fix present
+  - the two pre-sign-in screens were driven and screenshotted: both buttons
+    computed at rgb(3,105,161)
+  - the rendered sweep was re-run against the LIVE deployment: 0 AA failures,
+    exit 0, 23 panels
+
+================================================================================
+7. WHAT IS LEFT UNPROVEN -- NONE OF IT RECORDED AS CHECKED
+================================================================================
+
+  - MY OWN GATE DID NOT GATE MY OWN PUSH. The freshness notice said so. The
+    first real exercise is the next session's push.
+  - THE 153 ARE MEASURED AND NOT FIXED. Fourteen apps still ship them, and
+    they are not mine to fix silently: changing a brand surface in fourteen
+    customer-facing products is a decision, not a sweep.
+  - stonedesk's 56 undefined-token findings are the one part of the 153 that
+    is a DEFECT rather than a preference -- --surface and --surface-2 are
+    referenced 56 times and defined nowhere, so 56 background declarations are
+    being dropped entirely. NOT INVESTIGATED.
+  - The static half cannot see ancestor-dependent pairs: 4,439 UNRESOLVED.
+  - The rendered mode still covers ONE app of seventeen.
+  - No keyboard, focus-order or screen-reader pass, in any app.
+  - The trucking audit drove no product and interviewed nobody; six of its
+    eight regulatory claims are unverified secondary sources, labelled as such.
+  - Everything attributed to cc and hank in the handoff is carried from
+    b26/b28 and was NOT re-verified this batch.
+
+================================================================================
+EVIDENCE
+================================================================================
+
+  repo        tools/wcag_contrast_check.py, tools/sairn_push_gate_hook.py
+              (CHECK 5b), tools/gate_skip.py, docs/wcag-contrast-baseline.json,
+              docs/cloud-research/PARKED-VERTICALS.md,
+              docs/cloud-research/trucking-dot-compliance-worldwide-competitive-gap-audit-2026-10-19.md,
+              docs/2026-09-13-cross-domain-disciplines.md section 39,
+              docs/batch-manifest-fourth-b30.json, sairndental.html
+  scratchpad  C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\b621dce3-b1b4-4681-a633-54da35b654a4\scratchpad\b30\
+              b30_static_all.json (the 153), b30_rendered_live_after.json (0),
+              armA.log / armB.log / armC.log (the gate ablation, full
+              --pre-push output), pre_b29_sairndental.html, shots/
+  transcript  C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\b621dce3-b1b4-4681-a633-54da35b654a4.jsonl
+
+CONTEXT AT THIS LINE: 48.0% of 1000k (479,864 tokens, max usage sum over this
+session's transcript -- the same session as b29).
+
+SHA256 (SAIRN-handoff-fourth-b30.md): 2c8f58eb03d206ca
+END-OF-REPORT
