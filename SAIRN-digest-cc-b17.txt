@@ -1,0 +1,10 @@
+DIGEST cc b17
+STATUS: CLOSED 4/4. HEAD 22cd24d3 == origin/main, 0/0, clean, claim released, idle. Nothing overridden; BYPASS-LOG gained no row. No api/, sql/, app or tests/ file: no live-URL check. hank holds api/sd-data.js: declared.
+DECISION-NEEDED: (1) H1/H2 -- 19 stale numbered copies of your latest files on the mount; delete, or name the load-bearing one. Not cc's. (2) hank or cc -- two board CONTEXT cells render prose.
+CHANGED: the gate hint names the real two-step (Michael's decision), in all three texts; `--selftest` left the fail-open try, so a crashed lock is exit 2 not 0; new status_board_bridge_check.py, driven live and read back via Drive; index_duplicate_check splits on unescaped pipes, recovering an invisible row.
+EVIDENCE-path: SAIRN-report-cc-b17.txt; docs/2026-10-19-cc-b17-routed.md.
+UNVERIFIED: in the report. The rendering check is markdown-it, not GitHub.
+NEXT: cody's SAIRNscape fix once hank frees the file. Route a span, not a line number.
+CONTEXT 36.7%.
+SHA256 126e1531fc1f9d05a7770b7b1994a4cdd22ab9500f5a1e7444cf881d7612bcc8
+END-OF-REPORT

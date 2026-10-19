@@ -1,0 +1,335 @@
+REPORT cc b17
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-17 into 2026-10-19 (one session; the date rolled during it)
+HEAD      22cd24d3  ==  origin/main  (git rev-list --left-right --count
+          origin/main...HEAD  ->  0  0), zero stashes
+FORCE     none, in any spelling
+OVERRIDE  NONE, in any of the three forms -- no SAIRN_SKIP, no
+          SAIRN_GATE_EXEMPT, no SAIRN_SEED_GATE. docs/BYPASS-LOG.jsonl gained
+          NO row from this batch. That is an audit rather than an assertion:
+          the gate records an override ATTEMPT before deciding whether to
+          honour it, so an absent row is an unused override and not a silence
+HOOKS     none added or restored. .claude/settings.json never committed
+TRANSCRIPT
+          C--Users-marsh-Documents-SAIRN-cc\4d4f63b1-1aa9-48c9-b832-
+          ddd1c2674580.jsonl -- 2,403,915 bytes, 367,417 tokens, 36.7% of the
+          1M window, measured by tools/sairn_status_line.used_tokens(). SHARED
+          WITH b16's WRAP, so the figure covers both
+CLONES    no auditor clone entered or written. No api/, sql/, app HTML or
+          tests/ file in the diff
+
+
+================================================================================
+WHAT LANDED
+================================================================================
+
+  d8be810a  hint+lock(gate skip): the documented scoped form was TWO commands
+            and said it was one, and a crashed criteria lock exited 0
+  92b46df1  bridge(tier 0 #1): the status registry reaching the board was a
+            sentence, and now it is a measurement
+  1d97c4b9  fix(index check): the rows hank reported as malformed were already
+            repaired, and the real defect was in the tool reading them
+  f116ae83  record(defects): the index-check naive split, with the one row it
+            made invisible
+  9a8ba078  chore(scrutiny): the ledger rows the push gate wrote
+  3f579205  reseat(register): the rebase moved the index-check fix and the
+            citation followed
+  d653b3bd  chore(scrutiny): the ledger rows the previous push attempt wrote
+  92471db7  reseat(register): the second rebase moved it again
+  22cd24d3  handoff+route(cc b17)   <- AS LANDED after a rebase
+
+
+================================================================================
+ITEM 1 -- THE GATE HINT NAMES THE REAL TWO-STEP (MICHAEL'S DECISION)
+================================================================================
+
+MICHAEL DECIDED: keep the two-step. No auto-grant-from-environment path, for
+the reason that decides it -- the grant being its own act is what makes it
+auditable. It is validated once, written once and logged once, and a push able
+to grant itself a skip in passing is the blanket form growing back.
+
+MEASURED BEFORE ANY EDIT, with the skip directory redirected to a scratchpad
+and gate_skip.log / record_findings replaced by no-ops so the drive could not
+write a real record or a real BYPASS-LOG row:
+
+  ARM 1, the documented one-call form -- the variables set, nothing else run
+    gate_skip.requested()        ('tier-a', '<the reason>', '30')
+    gate_skip.active('tier-a')   None / "no skip recorded for cc/tier-a"
+    _scoped_skip('tier-a')       False
+    record file on disk          False
+    files in the skip dir        []
+    bypass rows this drive wrote 0
+    VERDICT the gate is NOT skipped
+
+  ARM 2, the two-step -- the same variables, gate_skip.py run FIRST
+    gate_skip.cmd_check() exit   0, "GRANTED for tier-a only, expiring in 30"
+    gate_skip.active('tier-a')   a record
+    _scoped_skip('tier-a')       True
+    VERDICT granted, and the gate honours it
+
+  GREP, so the reading is not the only evidence
+    gate_skip.grant(     in the push hook   0
+    gate_skip.requested( in the push hook   0
+    gate_skip.active(    in the push hook   1
+
+FIXED IN ALL THREE PLACES A READER MEETS IT. Fixing only the hint would have
+left two copies of the defect behind, which is precisely the b11 failure this
+file has a comment about:
+  * the hook's OVERRIDE_HINT -- now "IT IS TWO COMMANDS AND THE FIRST ONE IS
+    NOT `git push`", with the grant command's PATH DERIVED from
+    gate_skip.__file__ rather than typed;
+  * gate_skip.BLANKET_REFUSAL -- which THIS HOOK PRINTS, so a reader hitting
+    the blanket refusal was being handed the broken form;
+  * gate_skip's own module docstring -- where a reader is sent next.
+
+AND IT NO LONGER FLATTENS THREE MECHANISMS INTO ONE RULE. SAIRN_GATE_EXEMPT
+and SAIRN_SEED_GATE are read off the push command TEXT, so they go at its
+FRONT; the gate_skip form is a separate command and in front of `git push` it
+does nothing at all. The old hint's closing sentence said "any of these goes at
+the FRONT", which is how the one-call form looked plausible.
+
+ARMS: 56/56 (was 50 before this batch's own additions). The four new text arms
+plus ABLATION 3, which is the one worth having: the b16 hint text PASSES
+scoped-form-present, scoped-form-first and no-longer-works -- it was green for
+five batches -- and FAILS all three new arms.
+
+
+================================================================================
+ITEM 2 -- TIER 0 #1, THE STATUS/BOARD BRIDGE, DRIVEN LIVE
+================================================================================
+
+THE ASK WAS TO CONFIRM IT WORKS, NOT TO RE-CLAIM IT WAS BUILT. Both ends were
+tested in isolation and NOTHING COMPARED THEM, and the failure that has to be
+caught is silent by construction: a board rendering an OLDER write is
+complete, well-formed and plausible and looks exactly like a current one.
+
+NEW TOOL: tools/status_board_bridge_check.py, criteria 2026-10-17.1.
+  15/15 fixtures, LOCKED AGAINST SYNTHETIC ROWS BEFORE REAL DATA, in both
+  directions -- including "a board rendering an OLDER write", "a board whose
+  TEXT matches but whose FILE is hours older", "a nonce in the row but not in
+  the published files" (a finding about the BRIDGE) and "a nonce in neither"
+  (a finding about the WRITE), plus the positive direction without which a
+  checker passes by refusing everything.
+  FAILS CLOSED per PR 1.11: unreadable mount, missing board file or unreadable
+  registry is exit 2 COULD NOT RUN, never folded into a pass.
+
+THE LIVE WRITE
+    python tools/sairn_status.py set --state working \
+      --task "... BRIDGE-NONCE-6cc9f973c4"
+    registry read-back: state working, updated 2026-10-19T07:32:48, nonce
+    present
+
+THE MOUNT READ-BACK, MECHANICALLY COMPARED
+    python tools/status_board_bridge_check.py --agent cc \
+      --nonce BRIDGE-NONCE-6cc9f973c4
+    board SAIRN-board.md 17521 bytes, mtime 2026-10-19T07:32:49
+    cc  working  ok
+    CLEAN ... and the nonce crossed both ends          exit 0
+
+    ALL SIX AGENTS, same run: hank, cc, cody, fourth, H1, H2 -- all ok.
+
+THE DRIVE-SIDE API READ, WHICH THE MOUNT CANNOT SUBSTITUTE FOR
+    file id  19GSUTWQLddPwZiLEUNfssAjrMxK4vVE1
+    Published at: 2026-10-19T07:32:49 (local)
+    Trigger: cc set state=working
+    ## cc -- state working, "row written 2026-10-19T07:32:48, 0.0h old"
+    task -- "... BRIDGE-NONCE-6cc9f973c4"
+
+A nonce written into the registry at 07:32:48 was readable through the API, in
+the board's own section, at 07:32:49. H1/H2 re-derive it with their OWN nonce;
+the steps are in docs/2026-10-19-cc-b17-status-board-bridge-live-evidence.md
+and do not require taking cc's word for anything.
+
+
+================================================================================
+ITEM 3 -- A LOCK THAT CRASHES IS NOT A LOCK THAT PASSED
+================================================================================
+
+FOUND BY THIS BATCH'S OWN BROKEN ARM, which is the only reason it was found. A
+NameError in one of item 1's new arms printed 23 of 50 arms, no summary line,
+and EXITED 0. `--selftest` and `--preflight` were dispatched from INSIDE the
+hook's `except Exception: sys.exit(0)` -- fail-open, which is CORRECT for the
+gate path, because a gate that crashes closed gets disabled and then protects
+nothing, and WRONG for the criteria lock. A caller reading the exit code saw a
+clean lock over a selftest that never finished: PR 1.11's third state in the
+most load-bearing place on the platform.
+
+  0  the lock ran and passed
+  1  the lock ran and FOUND something
+  2  the lock COULD NOT RUN -- a third state, not a pass
+
+Lock entry points now run under _locked_entry, OUTSIDE the fail-open try.
+ARMS, driven through the real seam rather than asserted:
+  * a lock returning 0 or 1 keeps it -- the policy touches neither;
+  * a lock that RAISES is exit 2, with the traceback;
+  * a SystemExit passes straight through unchanged (exit 7 in, 7 out);
+  * ABLATION, the pre-fix policy returning 0 for the same crashing lock;
+  * ABLATION CONTROL, the pre-fix policy was RIGHT about pass and fail -- it
+    only ever lied about the crash;
+  * WIRING, a text read of this file's own __main__, with its limit stated
+    rather than hidden: it cannot prove behaviour, only notice the two lines
+    swapping back, which is how the defect arrived.
+
+END TO END, through __main__, which the in-process arm cannot reach --
+docs/2026-10-17-cc-b17-locked-entry-crash-injection.py takes the real hook,
+injects `raise RuntimeError` as selftest()'s first line, writes two copies with
+the two wirings and runs each as a subprocess:
+
+    POST-FIX  exit = 2   stdout 365 bytes, names COULD NOT RUN
+    PRE-FIX   exit = 0   stdout 0 BYTES     <- a crashed lock read as CLEAN
+
+THE SWEEP FOR THE SAME SHAPE ELSEWHERE, AND ITS OWN FAILURE FIRST. A probe
+over tools/ for a lock flag dispatched inside a fail-open-to-0 handler
+reported ZERO -- including zero in the pre-fix file it was written to detect,
+because its exit-0 window was 8 lines and the real handler carries eight lines
+of comment before sys.exit(0). Only after a CONTROL proved it fires on the
+pre-fix copy (2 hits) was its live answer worth anything: ONE hit, which is
+this batch's own WIRING arm, verified by reading it. So: one false positive,
+zero real instances. A detector that fires on absence is the one direction
+this class fails, and it failed that way first.
+
+
+================================================================================
+ITEM 4 -- THE INDEX ROWS WERE ALREADY REPAIRED
+================================================================================
+
+hank routed: "Row 355 and row 356 each carry 10 pipes where the 7-column table
+needs 8 ... fixing 355 alone publishes a half repair ... suggested repair is to
+spell the operator out rather than escape it (a backslash-escaped pipe inside a
+backtick span renders the backslash literally in this table)."
+
+THREE THINGS, MEASURED BEFORE ANYTHING WAS TOUCHED.
+
+  THE LINE NUMBERS MOVED. 355/356 are 479/480 today -- the index grows at the
+  top. Found by searching for hank's own quoted spans, not by trusting the
+  numbers.
+
+  THE TABLE IS SOUND. All 855 main-table rows carry exactly 8 UNESCAPED pipes.
+  Zero structurally broken rows. The 38 rows with a different count sit in the
+  3- and 4-column tables at lines 926-968, where their counts are correct.
+
+  THE BACKSLASH DOES NOT RENDER, and this is the premise the recommended fix
+  rested on. Driven through markdown-it-py in the gfm-like preset AND in
+  commonmark with the table rule enabled:
+      | x | six inert `\|\|` alias fallbacks |
+        ->  <td>six inert <code>||</code> alias fallbacks</td>
+            backslash present in output: False
+  Spelling the operator out in words would have REMOVED the literal operator
+  the row is about, in exchange for fixing nothing.
+
+THE RESIDUE WAS IN THE TOOL, and hank's instinct that "index_duplicate_check
+will still be reading a broken row" was right for a different reason.
+rows() did line.split('|'), which cannot tell a delimiter from an escaped
+pipe -- and escaping is the only way markdown admits a pipe into a cell, so
+the mis-split rows were exactly the rows about || operators and shell
+pipelines:
+
+    855  table rows
+     41  read with the wrong column count
+      0  of those had a wrong APP cell
+      2  had a wrong STATUS cell
+      1  had a wrong ITEM cell -- line 645, whose item came out as the seven
+         characters  **`(x \  and was then dropped by the len(norm) < 25
+         guard, with NO OUTPUT AT ALL
+
+ONE ROW OF THE OPEN-WORK INDEX WAS INVISIBLE TO THE DUPLICATE CHECK AND
+NOTHING SAID SO. Pipe-aware split that unescapes the cell; 10/10 fixtures
+including an ABLATION against the naive split and a CONTROL proving the naive
+one was right about rows with no escaped pipe; every skipped row now COUNTED
+in the summary and listed with its own reason. 836 rows compared before, 837
+after, line 645 recovered.
+
+THE TOOL IS CC'S BY THE OWNER MAP AND WAS NOT IN THIS BATCH'S FILES LIST. A
+claim ADDENDUM was written and published naming it, rather than editing it
+quietly.
+
+THE THREE UNDECLARED NEAR-DUPLICATE PAIRS the tool now reports (144/145
+SAIRNgrounds 0.988, 255/257 Tooling 1.000, and one more) are PRE-EXISTING and
+ROUTED. Whether two rows are a duplicate or a finding-plus-follow-up is the
+row author's call, which is why the tool reports and does not edit.
+
+
+================================================================================
+CHECKS, WITH REAL EXIT CODES
+================================================================================
+
+  tools/sairn_push_gate_hook.py --selftest      56/56 arms        exit 0
+  tools/gate_skip.py --fixtures                 14/14 fixtures    exit 0
+  tests/run_gate_skip_probe.py                  all arms          exit 0
+  tools/status_board_bridge_check.py --fixtures 15/15 fixtures    exit 0
+  tools/status_board_bridge_check.py (live)     6 agents, CLEAN   exit 0
+  tools/index_duplicate_check.py --fixtures     10/10 fixtures    exit 0
+  tools/index_duplicate_check.py (live)         3 undeclared      exit 1
+  tools/defect_register.py --check              640 records       exit 0
+  tools/tooling_inventory.py --check            matches the repo  exit 0
+  docs/2026-10-17-cc-b17-locked-entry-crash-injection.py
+                                                both reproduce    exit 0
+
+  PRE-FIX DRIVES RECORDED, not just post-fix passes: the env-only gate_skip
+  arm (no record, no skip), the pre-fix crash wiring (exit 0, empty stdout),
+  the naive split (836 rows, line 645's 7-character item), and the sweep's own
+  first version finding nothing in the file it was built to detect.
+
+  ONE DEFECT RECORD. Four contributing factors -- three actioned, one recorded
+  as an inherent property of the content rather than a fix -- and a
+  recurrence-open line naming what the fixtures do NOT close: nothing compares
+  this parse against open_work_shard.py's.
+
+
+================================================================================
+UNVERIFIED
+================================================================================
+
+  THE RENDERING MEASUREMENT IS markdown-it-py, NOT GITHUB. Two presets agree
+  and markdown-it is the same table semantics, but nobody fetched the rendered
+  page from GitHub to confirm it byte for byte. The COLUMN-COUNT half (855
+  rows, 8 unescaped pipes each) needs no renderer and is not subject to this.
+
+  THE WIRING ARM IS A TEXT READ of the hook's own __main__ and cannot prove
+  behaviour. The crash-injection driver covers the behaviour; the arm covers
+  the lines moving back.
+
+  THE FAIL-OPEN SWEEP COVERS ONE SHAPE -- a `try:` at the same indent as its
+  `except`, with an exit-0 within 40 lines. A differently-shaped fail-open
+  over a lock would be missed, and the sweep is a scratchpad probe, not a
+  committed tool.
+
+  THE BRIDGE CHECK CANNOT PROVE GOOGLE ACKNOWLEDGED THE BYTES. It prints the
+  board's Drive id and says the API read is still owed; this batch made that
+  read from the chat turn, but the TOOL cannot.
+
+  THE STALE-BRIDGE TOLERANCE IS 90 SECONDS, chosen deliberately loose because
+  the tool exists to catch a board frozen for HOURS. A board 30 seconds behind
+  a write would not be reported, and that bound is stated in the source.
+
+  NO LIVE DEPLOYED-URL CHECK: no api/, sql/ or app file changed. Structural,
+  not skipped.
+
+  CODY'S SAIRNSCAPE PII FINDING IS STILL OPEN AND WAS NOT TOUCHED, because
+  hank b18 holds api/sd-data.js. Declared, not worked around.
+
+
+================================================================================
+ONE MORE, FOUND AT THE WRAP: A CEILING NOBODY ENFORCED
+================================================================================
+
+tools/digest_lint.py exists, its 6/6 fixtures pass, and Michael set its
+150-word ceiling himself after a 2,062-word digest. NOBODY RUNS IT. The first
+draft of this batch's digest came in at 1,532 words and the lint said so on the
+first run; cc's b14 digest is of the same order and so is b16's. digest_lint is
+REPORT-ONLY, so nothing ever blocked them, and a ceiling nothing enforces is
+the drift this platform documents in six other places.
+
+THIS DIGEST IS 150 WORDS, lint CLEAN, all six fields present -- including the
+SHA256 and END-OF-REPORT trailer, which count toward the total and are the last
+three words that had to be made room for. The detail that used to live in the
+digest is in THIS FILE, which is what EVIDENCE-path is for.
+
+NOT FIXED HERE, and it is a decision rather than an oversight: making
+digest_lint blocking is a push-gate change that would deny every other agent's
+next wrap without warning. ROUTED TO EVERY AGENT instead -- run
+`python tools/digest_lint.py <your digest>` before publishing one -- and to
+Michael, who can say whether it should become a gate.
+
+END-OF-REPORT
