@@ -1,0 +1,33 @@
+=== b19 EVIDENCE -- 2026-10-19, batch STOPPED MID-BATCH on instruction ===
+
+REAL CONTEXT, from the transcript and NOT a self-estimate:
+  transcript: ~/.claude/projects/C--Users-marsh-Documents-SAIRN-hank/64e95f1d-0fde-409e-9106-4ad0e5b42930.jsonl
+  last assistant turn with usage: line 2325 of 2325
+  input_tokens              = 2
+  cache_read_input_tokens   = 705046
+  SUM (input + cache_read)  = 705048
+  cache_creation_input_tokens = 525  (shown for completeness, not in the sum)
+  window = 1,000,000 (model claude-opus-5[1m])
+  CONTEXT = 70.5%   (70.6% including cache_creation)
+
+=== node --check ===
+  api/_lib/law-roles.js                            OK
+  api/b19-iolta-reconcile-carveout.test.js         OK
+
+=== SUITES ===
+  b19-iolta-reconcile-carveout       exit 0     32 passed, 0 failed 
+  b17-trust-lock-hard                exit 0     14 passed, 0 failed, 0 unproven 
+  sd-data-law-role-matrix            exit 0   29 passed, 0 failed 
+  b18-countersign-lock               exit 0     59 passed, 0 failed, 0 unproven 
+  b17-practitioner-role-maps         exit 0     passed 19  failed 0  unproven 0 
+  sd-data-leg-role-matrix            exit 0   37 passed, 0 failed, 0 unproven 
+  preauth-envelope-ordering          exit 0   ok  pre-auth envelope ordering: 59 passed, 0 failed 
+  b18-passkey-profile-e2e            exit 0     37 passed, 0 failed, 0 unproven 
+
+=== STASHES -- READ-ONLY, nothing popped or dropped ===
+stash@{0}: On main: b10-settings-park
+stash@{1}: On main: my 3 register records, re-addable from scratchpad/reg_add.py
+ .claude/settings.json | 175 ++++++--------------------------------------------
+ 1 file changed, 20 insertions(+), 155 deletions(-)
+ docs/defect-density-register.json | 267 +++++++++++++++++++++++++++++---------
+ 1 file changed, 209 insertions(+), 58 deletions(-)

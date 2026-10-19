@@ -129,6 +129,112 @@ const LAW_TRUST_PREPARE_ROLES = Object.freeze(Object.assign(Object.create(null),
 // SAIRNsenior a real bug when two halves each called effectiveClock().
 const LAW_PREPARE_ACTION = 'prepare';
 
+// ══ b19: THE IOLTA THREE-WAY RECONCILIATION CARVE-OUT (C1's residual) ═════
+// b18 added `bookkeeper` and named a limit in its own table comment: a
+// bookkeeper CANNOT perform the IOLTA three-way reconciliation, because two of
+// its three legs are in LAW_TRUST_LOCKED. This closes that, and it closes it
+// by routing the work AWAY from bookkeeper rather than by opening trust to it.
+//
+// ── THE THREE LEGS ARE RECORDS, NOT ACTS, AND THAT CORRECTS THE PREMISE ───
+// A three-way reconciliation compares (a) the trust bank statement's adjusted
+// balance, (b) the firm's own trust ledger balance, and (c) the SUM of the
+// individual client sub-ledger balances. All three must agree. NONE of the
+// three is an act a licence is required to perform, and the instruction this
+// implements described them as "bar-admitted-only by law" -- which is not what
+// the rules say. What the common-practice sources actually support, in the same
+// way api/sv-auth.js's PRESCRIBER_ROLES is supported:
+//
+//   * ABA Model Rule 1.15 puts the DUTY to safeguard client property on the
+//     lawyer, and that duty is non-delegable as a RESPONSIBILITY.
+//   * ABA Model Rule 5.3 expressly permits non-lawyer assistants under the
+//     lawyer's supervision, so the clerical and arithmetic work of a
+//     reconciliation IS delegable -- and in ordinary practice it is delegated.
+//   * THE BAR-ADMITTED-ONLY ACT IS THE SIGNATURE, NOT THE ARITHMETIC. New
+//     York's Rule 1.15(e) is the clearest: only an attorney admitted in the
+//     State may be an authorised SIGNATORY on an attorney trust account.
+//     Several states carry an equivalent. That act is AUTHORISING MONEY OUT,
+//     which is exactly what C2's two-stage lock above already models.
+//   * State bar guidance that mandates periodic three-way reconciliation also
+//     puts the REVIEW on the lawyer and warns against a non-lawyer holding
+//     sole or unsupervised control of the trust account.
+//
+// SO THE ROUTING IS RIGHT AND THE REASON IS DIFFERENT. A bookkeeper with trust
+// access and no lawyer between them and the money is the specific arrangement
+// that guidance warns about; the legs belong to the legal side. But it is not
+// because the legs need a licence -- it is because the ACTS on them do, and
+// because the responsibility cannot be handed over with the task.
+//
+// ── A NAMED VERB, NOT A WIDER READ, AND THAT IS THE WHOLE SAFETY ──────────
+// `decide('law_trusttx', 'paralegal', 'read')` STAYS DENIED. b17's ARM B is
+// precisely the arm that proves the lock refuses a paralegal read, and a
+// blanket read grant would undo it. The reconciliation reaches the two legs
+// through `LAW_RECONCILE_ACTION` and nothing else, so there is one route in,
+// it is spelled once, and every other route is unchanged.
+const LAW_RECONCILE_ACTION = 'reconcile';
+
+// WHICH RESOURCES ARE RECONCILIATION LEGS. Both members of the trust lock,
+// and exactly those two -- the bank side and the ledger side. The third leg
+// (the sum of the client sub-ledgers) is DERIVED from law_trusttx and is not a
+// resource of its own, which is why this list has two entries and not three.
+const LAW_RECONCILE_LEGS = Object.freeze(Object.assign(Object.create(null), {
+  law_trusttx: true,
+  law_bankstatements: true
+}));
+
+// WHO MAY RECONCILE. The LEGAL SIDE: owner, attorney, paralegal.
+//
+// `bookkeeper` IS ABSENT AND THAT ABSENCE IS THE DELIVERABLE. It is not an
+// omission to be tidied up later: it is the carve-out, and the row comments in
+// LAW_ROLE_MATRIX below point here.
+//
+// `paralegal` IS PRESENT AND IS THE PART THE RESEARCH DOES NOT CLEANLY SETTLE.
+// Rule 5.3 supports a non-lawyer doing the work under supervision, so the
+// grant is defensible -- but the guidance also requires the LAWYER TO REVIEW
+// AND APPROVE the result, and SAIRNlaw has no attestation record anywhere. See
+// LAW_RECONCILE_ATTESTATION below: what ships is a DISCLOSURE, not a
+// mechanism, because a reconciliation presented as complete with no lawyer
+// attestation is the wrong model wearing compliance.
+//
+// NOT DERIVED FROM LAW_BAR_ADMITTED_ROLES, deliberately. It is that set plus
+// `paralegal`, and writing it out means the difference is visible on the
+// screen rather than computed -- the same call api/sd-data-sv-role-matrix's
+// arm A5b makes about SV_CONTROLLED_RECORD_ROLES. Arm R2 of
+// api/b19-iolta-reconcile-carveout.test.js asserts the relationship holds, so
+// a divergence has to be declared there.
+const LAW_RECONCILE_ROLES = Object.freeze(Object.assign(Object.create(null), {
+  owner: true,
+  attorney: true,
+  paralegal: true
+}));
+
+// THE HALF THIS DOES NOT BUILD, CARRIED AS A STRUCTURE SO IT CANNOT BE LOST.
+// Exported and asserted, so "the lawyer must review it" is a fact in the code
+// rather than a sentence in a handoff nobody re-reads.
+const LAW_RECONCILE_ATTESTATION = Object.freeze({
+  // Is a lawyer's review required by the rules this routing is based on?
+  required_by_rule: true,
+  // Does this app record one? NO. Measured, not hoped.
+  implemented: false,
+  basis: 'ABA Model Rule 1.15 (the duty is the lawyer\'s and non-delegable) '
+       + 'read with Rule 5.3 (the work is delegable under supervision). State '
+       + 'bar guidance mandating periodic three-way reconciliation also puts '
+       + 'the review on the lawyer.',
+  gap: 'A paralegal may RUN the reconciliation and nothing records that a '
+     + 'bar-admitted person reviewed the result. The reconciliation therefore '
+     + 'answers "the three legs agree" and never "a lawyer has attested that '
+     + 'they agree", and the app must not present the first as the second.',
+  // The mechanism that would close it, named rather than invented here.
+  candidate: 'the same countersignature lock api/_lib/countersign.js already '
+           + 'runs for C2 -- prepared by one role, attested by a bar-admitted '
+           + 'one, bound to a hash of the exact reconciliation',
+  recorded: '2026-10-19 (b19), hank -- raised as DECISION-NEEDED, not built'
+});
+
+/** Is this resource one of the reconciliation legs? */
+function isReconcileLeg(resource) {
+  return !!LAW_RECONCILE_LEGS[resource];
+}
+
 // PREPARING IS NOT WRITING THE LEDGER, and this is the property the whole
 // shape rests on. A prepared disbursement is a PENDING row that moves money
 // nowhere; only a bar-admitted countersignature converts it. The mechanism is
@@ -199,8 +305,8 @@ const LAW_ROLE_MATRIX = Object.freeze(Object.assign(Object.create(null), {
   law_pimedical:        { owner: 'rw', attorney: 'rw', paralegal: 'r', bookkeeper: '',   why: 'law_pimedical, named explicitly in the policy as read-only. bookkeeper NONE -- health information about an identified person is not billing data, and this is the row most worth being wrong about in the narrow direction' },
 
   // ── TRUST: paralegal none on WRITE, and the LOCK above decides, not these cells
-  law_trusttx:          { owner: 'rw', attorney: 'rw', paralegal: '', bookkeeper: '', why: 'TRUST -- IOLTA client money. The LOCK decides this row, not these cells: bar-admitted only, with ONE named exception -- C2\'s two-stage prepare, which paralegal may perform and which writes a PENDING row, never the ledger' },
-  law_bankstatements:   { owner: 'rw', attorney: 'rw', paralegal: '', bookkeeper: '', why: 'TRUST -- the bank side of the IOLTA three-way reconciliation. Bar-admitted only on EVERY verb: deliberately NOT in LAW_TRUST_TWO_STAGE, because nobody at the firm prepares a bank statement' },
+  law_trusttx:          { owner: 'rw', attorney: 'rw', paralegal: '', bookkeeper: '', why: 'TRUST -- IOLTA client money. The LOCK decides this row, not these cells: bar-admitted only, with TWO named exceptions and no others -- C2\'s two-stage `prepare`, which paralegal may perform and which writes a PENDING row rather than the ledger, and b19\'s `reconcile`, which is leg (b) of the three-way reconciliation and is granted to the LEGAL SIDE only. `bookkeeper` is absent from BOTH, and that absence is C1\'s carve-out rather than an omission' },
+  law_bankstatements:   { owner: 'rw', attorney: 'rw', paralegal: '', bookkeeper: '', why: 'TRUST -- leg (a) of the IOLTA three-way reconciliation, the bank side. Deliberately NOT in LAW_TRUST_TWO_STAGE, because nobody at the firm prepares a bank statement -- but it IS in LAW_RECONCILE_LEGS, because reconciling is exactly what it is for. `bookkeeper` cannot reach it on any verb' },
 
   // ── NOT IN ANY NAMED CATEGORY: paralegal none, by the stated default
   law_portalmessages:   { owner: 'rw', attorney: 'rw', paralegal: '', bookkeeper: '', why: 'not in a named category. Client portal CORRESPONDENCE is not "documents" and not "contacts"; denied by the stated default rather than guessed into a category. FLAGGED as the most likely of the six denials to need revisiting -- a paralegal who cannot read client messages on a matter they work may be the wrong answer operationally, and widening it is the same kind of decision as the rest of this table' },
@@ -273,15 +379,53 @@ function decide(resource, role, action) {
         && LAW_TRUST_PREPARE_ROLES[role] === true) {
       return ALLOW;
     }
+    // b19's SECOND exception, the same three-condition shape: the named verb,
+    // a resource that is a reconciliation LEG, and a role on the reconcile
+    // list. It yields the two legs to the LEGAL SIDE and never to
+    // `bookkeeper`, which is C1's carve-out.
+    //
+    // IT IS READ-SHAPED BY CONSTRUCTION, not by a flag. `reconcile` is not in
+    // any write path -- api/sd-data.js's law_trust_reconcile branch is
+    // read-only and computes a comparison -- so there is nothing to narrow
+    // here. A caller that wanted to WRITE a leg would have to ask for a write
+    // verb, and the branch above refuses it.
+    if (action === LAW_RECONCILE_ACTION
+        && LAW_RECONCILE_LEGS[resource] === true
+        && LAW_RECONCILE_ROLES[role] === true) {
+      return ALLOW;
+    }
     return DENY;
   }
+  // ── A NAMED VERB MEANS ONE THING, ON THE RESOURCES THAT DEFINE IT ───────
+  // FOUND BY DRIVING IT, not by reading it: `decide('law_invoices',
+  // 'bookkeeper', 'reconcile')` returned ALLOW. Nothing is locked on that row,
+  // so it fell through to the table, `reconcile` was treated as WRITE-class
+  // like any unknown verb, and bookkeeper holds `rw` on invoices -- so a verb
+  // that means "perform leg (a) or (b) of a trust reconciliation" was granted
+  // on a resource that has no legs. `prepare` had the same hole and nobody had
+  // asked.
+  //
+  // THE WRITE-CLASS DEFAULT IS STILL RIGHT FOR AN *UNKNOWN* VERB -- a future
+  // `soft_delete` or `export` must not ride in on a read grant, which is what
+  // that rule is for. It is wrong for a verb this module NAMES: a named verb
+  // is defined on a named set of resources and is meaningless off it. So the
+  // two are separated, and the direction is narrowing.
+  const NAMED_VERB_RESOURCES = {};
+  NAMED_VERB_RESOURCES[LAW_PREPARE_ACTION] = LAW_TRUST_TWO_STAGE;
+  NAMED_VERB_RESOURCES[LAW_RECONCILE_ACTION] = LAW_RECONCILE_LEGS;
+  if (Object.prototype.hasOwnProperty.call(NAMED_VERB_RESOURCES, action)
+      && NAMED_VERB_RESOURCES[action][resource] !== true) {
+    return DENY;
+  }
+
   const row = LAW_ROLE_MATRIX[resource];
   const grant = (role && Object.prototype.hasOwnProperty.call(row, role))
     ? String(row[role] || '')
     : '';
-  // 'prepare' reaching here is NOT a locked resource -- the branch above took
-  // every one of those -- so it is a verb nobody defined for this row and it
-  // is WRITE-class, like any other unknown verb.
+  // Any OTHER verb that is not 'read' is WRITE-class. The two named verbs
+  // cannot reach this line for a resource that does not define them -- the
+  // guard above returned -- and for a resource that DOES define them, the
+  // locked branch further up already answered.
   const wantsWrite = (action !== 'read');
   const allowed = wantsWrite ? (grant === 'rw') : (grant === 'rw' || grant === 'r');
   if (!allowed) return DENY;
@@ -313,7 +457,19 @@ function resources() {
 function denyMessage(resource, role, action) {
   if (LAW_TRUST_LOCKED[resource]) {
     const wantsWrite = (action !== 'read' && action !== LAW_PREPARE_ACTION
+                        && action !== LAW_RECONCILE_ACTION
                         && action !== undefined && action !== null && action !== '');
+    // b19: A BOOKKEEPER REFUSED A RECONCILIATION LEG GETS THE REASON, NOT THE
+    // GENERIC TRUST SENTENCE. "Available to the owner and attorneys only" is
+    // true and useless to the person whose job title is on the invoice they
+    // just raised -- they will ask for a permission nobody is going to grant,
+    // because the answer is that this work is not theirs. The refusal says so.
+    if (isReconcileLeg(resource) && role === 'bookkeeper') {
+      return 'Client trust records are not part of the bookkeeping role. The '
+           + 'IOLTA three-way reconciliation is the firm\'s legal staff\'s '
+           + 'work and a lawyer is answerable for it; the operating account is '
+           + 'yours. Ask an attorney if a trust figure needs checking.';
+    }
     if (LAW_TRUST_TWO_STAGE[resource] === true
         && LAW_TRUST_PREPARE_ROLES[role] === true
         && wantsWrite) {
@@ -332,6 +488,13 @@ module.exports = {
   // assert them and so no second file re-lists a role name.
   LAW_BAR_ADMITTED_ROLES,
   LAW_TRUST_TWO_STAGE, LAW_TRUST_PREPARE_ROLES, LAW_PREPARE_ACTION,
+  // b19, C1's IOLTA carve-out. LAW_RECONCILE_ROLES is what api/sd-data.js's
+  // law_trust_reconcile gate must READ rather than re-list -- that gate has
+  // carried a hand-written `roleSet({ owner: true })` and its own comment
+  // calling the widening "the open question, not a rejected one". This is the
+  // answer, in the module that owns law role policy.
+  LAW_RECONCILE_ACTION, LAW_RECONCILE_LEGS, LAW_RECONCILE_ROLES,
+  LAW_RECONCILE_ATTESTATION, isReconcileLeg,
   ALLOW, DENY, NOT_LAW,
   decide, resources, denyMessage
 };
