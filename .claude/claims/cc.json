@@ -4115,6 +4115,27 @@
         "tools/index_duplicate_check.py",
         "tools/status_board_bridge_check.py"
       ]
+    },
+    {
+      "id": "cc-1792417163",
+      "session": "cc",
+      "subject": "cc",
+      "task": "b19: (1) the board's digest-field parser stops at the headings agents really use, measured from the live digests, so STATUS/DECISION-NEEDED/NEXT stop swallowing prose -- Michael's decision; (2) publisher race hardening, a stale clone must not silently revert a corrected board; (3) a confirmation record that the Tier 0 status-bridge work is landed, with what is cc-verified and what is still owed stated separately; (4) AGENTS.md, a short standing per-repo context file; (5) concept before code on items 1 and 2. FILES: tools/sairn_board_publish.py AGENTS.md docs/2026-10-19-cc-b19-concepts.md docs/defect-density-register.json docs/batch-manifest-cc-b19.json SAIRN-handoff-cc-b19.md SAIRN-report-cc-b19.txt SAIRN-digest-cc-b19.txt SAIRN-ACTIVE-WORK-cc.md",
+      "claimed_at": "2026-10-19T13:39:23Z",
+      "claimed_at_epoch": 1792417163.807314,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "AGENTS.md",
+        "SAIRN-ACTIVE-WORK-cc.md",
+        "SAIRN-digest-cc-b19.txt",
+        "SAIRN-handoff-cc-b19.md",
+        "SAIRN-report-cc-b19.txt",
+        "docs/2026-10-19-cc-b19-concepts.md",
+        "docs/batch-manifest-cc-b19.json",
+        "docs/defect-density-register.json",
+        "tools/sairn_board_publish.py"
+      ]
     }
   ],
   "refusals": [
