@@ -1,0 +1,47 @@
+HANK b22 DIGEST -- 2026-10-19 -- six items closed, two gate refusals fed, zero overrides
+
+CONTEXT 81.3% of 1,000,000 -- 812,999 tokens, measured.
+  Printed by `python tools/context_verify.py --digest-line` and pasted
+  verbatim. The report carries 80.9%: the session kept running between them.
+
+STATUS
+LANDED on origin/main, tip 9d829d9eb, verified by sha after a fresh fetch ->
+0 ahead, 0 behind. NOT FORCED. Working tree clean; nothing half-finished,
+nothing left uncommitted. Six items, five fixes, 59 new/changed arms:
+  * api/bridge.js refuses an ABSENT ?action= -- the census that made the
+    decision safe found EIGHT callers where b21's URL-grep found three.
+  * findings #1599: 15 raw PostgREST filter splices in 7 files, not the 3 the
+    finding named. All fixed, plus a STANDING sweep arm.
+  * api/claude.js's pre-auth auth_observe line cannot be forged.
+  * F1 BUILT; F2/F3 policy built and WIRED TO NOTHING -- now an arm that fails
+    the day it is wired, not a paragraph in a handoff.
+  * Grant-App-Login CLOSED at a98def399, live-verified by an ABSENCE.
+Two gate refusals, both FED not escaped: three defect-register records and two
+regenerated documents.
+
+DECISION-NEEDED
+1. stonedesk.html:19939 sairnSyncAll REPORTS SUCCESS ON A REFUSAL -- fetch
+   resolves on a 4xx, so it toasts "All apps synced" having synced nothing.
+   fourth holds the file.
+2. api/sd-data.js was NOT swept for the raw-filter class. Cody's. LIKELY clean,
+   and LIKELY IS NOT MEASURED.
+3. Promote the filter rule to a standing coding rule -- it already has an arm.
+
+NEXT
+1. Run sql/sairnlegacy_countersign_schema.sql and
+   sql/sairnlegacy_settings_schema.sql.
+2. Re-probe the deployed /api/bridge once 9d829d9eb builds: the absent-action
+   case must answer 400, not 401.
+3. Route handoff items A-D to fourth and cody.
+
+UNVERIFIED
+b22's absent-action refusal is NOT DEPLOYED -- the live probe answered 401, the
+pre-fix fall-through. Not retried, per instruction. b21's unknown-action
+refusal IS live-proven (400). The log-line fix has no live evidence. No
+whole-tree run, no rendered pass, no SQL run.
+
+EVIDENCE-path  SAIRN-handoff-hank-b22.md -- Drive 12XvGyVSX5qS_hHN8fnXhCl5pw3hu-9gU
+               SAIRN-report-hank-b22.txt -- sealed, report_sha_check OK
+               docs/2026-10-19-hank-b22-notes.md
+
+END-OF-DIGEST
