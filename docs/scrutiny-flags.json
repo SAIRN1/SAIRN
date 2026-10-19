@@ -1973,6 +1973,30 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairnbuild_server_wins.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "40275ee5d2ccaaf771cff0b64877d9fe0677b7ff",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairndental_amount_construction.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "40275ee5d2ccaaf771cff0b64877d9fe0677b7ff",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairndental_rollup_panel.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "40275ee5d2ccaaf771cff0b64877d9fe0677b7ff",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/push_gate/check4_probe.py",
    "class": "test file",
    "level": "WEAKENING",
