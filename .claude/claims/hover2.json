@@ -690,8 +690,8 @@
       "task": "b61: demo-chain run, JS property-harness arm, cross-agent independence check vs H1, push",
       "claimed_at": "2026-10-19T13:58:38Z",
       "claimed_at_epoch": 1792418318.1439626,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-19T14:11:39Z",
       "files": null
     }
   ],
