@@ -33988,6 +33988,56 @@
       "factors_unknown_reason": "duplicate-copy follow-up to an already-registered defect (9a7f73da); the fix and its own regression coverage are the record, no separate RCA factor pass run"
     },
     {
+      "commit": "538af8d5ca7e",
+      "date": "2026-10-19",
+      "subject": "fix(path-manifest): a flag's value is not a path, and the proxy it exposed is withdrawn",
+      "files": [
+        "tools/sairn_path_manifest.py"
+      ],
+      "lines_added": 59,
+      "lines_removed": 2,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/sairn_path_manifest.py's `--check` collected every argument after itself that did not begin with `--`, which swallowed the VALUE of `--agent`. Driven on the real tool: `--check --agent cody sairnroofing.html sairnscape.html stonedesk.html` classified a path literally named `cody` and reported FOUR paths where three were given. THE PUSH VERDICT WAS STILL RIGHT, which is why it survived the batch that shipped it: `cody` matched no ownership prefix, read UNOWNED, and the three real paths were still refused, so the exit code was correct while the OUTPUT carried a row about a file nobody named. A wrong line inside a refusal somebody is meant to act on is worse than a wrong exit code, because the exit code is the part a reader re-derives and the prose is the part they believe. The same batch's `--history` mode then reported \"cody 50 paths, 14 REFUSED\" on a commit-subject proxy; re-measured here, all 13 of those .html paths come from ONE commit, 50f67cfe, authored by `fx` with the subject \"fix(contrast): 153 findings down to 3, app by app, and the 3 left are cody's file\" -- fourth's commit, fourth's own files, entirely in scope, with `cody` appearing only as a possessive. So the figure was 100% false positives for that population and the DECISION-NEEDED it produced is withdrawn rather than acted on.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "38bbd45518f1",
+        "date": "2026-10-19",
+        "subject": "feat(scope): a name list becomes a property, a threshold becomes a population, and a push learns its own scope",
+        "lag_days": 0
+      },
+      "contributing_factors": [
+        {
+          "factor": "the path collector tested for a `--` prefix instead of knowing which flags take a value, so any flag value became a path",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "extracted as paths_from_argv(), pure and locked -- 31 to 37 arms, with the real invocation as the arm, a flag-after-paths negative control so the fix is not position-dependent, and an ablation showing the pre-b25 expression returning the agent name as a path"
+        },
+        {
+          "factor": "the wrong output rode inside a CORRECT exit code, so every arm and every drive in the shipping batch agreed with it",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the arms now assert the collected path LIST rather than the verdict, so a phantom row fails even when the refusal is right"
+        },
+        {
+          "factor": "the same batch attributed commits to populations by searching the commit SUBJECT for an agent name, and reported a per-population refusal count built on it",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "reframe or remove --history: measured, git carries no per-population signal at all in this repo -- every commit is authored by Michael Dibert, SAIRN1 or fx -- so the mode cannot be fixed by switching to the author field and must stop attributing rather than attribute badly"
+        }
+      ],
+      "recurrence_open": "Nothing checks a tool's OUTPUT against its inputs -- only its exit code. This defect produced a correct refusal with a fabricated row in it and every control in the shipping batch passed. And the --history proxy is still present and still prints a per-population table; it is disclosed in its own output as a proxy, which is weaker than not printing a figure nobody can act on."
+    },
+    {
       "commit": "54d6e95d9678",
       "date": "2026-10-19",
       "subject": "feat(sairnlaw,sairnlegacy): the four remaining practitioner answers, and the trust lock finally decides before the table",
@@ -34053,6 +34103,63 @@
       "recurrence_open": "NOTHING COMPARES A FILE'S PROSE TO ITS CONTROL FLOW, on this file or any other. The arms added here check that two FUNCTIONS agree; they do not check that the header's word 'BEFORE' matches the order decide() uses. A second ordering claim in a second file would be invisible the same way. Also: the lock is still consulted only from inside decide(), so an override layer that bypassed decide() entirely would reach trust -- no such layer exists today and nothing prevents one."
     },
     {
+      "commit": "56659fc0fa1d",
+      "date": "2026-10-19",
+      "subject": "fix(claude b22): the pre-auth auth_observe log line cannot be forged",
+      "files": [
+        "api/b22-claude-logline.test.js",
+        "api/claude.js"
+      ],
+      "lines_added": 319,
+      "lines_removed": 1,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "api/claude.js logged a client-supplied, UNVALIDATED, PRE-AUTH app_id into its auth_observe line: console.log('api/claude auth_observe app_id=' + (body.app_id || '(none)') + ' state=' + authState + ' mode=' + claudeAuthMode). It ran on EVERY call, including unauthenticated ones, and it ran BEFORE the allowlist check at the !KNOWN_APP_IDS.includes(app_id) branch -- so a newline in app_id wrote a SECOND entry indistinguishable from a real one, with an attacker-chosen state=. THE FORGED state=valid IS THE POINT. auth_observe exists BECAUSE SAIRN_CLAUDE_AUTH_MODE defaults to `observe`: the log IS the evidence an operator reads to decide whether auth is working, and the entries it cannot be trusted on are exactly the ones somebody reads during an incident. FIX: logSafeAppId() with three rules, each closing a different hole. (1) VALIDATE FIRST -- a value in KNOWN_APP_IDS prints verbatim and nothing else is ever printed as though it were an app id. (2) STRIP THE WHOLE CONTROL CLASS, not just newlines: CR alone forges a line on a CR-splitting reader, ESC drives a terminal that renders the log, and U+2028/U+2029 are breaks to many log viewers -- so C0, DEL, C1 and both Unicode separators go. (3) CAP THE LENGTH at 40, applied AFTER stripping so 5,000 newlines cannot spend the budget and let a forgery through behind them. THE VALUE IS SANITISED, NOT DROPPED, and this file's own history is the argument: SAIRNsenior's every AI call 400ed silently for weeks and was found because a refusal NAMED the unrecognised app_id. Unrecognised values print LABELLED as (unrecognised:...) so a reader and a grep can never confuse one with a real app. A non-string app_id names its TYPE rather than being coerced, because String({}) would print '[object Object]' as though somebody had typed it. ARMS: api/b22-claude-logline.test.js, 12 arms. A1 is the forged-newline arm; A2 covers EVERY break character, because a fix that stripped only newlines would pass A1 and leave CR, ESC, NEL and both separators open. B1-B4 are the negative control: every id in KNOWN_APP_IDS prints verbatim, the longest is inside the cap, an absent value still reads (none). C1/C2 cover the cap and its ordering. D1 is the ablation and D2 its clean control.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "209e9802a5ba",
+        "date": "2026-09-08",
+        "subject": "feat(claude): Phase 1 of the licence-key requirement -- observe and record, enforce nothing yet",
+        "lag_days": 41
+      },
+      "citation_note": "The platform has a standing rule about user-controlled data reaching a sink unescaped (Guardian checks 25/26 for the DOM), and none that names A LOG as a sink. That is the gap this record argues for: a log line is read by an operator during an incident and is therefore a trust boundary, and `console.log('x=' + untrusted)` is the same shape as innerHTML with a different consumer. Recorded as not-citable so the rule can cite this instance.",
+      "phase_note": "Coding. The design is right and deliberate -- an observe-mode log that records the claimed app_id is exactly what Phase 1 of the licence requirement needed, and recording the raw claim is the POINT of it. The expression was wrong: it interpolated the claim into a line-structured sink with no sanitisation. Not design: the field stays and still carries the claimed value. Not config.",
+      "contributing_factors": [
+        {
+          "factor": "A client-supplied string was concatenated into a line-structured sink with no sanitisation, so a newline in it created a second entry. The log's format IS its parse -- one line per event -- and nothing enforced that.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "logSafeAppId(): validate against KNOWN_APP_IDS, strip the whole C0/DEL/C1 range plus U+2028/U+2029, cap at 40 after stripping, and label anything unrecognised."
+        },
+        {
+          "factor": "The log sits BEFORE the allowlist check, by design -- observe mode has to record what was CLAIMED, including by an unauthenticated caller. So the one value that most needs sanitising is the one guaranteed to be unvalidated at that point.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Validation moved INTO the rendering rather than being hoisted earlier: the line still records the raw claim, it just cannot print it as if it were a known app. Moving the allowlist check up would have destroyed the diagnostic observe mode exists for."
+        },
+        {
+          "factor": "No suite covered this line, and no checker treats a log as a sink. Guardian 25/26 cover the DOM; nothing covers console.log.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/b22-claude-logline.test.js, 12 arms, including A2 over the whole break-character class so a newline-only fix cannot pass, and E1 asserting the sanitiser's own regex carries no literal control byte."
+        },
+        {
+          "factor": "I WROTE THE 'LITERAL CONTROL BYTES IN A REGEX' DEFECT TWICE WHILE FIXING THIS -- once in the sanitiser and once in the test file that asserts against it, which would have been a checker carrying the defect it checks for. node --check caught both on the first run.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Both are now built from escapes, and arm E1 asserts the source contains no literal control byte -- so the next edit to that class fails loudly instead of shipping an invisible one."
+        }
+      ],
+      "recurrence_open": "THIS FIXES ONE LINE. Nothing sweeps the platform for other logs that interpolate request data -- there is no checker that treats a log as a sink, and this record's rule_note argues for one rather than claiming it exists. The 40-character cap is a JUDGEMENT, not a measurement: arm B2 asserts the longest CURRENT app_id fits, so a future app name over 40 characters fails that arm rather than being quietly truncated -- but nothing stops the cap being raised without re-checking. And the fix is NOT DEPLOYED at the time of this record: every arm is against the exported helper and none against the live endpoint's log output, which cannot be read from here at all."
+    },
+    {
       "commit": "56d267e3b169",
       "date": "2026-10-19",
       "subject": "fix(board)+harden(bridge): a figure cell now contains a figure, and the render claim is confirmed against GitHub itself",
@@ -34105,6 +34212,63 @@
         }
       ],
       "recurrence_open": "The STATUS and NEXT fields are parsed the same way and still swallow unlabelled prose; they are bounded by their own 900-character slices, so they degrade quietly rather than wrongly, and nothing here changes that. Nothing requires a digest to use only the nine labels the board knows. And the fix is in a SHARED publisher that every clone runs its own copy of -- measured during this batch, fourth's clone republished the board 20 minutes after cc's corrected version with its own pre-fix copy, so the platform-wide effect of this fix only arrives as each clone fetches."
+    },
+    {
+      "commit": "688abb92bc96",
+      "date": "2026-10-19",
+      "subject": "fix(bridge b22): an ABSENT ?action= is refused too -- b21's declared residual, closed after a caller census",
+      "files": [
+        "api/b21-bridge-unknown-action.test.js",
+        "api/bridge.js"
+      ],
+      "lines_added": 229,
+      "lines_removed": 45,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "api/bridge.js refused an UNKNOWN ?action= since b21 but still let an ABSENT one fall through to handlePush. b22 closed it after establishing the one fact the decision needed: does any LEGITIMATE caller omit ?action=. ANSWERING IT FOUND MORE THAN b21 KNEW. b21 grepped the literal URL and reported THREE call sites; a census of every /api/bridge fetch in every app file, INCLUDING the ones reached through a BRIDGE / SAIRN_BRIDGE / FM_API constant, found EIGHT. Four are legitimate and all four are unaffected, because the proxy_get body signal is matched ABOVE the refusal: stonedesk.html:20381 (?action=push), sairnbuild.html:7754, stonedesk.html:41857 and :41943 (all data_type:proxy_get, the last two NEW to this census). Three name an action this endpoint has never had and omit both the query param and data_type: stonedesk.html:7795, :2954 sendToNetwork {type:learn} and :19939 sairnSyncAll {type:full-sync} -- the last two also NEW. AND ONE IS WORSE THAN b21 RECORDED. :7795 and :2954 swallow the 401 in a bare .catch(){}. :19939 DOES NOT FAIL QUIETLY -- IT REPORTS SUCCESS: fetch only rejects on a transport error, so a 401 RESOLVES, its catch never runs, and sairnSyncAll sets 'Last sync: <time>' and toasts 'All apps synced' having synced nothing. That is a false success claim to the user's face. FIX: one condition, `if (!action || KNOWN_ACTIONS.indexOf(action) === -1)`, so absent and unrecognised are the same answer and there is one branch and one message to maintain. The falsy test covers both a missing param (null) and `?action=` with no value (empty string), which a guard written against only null would let through. ARMS: api/b21-bridge-unknown-action.test.js grew 14 -> 20. D1/D2 were RE-AIMED not deleted -- b21's D1 asserted the old behaviour and said in its own text that if it ever changed, that arm was the one to update. D1c covers the empty-param case; D2b covers the two newly-found callers; D2c asserts what the fix does NOT close. E3 is an ABSENT-half ablation beside the existing unknown-half one, because ONE condition now covers both cases and an ablation of it has to be shown to redden BOTH; E4 is a negative control proving the ablated copy still routes. NOT CLOSED: the three CALLERS are unchanged -- stonedesk.html is held by fourth under a live b34 claim -- so sairnSyncAll will still claim success on the 400 this fix now returns. Routed, and arm D2c pins it.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "df84b213f14e",
+        "date": "2026-07-31",
+        "subject": "feat: build api/bridge.js (proxy_get + push/pull) \u2014 Guardian scan clean",
+        "lag_days": 80
+      },
+      "citation_note": "No standing coding rule names this shape. It is the same class as the unknown-action half recorded against 62825f3d/1813a231d in b21 -- a dispatcher's final branch is an unguarded fall-through, so a selector the file does not recognise silently becomes the last handler's input. b21's record is the first instance; this is the second, and the pair is the argument for a rule rather than two not-citable notes. Recorded as not-citable rather than forced into the nearest bin.",
+      "phase_note": "Coding. The plan was right -- the file's header has documented exactly two POST actions since 2026-07-31 and `pull` was deliberately removed in 2026-09-17. The expression was wrong twice over: first no allowlist at all, then an allowlist that tested only for an UNRECOGNISED name and not for a MISSING one. Not design: the two-action structure never had to change. Not config.",
+      "contributing_factors": [
+        {
+          "factor": "b21's guard tested `action !== null && action !== undefined && action !== '' && not-in-list`, which refuses an unrecognised name and accepts an absent one. Two cases, one of them unguarded.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "One condition, `!action || not-in-list`, so absent and unrecognised are the same answer. The falsy test also covers `?action=` with an empty value, which an explicit null check misses."
+        },
+        {
+          "factor": "b21's caller census grepped the literal string 'api/bridge' and therefore missed every caller that reaches the endpoint through a BRIDGE / SAIRN_BRIDGE / FM_API constant -- three of the eight, including the worst one.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The b22 census enumerated fetches AND constant declarations, and arm D2b pins the two newly-found callers by file and line so a future census cannot quietly lose them again."
+        },
+        {
+          "factor": "stonedesk.html:19939 awaits the fetch and treats resolution as success. `fetch` resolves on a 4xx, so a 401 (and now a 400) never reaches its catch, and the UI reports 'All apps synced' plus a fresh 'Last sync' timestamp having synced nothing.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Routed: stonedesk.html is held by fourth under a live b34 claim. The caller must branch on res.ok or on the error code. Arm D2c asserts the endpoint's half -- a machine-readable UNKNOWN_ACTION code a caller CAN branch on -- and states plainly that the refusal changes 401 to 400 and changes nothing the user sees."
+        },
+        {
+          "factor": "b21 declared the absent-action case a residual in prose and in an arm, which is better than silence but still left the hole open for a batch. The decision needed a caller census to make safely, and nothing scheduled that census.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The census was done before the code this time, and its result is written into the handler comment and into the arms, so the next person to touch this branch inherits the eight-caller list rather than re-deriving it from a grep."
+        }
+      ],
+      "recurrence_open": "THE THREE CALLERS ARE UNCHANGED. stonedesk.html is claimed, so sairnSyncAll still toasts 'All apps synced' on the 400 this fix returns -- the endpoint half is closed and the caller half is routed. AND THE REFUSAL IS NOT DEPLOYED at the time of this record, so every arm is against the handler and none against the live URL; a 401 from the deployed endpoint today is evidence about the licence gate and none about this change. Finally, nothing prevents a NINTH caller being written against a non-existent action -- the refusal makes that loud at runtime but no check stops the call site being added."
     },
     {
       "commit": "6b2f8727895e",
@@ -34623,120 +34787,6 @@
         }
       ],
       "recurrence_open": "api/sd-data.js WAS NOT SWEPT and is NOT covered by this record. It is cody's file this batch, it is the largest handler on the platform, and it uses an enc() helper throughout -- so it is LIKELY clean, and LIKELY IS NOT MEASURED. Routed. The standing arm D1 walks only api/ and would catch a new splice there on the next run, which is the mitigation, not a measurement of today. Separately: D1 allowlists the namespaced-encoder shape (`spec.enc(...)`) by pattern, so a file that invents a THIRD encoder spelling would be silently skipped until somebody notices."
-    },
-    {
-      "commit": "688abb92bc96",
-      "date": "2026-10-19",
-      "subject": "fix(bridge b22): an ABSENT ?action= is refused too -- b21's declared residual, closed after a caller census",
-      "files": [
-        "api/b21-bridge-unknown-action.test.js",
-        "api/bridge.js"
-      ],
-      "lines_added": 229,
-      "lines_removed": 45,
-      "app": "stonedesk",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "api/bridge.js refused an UNKNOWN ?action= since b21 but still let an ABSENT one fall through to handlePush. b22 closed it after establishing the one fact the decision needed: does any LEGITIMATE caller omit ?action=. ANSWERING IT FOUND MORE THAN b21 KNEW. b21 grepped the literal URL and reported THREE call sites; a census of every /api/bridge fetch in every app file, INCLUDING the ones reached through a BRIDGE / SAIRN_BRIDGE / FM_API constant, found EIGHT. Four are legitimate and all four are unaffected, because the proxy_get body signal is matched ABOVE the refusal: stonedesk.html:20381 (?action=push), sairnbuild.html:7754, stonedesk.html:41857 and :41943 (all data_type:proxy_get, the last two NEW to this census). Three name an action this endpoint has never had and omit both the query param and data_type: stonedesk.html:7795, :2954 sendToNetwork {type:learn} and :19939 sairnSyncAll {type:full-sync} -- the last two also NEW. AND ONE IS WORSE THAN b21 RECORDED. :7795 and :2954 swallow the 401 in a bare .catch(){}. :19939 DOES NOT FAIL QUIETLY -- IT REPORTS SUCCESS: fetch only rejects on a transport error, so a 401 RESOLVES, its catch never runs, and sairnSyncAll sets 'Last sync: <time>' and toasts 'All apps synced' having synced nothing. That is a false success claim to the user's face. FIX: one condition, `if (!action || KNOWN_ACTIONS.indexOf(action) === -1)`, so absent and unrecognised are the same answer and there is one branch and one message to maintain. The falsy test covers both a missing param (null) and `?action=` with no value (empty string), which a guard written against only null would let through. ARMS: api/b21-bridge-unknown-action.test.js grew 14 -> 20. D1/D2 were RE-AIMED not deleted -- b21's D1 asserted the old behaviour and said in its own text that if it ever changed, that arm was the one to update. D1c covers the empty-param case; D2b covers the two newly-found callers; D2c asserts what the fix does NOT close. E3 is an ABSENT-half ablation beside the existing unknown-half one, because ONE condition now covers both cases and an ablation of it has to be shown to redden BOTH; E4 is a negative control proving the ablated copy still routes. NOT CLOSED: the three CALLERS are unchanged -- stonedesk.html is held by fourth under a live b34 claim -- so sairnSyncAll will still claim success on the 400 this fix now returns. Routed, and arm D2c pins it.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "df84b213f14e",
-        "date": "2026-07-31",
-        "subject": "feat: build api/bridge.js (proxy_get + push/pull) \u2014 Guardian scan clean",
-        "lag_days": 80
-      },
-      "citation_note": "No standing coding rule names this shape. It is the same class as the unknown-action half recorded against 62825f3d/1813a231d in b21 -- a dispatcher's final branch is an unguarded fall-through, so a selector the file does not recognise silently becomes the last handler's input. b21's record is the first instance; this is the second, and the pair is the argument for a rule rather than two not-citable notes. Recorded as not-citable rather than forced into the nearest bin.",
-      "phase_note": "Coding. The plan was right -- the file's header has documented exactly two POST actions since 2026-07-31 and `pull` was deliberately removed in 2026-09-17. The expression was wrong twice over: first no allowlist at all, then an allowlist that tested only for an UNRECOGNISED name and not for a MISSING one. Not design: the two-action structure never had to change. Not config.",
-      "contributing_factors": [
-        {
-          "factor": "b21's guard tested `action !== null && action !== undefined && action !== '' && not-in-list`, which refuses an unrecognised name and accepts an absent one. Two cases, one of them unguarded.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "One condition, `!action || not-in-list`, so absent and unrecognised are the same answer. The falsy test also covers `?action=` with an empty value, which an explicit null check misses."
-        },
-        {
-          "factor": "b21's caller census grepped the literal string 'api/bridge' and therefore missed every caller that reaches the endpoint through a BRIDGE / SAIRN_BRIDGE / FM_API constant -- three of the eight, including the worst one.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "The b22 census enumerated fetches AND constant declarations, and arm D2b pins the two newly-found callers by file and line so a future census cannot quietly lose them again."
-        },
-        {
-          "factor": "stonedesk.html:19939 awaits the fetch and treats resolution as success. `fetch` resolves on a 4xx, so a 401 (and now a 400) never reaches its catch, and the UI reports 'All apps synced' plus a fresh 'Last sync' timestamp having synced nothing.",
-          "kind": "latent-condition",
-          "action_status": "planned",
-          "action": "Routed: stonedesk.html is held by fourth under a live b34 claim. The caller must branch on res.ok or on the error code. Arm D2c asserts the endpoint's half -- a machine-readable UNKNOWN_ACTION code a caller CAN branch on -- and states plainly that the refusal changes 401 to 400 and changes nothing the user sees."
-        },
-        {
-          "factor": "b21 declared the absent-action case a residual in prose and in an arm, which is better than silence but still left the hole open for a batch. The decision needed a caller census to make safely, and nothing scheduled that census.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "The census was done before the code this time, and its result is written into the handler comment and into the arms, so the next person to touch this branch inherits the eight-caller list rather than re-deriving it from a grep."
-        }
-      ],
-      "recurrence_open": "THE THREE CALLERS ARE UNCHANGED. stonedesk.html is claimed, so sairnSyncAll still toasts 'All apps synced' on the 400 this fix returns -- the endpoint half is closed and the caller half is routed. AND THE REFUSAL IS NOT DEPLOYED at the time of this record, so every arm is against the handler and none against the live URL; a 401 from the deployed endpoint today is evidence about the licence gate and none about this change. Finally, nothing prevents a NINTH caller being written against a non-existent action -- the refusal makes that loud at runtime but no check stops the call site being added."
-    },
-    {
-      "commit": "56659fc0fa1d",
-      "date": "2026-10-19",
-      "subject": "fix(claude b22): the pre-auth auth_observe log line cannot be forged",
-      "files": [
-        "api/b22-claude-logline.test.js",
-        "api/claude.js"
-      ],
-      "lines_added": 319,
-      "lines_removed": 1,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "independent-review",
-      "summary": "api/claude.js logged a client-supplied, UNVALIDATED, PRE-AUTH app_id into its auth_observe line: console.log('api/claude auth_observe app_id=' + (body.app_id || '(none)') + ' state=' + authState + ' mode=' + claudeAuthMode). It ran on EVERY call, including unauthenticated ones, and it ran BEFORE the allowlist check at the !KNOWN_APP_IDS.includes(app_id) branch -- so a newline in app_id wrote a SECOND entry indistinguishable from a real one, with an attacker-chosen state=. THE FORGED state=valid IS THE POINT. auth_observe exists BECAUSE SAIRN_CLAUDE_AUTH_MODE defaults to `observe`: the log IS the evidence an operator reads to decide whether auth is working, and the entries it cannot be trusted on are exactly the ones somebody reads during an incident. FIX: logSafeAppId() with three rules, each closing a different hole. (1) VALIDATE FIRST -- a value in KNOWN_APP_IDS prints verbatim and nothing else is ever printed as though it were an app id. (2) STRIP THE WHOLE CONTROL CLASS, not just newlines: CR alone forges a line on a CR-splitting reader, ESC drives a terminal that renders the log, and U+2028/U+2029 are breaks to many log viewers -- so C0, DEL, C1 and both Unicode separators go. (3) CAP THE LENGTH at 40, applied AFTER stripping so 5,000 newlines cannot spend the budget and let a forgery through behind them. THE VALUE IS SANITISED, NOT DROPPED, and this file's own history is the argument: SAIRNsenior's every AI call 400ed silently for weeks and was found because a refusal NAMED the unrecognised app_id. Unrecognised values print LABELLED as (unrecognised:...) so a reader and a grep can never confuse one with a real app. A non-string app_id names its TYPE rather than being coerced, because String({}) would print '[object Object]' as though somebody had typed it. ARMS: api/b22-claude-logline.test.js, 12 arms. A1 is the forged-newline arm; A2 covers EVERY break character, because a fix that stripped only newlines would pass A1 and leave CR, ESC, NEL and both separators open. B1-B4 are the negative control: every id in KNOWN_APP_IDS prints verbatim, the longest is inside the cap, an absent value still reads (none). C1/C2 cover the cap and its ordering. D1 is the ablation and D2 its clean control.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "209e9802a5ba",
-        "date": "2026-09-08",
-        "subject": "feat(claude): Phase 1 of the licence-key requirement -- observe and record, enforce nothing yet",
-        "lag_days": 41
-      },
-      "citation_note": "The platform has a standing rule about user-controlled data reaching a sink unescaped (Guardian checks 25/26 for the DOM), and none that names A LOG as a sink. That is the gap this record argues for: a log line is read by an operator during an incident and is therefore a trust boundary, and `console.log('x=' + untrusted)` is the same shape as innerHTML with a different consumer. Recorded as not-citable so the rule can cite this instance.",
-      "phase_note": "Coding. The design is right and deliberate -- an observe-mode log that records the claimed app_id is exactly what Phase 1 of the licence requirement needed, and recording the raw claim is the POINT of it. The expression was wrong: it interpolated the claim into a line-structured sink with no sanitisation. Not design: the field stays and still carries the claimed value. Not config.",
-      "contributing_factors": [
-        {
-          "factor": "A client-supplied string was concatenated into a line-structured sink with no sanitisation, so a newline in it created a second entry. The log's format IS its parse -- one line per event -- and nothing enforced that.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "logSafeAppId(): validate against KNOWN_APP_IDS, strip the whole C0/DEL/C1 range plus U+2028/U+2029, cap at 40 after stripping, and label anything unrecognised."
-        },
-        {
-          "factor": "The log sits BEFORE the allowlist check, by design -- observe mode has to record what was CLAIMED, including by an unauthenticated caller. So the one value that most needs sanitising is the one guaranteed to be unvalidated at that point.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "Validation moved INTO the rendering rather than being hoisted earlier: the line still records the raw claim, it just cannot print it as if it were a known app. Moving the allowlist check up would have destroyed the diagnostic observe mode exists for."
-        },
-        {
-          "factor": "No suite covered this line, and no checker treats a log as a sink. Guardian 25/26 cover the DOM; nothing covers console.log.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "api/b22-claude-logline.test.js, 12 arms, including A2 over the whole break-character class so a newline-only fix cannot pass, and E1 asserting the sanitiser's own regex carries no literal control byte."
-        },
-        {
-          "factor": "I WROTE THE 'LITERAL CONTROL BYTES IN A REGEX' DEFECT TWICE WHILE FIXING THIS -- once in the sanitiser and once in the test file that asserts against it, which would have been a checker carrying the defect it checks for. node --check caught both on the first run.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Both are now built from escapes, and arm E1 asserts the source contains no literal control byte -- so the next edit to that class fails loudly instead of shipping an invisible one."
-        }
-      ],
-      "recurrence_open": "THIS FIXES ONE LINE. Nothing sweeps the platform for other logs that interpolate request data -- there is no checker that treats a log as a sink, and this record's rule_note argues for one rather than claiming it exists. The 40-character cap is a JUDGEMENT, not a measurement: arm B2 asserts the longest CURRENT app_id fits, so a future app name over 40 characters fails that arm rather than being quietly truncated -- but nothing stops the cap being raised without re-checking. And the fix is NOT DEPLOYED at the time of this record: every arm is against the exported helper and none against the live endpoint's log output, which cannot be read from here at all."
     },
     {
       "commit": "fed240ec418b",
