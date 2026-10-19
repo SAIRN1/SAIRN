@@ -379,3 +379,45 @@ CLAIM -- RELEASED with this report. `platform`, taken BEFORE any work, held
 through the whole batch including the three rebases, and released only after
 the push was confirmed PRESENT ON THE REMOTE rather than reported successful.
 ===========================================================================
+
+===========================================================================
+CORRECTION, APPENDED AFTER THE PUSH -- ONE SHA IN THIS FILE NO LONGER
+RESOLVES, AND IT IS THE RELEASE COMMIT
+===========================================================================
+
+This report states "The claim was released in ac6f6c9aa". THAT SHA NO LONGER
+RESOLVES. The final rebase -- the fourth, taken because two more clones landed
+work while the report and digest were being written -- rewrote it to 0926acac8.
+
+THE FIVE b22 COMMITS, FINAL SHAS, CONFIRMED PRESENT ON THE REMOTE by
+`git merge-base --is-ancestor <sha> $(git ls-remote origin refs/heads/main)`:
+
+  cfedf8dca  feat(sairnfreedom): the canteen's exempt entity is CONFIGURABLE...
+  ede864ef9  docs(b22): handoff...
+  89fbac189  regen(derived): the traceability matrix and master plan...
+  0926acac8  chore(claims): cody releases platform
+  be6a959c6  docs(b22): report and digest...
+
+EVERYTHING ELSE IN THIS FILE STANDS, INCLUDING THE STATUS LINE. 89fbac189 did
+land and is an ancestor of the remote tip; it is simply no longer the tip,
+because another clone pushed after it. `git ls-remote origin refs/heads/main`
+now reports 0a2b464417, and all twelve b22 artefacts were re-confirmed present
+in THAT tree with `git cat-file -e <tip>:<path>` -- including the claim file,
+which shows `status: released, released_at: 2026-10-17T15:28:27Z` ON THE REMOTE
+and not only locally.
+
+AND ONE FALSE ALARM WAS CAUGHT RATHER THAN REPORTED. The first run of that
+confirmation listed ALL TWELVE FILES AS MISSING. They were not missing: the
+remote tip had moved and `git cat-file -e` was being asked about an object this
+clone had not fetched yet, so it answered about LOCAL OBJECT AVAILABILITY and
+not about remote content. A fetch cleared all twelve. A verification step that
+reads "missing" when the real answer is "not fetched" is the same third-state
+collapse this platform keeps paying for -- COULD NOT TELL folded into a
+finding -- and it is recorded here because the next session will run the same
+command against a moving trunk.
+
+THE GENERAL FORM, which is the reusable part: ON A TRUNK FOUR CLONES PUSH TO,
+"IS IT THE TIP" IS THE WRONG QUESTION AND IT GOES STALE IN SECONDS.
+`merge-base --is-ancestor` is the right one -- it asks whether the work is
+PRESENT, which is what "landed" actually means and which stays true no matter
+who pushes next.
