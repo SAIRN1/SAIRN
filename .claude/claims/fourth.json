@@ -4176,8 +4176,8 @@
       "task": "b37: sairndental a11y remainder -- focus trap with return-focus on 7 modals, aria-live panel-change announcement in nav(), 3 unlabelled inputs; Tier A register review of invoices law_trusttx leg_cremations employees rf_claims rf_jobs (REPORT only, no write to docs/tier-a-reviews.json which cc holds); sairnlaw worldwide competitive-gap audit with primary regulation sources; push; handoff/report/digest. FILES: sairndental.html docs/cloud-research/ docs/2026-10-19-fourth-b37-notes.md SAIRN-handoff-fourth-b37.md SAIRN-report-fourth-b37.txt SAIRN-digest-fourth-b37.txt SAIRN-ACTIVE-WORK-fourth.md NOT-stonedesk-html-BLOCKED-pending-go-ahead NOT-docs-tier-a-reviews-json-cc-holds-it NOT-api-NOT-tools",
       "claimed_at": "2026-10-19T21:48:32Z",
       "claimed_at_epoch": 1792446512.2527258,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-19T22:47:42Z",
       "files": [
         "SAIRN-ACTIVE-WORK-fourth.md",
         "SAIRN-digest-fourth-b37.txt",
