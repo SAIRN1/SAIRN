@@ -33651,6 +33651,63 @@
       "single_factor_note": "not applicable -- three factors"
     },
     {
+      "commit": "1813a231dfad",
+      "date": "2026-10-19",
+      "subject": "fix(bridge b21): an unknown ?action= is refused, not silently treated as a push",
+      "files": [
+        "api/bridge-unknown-action.test.js",
+        "api/bridge.js"
+      ],
+      "lines_added": 397,
+      "lines_removed": 0,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "api/bridge.js's dispatch fell through to handlePush for EVERY unknown ?action=, so a request naming an action that has never existed was answered 401 NO_LICENCE or 403 -- a credential diagnosis for a routing fault. THREE LIVE CALL SITES land there, measured by grepping every app file for the URL rather than reasoned about: stonedesk.html:12814 (?action=maps-static), :12927 (?action=maps-optimize), and :7795, which sends no action and no data_type and a sairn-mobile-sync envelope body, reaches handlePush and UPSERTS a bridge_data row of {jobs:null, invoices:null, employees:null}. The wrong-layer diagnosis is the same class Guardian check 30 records costing a session a hunt for a RESEND_API_KEY that was present and correct the whole time; the null-row write is a silent failure, swallowed by a bare .catch(). FIX: KNOWN_ACTIONS = [push, proxy_get], spelled once, with the 400 UNKNOWN_ACTION refusal DERIVING its message from that array so a fourth action cannot be added to the gate without the message following. `pull` is deliberately absent and an arm asserts the absence -- it was removed 2026-09-17 for serving one tenant's data to an unauthenticated GET keyed on a RAW LICENCE KEY, and a refusal that advertises a withdrawn read side is worse than no refusal. ARMS: api/b21-bridge-unknown-action.test.js, 14 arms 0 failed, including the negative control the defect needs (a LICENCE-HEADED and SESSION-HEADED POST to an unknown action returns 400 and writes ZERO rows -- the valid credentials are the point, because without them a 401 arrives whether the refusal exists or not), A4 (an unauthenticated unknown action is still UNKNOWN_ACTION and never NO_LICENCE), C1-C3 controls proving the one live push caller and both proxy_get spellings still work, and E1 ABLATION (guard cut from a lifted copy -> the unknown action reaches handlePush and upserts, the pre-fix behaviour reproduced) with E2 CLEAN proving the ablation is a removal and not a corrupted file. NOT CLOSED BY THIS FIX, declared rather than left to be found: an ABSENT ?action= is still accepted and still reaches handlePush (arm D1 asserts that residual on purpose), and the three CALLERS are unchanged because stonedesk.html is held by fourth under a live b34 claim -- routed as an open-work row instead. UNVERIFIED LIVE: the refusal is not deployed at the time of this record, so every arm is against the handler and none against the URL.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "df84b213f14e",
+        "date": "2026-07-31",
+        "subject": "feat: build api/bridge.js (proxy_get + push/pull) \u2014 Guardian scan clean",
+        "lag_days": 80
+      },
+      "citation_note": "No standing coding rule in tools/coding_rule_discovery.py's registry names this shape. The shape is \"a dispatcher's final branch is an unguarded fall-through, so an unrecognised selector silently becomes the last handler's input\" -- which is the same class api/_lib/law-roles.js's NAMED_VERB_RESOURCES block fixed for `prepare` and `reconcile`, and the same class api/_lib/countersign-endpoint.js's ACTIONS allowlist already prevents. Recorded as not-citable rather than forced into the nearest bin, and named here so a future rule can cite this record as its first instance.",
+      "phase_note": "Coding. The plan was right -- the file's own header has documented exactly two POST actions since it was written in 2026-07-31, and `pull` was removed from it deliberately in 2026-09-17. The expression was wrong: the dispatch's last line was a bare `return handlePush(...)` where it needed an allowlist check first. Not design: nothing about the two-action structure had to change, and the fix is one guard plus a constant. Not config: no grant, env var or migration is involved.",
+      "contributing_factors": [
+        {
+          "factor": "The dispatcher's last branch was an unguarded fall-through, so an unrecognised ?action= became handlePush's input instead of a refusal. No allowlist existed at all.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "KNOWN_ACTIONS = [push, proxy_get], spelled once, with the 400 UNKNOWN_ACTION refusal DERIVING its message from the array so the gate and the message cannot drift apart."
+        },
+        {
+          "factor": "The refusal the caller actually received named a LICENCE, because handlePush's first gate is the licence check. So the symptom pointed at credentials while the cause was routing -- the caller had no way to learn the action does not exist.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The refusal is now raised BEFORE any credential gate, and an arm (A4) asserts that an UNAUTHENTICATED unknown action still answers UNKNOWN_ACTION and never NO_LICENCE."
+        },
+        {
+          "factor": "Two of the three callers wrap the request in a bare .catch(){}, and the third's failure is also swallowed, so no operator or log ever surfaced the 401. The endpoint and the callers each looked fine in isolation.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Open-work row BRIDGE-DEAD-CALL-SITES-HANK-2026-10-19 routes the caller-side fix to fourth, who holds stonedesk.html under a live b34 claim. The two Field Map catch arms must stop naming the Maps API key, and :7795 must send a real action or be deleted."
+        },
+        {
+          "factor": "api/bridge.js had no suite covering its dispatch at all. api/bridge-push-auth.test.js covers push authorisation thoroughly (27 arms) and never asks what happens to an action that is not push.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "api/b21-bridge-unknown-action.test.js, 14 arms, with the negative control the defect needs (licence-headed and session-headed POST to an unknown action -> 400 and ZERO upserts) and an ABLATION (E1) that reproduces the pre-fix behaviour so the arm cannot pass for another reason."
+        }
+      ],
+      "recurrence_open": "An ABSENT ?action= is STILL accepted and still reaches handlePush -- arm D1 asserts that residual deliberately, because refusing it is a second decision with a different blast radius (stonedesk.html:7795 sends neither an action nor a data_type). The THREE CALLERS are unchanged: stonedesk.html is held by fourth under a live b34 claim, so the caller half is routed rather than fixed, and until it lands :7795 keeps upserting a bridge_data row of three nulls. AND THE REFUSAL IS NOT DEPLOYED at the time of this record, so every arm is against the handler and none against the live URL -- a 401 from the deployed endpoint today is evidence about the licence gate and none about this fix."
+    },
+    {
       "commit": "1d97c4b9446c",
       "date": "2026-10-19",
       "subject": "fix(index check): the rows hank reported as malformed were already repaired, and the real defect was in the tool reading them",
@@ -33776,57 +33833,6 @@
         }
       ],
       "recurrence_open": "THREE THINGS THE ACTIONS ABOVE DO NOT CLOSE. (1) THE SWEEP IS NOT WIRED TO ANYTHING -- no hook, no push gate, no suite invokes it, which is precisely the tooling_inventory finding that a tool which exists is not a mechanism and a tool that RUNS is. Nothing stops the 102 candidates from growing. (2) THE 86 CANDIDATES THAT ARE NOT cody's ARE NOT READ and are not counted as clean. (3) AND THE SWEEP IS BLIND TO ONE MEMBER OF ITS OWN CLASS: b22's B6 arm was satisfied by a CONSTANT'S note FIELD -- real executable data carrying prose -- which looks like nothing to a text scanner because it IS code. Detecting that needs the value flow, not the text, and no tool here does it. Convention 36 was written about this class one batch before b23 and did not prevent b23 writing a B6-shaped arm of its own, which is the measurement that says prose is not a control."
-    },
-    {
-      "commit": "6b2f8727895e",
-      "date": "2026-10-19",
-      "subject": "fix(tests): the rf_claim_photos not-provisioned arm was satisfied by the WRONG OCCURRENCE, and a 1400-character window hid it",
-      "files": [
-        "tests/roofing_claim_gate_single_source.js"
-      ],
-      "lines_added": 57,
-      "lines_removed": 5,
-      "app": "sairnroofing",
-      "layer": "test",
-      "severity": "moderate",
-      "detection_method": "probe-control",
-      "summary": "tests/roofing_claim_gate_single_source.js, arm \"each branch keeps its own not-provisioned policy\", ASSERTED SOMETHING IT NEVER TESTED. It said \"the photo WRITE no longer refuses loudly\" and tested /NOT_PROVISIONED/ inside src.slice(i).slice(0, 1400) -- A FIXED 1400-CHARACTER WINDOW. The rf_claim_photos write branch is 5,470 characters, so the literal that satisfied the window was the one in the CLAIM-EXISTENCE guard at the top of the branch, NOT the photo write's own refusal 34 lines further down at :9850/:9854/:9871. ROUTING THAT FIRST GUARD THROUGH THE SHIPPED notProvisioned() HELPER -- behaviour identical, literal gone -- TURNED THE ARM RED WHILE THE POLICY IT NAMES WAS FULLY INTACT AT THREE SITES. So for seven weeks a green arm meant \"some occurrence of this string is within 1400 characters of the branch start\", which is not the claim in its name and is not a claim anybody would make. SEVERITY MODERATE, reasoning stated rather than implied: no shipped behaviour was ever wrong, and the cost is that the arm guarding a Tier A claim-photo refusal could not have noticed that refusal being removed -- a false NEGATIVE in a guard, not a false claim to a user. REPAIRED: both halves sliced by BALANCED BRACE with an explicit overrun assertion; the test is on the POLICY rather than one spelling of it (the literal OR a notProvisioned()/notProvisionedText() call); and the arm's ACTUAL subject is asserted for the first time -- that the read's degrade-to-empty-list literal does NOT appear in the write branch, because the two policies differing is the whole point of the arm and was never checked. THE CONTROL THAT MAKES THIS A REPAIR RATHER THAN A LOOSENING FITTED TO THE CHANGE: the repaired suite was copied into a HEAD~1 worktree and passes 23/23 against the UNCONVERTED handler too. FOUND BY A DIFFERENTIAL, NOT BY REVIEW: 230 suites referencing api/sd-data.js driven ALONE at HEAD and at HEAD~1; four came back red-and-unregistered and this was the ONLY one green at baseline. The other three were already red and are now registered in docs/known-red-suites.json. Full account: docs/2026-10-19-cody-b26-four-tier-reads-and-guard-conversion.md section 2.9.",
-      "rules": [
-        "1.7"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": "docs/b26-logs/regression_differential.py",
-      "found_by_session": null,
-      "injection": {
-        "commit": "7d4cb7928c14",
-        "date": "2026-09-04",
-        "subject": "refactor(sairnroofing): the claim assignment gate was written seven ways, not four",
-        "lag_days": 45
-      },
-      "phase_note": "the window was written as 1400 characters on 2026-09-04 in the commit that unified the claim assignment gate; the branch it slices was already longer than that at the time, so the arm never reached the refusal it names.",
-      "contributing_factors": [
-        {
-          "factor": "the arm sliced its subject with a FIXED 1400-CHARACTER WINDOW while the rf_claim_photos write branch is 5,470 characters, so /NOT_PROVISIONED/ was satisfied by the literal in the CLAIM-EXISTENCE guard at the top of the branch rather than by the photo write's own refusal 34 lines down",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "both halves are sliced by BALANCED BRACE now, with an explicit assertion that neither slice has overrun into the other branch. A fixed window is a guess about how long a branch is; a balanced brace is a property of the branch"
-        },
-        {
-          "factor": "the assertion tested ONE SPELLING of the policy rather than the policy -- a loud refusal is a 503 NOT_PROVISIONED whether the branch writes that literal itself or calls the helper that answers it, and routing the guard through the shipped notProvisioned() helper changed nothing about behaviour while removing the string",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "the assertion now accepts either the literal or a notProvisioned()/notProvisionedText() call, and the arm's ACTUAL subject is asserted for the first time: that the read's degrade-to-empty-list literal does NOT appear in the write branch. The two policies differing is the whole point of the arm and was never checked"
-        },
-        {
-          "factor": "nothing in the tree could distinguish 'this arm passes because the policy holds' from 'this arm passes because some other occurrence of the string is inside the window'. It was green for seven weeks and no review would have found it, because the code reads correctly",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "found by a REGRESSION DIFFERENTIAL rather than by review: 230 suites referencing api/sd-data.js were driven ALONE at HEAD and at HEAD~1, and this was the only one GREEN at baseline and RED after. The repaired suite was then driven against the UNCONVERTED handler in the baseline worktree and passes 23/23 there too, which is the control that the repair is not a loosening fitted to the change"
-        }
-      ],
-      "recurrence_open": "NOTHING SWEEPS FOR OTHER FIXED-SIZE WINDOWS. This repair fixed one arm; docs/b26-logs/sweep_bleed_measure.py measures a DIFFERENT defect class and would not have found this one. A fixed-character-window slice over app source is its own class and is unmeasured across the 619 test files."
     },
     {
       "commit": "45d9a9132305",
@@ -34156,6 +34162,57 @@
         }
       ],
       "recurrence_open": "The STATUS and NEXT fields are parsed the same way and still swallow unlabelled prose; they are bounded by their own 900-character slices, so they degrade quietly rather than wrongly, and nothing here changes that. Nothing requires a digest to use only the nine labels the board knows. And the fix is in a SHARED publisher that every clone runs its own copy of -- measured during this batch, fourth's clone republished the board 20 minutes after cc's corrected version with its own pre-fix copy, so the platform-wide effect of this fix only arrives as each clone fetches."
+    },
+    {
+      "commit": "6b2f8727895e",
+      "date": "2026-10-19",
+      "subject": "fix(tests): the rf_claim_photos not-provisioned arm was satisfied by the WRONG OCCURRENCE, and a 1400-character window hid it",
+      "files": [
+        "tests/roofing_claim_gate_single_source.js"
+      ],
+      "lines_added": 57,
+      "lines_removed": 5,
+      "app": "sairnroofing",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "probe-control",
+      "summary": "tests/roofing_claim_gate_single_source.js, arm \"each branch keeps its own not-provisioned policy\", ASSERTED SOMETHING IT NEVER TESTED. It said \"the photo WRITE no longer refuses loudly\" and tested /NOT_PROVISIONED/ inside src.slice(i).slice(0, 1400) -- A FIXED 1400-CHARACTER WINDOW. The rf_claim_photos write branch is 5,470 characters, so the literal that satisfied the window was the one in the CLAIM-EXISTENCE guard at the top of the branch, NOT the photo write's own refusal 34 lines further down at :9850/:9854/:9871. ROUTING THAT FIRST GUARD THROUGH THE SHIPPED notProvisioned() HELPER -- behaviour identical, literal gone -- TURNED THE ARM RED WHILE THE POLICY IT NAMES WAS FULLY INTACT AT THREE SITES. So for seven weeks a green arm meant \"some occurrence of this string is within 1400 characters of the branch start\", which is not the claim in its name and is not a claim anybody would make. SEVERITY MODERATE, reasoning stated rather than implied: no shipped behaviour was ever wrong, and the cost is that the arm guarding a Tier A claim-photo refusal could not have noticed that refusal being removed -- a false NEGATIVE in a guard, not a false claim to a user. REPAIRED: both halves sliced by BALANCED BRACE with an explicit overrun assertion; the test is on the POLICY rather than one spelling of it (the literal OR a notProvisioned()/notProvisionedText() call); and the arm's ACTUAL subject is asserted for the first time -- that the read's degrade-to-empty-list literal does NOT appear in the write branch, because the two policies differing is the whole point of the arm and was never checked. THE CONTROL THAT MAKES THIS A REPAIR RATHER THAN A LOOSENING FITTED TO THE CHANGE: the repaired suite was copied into a HEAD~1 worktree and passes 23/23 against the UNCONVERTED handler too. FOUND BY A DIFFERENTIAL, NOT BY REVIEW: 230 suites referencing api/sd-data.js driven ALONE at HEAD and at HEAD~1; four came back red-and-unregistered and this was the ONLY one green at baseline. The other three were already red and are now registered in docs/known-red-suites.json. Full account: docs/2026-10-19-cody-b26-four-tier-reads-and-guard-conversion.md section 2.9.",
+      "rules": [
+        "1.7"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "docs/b26-logs/regression_differential.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "7d4cb7928c14",
+        "date": "2026-09-04",
+        "subject": "refactor(sairnroofing): the claim assignment gate was written seven ways, not four",
+        "lag_days": 45
+      },
+      "phase_note": "the window was written as 1400 characters on 2026-09-04 in the commit that unified the claim assignment gate; the branch it slices was already longer than that at the time, so the arm never reached the refusal it names.",
+      "contributing_factors": [
+        {
+          "factor": "the arm sliced its subject with a FIXED 1400-CHARACTER WINDOW while the rf_claim_photos write branch is 5,470 characters, so /NOT_PROVISIONED/ was satisfied by the literal in the CLAIM-EXISTENCE guard at the top of the branch rather than by the photo write's own refusal 34 lines down",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "both halves are sliced by BALANCED BRACE now, with an explicit assertion that neither slice has overrun into the other branch. A fixed window is a guess about how long a branch is; a balanced brace is a property of the branch"
+        },
+        {
+          "factor": "the assertion tested ONE SPELLING of the policy rather than the policy -- a loud refusal is a 503 NOT_PROVISIONED whether the branch writes that literal itself or calls the helper that answers it, and routing the guard through the shipped notProvisioned() helper changed nothing about behaviour while removing the string",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the assertion now accepts either the literal or a notProvisioned()/notProvisionedText() call, and the arm's ACTUAL subject is asserted for the first time: that the read's degrade-to-empty-list literal does NOT appear in the write branch. The two policies differing is the whole point of the arm and was never checked"
+        },
+        {
+          "factor": "nothing in the tree could distinguish 'this arm passes because the policy holds' from 'this arm passes because some other occurrence of the string is inside the window'. It was green for seven weeks and no review would have found it, because the code reads correctly",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "found by a REGRESSION DIFFERENTIAL rather than by review: 230 suites referencing api/sd-data.js were driven ALONE at HEAD and at HEAD~1, and this was the only one GREEN at baseline and RED after. The repaired suite was then driven against the UNCONVERTED handler in the baseline worktree and passes 23/23 there too, which is the control that the repair is not a loosening fitted to the change"
+        }
+      ],
+      "recurrence_open": "NOTHING SWEEPS FOR OTHER FIXED-SIZE WINDOWS. This repair fixed one arm; docs/b26-logs/sweep_bleed_measure.py measures a DIFFERENT defect class and would not have found this one. A fixed-character-window slice over app source is its own class and is unmeasured across the 619 test files."
     },
     {
       "commit": "9a7f73dab468",
