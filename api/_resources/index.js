@@ -76,6 +76,15 @@ const REGISTRY_MODULES = [
   // from the App File Map), which is what "an app nothing has ever checked"
   // looks like from two different directions.
   require('./sairnfreedom'),
+  // `routes` joined 2026-10-19 (fourth b34) and is NOT an app -- it is the
+  // shared routing primitive, owned by no app and called by several. It is
+  // registered as its own module rather than as lines in shared.js because
+  // tools/criticality_tier_check.py skips shared.js by name, so anything
+  // declared there is invisible to the arm that refuses a registered resource
+  // with no criticality row. Both of these are Tier A on confidentiality;
+  // see api/_resources/routes.js for the measurement and docs/CRITICALITY-TIERS.md
+  // for the rows.
+  require('./routes'),
 ];
 
 // sairnvet.js STOPPED BEING EMPTY on 2026-09-09. The note above says SAIRNvet

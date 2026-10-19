@@ -1,0 +1,44 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "fourth",
+  "batch": "b34",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "",
+      "status": "done",
+      "evidence": "CLAIM CHECKED FIRST, as instructed. docs/CRITICALITY-TIERS.md is in NOBODY's declared FILES list and is unmodified in the cody clone working tree (git status --porcelain there) -- so it was CLEAR, not contended, and the b33 flag has lapsed. rt_routes and rt_stops written as Tier A / Confidentiality A, in a new '### routes' section, BEFORE any module code, against sql/rt_routes_schema.sql. Registered as its own api/_resources/routes.js rather than in shared.js, because apps_with_registries() in tools/criticality_tier_check.py SKIPS shared.js by name -- so a shared.js tier is one nothing enforces. Verify: python tools/criticality_tier_check.py -> RESOURCE_ROWS 391->393, TIER_A 276->278, PROBLEMS 6->4 (the 4 remaining are pre-existing and are scape's/senior's; my edit also closed the two pre-existing HEADLINE drifts because it moved that same sentence)."
+    },
+    {
+      "id": 2,
+      "title": "",
+      "status": "done",
+      "evidence": "MODULE DONE, DISPATCH BLOCKED AND FLAGGED BACK. api/_lib/routes.js + api/_lib/routes.test.js (node api/_lib/routes.test.js -> 56 passed, 0 failed, including two sabotage controls that fail if the null-saving rule or the never-echo-the-input rule is reinstated), sql/rt_routes_schema.sql, api/_resources/routes.js + one line in index.js. THE ONE HANDLER BRANCH IN api/sd-data.js IS NOT WRITTEN: sairn_claim.py check answers BLOCKED -- cody holds that file on b26 -- so it is routed instead, in full and pasteable, in docs/2026-10-19-fourth-b34-routing-phase1.md section 3, together with the extraActions line that must land with it and not before it."
+    },
+    {
+      "id": 3,
+      "title": "",
+      "status": "done",
+      "evidence": "StoneDesk fmRunOptimize repointed off the dead api/bridge.js ?action=maps-optimize onto sdData('optimize','rt_routes'), which already carries the licence, the session token and the abort signal. checkblocks.py stonedesk.html -> 131 blocks, 0 failed. DRIVEN IN A REAL BROWSER over all five answer paths with a stubbed transport: unavailable names its reason and leaves the order alone; drive-matrix reorders and banners 'saves ~10 min'; saved_seconds NULL banners with NO time claim at all; great-circle is labelled; a null response says the server did not answer. LIVE VERIFICATION AGAINST THE DEPLOYED URL IS NOT CLAIMED and the reason is measured, not assumed -- see item 6 evidence and the report section 4."
+    },
+    {
+      "id": 4,
+      "title": "",
+      "status": "done",
+      "evidence": "SAIRNgrounds wired as the SECOND consumer -- a 'Route order for a crew's day' card on the Scheduling panel calling grdData('optimize','rt_routes') with its OWN data shape (grd_schedule crew+next, addresses off grd_properties), proving the module is not StoneDesk-shaped. checkblocks.py sairngrounds.html -> 5 blocks, 0 failed. DRIVEN IN A REAL BROWSER over four answer paths plus the exclusion path: a scheduled visit whose property has no address is LISTED AS EXCLUDED, never silently dropped; saved_seconds NULL renders 'drive-time saving not computed' rather than '0 min'. Screenshot evidence in the report."
+    },
+    {
+      "id": 5,
+      "title": "",
+      "status": "blocked",
+      "evidence": "NOT STARTED, and it was the explicit if-time-allows item. The natural home is tools/wcag_contrast_check.py, which cc holds on an active b22 claim ('wcag product_files hyphenated stems... FILES: tools/wcag_contrast_check.py docs/wcag-contrast-baseline.json'), so a pixel-sampling resolver would have to land either in that file or as a second tool that duplicates its criteria lock. Neither was attempted. The b33 finding it would act on is unchanged and re-derivable: a computed-style contrast read returns 1.07:1 on StoneDesk's gate because the colour lives in linear-gradient(135deg, rgb(27,58,107), rgb(42,82,152)) and backgroundColor is rgba(0,0,0,0). NEXT STEP: agree with cc whether the resolver goes in their file or a sibling, then sample rendered pixels rather than computed style."
+    },
+    {
+      "id": 6,
+      "title": "",
+      "status": "open",
+      "evidence": ""
+    }
+  ]
+}

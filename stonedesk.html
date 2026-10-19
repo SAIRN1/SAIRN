@@ -12923,13 +12923,74 @@ function fmRunOptimize(person, dateStr, silent){
     fmRefreshCurrentView(person, dateStr);
     return;
   }
-  var addrs=notDone.map(function(s){return s.address;});
-  fetch(FM_API+'?action=maps-optimize', {method:'POST', headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({addresses:addrs})})
-    .then(function(r){ return r.ok?r.json():Promise.reject(r.status); })
+  // ── REPOINTED 2026-10-19 (fourth b34) AT THE SHARED ROUTING PRIMITIVE ────
+  // This used to POST `?action=maps-optimize` to api/bridge.js. THAT ACTION
+  // HAS NEVER EXISTED ON `main`: it was added on 2026-06-18 by 35169ea2, a
+  // commit `git merge-base --is-ancestor` shows is not an ancestor of main and
+  // which lives only on origin/claude/lucid-ptolemy-b73vu0. Every call from
+  // here fell through bridge.js's dispatch to its licence-gated push handler
+  // and came back 401 -- measured live on 2026-10-19 -- and the catch arm
+  // below told the reader to go and check a Maps API key the request never
+  // reached. Two defects: a dead call, and an error message that sent whoever
+  // read it to the wrong place.
+  //
+  // It now goes through sdData() -- the one caller that already carries the
+  // licence, the session token, the 15s abort signal and the failure reporter
+  // -- to the shared `rt_routes` resource. api/_lib/routes.js is the module
+  // and it is used by SAIRNgrounds too; neither app owns it.
+  //
+  // THREE ANSWERS ARE POSSIBLE AND THEY ARE NEVER FOLDED TOGETHER:
+  //   basis 'drive-matrix'  a real ordering from real drive times
+  //   basis 'great-circle'  a real ordering from straight-line distance, which
+  //                         is legitimate ONLY while it is labelled -- it
+  //                         carries no saved time because straight-line metres
+  //                         are not seconds
+  //   basis 'unavailable'   COULD NOT RUN. The stored order is left exactly as
+  //                         it was and `order` comes back null, so "unchanged"
+  //                         can never be read as "confirmed optimal".
+  //
+  // AND saved_seconds === null MEANS NOT COMPUTED, WHICH IS WHY THE BANNER
+  // BELOW TESTS FOR null RATHER THAN FOR FALSINESS. The 2026-06-18 original
+  // floored its saving at Math.max(0,...), so an unmeasurable route and an
+  // already-optimal one both rendered "0 min" and a reader could not tell
+  // which they had.
+  var payload={
+    app_id:'stonedesk',
+    assignee_id:person,
+    route_date:dateStr,
+    stops:notDone.map(function(s){
+      return {job_ref:s.id, address:s.address, locked:s.locked===true, status:s.status||'pending'};
+    })
+  };
+  Promise.resolve(sdData('optimize','rt_routes',payload))
     .then(function(data){
-      var order=data.order; // array of original indices in optimal order
-      if(!order || order.length!==notDone.length) return;
+      if(!data){
+        // sdData already recorded WHY (auth refused vs could-not-ask vs
+        // ok:false) and reported it. Say that it did not run rather than
+        // naming a cause this function cannot see.
+        if(!silent) showToast('Route optimisation did not run -- the server did not answer. Your stop order is unchanged.');
+        return;
+      }
+      if(data.basis==='unavailable'){
+        // NAME THE REASON. "Could not optimise" with no reason is what sent a
+        // reader to the wrong environment variable for four months.
+        var why={'no-key':'no routing key is configured on the server',
+                 'upstream-status':'the routing provider refused the request',
+                 'upstream-shape':'the routing provider sent something unreadable',
+                 'network':'the routing provider could not be reached',
+                 'no-reachable-pair':'no driving route exists between these stops',
+                 'not-orderable':'these stops could not be ordered',
+                 'too-few-stops':'there are not enough stops to order',
+                 'nothing-movable':'every remaining stop is locked or already done'}[data.reason]
+                 ||('the server reported "'+String(data.reason||'no reason given')+'"');
+        if(!silent) showToast('Route not reordered -- '+why+'. Your stop order is unchanged.');
+        return;
+      }
+      var order=data.order; // indices into the stops we sent, in visiting order
+      if(!order || order.length!==notDone.length){
+        if(!silent) showToast('Route not reordered -- the server returned an order that does not match the stops sent. Your stop order is unchanged.');
+        return;
+      }
       var reordered=order.map(function(i){return notDone[i];});
       var finalOrder=done.concat(reordered);
       var key=person+'|'+dateStr;
@@ -12937,12 +12998,19 @@ function fmRunOptimize(person, dateStr, silent){
       saveFM();
       fmRefreshCurrentView(person, dateStr);
       if(silent){
-        var savedMin=data.savedMinutes;
-        fmShowReoptBanner(escHtml(person)+'\'s route updated'+(savedMin?' -- saves ~'+savedMin+' min':'')+'.');
+        // null = NOT COMPUTED -> no claim at all. 0 = genuinely no saving ->
+        // say so. These are different facts and the banner keeps them apart.
+        var secs=data.saved_seconds;
+        var savedTxt='';
+        if(secs!==null&&secs!==undefined&&isFinite(secs)&&secs>0){
+          savedTxt=' -- saves ~'+Math.round(secs/60)+' min';
+        }
+        var basisTxt=(data.basis==='great-circle')?' (straight-line order; drive times were unavailable)':'';
+        fmShowReoptBanner(escHtml(person)+'\'s route updated'+savedTxt+basisTxt+'.');
       }
       fmGenerateDaySummary(person, dateStr, finalOrder);
     })
-    .catch(function(){ if(!silent) showToast('Could not optimize route -- check the Maps API key is configured.'); });
+    .catch(function(){ if(!silent) showToast('Route optimisation did not run. Your stop order is unchanged.'); });
 }
 
 // Claude reasons over the already-optimized stop list to surface one practical,

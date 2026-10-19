@@ -602,6 +602,24 @@ textarea{resize:vertical;min-height:80px;}
   <div class="ph"><div><div class="ptitle">Scheduling</div><div class="psub">Recurring routes + one-off jobs, weather-checked against the Weather Command Engine</div></div>
   <div class="pa"><button class="btn bp bs" onclick="openSchedModal()">+ Add to Schedule</button></div></div>
   <div id="sched-wx-note" class="note" style="display:none;margin-bottom:12px"></div>
+
+  <!-- ROUTE ORDER (2026-10-19, fourth b34) — the SECOND consumer of the
+       shared routing primitive. StoneDesk's Field Map is the first. Neither
+       app owns it: the module is api/_lib/routes.js and the resource is
+       rt_routes, registered in api/_resources/routes.js.
+       This panel exists to prove the primitive is shared rather than
+       StoneDesk-shaped, which is the only thing that makes it a platform
+       capability instead of one app's feature. -->
+  <div class="card" style="margin-bottom:14px"><div class="ch"><span class="ct">Route order for a crew's day</span></div><div class="cb">
+    <div class="note" style="margin-bottom:10px">Orders the stops a human already assigned &mdash; it does <strong>not</strong> decide who goes where. Addresses come from each property's own record; a scheduled visit whose property has no address is <strong>listed as excluded</strong> rather than silently dropped. <strong>Where drive times are unavailable the stored order is left exactly as it is</strong> and this says so, rather than reporting an unchanged list as an optimised one.</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+      <div class="fg" style="max-width:220px;margin:0"><label>Crew</label><select id="rtcrew"></select></div>
+      <div class="fg" style="max-width:200px;margin:0"><label>Date</label><input type="date" id="rtdate"></div>
+      <button class="btn bp bs" onclick="grdRouteOptimize()">Order this day</button>
+    </div>
+    <div id="rt-result" style="margin-top:12px"></div>
+  </div></div>
+
   <div class="note" style="margin-bottom:12px"><strong>Completion gate (item 3):</strong> a scheduled job cannot be marked Complete until a finished-product photo exists AND has been QC-approved by someone other than whoever uploaded it -- same shape as StoneDesk's progress-photo hard gate. Honest limitation: this is a client-side check (like every RBAC gate built in these two apps so far), not a server-enforced one -- StoneDesk's real depth uses a dedicated server endpoint (api/sd-sub-data.js) that independently re-verifies role and self-QC on every review call; that server-side piece does not exist for SAIRNgrounds/SAIRNscape yet.</div>
   <div class="card"><div class="cb">
     <div class="tw"><table><thead><tr><th>Property</th><th>Frequency</th><th>Next Date</th><th>Crew</th><th>Linked Quote</th><th>Status</th><th>Actions</th></tr></thead>
@@ -3325,6 +3343,7 @@ function fillQuoteSelect(selId,propertyId){
 function bldSched(){return ld('grd_schedule',[]);}
 function rSched(){
   fillPropertySelects();fillQuoteSelect('schquote','');
+  grdFillRouteCrews();
   var list=bldSched();
   $('schtbody').innerHTML=list.length?list.map(function(s){
     var status=s.status||'scheduled';
@@ -3340,6 +3359,135 @@ function rSched(){
   schedWeatherCheck();
   rGrdQcQueue();
 }
+// ── ROUTE ORDER — the SECOND consumer of the shared routing primitive ──────
+// 2026-10-19, fourth b34. StoneDesk's Field Map (fmRunOptimize) is the first.
+// Both call the same resource, `rt_routes`, handled by api/_lib/routes.js.
+// Neither app owns the module and neither app's data shape is baked into it:
+// StoneDesk sends Field Map stops keyed by its own stop id, this sends
+// scheduled visits keyed by grd_schedule id, and the module sees the same
+// {job_ref, address, locked, status} either way.
+//
+// THIS IS WHAT MAKES IT A PLATFORM CAPABILITY RATHER THAN ONE APP'S FEATURE.
+// A primitive with one consumer is a feature that happens to live in a shared
+// file; the second consumer is the thing that proves the seam is real.
+function grdRouteCrews(){
+  var seen={}, out=[];
+  bldSched().forEach(function(s){
+    var c=(s.crew||'').trim();
+    if(c&&!seen[c]){seen[c]=1;out.push(c);}
+  });
+  return out.sort();
+}
+function grdFillRouteCrews(){
+  var sel=$('rtcrew'); if(!sel) return;
+  var crews=grdRouteCrews(), cur=sel.value;
+  sel.innerHTML=crews.length
+    ? crews.map(function(c){return '<option value="'+H(c)+'">'+H(c)+'</option>';}).join('')
+    : '<option value="">-- no crew named on any scheduled visit --</option>';
+  if(cur&&crews.indexOf(cur)>=0) sel.value=cur;
+}
+function grdPropAddress(id){
+  var p=ld('grd_properties',[]).find(function(x){return x.id===id;});
+  return p&&p.address?String(p.address).trim():'';
+}
+async function grdRouteOptimize(){
+  var crew=($('rtcrew')&&$('rtcrew').value||'').trim();
+  var dateStr=($('rtdate')&&$('rtdate').value||'').trim();
+  var out=$('rt-result'); if(!out) return;
+  if(!crew){out.innerHTML='<div class="note">Pick a crew first.</div>';return;}
+  if(!dateStr){out.innerHTML='<div class="note">Pick a date first.</div>';return;}
+
+  var visits=bldSched().filter(function(s){
+    return (s.crew||'').trim()===crew && s.next===dateStr;
+  });
+  // EXCLUSIONS ARE LISTED, NOT DROPPED. A visit this cannot route is still a
+  // visit the crew has to make, and a quietly shorter list is how a stop stops
+  // existing. Same rule the Pace of Play panel already applies to incomplete
+  // holes: excluded and SAID, never estimated away.
+  var routable=[], excluded=[];
+  visits.forEach(function(s){
+    var addr=grdPropAddress(s.property_id);
+    if(addr) routable.push({rec:s, address:addr});
+    else excluded.push(s);
+  });
+
+  var exclHtml=excluded.length
+    ? '<div class="note" style="margin-top:10px"><strong>'+excluded.length+' visit'+(excluded.length===1?'':'s')+' excluded from the ordering</strong> because the property has no address on record: '
+      +excluded.map(function(s){return H(propName(s.property_id));}).join(', ')
+      +'. They are still scheduled &mdash; add an address on the Properties panel to include them.</div>'
+    : '';
+
+  if(routable.length<2){
+    out.innerHTML='<div class="note">'+routable.length+' routable visit'+(routable.length===1?'':'s')
+      +' for '+H(crew)+' on '+H(dateStr)+'. Ordering needs at least two.</div>'+exclHtml;
+    return;
+  }
+
+  out.innerHTML='<div class="note">Ordering '+routable.length+' stops&hellip;</div>';
+  var payload={
+    app_id:'sairngrounds',
+    assignee_id:crew,
+    route_date:dateStr,
+    stops:routable.map(function(r){
+      return {job_ref:r.rec.id, address:r.address,
+              locked:false, status:r.rec.status==='complete'?'done':'pending'};
+    })
+  };
+  var data=await grdData('optimize','rt_routes',payload);
+
+  if(!data){
+    out.innerHTML='<div class="note">Route ordering did not run &mdash; the server did not answer. Nothing was changed.</div>'+exclHtml;
+    return;
+  }
+  if(data.basis==='unavailable'){
+    // THE REASON IS NAMED. "Could not optimise" with no reason is what sent a
+    // StoneDesk reader to check the wrong environment variable for months.
+    var why={'no-key':'no routing key is configured on the server',
+             'upstream-status':'the routing provider refused the request',
+             'upstream-shape':'the routing provider sent something unreadable',
+             'network':'the routing provider could not be reached',
+             'no-reachable-pair':'no driving route exists between these stops',
+             'not-orderable':'these stops could not be ordered',
+             'too-few-stops':'there are not enough stops to order',
+             'nothing-movable':'every stop is locked or already done'}[data.reason]
+             ||('the server reported "'+H(String(data.reason||'no reason given'))+'"');
+    out.innerHTML='<div class="note"><strong>Not reordered</strong> &mdash; '+why+'. The schedule is unchanged.</div>'+exclHtml;
+    return;
+  }
+  var order=data.order;
+  if(!order||order.length!==routable.length){
+    out.innerHTML='<div class="note"><strong>Not reordered</strong> &mdash; the server returned an order that does not match the stops sent. The schedule is unchanged.</div>'+exclHtml;
+    return;
+  }
+
+  // saved_seconds === null MEANS NOT COMPUTED. Rendered as no claim at all,
+  // never as "saves 0 min" -- the distinction the 2026-06-18 implementation
+  // this module replaces had thrown away with Math.max(0, ...).
+  var secs=data.saved_seconds, savedHtml;
+  if(secs===null||secs===undefined||!isFinite(secs)){
+    savedHtml='<span style="color:var(--muted)">drive-time saving not computed</span>';
+  }else if(secs>0){
+    savedHtml='saves about '+Math.round(secs/60)+' min of driving';
+  }else if(secs===0){
+    savedHtml='no driving time saved &mdash; the order you had was already as good';
+  }else{
+    savedHtml='<span style="color:var(--muted)">this order is about '+Math.round(-secs/60)+' min LONGER than the one you had</span>';
+  }
+  var basisHtml=(data.basis==='great-circle')
+    ? '<div class="note" style="margin-top:8px"><strong>Straight-line order.</strong> Real drive times were unavailable ('+H(String(data.drive_unavailable_because||'reason not given'))+'), so this is ordered by distance as the crow flies. It is not a drive-time ordering and carries no time saving.</div>'
+    : '';
+
+  out.innerHTML='<div class="card"><div class="ch"><span class="ct">'+H(crew)+' &mdash; '+H(dateStr)
+    +'</span></div><div class="cb" style="padding:0"><div class="tw"><table><thead><tr><th>#</th><th>Property</th><th>Address</th></tr></thead><tbody>'
+    +order.map(function(srcIdx,pos){
+        var r=routable[srcIdx];
+        return '<tr><td>'+(pos+1)+'</td><td>'+H(propName(r.rec.property_id))+'</td><td>'+H(r.address)+'</td></tr>';
+      }).join('')
+    +'</tbody></table></div></div></div>'
+    +'<div class="note" style="margin-top:8px">'+savedHtml+'. Basis: <strong>'+H(String(data.basis))+'</strong>.</div>'
+    +basisHtml+exclHtml;
+}
+
 function openSchedModal(id){
   schedid=id||null;fillPropertySelects();
   var s=id?bldSched().find(function(x){return x.id===id;}):null;
