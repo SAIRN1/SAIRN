@@ -37,8 +37,8 @@
     {
       "id": 6,
       "title": "",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "pushed without force; origin/main...HEAD = 0 0; the b31 commits read back OFF origin/main (50f67cfe fix, 87038f9c register, 46c9c66d audit); defect record cites 50f67cfe and merge-base --is-ancestor confirms it resolves on origin/main; report and digest uploaded to Drive 14Xc5oT0xzSLa_rTSOSXWVK3Kko1Fbx09 as 1GdzqkTfH4BEuf25OAyJV35_LhMlaRVfY and 1qp7rslIgElqvQZ2PoMg6dLGpkbHDu_Q6, API-verified at 18461 and 6896 bytes equal to local"
     }
   ]
 }

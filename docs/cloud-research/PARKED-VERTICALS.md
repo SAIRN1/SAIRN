@@ -68,6 +68,40 @@ outage.
 
 ---
 
+## Structural pest control — AUDITED, NOT DECIDED (2026-10-19)
+
+**Audit:** `pest-control-worldwide-competitive-gap-audit-2026-10-19.md`
+(fourth b31). **No decision recorded.** Listed here so the series is visible in
+one place; it is **not** parked.
+
+**Why it is worth remembering even without a decision:** it was picked
+specifically to test whether the series can produce a yes — a field-service
+trade with recurring routes, the shape five SAIRN apps already serve — and it
+failed for a **new** reason. The first three audits found a gap and no
+capability; this one found **capability adjacency and no gap**. The software
+field is crowded and already laddered by operator size, and **route
+optimisation, which the buyer literature says operators buy first, is 0 of 17
+on this platform**.
+
+**The one transferable finding:** routing is the first BUILD gap the series has
+surfaced that SAIRN could simply close, and closing it would widen every field
+app already shipped rather than serving one new vertical.
+
+---
+
+## Small-fleet DOT / FMCSA compliance — AUDITED, NOT DECIDED (2026-10-19)
+
+**Audit:** `trucking-dot-compliance-worldwide-competitive-gap-audit-2026-10-19.md`
+(fourth b30). **No decision recorded**, and its §7 recommends against.
+
+**Perishable:** the DEA telemedicine lapse it cites belongs to the behavioral
+health row, not this one; what perishes here is the **non-domiciled CDL** pair
+(`90 FR 46509`, `91 FR 7044`, effective 2026-03-16) and six **reported,
+unverified** items including a 40% compliance-review increase that is a
+vendor-marketing number in every source seen. Re-derive before quoting.
+
+---
+
 ## Childcare — AUDITED, NOT DECIDED (2026-10-16)
 
 **Audit:** `childcare-worldwide-competitive-gap-audit-2026-10-16.md` (fourth
