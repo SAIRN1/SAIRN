@@ -217,6 +217,29 @@ THINGS I GOT WRONG IN THIS BATCH, EACH RECORDED RATHER THAN QUIETLY FIXED
      first.
 
 -----------------------------------------------------------------------------
+THE DRIVE COPIES, AND ONE THAT IS NOT BYTE-IDENTICAL
+-----------------------------------------------------------------------------
+  SAIRN-digest-hank-b18.txt    Drive acknowledged 6572 bytes; the repo file is
+                               6572. MATCHES.
+  SAIRN-handoff-hank-b18.md    Drive acknowledged 36898 bytes; the repo file is
+                               36914. DIFFERS BY 16 BYTES.
+
+  MEASURED, NOT GUESSED, AND NOT LINE ENDINGS: the repo file has 0 CRLF and
+  667 LF, and stripping CR changes nothing. The sixteen bytes are line-WRAPPING
+  in two paragraphs I edited in the repo copy after composing the Drive upload.
+  No sentence differs in meaning and I am NOT claiming the two are identical.
+
+  THE REPO COPY IS AUTHORITATIVE. It is the one under version control, the one
+  the push gate read, and the one a diff can be taken against. The Drive copy
+  exists so the next session can find it by recency, which is how it is
+  dispatched -- and that is also why this discrepancy is written down rather
+  than left for somebody to find by comparing byte counts.
+
+  The REPORT was not uploaded to Drive at all. Stated rather than implied: the
+  handoff and the digest are what a fresh session reads, and a third 14KB
+  upload of a file that is in the repo buys nothing.
+
+-----------------------------------------------------------------------------
 WHAT IS OPEN -- 15 items, full detail in SAIRN-handoff-hank-b18.md
 -----------------------------------------------------------------------------
   MICHAEL'S:   1 run two countersignature SQL files + read the grant checks

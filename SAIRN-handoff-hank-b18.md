@@ -543,13 +543,18 @@ a FILES list — cody's b22 claim. I read cody's paths against mine: the overlap
 is **`docs/known-red-suites.json`**, which I therefore **did not touch** and
 which is open item 8.
 
-**RELEASE IT, AND RE-CHECK `list` AFTER — the tool reads what is PUBLISHED.**
-At session start `list` showed cody's claim and none of mine, which is
-indistinguishable from "mine are not pushed yet". b17 found three stale active
-`hank` claims that way.
+**RELEASED, AND `list` RE-CHECKED AFTER — the tool reads what is PUBLISHED.**
+The first `release` attempt was REFUSED because the push gate had written
+`docs/scrutiny-flags.json` and `sairn_claim.py` will not rebase over an
+unstaged change; it said so and did not pretend otherwise. Committed that row,
+re-ran, and confirmed:
 
     python tools/sairn_claim.py release platform
-    python tools/sairn_claim.py list
+    python tools/sairn_claim.py list   -> 0 active hank claims
+
+At session start `list` showed cody's claim and none of mine, which is
+indistinguishable from "mine are not pushed yet" — b17 found three stale active
+`hank` claims that way, which is why the re-check is not optional.
 
 **Conflicts respected:**
 
@@ -633,7 +638,13 @@ fetch/rebase/push loop. Read its header before reusing it: the **first**
 version wrote **one fixed commit subject**, which the push gate refuses as
 reuse-on-a-different-file-set, and it **re-fetched before pushing**, widening
 the race it was built to lose less often. Both are fixed in version 2 and both
-are recorded in the file rather than silently repaired.
+are recorded in the file rather than silently repaired. Version 2 also learned
+two more things the hard way: it must **amend** its gate-document commit across
+passes rather than stack one per pass, and it must check for a REAL gate
+denial **before** the race pattern — because `register_feed_gate`'s own notice
+contains the words "NON-FAST-FORWARD", so a race pattern alone cannot tell a
+raced push from a gate that refused, and retrying a real refusal forever is how
+a loop hides one.
 
 **No detached worktree was created this batch.** Every ablation either mutates
 a file in place and restores it in a `finally` with a hard exit if the restore
