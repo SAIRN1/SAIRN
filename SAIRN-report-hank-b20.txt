@@ -1,0 +1,542 @@
+REPORT hank b20 2026-10-19 -- the IOLTA reconcile withdrawal, the SAIRNlegacy settings schema, the countersignature panel and the list action it turned out to need, and the Grant-App-Login status re-measured
+
+================================================================================
+1. WHAT LANDED
+================================================================================
+
+SEVEN COMMITS ON origin/main. Verified after the push with
+`git rev-list --left-right --count origin/main...HEAD` -> 0 ahead, 0 behind.
+Batch tip at the time of writing b3fad2fe4. RE-DERIVE IT -- five sessions push
+to one branch and it moved five times during this batch.
+
+  89c17849e  fix(sairnlaw b20)     paralegal off LAW_RECONCILE_ROLES
+  9b5cd61d6  feat(sairnlegacy b20) sql/sairnlegacy_settings_schema.sql
+  4c8d2fc2d  feat(countersign b20) the `open` action + 15-arm suite + a label
+  bd836b641  feat(sairnlaw b20)    the "Needs Your Authorisation" panel
+  13e9f379e  docs(hank b20)        active-work entries for b19 and b20
+  380709931  chore(derived b20)    MASTER-PLAN + traceability-matrix regenerated
+  b3fad2fe4  chore(b20)            the scrutiny row the push gate wrote
+
+ZERO GATE OVERRIDES. No SAIRN_GATE_EXEMPT, no SAIRN_SKIP, no SAIRN_SEED_GATE.
+Two real refusals were satisfied at the source, not routed around. Nothing to
+disclose under PR 3.3 because nothing was skipped.
+
+The two parked stashes were NOT TOUCHED, per the dispatch.
+
+================================================================================
+2. ITEM 2 -- paralegal OFF LAW_RECONCILE_ROLES
+================================================================================
+
+LAW_RECONCILE_ROLES is now { owner, attorney }. b19 shipped
+{ owner, attorney, paralegal } and raised the residual as its own
+DECISION-NEEDED rather than guessing. Michael's answer: the grant comes off
+until an attestation step exists.
+
+THE REASONING IS THE DIRECTION OF THE ERROR. With the grant and no attestation
+record, the app lets a non-lawyer produce a finished reconciliation that
+nothing records a lawyer as having reviewed, and the ABA Model Rule 1.15 duty
+is the lawyer's and non-delegable. Without the grant, a firm that delegates the
+arithmetic in practice is inconvenienced and asks for the feature. The first is
+a compliance claim the record cannot support; the second is a missing feature.
+The narrow one ships.
+
+DEFERRED, NOT REFUSED. LAW_RECONCILE_ATTESTATION still names the mechanism that
+would make the grant safe: prepared by a paralegal, attested by a bar-admitted
+person, bound to a hash of the exact reconciliation -- the lock
+api/_lib/countersign.js already runs for C2.
+
+--------------------------------------------------------------------------------
+2a. THREE ARMS WENT RED, NOT ONE. THE DISPATCH PREDICTED ONE.
+--------------------------------------------------------------------------------
+
+Measured, by running the suite before and after rather than trusting the
+prediction:
+
+  BEFORE  node api/b19-iolta-reconcile-carveout.test.js -> 32 passed, 0 failed
+  AFTER   node api/b19-iolta-reconcile-carveout.test.js -> 29 passed, 3 failed
+          FAILED: R1c, R1f, R2
+
+  R1c  paralegal reconciles the LEDGER leg -> ALLOW     (the grant is gone)
+  R1f  paralegal reconciles the BANK leg   -> ALLOW     (the grant is gone)
+  R2   reconcile set == bar-admitted tier + exactly { paralegal }
+
+ALL THREE ARE THE SAME DECISION ASSERTED THREE WAYS AND NONE IS SUPPRESSED.
+R2 exists precisely so that writing the set out by hand instead of deriving it
+from LAW_BAR_ADMITTED_ROLES cannot become a silent divergence. It did its job:
+a one-line policy change could not be made quietly.
+
+HAD I REPORTED "R2 red as expected" THE OTHER TWO WOULD HAVE BEEN A SURPRISE
+TO THE NEXT SESSION. That is the whole reason the suite was driven.
+
+The arms are NOT re-aimed by me and NOT deleted. docs/known-red-suites.json is
+in cody's declared FILES for b26, so the entry is ROUTED in the handoff in
+pasteable form.
+
+--------------------------------------------------------------------------------
+2b. TWO FOLLOW-ON EDITS IN THE SAME FILE, AND WHY NEITHER IS SCOPE CREEP
+--------------------------------------------------------------------------------
+
+LAW_RECONCILE_ATTESTATION.gap described a grant that no longer exists. It is an
+EXPORTED, ASSERTED constant whose stated purpose is that the gap "cannot be
+lost". A stale true-sounding sentence inside that structure is worse than none.
+The gap did not CLOSE when paralegal came off -- it NARROWED: the person doing
+the work is now qualified, what is absent is the RECORD, and delegation is now
+unavailable at all. Restated to say both. Arm A1 asserts /never/ and length>80
+and still passes.
+
+The lock's SECOND EXCEPTION BRANCH is now UNREACHABLE -- every member of
+LAW_RECONCILE_ROLES is also in LAW_BAR_ADMITTED_ROLES, so the enclosing `if`
+has already let them past and nothing arrives there. KEPT ON PURPOSE and named
+at the line: it is the shape the attestation decision re-populates, and
+deleting it would make re-granting paralegal a lock rewrite rather than a
+one-line set change. An unreachable branch nobody declared is discipline item
+8's shape.
+
+--------------------------------------------------------------------------------
+2c. THE no-defect-record JUDGEMENT, AND IT WAS DRIVEN THREE WAYS
+--------------------------------------------------------------------------------
+
+The dispatch offered the choice. I judged NO DEFECT IN SHIPPED BEHAVIOUR and
+wrote the trailer. The judgement is a REACHABILITY question, not a reading
+question, and reachability on this platform has to be driven:
+
+  1. THE ONE SHIPPED RECONCILIATION FEATURE NEVER CONSULTS THE MODULE.
+     api/sd-data.js:18765 is `resource === 'law_trust_reconcile' && action ===
+     'read'` with its own hand-written roleSet({ owner: true }). That is the
+     literal b19 ROUTED to cody to replace with a read of
+     LAW_RECONCILE_ROLES, and section 4 reports it STILL UNAPPLIED.
+
+  2. THE `reconcile` VERB IS UNREACHABLE AT THE ENVELOPE. Driven, not read:
+       node -e "...EXTRA_ACTIONS['law_trusttx']"      -> undefined
+       node -e "...EXTRA_ACTIONS['law_bankstatements']" -> undefined
+     api/sd-data.js:502 refuses any action that is not read/write and not in
+     that list, BEFORE the role gate at :16410 runs. This was the decisive
+     fact and it sits TWO LAYERS ABOVE the role gate I was first looking at.
+
+  3. PAST THE ENVELOPE THERE IS NO HANDLER. LAW_RESOURCES branches on
+     `action === 'read'` and `action === 'write'` only; anything else falls to
+     api/sd-data.js:19515, 400 Unsupported action/resource combination.
+
+SO b19's GRANT WAS INERT AND THIS WITHDRAWAL IS INERT. What b20 buys is ORDER:
+when cody applies the routed derive, the gate becomes { owner, attorney }
+without ever passing through a state where a paralegal could reconcile.
+
+================================================================================
+3. ITEMS 4 AND 5 -- THE CONCEPT WAS STATED FIRST, AS THE METHOD REQUIRED
+================================================================================
+
+docs/2026-10-19-hank-b20-concepts.md, written before either artefact and left
+unedited afterwards, same method as b19's concepts file.
+
+--------------------------------------------------------------------------------
+3a. sql/sairnlegacy_settings_schema.sql
+--------------------------------------------------------------------------------
+
+CONCEPT: one row per home keyed by license_hash, holding b18's two policy
+answers as NAMED COLUMNS -- the livery-billing arrangement as text with a
+database CHECK on the two-value enum, the apprentice config as jsonb because it
+is genuinely a list-of-names shape -- so an invalid value is refused at the
+boundary instead of normalised away at read time, and AN ABSENT ROW MEANS THE
+NARROW DEFAULT rather than an error.
+
+license_hash is UNIQUE and not merely indexed: two policy rows for one home is
+a question with two answers, and whichever a `limit 1` returned would be the
+policy. The constraint makes that unrepresentable instead of making the reader
+careful.
+
+WHY A CHECK WHEN api/_lib/leg-roles.js ALREADY FAILS NARROW -- the file argues
+it rather than assuming it. liveryBilling() SILENTLY REWRITES a bad value to
+the default, so a home that stored `direct-to-family` with a hyphen would be
+running `through_the_home` and nothing anywhere would say so: they would set
+the policy, see no error, and get the other arrangement. The CHECK makes that a
+refused write. TWO LAYERS, TWO DIFFERENT FAILURES -- the constraint stops a
+wrong value being STORED, the normaliser stops a wrong value being OBEYED if
+one ever is.
+
+THE jsonb CHOICE IS THE ONE PLACE THE CONCEPT'S OWN RULE DOES NOT APPLY, so it
+is argued: two of the three apprentice fields are LISTS OF RESOURCE NAMES, and
+a resource name is not an enum a database can hold in sync with LEG_ROLE_MATRIX
+(~36 rows, gaining them in application commits). A membership CHECK would go
+stale against the code and start refusing valid configuration. So the
+constraint asserts the SHAPE -- object at top level, countersign/forbidden
+arrays if present, presence_disclosure boolean if present -- and the comment
+says the normaliser remains the authority for membership, typos and the
+countersign/forbidden overlap.
+
+NO DELETE IN THE GRANTS, with a reason specific to THIS table rather than
+boilerplate: because AN ABSENT ROW MEANS THE NARROW DEFAULT, a TRUNCATE would
+revert every home to through_the_home with an empty apprentice config, raise no
+error anywhere, and PRESENT AS THE SAFE STATE. A failure that looks like the
+safe default is the hardest kind to notice.
+
+THE CROSS-FILE CHECK WAS DRIVEN, NOT ASSERTED. The enum is a SECOND COPY of
+LEG_LIVERY_BILLING_VALUES and the apprentice default a second copy of
+LEG_APPRENTICE_POLICY_DEFAULT:
+  ["through_the_home","direct_to_family"]
+  {"countersign":[],"forbidden":[],"presence_disclosure":true,...}
+Both agree with the file at this sha. The verification block also carries TWO
+NEGATIVE INSERTS -- the hyphenated enum value, and a JSON string where the
+object belongs -- each of which MUST ERROR, because a constraint nobody tried
+is a constraint nobody has evidence of.
+
+NOTHING READS THIS TABLE YET AND THE FILE'S OWN HEADER SAYS SO. Running it
+provisions storage nothing writes to and nothing reads.
+
+--------------------------------------------------------------------------------
+3b. THE sairnlaw.html PANEL -- AND THE SPEC WAS WRONG
+--------------------------------------------------------------------------------
+
+CONCEPT: one read-only "Needs your authorisation" list in the Trust Accounting
+area, rendering ONE NAMED STAGE per row -- the stage the endpoint computes --
+because four nullable columns is four chances for a panel to show "signed" for
+a spent-and-expired record.
+
+THE CORRECTION IS THE FINDING. b19's routed spec AND the b20 dispatch both say
+the panel is "driven by the `status` action" AND that
+idx_sairnlaw_countersign_open "exists to serve that query". Those cannot both
+be true of what shipped:
+
+  * api/_lib/countersign-endpoint.js:250 -- `status` takes { token } and
+    returns ONE row, keyed on token_hash = hashToken(token).
+  * the clear token is returned ONCE, at `prepare`, TO THE PREPARER. A signer
+    holds no token and could not drive `status` for anything.
+  * idx_<app>_countersign_open is (license_hash, resource, expires_at) WHERE
+    spent_at IS NULL -- a LIST index. Both SQL files call it "the query a
+    director's 'needs your signature' list is built from". NOTHING QUERIED IT.
+
+I wrote one of those two documents myself, one batch earlier. It was found by
+reading the endpoint, not by re-reading my own routing note.
+
+SO b20 ADDED `open`, in the shared endpoint, so one implementation serves both
+apps. It returns NO TOKEN AND NO TOKEN HASH -- both schemas say why in their own
+words: "a readable table of live tokens is a table of signatures waiting to be
+borrowed". The panel is therefore READ-ONLY BY CONSTRUCTION, not by politeness;
+signing still needs the reference the preparer hands over, which is the
+mechanism's design, and the response carries that sentence itself so two apps
+cannot grow two wordings of one limitation.
+
+THE STAGE LADDER WAS EXTRACTED, NOT COPIED. stageOf() and STAGE_COLUMNS are one
+implementation called by both `status` and `open`. Two copies would be two
+answers to "what is this record", and the second would be the one in the list a
+signer actually reads. The column list is one string for the same reason: a
+column added for one path and not the other would make stageOf read undefined
+and compute awaiting_signature for a FILED record.
+
+EXPIRED-BUT-UNSPENT ROWS ARE RETURNED, with the stage saying which they are. A
+row that expired unsigned is the one thing a signer most needs to see: an
+authorisation that quietly vanished from the list looks exactly like one that
+was never prepared, and the preparer is sitting waiting for it.
+
+THE CAP IS REPORTED, NEVER SILENT. Neither token table has a DELETE by design,
+so unspent expired rows accumulate without bound. limit = cap+1 is sent purely
+to DETECT truncation, and `truncated` is present on BOTH outcomes -- a field
+that only appears when truncation happened is a field a client forgets to look
+for.
+
+THE PANEL HAS FOUR OUTCOMES AND ONLY ONE MAY SAY "NOTHING WAITING":
+  in flight    "Checking with the server..." -- a card headed Needs Your
+               Authorisation showing nothing reads as "nothing is waiting"
+  503          the lock is not set up on the server -- production TODAY, named
+               separately so NOT_PROVISIONED cannot read as "the queue is empty"
+  401 / 403    a sign-in answer and a role answer, each its own sentence, each
+               stating that it is NOT a statement about what is waiting
+  200 + empty  the only place "Nothing waiting" is allowed, and it says the
+               answer is the SERVER'S rather than this device's
+
+The panel renders the server's stage and DOES NO ARITHMETIC -- it never reads
+countersign_employee_id / countersigned_at / spent_at to decide what a row IS,
+because the expiry comparison would be against this device's clock. expires_at
+is displayed, never interpreted.
+
+THE ROLE GATE IS UX-ONLY AND IS A SECOND COPY OF A ROLE SET, which this
+platform normally refuses -- so the reason it is acceptable is written at the
+declaration: it can only ever HIDE. `open` re-checks profile.signerRoles on
+every call, so a wider drift still gets refused by the server and a narrower
+drift means a signer sees no card and asks.
+
+================================================================================
+4. ITEM 3 -- DID cody APPLY THE ROUTED DIFF? NO. NEITHER CHANGE.
+================================================================================
+
+Checked by reading origin, not by redoing it, as instructed -- and RE-CHECKED
+against the landed origin after my own push, because origin moved five times.
+
+CHANGE 1, the reconcile gate derived from the module: NOT APPLIED.
+  git show origin/main:api/sd-data.js | grep -n "LAW_RECONCILE_ROLES = roleSet"
+  -> 18804:      const LAW_RECONCILE_ROLES = roleSet({ owner: true });
+The hand-written literal is still there, and so is the comment above it calling
+the widening "the open question, not a rejected one". THE QUESTION IS NOW
+ANSWERED IN THE MODULE AND THE GATE STILL DOES NOT READ IT.
+
+CHANGE 2, leg_settings as a resource: NOT APPLIED. Three ways:
+  * grep leg_settings -> one hit, api/sd-data.js:16662, which is b18's OWN
+    COMMENT saying "there is no leg_settings resource in LEG_RESOURCES and no".
+    No registration.
+  * grep legRoles.decide -> one call site, :16610, still THREE arguments:
+    legRoles.decide(resource, legSess.role, action). No grants, no home.
+  * so F2 AND F3 REMAIN POLICY NOTHING CONSULTS. Every apprentice gets the
+    empty default and F3's countersign branch is unreachable in production.
+
+cody is LIVE and working b26 on a different subject (four tier-row reads plus a
+NOT_PROVISIONED guard conversion) with api/sd-data.js in its declared FILES.
+NOT a dead claim and not overrulable. The routed document stands as written.
+
+WHAT b20 CHANGED FOR IT: change 1 is now SAFE TO PASTE. Before this batch,
+applying it would have widened the live gate to include paralegal.
+
+================================================================================
+5. ITEM 6 -- GRANT-APP-LOGIN, RE-DRIVEN RATHER THAN INHERITED
+================================================================================
+
+Both artefacts run at this sha. b19 explicitly did NOT get to this and recorded
+the status as b18's; it is now a measurement.
+
+  node api/b18-passkey-profile-e2e.test.js
+    -> 37 passed, 0 failed, 0 unproven
+    Includes the E-series ABLATIONS, which remove each b18 guard from a lifted
+    copy of the source and confirm the arm above it goes red -- so the arms are
+    testing those guards and not something else. E3b records a MEASURED
+    REDUNDANCY rather than claiming a working layer: removing the
+    `typeof showToast` guard alone changes nothing.
+
+  python -u docs/hank-evidence/b18_live_gate_probe.py
+    -> 12 verified, 0 failed, 4 COULD NOT RUN
+    THE FOUR ARE NOT PASSES and the probe prints them under their own heading:
+      - an unknown action is a 400 naming the ACTIONS allowlist (needs a real
+        licence key, which the probe deliberately does not carry)
+      - F1 leg_cremations happy path (the SQL has not been run)
+      - C2 law_trusttx two-stage happy path (the SQL has not been run)
+      - C1 bookkeeper credential creation (the CHECK widening has not been run)
+
+CONFIRMED BY FRESH MEASUREMENT, same shape as b18's figures -- and now a
+measurement rather than a citation.
+
+AND ONE STALE LABEL FIXED WHILE RE-DRIVING IT. The probe's arm read "an unknown
+action is a 400 naming prepare/countersign/status" and `open` makes four. THE
+ARM IS COULD NOT RUN, SO NOTHING FAILED -- which is exactly the shape worth
+catching: a label that quietly stopped describing the thing, inside a check
+whose own result could never contradict it. Discipline item 8, found by hand
+because nothing announces the day a check stops testing anything. It now names
+the ACTIONS allowlist rather than a snapshot of it.
+
+================================================================================
+6. REGRESSION EVIDENCE, ALL RE-DRIVEN AT THIS SHA
+================================================================================
+
+  api/b20-countersign-open.test.js              15 passed,  0 failed   (new)
+  api/b18-countersign-lock.test.js              59 passed,  0 failed, 0 unproven
+  api/b18-passkey-profile-e2e.test.js           37 passed,  0 failed, 0 unproven
+  api/b19-iolta-reconcile-carveout.test.js      29 passed,  3 failed   EXPECTED
+  api/b17-trust-lock-hard.test.js               14 passed,  0 failed, 0 unproven
+  api/b17-practitioner-role-maps.test.js        19 passed,  0 failed, 0 unproven
+  api/sd-data-law-role-matrix.test.js           29 passed,  0 failed
+  api/sd-data-leg-role-matrix.test.js           37 passed,  0 failed, 0 unproven
+  api/_lib/law-trust-reconcile-endpoint.test.js 12 passed,  0 failed
+  api/_lib/law-trust-reconcile.test.js          33 passed,  0 failed
+  api/sd-data-sairnlaw-resources.test.js        23 passed
+  docs/hank-evidence/b18_live_gate_probe.py     12 verified, 0 failed, 4 COULD NOT RUN
+  tests/law_reconcile_role_vocab_check.py       exit 2 COULD NOT RUN, pre-existing
+
+SYNTAX, BY HTML-PARSER EXTRACTION AND NOT `grep -c '<script'`:
+  3 script blocks parsed out of sairnlaw.html with html.parser, each written to
+  a file and `node --check`ed individually -> 0 errors.
+  tools/dup_dom_ids_check.py        333 ids / 0 dupes
+  tools/duplicate_global_check.py   288 globals / 0 duplicates
+  tools/html_script_check.py        duplicate-global and missing-DOM clean
+  tools/sairn_strict_args_check.py  clean
+  node --check api/_lib/law-roles.js, api/_lib/countersign-endpoint.js,
+  api/b20-countersign-open.test.js -> all clean
+
+WHAT THIS EVIDENCE DOES NOT COVER, stated rather than left to be assumed:
+
+  * NO LIVE PROBE AGAINST A DEPLOYED URL for anything b20 built. The `open`
+    action is not deployed at the time of writing and both countersignature SQL
+    files are unrun, so the deployed endpoint answers 503 NOT_PROVISIONED. Arm
+    D2 asserts exactly that state rather than leaving it a sentence.
+  * NO RENDERED PASS ON THE NEW PANEL. It was syntax-checked by parser
+    extraction and its DOM targets were checked, and IT HAS NOT BEEN LOOKED AT.
+    A card that renders wrong passes every check above.
+  * NO HANDLER-LEVEL ARM AND NO ABLATION FOR THE b20 POLICY CHANGE. The
+    withdrawal is proved by the module and by the three reachability
+    measurements, not by a request.
+  * NO WHOLE-TREE SUITE RUN. The 13 suites were chosen by what the diff
+    touches; a regression in an unrelated file would not appear here.
+  * api/b20-countersign-open.test.js IS TRACED TO NOTHING -- counted in
+    traceability_matrix's untraced population (224 -> 225). No open-work row
+    cites it, because the `open` action was found during b20 and has no index
+    row. That is the true answer rather than a figure to fix by writing a
+    citation.
+
+================================================================================
+7. THE PUSH -- FIVE ATTEMPTS, TWO REAL REFUSALS, ZERO OVERRIDES
+================================================================================
+
+ATTEMPTS 1-2 WERE NOT REFUSALS. origin/main moved under me while the gate was
+running, so the push was a non-fast-forward and git was going to refuse it
+itself. The gate said so and told me not to read it as a finding:
+  "THIS CLONE IS 5 AHEAD AND 1 BEHIND origin/main ... Nothing was checked, and
+   nothing was going to be pushed either. This is NOT a finding about your
+   commits."
+DO NOT READ THE GATE'S SILENCE ON THE CHECKS AS THE CHECKS PASSING. On those
+attempts they did not run. I misread it once; see section 8.
+
+ATTEMPT 3 -- TWO CHECKS REFUSED, BOTH TRUE, BOTH FIXED AT THE SOURCE:
+
+  (a) THE CREDENTIAL-SHAPE GATE matched the fixture token literal in
+      api/b20-countersign-open.test.js -- generic_credential_assignment, a
+      22-character value assigned to a name containing `token`. The gate
+      deliberately does not echo the match, which is correct and means you have
+      to open the file.
+
+      AND IT REFUSED THIS REPORT TOO, FOR QUOTING THE LINE. The first draft of
+      this section reproduced the offending assignment verbatim to explain it,
+      and the gate matched it again -- CORRECTLY, because the string ships in a
+      commit either way and a report is not a safe place to put a credential.
+      So the old value is described rather than written: a `b20-open-...` name
+      ending in `-fixture-token`, with no assignment form around it. THAT IS
+      THE GATE WORKING ON ITS OWN DOCUMENTATION, and it is worth knowing
+      before writing the next incident note.
+
+      b18 HIT THE IDENTICAL REFUSAL ON THE IDENTICAL KIND OF LINE and its fix
+      was reused rather than rediscovered: `placeholder` is one of
+      tools/redaction_check.py's PLACEHOLDER_MARKERS, so the fixture now
+      DECLARES WHAT IT IS ('b20-open-token-placeholder') rather than being
+      exempted through SAIRN_SKIP. Verified by driving the checker's own
+      find_hits() over the file ([]) AND over the added lines of the entire
+      outgoing range ([]).
+
+      AND THE COMMIT HAD TO BE REWRITTEN, NOT FIXED FORWARD. The gate reads the
+      ADDED LINES of EVERY commit the push would send, so a later fix commit
+      leaves the old blob shipping. The `open`-action commit was amended and the
+      two after it replayed onto it. THE STALE SCRUTINY COMMIT WAS DROPPED
+      rather than replayed, because its message and its JSON rows cited a sha
+      the rewrite destroyed; the gate wrote fresh rows on the next attempt.
+
+  (b) docs/MASTER-PLAN.md AND docs/traceability-matrix.md no longer matched
+      their sources. Both GENERATED, both clean at the base commit, so this
+      push was what changed the answer. Fixed by RUNNING THE GENERATORS, not by
+      editing the documents:
+        python tools/master_plan.py          -> 148 lines
+        python tools/traceability_matrix.py  -> 1018 lines
+      One new file moved every figure by one: test files on disk 995 -> 996,
+      `traced` under-count 224 -> 225, worst case 965 -> 967, RSS 732 -> 733.
+      RUN AFTER THE FINAL REBASE, deliberately -- these documents cite shas and
+      generating them before a rebase puts a stale sha in the thing an auditor
+      reads.
+
+ATTEMPT 4 PASSED EVERY CHECK and was rejected by the network:
+  ! [remote rejected] main -> main (cannot lock ref ... is at e777c49fa ... but
+  expected d0792165...)  -- fourth landed b33 during the gate run.
+
+ATTEMPT 5 LANDED: e777c49fa..b3fad2fe4  main -> main
+
+TWO EXTRA-SCRUTINY FLAGS WERE RAISED AND BOTH ARE FALSE POSITIVES. Recorded in
+docs/scrutiny-flags.json and COMMITTED rather than suppressed -- the row is the
+gate's output, not mine to edit:
+  * `is(capUrl && /limit=201/...)` -> "a bound or threshold ADDED". It asserts
+    that the query SENDS cap+1 so truncation is DETECTED rather than inferred
+    from a full page. A bound added to a CHECK is strengthening; the matcher
+    cannot see which side of the check it sits on.
+  * `section('A. the action exists, is allowlisted, ...')` -> "a skip /
+    exemption / allowlist entry ADDED". It is the word `allowlisted` in a
+    section TITLE.
+  * the probe's label edit matched the same word, on an arm that was COULD NOT
+    RUN before the edit and after it.
+The gate's own output says to expect this -- its WEAKENING level was 3-of-3
+false on its own landing commit and it is left matching deliberately, because a
+narrowed detector fails silently on the next phrasing. These rows need a human
+to close them, not a code change.
+
+ONE FURTHER NOTICE, PASSED THROUGH RATHER THAN SWALLOWED:
+  "Seam check COULD NOT TELL for at least one endpoint/engine pair. The push is
+   allowed, but nothing was verified about that seam."
+That is a third state, not a pass, and it is reported here for that reason.
+
+================================================================================
+8. WHAT I GOT WRONG OR CORRECTED IN THIS BATCH -- FIVE THINGS
+================================================================================
+
+1. THE DISPATCH SAID ARM R2 WOULD GO RED. THREE WENT RED. I did not take the
+   prediction as the answer; I ran the suite before and after and read the
+   failure list. Reporting "R2 red as expected" would have left two surprises.
+
+2. THE DISPATCH AND b19's OWN ROUTED SPEC BOTH SAID THE PANEL IS DRIVEN BY
+   `status` AND THAT THE INDEX SERVES THAT QUERY. Both sentences sit in two
+   documents and are mutually inconsistent with the shipped endpoint. I wrote
+   one of those documents one batch earlier. Found by reading
+   countersign-endpoint.js rather than trusting my own routing note.
+
+3. I FIRST TREATED THE no-defect-record JUDGEMENT AS A READING QUESTION. It is
+   a reachability question. The decisive fact -- the envelope's EXTRA_ACTIONS
+   allowlist -- is two layers above the role gate I was examining, and I would
+   have missed it by reading the gate alone.
+
+4. I NEARLY LEFT LAW_RECONCILE_ATTESTATION.gap ALONE as "one line, per the
+   decision". It is an exported, asserted constant that described a grant which
+   no longer existed -- a false statement inside the structure built so the gap
+   "cannot be lost".
+
+5. I READ THE PUSH LOG'S SILENCE ON THE CHECKS AS THE CHECKS PASSING. It was a
+   non-fast-forward and the gate had not run at all. The gate's message says
+   this explicitly; I had not read far enough up the log. Recorded because the
+   next session will hit the same thing with five agents on one branch.
+
+================================================================================
+9. WHAT IS OPEN -- SUMMARY. FULL NEXT-STEPS IN THE HANDOFF, SECTION 4.
+================================================================================
+
+  A  the three red arms in api/b19-iolta-reconcile-carveout.test.js -- re-aim
+     with the new expected answer WRITTEN DOWN, never delete to go green. The
+     docs/known-red-suites.json entry is ROUTED (cody's file) in pasteable form.
+  B  the whole `reconcile` VERB is inert -- not in any EXTRA_ACTIONS. NOT fixed
+     here deliberately: declaring it would widen the legs on the same day a
+     grant came off for being too wide. Michael's call.
+  C  sql/sairnlegacy_settings_schema.sql has NOT BEEN RUN, and steps 2-3 (the
+     resource registration and the decide() fifth argument) are cody's file.
+  D  no drift probe for the schema's two second copies of module constants. The
+     verification block documents the comparison and a comment block DOES NOT
+     RUN.
+  E  sairnlegacy.html's panel -- fourth's file, and now UNBLOCKED: the `open`
+     action is app-agnostic and arm D4 proves it gates on SAIRNlegacy's own
+     signer set through the real route.
+  F  the IOLTA attestation mechanism -- still DECISION-NEEDED, but no longer
+     open in both directions. A new build item, not a role-map entry.
+  G  api/b20-countersign-open.test.js is traced to nothing. An open-work row is
+     owed for the `open` action and for item B.
+  H  tests/law_reconcile_role_vocab_check.py is exit 2 COULD NOT RUN,
+     pre-existing, and ALSO needs re-aiming once cody's change 1 lands.
+  I  the two parked stashes -- UNTOUCHED, not mine to resolve, per the dispatch.
+
+================================================================================
+10. TRANSCRIPT AND CONTEXT
+================================================================================
+
+  C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-hank\c6aa6115-6c83-4e85-839e-9d1825f2115a.jsonl
+
+CONTEXT 32.0% of 1,000,000 -- 319,526 tokens, measured.
+Printed by `python tools/context_verify.py --digest-line` and pasted verbatim,
+NOT self-reported and not hand-edited -- cc's b21 gate (`--check-digest`)
+refuses a hand-typed percentage over a real count.
+SAIRN-digest-hank-b20.txt carries 31.5% / 314,742, printed by the same tool a
+few minutes earlier and verified OK by that gate. THE TWO FIGURES DIFFER
+BECAUSE THE SESSION KEPT RUNNING BETWEEN THEM, not because either is wrong --
+each is true of the last assistant turn at the moment it was taken, which is
+exactly what the tool's own age warning says to expect.
+The window is marked [window INFERRED] by the tool, which is its own
+disclosure and not a defect.
+THE FIGURE MOVED WHILE THIS BATCH RAN -- 23.0% at item 3, 28.3% when the
+handoff was written -- so it is re-measured at the moment of writing rather
+than quoted from earlier in the same session.
+
+THE SHA256 ON THE NEXT LINE is of the BODY of this file -- every byte from
+line 2 to the line immediately above it, LF-joined. It does NOT cover line 1
+(the REPORT line), the SHA256 line itself, or the END-OF-REPORT line, because
+a digest cannot cover itself. That is the TAIL layout
+tools/report_sha_check.py defines, and the figure below was produced by
+calling that tool's own parts()/verdict() rather than by a hand-rolled slice --
+a seal computed by one rule and checked by another is not a seal.
+Verify with:
+  python tools/report_sha_check.py SAIRN-report-hank-b20.txt
+
+SHA256 07b5212dda73439f0e3eea2995eb55d6c87771ed1cc3775922198d6dc596a906
+END-OF-REPORT
