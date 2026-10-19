@@ -4996,6 +4996,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "errors='replace', timeout=300, cwd=repo,"
+    }
+   ],
+   "sha": "84026d6186e8609831e7f8008fd47c6ad6a44d90",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/sd-data-leg-bookings-toctou.test.js",
    "class": "test file",
    "level": "WEAKENING",
