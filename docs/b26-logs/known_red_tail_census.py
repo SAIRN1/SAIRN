@@ -218,8 +218,12 @@ print('AND ' + str(len(rec)) + ' registered row(s) are GREEN, which the '
 for v in rec:
     print('  * ' + v['file'])
 
+# newline='' because Python on Windows otherwise writes CRLF while
+# .gitattributes normalises the stored blob to LF -- `git status` stays clean
+# and every later byte comparison reports a phantom difference. This file was
+# written CRLF on its first run and had to be normalised by hand.
 io.open('docs/b26-logs/known_red_tail_census.json', 'w',
-        encoding='utf-8').write(json.dumps(
+        encoding='utf-8', newline='').write(json.dumps(
             {'measured': '2026-10-19', 'by': 'cody b26',
              'tool': 'docs/b26-logs/known_red_tail_census.py',
              'comparison': 'tools/known_red_check.py::_same_reason, imported',

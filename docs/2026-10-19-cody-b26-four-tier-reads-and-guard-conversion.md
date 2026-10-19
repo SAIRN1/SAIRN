@@ -435,10 +435,82 @@ ALONE** and compares its real `out[-1]` against the stored `tail`.
 * **Five verdicts, and "could not run" is not folded into either:**
   `TAIL_MATCHES`, `TAIL_UNPRODUCIBLE`, `GREEN_RECOVERED`, `SKIPPED`, `TIMEOUT`.
 
-**RESULT: see `docs/b26-logs/known_red_tail_census.json`** — written by the
-run, with every verdict, every stored tail and every observed tail. The
-headline figures are in `SAIRN-report-cody-b26.txt`; they are not restated here
-because a figure typed into two documents drifts in one of them.
+### 3.2 THE RESULT — b22 FOUND ONE; THERE ARE TWELVE
+
+All 65 registered entries driven **ALONE**, one process each, in a disposable
+worktree at `81e6183d4`:
+
+```
+TAIL_MATCHES        37
+TAIL_UNPRODUCIBLE   12   <- THE ANSWER b22 6.6 ASKED FOR
+TIMEOUT             10   <- at 120s; see the caveat below
+GREEN_RECOVERED      5
+SKIPPED              1
+```
+
+**12 of the 49 COMPARABLE rows — 24% — carry a tail the runner cannot
+produce.** b22 found one of them and corrected it; the other eleven have been
+reporting `CHANGED` on every run since they were registered:
+
+```
+tests/defect_register_capa_control.py
+tests/run_adversarial_prompt_corpus_probe.py
+tests/run_alf_read_order_sabotage_probe.py
+tests/run_condition_coverage_probe.py
+tests/run_dependency_graph_probe.py
+tests/run_rebase_resolve_probe.py
+tests/run_report_only_checks_probe.py
+tests/run_selftest_independence_probe.py
+tests/run_write_path_scan_probe.py
+tests/sairncare_compliance_window_boundary.test.js
+tests/seam_check/run_or_default_probe.py
+tests/suite_control_backfill_probe.py
+```
+
+**AND 5 REGISTERED ROWS WERE GREEN**, which the register's own
+`_what_this_is_NOT` rule says must be removed — *"while it stands it swallows
+the next real failure of that file"*: `api/sf-auth.test.js`,
+`tests/faults/transport_timeout_sweep.js`, `tests/sql_preflight/run_probe.py`,
+`tests/run_b12_routed_findings_probe.py`, and
+`tests/sd_data_not_provisioned_misclass.js` (the last one green because of this
+batch; the other four found green, **cause not diagnosed and recorded as
+undiagnosed rather than guessed**).
+
+### 3.3 THE REMEDIATION IS **ROUTED, NOT APPLIED**, AND THE REASON IS A RULE
+
+Each of the 12 is marked **in place** with `tail_verdict_2026_10_19` and
+`observed_tail_2026_10_19`. **The stored `tail` is NOT overwritten.** Two
+reasons, both conventions rather than preferences:
+
+* overwriting destroys the record of what the row used to claim, which the
+  2026-10-13 b8 scope statement names in those words — *"No entry's `tail`
+  overwritten"*;
+* **a detector that applies its own repair is convention 11's human-gated
+  auto-remediation rule read the wrong way.** This census *measured* the
+  mismatch; deciding whether the register should carry the observed line, or
+  whether the **suite** should print a stable last line instead, is a judgement
+  about what each row is for.
+
+### 3.4 THREE CAVEATS, NAMED RATHER THAN BURIED
+
+1. **THE TIMEOUT WAS 120s, NOT THE RUNNER'S 300s.** Ten suites timed out and
+   **some of them may complete at 300s** — so `TIMEOUT 10` is an upper bound on
+   hangs and a lower bound on completions. **None of the ten is counted as
+   either matching or unproducible:** the 49 comparable rows are
+   `TAIL_MATCHES + TAIL_UNPRODUCIBLE` only, and the 10 timeouts plus the 1 skip
+   are **excluded from the denominator rather than folded into it.**
+2. **IT WAS DRIVEN IN A DISPOSABLE WORKTREE, not a live clone**, because
+   several of these suites write when run. An environment-sensitive suite could
+   answer differently in a clone; each row's own `environment` block records
+   where its verdict came from.
+3. **THE COMPARISON NORMALISES DIGITS AWAY** — that is
+   `known_red_check.py::_same_reason`'s deliberate choice, so two different
+   failures differing only in digits read as the same. **That weakness is
+   inherited here rather than introduced**, and it means 12 is a **lower
+   bound**.
+
+**PER-ROW DETAIL, every stored tail beside every observed one:**
+`docs/b26-logs/known_red_tail_census.json`.
 
 ---
 
