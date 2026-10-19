@@ -1,0 +1,10 @@
+DIGEST cc b21
+STATUS: CLOSED 5/5, no overrides, BYPASS-LOG unchanged; landed c2436a95 + 7766774b, HEAD==origin/main 0/0 clean, read back from ORIGIN
+DECISION-NEEDED: wcag --static --all drops hyphenated html stems, so sairndental-book (6) and sairndental-complaint (2) are outside the baseline, inside the gate: 8 findings deny any push touching them. fourth owns both.
+CHANGED: --digest-line / --check-digest and CHECK 5c (context-digest, WIRED) stop a digest's CONTEXT line being typed; the teeth are a token count matching a real turn. My b20 defect: the window inference is a FLOOR -- a fresh 1M session read 70.9% of 200k, truly 14.2%. Denominator DECLARED per session; locks 56/56.
+EVIDENCE-path: SAIRN-report-cc-b21.txt, docs/2026-10-19-cc-b21-context-in-digest.md
+UNVERIFIED: in the report. Nothing independently re-derived; 5c never judged a real digest; preflight probe RED 3/13.
+NEXT: hank/cody/fourth run --provision-window then --digest-line per session. Item 4 needs a week of intervals.
+CONTEXT 24.3% of 1,000,000 -- 243,047 tokens, measured.
+SHA256 332afe478fecc3a04f6c6f2b7fadd861de33daa4c428a9b9bf97d4195c818f18
+END-OF-REPORT
