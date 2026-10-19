@@ -70,6 +70,30 @@ def paragraphs(text):
     return [p for p in re.split(r"\n\s*\n", text) if p.strip()]
 
 
+# ── ABBREVIATION-SAFE SPLIT, h1 b56 ─────────────────────────────────────────
+# Identical fix to citation_class_check.py's split_sentences() (h1 b55, same
+# root cause, independently duplicated here): the bare re.split below treats
+# ANY period as a sentence end, including an abbreviation's. "...the Federal
+# Reserve Bank's FRED/St. Louis Fed API..." splits mid-phrase at "St.",
+# stranding two different-file citations with only each other's filenames as
+# anchor candidates -- and this file's own anchor_candidates() (via
+# hover_editor_review_criteria) excludes a citation's own file stem from its
+# candidate set, so both are guaranteed to fail. A short, explicit
+# abbreviation list, not a general detector, because the real cases seen are
+# all this shape.
+_ABBREV_TAILS = ('st', 'mr', 'mrs', 'ms', 'dr', 'prof', 'vs', 'etc', 'eg',
+                  'ie', 'inc', 'ltd', 'corp', 'jr', 'sr', 'no', 'approx',
+                  'u.s', 'co')
+
+
+def _ends_with_abbreviation(fragment):
+    tail = fragment.rstrip()
+    if not tail:
+        return False
+    word = re.split(r'[\s(]', tail)[-1].rstrip('.').lower()
+    return word in _ABBREV_TAILS
+
+
 def sentences(paragraph):
     # (?<=[.!?])\*{0,2}\s+ -- not just \s+. Register prose bolds sentence-
     # final punctuation ("...individually.**"), so a period is followed by
@@ -80,7 +104,16 @@ def sentences(paragraph):
     # 2026-09-28 testing CRITERIA_VERSION 3 against a real register row
     # (sf_ceremonial_items), where the leaked token coincidentally matched
     # elsewhere in the file and produced a false LINE-MISMATCH. Locked by F22.
-    return [s for s in re.split(r"(?<=[.!?])\*{0,2}\s+", paragraph) if s.strip()]
+    raw = [s for s in re.split(r"(?<=[.!?])\*{0,2}\s+", paragraph) if s.strip()]
+    if len(raw) <= 1:
+        return raw
+    out = []
+    for part in raw:
+        if out and _ends_with_abbreviation(out[-1]):
+            out[-1] = out[-1] + ' ' + part
+        else:
+            out.append(part)
+    return out
 
 
 class Review:
@@ -403,6 +436,36 @@ def run_fixture_lock(verbose):
                     print("    [%s %s] %s" % (kind, cls, detail))
             elif verbose:
                 print("fixture ok    %s" % name)
+
+        # ── UNIT-LEVEL REGRESSION, h1 b56: sentences() itself, no git
+        # fixture repo needed -- pure text splitting. Proves the same
+        # abbreviation-safe merge landed here as in citation_class_check.py
+        # (h1 b55), without touching build_fixture_repo()'s own carefully
+        # tuned sha1/sha2/sha3 transitions for a second file this fixture
+        # repo does not otherwise need.
+        count += 1
+        abbr_case = sentences(
+            "`frobnicate` lives in the St. Louis office, at src/app.py:10, "
+            "and `widget_helper` is unrelated.")
+        if len(abbr_case) != 1:
+            ok = False
+            print("FIXTURE FAIL  F32 abbreviation-safe split: expected 1 "
+                  "merged sentence, got %d: %r" % (len(abbr_case), abbr_case))
+        elif verbose:
+            print("fixture ok    F32 'St.' does not end a sentence early "
+                  "(h1 b56, same fix as citation_class_check.py's h1 b55)")
+
+        count += 1
+        real_boundary = sentences("First.** Second.")
+        if real_boundary != ["First.", "Second."]:
+            ok = False
+            print("FIXTURE FAIL  F33 a real sentence boundary (bolded "
+                  "period, F22's own shape) must still split: got %r"
+                  % real_boundary)
+        elif verbose:
+            print("fixture ok    F33 a real bolded-period boundary (F22's "
+                  "shape) still splits after the abbreviation fix")
+
         return ok, count
     finally:
         shutil.rmtree(d, ignore_errors=True)
