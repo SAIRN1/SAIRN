@@ -4198,6 +4198,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b19-iolta-reconcile-carveout.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "7b33fab79193e0f1c588cd77e3a5b1e24e7c387d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_blob_coverage_scope_sabotage.py",
    "class": "test file",
    "level": "CHANGE",
