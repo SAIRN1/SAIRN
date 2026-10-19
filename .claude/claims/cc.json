@@ -4165,8 +4165,8 @@
       "task": "b21 wire the measured context figure from context_verify.py into each build agent's digest-writing step as a push gate; confirm wcag_contrast_check.py is really wired into the push gate by driving it; scope-only design for a coordination-health monitor across the six-agent swarm. FILES: tools/context_verify.py tools/sairn_push_gate_hook.py tools/gate_skip.py docs/2026-10-19-cc-b21-context-in-digest.md docs/2026-10-19-coordination-health-monitor-scope.md docs/batch-manifest-cc-b21.json SAIRN-handoff-cc-b21.md SAIRN-report-cc-b21.txt SAIRN-digest-cc-b21.txt",
       "claimed_at": "2026-10-19T15:24:31Z",
       "claimed_at_epoch": 1792423471.5802126,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-19T16:31:30Z",
       "files": [
         "SAIRN-digest-cc-b21.txt",
         "SAIRN-handoff-cc-b21.md",
