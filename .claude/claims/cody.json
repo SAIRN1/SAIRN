@@ -4087,6 +4087,25 @@
         "sairnroofing.html",
         "tests/sairnlaw_trust_clearance_review_probe.js"
       ]
+    },
+    {
+      "id": "cody-1792420261",
+      "session": "cody",
+      "subject": "platform",
+      "task": "b25 live-verify rf_locations is_default response shape against the DEPLOYED endpoint (the missing check named in b24); SAIRNscape customers PII retier B-to-A in docs/CRITICALITY-TIERS.md plus confirm SD_SESSION_GATED and SD_GATE_APP both carry it in one edit, and make the WRITE path answer 403 not 400; commit scrutiny-flags rows on every gate attempt rather than stashing; handoff b25; push. NOTE: docs/CRITICALITY-TIERS.md IS NORMALLY HANK'S AND I AM TAKING IT ON MICHAEL'S EXPLICIT INSTRUCTION this batch because hank's window is stalled -- declared rather than assumed. api/sd-data.js likewise. B6-CLASS CHECK IS NOT STARTED THIS BATCH, by instruction. fourth holds sairnscape.html and twelve other app files for a contrast pass -- I do NOT touch sairnscape.html. FILES: api/sd-data.js docs/CRITICALITY-TIERS.md api/sd-data-scp-session-gate.test.js docs/b25-logs docs/2026-10-19-cody-b25-live-verify-and-scape-pii.md SAIRN-handoff-cody-b25.md SAIRN-report-cody-b25.txt SAIRN-digest-cody-b25.txt",
+      "claimed_at": "2026-10-19T14:31:01Z",
+      "claimed_at_epoch": 1792420261.9832125,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-cody-b25.txt",
+        "SAIRN-handoff-cody-b25.md",
+        "SAIRN-report-cody-b25.txt",
+        "api/sd-data-scp-session-gate.test.js",
+        "api/sd-data.js",
+        "docs/2026-10-19-cody-b25-live-verify-and-scape-pii.md",
+        "docs/CRITICALITY-TIERS.md"
+      ]
     }
   ],
   "refusals": [
