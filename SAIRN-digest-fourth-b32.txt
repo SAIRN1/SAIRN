@@ -1,0 +1,88 @@
+DIGEST fourth b32 2026-10-19
+
+STATUS
+  STOPPED ON DIRECT INSTRUCTION partway through item 5. ONE of six items is
+  finished, four were never started, one was started and interrupted before
+  any output was read. All four untouched items are recorded as `blocked` in
+  docs/batch-manifest-fourth-b32.json in the same words as the report, so the
+  manifest and the narrative cannot drift apart.
+  NOTHING IS HALF-APPLIED, uncommitted or unpushed. origin/main...HEAD = 0 0.
+  No force, NO override of any kind.
+  WHAT IS DONE: sairnroofing's 3 findings, which were the last contrast debt
+  on the platform. cody's claim on that file HAS released (its b25 claim names
+  api/sd-data.js and docs/CRITICALITY-TIERS.md, not the roofing file), so the
+  findings b31 had to flag back were closable.
+  THE PLATFORM NOW CARRIES ZERO CONTRAST DEBT: 153 at the start of b31, 3 at
+  the end of it, 0 now. First time the ratchet's baseline has been emptied.
+  THE HANDOFF WAS WRITTEN BEFORE THIS REPORT, as instructed -- b31 skipped it.
+
+DECISION-NEEDED
+  1. NOTHING HAS BEEN RENDERED SINCE b29, and fourteen customer-facing apps
+     have changed colour since then on the strength of arithmetic alone. The
+     rendered pass was approved and NOT STARTED. It is the largest unverified
+     claim on the platform right now.
+  2. THE RENDERED PASS IS NOT THIRTEEN COPIES OF THE DENTAL DRIVER, and the
+     obstacle is already measured: of the 17 root products, SEVEN have no
+     #gkey licence gate, FIVE have no nav() panel switcher, THREE have no
+     panel-* elements at all. Several of the thirteen will be reachable only
+     as far as their gate screen. Accept a partial pass with those recorded as
+     rendered-unreachable, or fund per-app drivers?
+  3. ITEM 5 PRODUCED NO RESULT AND THAT IS NOT A NIL RESULT. No conclusion
+     about whether routing code already exists may be drawn from this batch in
+     either direction, and item 3 stays correctly blocked behind it.
+
+CHANGED
+  sairnroofing.html   var(--bd) was referenced 3 times and defined NOWHERE, so
+                      three `border:1px solid var(--bd)` declarations were
+                      invalid at computed-value time and the border was
+                      DROPPED. TWO OF THE THREE ARE THE AGREEMENT AND
+                      JOB-BOARD SIGNATURE CANVASES, where that border is the
+                      only thing showing a customer where to sign. Pointed at
+                      --border, which the app already defines.
+  docs/wcag-contrast-baseline.json   3 -> 0
+  docs/defect-density-register.json  one record for 45d9a913; the FMEA loop
+                      scored it PREDICTED, the first time that loop has called
+                      one in advance rather than after
+  docs/batch-manifest-fourth-b32.json   1 done, 4 blocked, 1 open
+  SAIRN-handoff-fourth-b32.md   NEW, written before this report
+  NOT TOUCHED: the 13 recoloured apps (no rendered pass), api/, sql/, tests/,
+  .claude/settings.json, .githooks/, auditor clones. No routing scope doc, no
+  blockers page -- neither exists.
+
+EVIDENCE-path
+  C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\b621dce3-b1b4-4681-a633-54da35b654a4\scratchpad\b32\
+    -- created and EMPTY. b31's directory beside it holds fix.py, the
+       counted-edit applier this batch reused for the roofing fix.
+  transcript  C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\b621dce3-b1b4-4681-a633-54da35b654a4.jsonl
+
+  CHECK 5b: ran on this push (one HTML file changed, which is its trigger) and
+  did NOT deny. The push was denied three times by register-feed -- a fix()
+  commit with no defect record -- and once by a concurrent ref race. Second
+  batch running where the only gate to stop me was register-feed.
+
+UNVERIFIED
+  - NOTHING RENDERED SINCE b29. 14 apps recoloured, none opened in a browser.
+  - ITEM 5's SEARCHES WERE NEVER READ. Zero findings recorded because zero
+    output was seen. Do not read this batch as having established that no
+    routing code exists.
+  - The static half cannot see ancestor-dependent pairs: 4,420 UNRESOLVED
+    platform-wide -- the majority of every app's text.
+  - No keyboard, focus-order or screen-reader pass, in any app, ever.
+  - Carried and not re-verified: cc's two routed Tier A function bodies (sixth
+    batch) and tools/branch_census.py (ninth batch); cody's b28 check (4) and
+    the bld_draws no-arm gap; hank's H3/H2/H1 sequence.
+
+NEXT
+  1. The rendered pass on the 13 apps -- approved, not started, and the single
+     most important open item. Expect partial reach; record the unreachable
+     ones as unreachable rather than as passed.
+  2. Re-run item 5's three searches AND READ THEM, then extend to `git log -S`
+     over deleted code and the archive/ tree, which is where stonedesk's
+     --surface references came from. Only then design item 3.
+  3. Item 3's routing scope doc, then item 4's blockers page, in that order --
+     the blockers page has to say whether item 3 closes the routing blocker.
+
+CONTEXT 65.4% of 1000k (654,137 tokens) -- MEASURED from the last assistant
+turn in this session's transcript: input_tokens 2 + cache_read 654,135. The
+previous three reports used a different quantity (max usage SUM across turns:
+34.1%, 48.0%, 61.9%) and those figures are not comparable with this one.

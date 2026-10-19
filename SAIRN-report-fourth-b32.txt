@@ -1,0 +1,202 @@
+REPORT fourth b32 2026-10-19 -- stopped on instruction after one of six items; the platform's contrast debt is now zero
+
+================================================================================
+WHAT WAS ASKED, AND WHERE EACH ITEM ACTUALLY STANDS
+================================================================================
+
+b32 was stopped on direct instruction partway through item 5. This report says
+plainly which items are finished, which are partial, and which were never
+touched -- because a batch that reports six items and delivered one is the
+exact shape a reader must not have to reconstruct.
+
+  1  rendered pass on the 13 recoloured apps        NOT STARTED
+  2  sairnroofing's 3 remaining findings            DONE AND LANDED
+  3  routing primitive phase 1, scope only          NOT STARTED
+  4  the three recurring blockers, one page         NOT STARTED
+  5  methodology -- archaeology before designing    STARTED, INTERRUPTED,
+                                                    NO RESULT READ
+  6  push, no force, confirm landed                 DONE for what exists
+
+All four NOT-STARTED items are recorded as `blocked` in
+docs/batch-manifest-fourth-b32.json, each carrying the same wording as this
+report, so the manifest and the narrative cannot drift apart. NOTHING IS
+HALF-APPLIED IN ANY FILE. Nothing is uncommitted. Nothing is unpushed.
+
+THE HANDOFF WAS WRITTEN BEFORE THIS REPORT. b31 skipped that and was told it
+is non-negotiable; SAIRN-handoff-fourth-b32.md was written and uploaded first.
+
+================================================================================
+1. ITEM 2 -- THE ONE FINISHED ITEM, AND IT CLOSES A THREE-BATCH THREAD
+================================================================================
+
+FIRST, THE CLAIM CHECK THE ITEM ASKED FOR. cody's claim on sairnroofing.html
+HAS released. Its current b25 claim names api/sd-data.js and
+docs/CRITICALITY-TIERS.md; no active claim mentions the roofing file. So the
+three findings b31 had to flag back were closable, and they were the entire
+remaining contrast debt on the platform.
+
+THE DEFECT. var(--bd) was referenced three times and defined NOWHERE in that
+file, so all three `border:1px solid var(--bd)` declarations were invalid at
+computed-value time and the border was DROPPED -- not drawn in a fallback
+colour.
+
+TWO OF THE THREE ARE THE AGREEMENT AND JOB-BOARD SIGNATURE CANVASES, where
+that border is the only thing showing a customer where to sign. Across the
+153 findings this series has now closed, that is the sharpest instance of the
+class: not chrome, a customer-facing legal artefact with nothing marking the
+signing area.
+
+THE FIX. --bd now points at --border, which the app already defines. One line,
+same shape as b31's --line in sairncare, sairndesign and sairnlegacy.
+
+  python tools/wcag_contrast_check.py --gate sairnroofing.html   ->  0 findings
+  python tools/checkblocks.py sairnroofing.html                  ->  3 blocks,
+                                                                     0 failed
+
+THE PLATFORM NOW CARRIES ZERO CONTRAST DEBT. The ratchet's baseline has gone
+153 -> 3 -> 0 across b31 and b32. That is the second time it has been shrunk
+and the first time it has been emptied. A baseline that is never shrunk is an
+amnesty; this one is now cleared to nothing.
+
+ONE THING WORTH NOTICING, AND IT IS NOT MINE TO TAKE CREDIT FOR. The FMEA loop
+scored this record PREDICTED -- the rule-1.11 same-file risk draft for
+sairnroofing.html had it in advance. Every previous record this session scored
+MISSED. This is the first time that loop has called one before rather than
+after.
+
+================================================================================
+2. ITEM 5 -- STARTED, INTERRUPTED, AND THE RESULT IS NOT A NIL RESULT
+================================================================================
+
+THIS IS THE PART MOST AT RISK OF BEING MISREAD, so it is stated at length.
+
+The methodology item required searching the codebase for any existing
+route/stop sequencing -- even partial, even dead -- before designing anything,
+the way b31 root-caused stonedesk's undefined tokens with `git log -S`. Three
+searches were issued in one command:
+
+  1. tracked files for route_order|stop_order|routeOrder|stopOrder|
+     optimizeRoute|optimiseRoute|route_sequence|visit_order|waypoint
+  2. itinerary / travelling-salesman / dispatch_board vocabulary
+  3. geo primitives a router would need: lat/lng, geocode, haversine,
+     distance_matrix
+
+THE CALL WAS INTERRUPTED BEFORE ANY OUTPUT WAS READ.
+
+ZERO FINDINGS ARE RECORDED BECAUSE ZERO OUTPUT WAS SEEN. "Nothing found" is
+NOT what happened -- nothing was looked at. Any future session that reads this
+batch as having established that no routing code exists would be building on a
+measurement that was never taken. The manifest records it in the same words.
+
+WHAT THE NEXT SESSION SHOULD DO: re-run those three and READ them, then extend
+to the two places a first pass would miss -- `git log -S` over deleted code,
+and the archive/ tree, which is where stonedesk's --surface references came
+from in the first place. Only then design item 3.
+
+================================================================================
+3. ITEMS 1, 3 AND 4 -- NOT STARTED, AND WHAT EACH NEEDS
+================================================================================
+
+ITEM 1, THE RENDERED PASS. No browser was opened, no screenshot was taken,
+nothing was measured. The approval stands; the work does not exist.
+
+  AND THE OBSTACLE IS ALREADY MEASURED, which is why it should not be
+  attempted as thirteen copies of the SAIRNdental driver: of the seventeen root
+  products, SEVEN have no #gkey licence gate, FIVE have no nav() panel switcher
+  and THREE have no panel-* elements at all. That survey is what made b30
+  refuse to build rendered gate profiles in the first place. Several of the
+  thirteen will be reachable only as far as their gate screen, and those must
+  be recorded as rendered-unreachable rather than reported as passed.
+
+  THIS IS THE MOST IMPORTANT OPEN ITEM ON THE PLATFORM. Fourteen
+  customer-facing apps changed colour across b31 and b32 ON THE STRENGTH OF
+  ARITHMETIC ALONE, and nothing has been rendered since b29.
+
+ITEM 3, THE ROUTING SCOPE. No document, no schema, no API surface, no first-app
+choice. It was correctly sequenced BEHIND item 5 and the stop landed inside
+item 5 -- so nothing was designed from scratch and nothing was designed at all,
+which is the right state to be interrupted in.
+
+ITEM 4, THE BLOCKERS PAGE. Not written. The raw material is already landed --
+the four audits in docs/cloud-research/ and PARKED-VERTICALS.md -- and the
+page would need to say what must be true to unblock a regulatory-matrix owner,
+administered-service capacity, and the routing primitive, plus whether item 3's
+scope counts as closing the third.
+
+================================================================================
+4. THE PUSH
+================================================================================
+
+  git rev-list --left-right --count origin/main...HEAD   ->   0   0
+
+  45d9a913  fix(sairnroofing): the last 3 contrast findings on the platform
+  153f5fce  chore(defect register): the sairnroofing --bd record
+  (+ this report, the digest and the handoff)
+
+No force. NO OVERRIDE OF ANY KIND -- no SAIRN_SEED_GATE, no SAIRN_GATE_EXEMPT,
+no SAIRN_SKIP. Nothing was written under api/, sql/ or tests/, and no auditor
+clone was entered.
+
+CHECK 5b RAN AGAIN AND DID NOT DENY. This push changed one HTML file, which is
+its trigger. The push WAS denied three times by register-feed -- a fix() commit
+with no defect-density record -- and once by a concurrent ref race. A record
+was written and it went through. Second batch running in which the only gate to
+stop me was register-feed and the contrast gate passed clean.
+
+READ BACK OFF origin/main, not off the working tree: the --bd definition is in
+sairnroofing.html, the baseline file reads total 0, the manifest is present,
+and the defect record cites 45d9a913 which merge-base --is-ancestor confirms
+resolves on origin/main.
+
+================================================================================
+5. CONTEXT -- MEASURED, NOT ESTIMATED
+================================================================================
+
+Taken from the last assistant turn in this session's own transcript, as
+instructed, rather than from a self-estimate:
+
+  input_tokens          2
+  cache_read            654,135
+  cache_creation        1,338
+  MEASURED CONTEXT = input_tokens + cache_read = 654,137  ->  65.4% of 1000k
+
+THE PREVIOUS THREE REPORTS USED A DIFFERENT METHOD -- the maximum usage SUM
+over every turn in the transcript -- and reported 34.1%, 48.0% and 61.9%. That
+method is not the same quantity and should not be compared with this one. This
+figure is the one the instruction asked for.
+
+================================================================================
+6. WHAT IS LEFT UNPROVEN -- NONE OF IT RECORDED AS CHECKED
+================================================================================
+
+  - NOTHING HAS BEEN RENDERED SINCE b29. Fourteen apps have changed colour
+    across b31 and b32 and not one has been opened in a browser. The brand
+    identity argument -- that --p keeps every border and accent so each app
+    still reads as itself -- is reasoned from CSS and has never been seen.
+  - THE ARCHAEOLOGY FOUND NOTHING BECAUSE IT SAW NOTHING. No conclusion about
+    existing routing code may be drawn from this batch in either direction.
+  - The static half still cannot see ancestor-dependent pairs: 4,420
+    UNRESOLVED platform-wide, the majority of every app's text.
+  - No keyboard, focus-order or screen-reader pass, in any app, ever.
+  - Carried and not re-verified: cc's two routed Tier A function bodies (sixth
+    batch) and tools/branch_census.py (ninth batch); cody's b28 check (4) and
+    the bld_draws no-arm gap; hank's H3/H2/H1 sequence.
+
+================================================================================
+EVIDENCE
+================================================================================
+
+  repo        sairnroofing.html, docs/wcag-contrast-baseline.json (3 -> 0),
+              docs/defect-density-register.json (the 45d9a913 record),
+              docs/batch-manifest-fourth-b32.json (1 done, 4 blocked, 1 open),
+              SAIRN-handoff-fourth-b32.md
+  scratchpad  C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\b621dce3-b1b4-4681-a633-54da35b654a4\scratchpad\b32\
+              -- created and EMPTY; b31's directory beside it holds fix.py, the
+              counted-edit applier this batch reused
+  transcript  C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\b621dce3-b1b4-4681-a633-54da35b654a4.jsonl
+
+CONTEXT AT THIS LINE: 65.4% of 1000k (654,137 tokens, measured from the last
+assistant turn's input_tokens + cache_read_input_tokens).
+
+SHA256 (SAIRN-handoff-fourth-b32.md): 83b557675ae52752
+END-OF-REPORT

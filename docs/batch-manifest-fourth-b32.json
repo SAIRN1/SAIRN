@@ -37,8 +37,8 @@
     {
       "id": 6,
       "title": "",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "pushed without force; origin/main...HEAD = 0 0; commits 45d9a913 fix and 153f5fce register read back OFF origin/main; defect record cites 45d9a913 and merge-base --is-ancestor confirms it resolves there; baseline on origin/main reads total 0. Handoff, report and digest uploaded to Drive 14Xc5oT0xzSLa_rTSOSXWVK3Kko1Fbx09 as 1_OgNrtFGHoVHvtRCkveSdQbLslKDnb8S, 1V_7rG4jnsH8NZpPtHXvc2v5zzaXwntfS and 1c3M8nKk_w2K53ZFeI7D61CobHPvuNwdz, API-verified at 11899, 11030 and 5330 bytes equal to local"
     }
   ]
 }
