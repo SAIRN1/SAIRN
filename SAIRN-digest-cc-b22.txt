@@ -1,0 +1,10 @@
+DIGEST cc b22
+STATUS: CLOSED 6/6, no overrides, BYPASS-LOG unchanged; landed a61abc5a, HEAD==origin/main 0/0 clean, read back from ORIGIN
+DECISION-NEEDED: the 8 contrast findings are ACCEPTED DEBT, so the gate no longer protects the two dental sub-apps. Six match b29's sairndental fix. fourth's call.
+CHANGED: items 1-3 were ONE shape -- a filter that silently selected the wrong set and reported clean. wcag dropped hyphenated stems (17 -> 22 files, 8 recorded, ratchet intact); --agent H1 skipped the nonce check and printed CLEAN; the preflight probe anchored on a string literal. Locks 58/58, 45/45, 13/13, ablation 36/42.
+EVIDENCE-path: SAIRN-report-cc-b22.txt, docs/2026-10-19-cc-b22-case-and-stems.md
+UNVERIFIED: in the report. defect_register --check asks whether a cited commit RESOLVES, not whether origin has it -- a reflog orphan passes here, fails elsewhere.
+NEXT: fourth fixes the 8. Michael pastes report section 6 to hank/cody/fourth. b61 unverifiable.
+CONTEXT 38.3% of 1,000,000 -- 382,748 tokens, measured.
+SHA256 e20f590748755b95fcefc88bf7264381a9972e8c187736c2ce4295ad79df9592
+END-OF-REPORT

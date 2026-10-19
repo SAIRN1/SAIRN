@@ -1,0 +1,383 @@
+REPORT cc b22
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-19
+START     809176fc, pull already up to date. Clean 0/0, zero stashes, before
+          anything was touched.
+CLAIM     cc3b0e24 -- taken BEFORE work began, with a declared FILES list. One
+          lexical match (fourth b33) with disjoint declared files, read before
+          proceeding. fourth's b33 claim no longer listed
+          tools/wcag_contrast_check.py or docs/wcag-contrast-baseline.json, so
+          item 1's files were free.
+WORK      a61abc5a, plus register b9eb68d2, gate bookkeeping 03fd98e9 and the
+          reseat fix c3b3f658. The work sha ran 634f7d70 -> a61abc5a across one
+          rebase; only the last exists on origin.
+OVERRIDES none. No SAIRN_SKIP, no SAIRN_GATE_EXEMPT, no SAIRN_SEED_GATE.
+          docs/BYPASS-LOG.jsonl gains no row. The register-feed gate refused
+          the first push and was SATISFIED, NOT SKIPPED -- three real records.
+HOVER     no auditor transcript, clone or log was read. Item 2 acts on H1's b63
+          finding as it was routed through the shared status registry, and item
+          4 reads hover's and hover2's own PUBLISHED board rows and the shared
+          Drive mount -- both of which the four build agents write to as well.
+
+------------------------------------------------------------------------------
+1. THE ONE-LINE CONCEPT PER ITEM, STATED BEFORE THE CODE (methodology)
+------------------------------------------------------------------------------
+
+ITEM 1  Match the full filename stem with hyphens intact, so a sub-app is a
+        product; do not treat a hyphen as a reason to drop a file.
+
+ITEM 2  Answer "is this agent selected?" in exactly ONE place,
+        case-insensitively, so the row filter and the nonce gate cannot
+        disagree.
+
+ITEM 3  Inject at the LAST occurrence of the anchor, and refuse rather than
+        silently inject nothing if it is absent.
+
+ITEM 4  Re-run the original claim through the corrected tool and report what
+        it actually says, including when what it says is overstated.
+
+ITEM 5  One paragraph a reader can paste without editing, that states the two
+        commands, their order, and why the first is not optional.
+
+AND ONE OBSERVATION THAT IS WORTH MORE THAN THE THREE FIXES. Items 1, 2 and 3
+are the SAME DEFECT SHAPE wearing different clothes: A FILTER THAT QUIETLY
+SELECTED THE WRONG SET AND THEN REPORTED A CLEAN RESULT OVER IT. A hyphen test
+that removed five products; a token comparison that dropped a nonce; a textual
+anchor that matched a string literal. In every one of the three, the narrowing
+was invisible and the output was a pass. That is why all three cite PR 1.11 in
+the register -- each reported a pass it never performed.
+
+------------------------------------------------------------------------------
+2. ITEM 1 -- THE CONTRAST BASELINE COULD NOT SEE FIVE OF ITS OWN PRODUCTS
+------------------------------------------------------------------------------
+
+THE CODE. `product_files()` read:
+
+    if stem == "stonedesk" or (stem.startswith("sairn") and "-" not in stem):
+
+The hyphen clause did not narrow the list to products. It REMOVED the five
+sub-apps: sairndental-book, sairndental-complaint, stonedesk-catalog,
+stonedesk-hr, stonedesk-intake.
+
+WHY THAT WAS NOT A COSMETIC MISCOUNT. docs/wcag-contrast-baseline.json is
+GENERATED from this list, and the push gate runs on EVERY changed .html. So the
+baseline's universe was narrower than the gate's, and the two sub-apps carrying
+debt denied any push that touched them, on PRE-EXISTING findings, with no route
+but a skip.
+
+THE FIX IS A PREFIX RULE RATHER THAN A LIST, so a future sairnfoo-bar sub-app
+is covered the day it is added rather than the day somebody remembers:
+
+    return stem == "stonedesk" or stem.startswith("stonedesk-") \
+        or stem.startswith("sairn")
+
+MEASURED, BEFORE AND AFTER. `--static --all` went from 17 files to 22. All 8
+findings are in the two dental sub-apps and all are pre-existing:
+
+  sairndental-book       .btn                       #fff on var(--p)   2.77:1
+  sairndental-book       .slot.picked               #fff on var(--p)   2.77:1
+  sairndental-complaint  .btn                       #fff on var(--p)   2.77:1
+  sairndental-book       .slot:hover          var(--pd) on var(--pt)   3.57:1
+  sairndental-book       .msg.ok              var(--pd) on var(--pt)   3.57:1
+  sairndental-complaint  .msg.ok              var(--pd) on var(--pt)   3.57:1
+  sairndental-book       inline <button>       #fff on var(--danger)   3.76:1
+  sairndental-book       inline <button#bk-add-photo-btn>
+                                                var(--pd) on #fff     4.10:1
+
+THE GATE AFTER RE-RECORDING, each exit code read DIRECTLY and not through a
+pipe -- reading one through a pipe in b21 reported a deny as a pass:
+
+  sairndental-book.html       exit 0   BASELINE DEBT STILL OUTSTANDING: 6
+  sairndental-complaint.html  exit 0   BASELINE DEBT STILL OUTSTANDING: 2
+  stonedesk-catalog.html      exit 0   BASELINE DEBT STILL OUTSTANDING: 0
+
+AND THE RATCHET IS INTACT, WHICH IS THE ARM THAT MATTERS. Accepting debt must
+not loosen the gate. A copy of sairndental-complaint.html with a NEW below-AA
+rule planted (.cc-b22-ratchet, #9ca3af on #ffffff, 2.54:1) still DENIES at
+exit 1, while its 2 baselined findings are accepted and printed as outstanding
+debt.
+
+READ THIS BEFORE CONCLUDING THE BASELINE GOT WORSE. The file was at `total: 0`
+when this batch started -- fourth drove the 17 root products to zero across
+b29 to b33. The 8 are findings that ALWAYS EXISTED and that `--all` could not
+see. The number going up is the instrument improving, not the platform
+decaying. Fixing them is the follow-up and it is routed, with the per-finding
+list above and the b29 pattern that fixes six of the eight.
+
+A PROVENANCE LINE THAT COULD NOT CHANGE, SO IT WAS WRONG. `--baseline-write`
+wrote the literals `"written": "2026-10-19"` and `"written_by": "fourth b30"`.
+EVERY re-record claimed fourth's b30 authorship, whoever ran it and whenever.
+Both are now derived -- the date from the local clock, not UTC
+(tools/sairn_stale_snapshot_scan.py exists because UTC derivation dates an
+evening's work tomorrow), and the author from the clone's own identity marker,
+with "unknown (this clone has no session-identity marker)" rather than a guess.
+A `files_scanned` list was added so the baseline records its own universe,
+which is the thing that was wrong here.
+
+LOCK: 58/58, up from 41/41. The new arms assert all five sub-apps are products,
+four root products still are, five non-products still are not, a future
+sairnfoo-bar is, `stonedeskish` is NOT admitted by the stonedesk arm, and one
+ABLATION arm that fails on the pre-fix expression.
+
+------------------------------------------------------------------------------
+3. ITEM 2 -- `--agent H1` SKIPPED THE NONCE CHECK AND STILL PRINTED CLEAN
+------------------------------------------------------------------------------
+
+H1's b63 finding. THE ROOT CAUSE IS NOT THE CASE-SENSITIVITY -- it is that ONE
+QUESTION HAD TWO ANSWERS a hundred lines apart:
+
+    labels = [... if BP.BOARD_TOKEN[l] in agents or l in agents]  # label OR token
+    nonce  = nonce if (agents and token in agents) else None      # token ONLY
+
+BOARD_TOKEN['H1'] is 'h1'. So `--agent H1` matched the first expression on the
+LABEL and failed the second on the TOKEN: the row was checked, the nonce was
+dropped, and the summary printed
+
+    CLEAN: ... and the nonce crossed both ends
+
+because that sentence was keyed on a nonce having been SUPPLIED rather than
+CHECKED. That substitution is what made a skipped check read as a verified
+pass, and it is the part worth remembering: the wrong word in a summary turned
+a silent skip into an assertion.
+
+THREE CHANGES.
+  1. ONE EXPRESSION, `selects(label, token, agents)`, called by both sites.
+     Case-insensitive on both label and token, surrounding whitespace
+     tolerated, and a whitespace-only --agent selects nothing rather than
+     everything.
+  2. THE CLEAN SUMMARY'S NONCE CLAUSE NOW DERIVES FROM A COUNT,
+     `nonce_checked`, and names it. A nonce supplied and checked on no row
+     prints a loud line saying it should be unreachable since b22 and that the
+     two sites have drifted apart again if you are reading it.
+  3. AN `--agent` MATCHING NOTHING IS COULD NOT RUN, EXIT 2, naming the valid
+     names in both forms. Before b22 it fell through to
+     "0 FINDING(S) across 0 agent(s)" and then printed CLEAN at exit 0 -- a
+     verdict over an empty set, the same silent-skip family, found while
+     fixing the first one. Driven: `--agent zzz` -> exit 2.
+
+H1'S NEGATIVE CONTROL, MADE PERMANENT AND ABLATED. The regression arms replace
+the live registry and the Drive mount with a synthetic H1 row and board, so the
+control runs on any clone, forever, with no network.
+
+THE ARM THAT MATTERS IS NOT "UPPERCASE WORKS" -- IT IS THAT UPPERCASE AND
+LOWERCASE GIVE THE SAME ANSWER. A fixture asserting only the uppercase verdict
+would pass again the day the two expressions drift apart the other way.
+
+ABLATION: `selects()` reduced to the pre-b22 expression (`return token in
+agents`) in an isolated copy -- 36/42, SIX ARMS FAIL, including the headline
+one. The control has teeth.
+
+DRIVEN LIVE, BOTH DIRECTIONS:
+
+  --agent H1 --nonce CC-B22-NONCE-NEVER-WRITTEN-CONTROL   exit 1   FINDING
+  --agent h1 --nonce (same)                               exit 1   FINDING
+      byte-identical output. Pre-fix, the first was a false CLEAN.
+  --agent H2 --nonce H2B63-9a2f84dd                       exit 0   CLEAN
+  --agent h2 --nonce (same)                               exit 0   CLEAN
+      "the nonce crossed both ends on 1 row(s)" -- hover2's REAL current
+      nonce, and the positive direction without which this tool could pass by
+      refusing everything.
+  --agent zzz                                             exit 2   COULD NOT RUN
+
+TWO FIXTURE ARMS THAT WERE VACUOUS, CAUGHT BEFORE THEY LANDED. `check()`
+compares `bool(got) == bool(want)`, so a NON-EMPTY LIST IS TRUE WHATEVER IS IN
+IT -- `check(name, [False, False], [False, False])` passes without testing
+anything. Two arms were written that way in this batch and rewritten as
+`all(...)` / `any(...)` booleans before commit. Reported because it is
+discipline 8 arriving inside the fix for discipline 8, and because an arm that
+cannot fail is indistinguishable from an arm that passes.
+
+LOCK: 45/45, up from 39/39.
+
+------------------------------------------------------------------------------
+4. ITEM 3 -- THE PREFLIGHT PROBE'S INJECTION ANCHOR HAD GONE STALE
+------------------------------------------------------------------------------
+
+tests/run_push_gate_preflight_probe.py was RED 3 of 13 (E1, E2, E3), every
+failure reported as `RAISED SyntaxError` with no file, line or cause. Named as
+UNVERIFIED in b21, diagnosed there and not fixed.
+
+ROOT CAUSE, FIXED. `_drive()` did
+`source.replace("if __name__ == '__main__':", inject, 1)`. That anchor occurs
+TWICE in tools/sairn_push_gate_hook.py and the FIRST is inside a double-quoted
+string on a real code line -- `_src.rindex("if __name__ == '__main__':")`, part
+of the hook's OWN WIRING selftest arm, ADDED AFTER THIS PROBE WAS WRITTEN. A
+multi-line injection landed inside that literal, left it unterminated, and
+compile() raised before any arm could run.
+
+MEASURED, NOT READ -- both expressions applied to the real hook source:
+
+    OLD replace(...,1)   SyntaxError: unterminated string literal (line 4849)
+    NEW rfind            compiles
+    anchor occurrences: 2
+
+A STALE-ANCHOR DEFECT, DISCIPLINE 8: nothing announced the day the probe
+stopped testing anything, and three arms over the gate's multi-denial and
+fail-open behaviour tested nothing for days. The hook's own selftest already
+used `rindex` for exactly this reason and the probe did not.
+
+The fix also REFUSES when the anchor is absent, naming the anchor and the file,
+because an injection that silently does nothing would make every arm below
+pass while judging an unmodified gate -- which is the same defect one level up.
+
+RESULT: 13 passed, 0 failed.
+
+------------------------------------------------------------------------------
+5. ITEM 4 -- RE-DRIVING H1's b61 CLAIM: THE VERDICT WAS RIGHT, THE REASON WRONG
+------------------------------------------------------------------------------
+
+`--agent H1 --nonce H1-NONCE-1792420981`, both cases, exit 1, identical: the
+nonce is not in H1's registry row.
+
+BUT THAT VERDICT'S STATED REASON WAS FALSE. The text said flatly:
+
+    the WRITE did not land -- this is a finding about sairn_status.py, not
+    about the board.
+
+MEASURED: H1-NONCE-1792420981 is absent from the row AND PRESENT ON THE DRIVE
+MOUNT in SAIRN-handoff-H1-b61.md and SAIRN-report-H1-b61.txt. That write
+LANDED. H1's row has moved on three batches and now reads "h1 b64: repro for
+cc, nonce intentionally absent from this task string" -- H1 set up the repro
+deliberately.
+
+A ROW HOLDS ONE TASK STRING, so this check CANNOT distinguish "never written"
+from "written and since superseded". That is a could-not-tell about WHICH, so
+the finding now names both causes and prints the row's own `updated` stamp,
+which is the one piece of evidence that separates them. Three new arms lock it
+and one is an ablation that fails on the pre-b22 wording.
+
+A WRONG REASON UNDER A RIGHT VERDICT IS WORSE THAN A WRONG VERDICT, because
+the reason is the part somebody acts on. Somebody reading the old line would
+have gone looking for a bug in sairn_status.py that is not there.
+
+SO THE ANSWER TO ITEM 4, STATED PLAINLY: THE b61 BRIDGE CLAIM IS NOT
+RE-VERIFIABLE. The row it concerned has been overwritten and no tool can
+recover a superseded task string. What IS verified is the live bridge NOW, in
+both directions, by the table in section 3. A verdict about b61 specifically
+would need a nonce from b61's own row, which no longer exists.
+
+------------------------------------------------------------------------------
+6. ITEM 5 -- THE PARAGRAPH, HANDED OVER AS TEXT
+------------------------------------------------------------------------------
+
+Written to docs/2026-10-19-context-line-paragraph-for-dispatches.md and
+reproduced in section 5 of SAIRN-handoff-cc-b22.md. NOT RUN ON ANY OTHER
+SESSION -- it names two commands for hank, cody and fourth to run in their own
+clones, and running them from here would write the wrong session's declaration.
+
+The two commands, in order, once per session:
+
+    python tools/context_verify.py --provision-window 1000000
+    python tools/context_verify.py --digest-line
+
+1000000 is right for an Opus 1M session, which all four build clones have been
+on; 200000 otherwise. The tool refuses a declaration SMALLER than a prompt it
+has observed and CANNOT catch one that is too large, which is why it is scoped
+to one session. Nothing is to be run in hover or hover2.
+
+------------------------------------------------------------------------------
+7. UNVERIFIED, AND WHAT THAT MEANS HERE
+------------------------------------------------------------------------------
+
+NONE OF THIS WAS INDEPENDENTLY RE-DERIVED. Every figure comes from a command I
+ran in this session, with the command named beside it so a second reader can
+disagree with the number rather than with me.
+
+ITEM 1'S 8 FINDINGS ARE NOW ACCEPTED DEBT, NOT FIXED. The gate will not deny a
+push that touches those files, which is the intended outcome and is also a
+real reduction in protection for two app files until the 8 are fixed. Said
+plainly rather than left implied by the word "closed".
+
+THE RATCHET ARM WAS DRIVEN ON A COPY OUTSIDE THE REPO, not on the tracked file.
+The copy carries the same basename, which is what the baseline is keyed on, so
+the lookup is the real one -- but it is a copy, and a defect that depended on
+the file's path rather than its name would not have been caught.
+
+ITEM 2'S REGRESSION ARMS REPRODUCE live()'s SELECTION LOGIC RATHER THAN CALLING
+live(), because live() needs a registry and a Drive mount. A future change to
+live() that stops calling selects() at ONE of the two sites would not be caught
+by those arms -- only by the live drive, which is manual. This is stated in the
+register record's recurrence-open field as well as here.
+
+ITEM 3'S NEW REFUSAL FIRES WHEN THE ANCHOR IS ABSENT, NOT WHEN IT MATCHES THE
+WRONG OCCURRENCE. A third occurrence appearing before the real one would be
+caught only because compile() would raise again, which is luck rather than a
+control.
+
+THE DRIVE-SIDE HALF OF EVERY BRIDGE RUN IS STILL OWED. Every invocation printed
+the same note: no --api-readback was given, so the mount proves the bytes are
+in the sync set and nothing more. That limit is unchanged by this batch.
+
+A DEFECT I CAUSED AND FIXED IN THE SAME BATCH, AND THE FALSE PASS BEHIND IT.
+.githooks/post-rewrite fired on the b22 rebase and did exactly its job: it
+rewrote the three register records from 634f7d70 to a61abc5a using git's own
+old->new map. IT WROTE THE WORKING TREE. NOTHING COMMITTED IT, so the push that
+followed landed the pre-rebase citation -- origin/main briefly carried three
+records citing a commit that exists in no clone but this one's reflog. Fixed in
+c3b3f658 and verified: origin now carries a61abc5ae46e three times and
+634f7d709a87 zero times, and a61abc5a is an ancestor of origin/main.
+
+AND `defect_register.py --check` PASSED THROUGHOUT, because it asks whether the
+cited commit RESOLVES rather than whether it is an ANCESTOR OF origin/main. An
+orphan kept alive by a local reflog resolves. In any other clone the same
+records would have failed on an absent commit. THAT IS A FALSE PASS ON THE ONE
+FIELD THE REGISTER IS BUILT AROUND. Routed with this diagnosis rather than
+fixed -- it is a different check from the three this batch was sent at, and
+tools/defect_register.py was not in the claim.
+
+NO FMEA DRAFT EXISTS FOR ANY OF THE THREE FILES CHANGED. The register said so
+three times, once per record. Not done: three drafts is its own piece of work,
+and hank's b19 note already says drafts are owed for eight other files.
+
+hank's TWO ITEMS ROUTED TO cc ARE STILL NOT STARTED and were not in this
+batch's claim -- no gate driver references either new b18 suite, and FMEA
+drafts are owed for eight new/changed files. Carried forward from b21
+unchanged.
+
+------------------------------------------------------------------------------
+8. PUSH
+------------------------------------------------------------------------------
+
+Pushed as its own command, no force, no override, no skip.
+
+THE register-feed GATE REFUSED THE FIRST PUSH AND WAS SATISFIED RATHER THAN
+SKIPPED. It was DECLARED-BUT-NOT-WIRED when b21 read the list and is wired
+now. Three records were written, one per defect, rather than one record
+standing for three -- tooling/high/code-review for the product list,
+tooling/high/hover-audit for the bridge (found_by_session hover, since H1 found
+it), and test/moderate/probe-control for the stale anchor (found_by_tool
+run_push_gate_preflight_probe.py). All three cite PR 1.11. `--check` is OK at
+654 records, every commit resolving and every field in vocabulary.
+
+Each record carries its contributing factors and a `recurrence-open` sentence
+saying what the actions do NOT close. One factor was refused on the first
+attempt -- action_status `planned` with no `action` -- and the refusal was
+right: a status without the thing that was done is the CAPA box that field
+replaces.
+
+FOUR PUSHES, ONE GATE REFUSAL. The other three were non-fast-forward
+rejections while four other sessions pushed, each handled by committing the row
+the gate itself had just written into docs/scrutiny-flags.json, rebasing and
+pushing again. A BLOCKED OR REJECTED PUSH IS NOT A NO-OP -- `git status` first,
+not last, because the gate writes.
+
+READ BACK OUT OF ORIGIN rather than off disk, which is the only form of this
+check that means anything:
+
+  origin/main:tools/wcag_contrast_check.py            carries is_product_stem
+  origin/main:tools/status_board_bridge_check.py      carries selects
+  origin/main:tests/run_push_gate_preflight_probe.py  carries source.rfind(anchor)
+  origin/main:docs/wcag-contrast-baseline.json        total 8, written_by cc,
+                                                      files_scanned 22
+
+HEAD == origin/main, 0 ahead / 0 behind, clean, zero stashes.
+
+A SECOND PUSH CARRIES THIS REPORT, THE HANDOFF AND THE DIGEST, and CHECK 5c
+judges the digest's own CONTEXT line as it did in b21. Claim released after it.
+
+CONTEXT 38.3% of 1,000,000 -- 382,748 tokens, measured.
+The window is DECLARED for this session, not inferred.
+
+SHA256 4d4688b0cd4ea1f32e34803992241eb7f200268873c036d809a788ed83c0007f
+END-OF-REPORT
