@@ -792,6 +792,17 @@
       "status": "released",
       "released_at": "2026-10-19T21:46:57Z",
       "files": null
+    },
+    {
+      "id": "hover2-1792446637",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "b71: cerebras raw-source terms verification, tiebreak decisive test, mass-assignment + money-as-float sweeps 17 apps, semgrep install+run, H1 scope recheck, push",
+      "claimed_at": "2026-10-19T21:50:37Z",
+      "claimed_at_epoch": 1792446637.5994318,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
