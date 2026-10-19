@@ -4056,8 +4056,8 @@
       "task": "b18: trust-lock hard-lock reachability (LAW_TRUST_LOCKED consulted before the table); Grant App Login Access stuck-on-Granting; Passkey + Employee Profile E2E; F1/C2 countersignature lock leg_cremations + law_trusttx two-stage; F2 livery billing per-home setting; F3 apprentice permission config; C1 bookkeeper role; C3 bar-admitted-acts constant. FILES: api/_lib/law-roles.js api/_lib/leg-roles.js api/_lib/auth.js api/sd-data.js api/law-auth.js api/leg-auth.js sairnlaw.html sairnlegacy.html stonedesk.html sql/sairnlaw_bookkeeper_role.sql docs/2026-10-17-hank-b18-practitioner-answers.md SAIRN-handoff-hank-b18.md SAIRN-report-hank-b18.txt SAIRN-digest-hank-b18.txt",
       "claimed_at": "2026-10-17T14:20:15Z",
       "claimed_at_epoch": 1792246815.174781,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-19T14:09:21Z",
       "files": [
         "SAIRN-digest-hank-b18.txt",
         "SAIRN-handoff-hank-b18.md",
