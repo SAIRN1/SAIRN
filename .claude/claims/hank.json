@@ -4162,6 +4162,28 @@
         "api/leg-countersign.js",
         "docs/2026-10-19-hank-b22-notes.md"
       ]
+    },
+    {
+      "id": "hank-1792448645",
+      "session": "hank",
+      "subject": "hank",
+      "task": "b23: deployed /api/bridge absent-action re-probe; live proofs for b18 straight-time-floor sign guard, trust-lock hard-lock, claude.js auth_observe log line; IOLTA reconciliation attestation build per b21 design; raw-PostgREST-filter arm sabotage test; bridge caller re-census against refusal rules; push. FILES: api/law-reconcile.js api/_lib/law-roles.js api/b23-iolta-attestation.test.js api/b22-postgrest-filter-encoding.test.js sql/sairnlaw_reconcile_attestation_schema.sql docs/2026-10-19-hank-b23-notes.md SAIRN-handoff-hank-b23.md SAIRN-report-hank-b23.txt SAIRN-digest-hank-b23.txt SAIRN-ACTIVE-WORK-hank.md NOT-stonedesk-html-fourths NOT-api-sd-data-js-codys NOT-tools-ccs NOT-sairndental-html-fourths",
+      "claimed_at": "2026-10-19T22:24:05Z",
+      "claimed_at_epoch": 1792448645.301895,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-hank.md",
+        "SAIRN-digest-hank-b23.txt",
+        "SAIRN-handoff-hank-b23.md",
+        "SAIRN-report-hank-b23.txt",
+        "api/_lib/law-roles.js",
+        "api/b22-postgrest-filter-encoding.test.js",
+        "api/b23-iolta-attestation.test.js",
+        "api/law-reconcile.js",
+        "docs/2026-10-19-hank-b23-notes.md",
+        "sql/sairnlaw_reconcile_attestation_schema.sql"
+      ]
     }
   ],
   "refusals": [
