@@ -28,5 +28,15 @@
       "status": "done",
       "evidence": "tools/index_duplicate_check.py --fixtures 10/10 exit 0 with an ablation against the naive split; 836 rows compared before the fix and 837 after, line 645 recovered; the premise re-measured with markdown-it-py in two presets, docs/2026-10-19-cc-b17-routed.md H1 and H2"
     }
-  ]
+  ],
+  "closed": {
+    "drive_verify": "PASS",
+    "verified_by": "python tools/drive_upload_verify.py --agent cc --batch b17 --verify-only",
+    "criteria": "2026-10-13.1",
+    "deliverables": [
+      "SAIRN-handoff-cc-b17.md sha256 242cf31df57637ce",
+      "SAIRN-report-cc-b17.txt sha256 c89e15778f3b1df6",
+      "SAIRN-digest-cc-b17.txt sha256 148d9adaf0340ce7"
+    ]
+  }
 }
