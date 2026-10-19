@@ -5485,6 +5485,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b19-iolta-reconcile-carveout.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9b52b8bf5d57360c549e1ef8c831e717dcf232ee",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/legal-citator-feedback-attribution.test.js",
    "class": "test file",
    "level": "CHANGE",

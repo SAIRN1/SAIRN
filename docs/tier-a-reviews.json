@@ -6896,6 +6896,34 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-19T15:04:45Z",
+      "opened_at_sha": "9b52b8bf5d57360c549e1ef8c831e717dcf232ee",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 3,
+      "resources": [
+        "law_bankstatements",
+        "law_barcerts",
+        "law_invoices",
+        "law_matters",
+        "law_optx",
+        "law_trusttx"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/_lib/law-roles.js",
+        "api/b19-iolta-reconcile-carveout.test.js"
+      ],
+      "what": "b19 (STOPPED MID-BATCH on instruction): C1's IOLTA three-way reconciliation carve-out in api/_lib/law-roles.js -- a named `reconcile` verb on the two trust legs (law_trusttx, law_bankstatements) granted to owner/attorney/paralegal and NEVER to bookkeeper, plus a narrowing that refuses any NAMED verb off the resources that define it. THE ITEM I MOST WANT ATTACKED is attack point (a): PARALEGAL IS ON THE RECONCILE LIST AND THE RESEARCH DOES NOT CLEANLY SETTLE THAT. ABA Model Rule 5.3 supports a non-lawyer doing the work under supervision, but the same guidance requires the LAWYER TO REVIEW AND APPROVE the result and SAIRNlaw records no attestation anywhere -- LAW_RECONCILE_ATTESTATION carries required_by_rule:true, implemented:false. So the app can now produce a reconciliation a paralegal ran with nothing recording that a bar-admitted person looked at it. Is that worse than owner-only was? Attack point (b): the named-verb narrowing is NEW control flow in decide() ahead of the table -- does it refuse anything it should not, and is the UNKNOWN-verb write-class default still intact for a future soft_delete/export. Attack point (c): the carve-out has NO HANDLER ARM, NO ABLATION and NO LIVE PROBE -- 32 module-level arms only, because the batch stopped; is the module-level set sufficient to call the lock reachable. Attack point (d): api/sd-data.js's law_trust_reconcile gate STILL re-lists roleSet({owner:true}) and was NOT changed (cody holds that file on Michael's explicit instruction), so the module says owner/attorney/paralegal and the HANDLER still says owner alone -- the policy and the gate DISAGREE on main right now, which is routed in docs/2026-10-19-hank-b19-routed-to-cody-and-fourth.md and is the most likely thing here to bite.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-19T15:04:45Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
