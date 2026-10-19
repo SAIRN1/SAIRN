@@ -2754,6 +2754,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "os.path.abspath(gate_skip.__file__),"
+    }
+   ],
+   "sha": "5625636ee8a99ebe4946cfad21ca4030604bf56c",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "docs/hank-evidence/b16_live_gate_probe.py",
    "class": "test file",
    "level": "CHANGE",
