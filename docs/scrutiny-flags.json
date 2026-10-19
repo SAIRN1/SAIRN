@@ -6053,6 +6053,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "'silent skip. Run to a known exit code BEFORE wiring: exit 0, 1.38s, '"
+    }
+   ],
+   "sha": "9d50fe419d9d00d987819d0c8426b6b579f21532",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_selftest_sweep_probe.py",
    "class": "test file",
    "level": "CHANGE",
