@@ -811,8 +811,8 @@
       "task": "b72: cerebras third-party model terms + activate as 2nd provider, triage semgrep hits + 24 toFixed, SSRF/deserialization/cache-key sweeps, tiebreak LINE fix, push",
       "claimed_at": "2026-10-19T22:21:06Z",
       "claimed_at_epoch": 1792448466.4709089,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-19T22:41:27Z",
       "files": null
     }
   ],
