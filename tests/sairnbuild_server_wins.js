@@ -73,6 +73,74 @@ function oneLineVar(name) {
   return html.slice(b, html.indexOf(';', b) + 1);
 }
 
+// ── TWO VIEWS OF THE SOURCE, AND THE REASON THERE ARE TWO ─────────────────
+// EVERY SUBSTRING ASSERTION IN THIS FILE HAS BEEN SATISFIED AT LEAST ONCE BY
+// TEXT THAT DOES NOT EXECUTE. That is not a worry, it is a register, and each
+// entry was MEASURED BY ABLATION rather than noticed by reading:
+//
+//   b17   `key==='bld_bids'` satisfied by a COMMENT inside the very function
+//         under test, explaining that the code "used to read" it
+//   b27   a fourth argument satisfied by a BLOCK comment, because the repair
+//         stripped only `//` lines; and by a FALSY literal, which is the
+//         arm's own defect wearing an argument
+//   b27r  the verb 'write' invisible once string literals were collapsed, so
+//         the retry could be changed to 'read' and the arm stayed green
+//   b28   `BLD_PENDING_TRACKED['bld_bids'] = true;` satisfied by a LINE
+//         comment carrying it (N1) and the retry guard by a BLOCK comment
+//         (N4) -- so bld_bids could lose its pending tracking ENTIRELY with
+//         the suite at 25 passed, 0 failed. Routed by fourth b28 check 4 HIGH
+//   b23   and two more found while repairing those: a real bldPendingMark
+//         call site deleted with a COMMENT carrying the literal (N5), and the
+//         retry guard carried by a STRING LITERAL (N6). Both ACCEPTED at 25/0
+//
+// So the two views are not a style choice, and neither alone is enough:
+//
+//   code(s)    comments gone. Proves WHICH identifiers and string literals
+//              are written -- including which string a call was passed.
+//   struct(s)  comments gone AND every string collapsed to ''. Proves the
+//              text is EXECUTABLE, because no comment and no string survives
+//              to carry it -- but is blind to WHICH string it was.
+//
+// A mutation hiding code in a string satisfies code() and fails struct(); a
+// mutation changing a verb satisfies struct() and fails code(). Every
+// assertion below states which view it uses and which mutation that closes.
+//
+// SCOPE IS ALWAYS A BOUNDED WINDOW, NEVER THE WHOLE FILE, and that is the
+// second half of the repair. `html.indexOf(...)` over 400KB answers "does
+// this text occur anywhere", which is a question no property of this app
+// depends on -- it was the shape of N1, N4 and N5 together. It is also
+// unsafe to strip: a naive comment stripper over a whole app blanks URLs
+// inside strings and regex literals, which is a measured false-finding source
+// on this platform (Guardian check 27, 58 phantom findings). Over a function
+// body or a two-statement declaration window there is nothing to get wrong.
+function code(s) {
+  return s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
+}
+function struct(s) {
+  return code(s)
+    .replace(/'(?:[^'\\\n]|\\.)*'/g, "''")
+    .replace(/"(?:[^"\\\n]|\\.)*"/g, '""');
+}
+
+// The window between two NAMED, UNIQUE declarations. FAILS CLOSED: if either
+// anchor is absent, occurs more than once, or they have swapped order, this
+// throws rather than returning a slice that would make the arms vacuous.
+function windowBetween(startAnchor, endAnchor) {
+  const nS = html.split(startAnchor).length - 1;
+  const nE = html.split(endAnchor).length - 1;
+  assert.strictEqual(nS, 1, 'window start anchor ' + JSON.stringify(startAnchor)
+    + ' occurs ' + nS + ' times, expected exactly 1 -- re-anchor rather than '
+    + 'letting this slice some other region');
+  assert.strictEqual(nE, 1, 'window end anchor ' + JSON.stringify(endAnchor)
+    + ' occurs ' + nE + ' times, expected exactly 1');
+  const a = html.indexOf(startAnchor);
+  const b = html.indexOf(endAnchor, a);
+  assert.ok(b > a, 'the window end anchor ' + JSON.stringify(endAnchor)
+    + ' does not follow the start anchor -- the declarations have been '
+    + 'reordered and this window would be empty or inverted');
+  return html.slice(a, b);
+}
+
 // opts.local    { key: [records] }
 // opts.pending  { key: [ids], __overflow?: true } | 'corrupt' | undefined
 // opts.trusted  true to pretend this device has completed a clean retry
@@ -405,18 +473,95 @@ test('a CORRUPT pending list does not earn trust either', () => {
 test('bld_bids is tracked for pending at BOTH of its explicit write sites', () => {
   // It is not in BLD_SYNCED and so gets nothing from st()'s hook. Converting
   // its hydrate without this would give it a carve-out that is always empty.
-  assert.ok(html.indexOf("BLD_PENDING_TRACKED['bld_bids'] = true;") !== -1,
-    'bld_bids is not tracked, so its hydrate has no carve-out at all');
-  const marks = (html.match(/bldPendingMark\('bld_bids'/g) || []).length;
-  const clears = (html.match(/bldPendingClear\('bld_bids'/g) || []).length;
-  assert.strictEqual(marks, 2, 'expected a pending mark at both bld_bids write sites, found ' + marks);
-  assert.strictEqual(clears, 2, 'expected a pending clear at both bld_bids write sites, found ' + clears);
+  //
+  // ── THIS WHOLE ARM WAS A WHOLE-FILE SUBSTRING PROXY. 2026-10-19, b23,
+  //    ROUTED BY fourth b28 CHECK 4 AS HIGH AND REPRODUCED BY ABLATION ────
+  // THE CONCEPT, which is what the arm is actually checking: bld_bids is
+  // ENROLLED IN PENDING TRACKING BY EXECUTABLE CODE, and both of its write
+  // sites really call mark and clear -- not merely that those spellings occur
+  // somewhere in a 400KB file.
+  //
+  // What it read before, and what each line let through:
+  //
+  //   html.indexOf("BLD_PENDING_TRACKED['bld_bids'] = true;")
+  //     N1  the real statement replaced by `// BLD_PENDING_TRACKED[...]`
+  //         ACCEPTED, 25 passed 0 failed. The comment satisfied it.
+  //   html.match(/bldPendingMark\('bld_bids'/g).length === 2
+  //     N5  one of the two real call sites deleted and a COMMENT left
+  //         carrying both spellings. Count still 2. ACCEPTED, 25/0.
+  //
+  // Controls, so the above is attributable and not an artefact of a copy that
+  // cannot run: N2 the statement DELETED -> REFUSED; N3 flipped to `false`
+  // -> REFUSED. Both already bit, which is exactly why the hole was invisible
+  // -- the arm caught the careless mutations and missed the plausible ones.
+  //
+  // THE WINDOW IS THE ENROLMENT BLOCK, bounded by two named unique
+  // declarations, and windowBetween() fails closed if either moves.
+  const enrol = windowBetween('var BLD_PENDING_TRACKED', 'var BLD_SESSION_REQUIRED');
+  // (A) the key: which resource is enrolled, and to what. code() keeps string
+  //     literals so 'bld_bids' is still visible. Closes N1 and N3.
+  assert.ok(/BLD_PENDING_TRACKED\s*\[\s*'bld_bids'\s*\]\s*=\s*true\s*;/.test(code(enrol)),
+    'bld_bids must be enrolled in BLD_PENDING_TRACKED by an EXECUTABLE '
+    + 'assignment to true, or its hydrate has no carve-out at all. A comment '
+    + 'carrying this statement satisfied the previous form of this assertion '
+    + 'at 25 passed, 0 failed. Window was: ' + code(enrol).slice(0, 300));
+  // (B) executable: no comment and no string survives struct(), so whatever
+  //     matches here is real code. 'bld_bids' collapses to '' -- that is the
+  //     blindness (A) exists to cover, and the pair is the point.
+  assert.ok(/BLD_PENDING_TRACKED\s*\[\s*''\s*\]\s*=\s*true\s*;/.test(struct(enrol)),
+    'the enrolment must survive stripping comments AND collapsing every '
+    + 'string literal -- i.e. it must be code rather than text');
+
+  // THE CALL SITES ARE COUNTED INSIDE THEIR OWN FUNCTIONS, not across the
+  // file. That is strictly stronger than the count it replaces: it proves the
+  // calls are in the two functions that actually write a bid, where a
+  // whole-file count of 2 is satisfied by any two occurrences anywhere --
+  // including, as N5 measured, one real call and one comment.
+  [['saveBid', 'the bid modal'], ['bldReassignBid', 'the table reassignment']]
+    .forEach(([name, what]) => {
+      const body = code(fn(name));
+      const marks = (body.match(/bldPendingMark\(\s*'bld_bids'/g) || []).length;
+      const clears = (body.match(/bldPendingClear\(\s*'bld_bids'/g) || []).length;
+      assert.strictEqual(marks, 1, 'expected exactly one EXECUTABLE pending '
+        + 'mark for bld_bids in ' + name + '() (' + what + '), found ' + marks
+        + '. A failed push that is not marked is never retried and hydration '
+        + 'does not know to protect it');
+      assert.strictEqual(clears, 1, 'expected exactly one EXECUTABLE pending '
+        + 'clear for bld_bids in ' + name + '() (' + what + '), found '
+        + clears + '. Without it a successful push leaves the id on the list '
+        + 'for ever, and the carve-out stops meaning anything');
+    });
 });
 
 test('the retry covers bld_bids too, with the session its branch demands', () => {
   const body = fn('bldRetryPending');
-  assert.ok(body.indexOf('BLD_PENDING_TRACKED[key]') !== -1,
-    'the retry still filters on _bldSyncOn, so a pending bld_bids is never retried');
+  // ── N4 AND N6: THIS LINE WAS A RAW indexOf AND BOTH A COMMENT AND A STRING
+  //    SATISFIED IT. 2026-10-19, b23 ─────────────────────────────────────
+  // THE CONCEPT: the retry's per-key gate actually READS the tracking map in
+  // executable code, so a key that is not enrolled is skipped -- not merely
+  // that the spelling `BLD_PENDING_TRACKED[key]` appears in the body.
+  //
+  //   N4  the guard replaced by `/* was: if(!BLD_PENDING_TRACKED[key]||...) */
+  //       if(!Array.isArray(o[key]))return;`     ACCEPTED, 25 passed 0 failed
+  //   N6  the guard replaced by `var _n='BLD_PENDING_TRACKED[key]';
+  //       if(!Array.isArray(o[key]))return;`     ACCEPTED, 25 passed 0 failed
+  //
+  // Together with N1 and N5 above, that is bld_bids losing its pending
+  // tracking END TO END -- enrolment, both write sites and the retry gate --
+  // with this suite green. fourth b28 measured the first two and routed it
+  // HIGH without fixing it, correctly: tests/ is mine and a reviewer who
+  // repairs what he reviews is the self-signed review the ledger prevents.
+  //
+  // BOTH VIEWS, because N4 needs comments gone and N6 needs strings gone.
+  assert.ok(/!\s*BLD_PENDING_TRACKED\s*\[\s*key\s*\]/.test(code(body)),
+    'bldRetryPending must GATE on BLD_PENDING_TRACKED[key] in executable '
+    + 'code, or a pending bld_bids is never retried. Measured: a block '
+    + 'comment carrying this expression satisfied the previous raw indexOf at '
+    + '25 passed, 0 failed');
+  assert.ok(/!\s*BLD_PENDING_TRACKED\s*\[\s*key\s*\]/.test(struct(body)),
+    'the gate must survive collapsing every string literal -- i.e. it must '
+    + 'be code and not a string. Measured: assigning the expression to a '
+    + 'variable as a STRING satisfied the previous form at 25 passed, 0 failed');
   // ── THIS ASSERTION WAS PASSING ON A COMMENT. 2026-10-15 ───────────────
   // It read `body.indexOf("key==='bld_bids'") !== -1`. That expression is no
   // longer in bldRetryPending: sairnbuild.html:2369 declares
@@ -494,12 +639,14 @@ test('the retry covers bld_bids too, with the session its branch demands', () =>
   //       [key], which (A) cannot see once the strings are gone (M6, M9).
   // A mutation hiding the call in a string satisfies (B) and fails (A); a
   // mutation changing the verb satisfies (A) and fails (B).
-  const noComments = body
-    .replace(/\/\*[\s\S]*?\*\//g, ' ')
-    .replace(/\/\/[^\n]*/g, ' ');
-  const retryCode = noComments
-    .replace(/'(?:[^'\\\n]|\\.)*'/g, "''")
-    .replace(/"(?:[^"\\\n]|\\.)*"/g, '""');
+  // The two inline strippers that used to live here are now code() and
+  // struct() at the top of the file, unchanged in behaviour and shared with
+  // the three assertions b23 repaired. CONSOLIDATED RATHER THAN COPIED, and
+  // MEASURED rather than assumed safe: M1-M6 below were re-driven after the
+  // move and every one of them is still REFUSED, which is the only thing that
+  // makes replacing a working control acceptable.
+  const noComments = code(body);
+  const retryCode = struct(body);
   // (A) structural: it is executable code, not text.
   assert.ok(/bldData\(\s*''\s*,\s*key\s*,\s*rec\s*,[^)]*BLD_SESSION_REQUIRED\s*\[\s*key\s*\]/
     .test(retryCode),
@@ -515,12 +662,84 @@ test('the retry covers bld_bids too, with the session its branch demands', () =>
     + "'read'. Measured: changing this call site to 'read' left the suite at "
     + '25 passed, 0 failed');
   // (c). Asserted on the DECLARATION, comment-stripped for the same reason.
-  const sessMap = oneLineVar('BLD_SESSION_REQUIRED')
-    .replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
+  const sessMap = code(oneLineVar('BLD_SESSION_REQUIRED'));
   assert.ok(/\bbld_bids\s*:\s*true\b/.test(sessMap),
     'BLD_SESSION_REQUIRED must still carry bld_bids: true, or the call site '
     + 'above reads undefined and sends no session while still mentioning the '
     + 'map. Found: ' + sessMap);
+});
+
+test('bld_draws carries its session requirement too -- the arm the map gained a second member without', () => {
+  // ── THE CONCEPT, stated before this arm was written ───────────────────────
+  // bld_draws is a MEMBER of BLD_SESSION_REQUIRED with a TRUTHY value in the
+  // real declaration, so the one shared call-site expression
+  // `!!BLD_SESSION_REQUIRED[key]` sends an employee session for a draw write
+  // -- the identical property bld_bids already had an arm for, asserted over
+  // comment-stripped source so no comment can supply it.
+  //
+  // ── WHY IT DID NOT EXIST, WHICH IS THE PART WORTH KEEPING ────────────────
+  // THE GENERALISATION THAT FIXED ONE DEFECT CREATED THIS GAP. bld_bids'
+  // session requirement used to be spelled `key==='bld_bids'` inline. When
+  // bld_draws joined, that was correctly replaced by a MAP read at three call
+  // sites -- and the arm guarding it was updated to follow the map, but only
+  // ever for the member it was originally written about. So the suite guarded
+  // one of two members of a set whose whole purpose is to be extended.
+  //
+  // MEASURED, fourth b28 check 2, reproduced here before the fix:
+  //   D1  bld_draws: true -> false ............ ACCEPTED, 25 passed 0 failed
+  //   D3  bld_draws dropped from the map ...... ACCEPTED, 25 passed 0 failed
+  //   D4  real entry removed, a COMMENT carries
+  //       `bld_draws: true` ................... ACCEPTED, 25 passed 0 failed
+  //   D2  bld_bids: true -> false (CONTROL) ... REFUSED, named arm red
+  // D2 refusing is what makes D1 a finding rather than a broken copy: the
+  // same mutation on the other member of the same object was caught.
+  //
+  // fourth called this "the same shape as b26's law_bankstatements finding",
+  // and the reusable form is: WHEN A CONDITION BECOMES A SET, THE ARM MUST
+  // ITERATE THE SET. An arm naming one member is not a weaker guard, it is a
+  // guard that silently stops covering every member added after it.
+  //
+  // SO THIS ARM ITERATES rather than naming bld_draws a second time. A third
+  // resource joining the map gets covered on the day it is added, which is
+  // the only form of this arm that cannot recreate the gap it closes.
+  const sessMap = code(oneLineVar('BLD_SESSION_REQUIRED'));
+  const members = (sessMap.match(/\b(bld_[a-z_]+)\s*:/g) || [])
+    .map((m) => m.replace(/\s*:$/, ''));
+  // PRECONDITION, a third state and never folded into a pass: if the map
+  // cannot be read as a set, nothing below asserted anything.
+  assert.ok(members.length >= 2, 'BLD_SESSION_REQUIRED must parse as a set of '
+    + 'at least the two resources whose branches demand an employee session. '
+    + 'Read ' + members.length + ' member(s) from: ' + sessMap);
+  assert.ok(members.indexOf('bld_draws') !== -1, 'bld_draws must be a MEMBER '
+    + 'of BLD_SESSION_REQUIRED in executable code. Measured: dropping it, and '
+    + 'separately leaving only a comment carrying it, both left this suite at '
+    + '25 passed, 0 failed -- a draw write would then be sent with no '
+    + 'employee session and refused by its own branch, and the retry would '
+    + 'keep re-sending it. Members found: ' + members.join(', '));
+  // EVERY member, truthy, in real code. This is the half that closes D1 and
+  // D3 for a resource nobody has added yet.
+  members.forEach((key) => {
+    assert.ok(new RegExp('\\b' + key + '\\s*:\\s*true\\b').test(sessMap),
+      key + ' is a member of BLD_SESSION_REQUIRED but is not set to true. '
+      + '`!!BLD_SESSION_REQUIRED[key]` then sends false, and api/sd-data.js '
+      + 'refuses a session-required write with a false flag exactly as it '
+      + 'refuses one with no flag at all. Found: ' + sessMap);
+  });
+  // And the call sites read the MAP rather than naming a resource, which is
+  // what makes iterating it meaningful: an arm over the set is worthless if
+  // some site still hardcodes one member. struct() so a comment or string
+  // mentioning the map cannot stand in for a read.
+  ['bldRetryPending', 'bldHydrateOne'].forEach((name) => {
+    let body;
+    try { body = fn(name); } catch (e) { body = null; }
+    if (body === null) return;   // named optimistically; absence is not a pass
+    const s = struct(body);
+    if (s.indexOf('BLD_SESSION_REQUIRED') === -1) return;
+    assert.ok(/BLD_SESSION_REQUIRED\s*\[\s*key\s*\]/.test(s),
+      name + '() mentions BLD_SESSION_REQUIRED but does not index it by key, '
+      + 'so it is deciding the session requirement some other way and the '
+      + 'arm above over the whole map does not cover it');
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════

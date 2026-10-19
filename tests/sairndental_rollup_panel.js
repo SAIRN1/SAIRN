@@ -65,6 +65,24 @@ function grab(sig, terminator) {
   return html.slice(at, end + terminator.length);
 }
 
+// ── TWO DERIVED VIEWS, ADDED 2026-10-19 (b23 item 4) ──────────────────────
+// `markup` is the file with HTML COMMENTS removed; `code(s)` is a JS slice
+// with JS comments removed. Section 1's wiring arms read raw `html` and were
+// therefore satisfied by a commented-out panel, a commented-out sidebar
+// button, or a JS comment carrying nav()'s dispatch -- which is precisely the
+// unreachable state this suite exists to detect.
+//
+// WHY THE HTML STRIP IS WHOLE-FILE AND THE JS STRIP IS NOT. `<!--`/`-->` is
+// an unambiguous pair in an HTML document, so removing it across 440KB is
+// safe. A whole-file JS comment strip is NOT: `//` occurs inside every URL in
+// every string and inside regex literals, and a naive stripper over a whole
+// app is a measured false-finding source on this platform. So every JS
+// assertion below is bounded to one function body first, then stripped.
+const markup = html.replace(/<!--[\s\S]*?-->/g, ' ');
+function code(s) {
+  return s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
+}
+
 // The REAL escaper and the REAL cell renderers, lifted from the shipped file.
 const ctx = { console: console };
 vm.createContext(ctx);
@@ -86,23 +104,51 @@ const board = (sets) => rollup({ registry: REGISTRY, sets: sets, metrics: METRIC
 // ---------------------------------------------------------------------------
 section('1. WIRING -- the resource is named, and the panel is reachable');
 
-test('the app NAMES dnt_rollup -- the whole defect was that it did not', () => {
-  assert.ok(html.indexOf('dnt_rollup') !== -1,
-    'sairndental.html does not name dnt_rollup; the engine is unreachable again');
+test('the app CALLS dnt_rollup -- the whole defect was that it did not', () => {
+  // ── THIS ARM WAS `html.indexOf('dnt_rollup') !== -1`. 2026-10-19, b23 ────
+  // THE CONCEPT: the app READS the resource through a real data call, in
+  // executable code. "The string occurs somewhere in a 440KB file" is not
+  // that, and it is a especially poor proxy HERE: this arm exists because the
+  // row that tracked this panel recorded `dnt_rollup appears 0 times in every
+  // .html file`, so the file's PROSE about dnt_rollup is now extensive --
+  // this very suite's name is in it. A whole-file substring would stay green
+  // if every real call were deleted and one comment survived.
+  const body = code(grab('async function rRollup(', '\n}\n'));
+  assert.ok(/sdnData\(\s*'read'\s*,\s*'dnt_rollup'/.test(body),
+    "rRollup() does not READ dnt_rollup through sdnData; the engine is "
+    + 'unreachable again. The resource name occurring elsewhere in the file '
+    + 'is not a call -- it is what this arm used to accept');
 });
 
 test('panel, sidebar button and nav dispatch all exist', () => {
-  assert.ok(html.indexOf('id="panel-rollup"') !== -1, 'no panel-rollup');
-  assert.ok(html.indexOf('id="sb-rollup"') !== -1, 'no sb-rollup sidebar button');
-  assert.ok(/nav\('rollup'\)/.test(html), "nothing calls nav('rollup')");
-  assert.ok(/if\(id==='rollup'\)rRollup\(\);/.test(html),
-    "nav() does not dispatch to rRollup -- the panel would open blank");
+  // ── MARKUP ASSERTIONS NOW READ HTML-COMMENT-STRIPPED SOURCE, and the two
+  //    CODE assertions are bounded to nav()'s own body. 2026-10-19, b23 ────
+  // THE CONCEPT: the panel div, its sidebar button and nav()'s dispatch to
+  // rRollup all EXIST AS LIVE MARKUP AND LIVE CODE. An `<!-- ... -->` block
+  // carrying the ids, or a JS comment carrying the dispatch, satisfied every
+  // one of these four lines -- and a commented-out panel is exactly the
+  // unreachable state this suite was written for.
+  assert.ok(markup.indexOf('id="panel-rollup"') !== -1,
+    'no panel-rollup in live markup (HTML comments are stripped before this '
+    + 'check, so a commented-out panel no longer counts)');
+  assert.ok(markup.indexOf('id="sb-rollup"') !== -1,
+    'no sb-rollup sidebar button in live markup');
+  assert.ok(/nav\('rollup'\)/.test(markup), "nothing calls nav('rollup')");
+  // Bounded to nav() and comment-stripped: the dispatch is a property of that
+  // function, and nowhere else in the file can supply it.
+  const navBody = code(grab('function nav(id){', '\n}\n'));
+  assert.ok(/if\(id===['"]rollup['"]\)\s*rRollup\(\);/.test(navBody),
+    "nav() does not dispatch to rRollup -- the panel would open blank. "
+    + 'Asserted inside nav()\'s own body on comment-stripped source');
 });
 
 // THE CENSUS THAT CANNOT SEE THE ORIGINAL DEFECT, asserted anyway because it
 // catches the DIFFERENT defect of a half-wired panel.
 test('panels, nav targets and sidebar ids are three identical sets', () => {
-  const ids = (re) => new Set(Array.from(html.matchAll(re), (m) => m[1]));
+  // Over `markup`, not `html`: a commented-out panel counted as a panel and a
+  // commented-out sidebar id counted as a sidebar id, so the census compared
+  // three sets that each included dead markup and reported them identical.
+  const ids = (re) => new Set(Array.from(markup.matchAll(re), (m) => m[1]));
   const panels = ids(/id="panel-([a-z0-9_-]+)"/g);
   const navs = ids(/nav\('([a-z0-9_-]+)'\)/g);
   const sbs = ids(/id="sb-([a-z0-9_-]+)"/g);

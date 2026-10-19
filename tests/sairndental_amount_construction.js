@@ -50,6 +50,28 @@ function grab(sig, terminator) {
   return html.slice(at, end + terminator.length);
 }
 
+// ── EVERY TEXT ASSERTION BELOW READS code(), NOT THE RAW SLICE. 2026-10-19,
+//    b23 item 4, from the sweep in docs/b23-logs/ ───────────────────────────
+// `grab()` returns the function body INCLUDING its comments, and section 2's
+// arms are substring and ORDERING tests over that text. So a comment was
+// enough to satisfy every one of them, and the ordering arm was the worst of
+// the four: `src.indexOf('dntBadAmount') < src.indexOf('newId(')` is
+// satisfied by any comment mentioning dntBadAmount ABOVE the real `newId(`
+// call, while the real refusal sits below it -- which is a record minted with
+// an unreadable amount, the exact defect this file is named for.
+//
+// Measured, on a COPY, before this helper existed (docs/b23-logs/
+// ablate_amount_construction.py): moving the refusal BELOW newId() and
+// leaving a comment above it was ACCEPTED. It is REFUSED now.
+//
+// `grab()` ITSELF IS LEFT ALONE ON PURPOSE: its other caller feeds
+// vm.runInContext, and stripping comments out of code that is about to be
+// EXECUTED is a change to the subject under test rather than to the
+// assertion. One helper, applied at the assertion.
+function code(s) {
+  return s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
+}
+
 const ctx = { console: console };
 vm.createContext(ctx);
 vm.runInContext(grab('function dntMoneyIn(v){', '\n}\n'), ctx);
@@ -110,21 +132,36 @@ section('2. THE WRITERS REFUSE AT CONSTRUCTION, not at the caller');
 test('both writers parse BEFORE building the record', () => {
   const ch = grab('async function addChargeEntry(', '\n}\n');
   const pm = grab('async function addPaymentEntry(', '\n}\n');
-  [['addChargeEntry', ch], ['addPaymentEntry', pm]].forEach(([name, src]) => {
+  // THE CONCEPT: both writers parse the amount and RETURN on an unreadable one
+  // in EXECUTABLE code, before any record id is minted -- with the ordering
+  // measured over comment-stripped source, so prose mentioning the refusal
+  // cannot stand in for the refusal.
+  [['addChargeEntry', ch], ['addPaymentEntry', pm]].forEach(([name, raw]) => {
+    const src = code(raw);
     assert.ok(/var amt=dntMoneyIn\(amount\);/.test(src), name + ' does not parse the amount');
     assert.ok(/if\(amt===null\) return dntBadAmount\(/.test(src),
       name + ' does not refuse an unreadable amount');
+    // NEGATIVE, and comment-stripping fixes this one in BOTH directions: over
+    // raw text a comment quoting the old `Number(amount)||0` would fail a
+    // correct file, which is this repo's own recurring false alarm.
     assert.ok(!/Number\(amount\)\|\|0/.test(src),
       name + ' still coerces an unreadable amount to a measured zero');
     // The refusal has to come first: anything built before it is a record that
-    // existed with a bad amount, however briefly.
-    assert.ok(src.indexOf('dntBadAmount') < src.indexOf('newId('),
+    // existed with a bad amount, however briefly. MEASURED ON CODE -- a
+    // comment naming dntBadAmount above the real newId() satisfied this on
+    // the raw slice while the refusal itself sat below it.
+    const refuse = src.indexOf('dntBadAmount');
+    const mint = src.indexOf('newId(');
+    assert.ok(refuse !== -1 && mint !== -1, name + ' no longer contains both '
+      + 'the refusal and the id mint in executable code, so their ORDER is '
+      + 'not a meaningful comparison (refuse=' + refuse + ' mint=' + mint + ')');
+    assert.ok(refuse < mint,
       name + ' builds the record id before refusing');
   });
 });
 
 test('the estimate is computed from the VALIDATED amount', () => {
-  const ch = grab('async function addChargeEntry(', '\n}\n');
+  const ch = code(grab('async function addChargeEntry(', '\n}\n'));
   assert.ok(/computeEstimatedInsurance\(amt,/.test(ch),
     'the insurance estimate is derived from the raw amount, so a value the '
     + 'function has already refused still produces a stored second figure');

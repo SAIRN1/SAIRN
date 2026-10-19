@@ -6816,6 +6816,31 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-19T12:17:23Z",
+      "opened_at_sha": "0ef5447b263158909c89283dbe48c548c24f89f3",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 7,
+      "resources": [
+        "bld_bids",
+        "bld_draws",
+        "dnt_rollup"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tests/sairnbuild_server_wins.js",
+        "tests/sairndental_rollup_panel.js"
+      ],
+      "what": "b23 item 4: tests/sairndental_rollup_panel.js wiring arms repaired -- they read raw html and were satisfied by a commented-out panel div, a commented-out sidebar button and a JS comment carrying nav()'s dispatch, which is the UNREACHABLE state this Tier A PHI roll-up suite exists to detect. THE CONCEPT NOW ASSERTED: the panel div, sidebar button and nav() dispatch exist as LIVE markup and LIVE code, and rRollup() READS dnt_rollup through a real sdnData call. Repair: markup = html with HTML comments stripped (whole-file, safe because <!-- --> is unambiguous); code(slice) for the two JS arms, each BOUNDED to one function body first (a whole-file JS strip is unsafe -- // occurs in every URL in every string, Guardian check 27, 58 phantom findings). WHAT A REVIEWER SHOULD TRY TO BREAK, and it is not the diff: (1) construct a mutation that leaves the panel unreachable with all 18 arms green -- the four I drove (R1 real sdnData read deleted with a comment carrying dnt_rollup, R2 nav dispatch commented out, R3 panel div commented out, R4 sidebar button commented out) were ALL ACCEPTED pre-repair and ALL REFUSED after, measured both legs by docs/b23-logs/ablate_sweep_fixes.py and --before; (2) check whether stripping HTML comments whole-file broke any arm that MEANT to read commented markup -- I believe none did, 18/18 still pass, but that is my own read; (3) the census arm now compares three sets derived from markup rather than html, so a panel that is live-but-commented-in-the-sidebar now reports as a mismatch where before it reported identical -- confirm that is the intended direction. NOT CLAIMED: that the panel is reachable in a RENDERED browser. No live render was done; this is source-level only.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-10-19T12:17:23Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
