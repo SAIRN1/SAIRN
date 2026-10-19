@@ -37,8 +37,8 @@
     {
       "id": 6,
       "title": "",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "PUSHED AND LANDED. Commit 3c7f7efa on origin/main (merge-base --is-ancestor confirms), 0 ahead / 0 behind, 0 uncommitted. NO FORCE. FORBIDDEN PATHS VERIFIED CLEAN, scoped to my own commit rather than a range -- git show --name-only --format='' 3c7f7efa | grep -cE 'api/sd-data.js|^tools/|.githooks|settings.json' -> 0. My commit touches exactly four files: docs/CRITICALITY-TIERS.md, the manifest, the new audit, sairndental.html. One rebase was needed; the tier checker was re-run ON the merge and reads RESOURCE_ROWS 400 / TIER_A 283 / PROBLEMS 14 -- unchanged by the merge, and none of the 14 is a fourth row stating a wrong tier."
     }
   ]
 }
