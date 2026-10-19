@@ -4544,6 +4544,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "'silent skip. Run to a known exit code BEFORE wiring: exit 0, 1.38s, '"
+    }
+   ],
+   "sha": "7e8a6b58e5e14716c4457d397e51aea47bc15cb6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/_lib/sairnsenior-branches.test.js",
    "class": "test file",
    "level": "WEAKENING",
