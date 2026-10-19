@@ -624,8 +624,8 @@
       "task": "b55: coverage-ledger rotation draw next segment; re-check fourth b29 landing (note only, no action); parity-tool only if real spec exists; handoff+push",
       "claimed_at": "2026-10-19T12:14:07Z",
       "claimed_at_epoch": 1792412047.2443125,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-19T12:19:15Z",
       "files": null
     }
   ],
