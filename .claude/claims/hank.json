@@ -4184,6 +4184,32 @@
         "docs/2026-10-19-hank-b23-notes.md",
         "sql/sairnlaw_reconcile_attestation_schema.sql"
       ]
+    },
+    {
+      "id": "hank-1792448983",
+      "session": "hank",
+      "subject": "hank",
+      "task": "b23: deployed /api/bridge absent-action re-probe (DONE); live proofs for the b18 trust-lock hard-lock, the straight-time-floor sign guard and the claude.js auth_observe log line; IOLTA reconciliation attestation build per b21 design with a per-firm single-signer setting; raw-PostgREST-filter arm sabotage test; bridge caller re-census; push. FILES: api/_lib/law-roles.js api/law-countersign.js api/b23-iolta-attestation.test.js api/b18-countersign-lock.test.js api/b22-postgrest-filter-encoding.test.js sql/sairnlaw_trust_attestations.sql tools/law_trust_lock_live_probe.py tools/sen_straight_time_floor_live_probe.py tools/claude_logline_live_probe.py docs/2026-10-19-hank-b23-notes.md SAIRN-handoff-hank-b23.md SAIRN-report-hank-b23.txt SAIRN-digest-hank-b23.txt SAIRN-ACTIVE-WORK-hank.md NOT-stonedesk-html-fourths NOT-api-sd-data-js-codys NOT-existing-tools-files-ccs NOT-sairnlaw-html",
+      "claimed_at": "2026-10-19T22:29:43Z",
+      "claimed_at_epoch": 1792448983.0634925,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-hank.md",
+        "SAIRN-digest-hank-b23.txt",
+        "SAIRN-handoff-hank-b23.md",
+        "SAIRN-report-hank-b23.txt",
+        "api/_lib/law-roles.js",
+        "api/b18-countersign-lock.test.js",
+        "api/b22-postgrest-filter-encoding.test.js",
+        "api/b23-iolta-attestation.test.js",
+        "api/law-countersign.js",
+        "docs/2026-10-19-hank-b23-notes.md",
+        "sql/sairnlaw_trust_attestations.sql",
+        "tools/claude_logline_live_probe.py",
+        "tools/law_trust_lock_live_probe.py",
+        "tools/sen_straight_time_floor_live_probe.py"
+      ]
     }
   ],
   "refusals": [
