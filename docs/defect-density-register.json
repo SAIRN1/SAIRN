@@ -33477,7 +33477,7 @@
       "recurrence_open": "the second guard DETECTS and cannot refuse, so a replayed violation still reaches local history -- it is now named at the rewrite instead of only at the push. Nothing closes the commit-time miss itself, because git will not call pre-commit on a replay. And the eight arms cover the gate in a SANDBOX: no arm runs in the auditor's real clone, which a build agent must not enter."
     },
     {
-      "commit": "a52a6135c8bd",
+      "commit": "730a078c682f",
       "date": "2026-10-17",
       "subject": "fix(sairndental): three defects nothing could see, because nothing had ever rendered this app",
       "files": [
@@ -33538,7 +33538,7 @@
       "recurrence_open": "The new tool is not wired into a push gate and covers one app (sairndental) by profile, so the same defect class remains undetectable in the other sixteen until a profile is added for each and something runs it on a cadence."
     },
     {
-      "commit": "a52a6135c8bd",
+      "commit": "730a078c682f",
       "date": "2026-10-17",
       "subject": "fix(sairndental): three defects nothing could see, because nothing had ever rendered this app",
       "files": [
@@ -33596,7 +33596,7 @@
       "recurrence_open": "Sixteen other apps have never been measured and no gate runs this. The fix is one app wide; the class is platform wide."
     },
     {
-      "commit": "a52a6135c8bd",
+      "commit": "730a078c682f",
       "date": "2026-10-17",
       "subject": "fix(sairndental): three defects nothing could see, because nothing had ever rendered this app",
       "files": [
