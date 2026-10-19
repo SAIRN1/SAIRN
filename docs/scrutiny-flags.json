@@ -3093,6 +3093,32 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b21-bridge-unknown-action.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'blocklist wearing an allowlist\\'s name', async () => {"
+    }
+   ],
+   "sha": "4af97526a0c7d99b3cf314f2af641015ee5c65f1",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/bridge-unknown-action.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "assertions NET REMOVED",
+     "detail": "41 removed, 0 added; first removed: const assert = require('assert');"
+    }
+   ],
+   "sha": "4af97526a0c7d99b3cf314f2af641015ee5c65f1",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/b17-trust-lock-hard.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -7378,6 +7404,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b21-bridge-unknown-action.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ad7711d05c7b80780157cac688c0b86e828e6b0c",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_scope_gate_unfetched_base_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -10785,6 +10819,19 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "fe19dcd6306410ae8bb995e671142a9642810044",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/bridge-unknown-action.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'blocklist wearing an allowlist\\'s name', async () => {"
+    }
+   ],
+   "sha": "fed240ec418b03e0c5c607adeee9050dbd3ac808",
    "criteria_version": "2026-10-06.1"
   },
   {
