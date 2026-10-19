@@ -1,0 +1,199 @@
+cody b25 -- 2026-10-19 -- DIGEST -- STOPPED ON INSTRUCTION
+===========================================================================
+
+STATUS
+---------------------------------------------------------------------------
+STOPPED ON INSTRUCTION mid-batch, and NOTHING WAS MID-EDIT WHEN THE STOP
+ARRIVED: every file was already written and staged, every check had been run, no
+item was abandoned part-way. LANDED on origin/main and CONFIRMED BY READING THE
+FILES BACK OFF THE REMOTE TREE, not by git push's own exit. Remote tip
+20ca754a87ca7b3d6614dfbec68e65bf35f3d995 via `git ls-remote origin
+refs/heads/main`; both b25 commits proved ANCESTORS of it by `git merge-base
+--is-ancestor` -- 899597b5c (the work) and 20ca754a8 (the gate's own rows). All
+nine files read back with `git cat-file -e <tip>:<path>`, AND THE RETIER ITSELF
+WAS READ BACK OFF THE REMOTE rather than inferred: line 535 of
+docs/CRITICALITY-TIERS.md on origin now begins `| \`customers\` | **A** | **A**`.
+Tree CLEAN, stash list EMPTY, both checked rather than assumed. PUSHED WITHOUT
+--force. NOTHING OVERRIDDEN -- no SAIRN_SKIP, no SAIRN_GATE_EXEMPT, no
+SAIRN_SEED_GATE, no call to tools/gate_skip.py. THE PUSH TOOK TWO ROUNDS (one
+remote ref lock, then clean) with the gate's scrutiny-flags.json write COMMITTED
+RATHER THAN STASHED -- item 4 applied to itself, and TWO ROUNDS IS NOT A HARD
+TEST of that rule, reported as such. BOUNDARY DECLARED RATHER THAN ASSUMED:
+api/sd-data.js and docs/CRITICALITY-TIERS.md are normally HANK'S and I took them
+on MICHAEL'S EXPLICIT INSTRUCTION because hank's window is stalled; sd-data.js is
++37/-2 and COMMENT ONLY with no handler logic changed, and the register is +1/-1
+with ONE row rebuilt WHOLE. sairnscape.html was NOT touched -- fourth holds it.
+NO sql/ and NO tools/ file touched; five tools RUN. The live tree was never
+written by any ablation and that is ASSERTED. ONE live write, named:
+LOC-B25-VERIFY on RF-AUDIT-2026, seeded then DEACTIVATED and QUERIED BACK. CLAIM
+`platform` RELEASED after the work was confirmed present.
+
+FINISHED / PARTIAL / UNTOUCHED:
+  FINISHED   1 methodology -- concept before code, in the file
+  FINISHED   2 rf_locations live-verify -- 6/6 against the DEPLOYED endpoint
+  FINISHED   3 SAIRNscape customers PII -- retier B/B -> A/A, both lists
+               confirmed, write path measured 403 live, ordering arm 80 -> 92
+               ablated BOTH legs
+  PARTIAL    4 scrutiny-flags commit-not-stash -- rule LANDED and followed, but
+               this batch's push ran only two rounds
+  UNTOUCHED  5 B6-class check -- never started, by instruction, held back
+  FINISHED   (unplanned) demo-credentials: RF-AUDIT-2026 documented as dead; it
+               is not
+
+DECISION-NEEDED
+---------------------------------------------------------------------------
+NOTHING IS BLOCKED ON MICHAEL. Both instructions are implemented and ablated,
+and the retier owed since 2026-10-05 is closed. SAIRNcash stays HELD. ONE
+NON-BLOCKING QUESTION: the four tier rows that now disagree with `customers` --
+bld_suppliers, sf_vendors, leg_clergy, dnt_vendor_contacts. MY RECOMMENDATION IS
+A READ EACH, NOT A BULK RETIER: two of them may be genuinely B, and retiering
+four rows off one row's decision would recreate the class-default reasoning that
+produced the original error.
+
+CHANGED
+---------------------------------------------------------------------------
+ITEM 2 -- the live check b24's own report named as its gap. CONCEPT: a change to
+a response shape is not done until the destination is queried back. 6 checks,
+exit 0, real session against the deployed endpoint: is_default is on EVERY row,
+is a BOOLEAN on every row, and AGREES with default_location_id on every row, so
+the flag is COMPUTED and not stamped to a constant. A source-level suite could
+not have answered it -- every b24 arm reads the files OFF DISK, and this repo has
+a recorded incident where a failed Vercel deploy kept serving the last successful
+build while pushes reported clean. THREE THINGS THE CONTROLS CAUGHT: (1) the
+registry was EMPTY -- provisioned:true, ZERO rows -- so arm C2 went red and
+STOPPED THE RUN, because an absence over an empty list is satisfied for ever;
+resolved by SEED-AND-RECHECK, one synthetic row through the real write path, read
+back through the real read path, then DEACTIVATED and QUERIED BACK; (2) a second
+control separates "the change is broken" from "THE DEPLOY IS OLD" --
+default_location_id predates b24, and no amount of re-reading source
+distinguishes those two; (3) the is_default:TRUE case was NOT exercised live and
+the verifier says so in its own output.
+
+ITEM 3 -- the retier owed since 2026-10-05. docs/CRITICALITY-TIERS.md line 535
+now carries customers at A/A. Confidentiality B -> A because the row's OWN basis
+cell already read "A CUSTOMER's NAME, PHONE, EMAIL AND STREET ADDRESS" -- THE
+BASIS WAS CORRECTED 2026-09-30 AND THE LETTER WAS NOT, and the letter is what the
+gate sweep read. Integrity untouched, still genuinely B; the TIER follows to A
+because this register takes the worse axis. IT WAS CORRECTLY NOT TAKEN THEN AND
+THAT RECORD IS KEPT -- the sd-data.js note said the retier was owed and not its
+author's to make, the gate shipped AHEAD of the register with that comment as the
+explanation, and the paragraph is STRUCK THROUGH RATHER THAN DELETED because it
+is the record of why they disagreed for two weeks. AND IT BREAKS A STATED CLASS
+DECISION: four other rows rest on the class reading that is now struck through for
+one member, and they are NOT retiered here. THE WRITE PATH IS ALREADY 403,
+MEASURED LIVE with no session -- read, id-less write and valid write ALL THREE
+403 FORBIDDEN, with invoices and scp_quotes as controls, so the 400 the 2026-10-05
+note records is gone. BUT NOTHING WOULD HAVE NOTICED IF IT CAME BACK: the existing
+write arm sends a VALID payload, so THE ORDERING IS ONLY OBSERVABLE WITH A PAYLOAD
+THE BODY WOULD REFUSE. One arm per gated resource now sends {} and asserts 403 +
+FORBIDDEN, 80 -> 92. ABLATED BOTH LEGS and G1 is the whole claim: a payload check
+placed BEFORE the gate was ACCEPTED pre-repair and is REFUSED post-repair ONLY by
+the empty-payload arm, because the pre-existing arm stays GREEN under that
+mutation. G2 proves the new arm RUNS; G1 proves it was NEEDED.
+
+ITEM 4 -- the rule existed and stated only HALF of itself.
+docs/SAIRN-PROCESS-RULES.md 3.5 already prescribed the atomic loop and already
+said to STASH a hook-written file that belongs to somebody else. It did not state
+THE COMPLEMENT -- the more common case where nobody else declares it -- and a
+reader carried the correct NO across to their own file, which is how b24 spent
+four rounds inside the loop 3.5 itself names. Measured: git pull --rebase exited
+128 on a tree whose ONLY modification was the gate's own write, and the refusal
+that produced it asked for that rebase. A STASH IS WORSE THAN DIRTY: the rows are
+keyed PER COMMIT, so a stash held across a rebase keys them to shas that no longer
+exist. Landed as an ADDITION to 3.5, not a new section.
+
+AND ONE STANDING DOCUMENT HAD GONE STALE IN THE DIRECTION THAT CLOSES A QUESTION:
+demo-credentials said RF-AUDIT-2026 "returns 401 INVALID_LICENSE". IT RETURNS 200
+WITH A SESSION TOKEN. Read literally that entry says item 2 could not be done, and
+the only reason it was done is that the verifier TRIED THE LOGIN AND READ THE
+ANSWER INSTEAD OF THE DOCUMENT. A document that says a capability is ABSENT is
+strictly more expensive than one that says nothing. Corrected with both halves
+kept; RF-PINNACLE-2026 re-measured in the same run and still dead, so the section
+is corrected rather than emptied.
+
+AND THE FOURTH MEASUREMENT-TOOL DEFECT IN THREE BATCHES: the ablation harness
+applied the POST expectation to BOTH legs, so the PRE leg printed its two correct
+pre-repair results as "NOT AS EXPECTED". Expectations are per leg now. Each of the
+four was in a tool written TO HONOUR a discipline. The control also refused TWICE
+before passing -- a missing tests/lib/fn_span.js, then a missing sairnscape.html
+-- and each time said CONTROL FAILED, NOTHING BELOW IS ATTRIBUTABLE and stopped,
+which is all that stands between a REFUSED verdict and a copy that never executed
+a single arm.
+
+EVIDENCE-path
+---------------------------------------------------------------------------
+  SAIRN-handoff-cody-b25.md       written BEFORE the report, uploaded to Drive
+                                  and API-CONFIRMED, id
+                                  1aRavNd6KuMNyYFUC0uLWNISsVqNEnzU3
+  SAIRN-report-cody-b25.txt       REPORT first line, SHA256 second-to-last,
+                                  END-OF-REPORT last. sha256
+                                  654068628b45ec508d17237a33da1a831541d77a028b8fd2c33170c018b0d6a1
+                                  over every byte above that line; the line
+                                  carries the command that reproduces it, and it
+                                  WAS reproduced before this digest was written
+  docs/2026-10-19-cody-b25-live-verify-and-scape-pii.md   all items in full
+  docs/b25-logs/live_verify_rf_locations_is_default.py    item 2, re-runnable
+  docs/b25-logs/ablate_b25_gate_order.py                  item 3, both legs
+  docs/CRITICALITY-TIERS.md:535                           the retier
+  api/sd-data-scp-session-gate.test.js                    the ordering arm
+  docs/SAIRN-PROCESS-RULES.md 3.5                         item 4's complement
+  transcript C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cody\9fe1b8da-047e-4787-9e87-9983dd2e2635.jsonl
+
+UNVERIFIED
+---------------------------------------------------------------------------
+THE is_default:TRUE CASE WAS NOT EXERCISED LIVE -- covered at source level in two
+suites; exercising it means creating a sentinel-id row on a demo tenant, which
+changes what that tenant renders as "Main".
+ITEM 4's RULE IS OWED ONE HARD DEMONSTRATION -- this batch's push took two rounds
+and the rule held; two rounds does not exercise it under pressure.
+NO LIVE RENDER OF ANYTHING -- items 2 and 3 are live ENDPOINT checks, which is
+narrower than a rendered-page check.
+THE FOUR TIER ROWS THAT NOW DISAGREE WITH customers ARE NOT READ -- named and
+routed; no tier was assigned to any of them.
+THE 85 NON-cody SWEEP CANDIDATES FROM b24 ARE STILL UNREAD and not counted clean;
+no sweep work was done this batch.
+NO B6-CLASS CHECK EXISTS -- untouched by instruction.
+
+NEXT
+---------------------------------------------------------------------------
+NOBODY STARTS A NEW BATCH. This is a STOP, not a pause with a queue. A fresh
+session should read SAIRN-handoff-cody-b25.md and then WAIT for direction, not
+pick an item out of this list and begin it.
+WHOEVER TAKES THE FOUR DISAGREEING TIER ROWS -- read each one's columns out of its
+own sql/ schema and its own write site, NOT out of the register and NOT out of the
+customers decision, and record a tier per row with the columns quoted.
+ANYBODY WITH DATABASE ACCESS -- LOC-B25-VERIFY is an INACTIVE row on
+RF-AUDIT-2026; delete it if you like, nothing depends on it.
+AN OWNER FOR THE B6-CLASS CHECK -- scope at section 3 of
+docs/2026-10-19-cody-b24-sweep-continued.md; DO NOT BUILD IT WITHOUT A PRECISION
+NUMBER ON A REAL SAMPLE (b24 measured the arm-finding half at 1-of-4).
+WHOEVER TAKES THE NEXT SWEEP BATCH -- 85 candidates, not mine; read b24's
+window-bleed caveat first.
+HANK -- unchanged and NOT re-sent: C1 in
+tests/sd_data_not_provisioned_misclass.js is still red on purpose; route the
+alf_op_audits EXISTENCE SELECT through notProvisioned(res, existingR, <the same
+message>), one guard earlier than A1's fix; re-derive the line number; :14316
+still named and not driven. AND BECAUSE I CROSSED YOUR BOUNDARY TWICE NOW:
+api/sd-data.js is +37/-2 and COMMENT ONLY, no handler logic changed; the register
+is +1/-1, one row rebuilt whole; both on Michael's instruction because your window
+is stalled.
+FOURTH -- the b23 Tier A obligation on dnt_rollup is still open, assigned by the
+gate, and is NOT a substitute for your own live render pass. sairnscape.html was
+left alone; you hold it.
+CC -- row 449's "dnt_rollup appears 0 times in every .html file" is FALSE
+(sairndental.html:2543 is a real call), and row 356's item-4 sentence still
+contradicts row 355.
+CODY -- the b17/b18 carry-overs are untouched; the 151/57 sibling
+NOT_PROVISIONED guards are still NOT converted, a DECISION and not a backlog; the
+known-red-tail census is unmeasured; irs.gov/instructions/i8846 unread.
+
+CONTEXT%
+---------------------------------------------------------------------------
+70.0% of 1000k -- 700,309 tokens. REAL MEASURED FIGURE, taken from the LAST
+assistant turn's message.usage in this session's own jsonl: input_tokens 2 +
+cache_read_input_tokens 700,307. NOT an estimate, and NOT the
+max-over-transcript number b22-b24's artefacts used -- that one answers "what was
+the largest single request" rather than "what is loaded now". Transcript
+4,849,917 bytes / 2,561 lines, carrying b22, b23, b24 and b25.
+
+STOPPED. Awaiting a fresh-start paste.
