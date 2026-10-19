@@ -2621,6 +2621,91 @@ def main():
                 OVERRIDE_HINT,
             ]))
 
+    # ── CHECK 5b: CONTRAST AND UNDEFINED TOKENS (added 2026-10-19, b30) ────
+    # MICHAEL'S DECISION: a push gate, not a cadence and not manual.
+    #
+    # It runs the STATIC half of tools/wcag_contrast_check.py, and the reason
+    # is measured rather than cautious. The rendered half needs playwright, a
+    # chromium binary, network reach to Vercel, a live Supabase, a demo PIN and
+    # a per-app sign-in profile -- and a survey of the seventeen root products
+    # found SEVEN with no #gkey licence gate, FIVE with no nav() switcher and
+    # THREE with no panel-* elements at all. A rendered gate would exit 2 COULD
+    # NOT RUN on most of the platform, and a gate that cannot run is a gate
+    # that gets skipped: 80 of the 94 rows in docs/BYPASS-LOG.jsonl are already
+    # that shape. The static half reads the file and needs nothing.
+    #
+    # IT IS A RATCHET, AND THE DEBT IS VISIBLE RATHER THAN FORGIVEN. Measured
+    # the day it was wired: 153 findings across 14 of the 17 products, because
+    # "white text on the app's brand colour" is the HOUSE pattern and every
+    # app's .gbtn/.bp carries it. Those are recorded in
+    # docs/wcag-contrast-baseline.json; a push is denied for findings NOT in
+    # it, every run prints what is still outstanding per app, and the baseline
+    # grows only by an explicit --baseline-write, which is a commit somebody
+    # can refuse to approve.
+    #
+    # WHAT IT CATCHES THAT NOTHING ELSE DOES: (a) a rule or style ATTRIBUTE
+    # declaring a colour on an opaque background below WCAG AA, and (b) a
+    # var(--token) defined nowhere with no fallback -- which does not fall
+    # back, it DROPS the whole declaration. b28 shipped exactly that and a
+    # 22-arm green run could not have seen it.
+    if html_changed:
+        _wc = os.path.join(repo, 'tools', 'wcag_contrast_check.py')
+        if not os.path.isfile(_wc):
+            deny(chr(10).join([
+                "Blocked: this push changes HTML and tools/wcag_contrast_check.py is not",
+                "in this clone, so nothing looked at contrast or at undefined tokens.",
+                "",
+                "  expected: %s" % _wc,
+                "",
+                "A missing checker is not a clean result.",
+                OVERRIDE_HINT,
+            ]), gate='contrast')
+        else:
+            try:
+                _wr = subprocess.run(
+                    [sys.executable, _wc, '--gate'] + html_changed + ['--baseline'],
+                    capture_output=True, text=True, encoding='utf-8',
+                    errors='replace', timeout=300, cwd=repo,
+                    env=dict(os.environ, PYTHONIOENCODING='utf-8', PYTHONUTF8='1'))
+                if _wr.returncode == 1:
+                    deny(chr(10).join([
+                        "Blocked: this push adds a contrast or undefined-token finding that is",
+                        "NOT in docs/wcag-contrast-baseline.json.",
+                        "",
+                        (_wr.stdout or '').strip()[-3000:],
+                        "",
+                        "An `aa-contrast` line is text a customer cannot comfortably read, measured",
+                        "against the surface it is actually painted on. An `undefined var(--x)` line",
+                        "is worse than a wrong colour: the declaration is invalid at computed-value",
+                        "time and is DROPPED, so the property silently does nothing. b28 shipped",
+                        "border-left:3px solid var(--accent) and the stripe rendered at 0px, with 22",
+                        "passing unit arms behind it.",
+                        "",
+                        "Fix it, or -- if it is genuinely pre-existing debt this push merely moved --",
+                        "re-record the baseline deliberately and say so in the commit:",
+                        "  python tools/wcag_contrast_check.py --static --all --baseline-write",
+                        OVERRIDE_HINT,
+                    ]), gate='contrast')
+                elif _wr.returncode != 0:
+                    deny(chr(10).join([
+                        "Blocked: the contrast check COULD NOT RUN (exit %d), which is a third"
+                        % _wr.returncode,
+                        "state and not a pass.",
+                        "",
+                        ((_wr.stdout or '') + (_wr.stderr or '')).strip()[-1500:],
+                        "",
+                        OVERRIDE_HINT,
+                    ]), gate='contrast')
+            except Exception as e:
+                deny(chr(10).join([
+                    "Blocked: the contrast check could not be run, so this push is unchecked",
+                    "for it.",
+                    "",
+                    "  %s: %s" % (type(e).__name__, e),
+                    "",
+                    OVERRIDE_HINT,
+                ]), gate='contrast')
+
     # ── CHECK 6: REDACTION ON WHAT THIS PUSH SHIPS (added 2026-09-04) ──────
     # tools/redaction_check.py already runs as a PreToolUse Write|Edit hook, and
     # the open-work row saying "no hook exists" was STALE -- it is wired in both
