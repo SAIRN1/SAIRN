@@ -34107,7 +34107,7 @@
       "recurrence_open": "The STATUS and NEXT fields are parsed the same way and still swallow unlabelled prose; they are bounded by their own 900-character slices, so they degrade quietly rather than wrongly, and nothing here changes that. Nothing requires a digest to use only the nine labels the board knows. And the fix is in a SHARED publisher that every clone runs its own copy of -- measured during this batch, fourth's clone republished the board 20 minutes after cc's corrected version with its own pre-fix copy, so the platform-wide effect of this fix only arrives as each clone fetches."
     },
     {
-      "commit": "634f7d709a87",
+      "commit": "a61abc5ae46e",
       "date": "2026-10-19",
       "subject": "fix(filters): three selections that silently picked the wrong set and reported clean over it",
       "files": [
@@ -34162,7 +34162,7 @@
       "recurrence_open": "nothing yet refuses a baseline whose files_scanned list is narrower than the gate's own universe, so a future narrowing of either side is still silent. The files_scanned field makes it visible to a reader, not to a checker."
     },
     {
-      "commit": "634f7d709a87",
+      "commit": "a61abc5ae46e",
       "date": "2026-10-19",
       "subject": "fix(filters): three selections that silently picked the wrong set and reported clean over it",
       "files": [
@@ -34223,7 +34223,7 @@
       "recurrence_open": "the fixtures reproduce live() selection logic rather than calling live(), because live() needs a registry and a Drive mount. A future change to live() that stops calling selects() at one of the two sites would not be caught by these arms -- only by the live drive, which is manual."
     },
     {
-      "commit": "634f7d709a87",
+      "commit": "a61abc5ae46e",
       "date": "2026-10-19",
       "subject": "fix(filters): three selections that silently picked the wrong set and reported clean over it",
       "files": [

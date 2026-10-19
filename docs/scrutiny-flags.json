@@ -6496,6 +6496,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_push_gate_preflight_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a61abc5ae46e08b647620a3be4a2362abdf54270",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_drive_upload_verify_probe.py",
    "class": "test file",
    "level": "CHANGE",
