@@ -35,9 +35,16 @@ the record was pointing at a sha the rebase had rewritten -- fixed with the
 register's own `--reseat`, which matches BY SUBJECT and writes through the
 register's own writer.
 
+TWO MORE GATES REFUSED THE REPORTING PUSH AND BOTH WERE RIGHT. (1) "CLAIM
+STATE: NONE -- THIS PUSH IS NOT UNDER A HELD CLAIM": I released `platform` when
+the work landed and then kept pushing reporting files. The RELEASE was
+premature, not the gate wrong; re-claimed. (2) The CONTEXT line in this digest
+was HAND-WRITTEN and was refused -- see CONTEXT% below, where my hand figure
+turns out to be 9.5 points LOW.
+
 EVERY HOOK-WRITTEN FILE WAS COMMITTED ON EVERY ROUND AND NONE WAS STASHED.
 b25 landed the PROCESS-RULES 3.5 complement and owed it a full-loop
-demonstration; THIS IS IT -- six-plus rounds, a rebase conflict and a register
+demonstration; THIS IS IT -- a dozen rounds, a rebase conflict and a register
 re-seat in the middle, and those rows are keyed per COMMIT so a stash held
 across a rebase keys them to shas that no longer exist.
 
@@ -63,6 +70,14 @@ alf_op_audits. It did NOT pick up leg_clergy, even though the diff names it on
 a changed line and leg_clergy is now Tier A. The likely reason is that it scans
 CODE files and not docs/, which would be correct behaviour. I DID NOT CONFIRM
 THAT AND AM NOT CLAIMING IT. One read would settle it.
+
+AND ONE THE REGISTER'S OWN TOOL REFUSES TO DECIDE, correctly, and it is NOT
+mine: `defect_register.py --reseat` reports "f9a4e5a0032b COLLIDES -- a record
+already exists at 5bb0950a51b6 with the same summary ... Two records of one
+defect, from before and after a rebase. Deciding which survives is a content
+question and is not this command's to make." Both are `fix(audit-checkpoint,
+sql)` records from another session, one layer=product and one layer=tooling.
+Routed, not touched.
 
 CHANGED
 ---------------------------------------------------------------------------
