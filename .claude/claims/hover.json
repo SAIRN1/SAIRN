@@ -981,6 +981,17 @@
       "status": "released",
       "released_at": "2026-10-19T11:48:48Z",
       "files": null
+    },
+    {
+      "id": "hover-1792411142",
+      "session": "hover",
+      "subject": "hover",
+      "task": "b55: finish git-history secrets scan (48 remaining candidates); hank re-poll skipped (no new commits, per instruction); undirected sweep continuation, no overlap with H2 coverage-ledger/parity/rolling-rescan; watch for 3rd target-mislabel; handoff+push",
+      "claimed_at": "2026-10-19T11:59:02Z",
+      "claimed_at_epoch": 1792411142.5271387,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
