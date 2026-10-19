@@ -14,11 +14,15 @@ whether either has been applied, and the answer is **no, neither.**
 
 ## 1. COMMITTED AND PUSHED STATE
 
-**LANDED. Seven commits, on `origin/main`, verified `0 ahead / 0 behind` by
-`git rev-list --left-right --count origin/main...HEAD` after the push.**
-Batch tip at the time of writing `b3fad2fe4` — **re-derive it with
-`git rev-parse --short origin/main`** rather than trusting that sha: five
-sessions push to one branch and it moved five times during this batch.
+**LANDED, in three pushes, verified `0 ahead / 0 behind` by
+`git rev-list --left-right --count origin/main...HEAD` after each one.**
+**The WORK is the seven commits below, tip `b3fad2fe4`.** The three standing
+documents and the gate's own re-seated scrutiny rows landed after that —
+`5a9f934ff`/`c62aa5233`, then a correction pass at `07218786e` — which a
+handoff cannot table exhaustively because it would have to name its own sha.
+**Re-derive the tip with `git rev-parse --short origin/main`** rather than
+trusting any sha here: five sessions push to one branch and it moved seven
+times during this batch.
 
 | # | sha | commit | what |
 |---|---|---|---|
@@ -44,7 +48,7 @@ is unchanged by this batch.
 
 **ZERO gate overrides. No `SAIRN_GATE_EXEMPT`, no `SAIRN_SKIP`, no
 `SAIRN_SEED_GATE`.** Nothing was skipped, so there is nothing to disclose
-under PR §3.3. Both refusals were satisfied at the source.
+under PR §3.3. **All three refusals were satisfied at the source.**
 
 **Attempts 1–2 were not refusals at all** — `origin/main` moved under me
 (cc's b21, cody, fourth) while the gate was running, so the push was a
@@ -490,10 +494,18 @@ session does not read "clean working tree" as "the stashes were dealt with".
 
     C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-hank\c6aa6115-6c83-4e85-839e-9d1825f2115a.jsonl
 
-**Context at the time of writing: 28.3% — 282,577 of a 1,000,000 window**,
-measured by `python tools/context_verify.py` reading that transcript, not
-self-reported. The window is marked `[window INFERRED]` by the tool, which is
-its own disclosure and not a defect.
+**Context when this section was written: 28.3% — 282,577 of a 1,000,000
+window**, measured by `python tools/context_verify.py` reading that transcript,
+not self-reported. The window is marked `[window INFERRED]` by the tool, which
+is its own disclosure and not a defect.
+
+**THE FIGURE KEPT MOVING AND EACH DOCUMENT CARRIES ITS OWN MOMENT** — 23.0% at
+item 3, 28.3% here, 31.5% in `SAIRN-digest-hank-b20.txt`, 32.0% in
+`SAIRN-report-hank-b20.txt`. **None of them is wrong and none supersedes the
+others:** each is true of the last assistant turn at the instant it was taken,
+which is exactly what the tool's own age warning says to expect. The one to
+read as "the figure" is the digest's, because `--check-digest` verified it
+against the transcript.
 
 ---
 
