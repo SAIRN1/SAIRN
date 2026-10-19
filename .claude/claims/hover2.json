@@ -712,8 +712,8 @@
       "task": "b63: status bridge re-drive, SAIRN-latest cleanup, mutation-testing tool vs green-but-worthless sweep, undirected sweep, push",
       "claimed_at": "2026-10-19T14:57:39Z",
       "claimed_at_epoch": 1792421859.370326,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-19T15:29:20Z",
       "files": null
     }
   ],
