@@ -1,0 +1,636 @@
+REPORT cody b26 2026-10-19 -- four individual tier reads, the sibling guard conversion, the known-red tail census, and the 85-candidate sweep continued
+
+================================================================================
+1. ORIENTATION
+================================================================================
+
+git pull --ff-only origin main   74ff211ca -> 012881ca6, fast-forward
+working tree                     CLEAN before any edit, confirmed by
+                                 `git status --porcelain` returning nothing
+claim                            `platform`, taken BEFORE any work, with a
+                                 FILES list declared
+status registry                  row written: state=working, with the task
+boundary checked, not assumed    hank holds `platform` and its own claim string
+                                 EXPLICITLY EXCLUDES api/sd-data.js, saying
+                                 "EXCLUDES api/sd-data.js (cody holds it on
+                                 Michael's explicit instruction for b25)".
+                                 docs/CRITICALITY-TIERS.md is NOT in hank's
+                                 FILES list. fourth holds sairnroofing.html and
+                                 it was not touched.
+
+================================================================================
+2. ITEM 2 -- FOUR TIER ROWS, READ INDIVIDUALLY
+================================================================================
+
+THE TEST, STATED BEFORE THE VERDICTS SO IT COULD NOT BE FITTED TO THEM:
+  A row is confidentiality A when its own written fields, read together,
+  identify a specific private individual AND attach to them something beyond
+  how a business reaches them -- a dwelling, an unbounded narrative, or a
+  protected characteristic. B when the fields identify a BUSINESS, or identify
+  a person ONLY by how a business reaches them.
+
+THE CONTROL IS `customers`, WHICH THE TEST MUST RETURN A FOR. It writes
+{id,name,service,recurring,phone,email,address,notes}; `address` is a DWELLING,
+so A -- the tier b25 landed on other grounds. The test reproduces a verdict it
+did not set. Without this control it is a test that happens to return B three
+times with nothing establishing it can return anything else.
+
+ALL FOUR sql/ SCHEMAS ARE OPAQUE `data jsonb` ENVELOPES. Not one carries a
+single payload field as a named column:
+  bld_suppliers        sql/sairnbuild_data_schema.sql:383-393
+  sf_vendors           sql/sairnfreedom_data_schema.sql:678-688
+  leg_clergy           sql/sairnlegacy_data_schema.sql:117-121
+  dnt_vendor_contacts  sql/sairndental_vendor_schema.sql:108-118
+Each is {id uuid, license_hash, app_id, <resource>_id, data jsonb, created_at,
+updated_at} with unique(license_hash,<resource>_id) and the 65,536-byte cap.
+
+SO AN sql-ONLY READ WOULD HAVE REPORTED "NO PII" FOR ALL FOUR -- INCLUDING THE
+TWO THAT CARRY A NAMED INDIVIDUAL'S DIRECT PHONE AND EMAIL. That is why the
+instruction says schema AND write site: the schema half is load-bearing only as
+the fact that it cannot decide anything.
+
+THE FOUR READS, columns quoted from the write site at HEAD:
+
+  bld_suppliers        B/B CONFIRMED, now field-grounded
+    saveSupplier()  sairnbuild.html:6649
+    {id, name, category, terms, contact, phone}
+    Labels :1701-1703: "Supplier Name", "Category", "Terms", "Contact"
+    (placeholder "Optional"), "Phone" (placeholder "Optional").
+    NO email field anywhere on the row. Identifies a BUSINESS.
+    NUANCE THE REGISTER DOES NOT STATE: its basis is "`contact` IS A
+    DEPARTMENT, NOT A PERSON in every seeded row". True of the SEED (:3472 --
+    "Order Desk", "Sales", "Estimating", "Account Rep") and THE UI DOES NOT
+    ENFORCE IT -- supm-contact is free text with a bare "Optional" placeholder.
+    It does not move the tier: even typed with a person's name the row holds a
+    name plus a business switchboard number, no email, no address, no narrative.
+    Integrity B: `terms` is a string; spend is computed live from bld_pos
+    (panel :956 "spend-to-date", KPI sup-spend :960 "Via issued POs, all time").
+    CITATION RE-DERIVED: the cell cites :3379, which at HEAD is NEITHER the
+    write NOR the seed. Named, not silently repointed. Cell NOT rewritten --
+    the verdict is unchanged and there is nothing to correct.
+
+  sf_vendors           B/B CONFIRMED, and the class never applied to it
+    sfAddVendor()  sairnfreedom.html:5654
+    {id, name, category, brand, licensed}
+    NO person, NO phone, NO email, NO address. There is no individual on this
+    row AT ALL, so it cannot be in `customers`' confidentiality class on any
+    reading.
+    CITATION RE-DERIVED: the cell says sfAddVendor() is "currently near :5263";
+    it is :5654. DRIFT +391. Cell NOT rewritten.
+
+  dnt_vendor_contacts  B/B CONFIRMED, and the JUSTIFICATION MOVES
+    vEditContact()  sairndental.html:6803
+    {rep_name, phone, email} keyed by vendor
+    A named individual and NOTHING beyond how a business reaches them: no
+    address, no narrative, no protected characteristic.
+    ITS CELL HELD IT AT B *ON THE CLASS*, in terms: "the same shape already at
+    B for `bld_suppliers`, `sf_vendors` and `sen_applicants`". THAT COMPARISON
+    IS FALSE ON THE FIELDS IN TWO OF THREE DIRECTIONS -- bld_suppliers has no
+    email field anywhere and sf_vendors has no person at all -- so the class it
+    was held at B on contained NO other member carrying a named individual's
+    direct phone AND email. The tier survives; the reasoning does not, and it
+    is replaced with the field test rather than left resting on a clause b25
+    struck through.
+    CITATION RE-DERIVED: the cell cites :6598; it is :6803. DRIFT +205 -- the
+    fifth stale citation found in this one cell.
+
+  leg_clergy           B/B -> A/A. THE TEST MOVES THIS ROW.
+    saveClergyPartner()  sairnlegacy.html:4930
+    {id, name, faith_tradition, phone, email, notes, created_at}
+    Seed :2152 -- {id:'CG-1', name:'Rev. Thomas Boyle',
+    faith_tradition:'Catholic', phone:'(440) 555-0210', email:'', notes:''}
+    A named individual's DIRECT phone AND email, PLUS `notes` -- an unbounded
+    free-text field about that person, which no other row of the four has --
+    plus faith_tradition.
+    THE RETIER DOES NOT REST ON `faith_tradition` AND THE PRIOR READING IS NOT
+    OVERTURNED. The 2026-09-24 argument (hover H1 log #531, folded by CC) that
+    the field is a SERVICE OFFERING on the sv_staff precedent is sound and is
+    KEPT. The row moves on `notes` plus {name, phone, email}, which satisfies
+    the test's second limb without touching the belief question. The caveat
+    that cell recorded STANDS and is NOT discharged by this retier.
+    Integrity stays B, CHECKED NOT ASSUMED: clergyBookingConflict()
+    (sairnlegacy.html:4917) reads leg_clergybookings, NOT this row.
+    CONSEQUENCE NAMED RATHER THAN DISCOVERED: at A,
+    tools/tier_a_review_gate.py records a Tier A obligation against any future
+    diff naming leg_clergy. That lands on whoever next touches
+    sairnlegacy.html, and it is the POINT of the tier.
+
+  sen_applicants (:552, name+phone only) returns B under the same test and is
+  NOT touched -- not one of the four, and its cell is already field-grounded.
+  Named so the next reader does not re-derive that it was considered.
+
+THE EDIT, MEASURED BOTH WAYS (docs/b26-logs/retier_b26_four_rows.py, rows
+rebuilt WHOLE, never split on `|`):
+  lines          663 -> 663
+  `|`-rows       453 -> 453
+  leg_clergy     line 456  B/B -> A/A   pipes 7 -> 7
+  dnt_vendor_... line 318  B/B -> B/B   pipes 7 -> 7
+  lines differing from the original: [318, 456]  -- EXPECTED EXACTLY THESE TWO,
+  asserted by the inserter rather than checked by eye
+  python tools/md_table_check.py   docs/CRITICALITY-TIERS.md 434/434 OK
+
+TWO ROWS CHANGED, NOT FOUR. bld_suppliers and sf_vendors were NOT rewritten --
+their cells already say "individually read, not re-classified by the rule" and
+the read confirms them, so editing them would be a diff with no finding in it.
+THAT IS THE "no bulk retier" INSTRUCTION HONOURED, NOT A SHORTFALL.
+
+================================================================================
+3. ITEM 3 -- THE SIBLING GUARD CONVERSION. THE DECISION, TAKEN.
+================================================================================
+
+Standing in every handoff from b19 to b25 as "the 151/57 sibling
+NOT_PROVISIONED guards are still NOT converted -- a decision, not a backlog."
+
+THE TWO CONCEPTS, stated above the code in api/sd-data.js itself:
+
+  READ SIDE: a read that could not be performed is not an empty table, so a 400
+  is classified BEFORE any `provisioned: false` is sent -- an undefined-column
+  400 means the table EXISTS and may be full (503 SCHEMA_OUTDATED), a genuine
+  missing relation falls through to the caller's own `provisioned: false` which
+  is the one case where that answer is TRUE, and a 400 that cannot be
+  classified answers 502 rather than being folded into either.
+
+  WRITE SIDE: a row the table refused ON CONTENT is not a missing table, so the
+  guard routes through the classifier this file already ships instead of
+  answering 503 unconditionally and telling the operator to re-run a migration
+  that is already applied.
+
+NEITHER IS A NEW DESIGN. The write side is the shipped notProvisioned(). The
+read side is ONE BRANCH ALREADY WRITTEN THIS WAY -- mech_site_assets,
+2026-10-15, after fourth/H1 routed it. unreadableNotEmpty() is that branch's
+logic named once instead of copied 150 times.
+
+"151/57" WAS NEVER THE REAL POPULATION (docs/b26-logs/guard_census.py
+reconciles both counts rather than replacing one):
+  loose occurrences of the guard spelling              319
+    ...ONE IS INSIDE A COMMENT at :19586                 -1
+  real guard sites                                      318
+    ...with a brace block                               314
+    ...brace-less, returning a VALUE to a caller          4
+       :11339 return {missing:'table'}
+       :17039 return {provisioned:false, providerId:null}
+       :18005 return {unreadable:'NOT_PROVISIONED'}
+       :18811 return null
+
+  57 = 56 + a COMMENT. Six lines below :19586 are the words "503" and
+  "NOT_PROVISIONED", so the counter classified AN OCCURRENCE OF THE GUARD SHAPE
+  INSIDE A COMMENT DESCRIBING THE GUARD SHAPE as a guard. This repo's named b17
+  defect, in a population counter rather than in an arm.
+  151 = 150 + the brace-less closure guard at :17039, pulled in by the
+  five-line window. WINDOW BLEED -- the cause b24 named in the sweep
+  classifier, here in a different tool.
+
+CONVERTED AND HELD:
+  PLANNED READ  150     PLANNED WRITE 43     HELD 20
+  Every hold printed with its reason by docs/b26-logs/convert_sibling_guards.py
+  -- no silent cap, because a silent cap reads as "covered everything":
+    11  RAW503  the branch ALREADY reads the body and discriminates -- the
+                class api/sd-data.js:19596 says was left alone on purpose
+                :8172 :8955 :9987 :11222 :11463 :11662 :11966 :12043 :12236
+                :12294 :15848
+     6  OTHER   answers neither a raw 503 nor a raw 200
+                :10303 :10491 :10847 :11825 :15429 :16290
+     2  RAW503  THE BODY WAS ALREADY CONSUMED UPSTREAM (:3349 json, :18020
+                untraceable) -- the exact defect recorded at
+                api/sd-data.js:19628, where the first write-side rollout broke
+                five such sites
+     1  BOTH    :3668 answers BOTH a raw 503 and a raw 200
+
+THE PRE-READ CHECK IS THE WHOLE SAFETY ARGUMENT. :19628 records that the first
+draft of the write-side rollout broke five sites that had already done
+`await r.json()` -- the helper's own r.text() got '' and reclassified a genuine
+404 as UNCLASSIFIABLE, "turning one wrong diagnosis into a different wrong
+diagnosis" -- and concluded "a bulk edit is safe exactly as far as the property
+the script checked, and the script checked INSIDE the branch and not what came
+before it." So every candidate is checked from its `= await fetch(` ASSIGNMENT
+forward, and any body read of that variable in that window sends it to HOLD.
+
+THE CALLER KEEPS ITS OWN LITERAL, and the reason is measured: the 150 sites
+send 21 DISTINCT 200-SHAPES -- data:[], data:null, board:null, wip:null,
+worksheet:null, programs:[], coverage:{...}, scoped_projection:!broadStaffRead,
+summary:opAudit.summarise([]) and more. A helper that sent the answer itself
+would have had to flatten all 21.
+  200-shape count   157 -> 157   (MUST NOT CHANGE -- asserted)
+  NOT_PROVISIONED    86 ->  43   (falls by exactly the 43 write conversions)
+
+THE REAL FINDING: THE ROUTED ONE-LINE FIX WAS NOT SUFFICIENT.
+Arm C1 of tests/sd_data_not_provisioned_misclass.js, red on purpose since
+2026-10-17, routed to hank in these words: "THE SAME ONE-LINE FIX AS A1, one
+guard earlier: route it through notProvisioned(res, existingR, <the same
+message>). notProvisionedDecide() needs no change."
+b26 ROUTED EXACTLY THAT GUARD THROUGH EXACTLY THAT HELPER -- AND C1 STAYED RED.
+notProvisionedDecide() folds 42703 into NOT_PROVISIONED because its
+missing-relation test is a bare `does not exist` substring and a Postgres 42703
+message is LITERALLY "column alf_op_audits.reviewed_by does not exist". THE
+ROUTED FIX WAS RIGHT ABOUT THE CALL SITE AND WRONG ABOUT WHERE THE DEFECT WAS,
+and only DRIVING it showed that. Repaired in ONE place for every call site at
+once, ORDERED BEFORE THE BROAD TEST -- after it the arm would change nothing.
+C1 IS NOW GREEN. The suite is 16/16, exit 0.
+
+TWO MEASUREMENT-TOOL DEFECTS, BOTH FOUND BY AN ABLATION AND NEITHER BY REVIEW:
+  (a) P5 tested /notProvisioned\(\s*res\s*,/ over the WHOLE alf_op_audits
+      branch. The conversion added a SECOND such call to that branch, so with
+      hank's upsert call reverted in the ablation copy A1 went RED and P5
+      STAYED GREEN -- satisfied by the other call. Narrowed to the response
+      variable `w`. FIFTH measurement-tool defect in four batches; SECOND in
+      this one file.
+  (b) The new suite's ablation did src.replace(INSERT,'') FILE-WIDE. The
+      inserted line is byte-identical at all 150 sites, so it removed the FIRST
+      one -- a branch thousands of lines from the subject -- and WOULD HAVE
+      REPORTED THE ARMS GREEN WHILE THE SUBJECT WAS UNTOUCHED. Caught by the
+      readback guard b24 paid for, firing for a different reason than it was
+      written for. Scoped to the branch; the count is asserted to fall by
+      EXACTLY ONE and the subject branch asserted clean.
+  (c) The suite's population counter would have reported "151 guards still raw"
+      while 150 were protected, because a converted read branch contains BOTH
+      unreadableNotEmpty( and provisioned: false and the helper test came
+      second. Fixed.
+
+THE NEW SUITE: tests/sd_data_read_unreadable_not_empty.js, 12 arms, exit 0.
+Subject alf_op_audits read (TIER A, append-only, and its 200-shape carries an
+extra `summary` field, so it also demonstrates the caller-keeps-its-literal
+property). Four states, four different answers:
+  42703        -> 503 SCHEMA_OUTDATED        the table exists and may be full
+  404          -> 200 provisioned: false     TRUE here, and only here
+  400 PGRST100 -> 502 UPSTREAM_UNCLASSIFIED  "could not tell" is a third state
+  400 42P01    -> 200 provisioned: false     byte-identical to the 404, correct
+R5 asserts the answers are REALLY DISTINCT, because four green arms could
+otherwise be four copies of one answer. A1 ablates the inserted line in a copy
+of api/ and requires R1, R3 and P3 to go RED while R2 STAYS GREEN -- R2 green
+in both legs is what makes R1 and R3 attributable.
+
+THE TRADE IS NAMED RATHER THAN DISCOVERED: a malformed-filter 400 caused by a
+bug in api/sd-data.js used to render as an empty board and now renders as a
+502. Louder, and that is the point -- it was always a defect and always
+invisible.
+
+THE BLAST RADIUS, AS A DIFFERENTIAL (docs/b26-logs/regression_differential.py):
+230 suites referencing api/sd-data.js, each driven ALONE, in a disposable
+worktree, at HEAD *and* at HEAD~1:
+  GREEN 221 · RED_KNOWN 5 · RED_NEW 4  ->  EXACTLY ONE attributable to me
+  tests/roofing_claim_gate_single_source.js   exit 0 at HEAD~1, 1 at HEAD  MINE
+  api/_resources/extra-actions.test.js        41/7 in BOTH legs       not mine
+  tests/sairnlegacy_reservation_lock.js       byte-identical output    not mine
+  tests/sd_data_write_attribution_three_apps  17/3 in BOTH legs       not mine
+WITHOUT THE BASELINE LEG ALL FOUR WOULD HAVE READ AS REGRESSIONS.
+NOT CLEAN, SAID PLAINLY: this run is JS ONLY. The .py half of the tree was not
+driven and is NOT counted as clean.
+
+THE ONE REAL REGRESSION, AND THE ARM WAS WEAK BEFORE I TOUCHED IT.
+tests/roofing_claim_gate_single_source.js, arm "each branch keeps its own
+not-provisioned policy", said "the photo WRITE no longer refuses loudly" and
+tested /NOT_PROVISIONED/ inside src.slice(i).slice(0, 1400) -- A FIXED
+1400-CHARACTER WINDOW. The rf_claim_photos write branch is 5,470 characters, so
+the literal satisfying the window was the one in the CLAIM-EXISTENCE guard at
+the top of the branch, NOT the photo write's own refusal 34 lines down at
+:9850/:9854/:9871. Routing that first guard through notProvisioned() --
+behaviour identical, literal gone -- turned the arm red while the policy it
+names was intact at three sites. SO IT WAS NEVER TESTING WHAT IT SAID.
+Repaired: balanced-brace slices with an explicit overrun guard; the assertion
+is on the POLICY not one spelling of it; and the arm's ACTUAL subject is
+asserted for the first time -- that the read's degrade-to-empty-list literal
+does NOT appear in the write branch.
+GREEN IN BOTH LEGS, which is the control that this is a repair and not a
+loosening fitted to the change: the repaired suite was copied into the HEAD~1
+worktree and passes 23/23 against the UNCONVERTED handler too.
+
+================================================================================
+4. ITEM 4 -- THE KNOWN-RED TAIL CENSUS. b22 FOUND ONE; THERE ARE TWELVE.
+================================================================================
+
+Routed at SAIRN-handoff-cody-b22.md 6.6 and unmeasured through b23, b24 and
+b25, because "it is not cheap ... and several of those suites WRITE WHEN RUN."
+
+ALL 65 REGISTERED ENTRIES DRIVEN ALONE, one process each, in a disposable
+worktree at 81e6183d4:
+  TAIL_MATCHES        37
+  TAIL_UNPRODUCIBLE   12    <- THE ANSWER: 12 of 49 COMPARABLE rows, 24%
+  TIMEOUT             10    <- at 120s, NOT the runner's 300s
+  GREEN_RECOVERED      5
+  SKIPPED              1
+
+THE TWELVE, each of which known_red_check.py has been classifying CHANGED on
+every run -- which reads as "a second defect is hiding inside an entry that
+says this file is expected to fail" when THE ENTRY is the thing that is wrong:
+  tests/defect_register_capa_control.py
+  tests/run_adversarial_prompt_corpus_probe.py
+  tests/run_alf_read_order_sabotage_probe.py
+  tests/run_condition_coverage_probe.py
+  tests/run_dependency_graph_probe.py
+  tests/run_rebase_resolve_probe.py
+  tests/run_report_only_checks_probe.py
+  tests/run_selftest_independence_probe.py
+  tests/run_write_path_scan_probe.py
+  tests/sairncare_compliance_window_boundary.test.js
+  tests/seam_check/run_or_default_probe.py
+  tests/suite_control_backfill_probe.py
+
+AND 5 REGISTERED ROWS WERE GREEN -- moved to `recovered`, because the register's
+own _what_this_is_NOT says "while it stands it swallows the next real failure
+of that file": api/sf-auth.test.js, tests/faults/transport_timeout_sweep.js,
+tests/sql_preflight/run_probe.py, tests/run_b12_routed_findings_probe.py,
+tests/sd_data_not_provisioned_misclass.js. ONLY THE LAST IS GREEN BECAUSE OF
+THIS BATCH. The other four carry an UNDIAGNOSED `why` rather than a guessed one.
+
+THE CORRECTION TO THE 12 IS ROUTED, NOT APPLIED, for two rules rather than a
+preference. Each is marked in place with tail_verdict_2026_10_19 and
+observed_tail_2026_10_19; the stored `tail` is NOT overwritten. Overwriting
+destroys the record of what the row used to claim -- which the 2026-10-13 b8
+scope statement names in those words, "No entry's `tail` overwritten" -- and a
+detector that applies its own repair is convention 11's human-gated
+auto-remediation rule read the wrong way.
+
+FOUR RED-AND-UNREGISTERED SUITES ADDED, every one driven at HEAD *and* at
+HEAD~1 and red in BOTH legs, so NONE is caused by b26:
+  api/_resources/extra-actions.test.js
+  tests/sairnlegacy_reservation_lock.js
+  tests/sd_data_write_attribution_three_apps.js
+  tests/run_criticality_tier_probe.py  -- found by a different route: it reads
+    docs/CRITICALITY-TIERS.md, which b26 edited, so it was driven in both legs
+    to answer "did I break it". THE SAME EIGHT ARMS fail in both; only the
+    probe's own sliding tail text differs.
+
+THREE CAVEATS, NAMED RATHER THAN BURIED:
+  1. THE TIMEOUT WAS 120s, NOT 300s. Ten suites timed out and SOME MAY COMPLETE
+     AT 300s. TIMEOUT 10 is an upper bound on hangs and a lower bound on
+     completions, and NONE of the ten is counted as either matching or
+     unproducible -- the 49 comparable rows are TAIL_MATCHES +
+     TAIL_UNPRODUCIBLE only, with the 10 timeouts and the 1 skip EXCLUDED FROM
+     THE DENOMINATOR rather than folded into it.
+  2. DRIVEN IN A DISPOSABLE WORKTREE, not a live clone, because several of
+     these suites write when run. An environment-sensitive suite could answer
+     differently in a clone.
+  3. THE COMPARISON NORMALISES DIGITS AWAY -- _same_reason's deliberate choice,
+     inherited rather than introduced. SO 12 IS A LOWER BOUND.
+
+THE METHOD, and why it is trustworthy rather than merely run: the comparison is
+tools/known_red_check.py's OWN _same_reason, IMPORTED NOT RE-IMPLEMENTED -- a
+census using a different rule from the tool it audits measures a different
+thing and can neither confirm nor contradict it. The tail is built the way
+tools/run_all_tests.py:942 builds it. The tool REFUSES to run without
+--disposable-clone and does NOT try to detect "am I in a worktree", because
+that is a guess and the cost of being wrong is a mutated live clone. And
+known_red_registry_update.py EXITS 2 COULD NOT RUN when the census json is
+absent -- VERIFIED BY RUNNING IT BEFORE THE CENSUS FINISHED -- so there was
+never a half-applied state.
+
+================================================================================
+5. ITEM 5 -- THE 85-CANDIDATE SWEEP, CONTINUED
+================================================================================
+
+b24's CAVEAT READ FIRST, and it is the reason this was not done by reading 85
+files. Quoted rather than paraphrased:
+  "The residual cause is named: window bleed. The assertion window is a line
+   plus up to five continuation lines, so an extraction sitting next to an
+   assertion gets classified as one. 1 of 4 is better than b23's 6 of 16 and it
+   is not good."
+At 1-in-4 odds, reading 85 candidates yields ~21 real and ~64 wasted reads.
+
+THE SWEEP AT HEAD: 619 files scanned, 94 candidates, 9 cody's -> 85 NOT MINE.
+  FILE-DERIVED 63 · UNTRACED 31 · RUNTIME 0
+
+THE BLEED, MEASURED OVER THE WHOLE POPULATION
+(docs/b26-logs/sweep_bleed_measure.py reuses the sweep's own SUBJECT_RE and
+classify_subject and adds ONE discriminator: the subject occurrence must fall
+inside an assertion call's BALANCED PARENTHESIS span -- a window is a guess
+about where a statement ends, a balanced paren is a property of the call):
+  1,442 FILE-DERIVED occurrences across 201 files
+    BLED       1,060   74%   extraction next to an assertion, never a claim
+    IN-ASSERT    382
+b24's "1 of 4" on a sample of four is CONSISTENT with a 74% bleed rate measured
+over the whole population.
+
+AND A SECOND DISCRIMINATION, FOUND BY READING THE TOP CANDIDATE:
+  THE CONCEPT: an ABSENCE assertion over unstripped source text CANNOT be
+  satisfied by a comment -- a comment carrying the spelling makes it FAIL,
+  loudly -- so only PRESENCE assertions are candidates for this defect at all.
+  POLARITY of the 382 IN-ASSERT occurrences
+    PRESENCE   264   <- the real work-list
+    ABSENCE     73   <- SAFE DIRECTION, not this defect
+    UNSURE      45   <- THIS TOOL COULD NOT TELL; not folded into either
+  WORK-LIST: 264 of 1,442 -- 18% of what the unsplit sweep reports.
+
+THE CONTROL REFUSED ON ITS FIRST SPELLING, WHICH IS THE CONTROL WORKING. It
+encoded all four of b24's hand-read verdicts as bleed expectations and only two
+are about bleed:
+  * sairncode_pt_gp_modifier.js:333 was expected IN-ASSERT because b24 read it
+    as the one REAL finding -- AND b24 ALSO REPAIRED IT, IN THE SAME BATCH, in
+    its 4.1. The file strips comments there now and line 333 is a comment.
+    A FIXTURE ENCODING A DEFECT THAT WAS FIXED BY THE DOCUMENT IT WAS READ
+    FROM -- discipline 8 landing on the control written to honour it, one batch
+    later. Excluded and NAMED, not expected.
+  * sf_operator_payee_review_probe.js:41 is
+    assert.strictEqual(HTML.indexOf(startAnchor, i+1), -1, ...) -- an anchor
+    UNIQUENESS guard, genuinely inside an assertion, which b24 called a false
+    positive of the SWEEP on SEMANTIC grounds because the shape is STRONGER
+    than the one being swept for. "False positive of the sweep" and "bled" are
+    two different things and the first spelling conflated them. IN-ASSERT is
+    the CORRECT answer there, and it is why IN-ASSERT is a work-list and never
+    a defect count.
+Fixtures are ANCHORED ON LINE CONTENT as well as line number now: a fixture
+that finds nothing at its line is a THIRD STATE (the subject moved) and must
+not read as agreement.
+  3/3 -- the reclassifier agrees with every hand-read verdict it is ENTITLED to
+         decide, in BOTH directions: two BLED, one correctly IN-ASSERT.
+
+THE SAMPLE READ -- 6 files, 47 PRESENCE hits:
+  tests/sairnvet_formulary_source_honesty.js    5 judged   5 real   0 correct
+  tests/base_prompt_single_source.js            8          4        4
+  tests/sairnbuild_wip_percent_complete.js     10         10        0
+  tests/sairnlaw_citation_rule.js               8          8        0
+  tests/material_risk_engine.js                 8          7        1
+  tests/run_rate_limit_race_probe.js            8          7        1
+  TOTAL                                        47         41        6
+41 of 47 -- 87% -- against b24's 1-of-4 (25%) on the unsplit FILE-DERIVED
+class. The 6 "correct as written" are assertions whose subject genuinely IS
+prose: a prompt string extracted from the app (base_prompt's `literal` arms),
+and two arms that assert a specific COMMENT exists on purpose
+(material_risk_engine:192, run_rate_limit_race_probe:145).
+"REAL CANDIDATE" MEANS THE ASSERTION COULD BE SATISFIED BY A COMMENT. It is NOT
+a confirmed defect; b24's standard holds that a confirmed one needs an ablation.
+
+ONE CONFIRMED BY ABLATION, in a disposable worktree:
+  tests/sairnlaw_citation_rule.js:105
+  assert.ok(/function citatorFetch\s*\(/.test(src), 'citatorFetch is gone');
+The real function was RENAMED -- so the definition is genuinely gone -- and ONE
+comment planted carrying the exact spelling.
+  definitions of the ORIGINAL name left in the file : 1   <- and it is THE COMMENT
+    ok   citatorFetch exists and is how a real citation is retrieved
+THE ARM WHOSE WHOLE JOB IS "citatorFetch exists" PASSED WITH THE FUNCTION GONE.
+CONFIRMED green-but-worthless.
+THE HONEST MITIGATION, SAID RATHER THAN OMITTED: a SIBLING arm --
+"mtVerifyCitations still exists and still reaches the real citator" -- DID go
+red, so the file as a whole noticed the rename. The defect is that THIS arm did
+not, and nothing about reading it reveals that. The worktree app was restored
+with git checkout --, verified by git status.
+
+================================================================================
+6. VERIFICATION
+================================================================================
+
+EXIT=0  node --check api/sd-data.js                        (and every suite)
+EXIT=0  node tests/sd_data_not_provisioned_misclass.js     16 arms, C1 CLOSED
+EXIT=0  node tests/sd_data_read_unreadable_not_empty.js    12 arms + ablation
+EXIT=0  node tests/roofing_claim_gate_single_source.js     23/23, BOTH LEGS
+EXIT=0  python tools/md_table_check.py                     434/434 register rows
+EXIT=0  python tools/tier_a_review_gate.py                 alf_op_audits covered
+EXIT=0  python tools/sairn_strict_args_check.py            Guardian check 31
+EXIT=0  node   tools/strict_args_harness.js                Guardian check 31
+EXIT=0  python docs/b26-logs/known_red_tail_census.py      65/65 driven ALONE
+EXIT=0  python docs/b26-logs/known_red_registry_update.py  65->64, 46->51, 12
+                                                           marked in place
+EXIT=0  python tools/known_red_check.py --fixtures         6/6 + 7 arms
+EXIT=0  python tools/defect_register.py --check            655 records, every
+                                                           commit resolves
+EXIT=0  python docs/b26-logs/sweep_bleed_measure.py        control 3/3 FIRST
+EXIT=1  python docs/b23-logs/green_but_worthless_sweep.py --all   94 candidates
+EXIT=0  python -m py_compile docs/b26-logs/*.py
+        230-suite regression differential: GREEN 221 / RED_KNOWN 5 / RED_NEW 4
+
+AND ONE REFUSAL IS EVIDENCE RATHER THAN A SETBACK:
+known_red_registry_update.py was run BEFORE the census finished and exited
+2 COULD NOT RUN, naming the absent json and saying "Nothing was written, and no
+partial update was applied."
+
+THE CONVERSION'S POST-CONDITIONS WERE ASSERTED BEFORE ANYTHING WAS WRITTEN: the
+200-shape count must NOT change (157 -> 157) and the NOT_PROVISIONED literal
+count must fall by EXACTLY the write conversions (86 -> 43). Planned spans were
+checked for overlap. The file was read back and compared.
+
+THE LIVE TREE WAS NEVER WRITTEN BY ANY ABLATION, asserted rather than intended:
+every ablation ran in tempfile.mkdtemp() or a git worktree, and
+`git status --porcelain` was captured after each.
+
+ONE GUARDIAN CHECK WAS NOT RUN AND IT IS NAMED: no rendered or visual pass.
+This batch touched no .html file, so there is nothing to render -- but that is a
+REASON, not a PASS, and it is not reported as one.
+
+NO OVERRIDE OF ANY KIND WAS USED. No SAIRN_SKIP, no SAIRN_GATE_EXEMPT, no
+SAIRN_SEED_GATE, no call to tools/gate_skip.py. Said out loud because the
+protocol requires it either way.
+
+================================================================================
+7. THE PUSH -- EVERY GATE REFUSAL, AND WHAT IT WAS
+================================================================================
+
+The push took several rounds. EVERY ONE IS RECORDED, because a clean push
+reported after a loop nobody describes is the shape this platform keeps paying
+for.
+
+ROUND 1  register_feed_gate DENIED: "this push closes a defect and does not
+         feed the register." REAL AND CORRECT. The roofing arm repair closes a
+         defect and no record cited it. FED, NOT SKIPPED -- the gate offers
+         `no-defect-record: <why>` and this IS a defect, so taking that escape
+         would have been the dishonest half of a real choice.
+           sairnroofing / test / moderate / probe-control, rules 1.7,
+           injection 7d4cb7928 (2026-09-04), phase coding STATED, three
+           contributing factors, recurrence-open stated.
+         AND TWO SELF-INFLICTED THINGS, FIXED AND RECORDED RATHER THAN QUIETLY
+         REPAIRED: --summary was passed as the placeholder "x" while probing
+         the tool's required fields and the record landed with it (replaced in
+         place, with exactly ONE line of 33,793 asserted to differ); and the
+         first attempt at that edit used json.dumps(ensure_ascii=False) and the
+         round-trip check REFUSED, because the tool's own save() uses indent=2
+         at the default -- a serialiser written by hand would have reformatted
+         all 655 records and buried the one-field change. The fix is to import
+         and use the tool's OWN load()/save(), which is the same lesson as
+         importing known_red_check's _same_reason for the census.
+ROUNDS 2-4  register_feed_gate: "git handed this hook NO ref lines ... THIS
+         CLONE IS N AHEAD AND M BEHIND, so the push is a NON-FAST-FORWARD."
+         CONTENTION, NOT A GATE, and the gate says so itself: "This is NOT a
+         finding about your commits." Rebased each time.
+ROUND 5  derived_docs gate DENIED: docs/MASTER-PLAN.md and
+         docs/traceability-matrix.md "no longer match their sources ... clean
+         at the base commit and not at this tip, so this push is what changed
+         the answer." REAL AND CORRECT -- b26 adds a suite and both documents
+         count suites among their sources. Fixed with the gate's own fix line:
+         python tools/master_plan.py; python tools/traceability_matrix.py.
+         NO OVERRIDE -- reaching for SAIRN_SKIP=derived-docs on a check whose
+         remedy is one command would have been skipping a check, not using one.
+ROUND 6  ALL GATES PASSED; `remote rejected ... cannot lock ref` -- a pure
+         REF-LOCK RACE. Three other clones push to this trunk and the gate
+         suite takes ~90s, so main moved between the hook's check and the ref
+         update.
+LATER ROUNDS  a rebase CONFLICT on both generated documents, because another
+         clone regenerated them too. RESOLVED BY REGENERATING, NEVER BY PICKING
+         A SIDE: both are derived from the repo, so "ours" and "theirs" are
+         both wrong after a rebase that moved the sources, and the only correct
+         content is what the generator produces at the new tip.
+         And register_feed_gate refused again with a NEW message -- "BUT A
+         RECORD FOR THIS SUBJECT ALREADY EXISTS, citing <sha>. That sha is not
+         in this history -- a rebase moved the commit after the record was
+         written. The record is not missing; it is pointing at a commit that no
+         longer exists. RE-SEAT THE 1 STALE RECORD -- do not write a second
+         one." Fixed with the register's own
+         `python tools/defect_register.py --reseat`, which matches BY SUBJECT,
+         refuses on an ambiguous or absent match, and writes through the
+         register's own writer.
+
+EVERY HOOK-WRITTEN FILE WAS COMMITTED ON EVERY ROUND AND NONE WAS STASHED --
+PROCESS-RULES 3.5 and the complement b25 landed. Those rows are keyed per
+COMMIT, so a stash held across a rebase keys them to shas that no longer exist:
+a ledger entry pointing at nothing. b25 owed this rule a full-loop
+demonstration and THIS IS IT: six-plus rounds, every one committing the gate's
+own writes, with a rebase conflict and a register re-seat in the middle.
+
+================================================================================
+8. WHAT IS NOT DONE
+================================================================================
+
+* NO LIVE ENDPOINT CHECK AND NO LIVE RENDER. Everything in items 2, 3 and 5 is
+  source-level or in-process. Nothing here establishes behaviour against a real
+  Supabase or a real browser.
+* The .py half of the tree was not driven in the regression differential and is
+  NOT counted as clean.
+* The 20 held guards are not converted, each with a printed reason. The 11 that
+  already discriminate ARE convertible via notProvisionedText() and each needs
+  an individual read -- :11966 carries an entity_id special case a mechanical
+  conversion would delete.
+* The 4 brace-less closure guards return a VALUE to a caller rather than
+  answering res, so converting them means changing a return contract and every
+  caller.
+* 223 of the 264 PRESENCE sweep hits are unread, and 40 of the 41 read as real
+  candidates are UNABLATED. The 45 UNSURE polarity hits are unresolved.
+* The 12 unproducible tails are measured and marked, NOT corrected.
+* The 10 census timeouts are NOT a result: they timed out at 120s, not 300s,
+  and need re-driving alone before "ten hanging suites" is treated as a finding.
+* The four rows found green that this batch did not fix are undiagnosed.
+* The B6-class check is still not started; scope unchanged at section 3 of
+  docs/2026-10-19-cody-b24-sweep-continued.md, and b24's 1-of-4 arm-finding
+  precision is still the argument for not rushing it.
+* OBSERVED AND NOT RESOLVED: tier_a_review_gate.py ran on this batch and
+  reported only alf_op_audits -- it did NOT pick up leg_clergy even though the
+  diff names it on a changed line and leg_clergy is now Tier A. The likely
+  reason is that it scans CODE files and not docs/, which would be correct
+  behaviour. I DID NOT CONFIRM THAT AND AM NOT CLAIMING IT.
+* SAIRN-ACTIVE-WORK-cody.md was NOT appended to, deliberately: it is one of the
+  seven tracked documents already over the 400,000-byte ceiling
+  (775,962 bytes at the last measurement), and adding to it worsens a known
+  problem. The batch document and the handoff carry the record instead. Said
+  out loud rather than left as a silent omission.
+
+================================================================================
+9. ARTEFACTS
+================================================================================
+
+docs/2026-10-19-cody-b26-four-tier-reads-and-guard-conversion.md   the account
+docs/b26-logs/retier_b26_four_rows.py           the register row rebuilder
+docs/b26-logs/guard_census.py                   the population, both counts
+docs/b26-logs/convert_sibling_guards.py         the conversion, holds printed
+docs/b26-logs/known_red_tail_census.py          the census driver
+docs/b26-logs/known_red_tail_census.json        every verdict, per row
+docs/b26-logs/known_red_registry_update.py      the registry mover
+docs/b26-logs/sweep_bleed_measure.py            the bleed + polarity measure
+docs/b26-logs/regression_differential.py        the 230-suite differential
+SAIRN-handoff-cody-b26.md                       written BEFORE this report
+transcript  C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cody\f979712d-5568-4f2c-90db-611d70cdc27b.jsonl
+
+REAL MEASURED CONTEXT: 46.4% of 1000k -- 464,443 tokens. From the last
+assistant turn's message.usage in this session's own jsonl: input_tokens 2 +
+cache_creation_input_tokens 365 + cache_read_input_tokens 464,076. MEASURED,
+not estimated.
+
+HANDOFF SHA256 ec13a95a232d003b01b31f783d36642baa58a70be749c6dd55002f3e4ea78f7f
+
+SHA256 e80ca5546617d7edcc9b696bc38f0dae1f26abc33f42d847baa27c9582d4faf4  (sha256 of every byte ABOVE this line; this line and the next are excluded. Reproduce with: python -c "import hashlib,io;s=io.open('SAIRN-report-cody-b26.txt',encoding='utf-8',newline='').read();b=s[:s.index(chr(10)+'SHA256 ')+1];print(hashlib.sha256(b.encode()).hexdigest())")
+END-OF-REPORT
