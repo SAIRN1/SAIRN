@@ -8814,6 +8814,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b22-postgrest-filter-encoding.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d4ff60efba3b860089e11d982f33a0d39d53283c",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": ".claude/settings.json",
    "class": "CI / hook configuration",
    "level": "WEAKENING",
@@ -9507,6 +9515,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b21-bridge-unknown-action.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "e8041dbff8fa709e9409f761c5c4627431262c48",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_scope_gate_unfetched_base_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -9639,6 +9655,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "eaa9d51627d8826fe7581c95a475dc990d8c7078",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b22-claude-logline.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "eac95896f1ffc0327ea885b072623b4b059b2cc4",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -10203,6 +10227,19 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "f6c0a0f820591c7183fa1dc015fae2fd70240309",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b22-funeral-f1-f2-f3-wiring.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'second named person\" -- a rule the owner is exempt from is not that rule',"
+    }
+   ],
+   "sha": "f7ad06bb7e1d55f0768937b9fd3bbf93ff544602",
    "criteria_version": "2026-10-06.1"
   },
   {
