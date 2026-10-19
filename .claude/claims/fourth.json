@@ -4072,8 +4072,8 @@
       "task": "b32: rendered pass over the 13 apps whose colours changed in b31 (screenshots, brand-identity check); sairnroofing 3 remaining undefined-token findings now that cody released it; routing primitive phase 1 SCOPE ONLY (schema + API surface, shared module, no app code); the three recurring blockers written up; methodology -- search the codebase for any existing route/stop sequencing before designing. FILES: sairnroofing.html docs/2026-10-19-fourth-b32-routing-primitive-scope.md docs/cloud-research/ docs/wcag-contrast-baseline.json docs/batch-manifest-fourth-b32.json SAIRN-handoff-fourth-b32.md SAIRN-report-fourth-b32.txt SAIRN-digest-fourth-b32.txt",
       "claimed_at": "2026-10-19T15:19:30Z",
       "claimed_at_epoch": 1792423170.981363,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-19T15:49:32Z",
       "files": [
         "SAIRN-digest-fourth-b32.txt",
         "SAIRN-handoff-fourth-b32.md",
