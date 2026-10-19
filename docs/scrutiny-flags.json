@@ -8170,6 +8170,36 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b20-countersign-open.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "is(capUrl && /limit=201/.test(decodeURIComponent(capUrl.url)),"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "section('A. the action exists, is allowlisted, and stages every row');"
+    }
+   ],
+   "sha": "d14cad5876ba2dcad89d5e68013ea4b23bea6518",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "docs/hank-evidence/b18_live_gate_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "no('an unknown action is a 400 naming the endpoint\\'s ACTIONS allowlist',"
+    }
+   ],
+   "sha": "d14cad5876ba2dcad89d5e68013ea4b23bea6518",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/sd-data-sv-role-matrix.test.js",
    "class": "test file",
    "level": "CHANGE",
