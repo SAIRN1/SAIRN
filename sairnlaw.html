@@ -1157,7 +1157,27 @@ label.chk input{width:auto;}
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Owner only. Creates or updates one person's own credentials &mdash; there are no shared role PINs.</div>
     <div class="fg"><label>Employee ID or email</label><input id="sec-new-eid"></div>
     <div class="fg"><label>Display name</label><input id="sec-new-name"></div>
-    <div class="fg"><label>Role</label><select id="sec-new-role"><option value="attorney">Attorney</option><option value="paralegal">Paralegal</option><option value="owner">Owner</option></select></div>
+    <!-- `bookkeeper` IS OFFERED HERE AND THE DATABASE MAY STILL REFUSE IT.
+         Added 2026-10-17 (b18) as Michael's answer to practitioner question
+         C1: the person who enters time, raises invoices and reconciles the
+         operating account is a member of staff, and with three roles a firm
+         had to either give them an attorney token -- every matter document
+         and every client file -- or give a paralegal token the billing
+         surface it may only read.
+         The role is in ROLES_BY_APP.sairnlaw, api/law-auth.js's `setup`
+         accepts it, and api/_lib/law-roles.js carries all nineteen of its
+         cells -- but the Postgres CHECK on sairnlaw_employee_auth.role only
+         widens when the `bookkeeper` block at the bottom of
+         sql/sairnlaw_employee_auth_schema.sql is run. Until then this option
+         produces a 23514 at the INSERT, which surfaces as a failed save
+         rather than a validation message. Said here rather than left to be
+         found, exactly as sairncare.html says it for office_manager.
+         A BOOKKEEPER CANNOT TOUCH CLIENT TRUST, and that is not one of these
+         cells: `bookkeeper` is absent from LAW_BAR_ADMITTED_ROLES and the
+         trust lock is consulted before the role table. It therefore cannot
+         perform the IOLTA three-way reconciliation either -- named in the
+         b18 handoff as a follow-up question, not a bug. -->
+    <div class="fg"><label>Role</label><select id="sec-new-role"><option value="attorney">Attorney</option><option value="paralegal">Paralegal</option><option value="bookkeeper">Bookkeeper (billing only)</option><option value="owner">Owner</option></select></div>
     <div class="fg"><label>PIN (6-8 digits)</label><input id="sec-new-pin" type="password" inputmode="numeric"></div>
     <button class="btn bp" onclick="secProvision()">Save Employee</button>
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
