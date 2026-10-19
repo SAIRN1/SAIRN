@@ -1,0 +1,45 @@
+=== Guardian Check 0a (checkblocks) ===
+stonedesk.html     TOTAL_BLOCKS:131 FAILED_BLOCKS:0 
+sairnlaw.html      TOTAL_BLOCKS:4 FAILED_BLOCKS:0 
+
+=== literal_drift_check ===
+  -- entity name     not present
+  -- business email  not present
+  -- phone           not present
+  -- tier price      not present
+  -- thh rate        not present
+  -- slab default    not present
+  -- waste pct       not present
+
+=== C. SAME LABEL, DIFFERENT VALUE ===
+  none
+
+GATED FINDINGS:0 -- the gated set is the entity name and section C.
+Anything printed above under another heading is a TRIAGE SIGNAL and
+was deliberately not gated: demo phone numbers and demo city names
+dominate it, and a checker that cries wolf is one nobody reads.
+=== FULL api TREE SWEEP, 2026-10-19 (b18) ===
+total suites: 295
+non-zero:
+api/_resources/extra-actions.test.js 1
+api/sd-data-customer-soft-delete.test.js 1
+api/sd-data-family-contacts.test.js 1
+api/sd-data-scp-licence-only.test.js 1
+
+ALL FOUR VERIFIED PRE-EXISTING.
+  3 are registered in docs/known-red-suites.json (customer-soft-delete, family-contacts, scp-licence-only).
+  api/_resources/extra-actions.test.js is NOT registered and was driven on the
+  PRE-b18 TREE by stashing every b18 change: exit 1 there too. Measured, not assumed.
+
+=== THREE SUITES b18 BROKE AND FIXED, named rather than absorbed ===
+  api/preauth-envelope-ordering.test.js -- A REAL FINDING against b18's own new
+    endpoints: both delegated their whole handler to api/_lib/countersign-endpoint.js,
+    so tools/preauth_oracle_check.py reported them UNDECLARED PUBLIC -- no auth
+    boundary in the file that IS the route. Restructured: method/bearer/licence now
+    live in each api/*-countersign.js. PREAUTH_DISCLOSURES:0.
+  api/sd-data-leg-session-gate.test.js -- a STALE EXPECTATION. Its own comment had
+    predicted this exact shape in writing. Re-aimed by ASKING THE MODULE
+    (requiresCountersignature), not by re-listing.
+  api/sd-data-cross-tenant-dispatchers.test.js -- the leg_cremations [W] arm reported
+    itself UNREACHED. Added to WRITE_BLOCKED with its reason, the same call the list
+    already made for sv_controlled. READ isolation covered, WRITE disclosed as not.

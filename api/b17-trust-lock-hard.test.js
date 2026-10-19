@@ -22,13 +22,29 @@
 // testing the lock."
 //
 // ── WHY ARM A WAS GREEN, WHICH IS THE PART WORTH UNDERSTANDING ───────────
-// `decide()` applies the TABLE first and re-asserts the lock only after the
-// table has already agreed. On the shipped table the paralegal row for both
-// locked resources is `''`, so the table denies and the lock line is never
-// reached. The lock is a SECOND defence for the case where the table is
+// `decide()` applied the TABLE first and re-asserted the lock only after the
+// table had already agreed. On the shipped table the paralegal row for both
+// locked resources is `''`, so the table denied and the lock line was never
+// reached. The lock was a SECOND defence for the case where the table is
 // wrong -- and a second defence is exactly the thing no behavioural arm can
-// see while the first one is working. That is not a flaw in `decide()`; the
-// order is deliberate and correct. It is a flaw in how it was TESTED.
+// see while the first one is working. That was a flaw in how it was TESTED.
+//
+// ── AND IN b18 THE ORDER CHANGED, SO THIS PARAGRAPH IS CORRECTED, NOT ─────
+// ── ANNOTATED. THE SENTENCE IT USED TO END WITH WAS "that is not a flaw ───
+// ── in decide(); the order is deliberate and correct", AND IT IS NO ───────
+// ── LONGER THE SHIPPED ORDER. ────────────────────────────────────────────
+// `decide()` now consults LAW_TRUST_LOCKED FIRST and does not read the table
+// at all for a locked resource held by a non-bar-admitted role. The reason is
+// not this finding: it is C2. Michael's answer to practitioner question C2 is
+// that a paralegal MAY PREPARE a trust disbursement for an attorney to
+// authorise, and with the lock LAST the only place to express that exception
+// was a wider TABLE grant -- widening the thing the lock exists to survive.
+// The lock now owns trust policy including its one exception.
+//
+// EVERY ARM BELOW STILL READS THE SAME WAY and the 2x2 still lands on the
+// same four cells; that was checked by running it, not assumed. What is NEW
+// is T4b, which asserts the exception is named in the refusal and is as
+// narrow as it claims.
 //
 // ── SO THE ARMS HERE ARE OF TWO KINDS AND BOTH ARE NEEDED ────────────────
 //   T1-T4  assert the lock STRUCTURALLY -- its exact membership, that it is
@@ -238,16 +254,70 @@ async function arms() {
   // downgrades "Client trust records are available to the firm owner and
   // attorneys only" to the generic role sentence -- a user-visible change
   // that no status code would show.
+  // b18: the anchor is `client trust` and no longer `trust records`. The
+  // law_trusttx sentence now names the PREPARE route (C2) and does not contain
+  // the words "trust records" at all, so the old anchor would have failed on
+  // correct code -- an anchor that stops matching is item 8 of
+  // docs/2026-09-13-cross-domain-disciplines.md and is why this is re-aimed
+  // rather than deleted. `client trust` is in BOTH sentences by construction.
   try {
     const t = lawRoles.denyMessage('law_trusttx', 'paralegal');
     const bs = lawRoles.denyMessage('law_bankstatements', 'paralegal');
     const other = lawRoles.denyMessage('law_portalmessages', 'paralegal');
-    is(/trust records/i.test(t) && /trust records/i.test(bs)
-       && !/trust records/i.test(other),
-       'T4. denyMessage names TRUST for both locked resources and does NOT for '
-     + 'an unlocked one, so the message is the lock speaking',
+    is(/client trust/i.test(t) && /client trust/i.test(bs)
+       && !/client trust/i.test(other),
+       'T4. denyMessage names CLIENT TRUST for both locked resources and does '
+     + 'NOT for an unlocked one, so the message is the lock speaking',
        JSON.stringify({ t: t, bs: bs, other: other }));
   } catch (e) { bad('T4. denyMessage is driven by the lock', e && e.stack); }
+
+  // ── T4b (b18): THE C2 EXCEPTION IS NAMED, AND ONLY WHERE IT EXISTS ─────
+  // Four properties in one arm because they are one claim: a refusal that
+  // offers a route must offer it to the role that has one, on the resource
+  // that has one, and must NOT offer it anywhere else. A refusal that invites
+  // a paralegal to prepare a BANK STATEMENT would be a confident wrong answer
+  // in the direction of a user wasting their time on something impossible.
+  try {
+    const pWrite = lawRoles.denyMessage('law_trusttx', 'paralegal', 'write');
+    const pBank = lawRoles.denyMessage('law_bankstatements', 'paralegal', 'write');
+    const bkWrite = lawRoles.denyMessage('law_trusttx', 'bookkeeper', 'write');
+    const pPrepare = lawRoles.denyMessage('law_trusttx', 'paralegal',
+                                          lawRoles.LAW_PREPARE_ACTION);
+    is(/PREPARE/.test(pWrite)
+       && !/PREPARE/.test(pBank)
+       && !/PREPARE/.test(bkWrite)
+       && !/PREPARE/.test(pPrepare),
+       'T4b. the C2 prepare route is offered to paralegal on law_trusttx ONLY '
+     + '-- not on law_bankstatements, not to bookkeeper, and not to somebody '
+     + 'already preparing',
+       JSON.stringify({ pWrite: pWrite, pBank: pBank, bkWrite: bkWrite,
+                        pPrepare: pPrepare }));
+  } catch (e) { bad('T4b. the C2 exception is named only where it exists', e && e.stack); }
+
+  // ── T4c (b18): AND decide() AGREES WITH THE MESSAGE ────────────────────
+  // The message and the decision are two code paths and nothing made them
+  // agree. T4b proves what the refusal SAYS; this proves it is TRUE -- the
+  // prepare the message invites actually succeeds, and the three cases it
+  // does not offer actually fail. Both directions, because a message that
+  // promises an allow nobody grants is worse than no message.
+  try {
+    const d = {
+      pPrepareTrusttx: lawRoles.decide('law_trusttx', 'paralegal', lawRoles.LAW_PREPARE_ACTION),
+      pWriteTrusttx: lawRoles.decide('law_trusttx', 'paralegal', 'write'),
+      pPrepareBank: lawRoles.decide('law_bankstatements', 'paralegal', lawRoles.LAW_PREPARE_ACTION),
+      bkPrepareTrusttx: lawRoles.decide('law_trusttx', 'bookkeeper', lawRoles.LAW_PREPARE_ACTION),
+      pPrepareOther: lawRoles.decide('law_portalmessages', 'paralegal', lawRoles.LAW_PREPARE_ACTION)
+    };
+    is(d.pPrepareTrusttx === lawRoles.ALLOW
+       && d.pWriteTrusttx === lawRoles.DENY
+       && d.pPrepareBank === lawRoles.DENY
+       && d.bkPrepareTrusttx === lawRoles.DENY
+       && d.pPrepareOther === lawRoles.DENY,
+       'T4c. decide() grants exactly the prepare the message offers and refuses '
+     + 'the other four, including `prepare` used as a general verb on an '
+     + 'unlocked resource',
+       JSON.stringify(d));
+  } catch (e) { bad('T4c. decide() agrees with the message', e && e.stack); }
 
   // ── T5: decide() DENIES paralegal ON law_bankstatements ────────────────
   // The member of the lock that had no arm anywhere.

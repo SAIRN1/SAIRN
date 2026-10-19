@@ -19,7 +19,9 @@
 //
 //     leg_deathrecords read   -> 200 ok:true          (rows returned)
 //     leg_custodylog   write  -> 200 ok:true          (the row was upserted)
-//     leg_cremations   write  -> 200 ok:true
+//     leg_cremations   write  -> 403 COUNTERSIGN_REQUIRED since 2026-10-17
+//                               (b18 / practitioner answer F1). It was
+//                               `200 ok:true` and the lock is why it is not.
 //
 // Anyone holding the licence key could read a funeral home's death records and
 // APPEND TO ITS CHAIN-OF-CUSTODY LOG. That log is the document that says which
@@ -179,18 +181,40 @@ const RESOURCES = ['leg_deathrecords', 'leg_custodylog', 'leg_cremations', 'leg_
     // becomes append-only, the handler answers 409 and this suite still
     // expects 200 -- so a correct lock would be reported as a regression, and
     // the fix would look like relaxing the suite.
+    // ── AND A SECOND RESOURCE JOINED THAT CLASS ON 2026-10-17 (b18) ──────
+    // THE PARAGRAPH ABOVE PREDICTED THIS IN WRITING: "the day a SECOND leg_
+    // resource becomes append-only, the handler answers 409 and this suite
+    // still expects 200 -- so a correct lock would be reported as a
+    // regression, and the fix would look like relaxing the suite."
+    //
+    // It was not append-only, it was F1's COUNTERSIGNATURE lock, and the shape
+    // was exactly as described: `leg_cremations write with a session -> 200`
+    // went red the moment the lock landed. The fix is the same one -- ASK THE
+    // MODULE -- and `requiresCountersignature()` is the accessor
+    // api/_lib/leg-roles.js exports for it, so there is still no second copy
+    // of the list in this file.
+    //
+    // 403 AND NOT 409, and the difference carries information: 409 means the
+    // append-only rule refused an EDIT, 403 COUNTERSIGN_REQUIRED means the
+    // record needs a second named person. A 401 for either would mean the
+    // session gate rejected a good session, which is what this suite exists
+    // to catch, and asserting the exact code is what keeps those apart.
     const legRolesForGate = require('./_lib/leg-roles');
-    const expectCode = legRolesForGate.isAppendOnly(resource) ? 'APPEND_ONLY' : null;
+    const expectCode = legRolesForGate.isAppendOnly(resource) ? 'APPEND_ONLY'
+                     : legRolesForGate.requiresCountersignature(resource)
+                       ? 'COUNTERSIGN_REQUIRED' : null;
+    const expectStatus = (expectCode === 'COUNTERSIGN_REQUIRED') ? 403 : 409;
     if (expectCode) {
-      await test(resource + ' write with a session -> 409 ' + expectCode
-               + ' (append-only, and the GATE was passed to get there)', async () => {
-        const { handler } = load();
-        const res = mockRes();
-        await handler(withSession('write', resource, { id: 'X-1' }), res);
-        assert.strictEqual(res.statusCode, 409, JSON.stringify(res.body));
-        assert.strictEqual(res.body && res.body.error && res.body.error.code,
-                           expectCode, JSON.stringify(res.body));
-      });
+      await test(resource + ' write with a session -> ' + expectStatus + ' '
+               + expectCode + ' (and the SESSION GATE was passed to get there)',
+        async () => {
+          const { handler } = load();
+          const res = mockRes();
+          await handler(withSession('write', resource, { id: 'X-1' }), res);
+          assert.strictEqual(res.statusCode, expectStatus, JSON.stringify(res.body));
+          assert.strictEqual(res.body && res.body.error && res.body.error.code,
+                             expectCode, JSON.stringify(res.body));
+        });
     } else {
       await test(resource + ' write with a session -> 200', async () => {
         const { handler } = load();
