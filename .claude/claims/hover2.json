@@ -660,6 +660,17 @@
       "status": "released",
       "released_at": "2026-10-19T13:02:28Z",
       "files": null
+    },
+    {
+      "id": "hover2-1792415401",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "b59: this role's own coverage-ledger rotation draw next items; chain and mirror verify; handoff+push",
+      "claimed_at": "2026-10-19T13:10:01Z",
+      "claimed_at_epoch": 1792415401.9960175,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
