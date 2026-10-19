@@ -1,0 +1,434 @@
+REPORT -- cody, batch b25, 2026-10-19 -- STOPPED ON INSTRUCTION. b24's missing live check CLOSED, the SAIRNscape PII retier landed, one standing document corrected
+===========================================================================
+
+STATUS
+---------------------------------------------------------------------------
+STOPPED ON INSTRUCTION mid-batch. NOTHING WAS MID-EDIT WHEN THE STOP ARRIVED:
+every file was already written and staged, every check had already been run,
+and no item was abandoned part-way.
+
+LANDED on origin/main. CONFIRMED BY READING THE FILES BACK OFF THE REMOTE TREE,
+not by a clean exit from git push.
+
+  remote tip at confirmation : 20ca754a87ca7b3d6614dfbec68e65bf35f3d995
+                               (git ls-remote origin refs/heads/main)
+  my two b25 commits, CURRENT shas, each proved an ANCESTOR of that tip by
+  `git merge-base --is-ancestor`:
+
+    899597b5c  feat(sairnscape): customers PII retiered B->A, and the
+               gate-ordering arm that would notice if the 403 became a 400
+               again -- plus b24's missing live check, CLOSED
+    20ca754a8  chore(gate-bookkeeping): the gate's own rows for b25's work
+               commit
+
+  All nine b25 files read back out of that exact tree with
+  `git cat-file -e <tip>:<path>`, and THE RETIER ITSELF WAS READ BACK OFF THE
+  REMOTE rather than inferred from the push: line 535 of
+  docs/CRITICALITY-TIERS.md on origin now begins
+
+      | `customers` | **A** | **A** | ...
+
+  Tree CLEAN. Stash list EMPTY. Both checked rather than assumed.
+
+PUSHED WITHOUT --force. NOTHING OVERRIDDEN -- no SAIRN_SKIP, no
+SAIRN_GATE_EXEMPT, no SAIRN_SEED_GATE, in any form, and no call to
+tools/gate_skip.py.
+
+THE PUSH TOOK TWO ROUNDS AND THAT IS ITEM 4 APPLIED TO ITSELF. Round 1 was a
+remote ref lock -- another clone landed between my fetch and my push. Round 2
+was clean. The gate's own docs/scrutiny-flags.json write was COMMITTED, NOT
+STASHED, on the strength of the rule this batch landed. TWO ROUNDS IS NOT A HARD
+TEST OF THAT RULE and is reported as what it is rather than as a vindication.
+
+BOUNDARY, DECLARED RATHER THAN ASSUMED: api/sd-data.js and
+docs/CRITICALITY-TIERS.md ARE NORMALLY HANK'S AND I TOOK THEM ON MICHAEL'S
+EXPLICIT INSTRUCTION because hank's window is stalled, said so in the claim
+string, and confirmed hank holds no active claim. api/sd-data.js is +37/-2 and
+COMMENT ONLY -- no handler logic changed. docs/CRITICALITY-TIERS.md is +1/-1,
+ONE row rebuilt WHOLE. sairnscape.html was NOT touched: fourth holds it under a
+live claim for a contrast pass, and nothing in item 3 needed a client change. NO
+sql/ file touched. NO tools/ file touched; five were RUN.
+
+THE LIVE TREE WAS NEVER WRITTEN BY ANY ABLATION, and that is ASSERTED rather
+than intended: `git status --porcelain` captured before and after each run and
+diffed. Every mutation ran in a tempfile.mkdtemp() tree removed in a finally.
+
+ONE LIVE WRITE WAS MADE AND IT IS NAMED: LOC-B25-VERIFY on the demo licence
+RF-AUDIT-2026, seeded to make an empty registry non-empty, then DEACTIVATED and
+QUERIED BACK to confirm active=False rather than trusting the write's exit code.
+
+===========================================================================
+FINISHED / PARTIAL / UNTOUCHED -- plainly, before anything else
+===========================================================================
+
+  FINISHED   item 1  methodology: concept before code, in the file and not only
+                     in the batch doc
+  FINISHED   item 2  rf_locations live-verify: 6/6 green AGAINST THE DEPLOYED
+                     ENDPOINT, controls first, seeded row deactivated and
+                     queried back
+  FINISHED   item 3  SAIRNscape customers PII: retier B/B -> A/A landed, both
+                     lists confirmed, write path measured 403 live, ordering arm
+                     added (80 -> 92) and ablated BOTH legs
+  PARTIAL    item 4  scrutiny-flags commit-not-stash: the rule is LANDED and was
+                     followed for every gate interaction, but this batch's own
+                     push ran only TWO rounds, so it is proven on b24's
+                     measurement and on this staging rather than on a loop under
+                     pressure
+  UNTOUCHED  item 5  B6-class check: never started, by earlier instruction, and
+                     held back unchanged
+  FINISHED   (unplanned) docs/2026-09-03-demo-credentials.md: RF-AUDIT-2026 was
+                     documented as dead. It is not. Corrected with both halves
+                     kept
+
+===========================================================================
+ITEM 2 -- THE LIVE VERIFICATION. CLOSED, AND THE CONTROLS ARE THE WHOLE STORY
+===========================================================================
+
+THE CONCEPT, stated before the code: a change to a response shape is not done
+until the destination is queried back, so read rf_locations through the real
+endpoint with a real session and assert is_default on the rows that actually
+come out of it.
+
+  C1 provisioned:true .............................................. ok
+  C2 at least one row came back .................................... ok
+  C3 default_location_id present (pre-dates b24, so a deploy tell) . ok
+  A1 EVERY row carries is_default .................................. ok
+  A2 ...and every one is a BOOLEAN .................................. ok
+  A3 is_default AGREES with default_location_id -- computed, not
+     stamped to a constant ......................................... ok
+  6 checks run, 0 failed      EXIT=0
+
+docs/b25-logs/live_verify_rf_locations_is_default.py, re-runnable, and it reads
+the PIN out of the credentials document rather than carrying one of its own.
+
+WHY A SOURCE-LEVEL SUITE COULD NOT ANSWER THIS. Every b24 arm reads
+api/sd-data.js and sairnroofing.html OFF DISK. This repo has a recorded incident
+where a Vercel deploy failed, production kept serving the LAST SUCCESSFUL BUILD,
+and several pushes reported clean while the live site stayed on old code. A
+source-level suite is green against a tree nobody is serving and cannot tell.
+
+THREE THINGS THE CONTROLS CAUGHT, AND WITHOUT THEM THIS WOULD HAVE BEEN A FALSE
+PASS OR A FALSE FINDING:
+
+(1) THE REGISTRY WAS EMPTY. The first run came back provisioned:true with ZERO
+    ROWS, so arm C2 went red and REFUSED TO LET THE A-ARMS BE READ AT ALL.
+    "is_default was not found" over an empty list is satisfied for ever and says
+    nothing about the response shape. Resolved by SEED-AND-RECHECK, this
+    platform's named method for exactly that state -- a lookup returning
+    "nothing here" is AMBIGUOUS and neither answer may be reported without
+    seeding one real record and re-running.
+
+    THE SEED CONCEPT: an empty registry makes an absence unattributable, so the
+    verifier seeds ONE synthetic location through the real write path, reads it
+    back through the real read path, asserts the flag, and then DEACTIVATES it
+    -- leaving a named inactive row rather than silently mutating demo data.
+
+    WHAT IS LEFT BEHIND IS NAMED, NOT HIDDEN: LOC-B25-VERIFY, name "b25 live
+    verification -- safe to delete", on RF-AUDIT-2026, deactivated and QUERIED
+    BACK. SAIRNroofing has no delete path for a location -- a fact about the app
+    and not a choice made here, which is why it is deactivated rather than
+    removed.
+
+(2) A SECOND CONTROL SEPARATES "THE CHANGE IS BROKEN" FROM "THE DEPLOY IS OLD".
+    default_location_id has been on this response since 2026-09-16, long before
+    b24. Present while is_default was absent would mean the deployed build simply
+    predates b24 -- a DEPLOY question, not a code one. NO AMOUNT OF RE-READING
+    SOURCE DISTINGUISHES THOSE TWO, and reporting them as the same thing is what
+    C3 prevents.
+
+(3) THE is_default:TRUE CASE WAS NOT EXERCISED LIVE, and the verifier says so in
+    its own output. No row in that registry carries the sentinel id, and creating
+    one would change what the demo tenant renders as "Main". The TRUE branch is
+    covered at source level by api/_lib/location-scope.test.js arm E and
+    tests/sairnroofing_default_location_from_server.js arms B1/C1. "6 of 6 green"
+    over a one-row registry is a weaker claim than it looks and is not presented
+    as a stronger one.
+
+===========================================================================
+ITEM 3 -- THE SAIRNSCAPE customers PII RETIER, AND THE ORDERING ARM
+===========================================================================
+
+THE RETIER: B -> A ON BOTH AXES, docs/CRITICALITY-TIERS.md line 535.
+
+Confidentiality B -> A because the row's OWN basis cell already read "A
+CUSTOMER's NAME, PHONE, EMAIL AND STREET ADDRESS" -- THE BASIS WAS CORRECTED ON
+2026-09-30 AND THE LETTER WAS NOT, and the letter is what the 2026-10-05 gate
+sweep read when it stopped at Tier A. Integrity is untouched and still genuinely
+B. The TIER follows to A because this register takes the worse axis, the rule
+sd_sms_log is already carried under in that file.
+
+IT WAS CORRECTLY NOT TAKEN IN 2026-10-05 AND THAT RECORD IS KEPT. The
+SD_SESSION_GATED note said in terms: "THE RETIER IS OWED AND IT IS NOT MINE TO
+MAKE: hank holds docs/CRITICALITY-TIERS.md under a live claim." The gate was
+deliberately shipped AHEAD of the register with that comment as the explanation
+-- the right call, and the thing a reader needs in order to trust the next one.
+THAT PARAGRAPH IS STRUCK THROUGH RATHER THAN DELETED, because it is the record of
+why the two disagreed for two weeks.
+
+AND IT BREAKS A STATED CLASS DECISION, WHICH IS OPEN WORK AND NOT BOOKKEEPING.
+The struck-through cell held this row at B ON A CLASS shared with bld_suppliers,
+sf_vendors, leg_clergy and dnt_vendor_contacts. THOSE FOUR ARE NOT RETIERED HERE.
+Each needs its own individual read, and retiering four rows off one row's
+decision is precisely the class-default reasoning this register keeps correcting.
+Two of them may well be genuinely B: a supplier's company contact is not the same
+population as a residential landscaping customer's home address.
+
+THE ROW WAS REBUILT WHOLE, never split on a pipe. Measured both ways: 663 -> 663
+lines, 434 -> 434 table rows, the row ONE physical line, pipe count 7 -> 7, and
+EVERY OTHER LINE IN THE FILE ASSERTED BYTE-IDENTICAL by the inserter rather than
+checked by eye.
+
+BOTH LISTS CARRY IT, MEASURED RATHER THAN ASSUMED:
+  api/sd-data.js:1505   SD_SESSION_GATED  'customers': ['read', 'write']
+  api/sd-data.js:1842   SD_GATE_APP       'customers': 'sairnscape'
+THE PAIR IS THE POINT: a resource in the first without the second resolves to
+'stonedesk', and then EVERY CORRECTLY SIGNED-IN SAIRNSCAPE CREW LEAD IS REFUSED
+FORBIDDEN -- the failure mode that pair of lists exists to prevent.
+
+THE WRITE PATH IS ALREADY 403, MEASURED LIVE on SCP-DEMO-2026 with no session:
+
+  customers    read                        -> 403 FORBIDDEN
+  customers    write  (id-less payload)    -> 403 FORBIDDEN   <- the 2026-10-05
+                                                                 defect, GONE
+  customers    write  (valid payload)      -> 403 FORBIDDEN
+  invoices     read / write                -> 403 FORBIDDEN   <- control
+  scp_quotes   write                       -> 403 FORBIDDEN   <- control
+
+So the 400 the 2026-10-05 note records is gone and the gate fires before the
+handler body reads the payload. The controls are what make that a measurement
+rather than a coincidence.
+
+BUT NOTHING WOULD HAVE NOTICED IF IT CAME BACK, AND THAT IS THE REAL FINDING.
+
+THE CONCEPT: an unauthenticated write to a session-gated resource must be refused
+by the GATE before the handler body reads the payload, so it answers 403 and not
+the handler's own 400 -- a 400 proves the gate did not fire and discloses the
+validation rules to a caller who has not signed in.
+
+The existing suite's write arm sends {id:'X-1', customer_id:'C-1'} -- a VALID
+payload -- so it answers 403 whether the gate runs before or after validation.
+THE ORDERING IS ONLY OBSERVABLE WITH A PAYLOAD THE BODY WOULD REFUSE. One arm per
+gated resource now sends {} and asserts 403 plus code FORBIDDEN. 80 -> 92 arms.
+THE PAYLOAD IS DELIBERATELY EMPTY because every gated resource validates
+something -- an id, a customer_id, a date -- so {} is refused by all twelve
+handler bodies and one arm covers the list without encoding each validator's
+rules.
+
+ABLATED, BOTH LEGS, AND G1 IS THE WHOLE CLAIM:
+
+                                            PRE-REPAIR       POST-REPAIR
+  G3 CONTROL, unmutated copy                exit 0           exit 0
+  G1 a payload check for customers placed
+     BEFORE the gate                        ACCEPTED         REFUSED, and ONLY by
+                                            (unprotected)    the empty-payload arm
+  G2 CONTROL, customers removed from
+     SD_SESSION_GATED                       valid arm only   BOTH write arms red
+
+Under G1 the PRE-EXISTING write arm stays GREEN -- it sends a valid payload and
+gets its 403 either way. Only the empty-payload arm goes red. Removing the gate
+entirely (G2) turns both red and therefore proves the new arm RUNS, not that it
+was NEEDED; G1 proves it was needed.
+
+THE CONTROL REFUSED TWICE BEFORE IT PASSED AND BOTH REFUSALS WERE REAL. The temp
+tree lacked tests/lib/fn_span.js and then sairnscape.html, both of which the
+suite reads. Each time the harness reported CONTROL FAILED -- NOTHING BELOW IS
+ATTRIBUTABLE and stopped. Without the control, two rounds of "REFUSED" verdicts
+would have come from a copy that NEVER EXECUTED A SINGLE ARM -- which is b23's
+and b24's experience with a different missing dependency each time.
+
+AND THE HARNESS'S OWN LABELLING WAS WRONG ON THE FIRST PRE RUN. It applied the
+POST expectation to both legs, so the PRE leg printed G1 and G2 as "NOT AS
+EXPECTED" when both were behaving exactly as a pre-repair suite must.
+Expectations are per leg now. A HARNESS THAT CALLS THE CORRECT PRE-REPAIR RESULT
+A FAILURE IS REPORTING ON ITS OWN EXPECTATIONS RATHER THAN ON THE SUBJECT -- the
+same class as b24's silent clobber, in the labelling instead of the setup, and
+THE FOURTH MEASUREMENT-TOOL DEFECT IN THREE BATCHES. The pattern is consistent:
+each was in a tool written TO HONOUR a discipline.
+
+===========================================================================
+ITEM 4 -- THE RULE EXISTED AND STATED ONLY HALF OF ITSELF
+===========================================================================
+
+THE CONCEPT: a file the GATE ITSELF wrote during a refused push is bookkeeping
+this session owns and must be COMMITTED on every round; only a file another
+session has declared may be stashed -- because stashing the gate's own write
+leaves the tree dirty against the very rebase the gate's refusal asks for.
+
+docs/SAIRN-PROCESS-RULES.md section 3.5 ALREADY PRESCRIBED THE ATOMIC LOOP and
+ALREADY said what to do when the hook-written file belongs to somebody else:
+stash it, do not commit it. WHAT IT DID NOT SAY IS THE COMPLEMENT -- the more
+common case, where nobody else declares it. A reader carried the correct NO
+across to their own file, and that is how b24 spent four rounds inside the loop
+3.5 itself names.
+
+MEASURED, b24: `git pull --rebase origin main` exited 128 -- "cannot pull with
+rebase: Your index contains uncommitted changes" -- on a tree whose ONLY
+modification was the gate's own scrutiny-flags.json write, and the refusal that
+produced that write had asked for exactly that rebase.
+
+AND A STASH IS WORSE THAN DIRTY, WHICH IS THE PART THAT IS NOT OBVIOUS. Those
+rows are keyed PER COMMIT. A stash held across a rebase keys them to shas that no
+longer exist -- a ledger entry pointing at nothing. b24 took one stash to break
+the loop, found its rows superseded, and dropped it: the right sequence, two
+rounds later than committing would have been.
+
+THE TEST, IN ONE QUESTION: is this file in anybody else's declared FILES list?
+Check sairn_claim.py list rather than assuming. No -> commit it every round.
+Yes -> stash it and name it in the handoff. THE FILE IS NOT WHAT DECIDES; THE
+CLAIM IS. Landed as an ADDITION to 3.5 rather than a new section, because a
+second rule saying nearly the same thing is the duplication this platform
+penalises.
+
+APPLIED TO THIS BATCH'S OWN PUSH, which took TWO rounds -- one ref lock, then
+clean -- with the gate's rows committed rather than stashed. TWO ROUNDS IS NOT A
+HARD TEST and is reported as such.
+
+===========================================================================
+AND ONE STANDING DOCUMENT HAD GONE STALE IN THE DIRECTION THAT CLOSES A QUESTION
+===========================================================================
+
+docs/2026-09-03-demo-credentials.md, under "One licence does not exist":
+
+  `RF-AUDIT-2026` returns `401 INVALID_LICENSE`, which means
+  `sql/sairnroofing_audit_license_seed.sql` was written and never run.
+
+IT RETURNS 200 WITH A SESSION TOKEN. The seed has since been run.
+
+THE COST IS WHY THIS IS A FINDING AND NOT BOOKKEEPING. Read literally, that
+entry says there is no usable SAIRNroofing licence and item 2 cannot be done. The
+only reason it was done is that the verifier TRIED THE LOGIN AND READ THE ANSWER
+INSTEAD OF THE DOCUMENT. A STANDING DOCUMENT THAT SAYS A CAPABILITY IS ABSENT IS
+STRICTLY MORE EXPENSIVE THAN ONE THAT SAYS NOTHING, BECAUSE IT CLOSES THE
+QUESTION.
+
+CORRECTED WITH BOTH HALVES KEPT, and RF-PINNACLE-2026 was re-measured in the same
+run and is STILL 401 INVALID_CREDENTIALS -- so the section is corrected, not
+emptied. One of its two licences is genuinely still dead and the other is not,
+which is exactly the distinction a blanket heading loses.
+
+===========================================================================
+VERIFICATION -- exit codes from `echo "EXIT=$?"` on its own line, never a
+pipeline
+===========================================================================
+
+EXIT=0  python docs/b25-logs/live_verify_rf_locations_is_default.py  6/6, LIVE
+EXIT=0  python docs/b25-logs/ablate_b25_gate_order.py                POST, 0 unexpected
+EXIT=0  python docs/b25-logs/ablate_b25_gate_order.py --before       PRE,  0 unexpected
+EXIT=0  node api/sd-data-scp-session-gate.test.js                    92 arms (was 80)
+EXIT=0  node api/_lib/location-scope.test.js                         8, b24 regression
+EXIT=0  node api/_lib/roofing-locations.test.js                      17, regression
+EXIT=0  node api/_lib/roofing-locations-endpoint.test.js             29, regression
+EXIT=0  node tests/sairnroofing_default_location_from_server.js      15, b24 regression
+EXIT=0  node tests/sairnlaw_trust_clearance.js                       11, b24 regression
+EXIT=0  node --check api/sd-data.js and the gate suite
+EXIT=0  python -m py_compile docs/b25-logs/*.py
+EXIT=0  python tools/md_table_check.py
+EXIT=0  python tools/open_work_shard.py --check
+EXIT=0  python tools/tier_a_review_gate.py
+
+===========================================================================
+UNVERIFIED -- stated rather than folded into the pass
+===========================================================================
+
+THE is_default:TRUE CASE WAS NOT EXERCISED LIVE. Covered at source level in two
+suites. Exercising it means creating a registry row carrying the sentinel id on a
+demo tenant, which changes what that tenant renders as "Main".
+
+ITEM 4's RULE IS OWED ONE HARD DEMONSTRATION. This batch's push took two rounds
+-- one ref lock, then clean. The rule held, and two rounds does not exercise it
+under pressure.
+
+NO LIVE RENDER OF ANYTHING. Items 2 and 3 are live ENDPOINT checks, which is a
+different and narrower thing than a rendered-page check.
+
+THE FOUR TIER ROWS THAT NOW DISAGREE WITH `customers` ARE NOT READ. Named and
+routed; no tier was assigned to any of them.
+
+THE 85 NON-cody SWEEP CANDIDATES FROM b24 ARE STILL UNREAD and still not counted
+as clean. No sweep work was done this batch.
+
+NO B6-CLASS CHECK EXISTS. Untouched by instruction.
+
+===========================================================================
+DECISION-NEEDED
+===========================================================================
+
+NOTHING IS BLOCKED ON MICHAEL. Both of this batch's instructions are implemented
+and ablated, and the retier that had been owed since 2026-10-05 is closed.
+SAIRNcash stays HELD.
+
+ONE QUESTION IS WORTH A DECISION AND IS NOT BLOCKING: the four tier rows that now
+disagree with `customers` -- bld_suppliers, sf_vendors, leg_clergy,
+dnt_vendor_contacts. MY RECOMMENDATION IS A READ EACH, NOT A BULK RETIER. Two of
+them may be genuinely B, and retiering four rows off one row's decision would
+recreate the class-default reasoning that produced the original error.
+
+===========================================================================
+NEXT -- by owner, with the exact step
+===========================================================================
+
+NOBODY STARTS A NEW BATCH. This is a STOP, not a pause with a queue. A fresh
+  session should read SAIRN-handoff-cody-b25.md and then WAIT for direction --
+  not pick an item out of this list and begin it.
+
+WHOEVER TAKES THE FOUR DISAGREEING TIER ROWS -- read each one's columns out of
+  its own sql/ schema and its own write site, NOT out of the register and NOT out
+  of the `customers` decision, and record a tier per row with the columns quoted.
+
+ANYBODY WITH DATABASE ACCESS -- LOC-B25-VERIFY is an INACTIVE row on
+  RF-AUDIT-2026, seeded for the live check and deactivated. Delete it if you
+  like; nothing depends on it.
+
+AN OWNER FOR THE B6-CLASS CHECK -- scope at section 3 of
+  docs/2026-10-19-cody-b24-sweep-continued.md. DO NOT BUILD IT WITHOUT A
+  PRECISION NUMBER ON A REAL SAMPLE: b24 measured the arm-finding half at 1-of-4
+  on the easier population.
+
+WHOEVER TAKES THE NEXT SWEEP BATCH -- 85 candidates, not mine. Read b24's
+  window-bleed caveat first.
+
+HANK -- unchanged and NOT re-sent: C1 in
+  tests/sd_data_not_provisioned_misclass.js is still red on purpose; route the
+  alf_op_audits EXISTENCE SELECT through notProvisioned(res, existingR, <the same
+  message>), one guard earlier than A1's fix; re-derive the line number; :14316
+  still named and not driven. AND BECAUSE I CROSSED YOUR BOUNDARY TWICE NOW:
+  api/sd-data.js is +37/-2 and COMMENT ONLY -- the stale "the retier is owed and
+  it is not mine to make" paragraph, struck through and answered. No handler logic
+  changed. docs/CRITICALITY-TIERS.md is +1/-1, one row rebuilt whole. Both on
+  Michael's instruction because your window is stalled.
+
+FOURTH -- the b23 Tier A obligation on dnt_rollup is still open, assigned by the
+  gate, and is NOT a substitute for your own live render pass. sairnscape.html was
+  left alone this batch; you hold it.
+
+CC -- carried from b22: row 449's "dnt_rollup appears 0 times in every .html
+  file" is FALSE (sairndental.html:2543 is a real call), and row 356's item-4
+  sentence still contradicts row 355.
+
+CODY -- the b17/b18 carry-overs are untouched; the 151/57 sibling
+  NOT_PROVISIONED guards are still NOT converted, a DECISION and not a backlog;
+  the known-red-tail census is unmeasured; irs.gov/instructions/i8846 unread.
+
+===========================================================================
+CLAIM -- RELEASED with this report. `platform`, taken BEFORE any work with a
+FILES list declared, held through the whole batch and released only after the
+work was confirmed PRESENT ON THE REMOTE rather than reported successful.
+
+REAL MEASURED CONTEXT: 70.0% of 1000k -- 700,309 tokens, taken from the LAST
+assistant turn's message.usage in this session's own jsonl (input_tokens 2 +
+cache_read_input_tokens 700,307). MEASURED, NOT ESTIMATED. This is a different
+and more honest figure than the max-over-transcript number b22-b24's artefacts
+used, which answers "what was the largest single request" rather than "what is
+loaded now". Transcript: 4,849,917 bytes, 2,561 lines.
+
+EVIDENCE: SAIRN-handoff-cody-b25.md (written BEFORE this report and uploaded to
+Drive, API-confirmed, id 1aRavNd6KuMNyYFUC0uLWNISsVqNEnzU3),
+docs/2026-10-19-cody-b25-live-verify-and-scape-pii.md,
+docs/b25-logs/live_verify_rf_locations_is_default.py,
+docs/b25-logs/ablate_b25_gate_order.py.
+
+STOPPED. Awaiting a fresh-start paste.
+===========================================================================
+
+SHA256 654068628b45ec508d17237a33da1a831541d77a028b8fd2c33170c018b0d6a1  (sha256 of every byte ABOVE this line; this line and the next are excluded. Reproduce with: python -c "import hashlib,io;s=io.open('SAIRN-report-cody-b25.txt',encoding='utf-8',newline='').read();b=s[:s.index(chr(10)+chr(10)+'SHA256 ')+1];print(hashlib.sha256(b.encode()).hexdigest())")
+END-OF-REPORT
