@@ -726,6 +726,17 @@
       "status": "released",
       "released_at": "2026-10-19T15:48:39Z",
       "files": null
+    },
+    {
+      "id": "hover2-1792426464",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "b65: expand mutation_tester.py to more money/commission targets, write up actionable gap doc, undirected sweep x2, push",
+      "claimed_at": "2026-10-19T16:14:24Z",
+      "claimed_at_epoch": 1792426464.52736,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
