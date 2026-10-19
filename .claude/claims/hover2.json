@@ -756,8 +756,8 @@
       "task": "b67: write up timing-safe-compare finding + sbMatchPure gap, self-audit own tooling, 2 more mutation targets, check H1 pre-push hook, push",
       "claimed_at": "2026-10-19T17:27:15Z",
       "claimed_at_epoch": 1792430835.1659033,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-19T18:37:58Z",
       "files": null
     }
   ],
