@@ -3005,3 +3005,61 @@ Full account: `SAIRN-handoff-hank-b18.md`, `SAIRN-report-hank-b18.txt`
 (including **nine things I got wrong in this batch** -- the ninth found after
 the other eight were written down, which is why the list was re-counted),
 `SAIRN-digest-hank-b18.txt`.
+
+---
+
+## b19 — 2026-10-19 — the IOLTA carve-out, STOPPED MID-BATCH on instruction
+
+Recorded here late, in b20, because b19 was stopped before it wrote this entry
+and an absent log line is indistinguishable from a batch that never ran.
+
+**LANDED:** `api/_lib/law-roles.js` C1 carve-out (`LAW_RECONCILE_ACTION`,
+`LAW_RECONCILE_LEGS`, `LAW_RECONCILE_ROLES`, `LAW_RECONCILE_ATTESTATION`, the
+second lock exception, the named-verb narrowing, the bookkeeper refusal
+message) + `api/b19-iolta-reconcile-carveout.test.js`, 32 arms 0 failed.
+
+**The research CONTRADICTED the dispatch's premise and the contradiction is the
+deliverable.** The dispatch said two of the three legs are
+bar-admitted-only *by law*. They are not: the three legs are RECORDS, Rule 5.3
+expressly permits a non-lawyer assistant to do the arithmetic, and the
+hard rule (NY 1.15(e)) is about being an AUTHORISED SIGNATORY — the act, not
+the record. The routing is right; the reason given for it was wrong.
+
+**TWO ITEMS ROUTED OUT rather than written** —
+`docs/2026-10-19-hank-b19-routed-to-cody-and-fourth.md`. Both files were held
+by LIVE sessions and `api/sd-data.js` had been reassigned to cody by Michael.
+
+## b20 — 2026-10-19 — the decision on that residual, and three builds
+
+**Michael's decision on b19's own DECISION-NEEDED: `paralegal` comes OFF
+`LAW_RECONCILE_ROLES` until an attestation step exists.** Implemented, and the
+direction of the error is the reasoning: a non-lawyer producing a finished
+reconciliation that nothing records a lawyer as reviewing is a compliance claim
+the record cannot support; the same grant withheld is a missing feature.
+
+**THREE ARMS WENT RED, NOT ONE.** The dispatch predicted R2. Measured:
+R1c, R1f and R2 — 29 passed, 3 failed. The two extra arms asserted the
+paralegal ALLOW on each leg directly. **Not suppressed and not re-aimed by me**;
+`docs/known-red-suites.json` is cody's file and the entry is ROUTED.
+
+**No defect record for that commit, and the no-defect trailer carries three
+measurements rather than an opinion:** the live gate at `api/sd-data.js:18765`
+uses its own owner-only literal and never consults the module; the `reconcile`
+verb is not in `EXTRA_ACTIONS` so `api/sd-data.js:502` refuses it before the
+role gate runs; and past the envelope there is no handler at all. **b19's grant
+was inert and this withdrawal is inert** — what it buys is that when cody
+applies the routed derive, the gate becomes `{owner, attorney}` without ever
+passing through a state where a paralegal could reconcile.
+
+**The item worth remembering:** `idx_<app>_countersign_open` existed in BOTH
+SQL schemas, each with a comment calling it *"the query a director's 'needs
+your signature' list is built from"*, and **nothing queried it.** `status`
+takes a `{ token }` and the clear token goes once, at `prepare`, to the
+PREPARER — so a signer holds nothing and could not drive it. The panel both
+apps are owed had no endpoint to read. b19's routed spec and the b20 dispatch
+both asserted it did. Found by reading the endpoint, not the routing note;
+`open` now exists, returns no token or token hash, and reports its own
+truncation.
+
+Full account: `SAIRN-handoff-hank-b20.md`, `SAIRN-report-hank-b20.txt`,
+`SAIRN-digest-hank-b20.txt`.
