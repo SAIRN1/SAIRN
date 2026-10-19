@@ -118,6 +118,17 @@ function t(name, fn) {
 }
 function section(s) { console.log('\n' + s); }
 
+// ── THE ABLATION ANCHORS, NAMED ONCE (b22) ───────────────────────
+// Every ablation arm below cuts the SAME guard out of a lifted copy of
+// api/bridge.js, and each one used to carry its own copy of the source text
+// to find it. b22 changed that guard's condition and TWO arms went red with
+// "the anchor has drifted" -- which is the arms working, and also four
+// places to re-seat instead of one. Named here so the next change to the
+// guard is a one-line fix, and so a drifted anchor fails LOUDLY rather than
+// silently ablating nothing.
+const GUARD_ANCHOR = '  if (!action || KNOWN_ACTIONS.indexOf(action) === -1) {';
+const FALLTHROUGH_ANCHOR = '\n  return handlePush(body, res, req);';
+
 const handler = require('./bridge.js');
 const PUSH_BODY = { invoices: [{ id: 'i1', amount: 10 }] };
 
@@ -231,38 +242,115 @@ const PUSH_BODY = { invoices: [{ id: 'i1', amount: 10 }] };
       assert.notStrictEqual(r.status, 400, JSON.stringify(r.body));
     });
 
-  // ── D. THE DECLARED RESIDUAL, ASSERTED SO IT IS A DECISION ──────────────
-  section('D. an ABSENT ?action= is NOT refused -- recorded, not discovered later');
+  // ── D. THE RESIDUAL b21 DECLARED, NOW CLOSED (b22) ────────────────
+  // THESE ARMS ARE RE-AIMED, NOT DELETED, and the difference is the point.
+  // b21 asserted that an ABSENT ?action= reaches handlePush and said IN THE ARM
+  // TEXT that if that ever changed, THIS is the arm to update. It changed; this
+  // is that update. Deleting D1 to go green would have destroyed the only
+  // record that the old behaviour was a DECISION rather than an oversight, so
+  // the old expectation is quoted in each arm and the reason it reversed is
+  // named at the line.
+  section('D. an ABSENT ?action= is REFUSED too (b22) -- the residual b21 declared, closed after censusing every caller');
 
-  await t('D1. no ?action= and no data_type still reaches handlePush. This is a '
-        + 'DELIBERATE residual: the change refuses an UNKNOWN action, and '
-        + 'narrowing an ABSENT one is a second decision with a different blast '
-        + 'radius (stonedesk.html:7795 sends neither). Asserted so the next '
-        + 'session finds it written down instead of finding it', async () => {
+  await t('D1. no ?action= and no data_type is REFUSED 400 UNKNOWN_ACTION and '
+        + 'writes NOTHING. RE-AIMED in b22: in b21 this arm asserted '
+        + 'notStrictEqual(400) and strictEqual(200), because the absent case was '
+        + 'a declared residual then. Closed after a census of EIGHT /api/bridge '
+        + 'call sites found that every LEGITIMATE action-less caller signals '
+        + 'data_type:proxy_get and is matched BEFORE this branch', async () => {
     const r = await call(handler, '/api/bridge', PUSH_BODY);
-    assert.notStrictEqual(r.status, 400,
-      'an absent action is now refused -- if that was intended, this arm is '
-      + 'the one to update, and the handler comment must change with it');
-    assert.strictEqual(r.status, 200, JSON.stringify(r.body));
+    assert.strictEqual(r.status, 400,
+      'an absent action is no longer refused -- b22 closed this residual, so a '
+      + '200 here is a REGRESSION of that decision rather than the old '
+      + 'behaviour legitimately returning: status was ' + r.status);
+    assert.strictEqual(r.body.error.code, 'UNKNOWN_ACTION',
+      JSON.stringify(r.body));
+    assert.strictEqual(r.upserts.length, 0,
+      'an action-less request still wrote a bridge_data row');
   });
 
-  await t('D2. ...and the sairn-mobile-sync envelope stonedesk.html:7795 sends '
-        + 'reaches handlePush too. It carries no jobs/invoices/employees, so '
-        + 'the row it writes is three nulls -- which is the REAL open finding '
-        + 'and is routed rather than fixed here', async () => {
+  await t('D1b. ...and the message says NO ACTION WAS GIVEN rather than naming a '
+        + 'bogus one. An absent selector and a misspelled selector are different '
+        + 'mistakes that a caller fixes differently, so ONE branch answers both '
+        + 'and the WORDING still tells them apart', async () => {
+    const absent = await call(handler, '/api/bridge', PUSH_BODY);
+    const bogus = await call(handler, '/api/bridge?action=nope', PUSH_BODY);
+    assert.ok(/no action was given/i.test(absent.body.error.message),
+      absent.body.error.message);
+    assert.ok(/no such action/i.test(bogus.body.error.message),
+      bogus.body.error.message);
+    // BOTH still name the accepted set, so the refusal is derived from
+    // KNOWN_ACTIONS on both paths and not written out on one of them.
+    for (const m of [absent.body.error.message, bogus.body.error.message]) {
+      assert.ok(/\?action=push/.test(m) && /\?action=proxy_get/.test(m), m);
+    }
+  });
+
+  await t('D1c. an EMPTY ?action= is refused too, and this is the arm that proves '
+        + 'the guard tests for a MISSING NAME and not a MISSING PARAMETER -- '
+        + 'getQueryParam returns null for one and the empty string for the '
+        + 'other, and a guard written against only null would let this through '
+        + 'to handlePush', async () => {
+    const r = await call(handler, '/api/bridge?action=', PUSH_BODY);
+    assert.strictEqual(r.status, 400, JSON.stringify(r.body));
+    assert.strictEqual(r.body.error.code, 'UNKNOWN_ACTION');
+    assert.strictEqual(r.upserts.length, 0);
+  });
+
+  await t('D2. THE THREE-NULL WRITE IS GONE. RE-AIMED in b22: in b21 this arm '
+        + 'asserted that stonedesk.html:7795 sairn-mobile-sync envelope reached '
+        + 'handlePush and UPSERTED {jobs:null, invoices:null, employees:null}. '
+        + 'That was the real finding b21 routed, and the absent-action refusal '
+        + 'closes it AT THE ENDPOINT -- the envelope is refused and writes no '
+        + 'row at all', async () => {
     const r = await call(handler, '/api/bridge',
       { app_id: 'stonedesk', event_type: 'pos_sale', source_device: 'mobile',
         timestamp: '2026-10-19T00:00:00.000Z', payload: { num: 'INV-1' } });
-    assert.strictEqual(r.status, 200, JSON.stringify(r.body));
-    assert.strictEqual(r.upserts.length, 1);
-    const sent = JSON.parse(r.upserts[0].body);
-    const row = Array.isArray(sent) ? sent[0] : sent;
-    assert.deepStrictEqual(row.data, { jobs: null, invoices: null, employees: null },
-      'the envelope payload is now being stored -- that is a behaviour change '
-      + 'this suite did not ask for: ' + JSON.stringify(row.data));
+    assert.strictEqual(r.status, 400, JSON.stringify(r.body));
+    assert.strictEqual(r.body.error.code, 'UNKNOWN_ACTION');
+    assert.strictEqual(r.upserts.length, 0,
+      'the three-null row is STILL being written: ' + JSON.stringify(r.upserts));
   });
 
-  // ── E. ABLATION -- remove the guard and A1 must go RED ──────────────────
+  await t('D2b. ...and so are the OTHER TWO action-less callers the b22 census '
+        + 'found -- stonedesk.html:2954 sendToNetwork {type:learn} and :19939 '
+        + 'sairnSyncAll {type:full-sync}. NEITHER was known to b21, which '
+        + 'grepped the literal URL and missed every caller that goes through a '
+        + 'BRIDGE / SAIRN_BRIDGE constant', async () => {
+    const learn = await call(handler, '/api/bridge',
+      { from: 'stonedesk', to: 'network', type: 'learn', payload: { x: 1 } });
+    const sync = await call(handler, '/api/bridge',
+      { from: 'stonedesk', to: 'all', type: 'full-sync',
+        timestamp: '2026-10-19T00:00:00.000Z' });
+    for (const pair of [['sendToNetwork', learn], ['sairnSyncAll', sync]]) {
+      const name = pair[0], r = pair[1];
+      assert.strictEqual(r.status, 400, name + ': ' + JSON.stringify(r.body));
+      assert.strictEqual(r.body.error.code, 'UNKNOWN_ACTION', name);
+      assert.strictEqual(r.upserts.length, 0, name + ' wrote a row');
+    }
+  });
+
+  await t('D2c. AND THE CALLER-SIDE DEFECT THIS DOES *NOT* FIX, asserted so the '
+        + 'refusal is not credited with closing it: the endpoint answers 400 '
+        + 'with a machine-readable code, and stonedesk.html:19939 will STILL '
+        + 'toast "All apps synced" -- fetch RESOLVES on a 4xx, so its catch '
+        + 'never runs. The refusal turns 401 into 400 and changes nothing the '
+        + 'user sees. stonedesk.html is claimed; this is routed', async () => {
+    const r = await call(handler, '/api/bridge',
+      { from: 'stonedesk', to: 'all', type: 'full-sync' });
+    assert.strictEqual(r.status, 400, JSON.stringify(r.body));
+    assert.ok(r.body && r.body.error && r.body.error.code === 'UNKNOWN_ACTION',
+      'the refusal must carry a machine-readable code, because branching on '
+      + 'res.ok or on this code is the only way a caller can stop claiming '
+      + 'success it did not have');
+  });
+
+  // ── E. ABLATION -- remove the guard and D1 AND A1 must go RED ───────
+  // b22 ADDS AN ABSENT-ACTION ABLATION (E3) beside the unknown-action one,
+  // because an ablation that reddens A1 alone does NOT show the ABSENT case
+  // is held by anything -- ONE condition now covers both, so an ablation of
+  // it has to be shown to redden BOTH, or D1 could be passing because the
+  // handler happens to refuse somewhere else entirely.
   section('E. ABLATION -- the OLD fall-through, and A1 fails on it');
 
   await t('E1. with the unknown-action refusal REMOVED, ?action=maps-optimize '
@@ -273,11 +361,14 @@ const PUSH_BODY = { invoices: [{ id: 'i1', amount: 10 }] };
     // Cut exactly the refusal, by its own code constant, and leave the rest of
     // the file byte-identical. Anchored on the `if (action !== null` condition
     // through its closing `}` so the ablation cannot silently remove more.
-    const start = src.indexOf("  if (action !== null && action !== undefined && action !== ''");
+    const start = src.indexOf(GUARD_ANCHOR);
     assert.notStrictEqual(start, -1, 'the guard was not found -- this ablation '
-      + 'is anchored on source text and the anchor has drifted, which means it '
-      + 'is no longer ablating anything. FIX THE ANCHOR, do not delete the arm');
-    const end = src.indexOf('\n  return handlePush(body, res, req);', start);
+      + 'is anchored on SOURCE TEXT and the anchor has drifted, which means it '
+      + 'is no longer ablating anything. FIX THE ANCHOR, DO NOT DELETE THE ARM. '
+      + 'Last re-seated in b22 when the condition became `!action || ...`; the '
+      + 'arm caught its own staleness that time, which is the whole reason it '
+      + 'asserts the anchor exists before trusting the ablation');
+    const end = src.indexOf(FALLTHROUGH_ANCHOR, start);
     assert.notStrictEqual(end, -1, 'the fall-through after the guard was not found');
     const ablated = src.slice(0, start) + src.slice(end + 1);
     // ASSERT ON THE CODE LITERAL, NOT THE BARE NAME. The first draft of this
@@ -315,8 +406,8 @@ const PUSH_BODY = { invoices: [{ id: 'i1', amount: 10 }] };
         + 'handler still serves ?action=push normally. Without this, E1 would '
         + 'also pass if the ablation had simply corrupted the file', async () => {
     const src = fs.readFileSync(path.join(__dirname, 'bridge.js'), 'utf8');
-    const start = src.indexOf("  if (action !== null && action !== undefined && action !== ''");
-    const end = src.indexOf('\n  return handlePush(body, res, req);', start);
+    const start = src.indexOf(GUARD_ANCHOR);
+    const end = src.indexOf(FALLTHROUGH_ANCHOR, start);
     const ablated = src.slice(0, start) + src.slice(end + 1);
     const tmp = path.join(__dirname,
       '.bridge-ablated-clean-' + process.pid + '.js');
@@ -326,6 +417,58 @@ const PUSH_BODY = { invoices: [{ id: 'i1', amount: 10 }] };
       const r = await call(h, '/api/bridge?action=push', PUSH_BODY);
       assert.strictEqual(r.status, 200, JSON.stringify(r.body));
       assert.strictEqual(r.upserts.length, 1);
+    } finally {
+      try { fs.unlinkSync(tmp); } catch (e) { /* best effort */ }
+    }
+  });
+
+  await t('E3. ABLATION, THE ABSENT HALF: with the same guard cut, an '
+        + 'action-less request reaches handlePush and UPSERTS. So D1 is held by '
+        + 'THIS condition and not by an unrelated refusal further down -- one '
+        + 'condition covers both cases now, and an ablation of it must redden '
+        + 'both or neither arm is attributable', async () => {
+    const s0 = fs.readFileSync(path.join(__dirname, 'bridge.js'), 'utf8');
+    const start = s0.indexOf(GUARD_ANCHOR);
+    assert.notStrictEqual(start, -1, 'the guard was not found -- re-seat the '
+      + 'anchor, do not delete the arm');
+    const end = s0.indexOf(FALLTHROUGH_ANCHOR, start);
+    assert.notStrictEqual(end, -1, 'the fall-through after the guard was not found');
+    const ablated = s0.slice(0, start) + s0.slice(end + 1);
+    assert.ok(!/code: 'UNKNOWN_ACTION'/.test(ablated),
+      'the ablation left the refusal in place, so this arm proves nothing');
+    const tmp = path.join(__dirname, '.bridge-abl-absent-' + process.pid + '.js');
+    fs.writeFileSync(tmp, ablated, 'utf8');
+    try {
+      const h = require(tmp);
+      const r = await call(h, '/api/bridge', PUSH_BODY);
+      assert.strictEqual(r.status, 200,
+        'the ablated handler did not reach handlePush on an ABSENT action: '
+        + r.status + ' ' + JSON.stringify(r.body));
+      assert.strictEqual(r.upserts.length, 1,
+        'the ablated handler refused an action-less request anyway, so D1 may '
+        + 'be passing for a reason other than this guard');
+    } finally {
+      try { fs.unlinkSync(tmp); } catch (e) { /* best effort */ }
+    }
+  });
+
+  await t('E4. NEGATIVE CONTROL ON THE ABLATION ITSELF: the ablated handler still '
+        + 'relays a data_type:proxy_get body. Without this, E1 and E3 could both '
+        + 'be measuring a file that no longer routes anything rather than one '
+        + 'with a single guard removed', async () => {
+    const s0 = fs.readFileSync(path.join(__dirname, 'bridge.js'), 'utf8');
+    const start = s0.indexOf(GUARD_ANCHOR);
+    const end = s0.indexOf(FALLTHROUGH_ANCHOR, start);
+    const ablated = s0.slice(0, start) + s0.slice(end + 1);
+    const tmp = path.join(__dirname, '.bridge-abl-ctl-' + process.pid + '.js');
+    fs.writeFileSync(tmp, ablated, 'utf8');
+    try {
+      const h = require(tmp);
+      const r = await call(h, '/api/bridge',
+        { data_type: 'proxy_get',
+          payload: { url: 'https://api.stlouisfed.org/fred/series/observations?x=1' } });
+      assert.notStrictEqual(r.status, 400, JSON.stringify(r.body));
+      assert.strictEqual(r.upserts.length, 0, 'a proxy_get wrote a row');
     } finally {
       try { fs.unlinkSync(tmp); } catch (e) { /* best effort */ }
     }

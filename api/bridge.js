@@ -241,23 +241,64 @@ module.exports = async (req, res) => {
   // from KNOWN_ACTIONS rather than written out, so a fourth action cannot be
   // added without the message following it.
   //
-  // AN ABSENT ?action= IS DELIBERATELY *NOT* REFUSED HERE, and that is a
-  // declared residual rather than an oversight. The instruction was to refuse
-  // an UNKNOWN action; an absent one is a different case with a different
-  // blast radius -- stonedesk.html:7795 sends no action and no data_type, and
-  // narrowing it in the same change would be two decisions in one line. It
-  // already fails (401, inside a `.catch(){}` that swallows it, so nobody has
-  // ever seen the error), and it is routed as open work rather than widened or
-  // quietly narrowed. The named-verb lesson from api/_lib/law-roles.js applies:
-  // a verb this file NAMES is defined on a named set and is meaningless off
-  // it, and an unknown verb must not ride in on another handler's gate.
-  if (action !== null && action !== undefined && action !== ''
-      && KNOWN_ACTIONS.indexOf(action) === -1) {
+  // ── AND AN ABSENT ?action= IS NOW REFUSED THE SAME WAY (b22) ──────────
+  // b21 left this open on purpose and said so: it refused an UNKNOWN action
+  // and declared the absent case as a residual, because narrowing both in one
+  // line would have been two decisions at once. THIS IS THAT SECOND DECISION,
+  // taken after establishing the one fact it depends on.
+  //
+  // THE QUESTION THAT HAD TO BE ANSWERED FIRST: does any LEGITIMATE caller
+  // omit `?action=`? Answered by censusing every `/api/bridge` fetch in every
+  // app file -- EIGHT call sites, not the three b21 found, because b21 grepped
+  // for the literal URL and missed the ones that go through a `BRIDGE` /
+  // `SAIRN_BRIDGE` / `FM_API` constant:
+  //
+  //   LEGITIMATE, and all four are UNAFFECTED by this refusal:
+  //     stonedesk.html:20381    ?action=push                 the one push caller
+  //     sairnbuild.html:7754    data_type:'proxy_get'        body signal
+  //     stonedesk.html:41857    data_type:'proxy_get'        body signal
+  //     stonedesk.html:41943    data_type:'proxy_get'        body signal
+  //
+  //   NOT LEGITIMATE -- three callers naming an action this endpoint has never
+  //   had, all of which omit `?action=` AND omit `data_type`:
+  //     stonedesk.html:7795     {app_id, event_type:'pos_sale', ...}
+  //     stonedesk.html:2954     {from, to:'network',  type:'learn'}
+  //     stonedesk.html:19939    {from, to:'all', type:'full-sync'}
+  //
+  // THE PROXY_GET BODY SIGNAL IS MATCHED ABOVE THIS BLOCK, so every legitimate
+  // action-less caller has already returned by the time control reaches here.
+  // That is what makes refusing the rest safe, and it is why the branch order
+  // is load-bearing rather than incidental.
+  //
+  // WHAT THE THREE ILLEGITIMATE CALLERS DO TODAY, and one is worse than b21
+  // recorded: all three reach `handlePush`, which answers 401 NO_LICENCE
+  // because none sends an Authorization header. :7795 and :2954 swallow it in
+  // a bare `.catch(){}`. **:19939 DOES NOT EVEN FAIL QUIETLY -- IT REPORTS
+  // SUCCESS.** `fetch` only rejects on a transport error, so a 401 RESOLVES,
+  // its `catch` never runs, and `sairnSyncAll` sets "Last sync: <time>" and
+  // toasts "All apps synced" having synced nothing. That is a false success
+  // claim to the user's face, and it is in `stonedesk.html`, which is claimed
+  // -- so it is reported and routed, NOT fixed here.
+  //
+  // THIS REFUSAL DOES NOT FIX THAT FALSE CLAIM and does not make it worse: the
+  // caller will read 400 where it read 401 and still say "All apps synced".
+  // Said plainly so the change is not credited with more than it does.
+  //
+  // ONE CONDITION, BOTH CASES. `action` absent and `action` unrecognised are
+  // the same answer now -- a request that does not NAME a supported action is
+  // refused -- so there is one branch to read and one message to maintain
+  // rather than two that can drift. `getQueryParam` returns `null` for a
+  // missing param and PostgREST-style empty (`?action=`) arrives as `''`, so
+  // both are covered by the falsy test rather than by enumerating them.
+  if (!action || KNOWN_ACTIONS.indexOf(action) === -1) {
     res.status(400).json({ error: { code: 'UNKNOWN_ACTION', message:
-      'No such action: ' + JSON.stringify(String(action)) + '. This endpoint '
-      + 'accepts ' + KNOWN_ACTIONS.map(function (a) { return '?action=' + a; })
-        .join(' or ') + ' (proxy_get may also be signalled by '
-      + 'data_type in the body). Nothing was read and nothing was written.' } });
+      (action
+        ? 'No such action: ' + JSON.stringify(String(action)) + '. '
+        : 'No action was given. ')
+      + 'This endpoint accepts '
+      + KNOWN_ACTIONS.map(function (a) { return '?action=' + a; }).join(' or ')
+      + ' (proxy_get may also be signalled by data_type in the body). '
+      + 'Nothing was read and nothing was written.' } });
     return;
   }
   return handlePush(body, res, req);
