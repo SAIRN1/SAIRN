@@ -1,0 +1,38 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "cc",
+  "batch": "b20",
+  "id_lock": "acc5585cac164c2c",
+  "items": [
+    {
+      "id": 1,
+      "title": "",
+      "status": "open",
+      "evidence": ""
+    },
+    {
+      "id": 2,
+      "title": "",
+      "status": "open",
+      "evidence": ""
+    },
+    {
+      "id": 3,
+      "title": "",
+      "status": "open",
+      "evidence": ""
+    },
+    {
+      "id": 4,
+      "title": "",
+      "status": "open",
+      "evidence": ""
+    },
+    {
+      "id": 5,
+      "title": "",
+      "status": "open",
+      "evidence": ""
+    }
+  ]
+}
