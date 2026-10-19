@@ -4208,8 +4208,8 @@
       "task": "b23 defect_register --check must require a cited commit be an ANCESTOR of origin/main or HEAD rather than merely resolvable, so a reflog orphan cannot pass a check that fails in every other clone; FMEA drafts for the three b22 files plus eight of hank's b18-owed files; wire hank's two b18 suites into the push gate seam registry. FILES: tools/defect_register.py tools/sairn_push_gate_hook.py docs/fmea/ docs/2026-10-19-cc-b23-ancestor-and-fmea.md docs/batch-manifest-cc-b23.json SAIRN-handoff-cc-b23.md SAIRN-report-cc-b23.txt SAIRN-digest-cc-b23.txt NOT-docs-defect-density-register-json-hank-holds-it",
       "claimed_at": "2026-10-19T19:04:33Z",
       "claimed_at_epoch": 1792436673.822041,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-19T20:44:50Z",
       "files": [
         "SAIRN-digest-cc-b23.txt",
         "SAIRN-handoff-cc-b23.md",
