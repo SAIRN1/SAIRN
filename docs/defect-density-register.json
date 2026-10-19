@@ -33703,7 +33703,7 @@
       "recurrence_open": "The fixtures lock the SPLIT only. Nothing checks that the index's own rows are well formed -- a row that genuinely carries the wrong number of columns is still only noticed if somebody counts, and the three undeclared near-duplicate pairs this tool reports remain unresolved and belong to the rows' authors. Nor does anything compare this tool's parse against the parse used by open_work_shard.py or by any renderer, so a second naive split elsewhere would not be caught by this fixture set."
     },
     {
-      "commit": "218a3abf73e7",
+      "commit": "40275ee5d2cc",
       "date": "2026-10-19",
       "subject": "fix(tests): bld_bids could lose its pending tracking END TO END with the suite green, and bld_draws had no arm at all",
       "files": [
