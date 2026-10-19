@@ -33651,63 +33651,6 @@
       "single_factor_note": "not applicable -- three factors"
     },
     {
-      "commit": "fed240ec418b",
-      "date": "2026-10-19",
-      "subject": "fix(bridge b21): an unknown ?action= is refused, not silently treated as a push",
-      "files": [
-        "api/bridge-unknown-action.test.js",
-        "api/bridge.js"
-      ],
-      "lines_added": 397,
-      "lines_removed": 0,
-      "app": "stonedesk",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "api/bridge.js's dispatch fell through to handlePush for EVERY unknown ?action=, so a request naming an action that has never existed was answered 401 NO_LICENCE or 403 -- a credential diagnosis for a routing fault. THREE LIVE CALL SITES land there, measured by grepping every app file for the URL rather than reasoned about: stonedesk.html:12814 (?action=maps-static), :12927 (?action=maps-optimize), and :7795, which sends no action and no data_type and a sairn-mobile-sync envelope body, reaches handlePush and UPSERTS a bridge_data row of {jobs:null, invoices:null, employees:null}. The wrong-layer diagnosis is the same class Guardian check 30 records costing a session a hunt for a RESEND_API_KEY that was present and correct the whole time; the null-row write is a silent failure, swallowed by a bare .catch(). FIX: KNOWN_ACTIONS = [push, proxy_get], spelled once, with the 400 UNKNOWN_ACTION refusal DERIVING its message from that array so a fourth action cannot be added to the gate without the message following. `pull` is deliberately absent and an arm asserts the absence -- it was removed 2026-09-17 for serving one tenant's data to an unauthenticated GET keyed on a RAW LICENCE KEY, and a refusal that advertises a withdrawn read side is worse than no refusal. ARMS: api/b21-bridge-unknown-action.test.js, 14 arms 0 failed, including the negative control the defect needs (a LICENCE-HEADED and SESSION-HEADED POST to an unknown action returns 400 and writes ZERO rows -- the valid credentials are the point, because without them a 401 arrives whether the refusal exists or not), A4 (an unauthenticated unknown action is still UNKNOWN_ACTION and never NO_LICENCE), C1-C3 controls proving the one live push caller and both proxy_get spellings still work, and E1 ABLATION (guard cut from a lifted copy -> the unknown action reaches handlePush and upserts, the pre-fix behaviour reproduced) with E2 CLEAN proving the ablation is a removal and not a corrupted file. NOT CLOSED BY THIS FIX, declared rather than left to be found: an ABSENT ?action= is still accepted and still reaches handlePush (arm D1 asserts that residual on purpose), and the three CALLERS are unchanged because stonedesk.html is held by fourth under a live b34 claim -- routed as an open-work row instead. UNVERIFIED LIVE: the refusal is not deployed at the time of this record, so every arm is against the handler and none against the URL.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "df84b213f14e",
-        "date": "2026-07-31",
-        "subject": "feat: build api/bridge.js (proxy_get + push/pull) \u2014 Guardian scan clean",
-        "lag_days": 80
-      },
-      "citation_note": "No standing coding rule in tools/coding_rule_discovery.py's registry names this shape. The shape is \"a dispatcher's final branch is an unguarded fall-through, so an unrecognised selector silently becomes the last handler's input\" -- which is the same class api/_lib/law-roles.js's NAMED_VERB_RESOURCES block fixed for `prepare` and `reconcile`, and the same class api/_lib/countersign-endpoint.js's ACTIONS allowlist already prevents. Recorded as not-citable rather than forced into the nearest bin, and named here so a future rule can cite this record as its first instance.",
-      "phase_note": "Coding. The plan was right -- the file's own header has documented exactly two POST actions since it was written in 2026-07-31, and `pull` was removed from it deliberately in 2026-09-17. The expression was wrong: the dispatch's last line was a bare `return handlePush(...)` where it needed an allowlist check first. Not design: nothing about the two-action structure had to change, and the fix is one guard plus a constant. Not config: no grant, env var or migration is involved.",
-      "contributing_factors": [
-        {
-          "factor": "The dispatcher's last branch was an unguarded fall-through, so an unrecognised ?action= became handlePush's input instead of a refusal. No allowlist existed at all.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "KNOWN_ACTIONS = [push, proxy_get], spelled once, with the 400 UNKNOWN_ACTION refusal DERIVING its message from the array so the gate and the message cannot drift apart."
-        },
-        {
-          "factor": "The refusal the caller actually received named a LICENCE, because handlePush's first gate is the licence check. So the symptom pointed at credentials while the cause was routing -- the caller had no way to learn the action does not exist.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "The refusal is now raised BEFORE any credential gate, and an arm (A4) asserts that an UNAUTHENTICATED unknown action still answers UNKNOWN_ACTION and never NO_LICENCE."
-        },
-        {
-          "factor": "Two of the three callers wrap the request in a bare .catch(){}, and the third's failure is also swallowed, so no operator or log ever surfaced the 401. The endpoint and the callers each looked fine in isolation.",
-          "kind": "latent-condition",
-          "action_status": "planned",
-          "action": "Open-work row BRIDGE-DEAD-CALL-SITES-HANK-2026-10-19 routes the caller-side fix to fourth, who holds stonedesk.html under a live b34 claim. The two Field Map catch arms must stop naming the Maps API key, and :7795 must send a real action or be deleted."
-        },
-        {
-          "factor": "api/bridge.js had no suite covering its dispatch at all. api/bridge-push-auth.test.js covers push authorisation thoroughly (27 arms) and never asks what happens to an action that is not push.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "api/b21-bridge-unknown-action.test.js, 14 arms, with the negative control the defect needs (licence-headed and session-headed POST to an unknown action -> 400 and ZERO upserts) and an ABLATION (E1) that reproduces the pre-fix behaviour so the arm cannot pass for another reason."
-        }
-      ],
-      "recurrence_open": "An ABSENT ?action= is STILL accepted and still reaches handlePush -- arm D1 asserts that residual deliberately, because refusing it is a second decision with a different blast radius (stonedesk.html:7795 sends neither an action nor a data_type). The THREE CALLERS are unchanged: stonedesk.html is held by fourth under a live b34 claim, so the caller half is routed rather than fixed, and until it lands :7795 keeps upserting a bridge_data row of three nulls. AND THE REFUSAL IS NOT DEPLOYED at the time of this record, so every arm is against the handler and none against the live URL -- a 401 from the deployed endpoint today is evidence about the licence gate and none about this fix."
-    },
-    {
       "commit": "1d97c4b9446c",
       "date": "2026-10-19",
       "subject": "fix(index check): the rows hank reported as malformed were already repaired, and the real defect was in the tool reading them",
@@ -34244,6 +34187,66 @@
       "factors_unknown_reason": "found and fixed in one sitting with the fix itself as the record; no separate RCA factor pass was run beyond what the commit message already states"
     },
     {
+      "commit": "9d50fe419d9d",
+      "date": "2026-10-19",
+      "subject": "fix(register): a citation is only a citation if a ref reaches it -- ancestor, not merely resolvable",
+      "files": [
+        "docs/2026-10-19-cc-b23-ancestor-and-fmea.md",
+        "docs/fmea/api__lib_audit.js.json",
+        "docs/fmea/api__lib_sf-roles.js.json",
+        "docs/fmea/api_b18-countersign-lock.test.js.json",
+        "docs/fmea/api_b18-passkey-profile-e2e.test.js.json",
+        "docs/fmea/api_sairncash_verify.js.json",
+        "docs/fmea/api_sd-data-cross-tenant-dispatchers.test.js.json",
+        "docs/fmea/sql_sairnlegacy_audit_log_schema.sql.json",
+        "docs/fmea/tests_run_push_gate_preflight_probe.py.json",
+        "docs/fmea/tools_audit_event_type_check.py.json",
+        "docs/fmea/tools_status_board_bridge_check.py.json",
+        "docs/fmea/tools_wcag_contrast_check.py.json",
+        "tools/defect_register.py",
+        "tools/sairn_push_gate_hook.py"
+      ],
+      "lines_added": 18165,
+      "lines_removed": 9,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/defect_register.py --check accepted any cited sha that 'git rev-parse --verify' would take, which accepts a DANGLING OBJECT for as long as the local reflog holds it. So the check's verdict depended on WHO RAN IT: in b22 origin/main carried three records citing 634f7d70, a commit that exists in no clone but cc's own reflog, and --check printed OK in cc while the identical records would have failed on an absent commit anywhere else. A citation is only a citation if a ref another clone can reach actually reaches it.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The acceptance contract predates the 2026-09-16 commit that added reachable() and explicitly left --check unchanged; the resolvable-only test has been there since the function was first written and no single commit introduced it. Naming an arbitrary one would be a guess dressed as a lag measurement."
+      },
+      "contributing_factors": [
+        {
+          "factor": "resolvability and reachability were treated as the same question, and resolvability is a fact about ONE clone while a register is shared",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "--check now requires the cited sha to be an ancestor of origin/main OR HEAD, the union, so legitimate pre-push work is still a valid citation while a reflog orphan is not; --selfcheck-reachability holds it with 16 arms and synthesises the dangling commit with git commit-tree rather than naming the real one"
+        },
+        {
+          "factor": "the summary line claimed every commit RESOLVES, which was literally what it checked, so nothing in the output told a reader the weaker question had been asked",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the OK line now names the refs it measured against, and an absent ref prints COULD NOT CHECK REACHABILITY rather than a pass"
+        },
+        {
+          "factor": "a correct post-rewrite reseat that is never committed is invisible: the hook repairs the working tree and nothing says the repair is pending",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "have the reseat path, or a push-time check, notice an uncommitted register reseat and name it; not built here because it belongs to the hook rather than to --check, and the register file is under another session claim this batch"
+        }
+      ],
+      "recurrence_open": "Two further defects were introduced INSIDE this fix and caught before commit, so they are deliberately not recorded as shipped defects: a 43-second regression from calling reachable() per record, which timed out the register probe at 420s, and an ancestor cache keyed on refs while REPO is a module global that a probe reassigns. Neither reached origin. What remains open is that nothing checks a probe or a gate for having become slow enough to be excluded from the sweep -- an excluded check reports nothing and looks exactly like one that passed."
+    },
+    {
       "commit": "a61abc5ae46e",
       "date": "2026-10-19",
       "subject": "fix(filters): three selections that silently picked the wrong set and reported clean over it",
@@ -34559,64 +34562,238 @@
       "recurrence_open": "E3b MEASURED THE typeof GUARD ALONE AND IT CHANGES NOTHING -- the per-step try covers it, so the guard is defence in depth and NOT the load-bearing layer. Recorded because an arm claiming otherwise would have been a green claim about a layer doing no work. And the pattern is unswept: other handlers in this file call unguarded globals after a confirmed success and nothing counts them."
     },
     {
-      "commit": "9d50fe419d9d",
+      "commit": "d4ff60efba3b",
       "date": "2026-10-19",
-      "subject": "fix(register): a citation is only a citation if a ref reaches it -- ancestor, not merely resolvable",
+      "subject": "fix(api b22): encode every identifier spliced into a PostgREST filter -- findings-register #1599, and the sweep found 15 sites not 3",
       "files": [
-        "docs/2026-10-19-cc-b23-ancestor-and-fmea.md",
-        "docs/fmea/api__lib_audit.js.json",
-        "docs/fmea/api__lib_sf-roles.js.json",
-        "docs/fmea/api_b18-countersign-lock.test.js.json",
-        "docs/fmea/api_b18-passkey-profile-e2e.test.js.json",
-        "docs/fmea/api_sairncash_verify.js.json",
-        "docs/fmea/api_sd-data-cross-tenant-dispatchers.test.js.json",
-        "docs/fmea/sql_sairnlegacy_audit_log_schema.sql.json",
-        "docs/fmea/tests_run_push_gate_preflight_probe.py.json",
-        "docs/fmea/tools_audit_event_type_check.py.json",
-        "docs/fmea/tools_status_board_bridge_check.py.json",
-        "docs/fmea/tools_wcag_contrast_check.py.json",
-        "tools/defect_register.py",
-        "tools/sairn_push_gate_hook.py"
+        "api/agent/enqueue.js",
+        "api/agent/poll.js",
+        "api/agent/register.js",
+        "api/agent/result.js",
+        "api/agent/stripe-webhook.js",
+        "api/b22-postgrest-filter-encoding.test.js",
+        "api/legal-citator.js",
+        "api/sairndental/public-complaint-submit.js"
       ],
-      "lines_added": 18165,
-      "lines_removed": 9,
-      "app": "tooling",
-      "layer": "tooling",
+      "lines_added": 351,
+      "lines_removed": 14,
+      "app": "PLATFORM",
+      "layer": "product",
       "severity": "high",
-      "detection_method": "code-review",
-      "summary": "tools/defect_register.py --check accepted any cited sha that 'git rev-parse --verify' would take, which accepts a DANGLING OBJECT for as long as the local reflog holds it. So the check's verdict depended on WHO RAN IT: in b22 origin/main carried three records citing 634f7d70, a commit that exists in no clone but cc's own reflog, and --check printed OK in cc while the identical records would have failed on an absent commit anywhere else. A citation is only a citation if a ref another clone can reach actually reaches it.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
+      "detection_method": "independent-review",
+      "summary": "Findings register #1599: identifiers were interpolated RAW into PostgREST filter URLs while the same value was encoded correctly elsewhere in the same file. PostgREST reads its filters from the query string and nothing downstream quotes or escapes them, so an `&` in a spliced value STARTS A NEW PARAMETER: a command_id of 'x&select=*&order=created_at.desc' turned ?id=eq.x&agent_id=eq.<uuid>&select=id into a query carrying a caller-chosen projection and ordering. The ownership filter is still ANDed, so this is not cross-tenant read -- it is a caller reshaping the row the handler then reads cmds[0].id out of. #1599 NAMES THE WORST VERSION: api/agent/enqueue.js encoded agent_id at :126 and spliced THE SAME VALUE raw at :77. One file, one identifier, both spellings -- a reviewer who greps for encodeURIComponent finds it PRESENT and moves on, and a grep for the right thing cannot show an absence. THE SWEEP FOUND 15 PRODUCTION SITES ACROSS 7 FILES, not the 3 the finding named, derived by a detector over every api/**/*.js rather than assembled by eye: enqueue.js:77 (agent_id, request body), result.js:66 x2 (command_id from the body, agentId) and :79 (command_id), result.js:55 / poll.js:63 / register.js:47 (tokenHash), poll.js:93/:104/:112 and register.js:62 (agent.id, cmd.id), stripe-webhook.js:177 (agentId), legal-citator.js:467/:494 (clusterId, citedClusterId), public-complaint-submit.js:88 (submissionKey). ALL 15 FIXED with 14 exact unique-substring edits, one of which carried two values; the patcher REFUSES if a target is absent or appears more than once, so a silent partial application is impossible. api/_lib/leg-overlap.js:122-123 is a FALSE POSITIVE and is left alone -- it encodes through a NAMESPACED encoder (spec.enc) that a bare-name check cannot see, allowlisted in the standing arm BY SHAPE so a genuinely raw splice in that same file still fails. ARMS: api/b22-postgrest-filter-encoding.test.js, 9 arms. A1 drives the real handler and asserts what the URL does NOT contain -- the `&` COUNT is what distinguishes encoded from merely present. B1/B2 are the negative control: a benign uuid is byte-identical after encoding and the handler still completes its PATCH, so the fix is not a wall. C1 is the ablation and C2 its clean control. D1 is a STANDING SWEEP ARM asserting zero production splices, and D2 feeds the detector a known-bad line because a detector that only ever returns clean is indistinguishable from one that matches nothing.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
       "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "unknown_reason": "The acceptance contract predates the 2026-09-16 commit that added reachable() and explicitly left --check unchanged; the resolvable-only test has been there since the function was first written and no single commit introduced it. Naming an arbitrary one would be a guess dressed as a lag measurement."
+        "commit": "e4b67bf497cd",
+        "date": "2026-07-09",
+        "subject": "Add SAIRN on-prem agent system: Supabase schema, register/poll/result/enqueue endpoints, standalone agent script with local-whitelist-only operation model, provisioning script, and README. Outbound-only from the agent side; agent refuses any operation not in its own local config. Known limitations documented in README (enqueue.js has no per-customer session auth yet, ~8-10s latency, only sql_query/file_read operation kinds implemented).",
+        "lag_days": 102
       },
+      "citation_note": "No standing coding rule names it, and this record is the argument for one: 'a value concatenated into a PostgREST filter must pass through encodeURIComponent at the point of concatenation' is mechanically checkable and now has a standing arm (D1) enforcing it on every api/ file. Recorded as not-citable rather than pushed into the nearest bin; whoever registers that rule should cite this record as its first instance.",
+      "phase_note": "Coding. The design was right and is visibly right in the same files -- enqueue.js:126 and legal-citator.js:348 both encode correctly, so the convention existed and was known. The expression was wrong at 15 sites. Not design: no structure had to change, each fix is one encoder call. Not config.",
       "contributing_factors": [
         {
-          "factor": "resolvability and reachability were treated as the same question, and resolvability is a fact about ONE clone while a register is shared",
-          "kind": "latent-condition",
+          "factor": "15 call sites concatenated a value straight into a filter string. PostgREST has no downstream quoting, so an `&` in the value becomes a query-parameter separator.",
+          "kind": "technical",
           "action_status": "done",
-          "action": "--check now requires the cited sha to be an ancestor of origin/main OR HEAD, the union, so legitimate pre-push work is still a valid citation while a reflog orphan is not; --selfcheck-reachability holds it with 16 arms and synthesises the dangling commit with git commit-tree rather than naming the real one"
+          "action": "All 15 wrapped in encodeURIComponent at the point of concatenation, by exact unique-substring edits that refuse an ambiguous or absent target."
         },
         {
-          "factor": "the summary line claimed every commit RESOLVES, which was literally what it checked, so nothing in the output told a reader the weaker question had been asked",
+          "factor": "The convention was PRESENT in the same files, which is what made it invisible: a reviewer greps for encodeURIComponent, finds hits, and concludes the file is clean. The defect is an ABSENCE and a grep for the right thing cannot show one.",
           "kind": "detection",
           "action_status": "done",
-          "action": "the OK line now names the refs it measured against, and an absent ref prints COULD NOT CHECK REACHABILITY rather than a pass"
+          "action": "A detector that matches the SHAPE (filter operator, quote, concatenation of a non-encoder expression) rather than the presence of the encoder, kept as standing arm D1 so it runs on every push instead of once."
         },
         {
-          "factor": "a correct post-rewrite reseat that is never committed is invisible: the hook repairs the working tree and nothing says the repair is pending",
+          "factor": "Two of the values -- command_id in result.js and agent_id in enqueue.js -- come straight from the request body with only a truthiness check, so they are attacker-controlled rather than database-derived.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Both encoded, and arm A1 drives the real handler with an injection payload rather than asserting that a string appears in the source."
+        },
+        {
+          "factor": "No suite anywhere asserted the class, so fixing the three sites the finding named would have left the other twelve and the sixteenth to be found the same way.",
           "kind": "process",
-          "action_status": "planned",
-          "action": "have the reseat path, or a push-time check, notice an uncommitted register reseat and name it; not built here because it belongs to the hook rather than to --check, and the register file is under another session claim this batch"
+          "action_status": "done",
+          "action": "D1 asserts the class across all of api/, and D2 proves the detector still finds a raw splice when fed one, so D1 cannot pass vacuously."
         }
       ],
-      "recurrence_open": "Two further defects were introduced INSIDE this fix and caught before commit, so they are deliberately not recorded as shipped defects: a 43-second regression from calling reachable() per record, which timed out the register probe at 420s, and an ancestor cache keyed on refs while REPO is a module global that a probe reassigns. Neither reached origin. What remains open is that nothing checks a probe or a gate for having become slow enough to be excluded from the sweep -- an excluded check reports nothing and looks exactly like one that passed."
+      "recurrence_open": "api/sd-data.js WAS NOT SWEPT and is NOT covered by this record. It is cody's file this batch, it is the largest handler on the platform, and it uses an enc() helper throughout -- so it is LIKELY clean, and LIKELY IS NOT MEASURED. Routed. The standing arm D1 walks only api/ and would catch a new splice there on the next run, which is the mitigation, not a measurement of today. Separately: D1 allowlists the namespaced-encoder shape (`spec.enc(...)`) by pattern, so a file that invents a THIRD encoder spelling would be silently skipped until somebody notices."
+    },
+    {
+      "commit": "e8041dbff8fa",
+      "date": "2026-10-19",
+      "subject": "fix(bridge b22): an ABSENT ?action= is refused too -- b21's declared residual, closed after a caller census",
+      "files": [
+        "api/b21-bridge-unknown-action.test.js",
+        "api/bridge.js"
+      ],
+      "lines_added": 229,
+      "lines_removed": 45,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "api/bridge.js refused an UNKNOWN ?action= since b21 but still let an ABSENT one fall through to handlePush. b22 closed it after establishing the one fact the decision needed: does any LEGITIMATE caller omit ?action=. ANSWERING IT FOUND MORE THAN b21 KNEW. b21 grepped the literal URL and reported THREE call sites; a census of every /api/bridge fetch in every app file, INCLUDING the ones reached through a BRIDGE / SAIRN_BRIDGE / FM_API constant, found EIGHT. Four are legitimate and all four are unaffected, because the proxy_get body signal is matched ABOVE the refusal: stonedesk.html:20381 (?action=push), sairnbuild.html:7754, stonedesk.html:41857 and :41943 (all data_type:proxy_get, the last two NEW to this census). Three name an action this endpoint has never had and omit both the query param and data_type: stonedesk.html:7795, :2954 sendToNetwork {type:learn} and :19939 sairnSyncAll {type:full-sync} -- the last two also NEW. AND ONE IS WORSE THAN b21 RECORDED. :7795 and :2954 swallow the 401 in a bare .catch(){}. :19939 DOES NOT FAIL QUIETLY -- IT REPORTS SUCCESS: fetch only rejects on a transport error, so a 401 RESOLVES, its catch never runs, and sairnSyncAll sets 'Last sync: <time>' and toasts 'All apps synced' having synced nothing. That is a false success claim to the user's face. FIX: one condition, `if (!action || KNOWN_ACTIONS.indexOf(action) === -1)`, so absent and unrecognised are the same answer and there is one branch and one message to maintain. The falsy test covers both a missing param (null) and `?action=` with no value (empty string), which a guard written against only null would let through. ARMS: api/b21-bridge-unknown-action.test.js grew 14 -> 20. D1/D2 were RE-AIMED not deleted -- b21's D1 asserted the old behaviour and said in its own text that if it ever changed, that arm was the one to update. D1c covers the empty-param case; D2b covers the two newly-found callers; D2c asserts what the fix does NOT close. E3 is an ABSENT-half ablation beside the existing unknown-half one, because ONE condition now covers both cases and an ablation of it has to be shown to redden BOTH; E4 is a negative control proving the ablated copy still routes. NOT CLOSED: the three CALLERS are unchanged -- stonedesk.html is held by fourth under a live b34 claim -- so sairnSyncAll will still claim success on the 400 this fix now returns. Routed, and arm D2c pins it.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "df84b213f14e",
+        "date": "2026-07-31",
+        "subject": "feat: build api/bridge.js (proxy_get + push/pull) \u2014 Guardian scan clean",
+        "lag_days": 80
+      },
+      "citation_note": "No standing coding rule names this shape. It is the same class as the unknown-action half recorded against 62825f3d/1813a231d in b21 -- a dispatcher's final branch is an unguarded fall-through, so a selector the file does not recognise silently becomes the last handler's input. b21's record is the first instance; this is the second, and the pair is the argument for a rule rather than two not-citable notes. Recorded as not-citable rather than forced into the nearest bin.",
+      "phase_note": "Coding. The plan was right -- the file's header has documented exactly two POST actions since 2026-07-31 and `pull` was deliberately removed in 2026-09-17. The expression was wrong twice over: first no allowlist at all, then an allowlist that tested only for an UNRECOGNISED name and not for a MISSING one. Not design: the two-action structure never had to change. Not config.",
+      "contributing_factors": [
+        {
+          "factor": "b21's guard tested `action !== null && action !== undefined && action !== '' && not-in-list`, which refuses an unrecognised name and accepts an absent one. Two cases, one of them unguarded.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "One condition, `!action || not-in-list`, so absent and unrecognised are the same answer. The falsy test also covers `?action=` with an empty value, which an explicit null check misses."
+        },
+        {
+          "factor": "b21's caller census grepped the literal string 'api/bridge' and therefore missed every caller that reaches the endpoint through a BRIDGE / SAIRN_BRIDGE / FM_API constant -- three of the eight, including the worst one.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The b22 census enumerated fetches AND constant declarations, and arm D2b pins the two newly-found callers by file and line so a future census cannot quietly lose them again."
+        },
+        {
+          "factor": "stonedesk.html:19939 awaits the fetch and treats resolution as success. `fetch` resolves on a 4xx, so a 401 (and now a 400) never reaches its catch, and the UI reports 'All apps synced' plus a fresh 'Last sync' timestamp having synced nothing.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Routed: stonedesk.html is held by fourth under a live b34 claim. The caller must branch on res.ok or on the error code. Arm D2c asserts the endpoint's half -- a machine-readable UNKNOWN_ACTION code a caller CAN branch on -- and states plainly that the refusal changes 401 to 400 and changes nothing the user sees."
+        },
+        {
+          "factor": "b21 declared the absent-action case a residual in prose and in an arm, which is better than silence but still left the hole open for a batch. The decision needed a caller census to make safely, and nothing scheduled that census.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The census was done before the code this time, and its result is written into the handler comment and into the arms, so the next person to touch this branch inherits the eight-caller list rather than re-deriving it from a grep."
+        }
+      ],
+      "recurrence_open": "THE THREE CALLERS ARE UNCHANGED. stonedesk.html is claimed, so sairnSyncAll still toasts 'All apps synced' on the 400 this fix returns -- the endpoint half is closed and the caller half is routed. AND THE REFUSAL IS NOT DEPLOYED at the time of this record, so every arm is against the handler and none against the live URL; a 401 from the deployed endpoint today is evidence about the licence gate and none about this change. Finally, nothing prevents a NINTH caller being written against a non-existent action -- the refusal makes that loud at runtime but no check stops the call site being added."
+    },
+    {
+      "commit": "eac95896f1ff",
+      "date": "2026-10-19",
+      "subject": "fix(claude b22): the pre-auth auth_observe log line cannot be forged",
+      "files": [
+        "api/b22-claude-logline.test.js",
+        "api/claude.js"
+      ],
+      "lines_added": 319,
+      "lines_removed": 1,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "api/claude.js logged a client-supplied, UNVALIDATED, PRE-AUTH app_id into its auth_observe line: console.log('api/claude auth_observe app_id=' + (body.app_id || '(none)') + ' state=' + authState + ' mode=' + claudeAuthMode). It ran on EVERY call, including unauthenticated ones, and it ran BEFORE the allowlist check at the !KNOWN_APP_IDS.includes(app_id) branch -- so a newline in app_id wrote a SECOND entry indistinguishable from a real one, with an attacker-chosen state=. THE FORGED state=valid IS THE POINT. auth_observe exists BECAUSE SAIRN_CLAUDE_AUTH_MODE defaults to `observe`: the log IS the evidence an operator reads to decide whether auth is working, and the entries it cannot be trusted on are exactly the ones somebody reads during an incident. FIX: logSafeAppId() with three rules, each closing a different hole. (1) VALIDATE FIRST -- a value in KNOWN_APP_IDS prints verbatim and nothing else is ever printed as though it were an app id. (2) STRIP THE WHOLE CONTROL CLASS, not just newlines: CR alone forges a line on a CR-splitting reader, ESC drives a terminal that renders the log, and U+2028/U+2029 are breaks to many log viewers -- so C0, DEL, C1 and both Unicode separators go. (3) CAP THE LENGTH at 40, applied AFTER stripping so 5,000 newlines cannot spend the budget and let a forgery through behind them. THE VALUE IS SANITISED, NOT DROPPED, and this file's own history is the argument: SAIRNsenior's every AI call 400ed silently for weeks and was found because a refusal NAMED the unrecognised app_id. Unrecognised values print LABELLED as (unrecognised:...) so a reader and a grep can never confuse one with a real app. A non-string app_id names its TYPE rather than being coerced, because String({}) would print '[object Object]' as though somebody had typed it. ARMS: api/b22-claude-logline.test.js, 12 arms. A1 is the forged-newline arm; A2 covers EVERY break character, because a fix that stripped only newlines would pass A1 and leave CR, ESC, NEL and both separators open. B1-B4 are the negative control: every id in KNOWN_APP_IDS prints verbatim, the longest is inside the cap, an absent value still reads (none). C1/C2 cover the cap and its ordering. D1 is the ablation and D2 its clean control.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "209e9802a5ba",
+        "date": "2026-09-08",
+        "subject": "feat(claude): Phase 1 of the licence-key requirement -- observe and record, enforce nothing yet",
+        "lag_days": 41
+      },
+      "citation_note": "The platform has a standing rule about user-controlled data reaching a sink unescaped (Guardian checks 25/26 for the DOM), and none that names A LOG as a sink. That is the gap this record argues for: a log line is read by an operator during an incident and is therefore a trust boundary, and `console.log('x=' + untrusted)` is the same shape as innerHTML with a different consumer. Recorded as not-citable so the rule can cite this instance.",
+      "phase_note": "Coding. The design is right and deliberate -- an observe-mode log that records the claimed app_id is exactly what Phase 1 of the licence requirement needed, and recording the raw claim is the POINT of it. The expression was wrong: it interpolated the claim into a line-structured sink with no sanitisation. Not design: the field stays and still carries the claimed value. Not config.",
+      "contributing_factors": [
+        {
+          "factor": "A client-supplied string was concatenated into a line-structured sink with no sanitisation, so a newline in it created a second entry. The log's format IS its parse -- one line per event -- and nothing enforced that.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "logSafeAppId(): validate against KNOWN_APP_IDS, strip the whole C0/DEL/C1 range plus U+2028/U+2029, cap at 40 after stripping, and label anything unrecognised."
+        },
+        {
+          "factor": "The log sits BEFORE the allowlist check, by design -- observe mode has to record what was CLAIMED, including by an unauthenticated caller. So the one value that most needs sanitising is the one guaranteed to be unvalidated at that point.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Validation moved INTO the rendering rather than being hoisted earlier: the line still records the raw claim, it just cannot print it as if it were a known app. Moving the allowlist check up would have destroyed the diagnostic observe mode exists for."
+        },
+        {
+          "factor": "No suite covered this line, and no checker treats a log as a sink. Guardian 25/26 cover the DOM; nothing covers console.log.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/b22-claude-logline.test.js, 12 arms, including A2 over the whole break-character class so a newline-only fix cannot pass, and E1 asserting the sanitiser's own regex carries no literal control byte."
+        },
+        {
+          "factor": "I WROTE THE 'LITERAL CONTROL BYTES IN A REGEX' DEFECT TWICE WHILE FIXING THIS -- once in the sanitiser and once in the test file that asserts against it, which would have been a checker carrying the defect it checks for. node --check caught both on the first run.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Both are now built from escapes, and arm E1 asserts the source contains no literal control byte -- so the next edit to that class fails loudly instead of shipping an invisible one."
+        }
+      ],
+      "recurrence_open": "THIS FIXES ONE LINE. Nothing sweeps the platform for other logs that interpolate request data -- there is no checker that treats a log as a sink, and this record's rule_note argues for one rather than claiming it exists. The 40-character cap is a JUDGEMENT, not a measurement: arm B2 asserts the longest CURRENT app_id fits, so a future app name over 40 characters fails that arm rather than being quietly truncated -- but nothing stops the cap being raised without re-checking. And the fix is NOT DEPLOYED at the time of this record: every arm is against the exported helper and none against the live endpoint's log output, which cannot be read from here at all."
+    },
+    {
+      "commit": "fed240ec418b",
+      "date": "2026-10-19",
+      "subject": "fix(bridge b21): an unknown ?action= is refused, not silently treated as a push",
+      "files": [
+        "api/bridge-unknown-action.test.js",
+        "api/bridge.js"
+      ],
+      "lines_added": 397,
+      "lines_removed": 0,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "api/bridge.js's dispatch fell through to handlePush for EVERY unknown ?action=, so a request naming an action that has never existed was answered 401 NO_LICENCE or 403 -- a credential diagnosis for a routing fault. THREE LIVE CALL SITES land there, measured by grepping every app file for the URL rather than reasoned about: stonedesk.html:12814 (?action=maps-static), :12927 (?action=maps-optimize), and :7795, which sends no action and no data_type and a sairn-mobile-sync envelope body, reaches handlePush and UPSERTS a bridge_data row of {jobs:null, invoices:null, employees:null}. The wrong-layer diagnosis is the same class Guardian check 30 records costing a session a hunt for a RESEND_API_KEY that was present and correct the whole time; the null-row write is a silent failure, swallowed by a bare .catch(). FIX: KNOWN_ACTIONS = [push, proxy_get], spelled once, with the 400 UNKNOWN_ACTION refusal DERIVING its message from that array so a fourth action cannot be added to the gate without the message following. `pull` is deliberately absent and an arm asserts the absence -- it was removed 2026-09-17 for serving one tenant's data to an unauthenticated GET keyed on a RAW LICENCE KEY, and a refusal that advertises a withdrawn read side is worse than no refusal. ARMS: api/b21-bridge-unknown-action.test.js, 14 arms 0 failed, including the negative control the defect needs (a LICENCE-HEADED and SESSION-HEADED POST to an unknown action returns 400 and writes ZERO rows -- the valid credentials are the point, because without them a 401 arrives whether the refusal exists or not), A4 (an unauthenticated unknown action is still UNKNOWN_ACTION and never NO_LICENCE), C1-C3 controls proving the one live push caller and both proxy_get spellings still work, and E1 ABLATION (guard cut from a lifted copy -> the unknown action reaches handlePush and upserts, the pre-fix behaviour reproduced) with E2 CLEAN proving the ablation is a removal and not a corrupted file. NOT CLOSED BY THIS FIX, declared rather than left to be found: an ABSENT ?action= is still accepted and still reaches handlePush (arm D1 asserts that residual on purpose), and the three CALLERS are unchanged because stonedesk.html is held by fourth under a live b34 claim -- routed as an open-work row instead. UNVERIFIED LIVE: the refusal is not deployed at the time of this record, so every arm is against the handler and none against the URL.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "df84b213f14e",
+        "date": "2026-07-31",
+        "subject": "feat: build api/bridge.js (proxy_get + push/pull) \u2014 Guardian scan clean",
+        "lag_days": 80
+      },
+      "citation_note": "No standing coding rule in tools/coding_rule_discovery.py's registry names this shape. The shape is \"a dispatcher's final branch is an unguarded fall-through, so an unrecognised selector silently becomes the last handler's input\" -- which is the same class api/_lib/law-roles.js's NAMED_VERB_RESOURCES block fixed for `prepare` and `reconcile`, and the same class api/_lib/countersign-endpoint.js's ACTIONS allowlist already prevents. Recorded as not-citable rather than forced into the nearest bin, and named here so a future rule can cite this record as its first instance.",
+      "phase_note": "Coding. The plan was right -- the file's own header has documented exactly two POST actions since it was written in 2026-07-31, and `pull` was removed from it deliberately in 2026-09-17. The expression was wrong: the dispatch's last line was a bare `return handlePush(...)` where it needed an allowlist check first. Not design: nothing about the two-action structure had to change, and the fix is one guard plus a constant. Not config: no grant, env var or migration is involved.",
+      "contributing_factors": [
+        {
+          "factor": "The dispatcher's last branch was an unguarded fall-through, so an unrecognised ?action= became handlePush's input instead of a refusal. No allowlist existed at all.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "KNOWN_ACTIONS = [push, proxy_get], spelled once, with the 400 UNKNOWN_ACTION refusal DERIVING its message from the array so the gate and the message cannot drift apart."
+        },
+        {
+          "factor": "The refusal the caller actually received named a LICENCE, because handlePush's first gate is the licence check. So the symptom pointed at credentials while the cause was routing -- the caller had no way to learn the action does not exist.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The refusal is now raised BEFORE any credential gate, and an arm (A4) asserts that an UNAUTHENTICATED unknown action still answers UNKNOWN_ACTION and never NO_LICENCE."
+        },
+        {
+          "factor": "Two of the three callers wrap the request in a bare .catch(){}, and the third's failure is also swallowed, so no operator or log ever surfaced the 401. The endpoint and the callers each looked fine in isolation.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Open-work row BRIDGE-DEAD-CALL-SITES-HANK-2026-10-19 routes the caller-side fix to fourth, who holds stonedesk.html under a live b34 claim. The two Field Map catch arms must stop naming the Maps API key, and :7795 must send a real action or be deleted."
+        },
+        {
+          "factor": "api/bridge.js had no suite covering its dispatch at all. api/bridge-push-auth.test.js covers push authorisation thoroughly (27 arms) and never asks what happens to an action that is not push.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "api/b21-bridge-unknown-action.test.js, 14 arms, with the negative control the defect needs (licence-headed and session-headed POST to an unknown action -> 400 and ZERO upserts) and an ABLATION (E1) that reproduces the pre-fix behaviour so the arm cannot pass for another reason."
+        }
+      ],
+      "recurrence_open": "An ABSENT ?action= is STILL accepted and still reaches handlePush -- arm D1 asserts that residual deliberately, because refusing it is a second decision with a different blast radius (stonedesk.html:7795 sends neither an action nor a data_type). The THREE CALLERS are unchanged: stonedesk.html is held by fourth under a live b34 claim, so the caller half is routed rather than fixed, and until it lands :7795 keeps upserting a bridge_data row of three nulls. AND THE REFUSAL IS NOT DEPLOYED at the time of this record, so every arm is against the handler and none against the live URL -- a 401 from the deployed endpoint today is evidence about the licence gate and none about this fix."
     }
   ],
   "started": "2026-09-09",
