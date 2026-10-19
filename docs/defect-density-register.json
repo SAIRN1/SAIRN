@@ -34500,6 +34500,66 @@
         }
       ],
       "recurrence_open": "E3b MEASURED THE typeof GUARD ALONE AND IT CHANGES NOTHING -- the per-step try covers it, so the guard is defence in depth and NOT the load-bearing layer. Recorded because an arm claiming otherwise would have been a green claim about a layer doing no work. And the pattern is unswept: other handlers in this file call unguarded globals after a confirmed success and nothing counts them."
+    },
+    {
+      "commit": "bff166bb56f6",
+      "date": "2026-10-19",
+      "subject": "fix(register): a citation is only a citation if a ref reaches it -- ancestor, not merely resolvable",
+      "files": [
+        "docs/2026-10-19-cc-b23-ancestor-and-fmea.md",
+        "docs/fmea/api__lib_audit.js.json",
+        "docs/fmea/api__lib_sf-roles.js.json",
+        "docs/fmea/api_b18-countersign-lock.test.js.json",
+        "docs/fmea/api_b18-passkey-profile-e2e.test.js.json",
+        "docs/fmea/api_sairncash_verify.js.json",
+        "docs/fmea/api_sd-data-cross-tenant-dispatchers.test.js.json",
+        "docs/fmea/sql_sairnlegacy_audit_log_schema.sql.json",
+        "docs/fmea/tests_run_push_gate_preflight_probe.py.json",
+        "docs/fmea/tools_audit_event_type_check.py.json",
+        "docs/fmea/tools_status_board_bridge_check.py.json",
+        "docs/fmea/tools_wcag_contrast_check.py.json",
+        "tools/defect_register.py",
+        "tools/sairn_push_gate_hook.py"
+      ],
+      "lines_added": 18165,
+      "lines_removed": 9,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/defect_register.py --check accepted any cited sha that 'git rev-parse --verify' would take, which accepts a DANGLING OBJECT for as long as the local reflog holds it. So the check's verdict depended on WHO RAN IT: in b22 origin/main carried three records citing 634f7d70, a commit that exists in no clone but cc's own reflog, and --check printed OK in cc while the identical records would have failed on an absent commit anywhere else. A citation is only a citation if a ref another clone can reach actually reaches it.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The acceptance contract predates the 2026-09-16 commit that added reachable() and explicitly left --check unchanged; the resolvable-only test has been there since the function was first written and no single commit introduced it. Naming an arbitrary one would be a guess dressed as a lag measurement."
+      },
+      "contributing_factors": [
+        {
+          "factor": "resolvability and reachability were treated as the same question, and resolvability is a fact about ONE clone while a register is shared",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "--check now requires the cited sha to be an ancestor of origin/main OR HEAD, the union, so legitimate pre-push work is still a valid citation while a reflog orphan is not; --selfcheck-reachability holds it with 16 arms and synthesises the dangling commit with git commit-tree rather than naming the real one"
+        },
+        {
+          "factor": "the summary line claimed every commit RESOLVES, which was literally what it checked, so nothing in the output told a reader the weaker question had been asked",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the OK line now names the refs it measured against, and an absent ref prints COULD NOT CHECK REACHABILITY rather than a pass"
+        },
+        {
+          "factor": "a correct post-rewrite reseat that is never committed is invisible: the hook repairs the working tree and nothing says the repair is pending",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "have the reseat path, or a push-time check, notice an uncommitted register reseat and name it; not built here because it belongs to the hook rather than to --check, and the register file is under another session claim this batch"
+        }
+      ],
+      "recurrence_open": "Two further defects were introduced INSIDE this fix and caught before commit, so they are deliberately not recorded as shipped defects: a 43-second regression from calling reachable() per record, which timed out the register probe at 420s, and an ancestor cache keyed on refs while REPO is a module global that a probe reassigns. Neither reached origin. What remains open is that nothing checks a probe or a gate for having become slow enough to be excluded from the sweep -- an excluded check reports nothing and looks exactly like one that passed."
     }
   ],
   "started": "2026-09-09",
