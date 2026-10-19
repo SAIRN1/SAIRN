@@ -715,6 +715,17 @@
       "status": "released",
       "released_at": "2026-10-19T15:29:20Z",
       "files": null
+    },
+    {
+      "id": "hover2-1792424273",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "b64: expand mutation_tester.py to more targets, spot-check it against a weak test, undirected sweep x2, push",
+      "claimed_at": "2026-10-19T15:37:53Z",
+      "claimed_at_epoch": 1792424273.8491657,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
