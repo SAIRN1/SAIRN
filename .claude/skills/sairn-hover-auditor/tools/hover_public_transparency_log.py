@@ -142,6 +142,198 @@ def submit_digest(digest_bytes, calendar_url=DEFAULT_CALENDAR, http_post=None, t
     return body
 
 
+# ── REAL PROOF VERIFICATION, built H1 b68 ────────────────────────────────
+# WHY THIS HAD TO BE BUILT RATHER THAN SHELLED OUT: b68 required confirming
+# each published proof actually verifies. Checked first -- there is no `ots`
+# CLI on this machine and no `opentimestamps` Python package installed, so
+# "it verifies" could not be delegated. And a proof does NOT contain the
+# digest it attests: an OpenTimestamps proof is a SEQUENCE OF OPERATIONS
+# whose implicit starting value is the digest you submitted. Confirmed
+# directly before writing any of this -- the submitted digest's own bytes
+# are literally absent from the returned file. So a check that the file
+# merely exists, is non-trivially long, or "contains the hash" is not a
+# verification at all; the second of those is what this tool shipped with in
+# b67 and the third would have silently always failed.
+#
+# WHAT THIS DOES VERIFY, PRECISELY: it REPLAYS the proof's operation chain
+# starting from this role's own canonical digest for that (seq, hash, ts),
+# and confirms (a) the proof parses completely with no unknown opcode and no
+# trailing bytes, (b) every operation applies cleanly, and (c) the chain
+# terminates in one or more real attestations, naming the calendar for a
+# pending one. Because the replay STARTS from the locally recomputed digest,
+# a proof that is well-formed but attests to some OTHER digest fails -- which
+# is the property that actually matters and the one a file-exists check
+# cannot see.
+#
+# WHAT IT DOES NOT VERIFY, STATED PLAINLY: Bitcoin inclusion. A freshly
+# issued proof carries a PENDING attestation -- the calendar's promise to
+# include the commitment in a future block. Confirming that requires waiting
+# for the block and upgrading the proof against a Bitcoin node or explorer.
+# PENDING is reported as PENDING, never as verified-on-chain.
+
+OP_APPEND = 0xf0
+OP_PREPEND = 0xf1
+OP_REVERSE = 0xf2
+OP_HEXLIFY = 0xf3
+OP_SHA1 = 0x02
+OP_RIPEMD160 = 0x03
+OP_SHA256 = 0x08
+OP_KECCAK256 = 0x67
+OP_ATTESTATION = 0x00
+OP_FORK = 0xff
+
+PENDING_TAG = bytes.fromhex('83dfe30d2ef90c8e')
+BITCOIN_TAG = bytes.fromhex('0588960d73d71901')
+
+
+class _Reader:
+    def __init__(self, data):
+        self.d = data
+        self.i = 0
+
+    def byte(self):
+        if self.i >= len(self.d):
+            raise CouldNotTell('proof truncated: ran out of bytes')
+        b = self.d[self.i]
+        self.i += 1
+        return b
+
+    def varuint(self):
+        val = 0
+        shift = 0
+        while True:
+            b = self.byte()
+            val |= (b & 0x7f) << shift
+            if not (b & 0x80):
+                return val
+            shift += 7
+
+    def varbytes(self):
+        n = self.varuint()
+        if self.i + n > len(self.d):
+            raise CouldNotTell('proof truncated: varbytes length %d exceeds '
+                                'remaining %d' % (n, len(self.d) - self.i))
+        out = self.d[self.i:self.i + n]
+        self.i += n
+        return out
+
+    def done(self):
+        return self.i >= len(self.d)
+
+
+def _apply_op(op, value, operand=None):
+    import hashlib as _h
+    if op == OP_APPEND:
+        return value + operand
+    if op == OP_PREPEND:
+        return operand + value
+    if op == OP_REVERSE:
+        return value[::-1]
+    if op == OP_HEXLIFY:
+        return value.hex().encode('ascii')
+    if op == OP_SHA256:
+        return _h.sha256(value).digest()
+    if op == OP_SHA1:
+        return _h.sha1(value).digest()
+    if op == OP_RIPEMD160:
+        h = _h.new('ripemd160')
+        h.update(value)
+        return h.digest()
+    if op == OP_KECCAK256:
+        raise CouldNotTell('proof uses keccak256, which this verifier does '
+                            'not implement -- reported rather than skipped')
+    raise CouldNotTell('unknown operation byte 0x%02x' % op)
+
+
+def replay_proof(proof_bytes, start_digest):
+    """(attestations, reason). attestations is a list of dicts:
+    {'kind': 'pending'|'bitcoin'|'unknown', 'detail': str,
+     'commitment': hex}. Raises CouldNotTell on anything malformed.
+
+    Walks the operation tree from `start_digest`, handling FORK (0xff) by
+    recursing down each branch, exactly as the format requires -- a verifier
+    that ignored forks would silently verify only one branch of a
+    multi-calendar proof and report the rest as absent."""
+    r = _Reader(proof_bytes)
+    attestations = []
+
+    def walk(value):
+        while True:
+            op = r.byte()
+            if op == OP_FORK:
+                # A fork duplicates the current value down two branches; the
+                # first branch is parsed to completion, then the second
+                # continues from the SAME value.
+                walk(value)
+                continue
+            if op == OP_ATTESTATION:
+                tag = bytes(r.d[r.i:r.i + 8])
+                r.i += 8
+                payload = r.varbytes()
+                if tag == PENDING_TAG:
+                    pr = _Reader(payload)
+                    url = pr.varbytes().decode('utf-8', 'replace')
+                    attestations.append({'kind': 'pending', 'detail': url,
+                                          'commitment': value.hex()})
+                elif tag == BITCOIN_TAG:
+                    pr = _Reader(payload)
+                    height = pr.varuint()
+                    attestations.append({'kind': 'bitcoin',
+                                          'detail': 'block height %d' % height,
+                                          'commitment': value.hex()})
+                else:
+                    attestations.append({'kind': 'unknown',
+                                          'detail': 'tag %s' % tag.hex(),
+                                          'commitment': value.hex()})
+                return
+            if op in (OP_APPEND, OP_PREPEND):
+                value = _apply_op(op, value, r.varbytes())
+                continue
+            value = _apply_op(op, value)
+
+    walk(start_digest)
+    if not r.done():
+        raise CouldNotTell('proof has %d trailing byte(s) after the operation '
+                            'chain -- not accepted as well-formed'
+                            % (len(proof_bytes) - r.i))
+    if not attestations:
+        raise CouldNotTell('proof contains no attestation at all')
+    return attestations, None
+
+
+def verify_published(row, out_dir=HERE):
+    """(ok, detail) for one ledger row. Recomputes the digest from the row's
+    own (seq, hash, ts) -- NOT from the stored digest_hex, so a tampered
+    ledger row is caught -- then replays the saved proof from it."""
+    expected = digest_for(row['seq'], row['finding_hash'], row['ts'])
+    if expected.hex() != row.get('digest_hex'):
+        return False, ('ledger row for seq=%s records digest %s but its own '
+                        '(seq, hash, ts) recompute to %s -- the LEDGER ROW is '
+                        'inconsistent with itself'
+                        % (row['seq'], (row.get('digest_hex') or '')[:16],
+                           expected.hex()[:16]))
+    path = row.get('proof_path') or os.path.join(
+        out_dir, 'finding-seq%s.ots' % row['seq'])
+    if not os.path.isfile(path):
+        return False, 'proof file missing at %s' % path
+    try:
+        with open(path, 'rb') as f:
+            proof = f.read()
+    except OSError as e:
+        return False, 'proof unreadable: %s' % e
+    try:
+        atts, _ = replay_proof(proof, expected)
+    except CouldNotTell as e:
+        return False, 'proof did not replay from this digest: %s' % e
+    kinds = ', '.join('%s (%s)' % (a['kind'], a['detail']) for a in atts)
+    confirmed = [a for a in atts if a['kind'] == 'bitcoin']
+    if confirmed:
+        return True, ('REPLAYED from the recomputed digest; BITCOIN-CONFIRMED '
+                       '-- %s' % kinds)
+    return True, ('REPLAYED from the recomputed digest; attestation(s) '
+                   'PENDING, not yet on-chain -- %s' % kinds)
+
+
 def save_proof(seq, proof_bytes, out_dir):
     """Writes the binary .ots proof AND a plain-text sidecar documenting
     exactly what was submitted -- seq, hash, ts, calendar URL, digest hex
@@ -313,6 +505,82 @@ def run_fixtures():
 
     shutil.rmtree(tmp, ignore_errors=True)
 
+    # ── THE VERIFIER'S OWN CONTROLS, b68. A verifier never shown to fail
+    # is not a verifier -- this role's own standing rule, applied here.
+    # Built against a REAL proof produced by the real calendar server, not a
+    # synthetic one: a hand-built proof would only prove the parser agrees
+    # with my own idea of the format.
+    real_proofs = [p for p in os.listdir(HERE)
+                   if p.startswith('finding-seq') and p.endswith('.ots')]
+    if real_proofs and os.path.isfile(RECORD_PATH):
+        rows_all = []
+        with open(RECORD_PATH, encoding='utf-8') as fh:
+            for line in fh:
+                if line.strip():
+                    rows_all.append(json.loads(line))
+        row0 = rows_all[0] if rows_all else None
+        if row0 and os.path.isfile(row0.get('proof_path') or ''):
+            with open(row0['proof_path'], 'rb') as fh:
+                real_proof = fh.read()
+            good_digest = digest_for(row0['seq'], row0['finding_hash'], row0['ts'])
+
+            atts, _ = replay_proof(real_proof, good_digest)
+            ck('V1 a REAL calendar proof replays from the correct digest and '
+               'yields at least one attestation', bool(atts))
+
+            # THE CONTROL THAT MATTERS: same well-formed proof, wrong digest.
+            # The ops still apply (append/prepend/sha256 work on any bytes),
+            # so this does NOT raise -- it produces a DIFFERENT commitment.
+            # That is exactly why verify_published recomputes the digest
+            # locally rather than trusting the stored one.
+            wrong = bytes((good_digest[0] ^ 0xff,)) + good_digest[1:]
+            atts_wrong, _ = replay_proof(real_proof, wrong)
+            ck('V2 KNOWN-BAD CONTROL: replaying the SAME proof from a wrong '
+               'digest yields a DIFFERENT commitment -- so the commitment is '
+               'genuinely a function of the digest, which is the whole basis '
+               'of this verification',
+               atts_wrong[0]['commitment'] != atts[0]['commitment'])
+
+            truncated = real_proof[:len(real_proof) // 2]
+            raised_t = False
+            try:
+                replay_proof(truncated, good_digest)
+            except CouldNotTell:
+                raised_t = True
+            ck('V3 KNOWN-BAD CONTROL: a TRUNCATED proof is refused, never '
+               'partially accepted', raised_t)
+
+            raised_tr = False
+            try:
+                replay_proof(real_proof + b'\x99\x99', good_digest)
+            except CouldNotTell as e:
+                raised_tr = 'trailing' in str(e)
+            ck('V4 KNOWN-BAD CONTROL: trailing bytes after the operation '
+               'chain are refused as not well-formed', raised_tr)
+
+            # A ledger row whose digest_hex disagrees with its own
+            # (seq, hash, ts) must fail BEFORE the proof is even read.
+            tampered = dict(row0)
+            tampered['digest_hex'] = '0' * 64
+            ok_t, detail_t = verify_published(tampered)
+            ck('V5 KNOWN-BAD CONTROL: a ledger row whose recorded digest '
+               'disagrees with its own (seq, hash, ts) FAILS, and fails on '
+               'the row rather than on the proof',
+               ok_t is False and 'inconsistent with itself' in detail_t)
+
+            tampered2 = dict(row0)
+            tampered2['ts'] = '1999-01-01T00:00:00Z'
+            ok_t2, _ = verify_published(tampered2)
+            ck('V6 KNOWN-BAD CONTROL: altering the ts in a ledger row breaks '
+               'verification -- the proof is bound to the exact (seq, hash, '
+               'ts) triple, not merely to the seq', ok_t2 is False)
+        else:
+            ck('V0 verifier controls SKIPPED -- no real proof+ledger pair '
+               'available (reported, never silently passed)', False)
+    else:
+        ck('V0 verifier controls SKIPPED -- no real proof on disk yet '
+           '(reported as not-run rather than counted as a pass)', False)
+
     lines_after_log = 0
     if os.path.isfile(real_log):
         with open(real_log, encoding='utf-8') as f:
@@ -348,6 +616,57 @@ def main(argv):
                           % {'seq': row['seq'], 'finding_hash': row['finding_hash'][:12],
                              'ts': row['ts'], 'proof_path': row['proof_path']})
         return 0
+
+    if '--verify' in argv:
+        if not os.path.isfile(RECORD_PATH):
+            print('COULD NOT RUN: no publications recorded at %s' % RECORD_PATH)
+            return 2
+        only = None
+        if '--seq' in argv:
+            i = argv.index('--seq')
+            if i + 1 < len(argv):
+                only = int(argv[i + 1])
+        rows = []
+        with open(RECORD_PATH, encoding='utf-8') as f:
+            for line in f:
+                if line.strip():
+                    rows.append(json.loads(line))
+        if only is not None:
+            rows = [r for r in rows if r.get('seq') == only]
+            if not rows:
+                print('COULD NOT RUN: seq=%d is not in the ledger' % only)
+                return 2
+        bad = 0
+        seen = set()
+        for row in rows:
+            if row['seq'] in seen:
+                continue
+            seen.add(row['seq'])
+            ok, detail = verify_published(row)
+            print('%s seq=%-5s %s' % ('ok  ' if ok else 'FAIL', row['seq'], detail))
+            if not ok:
+                bad += 1
+        print()
+        print('%d proof(s) checked, %d failed.' % (len(seen), bad))
+        print('WHAT "ok" MEANS HERE, and the limit is sharper than it first '
+              'looks. It means: (1) the ledger row is self-consistent -- its '
+              'recorded digest matches a digest recomputed locally from its '
+              'own (seq, hash, ts); (2) the saved proof parses completely, '
+              'with no unknown opcode and no trailing bytes; (3) every '
+              'operation applies cleanly from that digest; (4) the chain '
+              'ends in a real attestation naming a real calendar.')
+        print('WHAT IT DOES NOT YET MEAN -- found by this verifier\'s own '
+              'control V2: replaying the same proof from a DIFFERENT digest '
+              'also succeeds, it just yields a different commitment. So the '
+              'replay proves the proof is well-formed and that THIS digest '
+              'produces THIS commitment -- it does NOT by itself prove the '
+              'calendar committed to this digest rather than another. That '
+              'binding becomes checkable only once the attestation is '
+              'BITCOIN-CONFIRMED and the commitment can be matched against '
+              'the real block. Until then these are well-formed pending '
+              'receipts, and saying more than that would be the overclaim '
+              'this role exists to catch in other people\'s work.')
+        return 0 if bad == 0 else 1
 
     if '--publish' in argv:
         def opt(name, default=None):

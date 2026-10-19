@@ -113,6 +113,22 @@ class CouldNotTell(Exception):
     pass
 
 
+def _force_utf8_stdout():
+    """FOUND LIVE, H1 b68, on the third real finding-review call: the vendor
+    returned a non-cp1252 character (an em dash) in its reasoning and the
+    PRINT crashed with UnicodeEncodeError on this machine's default console
+    codepage -- after the real API call had already been made and the real
+    tokens already spent. A third party's response text is not something
+    this tool controls, so losing a paid-for verdict to the console encoding
+    is a defect in this tool, not in the response. errors='replace' so a
+    stray character degrades one glyph instead of the whole verdict."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding='utf-8', errors='replace')
+        except (AttributeError, ValueError, OSError):
+            pass  # a stream that cannot be reconfigured is left as-is
+
+
 def _hover_log_script_path():
     """Resolve the real hover_log.py to subprocess-invoke, regardless of
     whether THIS tool is running from the operational hover-audit-log/
@@ -329,6 +345,71 @@ SYSTEM_PROMPT = (
     "Call report_findings even if the diff is clean (with an empty list)."
 )
 
+# ── FINDING-REVIEW MODE, added H1 b68 ─────────────────────────────────────
+# The diff mode above answers "does this change introduce a defect". This
+# mode answers a DIFFERENT question that b68's dispatch actually needs: does
+# an already-written finding's own reasoning hold up to a genuinely
+# different vendor reading the same written evidence. Same shape as
+# hover_second_opinion.py's Haiku path, deliberately -- that tool reaches a
+# different MODEL from the same vendor, this one reaches a different VENDOR
+# entirely, and running both on one finding is two independent reads rather
+# than one repeated.
+#
+# EVIDENCE-ONLY, the same discipline as diff-only: the reviewer gets the
+# finding's own summary and citations and NOTHING else -- no source file, no
+# repository access. It therefore cannot confirm the underlying facts, only
+# whether the argument as written is sound. That is a real, narrower claim
+# and it is stated in the prompt itself so the model is not invited to
+# pretend otherwise.
+FINDING_SYSTEM_PROMPT = (
+    "You are an independent second reviewer on a software-audit platform, "
+    "from a different organisation than the reviewer who wrote the finding "
+    "you are about to read. You are shown that finding's OWN written "
+    "evidence: its summary and its citations. You have NOT read the source "
+    "code and cannot look it up -- so judge only whether the finding's own "
+    "REASONING holds together: does the evidence it cites actually support "
+    "the conclusion it draws, is the stated severity justified by what is "
+    "described, and is there an obvious alternative explanation the write-up "
+    "fails to address. Do not agree merely because the finding is written "
+    "confidently and in detail. If you disagree, you MUST name a specific "
+    "objection and quote the exact phrase or citation from the finding that "
+    "your objection attaches to -- a vague doubt is not a usable "
+    "disagreement. If you agree, say what specifically makes the argument "
+    "sound. Always call the judge_finding tool."
+)
+
+JUDGE_FINDING_TOOL = {
+    'type': 'function',
+    'function': {
+        'name': 'judge_finding',
+        'description': "Record your independent judgment of whether this finding's own reasoning holds.",
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'agrees': {
+                    'type': 'boolean',
+                    'description': 'True if the cited evidence genuinely supports the stated conclusion and severity.',
+                },
+                'confidence': {'type': 'string', 'enum': ['low', 'medium', 'high']},
+                'reasoning': {
+                    'type': 'string',
+                    'description': 'Your independent reasoning in 2-5 sentences.',
+                },
+                'objection': {
+                    'type': 'string',
+                    'description': 'If you disagree: the specific objection. Empty string if you agree.',
+                },
+                'quoted_evidence': {
+                    'type': 'string',
+                    'description': 'The exact phrase or citation from the finding that your judgment attaches to. Required either way -- a verdict with nothing quoted is not usable.',
+                },
+            },
+            'required': ['agrees', 'confidence', 'reasoning', 'objection',
+                         'quoted_evidence'],
+        },
+    },
+}
+
 
 def ask_groq(diff_text, api_key, http_post=None):
     """http_post(url, headers, body_bytes) -> (status, response_dict) is
@@ -390,6 +471,174 @@ def ask_groq(diff_text, api_key, http_post=None):
 
     raise CouldNotTell('Groq did not return the forced report_findings tool call '
                         '-- finish_reason=%r' % data.get('choices', [{}])[0].get('finish_reason'))
+
+
+def load_finding(seq, log_path=LOG_PATH):
+    """The real log entry for `seq`, or CouldNotTell. Reads the whole entry
+    (unlike the transparency log, which deliberately narrows to seq/hash/ts)
+    because the finding's own summary and citations ARE the evidence being
+    reviewed here."""
+    if not os.path.isfile(log_path):
+        raise CouldNotTell('self-log not found at %s' % log_path)
+    with open(log_path, encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            e = json.loads(line)
+            if e.get('seq') == seq:
+                if e.get('type') != 'finding':
+                    raise CouldNotTell(
+                        'seq=%d is type %r, not a finding -- this mode reviews '
+                        'findings' % (seq, e.get('type')))
+                return e
+    raise CouldNotTell('no entry with seq=%d in %s' % (seq, log_path))
+
+
+def build_finding_evidence(entry):
+    """The exact text handed to the other vendor. Summary and citations
+    only -- no source, no repo. Assembled in one place so what crosses the
+    boundary is auditable by reading one function."""
+    lines = ['FINDING seq=%s' % entry.get('seq'),
+             'severity: %s' % (entry.get('severity') or '(unset)')]
+    if entry.get('vector'):
+        lines.append('severity vector: %s' % entry['vector'])
+    lines.append('target (who owns the fix): %s' % (entry.get('target') or '-'))
+    if entry.get('ref'):
+        lines.append('cited evidence: %s' % entry['ref'])
+    shas = entry.get('source_shas')
+    if isinstance(shas, dict) and shas:
+        # REAL SHAPE, found by this mode CRASHING on its first live run: the
+        # values are {'sha': ..., 'source': ...} dicts, not bare sha
+        # strings. The fixture had hand-built the bare-string shape and so
+        # could never have caught it -- the exact "teleported-in fixture vs
+        # the shape real data actually has" gap SKILL.md's own standing rule
+        # 3 names. Both shapes are handled now and BOTH are fixture-locked.
+        parts = []
+        for p, v in sorted(shas.items()):
+            if isinstance(v, dict):
+                sha = str(v.get('sha') or '')
+            else:
+                sha = str(v or '')
+            parts.append('%s -> %s' % (p, sha[:12]))
+        lines.append('cited files (path -> blob sha at review time): %s'
+                      % ', '.join(parts))
+    lines.append('')
+    lines.append('THE FINDING AS WRITTEN:')
+    lines.append(entry.get('summary') or '(no summary)')
+    return '\n'.join(lines)
+
+
+def judge_finding(evidence_text, api_key, http_post=None):
+    """(verdict_dict, real_total_tokens). Same transport, same caps and the
+    same could-not-tell discipline as ask_groq -- a failure of any kind is
+    never silently an agreement."""
+    body = json.dumps({
+        'model': MODEL,
+        'messages': [{'role': 'system', 'content': FINDING_SYSTEM_PROMPT},
+                     {'role': 'user', 'content': evidence_text}],
+        'tools': [JUDGE_FINDING_TOOL],
+        'tool_choice': {'type': 'function',
+                         'function': {'name': 'judge_finding'}},
+        'max_tokens': MAX_OUTPUT_TOKENS,
+        'temperature': 0,
+        'reasoning_effort': 'low',
+    }).encode('utf-8')
+    headers = {'Authorization': 'Bearer ' + api_key,
+               'Content-Type': 'application/json',
+               'User-Agent': 'sairn-hover-auditor/1.0'}
+
+    if http_post is not None:
+        status, data = http_post(GROQ_URL, headers, body)
+    else:
+        req = urllib.request.Request(GROQ_URL, data=body, headers=headers,
+                                      method='POST')
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                status = resp.status
+                data = json.loads(resp.read().decode('utf-8'))
+        except urllib.error.HTTPError as e:
+            raise CouldNotTell('Groq API HTTP %d: %s'
+                                % (e.code, e.read().decode('utf-8', 'replace')[:300]))
+        except Exception as e:
+            raise CouldNotTell('Groq API call failed: %s: %s'
+                                % (type(e).__name__, e))
+
+    if status != 200:
+        raise CouldNotTell('Groq API returned HTTP %d' % status)
+    usage = data.get('usage') or {}
+    real_total_tokens = int(usage.get('total_tokens') or 0)
+    try:
+        message = data['choices'][0]['message']
+    except (KeyError, IndexError, TypeError):
+        raise CouldNotTell('Groq response had no choices[0].message')
+    for call in (message.get('tool_calls') or []):
+        fn = call.get('function') or {}
+        if fn.get('name') == 'judge_finding':
+            try:
+                return json.loads(fn.get('arguments') or '{}'), real_total_tokens
+            except ValueError as e:
+                raise CouldNotTell('judge_finding arguments did not parse: %s' % e)
+    raise CouldNotTell('Groq did not return the forced judge_finding tool call '
+                        '-- finish_reason=%r'
+                        % data.get('choices', [{}])[0].get('finish_reason'))
+
+
+def log_finding_review(seq, entry, verdict, adjudication, note,
+                        log_path_override=None):
+    """Logs the cross-vendor verdict against one finding, with the three
+    things b68 requires on the evidence trail: the PROVIDER by name, whether
+    it AGREED with this role's own review, and this role's own ADJUDICATION
+    of that verdict (real-catch / agree / false-alarm).
+
+    The adjudication is deliberately a separate field from `agrees`, because
+    they answer different questions: `agrees` is what the other vendor said,
+    the adjudication is whether it was RIGHT -- and recording only the first
+    would let a confident wrong objection read as a real catch forever."""
+    agrees = bool(verdict.get('agrees'))
+    lines = [
+        'CROSS-VENDOR FINDING REVIEW -- provider: Groq / %s (a different '
+        'vendor from this role and from hover_second_opinion.py\'s Anthropic '
+        'path).' % MODEL,
+        'subject: own finding #%d (severity %s%s, target %s)'
+        % (seq, entry.get('severity') or '(unset)',
+           ', vector %s' % entry['vector'] if entry.get('vector') else '',
+           entry.get('target') or '-'),
+        'verdict: %s with this role\'s own review.' % ('AGREES' if agrees else 'DISAGREES'),
+        'stated confidence: %s' % (verdict.get('confidence') or '-'),
+        'its reasoning: %s' % (verdict.get('reasoning') or '-'),
+    ]
+    if (verdict.get('objection') or '').strip():
+        lines.append('its specific objection: %s' % verdict['objection'].strip())
+    if (verdict.get('quoted_evidence') or '').strip():
+        lines.append('evidence it attached its judgment to: %s'
+                      % verdict['quoted_evidence'].strip())
+    lines.append('')
+    lines.append('ADJUDICATION BY THIS ROLE: %s' % adjudication)
+    lines.append('why: %s' % note)
+    lines.append('')
+    lines.append('EVIDENCE-ONLY LIMIT, stated rather than implied: the '
+                 'reviewer saw this finding\'s summary and citations and no '
+                 'source code at all, so its verdict is about whether the '
+                 'ARGUMENT holds, never independent confirmation of the '
+                 'underlying facts.')
+
+    # A disagreement is a finding in its own right; an agreement is a check.
+    etype = 'check' if agrees and adjudication.startswith('AGREE') else 'finding'
+    hover_log_script = _hover_log_script_path()
+    if hover_log_script is None:
+        return 2, '', 'COULD NOT RUN: no hover_log.py found', etype
+    argv = [sys.executable, hover_log_script, '--add', '--type', etype,
+            '--target', 'self', '--ref', 'seq=%d' % seq,
+            '--summary', '\n'.join(lines)]
+    if etype == 'finding':
+        argv += ['--severity', 'low']
+    env = dict(os.environ)
+    if log_path_override:
+        env['HOVER_LOG_PATH_OVERRIDE'] = log_path_override
+    r = subprocess.run(argv, cwd=HERE, capture_output=True, text=True,
+                        encoding='utf-8', env=env)
+    return r.returncode, r.stdout, r.stderr, etype
 
 
 def validate_findings(findings, added_lines):
@@ -669,6 +918,154 @@ def run_fixtures():
        and rows2[-1]['severity'] == 'moderate' and agree2 is False)
     shutil.rmtree(tmp2, ignore_errors=True)
 
+    # ── FINDING-REVIEW MODE fixtures, b68 ────────────────────────────────
+    tmp3 = tempfile.mkdtemp(prefix='hover_cv_finding_fx_')
+    try:
+        fx_log = os.path.join(tmp3, 'log.jsonl')
+        with open(fx_log, 'w', encoding='utf-8') as f:
+            f.write(json.dumps({
+                'seq': 10, 'type': 'finding', 'severity': 'high',
+                'vector': 'T:A/EX:M/IM:H/SC:S', 'target': 'cc',
+                'ref': 'api/x.js', 'source_shas': {'api/x.js': 'a' * 40},
+                'summary': 'A real finding about api/x.js.'}) + '\n')
+            f.write(json.dumps({
+                'seq': 11, 'type': 'check', 'severity': '', 'target': 'self',
+                'summary': 'not a finding'}) + '\n')
+
+        got = load_finding(10, log_path=fx_log)
+        ck('FR1 load_finding returns the right entry by seq', got['seq'] == 10)
+        raised_nf = False
+        try:
+            load_finding(11, log_path=fx_log)
+        except CouldNotTell as e:
+            raised_nf = 'not a finding' in str(e)
+        ck('FR2 KNOWN-BAD CONTROL: a CHECK entry is refused -- this mode '
+           'reviews findings, and silently reviewing a check would produce a '
+           'verdict about the wrong kind of record', raised_nf)
+        raised_ms = False
+        try:
+            load_finding(999, log_path=fx_log)
+        except CouldNotTell:
+            raised_ms = True
+        ck('FR3 an unknown seq raises CouldNotTell, never returns None', raised_ms)
+
+        ev = build_finding_evidence(got)
+        ck('FR4 the evidence text carries the finding summary and its citations',
+           'A real finding about api/x.js.' in ev and 'api/x.js' in ev)
+        ck('FR5 the evidence text carries severity AND the vector, so the '
+           'reviewer can judge whether the stated severity is justified',
+           'high' in ev and 'T:A/EX:M/IM:H/SC:S' in ev)
+        ck('FR6 EVIDENCE-ONLY: the payload carries no file contents and no '
+           'hash-chain internals (no prev_hash/hash leakage)',
+           'prev_hash' not in ev and 'genesis' not in ev)
+
+        # FR6b: THE REAL source_shas SHAPE, added after this mode crashed on
+        # its FIRST live run with KeyError: slice(None, 12, None). The real
+        # log stores {'sha':..., 'source':...} dicts; the fixture above had
+        # hand-built bare sha STRINGS, so it could not have caught this.
+        # Both shapes locked, so neither can regress.
+        real_shape_entry = dict(got)
+        real_shape_entry['source_shas'] = {
+            'api/agent/enqueue.js': {'sha': 'e' * 40, 'source': 'explicit'}}
+        ev_real = build_finding_evidence(real_shape_entry)
+        ck('FR6b the REAL source_shas shape ({sha, source} dicts) renders the '
+           'sha, not a crash -- the live-crash regression',
+           'api/agent/enqueue.js -> ' + 'e' * 12 in ev_real)
+        ck('FR6c the legacy bare-string sha shape still renders too',
+           'api/x.js -> ' + 'a' * 12 in build_finding_evidence(got))
+
+        sent = []
+
+        def fake_judge_ok(url, headers, body):
+            sent.append(json.loads(body.decode('utf-8')))
+            return 200, {'usage': {'total_tokens': 321},
+                          'choices': [{'finish_reason': 'tool_calls', 'message': {
+                              'tool_calls': [{'function': {
+                                  'name': 'judge_finding',
+                                  'arguments': json.dumps({
+                                      'agrees': True, 'confidence': 'high',
+                                      'reasoning': 'The citation supports it.',
+                                      'objection': '',
+                                      'quoted_evidence': 'api/x.js'})}}]}}]}
+
+        v, toks = judge_finding(ev, 'fake-key', http_post=fake_judge_ok)
+        ck('FR7 judge_finding parses the forced tool call and the real token count',
+           v['agrees'] is True and toks == 321)
+        ck('FR8 the request forces the judge_finding tool specifically',
+           sent[0]['tool_choice']['function']['name'] == 'judge_finding')
+        ck('FR9 the request caps output at MAX_OUTPUT_TOKENS and sets the '
+           'reasoning-effort fix found live in b67',
+           sent[0]['max_tokens'] == MAX_OUTPUT_TOKENS
+           and sent[0]['reasoning_effort'] == 'low')
+
+        def fake_judge_no_tool(url, headers, body):
+            return 200, {'usage': {'total_tokens': 5},
+                          'choices': [{'finish_reason': 'stop', 'message': {}}]}
+
+        raised_nt = False
+        try:
+            judge_finding(ev, 'fake-key', http_post=fake_judge_no_tool)
+        except CouldNotTell:
+            raised_nt = True
+        ck('FR10 a response with no forced tool call is COULD-NOT-TELL, never '
+           'a fabricated agreement', raised_nt)
+
+        def fake_judge_429(url, headers, body):
+            return 429, {}
+
+        raised_429 = False
+        try:
+            judge_finding(ev, 'fake-key', http_post=fake_judge_429)
+        except CouldNotTell as e:
+            raised_429 = '429' in str(e)
+        ck('FR11 a non-200 is COULD-NOT-TELL with the real status preserved',
+           raised_429)
+
+        # log_finding_review: the adjudication must be a distinct recorded
+        # field, and an agreement vs a disagreement must land as different
+        # entry types.
+        rlog = os.path.join(tmp3, 'result.jsonl')
+        rc_a, _, _, et_a = log_finding_review(
+            10, got, {'agrees': True, 'confidence': 'high',
+                       'reasoning': 'sound', 'objection': '',
+                       'quoted_evidence': 'api/x.js'},
+            'AGREE -- independently reached the same conclusion',
+            'both read the same cited evidence the same way',
+            log_path_override=rlog)
+        rows_a = [json.loads(l) for l in open(rlog, encoding='utf-8') if l.strip()]
+        ck('FR12 an AGREE verdict adjudicated AGREE logs as a check',
+           et_a == 'check' and rows_a[-1]['type'] == 'check')
+        ck('FR13 the logged entry names the PROVIDER explicitly',
+           'Groq' in rows_a[-1]['summary'] and MODEL in rows_a[-1]['summary'])
+        ck('FR14 the logged entry records the ADJUDICATION as its own stated '
+           'line, not merged into the verdict',
+           'ADJUDICATION BY THIS ROLE:' in rows_a[-1]['summary'])
+
+        rc_d, _, _, et_d = log_finding_review(
+            10, got, {'agrees': False, 'confidence': 'medium',
+                       'reasoning': 'unconvinced', 'objection': 'no proof of reachability',
+                       'quoted_evidence': 'api/x.js'},
+            'FALSE-ALARM -- the objection is answered by evidence it could not see',
+            'evidence-only reviewer could not see the reachability trace',
+            log_path_override=rlog)
+        rows_d = [json.loads(l) for l in open(rlog, encoding='utf-8') if l.strip()]
+        ck('FR15 a DISAGREE verdict logs as a FINDING, never silently dropped',
+           et_d == 'finding' and rows_d[-1]['type'] == 'finding')
+        ck('FR16 the disagreement entry carries the specific objection text',
+           'no proof of reachability' in rows_d[-1]['summary'])
+        ck('FR17 KNOWN-BAD CONTROL: an AGREE verdict that this role '
+           'adjudicates as a REAL-CATCH still logs as a finding -- the '
+           'adjudication, not the verdict, decides the entry type',
+           log_finding_review(10, got,
+                              {'agrees': True, 'confidence': 'low',
+                               'reasoning': 'r', 'objection': '',
+                               'quoted_evidence': 'q'},
+                              'REAL-CATCH -- it agreed but surfaced a second '
+                              'issue this role had missed', 'n',
+                              log_path_override=rlog)[3] == 'finding')
+    finally:
+        shutil.rmtree(tmp3, ignore_errors=True)
+
     lines_after = 0
     if os.path.isfile(real_log):
         with open(real_log, encoding='utf-8') as f:
@@ -681,6 +1078,7 @@ def run_fixtures():
 
 
 def main(argv):
+    _force_utf8_stdout()
     if '--selftest' in argv:
         return 0 if run_fixtures() else 1
 
@@ -691,10 +1089,107 @@ def main(argv):
                 return argv[i + 1]
         return default
 
+    # ── FINDING-REVIEW MODE: --seq N ──────────────────────────────────────
+    if '--seq' in argv:
+        seq_raw = opt('--seq')
+        key_path = opt('--key-path', DEFAULT_KEY_PATH)
+        try:
+            seq = int(seq_raw)
+        except (TypeError, ValueError):
+            print('--seq needs an integer')
+            return 2
+        try:
+            entry = load_finding(seq)
+            evidence = build_finding_evidence(entry)
+            est = estimate_tokens(FINDING_SYSTEM_PROMPT) + estimate_tokens(evidence)
+            if est + MAX_OUTPUT_TOKENS + TOKEN_SAFETY_MARGIN > TPM_BUDGET_CEILING:
+                raise CouldNotTell(
+                    'estimated %d prompt tokens + %d capped output + %d margin '
+                    'exceeds the %d TPM ceiling -- finding too long for one call'
+                    % (est, MAX_OUTPUT_TOKENS, TOKEN_SAFETY_MARGIN,
+                       TPM_BUDGET_CEILING))
+            gate = RateGate()
+            ok_gate, why = gate.wait_or_refuse(est)
+            if not ok_gate:
+                raise CouldNotTell('rate-limited: %s' % why)
+            if not os.path.isfile(key_path):
+                raise CouldNotTell('no Groq key at %s' % key_path)
+            with open(key_path, encoding='utf-8') as f:
+                api_key = f.read().strip()
+            verdict, toks = judge_finding(evidence, api_key)
+            gate.record_call(toks)
+        except CouldNotTell as e:
+            print('COULD NOT RUN: %s' % e)
+            return 2
+        print('PROVIDER: Groq / %s' % MODEL)
+        print('SUBJECT : own finding #%d (severity %s, vector %s)'
+              % (seq, entry.get('severity') or '(unset)', entry.get('vector') or '-'))
+        print('VERDICT : %s' % ('AGREES' if verdict.get('agrees') else 'DISAGREES'))
+        print('CONF    : %s' % verdict.get('confidence'))
+        print('REASON  : %s' % verdict.get('reasoning'))
+        if (verdict.get('objection') or '').strip():
+            print('OBJECTION: %s' % verdict['objection'])
+        if (verdict.get('quoted_evidence') or '').strip():
+            print('QUOTED  : %s' % verdict['quoted_evidence'])
+        print('TOKENS  : %d (real, from the API usage object)' % toks)
+
+        adjudication = opt('--adjudication')
+        note = opt('--note')
+        if not adjudication:
+            print()
+            print('NOT LOGGED -- no --adjudication given. This mode prints the '
+                  'verdict so it can be ADJUDICATED (real-catch / agree / '
+                  'false-alarm) before anything permanent is written; logging '
+                  'a raw verdict unadjudicated would let a confident wrong '
+                  'objection read as a real catch forever. Re-run with:')
+            print('  --seq %d --adjudication "<AGREE|REAL-CATCH|FALSE-ALARM '
+                  '-- ...>" --note "<why>" [--prior-verdict agrees|disagrees]'
+                  % seq)
+            return 0 if verdict.get('agrees') else 1
+
+        # RUN-TO-RUN CONSISTENCY, free and worth having: when an earlier
+        # printed run's verdict is named, this logged run states whether the
+        # vendor reached the SAME verdict on the same evidence. A second
+        # reviewer that flips between runs is a different and worse problem
+        # than one that disagrees with this role, and it would otherwise be
+        # invisible.
+        prior = (opt('--prior-verdict') or '').strip().lower()
+        consistency = ''
+        if prior in ('agrees', 'disagrees'):
+            same = (prior == 'agrees') == bool(verdict.get('agrees'))
+            consistency = (
+                'RUN-TO-RUN: a prior run on identical evidence returned %s; '
+                'this logged run returned %s -- %s.'
+                % (prior.upper(),
+                   'AGREES' if verdict.get('agrees') else 'DISAGREES',
+                   'CONSISTENT' if same else
+                   'INCONSISTENT, which is itself a real signal about the '
+                   'reviewer rather than about the finding'))
+            print(consistency)
+
+        full_note = note or '(no note given)'
+        if consistency:
+            full_note = full_note + ' | ' + consistency
+        rc, out, err, etype = log_finding_review(seq, entry, verdict,
+                                                  adjudication, full_note)
+        print()
+        print('LOGGED as type=%s: %s' % (etype, (out or err).strip()))
+        return 0 if verdict.get('agrees') else 1
+
+    # ── log an already-printed verdict with this role's adjudication ─────
+    if '--log-review' in argv:
+        print('COULD NOT RUN: --log-review requires the verdict fields; use '
+              'the library function log_finding_review() from a script that '
+              'already holds the real verdict dict, so a verdict is never '
+              'retyped by hand into the permanent log.')
+        return 2
+
     range_ = opt('--range')
     if not range_:
         print('usage: hover_cross_vendor_check.py --range <git-range> [--cwd DIR] '
-              '[--own-verdict clean|N] [--key-path PATH] | --selftest')
+              '[--own-verdict clean|N] [--key-path PATH]\n'
+              '       hover_cross_vendor_check.py --seq N [--key-path PATH]\n'
+              '       hover_cross_vendor_check.py --selftest')
         return 2
     cwd = opt('--cwd', os.getcwd())
     own_verdict = opt('--own-verdict')

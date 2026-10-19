@@ -9,15 +9,6 @@ H2 -- H2 builds its own independent version later, not a copy of this one,
 the same "independent, not copied" standard this role already holds
 everyone else's second-opinion tooling to (see SKILL.md, Spec 3).
 
-ARCHIVAL COPY, same disclosure as every other tool in this directory: the
-OPERATIONAL copy lives per-clone in hover-audit-log/, where PROJECT_DIR
-below actually resolves to the real project directory full of session
-*.jsonl transcripts. Run from HERE, PROJECT_DIR resolves to this skill's
-own directory instead, which has no top-level *.jsonl transcripts --
-that is fine, not a bug: --selftest still passes (it never touches real
-transcripts), and the real-data path fails CLOSED with a named reason
-rather than silently measuring the wrong thing.
-
 WHAT IS ACTUALLY MEASURED, NAMED PRECISELY RATHER THAN IMPLIED. Each
 written assistant-turn entry in a session's own .jsonl transcript carries
 a real `message.usage` object from the API response: `input_tokens` (new,
@@ -74,7 +65,49 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(HERE)
 
 EXIT_OK = 0
+EXIT_RED_FLAG = 1
 EXIT_COULD_NOT_RUN = 2
+
+# ── THE RED-FLAG CONTEXT THRESHOLD: 70% -> 80%, AND MADE MECHANICAL ───────
+# MOVED ON DIRECT INSTRUCTION, H1 b68. The honest before-state, stated
+# first: this threshold was PROSE ONLY. The rule ">70%, stop starting items"
+# existed as a sentence in a dispatch and in this role's own b24 handoff
+# ("the '>70%, stop starting items' condition had nothing left to gate") and
+# appeared in NO tool anywhere -- grepped for before changing anything:
+# zero hits for a 70 threshold constant across all 60 of this role's tools.
+# So "moving it to 80%" could not be a one-character edit; there was no
+# mechanism to edit. It is BOTH moved to 80% and given a real trigger here
+# for the first time, which is the same lesson this role's own SKILL.md
+# already records against itself: a sentence an LLM is supposed to remember
+# is not a mechanical trigger, and prose is exactly what that section says
+# is not enough.
+#
+# WHY A HIGHER NUMBER IS THE SAFER ONE HERE, rather than a looser one: the
+# rule gates STARTING new work, and firing it too early strands dispatched
+# items unfinished for no reason. b66/b67 both ran to completion past 50%
+# of a 1M window with no degradation, so 70% was costing real work. 80%
+# still leaves ~200k tokens on a 1M window -- more than a whole b67's worth
+# of measured usage -- to finish and hand off cleanly.
+RED_FLAG_PCT = 80.0
+
+# The same window table and the same inference convention the platform's own
+# tools/context_verify.py uses -- deliberately the SAME numbers rather than
+# a second, competing answer. That tool is scoped to the four build clones
+# and says so ("the hover clones are not reachable from here"), so this is
+# the hover-side implementation of one shared convention, not a rival one.
+WINDOWS = {
+    'claude-opus-5': (200000, 1000000),
+    'claude-opus-4': (200000, 1000000),
+    'claude-sonnet-5': (200000, 1000000),
+    'claude-haiku-4-5': (200000,),
+}
+DEFAULT_WINDOWS = (200000, 1000000)
+
+# Declared per-session window marker, read if present. Same filename and
+# same reasoning as the platform convention: untracked, so it cannot travel
+# in a commit; keyed by session, because an observed prompt can witness a
+# declaration that is too SMALL and can never witness one that is too LARGE.
+WINDOW_MARKER = 'sairn-context-window'
 
 
 def last_assistant_usage(lines):
@@ -108,6 +141,129 @@ def last_assistant_usage(lines):
     if last_usage is None:
         return None, 0, 'no assistant turn in this transcript carries a usage object'
     return last_usage, count, None
+
+
+def model_of(lines):
+    """The model string the session's own assistant turns record, or None.
+    Read from the transcript rather than assumed -- and note it does NOT
+    settle the window: a 1M-variant session records the same model string a
+    200k one does, which is why the inference below needs the observed
+    maximum prompt as well."""
+    model = None
+    for raw in lines:
+        raw = raw.strip()
+        if not raw:
+            continue
+        try:
+            obj = json.loads(raw)
+        except ValueError:
+            continue
+        if obj.get('type') != 'assistant' or obj.get('isSidechain'):
+            continue
+        msg = obj.get('message')
+        if isinstance(msg, dict) and msg.get('model'):
+            model = str(msg['model'])
+    return model
+
+
+def model_family(model):
+    """Strip a variant suffix like '[1m]' so 'claude-opus-5[1m]' and
+    'claude-opus-5' land on the same window table row."""
+    if not model:
+        return ''
+    return model.split('[')[0].strip()
+
+
+def observed_max_prompt(lines):
+    """The largest real prompt seen across the session's own assistant
+    turns. This is the only evidence in the transcript that distinguishes a
+    1M session from a 200k one, so the window inference needs it -- the
+    last turn alone is not enough (a fresh window's first turn is small on
+    either)."""
+    best = 0
+    for raw in lines:
+        raw = raw.strip()
+        if not raw:
+            continue
+        try:
+            obj = json.loads(raw)
+        except ValueError:
+            continue
+        if obj.get('type') != 'assistant' or obj.get('isSidechain'):
+            continue
+        msg = obj.get('message')
+        if not isinstance(msg, dict):
+            continue
+        usage = msg.get('usage')
+        if isinstance(usage, dict):
+            best = max(best, context_figure(usage))
+    return best
+
+
+def declared_window(session_id, project_dir=PROJECT_DIR):
+    """(tokens_or_None, why). Reads the untracked per-session marker if one
+    exists. The marker lives in THIS clone's .git directory, keyed by
+    session id -- same convention as the platform tool."""
+    repo = os.path.join(os.path.expanduser('~'), 'Documents', 'SAIRN-hover')
+    path = os.path.join(repo, '.git', WINDOW_MARKER)
+    if not os.path.isfile(path):
+        return None, 'no declared window marker at %s' % path
+    try:
+        with open(path, encoding='utf-8') as f:
+            raw = f.read()
+    except OSError as e:
+        return None, 'declared-window marker unreadable: %s' % e
+    for line in raw.splitlines():
+        line = line.strip()
+        if not line or line.startswith('#'):
+            continue
+        parts = line.split()
+        if len(parts) >= 2 and parts[0] == session_id:
+            try:
+                return int(parts[1]), ''
+            except ValueError:
+                return None, 'marker line for this session is not an integer: %r' % line
+        if len(parts) == 1 and session_id is None:
+            try:
+                return int(parts[0]), ''
+            except ValueError:
+                pass
+    return None, 'marker exists but names no window for session %s' % session_id
+
+
+def window_for(model, observed_max, declared=None):
+    """(window_or_None, why). DECLARED if there is one, else the SMALLEST
+    tabled window the observed prompt actually fits in.
+
+    THAT INFERENCE IS A FLOOR ON THE WINDOW, THEREFORE A CEILING ON THE
+    PERCENTAGE, and this matters in exactly one direction: early in a 1M
+    session a 141k prompt fits 200k, so the inference reports ~71% when the
+    truth is ~14%. Over-reporting is the safe direction for a threshold
+    whose job is to say "stop starting things" -- but it is still wrong, so
+    it is labelled an inference every time and a declared marker always
+    wins. A declaration SMALLER than a prompt actually observed is refused,
+    because then the declaration is the thing that is wrong."""
+    fam = model_family(model)
+    sizes = WINDOWS.get(fam, DEFAULT_WINDOWS)
+    if declared:
+        if observed_max > declared:
+            return None, ('a window of %s is declared for this session but a '
+                          'prompt of %s was actually observed -- the '
+                          'DECLARATION is wrong, so no percentage is reported '
+                          'off a denominator already contradicted'
+                          % ('{:,}'.format(declared), '{:,}'.format(observed_max)))
+        return declared, 'declared'
+    for size in sizes:
+        if observed_max <= size:
+            return size, ('inferred as the smallest tabled window for %r that '
+                          'the observed maximum prompt (%s) fits -- a FLOOR on '
+                          'the window and so a CEILING on the percentage'
+                          % (fam or 'unknown model', '{:,}'.format(observed_max)))
+    return None, ('an observed prompt of %s fits no published window for %r '
+                  '(largest tabled %s) -- no percentage rather than one over '
+                  '100 off a denominator known to be wrong'
+                  % ('{:,}'.format(observed_max), fam or 'unknown model',
+                     '{:,}'.format(sizes[-1])))
 
 
 def context_figure(usage):
@@ -169,6 +325,44 @@ def cmd_measure(argv):
           % (figure, int(usage.get('input_tokens') or 0),
              int(usage.get('cache_read_input_tokens') or 0),
              turn_count, sid, path))
+
+    # ── THE RED-FLAG GATE, mechanical since b68 (was prose at 70%) ────────
+    model = model_of(lines)
+    obs_max = observed_max_prompt(lines)
+    decl, decl_why = declared_window(sid)
+    win, win_why = window_for(model, obs_max, declared=decl)
+    if win is None:
+        print('CONTEXT%%: COULD NOT TELL -- %s' % win_why)
+        print('  The red-flag threshold (%.0f%%) therefore did not evaluate. '
+              'That is a third state, never folded into "under the '
+              'threshold". Declare the real window to resolve it:'
+              % RED_FLAG_PCT)
+        print('  echo "%s <tokens>" >> %s' % (
+            sid, os.path.join(os.path.expanduser('~'), 'Documents',
+                               'SAIRN-hover', '.git', WINDOW_MARKER)))
+        return EXIT_COULD_NOT_RUN
+
+    pct = 100.0 * figure / win
+    # win_why, never decl_why: when nothing is declared, decl_why is the
+    # marker-ABSENCE reason ("no declared window marker at ..."), which is
+    # not the reason the window is what it is. Caught by reading this tool's
+    # own first real output -- it printed the marker path where the
+    # inference explanation belonged.
+    print('CONTEXT%%: %.1f%% of %s (model %r; window %s)'
+          % (pct, '{:,}'.format(win), model or 'unknown', win_why))
+    if not decl:
+        print('  NOTE: the window is INFERRED, not declared -- it is a floor, '
+              'so this percentage is a CEILING and may overstate usage early '
+              'in a large-window session.')
+    if pct >= RED_FLAG_PCT:
+        print('RED FLAG: %.1f%% is at or past the %.0f%% threshold -- STOP '
+              'STARTING NEW ITEMS. Finish, hand off and close out what is '
+              'already open. (Threshold moved 70%%->80%% and made mechanical '
+              'at b68; it was prose in a handoff before that and gated '
+              'nothing.)' % (pct, RED_FLAG_PCT))
+        return EXIT_RED_FLAG
+    print('Under the %.0f%% red-flag threshold -- a measured all-clear, not '
+          'an unrun check.' % RED_FLAG_PCT)
     return EXIT_OK
 
 
@@ -257,6 +451,63 @@ def _selftest():
         ck('C5 FAIL-CLOSED: a --session naming a transcript that does not '
            'exist refuses, never silently falls back to auto-pick',
            missing is None and missing_reason)
+
+        # ── THE RED-FLAG THRESHOLD, b68. Locked in BOTH directions, and
+        # the number itself asserted so a silent edit back to 70 fails here.
+        ck('T0 the threshold constant is 80%, not the old prose 70%',
+           RED_FLAG_PCT == 80.0)
+
+        big = json.dumps({'type': 'assistant',
+                           'message': {'role': 'assistant',
+                                       'model': 'claude-opus-5',
+                                       'usage': {'input_tokens': 2,
+                                                 'cache_read_input_tokens': 850000}}})
+        small = json.dumps({'type': 'assistant',
+                             'message': {'role': 'assistant',
+                                         'model': 'claude-opus-5',
+                                         'usage': {'input_tokens': 2,
+                                                   'cache_read_input_tokens': 100000}}})
+        ck('T1 model_of reads the real model string off an assistant turn',
+           model_of([big]) == 'claude-opus-5')
+        ck('T2 model_family strips a [1m] variant suffix so both variants '
+           'hit one window row',
+           model_family('claude-opus-5[1m]') == 'claude-opus-5')
+        ck('T3 observed_max_prompt takes the LARGEST prompt, not the last',
+           observed_max_prompt([big, small]) == 850002)
+
+        w1, why1 = window_for('claude-opus-5', 850002)
+        ck('T4 an 850k observed prompt infers the 1M window (200k cannot '
+           'hold it)', w1 == 1000000)
+        w2, why2 = window_for('claude-opus-5', 100002)
+        ck('T5 FLOOR BEHAVIOUR, disclosed not hidden: a 100k prompt infers '
+           '200k -- the smallest window it fits -- and the reason text says '
+           'it is a floor/ceiling', w2 == 200000 and 'FLOOR' in why2)
+        w3, why3 = window_for('claude-opus-5', 850002, declared=1000000)
+        ck('T6 a DECLARED window wins over the inference', w3 == 1000000)
+        w4, why4 = window_for('claude-opus-5', 850002, declared=200000)
+        ck('T7 KNOWN-BAD CONTROL: a declaration SMALLER than an observed '
+           'prompt is refused (window None), never used to report a >100% '
+           'figure', w4 is None and 'DECLARATION is wrong' in why4)
+        w5, why5 = window_for('claude-haiku-4-5', 500000)
+        ck('T8 FAIL-CLOSED: a prompt fitting no tabled window returns None '
+           'with a named reason, not a percentage over 100',
+           w5 is None and 'no published window' in why5)
+
+        # The threshold arithmetic itself, both sides of the line.
+        ck('T9 850002 of 1,000,000 is 85.0% -- at/over 80%, a RED FLAG',
+           (100.0 * 850002 / 1000000) >= RED_FLAG_PCT)
+        ck('T10 KNOWN-BAD CONTROL: 700,000 of 1,000,000 is 70.0% -- this is '
+           'exactly the figure the OLD 70% rule would have red-flagged and '
+           'the new 80% rule must NOT, which is the whole point of the move',
+           (100.0 * 700000 / 1000000) < RED_FLAG_PCT)
+        ck('T11 the 80% boundary is inclusive (>=), so exactly 800,000 of '
+           '1,000,000 still red-flags',
+           (100.0 * 800000 / 1000000) >= RED_FLAG_PCT)
+
+        declared_missing, dwhy = declared_window('no-such-session-id')
+        ck('T12 a session with no declared-window marker line returns None '
+           'with a reason, so the caller falls back to the inference rather '
+           'than to a guess', declared_missing is None and dwhy)
     finally:
         import shutil
         shutil.rmtree(tmp, ignore_errors=True)
