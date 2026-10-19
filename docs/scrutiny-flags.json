@@ -1887,6 +1887,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/roofing_claim_gate_single_source.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "3373f5ac4800f0eafc4eb458874495a32a5ad1f0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/provisioning_attribution.js",
    "class": "test file",
    "level": "CHANGE",
@@ -8156,6 +8164,22 @@
     }
    ],
    "sha": "cd65d82d66b32d8cd5b923ace8dc31b8d35b13c2",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_not_provisioned_misclass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "cd9285695527b5094054a7b1f2a4b5a6bce74dca",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_read_unreadable_not_empty.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "cd9285695527b5094054a7b1f2a4b5a6bce74dca",
    "criteria_version": "2026-10-06.1"
   },
   {
