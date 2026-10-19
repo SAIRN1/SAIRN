@@ -1,0 +1,383 @@
+REPORT fourth b36 2026-10-19 -- wrapped on instruction with nothing half-written; two instruction premises that did not hold, and one defect left in place on purpose
+
+================================================================================
+WHAT WAS ASKED, AND WHERE EACH ITEM ACTUALLY STANDS
+================================================================================
+
+  1  publish rt_routes_schema.sql verbatim + re-check its columns     DONE
+  2  SAIRNmechanical as the fifth routing consumer                    NOT STARTED
+                                                                      -- STOPPED
+                                                                      AND REPORTED
+  3  measure how often redactDocumentText returns complete:false      DONE -- 100%
+  4  keyboard / focus / screen-reader pass on sairndental             PARTLY DONE
+  5  worldwide competitive-gap audit, one vertical                    DONE
+  6  push, no force, confirm landed                                   DONE
+
+Five done or partly done, one deliberately not started. The manifest carries
+the same wording so it and this narrative cannot drift apart.
+
+WRAPPED UP ON INSTRUCTION, AND THE STOP COST NOTHING. All six items' work was
+already committed and landed as 3c7f7efa before the wrap-up arrived. NOTHING
+WAS MID-EDIT, NOTHING WAS STASHED, NOTHING WAS REVERTED -- the only
+uncommitted files at the stop were the handoff and the item-6 manifest row,
+both complete. git stash list reads 0.
+
+THE HANDOFF WAS WRITTEN BEFORE THIS REPORT, as instructed.
+
+NO FORCE AND NO OVERRIDE OF ANY FORM. api/sd-data.js, tools/, hooks and
+settings files were all left alone, verified with a command scoped to my own
+commit rather than a range.
+
+
+================================================================================
+1. THE THREE HEADLINES
+================================================================================
+
+1. TWO INSTRUCTION PREMISES DID NOT HOLD, AND BOTH ARE REPORTED RATHER THAN
+   WORKED AROUND. The redaction question asked for a rate on the assumption
+   that complete:true is normal -- it is NEVER true, by construction. And the
+   audit asked for the first of four verticals with no current audit -- all
+   four have one. Sections 4 and 6.
+
+2. ONE REAL SCHEMA DEFECT FOUND AND DELIBERATELY NOT FIXED. rtroutes_saved_sane
+   requires saved_seconds >= 0; the module returns NEGATIVE savings un-clamped
+   by design, a test asserts it, and all four consumers render it. A negative
+   would make Postgres reject the whole upsert. It is a CHECK-constraint
+   contradiction, NOT a column-name or type mismatch, and the instruction
+   scoped fixes to those two. Section 2.
+
+3. SAIRNMECHANICAL HAS NO SCHEDULE DATA LAYER AT ALL. Not a module problem --
+   there is nothing to route. The app's own code says so twice. Section 3.
+
+
+================================================================================
+2. ITEM 1 -- THE SCHEMA: CHECK COMPLETED, ONE DEFECT REPORTED
+================================================================================
+
+THE COLUMN CHECK WAS COMPLETED, not abandoned at the stop. Compared against
+api/_lib/routes.js and all four wired consumers:
+
+  * all four consumers send exactly {job_ref, address, locked, status};
+    rt_stops declares all four
+  * status enum ('pending','done','skipped') matches what the consumers send
+    AND what isPinned() tests
+  * source enum ('manual','drive-matrix','great-circle') matches the module's
+    STORED_BASES exactly
+  * route-level app_id / assignee_id / route_date all present
+
+NO COLUMN-NAME OR TYPE MISMATCH, SO NOTHING WAS EDITED -- exactly as
+instructed. The file published to Drive is byte-identical to the repo copy:
+8,777 bytes, sha256 2c9488e38554e320.
+
+2.1 THE DEFECT, REPORTED AND LEFT IN PLACE
+
+    constraint rtroutes_saved_sane
+      check (saved_seconds is null or saved_seconds >= 0),
+
+THE MODULE DELIBERATELY RETURNS NEGATIVE SAVINGS UN-CLAMPED. From routes.js:
+"A NEGATIVE RESULT IS RETURNED AS-IS AND IS NOT CLAMPED. A nearest-neighbour
+heuristic can genuinely produce a worse path than the one a human chose, and a
+caller that stores a negative saving has learned something true. Clamping is
+how the original lost the distinction in the first place."
+
+A test arm asserts the result IS negative. All four consumers render it --
+"this order is about N min LONGER than the one you had."
+
+SO IF THE HANDLER BRANCH EVER STORES A NEGATIVE, POSTGRES REJECTS THE ENTIRE
+UPSERT and the route write fails.
+
+NOT FIXED, ON PURPOSE. The instruction scoped fixes to column-name and type
+mismatches; this is neither. THE CORRECT FIX IS TO DROP THE CONSTRAINT, not to
+clamp the module -- clamping re-introduces the exact 2026-06-18 defect the
+module was written to avoid, where an unmeasurable route and an already-optimal
+one both rendered "0 min".
+
+NOT REPRODUCED, AND THAT IS STATED: the tables do not exist, so no insert was
+attempted. The contradiction is read from the schema text and the module
+source, not from a failed write.
+
+
+================================================================================
+3. ITEM 2 -- SAIRNMECHANICAL: STOPPED AND REPORTED, WHICH IS THE ANSWER
+================================================================================
+
+The data model was read FIRST, as instructed, and the instruction's own warning
+-- do not assume it matches scape or grounds -- turned out to understate it.
+
+SAIRNMECHANICAL HAS NO SCHEDULE DATA LAYER. Its 7 registered resources:
+
+    mech_credentials  mech_site_assets  mech_insurance_policies
+    mech_quotes  mech_checks  mech_docs  mech_takeoffs
+
+NONE is a schedule, an assignment, or a dated visit.
+
+mech_site_assets DOES carry site_address and customer_name, so addresses
+exist -- but it has NO assignee and NO scheduled date. recorded_by is who
+entered the row; installed_on is an install date. A ROUTE NEEDS STOPS PLUS AN
+ASSIGNEE PLUS A DATE, AND TWO OF THE THREE DO NOT EXIST.
+
+THE APP SAYS SO ITSELF, TWICE, which is why this is a finding and not an
+opinion:
+
+  * the Dispatch & Scheduling panel markup -- "This panel has no backend;
+    building one is separate scoped work."
+  * aiDispatch() -- "FABRICATED PROMPT REMOVED 2026-08-27... There is no data
+    layer for this app yet, so the honest behaviour is to refuse. Do NOT
+    restore a fixture prompt -- wire it to real records."
+
+Wiring a Route-order card would have meant either INVENTING that layer
+(explicitly out of scope, and explicitly warned against) or SHIPPING A DEAD
+CONTROL over an empty state that can never populate -- a Check 0d defect.
+
+THE MODULE IS UNCHANGED AND CORRECT. This is not the "shape needs a module
+change" case the instruction anticipated; it is stronger -- the prerequisite
+data does not exist at all.
+
+EXACT NEXT STEP: build mech_schedule (a job/asset ref + an assignee + a date)
+as its own scoped work. Once it exists the card is the same three edits as
+SAIRNscape.
+
+
+================================================================================
+4. ITEM 3 -- THE RATE IS 100%, AND THE QUESTION'S PREMISE WAS FALSE
+================================================================================
+
+MEASURED: complete:false on 193 of 193 samples. complete === true: 0.
+RATE: 100.0%.
+
+METHOD, re-runnable -- node scratchpad/b36/measure_redaction.js:
+  * 185 paragraph-sized chunks harvested from SIX REAL REPO FILES
+    (CRITICALITY-TIERS.md, SAIRN-PROCESS-RULES.md, mech-redact.js,
+    ai-scan-redaction.js, the pest-control audit, CLAUDE.md)
+  * plus 8 SYNTHETIC documents built to the shapes AI_SCANNED_TEXT names --
+    work order, AI memory, takeoff, quote, plain note, already-redacted,
+    empty -- each seeded with the identifier classes the RULES target, so the
+    measurement exercises the redactor rather than only its pass-through
+
+AND THE STRUCTURAL READING BEATS THE SAMPLED ONE, which is why both are
+reported. All three `complete:` literals in api/_lib/mech-redact.js are false,
+and the source says why in its own words:
+
+    "NEVER TRUE. Stated as a constant rather than computed, because there is
+     no input for which this pass is complete and a field that could be true
+     invites a caller to branch on it."
+
+SO b35's PREMISE WAS FALSE. That row said the B "rests on complete:true not
+being abnormal" and asked for the rate. complete is never true; the rate could
+not have been anything but 100%, and no sample size would have changed it. A
+sampled figure alone would have answered the question while missing that.
+
+4.1 THE SHARPER RESULT CAME FROM AN INDEPENDENT PATTERN SET
+
+Residual identifiers were checked with patterns DELIBERATELY DIFFERENT from
+the redactor's own RULES -- checking a redactor with its own regexes only
+proves it is self-consistent.
+
+  * "Customer: Diane Ferraro" IS redacted when the label STARTS A LINE --
+    LABELLED_NAME is line-anchored (^...$ with the m flag)
+  * THE SAME STRING SURVIVES MID-LINE
+  * "Marcus Webb" in ordinary prose survives, which the shipped
+    NOT_REDACTED_NOTE discloses on every single result
+
+So the redactor is honest about its own limits and the measurement confirms
+documented behaviour rather than finding a bug.
+
+4.2 WHAT CHANGED IN THE REGISTER
+
+The `memory` row's confidentiality and evidence cells were rewritten. TIER
+UNCHANGED AT B -- but on NEW grounds: not "the redaction is complete" (false)
+but "the stored value is a <=120-character business insight, not a document,
+and the identifier classes a short insight is likely to carry are the ones the
+rules do catch."
+
+AND THE ROW NOW NAMES A SHARPER NEXT TEST than the one it carried: does a real
+ai_memories corpus contain personal names in PROSE? That needs production rows
+this clone does not have, and it is recorded as such rather than guessed.
+
+
+================================================================================
+5. ITEM 4 -- SAIRNDENTAL: THE FIRST A11Y PASS ON ANY SAIRN APP
+================================================================================
+
+Four mechanical, low-risk fixes. EVERY EDIT CARRIES A COUNTED ASSERTION in
+scratchpad/b36/a11y_fix.py, and all four were RE-RENDERED to confirm.
+
+  fix                                        measured
+  -----------------------------------------  --------------------------------
+  A  :focus-visible outlines                 visible ring across 5 panels
+                                             8/26 -> 26/26, missing 0
+  B  144 labels associated by for=/id        unlabelled inputs 147 -> 3
+  C  role="dialog" + aria-modal="true"       0 -> 7 of 7 modals
+  D  Escape closes an open modal             confirmed TRUE in the browser
+
+ON (A), WHICH WAS THE BIGGEST GAP: the global rule at :122 set outline:none on
+EVERY input, select and textarea, and the only remaining focus signal was a 1px
+border-colour change -- not a visible focus indicator under WCAG 2.4.7, and
+invisible to anyone who cannot distinguish the two border colours. The
+outline:none declarations are DELIBERATELY LEFT IN PLACE AND OVERRIDDEN rather
+than deleted: deleting them changes the RESTING appearance of every control in
+the app, where the override changes only the focused state. :focus-visible
+rather than :focus so a mouse click does not draw a ring.
+
+TAB ORDER THROUGH THE PANEL SWITCHER WAS ALREADY CORRECT and is recorded as a
+pass rather than silently omitted: all 23 sidebar items are native <button>
+elements, none carries a negative tabindex, and the nav has aria-label="Main
+navigation" with the toggle carrying aria-label + aria-expanded +
+aria-controls.
+
+checkblocks 5 blocks / 0 failed. wcag_contrast_check --gate: 0 findings.
+
+5.1 TWO THINGS THAT NEARLY SHIPPED SILENTLY
+
+(a) AN ASSERTION REFUSED THE ESCAPE LISTENER. '</body>' appears TWICE in the
+    file -- the first inside a JAVASCRIPT STRING at :5750 that builds a print
+    document. A blind replace would have injected the listener into generated
+    print markup and left the real page without it: WORKING BY APPEARANCE,
+    BROKEN IN FACT. Re-anchored on the last occurrence and the shape
+    re-asserted. The script writes the file only at the end, so nothing was
+    half-applied when the assertion fired.
+
+(b) THE FIRST VERIFY RUN READ FROM BROWSER CACHE and showed all four fixes
+    ABSENT. Without a cache-buster this would have been reported as a false
+    failure -- the file on disk had already grown 443,029 -> 447,676 bytes.
+
+5.2 WHAT REMAINS, WITH LINE NUMBERS
+
+  * 3 inputs still unlabelled:
+      #gkey            :230   the licence-gate input
+      #icap-file       :428   a display:none file input
+      #tp-item-planned :981   its label has no id to point at
+  * NO FOCUS TRAP on any of the 7 modals. Deliberately NOT half-built: a trap
+    needs per-modal first/last focusable bookkeeping and a return-focus
+    target, and half of one is worse than none because it reads as done.
+  * NO PANEL-CHANGE ANNOUNCEMENT. nav() toggles .on with no aria-live region,
+    so a screen-reader user gets no notice the panel changed. Two aria-live
+    attributes exist in the file; neither is on the switcher.
+  * NO ACTUAL SCREEN-READER TEST WAS RUN. This was a MECHANICAL audit -- roles,
+    labels, focus, keys -- driven through the DOM. NVDA, JAWS and VoiceOver
+    were not used, and that is a different and stronger check. The item asked
+    for a screen-reader pass and this is not one; saying so is the honest
+    report.
+
+
+================================================================================
+6. ITEM 5 -- THE AUDIT TARGET'S PREMISE DID NOT HOLD EITHER
+================================================================================
+
+The instruction said to take the first of sairnlaw, sairncode, sairndesign,
+sairnbiz WITH NO CURRENT AUDIT. ALL FOUR HAVE ONE. Measured before choosing:
+
+    sairnlaw     2 audits, newest 2026-09-26
+    sairncode    2 audits, newest 2026-09-26
+    sairnbiz     1 audit,         2026-09-26
+    sairndesign  1 audit,         2026-10-05
+
+None is older than four weeks, so none is stale. THREE APPS HAVE ZERO AUDITS:
+sairndental, sairnmechanical, sairnroofing.
+
+Took SAIRNDENTAL -- no audit at all, and already open for item 4, so the code
+recon is first-hand rather than inherited. Reported rather than blocking on the
+discrepancy.
+
+6.1 THE RESULT INVERTS THE SERIES
+
+The previous four audits each found a market gap SAIRN had NO capability to
+fill. THIS ONE IS THE REVERSE: the gap the 2026 dental market most loudly names
+is the one SAIRNdental is already closest to filling.
+
+The buyer literature is consistent and does NOT ask for another PMS. It asks
+for eligibility verification, denial management and credentialing to stop
+living in three separate tools -- "eligibility verification sits upstream,
+while denial management, appeals, credentialing and A/R recovery sit
+downstream".
+
+SAIRNDENTAL ALREADY HOLDS THREE OF THE FOUR PIECES IN ONE APP, read from its
+registry: dnt_denial, dnt_credentials + dnt_cred_rules, dnt_coverage_rules --
+plus dnt_gfe, which incumbents mostly do not carry. The regulatory surface is
+FEDERAL AND SETTLED (No Surprises Act Good Faith Estimates), which is the
+opposite of childcare's and pest control's 50-state matrices.
+
+THE MISSING PIECE IS REAL-TIME ELIGIBILITY, AND THE BLOCKER IS A COMPANY
+DECISION. Eligibility is an X12 270/271 EDI transaction that must go through a
+clearinghouse -- DentalXChange, Vyne, Change Healthcare, Tesia, NEA, QSI,
+NextGen. Reported economics, vendor-sourced: $40-60K integration, $20-40K/year
+recurring, $0.15-0.51 per transaction.
+
+TO SHIP IT, SAIRN MUST ENTER A COMMERCIAL CLEARINGHOUSE RELATIONSHIP -- sign a
+contract, carry a recurring cost, accept per-transaction billing that scales
+with customer usage. NO AMOUNT OF BUILDING SUBSTITUTES FOR IT. Same CLASS as
+trucking's "SAIRN has never sold an administered service", narrower in scope:
+a vendor contract and a line item, not a staffed service with liability.
+
+FOUR OF FIVE SERIES BLOCKERS ARE NOW COMPANY DECISIONS.
+
+6.2 THE SOURCING IS WEAKER THAN THE LAST TWO AUDITS AND THE DOCUMENT SAYS SO
+
+No primary regulatory citation was pulled -- the GFE requirements come from
+compliance-firm summaries, not the Federal Register, where the pest-control and
+trucking audits both used the Federal Register API. Several sources sell
+eligibility tools into this exact gap, and that conflict is named rather than
+averaged away. One source states outright that no authoritative public
+market-share dataset for dental PMS exists, which is more useful than the
+numbers around it; share figures are therefore reported as RANGES.
+
+
+================================================================================
+7. STATE
+================================================================================
+
+  HEAD vs origin/main   0 ahead, 0 behind -- READ FROM THE REMOTE after fetch
+  the two commits       3c7f7efa  the work (4 files)
+                        56663d88  the handoff + manifest
+  both on origin        each confirmed by merge-base --is-ancestor
+  forbidden paths       0 -- api/sd-data.js, tools/, .githooks, settings.json,
+                        scoped to MY OWN COMMIT, not a range
+  uncommitted           none
+  git stash             0 -- NOTHING STASHED, NOTHING REVERTED
+  force push            none
+  overrides             none, any form
+  auditor clones        not entered
+  manifest              5 done, 1 blocked (item 2, with its reason)
+  claim                 RELEASED IN FULL -- no file in it has unfinished work
+  tier checker          RESOURCE_ROWS 400, TIER_A 283, PROBLEMS 14, re-run on
+                        the merge; none of the 14 is a fourth row stating a
+                        wrong tier
+
+
+================================================================================
+8. WHAT b36 PROVED vs LEFT UNPROVEN
+================================================================================
+
+PROVED, measured or driven:
+  * the schema matches the module and all four consumers on every column name
+    and type; one CHECK contradiction found and located
+  * complete:false on 193/193, and complete is a hard-coded constant in all
+    three return paths
+  * a labelled name survives mid-line while being redacted at line start --
+    found with an independent pattern set
+  * sairndental: focus ring 8/26 -> 26/26, labels 147 -> 3, modals 0 -> 7,
+    Escape works -- all re-rendered after a cache-buster
+  * checkblocks 5/0, wcag gate 0 findings, routes suite 56/56
+  * my commits touch five files total and 0 forbidden paths
+
+LEFT UNPROVEN, and none of it is recorded as checked:
+  * NO SCREEN-READER TEST WAS RUN. Item 4 asked for one; what was done is a
+    mechanical DOM audit. This is the largest gap in this batch.
+  * THE NEGATIVE-SAVING DEFECT IS REASONED, NOT REPRODUCED -- the tables do not
+    exist, so no insert was attempted.
+  * NOTHING LIVE. Unchanged from b34/b35 and for the same measured reason: the
+    licence gate answers 401 ahead of resource dispatch.
+  * ALL FOUR WIRED ROUTE CONSUMERS REMAIN UNREACHABLE AT RUNTIME until the
+    api/sd-data.js handler branch lands.
+  * THE DENTAL AUDIT drove no competitor product, interviewed nobody, and
+    pulled no primary regulation.
+  * SAIRNDENTAL's GFE / denials / credentialing panels were read from the
+    REGISTRY, not audited for correctness. Existing and being right are
+    different claims.
+  * memory's prose-name exposure in a REAL corpus -- needs production rows.
+
+CONTEXT 80.2% of 1,000,000 -- 801,631 tokens, measured.
+Printed by `python tools/context_verify.py --digest-line` and pasted verbatim.
+
+SHA256 (SAIRN-handoff-fourth-b36.md): 99db67ae33874f27
+END-OF-REPORT

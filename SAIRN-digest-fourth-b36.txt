@@ -1,0 +1,319 @@
+DIGEST fourth b36 2026-10-19
+
+STATUS
+  WRAPPED ON INSTRUCTION, AND THE STOP COST NOTHING. All six items' work was
+  already committed and landed as 3c7f7efa before the wrap-up arrived; the
+  handoff and the item-6 manifest row followed as 56663d88. NOTHING WAS
+  MID-EDIT, NOTHING WAS STASHED, NOTHING WAS REVERTED -- git stash list reads
+  0 and git status --porcelain is empty. 0 ahead / 0 behind, read from the
+  remote after a fetch. NO FORCE, NO OVERRIDE OF ANY FORM.
+  THE HANDOFF WAS WRITTEN BEFORE THIS REPORT, as instructed.
+  THE CLAIM IS RELEASED IN FULL -- no file in it has unfinished work.
+
+  1  publish + re-check rt_routes_schema.sql    DONE -- check COMPLETED
+  2  SAIRNmechanical as fifth consumer          NOT STARTED, STOPPED AND
+                                                REPORTED (the correct outcome)
+  3  measure complete:false rate                DONE -- 100%, 193 samples
+  4  sairndental keyboard/focus/SR pass         PARTLY DONE -- 4 fixes landed,
+                                                no screen-reader test run
+  5  competitive-gap audit, one vertical        DONE -- target premise corrected
+  6  push, confirm landed                       DONE
+
+  TWO INSTRUCTION PREMISES DID NOT HOLD AND BOTH ARE REPORTED RATHER THAN
+  WORKED AROUND: the redaction question assumed complete:true is normal (it is
+  NEVER true, by construction), and the audit asked for the first of four
+  verticals with no current audit (all four have one).
+
+DECISION-NEEDED
+  1. A REAL SCHEMA DEFECT, FOUND AND DELIBERATELY NOT FIXED. Constraint
+     rtroutes_saved_sane requires saved_seconds >= 0, while api/_lib/routes.js
+     returns NEGATIVE savings UN-CLAMPED by design, a test arm asserts it, and
+     all four consumers render it as "this order is about N min LONGER". A
+     negative would make Postgres REJECT THE ENTIRE UPSERT and the route write
+     would fail. NOT fixed because it is a CHECK-constraint contradiction, not
+     a column-name or type mismatch, and the instruction scoped edits to those
+     two. THE CORRECT FIX IS TO DROP THE CONSTRAINT, NOT TO CLAMP THE MODULE --
+     clamping re-introduces the exact 2026-06-18 defect the module exists to
+     avoid. Needs whoever next holds sql/.
+  2. SAIRNMECHANICAL CANNOT BE WIRED AND THAT IS NOT A MODULE PROBLEM. It has
+     NO schedule data layer: its 7 resources are mech_credentials,
+     mech_site_assets, mech_insurance_policies, mech_quotes, mech_checks,
+     mech_docs, mech_takeoffs -- none is a schedule, an assignment or a dated
+     visit. mech_site_assets DOES carry site_address, but has no assignee and
+     no date. The app says so itself twice: the Dispatch panel markup ("This
+     panel has no backend; building one is separate scoped work") and
+     aiDispatch() ("There is no data layer for this app yet... Do NOT restore a
+     fixture prompt -- wire it to real records"). NEXT: build mech_schedule as
+     its own scoped work, then the card is three edits.
+  3. api/sd-data.js's rt_routes HANDLER BRANCH IS STILL UNAPPLIED, so ALL FOUR
+     wired consumers remain unreachable at runtime. cody holds that file.
+     Pasteable in docs/2026-10-19-fourth-b34-routing-phase1.md section 3.
+  4. sql/rt_routes_schema.sql HAS STILL NEVER BEEN RUN. Michael's -- the full
+     text is under SQL below.
+  5. THE DENTAL AUDIT'S BLOCKER IS A COMPANY DECISION, FLAGGED AS ONE:
+     real-time eligibility is an X12 270/271 transaction requiring a COMMERCIAL
+     CLEARINGHOUSE CONTRACT (DentalXChange, Vyne et al), reported at $40-60K
+     integration, $20-40K/year, $0.15-0.51 per transaction. Four of five series
+     blockers are now company decisions.
+
+CHANGED
+  docs/CRITICALITY-TIERS.md   the `memory` row's confidentiality and evidence
+                      cells rewritten. TIER UNCHANGED AT B but on NEW grounds:
+                      not "the redaction is complete" (false) but "a <=120-char
+                      business insight, and the identifier classes it is likely
+                      to carry are the ones the rules do catch". The row now
+                      names a sharper next test than the one it carried.
+  sairndental.html    FOUR a11y fixes, each with a counted assertion, all
+                      re-rendered: :focus-visible outlines (visible ring across
+                      5 panels 8/26 -> 26/26); 144 labels associated by for=/id
+                      (unlabelled 147 -> 3); role=dialog + aria-modal on all 7
+                      modals (0 -> 7); Escape closes an open modal. 443,029 ->
+                      447,676 bytes. checkblocks 5/0, wcag gate 0 findings.
+  docs/cloud-research/sairndental-competitive-gap-audit-2026-10-19.md   NEW.
+  SAIRN-handoff-fourth-b36.md, the b36 manifest   NEW.
+  NOT TOUCHED: api/sd-data.js (cody's), tools/ (cc's), .githooks, settings
+  files, sairnmechanical.html (claimed, deliberately unmodified), api/bridge.js
+  (hank's), the auditor clones. sql/rt_routes_schema.sql NOT EDITED -- the
+  Drive copy is byte-identical, 8,777 bytes, sha256 2c9488e38554e320.
+
+EVIDENCE-path
+  C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\7114877e-14ff-4635-8129-799b043ea778\scratchpad\b36\
+    -- measure_redaction.js (the 193-sample measurement), a11y_fix.py (the four
+       counted-assertion fixes), fix_memory_row.py, httpd.log
+  transcript  C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\7114877e-14ff-4635-8129-799b043ea778.jsonl
+
+  KEY COMMANDS, re-runnable:
+    node scratchpad/b36/measure_redaction.js      -> 193/193 complete:false
+    python tools/checkblocks.py sairndental.html  -> 5 blocks, 0 failed
+    python tools/wcag_contrast_check.py --gate sairndental.html -> 0 findings
+    node api/_lib/routes.test.js                  -> 56 passed, 0 failed
+    python tools/criticality_tier_check.py        -> PROBLEMS 14, none a fourth
+                                                     row stating a wrong tier
+    git show --name-only --format="" 3c7f7efa 56663d88 | sort -u \
+      | grep -cE 'api/sd-data\.js|^tools/|\.githooks|settings\.json'  -> 0
+
+UNVERIFIED
+  - THE COLUMN CHECK WAS COMPLETED, so this is NOT an unfinished-check caveat:
+    all four consumers send {job_ref,address,locked,status}, rt_stops declares
+    all four, the status and source enums match the module exactly, and the
+    route-level app_id/assignee_id/route_date are all present. NO column-name
+    or type mismatch. The one defect found is the CHECK contradiction in
+    DECISION-NEEDED 1.
+  - NO SCREEN-READER TEST WAS RUN. Item 4 asked for one; what was done is a
+    MECHANICAL DOM audit of roles, labels, focus and keys. NVDA, JAWS and
+    VoiceOver were not used. THIS IS THE LARGEST GAP IN THE BATCH.
+  - STILL OUTSTANDING ON sairndental, with line numbers: 3 unlabelled inputs
+    (#gkey :230, #icap-file :428, #tp-item-planned :981); NO FOCUS TRAP on any
+    of the 7 modals (deliberately not half-built -- a trap needs per-modal
+    first/last bookkeeping and a return-focus target); NO panel-change
+    announcement (nav() toggles .on with no aria-live region).
+  - THE NEGATIVE-SAVING DEFECT IS REASONED, NOT REPRODUCED. The tables do not
+    exist, so no insert was attempted.
+  - NOTHING LIVE. Unchanged from b34/b35 and for the same measured reason: the
+    licence gate answers 401 ahead of resource dispatch, so a probe cannot tell
+    a registered resource from a nonsense one.
+  - THE DENTAL AUDIT drove no competitor product, interviewed nobody, and
+    pulled NO PRIMARY REGULATION -- weaker sourcing than the pest-control and
+    trucking audits, and the document says so. Several sources sell eligibility
+    tools into the exact gap they describe.
+  - SAIRNDENTAL's GFE/denials/credentialing panels were read from the REGISTRY,
+    not audited for correctness. Existing and being right are different claims.
+  - memory's prose-name exposure in a REAL corpus -- needs production rows this
+    clone does not have.
+
+  TWO THINGS A GUARD CAUGHT THAT WOULD OTHERWISE HAVE SHIPPED SILENTLY:
+  (a) An assertion refused the Escape listener because '</body>' appears TWICE
+      -- the first inside a JavaScript STRING at :5750 building a print
+      document. A blind replace would have injected it into generated print
+      markup and left the real page without it.
+  (b) The first verify run READ FROM BROWSER CACHE and showed all four a11y
+      fixes absent. Without a cache-buster that would have been reported as a
+      false failure.
+
+NEXT
+  1. MICHAEL: run the SQL below in the Supabase SQL editor. CONSIDER DROPPING
+     rtroutes_saved_sane FIRST -- see DECISION-NEEDED 1; as written it will
+     reject any route whose optimised order is worse than the human's.
+  2. WHOEVER HOLDS api/sd-data.js: paste the rt_routes handler branch and the
+     extraActions line from the b34 doc, section 3.
+  3. AFTER 1 AND 2: live-verify against the DEPLOYED URL with a real session --
+     not a clean git push, not a local run, not a stubbed transport.
+  4. mech_schedule as scoped work, then SAIRNmechanical is three edits.
+  5. sairndental a11y remainder: focus trap, panel-change announcement, the 3
+     labelled inputs, and A REAL SCREEN-READER TEST.
+  6. cc: the shared.js skip fix (b35, measured to clear 8 findings and
+     introduce 0), and the b34 Tier A review obligation on rt_routes/rt_stops.
+  7. MICHAEL: the dental clearinghouse decision (audit section 6.1).
+  8. sairnmechanical and sairnroofing still have ZERO competitive-gap audits.
+
+SQL
+  sql/rt_routes_schema.sql -- VERBATIM AND UNEDITED, 8,777 bytes, sha256
+  2c9488e38554e320. THE COLUMN CHECK AGAINST THE MODULE AND ALL FOUR CONSUMERS
+  IS COMPLETE (see UNVERIFIED, first bullet). Run as-is, or drop
+  rtroutes_saved_sane first per DECISION-NEEDED 1.
+
+-- sql/rt_routes_schema.sql
+-- The shared routing primitive — Supabase schema for `rt_routes` + `rt_stops`.
+--
+-- Run this once in the Supabase SQL editor before the `rt_routes` / `rt_stops`
+-- resources will work. Scope and the reasoning behind every column:
+-- docs/2026-10-19-fourth-b33-routing-primitive-scope.md.
+--
+-- WHY THIS IS NOT PER-APP. StoneDesk, SAIRNgrounds, SAIRNscape, SAIRNroofing
+-- and SAIRNmechanical all order a day's stops for one person. Five copies of
+-- that would be five places to fix the same bug, which is why
+-- api/_lib/routes.js is one module and these are one pair of tables. `app_id`
+-- distinguishes the tenant's app, not the schema.
+--
+-- WHY `rt_` AND NOT `sd_`: the prefix on this platform marks the OWNING app,
+-- and no app owns these. A `sd_` prefix would have made StoneDesk the owner of
+-- a table SAIRNgrounds writes to, which is the naming the rest of the register
+-- uses to decide who may change what.
+--
+-- KEYING: license_hash = sha256(license_key), the same key every other
+-- server-side SAIRN table uses. `assignee_id` is the APP'S OWN employee or
+-- crew identifier, carried verbatim and never re-keyed here — this module does
+-- not own the roster and must not invent a second identity for a person who
+-- already has one.
+--
+-- ── CRITICALITY, STATED HERE BECAUSE THE SCHEMA IS WHERE IT IS DECIDED ──────
+-- Both rows are TIER A ON CONFIDENTIALITY. docs/CRITICALITY-TIERS.md carries
+-- the row and the argument; the short form is that `rt_stops` joins a street
+-- address to a NAMED assignee and a DATE, which is a record of where an
+-- identifiable person was or will be at a known time. That is the same class
+-- that took `grd_cart_orders` and `leg_processions` from B to A. It is not
+-- incidental to the feature — an ordering with no addresses is not an
+-- ordering — so it cannot be designed away, only protected.
+--
+-- SECURITY MODEL: service-role only, RLS enabled with no anon policy.
+-- The application layer requires a LICENCE **and** A SESSION for every verb.
+-- Not licence-only: a licence proves the shop, and an address list joined to a
+-- named employee is not shop metadata. api/bridge.js's `push` was licence-only
+-- for months while carrying expense invoices, and the comment at the top of
+-- that file is the record of what that cost.
+
+-- ── rt_routes: one planned run of stops, for one assignee, on one date ──────
+create table if not exists public.rt_routes (
+  id            uuid primary key default gen_random_uuid(),
+  license_hash  text not null,
+  app_id        text not null,
+  assignee_id   text not null,
+  route_date    date not null,
+  status        text not null default 'planned'
+                  check (status in ('planned','active','closed')),
+
+  -- NULL MEANS NEVER OPTIMISED. Not 0, not now(). A route that has only ever
+  -- been hand-ordered must be able to say so, and `source` says which.
+  optimized_at  timestamptz,
+
+  -- NULL MEANS NOT COMPUTED, AND THAT IS THE POINT OF THE COLUMN.
+  -- The 2026-06-18 implementation this design was recovered from floored its
+  -- saving at `Math.max(0, ...)`, which renders "we could not tell" and "we
+  -- saved nothing" as the same figure on screen. They are different facts.
+  -- A NULL here MUST render as no claim at all, never as "saves ~0 min".
+  saved_seconds integer,
+
+  -- Which basis produced the CURRENT order. 'manual' = a human ordered it.
+  -- 'drive-matrix' = a real drive-time matrix answered. 'great-circle' = a
+  -- straight-line fallback, which is a legitimate second basis ONLY while it
+  -- is labelled as one and never allowed to pass as drive time.
+  source        text not null default 'manual'
+                  check (source in ('manual','drive-matrix','great-circle')),
+
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now(),
+
+  -- One route per assignee per app per day. The upsert key.
+  unique (license_hash, app_id, assignee_id, route_date),
+
+  constraint rtroutes_saved_sane
+    check (saved_seconds is null or saved_seconds >= 0),
+  -- A computed saving with no basis and no timestamp is a number from nowhere.
+  constraint rtroutes_saving_has_a_basis
+    check (saved_seconds is null
+           or (optimized_at is not null and source <> 'manual'))
+);
+create index if not exists idx_rtroutes_license
+  on public.rt_routes(license_hash, app_id, route_date);
+
+-- ── rt_stops: one stop on that run. Address in, ORDER out ───────────────────
+create table if not exists public.rt_stops (
+  id            uuid primary key default gen_random_uuid(),
+  route_id      uuid not null references public.rt_routes(id) on delete cascade,
+  license_hash  text not null,
+
+  -- 1-based position in the CURRENT order.
+  seq           integer not null check (seq >= 1),
+
+  -- The app's own job identifier, free-form and nullable. This module does not
+  -- own the job and does not validate it.
+  job_ref       text,
+
+  address       text not null,
+
+  -- NULL WHEN NOT GEOCODED. NEVER 0,0 — Null Island is a real failure mode and
+  -- a stop at (0,0) is indistinguishable from a stop in the Gulf of Guinea.
+  -- sairnsenior.html already has this instinct for its EVV clock-in: the
+  -- coordinates are left null and the absence disclosed, never faked.
+  lat           double precision check (lat is null or (lat between -90 and 90)),
+  lng           double precision check (lng is null or (lng between -180 and 180)),
+
+  -- Carried when the point came from a device fix, so a consumer that computes
+  -- distance can honour the error band rather than discard it. SAIRNgrounds'
+  -- gcdHaversineM() is the model: bands are ADDED, never averaged.
+  accuracy_m    double precision check (accuracy_m is null or accuracy_m >= 0),
+
+  status        text not null default 'pending'
+                  check (status in ('pending','done','skipped')),
+
+  -- TRUE = the optimiser must not move this stop. A real day has fixed
+  -- appointments, and an optimiser that reorders a 9 AM commitment to save
+  -- four minutes of driving is worse than no optimiser.
+  locked        boolean not null default false,
+
+  created_at    timestamptz not null default now(),
+
+  unique (route_id, seq),
+  -- lat and lng are meaningless alone; a stop has both or neither.
+  constraint rtstops_coords_are_a_pair
+    check ((lat is null) = (lng is null)),
+  -- An accuracy with no fix to attach to is a number about nothing.
+  constraint rtstops_accuracy_needs_a_fix
+    check (accuracy_m is null or lat is not null),
+  constraint rtstops_address_size
+    check (char_length(address) between 1 and 500)
+);
+create index if not exists idx_rtstops_route on public.rt_stops(route_id, seq);
+create index if not exists idx_rtstops_license on public.rt_stops(license_hash);
+
+-- ── RLS ─────────────────────────────────────────────────────────────────────
+alter table public.rt_routes enable row level security;
+alter table public.rt_stops  enable row level security;
+
+drop policy if exists "svc only rt_routes" on public.rt_routes;
+create policy "svc only rt_routes" on public.rt_routes
+  for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
+
+drop policy if exists "svc only rt_stops" on public.rt_stops;
+create policy "svc only rt_stops" on public.rt_stops
+  for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
+
+-- ── GRANTS ──────────────────────────────────────────────────────────────────
+-- NO `truncate`, NO `references`, NO `trigger`. Read docs/ and the
+-- sairn-grant-sweep skill before widening this line; the platform-wide revoke
+-- of 2026-08-24 took `delete` off 134 tables and this file is
+-- `create table if not exists`, so a stray verb here would silently restore it
+-- on the next re-run.
+--
+-- `delete` IS granted here and it is the only verb that needs an argument.
+-- `upsert` replaces a route's stop set, which means removing the stops that
+-- are no longer on it. The alternative — a soft-delete flag on every stop —
+-- would make `seq` uniqueness unenforceable at the database, and `seq` is the
+-- one thing this table exists to get right. The blast radius is bounded by the
+-- `route_id` foreign key: a delete can only ever reach stops of one route of
+-- one licence.
+grant usage on schema public to service_role;
+grant select, insert, update on public.rt_routes to service_role;
+grant select, insert, update, delete on public.rt_stops to service_role;
+
+CONTEXT 83.5% of 1,000,000 -- 834,728 tokens, measured.
