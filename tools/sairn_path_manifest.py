@@ -178,6 +178,41 @@ def check(paths, agent, manifest):
     return rows, sum(1 for _p, v, _r in rows if v not in ALLOWED)
 
 
+FLAGS_WITH_VALUES = ('--agent', '--history')
+
+
+def paths_from_argv(argv):
+    """The paths given after `--check`. Pure, so it can be locked.
+
+    ── A FLAG'S VALUE IS NOT A PATH (fixed b25) ─────────────────────────────
+    This was inline and collected everything after `--check` that did not
+    start with `--`, which SWALLOWED THE VALUE OF `--agent`. Driven on the
+    real tool: `--check --agent cody sairnroofing.html` classified a path
+    literally named `cody` and reported 4 paths where 3 were given.
+
+    THE PUSH VERDICT WAS STILL RIGHT, WHICH IS WHY IT SURVIVED. `cody`
+    matched no prefix so it read UNOWNED and the three real paths were still
+    refused -- so the exit code was correct and the OUTPUT carried a row
+    about a file nobody named. A wrong line in a refusal a reader is meant to
+    act on is worse than a wrong exit code, because the exit code is the part
+    somebody re-derives.
+    """
+    if '--check' not in argv:
+        return []
+    out, skip = [], False
+    for a in argv[argv.index('--check') + 1:]:
+        if skip:
+            skip = False
+            continue
+        if a in FLAGS_WITH_VALUES:
+            skip = True
+            continue
+        if a.startswith('--'):
+            continue
+        out.append(a)
+    return out
+
+
 def session():
     """-> (agent, why). From the per-clone marker, never the folder name."""
     try:
@@ -333,6 +368,29 @@ def run_fixtures():
     ck('AN UNKNOWN AGENT OWNS NOTHING, so every owned path reads FOREIGN '
        'rather than defaulting open', v('tools/x.py', 'nobody'), FOREIGN)
 
+    # ── THE ARGV COLLECTION (b25). A FLAG'S VALUE IS NOT A PATH. ───────────
+    # ARM: the real invocation that exposed it.
+    ck('`--check --agent cody a.html` gives ONE path, not two -- the agent '
+       'name is a flag VALUE and was being classified as a file',
+       paths_from_argv(['--check', '--agent', 'cody', 'a.html']), ['a.html'])
+    # NEGATIVE CONTROL: without this, the arm above would pass on a collector
+    # that simply dropped the first argument.
+    ck('...and the flag AFTER the paths is handled too, so the fix is not '
+       'position-dependent',
+       paths_from_argv(['--check', 'a.html', '--agent', 'cody']), ['a.html'])
+    ck('...a bare --check collects nothing rather than guessing',
+       paths_from_argv(['--check']), [])
+    ck('...no --check at all collects nothing',
+       paths_from_argv(['--outgoing']), [])
+    ck('...and a VALUELESS flag is still skipped without eating a path',
+       paths_from_argv(['--check', '--outgoing', 'a.html']), ['a.html'])
+    # ABLATION: the pre-b25 expression, stated as an arm so the regression
+    # has to argue with it.
+    ck('ABLATION: the pre-b25 collector returns the agent name AS A PATH, '
+       'which is what put a row about a file nobody named into a refusal',
+       [a for a in ['--agent', 'cody', 'a.html'] if not a.startswith('--')],
+       ['cody', 'a.html'])
+
     print('  %d/%d arms classify correctly' % (total - bad, total))
     return EXIT_FINDING if bad else EXIT_CLEAN
 
@@ -461,8 +519,7 @@ def main(argv=None):
             print('IN SCOPE: this push ships no files.')
             return EXIT_CLEAN
     else:
-        paths = [a for a in argv[argv.index('--check') + 1:]
-                 if not a.startswith('--')] if '--check' in argv else []
+        paths = paths_from_argv(argv)
         if not paths:
             print('COULD NOT RUN: pass --check <path> ... or --outgoing. '
                   'Nothing was checked.')
