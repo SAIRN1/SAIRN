@@ -33836,7 +33836,7 @@
       "factors_unknown_reason": "duplicate-copy follow-up to an already-registered defect (9a7f73da); the fix and its own regression coverage are the record, no separate RCA factor pass run"
     },
     {
-      "commit": "4b6d3d3633c9",
+      "commit": "8e5e18a2f2b1",
       "date": "2026-10-19",
       "subject": "fix(board)+harden(bridge): a figure cell now contains a figure, and the render claim is confirmed against GitHub itself",
       "files": [
