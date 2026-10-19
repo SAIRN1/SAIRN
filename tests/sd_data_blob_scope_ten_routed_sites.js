@@ -185,7 +185,23 @@ function fakeRes() {
 // arm with a 401/403 -- which is exactly the shape of a suite that reports ten
 // defects and has measured none of them. tokenFromRequest() reads `x-sd-auth`.
 const AUTH_SRC = fs.readFileSync(path.join(API_DIR, '_lib/auth.js'), 'utf8');
-const HDR_M = AUTH_SRC.match(/function tokenFromRequest\(req\)\s*\{\s*\n\s*const h = req\.headers\[['"]([a-z0-9-]+)['"]\]/);
+// ── COMMENT-STRIPPED BEFORE THE MATCH. 2026-10-19, cody b24, routed by b23's
+//    green-but-worthless sweep as the LOWEST of its six confirmed ──────────
+// THE CONCEPT: the session header name is EXTRACTED from the handler's own
+// EXECUTABLE code, so this suite cannot type it and a comment cannot supply a
+// wrong one.
+//
+// THE EXTRACTION ITSELF IS THE DISCIPLINE AND IS NOT THE DEFECT -- reading the
+// name rather than typing it is precisely what stopped this suite reporting
+// ten defects it had measured none of. The only hole was that `auth.js`'s own
+// comments are in scope of the match, so a comment carrying this shape with a
+// DIFFERENT header name could be picked up ahead of the real one and every
+// gated site would then fail its precondition for a reason that is not about
+// the blob. Stripping comments first closes that without touching the design.
+const AUTH_CODE = AUTH_SRC
+  .replace(/\/\*[\s\S]*?\*\//g, ' ')
+  .replace(/\/\/[^\n]*/g, ' ');
+const HDR_M = AUTH_CODE.match(/function tokenFromRequest\(req\)\s*\{\s*\n?\s*const h = req\.headers\[['"]([a-z0-9-]+)['"]\]/);
 if (!HDR_M) {
   couldNotRun('the session header could not be read out of '
             + 'api/_lib/auth.js tokenFromRequest(), so this suite cannot '

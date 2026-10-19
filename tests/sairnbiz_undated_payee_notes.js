@@ -25,6 +25,24 @@ const SRC = fs.readFileSync(
 // Anchored on the DECLARATION, and it must appear exactly once -- an anchor
 // that matches twice picks a function nobody chose.
 const NAME = 'sbVendorPaidUndatedOtherYear';
+
+// Balanced-brace body for any named function, with the SAME uniqueness check
+// the primary anchor below already gets -- `indexOf` alone would silently take
+// the first of several, and a slice that starts in the wrong place makes the
+// arm that uses it vacuous. Added 2026-10-19 (cody b24).
+function fnBody(name) {
+  const n = SRC.split('function ' + name + '(').length - 1;
+  assert.strictEqual(n, 1, 'expected exactly one declaration of ' + name
+    + ', found ' + n + ' -- the anchor is ambiguous and the arm using this '
+    + 'slice would be testing a guess');
+  const a = SRC.indexOf('function ' + name + '(');
+  let d = 0;
+  for (let i = SRC.indexOf('{', a); i < SRC.length; i++) {
+    if (SRC[i] === '{') d++;
+    else if (SRC[i] === '}') { d--; if (d === 0) return SRC.slice(a, i + 1); }
+  }
+  throw new Error('unbalanced braces after function ' + name + '()');
+}
 const occurrences = SRC.split('function ' + NAME + '(').length - 1;
 assert.strictEqual(occurrences, 1,
   'expected exactly one declaration of ' + NAME + ', found ' + occurrences +
@@ -149,9 +167,25 @@ t('rVends still unions the orphan keys rather than only walking sb_vends', () =>
   // The set-difference half, asserted against the SOURCE because this suite
   // does not render the panel. If this anchor stops matching, the note has
   // been removed or rewritten and these arms no longer describe the screen.
-  assert.ok(/Object\.keys\(und\)\.forEach/.test(SRC),
+  //
+  // ── THE FIRST ASSERTION WAS A WHOLE-FILE REGEX. 2026-10-19, cody b24,
+  //    routed by b23's green-but-worthless sweep ──────────────────────────
+  // THE CONCEPT: rVends() really ITERATES the undated keys in executable code
+  // INSIDE ITS OWN BODY, so an unlisted payee stays reachable -- not that the
+  // spelling `Object.keys(und).forEach` occurs somewhere in a 1MB file.
+  //
+  // THE OTHER TWO ARE DELIBERATELY LEFT ON RAW SOURCE AND THAT IS THE WHOLE
+  // DISTINCTION THE SWEEP TURNS ON. "NOT ON THE VENDOR LIST" and "FUTURE year
+  // already marked Paid" are PANEL NOTES -- text a user reads on screen. Their
+  // subject genuinely IS the prose, so comment-stripping them would be
+  // checking the wrong thing. The first is about CODE; these two are about
+  // COPY. Same file, opposite correct treatment.
+  const rv = fnBody('rVends').replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
+  assert.ok(/Object\.keys\(\s*und\s*\)\s*\.\s*forEach/.test(rv),
     'rVends no longer iterates the undated keys, so an unlisted payee is '
-    + 'unreachable again');
+    + 'unreachable again. Asserted inside rVends()\'s own body on '
+    + 'comment-stripped source: over the whole file a comment carrying this '
+    + 'spelling satisfied it');
   assert.ok(/NOT ON THE VENDOR LIST/.test(SRC),
     'the unlisted-payee note is gone from the panel');
   assert.ok(/FUTURE year already marked Paid/.test(SRC),

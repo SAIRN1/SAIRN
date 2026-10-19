@@ -330,12 +330,47 @@ section('6b. an RTM line with no GP now WARNS -- and never blocks');
 // A rule the form cannot reach is worse than no rule: it reads as covered.
 section('7. the panel field exists and reaches the validator');
 {
-  ok(/id="pt-gp"/.test(html), 'the PT panel has a pt-gp input');
-  ok(/gp_applied_codes:\s*scParseList\(document\.getElementById\('pt-gp'\)\.value\)/
-     .test(html),
+  // ── THESE READ RAW SOURCE AND A COMMENTED-OUT PANEL SATISFIED THEM.
+  //    2026-10-19, cody b24, routed by the green-but-worthless sweep ───────
+  // THE CONCEPT: the pt-gp input exists as LIVE MARKUP and runPtCheck reads it
+  // in LIVE CODE -- so a commented-out input or a commented-out read cannot
+  // satisfy either, which is exactly the "a rule the form cannot reach reads
+  // as covered" failure this section is named for.
+  //
+  // TWO STRIPS, NOT ONE, AND THE SPLIT IS DELIBERATE. `<!-- -->` is an
+  // unambiguous pair in an HTML document so it is removed across the whole
+  // file; a whole-file JS strip is NOT safe, because `//` occurs inside every
+  // URL in every string and inside regex literals, which is a measured
+  // false-finding source on this platform. So the markup arm reads
+  // HTML-comment-stripped source and the CODE arm is bounded to runPtCheck's
+  // own body before its JS comments are removed.
+  const markup = html.replace(/<!--[\s\S]*?-->/g, ' ');
+  const jsCode = (() => {
+    const at = html.indexOf('function runPtCheck(');
+    if (at < 0) return null;
+    const open = html.indexOf('{', at);
+    let d = 0;
+    for (let i = open; i < html.length; i++) {
+      if (html[i] === '{') d++;
+      else if (html[i] === '}') { d--; if (d === 0) return html.slice(at, i + 1); }
+    }
+    return null;
+  })();
+  ok(/id="pt-gp"/.test(markup), 'the PT panel has a pt-gp input IN LIVE '
+     + 'MARKUP -- HTML comments are stripped before this check, so a '
+     + 'commented-out input no longer counts');
+  // A THIRD STATE: if runPtCheck cannot be located the arm below has no
+  // subject, and that is reported rather than folded into either answer.
+  ok(jsCode !== null, 'runPtCheck() could not be located by balanced braces, '
+     + 'so the arm below asserted nothing about it -- re-anchor rather than '
+     + 'letting this read as a pass');
+  ok(jsCode !== null
+     && /gp_applied_codes:\s*scParseList\(document\.getElementById\('pt-gp'\)\.value\)/
+       .test(jsCode.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ')),
      'runPtCheck passes it through as gp_applied_codes, via the same '
-     + 'scParseList the CQ field uses');
-  const tip = /data-tip="Physical Therapy[^"]*"/.exec(html);
+     + 'scParseList the CQ field uses -- asserted inside runPtCheck\'s own '
+     + 'body on comment-stripped source');
+  const tip = /data-tip="Physical Therapy[^"]*"/.exec(markup);
   ok(tip && /\bGP\b/.test(tip[0]),
      'the nav tooltip names GP -- it listed every other modifier this panel '
      + 'checks and was accurate about all of them: ' + (tip && tip[0].slice(0, 90)));

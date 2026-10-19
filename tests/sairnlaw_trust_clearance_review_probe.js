@@ -250,14 +250,47 @@ function answered(n, t) { console.log('\n=== PRESS-ON (' + n + '): ' + t + '\n')
             + '                 reason than the prompt cody relied on');
   {
     const outBtn = /t\.cleared_on\|\|t\.cleared===false\?'':' <button[^>]*lawMarkOutstanding/.test(html);
+    // ── THIS COMPUTATION WAS AN ORDERING TEST OVER RAW TEXT. 2026-10-19,
+    //    cody b24, the same shape proved to bite on the money arm in b23 ────
+    // THE CONCEPT: lawSetClearance() performs the local write and the
+    // re-render in EXECUTABLE code BEFORE its await -- with the ordering
+    // measured on comment-stripped source and BOTH anchors required present
+    // before their positions are compared.
+    //
+    // It read three raw `f.indexOf(...)` positions. A comment above the await
+    // naming st('law_trusttx',list) satisfies it with the real write moved
+    // AFTER, which is the identical defect repaired in
+    // tests/sairndental_amount_construction.js: an order comparison over
+    // unstripped text compares the position of whichever MENTION comes first,
+    // and a mention can be prose. This function already carries four comment
+    // blocks between its anchors.
+    //
+    // AND AN ABSENT ANCHOR WAS SILENTLY "IN ORDER": indexOf returns -1, and
+    // -1 < <any positive> is TRUE, so deleting the write entirely reported
+    // the ordering as HOLDING. Both anchors are now required to exist.
+    //
+    // THIS FILE IS REPORT-ONLY BY DESIGN AND STAYS THAT WAY -- it exits 0
+    // whatever it finds, which is a deliberate contract stated at the bottom.
+    // So the GUARD that can actually fail lives in
+    // tests/sairnlaw_trust_clearance.js, added in the same batch. The sentence
+    // below names "moving rTrust() after the await" as the edit to watch, and
+    // until b24 nothing watched it.
+    const strip = (s) => s
+      .replace(/\/\*[\s\S]*?\*\//g, ' ')
+      .replace(/\/\/[^\n]*/g, ' ');
     const setsBeforeAwait = (() => {
-      const f = grab('async function lawSetClearance(', '\n}\n');
-      return f.indexOf("st('law_trusttx',list)") < f.indexOf('await sdnData')
-        && f.indexOf('rTrust();') < f.indexOf('await sdnData');
+      const f = strip(grab('async function lawSetClearance(', '\n}\n'));
+      const write = f.indexOf("st('law_trusttx',list)");
+      const render = f.indexOf('rTrust();');
+      const wait = f.indexOf('await sdnData');
+      if (write === -1 || render === -1 || wait === -1) return null;
+      return write < wait && render < wait;
     })();
     console.log('  the Outstanding button is omitted once the row is outstanding : %s', outBtn);
     console.log('  st() and rTrust() both run BEFORE the await                   : %s',
-      setsBeforeAwait);
+      setsBeforeAwait === null
+        ? 'COULD NOT TELL -- an anchor is absent, see tests/sairnlaw_trust_clearance.js'
+        : setsBeforeAwait);
     console.log('  the Cleared path goes through a blocking prompt()             : %s',
       /var d=prompt\(/.test(grab('function lawMarkCleared(', '\n}\n')));
     console.log(`

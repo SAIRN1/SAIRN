@@ -49,6 +49,25 @@ OWNERSHIP IS DERIVED FROM COMMIT SUBJECTS, not from an OWNER header: 26 of
 617 test files carry one, and every commit on this repo is authored by the
 same git identity, so the session is only recoverable from what the commit
 said about itself.
+
+── EXTENDED 2026-10-19 (cody b24): THE SUBJECT IS CLASSIFIED, NOT FILTERED ──
+THE CONCEPT: a candidate is only interesting when the variable being
+substring-tested is DERIVED FROM FILE TEXT, so this sweep traces each
+asserted-on identifier back to its assignment and reports FILE-DERIVED,
+RUNTIME and UNTRACED as THREE SEPARATE POPULATIONS -- never folding UNTRACED
+into either of the other two.
+
+WHY, MEASURED: on b23's run this tool reported 16 candidates in cody's scope
+and READING them found 10 FALSE POSITIVES -- `b[0].rule`, a `vm`-lifted array,
+and an anchor UNIQUENESS guard (which is the STRONGER shape, not a weaker one).
+A 10-of-16 false-positive rate makes a work-list nobody reads twice.
+
+AND IT IS A CLASSIFIER RATHER THAN A NARROWER PATTERN, deliberately. Narrowing
+the match would clear the known instances and fail silently on the next
+phrasing; in a detector a false negative is invisible where a false positive is
+loud and gets read. So nothing is dropped from the candidate count -- a third
+column says which population each row is in, and UNTRACED means THIS TOOL
+COULD NOT TELL and still needs a human.
 """
 import io
 import json
@@ -82,6 +101,103 @@ STRIPS = re.compile(
     r"strip_comments|stripComments|no_?comments|noComments|"
     r"code\s*\(|struct\s*\(|comment[_-]?strip",
     re.I)
+
+
+# The identifier a text assertion is applied to, so it can be traced.
+SUBJECT_RE = re.compile(
+    r"\b([A-Za-z_][A-Za-z0-9_]*)\s*\.\s*(?:indexOf|includes|match|search)\s*\(|"
+    r"\.test\s*\(\s*([A-Za-z_][A-Za-z0-9_]*)\b")
+
+# How an identifier came to hold what it holds. FILE-DERIVED first: a name
+# assigned from a file read, or sliced out of one, is the shape this sweep is
+# about. RUNTIME second: a vm context, a require, a JSON.parse of a tool's
+# output -- real values, and a substring test on one is not this defect.
+FILE_ASSIGN = (
+    'readfilesync', '.read()', 'read_text', 'io.open', 'git show',
+)
+RUNTIME_ASSIGN = (
+    'runincontext', 'createcontext', 'require(', 'json.parse', '.json()',
+    'new function', 'harness(', 'subprocess', 'execsync',
+)
+
+
+def classify_subject(src, name):
+    """FILE-DERIVED / RUNTIME / UNTRACED for one identifier.
+
+    UNTRACED IS A REAL ANSWER AND IS NOT A PASS. It means no assignment to
+    this name was found, or the assignment matched neither vocabulary -- which
+    is exactly the state a human has to resolve, and folding it into either
+    side is the third-state collapse this platform keeps paying for.
+    """
+    # Every assignment to the name, in declaration or plain-assignment form.
+    pat = re.compile(r'(?:const|let|var)\s+' + re.escape(name)
+                     + r'\s*=([^\n;]*)|(?<![.\w])' + re.escape(name)
+                     + r'\s*=([^\n;=][^\n;]*)')
+    rhs = []
+    for m in pat.finditer(src):
+        rhs.append((m.group(1) or m.group(2) or '').lower())
+    # A slice of an already-file-derived name counts as file-derived, so follow
+    # one hop: `const body = html.slice(...)` is still the file's text.
+    joined = ' '.join(rhs)
+    if not rhs:
+        return 'UNTRACED'
+    if any(k in joined for k in FILE_ASSIGN):
+        return 'FILE-DERIVED'
+    hop = re.findall(r'\b([A-Za-z_][A-Za-z0-9_]*)\s*\.\s*(?:slice|replace|match|split)\s*\(',
+                     joined)
+    for h in set(hop):
+        if h != name and classify_subject(src, h) == 'FILE-DERIVED':
+            return 'FILE-DERIVED'
+    if any(k in joined for k in RUNTIME_ASSIGN):
+        return 'RUNTIME'
+    return 'UNTRACED'
+
+
+# ── ONLY A TEXT TEST INSIDE AN ASSERTION COUNTS. 2026-10-19, cody b24 ───────
+# THE CONCEPT: an indexOf in a SLICING HELPER is extraction, not a claim, so it
+# must not be classified as though it were one.
+#
+# MEASURED, AND THE FIRST VERSION OF THIS CLASSIFIER WAS USELESS BECAUSE OF IT:
+# collecting every subject in the file and taking the strongest reported
+# 83 FILE-DERIVED / 12 UNTRACED / 0 RUNTIME over 95 candidates -- i.e. it
+# discriminated nothing, because nearly every one of these files reads an app
+# into `html` and then calls `html.indexOf(sig)` inside a grab() helper. b23's
+# READING of the same scope found 10 of 16 to be assertions on RUNTIME values.
+# A classifier whose output is "almost everything" is a number, not a signal,
+# and shipping it would have been worse than shipping nothing.
+ASSERT_MARK = re.compile(r'\bassert\b|\bassert\.|^\s*ok\(|[^\w.]ok\(|'
+                         r'[^\w.]bad\(|\barm\(|\bexpect\(', re.M)
+
+
+def assertion_windows(src):
+    """Statements that make a claim, as text windows.
+
+    Deliberately crude -- a line plus its continuation up to the next
+    semicolon or blank line. A parser would be better and is not needed to
+    separate `assert.ok(html.indexOf(...))` from `const a = html.indexOf(sig)`.
+    """
+    out = []
+    lines = src.split('\n')
+    for i, ln in enumerate(lines):
+        if not ASSERT_MARK.search(ln):
+            continue
+        win = [ln]
+        for j in range(i + 1, min(i + 6, len(lines))):
+            win.append(lines[j])
+            if lines[j].rstrip().endswith(';') or not lines[j].strip():
+                break
+        out.append('\n'.join(win))
+    return out
+
+
+def subjects_of(src):
+    names = []
+    for win in assertion_windows(src):
+        for m in SUBJECT_RE.finditer(win):
+            n = m.group(1) or m.group(2)
+            if n and n not in names:
+                names.append(n)
+    return names
 
 
 def git(*args):
@@ -132,11 +248,23 @@ def main():
             continue
         rel = 'tests/' + f
         who = attribution(rel)
+        cls = {}
+        for n in subjects_of(s):
+            cls.setdefault(classify_subject(s, n), []).append(n)
+        # The row's class is the STRONGEST thing present: one file-derived
+        # subject is enough to make the file worth reading.
+        klass = ('FILE-DERIVED' if cls.get('FILE-DERIVED')
+                 else 'UNTRACED' if cls.get('UNTRACED')
+                 else 'RUNTIME' if cls.get('RUNTIME')
+                 else 'UNTRACED')
         candidates.append({
             'file': rel,
             'text_assertions': len(hits),
             'sessions': sorted(who),
             'mine': 'cody' in who,
+            'subject_class': klass,
+            'file_derived_subjects': sorted(cls.get('FILE-DERIVED', []))[:6],
+            'untraced_subjects': sorted(cls.get('UNTRACED', []))[:6],
         })
 
     scope = [c for c in candidates if c['mine']] if not everyone else candidates
@@ -166,10 +294,30 @@ def main():
         print('  any of this.')
         return 0
 
-    print('  %-52s %5s  %s' % ('file', 'text?', 'sessions'))
-    for c in sorted(scope, key=lambda x: -x['text_assertions']):
-        print('  %-52s %5d  %s'
-              % (c['file'], c['text_assertions'], ','.join(c['sessions'])))
+    # THREE POPULATIONS, PRINTED SEPARATELY. A single number over all three
+    # was the thing that made b23's work-list 10-of-16 false.
+    byclass = {}
+    for c in candidates:
+        byclass.setdefault(c['subject_class'], []).append(c)
+    print('  SUBJECT CLASS over all %d candidates -- what the substring test '
+          'is applied TO:' % len(candidates))
+    for k in ('FILE-DERIVED', 'UNTRACED', 'RUNTIME'):
+        rows = byclass.get(k, [])
+        print('    %-13s %3d   (%s)'
+              % (k, len(rows), 'read these' if k == 'FILE-DERIVED'
+                 else 'THIS TOOL COULD NOT TELL -- still needs a human'
+                 if k == 'UNTRACED' else 'a substring test on a runtime value '
+                 'is not this defect'))
+    print('')
+    print('  %-52s %5s  %-12s %s' % ('file', 'text?', 'subject', 'sessions'))
+    for c in sorted(scope, key=lambda x: (x['subject_class'] != 'FILE-DERIVED',
+                                          x['subject_class'] != 'UNTRACED',
+                                          -x['text_assertions'])):
+        print('  %-52s %5d  %-12s %s'
+              % (c['file'], c['text_assertions'], c['subject_class'],
+                 ','.join(c['sessions'])))
+        if c['file_derived_subjects']:
+            print('  %54s   on: %s' % ('', ', '.join(c['file_derived_subjects'])))
     print('')
     print('  EACH NEEDS A READ, AND A CONFIRMED ONE NEEDS AN ABLATION. A')
     print('  candidate is not a finding: an assertion whose subject genuinely')

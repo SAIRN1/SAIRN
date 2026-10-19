@@ -47,6 +47,23 @@
 const locationScope = require('./location-scope');
 const DEFAULT_LOCATION_ID = locationScope.DEFAULT_LOCATION_ID;
 
+// ── isDefaultLocation IS RE-EXPORTED NOW, AND IT IS WHAT MAKES ARM E TRUE
+//    (2026-10-19, Michael's decision) ────────────────────────────────────────
+// location-scope.js added isDefaultLocation() with its reason stated: "a UI
+// that hardcodes the sentinel is the next place the constant drifts", because
+// sairnroofing.html asked that question inline TWICE. Measured in cody b22:
+// BOTH SITES STILL HARDCODED IT AND COULD NOT STOP -- that module is CommonJS
+// and the app is a single HTML file with no loader and no build step, so there
+// was no path from the UI to the function. Arm E passed and proved the
+// function WORKS, not that anything USES it.
+//
+// Michael's decision of the two options recorded in cody b23: NOT "accept the
+// two client literals with a comment", but SERVE THE ANSWER. So the
+// rf_locations read branch stamps `is_default` on every row using this
+// function, the client reads it off the row, and the sentinel is defined in
+// exactly ONE module with no copy anywhere a browser can see.
+const isDefaultLocation = locationScope.isDefaultLocation;
+
 const MAX_ID_LEN = 64;
 const MAX_NAME_LEN = 128;
 
@@ -137,6 +154,7 @@ function canSeeSchedule(session, entry, jobAssignee, managementRoles, broadReadR
 
 module.exports = {
   DEFAULT_LOCATION_ID,
+  isDefaultLocation,
   SCHEDULE_STATUSES,
   stampLocation,
   validateLocation,

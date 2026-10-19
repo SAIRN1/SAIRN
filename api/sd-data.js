@@ -11871,7 +11871,17 @@ module.exports = async (req, res) => {
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
-      res.status(200).json({ ok: true, provisioned: true, entity_provisioned: entityProvisioned, data: (rows || []).map((x) => Object.assign({}, x.data || {}, { location_id: x.location_id, name: x.name, active: x.active, entity_id: x.entity_id === undefined ? null : x.entity_id })), default_location_id: roofingLocations.DEFAULT_LOCATION_ID });
+      // `is_default` PER ROW (2026-10-19, Michael's decision). The client asked
+      // this question inline twice by comparing a hardcoded 'LOC-DEFAULT', and
+      // it could not stop: api/_lib/location-scope.js is CommonJS and
+      // sairnroofing.html has no loader and no build step, so isDefaultLocation()
+      // -- added for exactly those two sites -- was unreachable from them. The
+      // answer is computed HERE by the module that owns the sentinel, so the
+      // constant has no copy anywhere a browser can see. `default_location_id`
+      // stays on the response for an id that is NOT in the registry: the
+      // sentinel may legitimately have no row of its own, so a per-row flag
+      // alone cannot answer for a job attributed to the implicit default.
+      res.status(200).json({ ok: true, provisioned: true, entity_provisioned: entityProvisioned, data: (rows || []).map((x) => Object.assign({}, x.data || {}, { location_id: x.location_id, name: x.name, active: x.active, entity_id: x.entity_id === undefined ? null : x.entity_id, is_default: roofingLocations.isDefaultLocation(x.location_id) })), default_location_id: roofingLocations.DEFAULT_LOCATION_ID });
       return;
     }
     if (resource === 'rf_locations' && action === 'write') {

@@ -36,6 +36,34 @@ const HTML = fs.readFileSync(path.join(ROOT, 'sairnfreedom.html'), 'utf8').repla
 const SCHEMA = fs.readFileSync(path.join(ROOT, 'sql', 'sairnfreedom_data_schema.sql'), 'utf8');
 const REG = require(path.join(ROOT, 'api', '_resources', 'sairnfreedom.js'));
 
+// ── CODE-ONLY VIEWS, ADDED 2026-10-19 (cody b24, from b23's sweep) ─────────
+// Section 3 and 4's arms were whole-file regexes over raw HTML, so a comment
+// quoting the shape satisfied them -- including a comment explaining that the
+// thing being asserted had been REMOVED, which is this repo's b17 defect.
+//
+// TWO ASSERTIONS IN THIS FILE ARE DELIBERATELY LEFT ON RAW SOURCE and that is
+// not an oversight: `/IS saved on this device/` and `/localStorage write
+// FAILED/` are about the MESSAGE A USER READS. Their subject genuinely IS the
+// prose, so stripping comments would be checking the wrong thing -- the sweep
+// that routed this file says so by name.
+function code(s) {
+  return s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
+}
+// A function body bounded by BALANCED BRACES, not by a character window: a
+// slice that overruns swallows neighbouring functions, and this repo measured
+// that overrunning by a factor of 130 in another suite.
+function fnBody(name) {
+  const at = HTML.indexOf('function ' + name + '(');
+  assert.ok(at > 0, 'not found in sairnfreedom.html: function ' + name + '()');
+  const open = HTML.indexOf('{', at);
+  let depth = 0;
+  for (let i = open; i < HTML.length; i++) {
+    if (HTML[i] === '{') depth++;
+    else if (HTML[i] === '}') { depth--; if (depth === 0) return HTML.slice(at, i + 1); }
+  }
+  throw new Error('unbalanced braces after function ' + name + '()');
+}
+
 let pass = 0;
 let fail = 0;
 
@@ -175,10 +203,23 @@ test('st() delegates its backup failure to a NAMED reporter', () => {
   // suite pins at one. The two failures say different things -- the record was
   // NOT saved versus it WAS saved and only the backup threw -- and collapsing
   // them tells somebody their work was lost when it was not.
-  assert.ok(/function sfBackupHookFailed\(/.test(HTML),
+  // ── THESE WERE WHOLE-FILE REGEXES OVER RAW HTML. 2026-10-19, cody b24,
+  //    routed by b23's green-but-worthless sweep ───────────────────────────
+  // THE CONCEPT: the backup-failure reporter EXISTS as a function and st()
+  // really DELEGATES to it in executable code -- asserted inside the function
+  // that owns the call, on comment-stripped source, so no comment or string
+  // anywhere in a 477KB file can supply either half.
+  //
+  // The second line was the weaker one: `catch(e2){ sfBackupHookFailed(k, e2); }`
+  // tested over the whole file is satisfied by any comment quoting that exact
+  // shape -- including a comment explaining that the delegation was removed,
+  // which is the b17 defect verbatim.
+  assert.ok(/function sfBackupHookFailed\s*\(/.test(code(HTML)),
     'sfBackupHookFailed() is gone -- the backup failure has no named reporter');
-  assert.ok(/catch\(e2\)\{ sfBackupHookFailed\(k, e2\); \}/.test(HTML),
-    'st() no longer delegates to it');
+  assert.ok(/catch\s*\(\s*e2\s*\)\s*\{\s*sfBackupHookFailed\(/.test(code(fnBody('st'))),
+    'st() no longer delegates to it. Asserted INSIDE st()\'s own body on '
+    + 'comment-stripped source: over the whole file this was satisfied by any '
+    + 'comment quoting the catch, including one explaining its removal');
 });
 
 test('the two failures still say DIFFERENT things', () => {
@@ -193,7 +234,13 @@ test('the two failures still say DIFFERENT things', () => {
 section('4. the sync hook is keyed off the storage key, as the registry says');
 
 test('SF_SYNCED_ON is derived from SF_SYNCED, not hand-listed', () => {
-  assert.ok(/SF_SYNCED\.forEach\(function\(k\)\{ SF_SYNCED_ON\[k\]=true; \}\);/.test(HTML),
+  // THE CONCEPT: SF_SYNCED_ON is BUILT from SF_SYNCED by executable code, so
+  // the two lists cannot disagree -- not that a line matching that shape
+  // occurs somewhere in the file. Comment-stripped and loosened on whitespace,
+  // because the PROPERTY is the derivation and not its exact spelling; what it
+  // must not be satisfied by is prose.
+  assert.ok(/SF_SYNCED\s*\.\s*forEach\([^)]*\)\s*\{?[\s\S]{0,80}?SF_SYNCED_ON\s*\[/
+    .test(code(HTML)),
     'SF_SYNCED_ON is no longer derived -- a hand-kept second list is a fourth thing to drift');
 });
 

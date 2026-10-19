@@ -3271,11 +3271,53 @@ function rfAddRequirement(){
 // api/_lib/roofing-locations.js.
 var rfLocations=[],rfSchedule=[],editingScheduleId=null;
 
+// ── THE DEFAULT-LOCATION SENTINEL IS NO LONGER SPELLED IN THIS FILE
+//    (2026-10-19, Michael's decision) ──────────────────────────────────────
+// THE CONCEPT: the SERVER says which location is the implicit default --
+// `is_default` on every row and `default_location_id` on the response -- and
+// this file reads that answer instead of carrying its own copy of the string,
+// so the constant is defined in exactly one module and no UI can drift from it.
+//
+// It used to ask the question inline twice, `id==='LOC-DEFAULT'`, and
+// api/_lib/location-scope.js added isDefaultLocation() FOR THOSE TWO SITES,
+// saying so in its own comment: "a UI that hardcodes the sentinel is the next
+// place the constant drifts." Measured in cody b22: both sites still hardcoded
+// it AND COULD NOT STOP -- that module is CommonJS, this is a single HTML file
+// with no loader and no build step, so there was no path from here to it. The
+// arm guarding it passed and proved the function works, not that anything uses
+// it. Michael's decision was to SERVE THE ANSWER rather than accept the
+// literals, so the endpoint now stamps is_default per row.
+//
+// NULL MEANS NOT ASKED YET, AND IT IS NOT FALSE. Before the first successful
+// read this file has no server answer, and guessing either way is wrong in a
+// different direction. rfIsDefaultLoc() returns null then, and each call site
+// below says what it does with an unknown -- never silently treating it as a
+// decided answer.
+var rfDefaultLocId=null;
+
 function rfLoadLocations(){
   return rfDataRaw('read','rf_locations',{}).then(function(r){
     rfLocations=(r.ok&&r.data&&r.data.data)||[];
+    // Captured from the response, never typed. A read that failed leaves this
+    // null, which is what makes the UNKNOWN state real rather than nominal.
+    if(r.ok&&r.data&&typeof r.data.default_location_id==='string')rfDefaultLocId=r.data.default_location_id;
     return rfLocations;
   });
+}
+
+// true / false / null, and null is UNKNOWN. A row's own is_default is
+// preferred because the server computed it with the module that owns the
+// sentinel; default_location_id covers an id with NO ROW OF ITS OWN, which is
+// the normal case -- a shop that never opened a second branch has every job on
+// the implicit default and an empty registry.
+function rfIsDefaultLoc(id){
+  if(!id)return true;                      /* absent IS the implicit default */
+  for(var i=0;i<rfLocations.length;i++){
+    if(rfLocations[i].location_id===id){
+      return typeof rfLocations[i].is_default==='boolean'?rfLocations[i].is_default:null;
+    }
+  }
+  return rfDefaultLocId===null?null:id===rfDefaultLocId;
 }
 
 function rfFillLocationSelect(selected){
@@ -3289,13 +3331,25 @@ function rfFillLocationSelect(selected){
     // A job on the implicit default shows as "Main" rather than as a blank --
     // the two are the same thing and rendering them differently would suggest
     // the job is unattributed when it is not.
-    el.value=(selected&&selected!=='LOC-DEFAULT')?selected:'';
+    //
+    // AN UNKNOWN (null) IS TREATED AS *NOT* DEFAULT, which keeps the explicit
+    // id selected rather than collapsing it to Main. That direction is chosen
+    // and not incidental: showing Main for an id we could not classify would
+    // tell a foreman the job is on the default branch when it may not be. The
+    // save path is unaffected either way -- it sends location_id only when the
+    // user actually picked one, which is what stops a blank dropdown
+    // reattributing an edited job.
+    el.value=(selected&&rfIsDefaultLoc(selected)!==true)?selected:'';
   }
   if(rfLocations.length)paint(); else rfLoadLocations().then(paint);
 }
 
 function rfLocationName(id){
-  if(!id||id==='LOC-DEFAULT')return 'Main';
+  // An UNKNOWN falls through to the row name, or to the raw id -- which is the
+  // honest answer and is already what this function does for an id the
+  // registry has never heard of. It does NOT print "Main" for something it
+  // could not classify.
+  if(rfIsDefaultLoc(id)===true)return 'Main';
   var l=rfLocations.filter(function(x){return x.location_id===id;})[0];
   return l?l.name:id;
 }

@@ -203,5 +203,56 @@ await t('ALREADY IN THE TARGET STATE sends nothing -- and Re-date still does',as
   assert.strictEqual(redate.__store.law_trusttx[0].cleared_on,'2026-09-22');
 });
 
+// ── THE ORDERING THAT MAKES A DOUBLE-PRESS HARMLESS, GUARDED HERE BECAUSE
+//    THE ONLY PLACE IT WAS RECORDED COULD NOT FAIL. 2026-10-19, cody b24 ────
+// THE CONCEPT: lawSetClearance() performs the local write st('law_trusttx',list)
+// and the re-render rTrust() in EXECUTABLE code BEFORE its await, measured on
+// comment-stripped source with both anchors required present.
+//
+// WHY IT MATTERS, in the words of the review that established it:
+// lawMarkOutstanding goes straight to lawSetClearance(id, null, true) with NO
+// prompt, so the "a prompt blocks a second click" argument does not cover that
+// path. It holds anyway for a stronger reason -- st() and rTrust() both run
+// SYNCHRONOUSLY BEFORE the await, JavaScript dispatches the second click only
+// after the first handler yields, and by then the re-render has REMOVED the
+// Outstanding button because the row is now cleared===false. The control the
+// second press would need is gone before the second press can be delivered.
+//
+// THAT REVIEW NAMED "moving rTrust() after the await" AS THE EDIT TO WATCH AND
+// NOTHING WATCHED IT. tests/sairnlaw_trust_clearance_review_probe.js is
+// report-only by design -- `exit 0 by design` is its stated contract -- so it
+// COMPUTED the ordering and PRINTED it, and a false value failed nothing. Worse,
+// it computed it over RAW text with three bare indexOf calls, so a comment
+// above the await naming st('law_trusttx',list) satisfied it with the real
+// write moved after (the same shape repaired on the money arm in b23), and an
+// ABSENT anchor read as in-order because -1 is less than every real position.
+//
+// This arm is the half that can go red. The probe keeps its contract.
+t('THE ORDER IS THE CONTROL: st() and rTrust() both run BEFORE the await',()=>{
+  const strip=(s)=>s.replace(/\/\*[\s\S]*?\*\//g,' ').replace(/\/\/[^\n]*/g,' ');
+  const f=strip(grab('async function lawSetClearance(','\n}\n'));
+  const write=f.indexOf("st('law_trusttx',list)");
+  const render=f.indexOf('rTrust();');
+  const wait=f.indexOf('await sdnData');
+  // BOTH ANCHORS REQUIRED FIRST. Comparing positions that may be -1 is how the
+  // probe reported a DELETED write as correctly ordered.
+  assert.ok(write!==-1,'lawSetClearance no longer writes the ledger locally '
+    +"(st('law_trusttx',list) is absent from its executable code), so there is "
+    +'no local state for the re-render to show and the ordering below is not a '
+    +'meaningful comparison');
+  assert.ok(render!==-1,'lawSetClearance no longer calls rTrust(), so the '
+    +'Outstanding button is not removed before a second press can be '
+    +'delivered -- that re-render IS the control');
+  assert.ok(wait!==-1,'lawSetClearance no longer awaits sdnData, so this arm '
+    +'is asserting an order against an await that is not there');
+  assert.ok(write<wait,'the local write now happens AFTER the await. A failed '
+    +'or slow network leaves the ledger unchanged on screen while the clerk '
+    +'believes the clearance was recorded');
+  assert.ok(render<wait,'rTrust() now runs AFTER the await. The Outstanding '
+    +'button survives until the network returns, so a second press IS '
+    +'deliverable -- and lawMarkOutstanding has no prompt to block it. This is '
+    +'the exact edit the 2026-09-21 review named as the one to watch');
+});
+
 console.log('\n'+pass+' passed, '+fail+' failed');process.exit(fail?1:0);
 })();
