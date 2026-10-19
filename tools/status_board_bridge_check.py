@@ -6,6 +6,8 @@
     python tools/status_board_bridge_check.py                 # every agent
     python tools/status_board_bridge_check.py --agent cc
     python tools/status_board_bridge_check.py --nonce <token> --agent cc
+    python tools/status_board_bridge_check.py --api-readback board-from-api.md
+    python tools/status_board_bridge_check.py --api-published-at <stamp>
     python tools/status_board_bridge_check.py --fixtures      # criteria lock
 
 Exit 0 clean, 1 findings, 2 COULD NOT RUN.
@@ -42,7 +44,17 @@ The mount is a SYNC directory. Bytes present there are in the sync set; that is
 not proof Google acknowledged them. Only a Drive-side API read closes that, and
 only a human or a chat turn can make one -- so this tool prints the board's
 Drive file id and says the API read is still owed rather than implying it.
+
+IT STILL CANNOT MAKE THE REQUEST, and that limit stays printed. What changed in
+b18: the read is no longer compared BY EYE. Save what the API returned and pass
+`--api-readback <path>`; the two are compared by sha256, a match is a note
+naming the hash, a difference is a finding that says a republish between the
+two reads is an ordinary cause and a single mismatch is a could-not-tell about
+WHICH rather than a verdict, and no `--api-readback` at all is a note saying
+the Drive-side half is still owed. A comparison by eye over a 17KB file was not
+a comparison.
 """
+import hashlib
 import io
 import json
 import os
@@ -159,6 +171,23 @@ def classify(row, board_text, latest_text, published_epoch, nonce=None,
                 'rendering a write that has been superseded, and nothing in '
                 'the board itself can say so.'
                 % (label, stamp, (row_e - published_epoch) / 60.0))
+        elif published_epoch < row_e:
+            # ── THE TOLERANCE IS NOT A BLIND SPOT ANY MORE (b18 item 2) ───
+            # b17 shipped a 90-second tolerance and said so in its own
+            # UNVERIFIED: "a board 30 seconds behind a write would not be
+            # reported". That is a gap with a number on it, which is the one
+            # kind that quietly widens -- the publisher getting slower, or a
+            # mount flush taking longer, moves real staleness INSIDE the
+            # window and nothing changes in the output. So the window is now
+            # a NOTE rather than silence: inside it is not a finding, and it
+            # is not nothing either.
+            notes.append(
+                '%s: the published file is %.1f second(s) behind the row, '
+                'within the %d-second tolerance, so NOT a finding -- the '
+                'publisher writes the file after the row. Reported because a '
+                'tolerance nobody can see is a gap that widens without '
+                'anybody noticing.'
+                % (label, row_e - published_epoch, STALE_TOLERANCE_S))
 
     if nonce:
         if nonce not in json.dumps(row, default=str):
@@ -176,6 +205,93 @@ def classify(row, board_text, latest_text, published_epoch, nonce=None,
                         '%s: the nonce %r IS in the registry row and is NOT in '
                         'the %s. The registry accepted this write and the '
                         'bridge did not carry it.' % (label, nonce, name))
+    return findings, notes
+
+
+# ── CLOSING THE MOUNT-IS-NOT-THE-API GAP MECHANICALLY (b18 item 2) ─────────
+# b17 said, correctly, that this tool cannot prove Google acknowledged the
+# bytes -- only a Drive-side API read can, and only a chat turn or a human can
+# make one. It then left the comparison to a reader's eye: somebody fetches the
+# board through the API, looks at it, and says it matches.
+#
+# A COMPARISON BY EYE OVER A 17KB FILE IS NOT A COMPARISON. So the API read
+# becomes a checkable artefact instead: save what the API returned to a file,
+# pass --api-readback <path>, and the two are compared by sha256. The tool
+# still cannot MAKE the request -- that limit is real and stays printed -- but
+# the half a reader was doing badly is now done by the machine.
+def compare_readback(mount_bytes, api_bytes, label='SAIRN-board.md'):
+    """-> (findings, notes). Pure. Either argument may be None."""
+    findings, notes = [], []
+    if mount_bytes is None:
+        findings.append('%s: the file on the MOUNT could not be read, so the '
+                        'API copy has nothing to be compared against. That is '
+                        'not a match.' % label)
+        return findings, notes
+    if api_bytes is None:
+        notes.append('%s: no --api-readback given, so the Drive-side half is '
+                     'still OWED. The mount proves the bytes are in the sync '
+                     'set and nothing more.' % label)
+        return findings, notes
+    m = hashlib.sha256(mount_bytes).hexdigest()
+    a = hashlib.sha256(api_bytes).hexdigest()
+    if m == a:
+        notes.append('%s: API read-back MATCHES the mount byte for byte, '
+                     'sha256 %s. Google has acknowledged these bytes.'
+                     % (label, m[:16]))
+        return findings, notes
+    # A DIFFERENCE IS NOT AUTOMATICALLY A FAILED UPLOAD. The mount's metadata
+    # lags a revision, and a republish between the two reads is ordinary with
+    # six agents writing. So the finding says what it is and what it is not.
+    findings.append(
+        '%s: the API copy and the mount copy DIFFER -- mount sha256 %s (%d '
+        'bytes), API sha256 %s (%d bytes). Either the upload has not landed, '
+        'or the board was republished between the two reads, which is '
+        'ordinary with six agents writing. Re-read and compare again before '
+        'calling it a failed upload; a single mismatch is a could-not-tell '
+        'about WHICH, not a verdict.'
+        % (label, m[:16], len(mount_bytes), a[:16], len(api_bytes)))
+    return findings, notes
+
+
+# ── THE SMALL VALUE THAT CROSSES THE CHAT BOUNDARY (b18 item 2) ────────────
+# --api-readback wants a FILE, which means a chat turn has to materialise 17KB
+# of base64 into the repo before anything can be compared -- so in practice it
+# is used by a human with a browser and not by the turn that actually makes the
+# API call. The board already carries one field that identifies its revision
+# exactly: its own `Published at:` line. That is short enough to read out of an
+# API response and paste, which makes it the comparison that will actually get
+# made. Both forms exist on purpose; this is the one for the chat turn.
+PUBLISHED_RE = re.compile(r'^-\s*\*\*Published at:\*\*\s*(\S+)', re.MULTILINE)
+
+
+def published_at(board_text):
+    """-> the board's own Published-at stamp, or ''."""
+    m = PUBLISHED_RE.search(board_text or '')
+    return m.group(1) if m else ''
+
+
+def compare_published_at(mount_text, api_stamp):
+    """-> (findings, notes). The API copy's revision against the mount's."""
+    findings, notes = [], []
+    if not api_stamp:
+        return findings, notes
+    mine = published_at(mount_text)
+    if not mine:
+        findings.append('the board on the mount carries no `Published at:` '
+                        'line, so the API stamp %r has nothing to be compared '
+                        'against. Not a match.' % api_stamp)
+        return findings, notes
+    if mine.strip() == api_stamp.strip():
+        notes.append('API read-back is the SAME REVISION as the mount '
+                     '(Published at %s). Google has acknowledged this '
+                     'revision.' % mine)
+        return findings, notes
+    findings.append(
+        'the API copy is a DIFFERENT REVISION: the mount says Published at %s '
+        'and the API says %s. Drive\'s copy lagging by one revision is '
+        'ordinary -- the mount\'s own metadata does too -- and so is another '
+        'clone republishing between the two reads. Re-read before calling it '
+        'a failed upload.' % (mine, api_stamp))
     return findings, notes
 
 
@@ -266,12 +382,66 @@ def run_fixtures():
     check('an unparseable row stamp is reported rather than treated as fresh',
           notes, True)
 
+    # ── b18 item 2: THE TOLERANCE IS VISIBLE, AND THE API HALF IS CHECKED ──
+    f, notes = classify(ROW, BOARD, LATEST, E - 30, now=E)
+    check('a file INSIDE the tolerance is a NOTE, not a finding -- b17 left '
+          'this silent and said so in its own UNVERIFIED', f, False)
+    check('...and the note names the gap in seconds and the tolerance, so a '
+          'window that widens is visible',
+          any('within the %d-second tolerance' % STALE_TOLERANCE_S in n
+              for n in notes), True)
+    f, notes = classify(ROW, BOARD, LATEST, E + 30, now=E)
+    check('a file NEWER than the row is neither -- the publisher writing after '
+          'the row is the normal case and must stay quiet', (f, notes),
+          ([], []))
+
+    f, n = compare_readback(b'identical bytes', b'identical bytes')
+    check('an API read-back matching the mount is a NOTE naming the sha, not a '
+          'silent pass', (f, bool(n)), ([], True))
+    f, n = compare_readback(b'the mount copy', b'a different copy')
+    check('a DIFFERENT API copy is a finding', f, True)
+    check('...and that finding does NOT call it a failed upload, because a '
+          'republish between the two reads is ordinary',
+          any('ordinary with six agents' in x for x in f), True)
+    f, n = compare_readback(None, b'an api copy')
+    check('an unreadable MOUNT copy is a finding -- an API copy with nothing '
+          'to compare against is not a match', f, True)
+    f, n = compare_readback(b'the mount copy', None)
+    check('NO --api-readback is a NOTE saying the Drive-side half is still '
+          'OWED, never a pass', (f, bool(n)), ([], True))
+    check('...and that note says the mount proves only the sync set',
+          any('sync set' in x for x in n), True)
+
+    NL = chr(10)
+    BOARD_PUB = (
+        '# SAIRN board' + NL + NL +
+        '- **Published at:** 2026-10-19T08:55:21 (local)' + NL +
+        '- **Trigger:** claim change by fourth' + NL)
+    check('the board\'s own Published-at stamp is readable',
+          published_at(BOARD_PUB), '2026-10-19T08:55:21')
+    f, n = compare_published_at(BOARD_PUB, '2026-10-19T08:55:21')
+    check('the SAME revision at both ends is a note, not a finding',
+          (f, bool(n)), ([], True))
+    f, n = compare_published_at(BOARD_PUB, '2026-10-19T07:32:49')
+    check('a DIFFERENT revision from the API is a finding', f, True)
+    check('...and it names a lagging revision and a concurrent republish as '
+          'ordinary causes rather than declaring a failed upload',
+          any('ordinary' in x for x in f), True)
+    f, n = compare_published_at('a board with no such line', '2026-10-19T08:55:21')
+    check('a mount copy with no Published-at line is a finding, not a match',
+          f, True)
+    f, n = compare_published_at(BOARD_PUB, None)
+    check('no --api-published-at is neither a finding nor a note -- the OWED '
+          'note comes from the readback half, and saying it twice would read '
+          'as two gaps', (f, n), ([], []))
+
     print('  %d/%d fixtures classify correctly' % (total - bad, total))
     return EXIT_FINDING if bad else EXIT_CLEAN
 
 
 # ── THE LIVE READ ──────────────────────────────────────────────────────────
-def live(agents=None, nonce=None):
+def live(agents=None, nonce=None, api_readback=None,
+         api_published_at=None):
     try:
         import sairn_status as ST
         import sairn_board_publish as BP
@@ -372,6 +542,36 @@ def live(agents=None, nonce=None):
             print('      ? %d numbered duplicate(s) of %s on the mount'
                   % (len(dups), BP.LATEST_NAME % label))
 
+    # ── THE DRIVE-SIDE HALF, COMPARED RATHER THAN EYEBALLED ───────────────
+    api_bytes, api_why = None, ''
+    if api_readback:
+        try:
+            api_bytes = io.open(api_readback, 'rb').read()
+        except OSError as exc:
+            api_why = ('--api-readback %r could not be read (%s), so the '
+                       'Drive-side half was NOT checked. That is not a match.'
+                       % (api_readback, exc))
+    try:
+        mount_bytes = io.open(board_path, 'rb').read()
+    except OSError:
+        mount_bytes = None
+    if api_why:
+        print('  ! %s' % api_why)
+        all_f.append(api_why)
+    else:
+        rf, rn = compare_readback(mount_bytes, api_bytes, BP.BOARD_NAME)
+        for x in rf:
+            print('  ! %s' % x)
+        all_f += rf
+        all_n += rn
+    sf, sn = compare_published_at(board_text, api_published_at)
+    for x in sf:
+        print('  ! %s' % x)
+    for x in sn:
+        print('  ? %s' % x)
+    all_f += sf
+    all_n += sn
+
     print('')
     if all_f:
         print('%d FINDING(S) across %d agent(s).' % (len(all_f), checked))
@@ -407,7 +607,9 @@ def main(argv=None):
         return argv[argv.index(name) + 1] if name in argv else None
 
     one = opt('--agent')
-    return live(agents=[one] if one else None, nonce=opt('--nonce'))
+    return live(agents=[one] if one else None, nonce=opt('--nonce'),
+                api_readback=opt('--api-readback'),
+                api_published_at=opt('--api-published-at'))
 
 
 if __name__ == '__main__':

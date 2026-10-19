@@ -773,6 +773,54 @@ def routed_for(label):
     return mine, ambiguous
 
 
+# ── A FIGURE CELL MUST CONTAIN A FIGURE (cc b18 item 1, 2026-10-19) ────────
+# The CONTEXT cell rendered up to 120 characters of whatever followed the
+# digest's CONTEXT label, and for two of six agents that was a paragraph:
+# MEASURED before the fix, `digest_fields()` returns a context body of
+# 4,673 characters for hank b17 and 10,717 for cody b22, because the parse runs
+# from the label to the next RECOGNISED label and those digests continue with
+# unlabelled section headings of their own. The board then sliced that to 120
+# and the table to 40, so hank's cell read
+#
+#     46% WHAT LANDED -- fourth's b26, four ro
+#
+# which is a real figure welded to a paragraph and cut mid-word. Truncating
+# harder is a smaller weld, not a fix, and requiring the other agents to shape
+# their digests differently is not available to a tool that READS their files.
+#
+# So the figure is PARSED OUT and the figure is what prints. When no figure is
+# parseable the cell says UNKNOWN with the reason -- never a plausible 0%,
+# which is the fabricated-value shape Guardian 0b exists for.
+#
+# WHAT THIS CANNOT DO, stated rather than discovered: extracting a figure
+# cannot tell a STALE figure from a current one. The `source` half of the
+# return is still the only thing that distinguishes "live status row, set
+# <when>" from "digest bN", and it is printed beside every cell.
+PCT_RE = re.compile(r'(\d{1,3}(?:\.\d+)?)\s*%')
+
+
+def context_figure(body):
+    """-> (figure, '') or ('', why_not). The FIRST percentage in a context body.
+
+    FIRST, not largest: a context line's own reading comes before any figure it
+    goes on to discuss (hank's 46% is followed by a paragraph containing other
+    numbers), and `max` would pick whichever number in the prose happened to be
+    biggest. A percentage over 100 is refused rather than printed, because a
+    context reading is a share of a window and 4,673% is a parse accident.
+    """
+    for m in PCT_RE.finditer(body or ''):
+        try:
+            val = float(m.group(1))
+        except ValueError:                                       # noqa: PERF203
+            continue
+        if 0.0 <= val <= 100.0:
+            return m.group(0).replace(' ', ''), ''
+    if not (body or '').strip():
+        return '', 'the digest carries no CONTEXT line'
+    return '', ('the digest\'s CONTEXT line carries no percentage in its first '
+                '%d character(s)' % min(len(body), 400))
+
+
 def context_for(row, dfields, dbatch):
     """(text, source). The live reading wins; the digest is the fallback."""
     live = (row or {}).get('context_pct')
@@ -783,8 +831,18 @@ def context_for(row, dfields, dbatch):
         return ('%s%%' % live,
                 'live status row, set %s'
                 % ((row or {}).get('context_set') or 'at an unrecorded time'))
-    if dfields.get('context'):
-        return dfields['context'][:120], 'digest b%s' % dbatch
+    body = dfields.get('context') or ''
+    if body:
+        fig, why = context_figure(body)
+        if fig:
+            # The body's LENGTH is reported when it was a paragraph, because a
+            # reader who sees a clean 46% here deserves to know the source line
+            # was 4,673 characters and this is the figure cut out of it.
+            extra = ('' if len(body) <= 160 else
+                     ', parsed out of a %d-character CONTEXT line'
+                     % len(body))
+            return fig, 'digest b%s%s' % (dbatch, extra)
+        return ('UNKNOWN -- %s' % why), 'digest b%s' % dbatch
     return ('UNKNOWN -- the agent has set no context_pct and its newest digest '
             'carries no CONTEXT line'), 'none'
 
@@ -934,7 +992,13 @@ def render_board(rows, problems, extra_rows, extra_digests, reason, ddir):
         L.append('| **%s** | %s | %s | %s | %s | %d | %s | %s |' % (
             r['label'], _cell(r['state'], 'UNKNOWN'),
             _cell(r['liveness'], '-'), batch,
-            r['context'][:40], len(r['claims']),
+            # A GLANCE COLUMN IS A FIGURE OR THE WORD UNKNOWN. Slicing an
+            # UNKNOWN sentence to 40 characters gave `UNKNOWN -- the digest's
+            # CONTEXT line car`, which is the same cut-mid-word shape the
+            # figure fix just removed, one column over. The REASON belongs in
+            # the per-agent section below, where it is printed whole.
+            ('UNKNOWN' if r['context'].startswith('UNKNOWN')
+             else r['context'][:40]), len(r['claims']),
             _cell(r['blocked_on'], '-'),
             ('%sh' % r['age_h']) if r['age_h'] is not None else '-'))
     L += ['', 'CONTEXT is the agent\'s own reading. Its source is named per '
@@ -1971,6 +2035,53 @@ def _a16(sdir, ddir):
             and 'BOARD NOT PUBLISHED' in NL.join(lines)
             and not os.path.isfile(os.path.join(ddir, MANIFEST_NAME))), \
         'exit %d' % code
+
+
+@arm('A29-context-prose', 'a CONTEXT cell renders the PARAGRAPH that followed '
+                          'the label instead of the figure in it')
+def _a17(sdir, ddir):
+    # THE REAL SHAPE, taken from hank b17 and cody b22: the digest's CONTEXT
+    # label is followed by a figure and then by unlabelled prose, so
+    # digest_fields() returns thousands of characters and the cell printed the
+    # first 120 of them. Measured on the live mount before the fix: 4,673 and
+    # 10,717 characters.
+    d = json.load(io.open(os.path.join(sdir, 'cc.json'), encoding='utf-8'))
+    d.pop('context_pct')                   # force the digest fallback
+    _write(os.path.join(sdir, 'cc.json'), json.dumps(d))
+    prose = ('46% WHAT LANDED -- fourth\'s b26, four routed fixes, each '
+             'failing-first with an ablation. H3 (critical, money): the '
+             'paid-period freeze was ERASABLE BY THE ROLE THAT RUNS PAYROLL '
+             'through a 200, because the handler trusted a client flag. '
+             'Numbers that must not be mistaken for the reading: 2026, 144, '
+             '99, 1000000.')
+    _write(os.path.join(ddir, 'SAIRN-digest-cc-b7.txt'),
+           'DIGEST cc b7\nSTATUS: s.\nNEXT: n.\nCONTEXT %s\n' % prose)
+    txt = _board_for(sdir, ddir)[0]
+    # The figure prints, the prose does not, and the cell says where the
+    # figure was cut from.
+    ok = ('**CONTEXT:** 46%' in txt
+          and 'WHAT LANDED' not in txt
+          and 'ERASABLE' not in txt
+          and 'parsed out of a' in txt)
+    return ok, txt
+
+
+@arm('A30-context-no-figure', 'a CONTEXT line with no percentage renders as '
+                              'prose, or worse as a plausible 0%')
+def _a18(sdir, ddir):
+    d = json.load(io.open(os.path.join(sdir, 'cc.json'), encoding='utf-8'))
+    d.pop('context_pct')
+    _write(os.path.join(sdir, 'cc.json'), json.dumps(d))
+    _write(os.path.join(ddir, 'SAIRN-digest-cc-b7.txt'),
+           'DIGEST cc b7\nSTATUS: s.\nNEXT: n.\nCONTEXT not measured this '
+           'batch -- no tool available here exposes the per-turn usage sum\n')
+    txt = _board_for(sdir, ddir)[0]
+    # H1's real wording, which has no figure in it at all. UNKNOWN with the
+    # reason; never 0%, and never the sentence itself in a figure column.
+    ok = ('UNKNOWN -- the digest\'s CONTEXT line carries no percentage' in txt
+          and 'CONTEXT:** 0%' not in txt
+          and 'no tool available here' not in txt)
+    return ok, txt
 
 
 def _run_arms(verbose=True, only=None):
