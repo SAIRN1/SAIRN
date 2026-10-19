@@ -4114,8 +4114,8 @@
       "task": "b26: per-row tier reads for bld_suppliers sf_vendors leg_clergy dnt_vendor_contacts off their own sql schema and write site (RECORD, not retier); convert the 151/57 sibling NOT_PROVISIONED guards in api/sd-data.js to the shipped notProvisioned()/notProvisionedDecide() pattern; measure the known-red tail census; continue the 85-candidate green_but_worthless sweep. FILES: api/sd-data.js docs/2026-10-19-cody-b26-tier-reads-and-guard-conversion.md docs/b26-logs/ tests/sd_data_not_provisioned_misclass.js docs/known-red-suites.json SAIRN-handoff-cody-b26.md SAIRN-report-cody-b26.txt SAIRN-digest-cody-b26.txt",
       "claimed_at": "2026-10-19T15:33:58Z",
       "claimed_at_epoch": 1792424038.9911604,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-19T18:58:44Z",
       "files": [
         "SAIRN-digest-cody-b26.txt",
         "SAIRN-handoff-cody-b26.md",
