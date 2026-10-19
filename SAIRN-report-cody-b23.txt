@@ -1,0 +1,435 @@
+REPORT -- cody, batch b23, 2026-10-19 -- four items, all closed, every repair ablated in both legs
+===========================================================================
+
+STATUS
+---------------------------------------------------------------------------
+LANDED on origin/main. CONFIRMED BY READING THE FILES BACK OFF THE REMOTE
+TREE, not by a clean exit from git push.
+
+  remote tip at confirmation : 18c77106d8f415ad2de628473041739ad73ce830
+                               (git ls-remote origin refs/heads/main)
+  my three b23 commits, CURRENT shas, each proved an ANCESTOR of that tip
+  by `git merge-base --is-ancestor`:
+
+    40275ee5d  fix(tests): bld_bids could lose its pending tracking END TO END
+               with the suite green, and bld_draws had no arm at all
+    51a5fa077  record(defect): the six comment-satisfied test arms b23
+               repaired, PLATFORM/test/high, 1.1
+    18c77106d  reseat(register): the rebase rewrote b23's fix commit and the
+               record's citation followed
+
+  ANCESTRY, NOT TIP-EQUALITY, AND THAT IS DELIBERATE. Five sessions push to
+  this trunk; "is it the tip" goes stale in seconds and says nothing about
+  whether the work is present. All ten b23 files were then read back out of
+  that exact tree with `git cat-file -e <tip>:<path>`: the three repaired
+  suites, the three new scripts under docs/b23-logs/, the sweep document, the
+  handoff, docs/tier-a-reviews.json and docs/defect-density-register.json. All
+  present. Tree clean.
+
+  THE PRE-PUSH SHAS IN THE HANDOFF NO LONGER RESOLVE AND THAT IS NOT A
+  PROBLEM. The handoff is written BEFORE the push by design; the push rebased
+  FOUR times onto other clones' work (30 commits, then 2, then 1, then a
+  remote-rejected ref lock), so 218a3abf7 and b67b98184 were rewritten to
+  40275ee5d and 51a5fa077. The current shas are above.
+
+PUSHED WITHOUT --force. NOTHING OVERRIDDEN -- no SAIRN_SKIP, no
+SAIRN_GATE_EXEMPT, no SAIRN_SEED_GATE, in any form, and no call to
+tools/gate_skip.py.
+
+THE PUSH WAS REFUSED THREE TIMES AND EVERY REFUSAL WAS READ RATHER THAN
+ROUTED AROUND:
+  (1) tier_a_review_gate.py refused because dnt_rollup is Tier A and no open
+      obligation covered it. RECORDED, assigned to fourth by the gate rather
+      than left first-come.
+  (2) The register-feed gate refused because the push closes a defect and fed
+      nothing. A record was written -- NOT the no-defect-record escape hatch,
+      because the register has a `test` LAYER with 96 existing records and
+      `mutation-testing` as a detection method, so this class is registrable
+      and opting out would have been the lazier of two honest options.
+  (3) A remote ref lock mid-push, twice: another clone landed between my fetch
+      and my push. Rebased and retried.
+
+NO api/, sql/ OR tools/ FILE WRITTEN. api/_lib was COPIED into a temp tree by
+one ablation and never written. Twelve tools were RUN. No hook restored.
+.claude/settings.json never committed. No auditor clone entered. NO STRIPE
+WORK OF ANY KIND -- SAIRNcash is HELD and was not touched.
+
+THE LIVE TREE WAS NEVER WRITTEN BY ANY ABLATION, and that is ASSERTED rather
+than intended: `git status --porcelain` captured before and after each run and
+diffed. Every mutation ran in a tempfile.mkdtemp() tree removed in a finally.
+
+===========================================================================
+THE HEADLINE: THE SHAPE fourth ROUTED AS HIGH WAS WORSE THAN ROUTED, AND SO
+WAS MY OWN MEASUREMENT OF IT
+===========================================================================
+
+fourth b28 check 4 found TWO ways bld_bids could lose its pending tracking
+with the suite green. Driving it found TWO MORE, so the resource could lose
+tracking END TO END -- enrolment, both write sites, and the retry gate -- at
+25 passed, 0 failed.
+
+And then the ablation HARNESS I wrote to measure it reported SIX FALSE
+ACCEPTEDs, because its count regex read the number out of my own new assertion
+messages, which quote the phrase "at 25 passed, 0 failed" as evidence of the
+old hole. THE MEASURING TOOL HAD THE DEFECT IT WAS MEASURING, ONE LAYER OUT.
+
+===========================================================================
+ITEM 1 -- bld_bids: pending tracking could be lost at EVERY layer
+===========================================================================
+
+Routed by fourth b28 check 4 as HIGH and deliberately not fixed there, because
+tests/ is mine and "a reviewer who fixes what he reviews is the self-signed
+review this ledger exists to prevent." REPRODUCED BEFORE REPAIRING, never
+taken on trust.
+
+THE CONCEPTS, stated before the code was written -- two assertions, two
+properties:
+
+  bld_bids is ENROLLED IN PENDING TRACKING BY EXECUTABLE CODE, and both of its
+  write sites really call mark and clear -- not merely that those spellings
+  occur somewhere in a 400KB file.
+
+  The retry's per-key gate actually READS the tracking map in executable code,
+  so a key that is not enrolled is skipped -- not merely that the spelling
+  BLD_PENDING_TRACKED[key] appears in the body.
+
+MEASURED, PRE-REPAIR, docs/b23-logs/ablate_bld_server_wins.py:
+
+  N1  declaration replaced by a LINE COMMENT carrying it ..... ACCEPTED 25/0
+  N4  retry guard broken, BLOCK COMMENT carries a satisfying .. ACCEPTED 25/0
+  N5  a real bldPendingMark call site deleted, a COMMENT
+      carrying both spellings left behind ................... ACCEPTED 25/0  NEW
+  N6  retry guard broken, a STRING LITERAL carries one ........ ACCEPTED 25/0  NEW
+  N2  declaration DELETED (control) .......................... REFUSED
+  N3  declaration flipped to false (control) ................. REFUSED
+
+N5 AND N6 ARE MINE AND THEY ARE THE REASON REPRODUCING MATTERED. fourth named
+two; the shape had four. AND N2 AND N3 REFUSING IS WHAT MADE THE HOLE
+INVISIBLE -- the arm caught the careless mutations and missed every plausible
+one, which reads as a working arm from every angle except an ablation.
+
+WHAT IT WOULD HAVE COST IN THE APP: a bld_bids record whose push failed would
+never be retried, and hydration would overwrite it on the next sign-in,
+because the carve-out protecting it comes from exactly the list that stopped
+being written.
+
+THE REPAIR IS TWO THINGS AND THE SECOND IS THE ONE PEOPLE SKIP.
+
+  (a) TWO VIEWS OF THE SOURCE. code() strips comments and KEEPS strings, so
+      which string a call was passed is still visible; struct() also collapses
+      every string to '', so whatever matches is executable. Neither alone is
+      enough: a mutation hiding code in a string satisfies code() and fails
+      struct(); one changing a verb satisfies struct() and fails code(). Every
+      assertion now states which view it uses and which NAMED mutation that
+      closes.
+
+  (b) SCOPE IS A BOUNDED WINDOW, NEVER THE WHOLE FILE. A whole-file indexOf
+      over 400KB answers "does this text occur anywhere", which is a question
+      no property of this app depends on -- and it is ALSO unsafe to strip,
+      because a naive comment stripper over a whole app blanks URLs inside
+      strings and regex literals (Guardian check 27: 58 phantom findings).
+      windowBetween() fails CLOSED if either anchor is absent, occurs more than
+      once, or the declarations swap order.
+
+The two call sites are now counted INSIDE saveBid() and bldReassignBid()
+rather than across the file -- strictly stronger than the count it replaces,
+because a whole-file count of 2 is satisfied by any two occurrences anywhere,
+including, as N5 measured, one real call and one comment.
+
+===========================================================================
+ITEM 2 -- bld_draws had NO ARM, and the generalisation that fixed one defect
+created the gap
+===========================================================================
+
+Routed by fourth b28 check 2, "same shape as b26's law_bankstatements
+finding."
+
+THE CONCEPT, stated before the arm was written:
+
+  bld_draws is a MEMBER of BLD_SESSION_REQUIRED with a TRUTHY value in the
+  real declaration, so the one shared call-site expression
+  !!BLD_SESSION_REQUIRED[key] sends an employee session for a draw write --
+  the identical property bld_bids already had an arm for, asserted over
+  comment-stripped source so no comment can supply it.
+
+WHY IT DID NOT EXIST IS THE PART WORTH KEEPING. bld_bids' session requirement
+used to be an inline equality test on one resource name. When bld_draws
+joined, that was correctly replaced by a MAP READ at three call sites -- and
+the arm guarding it was updated to follow the map, BUT ONLY FOR THE MEMBER IT
+WAS ORIGINALLY WRITTEN ABOUT. So the suite guarded one of two members of a set
+whose entire purpose is to be extended.
+
+MEASURED, PRE-REPAIR:
+
+  D1  bld_draws: true -> false ........................ ACCEPTED 25/0
+  D3  bld_draws DROPPED from the map .................. ACCEPTED 25/0
+  D4  real entry removed, a COMMENT carries it ........ ACCEPTED 25/0
+  D2  bld_bids: true -> false (CONTROL) ............... REFUSED
+
+D2 REFUSING IS WHAT MAKES D1 A FINDING RATHER THAN A BROKEN COPY: the same
+mutation on the other member of the same object was caught.
+
+SO THE ARM ITERATES THE SET rather than naming bld_draws a second time. THAT
+IS THE GENERALISABLE FORM: WHEN A CONDITION BECOMES A SET, THE ARM MUST
+ITERATE THE SET. An arm naming one member is not a weaker guard -- it is a
+guard that silently stops covering every member added after it. A third
+resource joining the map is covered ON THE DAY IT IS ADDED, which is the only
+version of this arm that cannot recreate the gap it closes. It also carries a
+PRECONDITION that the map parses as a set of at least two members, and a check
+that the call sites INDEX the map rather than hardcoding a member -- an arm
+over a set is worthless if some site still names one.
+
+===========================================================================
+ITEM 3 -- arm Z re-ablated: still CAUGHT, no regression
+===========================================================================
+
+  python docs/b19-logs/ablate_arm_z.py
+
+  BASELINE  EXIT=0   16 passed, 0 failed   arm Z ok:1 FAIL:0
+  ABLATED   EXIT=1   15 passed, 1 failed   arm Z ok:0 FAIL:1
+  CAUGHT.
+
+THE CONTROL RAN FIRST AND PASSED, so the ABLATED leg is attributable. Figures
+identical to the b19 post-fix leg. Arm Z still fires.
+
+===========================================================================
+ITEM 4 -- the sweep: 617 scanned, 102 candidates, 16 mine, 6 confirmed,
+2 repaired and ablated, 4 routed
+===========================================================================
+
+THREE NUMBERS AT THREE STAGES BY THREE METHODS, never one number:
+
+  scanner  docs/b23-logs/green_but_worthless_sweep.py
+           617 test files scanned, 102 candidates, 16 attributable to cody
+  reading  6 CONFIRMED, 10 REFUTED
+  ablation docs/b23-logs/ablate_sweep_fixes.py -- 2 repaired, 7/7 refused
+
+10 OF 16 WERE FALSE POSITIVES AND THE TOOL IS LEFT MATCHING RATHER THAN
+NARROWED. It flags variable NAMES that look like source and hold runtime
+values -- b[0].rule, a vm-lifted array, and an anchor UNIQUENESS guard, which
+is the STRONGER shape, not a weaker one. Narrowing clears the known instances
+and fails silently on the next phrasing; in a detector a false negative is
+invisible where a false positive is loud and gets read. Same call
+tools/sairn_push_gate_hook.py records for its own WEAKENING level.
+
+THE TWO REPAIRED, each concept-first:
+
+  MONEY -- tests/sairndental_amount_construction.js. THE CONCEPT: both writers
+  parse the amount and RETURN on an unreadable one in executable code, before
+  any record id is minted, with the ORDERING measured over comment-stripped
+  source. THE ORDERING ARM WAS THE WORST OF THE FOUR: comparing the index of
+  the refusal against the index of the id mint is satisfied by ANY comment
+  naming the refusal above the real mint while the real refusal sits below it
+  -- and addChargeEntry's FIRST LINE IS SUCH A COMMENT. The arm was reading a
+  comment's position. code() is applied AT THE ASSERTION and not inside grab(),
+  because grab()'s other caller feeds vm.runInContext and stripping comments
+  out of code about to be EXECUTED changes the subject under test rather than
+  the assertion. Plus a precondition that both anchors exist before their
+  order is compared -- an order comparison between two absent anchors is a
+  comparison of two -1s.
+
+  TIER A PHI -- tests/sairndental_rollup_panel.js. THE CONCEPT: the panel div,
+  its sidebar button and nav()'s dispatch to rRollup all exist as LIVE MARKUP
+  AND LIVE CODE, and rRollup() READS dnt_rollup through a real sdnData call.
+  THIS FILE IS THE WORST POSSIBLE PLACE FOR A WHOLE-FILE SUBSTRING AND THE
+  REASON IS ITS OWN HISTORY: the arm exists because the open-work row tracking
+  this panel recorded "dnt_rollup appears 0 times in every .html file", so the
+  file's PROSE about dnt_rollup is now extensive -- this suite's own name is in
+  it -- and a whole-file substring would stay green IF EVERY REAL CALL WERE
+  DELETED AND ONE COMMENT SURVIVED. markup = html with HTML comments stripped,
+  whole-file because the HTML comment delimiters are unambiguous; code(slice)
+  for the two JS arms, each BOUNDED to one function body first, because a
+  whole-file JS strip is not safe.
+
+ABLATED BOTH LEGS, SAME SESSION:
+
+  PRE-REPAIR  (suites from git, --before)   5 ACCEPTED, 2 REFUSED
+                                            ACCEPTED: A1, R1, R2, R3, R4
+                                            REFUSED : A2, A3 -- controls
+  POST-REPAIR (suites on disk)              0 ACCEPTED, 7 REFUSED
+
+===========================================================================
+THREE DEFECTS IN MY OWN MEASUREMENT, FOUND AND RECORDED RATHER THAN QUIETLY
+FIXED -- each in a tool written TO HONOUR a discipline and breaking it
+===========================================================================
+
+(a) THE ABLATION HARNESS HAD THE DEFECT IT WAS MEASURING. Its summary parse
+    was `(\d+) passed, (\d+) failed`, UNANCHORED. My new assertion MESSAGES
+    quote "at 25 passed, 0 failed" as evidence of the old hole -- so on every
+    run where one of those arms went red, the harness read the count out of
+    the FAILURE TEXT and reported ACCEPTED for a mutation the suite had just
+    REFUSED BY NAME. Six false ACCEPTEDs in one run. Anchored to the suite's
+    own summary line now, and the verdict is the EXIT CODE PLUS A NAMED RED
+    ARM, never the parsed count alone.
+
+(b) A CLOSING CLAIM THAT HAD MEASURED NOTHING. ablate_sweep_fixes.py ended
+    with "EVERY ONE OF THESE WAS ACCEPTED BEFORE THE REPAIR" and I had not
+    driven the pre-repair leg. Driving it said FIVE OF SEVEN. The script now
+    carries a --before mode that takes the suites out of git, so the sentence
+    is a differential and not a claim.
+
+(c) TWO ABLATIONS THAT CHANGED TWO THINGS. R3 and R4 commented the element out
+    AND renamed the live one, and both came back REFUSED pre-repair -- by the
+    census arm catching the RENAME, not by anything noticing the comment. A
+    MUTATION THAT CHANGES TWO THINGS CANNOT ATTRIBUTE A REFUSAL TO EITHER,
+    which is cross-domain item 12's own rule, broken inside the ablation
+    written to honour it. Single-layer now; ACCEPTED pre-repair, REFUSED after.
+
+AND ONE CONTROL EARNED ITS PLACE OUT LOUD: ablate_sweep_fixes.py's first run
+FAILED ITS CONTROL, because the amount suite also require()s
+api/_lib/safe-number.js and the temp tree had no api/. Without the control
+running first, every "REFUSED" below it would have been a copy that could not
+run -- a green ablation report for a suite that never executed.
+
+===========================================================================
+VERIFICATION -- exit codes from `echo "EXIT=$?"` on its own line, never a
+pipeline. Every line re-run after each of the four rebases.
+===========================================================================
+
+EXIT=0  node tests/sairnbuild_server_wins.js              26 passed, 0 failed (was 25)
+EXIT=0  node tests/sairndental_amount_construction.js     10 assertions pass
+EXIT=0  node tests/sairndental_rollup_panel.js            18 assertions pass
+EXIT=0  node tests/bld_draws_role_arms.test.js            regression, untouched
+EXIT=0  node tests/sd_data_blob_scope_ten_routed_sites.js regression, 16 passed
+EXIT=0  python tests/run_sairnbuild_server_wins_sabotage_probe.py  negative control
+EXIT=0  node --check on all three changed suites
+EXIT=0  python -m py_compile on all three new scripts
+EXIT=0  python docs/b19-logs/ablate_arm_z.py              item 3, CAUGHT
+EXIT=0  python docs/b23-logs/ablate_bld_server_wins.py    16 REFUSED, 0 ACCEPTED
+EXIT=0  python docs/b23-logs/ablate_sweep_fixes.py        7 REFUSED, 0 ACCEPTED
+EXIT=1  python docs/b23-logs/ablate_sweep_fixes.py --before  5 ACCEPTED -- EXPECTED
+EXIT=1  python docs/b23-logs/green_but_worthless_sweep.py 16 candidates in scope
+EXIT=0  python tools/md_table_check.py
+EXIT=0  python tools/open_work_shard.py --check
+EXIT=0  python tools/tier_a_review_gate.py               AFTER recording the obligation
+EXIT=0  python tools/defect_register.py --check          AFTER the reseat
+EXIT=0  python tools/known_red_check.py --from-run <b22 fixture>
+
+THE ITEMS 1-2 ABLATION CARRIES M1-M7 AS REGRESSION ARMS, re-driven because
+b23 replaced the previously-repaired arm's two inline strippers with the
+shared code() and struct(). ALL SEVEN STILL REFUSED. A consolidation that
+quietly loosened a working control would be invisible without them, and
+replacing a proven control on the strength of "it looks equivalent" is not
+acceptable here.
+
+THE TWO EXIT-1s ARE BOTH EXPECTED AND BOTH SAY SO IN THEIR OWN OUTPUT.
+--before is a pre-repair leg that must find holes; the sweep exits 1 while any
+candidate stands in scope, which is what keeps the four routed ones visible.
+
+===========================================================================
+UNVERIFIED -- stated rather than folded into the pass
+===========================================================================
+
+NO LIVE RENDER. tests/sairndental_rollup_panel.js is a SOURCE-LEVEL suite and
+this batch made it stricter at source level. It does NOT establish that the
+roll-up panel is reachable in a real browser against a real Supabase, and
+nothing here substitutes for fourth's own b29 LIVE render pass.
+
+THE 86 NON-cody CANDIDATES ARE UNREAD and are NOT counted as clean. The sweep
+keeps reporting them and exits 1 while any remain in scope.
+
+THE SWEEP IS BLIND TO ONE MEMBER OF ITS OWN CLASS. b22's B6 arm was satisfied
+by a CONSTANT'S note FIELD -- real executable data carrying prose -- which
+looks like nothing to a text scanner because it IS code. Detecting it needs
+the value flow, not the text, and NO TOOL ON THIS PLATFORM LOOKS FOR IT.
+
+THE SWEEP IS WIRED TO NOTHING. No hook, no push gate, no suite invokes it,
+which is the tooling_inventory finding that a tool which EXISTS is not a
+mechanism and a tool that RUNS is. Recorded in the defect record's
+recurrence_open rather than left to be discovered.
+
+THE FOUR ROUTED CANDIDATES ARE CONFIRMED BY READING AND NOT BY ABLATION. Each
+is a candidate I am confident about; none has been driven.
+
+===========================================================================
+DECISION-NEEDED
+===========================================================================
+
+NOTHING IS BLOCKED ON MICHAEL THIS BATCH. One judgement call is carried
+forward from b22, unchanged and small: isDefaultLocation() was added to
+api/_lib/location-scope.js for two sairnroofing.html sites that CANNOT reach
+it -- CommonJS module, single-file app, no loader, no build step -- so arm E
+proves the function WORKS, not that anything USES it. Either accept the two
+client literals permanently with a comment at both sites, or return an
+is_default boolean per row from the locations endpoint. Not taken here: api/
+is hank's.
+
+SAIRNcash stays HELD. No session should pick up a Stripe item until Michael
+says go.
+
+===========================================================================
+NEXT -- by owner, with the exact step
+===========================================================================
+
+FOURTH -- the Tier A obligation on dnt_rollup, recorded this batch and
+  ASSIGNED TO YOU BY THE GATE rather than left first-come. It names what to
+  try to break rather than asking for a diff read: (1) construct a mutation
+  that leaves the panel UNREACHABLE with all 18 arms green -- the four I drove
+  were all ACCEPTED pre-repair and all REFUSED after; (2) check whether
+  stripping HTML comments whole-file broke any arm that MEANT to read
+  commented markup -- 18/18 still pass, but that is my own read; (3) the
+  census arm now compares three sets derived from markup rather than html, so
+  a panel live-but-commented-in-the-sidebar reports a MISMATCH where it
+  previously reported identical -- confirm that direction is intended. AND
+  THANK YOU FOR b28 CHECKS 2 AND 4: both were real, both were routed without
+  being fixed, and that was the right call.
+
+WHOEVER TAKES THE NEXT SWEEP REPAIR -- TAKE
+  tests/sairnlaw_trust_clearance_review_probe.js:255 FIRST. It is the SAME
+  ORDERING SHAPE as the money arm repaired here, so the money one is now proof
+  that it bites. The property is that the local write and the re-render happen
+  BEFORE the await -- a trust-ledger entry on screen before the network call.
+  A comment above `await sdnData` naming st('law_trusttx',list) satisfies it
+  with the real write moved after. EDIT: wrap f in a comment stripper and
+  assert both anchors exist before comparing positions. TRUST MONEY.
+  Then tests/sairnfreedom_server_backup.js:178/:180/:196 -- bound :180 and
+  :196 to st()'s own body and strip comments; LEAVE :187 AND :189 ALONE, their
+  subject genuinely IS the user-facing message.
+  Then tests/sairnbiz_undated_payee_notes.js:152 -- assert inside rVends's
+  body; LEAVE :155 AND :158 ALONE, those are panel notes and asserting the
+  prose is the point.
+  Then tests/sd_data_blob_scope_ten_routed_sites.js:188 -- lowest; strip
+  comments from AUTH_SRC before the match and DO NOT "fix" the extraction
+  itself, which is the discipline rather than a defect.
+
+HANK -- unchanged from b22 and NOT re-sent. C1 in
+  tests/sd_data_not_provisioned_misclass.js is still red on purpose: route the
+  alf_op_audits EXISTENCE SELECT through
+  notProvisioned(res, existingR, <the same message>), one guard earlier than
+  A1's fix. notProvisionedDecide() needs no change. Re-derive the line number.
+  :14316 is still named and not driven.
+
+WHOEVER OWNS THE OTHER 86 CANDIDATES -- green_but_worthless_sweep.py --all
+  reports 102; 16 are cody's and the other 86 are not mine, not read, and not
+  counted as clean.
+
+NOBODY YET, AND IT IS A REAL BLIND SPOT -- the B6 class. No tool here looks
+  for an arm satisfied by executable DATA carrying prose, and the only thing
+  that has ever found one is an ablation.
+
+CC -- carried from b22: open-work row 449 records "dnt_rollup appears 0 times
+  in every .html file", which is now FALSE -- sairndental.html:2543 is a real
+  sdnData('read','dnt_rollup',{}) call. The amendment is yours. And row 356's
+  item-4 sentence still says the shared multi-location architecture is NOT
+  STARTED, which row 355 contradicts.
+
+CODY -- the b17/b18 carry-overs are untouched; the 151/57 sibling
+  NOT_PROVISIONED guards are still NOT converted, a DECISION and not a
+  backlog; irs.gov/instructions/i8846 is still unread.
+
+===========================================================================
+CLAIM -- RELEASED with this report. `platform`, taken BEFORE any work with a
+FILES list declared, held through the whole batch including four rebases, and
+released only after the work was confirmed PRESENT ON THE REMOTE rather than
+reported successful.
+
+CONTEXT at this line: 45.1% of 1000k (450,622 tokens, max usage sum over this
+session's transcript, which also carries b22). Measured, not estimated.
+
+EVIDENCE: docs/2026-10-19-cody-b23-green-but-worthless-sweep.md,
+docs/b23-logs/ (three re-runnable scripts), SAIRN-handoff-cody-b23.md,
+docs/defect-density-register.json record 40275ee5d2cc.
+===========================================================================
+
+SHA256 5d35bb6d90c29cb541ba5f7da073899b4b2172c3c5970133fe4c252228f4745b  (sha256 of every byte ABOVE this line; this line and the next are excluded, so it is reproducible with: python -c "import hashlib,io;s=io.open('SAIRN-report-cody-b23.txt',encoding='utf-8',newline='').read();b=s[:s.index(chr(10)+chr(10)+'SHA256 ')+1];print(hashlib.sha256(b.encode()).hexdigest())")
+END-OF-REPORT
