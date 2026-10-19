@@ -1,0 +1,32 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "cc",
+  "batch": "b17",
+  "id_lock": "830e796c27b97f49",
+  "items": [
+    {
+      "id": 1,
+      "title": "",
+      "status": "done",
+      "evidence": "tools/sairn_push_gate_hook.py --selftest 56/56 exit 0 (four new text arms + ABLATION 3 on the b16 hint); the one-call form removed from OVERRIDE_HINT, gate_skip.BLANKET_REFUSAL and gate_skip's docstring, all three locked by arms; Michael's decision recorded in the code comment"
+    },
+    {
+      "id": 2,
+      "title": "",
+      "status": "done",
+      "evidence": "tools/status_board_bridge_check.py --fixtures 15/15 exit 0; live --agent cc --nonce BRIDGE-NONCE-6cc9f973c4 exit 0 CLEAN, all six agents ok; Drive API read of 19GSUTWQLddPwZiLEUNfssAjrMxK4vVE1 carries the nonce; docs/2026-10-19-cc-b17-status-board-bridge-live-evidence.md"
+    },
+    {
+      "id": 3,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/2026-10-17-cc-b17-locked-entry-crash-injection.py exit 0: PRE-FIX exit 0 with empty stdout, POST-FIX exit 2 naming COULD NOT RUN; _locked_entry arms plus ablation and control in tools/sairn_push_gate_hook.py --selftest 56/56"
+    },
+    {
+      "id": 4,
+      "title": "",
+      "status": "done",
+      "evidence": "tools/index_duplicate_check.py --fixtures 10/10 exit 0 with an ablation against the naive split; 836 rows compared before the fix and 837 after, line 645 recovered; the premise re-measured with markdown-it-py in two presets, docs/2026-10-19-cc-b17-routed.md H1 and H2"
+    }
+  ]
+}
