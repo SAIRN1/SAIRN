@@ -4126,8 +4126,8 @@
       "task": "b21: discharge review obligations; b18 re-derive (straight-time-floor sign guard, trust-lock hard-lock); api/bridge.js unknown-action refusal + negative control + ablation; concat 3 sql files to Drive; attestation design note; 2 open-work rows. FILES: api/bridge.js api/bridge-unknown-action.test.js docs/2026-10-19-hank-b21-attestation-design.md docs/SAIRN-OPEN-WORK-INDEX.md SAIRN-handoff-hank-b21.md SAIRN-report-hank-b21.txt SAIRN-digest-hank-b21.txt SAIRN-ACTIVE-WORK-hank.md NOT-stonedesk.html-fourth-holds-it",
       "claimed_at": "2026-10-19T17:59:03Z",
       "claimed_at_epoch": 1792432743.3738687,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-19T20:43:31Z",
       "files": [
         "NOT-stonedesk.html",
         "SAIRN-ACTIVE-WORK-hank.md",
