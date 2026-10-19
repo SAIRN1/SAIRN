@@ -10,6 +10,7 @@
 //   prepare       { resource, payload }        -> { token, expires_at }
 //   countersign   { token }                     (a DIFFERENT qualified signer)
 //   status        { token }                    -> what stage it is at
+//   open          { }                          -> every UNSPENT row, staged
 //
 // `prepare` IS NAMED `prepare` AND NOT `request`, which api/sv-witness.js
 // calls it. The verb is the one api/_lib/law-roles.js and api/_lib/leg-roles.js
@@ -44,7 +45,35 @@
 const { verifySessionToken, tokenFromRequest } = require('./auth');
 const cs = require('./countersign');
 
-const ACTIONS = ['prepare', 'countersign', 'status'];
+const ACTIONS = ['prepare', 'countersign', 'status', 'open'];
+
+// ── `open` EXISTS BECAUSE THE INDEX DID AND THE QUERY DID NOT (b20) ───────
+// Both app schemas ship `idx_<app>_countersign_open` --
+// `(license_hash, resource, expires_at) WHERE spent_at IS NULL` -- and both
+// carry a comment saying it is "the query a director's 'needs your signature'
+// list is built from". NOTHING QUERIED IT. `status` takes a `{ token }` and
+// returns ONE row, and the clear token is handed out exactly once, at
+// `prepare`, TO THE PREPARER -- so a signer holds no token and could not drive
+// `status` for anything. The list panel both apps are owed had no endpoint to
+// read, and the index served nobody.
+//
+// Found by reading the endpoint rather than the routing note: b19's routed
+// spec and the b20 dispatch both say the panel is "driven by the `status`
+// action" AND that the index "exists to serve that query", and those two
+// sentences cannot both be true of what shipped.
+//
+// ── IT RETURNS NO TOKEN AND NO TOKEN HASH, AND THAT IS NOT AN OVERSIGHT ───
+// Both SQL files say why in their own words: "a readable table of live tokens
+// is a table of signatures waiting to be borrowed". A token is a bearer
+// credential for exactly one irreversible write. An endpoint that listed them
+// to every qualified signer would hand out the mechanism the content hash and
+// the single-use rule exist to protect.
+//
+// SO THE PANEL IS READ-ONLY BY CONSTRUCTION, not by politeness. It tells a
+// signer what is waiting; signing still requires the token the preparer hands
+// them out of band, which is the design and not a gap. The UI must say so
+// rather than render a button that cannot work.
+const OPEN_CAP = 200;
 
 /**
  * @param {object} profile see api/_lib/countersign.js assertProfile
@@ -54,6 +83,34 @@ const ACTIONS = ['prepare', 'countersign', 'status'];
  *   be refused here too, because "the route checked it" is an assumption and
  *   this function is reachable from any future route.
  */
+// ── ONE STAGE COMPUTATION, CALLED BY BOTH `status` AND `open` (b20) ───────
+// THE STAGE IS COMPUTED HERE AND NAMED, rather than returning four nullable
+// columns for a client to reason over. Four columns is four chances for a
+// panel to render "signed" for a spent-and-expired row.
+//
+// EXTRACTED RATHER THAN COPIED when `open` was added, and the reason is the
+// whole point of the stage existing: two copies of this ladder would be two
+// answers to "what is this record", and the second one would be the one in the
+// list a signer actually reads. The ORDER is the policy -- spent first,
+// expired before signed -- so a row that was signed and then expired reads
+// `expired`, which is what it is.
+const STAGES = Object.freeze(['awaiting_signature', 'signed', 'filed', 'expired']);
+function stageOf(row, nowMs) {
+  const expired = new Date(row.expires_at).getTime() <= nowMs;
+  return row.spent_at ? 'filed'
+       : expired ? 'expired'
+       : row.countersign_employee_id ? 'signed'
+       : 'awaiting_signature';
+}
+
+// The column list both actions select. ONE STRING, so a column added for one
+// and not the other cannot make `stageOf` read `undefined` on one path --
+// which would compute `awaiting_signature` for a filed record and is precisely
+// the failure the computed stage exists to prevent.
+const STAGE_COLUMNS = 'resource,prepared_by,prepared_role,'
+  + 'countersign_employee_id,countersign_role,countersigned_at,spent_at,'
+  + 'expires_at';
+
 function runCountersignAction(profile, req, res, lic) {
   cs.assertProfile(profile);
   if (!lic || lic.valid !== true || lic.active !== true || !lic.license_hash) {
@@ -254,20 +311,14 @@ async function handleAction(profile, req, res, lic) {
         if (!tok) { res.status(400).json({ error: { message: 'token is required' } }); return; }
         const r = await fetch(rest(profile.tokenTable + '?license_hash=eq.' + enc(licHash) +
           '&token_hash=eq.' + enc(cs.hashToken(tok)) +
-          '&select=resource,prepared_by,prepared_role,countersign_employee_id,'
-          + 'countersign_role,countersigned_at,spent_at,expires_at&limit=1'), { headers });
+          '&select=' + STAGE_COLUMNS + '&limit=1'), { headers });
         const rows = await r.json().catch(() => null);
         if (!r.ok) return upstream(rows);
         const row = (Array.isArray(rows) && rows[0]) || null;
         if (!row) { res.status(404).json({ error: { code: 'NO_SUCH_TOKEN', message: 'That record is not recognised.' } }); return; }
-        // THE STAGE IS COMPUTED HERE AND NAMED, rather than returning four
-        // nullable columns for a client to reason over. Four columns is four
-        // chances for a panel to render "signed" for a spent-and-expired row.
-        const expired = new Date(row.expires_at).getTime() <= Date.now();
-        const stage = row.spent_at ? 'filed'
-                    : expired ? 'expired'
-                    : row.countersign_employee_id ? 'signed'
-                    : 'awaiting_signature';
+        // b20: the ladder moved to `stageOf` so `open` cannot grow a second
+        // copy of it. Same answer, same order, one implementation.
+        const stage = stageOf(row, Date.now());
         res.status(200).json({
           ok: true, stage: stage,
           resource: row.resource,
@@ -278,6 +329,83 @@ async function handleAction(profile, req, res, lic) {
           spent_at: row.spent_at || null,
           expires_at: row.expires_at,
           countersign_required_from: profile.signerLabel
+        });
+        return;
+      }
+
+      // ── `open` -- THE LIST THE INDEX WAS BUILT FOR (b20) ───────────────
+      if (action === 'open') {
+        const caller = await activeCaller();
+        if (!caller) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+        // THE SIGNER SET, NOT EVERY EMPLOYEE. The outstanding queue names who
+        // prepared each pending irreversible act and what resource it is on;
+        // it is the signer's work list and nobody else's. Gated on
+        // `profile.signerRoles` -- the SAME set `countersign` checks, read
+        // from the profile rather than re-listed, so the list and the act it
+        // leads to cannot disagree about who is qualified.
+        //
+        // THE PREPARER IS DELIBERATELY NOT INCLUDED, and it is a real
+        // omission rather than an accident: a paralegal wanting to know
+        // whether their disbursement was authorised has the token and can
+        // call `status`, which is the narrower route and already exists.
+        // Widening this to preparers is a decision, not a convenience.
+        if (profile.signerRoles[caller.role] !== true) {
+          res.status(403).json({ error: { code: 'NOT_QUALIFIED_TO_SIGN',
+            message: profile.signerRefusal } });
+          return;
+        }
+        // EXACTLY THE INDEX'S PREDICATE -- `license_hash` and
+        // `spent_at is null` -- ordered by `expires_at`, which is the index's
+        // third column. Written to match idx_<app>_countersign_open rather
+        // than hoping the planner finds a use for it.
+        //
+        // EXPIRED-BUT-UNSPENT ROWS ARE RETURNED, not filtered server-side,
+        // and the stage says which they are. A row that expired unsigned is
+        // the one thing a signer most needs to see -- an authorisation that
+        // quietly vanished from the list looks exactly like one that was
+        // never prepared, and the preparer is sitting waiting for it.
+        const r = await fetch(rest(profile.tokenTable + '?license_hash=eq.' + enc(licHash) +
+          '&spent_at=is.null&select=' + STAGE_COLUMNS +
+          '&order=expires_at.asc&limit=' + (OPEN_CAP + 1)), { headers });
+        const rows = await r.json().catch(() => null);
+        if (!r.ok) return upstream(rows);
+        const all = Array.isArray(rows) ? rows : [];
+        // ── THE CAP IS REPORTED, NEVER SILENT ──────────────────────────
+        // There is no DELETE on either token table by design, so unspent
+        // expired rows accumulate forever and this list has no natural
+        // bound. A truncated list that does not say it was truncated is
+        // indistinguishable from a complete one -- the platform's most
+        // expensive defect shape -- so one extra row is fetched purely to
+        // detect the condition and `truncated` is part of the response.
+        const truncated = all.length > OPEN_CAP;
+        const now = Date.now();
+        const items = all.slice(0, OPEN_CAP).map((row) => ({
+          stage: stageOf(row, now),
+          resource: row.resource,
+          prepared_by: row.prepared_by,
+          prepared_role: row.prepared_role,
+          countersign_employee_id: row.countersign_employee_id || null,
+          countersign_role: row.countersign_role || null,
+          countersigned_at: row.countersigned_at || null,
+          expires_at: row.expires_at
+          // NO token, NO token_hash, NO content_hash. See the note above
+          // ACTIONS. `spent_at` is omitted too: every row here is unspent by
+          // the query's own predicate, so a column that is always null would
+          // only invite a client to reason over it.
+        }));
+        res.status(200).json({
+          ok: true,
+          items: items,
+          truncated: truncated,
+          cap: OPEN_CAP,
+          stages: STAGES,
+          countersign_required_from: profile.signerLabel,
+          // THE LIMIT OF WHAT THIS LIST IS, carried in the response rather
+          // than left to the UI to word. A signer cannot act from this list:
+          // the token is the preparer's and is handed over out of band.
+          note: 'This list is read-only. Authorising a record needs the '
+              + 'reference the person who prepared it gives you -- it is not '
+              + 'shown here and cannot be recovered from this list.'
         });
         return;
       }

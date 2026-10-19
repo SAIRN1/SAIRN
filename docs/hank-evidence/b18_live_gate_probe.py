@@ -123,13 +123,22 @@ else:
             bad(name + ' refuses a bearer-less POST',
                 'HTTP ' + str(st) + ': ' + txt[:140])
 
-    # ── 3. AN UNKNOWN ACTION IS A 400 THAT NAMES THE THREE ─────────────────
+    # ── 3. AN UNKNOWN ACTION IS A 400 THAT NAMES THE ALLOWLIST ─────────────
     # Needs a licence, which this probe does not have. Stated rather than
     # attempted and reported as a pass.
-    no('an unknown action is a 400 naming prepare/countersign/status',
+    #
+    # THE LABEL NO LONGER SPELLS THE LIST, FIXED 2026-10-19 (b20). It read
+    # "naming prepare/countersign/status" and b20 added a FOURTH action,
+    # `open`. The arm is COULD NOT RUN so nothing failed -- which is exactly
+    # the shape worth catching: a label that quietly stopped describing the
+    # thing, in a check whose own result could never contradict it. The
+    # endpoint derives that message from its ACTIONS array, so the honest
+    # label names the array rather than a snapshot of it.
+    no('an unknown action is a 400 naming the endpoint\'s ACTIONS allowlist',
        'needs a valid licence key, which this probe deliberately does not '
        'carry. api/b18-countersign-lock.test.js arm K14 drives it against the '
-       'real handler')
+       'real handler, and it asserts the MESSAGE SHAPE rather than the list, '
+       'which is why adding `open` in b20 did not make it red')
 
     # ── 4. THE SQL IS NOT RUN, SO THE LOCKS ANSWER 503 ─────────────────────
     no('F1 leg_cremations happy path (prepare -> countersign -> write)',

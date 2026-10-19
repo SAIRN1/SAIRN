@@ -181,30 +181,47 @@ const LAW_RECONCILE_LEGS = Object.freeze(Object.assign(Object.create(null), {
   law_bankstatements: true
 }));
 
-// WHO MAY RECONCILE. The LEGAL SIDE: owner, attorney, paralegal.
+// WHO MAY RECONCILE. The BAR-ADMITTED ROLES: owner and attorney.
 //
 // `bookkeeper` IS ABSENT AND THAT ABSENCE IS THE DELIVERABLE. It is not an
 // omission to be tidied up later: it is the carve-out, and the row comments in
 // LAW_ROLE_MATRIX below point here.
 //
-// `paralegal` IS PRESENT AND IS THE PART THE RESEARCH DOES NOT CLEANLY SETTLE.
-// Rule 5.3 supports a non-lawyer doing the work under supervision, so the
-// grant is defensible -- but the guidance also requires the LAWYER TO REVIEW
-// AND APPROVE the result, and SAIRNlaw has no attestation record anywhere. See
-// LAW_RECONCILE_ATTESTATION below: what ships is a DISCLOSURE, not a
-// mechanism, because a reconciliation presented as complete with no lawyer
-// attestation is the wrong model wearing compliance.
+// ── `paralegal` WAS HERE IN b19 AND CAME OFF IN b20, ON MICHAEL'S DECISION ─
+// b19 shipped `{ owner, attorney, paralegal }` and raised the residual as its
+// own DECISION-NEEDED: Rule 5.3 supports a non-lawyer doing the WORK under
+// supervision, but the same guidance requires the LAWYER TO REVIEW AND APPROVE
+// the result, and SAIRNlaw records no attestation anywhere. b19 shipped a
+// DISCLOSURE for that gap (LAW_RECONCILE_ATTESTATION below) rather than a
+// mechanism.
 //
-// NOT DERIVED FROM LAW_BAR_ADMITTED_ROLES, deliberately. It is that set plus
-// `paralegal`, and writing it out means the difference is visible on the
-// screen rather than computed -- the same call api/sd-data-sv-role-matrix's
-// arm A5b makes about SV_CONTROLLED_RECORD_ROLES. Arm R2 of
-// api/b19-iolta-reconcile-carveout.test.js asserts the relationship holds, so
-// a divergence has to be declared there.
+// Michael's answer, 2026-10-19: **`paralegal` comes OFF the list until the
+// attestation step exists.** The reasoning is the direction of the error. With
+// the grant and no attestation, the app lets a non-lawyer produce a finished
+// reconciliation that nothing records a lawyer as having reviewed -- and the
+// duty under Rule 1.15 is the lawyer's and non-delegable. Without the grant,
+// a firm that delegates the arithmetic in practice is inconvenienced and asks
+// for the feature. One of those is a compliance claim the record cannot
+// support; the other is a missing feature. The narrow one ships.
+//
+// THIS IS NOT A WITHDRAWAL OF THE RESEARCH. Rule 5.3 still supports the
+// delegation and `LAW_RECONCILE_ATTESTATION.candidate` still names the
+// mechanism that would make it safe -- prepared by a paralegal, attested by a
+// bar-admitted person, bound to a hash of the exact reconciliation, which is
+// the lock api/_lib/countersign.js already runs for C2. The grant is DEFERRED
+// behind that mechanism, not refused.
+//
+// STILL NOT DERIVED FROM LAW_BAR_ADMITTED_ROLES, and the reason survives the
+// change even though the two sets are now equal. Arm R2 of
+// api/b19-iolta-reconcile-carveout.test.js asserts the RELATIONSHIP (`tier
+// plus exactly { paralegal }`), so this edit makes R2 RED -- deliberately and
+// expectedly. That red is the mechanism working: the one-line policy change
+// cannot be made quietly. See docs/2026-10-19-hank-b20-concepts.md; the arm is
+// in api/ and is re-aimed when the suite's owner updates it, not suppressed
+// here.
 const LAW_RECONCILE_ROLES = Object.freeze(Object.assign(Object.create(null), {
   owner: true,
-  attorney: true,
-  paralegal: true
+  attorney: true
 }));
 
 // THE HALF THIS DOES NOT BUILD, CARRIED AS A STRUCTURE SO IT CANNOT BE LOST.
@@ -219,15 +236,27 @@ const LAW_RECONCILE_ATTESTATION = Object.freeze({
        + 'read with Rule 5.3 (the work is delegable under supervision). State '
        + 'bar guidance mandating periodic three-way reconciliation also puts '
        + 'the review on the lawyer.',
-  gap: 'A paralegal may RUN the reconciliation and nothing records that a '
-     + 'bar-admitted person reviewed the result. The reconciliation therefore '
-     + 'answers "the three legs agree" and never "a lawyer has attested that '
-     + 'they agree", and the app must not present the first as the second.',
+  // b20: RESTATED, because the b19 wording described a grant that no longer
+  // exists and a stale true-sounding sentence in an exported constant is worse
+  // than none. The gap did NOT close when `paralegal` came off the list -- it
+  // narrowed. Only a bar-admitted person can now run a leg, so the person doing
+  // the work is qualified; what is still absent is the RECORD.
+  gap: 'Nothing in this app records an attestation. A reconciliation run by a '
+     + 'bar-admitted person answers "the three legs agree" and never "a lawyer '
+     + 'has attested that they agree", and the app must not present the first '
+     + 'as the second. Separately, DELEGATION IS NOT AVAILABLE AT ALL until '
+     + 'that record exists: `paralegal` was granted in b19 and withdrawn in '
+     + 'b20 for exactly this reason, so a firm that delegates the arithmetic '
+     + 'in practice cannot do it in the app.',
   // The mechanism that would close it, named rather than invented here.
   candidate: 'the same countersignature lock api/_lib/countersign.js already '
            + 'runs for C2 -- prepared by one role, attested by a bar-admitted '
            + 'one, bound to a hash of the exact reconciliation',
-  recorded: '2026-10-19 (b19), hank -- raised as DECISION-NEEDED, not built'
+  recorded: '2026-10-19 (b19), hank -- raised as DECISION-NEEDED, not built. '
+          + 'DECIDED 2026-10-19 (b20) by Michael: the delegation grant comes '
+          + 'OFF until the attestation step exists. The mechanism is still not '
+          + 'built; what changed is that the app no longer relies on it being '
+          + 'absent.'
 });
 
 /** Is this resource one of the reconciliation legs? */
@@ -305,7 +334,7 @@ const LAW_ROLE_MATRIX = Object.freeze(Object.assign(Object.create(null), {
   law_pimedical:        { owner: 'rw', attorney: 'rw', paralegal: 'r', bookkeeper: '',   why: 'law_pimedical, named explicitly in the policy as read-only. bookkeeper NONE -- health information about an identified person is not billing data, and this is the row most worth being wrong about in the narrow direction' },
 
   // ── TRUST: paralegal none on WRITE, and the LOCK above decides, not these cells
-  law_trusttx:          { owner: 'rw', attorney: 'rw', paralegal: '', bookkeeper: '', why: 'TRUST -- IOLTA client money. The LOCK decides this row, not these cells: bar-admitted only, with TWO named exceptions and no others -- C2\'s two-stage `prepare`, which paralegal may perform and which writes a PENDING row rather than the ledger, and b19\'s `reconcile`, which is leg (b) of the three-way reconciliation and is granted to the LEGAL SIDE only. `bookkeeper` is absent from BOTH, and that absence is C1\'s carve-out rather than an omission' },
+  law_trusttx:          { owner: 'rw', attorney: 'rw', paralegal: '', bookkeeper: '', why: 'TRUST -- IOLTA client money. The LOCK decides this row, not these cells: bar-admitted only, with TWO named exceptions and no others -- C2\'s two-stage `prepare`, which paralegal may perform and which writes a PENDING row rather than the ledger, and b19\'s `reconcile`, which is leg (b) of the three-way reconciliation and is granted to the BAR-ADMITTED ROLES only -- b19 included `paralegal` and b20 took it off until an attestation record exists. `bookkeeper` is absent from BOTH, and that absence is C1\'s carve-out rather than an omission' },
   law_bankstatements:   { owner: 'rw', attorney: 'rw', paralegal: '', bookkeeper: '', why: 'TRUST -- leg (a) of the IOLTA three-way reconciliation, the bank side. Deliberately NOT in LAW_TRUST_TWO_STAGE, because nobody at the firm prepares a bank statement -- but it IS in LAW_RECONCILE_LEGS, because reconciling is exactly what it is for. `bookkeeper` cannot reach it on any verb' },
 
   // ── NOT IN ANY NAMED CATEGORY: paralegal none, by the stated default
@@ -383,6 +412,15 @@ function decide(resource, role, action) {
     // a resource that is a reconciliation LEG, and a role on the reconcile
     // list. It yields the two legs to the LEGAL SIDE and never to
     // `bookkeeper`, which is C1's carve-out.
+    //
+    // b20: THE BRANCH IS NOW UNREACHABLE AND IS KEPT ON PURPOSE. Since
+    // `paralegal` came off LAW_RECONCILE_ROLES, every member of that set is
+    // also in LAW_BAR_ADMITTED_ROLES, so the enclosing `if` has already let
+    // them past and nothing arrives here. It is NOT dead code to delete: it is
+    // the exception shape the attestation decision will re-populate, and
+    // deleting it would make re-granting `paralegal` a lock rewrite rather
+    // than a one-line set change. Named rather than left to be rediscovered,
+    // because an unreachable branch nobody declared is item 8's shape.
     //
     // IT IS READ-SHAPED BY CONSTRUCTION, not by a flag. `reconcile` is not in
     // any write path -- api/sd-data.js's law_trust_reconcile branch is

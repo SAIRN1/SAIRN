@@ -552,6 +552,22 @@ label.chk input{width:auto;}
     <div id="tr-reconcile-result" style="margin-top:14px"></div>
     <button class="btn bo bs" id="tr-explain-btn" style="display:none;margin-top:10px" onclick="explainReconciliation()">Explain This Discrepancy (AI)</button>
   </div></div>
+  <!-- ── NEEDS YOUR AUTHORISATION (b20) ──────────────────────────────────
+       The read-only outstanding queue for the two-stage trust disbursement
+       (C2, api/law-countersign.js). RENDERS ONE COMPUTED STAGE PER ROW, which
+       the server computes -- never the four nullable signature columns, because
+       four columns is four chances to show "signed" for a record whose
+       authorisation has expired.
+
+       IT IS A LIST AND NOT AN ACTION. Authorising needs the reference the
+       preparer hands over; it is deliberately not in this list and cannot be
+       recovered from it. The card says so on screen rather than offering a
+       button that cannot work.
+
+       HIDDEN BY DEFAULT and shown by rCountersignQueue(). The gate here is
+       UX-ONLY; api/_lib/countersign-endpoint.js re-checks the signer set on
+       every call. -->
+  <div class="card" id="tr-countersign-card" style="display:none"><div class="ch"><span class="ct">Needs Your Authorisation</span></div><div class="cb" id="tr-countersign-body"></div></div>
   <div class="card"><div class="ch"><span class="ct">Client Ledger Balances</span></div><div class="cb" id="tr-client-ledgers"></div></div>
   <div class="card"><div class="ch"><span class="ct">Transaction Log</span></div><div class="cb">
     <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Date</th><th>Client</th><th>Matter</th><th>Type</th><th>Amount</th><th>Description</th><th>Status</th><th>Bank<div style="font-weight:400;font-size:10px;color:var(--muted)">cleared / outstanding</div></th><th>Actions</th></tr></thead>
@@ -1325,6 +1341,10 @@ function lawLocalToday(){
 // validation is server-side in api/_lib/license.js against license_keys.
 var VALID=['LAW-','DEMO-','SAIRN-'];
 var AUTH_API='https://sairn.vercel.app/api/law-auth';
+// b20: the two-stage trust disbursement lock (C2). Its own route, not a
+// resource on sd-data -- api/law-countersign.js carries its own licence and
+// session boundary for the reason its header states.
+var COUNTERSIGN_API='https://sairn.vercel.app/api/law-countersign';
 
 // SESSION INDEPENDENCE (per the build brief -- the named Amicus Attorney
 // bug class: one user's session affecting another logged-in user's
@@ -3347,6 +3367,133 @@ function trustReconcileServer(){
       message:e.message||'The reconciliation could not be run.'};
   });
 }
+// ══ NEEDS YOUR AUTHORISATION -- THE COUNTERSIGNATURE QUEUE (b20) ═════════
+// The client half of api/law-countersign.js's `open` action. One read-only
+// list of the trust disbursements a paralegal has prepared and that are
+// waiting on a bar-admitted signature.
+//
+// ── IT RENDERS THE SERVER'S COMPUTED STAGE AND DOES NO ARITHMETIC ────────
+// The endpoint returns ONE NAMED STAGE per row -- awaiting_signature / signed
+// / filed / expired -- and this panel renders that name. It deliberately does
+// NOT look at countersign_employee_id, countersigned_at, spent_at or
+// expires_at to work out what a row IS, because four nullable columns is four
+// chances to render "signed" for a record whose authorisation has expired, and
+// the expiry comparison would be against THIS DEVICE'S CLOCK rather than the
+// server's. `expires_at` is displayed, never interpreted.
+//
+// ── AND THE QUEUE OFFERS NO BUTTON, WHICH IS THE MECHANISM, NOT A GAP ────
+// The token that authorises a disbursement is returned exactly once, at
+// `prepare`, to the person who prepared it. It is not in this list and cannot
+// be recovered from it -- api/_lib/countersign-endpoint.js's `open` returns no
+// token and no token hash on purpose, because, in both SQL schemas' own words,
+// "a readable table of live tokens is a table of signatures waiting to be
+// borrowed". So the list says what it is and what the signer has to ask for.
+function lawCountersign(action,payload){
+  var lic=lawLicenseKey();
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};
+  var tok=lawSessionToken();
+  if(tok)h['X-SD-Auth']=tok;
+  return fetch(COUNTERSIGN_API,{method:'POST',headers:h,body:JSON.stringify(Object.assign({action:action},payload||{}))})
+    .then(function(r){return r.json().catch(function(){return{};}).then(function(d){
+      return {ok:r.ok&&d&&d.ok,status:r.status,data:d,
+              msg:(d&&d.error&&d.error.message)||'',code:(d&&d.error&&d.error.code)||''};
+    });})
+    .catch(function(e){return {ok:false,status:0,data:null,msg:'Network error — check your connection.',code:'NETWORK'};});
+}
+
+// The four stage names the SERVER computes, mapped to a badge. The keys are
+// the server's vocabulary; the response also ships `stages`, and an answer
+// outside this map renders the raw name rather than being dropped -- a stage
+// this panel does not recognise is exactly the thing a reader must see.
+var LAW_COUNTERSIGN_STAGE={
+  awaiting_signature:{cls:'bw',label:'Awaiting your authorisation'},
+  signed:{cls:'bg',label:'Authorised — not yet filed'},
+  filed:{cls:'bg',label:'Filed'},
+  expired:{cls:'br',label:'Expired — must be prepared again'}
+};
+
+// UX-ONLY, AND THE SERVER DECIDES. This mirrors LAW_BAR_ADMITTED_ROLES
+// (api/_lib/law-roles.js, C3's answer) so a paralegal is not shown a card that
+// will answer 403. It is a SECOND COPY of a role set, which this platform
+// normally refuses -- the reason it is acceptable here and nowhere else is
+// that it can only ever HIDE: `open` re-checks `profile.signerRoles` on every
+// call, so if this list drifts wider the server still refuses, and if it
+// drifts narrower a signer sees no card and asks. Same shape and same reason
+// as sdRefreshLoginAccessGate() in stonedesk.
+var LAW_COUNTERSIGN_SIGNER_ROLES={owner:true,attorney:true};
+
+function rCountersignQueue(){
+  var card=$('tr-countersign-card');
+  var body=$('tr-countersign-body');
+  if(!card||!body)return;
+  var role=(lawSession&&lawSession.role)||'';
+  if(LAW_COUNTERSIGN_SIGNER_ROLES[role]!==true){card.style.display='none';return;}
+  card.style.display='';
+  // NOT AN EMPTY BOX WHILE THE REQUEST IS IN FLIGHT. A card headed "Needs Your
+  // Authorisation" showing nothing reads as "nothing is waiting", which is the
+  // one wrong answer it must never give by accident. Same reasoning as the
+  // reconciliation panel's starting state above.
+  body.innerHTML='<div class="badge bw" style="font-size:13px;padding:6px 14px">Checking with the server&hellip;</div>';
+  lawCountersign('open',{}).then(function(v){
+    if(!v.ok){
+      // THREE DIFFERENT SENTENCES FOR THREE DIFFERENT ANSWERS, and not one of
+      // them is "nothing is waiting". NOT_PROVISIONED is named separately
+      // because it is the state production is in today -- the SQL has not been
+      // run -- and "the lock is not set up" must not read as "the queue is
+      // empty".
+      var why;
+      if(v.code==='NOT_PROVISIONED')why='The countersignature lock is not set up on the server yet, so this queue cannot be read. Nothing is missing from your records -- this list simply cannot be produced until sql/sairnlaw_countersign_schema.sql has been run. Report it.';
+      else if(v.status===401)why='Your sign-in could not be verified, so the queue was not read. Sign out and sign in again.';
+      else if(v.status===403)why='Authorising money out of client trust is available to an attorney or the firm owner, and the server did not recognise your role as one. Nothing here is a statement about what is or is not waiting.';
+      else why='The queue could not be read, so it is NOT known whether anything is waiting: '+H(v.msg||'no reason given');
+      body.innerHTML='<div class="badge bw" style="font-size:13px;padding:6px 14px">Not read</div>'+
+        '<div style="margin-top:8px;color:var(--muted);font-size:13px">'+why+'</div>';
+      return;
+    }
+    var d=v.data||{};
+    var items=Array.isArray(d.items)?d.items:[];
+    var out='';
+    if(!items.length){
+      // THE ONLY PLACE THIS PANEL IS ALLOWED TO SAY "NOTHING", and it says it
+      // only on a 200 with an empty list -- never on a failure, never while
+      // loading.
+      out+='<div class="badge bg" style="font-size:13px;padding:6px 14px">Nothing waiting</div>'+
+        '<div style="margin-top:8px;color:var(--muted);font-size:13px">The server has no prepared trust disbursement outstanding. This is the server&rsquo;s answer, not this device&rsquo;s.</div>';
+    }else{
+      out+='<div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr>'+
+        '<th>Stage</th><th>Record</th><th>Prepared by</th><th>Role</th><th>Authorised by</th><th>Expires</th>'+
+        '</tr></thead><tbody>';
+      items.forEach(function(it){
+        var meta=LAW_COUNTERSIGN_STAGE[it.stage]||{cls:'bw',label:String(it.stage||'unknown stage')};
+        out+='<tr>'+
+          '<td><span class="badge '+meta.cls+'">'+H(meta.label)+'</span></td>'+
+          '<td>'+H(it.resource||'--')+'</td>'+
+          '<td>'+H(it.prepared_by||'--')+'</td>'+
+          '<td>'+H(it.prepared_role||'--')+'</td>'+
+          // The signer's own columns, DISPLAYED and not used to decide the
+          // stage. An em-dash where there is nobody, rather than a blank cell
+          // that reads as a rendering failure.
+          '<td>'+H(it.countersign_employee_id||'—')+'</td>'+
+          '<td>'+H(fdatetime(it.expires_at))+'</td>'+
+          '</tr>';
+      });
+      out+='</tbody></table></div>';
+    }
+    // ── THE TRUNCATION FLAG IS RENDERED, because a short list that is not
+    // the whole list is the same defect one layer up. There is no DELETE on
+    // the token table by design, so expired rows accumulate and this can
+    // genuinely fire.
+    if(d.truncated===true){
+      out+='<div class="badge br" style="font-size:12px;padding:5px 12px;margin-top:10px">Showing the first '+H(String(d.cap||items.length))+' only</div>'+
+        '<div style="margin-top:6px;color:var(--muted);font-size:12px">More records are outstanding than this list shows. Do not read the list above as complete.</div>';
+    }
+    // The server's own sentence about what this list is, rendered rather than
+    // reworded here -- two apps must not grow two wordings of one limitation.
+    if(d.note)out+='<div style="margin-top:12px;color:var(--muted);font-size:12px">'+H(d.note)+'</div>';
+    body.innerHTML=out;
+  });
+}
+
 function trMatterChange(){
   var matterId=$('trmatter').value;
   var m=matters().find(function(x){return x.id===matterId;});
@@ -3738,6 +3885,10 @@ function lawMarkOutstanding(id){ return lawSetClearance(id,null,true); }
 
 function rTrust(){
   lawRenderDemoNotice('tr-demo-notice','trust');
+  // b20: the countersignature queue. Called from here rather than once at
+  // load, so re-entering the Trust tab re-reads it -- a signature queue that
+  // is only as fresh as the page load is a queue that shows work already done.
+  rCountersignQueue();
   fillMatterSelects();
   var tx=trustTransactions();
   var r=trustFigures();
