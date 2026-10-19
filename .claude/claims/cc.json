@@ -4097,6 +4097,24 @@
         "tools/sairn_push_gate_hook.py",
         "tools/sairn_status.py"
       ]
+    },
+    {
+      "id": "cc-1792410318",
+      "session": "cc",
+      "subject": "cc",
+      "task": "b17 ADDENDUM, declared rather than assumed: tools/index_duplicate_check.py is cc's by the owner map and was NOT in the b17 FILES list when the batch opened -- the index rows turned out to be already repaired and the real defect was in the tool. FILES: tools/index_duplicate_check.py tools/status_board_bridge_check.py docs/TOOLING-INVENTORY.md docs/2026-10-19-cc-b17-status-board-bridge-live-evidence.md docs/2026-10-19-cc-b17-routed.md docs/2026-10-17-cc-b17-locked-entry-crash-injection.py",
+      "claimed_at": "2026-10-19T11:45:18Z",
+      "claimed_at_epoch": 1792410318.5637197,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/2026-10-17-cc-b17-locked-entry-crash-injection.py",
+        "docs/2026-10-19-cc-b17-routed.md",
+        "docs/2026-10-19-cc-b17-status-board-bridge-live-evidence.md",
+        "docs/TOOLING-INVENTORY.md",
+        "tools/index_duplicate_check.py",
+        "tools/status_board_bridge_check.py"
+      ]
     }
   ],
   "refusals": [
