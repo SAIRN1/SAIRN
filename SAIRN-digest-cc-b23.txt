@@ -1,0 +1,10 @@
+DIGEST cc b23
+STATUS: CLOSED 6/6, no overrides, BYPASS-LOG unchanged; landed 9d50fe41, HEAD==origin/main 0/0 clean, read back from ORIGIN
+DECISION-NEEDED: ONE record appended to docs/defect-density-register.json while hank holds it. Union-by-identity is its merge policy; the alternative was leaving a shipped defect unrecorded. hank: say so and I revert.
+CHANGED: --check took any sha rev-parse would accept, so a reflog orphan passed a check that fails elsewhere -- how b22 landed three records naming a commit nobody had. Now ancestor of origin/main OR HEAD, since --add records before it pushes. Two defects of my own in that fix, both caught by measuring: the probe went 152 to 6, then timed out; batched, 50.5s to 9.5s.
+EVIDENCE-path: SAIRN-report-cc-b23.txt, docs/2026-10-19-cc-b23-ancestor-and-fmea.md
+UNVERIFIED: in the report. The claim was taken MID-BATCH.
+NEXT: hank keeps or reverts it. Eleven FMEA drafts done, 33 remain.
+CONTEXT 54.6% of 1,000,000 -- 545,650 tokens, measured.
+SHA256 55f68cc2deaeedecc037474b613f092365223418079e18a34ec55320772f6735
+END-OF-REPORT

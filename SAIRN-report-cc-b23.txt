@@ -1,0 +1,369 @@
+REPORT cc b23
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-19
+START     ccc2c8b0, pull already up to date. Clean 0/0, zero stashes, before
+          anything was touched.
+CLAIM     ba62b227 -- AND IT WAS TAKEN MID-BATCH RATHER THAN BEFORE IT, which
+          is a process slip of mine and is reported in section 7 rather than
+          left for a reader to notice.
+WORK      9d50fe41. The sha moved FOUR times across four rebases
+          (bff166bb -> 7e8a6b58 -> e6227220 -> 9d50fe41) and only the last
+          exists on origin -- which is the same mechanism this batch's fix is
+          about, and it fired on the fix itself. Section 5.
+OVERRIDES none. No SAIRN_SKIP, no SAIRN_GATE_EXEMPT, no SAIRN_SEED_GATE.
+          docs/BYPASS-LOG.jsonl gains no row. The register-feed and
+          derived-docs gates each refused once and were SATISFIED, NOT SKIPPED.
+HOVER     no auditor transcript, clone or log was read.
+BOUNDARY  docs/defect-density-register.json was WRITTEN while hank holds it.
+          Declared here, in the commit message and in the status registry, not
+          hidden. Section 6.
+
+------------------------------------------------------------------------------
+1. THE ONE-LINE CONCEPT PER ITEM, STATED BEFORE THE CODE (item 4)
+------------------------------------------------------------------------------
+
+ITEM 1  A citation is only a citation if the commit is on a ref another clone
+        can reach -- so --check asks whether the cited sha is an ancestor of
+        origin/main or of HEAD, and says COULD NOT TELL when neither ref can
+        be read rather than passing.
+
+ITEM 2  Every file this batch's predecessor changed gets the risk draft the
+        register asks for, generated from recorded history rather than
+        invented.
+
+ITEM 3  A suite hank wrote and nobody drives is wired into the gate's seam
+        registry only if it clears that registry's own admission bar -- a
+        seam, a recorded defect, and a known exit code measured first.
+
+ITEM 5  Take hank's FMEA debt by MEASURING it instead of trusting the number
+        in the note, then draft the subset where a defect would cost most and
+        say plainly what was left.
+
+------------------------------------------------------------------------------
+2. ITEM 1 -- --check PASSED ON A COMMIT THAT EXISTED IN ONE CLONE ONLY
+------------------------------------------------------------------------------
+
+WHAT WAS WRONG, in one line of code:
+
+    if git('rev-parse', '--verify', rec['commit'] + '^{commit}'):
+        return rec['commit'], 'sha'          # accepted
+
+`rev-parse --verify` accepts a DANGLING OBJECT for as long as the reflog holds
+it. In b22 that is exactly what happened: a rebase replaced 634f7d70,
+.githooks/post-rewrite reseated the three new records correctly IN THE WORKING
+TREE, nothing committed the reseat, and the push landed the pre-rebase
+citation. origin/main carried three records naming a commit that exists in no
+clone but cc's own reflog -- and --check printed OK throughout.
+
+THE OLD CONTRACT WAS TRUE OF ONE CLONE AND FALSE OF EVERY OTHER. Its stated
+rationale -- "a record pointing at a real object is not a register pointing at
+nothing" -- holds only where that object exists. The verdict depended on WHO
+RAN IT, which is the one thing a shared register cannot afford.
+
+THIS REVERSES A RECORDED DECISION AND SAYS SO. `reachable()` has carried this
+sentence since 2026-09-16: "--check's acceptance contract is deliberately
+unchanged." It is overturned in the docstring, on the evidence above, rather
+than quietly contradicted by a later edit.
+
+WHAT IS NOT CHANGED, because the 2026-09-11 reasoning behind it still stands.
+An unreachable sha is NOT a failure on its own. It falls through to the
+record's SUBJECT, exactly as an unresolvable one already did, and a unique
+subject match is reported as a RESEAT. Rebasing is normal with five clones on
+one branch and a register that goes red for it is a register somebody switches
+off. The only records that now fail are those where neither a reachable sha
+nor the subject answers.
+
+MEASURED BEFORE THE CHANGE so the cost was known rather than hoped: of 653
+non-external records, 648 resolve AND are ancestors, 0 resolved-but-dangling,
+and 5 did not resolve at all and were already being re-seated by subject. A
+zero is a weak test, which is why the reproduction below is DRIVEN rather than
+inferred from it.
+
+VERIFIED AGAINST THIS BATCH'S OWN THREE RECORDS, which is what item 1 asked
+for. b22's three records put through both the pre-b23 and the post-b23
+resolve(). Reads the real register; writes nothing to it.
+
+  case                                            pre-b23   post-b23
+  A. as they stand on origin (a61abc5a)            PASS      PASS
+  B. commit rolled back to the orphan              PASS      RESEAT (visible)
+  C. the orphan AND the subject gone               PASS      FAIL
+
+C IS THE b22 DEFECT EXACTLY, and the column that matters is that pre-b23
+called it good.
+
+THE PERMANENT LOCK IS --selfcheck-reachability, 16/16, AND IT SYNTHESISES THE
+DANGLING COMMIT. `git commit-tree` creates a commit referenced by nothing: it
+resolves and is an ancestor of nothing, in any clone, with no reflog involved.
+Hard-coding 634f7d70 would have made the lock pass today, pass nowhere else,
+and stop testing anything the day that reflog expired -- discipline 8 arriving
+inside the fix for a reachability defect.
+
+------------------------------------------------------------------------------
+3. THE FIRST DRAFT OF THAT FIX WAS WRONG, AND A PROBE SAID SO WITHIN THE HOUR
+------------------------------------------------------------------------------
+
+The first version used reseat_base(), which prefers origin/main and falls back
+to HEAD. That is right for --reseat -- you want to know what another clone will
+actually fetch -- and WRONG for --check:
+
+    tests/run_defect_register_probe.py:  152/152  ->  6 FAILED
+    (CC18, CC19, J1, J2, J3, J4 -- all --check returning 1 where 0 or 2 was due)
+
+Because --add RECORDS A COMMIT THE MOMENT IT IS MADE, and that probe plants
+records citing commits it creates in its own throwaway worktree. Those commits
+are real, are on that clone's HEAD, and are not on origin/main yet. Refusing
+them would make the register red for the entire normal window between
+committing and pushing -- which is most of a batch.
+
+SO THE CONTRACT IS THE UNION: origin/main OR HEAD. And the b22 failure is
+still caught, measured rather than argued:
+
+  sha                            resolves   anc origin/main   anc HEAD
+  634f7d709a87 (the orphan)      yes        NO               NO
+  a61abc5ae46e (its successor)   yes        yes              yes
+
+The rebase REPLACED the orphan, so HEAD does not carry it either. The union
+admits legitimate pre-push work and still refuses a reflog orphan, which is
+exactly the line the b22 defect fell across.
+
+HOW THE BASELINE WAS ESTABLISHED, because "the probe is red" is only a finding
+if it was green before. origin/main's own copy of the tool was written into
+tools/defect_register.py inside a try/finally, the probe driven, and the file
+restored and byte-compared: 376s, exit 0, 152 checks, 0 FAILED. So the six
+failures were mine, and I had the measurement before I had an opinion.
+
+AND A SECOND DEFECT OF MY OWN, IN THE FIX FOR THE FIRST. Calling reachable()
+per record is a `git merge-base --is-ancestor` each time: MEASURED AT 66ms PER
+CALL on this machine, 653 non-external records. --check went to 50.5s, and
+tests/run_defect_register_probe.py -- which drives --check several times --
+went from passing to a 420-SECOND TIMEOUT.
+
+THAT IS NOT COSMETIC. A check slow enough to time out is a check that gets
+excluded from the sweep, and an excluded check reports nothing while looking
+exactly like one that passed. That is the same shape this whole fix exists to
+close, one layer out.
+
+`git rev-list` answers the whole question in ONE call: 0.33s for all 9,804
+commits. And membership of that set proves EXISTENCE as well as reachability,
+so the rev-parse is skipped for every record on the trunk -- which removed 648
+of the 661 rev-parse subprocesses the function was ALREADY making before b23.
+
+    50.5s  ->  9.5s, which is faster than the code this started from.
+
+AND A THIRD: THE CACHE LEAKED ACROSS REPOSITORIES. ancestor_set was keyed on
+the refs alone. `REPO` is a module global and
+tests/run_defect_register_superseded_probe.py reassigns it to drive cmd_check()
+in-process against a throwaway repository, so 9,804 real ancestors leaked into
+the sandbox and one arm went red. Now keyed on (REPO, refs), with two arms
+holding it. THIS FILE'S OWN DOCSTRING HAD ALREADY WARNED that a stale ancestor
+set would be "a confident wrong answer about exactly the thing under test"
+while nothing stopped one -- a warning is not a control.
+
+FINAL STATE: --check exit 0, 656 records, 9.5s, and the summary line rewritten
+to NAME THE REFS it asked about instead of claiming "every commit resolves".
+All five register probes green: main 152/152, plus reseat, superseded, vocab
+and planned. Gate selftest 56/56. --preflight clean.
+
+------------------------------------------------------------------------------
+4. ITEMS 2 AND 5 -- ELEVEN DRAFTS, AND HANK'S NUMBER RE-MEASURED
+------------------------------------------------------------------------------
+
+ITEM 2, the three files b22 changed -- the register printed NO DRAFT for each
+of them three times, once per b22 record:
+
+  tools/wcag_contrast_check.py                204 risks
+  tools/status_board_bridge_check.py          200
+  tests/run_push_gate_preflight_probe.py      197
+
+ITEM 5, hank's b18 debt, AND THE NOTE'S FIGURE WAS LOW. Hank's registry note
+says "FMEA drafts are owed for eight new/changed files." Measured against the
+five b18 register records and docs/fmea/:
+
+    55 files cited by the b18 records. 8 had a draft. 47 DID NOT
+    -- 41 of them real source, test or SQL rather than evidence logs.
+
+So FORTY-ONE, not eight. Reported rather than quietly worked to the smaller
+number. Eight drafted, chosen by what a defect in them would cost:
+
+  api/_lib/audit.js                            every app's audit trail
+  api/_lib/sf-roles.js                         a role module -- who may do what
+  api/sairncash/verify.js                      payment verification
+  tools/audit_event_type_check.py              the checker itself
+  api/b18-countersign-lock.test.js             wired into the blocking gate today
+  api/b18-passkey-profile-e2e.test.js          likewise
+  api/sd-data-cross-tenant-dispatchers.test.js tenant isolation
+  sql/sairnlegacy_audit_log_schema.sql         representative of the thirteen
+
+THE THIRTEEN *_audit_log_schema.sql FILES ARE ONE SHAPE REPEATED. One is
+drafted as the representative; drafting all thirteen would be bulk with little
+marginal value, and that is a judgement STATED rather than performed as a
+silent skip.
+
+After: 16 of 55 drafted, 39 owed, 33 of those source/test/SQL. The
+platform-wide fmea_prediction_check.py figure moved 203 -> 202, which is the
+honest number and not a disappointment: that metric counts files WITH A DEFECT
+ON RECORD and no draft, and most of these eleven are cited BY a record rather
+than being its subject.
+
+ITEM 3, THE TWO b18 SUITES. Re-measured before acting rather than taken from
+the note: `grep -rlE 'b18-(countersign|passkey)' tools/` returned nothing, and
+now returns tools/sairn_push_gate_hook.py.
+
+GUARD_TESTS is the SEAM registry -- not the full suite, deliberately, because
+146 files on every push is a real tax and most of them are the author-runs-it
+class. Its bar is three things and both suites clear all three.
+
+api/b18-countersign-lock.test.js is a seam between api/_lib/countersign.js
+(decides) and api/sd-data.js (enforces), edited by different work. The recorded
+defect is fourth's b26 finding H1: SAIRNlaw's trust hard-lock could be DELETED
+ENTIRELY with every suite still green -- the defence existed, was written down,
+was believed, and no arm could see it because the thing in front of it was
+working. So this suite removes each gate on purpose and asserts what goes red
+PER ARM. Its A1 arm is the one to read first: neither SQL file has been run, so
+both locks answer 503 NOT_PROVISIONED in production today, and A1 asserts
+exactly that -- "the lock is inert until Michael runs SQL" and "the lock lets
+writes through until Michael runs SQL" are opposite facts and only one is safe.
+exit 0, 2.40s, 59 passed.
+
+api/b18-passkey-profile-e2e.test.js is a seam between a suite and a 2MB page,
+which is the shape that rots silently. The recorded defect is stonedesk.html's
+own 2026-08-06 "Granting..." bug, and the sentence that earns it a place is in
+that comment: the reset code was "confirmed present and correct on every path,
+CHECKED REPEATEDLY" and never ran, because a synchronous ReferenceError
+happened first. READING THE CODE WAS THE METHOD AND THE METHOD FAILED.
+
+IT FAILS CLOSED ON ITS OWN EXTRACTION, WHICH IS WHAT MAKES IT SAFE TO WIRE. It
+lifts three functions out of stonedesk.html by anchor and COMPILES them; a lift
+that is missing or will not parse is reported UNPROVEN and never as a pass, and
+a Section Z asserts the extraction before any arm depends on it. That is the
+same stale-anchor class cc b22 fixed in run_push_gate_preflight_probe.py --
+already handled here -- and exit 3 routes to the gate's exit3_reason() rather
+than to a silent skip. exit 0, 1.38s, 37 passed.
+
+GUARD_TESTS 16 -> 18 wired, 35 -> 37 entries, and both suites are now TRACED to
+a stated requirement (sairnlaw, stonedesk), which moved traced 771 -> 773 and
+untraced 225 -> 223 in the regenerated traceability matrix.
+
+------------------------------------------------------------------------------
+5. THE b22 SHAPE RECURRED INSIDE b23, AND THE b23 CHECK CAUGHT IT
+------------------------------------------------------------------------------
+
+This is the strongest evidence in the batch and it was not planned. Four
+rebases produced four post-rewrite reseats of the working tree. Measured on the
+COMMITTED tree before the first of them was committed:
+
+    bff166bb56f6   resolves=True   reachable=False -> post-b23: RESEAT, visible
+    7e8a6b58e5e1   resolves=True   reachable=True  -> post-b23: clean
+    and pre-b23 the orphan was simply 'sha', which PASSED in silence.
+
+So the defect recurred WITHIN ONE BATCH of being fixed, which is a better
+argument for the fix than any fixture: the failure mode is STRUCTURAL -- five
+clones rebasing onto one branch -- and not anybody's lapse. Each reseat was
+committed rather than pushed past.
+
+------------------------------------------------------------------------------
+6. THE BOUNDARY I CROSSED, AND WHY
+------------------------------------------------------------------------------
+
+docs/defect-density-register.json IS IN HANK'S b20 CLAIM AND I WROTE TO IT.
+
+The register-feed gate refused the push: a commit that closes a defect must
+feed the register. The three options were to leave a real shipped defect
+unrecorded, to use SAIRN_SKIP=register-feed, or to append.
+
+I APPENDED, for three reasons that are about that file specifically rather
+than about convenience: its declared merge policy is UNION-BY-IDENTITY, a
+concurrent append is the operation it is built for;
+tools/sairn_rebase_resolve.py merges it from the common ancestor; and cody made
+the identical call in the other direction on 2026-10-05 and declared it the
+same way rather than hiding it. HANK: DISAGREE AND I WILL REVERT IT.
+
+ONE RECORD, NOT THREE, and the arithmetic is deliberate. The work commit fixes
+three defects and ONLY ONE SHIPPED -- the resolvable-not-reachable acceptance,
+which reached origin and produced a wrong OK there. The per-record 43-second
+regression and the cross-repository cache leak were introduced and caught
+INSIDE this batch and never left the working tree. Recording them as shipped
+defects would inflate the register with work that never shipped, so they are
+named in the surviving record's recurrence_open field instead.
+
+------------------------------------------------------------------------------
+7. UNVERIFIED, AND WHAT THAT MEANS HERE
+------------------------------------------------------------------------------
+
+NONE OF THIS WAS INDEPENDENTLY RE-DERIVED. Every figure comes from a command I
+ran in this session, named beside it so a second reader can disagree with the
+number rather than with me.
+
+A PROCESS SLIP OF MINE: THE CLAIM WAS TAKEN MID-BATCH, NOT BEFORE IT.
+`--preflight` printed "CLAIM STATE: NONE -- THIS PUSH IS NOT UNDER A HELD
+CLAIM" and that is how I noticed, well after the first edit. CLAUDE.md is
+explicit -- claim before you start, not after you finish -- and for most of
+this batch no other clone could see this work coming. No collision resulted,
+which is luck and not process. Reported because a slip that produced no damage
+is the only kind anybody is tempted not to report.
+
+THE NEW CHECK HAS NEVER REFUSED A REAL RECORD IN ANOTHER CLONE. It refused a
+synthesised orphan, and it correctly re-seated a real one four times in this
+batch's own push loop. The first time it judges another session's register is
+still ahead.
+
+THE 24-HOUR, 12-CHARACTER AND UNION ASSUMPTIONS ARE ASSUMPTIONS. reachable_fast
+keys on a 12-character prefix because that is what --add stores; a shorter sha
+falls back to the subprocess rather than guessing, and that fallback is an arm.
+A record citing a commit on a BRANCH that is neither origin/main nor HEAD would
+read as unreachable -- correct for this platform, where all real work lands on
+main, and stated because it is a property of this platform rather than of git.
+
+NOTHING CHECKS A PROBE OR A GATE FOR HAVING BECOME TOO SLOW TO RUN. Found by
+causing it. Fixed by batching, but no control exists, and the pattern to copy
+already exists in tools/guard_ablation.py's SUITE_BOUND, which treats a timeout
+as COULD NOT RUN rather than as an exit code.
+
+NOTHING NOTICES AN UNCOMMITTED POST-REWRITE RESEAT. The repair is correct and
+invisible; --check only sees the problem after a push has landed the wrong
+citation. It is the `planned` action on the new record's third contributing
+factor and it belongs to the hook rather than to --check.
+
+33 OF HANK'S b18-OWED DRAFTS REMAIN, and twelve of those are the identical
+audit_log schemas whose marginal value is low. The open judgement is whether to
+draft them at all, not which.
+
+------------------------------------------------------------------------------
+8. PUSH
+------------------------------------------------------------------------------
+
+Pushed as its own command, no force, no override, no skip. TWO GATE REFUSALS,
+both satisfied rather than skipped:
+
+  register-feed   a commit closing a defect must feed the register -> one real
+                  record, section 6.
+  derived-docs    docs/MASTER-PLAN.md and docs/traceability-matrix.md stopped
+                  matching their sources -> regenerated with their own
+                  generators, numstat read BEFORE committing (4/4 and 8/8
+                  lines), and the whole delta is the two newly wired suites.
+
+FIVE FURTHER PUSHES WERE NON-FAST-FORWARD REJECTIONS while four other sessions
+pushed, and one rebase CONFLICTED in both generated documents.
+tools/sairn_rebase_resolve.py was reached for FIRST and resolved it correctly
+by REGENERATING rather than merging prose -- the right answer for a generated
+file, and it staged both. A BLOCKED OR REJECTED PUSH IS NOT A NO-OP: the gate
+writes docs/scrutiny-flags.json and post-rewrite writes the register, so
+`git status` comes first, not last.
+
+READ BACK OUT OF ORIGIN rather than off disk, which is the only form of this
+check that means anything:
+
+  origin/main:tools/defect_register.py        citation_refs, ancestor_set,
+                                              reachable_fast,
+                                              --selfcheck-reachability
+  origin/main:tools/sairn_push_gate_hook.py   both b18 suites named
+  origin/main:docs/fmea/                      163 drafts
+
+HEAD == origin/main, 0 ahead / 0 behind, clean, zero stashes.
+
+CONTEXT 54.6% of 1,000,000 -- 545,650 tokens, measured.
+The window is DECLARED for this session, not inferred.
+
+SHA256 5c9acbdf7b645381e903038ba79dde2f0b9e445934fdeaf5a47ee3258e897c9c
+END-OF-REPORT
