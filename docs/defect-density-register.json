@@ -33649,6 +33649,58 @@
       ],
       "recurrence_open": "The same owner-view-versus-public-view divergence can exist in any app with a public surface; only sairndental was checked.",
       "single_factor_note": "not applicable -- three factors"
+    },
+    {
+      "commit": "d7527ad29809",
+      "date": "2026-10-19",
+      "subject": "fix(index check): the rows hank reported as malformed were already repaired, and the real defect was in the tool reading them",
+      "files": [
+        "tools/index_duplicate_check.py"
+      ],
+      "lines_added": 120,
+      "lines_removed": 6,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/index_duplicate_check.py rows() split each table row on EVERY pipe, so a\ncell containing an ESCAPED pipe was cut in half and every column after it\nshifted. Escaping is the only way markdown admits a pipe into a cell, so the\nmis-split rows were exactly the rows about `||` operators and shell pipelines.\nMeasured on the live index: 41 of 855 rows read with the wrong column count;\nthe APP cell wrong on 0, the STATUS cell on 2, and the ITEM cell on ONE --\nline 645's item came out as the seven characters **`(x \\ and was then dropped\nby the len(norm) < 25 guard with no output at all. ONE ROW OF THE OPEN-WORK\nINDEX WAS INVISIBLE TO THE DUPLICATE CHECK AND NOTHING SAID SO, which is the\nsame silent-exclusion failure the tool exists to prevent one document layer up.\nFixed with a pipe-aware split that unescapes the cell, plus every skipped row\nnow COUNTED and listed with its reason in the output.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The split predates the tool's own history in this repo -- rows() carried line.split('|') from its first commit, and the escaped-pipe rows were added to the index later by other sessions, so there is no single commit that introduced the fault."
+      },
+      "citation_note": "No standing rule names naive-split-over-an-escaped-delimiter; the closest in spirit is PR 2.1 (never edit an index row by splitting on the pipe), which is about EDITING a row by hand and this is a tool READING one.",
+      "contributing_factors": [
+        {
+          "factor": "a naive line.split() was used on a format that defines an escape for the delimiter it splits on",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "pipe-aware split_cells() that treats a backslash-pipe as content and unescapes it, 10/10 fixtures including an ablation against the naive split and a control proving the naive one was right about unescaped rows"
+        },
+        {
+          "factor": "the row was dropped by a length guard that printed nothing, so a parse failure and a legitimately short row were the same screen",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "every skipped row is now counted in the summary and listed with its own reason"
+        },
+        {
+          "factor": "the tool had no criteria lock at all, so no fixture could have caught a parser change in either direction",
+          "kind": "process",
+          "action_status": "done",
+          "action": "--fixtures added and run before any live verdict; the live path exits 2 COULD NOT RUN if the lock fails"
+        },
+        {
+          "factor": "the rows that use the escape are the rows about operators and pipelines, so the defect was concentrated in exactly the subject matter the index most needs to deduplicate",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "an inherent property of the content, not something to fix; recorded because it explains why a 41-row parse fault reached only one item cell and why that one mattered"
+        }
+      ],
+      "recurrence_open": "The fixtures lock the SPLIT only. Nothing checks that the index's own rows are well formed -- a row that genuinely carries the wrong number of columns is still only noticed if somebody counts, and the three undeclared near-duplicate pairs this tool reports remain unresolved and belong to the rows' authors. Nor does anything compare this tool's parse against the parse used by open_work_shard.py or by any renderer, so a second naive split elsewhere would not be caught by this fixture set."
     }
   ],
   "started": "2026-09-09",
