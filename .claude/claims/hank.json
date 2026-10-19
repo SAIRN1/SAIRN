@@ -4097,6 +4097,27 @@
         "sairnlaw.html",
         "sql/sairnlegacy_settings_schema.sql"
       ]
+    },
+    {
+      "id": "hank-1792426451",
+      "session": "hank",
+      "subject": "hank",
+      "task": "b20: remove paralegal from LAW_RECONCILE_ROLES (R2 goes red, expected); write sql/sairnlegacy_settings_schema.sql; build sairnlaw.html countersignature panel; re-drive Grant-App-Login status. FILES: api/_lib/law-roles.js sql/sairnlegacy_settings_schema.sql sairnlaw.html docs/2026-10-19-hank-b20-concepts.md docs/defect-density-register.json SAIRN-ACTIVE-WORK-hank.md SAIRN-handoff-hank-b20.md SAIRN-report-hank-b20.txt SAIRN-digest-hank-b20.txt",
+      "claimed_at": "2026-10-19T16:14:11Z",
+      "claimed_at_epoch": 1792426451.1842532,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-hank.md",
+        "SAIRN-digest-hank-b20.txt",
+        "SAIRN-handoff-hank-b20.md",
+        "SAIRN-report-hank-b20.txt",
+        "api/_lib/law-roles.js",
+        "docs/2026-10-19-hank-b20-concepts.md",
+        "docs/defect-density-register.json",
+        "sairnlaw.html",
+        "sql/sairnlegacy_settings_schema.sql"
+      ]
     }
   ],
   "refusals": [
