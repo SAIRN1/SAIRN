@@ -602,8 +602,8 @@
       "task": "b53: land-check cody b22 (closed); poll hank b18 status only; one new queue item if available; handoff+push",
       "claimed_at": "2026-10-19T11:35:32Z",
       "claimed_at_epoch": 1792409732.068296,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-19T11:40:29Z",
       "files": null
     }
   ],
