@@ -1,8 +1,41 @@
 {
  "_what_this_is": "Contrast and undefined-token findings that EXISTED when tools/wcag_contrast_check.py was wired into the push gate on 2026-10-19. The gate denies on findings NOT in here. This is a ratchet and a debt list, not an exemption: every gate run prints what is still outstanding, and this file only grows by an explicit --baseline-write, which is a commit somebody can refuse to approve.",
- "counts": {},
+ "counts": {
+  "sairndental-book.html|aa-contrast|.btn|#fff|var(--p)": 1,
+  "sairndental-book.html|aa-contrast|.msg.ok|var(--pd)|var(--pt)": 1,
+  "sairndental-book.html|aa-contrast|.slot.picked|#fff|var(--p)": 1,
+  "sairndental-book.html|aa-contrast|.slot:hover|var(--pd)|var(--pt)": 1,
+  "sairndental-book.html|aa-contrast|inline <button#bk-add-photo-btn>|var(--pd)|#fff": 1,
+  "sairndental-book.html|aa-contrast|inline <button>|#fff|var(--danger)": 1,
+  "sairndental-complaint.html|aa-contrast|.btn|#fff|var(--p)": 1,
+  "sairndental-complaint.html|aa-contrast|.msg.ok|var(--pd)|var(--pt)": 1
+ },
+ "files_scanned": [
+  "sairnbiz.html",
+  "sairnbuild.html",
+  "sairncare.html",
+  "sairncash.html",
+  "sairncode.html",
+  "sairndental-book.html",
+  "sairndental-complaint.html",
+  "sairndental.html",
+  "sairndesign.html",
+  "sairnfreedom.html",
+  "sairngrounds.html",
+  "sairnlaw.html",
+  "sairnlegacy.html",
+  "sairnmechanical.html",
+  "sairnroofing.html",
+  "sairnscape.html",
+  "sairnsenior.html",
+  "sairnvet.html",
+  "stonedesk-catalog.html",
+  "stonedesk-hr.html",
+  "stonedesk-intake.html",
+  "stonedesk.html"
+ ],
  "regenerate": "python tools/wcag_contrast_check.py --static --all --baseline-write",
- "total": 0,
+ "total": 8,
  "written": "2026-10-19",
- "written_by": "fourth b30"
+ "written_by": "cc"
 }

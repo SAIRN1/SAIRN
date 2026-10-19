@@ -163,8 +163,31 @@ def main():
                   '    deny(\'INJECTED FIRST: a stale generated document\')\n' +
                   '    deny(\'INJECTED SECOND: no register record\')\n' +
                   '    raise RuntimeError(\'continuation\')\n')
-        src2 = source.replace('if __name__ == \'__main__\':',
-                              inject + '\nif __name__ == \'__main__\':', 1)
+        # ── THE LAST OCCURRENCE, NOT THE FIRST (fixed 2026-10-19, cc b22) ──
+        # This was `source.replace(anchor, inject + anchor, 1)` and E1/E2/E3
+        # were RED for days with `RAISED SyntaxError` and no explanation.
+        # The anchor now occurs TWICE in tools/sairn_push_gate_hook.py and the
+        # FIRST is inside a double-quoted string on a real code line --
+        # `_src.rindex("if __name__ == '__main__':")`, part of the hook's own
+        # WIRING selftest arm, added after this probe was written. A
+        # multi-line injection landed inside that literal, left it
+        # unterminated, and compile() raised before any arm could run.
+        #
+        # SO THIS IS A STALE-ANCHOR DEFECT, discipline 8: nothing announced
+        # the day a probe stopped testing anything. The hook's own selftest
+        # already used `rindex` for exactly this reason and this did not.
+        #
+        # It REFUSES rather than guessing when the anchor is absent: an
+        # injection that silently does nothing would make every arm below
+        # pass on an unmodified gate.
+        anchor = 'if __name__ == \'__main__\':'
+        at = source.rfind(anchor)
+        if at < 0:
+            raise RuntimeError(
+                'the injection anchor %r is not in %s, so nothing could be '
+                'injected and the arms below would judge an unmodified gate'
+                % (anchor, TOOL))
+        src2 = source[:at] + inject + '\n' + source[at:]
         old = sys.argv
         sys.argv = argv
         buf = _io.StringIO()

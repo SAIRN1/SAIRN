@@ -552,11 +552,17 @@ def static_run(paths, show_unresolved=False, json_out=None,
                 "prints what is still outstanding, and this file only grows by "
                 "an explicit --baseline-write, which is a commit somebody can "
                 "refuse to approve.",
-            "written": "2026-10-19", "written_by": "fourth b30",
+            # WHO WROTE IT, DERIVED. These two fields were the literals
+            # "2026-10-19" and "fourth b30" until 2026-10-19 (b22), so EVERY
+            # re-record claimed fourth's b30 authorship whoever ran it and
+            # whenever -- a provenance line that cannot change is a provenance
+            # line that is wrong the second time. Caught by re-recording it.
+            "written": _today(), "written_by": _who(),
+            "files_scanned": sorted(r[0] for r in rows),
             "regenerate": "python tools/wcag_contrast_check.py --static --all "
                           "--baseline-write",
             "total": len(all_f), "counts": counts}, indent=1, sort_keys=True),
-            encoding="utf-8")
+            encoding="utf-8", newline="\n")
         print("wrote %s with %d finding(s) accepted as existing debt"
               % (BASELINE.name, len(all_f)))
         return 0
@@ -605,8 +611,53 @@ def static_run(paths, show_unresolved=False, json_out=None,
     return 1 if all_f else 0
 
 
+def _today():
+    """The calendar date, LOCAL rather than UTC -- tools/sairn_stale_snapshot
+    _scan.py exists because UTC derivation dates an evening's work tomorrow."""
+    import time
+    return time.strftime("%Y-%m-%d")
+
+
+def _who():
+    """Who re-recorded the baseline, from the clone's own identity marker.
+    'unknown' rather than a guess: a wrong name is worse than no name."""
+    import sys as _sys
+    _sys.path.insert(0, str(pathlib.Path(__file__).parent))
+    try:
+        import sairn_session_identity as _sid
+        return _sid.session_name()
+    except Exception:                                            # noqa: BLE001
+        return "unknown (this clone has no session-identity marker)"
+
+
+def is_product_stem(stem):
+    """Is this root HTML stem one of this platform's shipped products?
+
+    THE WHOLE STEM, HYPHENS INTACT. Until 2026-10-19 (b22) this read
+    `stem.startswith("sairn") and "-" not in stem`, and the hyphen clause is
+    the defect: it did not narrow the list to products, it silently removed
+    the five SUB-APPS -- sairndental-book, sairndental-complaint,
+    stonedesk-catalog, stonedesk-hr, stonedesk-intake.
+
+    WHY THAT WAS NOT A COSMETIC MISCOUNT. docs/wcag-contrast-baseline.json is
+    generated from THIS list and the push gate runs on EVERY changed `.html`.
+    So the baseline's universe was narrower than the gate's, and the two
+    sub-apps carrying debt -- sairndental-book 6 findings,
+    sairndental-complaint 2 -- denied any push that touched them, on
+    PRE-EXISTING debt, with no route but a skip. Measured in b21.
+
+    A PREFIX RULE RATHER THAN A LIST, deliberately: a future `sairnfoo-bar`
+    sub-app is included the day it is added rather than the day somebody
+    remembers. A root HTML that is NOT a product (an index page, a scratch
+    file) still does not match, because it does not carry either prefix.
+    """
+    return stem == "stonedesk" or stem.startswith("stonedesk-") \
+        or stem.startswith("sairn")
+
+
 def product_files():
-    """The root products, DERIVED rather than listed (b29 corrected 18 -> 17)."""
+    """The root products, DERIVED rather than listed (b29 corrected 18 -> 17;
+    b22 corrected 17 -> every root product INCLUDING the five sub-apps)."""
     import subprocess
     r = subprocess.run(["git", "ls-files", "*.html"], capture_output=True,
                        text=True, cwd=str(REPO))
@@ -617,8 +668,7 @@ def product_files():
         line = line.strip()
         if "/" in line:
             continue
-        stem = line[:-5]
-        if stem == "stonedesk" or (stem.startswith("sairn") and "-" not in stem):
+        if is_product_stem(line[:-5]):
             out.append(line)
     return sorted(out)
 
@@ -753,6 +803,33 @@ def selftest():
     f, _u, st = one(":root{--a:var(--b);--b:#fff}\n.x{color:var(--a);background:#fff;}")
     ok("...and the chain is really followed, not just tolerated: white on "
        "white through two hops FAILS", (len(f), f[0]["ratio"] if f else 0), (1, 1.0))
+
+    # ── THE PRODUCT LIST (b22). THE DEFECT THESE LOCK, IN BOTH DIRECTIONS ──
+    # The old rule was `startswith("sairn") and "-" not in stem`. It did not
+    # narrow the list to products; it removed the five SUB-APPS, so the
+    # baseline this list generates could not see files the gate judges.
+    for stem in ("sairndental-book", "sairndental-complaint",
+                 "stonedesk-catalog", "stonedesk-hr", "stonedesk-intake"):
+        ok("A HYPHENATED SUB-APP IS A PRODUCT: %s -- the b21 finding, and the "
+           "two dental ones carried 8 findings the gate denied on while the "
+           "baseline could not see them" % stem, is_product_stem(stem), True)
+    for stem in ("stonedesk", "sairndental", "sairnroofing", "sairnbiz"):
+        ok("...and an UNHYPHENATED root product is still one: %s" % stem,
+           is_product_stem(stem), True)
+    ok("ABLATION: the OLD rule would have refused sairndental-book, which is "
+       "the one arm that fails on the pre-fix code and passes on this one",
+       ("sairndental-book".startswith("sairn")
+        and "-" not in "sairndental-book"), False)
+    for stem in ("index", "test", "scratch", "readme", "404"):
+        ok("a root HTML that is NOT a product still does not match: %s"
+           % stem, is_product_stem(stem), False)
+    ok("the prefix rule admits a sub-app that does not exist yet, so a future "
+       "one is covered the day it is added rather than the day somebody "
+       "remembers", is_product_stem("sairnfoo-bar"), True)
+    ok("...and `stonedeskish` is NOT admitted by the stonedesk arm -- the "
+       "prefix is `stonedesk-`, so a near-name does not slip in through it",
+       ("stonedeskish" == "stonedesk"
+        or "stonedeskish".startswith("stonedesk-")), False)
 
     bad = [c for c in cases if not c[0]]
     for good, name, got, want in cases:

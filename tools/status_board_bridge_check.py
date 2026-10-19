@@ -70,7 +70,7 @@ try:
 except Exception:                                                # noqa: BLE001
     EXIT_CLEAN, EXIT_FINDING, EXIT_COULD_NOT_RUN = 0, 1, 2
 
-CRITERIA_VERSION = '2026-10-17.1'
+CRITERIA_VERSION = '2026-10-19.1'
 
 # How much older than the row the published file may be before it is STALE.
 # Not zero: the publisher writes the file a moment after the row, and on this
@@ -112,6 +112,34 @@ def section(board_text, label):
 
 
 # ── THE PURE CORE. Everything below the fixtures drives THIS. ───────────────
+def selects(label, token, agents):
+    """Is this board row selected by `--agent`? -> bool.
+
+    ONE EXPRESSION, CALLED BY BOTH THE ROW FILTER AND THE NONCE GATE, and
+    that is the whole fix. Until 2026-10-19 (b22) the same question was
+    answered by two different expressions a hundred lines apart:
+
+        labels = [... if BP.BOARD_TOKEN[l] in agents or l in agents]
+        nonce  = nonce if (agents and token in agents) else None
+
+    The first compares the LABEL ('H1') or the token ('h1'); the second
+    compares the TOKEN ONLY. So `--agent H1` selected the row and then
+    silently dropped the nonce, and the summary still printed `CLEAN ... and
+    the nonce crossed both ends` because that sentence was keyed on a nonce
+    having been SUPPLIED rather than CHECKED. H1 found it in its b63 and
+    reproduced it with a never-written-nonce negative control: uppercase a
+    false CLEAN, lowercase the correct FINDING, same registry, same board.
+
+    Case-insensitive on both sides, because the board's own labels are mixed
+    case ('H1', 'cc') and nobody typing `--agent H1` means a different agent
+    from `--agent h1`.
+    """
+    if not agents:
+        return True
+    want = {str(a).strip().lower() for a in agents if str(a).strip()}
+    return label.lower() in want or token.lower() in want
+
+
 def classify(row, board_text, latest_text, published_epoch, nonce=None,
              label=None, now=None):
     """-> (findings, notes). Pure: no filesystem, no clock except `now`."""
@@ -191,10 +219,32 @@ def classify(row, board_text, latest_text, published_epoch, nonce=None,
 
     if nonce:
         if nonce not in json.dumps(row, default=str):
-            findings.append('%s: the nonce %r is not in the registry row, so '
-                            'the WRITE did not land -- this is a finding about '
-                            'sairn_status.py, not about the board.'
-                            % (label, nonce))
+            # ── THIS REASON USED TO BE OVERSTATED (corrected cc b22) ───────
+            # It said flatly "the WRITE did not land -- this is a finding
+            # about sairn_status.py". MEASURED 2026-10-19 while re-driving
+            # H1's b61 nonce through this tool: `H1-NONCE-1792420981` is
+            # absent from H1's row AND present on the Drive mount in
+            # SAIRN-handoff-H1-b61.md and SAIRN-report-H1-b61.txt. So that
+            # write DID land; the row has simply been overwritten three
+            # batches since. The verdict (nonce absent) was right and the
+            # REASON was wrong, which is worse than a wrong verdict because
+            # somebody acts on the reason.
+            #
+            # A row holds ONE task string, so this check cannot distinguish
+            # "never written" from "written and since superseded". That is a
+            # could-not-tell about WHICH, so both causes are named and the
+            # one piece of evidence that separates them is printed.
+            findings.append(
+                '%s: the nonce %r is not in the registry row. TWO CAUSES AND '
+                'THIS CANNOT TELL THEM APART: the write never landed (a '
+                'finding about sairn_status.py), or it landed and the row has '
+                'since been overwritten by a later batch -- a row holds one '
+                'task string. The row\'s own `updated` stamp is %s; if that '
+                'is later than the batch the nonce came from, the second '
+                'cause is the ordinary one and this is not evidence against '
+                'the original write. Check a nonce from the CURRENT batch to '
+                'get an answer about the bridge.'
+                % (label, nonce, stamp or 'absent'))
         else:
             for name, text in (('board section', sec),
                                ('latest file', latest_text)):
@@ -354,8 +404,24 @@ def run_fixtures():
                      nonce='NONCE-abc123', now=E)
     check('a nonce in NEITHER end is a finding about the WRITE', f, True)
     f, _ = classify(ROW, BOARD, LATEST, E, nonce='NONCE-abc123', now=E)
-    check('...and that finding names sairn_status.py rather than the board',
-          any('did not land' in x for x in f), True)
+    check('...and that finding names sairn_status.py as ONE of the causes',
+          any('finding about sairn_status.py' in x for x in f), True)
+    # THE ARM THAT CORRECTS b17's WORDING (cc b22). The old text said flatly
+    # "the WRITE did not land", and H1's b61 nonce is absent from the row AND
+    # present on the mount in that batch's own handoff and report -- so that
+    # write landed and the row was overwritten. A row holds one task string,
+    # so this check cannot tell those apart and must not pick one.
+    check('...and it ALSO names the overwritten-row cause, because a row '
+          'holds ONE task string and this cannot distinguish "never written" '
+          'from "written and since superseded"',
+          any('since been overwritten' in x for x in f), True)
+    check('...and it prints the row\'s own `updated` stamp, which is the one '
+          'piece of evidence that separates the two causes',
+          any(STAMP in x for x in f), True)
+    check('ABLATION: the OLD wording asserted one cause with no evidence for '
+          'it -- this arm fails on the pre-b22 text, which contained no '
+          'stamp and no second cause',
+          any(('since been overwritten' in x and STAMP in x) for x in f), True)
 
     ROWN = dict(ROW, task=ROW['task'] + ' NONCE-abc123')
     f, _n = classify(ROWN, BOARD, LATEST, E, nonce='NONCE-abc123', now=E)
@@ -435,6 +501,74 @@ def run_fixtures():
           'note comes from the readback half, and saying it twice would read '
           'as two gaps', (f, n), ([], []))
 
+    # ── H1's b63 NEGATIVE CONTROL, MADE PERMANENT (b22) ───────────────────
+    # The defect: `--agent H1` selected the row and silently dropped the
+    # nonce, so a nonce that was NEVER WRITTEN to the row still produced
+    # CLEAN, while `--agent h1` on the same registry and the same board
+    # produced the correct FINDING. These arms are that control, with the
+    # live registry and the Drive mount replaced by the synthetic row and
+    # board above so the control runs on any clone, forever, with no network.
+    #
+    # The arm that matters is not "uppercase works". It is that uppercase and
+    # lowercase give the SAME ANSWER. A fixture asserting only the uppercase
+    # verdict would pass again the day the two expressions drift apart in the
+    # other direction.
+    H1_ROW = {'session': 'h1', 'state': 'idle', 'updated': STAMP,
+              'task': 'h1 b61: status-board bridge re-drive'}
+    H1_BOARD = ('# SAIRN board\n\n## H1\n\n- **state:** idle (row written %s)\n'
+                '- **task:** h1 b61: status-board bridge re-drive\n' % STAMP)
+    NEVER_WRITTEN = 'H1-NONCE-NEVER-WRITTEN-b22-CONTROL'
+
+    def _verdict(agents):
+        """What live() would decide for the H1 row under this --agent value:
+        is it selected, is the nonce actually used, and what does classify
+        say. The two `selects` call sites, exercised together."""
+        token = 'h1'
+        picked = selects('H1', token, agents)
+        used = NEVER_WRITTEN if (NEVER_WRITTEN and
+                                 selects('H1', token, agents)) else None
+        f, _ = classify(H1_ROW, H1_BOARD, None, E, nonce=used, label='H1',
+                        now=E + 60)
+        return picked, bool(used), len(f)
+
+    up, low = _verdict(['H1']), _verdict(['h1'])
+    check('THE b63 CONTROL: a nonce that was NEVER WRITTEN to the row is a '
+          'FINDING under UPPERCASE --agent H1 (it was a false CLEAN)',
+          up[2] >= 1, True)
+    check('...and under lowercase --agent h1, which always worked',
+          low[2] >= 1, True)
+    check('...AND THE TWO ANSWERS ARE IDENTICAL, which is the arm that '
+          'survives the next drift in either direction', up == low, True)
+    check('the nonce is actually USED for an uppercase --agent, not dropped '
+          'on the floor -- the precise mechanism of the false CLEAN',
+          up[1], True)
+    check('the row is selected by its board LABEL (H1)',
+          selects('H1', 'h1', ['H1']), True)
+    check('...and by its registry TOKEN (h1)',
+          selects('H1', 'h1', ['h1']), True)
+    # EVERY ARM BELOW IS A BOOLEAN, NOT A LIST. `check` compares
+    # bool(got) == bool(want), so a non-empty list is True whatever is in it
+    # -- `check(name, [False, False], [False, False])` passes vacuously. Two
+    # arms were written that way minutes ago and caught before they landed.
+    check('...and by either in any case (Cc, FOURTH, h2)',
+          all((selects('cc', 'cc', ['Cc']),
+               selects('fourth', 'fourth', ['FOURTH']),
+               selects('H2', 'h2', ['h2']))), True)
+    check('NO --agent selects every row, unchanged',
+          all(selects(l, l.lower(), None)
+              for l in ('hank', 'cc', 'cody', 'fourth', 'H1', 'H2')), True)
+    check('AN UNRELATED --agent STILL SELECTS NOTHING -- case-insensitivity '
+          'must not widen the filter into a match-anything',
+          selects('H1', 'h1', ['cody']), False)
+    check('...and a prefix of a real name is NOT a match either',
+          any((selects('H1', 'h1', ['h']), selects('cc', 'cc', ['c']))),
+          False)
+    check('surrounding whitespace in --agent is tolerated rather than '
+          'silently selecting nothing', selects('H1', 'h1', ['  H1 ']), True)
+    check('an --agent that is only whitespace selects nothing, so live() '
+          'reaches the COULD-NOT-RUN rather than checking every row',
+          selects('H1', 'h1', ['   ']), False)
+
     print('  %d/%d fixtures classify correctly' % (total - bad, total))
     return EXIT_FINDING if bad else EXIT_CLEAN
 
@@ -494,8 +628,22 @@ def live(agents=None, nonce=None, api_readback=None,
     print('')
 
     labels = [l for l in BP.BOARD_ORDER
-              if not agents or BP.BOARD_TOKEN[l] in agents or l in agents]
+              if selects(l, BP.BOARD_TOKEN[l], agents)]
+    # AN --agent THAT MATCHES NOTHING IS NOT A CLEAN BRIDGE. Before b22 this
+    # fell through to `0 FINDING(S) across 0 agent(s)` and then printed
+    # CLEAN at exit 0 -- a verdict over an empty set, which is the same
+    # silent-skip family as the nonce defect above and was found while
+    # fixing it.
+    if agents and not labels:
+        print('COULD NOT RUN: --agent %r matches no board row, so NOTHING was '
+              'compared. A verdict over an empty set is not a pass.'
+              % (agents[0] if len(agents) == 1 else list(agents)))
+        print('  valid names (either form, any case): %s'
+              % ', '.join('%s/%s' % (l, BP.BOARD_TOKEN[l])
+                          for l in BP.BOARD_ORDER))
+        return EXIT_COULD_NOT_RUN
     all_f, all_n, checked = [], [], 0
+    nonce_checked = 0
     for label in labels:
         token = BP.BOARD_TOKEN[label]
         row = rows.get(token)
@@ -513,9 +661,13 @@ def live(agents=None, nonce=None, api_readback=None,
             all_n.append('%s: %s is not on the mount, so only the board half '
                          'was compared.' % (label, BP.LATEST_NAME % label))
         pub = min(x for x in (board_epoch, latest_epoch) if x is not None)
+        # THE SAME `selects` AS THE ROW FILTER. Two expressions for one
+        # question is the b63 defect; see selects().
+        use_nonce = nonce if (nonce and selects(label, token, agents)) else None
+        if use_nonce:
+            nonce_checked += 1
         f, n = classify(row, board_text, latest_text, pub,
-                        nonce=nonce if (agents and token in agents) else None,
-                        label=label)
+                        nonce=use_nonce, label=label)
         checked += 1
         state = (row or {}).get('state', 'NO ROW')
         print('  %-5s %-8s %s' % (label, state,
@@ -576,9 +728,21 @@ def live(agents=None, nonce=None, api_readback=None,
     if all_f:
         print('%d FINDING(S) across %d agent(s).' % (len(all_f), checked))
     else:
-        print('CLEAN: every row checked is rendered by a board no older than '
-              'the row itself%s.' % (', and the nonce crossed both ends'
-                                     if nonce else ''))
+        # THE NONCE CLAUSE IS KEYED ON WHETHER ONE WAS CHECKED, NOT ON
+        # WHETHER ONE WAS SUPPLIED. That substitution is what made the b63
+        # defect READ as a verified pass: `--agent H1 --nonce X` printed the
+        # nonce in the header, skipped the check, and then claimed it crossed.
+        if nonce and not nonce_checked:
+            print('CLEAN on the rows checked -- BUT THE NONCE WAS NOT '
+                  'CHECKED ON ANY ROW, so this says nothing about whether '
+                  'THIS write crossed. It should be unreachable since b22; '
+                  'if you are reading it, the selection and the nonce gate '
+                  'have drifted apart again.')
+        else:
+            print('CLEAN: every row checked is rendered by a board no older '
+                  'than the row itself%s.'
+                  % (', and the nonce crossed both ends on %d row(s)'
+                     % nonce_checked if nonce_checked else ''))
     if all_n:
         print('%d NOTE(S), not folded into that verdict:' % len(all_n))
         for x in all_n:
