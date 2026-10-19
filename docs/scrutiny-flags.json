@@ -981,6 +981,70 @@
    "class": "test file",
    "level": "CHANGE",
    "shapes": [],
+   "sha": "163f70fd8976855cdd0f2caaef9af6f47fa7df46",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnbiz_undated_payee_notes.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "163f70fd8976855cdd0f2caaef9af6f47fa7df46",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairncode_pt_gp_modifier.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "163f70fd8976855cdd0f2caaef9af6f47fa7df46",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnfreedom_server_backup.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "163f70fd8976855cdd0f2caaef9af6f47fa7df46",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlaw_trust_clearance.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "163f70fd8976855cdd0f2caaef9af6f47fa7df46",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlaw_trust_clearance_review_probe.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "163f70fd8976855cdd0f2caaef9af6f47fa7df46",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnroofing_default_location_from_server.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "163f70fd8976855cdd0f2caaef9af6f47fa7df46",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_blob_scope_ten_routed_sites.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "163f70fd8976855cdd0f2caaef9af6f47fa7df46",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/location-scope.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
    "sha": "16bfb2c2ab28bc34a831f6ce187daddbeec0a0f1",
    "criteria_version": "2026-10-06.1"
   },
@@ -4457,6 +4521,70 @@
     }
    ],
    "sha": "8783822aec5276d5d2a907013bd7313ad4cc80c9",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/location-scope.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "87ac254d68d97252d2998a80a39393728ca637b5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnbiz_undated_payee_notes.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "87ac254d68d97252d2998a80a39393728ca637b5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairncode_pt_gp_modifier.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "87ac254d68d97252d2998a80a39393728ca637b5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnfreedom_server_backup.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "87ac254d68d97252d2998a80a39393728ca637b5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlaw_trust_clearance.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "87ac254d68d97252d2998a80a39393728ca637b5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlaw_trust_clearance_review_probe.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "87ac254d68d97252d2998a80a39393728ca637b5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnroofing_default_location_from_server.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "87ac254d68d97252d2998a80a39393728ca637b5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_blob_scope_ten_routed_sites.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "87ac254d68d97252d2998a80a39393728ca637b5",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -9016,6 +9144,70 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/_lib/location-scope.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f638d38726504a9f02340add5ec377dfb78e9e34",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnbiz_undated_payee_notes.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f638d38726504a9f02340add5ec377dfb78e9e34",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairncode_pt_gp_modifier.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f638d38726504a9f02340add5ec377dfb78e9e34",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnfreedom_server_backup.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f638d38726504a9f02340add5ec377dfb78e9e34",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlaw_trust_clearance.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f638d38726504a9f02340add5ec377dfb78e9e34",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlaw_trust_clearance_review_probe.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f638d38726504a9f02340add5ec377dfb78e9e34",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnroofing_default_location_from_server.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f638d38726504a9f02340add5ec377dfb78e9e34",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_blob_scope_ten_routed_sites.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f638d38726504a9f02340add5ec377dfb78e9e34",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/b14-clock-approval-two-person.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -9541,6 +9733,70 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "fb35b3b48cef91293fd87f0adbcc1092d5652ed5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/location-scope.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "fccff89f465c6bf4d8b6a9f54f8d7d98c0d5ee4b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnbiz_undated_payee_notes.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "fccff89f465c6bf4d8b6a9f54f8d7d98c0d5ee4b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairncode_pt_gp_modifier.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "fccff89f465c6bf4d8b6a9f54f8d7d98c0d5ee4b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnfreedom_server_backup.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "fccff89f465c6bf4d8b6a9f54f8d7d98c0d5ee4b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlaw_trust_clearance.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "fccff89f465c6bf4d8b6a9f54f8d7d98c0d5ee4b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlaw_trust_clearance_review_probe.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "fccff89f465c6bf4d8b6a9f54f8d7d98c0d5ee4b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnroofing_default_location_from_server.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "fccff89f465c6bf4d8b6a9f54f8d7d98c0d5ee4b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_blob_scope_ten_routed_sites.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "fccff89f465c6bf4d8b6a9f54f8d7d98c0d5ee4b",
    "criteria_version": "2026-10-06.1"
   },
   {
