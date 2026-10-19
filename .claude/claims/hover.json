@@ -1003,6 +1003,17 @@
       "status": "released",
       "released_at": "2026-10-19T12:43:14Z",
       "files": null
+    },
+    {
+      "id": "hover-1792414807",
+      "session": "hover",
+      "subject": "hover",
+      "task": "b57: register sha bookkeeping fix, undirected sweep (fourth b28 N5 land-check), handoff+report+digest",
+      "claimed_at": "2026-10-19T13:00:07Z",
+      "claimed_at_epoch": 1792414807.2352335,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
