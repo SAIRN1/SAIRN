@@ -745,8 +745,8 @@
       "task": "b66: add 2 gaps to write-up doc, 2 more mutation targets, undirected sweep, Trusted Debate key recheck, push",
       "claimed_at": "2026-10-19T16:45:00Z",
       "claimed_at_epoch": 1792428300.0236456,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-19T17:02:16Z",
       "files": null
     }
   ],
