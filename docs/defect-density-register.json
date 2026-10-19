@@ -33807,7 +33807,7 @@
       "factors_unknown_reason": "found and fixed in one sitting with the fix itself as the record; no separate RCA factor pass was run beyond what the commit message already states"
     },
     {
-      "commit": "c6c9f8607441",
+      "commit": "5107fcafd084",
       "date": "2026-10-19",
       "subject": "fix(hover): hover_editor_review's sentences() gets the same abbreviation-safe split, h1 b56",
       "files": [
