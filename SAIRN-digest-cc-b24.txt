@@ -1,0 +1,10 @@
+DIGEST cc b24
+STATUS: CLOSED 6/6, no overrides; landed 38bbd455, 0/0 read from the REMOTE; api/ tests/ .html settings.json untouched
+DECISION-NEEDED: cody pushed .html under Michael's assignment while the split gives .html to fourth, so the manifest refuses cody. assigned_overrides is the route and is EMPTY.
+CHANGED: the tier checker skipped registries by NAME and missed shared.js -- seven resources including Tier A employees, invisible to the arm. Now a property each module declares: 18 to 19 registries, 8 cleared 0 introduced. Red-flag context 70 to 80 for build agents only, hover unchanged. A path manifest and pre-push CHECK 5d refuse an out-of-scope or auditor path in-clone.
+EVIDENCE-path: SAIRN-report-cc-b24.txt, SAIRN-handoff-cc-b24.md
+UNVERIFIED: in the report. The rt_routes review is a reading; its schema was never run.
+NEXT: cody derives rt_stops.license_hash from the ROUTE ROW; 33 drafts left.
+CONTEXT 75.7% of 1,000,000 -- 757,422 tokens, measured.
+SHA256 91887f22de44da9bb63c18e954f4471502c9f8b898710780658bddcc76009dd8
+END-OF-REPORT
