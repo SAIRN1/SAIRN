@@ -33988,7 +33988,7 @@
       "factors_unknown_reason": "duplicate-copy follow-up to an already-registered defect (9a7f73da); the fix and its own regression coverage are the record, no separate RCA factor pass run"
     },
     {
-      "commit": "538af8d5ca7e",
+      "commit": "40cbbf97ade5",
       "date": "2026-10-19",
       "subject": "fix(path-manifest): a flag's value is not a path, and the proxy it exposed is withdrawn",
       "files": [
