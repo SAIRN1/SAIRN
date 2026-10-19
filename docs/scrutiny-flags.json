@@ -1057,6 +1057,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "errors='replace', timeout=300, cwd=repo,"
+    }
+   ],
+   "sha": "162681f9cc38031d734171ed16d77711e9d6a11b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/_lib/location-scope.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -3485,6 +3498,19 @@
     }
    ],
    "sha": "5ffe2b90616c16be8743bf1feceee3e8284f6338",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "errors='replace', timeout=300, cwd=repo,"
+    }
+   ],
+   "sha": "60e6a3a5b5215794727d26d12bffd57e0990d839",
    "criteria_version": "2026-10-06.1"
   },
   {
