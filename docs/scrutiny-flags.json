@@ -1238,6 +1238,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/bridge-unknown-action.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'blocklist wearing an allowlist\\'s name', async () => {"
+    }
+   ],
+   "sha": "1813a231dfada7e765e4c6af88c3657a7e7e7c0f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/_lib/auth-roleset-seam.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -1285,6 +1298,14 @@
     }
    ],
    "sha": "1b7f9bfa517840695a91577e497ab16795b8d4f1",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b21-bridge-unknown-action.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "1b818265ab7bde9b7ccf9d8213174a80ca4711c4",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -7159,6 +7180,32 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "afd17c863cb6c0ae1d65966208ba4801ac863b29",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b21-bridge-unknown-action.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'blocklist wearing an allowlist\\'s name', async () => {"
+    }
+   ],
+   "sha": "b059c6153b8fd25627613dd3113589e18381e9be",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/bridge-unknown-action.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "assertions NET REMOVED",
+     "detail": "41 removed, 0 added; first removed: const assert = require('assert');"
+    }
+   ],
+   "sha": "b059c6153b8fd25627613dd3113589e18381e9be",
    "criteria_version": "2026-10-06.1"
   },
   {
