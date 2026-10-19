@@ -1243,6 +1243,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "docs/hank-evidence/b18_live_gate_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "1e1d1dc3442bde49acfd838570cc18cf2178b64c",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/b17-trust-lock-hard.test.js",
    "class": "test file",
    "level": "CHANGE",
