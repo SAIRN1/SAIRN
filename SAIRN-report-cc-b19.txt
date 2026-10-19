@@ -1,0 +1,296 @@
+REPORT cc b19
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-19
+HEAD      3dfc99dc  ==  origin/main  (git rev-list --left-right --count
+          origin/main...HEAD  ->  0  0), zero stashes. The handoff was read
+          back OUT OF ORIGIN -- `git show origin/main:SAIRN-handoff-cc-b19.md`
+          -- rather than from the push command's exit code
+FORCE     none, in any spelling
+OVERRIDE  NONE, in any of the three forms. docs/BYPASS-LOG.jsonl gained NO row
+          from this batch. An audit rather than an assertion: the gate records
+          an override ATTEMPT before deciding whether to honour it, so an
+          absent row is an unused override and not a silence
+HOOKS     none added or restored. .claude/settings.json never committed
+TRANSCRIPT
+          C--Users-marsh-Documents-SAIRN-cc\4d4f63b1-1aa9-48c9-b832-
+          ddd1c2674580.jsonl -- 4,446,199 bytes, 619,477 tokens, 61.9% of the
+          1M window, by tools/sairn_status_line.used_tokens(). SHARED WITH
+          b16's WRAP, b17 AND b18, so the figure covers four batches
+CLONES    no auditor clone entered or written. No api/, sql/, app HTML or
+          tests/ file in the diff
+
+
+================================================================================
+WHAT LANDED
+================================================================================
+
+  e57f3c3d  concepts(cc b19): both fixes stated before the code, and both
+            measurements changed what the fix should be
+  fb0c90c8  parse(labels)+guard(race): a field ends where its section ends,
+            and a stale clone refuses to revert a newer board
+  6dfa1cb3  agents(md)+confirm(tier 0): the per-repo context file, and a
+            confirmation record that says plainly it is not independent
+  3dfc99dc  handoff(cc b19)   <- AS LANDED, after two rebases
+
+  TWO REBASES AND TWO `cannot lock ref` RACES, all resolved by pulling. Four
+  other agents pushed to this trunk during the batch.
+
+
+================================================================================
+ITEM 5 FIRST, BECAUSE THE ORDER IS THE POINT
+================================================================================
+
+docs/2026-10-19-cc-b19-concepts.md is the batch's FIRST commit and
+tools/sairn_board_publish.py changed in the SECOND, so the ordering is provable
+from `git log` rather than asserted by the file claiming it.
+
+  ITEM 1, one line: a digest field must end where its own section ends -- so
+  the parse stops at the next DOCUMENT-LEVEL heading rather than running into
+  the next section's prose, and where it cannot safely stop it SAYS the field
+  contains another heading instead of silently slicing 900 characters out of
+  the middle.
+
+  ITEM 2, one line: a publish must refuse to overwrite a board written by a
+  NEWER publisher than this clone is running, or from FRESHER rows than this
+  clone can see -- so a stale clone reverting a corrected board is a refusal
+  with a named cause instead of a silent last-write-wins.
+
+BOTH CONCEPTS RECORD WHAT THE FIX RULES OUT, and in both cases that is the
+half that mattered. For item 1: not "truncate it shorter" and not "fix the
+digests", because the board READS six other agents' files. For item 2: not a
+row-timestamp check, because the data was never stale.
+
+
+================================================================================
+ITEM 1 -- THE LABEL SET, AND A CORRECTION TO THE DECISION AS WRITTEN
+================================================================================
+
+THE DECISION SAID "add explicit STATUS/DECISION-NEEDED/NEXT". ALL NINE WERE
+ALREADY THERE -- STATUS, DECISION-NEEDED, CHANGED, EVIDENCE-path, UNVERIFIED,
+NEXT, CONTEXT, SHA256, END-OF-REPORT -- read out of digest_fields()'s own tuple
+rather than remembered. Saying so cost less than implementing it twice.
+
+MISSING, measured against the six live digests on the mount: IDENTITY (hank's
+first line) and DIGEST (cc's and fourth's). Both added.
+
+THE RUN-ON HAD ONE LIVE INSTANCE, and here is the measurement:
+
+    hank b17   CONTEXT at offset 1506, next RECOGNISED label at 6193
+               -> a CONTEXT body of 4,673 characters, containing
+                  `WHAT LANDED --`, `THE METHODOLOGY ITEM CAUGHT ITS OWN
+                  AUTHOR...` and `AND THREE SUITES WENT RED...`
+    cody b23   status 1669, next 2743, context 240
+    fourth b30 status 931, next 382, context 104
+    cc b18     status 167, next 80, context 15
+
+A BLANKET "STOP AT ANY HEADING" RULE WOULD HAVE BEEN WORSE, and this is why
+the concept was written before the code. cody b23's CHANGED carries `ITEM 1 --`,
+`ITEM 2 --`, `ITEM 3 --`, `A DEFECT RECORD WAS WRITTEN`; its NEXT carries
+`WHOEVER TAKES THE NEXT SWEEP REPAIR`, `HANK --`, `CC --`. Every one is
+blank-line-preceded, at column 0, upper case -- the same shape as hank's -- and
+every one is genuinely part of the field a reader wants. Terminating there
+would have cut cody's CHANGED to one paragraph and called it the whole field.
+
+SO THE RULE IS SCOPED BY WHAT THE FIELD IS:
+
+  CONTEXT is a FIGURE field. Its content is a few words, so a
+  blank-line-preceded heading inside it is always the next section. It
+  terminates there: hank's 4,673 characters became 3, `46%`.
+
+  STATUS and NEXT are PROSE fields. They legitimately carry their author's
+  headings, so they still end only at a known label or at end of file -- and
+  when one contains such a heading the fields dict NAMES it. Live, cody's NEXT
+  reports "carries 3 of the digest's own heading(s) (first: 'WHOEVER TAKES THE
+  NEXT SWEEP REPAIR -- TAKE'); the field is NOT cut there". Same pattern as
+  b18's tolerance note: a bound nobody can see is a bound that widens.
+
+WHAT DID NOT CHANGE, stated rather than implied: the 900-character display
+slice. A 1,416-character STATUS still shows 900 of itself. What changed is that
+a reader is told when those 900 have another section's heading inside them.
+
+AND THE FIRST VERSION OF own_headings() CAUGHT NOTHING -- INCLUDING NOTHING IN
+THE FILE IT WAS WRITTEN FOR. The length guard was on the LINE, and hank's
+headings are `WHAT LANDED -- <a paragraph>` on a single line, so every one was
+skipped and CONTEXT stayed at 4,673 characters with a clean-looking parse. The
+arm agreed with the bug, because its fixture had been written in the same wrong
+shape. Caught by re-measuring the live digests after the change -- not by the
+arm. The guard is on the HEAD now, the arm's fixture is hank's real
+single-line shape, and the comment in the source says all of this.
+
+ARMS: A31 (the run-on) and A32 (THE CONTROL -- a prose field keeps its author's
+headings and is not cut). 36/36 arms fire on the defect they name.
+
+
+================================================================================
+ITEM 2 -- THE PUBLISHER RACE
+================================================================================
+
+WHAT HAPPENED IN b18, measured: cc's clone published a corrected board at
+08:34; FOURTH'S CLONE REPUBLISHED AT 08:55 with its own pre-fix copy of the
+publisher, and the broken cells came back with no error anywhere. It resolved
+itself when other clones pulled -- luck, not a mechanism.
+
+THE DATA WAS NOT STALE. THE CODE WAS. Every clone renders from the same
+registry outside git, so fourth's rows were as fresh as cc's: a
+last-write-wins check on row timestamps would have let that publish through
+unchanged. That is the measurement that decided the design, and it is the one
+the dispatch's wording would have missed.
+
+TWO COMPARISONS, in overwrite_refusal(), before a single byte is written:
+
+  PUBLISHER REVISION. The board carries the revision of the publisher that
+  wrote it -- published in the header on purpose, so the guard reads the BOARD
+  rather than trusting its own copy. A clone on a LOWER revision refuses.
+  Compared as a NUMERIC TUPLE: `2026-10-19.10` < `2026-10-19.9` as text, which
+  would invert the guard the first time a serial reached two digits. Arm A34
+  asserts both the correct comparison and the textual trap.
+
+  ROW RECENCY. Per agent, the board's rendered `row written` stamp against what
+  this process would render. A board showing a row NEWER than this clone can
+  see means the registry read behind it is stale, so publishing would walk the
+  board backwards. Arm A36.
+
+REFUSE, NEVER MERGE. A merged rendering of six agents' state describes no
+moment that ever existed. "Reject" is the branch of the decision that can be
+made correct.
+
+AND REFUSING DOES NOT BREAK THE CALLER. Publishing is a side effect of a status
+or claim write; the write still succeeds and the board is reported NOT
+PUBLISHED with its cause and the command that fixes it:
+
+    BOARD NOT PUBLISHED -- this clone would have REVERTED a newer board.
+      the board on the mount was written by publisher revision 2099-01-01.1
+      and this clone is running 2026-10-19.1 ...
+      Your status or claim write SUCCEEDED; only the Drive board was left
+      alone.
+      Fix: git pull --rebase origin main, then re-run any status command.
+
+TWO CONTROLS, because a guard that refused everything would be worse than the
+race: arm A35 proves an OLDER board and an ABSENT board both still publish, and
+that publish() returns EXIT_CLEAN with the file written. Arm A33 proves the
+refusal leaves the existing file BYTE-UNTOUCHED, not merely unreported.
+
+THE LIMIT, in the source: a clone running a publisher older than revision
+2026-10-19.1 neither writes the field nor reads it, so it cannot be stopped by
+this. The guard protects every clone from this revision forward and the push is
+what distributes it. A revert from a pre-revision clone stays possible until
+each clone fetches.
+
+
+================================================================================
+ITEM 3 -- THE CONFIRMATION, AND WHY IT SAYS IT IS NOT INDEPENDENT
+================================================================================
+
+Recorded with tools/defect_register.py --confirm on fb0c90c8: layer tooling,
+method live-verification, verdict sound-with-limits, in the CONFIRMED CLEAN
+population -- 6 records, a separate population that is in NO defect figure.
+`--check` OK over 649 records, exit 0.
+
+THE CLAIM: Tier 0 item 1, the Drive status-bridge, is landed end to end -- a
+status write reaches the published board; the board renders each row's own
+state, updated stamp and task; the CONTEXT cell renders a figure or
+UNKNOWN-with-a-reason rather than a paragraph; the bridge check's two b17
+unverifieds are closed; the index-hook criteria-lock gap is shut.
+
+THE DRIVEN FIELD lists what was run rather than what was read: the nonce
+B18-BRIDGE-3728541b crossing both ends from row 2026-10-19T08:34:45; the
+Drive-side API read of board id 19GSUTWQLddPwZiLEUNfssAjrMxK4vVE1; 36/36
+publisher arms; the index hook's four criteria-lock arms driven failing-first;
+14/14 index-check fixtures with line 645 pinned; and the GitHub render
+confirmation at exit 0.
+
+THE LIMITS FIELD IS THE PART THAT MATTERS, and it says this is NOT an
+independent confirmation: cc wrote the bridge check, the publisher and the
+record, so every arm above is the author checking his own work. Two elements
+genuinely are independent and both are named -- the Drive-side API read goes
+through Google rather than the mount, and HOVER2'S CLONE, not cc's, published
+the board that was read back. H1/H2's own re-drive is still OWED and the
+handoff carries the three exact commands.
+
+
+================================================================================
+ITEM 4 -- AGENTS.md
+================================================================================
+
+858 words at the repo root: the before-first-tool-call commands; the clone list
+as a COMMAND rather than a list, because that list has been wrong before; how
+to read the documents that do not fit a context window; the push protocol short
+form including the two-command skip and the fact that those variables in front
+of `git push` grant nothing; the four-file artefact contract with the 150-word
+digest ceiling; and the six things that have cost real time more than once.
+
+EVERY PATH IT NAMES WAS CHECKED TO EXIST -- every tools/*.py it cites and all
+five linked documents. Every count is expressed as a command rather than a
+figure, because this repo has corrected a hardcoded count in three documents at
+once. And it says in its own opening that it does NOT replace CLAUDE.md and is
+not a second copy of anything countable: a ninth standing document that goes
+stale is worse than no ninth document.
+
+
+================================================================================
+CHECKS, WITH REAL EXIT CODES
+================================================================================
+
+  tools/sairn_board_publish.py --selftest      36/36 arms        exit 0
+  tools/sairn_board_publish.py (live publish)  all files OK,
+                                               read-back
+                                               verified          exit 0
+  tools/defect_register.py --check             649 records       exit 0
+  tools/defect_register.py --confirm           recorded          exit 0
+  tools/digest_lint.py (on this batch's
+      digest)                                  CLEAN             exit 0
+  tools/drive_upload_verify.py --agent cc
+      --batch b19                              3 PASS            exit 0
+
+  PRE-FIX DRIVES RECORDED: hank's 4,673-character CONTEXT body before the
+  parse change; cody's own in-field headings, which is why the rule is scoped;
+  own_headings()'s first version catching NOTHING; and the textual revision
+  comparison that inverts at two digits, asserted in A34 rather than described.
+
+
+================================================================================
+UNVERIFIED
+================================================================================
+
+  A PRE-REVISION CLONE CAN STILL REVERT THE BOARD. The guard is only live in a
+  clone that has fetched revision 2026-10-19.1.
+
+  THE 900-CHARACTER DISPLAY SLICE IS UNCHANGED. A prose field's slice can still
+  land inside another section; the parser now says so, which is a different
+  thing from being fixed.
+
+  THE CONFIRMATION IS NOT INDEPENDENT and says so in its own limits field.
+  H1/H2's re-drive is owed.
+
+  THE OWN-HEADING RULE IS A HEURISTIC over six digests. An author whose heading
+  is not blank-line-preceded, or is mixed case, is not matched -- and that
+  direction is silent rather than loud.
+
+  AGENTS.md IS A DOCUMENT AND WILL AGE. Its mitigations are that it holds no
+  figures and that every path was verified once, not that anything checks it.
+
+  CODY'S SAIRNSCAPE PII FINDING IS STILL OPEN AND UNTOUCHED, because hank b18
+  holds api/sd-data.js.
+
+  THREE b12 TEST-FILE-FLOOR LAYERS REMAIN UNARMED, carried from b14 through
+  b18 unchanged. tests/ is cody's.
+
+  NO LIVE DEPLOYED-URL CHECK: no api/, sql/ or app file changed. Structural,
+  not skipped.
+
+
+================================================================================
+METHOD NOTE
+================================================================================
+
+A CHECK THAT FIRES ON ABSENCE IS THIS PLATFORM'S MOST EXPENSIVE BUG, AND IT
+HAPPENED INSIDE THIS BATCH. own_headings()'s length guard was on the line
+rather than the heading; it matched none of hank's headings, left CONTEXT at
+4,673 characters, and its arm agreed because the fixture had been written in
+the same wrong shape. The only reason it was caught is that the live digests
+were re-measured after the change. DRIVE A NEW CHECK AGAINST THE REAL INSTANCE
+IT EXISTS FOR -- not against a fixture written from the same misunderstanding.
+
+SHA256 7160759a9c5485eb45ec85c53a3b823a17777addb02d162a2fb299647e928f76
+END-OF-REPORT

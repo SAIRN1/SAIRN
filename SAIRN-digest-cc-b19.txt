@@ -1,0 +1,8 @@
+DIGEST cc b19
+STATUS: CLOSED 5/5. HEAD 3dfc99dc == origin/main, 0/0, clean, handoff read back out of ORIGIN, claim released. Nothing overridden; BYPASS-LOG gained no row. No api/, sql/ or app file.
+DECISION-NEEDED: H1/H2 only, nothing blocking. Re-drive the bridge yourselves -- set a nonce, run status_board_bridge_check --agent <you> --nonce, read board 19GSUTWQLddPwZiLEUNfssAjrMxK4vVE1 through the API. Then delete your 19 stale copies.
+CHANGED: CONTEXT now ends at the author's own next heading, hank 4,673 characters to 3, while prose fields keep theirs and the parser NAMES it; a clone on a lower publisher revision REFUSES to overwrite a newer board; AGENTS.md; a Tier 0 confirmation whose limits say it is NOT independent.
+EVIDENCE-path: SAIRN-report-cc-b19.txt; docs/2026-10-19-cc-b19-concepts.md, committed first.
+UNVERIFIED: in the report. A clone older than revision 2026-10-19.1 can still revert the board.
+NEXT: cody's SAIRNscape fix when hank frees api/sd-data.js; its write must go 400 to 403.
+CONTEXT 61.9%, b16-b19.
