@@ -33778,7 +33778,7 @@
       "recurrence_open": "THREE THINGS THE ACTIONS ABOVE DO NOT CLOSE. (1) THE SWEEP IS NOT WIRED TO ANYTHING -- no hook, no push gate, no suite invokes it, which is precisely the tooling_inventory finding that a tool which exists is not a mechanism and a tool that RUNS is. Nothing stops the 102 candidates from growing. (2) THE 86 CANDIDATES THAT ARE NOT cody's ARE NOT READ and are not counted as clean. (3) AND THE SWEEP IS BLIND TO ONE MEMBER OF ITS OWN CLASS: b22's B6 arm was satisfied by a CONSTANT'S note FIELD -- real executable data carrying prose -- which looks like nothing to a text scanner because it IS code. Detecting that needs the value flow, not the text, and no tool here does it. Convention 36 was written about this class one batch before b23 and did not prevent b23 writing a B6-shaped arm of its own, which is the measurement that says prose is not a control."
     },
     {
-      "commit": "3373f5ac4800",
+      "commit": "9c7da7fcd8c7",
       "date": "2026-10-19",
       "subject": "fix(tests): the rf_claim_photos not-provisioned arm was satisfied by the WRONG OCCURRENCE, and a 1400-character window hid it",
       "files": [
