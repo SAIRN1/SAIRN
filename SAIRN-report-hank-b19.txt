@@ -1,0 +1,255 @@
+REPORT hank b19 2026-10-19 -- STOPPED MID-BATCH ON INSTRUCTION
+=============================================================================
+Every number below was RE-DERIVED from the log or tool that records it
+immediately before being written down. A remembered count drifts toward the
+flattering one -- and this batch has a measured example of exactly that, in
+the CONTEXT section.
+
+-----------------------------------------------------------------------------
+REAL CONTEXT -- MEASURED FROM THE TRANSCRIPT, NOT A SELF-ESTIMATE
+-----------------------------------------------------------------------------
+  source : ~/.claude/projects/C--Users-marsh-Documents-SAIRN-hank/
+           64e95f1d-0fde-409e-9106-4ad0e5b42930.jsonl
+  method : last assistant-turn message.usage in the file (line 2429 of 2433)
+
+  input_tokens                 =       2
+  cache_read_input_tokens      = 729,461
+  SUM (input + cache_read)     = 729,463  of 1,000,000  ->  72.9%
+  cache_creation_input_tokens  =   1,256
+  including cache_creation     = 730,719  of 1,000,000  ->  73.1%
+
+  window = 1,000,000 (model claude-opus-5[1m])
+
+  AND THE REASON THIS WAS WORTH MEASURING: b18's board row carried 46%, which
+  was INHERITED FROM b17's DIGEST AND NEVER RE-MEASURED. A number copied
+  forward through two batches while the real figure climbed about 27 points.
+  The self-estimate was wrong in the FLATTERING direction, which is the
+  direction a remembered number always drifts.
+
+  An earlier read in this same window returned 705,048 (70.5%). The figure
+  above is the later one, re-derived rather than quoted from earlier in this
+  session.
+
+-----------------------------------------------------------------------------
+WHAT WAS DISPATCHED, AND WHAT ACTUALLY HAPPENED TO EACH ITEM
+-----------------------------------------------------------------------------
+  1  methodology first ................. DONE. Concepts written BEFORE code,
+                                         left unedited after.
+  2  C1 bookkeeper IOLTA carve-out ..... DONE. 32 arms, 0 failed. AND THE
+                                         RESEARCH CONTRADICTS THE DISPATCH'S
+                                         PREMISE -- see below.
+  3  leg_settings storage ............... NOT DONE. Batch stopped before it.
+                                         NOT blocked.
+  4  client UI, both countersign panels . NOT DONE. sairnlegacy.html BLOCKED
+                                         (fourth's); sairnlaw.html was NOT
+                                         blocked and simply was not reached.
+  5  Grant-App-Login status ............. NOT RE-DRIVEN. The status on record
+                                         is b18's measurement, NOT a fresh
+                                         one, and that distinction is the
+                                         whole point of the item.
+  6  push, confirm landed, clean tree ... DONE. ZERO STASHES: NOT DONE, on
+                                         purpose -- see the stashes section.
+
+-----------------------------------------------------------------------------
+ITEM 2 -- THE CARVE-OUT, AND WHERE THE RESEARCH DISAGREES
+-----------------------------------------------------------------------------
+  CONCEPT, STATED BEFORE THE CODE:
+    the two trust-side reconciliation legs become reachable by a NEW NAMED
+    VERB -- `reconcile` -- granted to the LEGAL-SIDE roles only (owner /
+    attorney / paralegal) and NEVER to bookkeeper; a plain `read` on those two
+    resources stays refused, so the hard lock still closes every other route.
+
+  THE DISPATCH'S PREMISE WAS: "two of the three legs are bar-admitted-only by
+  law." THAT IS NOT WHAT THE RULES SAY, and reporting that is the deliverable
+  of doing research rather than citing it.
+
+    * THE THREE LEGS ARE RECORDS, NOT ACTS -- the bank statement's adjusted
+      balance, the firm's own trust ledger balance, and the SUM of the
+      individual client sub-ledgers. None is an act a licence is required to
+      perform.
+    * ABA MODEL RULE 1.15 puts the DUTY on the lawyer and makes it
+      non-delegable as a RESPONSIBILITY.
+    * ABA MODEL RULE 5.3 expressly permits non-lawyer assistants under
+      supervision, so the ARITHMETIC IS DELEGABLE -- and in practice it is.
+    * THE BAR-ADMITTED-ONLY ACT IS THE SIGNATURE. New York Rule 1.15(e): only
+      an attorney admitted in the State may be an authorised signatory on an
+      attorney trust account. That is AUTHORISING MONEY OUT -- exactly the act
+      C2's two-stage lock already models.
+    * State bar guidance mandating periodic three-way reconciliation also puts
+      the REVIEW on the lawyer and warns against a non-lawyer holding sole or
+      unsupervised control of the trust account.
+
+  SO THE ROUTING IS RIGHT AND THE REASON IS DIFFERENT. A bookkeeper with trust
+  access and no lawyer between them and the money is the specific arrangement
+  that guidance warns about. But it is not because the legs need a licence --
+  it is because the ACTS ON THEM do, and because the responsibility cannot be
+  handed over with the task.
+
+  WHAT SHIPPED: LAW_RECONCILE_ACTION, LAW_RECONCILE_LEGS, LAW_RECONCILE_ROLES,
+  LAW_RECONCILE_ATTESTATION, isReconcileLeg(), a second exception inside the
+  trust lock, a named-verb narrowing, and a bookkeeper-specific refusal that
+  says whose work it is.
+
+  WHAT DID NOT SHIP, AND IS THE REAL DECISION-NEEDED:
+  LAW_RECONCILE_ATTESTATION carries required_by_rule:true and
+  implemented:false. The rules require the LAWYER TO REVIEW AND APPROVE the
+  reconciliation and SAIRNlaw records no attestation anywhere, so the app can
+  now produce a reconciliation a PARALEGAL ran with nothing recording that a
+  bar-admitted person looked at it. Two booleans rather than a sentence, so
+  "we know and have not built it" cannot decay into "it is fine".
+
+-----------------------------------------------------------------------------
+ONE DEFECT FOUND BY DRIVING IT, NOT BY READING IT
+-----------------------------------------------------------------------------
+  The first draft let a NAMED verb through anywhere the role held `rw`:
+
+    decide('law_invoices', 'bookkeeper', 'reconcile')  ->  ALLOW
+
+  law_invoices is not locked, so the verb fell through to the table, was
+  treated as WRITE-class like any unknown verb, and bookkeeper holds `rw`
+  there. A verb meaning "perform leg (a) or (b) of a trust reconciliation" was
+  granted on a resource with no legs -- AND `prepare` HAD THE IDENTICAL HOLE
+  SINCE b18 AND NOBODY HAD ASKED.
+
+  FIXED BY SEPARATING TWO RULES THAT HAD BEEN ONE: a NAMED verb is refused off
+  the resources that define it; an UNKNOWN verb is still WRITE-class, which is
+  what that default was always for (a future soft_delete or export must not
+  ride in on a read grant). Arms N1-N4 are the finding; N5a-N5e are the silent
+  half proving the narrowing caught nothing else.
+
+-----------------------------------------------------------------------------
+TESTS
+-----------------------------------------------------------------------------
+  api/b19-iolta-reconcile-carveout.test.js ......  32 / 0        (NEW)
+  api/b17-trust-lock-hard.test.js ...............  14 / 0 / 0
+  api/sd-data-law-role-matrix.test.js ...........  29 / 0
+  api/b18-countersign-lock.test.js ..............  59 / 0 / 0
+  api/b17-practitioner-role-maps.test.js ........  19 / 0 / 0
+  api/sd-data-leg-role-matrix.test.js ...........  37 / 0 / 0
+  api/preauth-envelope-ordering.test.js .........  59 / 0
+  api/b18-passkey-profile-e2e.test.js ...........  37 / 0 / 0
+
+  node --check clean on both changed/new JS files.
+
+  NO FULL-TREE SWEEP WAS RUN THIS BATCH. b18's was 295 suites; b19 ran the
+  eight above, chosen as everything that reads api/_lib/law-roles.js plus the
+  two b18 suites. THAT IS A NARROWER CLAIM AND IT IS STATED AS ONE.
+
+  NO LIVE PROBE WAS RUN. The carve-out is module-level policy with no deployed
+  surface of its own until api/sd-data.js's gate changes, and that file is
+  cody's this batch.
+
+  EVIDENCE: docs/hank-evidence/b19/evidence.log
+
+-----------------------------------------------------------------------------
+THE PUSH
+-----------------------------------------------------------------------------
+  origin/main at read-back: 1835e35da, HEAD...origin/main = 0 0.
+  NOT FORCED -- no --force, no --force-with-lease.
+  NO OVERRIDE FORM USED -- not SAIRN_SEED_GATE=off, not SAIRN_GATE_EXEMPT=seed,
+  not SAIRN_SKIP / gate_skip.py.
+
+  THREE gate refusals, zero overridden:
+    register-feed  -- see open item 7, NOT yet satisfied
+    tier-a         -- an obligation over 6 resources, assigned to cc, four
+                      named attack points
+    derived-docs   -- MASTER-PLAN + traceability-matrix regenerated by their
+                      own tools, never hand-merged
+
+  The remote raced ELEVEN passes. Loop: scratchpad/pushloop2.sh.
+
+  READ BACK FROM ORIGIN BY CONTENT, including ONE ABSENCE CHECK:
+    LAW_RECONCILE_ACTION present .......................... YES
+    LAW_RECONCILE_ROLES carries paralegal:true ............ YES
+    LAW_RECONCILE_ATTESTATION carries implemented:false ... YES
+    the named-verb narrowing present ...................... YES
+    bookkeeper ABSENT from the reconcile set .............. ABSENT
+    the suite, the concepts doc, the routed doc, evidence .. PRESENT
+  The deliverable of item 2 is an ABSENCE, so it is checked as one.
+
+-----------------------------------------------------------------------------
+CLAIMS -- TWO LIVE SESSIONS BLOCKED TWO OF THE FOUR BUILD ITEMS
+-----------------------------------------------------------------------------
+  The FIRST check, with the honest full file set, was BLOCKED BY NAME:
+
+    session : cody    blocked by: same declared FILES: api/sd-data.js
+    session : fourth  blocked by: same app: sairnlegacy
+
+  cody's own claim string says WHY, and it is not an inference:
+    "docs/CRITICALITY-TIERS.md IS NORMALLY HANK'S AND I AM TAKING IT ON
+     MICHAEL'S EXPLICIT INSTRUCTION this batch because hank's window is
+     stalled -- declared rather than assumed. api/sd-data.js likewise."
+
+  SO MICHAEL REASSIGNED api/sd-data.js TO cody FOR b25. Overruling a
+  reassignment Michael made, in the platform's most critical shared file,
+  while the holder is LIVE, is not mine to do. Both holders were live at check
+  time -- running PIDs that started exactly when the lock says -- so this was
+  never the dead-claim case the tool permits overruling, and even that requires
+  confirming with the other session first.
+
+  I DID NOT REWORD THE TASK STRING TO SLIP PAST THE MATCHER (PR 4.3). I
+  narrowed the actual WORK and DECLARED the exclusion in words:
+    "EXCLUDES api/sd-data.js (cody holds it ...) and EXCLUDES sairnlegacy.html
+     (fourth holds it ...) -- both are routed as pasteable changes instead."
+
+  Both blocked changes are routed with their exact diffs and warnings:
+  docs/2026-10-19-hank-b19-routed-to-cody-and-fourth.md
+
+-----------------------------------------------------------------------------
+THE ONE THING ASKED FOR THAT I DID NOT DO: ZERO STASHES
+-----------------------------------------------------------------------------
+  INSPECTED READ-ONLY -- git stash show --stat only, nothing popped, nothing
+  dropped:
+
+    stash@{0}  b10-settings-park   .claude/settings.json              +20 /-155
+    stash@{1}  3 register records   docs/defect-density-register.json +209 / -58
+
+  NEITHER IS THIS SESSION'S AND DROPPING EITHER IS IRREVERSIBLE. stash@{0}
+  holds a parked .claude/settings.json 155 lines smaller than the current one;
+  dropping it discards whatever hook or permission state b10 parked. stash@{1}
+  holds 209 added lines of defect register and its own message says it is
+  re-addable from a scratchpad script IN A TRANSCRIPT DIRECTORY THAT MAY NO
+  LONGER EXIST. b17 and b18 both recorded leaving them alone.
+
+  I AM NOT DESTROYING TWO OTHER SESSIONS' UNMERGED WORK TO SATISFY A CHECKLIST
+  LINE. Michael says drop, or whoever owns b10's settings park confirms it is
+  dead, and then it takes one command. Flagged rather than done.
+
+-----------------------------------------------------------------------------
+WHAT IS OPEN -- 10 items, full detail and exact next step in the handoff
+-----------------------------------------------------------------------------
+  MICHAEL'S:  8  should PARALEGAL be on the reconcile list at all before an
+                 attestation step exists -- is this worse than owner-only was
+             10  the two stashes: drop, or keep
+  cody's:     2  the policy and the handler DISAGREE on main right now
+              3  tests/law_reconcile_role_vocab_check.py will need re-aiming
+              4  leg_settings is not registered as a resource
+  fourth's:   5a the sairnlegacy.html countersignature panel
+  ANYBODY'S:  1  sql/sairnlegacy_settings_schema.sql is not written
+             5b the sairnlaw.html panel -- NOT blocked, just not reached
+              6  re-drive the Grant-App-Login status rather than assume it
+              7  a defect-register record (or a no-defect-record trailer) for
+                 the carve-out commit
+              9  a handler arm, an ablation and a live probe for the carve-out
+
+-----------------------------------------------------------------------------
+ARTEFACTS
+-----------------------------------------------------------------------------
+  SAIRN-handoff-hank-b19.md    Drive id 1X7BbGritEYxU2f5c8lHEnvQTwq2sbDr3
+  SAIRN-report-hank-b19.txt    this file
+  SAIRN-digest-hank-b19.txt    uploaded to Drive; id in the final message
+  docs/2026-10-19-hank-b19-concepts.md
+  docs/2026-10-19-hank-b19-routed-to-cody-and-fourth.md
+  docs/hank-evidence/b19/evidence.log
+  transcript: C:\Users\marsh\AppData\Local\Temp\claude\
+              C--Users-marsh-Documents-SAIRN-hank\
+              64e95f1d-0fde-409e-9106-4ad0e5b42930\
+
+-----------------------------------------------------------------------------
+The SHA256 on the next line is of EVERYTHING ABOVE IT in this file -- every
+byte up to and including the newline that ends this paragraph's line. It does
+NOT cover the SHA256 line itself or the END-OF-REPORT line, because a digest
+cannot cover itself. Recompute with:
+  python -c "import io,hashlib;d=io.open('SAIRN-report-hank-b19.txt','rb').read();i=d.rindex(b'SHA256 ');print(hashlib.sha256(d[:i]).hexdigest())"
+SHA256 3ad5a989337660322b6a33e876504d9f6486aaa0f1b8085614c26d8656ae8de0
+END-OF-REPORT
