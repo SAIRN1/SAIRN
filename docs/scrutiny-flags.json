@@ -557,6 +557,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sd_data_not_provisioned_misclass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0e9ba7ad1884ad73a8e3fd05d0e3d3936e1d6dbf",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_read_unreadable_not_empty.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0e9ba7ad1884ad73a8e3fd05d0e3d3936e1d6dbf",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/hook_integrity_check.py",
    "class": "push-gate logic",
    "level": "CHANGE",
@@ -5361,6 +5377,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "93b96c4ee2da04aea6ea7a6db4f080d2a40d8b31",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/roofing_claim_gate_single_source.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "93d483a7e182e8744f0acfe8fe2a9b010c3a0b61",
    "criteria_version": "2026-10-06.1"
   },
   {
