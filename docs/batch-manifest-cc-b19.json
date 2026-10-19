@@ -7,32 +7,32 @@
     {
       "id": 1,
       "title": "",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "tools/sairn_board_publish.py --selftest 36/36 exit 0 with new arms A31 (CONTEXT ends at the digest's own heading, hank's 4673 -> 3 chars) and A32 (CONTROL: a prose field keeps its author's headings); LABELS gained IDENTITY and DIGEST; live board shows hank 46%"
     },
     {
       "id": 2,
       "title": "",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "tools/sairn_board_publish.py --selftest arms A33-A36 exit 0: a lower-revision clone REFUSES with git pull named and the file untouched, revision compare is numeric not textual, and two controls prove an older or absent board still publishes; PUBLISHER_REVISION 2026-10-19.1 is published in the board header"
     },
     {
       "id": 3,
       "title": "",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "tools/defect_register.py --confirm on fb0c90c8, verdict sound-with-limits, in the CONFIRMED CLEAN population and no defect figure; --check OK 649 records exit 0; the limits field states it is NOT independent and names what H1/H2 still owe"
     },
     {
       "id": 4,
       "title": "",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "AGENTS.md at the repo root, 858 words; every tools/ path and every linked document it names verified to exist; counts expressed as commands rather than figures"
     },
     {
       "id": 5,
       "title": "",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "docs/2026-10-19-cc-b19-concepts.md committed at the batch's first commit, before tools/sairn_board_publish.py changed -- provable from git log; both concepts record what the fix rules OUT, and both measurements changed the fix"
     }
   ]
 }
