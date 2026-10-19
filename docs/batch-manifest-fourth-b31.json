@@ -1,0 +1,44 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "fourth",
+  "batch": "b31",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "",
+      "status": "done",
+      "evidence": "150 of 153 findings fixed across 13 apps, app by app, each verified by re-running the checker on that file before moving on: 153 -> 3. The 3 remaining are ALL sairnroofing.html, which cody holds under an active claim naming that exact file, so it was NOT touched and is flagged back. Every fix is a token or an exact counted declaration; the counted assertion REFUSED three attempts that would have been half-done (sairncode 31-vs-33, sairnmechanical 2-vs-6, stonedesk 2-vs-3) before anything was written. All 13 apps pass checkblocks with 0 failed script blocks."
+    },
+    {
+      "id": 2,
+      "title": "",
+      "status": "done",
+      "evidence": "stonedesk --surface/--surface-2 root cause FOUND: not a deleted :root block -- git log -S shows NO commit ever defined them in stonedesk.html. They arrived with markup copied from the archived SAIRNaccounting app, which does define them (--surface:#FFFFFF, --surface-2:#EDF7F1). Fixed by defining them against this app's own equivalents (--card, --stone) in :root; 56 dropped background declarations now render, and re-measuring produced NO new contrast failures from the newly-visible surfaces"
+    },
+    {
+      "id": 3,
+      "title": "",
+      "status": "done",
+      "evidence": "no rendered gate profiles built -- Michael's call stands; the APPS table still carries sairndental alone and tools/wcag_contrast_check.py's docstring already records why (7 of 17 products have no licence gate, 5 no panel switcher, 3 no panels)"
+    },
+    {
+      "id": 4,
+      "title": "",
+      "status": "open",
+      "evidence": ""
+    },
+    {
+      "id": 5,
+      "title": "",
+      "status": "open",
+      "evidence": ""
+    },
+    {
+      "id": 6,
+      "title": "",
+      "status": "open",
+      "evidence": ""
+    }
+  ]
+}

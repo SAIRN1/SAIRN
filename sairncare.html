@@ -16,7 +16,9 @@
    collision) -- flagged per the map's own disclosed-not-hidden
    precedent for SAIRNcash/SAIRNvet's similar near-miss, not silently
    re-themed to force full distinctness. */
-:root{--p:#0D9488;--pd:#115E59;--pt:#F0FDFA;--pb:#99F6E4;--bg:#F8FAFC;--card:#fff;--border:#E2E8F0;--text:#0F172A;--muted:#64748B;--danger:#EF4444;--warn:#F59E0B;--ok:#22C55E;--sh:0 1px 4px rgba(0,0,0,.08);}
+/* b31: white text needs 4.5:1 and the bright brand token never gave it. --p keeps every border, accent and focus ring; only the SURFACES UNDER WHITE TEXT move to --pd, which this app already defined and which already passes. --pdd is new and exists ONLY so :hover stays a visible state change now that --pd is the resting colour. Per-fix ratios: SAIRN-report-fourth-b31.txt. */
+/* b31: var(--line) was referenced and defined NOWHERE in this file, so every `border:1px solid var(--line)` was invalid at computed-value time and the border was DROPPED -- not drawn in a fallback colour. It means --border, which this app already defines. */
+:root{--line:var(--border);--p:#0D9488;--pd:#115E59;--pdd:#0B3B38;--pt:#F0FDFA;--pb:#99F6E4;--bg:#F8FAFC;--card:#fff;--border:#E2E8F0;--text:#0F172A;--muted:#64748B;--danger:#EF4444;--warn:#F59E0B;--ok:#22C55E;--sh:0 1px 4px rgba(0,0,0,.08);}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Segoe UI','Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
 /* GATE */
@@ -26,7 +28,7 @@ body{font-family:'Segoe UI','Apple Color Emoji','Segoe UI Emoji','Noto Color Emo
 .gsub{color:var(--muted);font-size:13px;margin-bottom:28px;}
 .ginp{width:100%;border:2px solid var(--border);border-radius:8px;padding:12px 14px;font-size:15px;outline:none;text-align:center;letter-spacing:2px;margin-bottom:12px;}
 .ginp:focus{border-color:var(--p);}
-.gbtn{width:100%;background:var(--p);color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;}
+.gbtn{width:100%;background:var(--pd);color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;}
 .gbtn:hover{background:var(--pd);}
 .gerr{color:var(--danger);font-size:13px;margin-top:8px;min-height:18px;}
 /* PIN / real per-employee login */
@@ -64,8 +66,8 @@ main{flex:1;overflow-y:auto;padding:24px;}
 .psub{color:var(--muted);font-size:13px;margin-top:2px;}
 .pa{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
 .btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;}
-.bp{background:var(--p);color:#fff;}
-.bp:hover{background:var(--pd);}
+.bp{background:var(--pd);color:#fff;}
+.bp:hover{background:var(--pdd);}
 .bo{background:#fff;border:1px solid var(--border);color:var(--text);}
 .bo:hover{border-color:var(--p);color:var(--pd);}
 .bs{padding:6px 12px;font-size:12px;}
