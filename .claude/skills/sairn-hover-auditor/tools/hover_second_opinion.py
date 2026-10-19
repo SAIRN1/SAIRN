@@ -75,6 +75,28 @@ class CouldNotTell(Exception):
     pass
 
 
+def _hover_log_script_path():
+    """Resolve the real hover_log.py to subprocess-invoke, regardless of
+    whether THIS tool is running from the operational hover-audit-log/
+    directory or the tracked platform copy. FOUND LIVE AND FIXED, H1 b67:
+    hover_log.py was retired from hover-audit-log/ at b33 (merged into
+    the tracked copy only), which silently broke this file's own
+    log_result() -- its selftest crashed with a real FileNotFoundError
+    the moment it was re-run from this directory, and nobody had re-run
+    it since the retirement. The same fix landed in the new
+    hover_cross_vendor_check.py built the same batch; ported back here
+    rather than left as a known gap in a tool its docstring cites."""
+    candidates = [
+        os.path.join(HERE, 'hover_log.py'),
+        os.path.join(os.path.expanduser('~'), 'Documents', 'SAIRN-hover',
+                      '.claude', 'skills', 'sairn-hover-auditor', 'tools', 'hover_log.py'),
+    ]
+    for c in candidates:
+        if os.path.isfile(c):
+            return c
+    return None
+
+
 def discover_repo(argv=None):
     argv = sys.argv[1:] if argv is None else argv
     if '--repo' in argv:
@@ -220,7 +242,11 @@ def log_result(seq, entry, verdict, log_path_override=None):
         ]
     summary = '\n'.join(summary_lines)
 
-    argv = [sys.executable, os.path.join(HERE, 'hover_log.py'), '--add',
+    hover_log_script = _hover_log_script_path()
+    if hover_log_script is None:
+        return 2, '', 'COULD NOT RUN: no hover_log.py found at %s or the tracked platform copy -- nothing logged.' % HERE
+
+    argv = [sys.executable, hover_log_script, '--add',
             '--type', etype, '--target', 'self',
             '--ref', 'seq=%d' % seq,
             '--summary', summary]
