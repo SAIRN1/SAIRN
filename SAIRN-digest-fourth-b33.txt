@@ -1,0 +1,156 @@
+DIGEST fourth b33 2026-10-19
+
+STATUS
+  FIVE OF SIX ITEMS DONE; the sixth is the push this precedes. Nothing is
+  half-applied, uncommitted or half-written. No force. NO OVERRIDE OF ANY
+  KIND -- no SAIRN_SEED_GATE, no SAIRN_GATE_EXEMPT, no SAIRN_SKIP.
+  THE HANDOFF WAS WRITTEN BEFORE THIS REPORT, as instructed.
+
+  1. THE RENDERED PASS IS DONE, 13 OF 13. Nothing had been rendered since b29
+     while fourteen customer-facing apps changed colour on the strength of
+     arithmetic alone. Every one of the thirteen was served at
+     http://127.0.0.1:8733, opened in Chrome and screenshotted, and every one
+     reached its main working surface with its brand token resolving as
+     intended. That was the largest unverified claim on the platform and it is
+     closed.
+  2. b31's STONEDESK --surface-2 FIX IS VISUALLY CONFIRMED FOR THE FIRST TIME.
+     The token resolves to #f0f4fb at runtime and the four .biz-kpi tiles in
+     panel-business paint it (measured rgb(240,244,251)). Before b31 it was
+     undefined, so 56 background declarations were invalid at computed-value
+     time and dropped -- those tiles would have been white-on-white.
+  3. ROUTING CODE ALREADY EXISTS AND NOBODY KNEW. b32 left the archaeology as
+     an explicit false nil -- searched, interrupted, never read. Re-run and
+     READ this batch, then extended to `git log -S` and archive/. A complete
+     nearest-neighbour route optimiser over Google Route Matrix drive times
+     exists at commit 35169ea2, on a branch that is NOT an ancestor of main.
+  4. ZERO FABRICATED KPIs observed across thirteen rendered dashboards. Every
+     one showed 0, $0, "--" or an explicit sentence about why it was empty.
+     Guardian Check 0b passing where it is hardest to fake.
+
+DECISION-NEEDED
+  1. STONEDESK'S FIELD MAP ROUTE OPTIMISER IS BROKEN ON THE LIVE DEPLOYMENT
+     AND ITS ERROR MESSAGE BLAMES THE WRONG THING. stonedesk.html:12927 and
+     :12814 POST ?action=maps-optimize / maps-static to an action that has
+     never existed on main; both return HTTP 401, live-verified through
+     tools/sairn_http.py. The catch arm says "check the Maps API key is
+     configured." The key is irrelevant -- the request never reaches code that
+     reads it. A person acting on that message checks the wrong Vercel
+     variable. REPAIR NOT STARTED; it needs an owner (api/ is hank's lane).
+  2. A LATENT WRITE HAZARD IN THE SAME FALL-THROUGH. api/bridge.js sends any
+     POST that is not proxy_get to handlePush. Today the maps calls 401
+     because they carry no licence header -- but if a future change gave them
+     the header the rest of StoneDesk already holds, the fall-through would
+     upsert data:{addresses:[...]} over that shop's bridge_data row, silently,
+     with a 200 ok. An unknown ?action= should not reach a WRITE.
+  3. DOES THE ROUTING SCOPE DOC CLOSE THE ROUTING BLOCKER? ANSWERED IN THE
+     PAGE, PLAINLY AND IN BOTH DIRECTIONS: NO, IT DOES NOT. No code, no schema
+     run, no endpoint, nothing deployed, nothing tested -- a design on disk is
+     not a primitive. It DOES close the unknown inside it (routing code
+     exists; not greenfield; StoneDesk first and why; schema and API surface
+     specified). Four named closing conditions, none done. Blocker C is the
+     ONLY one of the three that building can close -- A and B are Michael's.
+  4. ONE AGAINST MYSELF, AND NOTHING IS ROUTED TO cc. This batch first wrote
+     up a five-fold "tool bug" in tools/context_verify.py. THE TOOL IS
+     CORRECT. It flags `ambiguous` whenever more than one published window
+     still fits (tools/context_verify.py:437-456), and at 188,338 tokens both
+     200,000 and 1,000,000 fit, so it named both candidates and the fix. I
+     truncated its output with `tail -20` and quoted the number without the
+     warning -- the exact failure CLAUDE.md names. THE context-digest PUSH
+     GATE REFUSED THE PUSH AND THAT IS WHAT CAUGHT IT. Report section 7 keeps
+     the whole account rather than deleting it.
+
+CHANGED
+  docs/2026-10-19-fourth-b33-routing-primitive-scope.md   NEW. One shared
+                      module under api/_lib/ dispatched by api/sd-data.js
+                      resource 'routes' -- NOT api/bridge.js, whose own header
+                      says it is StoneDesk-only. rt_routes/rt_stops schema;
+                      four actions with an explicit basis:'unavailable' third
+                      state so "could not run" is never folded into a result.
+                      StoneDesk named first because its client half already
+                      exists and is broken -- phase 1 there is three edits.
+                      SCOPE ONLY; no app code.
+  docs/cloud-research/2026-10-19-three-recurring-blockers.md   NEW. Blockers A
+                      (no owner for a 50-state regulatory matrix -- named by 3
+                      of 4 audits) and B (SAIRN has never sold an administered
+                      service) are company decisions. C (routing) is the only
+                      buildable one, and section 4 answers whether the scope
+                      doc closes it.
+  SAIRN-handoff-fourth-b33.md   NEW, written before this report
+  docs/batch-manifest-fourth-b33.json   5 done, 1 open
+  NOT TOUCHED: any .html (0 changed), api/, sql/, tests/,
+  .claude/settings.json, .githooks/, tools/context_verify.py,
+  tools/wcag_contrast_check.py, the auditor clones. git stash = 0.
+
+EVIDENCE-path
+  C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\7114877e-14ff-4635-8129-799b043ea778\scratchpad\b33\
+    -- live_bridge.py, the probe that produced the two HTTP 401s against the
+       real deployment; httpd.log from the local server that hosted the
+       rendered pass.
+  transcript  C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\7114877e-14ff-4635-8129-799b043ea778.jsonl
+    -- a FRESH window, not a continuation of b29-b32's b621dce3 session.
+
+  KEY COMMANDS, re-runnable:
+    git merge-base --is-ancestor 35169ea2 HEAD       -> NOT an ancestor
+    git branch -a --contains 35169ea2                -> origin/claude/lucid-ptolemy-b73vu0
+    grep -i "maps|optimize|GOOGLE_MAPS" api/bridge.js -> nothing at HEAD
+    grep -rln "maps-optimize" archive/               -> nothing preserved
+    python tools/context_verify.py --digest-line     -> the CONTEXT line below,
+                                                        pasted verbatim; the
+                                                        context-digest gate
+                                                        refuses a hand-written
+                                                        one and did refuse once
+
+UNVERIFIED
+  - NO APP WAS AUTHENTICATED INTO. Every one of the thirteen interiors was
+    reached by FORCING display via JavaScript, never by signing in. A PASS
+    proves the CSS, markup and brand render -- NOT that the gate works, the
+    session works, the data loads, or any control functions. Four of the
+    thirteen have real server-backed credential gates that were deliberately
+    not attempted.
+  - GOOGLE_MAPS_API_KEY's state in Vercel was NOT checked. The 401s prove the
+    actions are refused, not that the key is missing. Different question.
+  - The archived optimiser was READ, NOT RUN. It has never executed in this
+    clone. Its Math.max(0, savedMinutes) is a defect the scope doc corrects
+    rather than inherits.
+  - A BROWSER CONTRAST MEASUREMENT WAS ATTEMPTED AND FAILED, and no finding is
+    claimed in either direction. It resolves flat backgrounds but not
+    gradients: StoneDesk's gate reported 1.07:1 on plainly readable text
+    because the colour lives in a linear-gradient and backgroundColor is
+    transparent. Resolving that needs rendered-pixel sampling, not computed
+    style. Nothing in tools/wcag_contrast_check.py was changed.
+  - The 4,420 ancestor-dependent UNRESOLVED pairs are unchanged.
+  - No keyboard, focus-order or screen-reader pass, in any app, ever.
+  - Carried from b32 and NOT re-verified: cc's two routed Tier A function
+    bodies and tools/branch_census.py; cody's b28 check (4) on
+    tests/sairnbuild_server_wins.js and the bld_draws no-arm gap; hank's api/
+    queue. Each is its owner's to report, not mine.
+
+NEXT
+  1. THE THREE REPAIRS DUE REGARDLESS, none started: (a) api/bridge.js must
+     refuse an unknown ?action= rather than falling through to a WRITE;
+     (b) StoneDesk's two Field Map error messages must stop naming
+     GOOGLE_MAPS_API_KEY; (c) maps-static needs a DECISION, not a scope --
+     until then fmRenderMap should say "Route preview is not available in this
+     build."
+  2. ROUTING PHASE 1, in order, and the FIRST step is a register write that
+     must PRECEDE the code: rt_routes and rt_stops into
+     docs/CRITICALITY-TIERS.md, expecting A ON CONFIDENTIALITY (an address
+     joined to a named assignee and a date is the class that took
+     grd_cart_orders and leg_processions to A). THAT FILE IS CONTENDED --
+     check the claim record before touching it. Then the shared module, then
+     repoint StoneDesk and LIVE-VERIFY against the deployed URL, then prove it
+     shared with a second app (SAIRNgrounds argued -- it already owns the only
+     real haversine on the platform and the accuracy-band discipline).
+  3. tools/context_verify.py's window inference -- cc's lane. Read the model
+     id from the transcript, and report COULD-NOT-TELL rather than a confident
+     percentage when it cannot be read.
+  4. NO FIFTH VERTICAL AUDIT until one of the three blockers is addressed.
+     b30 recommended this, a fourth was run anyway on instruction, and it
+     failed for a genuinely new reason -- pest control is not an underserved
+     market. The position is unchanged and now better evidenced.
+  5. OPTIONAL, and worth more than it looks: the browser CAN resolve the
+     ancestor-dependent pairs the static checker cannot, for flat backgrounds
+     today and for gradients with pixel sampling. 4,420 UNRESOLVED is the
+     majority of every app's text.
+
+CONTEXT 31.9% of 1,000,000 -- 318,733 tokens, measured.

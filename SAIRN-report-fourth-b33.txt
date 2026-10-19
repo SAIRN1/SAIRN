@@ -1,0 +1,495 @@
+REPORT fourth b33 2026-10-19 -- the rendered pass is done 13/13, and the routing archaeology found a working optimiser that main has never carried
+
+================================================================================
+WHAT WAS ASKED, AND WHERE EACH ITEM ACTUALLY STANDS
+================================================================================
+
+  1  orientation, pull, confirm clean start                       DONE
+  2  rendered pass on the 13 recoloured apps                      DONE -- 13/13
+  3  re-run item 5's three searches AND READ THEM; extend to
+     `git log -S` and archive/                                    DONE -- and it
+                                                                  changed the answer
+  4  routing primitive, phase 1 scope (only after item 3)         DONE
+  5  the three recurring blockers, one page                       DONE
+  6  push, no force, confirm landed                               see section 8
+
+Five of six closed. docs/batch-manifest-fourth-b33.json carries the same
+wording so the manifest and this narrative cannot drift apart.
+
+THE HANDOFF WAS WRITTEN BEFORE THIS REPORT, as instructed.
+
+NO GATE WAS SKIPPED AND NO OVERRIDE WAS USED, in any form -- no
+SAIRN_SEED_GATE, no SAIRN_GATE_EXEMPT, no SAIRN_SKIP. Said out loud because
+80 of the 94 rows in docs/BYPASS-LOG.jsonl were taken because the blanket flag
+was the only thing available; a batch that used nothing should say so as
+loudly as one that did.
+
+
+================================================================================
+1. THE THREE HEADLINES
+================================================================================
+
+1. ROUTING CODE ALREADY EXISTS AND NOBODY KNEW. b32 recorded the archaeology
+   as an explicit false nil -- searched, interrupted, never read. Re-run and
+   READ this batch: a complete nearest-neighbour route optimiser over Google
+   Route Matrix drive times exists at commit 35169ea2, on a branch that is NOT
+   an ancestor of main. Section 3.
+
+2. STONEDESK'S FIELD MAP ROUTE OPTIMISER IS BROKEN ON THE LIVE DEPLOYMENT AND
+   ITS ERROR MESSAGE BLAMES THE WRONG THING. Two POSTs from stonedesk.html hit
+   an action that has never existed on main; both return HTTP 401, live-
+   verified. The catch arm tells the reader to check a Maps API key that is
+   irrelevant. Section 3.2.
+
+3. b31's STONEDESK --surface-2 FIX IS VISUALLY CONFIRMED, for the first time.
+   Section 2.
+
+4. AND ONE AGAINST MYSELF, KEPT RATHER THAN DELETED. This report first carried
+   a five-fold "tool bug" in tools/context_verify.py and routed it to cc. The
+   tool is correct; I had quoted a number out of a truncated table and left its
+   own ambiguity warning behind. The context-digest push gate refused the push
+   and that is what caught it. Section 7.
+
+
+================================================================================
+2. ITEM 2 -- THE RENDERED PASS, 13 OF 13
+================================================================================
+
+Nothing had been rendered since b29 while fourteen customer-facing apps changed
+colour across b31 and b32 on the strength of arithmetic alone. That is closed.
+
+METHOD, stated because it bounds the result: the clone was served at
+http://127.0.0.1:8733 (python -m http.server --bind 127.0.0.1) and each app was
+opened in Chrome and screenshotted. file:// is refused by the browser
+extension, which is why a local server was used rather than direct file access.
+
+  app              brand token(s) resolved at runtime        verdict
+  ---------------  ----------------------------------------  --------------------
+  sairnbiz         --p #14B8A6 / --pd #0F766E / --pdd #0A524C  PASS gate+dashboard
+  sairnbuild       --p #F59E0B / --pd #B45309 / --pdd #8D4107  PASS
+  sairncare        --p #0D9488 / --pd #115E59 / --pdd #0B3B38  PASS
+  sairncash        --pulse #00E5C4 (dark, no --p)              PASS landing,
+                                                               paywall AND app
+  sairncode        NO CSS custom properties at all             PASS gate+dashboard
+  sairndesign      --p #6366F1 / --pd #4338CA / --pdd #372EAC  PASS
+  sairngrounds     --p #16A34A / --pd #15803D / --pdd #0F5D2C  PASS
+  sairnlegacy      --p #6B7280 / --pd #4B5563, NO --pdd        PASS
+  sairnmechanical  --d #3F6212 (no --p), page-* not panel-*    PASS
+  sairnscape       dark #060810, --d #404060                   PASS consumer chat,
+                                                               business gate AND
+                                                               business dashboard
+  sairnsenior      --p #DB2777 / --pd #9D174D, NO --pdd        PASS
+  sairnvet         --primary #7C3AED (no --p), #appContainer   PASS
+  stonedesk        --navy #1B3A6B; --surface/--surface-2 NOW   PASS, see 2.1
+                   DEFINED
+
+2.1 THE SINGLE MOST USEFUL RESULT
+
+getComputedStyle(document.documentElement) resolves --surface-2 to #f0f4fb, and
+the four .biz-kpi tiles in panel-business render with a visible pale-blue
+background, measured rgb(240, 244, 251). Before b31 that token was undefined,
+so `background:var(--surface-2)` was invalid at computed-value time and DROPPED
+-- the tiles would have been white-on-white against the card.
+
+That is the first rendered proof of that fix and it is the one that most needed
+one: 56 background declarations in stonedesk.html depend on those two tokens,
+and they had been invalid since the day the markup was copied from the archived
+SAIRNaccounting app.
+
+2.2 THE SCOPE LIMIT, WHICH MUST TRAVEL WITH EVERY VERDICT ABOVE
+
+EVERY INTERIOR WAS REACHED BY FORCING display VIA JAVASCRIPT. NO APP WAS
+AUTHENTICATED INTO. Four of the thirteen have server-backed credential gates
+(sairnmechanical: licence + employee id + PIN; sairnvet; sairncash: an
+email-gated 30-day trial; stonedesk) that were deliberately not attempted.
+
+So a PASS here means the CSS, the markup and the brand identity render
+correctly. It does NOT mean the gate works, the session works, the data loads,
+or that any control functions.
+
+RENDERED-UNREACHABLE COUNT: 0 of 13 at the brand-identity level -- every app's
+main working surface was reached and screenshotted. But the AUTHENTICATED
+surface is unreached in all 13, which is the honest framing and is stated here
+rather than buried.
+
+2.3 THREE OBSERVATIONS WORTH CARRYING
+
+(a) THE b31 ARGUMENT DOES NOT APPLY UNIFORMLY, and this is a thing to stop
+    repeating rather than a defect. "--p keeps every border, accent and focus
+    ring" is true of the eight apps that define --p. SIX OF THE THIRTEEN DO
+    NOT DEFINE IT AT ALL: sairncash (--pulse), sairnvet (--primary),
+    sairnmechanical (--d), sairnscape, stonedesk (--navy), and SAIRNCODE,
+    WHICH USES NO CSS CUSTOM PROPERTIES WHATSOEVER -- its 62 changed lines in
+    8c5717d1 were literal hex edits, not a token swap. Anyone re-applying the
+    house pattern must check which family an app is in first.
+
+(b) THREE APPS HAVE NO --pdd: sairnlegacy, sairnsenior, and sairnmechanical
+    (which has --d instead). Each had roughly 2 changed lines in 8c5717d1,
+    consistent with needing no hover-state token.
+
+(c) HONEST EMPTY STATES EVERYWHERE. Every dashboard showed 0, $0, "--" or an
+    explicit sentence: "No operations data yet -- nothing to analyse";
+    "Not enough decided-proposal history yet (0 on record, need at least 6)";
+    "Crew is read live from SAIRNbiz and is not stored here. No validated
+    license is provisioned for SAIRNbuild yet, so this read returns 401 and
+    the list is genuinely empty -- not hidden, not seeded"; sairnvet's
+    "Counted live, not written down". ZERO FABRICATED KPIs OBSERVED ACROSS
+    THIRTEEN RENDERED DASHBOARDS. That is Guardian Check 0b passing in the one
+    place it is hardest to fake.
+
+2.4 ONE MEASUREMENT I ATTEMPTED AND COULD NOT COMPLETE
+
+Recorded rather than quietly dropped. I tried to compute real WCAG ratios in
+the browser, hoping to resolve some of the 4,420 ancestor-dependent UNRESOLVED
+pairs the static checker cannot see. It worked for flat backgrounds and FAILED
+FOR GRADIENTS: StoneDesk's gate reported 1.07:1 on text that is plainly
+readable, because backgroundColor is rgba(0,0,0,0) and the real colour lives in
+`linear-gradient(135deg, rgb(27,58,107), rgb(42,82,152))`.
+
+NO CONTRAST FINDING IS REPORTED FROM THAT ATTEMPT IN EITHER DIRECTION. A
+gradient has no single background colour to compare against; resolving it needs
+sampling rendered pixels, not computed style. That is a real and tractable next
+step for the contrast tool and it is NOT claimed as done. Nothing in
+tools/wcag_contrast_check.py was changed.
+
+
+================================================================================
+3. ITEM 3 -- THE ARCHAEOLOGY, RE-RUN AND READ
+================================================================================
+
+b32 left this as an explicit false nil: "zero findings are recorded because zero
+output was seen." All three searches were re-run, THE OUTPUT WAS READ, and the
+search was extended to `git log -S` over deleted code and to the archive/ tree
+as instructed.
+
+3.1 ROUTING CODE EXISTS -- OFF-BRANCH
+
+Commit 35169ea2, 2026-06-18, "Add maps-optimize and maps-static actions to
+SAIRN Data Bridge for StoneDesk Field Map", adds 105 lines to api/bridge.js:
+
+  * POST ?action=maps-optimize taking { addresses: string[] }
+  * a call to Google's Route Matrix
+    (routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix) with
+    travelMode 'DRIVE', keyed server-side so GOOGLE_MAPS_API_KEY never reaches
+    the browser
+  * a NEAREST-NEIGHBOUR ORDERING over the real drive-time matrix, starting at
+    stop 0, with an explicit unreachable-pair fallback
+  * a savedMinutes figure: as-given total minus optimised total
+  * a sibling ?action=maps-static that fetches the preview image server-side
+    and returns a data URL, so the key never appears in a browser-visible URL
+
+Its own comment explains why it does NOT use Google's optimizeWaypointOrder:
+that feature is gated behind a manual Support enablement request, and a
+nearest-neighbour ordering over real drive times does not depend on a flag that
+might not be turned on. That judgment is worth keeping.
+
+IT IS NOT ON main AND NEVER HAS BEEN:
+
+  git merge-base --is-ancestor 35169ea2 HEAD    -> NOT an ancestor
+  git branch -a --contains 35169ea2             -> remotes/origin/claude/lucid-ptolemy-b73vu0
+  grep -i "maps|optimize|GOOGLE_MAPS" api/bridge.js   -> nothing at HEAD
+  grep -rln "maps-optimize" archive/            -> nothing
+
+main's api/bridge.js was built fresh on 2026-07-31 (df84b213) with proxy_get +
+push + pull, and its own header records that at that moment "no api/bridge.js
+was ever committed" even though callers already assumed one existed. The
+archive commit 39af4f5e preserved 167 files from that branch but NOT this one.
+
+3.2 THE CLIENT HALF IS ON main AND IS CALLING INTO THE VOID
+
+  stonedesk.html:12547   var FM_API = 'https://sairn.vercel.app/api/bridge';
+  stonedesk.html:12927   fmRunOptimize() POSTs ?action=maps-optimize
+  stonedesk.html:12814   fmRenderMap()  POSTs ?action=maps-static
+
+Neither sends an Authorization header. On main, api/bridge.js dispatches any
+POST that is not proxy_get to handlePush, which requires a licence.
+
+LIVE-VERIFIED through tools/sairn_http.py against the real deployment (NOT bare
+curl, per PR section 3.2):
+
+  POST /api/bridge?action=maps-optimize  ->  HTTP 401 Unauthorized
+  POST /api/bridge?action=maps-static    ->  HTTP 401 Unauthorized
+  GET  /api/bridge                       ->  HTTP 405 NO_READ_SIDE (by design)
+
+AND THE FAILURE MESSAGE BLAMES THE WRONG THING. fmRunOptimize's catch arm says
+"Could not optimize route -- check the Maps API key is configured." and
+fmRenderMap's says "Map unavailable -- check GOOGLE_MAPS_API_KEY is set."
+NEITHER IS TRUE. The key is irrelevant: the request never reaches code that
+reads it, because the action does not exist on this deployment. A person acting
+on that message would go and check a Vercel environment variable that is not
+the problem. This is the silent-failure-wearing-a-diagnosis shape, which is
+worse than a bare failure because it sends the reader somewhere else.
+
+3.3 A LATENT SECOND-ORDER HAZARD IN THE SAME FALL-THROUGH
+
+handlePush upserts { license_hash, data } into bridge_data. Today the two maps
+calls carry no Authorization header, so they 401 before touching it. IF A
+FUTURE CHANGE GAVE THOSE CALLS THE LICENCE HEADER THE REST OF STONEDESK
+ALREADY HOLDS, the fall-through would accept them as a push and upsert
+data:{addresses:[...]} over that shop's stored row -- silently, with a 200 ok.
+The defect is not in the maps calls; it is that an unknown ?action= falls
+through to a WRITE rather than being refused.
+
+3.4 WHAT DOES NOT EXIST, HAVING NOW ACTUALLY LOOKED
+
+  * route_order, stop_order, visit_order, waypoint, distance_matrix,
+    dispatch_board -- zero real hits at HEAD. Only this batch's and b32's own
+    prose, plus the archived sairntrade.html.
+  * REAL GEO PRIMITIVES DO EXIST, and one is production-grade:
+    sairngrounds.html:2793 gcdHaversineM() -- great-circle distance on the
+    WGS84 mean radius, with a per-fix accuracy_m discipline where the error
+    band is ADDED rather than averaged, and a combined band over 25m yields no
+    distance at all. sairnsenior.html:3207 captures lat/lng for EVV clock-in
+    and leaves them NULL rather than faked when permission is refused.
+    sairnlegacy shares a live vehicle position (leg_processions, Tier A on
+    confidentiality).
+  * THE ARCHIVED sairntrade.html optimizeRoute() IS NOT PRIOR ART. It is a
+    Claude prompt with six hardcoded Westlake OH addresses in the user message
+    -- a demo, not an algorithm. Named here so nobody later mistakes it for
+    one.
+
+3.5 A CORRECTION TO THE PEST-CONTROL AUDIT, OFFERED NOT IMPOSED
+
+The pest-control audit (section 3) measured "route / stop ordering: 0 of 17"
+and concluded "there is no routing primitive anywhere on this platform."
+THAT MEASUREMENT IS CORRECT ABOUT THE SEVENTEEN APPS. What it could not see is
+that a working server implementation exists off-branch and a live client half
+exists on-branch. The audit's conclusion stands; its premise is now better
+informed, and the blockers page says so rather than editing the audit.
+
+
+================================================================================
+4. ITEM 4 -- docs/2026-10-19-fourth-b33-routing-primitive-scope.md
+================================================================================
+
+Written AFTER section 3 had a real answer, which is the sequencing b32 got
+right and was interrupted inside. SCOPE ONLY; no app code was written.
+
+SHAPE: one shared module under api/_lib/, called by api/sd-data.js's existing
+resource dispatch as resource 'routes'. NOT a new top-level endpoint and NOT
+api/bridge.js -- whose own header says it is StoneDesk-only and explicitly is
+not the cross-app data path other apps mean, has no read side, and answers 405
+to GET.
+
+SCHEMA: rt_routes + rt_stops. Four decisions that are the point, not decoration:
+
+  * saved_seconds is NULLABLE and NULL means NOT COMPUTED. The archived
+    implementation floored it at Math.max(0, ...), which makes "we could not
+    tell" and "we saved nothing" the same value on screen. They are different
+    facts and the column keeps them different.
+  * optimized_at NULL means never optimised; `source` says which basis.
+  * lat/lng nullable, NEVER 0,0. Null Island is a real failure mode, and
+    sairnsenior already has the right instinct.
+  * a `locked` flag, because a real day has fixed appointments and an optimiser
+    that reorders a 9 AM commitment is worse than no optimiser.
+
+API SURFACE: read / upsert / reorder / optimize. optimize must answer in three
+states and never fold them: basis 'drive-matrix' (a real matrix answer),
+basis 'unavailable' (no key, no reach, or an unreachable pair -- THE STORED
+ORDER DOES NOT CHANGE and saved_seconds stays NULL), and it NEVER returns a
+reordering it did not compute. Auth is licence + session, not licence-only: an
+address list joined to a named employee is not shop metadata.
+
+FIRST APP: STONEDESK. Not because it is biggest -- because its client half
+already exists and is currently broken. fmRunOptimize() already builds the
+address list, already consumes {order, savedMinutes}, already persists into
+sdFieldOrder, already re-renders, and already splits done from not-done
+(stonedesk.html:12920-12923). Phase 1 there is three edits, not a feature.
+
+SECOND APP, argued: SAIRNGROUNDS, because it already owns the only real
+gcdHaversineM() on the platform and the accuracy-band discipline around it.
+When basis 'unavailable' fires, a straight-line ordering is a legitimate second
+basis -- but only labelled basis 'great-circle' and never allowed to masquerade
+as drive time. Grounds has the code and, more importantly, the habit.
+
+EXPLICITLY NOT IN PHASE 1, said out loud so silence is not read as omission:
+no geocoding, no live traffic, no time windows, no multi-day, no capacity
+constraints, NO CREW ASSIGNMENT (phase 1 orders stops a human already
+assigned; deciding WHO goes is a different problem with a different failure
+mode), no new map rendering, and no per-app copy of the module ever.
+
+
+================================================================================
+5. ITEM 5 -- docs/cloud-research/2026-10-19-three-recurring-blockers.md
+================================================================================
+
+THE THREE BLOCKERS ACROSS FOUR AUDITS. Not one audit was blocked by the market
+or the regulation; each was blocked by a standing SAIRN capability.
+
+  A  NO OWNER FOR A STANDING 50-STATE REGULATORY MATRIX -- named by THREE of
+     four (childcare, behavioral health, pest control). A content obligation,
+     not a code one. SAIRNdental refused to bundle a CDT library on copyright
+     grounds; state tables are public so the copyright half does not transfer,
+     but the STAFFING half does. Michael's call, and no amount of building
+     changes it.
+
+  B  SAIRN HAS NEVER SOLD AN ADMINISTERED SERVICE -- trucking. Small-carrier
+     DOT compliance is bought as a service with staffing and liability. The
+     audit's own words: "a company decision, not a product one." Michael's call.
+
+  C  THE ROUTING PRIMITIVE -- pest control, which measured 0 of 17 and called
+     route optimisation "what the customer buys first." THE ONLY ONE OF THE
+     THREE THAT CAN BE CLOSED BY BUILDING.
+
+5.1 DOES ITEM 4's SCOPE DOC CLOSE THE ROUTING BLOCKER? -- NO. NOT YET.
+
+The page answers this plainly and in both directions, because it was asked to:
+
+  IT DOES NOT CLOSE BLOCKER C. It is a scope document. No code was written, no
+  schema was run, no endpoint exists, nothing was deployed, nothing was tested.
+  A design on disk is not a primitive. Anyone later finding Blocker C marked
+  closed on the strength of that document is reading an error.
+
+  IT DOES CLOSE THE UNKNOWN INSIDE THE BLOCKER, which is not nothing:
+    - does routing code already exist anywhere?  ANSWERED: YES. Previously
+      recorded as unknown-because-nothing-was-read (b32 section 6).
+    - is this greenfield?  ANSWERED: NO. A repair of a live broken call plus a
+      shared module, with a reference implementation to read.
+    - which app first, and why?  ANSWERED: StoneDesk, with the three named
+      functions as the reason.
+    - what is the schema and the API surface?  SPECIFIED, with the four
+      decisions above.
+
+FOUR NAMED CLOSING CONDITIONS, NONE DONE, in order:
+  1. rt_routes / rt_stops into docs/CRITICALITY-TIERS.md BEFORE the code, not
+     after -- expect A ON CONFIDENTIALITY. An address joined to a named
+     assignee and a date is the same class that took grd_cart_orders and
+     leg_processions to A.
+  2. the shared module lands under api/_lib/ with the four actions and the
+     explicit third state.
+  3. StoneDesk's fmRunOptimize is repointed and LIVE-VERIFIED against the
+     deployed URL -- a clean git push is not proof.
+  4. a SECOND app proves the module is shared rather than StoneDesk-shaped.
+Only after 4 is Blocker C closed, because "the customer buys routing first" is
+a claim about a shared capability across field apps, not about one app.
+
+5.2 THE SERIES RECOMMENDATION STANDS AND IS NOW BETTER EVIDENCED
+
+b30 recommended stopping the audit series until A and B were settled:
+"Running a fourth before either blocker is resolved would be measuring the same
+wall from a new angle." The instruction was to continue, it was continued, and
+THE FOURTH AUDIT FAILED FOR A GENUINELY NEW REASON -- pest control is not an
+underserved market. Three audits found a gap and no capability; the fourth
+found capability adjacency and no gap. So: no fifth vertical audit until one of
+the three blockers is addressed.
+
+
+================================================================================
+6. THREE REPAIRS DUE REGARDLESS, AND NONE IS CLAIMED DONE
+================================================================================
+
+  1. api/bridge.js MUST REFUSE AN UNKNOWN ?action= rather than falling through
+     to a WRITE. Section 3.3. A typo'd action should not reach handlePush.
+     Owner: whoever next holds api/ -- hank's lane. NOT STARTED.
+  2. STONEDESK'S TWO FIELD MAP ERROR MESSAGES MUST STOP NAMING
+     GOOGLE_MAPS_API_KEY. Section 3.2. A message that sends a reader to the
+     wrong environment variable is a defect today, whatever happens to routing.
+     NOT STARTED.
+  3. maps-static NEEDS A DECISION, NOT A SCOPE. The preview image is a separate
+     call with a separate cost. Until someone decides whether a map image is
+     wanted at all, fmRenderMap should say "Route preview is not available in
+     this build" rather than naming a key. NOT STARTED.
+
+
+================================================================================
+7. A "TOOL BUG" I WAS ABOUT TO ROUTE TO cc -- AND IT WAS MY READING ERROR
+================================================================================
+
+THIS SECTION SAID tools/context_verify.py OVERSTATED THIS SESSION'S CONTEXT BY
+FIVE TIMES AND ROUTED IT TO cc AS A DEFECT. THAT WAS WRONG. The context-digest
+push gate refused the push and that refusal is what exposed it. The correction
+is more useful than the claim would have been, so it is kept rather than
+quietly deleted.
+
+WHAT HAPPENED. An early run printed:
+
+  agent     REAL %       prompt      window   age h
+  fourth     94.2%      188,338     200,000     0.0
+
+I read 94.2% as the tool's answer, concluded it had inferred a 200,000 window
+for a 1,000,000-token session, and wrote it up as a five-fold overstatement.
+
+THE TOOL HAD ALREADY SAID OTHERWISE AND I DID NOT READ IT. --agent sets an
+`ambiguous` flag whenever more than one published window still fits the
+observed maximum (tools/context_verify.py:437-456). At 188,338 tokens BOTH
+200,000 AND 1,000,000 FIT, so the row was flagged and carried a `why` naming
+both candidate percentages and the fix -- "Declare it once: python
+tools/context_verify.py --provision-window <tokens>". The file says the same
+thing in its own header at lines 76-89: THE INFERENCE IS A FLOOR, THEREFORE THE
+PERCENTAGE IS A CEILING. b21 built that guard on purpose.
+
+I TRUNCATED THE OUTPUT WITH `tail -20` AND QUOTED THE NUMBER WITHOUT THE
+WARNING ATTACHED TO IT. That is the exact failure CLAUDE.md names -- a
+truncated read is indistinguishable from a complete one -- committed while
+writing up a different session's measurement discipline.
+
+NOTHING IS WRONG WITH THE TOOL AND NOTHING IS ROUTED TO cc. Later in the same
+session the prompt passed 200,000, only one published size still fit, and it
+resolved correctly and unprompted:
+
+  fourth     30.9%      308,588   1,000,000     0.0   [window INFERRED]
+
+THE ONE THING GENUINELY WORTH CARRYING FORWARD is not a defect report, it is a
+usage rule: --digest-line is the command, its output is pasted verbatim, and
+the context-digest push gate refuses anything hand-written -- which is
+precisely how this got caught. A figure read out of a truncated table is not a
+measurement even when the tool that produced it is correct.
+
+
+================================================================================
+8. STATE, AND WHAT IS STILL AHEAD OF THIS LINE
+================================================================================
+
+  files written      3 docs + 1 manifest. NO app code. NO api/, sql/, tests/.
+                     0 .html files changed.
+  git stash          0
+  overrides          none, any form
+  settings/hooks     not touched
+  auditor clones     not entered
+  claim              HELD by fourth, FILES list declared
+  manifest           5 done, 1 open (item 6, the push, which this precedes)
+
+STILL AHEAD: this report and the digest; upload the handoff, report and digest
+to Drive folder 14Xc5oT0xzSLa_rTSOSXWVK3Kko1Fbx09 and verify each THROUGH THE
+DRIVE API rather than off the sync mount; push; confirm landed; release the
+claim LAST; set the status row to idle.
+
+
+================================================================================
+9. WHAT b33 PROVED vs LEFT UNPROVEN
+================================================================================
+
+PROVED, driven or measured:
+  * all 13 recoloured apps render with their brand token resolving as intended
+  * stonedesk's --surface-2 resolves to #f0f4fb at runtime and .biz-kpi paints
+    it -- b31's fix, visually confirmed for the first time
+  * zero fabricated KPIs observed across thirteen rendered dashboards
+  * a working route optimiser exists at 35169ea2 and is NOT an ancestor of
+    main; the archive did not preserve it
+  * stonedesk's two Field Map calls return HTTP 401 against the real deployment
+  * tools/context_verify.py is CORRECT and resolves the window unprompted once
+    the prompt passes 200,000 -- section 7 records my own misreading of it,
+    caught by the context-digest push gate before it could be routed to cc
+
+LEFT UNPROVEN, and none of it is recorded as checked:
+  * NO APP WAS AUTHENTICATED INTO. Every rendered verdict is display-forced.
+    The auth, session and data paths are all untested here.
+  * GOOGLE_MAPS_API_KEY's state in Vercel was NOT checked. The 401s prove the
+    actions are refused, not that the key is missing. Different question.
+  * The archived optimiser was READ, NOT RUN. It has never executed in this
+    clone.
+  * No contrast measurement was completed in the browser -- the gradient case
+    defeated it and no finding is claimed either way.
+  * The 4,420 ancestor-dependent UNRESOLVED pairs are unchanged.
+  * No keyboard, focus-order or screen-reader pass, in any app, ever.
+  * Everything carried in b32 section 4 -- cc's two Tier A function bodies and
+    tools/branch_census.py; cody's tests/sairnbuild_server_wins.js check and
+    the bld_draws no-arm gap; hank's api/ queue -- was NOT re-verified this
+    batch and remains each owner's to report.
+
+CONTEXT 31.9% of 1,000,000 -- 318,733 tokens, measured.
+Printed by `python tools/context_verify.py --digest-line` and pasted verbatim.
+An earlier hand-read of this figure was wrong and is kept in section 7.
+
+SHA256 (SAIRN-handoff-fourth-b33.md): 974eaf7dfe4afe2a
+END-OF-REPORT

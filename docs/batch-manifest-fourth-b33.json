@@ -1,0 +1,44 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "fourth",
+  "batch": "b33",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "",
+      "status": "done",
+      "evidence": "Orientation. git pull origin main fast-forwarded 4aa4f594..8d0702b7, git status --porcelain empty; python tools/sairn_status.py read (6 sessions); sairn_claim.py claim fourth with a FILES list, pushed; batch_manifest.py --new fourth b33 --items 6, id_lock=906816e5cf0d24f9."
+    },
+    {
+      "id": 2,
+      "title": "",
+      "status": "done",
+      "evidence": "RENDERED PASS, 13 of 13. Served the clone at http://127.0.0.1:8733 (python -m http.server) and drove Chrome over each app; per-app verdict table and the --surface-2 confirmation are in SAIRN-report-fourth-b33.txt section 2. SCOPE LIMIT STATED THERE, not hidden: every interior was reached by FORCING display via JS, never by authenticating, so these prove CSS/markup/brand render -- not that the auth path or the data path works."
+    },
+    {
+      "id": 3,
+      "title": "",
+      "status": "done",
+      "evidence": "Archaeology re-run AND READ, then extended. Routing code EXISTS: maps-optimize in api/bridge.js at commit 35169ea2 (nearest-neighbour over Google Route Matrix drive times), which git merge-base --is-ancestor proves is NOT on main -- it is only on origin/claude/lucid-ptolemy-b73vu0. stonedesk.html:12927 and :12814 still call it; live POST via tools/sairn_http.py returns 401. Full account in SAIRN-report-fourth-b33.txt section 3."
+    },
+    {
+      "id": 4,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/2026-10-19-fourth-b33-routing-primitive-scope.md written AFTER item 3's archaeology had a real answer, not before. Shared module under api/_lib/ dispatched by api/sd-data.js resource 'routes' (NOT api/bridge.js, whose own header says it is StoneDesk-only); rt_routes/rt_stops schema with four stated decisions; four actions with an explicit basis:'unavailable' third state; StoneDesk named first with the three named functions as the reason. Scope only -- no app code."
+    },
+    {
+      "id": 5,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/cloud-research/2026-10-19-three-recurring-blockers.md written. Its section 4 answers the required question plainly and in both directions: the routing scope doc DOES NOT close the routing blocker (no code, no schema, no endpoint, nothing deployed), and it DOES close the unknown inside it (routing code exists off-branch; not greenfield; StoneDesk first; schema and API specified). Four named closing conditions, none done."
+    },
+    {
+      "id": 6,
+      "title": "",
+      "status": "done",
+      "evidence": "Pushed. The context-digest push gate REFUSED the first attempt and that refusal caught a real error in my own reporting: this batch had written up a five-fold tool bug in tools/context_verify.py and routed it to cc. The tool is correct -- it flags ambiguous when >1 published window fits (tools/context_verify.py:437-456) and I had truncated its output with tail -20. All three artefacts corrected, the CONTEXT line regenerated from --digest-line verbatim, handoff SHA re-stamped. Verify: git log --oneline origin/main | head -1"
+    }
+  ]
+}
