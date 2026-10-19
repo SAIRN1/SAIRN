@@ -143,6 +143,62 @@ def is_covered(file_path, target):
     return os.path.normcase(os.path.abspath(file_path)) == os.path.normcase(target)
 
 
+# ── THE LOCK RUNS ON THE PATH THAT ACTUALLY FIRES (cc b18 item 3) ──────────
+# `index_duplicate_check.py` grew a criteria lock in b17 -- 10 fixtures over
+# the pipe-aware cell split, including an ablation against the naive one -- and
+# its own CLI runs that lock before any live verdict, exiting 2 COULD NOT RUN
+# if it fails. THIS WRAPPER NEVER RAN IT. It calls `idc.rows()` straight, and
+# `rows()` is exactly the function the fixtures are about.
+#
+# So the fixtures existed and the one invocation path that fires AT THE MOMENT
+# THE DEFECT IS INTRODUCED -- a Write or Edit to the index -- was not covered
+# by them. A regression in `split_cells` would have gone unnoticed here, which
+# is the same gap one layer down from the one this wrapper was built to close.
+#
+# Run once per process, because a PostToolUse hook runs on every edit and 10
+# fixtures per keystroke is a check somebody turns off.
+_LOCK_RESULT = None
+
+
+def criteria_lock(idc):
+    """-> (ok, message). The checker's own fixtures, run once per process.
+
+    FAILS CLOSED: a lock that cannot be run is not a lock that passed, and the
+    caller must treat it the same as an absent checker.
+    """
+    global _LOCK_RESULT
+    if _LOCK_RESULT is not None:
+        return _LOCK_RESULT
+    fn = getattr(idc, 'run_fixtures', None)
+    if fn is None:
+        _LOCK_RESULT = (False, (
+            '%s has no run_fixtures() -- its criteria lock cannot be run from '
+            'here, so its parse is UNCHECKED. That is a could-not-check, not '
+            'a pass (PR 1.11).' % CHECKER))
+        return _LOCK_RESULT
+    buf = io.StringIO()
+    keep = sys.stdout
+    try:
+        sys.stdout = buf                       # the lock is chatty by design
+        rc = fn()
+    except Exception as exc:                                     # noqa: BLE001
+        _LOCK_RESULT = (False, (
+            '%s raised while running its own criteria lock (%s), so NO '
+            'duplicate check ran. A crashed lock is not a clean one.'
+            % (CHECKER, str(exc)[:160])))
+        return _LOCK_RESULT
+    finally:
+        sys.stdout = keep
+    if rc != 0:
+        _LOCK_RESULT = (False, (
+            '%s FAILED its own criteria lock (exit %s), so its parse of the '
+            'index cannot be trusted and no verdict is reported from it. The '
+            'lock output:%s%s' % (CHECKER, rc, chr(10), buf.getvalue()[-900:])))
+        return _LOCK_RESULT
+    _LOCK_RESULT = (True, '')
+    return _LOCK_RESULT
+
+
 def _pairs_for(idc, doc_path):
     """The checker's own undeclared near-duplicate pairs for `doc_path`.
 
@@ -215,6 +271,12 @@ def report(abs_path, rel):
     idc = _idc()
     if idc is None:
         return None
+    # THE CHECKER'S OWN CRITERIA LOCK, BEFORE ITS PARSE IS TRUSTED. A failed
+    # lock is reported through the same channel as an absent checker, because
+    # to a reader they are the same thing: no duplicate check ran.
+    lock_ok, lock_why = criteria_lock(idc)
+    if not lock_ok:
+        return {'error': lock_why}
     try:
         current = _pairs_for(idc, abs_path)
     except Exception as exc:
@@ -272,6 +334,58 @@ def selftest():
         'be switched off within a week -- which is exactly why the checker is '
         'not wired to Write|Edit directly')
     arm('an empty path does NOT match', not is_covered('', target))
+
+    # ── THE CHECKER'S CRITERIA LOCK IS RUN ON THIS PATH (cc b18 item 3) ────
+    # The fixtures existed in the checker and this wrapper never ran them, so
+    # the one invocation path that fires at the moment a row is written had an
+    # UNCHECKED parse under it.
+    _idcm = _idc()
+    if _idcm is not None:
+        global _LOCK_RESULT
+        _LOCK_RESULT = None
+        ok, why = criteria_lock(_idcm)
+        arm('the checker\'s own criteria lock PASSES, run from this wrapper '
+            'rather than only from its CLI', ok, why[:300])
+        arm('...and the result is cached, so a PostToolUse hook does not run '
+            '10 fixtures per keystroke', criteria_lock(_idcm) is _LOCK_RESULT)
+
+        # FAILING-FIRST, by handing criteria_lock a module whose lock is red.
+        class _RedLock(object):
+            INDEX = _idcm.INDEX
+            THRESHOLD = _idcm.THRESHOLD
+            ACCEPTED = _idcm.ACCEPTED
+
+            @staticmethod
+            def run_fixtures():
+                print('  FAIL a fixture that is red on purpose')
+                return 1
+        _LOCK_RESULT = None
+        ok2, why2 = criteria_lock(_RedLock)
+        arm('A RED LOCK IS A COULD-NOT-CHECK: the wrapper refuses to report a '
+            'verdict from a checker whose own criteria failed',
+            (not ok2) and 'FAILED its own criteria lock' in why2, why2[:200])
+        arm('...and the lock\'s own output is quoted, so the reader sees WHICH '
+            'fixture went red rather than a bare refusal',
+            'red on purpose' in why2)
+
+        class _RaisingLock(_RedLock):
+            @staticmethod
+            def run_fixtures():
+                raise RuntimeError('the lock itself exploded')
+        _LOCK_RESULT = None
+        ok3, why3 = criteria_lock(_RaisingLock)
+        arm('A CRASHED LOCK IS ALSO A COULD-NOT-CHECK, not a pass -- the same '
+            'shape cc b17 found in the push gate, one tool over',
+            (not ok3) and 'A crashed lock is not a clean one' in why3,
+            why3[:200])
+
+        class _NoLock(_RedLock):
+            run_fixtures = None
+        _LOCK_RESULT = None
+        ok4, why4 = criteria_lock(_NoLock)
+        arm('a checker with NO run_fixtures() is reported as UNCHECKED rather '
+            'than assumed fine', (not ok4) and 'UNCHECKED' in why4, why4[:200])
+        _LOCK_RESULT = None          # leave the process as it was found
 
     # ── THE ARM THAT MATTERS: DOES THE COMPARISON ACTUALLY FIND A DUPLICATE?
     # Everything above tests ROUTING. A hook that routes perfectly into a
