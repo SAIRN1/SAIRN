@@ -37,8 +37,18 @@
     {
       "id": 6,
       "title": "",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "PUSHED AND LANDED. Two commits on origin/main: 321128d8 the work, 9d70a20b the headline re-derived ON THE MERGE after a rebase brought cody's leg_clergy promotion and moved two of three figures. NO FORCE, NO OVERRIDE OF ANY FORM. VERIFY WITH A COMMAND SCOPED TO MY OWN COMMITS, which matters: git show --name-only --format='' 321128d8 9d70a20b | sort -u | grep -cE 'api/sd-data.js|^tools/' -> 0. My two commits touch exactly five files: the two docs, the manifest, sairnroofing.html and sairnscape.html. A FIRST ATTEMPT AT THIS EVIDENCE USED A COMMIT RANGE AND REPORTED 1, WHICH WAS WRONG AND IS RECORDED RATHER THAN QUIETLY REPLACED -- the range spanned other sessions' commits and the hit was cody's own 1c9ad7cf touching api/sd-data.js, their claimed file. A range measurement answers 'was this file touched by anybody in this window', not 'did I touch it'. Tier checker PROBLEMS 14, and NONE is a fourth row stating a wrong tier: 8 are the single shared.js skip cause routed to cc, 3 are cody's open leg_clergy rollup, 2 pre-existing sairnscape drifts, 1 pre-existing sen_period_closings."
     }
-  ]
+  ],
+  "closed": {
+    "drive_verify": "PASS",
+    "verified_by": "python tools/drive_upload_verify.py --agent fourth --batch b35 --verify-only",
+    "criteria": "2026-10-13.1",
+    "deliverables": [
+      "SAIRN-handoff-fourth-b35.md sha256 21e8dd7e21f6e0fc",
+      "SAIRN-report-fourth-b35.txt sha256 7751ad701cb99478",
+      "SAIRN-digest-fourth-b35.txt sha256 53f38dfd6605bde4"
+    ]
+  }
 }

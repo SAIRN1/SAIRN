@@ -1,0 +1,434 @@
+REPORT fourth b35 2026-10-19 -- one row moved not two, seven resources tiered at their write sites, and a checker gap that fails open in both directions
+
+================================================================================
+WHAT WAS ASKED, AND WHERE EACH ITEM ACTUALLY STANDS
+================================================================================
+
+  1  sd_field_stops vs rt_stops -- state the deciding test,
+     then correct the WRONG tier, not both                       DONE -- one row
+                                                                  moved
+  2  tier the seven shared.js resources at their write sites     DONE -- and BOTH
+                                                                  flagged rows moved
+  3  write up the tier-checker fail-open as a pasteable item
+     for cc; do not fix it yourself                              DONE -- routed,
+                                                                  and MEASURED
+  4  SAIRNscape as the third consumer                            DONE
+  5  SAIRNroofing as the fourth consumer                         DONE
+  6  push, no force, confirm landed                              DONE -- 2 commits
+
+Six of six. docs/batch-manifest-fourth-b35.json carries the same wording so the
+manifest and this narrative cannot drift apart.
+
+THE HANDOFF WAS WRITTEN BEFORE THIS REPORT, as instructed.
+
+NO FORCE AND NO OVERRIDE OF ANY FORM. api/sd-data.js and tools/ were both left
+alone, verified with a command scoped to my own commits -- see section 8, which
+also records the first version of that measurement being WRONG.
+
+
+================================================================================
+1. THE THREE HEADLINES
+================================================================================
+
+1. THE CONTRADICTION IS RESOLVED AND ONLY ONE ROW MOVED. The deciding test was
+   written into the register in b34 BEFORE the read, so the answer could not be
+   fitted to the result. sd_field_stops was the wrong row. Section 2.
+
+2. THE CHECKER GAP FAILS OPEN IN **BOTH** DIRECTIONS, which is worse than b34
+   recorded and is what turns it from a tidy-up into a blocker: it never
+   demanded a row for the seven, AND it rejects the rows as orphans once
+   written. So the register could not be made correct without cc's fix.
+   Section 4.
+
+3. `employees` IS TIER A ON BOTH AXES AND THE CODE ALREADY KNEW. api/sd-data.js
+   has carried a per-role gate stripping hourly_rate from a Manager for months,
+   with a comment saying why. The register was the only place that did not
+   know -- and the arm that would have said so was skipping the file.
+   Section 3.
+
+
+================================================================================
+2. ITEM 1 -- THE DECIDING TEST, AND THE ROW THAT WAS WRONG
+================================================================================
+
+THE TEST, QUOTED FROM THE REGISTER AS b34 WROTE IT, before any of this batch's
+reading happened:
+
+    Is a stored stop joined to a NAMED person? If yes it moves. If the stop
+    carries no assignee at all, B is right -- and then rt_stops is the first
+    time that join exists in StoneDesk's data.
+
+Writing it down in advance is the whole mechanism. An answer derived after the
+fact can be shaped to whichever row somebody would rather not touch.
+
+THE ANSWER, READ AT THE WRITE SITE: YES, TWICE OVER.
+
+fmSaveStop() at stonedesk.html:12879 REFUSES to save without all three --
+"Person, address, and date are required" -- and pre-fills `person` from
+currentUser.name. The stored row is:
+
+    {id, person, type, date, time, address, customer, notes, status, createdAt}
+
+`customer` is a free-text "Customer name" input (:8446). So the row names an
+employee AND a customer, against a street address, a date and a time.
+
+AND IT LEAVES THE DEVICE. sd_field_stops is in SD_SYNCED (:2035), so it is
+pushed to the server. A local-only reading would have stopped one step short of
+that and reached a softer answer.
+
+THAT IS STRICTLY MORE THAN rt_stops CARRIES. rt_stops has no customer-name
+field at all. So the two rows could not both be right, and the one carrying
+more data was the one at the lower tier.
+
+WHAT MOVED: sd_field_stops B -> A on CONFIDENTIALITY.
+WHAT DID NOT: rt_stops was re-read and STANDS at A/A.
+
+INTEGRITY ON sd_field_stops STAYS B, stated rather than quietly promoted: a
+lost stop costs a re-entry from the job the visit belongs to, and no money and
+no regulated record sits on it. The A is the confidentiality axis alone,
+derived as the worse of the two.
+
+CORRECTING BOTH TO MATCH WOULD HAVE BEEN THE RETIER-BY-ANALOGY THE GAPS BULLET
+EXISTED TO REFUSE, and it was the instruction too.
+
+ONE THING SAID IN THE OLD CELL'S DEFENCE, because it matters for how this file
+is read: it was not dishonest. It said of itself "Classified by the stated B
+rule rather than individually read" -- it was honest that it had no evidence.
+The contradiction with rt_stops is what forced somebody to go and get some.
+
+
+================================================================================
+3. ITEM 2 -- THE SEVEN, EACH READ AT ITS OWN WRITE SITE
+================================================================================
+
+  resource           Tier  Conf.  the deciding fact
+  -----------------  ----  -----  ----------------------------------------------
+  profile              B     B    business_profiles, one row per shop per app.
+                                  The shop's description of ITSELF; nothing on
+                                  it is about a person
+  memory               B     B    written through aiScan.redactAiFields(), and
+                                  `memory` IS in AI_SCANNED_TEXT
+                                  (ai-scan-redaction.js:84) -- so the redaction
+                                  is real rather than nominal
+  employees            A     A    compensation, AND a money path that crosses an
+                                  app boundary
+  slabs                A     B    a DOCUMENTED INCIDENT -- the third limb of the
+                                  A rule, which needs no money test
+  render_usage         B     B    an integer per shop per month; no charge
+                                  computes from it
+  shared_knowledge     B     B    a word list -- "Never raw message text"
+                                  (sd-data.js:6221)
+  employee_profile     A     A    a manager's written assessment of a NAMED
+                                  employee
+
+BOTH ROWS FLAGGED IN ADVANCE AS NOT-OBVIOUSLY-B MOVED. That is worth saying
+because the instruction to read them before asserting was the thing that
+produced the result -- a stated-rule classification would have put both at B
+and been wrong twice.
+
+3.1 employees -- THE SHARPEST FINDING IS THAT THE CODE ALREADY KNEW
+
+api/sd-data.js:2478 carries this, and it PREDATES the row:
+
+    "this resource carries hourly_rate (payroll), so it's the first real
+     server-side role check in this file. Sales/Install are refused outright;
+     Owner/Manager may read, but Manager gets hourly_rate stripped -- only
+     Owner sees pay."
+
+NOBODY BUILDS A PER-ROLE FIELD-STRIPPING GATE FOR TIER B DATA. The code had
+been treating this as Tier A for months. The register was the only place that
+did not know, for as long as the row was missing -- and section 4 is why
+nothing raised it.
+
+AND THE INTEGRITY HALF CROSSES AN APP BOUNDARY, which is the part a per-app
+reading would miss entirely: stonedesk.html:43148 averages hourly_rate across
+the shared roster and presents it as the shop's labour rate. A wrong rate in
+SAIRNbiz's roster becomes a wrong labour cost in STONEDESK's Business
+Intelligence, upstream of what a job is quoted at. That is the register's own
+"pricing that feeds money" test, met across two apps.
+
+The write also stores `data: emp.data || emp` verbatim -- SAIRNbiz's whole
+employee record, {fn, ln, role, dept, type, rate, pay_freq, start, phone,
+email, status, ec, notes}. Compensation, personal contact details and an
+emergency contact.
+
+3.2 employee_profile -- THE READ GATE IS THE EVIDENCE
+
+The write is Owner/Manager-only. The READ branch (:3731) is what decides it: it
+refuses payload.all to anyone outside those roles, and otherwise serves ONLY
+the caller's own profile, derived server-side from the verified session token,
+NEVER from a client-supplied employee_id.
+
+An app does not derive the subject server-side to stop one employee reading a
+colleague's row unless the row is about a person. Integrity left at B -- a lost
+tone setting costs a re-entry.
+
+3.3 ONE ROW KEEPS AN OPEN QUESTION RATHER THAN ROUNDING IT OFF
+
+memory's B rests on redactDocumentText() normally returning complete:true.
+NOBODY HAS MEASURED HOW OFTEN IT RETURNS FALSE. That is written into the row
+itself as the one thing that would move it, rather than left as a silent
+assumption underneath a B.
+
+3.4 TWO OF MY OWN ERRORS, BOTH CAUGHT BY GUARDS, BOTH KEPT
+
+(a) COMPUTED TIER MISMATCH. I first typed employee_profile Tier B beside
+    Confidentiality A. The checker refused it: the Tier cell is DERIVED as the
+    worse of the two axes, never hand-entered. That refusal is now written into
+    the row itself, because a hand-entered Tier is exactly how a Tier A row
+    ships reading B.
+
+(b) THE PIPE-COUNT GUARD. My own pre-write assertion caught `data: emp.data ||
+    emp` putting TWO LITERAL PIPES inside a markdown table cell, which would
+    have broken the row structure silently. Escaped as &#124;&#124;. This is
+    the guard CLAUDE.md PR 2.1 asks for, doing the thing it was written for.
+
+
+================================================================================
+4. ITEM 3 -- ROUTED TO cc, AND THE FIX WAS MEASURED RATHER THAN ASSERTED
+================================================================================
+
+NOT APPLIED. tools/ is cc's directory and it was not touched.
+
+4.1 THE GAP FAILS OPEN IN BOTH DIRECTIONS
+
+apps_with_registries() skips shared.js by name:
+
+    if app in ('index', 'shared'):
+        continue
+
+index.js belongs in that list -- it is the merger, not a registry. shared.js
+does NOT -- it is a registry with seven real resources on it.
+
+  DIRECTION 1  It never demanded a row. The completeness arm that catches
+               sairnsenior/sen_period_closings reported CLEAN over all seven
+               for as long as they had no row -- including over `employees`,
+               Tier A on both axes.
+  DIRECTION 2  It rejects the rows once written. Adding the seven raised SEVEN
+               `NOT A RESOURCE` findings plus one `GONE` for the rollup line.
+
+SO THE REGISTER COULD NOT BE MADE CORRECT WITHOUT THE FIX. That is what makes
+this a blocker rather than a tidy-up, and direction 2 is the half b34 did not
+see -- b34 recorded the skip as "a tier nothing enforces" and that understated
+it.
+
+4.2 THE FIX
+
+    if app == 'index':
+        continue
+
+4.3 ITS EFFECT WAS MEASURED, IN AN ISOLATED WORKTREE
+
+scratchpad/b35/simulate_cc_fix.py creates a detached worktree at HEAD, copies
+the b35 register into it, runs the checker, applies the one line, runs it
+again, and DIFFS THE FINDING LISTS -- then restores the tool so the worktree is
+not left carrying a change nobody asked for.
+
+    BEFORE   APPS_WITH_REGISTRIES 18   RESOURCES_REGISTERED 394   PROBLEMS 11
+    AFTER    APPS_WITH_REGISTRIES 19   RESOURCES_REGISTERED 401   PROBLEMS  3
+
+    CLEARED by the fix   : 8   (1 GONE + all 7 NOT A RESOURCE)
+    INTRODUCED by the fix: 0
+
+The 3 that remain are pre-existing and not fourth's. Asserting this without
+running it would have been exactly the "a check passed and you are not sure it
+tested anything" shape, on a claim routed to somebody else to act on.
+
+4.4 THE LANDING IS PREPARED
+
+The `### shared` section AND its rollup line are already written, so cc's one
+line lands on a consistent register rather than on seven fresh findings. The
+rollup row says in its own cell that it is written ahead of being checkable.
+
+4.5 TWO THINGS NAMED FOR cc TO DECIDE, NOT ASSUMED
+
+  * Is `routes` right as its own registry file? b34 created
+    api/_resources/routes.js specifically to dodge this skip. With the skip
+    gone, shared.js would have been a legitimate home. Leaving it costs nothing
+    and keeps the two cross-app registries separately rollup-able -- but it is
+    now a CHOICE rather than a workaround and should be recorded as one.
+  * Should the skip be a property a file declares rather than a hard-coded name
+    list? A tuple goes stale; a module opting itself out does not. Not
+    proposed -- named. It is her file and her call.
+
+
+================================================================================
+5. ITEMS 4 AND 5 -- CONSUMERS THREE AND FOUR
+================================================================================
+
+THE POINT IS NOT THAT THERE ARE MORE OF THEM. It is that each one's data shape
+is different and the module did not change.
+
+                    assignee           address lives on   storage
+  ----------------  -----------------  -----------------  --------------
+  StoneDesk (b34)   `person` on stop   the stop itself    localStorage
+  SAIRNgrounds      `crew` string      the PROPERTY       localStorage
+  SAIRNscape (b35)  `crew` string      the CUSTOMER       localStorage
+  SAIRNroofing      `crew` ARRAY       the JOB            SERVER-FIRST
+
+5.1 SAIRNSCAPE -- concept first, then the build
+
+scp_schedule rows are {id, customer_id, freq, next, crew, status} and the
+address lives on the CUSTOMER record, reached through customer_id.
+
+A "Route order for a crew's day" card on the Scheduling panel calling
+scpData('optimize','rt_routes'). checkblocks -> 7 blocks, 0 failed.
+
+5.2 SAIRNROOFING -- the one that actually tested the seam
+
+rf_schedule rows are {schedule_id, job_id, scheduled_date, status,
+crew:[ARRAY of names], notes} and the address lives on the JOB.
+
+TWO THINGS ARE GENUINELY DIFFERENT, and they are why this app was worth wiring
+rather than being a fourth copy of the same card:
+
+  * THERE IS NO SINGLE ASSIGNEE ON THE RECORD. `crew` is an array -- a roofing
+    day belongs to several people at once. The ordering unit therefore becomes
+    ONE NAMED PERSON across the days they appear on, which is the right unit
+    regardless, since a route is driven by a person and not by a crew.
+  * THE APP IS SERVER-FIRST. rfSchedule is populated by rfLoadSchedule() from
+    the server with role-scoped visibility ALREADY APPLIED, so the card reads
+    the in-memory list rather than issuing a second query that could return a
+    different set of days than the one on screen.
+
+checkblocks -> 3 blocks, 0 failed.
+
+5.3 BOTH DRIVEN IN A REAL BROWSER, EVERY ANSWER PATH
+
+  path                  SAIRNscape                    SAIRNroofing
+  --------------------  ----------------------------  ----------------------
+  unavailable           names the reason, schedule    same
+                        unchanged
+  drive-matrix          reordered, "saves about       reordered, "saves about
+                        8 min"                        11 min"
+  saved_seconds NULL    "drive-time saving not        same -- NEVER "0 min"
+                        computed"
+  great-circle          labelled, with the reason     labelled
+                        drive times were unavailable
+  no answer             "Nothing was changed"         "did not run -- Not
+                                                      signed in"
+  order length mismatch  --                           REFUSED, schedule
+                                                      unchanged
+
+THE saved_seconds-NULL ROW IS THE ONE THAT MATTERS. It is the shape of the
+original 2026-06-18 defect this module was recovered from, and all four
+consumers now say nothing rather than "0 min".
+
+EXCLUSION PATH CONFIRMED IN BOTH: a visit whose customer (scape) or job
+(roofing) has NO address is LISTED BY NAME as excluded, never silently dropped.
+
+CREW-ARRAY FLATTENING CONFIRMED: ['Ana Reyes','Tom Cole'] and ['Ana Reyes']
+across three days produced exactly TWO picker entries, deduped and sorted.
+
+5.4 ONE TEST-HARNESS OBSERVATION, RECORDED BECAUSE IT NEARLY READ AS A BUG
+
+The first roofing run returned "Pick a crew member first" on four of five arms.
+That was not the code: the app's own rfLoadSchedule() runs on an unauthenticated
+session, empties rfSchedule, and the picker empties with it -- so a value set
+before that point does not survive. Re-seeding per arm resolved it and all five
+arms then behaved. Recorded rather than dropped, because "the arm failed" and
+"the harness reset the form" look identical in a log.
+
+
+================================================================================
+6. THE COMMAND THAT WOULD HAVE MADE THIS A CLEAN SIX ANYWAY
+================================================================================
+
+A rebase mid-push brought cody's leg_clergy promotion and moved the shared
+headline count by one. My first re-derivation read 400/282/118 and was CORRECT
+FOR THE TREE IT RAN ON; the merged tree reads 400/283/117.
+
+Re-derived a SECOND time, on the merge, from the checker's own RESOURCE_ROWS
+and TIER_A rather than adjusted by one -- which is the distinction that
+sentence has been re-derived rather than edited for twelve recorded drifts, and
+the exact failure its own history already records twice. The second
+re-derivation is its own commit (9d70a20b) so the sequence is legible.
+
+
+================================================================================
+7. STATE
+================================================================================
+
+  HEAD vs origin/main   0 ahead, 0 behind -- PUSHED AND LANDED
+  the two commits       321128d8  the work
+                        9d70a20b  the headline re-derived ON the merge
+  both on origin        each confirmed by merge-base --is-ancestor
+  files my commits
+    actually touch      FIVE: the two docs, the manifest, sairnroofing.html,
+                        sairnscape.html
+  api/sd-data.js        NOT TOUCHED -- 0, scoped to my own commits
+  tools/                NOT TOUCHED -- 0, same command
+  stonedesk.html        CLAIMED and NOT MODIFIED -- the read for item 1 was a
+                        read
+  uncommitted           none
+  git stash             0
+  force push            none
+  overrides             none, any form
+  temp worktree         created for section 4.3, REMOVED
+  manifest              6 of 6 done
+  claim                 HELD by fourth; released LAST, after this report
+
+
+================================================================================
+8. A MEASUREMENT I GOT WRONG, CORRECTED, AND KEPT
+================================================================================
+
+My first attempt at the "did I touch api/sd-data.js" evidence used a COMMIT
+RANGE -- git diff --name-only 6a48a4e9..9d70a20b -- and answered 1.
+
+THAT WAS WRONG. The range spanned other sessions' commits, and the hit was
+cody's own 1c9ad7cf touching their own claimed file. A RANGE MEASUREMENT
+ANSWERS "was this file touched by anybody in this window", NOT "did I touch
+it". Those are different questions and only one of them was being asked.
+
+The correct command scopes to my own commits:
+
+    git show --name-only --format="" 321128d8 9d70a20b | sort -u \
+      | grep -cE 'api/sd-data\.js|^tools/'     -> 0
+
+Both the wrong attempt and the correction are in the manifest evidence for item
+6. A corrected number with no record of the correction is how the next person
+makes the same mistake -- and this one would have produced a false claim about
+having touched somebody else's claimed file, which is the worst direction for
+this particular error to run.
+
+
+================================================================================
+9. WHAT b35 PROVED vs LEFT UNPROVEN
+================================================================================
+
+PROVED, driven or measured:
+  * sd_field_stops carries a named person, a named customer, an address, a date
+    and a time, and syncs to the server -- read at the write site
+  * all seven shared.js resources read at their own write sites; both
+    not-obviously-B rows moved off B
+  * cc's one-line fix clears 8 findings and introduces 0 -- measured in an
+    isolated worktree, diffed, not asserted
+  * both new consumers behave correctly across every answer path in a real
+    browser, including saved_seconds:null claiming nothing
+  * roofing's crew-array flattening and its bad-order-length refusal
+  * checkblocks scape 7/0, roofing 3/0, stonedesk 131/0; routes suite 56/56
+  * my commits touch five files; api/sd-data.js and tools/ are 0
+
+LEFT UNPROVEN, and none of it is recorded as checked:
+  * NOTHING LIVE. Unchanged from b34 and for the same measured reason -- the
+    licence gate answers 401 ahead of resource dispatch, so a probe cannot tell
+    a registered resource from a nonsense one.
+  * THE SCHEMA HAS NEVER BEEN RUN. Neither rt_routes nor rt_stops exists.
+  * ALL FOUR CONSUMERS ARE UNREACHABLE AT RUNTIME until the handler branch
+    lands. The browser evidence used a STUBBED TRANSPORT -- it proves the
+    client handling, not the round trip, and that distinction is the whole
+    reason it is stated here.
+  * THE SEVEN NEW ROWS ARE CORRECT BUT UNVERIFIABLE BY THE CHECKER until cc's
+    fix lands -- it currently calls them orphans.
+  * memory's redaction completeness rate is unmeasured.
+  * Tier checker PROBLEMS is 14; none is a fourth row stating a wrong tier
+    (8 the shared.js cause, 3 cody's open leg_clergy rollup, 2 pre-existing
+    sairnscape, 1 pre-existing sen_period_closings).
+  * No keyboard, focus-order or screen-reader pass, in any app, ever.
+
+CONTEXT 68.5% of 1,000,000 -- 684,501 tokens, measured.
+Printed by `python tools/context_verify.py --digest-line` and pasted verbatim.
+
+SHA256 (SAIRN-handoff-fourth-b35.md): 21e8dd7e21f6e0fc
+END-OF-REPORT

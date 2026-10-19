@@ -1,0 +1,125 @@
+DIGEST fourth b35 2026-10-19
+
+STATUS
+  SIX OF SIX DONE. Two commits landed on origin/main: 321128d8 the work,
+  9d70a20b the headline re-derived ON THE MERGE after a rebase brought cody's
+  leg_clergy promotion. 0 ahead / 0 behind. NO FORCE, NO OVERRIDE OF ANY FORM.
+  THE HANDOFF WAS WRITTEN BEFORE THIS REPORT, as instructed.
+
+  1. THE sd_field_stops CONTRADICTION IS RESOLVED AND ONLY ONE ROW MOVED. The
+     deciding test was written into the register in b34 BEFORE the read, so the
+     answer could not be fitted to the result. fmSaveStop (stonedesk.html:12879)
+     REFUSES to save without person+address+date, pre-fills person from
+     currentUser.name, carries a free-text Customer name beside it, AND the row
+     is in SD_SYNCED so it leaves the device. That is STRICTLY MORE than
+     rt_stops carries. sd_field_stops B -> A on CONFIDENTIALITY; rt_stops
+     re-read and STANDS at A/A.
+  2. SEVEN shared.js RESOURCES TIERED AT THEIR OWN WRITE SITES, and BOTH rows
+     flagged in advance as not-obviously-B moved: employees A/A,
+     employee_profile A/A. The other five are profile B/B, memory B/B, slabs
+     A/B, render_usage B/B, shared_knowledge B/B.
+  3. THE CHECKER GAP FAILS OPEN IN BOTH DIRECTIONS -- worse than b34 recorded.
+     It never demanded a row for the seven, AND it rejects the rows as orphans
+     once written. The register could not be made correct without the fix.
+     ROUTED TO cc, NOT APPLIED; tools/ untouched.
+  4. CONSUMERS THREE AND FOUR WIRED. SAIRNscape keys on a CUSTOMER;
+     SAIRNroofing keys on a JOB, is SERVER-FIRST, and its crew is an ARRAY --
+     so there is no single assignee on the record at all. Four apps, four data
+     models, one {job_ref, address, locked, status} seam, module unchanged.
+
+DECISION-NEEDED
+  1. api/sd-data.js's rt_routes HANDLER BRANCH IS STILL UNAPPLIED, so ALL FOUR
+     CONSUMERS ARE UNREACHABLE AT RUNTIME. cody holds that file and pushed to
+     it during this batch (1c9ad7cf). The branch and the extraActions line that
+     must land WITH it are pasteable in
+     docs/2026-10-19-fourth-b34-routing-phase1.md section 3.
+  2. sql/rt_routes_schema.sql HAS STILL NEVER BEEN RUN. Michael's, in the
+     Supabase SQL editor. Neither table exists.
+  3. cc HAS TWO THINGS: the one-line checker fix (measured to clear 8 findings
+     and introduce 0), and the Tier A review obligation on rt_routes/rt_stops
+     opened in b34 and still undischarged.
+  4. TWO QUESTIONS NAMED FOR cc RATHER THAN ASSUMED: is `routes` right as its
+     own registry file now that the skip is going (it was created to dodge it,
+     so it is now a CHOICE not a workaround); and should the skip be a property
+     a module declares rather than a hard-coded name list that goes stale.
+  5. memory's B RESTS ON AN UNMEASURED ASSUMPTION -- how often
+     redactDocumentText returns complete:false. Written into the row as the one
+     thing that would move it.
+
+CHANGED
+  docs/CRITICALITY-TIERS.md   sd_field_stops B -> A on confidentiality (one row,
+                      not two). NEW `### shared` section with all seven rows and
+                      a rollup line written AHEAD of being checkable, so cc's
+                      one line lands on a consistent register rather than on
+                      seven fresh findings. Headline re-derived twice -- once on
+                      my tree, once ON THE MERGE after cody's leg_clergy landed
+                      and moved two of three figures.
+  sairnscape.html     NEW "Route order for a crew's day" card on Scheduling.
+                      7 blocks, 0 failed.
+  sairnroofing.html   NEW "Route order for one person's day" card, handling the
+                      crew ARRAY and the server-first load. 3 blocks, 0 failed.
+  docs/2026-10-19-fourth-b35-shared-tiers-and-consumers.md   NEW. Section 3 is
+                      the routed item for cc, with the measured before/after.
+  NOT TOUCHED: api/sd-data.js (cody's), tools/ (cc's), stonedesk.html (claimed
+  and read, not modified), api/bridge.js (hank picked it up this batch),
+  .claude/settings.json, .githooks/, the auditor clones. git stash = 0.
+
+EVIDENCE-path
+  C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\7114877e-14ff-4635-8129-799b043ea778\scratchpad\b35\
+    -- simulate_cc_fix.py, the isolated-worktree measurement of cc's fix;
+       add_shared_rows.py; httpd.log.
+  transcript  C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\7114877e-14ff-4635-8129-799b043ea778.jsonl
+
+  KEY COMMANDS, re-runnable:
+    node api/_lib/routes.test.js                      -> 56 passed, 0 failed
+    python tools/checkblocks.py sairnscape.html       -> 7 blocks, 0 failed
+    python tools/checkblocks.py sairnroofing.html     -> 3 blocks, 0 failed
+    python tools/criticality_tier_check.py            -> PROBLEMS 14, none a
+                                                         fourth row stating a
+                                                         wrong tier
+    git show --name-only --format="" 321128d8 9d70a20b | sort -u \
+      | grep -cE 'api/sd-data\.js|^tools/'            -> 0
+
+UNVERIFIED
+  - NOTHING LIVE. Unchanged from b34 and for the same MEASURED reason: the
+    licence gate answers 401 ahead of resource dispatch, so a probe cannot tell
+    a registered resource from a nonsense one in either direction.
+  - THE SCHEMA HAS NEVER BEEN RUN. Neither rt_routes nor rt_stops exists.
+  - ALL FOUR CONSUMERS ARE UNREACHABLE AT RUNTIME until the handler branch
+    lands. THE BROWSER EVIDENCE USED A STUBBED TRANSPORT -- it proves the
+    client handling, not the round trip, and that distinction is why it is
+    stated rather than implied.
+  - THE SEVEN NEW ROWS ARE CORRECT BUT UNVERIFIABLE BY THE CHECKER until cc's
+    fix lands; it currently calls them orphans.
+  - memory's redaction completeness rate is unmeasured.
+  - Tier checker PROBLEMS 14: 8 are the single shared.js cause, 3 are cody's
+    open leg_clergy rollup, 2 are pre-existing sairnscape drifts, 1 is
+    pre-existing sen_period_closings. NONE is a fourth row stating a wrong tier.
+  - No keyboard, focus-order or screen-reader pass, in any app, ever.
+
+  TWO OF MY OWN ERRORS, CAUGHT BY GUARDS AND KEPT RATHER THAN QUIETLY FIXED:
+  (a) COMPUTED TIER MISMATCH -- I typed employee_profile Tier B beside
+      Confidentiality A; the Tier is DERIVED as the worse of the two and the
+      checker refused it. The refusal is now written into the row.
+  (b) A RANGE MEASUREMENT ANSWERED THE WRONG QUESTION -- my first
+      "did I touch api/sd-data.js" check used a commit range and said 1. The
+      hit was cody's own commit in that window. Scoped to my own commits it is
+      0. Report section 8.
+
+NEXT
+  1. WHOEVER HOLDS api/sd-data.js: paste the rt_routes handler branch and the
+     extraActions line from the b34 doc, section 3. Nothing else in that file
+     changes. This is the single thing standing between four wired consumers
+     and a working feature.
+  2. MICHAEL: run sql/rt_routes_schema.sql in the Supabase SQL editor.
+  3. AFTER 1 AND 2: live-verify against the DEPLOYED URL with a real session --
+     not a clean git push, not a local run, not a stubbed transport.
+  4. cc: the one-line checker fix, and the b34 Tier A review obligation.
+  5. SAIRNMECHANICAL as the fifth consumer -- queued, as instructed. Its shape
+     has NOT been read yet, so read it first rather than assuming it matches
+     scape or grounds; roofing already proved the shapes diverge.
+  6. ANYONE: measure how often redactDocumentText returns complete:false --
+     memory's B tier rests on it.
+  7. cody's open leg_clergy rollup (3 of the 14 findings) is theirs to close.
+
+CONTEXT 69.3% of 1,000,000 -- 693,062 tokens, measured.
