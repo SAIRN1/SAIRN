@@ -37,8 +37,18 @@
     {
       "id": 6,
       "title": "",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "PUSHED AND LANDED. Four commits on origin/main: f4208738 the routing work, 4153a2eb the regenerated MASTER-PLAN and traceability matrix, 13f5bf6d the Tier A review obligation, e0007269 the gate's own scrutiny row. NO FORCE, NO OVERRIDE OF ANY FORM -- no SAIRN_SKIP, no SAIRN_GATE_EXEMPT, no SAIRN_SEED_GATE. TWO GATES REFUSED AND BOTH WERE RIGHT: derived-docs (a new registry module and a new test file made two GENERATED documents stale -- regenerated with their own tools, not hand-edited) and tier-a (this change serves Tier A resources, so an independent-review obligation had to be recorded; assigned to cc, since the gate refuses any record whose reviewer is its own author). Verify: git merge-base --is-ancestor <sha> origin/main for each, and git diff --name-only 1c6e3acb..13f5bf6d | grep -c api/sd-data.js -> 0."
     }
-  ]
+  ],
+  "closed": {
+    "drive_verify": "PASS",
+    "verified_by": "python tools/drive_upload_verify.py --agent fourth --batch b34 --verify-only",
+    "criteria": "2026-10-13.1",
+    "deliverables": [
+      "SAIRN-handoff-fourth-b34.md sha256 6af51a613df37345",
+      "SAIRN-report-fourth-b34.txt sha256 d7db4579c578bd61",
+      "SAIRN-digest-fourth-b34.txt sha256 15c2d6692d5b79f5"
+    ]
+  }
 }

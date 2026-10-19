@@ -1,0 +1,471 @@
+REPORT fourth b34 2026-10-19 -- routing phase 1: the tier first, the module, two consumers, and one branch flagged back rather than worked around
+
+================================================================================
+WHAT WAS ASKED, AND WHERE EACH ITEM ACTUALLY STANDS
+================================================================================
+
+  1  tier rows BEFORE any code, claim-checked first          DONE -- and the file
+                                                              was CLEAR, verified
+                                                              two ways
+  2  the shared module under api/_lib/                       MODULE DONE;
+                                                              THE sd-data.js
+                                                              DISPATCH IS BLOCKED
+                                                              AND ROUTED
+  3  repoint StoneDesk, live-verify                          CLIENT DONE;
+                                                              LIVE VERIFY
+                                                              IMPOSSIBLE, NOT
+                                                              CLAIMED
+  4  SAIRNgrounds as the second consumer                     DONE, browser-driven
+  5  pixel-sampling gradient contrast resolver (if time)     NOT STARTED -- its
+                                                              file is cc's
+  6  push, no force, confirm landed                          DONE -- 4 commits
+
+Five done, one blocked. docs/batch-manifest-fourth-b34.json carries the same
+wording so the manifest and this narrative cannot drift apart.
+
+THE HANDOFF WAS WRITTEN BEFORE THIS REPORT, as instructed.
+
+NO FORCE, AND NO OVERRIDE OF ANY FORM -- no SAIRN_SKIP, no SAIRN_GATE_EXEMPT,
+no SAIRN_SEED_GATE. TWO GATES REFUSED THIS PUSH AND BOTH WERE RIGHT; both were
+satisfied rather than skipped. Section 7.
+
+
+================================================================================
+1. THE THREE HEADLINES
+================================================================================
+
+1. ONE ITEM WAS BLOCKED AND WAS FLAGGED BACK RATHER THAN WORKED AROUND.
+   api/sd-data.js is claimed by cody on b26 and the routing primitive's single
+   handler branch lives there. sairn_claim.py answers BLOCKED. It was not
+   touched -- 0 occurrences across the entire outgoing range -- and the full
+   branch is routed as a pasteable block instead. Section 4.2.
+
+2. WRITING THE TIER ROWS FOUND A FAIL-OPEN SKIP IN THE TIER CHECKER. Seven
+   registered resources in api/_resources/shared.js have no row in the
+   register, and the completeness arm that catches a missing row reports
+   nothing about any of them, because apps_with_registries() skips that file
+   by name. Recorded as work; NOT closed. Section 3.2.
+
+3. THE TIER GATE REFUSED THIS PUSH BECAUSE OF THIS BATCH'S OWN ITEM 1, which
+   is the register working rather than obstructing: writing rt_routes and
+   rt_stops as Tier A is what made the code serving them a Tier A change, so
+   an independent-review obligation had to be recorded. Assigned to cc.
+   Section 7.
+
+
+================================================================================
+2. ITEM 1 -- THE CLAIM CHECK CAME FIRST, AS INSTRUCTED
+================================================================================
+
+b33 flagged docs/CRITICALITY-TIERS.md as contended. THAT FLAG HAD LAPSED, and
+it was verified two independent ways rather than taken from one tool:
+
+  (a) the claim record -- the file is in NOBODY's declared FILES list.
+      cody's b26 claim names api/sd-data.js, a b26 doc, docs/b26-logs/,
+      a test and docs/known-red-suites.json. Not the register.
+  (b) the cody clone's own working tree --
+      git status --porcelain docs/CRITICALITY-TIERS.md in
+      C:\Users\marsh\Documents\SAIRN-cody returns EMPTY. It is not open
+      there either.
+
+So the file was CLEAR, not contended, and work proceeded. Had either check
+disagreed, this item would have stopped and been reported back -- which is what
+did happen to item 2's dispatch half.
+
+A WORDING TRAP WORTH NAMING, because the two cases look identical from outside.
+My first claim attempt put api/sd-data.js in the task string as an explicit
+EXCLUSION -- "NOT CLAIMED AND NOT TOUCHED: api/sd-data.js". The matcher read the
+path and REFUSED the whole claim. The fix was to declare only the files I would
+touch and move the exclusion into the status note. That is NOT rewording to slip
+past the matcher (PR 4.3) -- the task genuinely excluded that file -- but a
+later reader cannot tell those apart from the claim string alone, so it is
+written down rather than left to be re-derived.
+
+
+================================================================================
+3. ITEM 1 -- THE ROWS, AND WHAT WRITING THEM EXPOSED
+================================================================================
+
+3.1 THE ROWS
+
+rt_routes and rt_stops, both TIER A / CONFIDENTIALITY A, in a new `### routes`
+section, written against sql/rt_routes_schema.sql BEFORE any module code
+existed. The order is the point: the tier is what the schema was then built to
+protect, rather than a label applied to whatever got written.
+
+THE ARGUMENT IN ONE LINE: rt_stops joins a street address to a NAMED assignee
+and a DATE, which is a record of where an identifiable person was or will be at
+a known time -- the same class that took grd_cart_orders and leg_processions
+from B to A. Read from the customer's side it is also the home or site address
+of whoever the job is for.
+
+AND IT CANNOT BE DESIGNED AWAY. An ordering with no addresses is not an
+ordering, so the address is not incidental to the feature, it IS the feature.
+The only available response is to protect it.
+
+INTEGRITY IS B ON ITS OWN MERITS for both rows -- operational scheduling, no
+money, no regulated record -- and the A is INHERITED from the confidentiality
+axis under the stated worse-of-the-two rule. The rows say that explicitly
+rather than implying the money test was met, because a Tier A row that cannot
+say which axis earned it is the shape the second axis was added to fix.
+
+3.2 THE REAL FINDING -- A FAIL-OPEN SKIP IN THE CHECKER
+
+The obvious home for a cross-app resource was api/_resources/shared.js.
+IT WOULD HAVE BEEN INVISIBLE THERE. apps_with_registries() in
+tools/criticality_tier_check.py skips that file by name:
+
+    if app in ('index', 'shared'):
+        continue
+
+MEASURED: all seven of shared.js's resources -- profile, memory, employees,
+slabs, render_usage, shared_knowledge, employee_profile -- have NO row in
+docs/CRITICALITY-TIERS.md, and the checker raises nothing about any of them.
+The same completeness arm catches sairnsenior/sen_period_closings, so the arm
+works; it is simply never shown these seven.
+
+THAT IS A FAIL-OPEN SKIP, NOT A MISSING CHECK. It reports CLEAN over seven
+resources it was never given, which reads exactly like a pass -- the pattern
+CLAUDE.md PR 1.11 names, found in the checker rather than in a new tool.
+
+TWO OF THE SEVEN ARE NOT OBVIOUSLY B: `employees` is the cross-app HR roster
+and `employee_profile` is a manager-set record about a named person -- both the
+shape that has been promoted on the confidentiality axis elsewhere in that
+table. NO TIER IS ASSERTED FOR ANY OF THEM HERE. Each needs reading at its own
+write site, which is the work the gaps bullet exists to schedule.
+
+So rt_routes/rt_stops registered as their own api/_resources/routes.js, inside
+the checker's enumeration, and a future sibling added without a row will raise
+NO TIER rather than passing quietly. APPS_WITH_REGISTRIES now reads 18 for 17
+apps; the discrepancy is the point, not an error.
+
+3.3 A CONTRADICTION FLAGGED AND DELIBERATELY NOT FIXED
+
+stonedesk/sd_field_stops sits at B / B on "A field visit record lost" and the
+boilerplate "Classified by the stated B rule rather than individually read". It
+is StoneDesk's existing Field Map stop store and it carries THE SAME DATA SHAPE
+rt_stops is A for. Either that row is wrong or these two are.
+
+NOT RETIERED. The honest answer needs a read of StoneDesk's own write site, and
+a retier by analogy to a neighbouring row is precisely the move this register
+was built to stop -- the cell would carry an inference where every other A cell
+carries a read. THE DECIDING TEST IS WRITTEN INTO THE GAPS SECTION so the next
+reader does not re-derive the question: is a stored stop joined to a NAMED
+person? If yes it moves; if the stop carries no assignee at all, B is right and
+rt_stops is the first time that join exists in StoneDesk's data -- which is
+worth knowing on its own.
+
+3.4 THE CHECKER, BEFORE AND AFTER
+
+    before: RESOURCE_ROWS:391  TIER_A:276  PROBLEMS:6
+    after : RESOURCE_ROWS:393  TIER_A:278  PROBLEMS:4
+
+ZERO NEW PROBLEMS. The two that went away are pre-existing HEADLINE drifts in a
+sentence this edit had to move anyway -- re-derived from the checker's own
+RESOURCE_ROWS and TIER_A rather than adjusted by the size of the edit.
+
+AND THE BASELINE IS RECORDED BECAUSE IT MATTERS: a clean-tree run at HEAD taken
+BEFORE any row was written read 391/276/115 against a stated 391/275/116. So
+one of the two figures this edit corrects was already wrong when I arrived, and
+saying which is the only way a reader can tell a re-derivation from an
+arithmetic adjustment. THE REMAINING 4 ARE NOT MINE: three sairnscape rollup
+drifts and sairnsenior/sen_period_closings having no row.
+
+
+================================================================================
+4. ITEM 2 -- THE MODULE IS DONE; THE DISPATCH IS BLOCKED
+================================================================================
+
+4.1 WHAT LANDED
+
+  api/_lib/routes.js        the module -- pure core, injected edges
+  api/_lib/routes.test.js   56 arms, 56 passing, two sabotage controls
+  sql/rt_routes_schema.sql  NOT RUN against Supabase
+  api/_resources/routes.js  the registry, plus one line in index.js
+
+IT IS A RECOVERY PLUS THREE CORRECTIONS, NOT AN INVENTION. Commit 35169ea2
+(2026-06-18, never an ancestor of main) already had a nearest-neighbour
+ordering over Google Route Matrix drive times. The three corrections:
+
+  (1) saved_seconds IS NULLABLE AND NULL MEANS NOT COMPUTED. The original
+      floored it at Math.max(0, ...), so an unmeasurable route and an
+      already-optimal one both rendered "0 min" and a reader could not tell
+      which they had. Section 1 of the suite drives BOTH cases and proves they
+      now differ -- and a NEGATIVE saving is returned as-is rather than
+      clamped, because a heuristic can genuinely be worse than a human's order
+      and storing that is learning something true.
+  (2) basis IS A THREE-STATE ANSWER. 'drive-matrix', 'great-circle', and
+      'unavailable' -- where unavailable LEAVES THE STORED ORDER UNTOUCHED and
+      returns order:null, so "unchanged" can never be read as "confirmed
+      optimal". Eight distinct reason values, because "could not optimise" with
+      no reason is exactly what sent a StoneDesk reader to check the wrong
+      Vercel environment variable for four months.
+  (3) `locked`. A real day has fixed appointments, and an optimiser that moves
+      a 9 AM commitment to save four minutes of driving is worse than no
+      optimiser.
+
+ALSO DELIBERATE, AND NAMED SO IT IS NOT MISTAKEN FOR AN OMISSION: no assumed
+speed appears anywhere in the file. A straight-line distance therefore cannot
+become a fabricated drive time, and the great-circle basis carries NO
+saved_seconds at all. The accuracy discipline is lifted from
+sairngrounds.html:2793 rather than re-derived -- error bands are ADDED, never
+averaged, with a 25 m combined ceiling.
+
+THE SUITE'S SHAPE IS THE POINT. Most of it is about the third state, not the
+ordering: the ordering is a nearest-neighbour loop and it is easy; the thing
+that has actually gone wrong on this platform is a "could not run" arriving
+dressed as a result. Every refusal is driven in BOTH directions -- a validator
+that refuses everything passes a one-sided suite -- and section 9 holds two
+SABOTAGE CONTROLS that fail if either the null-saving rule or the
+never-echo-the-input rule is reinstated.
+
+4.2 WHAT IS BLOCKED, AND WHAT WAS DONE INSTEAD
+
+api/sd-data.js is claimed by cody on b26 ("convert the 151/57 sibling
+NOT_PROVISIONED guards ... to the shipped notProvisioned()/notProvisionedDecide()
+pattern"). sairn_claim.py check answers:
+
+    BLOCKED -- blocked by: same file or resource: api/sd-data.js
+    DO NOT start this. Flag it back.
+
+IT WAS NOT TOUCHED. Verify:
+    git diff --name-only 1c6e3acb..13f5bf6d | grep -c api/sd-data.js   -> 0
+
+THE FULL HANDLER BRANCH IS ROUTED, PASTEABLE, in
+docs/2026-10-19-fourth-b34-routing-phase1.md section 3 -- read, upsert, reorder
+and optimize, with the licence-AND-session gate, the bounded delete, and the
+rule that nothing is written when basis is 'unavailable'. Together with the
+extraActions declaration that MUST LAND WITH IT AND NOT BEFORE IT:
+api/_resources/index.js asserts extra actions at load, so declaring
+optimize/upsert/reorder with no handler branch would make the registry assert a
+capability that answers 400.
+
+UNTIL THAT BRANCH EXISTS THE ENDPOINT CANNOT ANSWER. The registry entry only
+gets a request past the allowlist.
+
+
+================================================================================
+5. ITEMS 3 AND 4 -- BOTH CONSUMERS, DRIVEN IN A REAL BROWSER
+================================================================================
+
+STONEDESK: fmRunOptimize repointed off the dead
+api/bridge.js?action=maps-optimize onto sdData('optimize','rt_routes'), which
+already carries the licence, the session token, the 15s abort signal and the
+failure reporter. checkblocks -> 131 blocks, 0 failed.
+
+SAIRNGROUNDS: a "Route order for a crew's day" card on the Scheduling panel,
+sending ITS OWN SHAPE -- grd_schedule crew + next, addresses off
+grd_properties. checkblocks -> 5 blocks, 0 failed.
+
+THAT SECOND CONSUMER IS WHAT MAKES THIS A PLATFORM CAPABILITY RATHER THAN ONE
+APP'S FEATURE. Two different app data models reach the same
+{job_ref, address, locked, status} seam; a primitive with one consumer is a
+feature that happens to live in a shared file.
+
+DRIVEN LIVE IN CHROME over every answer path with a stubbed transport:
+
+  path                 StoneDesk                     SAIRNgrounds
+  -------------------  ----------------------------  --------------------------
+  unavailable          toast names the reason,       "Not reordered -- no
+                       "Your stop order is           routing key is configured
+                       unchanged."                   on the server."
+  drive-matrix         banner "saves ~10 min",       table reordered,
+                       stored order reversed to      "saves about 9 min"
+                       FS-2, FS-1
+  saved_seconds NULL   banner "route updated." --    "drive-time saving not
+                       NO TIME CLAIM AT ALL          computed"
+  great-circle         "(straight-line order;        explicit straight-line note
+                       drive times were              naming the reason drive
+                       unavailable)"                 times were unavailable
+  no response          "the server did not answer"   "Nothing was changed"
+
+THE saved_seconds-NULL ROW IS THE ONE THAT MATTERS. It is the original defect's
+exact shape, and both renderers now say nothing rather than "0 min".
+
+AND SAIRNGROUNDS' EXCLUSION PATH: a scheduled visit whose property has no
+address is LISTED AS EXCLUDED BY NAME, never silently dropped -- the same rule
+the Pace of Play panel already applies to incomplete holes. Driven and
+confirmed in all four arms.
+
+
+================================================================================
+6. WHAT IS NOT VERIFIED -- STATED RATHER THAN SOFTENED
+================================================================================
+
+THE LIVE PROBE COULD NOT ANSWER THE QUESTION, AND THE CONTROLS ARE WHAT PROVE
+IT. Via tools/sairn_http.py against the deployed api/sd-data (not bare curl,
+per PR 3.2):
+
+    rt_routes           -> 401 {"error":{"code":"NO_LICENSE", ...}}
+    rt_stops            -> 401 NO_LICENSE
+    employees           -> 401 NO_LICENSE   control: a resource that EXISTS
+    zzz_not_a_resource  -> 401 NO_LICENSE   control: one that does NOT
+
+BOTH CONTROLS ANSWER IDENTICALLY. The licence gate fires ahead of resource
+dispatch, so an unauthenticated probe cannot distinguish a registered resource
+from an unregistered one IN EITHER DIRECTION. Going further would mean entering
+a real licence key, which is not something this session does.
+
+So NO LIVE VERIFICATION OF ITEMS 3 OR 4 IS CLAIMED, and closing condition 3
+from the blockers page is STILL OPEN.
+
+AND sql/rt_routes_schema.sql HAS NOT BEEN RUN. Both tables are absent from
+Supabase, so even with the handler branch applied the endpoint would answer
+provisioned:false. That is correct behaviour and it is still not a working
+feature.
+
+THE CLIENT HALVES ARE SAFE TO SHIP AHEAD OF ALL THAT, WHICH IS WHY THEY WERE
+SHIPPED. Both consumers treat basis:'unavailable' and a null response as
+first-class answers that say the stored order is unchanged and name the reason.
+That path must exist regardless of whether the endpoint ever answers, and it is
+a strict improvement on what StoneDesk did before: a dead call to an action
+that never existed on main, under a message telling the reader to check a Maps
+API key the request never reached.
+
+PRE-EXISTING, VERIFIED AGAINST A CLEAN-HEAD WORKTREE RATHER THAN ASSUMED:
+api/_resources/extra-actions.test.js is 41 passed / 7 failed BOTH with and
+without this change -- the same seven sc_ arms, compared by arm name, not just
+by count. The worktree was created for that comparison and removed; git
+worktree list shows no b34 entry.
+
+
+================================================================================
+7. THE TWO GATES THAT REFUSED THIS PUSH, AND WHY NEITHER WAS OVERRIDDEN
+================================================================================
+
+derived-docs. A new registry module and a new test file made docs/MASTER-PLAN.md
+and docs/traceability-matrix.md stale. Regenerated with the tools that own them
+-- python tools/master_plan.py and python tools/traceability_matrix.py -- never
+hand-edited. Every moved figure is what the change implies and nothing else:
+apps owning a resource 17 -> 18, test files on disk 996 -> 997, tests traced
+771 -> 772, declared fault probes 341 -> 342. THE TRACED RATE IS UNCHANGED AT
+77.4%, which is the figure that would have moved if something unintended had.
+
+tier-a. THIS CHANGE SERVES TIER A RESOURCES, SO AN INDEPENDENT-REVIEW
+OBLIGATION HAD TO BE RECORDED -- and that refusal is the direct consequence of
+this batch's own item 1. Writing rt_routes/rt_stops into the register as Tier A
+is what made the code serving them a Tier A change. The gate is the register
+doing its job one step later than usual, not an obstacle to it.
+
+Recorded via python tools/tier_a_review_gate.py --open and ASSIGNED TO cc; the
+gate refuses any record whose reviewer is its own author, so I cannot discharge
+my own. The record names what a reviewer should attack FIRST and in what order,
+including the two places I would look if I were trying to break it: whether
+sd_field_stops at B/B means one of the two rows is wrong, and the pasteable
+handler branch that no suite covers.
+
+A THIRD CHECK REPORTED AND DID NOT BLOCK, recorded because an unread notice is
+how these go quiet: EXTRA SCRUTINY flagged api/_lib/routes.test.js as WEAKENING
+on two shapes. BOTH ARE FALSE POSITIVES on inspection -- the "bound ADDED" is
+the 25 m combined-accuracy ceiling appearing in a TEST NAME, and the
+"skip/allowlist ADDED" is the word `skipped` as a stop STATUS value in a section
+heading. They are left standing rather than argued with or edited around:
+renaming a test to dodge a flagger is the worse trade, and the flag is in
+docs/scrutiny-flags.json under its commit for a reviewer to agree or disagree
+with.
+
+AND ONE THAT SAID COULD-NOT-TELL: the seam check reported COULD NOT TELL for at
+least one endpoint/engine pair. The push was allowed and NOTHING ABOUT THAT
+SEAM WAS VERIFIED. Recorded here rather than folded into the pass.
+
+
+================================================================================
+8. ONE THING TOUCHED THAT THE BATCH DECLARED NOT MINE
+================================================================================
+
+The instruction placed "StoneDesk's two wrong Field Map error messages" out of
+scope as api/, hank's lane. TWO CORRECTIONS, OFFERED RATHER THAN ASSUMED:
+
+  1. Those messages are NOT in api/. They are in stonedesk.html, at the .catch
+     arms of fmRunOptimize (:12944) and fmRenderMap (:12818).
+  2. One of them is INSIDE THE FUNCTION ITEM 3 ASKED ME TO REPOINT. Changing
+     where fmRunOptimize sends its request necessarily rewrites its catch arm;
+     leaving the old text would have meant a call to the NEW endpoint failing
+     under a message about a Maps API key that is now doubly irrelevant.
+
+fmRenderMap WAS NOT TOUCHED -- it still names GOOGLE_MAPS_API_KEY and still
+calls the dead bridge action. api/bridge.js's unknown-?action=-reaches-a-WRITE
+hazard WAS NOT TOUCHED -- that is the real api/ item and it remains routed to
+hank, unclaimed and unstarted.
+
+
+================================================================================
+9. ITEM 5 -- NOT STARTED, AND THE REASON
+================================================================================
+
+The pixel-sampling gradient contrast resolver was the explicit if-time-allows
+item. ITS NATURAL HOME IS tools/wcag_contrast_check.py, WHICH cc HOLDS ON AN
+ACTIVE b22 CLAIM, so it would have to land either in that file or as a second
+tool duplicating its criteria lock. NEITHER WAS ATTEMPTED -- this is
+not-started, not partially applied, and nothing is sitting half-written.
+
+The b33 finding it would act on is unchanged and re-derivable: a computed-style
+contrast read returns 1.07:1 on StoneDesk's gate because the colour lives in
+linear-gradient(135deg, rgb(27,58,107), rgb(42,82,152)) while backgroundColor
+is rgba(0,0,0,0).
+
+NEXT STEP: agree with cc whether the resolver belongs in their file or a
+sibling, then sample rendered pixels rather than computed style.
+
+
+================================================================================
+10. STATE
+================================================================================
+
+  HEAD vs origin/main   0 ahead, 0 behind -- PUSHED AND LANDED
+  the four commits      f4208738 routing
+                        4153a2eb regenerated derived docs
+                        13f5bf6d Tier A review obligation (assigned to cc)
+                        e0007269 the gate's own scrutiny row
+  all four on origin    each confirmed by merge-base --is-ancestor
+  api/sd-data.js        NOT TOUCHED -- 0 across the whole outgoing range
+  uncommitted           none
+  git stash             0
+  force push            none
+  overrides             none, any form
+  settings / githooks   not touched
+  auditor clones        not entered
+  temp worktree         created for the clean-HEAD comparison, REMOVED
+  manifest              5 done, 1 blocked (item 5, with its reason)
+  claim                 HELD by fourth; released LAST, after this report
+
+
+================================================================================
+11. WHAT b34 PROVED vs LEFT UNPROVEN
+================================================================================
+
+PROVED, driven or measured:
+  * the tier rows are in and MECHANICALLY ENFORCED -- rows 391 -> 393, TIER_A
+    276 -> 278, PROBLEMS 6 -> 4, zero new problems
+  * seven shared.js resources are untiered AND invisible to the checker, which
+    reports clean over them
+  * node api/_lib/routes.test.js -> 56 passed, 0 failed, including two controls
+    that fail if the defects are reinstated
+  * both consumers behave correctly across all five answer paths IN A REAL
+    BROWSER, including saved_seconds:null rendering no claim at all
+  * checkblocks: stonedesk 131/0, sairngrounds 5/0
+  * api/sd-data.js untouched -- 0 across the outgoing range
+  * extra-actions.test.js's 7 failures are PRE-EXISTING, compared by arm name
+    against a clean-HEAD worktree rather than assumed
+
+LEFT UNPROVEN, and none of it is recorded as checked:
+  * NOTHING LIVE. The probe cannot tell registered from unregistered; a
+    known-good resource and a nonsense one both answer 401.
+  * THE SCHEMA HAS NEVER BEEN RUN. Neither table exists.
+  * THE PASTEABLE HANDLER BRANCH IS COVERED BY NO SUITE -- it is not applied,
+    so nothing executes it. It is the least-tested artefact this batch produced
+    and it is the one somebody will paste.
+  * sd_field_stops vs rt_stops -- one of the two tiers is wrong and which is
+    not established.
+  * The seam check reported COULD NOT TELL for at least one endpoint/engine
+    pair on this push.
+  * No keyboard, focus-order or screen-reader pass, in any app, ever.
+  * Carried and NOT re-verified this batch: api/bridge.js's write-hazard;
+    fmRenderMap's message and the maps-static decision; the 4,420
+    ancestor-dependent UNRESOLVED contrast pairs.
+
+CONTEXT 52.2% of 1,000,000 -- 521,934 tokens, measured.
+Printed by `python tools/context_verify.py --digest-line` and pasted verbatim.
+
+SHA256 (SAIRN-handoff-fourth-b34.md): 6af51a613df37345
+END-OF-REPORT
