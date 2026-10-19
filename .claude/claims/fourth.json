@@ -4036,6 +4036,34 @@
         "tools/tooling_inventory.py",
         "tools/wcag_contrast_check.py"
       ]
+    },
+    {
+      "id": "fourth-1792417982",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "b31: fix the 153 WCAG AA contrast + undefined-token findings app by app (darken the brand surface, b29 dental pattern), with a before/after ratio logged per fix; stonedesk --surface/--surface-2 root-cause and fix; next worldwide competitive-gap vertical; watch CHECK 5b's first real firing. FILES: stonedesk.html sairnbiz.html sairnbuild.html sairncare.html sairncash.html sairncode.html sairndesign.html sairngrounds.html sairnlegacy.html sairnmechanical.html sairnscape.html sairnsenior.html sairnvet.html docs/wcag-contrast-baseline.json docs/cloud-research/ docs/2026-09-13-cross-domain-disciplines.md docs/batch-manifest-fourth-b31.json NOT-sairnroofing-cody-holds-it",
+      "claimed_at": "2026-10-19T13:53:02Z",
+      "claimed_at_epoch": 1792417982.6878133,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/2026-09-13-cross-domain-disciplines.md",
+        "docs/batch-manifest-fourth-b31.json",
+        "docs/wcag-contrast-baseline.json",
+        "sairnbiz.html",
+        "sairnbuild.html",
+        "sairncare.html",
+        "sairncash.html",
+        "sairncode.html",
+        "sairndesign.html",
+        "sairngrounds.html",
+        "sairnlegacy.html",
+        "sairnmechanical.html",
+        "sairnscape.html",
+        "sairnsenior.html",
+        "sairnvet.html",
+        "stonedesk.html"
+      ]
     }
   ],
   "refusals": [
