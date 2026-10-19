@@ -34,5 +34,15 @@
       "status": "done",
       "evidence": "tools/sairn_board_publish.py --selftest arms A33-A36 all PASS after the new write path and --ablation reports every layer load-bearing; a synthetic higher-revision board still refuses this clone while the real live board still allows it; A29 and A31 went red on ANCHOR ROT from the label rename and were re-anchored rather than loosened"
     }
-  ]
+  ],
+  "closed": {
+    "drive_verify": "PASS",
+    "verified_by": "python tools/drive_upload_verify.py --agent cc --batch b20 --verify-only",
+    "criteria": "2026-10-13.1",
+    "deliverables": [
+      "SAIRN-handoff-cc-b20.md sha256 2f8c88a67f48c721",
+      "SAIRN-report-cc-b20.txt sha256 eebd65fc45cd68ac",
+      "SAIRN-digest-cc-b20.txt sha256 133a124a6e97aaea"
+    ]
+  }
 }
