@@ -1000,8 +1000,8 @@
       "task": "b56: apply abbreviation-safe citation-splitter fix to hover_editor_review.py's duplicated bug; hank re-check skipped (unchanged); FRED_KEY/Dependabot noted, no action; undirected sweep continuation, no overlap with H2 rotation/parity scope; handoff+push",
       "claimed_at": "2026-10-19T12:33:02Z",
       "claimed_at_epoch": 1792413182.267509,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-19T12:43:14Z",
       "files": null
     }
   ],
