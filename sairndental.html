@@ -29,7 +29,12 @@ body{font-family:'Segoe UI','Apple Color Emoji','Segoe UI Emoji','Noto Color Emo
 .gsub{color:var(--muted);font-size:13px;margin-bottom:28px;}
 .ginp{width:100%;border:2px solid var(--border);border-radius:8px;padding:12px 14px;font-size:15px;outline:none;text-align:center;letter-spacing:2px;margin-bottom:12px;transition:border .2s;}
 .ginp:focus{border-color:var(--p);}
-.gbtn{width:100%;background:var(--p);color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;}
+/* --pd, not --p: white on the bright sky is 2.77:1. THIS ONE SURVIVED b29
+   because the rendered sweep only ever visited SIGNED-IN panels and .gbtn is
+   the Activate and Sign In button on the two screens before sign-in. The
+   static gate reads the file rather than the session and found it in one run.
+   Neither half of this tool would have caught it alone. */
+.gbtn{width:100%;background:var(--pd);color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;}
 .gbtn:hover{background:var(--pd);}
 .gerr{color:var(--danger);font-size:13px;margin-top:8px;min-height:18px;}
 /* PIN */
