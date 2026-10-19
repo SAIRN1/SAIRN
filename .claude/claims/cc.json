@@ -4083,8 +4083,8 @@
       "task": "b17: (1) gate refusal-hint text names the real two-step, Michael DECIDED keep two-step and NO auto-grant-from-environment; (2) TIER 0 #1 status/board bridge LIVE write + read-back evidence for H1/H2; (3) methodology item; (4) docs/SAIRN-OPEN-WORK-INDEX.md rows 355 and 356 repaired in ONE pass, both hank's, 10 pipes where 8 are needed. CONFLICT DECLARED PER PR 4.3, NOT OVERRIDDEN: hank b18 holds api/sd-data.js, so cody's SAIRNscape customers gating fix is NOT in this batch and stays routed. No auditor clone entered or written. FILES: tools/gate_skip.py tools/sairn_push_gate_hook.py tools/sairn_status.py tools/sairn_board_publish.py docs/SAIRN-OPEN-WORK-INDEX.md docs/batch-manifest-cc-b17.json SAIRN-handoff-cc-b17.md SAIRN-report-cc-b17.txt SAIRN-digest-cc-b17.txt SAIRN-ACTIVE-WORK-cc.md",
       "claimed_at": "2026-10-17T15:05:26Z",
       "claimed_at_epoch": 1792249526.1791532,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-19T12:30:23Z",
       "files": [
         "SAIRN-ACTIVE-WORK-cc.md",
         "SAIRN-digest-cc-b17.txt",
@@ -4105,8 +4105,8 @@
       "task": "b17 ADDENDUM, declared rather than assumed: tools/index_duplicate_check.py is cc's by the owner map and was NOT in the b17 FILES list when the batch opened -- the index rows turned out to be already repaired and the real defect was in the tool. FILES: tools/index_duplicate_check.py tools/status_board_bridge_check.py docs/TOOLING-INVENTORY.md docs/2026-10-19-cc-b17-status-board-bridge-live-evidence.md docs/2026-10-19-cc-b17-routed.md docs/2026-10-17-cc-b17-locked-entry-crash-injection.py",
       "claimed_at": "2026-10-19T11:45:18Z",
       "claimed_at_epoch": 1792410318.5637197,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-19T12:30:23Z",
       "files": [
         "docs/2026-10-17-cc-b17-locked-entry-crash-injection.py",
         "docs/2026-10-19-cc-b17-routed.md",
