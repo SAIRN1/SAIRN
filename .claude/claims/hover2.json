@@ -781,6 +781,17 @@
       "status": "released",
       "released_at": "2026-10-19T20:47:01Z",
       "files": null
+    },
+    {
+      "id": "hover2-1792443734",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "b70: cross-vendor tiebreak mode + tier2 scope widening, provider terms research + non-AI checker build, clickjacking sweep 17 root apps, calibration prospective confidences, push",
+      "claimed_at": "2026-10-19T21:02:14Z",
+      "claimed_at_epoch": 1792443734.1944747,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
