@@ -122,6 +122,8 @@ GATES = {
     'control-bytes': 'no control characters in tracked text',
     'contrast': 'a changed app file must not add a NEW contrast or '
                 'undefined-token finding',
+    'context-digest': "a digest's CONTEXT line must be a measurement, not a "
+                      'typed estimate',
 }
 
 UNSKIPPABLE = {

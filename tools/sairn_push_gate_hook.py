@@ -2706,6 +2706,131 @@ def main():
                     OVERRIDE_HINT,
                 ]), gate='contrast')
 
+    # ── CHECK 5c: A DIGEST'S CONTEXT LINE IS A MEASUREMENT (2026-10-19, b21)
+    # b20 measured every build agent's self-reported context against its own
+    # transcript and found all four UNDER-READING by 7 to 12 points -- cc 61.9
+    # vs 68.8, cody 59.2 vs 66.3, fourth 48.0 vs 60.0, hank nothing at all. It
+    # then published both figures side by side on the board, which makes the
+    # gap VISIBLE and does nothing to stop the next digest carrying another
+    # estimate. The defect is at the source: the line is TYPED.
+    #
+    # So this is the source. `python tools/context_verify.py --digest-line`
+    # emits the line, and nothing else should ever write one.
+    #
+    # THE ARM WITH TEETH IS THE TOKEN COUNT, NOT THE SHAPE. An estimate can be
+    # typed in the measured shape; it cannot match, to the token, a prompt that
+    # a real assistant turn in that session's own transcript actually carried.
+    # The percentage is then checked arithmetically against the count and
+    # window beside it, which catches a real count with an edited percentage
+    # over it -- the exact under-read shape.
+    #
+    # SCOPE: THE PUSHING SESSION'S OWN DIGEST, AND ONLY IF IT IS A BUILD
+    # AGENT. hover and hover2 are outside it by the separation boundary, the
+    # same boundary that keeps context_verify.py out of their project folders.
+    # Another agent's digest arriving in the same push is NAMED and not
+    # judged -- this clone cannot measure a session it does not own.
+    #
+    # IT FAILS CLOSED ON A MEASUREMENT IT CANNOT MAKE, with one exception that
+    # is stated rather than hidden: if the session IDENTITY cannot be
+    # established, nothing can even tell WHICH digest is ours, so there is no
+    # check to fail closed on. That is reported, the way check 16 reports an
+    # unreadable claim state, and it has a known benign cause (a git worktree
+    # has no identity marker). Everything past that point denies.
+    _ident = None
+    try:
+        sys.path.insert(0, os.path.join(repo, 'tools'))
+        import sairn_session_identity as _sid
+        _ident = _sid.session_name(repo)
+    except Exception as _e:                                      # noqa: BLE001
+        _ident = None
+        _ctx_untold = str(_e).splitlines()[0]
+    _BUILD = ('hank', 'cc', 'cody', 'fourth')
+    _digests = [q for q in changed
+                if q.startswith('SAIRN-digest-') and q.endswith('.txt')]
+    if _digests and _ident is None:
+        note = ("CONTEXT-DIGEST CHECK DID NOT RUN: this clone's session identity could "
+                "not be established, so nothing can tell which of these digests is its "
+                "own -- %s. Not a pass and not a finding." % _ctx_untold)
+        if MODE == 'prepush':
+            sys.stderr.write(chr(10) + note + chr(10) + chr(10))
+        else:
+            print(json.dumps({"hookSpecificOutput": {
+                "hookEventName": "PreToolUse", "additionalContext": note}}))
+    elif _digests and _ident in _BUILD:
+        _mine = [q for q in _digests
+                 if os.path.basename(q).startswith('SAIRN-digest-%s-' % _ident)]
+        _theirs = [q for q in _digests if q not in _mine]
+        if _theirs and MODE == 'prepush':
+            sys.stderr.write(
+                chr(10) + "Note: %d digest(s) in this push belong to another session "
+                "(%s). NOT checked -- this clone cannot measure a session it does not "
+                "own." % (len(_theirs), ', '.join(_theirs)) + chr(10))
+        _cv = os.path.join(repo, 'tools', 'context_verify.py')
+        if _mine and not os.path.isfile(_cv):
+            deny(chr(10).join([
+                "Blocked: this push ships your own digest and tools/context_verify.py is",
+                "not in this clone, so nothing re-derived its CONTEXT line.",
+                "",
+                "  expected: %s" % _cv,
+                "",
+                "A missing checker is not a clean result.",
+                OVERRIDE_HINT,
+            ]), gate='context-digest')
+        for _d in _mine:
+            try:
+                _cr = subprocess.run(
+                    [sys.executable, _cv, '--check-digest', _d,
+                     '--agent', _ident],
+                    capture_output=True, text=True, encoding='utf-8',
+                    errors='replace', timeout=300, cwd=repo,
+                    env=dict(os.environ, PYTHONIOENCODING='utf-8',
+                             PYTHONUTF8='1'))
+            except Exception as e:                               # noqa: BLE001
+                deny(chr(10).join([
+                    "Blocked: the context-digest check could not be run on %s," % _d,
+                    "so this push is unchecked for it.",
+                    "",
+                    "  %s: %s" % (type(e).__name__, e),
+                    "",
+                    OVERRIDE_HINT,
+                ]), gate='context-digest')
+                continue
+            _out = ((_cr.stdout or '') + (_cr.stderr or '')).strip()
+            _tail = chr(10).join(
+                [ln for ln in _out.splitlines()
+                 if not ln.startswith('  ok ') and 'fixtures classify' not in ln
+                 ])[-2000:]
+            if _cr.returncode == 1:
+                deny(chr(10).join([
+                    "Blocked: %s carries a CONTEXT line that is not a measurement." % _d,
+                    "",
+                    _tail,
+                    "",
+                    "Every build agent's self-reported context UNDER-READ its real figure by",
+                    "7 to 12 points when b20 measured it -- cc 61.9 vs 68.8, cody 59.2 vs 66.3,",
+                    "fourth 48.0 vs 60.0. The line is not written by hand. Run this and paste",
+                    "exactly what it prints:",
+                    "",
+                    "  python tools/context_verify.py --digest-line",
+                    "",
+                    "If it refuses because the window is AMBIGUOUS, declare it once for this",
+                    "session -- the percentage needs a denominator and the inference is only a",
+                    "floor:",
+                    "",
+                    "  python tools/context_verify.py --provision-window 1000000",
+                    OVERRIDE_HINT,
+                ]), gate='context-digest')
+            elif _cr.returncode != 0:
+                deny(chr(10).join([
+                    "Blocked: the context-digest check COULD NOT RUN on %s (exit %d),"
+                    % (_d, _cr.returncode),
+                    "which is a third state and not a pass.",
+                    "",
+                    _tail,
+                    "",
+                    OVERRIDE_HINT,
+                ]), gate='context-digest')
+
     # ── CHECK 6: REDACTION ON WHAT THIS PUSH SHIPS (added 2026-09-04) ──────
     # tools/redaction_check.py already runs as a PreToolUse Write|Edit hook, and
     # the open-work row saying "no hook exists" was STALE -- it is wired in both
