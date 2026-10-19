@@ -6285,6 +6285,62 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b17-trust-lock-hard.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "abee0d2a7788d95e2c55c98685b5cd413782f2d6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b18-countersign-lock.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "abee0d2a7788d95e2c55c98685b5cd413782f2d6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b18-passkey-profile-e2e.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "abee0d2a7788d95e2c55c98685b5cd413782f2d6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-cross-tenant-dispatchers.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "abee0d2a7788d95e2c55c98685b5cd413782f2d6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-law-role-matrix.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "abee0d2a7788d95e2c55c98685b5cd413782f2d6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-leg-role-matrix.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "abee0d2a7788d95e2c55c98685b5cd413782f2d6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-leg-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "abee0d2a7788d95e2c55c98685b5cd413782f2d6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/greeting.test.js",
    "class": "test file",
    "level": "CHANGE",
