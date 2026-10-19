@@ -4788,6 +4788,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/sd-data-scp-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "899597b5c48dd0bb422b28ae203cf22b2af6180f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/b14-clock-approval-two-person.test.js",
    "class": "test file",
    "level": "CHANGE",
