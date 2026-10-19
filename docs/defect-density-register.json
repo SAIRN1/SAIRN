@@ -34502,7 +34502,7 @@
       "recurrence_open": "E3b MEASURED THE typeof GUARD ALONE AND IT CHANGES NOTHING -- the per-step try covers it, so the guard is defence in depth and NOT the load-bearing layer. Recorded because an arm claiming otherwise would have been a green claim about a layer doing no work. And the pattern is unswept: other handlers in this file call unguarded globals after a confirmed success and nothing counts them."
     },
     {
-      "commit": "7e8a6b58e5e1",
+      "commit": "e6227220222e",
       "date": "2026-10-19",
       "subject": "fix(register): a citation is only a citation if a ref reaches it -- ancestor, not merely resolvable",
       "files": [
