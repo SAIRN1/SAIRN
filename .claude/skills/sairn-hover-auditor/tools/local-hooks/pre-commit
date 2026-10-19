@@ -1,0 +1,9 @@
+#!/bin/sh
+# .claude/skills/sairn-hover-auditor/tools/local-hooks/pre-commit
+#
+# Pure passthrough. core.hooksPath points here locally for pre-push's sake
+# (see the pre-push file in this directory); every OTHER hook name must
+# behave exactly as if hooksPath still pointed at .githooks, so each of
+# those is a one-line exec of the real platform hook, unchanged.
+ROOT=$(git rev-parse --show-toplevel)
+exec sh "$ROOT/.githooks/pre-commit" "$@"

@@ -1,0 +1,5 @@
+#!/bin/sh
+# .claude/skills/sairn-hover-auditor/tools/local-hooks/post-rewrite
+# Pure passthrough -- see pre-commit in this directory for why.
+ROOT=$(git rev-parse --show-toplevel)
+exec sh "$ROOT/.githooks/post-rewrite" "$@"

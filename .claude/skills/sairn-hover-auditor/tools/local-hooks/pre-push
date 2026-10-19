@@ -1,0 +1,42 @@
+#!/bin/sh
+# .claude/skills/sairn-hover-auditor/tools/local-hooks/pre-push
+#
+# Clone-local, additive layer in front of the real platform pre-push hook.
+# core.hooksPath is pointed at this directory LOCALLY (.git/config, never
+# tracked) in THIS clone only. Runs the hover scope-manifest check first;
+# on any violation, REJECTS and never reaches the real hook. On a clean
+# pass, chains to the real .githooks/pre-push unchanged -- this can only
+# ADD a rejection, never remove one the platform gate would have made.
+#
+# STDIN IS READ ONCE, UP FRONT, AND REPLAYED -- same reason the real
+# .githooks/pre-push itself reads stdin once: a stream is consumed by its
+# first reader, and this hook plus the real one both need the ref lines.
+
+ROOT=$(git rev-parse --show-toplevel)
+PY=python
+CHECK="$ROOT/.claude/skills/sairn-hover-auditor/tools/hover_scope_prepush_check.py"
+EMPTY_TREE=4b825dc642cb6eb9a060e54bf8d69288fbee4904
+
+REFS=$(cat)
+RC=0
+
+printf '%s\n' "$REFS" | while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
+  [ -z "$local_ref" ] && continue
+  case "$local_sha" in
+    0000000000000000000000000000000000000000) continue ;;  # deleting a ref
+  esac
+  case "$remote_sha" in
+    0000000000000000000000000000000000000000) range="$EMPTY_TREE..$local_sha" ;;  # first push of this ref
+    *) range="$remote_sha..$local_sha" ;;
+  esac
+  "$PY" "$CHECK" --range "$range" --cwd "$ROOT" || exit 1
+done
+RC=$?
+
+if [ "$RC" != "0" ]; then
+  echo "HOVER SCOPE MANIFEST GATE -- REJECTED. Clone-local additive check; see the lines above for the exact out-of-manifest file(s)."
+  exit 1
+fi
+
+# Clean -- chain to the real platform hook, replaying the SAME stdin.
+printf '%s\n' "$REFS" | sh "$ROOT/.githooks/pre-push" "$@"
