@@ -4057,8 +4057,8 @@
       "task": "b23 sairnbuild server wins suite BLD_PENDING_TRACKED substring proxy repair routed by fourth b28 check 4 HIGH; bld_draws no-arm gap check 2; re-ablate arm Z b20 fix; sweep own tests for comment/constant-satisfied arms; handoff b23; push. HOLD: api/ and sql/ READ-ONLY (hank's), tools/ is cc's and RUN not edited. FILES: tests/sairnbuild_server_wins.js tests/run_sairnbuild_server_wins_sabotage_probe.py docs/2026-10-19-cody-b23-green-but-worthless-sweep.md docs/b23-logs SAIRN-handoff-cody-b23.md SAIRN-report-cody-b23.txt SAIRN-digest-cody-b23.txt",
       "claimed_at": "2026-10-19T11:50:43Z",
       "claimed_at_epoch": 1792410643.7588756,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-19T12:58:26Z",
       "files": [
         "SAIRN-digest-cody-b23.txt",
         "SAIRN-handoff-cody-b23.md",
