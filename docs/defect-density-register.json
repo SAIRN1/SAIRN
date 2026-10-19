@@ -33778,6 +33778,57 @@
       "recurrence_open": "THREE THINGS THE ACTIONS ABOVE DO NOT CLOSE. (1) THE SWEEP IS NOT WIRED TO ANYTHING -- no hook, no push gate, no suite invokes it, which is precisely the tooling_inventory finding that a tool which exists is not a mechanism and a tool that RUNS is. Nothing stops the 102 candidates from growing. (2) THE 86 CANDIDATES THAT ARE NOT cody's ARE NOT READ and are not counted as clean. (3) AND THE SWEEP IS BLIND TO ONE MEMBER OF ITS OWN CLASS: b22's B6 arm was satisfied by a CONSTANT'S note FIELD -- real executable data carrying prose -- which looks like nothing to a text scanner because it IS code. Detecting that needs the value flow, not the text, and no tool here does it. Convention 36 was written about this class one batch before b23 and did not prevent b23 writing a B6-shaped arm of its own, which is the measurement that says prose is not a control."
     },
     {
+      "commit": "446d6c0bf332",
+      "date": "2026-10-19",
+      "subject": "fix(tests): the rf_claim_photos not-provisioned arm was satisfied by the WRONG OCCURRENCE, and a 1400-character window hid it",
+      "files": [
+        "tests/roofing_claim_gate_single_source.js"
+      ],
+      "lines_added": 57,
+      "lines_removed": 5,
+      "app": "sairnroofing",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "probe-control",
+      "summary": "tests/roofing_claim_gate_single_source.js, arm \"each branch keeps its own not-provisioned policy\", ASSERTED SOMETHING IT NEVER TESTED. It said \"the photo WRITE no longer refuses loudly\" and tested /NOT_PROVISIONED/ inside src.slice(i).slice(0, 1400) -- A FIXED 1400-CHARACTER WINDOW. The rf_claim_photos write branch is 5,470 characters, so the literal that satisfied the window was the one in the CLAIM-EXISTENCE guard at the top of the branch, NOT the photo write's own refusal 34 lines further down at :9850/:9854/:9871. ROUTING THAT FIRST GUARD THROUGH THE SHIPPED notProvisioned() HELPER -- behaviour identical, literal gone -- TURNED THE ARM RED WHILE THE POLICY IT NAMES WAS FULLY INTACT AT THREE SITES. So for seven weeks a green arm meant \"some occurrence of this string is within 1400 characters of the branch start\", which is not the claim in its name and is not a claim anybody would make. SEVERITY MODERATE, reasoning stated rather than implied: no shipped behaviour was ever wrong, and the cost is that the arm guarding a Tier A claim-photo refusal could not have noticed that refusal being removed -- a false NEGATIVE in a guard, not a false claim to a user. REPAIRED: both halves sliced by BALANCED BRACE with an explicit overrun assertion; the test is on the POLICY rather than one spelling of it (the literal OR a notProvisioned()/notProvisionedText() call); and the arm's ACTUAL subject is asserted for the first time -- that the read's degrade-to-empty-list literal does NOT appear in the write branch, because the two policies differing is the whole point of the arm and was never checked. THE CONTROL THAT MAKES THIS A REPAIR RATHER THAN A LOOSENING FITTED TO THE CHANGE: the repaired suite was copied into a HEAD~1 worktree and passes 23/23 against the UNCONVERTED handler too. FOUND BY A DIFFERENTIAL, NOT BY REVIEW: 230 suites referencing api/sd-data.js driven ALONE at HEAD and at HEAD~1; four came back red-and-unregistered and this was the ONLY one green at baseline. The other three were already red and are now registered in docs/known-red-suites.json. Full account: docs/2026-10-19-cody-b26-four-tier-reads-and-guard-conversion.md section 2.9.",
+      "rules": [
+        "1.7"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "docs/b26-logs/regression_differential.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "7d4cb7928c14",
+        "date": "2026-09-04",
+        "subject": "refactor(sairnroofing): the claim assignment gate was written seven ways, not four",
+        "lag_days": 45
+      },
+      "phase_note": "the window was written as 1400 characters on 2026-09-04 in the commit that unified the claim assignment gate; the branch it slices was already longer than that at the time, so the arm never reached the refusal it names.",
+      "contributing_factors": [
+        {
+          "factor": "the arm sliced its subject with a FIXED 1400-CHARACTER WINDOW while the rf_claim_photos write branch is 5,470 characters, so /NOT_PROVISIONED/ was satisfied by the literal in the CLAIM-EXISTENCE guard at the top of the branch rather than by the photo write's own refusal 34 lines down",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "both halves are sliced by BALANCED BRACE now, with an explicit assertion that neither slice has overrun into the other branch. A fixed window is a guess about how long a branch is; a balanced brace is a property of the branch"
+        },
+        {
+          "factor": "the assertion tested ONE SPELLING of the policy rather than the policy -- a loud refusal is a 503 NOT_PROVISIONED whether the branch writes that literal itself or calls the helper that answers it, and routing the guard through the shipped notProvisioned() helper changed nothing about behaviour while removing the string",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the assertion now accepts either the literal or a notProvisioned()/notProvisionedText() call, and the arm's ACTUAL subject is asserted for the first time: that the read's degrade-to-empty-list literal does NOT appear in the write branch. The two policies differing is the whole point of the arm and was never checked"
+        },
+        {
+          "factor": "nothing in the tree could distinguish 'this arm passes because the policy holds' from 'this arm passes because some other occurrence of the string is inside the window'. It was green for seven weeks and no review would have found it, because the code reads correctly",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "found by a REGRESSION DIFFERENTIAL rather than by review: 230 suites referencing api/sd-data.js were driven ALONE at HEAD and at HEAD~1, and this was the only one GREEN at baseline and RED after. The repaired suite was then driven against the UNCONVERTED handler in the baseline worktree and passes 23/23 there too, which is the control that the repair is not a loosening fitted to the change"
+        }
+      ],
+      "recurrence_open": "NOTHING SWEEPS FOR OTHER FIXED-SIZE WINDOWS. This repair fixed one arm; docs/b26-logs/sweep_bleed_measure.py measures a DIFFERENT defect class and would not have found this one. A fixed-character-window slice over app source is its own class and is unmeasured across the 619 test files."
+    },
+    {
       "commit": "45d9a9132305",
       "date": "2026-10-19",
       "subject": "fix(sairnroofing): the last 3 contrast findings on the platform, and two of them were signature borders",
@@ -34107,6 +34158,35 @@
       "recurrence_open": "The STATUS and NEXT fields are parsed the same way and still swallow unlabelled prose; they are bounded by their own 900-character slices, so they degrade quietly rather than wrongly, and nothing here changes that. Nothing requires a digest to use only the nine labels the board knows. And the fix is in a SHARED publisher that every clone runs its own copy of -- measured during this batch, fourth's clone republished the board 20 minutes after cc's corrected version with its own pre-fix copy, so the platform-wide effect of this fix only arrives as each clone fetches."
     },
     {
+      "commit": "9a7f73dab468",
+      "date": "2026-10-19",
+      "subject": "fix(hover): citation_class_check's sentence splitter is abbreviation-safe now, h1 b55",
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools/citation_class_check.py"
+      ],
+      "lines_added": 96,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": "citation_class_check.py's sentence splitter treated any abbreviation period (e.g. 'St.' in 'St. Louis Fed') as a sentence end, stranding two different-file citations in the remaining fragment with only each other's filenames as anchor candidates -- which anchor_ok's own-stem exclusion guarantees fails, misclassifying a correct citation as WRONG-AT-DERIVATION. Found while writing a real hover log entry (h1 b55) after two prior occurrences (b53, b54) were worked around by rephrasing rather than root-caused.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "d1a9e5276a88",
+        "date": "2026-09-29",
+        "subject": "feat(hover-tools): three-class citation classifier (wrong-at-derivation / moved-since / not-a-repo-path) with blob-sha support and misclassification control",
+        "lag_days": 20
+      },
+      "citation_note": "no existing cross-domain-disciplines section names naive sentence-boundary splitting around abbreviation periods; this is a new-shaped defect, not a recurrence of a named rule",
+      "factors_unknown_reason": "found and fixed in one sitting with the fix itself as the record; no separate RCA factor pass was run beyond what the commit message already states"
+    },
+    {
       "commit": "a61abc5ae46e",
       "date": "2026-10-19",
       "subject": "fix(filters): three selections that silently picked the wrong set and reported clean over it",
@@ -34276,35 +34356,6 @@
         }
       ],
       "recurrence_open": "nothing checks that a probe which injects into another file still injects successfully. The refusal added here fires when the anchor is ABSENT, not when it matches the wrong occurrence -- a third occurrence appearing before the real one would be caught only because compile() would raise again, which is luck rather than a control."
-    },
-    {
-      "commit": "9a7f73dab468",
-      "date": "2026-10-19",
-      "subject": "fix(hover): citation_class_check's sentence splitter is abbreviation-safe now, h1 b55",
-      "files": [
-        ".claude/skills/sairn-hover-auditor/tools/citation_class_check.py"
-      ],
-      "lines_added": 96,
-      "lines_removed": 1,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "low",
-      "detection_method": "hover-audit",
-      "summary": "citation_class_check.py's sentence splitter treated any abbreviation period (e.g. 'St.' in 'St. Louis Fed') as a sentence end, stranding two different-file citations in the remaining fragment with only each other's filenames as anchor candidates -- which anchor_ok's own-stem exclusion guarantees fails, misclassifying a correct citation as WRONG-AT-DERIVATION. Found while writing a real hover log entry (h1 b55) after two prior occurrences (b53, b54) were worked around by rephrasing rather than root-caused.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover",
-      "injection": {
-        "commit": "d1a9e5276a88",
-        "date": "2026-09-29",
-        "subject": "feat(hover-tools): three-class citation classifier (wrong-at-derivation / moved-since / not-a-repo-path) with blob-sha support and misclassification control",
-        "lag_days": 20
-      },
-      "citation_note": "no existing cross-domain-disciplines section names naive sentence-boundary splitting around abbreviation periods; this is a new-shaped defect, not a recurrence of a named rule",
-      "factors_unknown_reason": "found and fixed in one sitting with the fix itself as the record; no separate RCA factor pass was run beyond what the commit message already states"
     },
     {
       "commit": "a98def399e4f",
