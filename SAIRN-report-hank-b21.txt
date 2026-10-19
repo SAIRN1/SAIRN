@@ -1,0 +1,614 @@
+REPORT hank b21 2026-10-19 -- the platform's oldest review obligation discharged, api/bridge.js's unknown-action fall-through closed with an ablation, the three unrun SQL files bundled and verified on Drive, the IOLTA attestation designed, three open-work rows, and item 3 correctly skipped
+
+================================================================================
+1. WHAT LANDED
+================================================================================
+
+LANDED ON origin/main, tip 29ed1be51 at read-back, verified by comparing
+origin/main to HEAD BY SHA after a fresh fetch -> 0 ahead, 0 behind.
+RE-DERIVE THE TIP: five sessions push to one branch.
+
+NOT FORCED. ZERO GATE OVERRIDES -- no SAIRN_GATE_EXEMPT, no SAIRN_SKIP, no
+SAIRN_SEED_GATE. Nothing was skipped, so there is nothing to disclose under
+PR 3.3.
+
+  review(hank b21)        the 522h review obligation, discharged with a verdict
+  fix(bridge b21)         unknown ?action= refused + a 14-arm suite with an ablation
+  docs(hank b21)          three open-work rows, the attestation design note, the SQL bundle
+  docs(hank b21)          the active-work entry
+  chore(b21)              the renamed suite's header + the derived documents regenerated
+  chore(defect register)  the register record the push gate required
+  handoff(hank b21)       the handoff + the Tier A review obligation
+  chore(b21)              the obligation amended to add `employees`
+  chore(b21) x7           the bookkeeping rows the gates themselves wrote
+
+EVERY ARTEFACT CONFIRMED PRESENT ON origin BY `git cat-file -e`, not by
+trusting the push: api/bridge.js, api/b21-bridge-unknown-action.test.js,
+SAIRN-sql-hank-b21.txt, docs/2026-10-19-hank-b21-attestation-design.md,
+SAIRN-handoff-hank-b21.md, docs/SAIRN-OPEN-WORK-INDEX.md,
+docs/tier-a-reviews.json, docs/defect-density-register.json.
+
+================================================================================
+2. THE REVIEW OBLIGATION -- THE PLATFORM'S OLDEST, 522h
+================================================================================
+
+Dispatched first and done first. `tools/sairn_claim.py --list` has no
+review-obligation mode; `tools/obligation_surface.py` is the lister, and it
+reported 15 open / 12 overdue with FOUR eligible to me (owner=hank, authored by
+somebody else). DISCHARGED THE MOST OVERDUE: 522h, author `fourth`, opened
+2026-09-28T00:16:59Z, over alf_facility + 11 other named resources.
+
+CONFIRMED BY RE-RUNNING THE LISTER, not by the discharge command's own output:
+15 open / 12 overdue BEFORE -> 14 open / 11 overdue AFTER, and the 522h row is
+gone.
+
+REVIEWED AGAINST CURRENT HEAD, NOT THE RECORDED SHA, and the record's own
+COULD-NOT-TELL stands: 3e3e1cca210e does not resolve in this clone. Said in the
+verdict rather than glossed, because a review that quietly substitutes a
+different subject is worse than one that declares it.
+
+ACCEPTED, WITH TWO FINDINGS.
+
+--------------------------------------------------------------------------------
+2a. THE ABLATION CLAIM WAS RE-DRIVEN, NOT TRUSTED
+--------------------------------------------------------------------------------
+
+A copy of api/ in an isolated scratch dir -- THE LIVE CLONE WAS NEVER MUTATED.
+
+  BASELINE   node api/sd-data-alf-isolation.test.js  -> 28 passed, 0 failed
+  ABLATED    the four-line ALF_MANAGEMENT_ROLES guard deleted from the
+             `resource === 'alf_facility' && action === 'write'` branch,
+             node --check clean                      -> 23 passed, 5 FAILED
+             FAILED: the four [ROLE] arms + [ROLE-ord], the ordering arm
+  CONTROL    [ROLE-ctl] STAYED GREEN
+
+One layer removed, not the floor -- which is what the ablation discipline asks
+for and what makes the five reds attributable to that guard.
+
+--------------------------------------------------------------------------------
+2b. THE AUTHOR'S OWN ATTACK POINT IS HALF WRONG, AND THE WRONG HALF MATTERS
+--------------------------------------------------------------------------------
+
+The record says of the `caregiver` arm: "refuses for the wrong reason and buys
+no measured coverage."
+
+MEASURED, by driving the module rather than reading it:
+  node -e "ROLES_BY_APP.sairncare" ->
+    ["owner","nursing","med_aide","caregiver","billing","activities","office_manager"]
+
+So `caregiver` IS in the app's role vocabulary. verifySessionToken ACCEPTS the
+session, and the 403 therefore comes from the management gate itself -- THE
+REASON IS RIGHT, not wrong. And the arm goes RED under the ablation above, so
+IT DOES BUY COVERAGE.
+
+WHAT IS TRUE IS WEAKER AND STILL WORTH HAVING: `caregiver` appears in ZERO
+roleSet() literals in api/sd-data.js. Measured across the vocabulary:
+
+  owner 27   billing 12   nursing 9   activities 3   med_aide 1
+  caregiver 0             office_manager 0
+
+So that one arm cannot distinguish "the ALF management gate refused it" from
+"nothing anywhere grants caregiver". It is the LEAST DISCRIMINATING of the
+four; the nursing / med_aide / activities arms carry the specificity.
+
+--------------------------------------------------------------------------------
+2c. THE FINDING THE RECORD DOES NOT NAME -- `office_manager`
+--------------------------------------------------------------------------------
+
+`office_manager` is a real sairncare role. It is offered in BOTH
+sairncare.html role dropdowns (lines 653 and 1020). It is in
+ROLES_BY_APP.sairncare. It has ZERO roleSet() hits. AND IT IS NOT IN
+ALF_NON_MGMT, which is exactly:
+
+  api/sd-data-alf-isolation.test.js:362
+  const ALF_NON_MGMT = ['nursing', 'med_aide', 'caregiver', 'activities'];
+
+FIVE OF SAIRNCARE'S SEVEN ROLES ARE EXCLUDED FROM THIS GATE AND ONLY FOUR ARE
+ASSERTED. Not fixed here: that file is cody's api/ test surface this batch.
+ROUTED in the handoff with the one-token change and the instruction to re-run
+the ablation afterwards -- an arm that stays green under the ablation is
+testing nothing.
+
+--------------------------------------------------------------------------------
+2d. THE MIS-ATTRIBUTION THE AUTHOR DECLARED IS CONFIRMED, WITH THE MEASUREMENT
+     THE RECORD LACKED
+--------------------------------------------------------------------------------
+
+bld_draws, bld_tna, sdn_clients, sen_claims and sen_clients appear ONLY in
+tests/role_gate_loop_rule_probe.py (1-2 hits each) and ZERO times in the other
+three recorded files. And that probe states at its OWN line 39 that it touches
+neither api/sd-data.js nor any real suite. So the obligation was raised over
+five resources nothing changed, by a Python probe's quoted JavaScript fixtures.
+
+Not fixed: tools/tier_a_review_gate.py is cody's, and the author already
+declared it rather than working around it.
+
+--------------------------------------------------------------------------------
+2e. THE DEPLOYED GATE REMAINS UNVERIFIED, AND THE AUTHOR SAID SO HONESTLY
+--------------------------------------------------------------------------------
+
+tools/alf_facility_role_gate_live_probe.py re-driven at this sha, EXIT 2:
+  "UNVERIFIED -- ALF_LICENSE is not set, so NOTHING was driven ... This is the
+   THIRD STATE. It is NOT 'the gate is fine'."
+
+Every arm above is against a mock. This review does not discharge that, and
+the verdict says so.
+
+================================================================================
+3. ITEM 1 -- THE TWO b18 ITEMS, RE-DERIVED FROM HEAD
+================================================================================
+
+BOTH LANDED. Both are in commit 144dfb715 (2026-10-16):
+  git merge-base --is-ancestor 144dfb715 origin/main  -> TRUE
+
+  straight-time-floor sign guard
+    api/b17-straight-time-floor.test.js -> 11 passed, 0 failed, 0 unproven
+    including A10 ABLATION (without the sign guard the deduction returns
+    -2000, total < gross) and A11 CONTROL (no closed_periods -> no adjustment)
+
+  trust-lock hard-lock
+    api/b17-trust-lock-hard.test.js -> 14 passed, 0 failed, 0 unproven
+    including T8d -- emptying LAW_TRUST_LOCKED now fails THIS file, which is
+    fourth's H1 closed, while staying green in the trusttx suite, stated as
+    the original finding rather than a regression
+
+NOTHING WAS OPEN, SO NOTHING WAS FINISHED.
+
+LIVE PROOF IS NOT OBTAINABLE AND IT IS REPORTED AS A THIRD STATE, NOT A PASS.
+Driven against the real deployed URL with tools/sairn_http.py:
+
+  law_trusttx write, NO licence     -> 401
+  law_trusttx write, bogus licence  -> 401
+  sen_visits read, NO licence       -> 401
+
+That is evidence about the LICENCE gate and NONE AT ALL about either fix. Both
+live in pure modules (api/_lib/sen-payroll.js, api/_lib/law-roles.js) reached
+only through a session-gated handler, so a live assertion needs a real licence
+AND a real employee session, which this clone does not carry. A 401 means
+UNVERIFIED, not verified-good.
+
+================================================================================
+4. ITEM 2 -- api/bridge.js REFUSES AN UNKNOWN ?action=
+================================================================================
+
+The dispatch ended `return handlePush(body, res, req)` with nothing between it
+and the proxy_get branch, so EVERY ?action= the endpoint did not know became a
+push attempt.
+
+THREE LIVE CALL SITES LAND THERE -- measured by grepping every app file for the
+URL, not reasoned about:
+
+  stonedesk.html:12814   ?action=maps-static      no such action
+  stonedesk.html:12927   ?action=maps-optimize    no such action
+  stonedesk.html:7795    NO ?action=, NO data_type, a sairn-mobile-sync
+                         envelope body {app_id, event_type:'pos_sale', ...}
+
+All three reached handlePush and were answered 401 NO_LICENCE or 403. SO A
+CALLER ASKING FOR AN ACTION THAT HAS NEVER EXISTED WAS TOLD ITS CREDENTIALS
+WERE WRONG -- the wrong diagnosis pointed at the wrong layer, the shape
+Guardian check 30 records costing a previous session a hunt for a
+RESEND_API_KEY that was present and correct the whole time.
+
+THE CHANGE. KNOWN_ACTIONS = ['push','proxy_get'], spelled once, and the
+400 UNKNOWN_ACTION refusal DERIVES its message from that array -- the same
+decision api/_lib/countersign-endpoint.js made, so a fourth action cannot be
+added to the gate without the message following it. `pull` is DELIBERATELY
+ABSENT and arm B2 asserts the absence: it was removed 2026-09-17 for serving
+one tenant's data to an unauthenticated GET keyed on a RAW LICENCE KEY, and a
+refusal that advertises a withdrawn read side is worse than no refusal.
+
+api/b21-bridge-unknown-action.test.js -- 14 arms, 0 failed:
+
+  A1  THE NEGATIVE CONTROL THE DISPATCH ASKED FOR. A LICENCE-HEADED and
+      SESSION-HEADED POST to ?action=maps-optimize -> 400 UNKNOWN_ACTION with
+      ZERO bridge_data upserts. THE VALID CREDENTIALS ARE THE POINT: without
+      them a 401 arrives whether the refusal exists or not and the arm passes
+      for the wrong reason.
+  A2  the other real live call site answers identically, so the refusal is on
+      the CLASS and not on one string
+  A3  an action nobody has ever sent is refused identically -- a guard that
+      only knows the strings already in the tree is a blocklist wearing an
+      allowlist's name
+  A4  an UNAUTHENTICATED unknown action is STILL UNKNOWN_ACTION, never
+      NO_LICENCE -- the refusal names the real fault, not the first gate it
+      happens to reach
+  B1-B3 the message names both accepted actions, does NOT name `pull`, and
+      states that nothing was written
+  C1  CONTROL: ?action=push with a valid licence and session still upserts, so
+      the refusal is not a wall
+  C2  the body `data_type:'proxy_get'` signal sairnbuild.html:7754 uses still
+      relays
+  C3  and the QUERY form nothing currently uses still relays -- exactly what a
+      narrowing change breaks silently
+  D1  THE DECLARED RESIDUAL, ASSERTED ON PURPOSE: an ABSENT ?action= still
+      reaches handlePush
+  D2  and the :7795 envelope upserts {jobs:null, invoices:null, employees:null}
+  E1  ABLATION: with the guard cut from a lifted copy, ?action=maps-optimize
+      reaches handlePush AND UPSERTS -- the pre-b21 behaviour reproduced
+  E2  CLEAN: the ablated copy still serves ?action=push, so E1 is a REMOVAL and
+      not a corrupted file
+
+REGRESSION: api/bridge-push-auth.test.js still 27 passed, 0 failed. Re-run at
+the landed sha, not quoted from before the change.
+
+AN ABSENT ?action= IS DELIBERATELY NOT REFUSED. The instruction was to refuse
+an UNKNOWN action; an absent one is a different case with a different blast
+radius, since :7795 sends neither. Arm D1 ASSERTS the residual so the next
+session reads it instead of discovering it.
+
+AND THE ABLATION'S FIRST DRAFT FAILED ON A CORRECT ABLATION. It asserted
+`!ablated.includes('UNKNOWN_ACTION')`, which matched KNOWN_ACTIONS' own header
+comment saying "the UNKNOWN_ACTION refusal below". AN ABLATION CHECK THAT
+MATCHES PROSE ABOUT THE CODE CANNOT TELL A REMOVED GUARD FROM A DESCRIBED ONE.
+It now asserts the code literal, and the reason is written at the line.
+
+================================================================================
+5. ITEM 3 -- SKIPPED. THE CLAIM HOLDER IS `fourth`.
+================================================================================
+
+The claim list was checked FIRST, as dispatched. python tools/sairn_claim.py
+check returned, by name:
+
+  BLOCKED -- another session already claimed overlapping work:
+    session   : fourth
+    subject   : fourth
+    task      : b34: routing phase 1 ... FILES: ... stonedesk.html ...
+    blocked by: same app: stonedesk
+
+LIVE, not a stale claim -- claimed ~0.5h before the check. NOTHING IN
+stonedesk.html WAS TOUCHED.
+
+THE PREMISE WAS VERIFIED LIVE FIRST so the routed spec is accurate rather than
+inherited: both ?action=maps-optimize and ?action=maps-static answer 401
+against the deployed endpoint today.
+
+AND ONE CORRECTION TO THE DISPATCH'S PREMISE, which matters to whoever picks it
+up: AFTER b21's ENDPOINT FIX DEPLOYS those two call sites will answer
+400 UNKNOWN_ACTION, NOT 401. The catch-arm messages naming the Maps API key are
+wrong either way -- the key was never the fault -- but the status code in the
+spec will have changed by the time the fix is written. The full spec is in
+open-work row BRIDGE-DEAD-CALL-SITES-HANK-2026-10-19.
+
+================================================================================
+6. ITEM 4 -- THE SQL BUNDLE
+================================================================================
+
+SAIRN-sql-hank-b21.txt -- 49,450 bytes, 854 lines. The three unrun schema files
+in the dispatched order, each VERBATIM.
+
+"VERBATIM" IS PROVED, NOT CLAIMED. The builder asserts each repo file's exact
+bytes appear in the bundle -- all three True -- and EACH FILE'S OWN sha256 IS
+PRINTED AT ITS SEPARATOR so the bundle can be checked against the repo rather
+than trusted.
+
+THE NEGATIVE INSERTS, AND WHICH ARE NEW:
+
+  File 1  sql/sairnlegacy_settings_schema.sql SHIPS ITS OWN TWO and they appear
+          verbatim -- the HYPHENATED enum value (liveryBilling() would ACCEPT
+          that row and silently run through_the_home, so the home gets the other
+          arrangement and is never told) and a JSON STRING where the object
+          belongs (apprenticePolicy() coerces it to {}, so the home's entire F3
+          answer vanishes with no error on write and no error on read).
+  Files 2 and 3  THE TWO COUNTERSIGN SCHEMAS SHIP NONE. Their verification
+          blocks check counts and constraint names only, SO NOTHING IN THEM IS
+          EVIDENCE THE CONSTRAINTS REFUSE ANYTHING. Negative inserts for both
+          are AUTHORED IN THE BUNDLE and labelled "ADDED FOR b21 -- NOT IN THE
+          REPO FILE", so nobody diffs it against the repo and concludes the repo
+          lost something it never had. Each covers the SELF-SIGNATURE refusal
+          and the HALF-WRITTEN SIGNATURE refusal, with the expected ERROR 23514
+          and the constraint name.
+
+EACH ADDED BLOCK CARRIES A POSITIVE CONTROL THAT MUST SUCCEED, because two
+erroring inserts are equally consistent with "the constraints work" and "the
+table rejects everything I send", and only one of those is evidence.
+
+AND EACH BLOCK NAMES WHAT SQL CANNOT PROVE: the content-hash binding and the
+single-use rule are APPLICATION properties, not constraints. A clean run says
+the database refuses a self-signature and a half-signature; it says nothing
+about whether a token can be spent on a different record.
+
+UPLOADED AND VERIFIED THROUGH THE API, NOT JUST THE SYNC MOUNT:
+
+  mount copy   byte-identical, sha 74ccb4f17bb132402e1432732999cac08d0cc0b559cfc4dc19f8841ae881f5ea both sides
+  Drive API    id 1j0bFg1rVn-d4VpaHEXIxPvFhX3Ja2k93
+               49450 bytes -- matches local EXACTLY
+               title SAIRN-sql-hank-b21.txt
+               content snippet is the bundle's real first lines
+
+THAT SECOND STEP IS WHAT CLOSES THE LIMIT drive_upload_verify.py PRINTS ON
+EVERY RUN: a matching mount read-back proves the bytes are in the SYNC SET and
+NOT that Google acknowledged them. The first API search returned EMPTY -- the
+sync had not completed -- so this is a measured confirmation and not an
+assumption about how fast a mount flushes.
+
+================================================================================
+7. ITEM 5 -- THE ATTESTATION DESIGN NOTE
+================================================================================
+
+docs/2026-10-19-hank-b21-attestation-design.md. DESIGN NOTE ONLY, NO CODE, as
+dispatched. One-line concept first, then Goals (5), Non-goals (6), FOUR
+alternatives, and cross-cutting concerns split security / data / test plan.
+
+THE ONE-LINE CONCEPT:
+  A completed three-way reconciliation becomes an ATTESTED record only when a
+  bar-admitted person signs a hash of the exact comparison that was run -- so
+  "the three legs agree" and "a lawyer has attested that they agree" are two
+  different stored facts, and the app can never present the first as the second.
+
+ALTERNATIVES: (A) reuse the countersignature lock with a new profile --
+RECOMMENDED; (B) self-attestation columns on the reconciliation row -- rejected
+as the primary mechanism and KEPT because it is the only one that solves the
+solo-practitioner case; (C) an append-only log with no lock -- rejected as
+primary, KEPT AS A COMPANION since a log and a control answer different
+questions; (D) do nothing and keep the disclosure -- recorded because it is the
+CURRENT state and is defensible, which is why b20 shipped it.
+
+THE SHARPEST DECISION: MODE_ALWAYS, NOT MODE_PREPARED_ONLY. C2's lock lets a
+bar-admitted person write law_trusttx with no token because C2 asked only
+whether a paralegal may PREPARE. Here that asymmetry DEFEATS THE PURPOSE -- an
+attorney who ran the reconciliation would attest their own work with no second
+party and no token, which is the shape b20 withdrew a grant to avoid.
+SAIRNlegacy's F1 lock is MODE_ALWAYS and its schema says why in as many words:
+a rule the owner is exempt from is not "the paperwork needs a second named
+person".
+
+NON-GOAL 1 IS THE ONE WORTH READING: an attestation records that a qualified
+person LOOKED AND SIGNED. It does not and must not imply the figures are right.
+The research behind the lock is explicit that even independent double-review
+has a measured, non-zero failure rate. Building an attestation that reads as a
+correctness guarantee would be the wrong-model-that-looks-like-compliance
+failure F3 names.
+
+THE TEST PLAN SPECIFIES THREE NEGATIVE CONTROLS, not a green suite: two
+ablations (the MODE_ALWAYS branch, and the content-hash recomputation, each
+expected to redden a DIFFERENT named arm) and a CLEAN control, plus SQL negative
+inserts with a positive control, plus a live probe that must exit 2 COULD NOT
+RUN without credentials, plus a rendered pass because the
+reconciled-vs-attested distinction is visual and no static check can see it.
+
+AND IT NAMES THE ONE QUESTION IT CANNOT ANSWER RATHER THAN GUESSING: under
+MODE_ALWAYS A SOLO PRACTITIONER CANNOT ATTEST AT ALL, because there is no
+second bar-admitted signer. That is not an edge case -- a large share of real
+firms are one attorney plus staff, and for them the mechanism would make
+attestation IMPOSSIBLE rather than REQUIRED, which is worse than the current
+state where it is merely absent. Three answers are laid out and they are not
+equivalent; the one with the honesty in it changes what the record CLAIMS
+(single-signer, recorded as such) rather than weakening what it requires.
+
+================================================================================
+8. ITEM 6 -- THREE OPEN-WORK ROWS, NOT TWO
+================================================================================
+
+Rows built WHOLE AND JOINED, never by splitting an existing row on a pipe
+(PR 2.1), with each row's pipe count asserted at 8 BEFORE it was written and
+each cell checked for an embedded pipe. docs/SAIRN-OPEN-WORK-INDEX.md was never
+opened -- it is 2,396,137 bytes; it was read by grep and awk only.
+
+  1. api/b20-countersign-open.test.js IS TRACED TO NOTHING. THE ROW IS THE
+     CITATION and opening it is the fix. ACCEPTANCE TEST, written into the row
+     and then DRIVEN rather than asserted:
+       traceability_matrix.traced() answers True for that file where it
+       answered False.
+  2. THE `reconcile` VERB STAYS UNDECLARED -- recorded as a CLOSED DECISION,
+     not left open, because an undeclared verb nobody wrote down reads as an
+     oversight and gets "fixed" by the next session. Three measurements in the
+     row: EXTRA_ACTIONS['law_trusttx'] is undefined (DRIVEN), sd-data:502
+     refuses before the role gate at :16410, sd-data:19515 is the terminal 400.
+     law_trust_reconcile + read is the only route. THE ROW IS ALSO THE REFUSAL:
+     if a future session proposes declaring the verb, it reopens as a decision
+     for Michael.
+  3. THREE LIVE api/bridge CALL SITES ASK FOR ACTIONS THAT DO NOT EXIST --
+     opened because b21 fixed the ENDPOINT half and the CALLER half is fourth's.
+     It also carries b21's own declared residual so it is tracked rather than
+     living only in a test comment.
+
+SHARDS RECONCILED AND PROVED: open_work_shard.py --write then --check ->
+CLEAN, 817 rows present byte for byte, no shard carrying a row the index does
+not.
+
+AND THE SUITE WAS RENAMED api/bridge-unknown-action.test.js ->
+api/b21-bridge-unknown-action.test.js SO ROW 3 CAN CITE IT. Without that it
+would have landed UNTRACED in the same measurement that closed row 1 -- the
+exact gap item 6 exists to close, reproduced by the fix for it.
+
+MEASURED BOTH WAYS rather than claimed:
+  test files on disk              996 -> 997
+  tests traced to a requirement   771 -> 773
+  UNTRACED                        225 -> 224, A NET DROP OF ONE with a new
+                                  suite added in the same batch
+Both suites answer traced: True.
+
+================================================================================
+9. THE PUSH -- FIVE REAL GATE REFUSALS, ALL FED OR RECORDED, ZERO OVERRIDES
+================================================================================
+
+The gates refused this push five times for five different real reasons. Every
+one was satisfied at the source.
+
+  1. REGISTER FEED. "this push closes a defect and does not feed the register."
+     Correct -- a fix( commit after the requirement date citing no record. FED,
+     not escaped with a no-defect trailer, because this IS a defect in shipped
+     behaviour. Record: app stonedesk, layer product, moderate, code-review,
+     injection df84b213f (2026-07-31 -- the fall-through was present at the
+     file's BUILD commit, found with `git log -S` rather than guessed, so the
+     ~80-day lag is a real figure), rule not-citable WITH the note naming the
+     shape, phase coding WITH the note saying why not design and not config,
+     and FOUR CONTRIBUTING FACTORS: technical (no allowlist), detection (the
+     refusal named a LICENCE because handlePush's first gate is the licence
+     check), latent-condition (bare .catch(){} meant no operator ever saw the
+     401), process (bridge.js had NO dispatch suite -- the 27-arm push-auth
+     suite never asks what happens to an action that is not push).
+     recurrence_open names what the actions do NOT close.
+
+  2. TIER A, FIRST BLOCK. "changes code serving a Tier A resource and no
+     independent-review obligation is recorded" -- rf_claims and rf_jobs NOT
+     covered. RECORDED and assigned to fourth. The body declares BOTH halves:
+     the real change is `invoices` (handlePush upserts bridge_data, which
+     StoneDesk fills with expense invoices carrying payee/amount/memo/GL), and
+     rf_claims/rf_jobs ARE A MIS-ATTRIBUTION -- flagged only because the SQL
+     bundle QUOTES the 2026-08-26 partial-apply incident in its header caution.
+     I DID NOT REWORD THE CAUTION TO DODGE THE MATCHER: it is the most useful
+     paragraph in the bundle and rewording a real warning to satisfy a matcher
+     is how the warning gets lost. Same gate blindness fourth recorded
+     2026-09-28 and cody 2026-09-21, running the same direction.
+     The body also names FOUR things to attack, written as my own doubts
+     rather than a summary of the arms.
+
+  3. TIER A, SECOND BLOCK -- `employees`, FOUND IN MY OWN NEW SUITE. A REAL
+     OMISSION ON MY PART and reported as one, because the same obligation
+     already declares two mis-attributed resources and the difference matters
+     to the reviewer. handlePush builds {jobs, invoices, employees} and upserts
+     all three slots together; I named only `invoices` because that is what the
+     LIVE CALLER fills -- I reasoned from the caller instead of from the
+     HANDLER'S OWN SHAPE, which is the narrower read and the wrong one for a
+     write path. MY OWN ARM D2 NAMED THE RESOURCE MY OWN OBLIGATION LEFT OUT.
+     Amended; the previous sets are kept in the `amendments` entry.
+
+  4. CONFLICT MARKERS IN A STAGED FILE. docs/defect-density-register.json went
+     out with live <<<<<<< / >>>>>>> markers, because MY PUSH LOOP RAN
+     `git add -A docs/` DURING A CONFLICTED REBASE -- and `git add -A` cannot
+     tell a resolved file from an unmerged one, which is exactly what the gate
+     said back to me. Restored from HEAD, the record re-derived, and the loop
+     rewritten to stage BY NAME and to STOP on any unmerged path rather than
+     staging it.
+
+  5. GENERATED-DOC DRIFT, repeatedly, from MASTER-PLAN.md and
+     traceability-matrix.md. Resolved by `tools/sairn_rebase_resolve.py`, which
+     REGENERATES them from their own generators instead of merging two
+     generated outputs by hand.
+
+ZERO OVERRIDES. No SAIRN_GATE_EXEMPT, no SAIRN_SKIP, no SAIRN_SEED_GATE.
+
+LANDING WAS CONFIRMED BY SHA COMPARISON after a fresh fetch -- never by
+grepping the push output for "main -> main", which also appears inside git's
+own REJECTION line. That is b20's lesson carried forward and it earned its
+keep: an earlier loop in b20 reported LANDED on a refused push for exactly
+that reason.
+
+================================================================================
+10. EVIDENCE -- RE-DRIVEN AT THE LANDED SHA
+================================================================================
+
+  api/b21-bridge-unknown-action.test.js        14 passed,  0 failed   (new)
+  api/bridge-push-auth.test.js                 27 passed,  0 failed
+  api/sd-data-alf-isolation.test.js            28 passed,  0 failed
+    ...ablated (ALF_MANAGEMENT_ROLES cut)      23 passed,  5 FAILED   the ablation
+  api/b17-straight-time-floor.test.js          11 passed,  0 failed, 0 unproven
+  api/b17-trust-lock-hard.test.js              14 passed,  0 failed, 0 unproven
+  tools/alf_facility_role_gate_live_probe.py   EXIT 2 COULD NOT RUN
+  tools/open_work_shard.py --check             CLEAN, 817 rows byte for byte
+  tools/obligation_surface.py                  15/12 -> 14/11
+  live api/sd-data x3                          401 -- licence-gate evidence only
+  live api/bridge x2                           401 -- pre-deploy, item 3's premise
+  node --check api/bridge.js                   clean
+  Drive API read-back                          id + 49450 bytes + title + snippet
+
+WHAT THIS EVIDENCE DOES NOT COVER, stated rather than left to be assumed:
+
+  * NO WHOLE-TREE SUITE RUN. The suites above were chosen by what the diff
+    touches; a regression in an unrelated file would not appear here.
+  * NO LIVE PROBE OF THE BRIDGE REFUSAL. It is not deployed at the time of
+    writing. The arms prove what the HANDLER answers, not what the URL does.
+  * NO RENDERED PASS ANYWHERE. Nothing visual was looked at this batch.
+  * THE 522h REVIEW IS AGAINST A MOCK, and against CURRENT HEAD rather than the
+    recorded sha, which does not resolve in this clone.
+  * THE THREE SQL FILES ARE STILL UNRUN. The bundle is an artefact for Michael
+    to paste; nothing in it has been executed against a database.
+  * THE ATTESTATION IS A DESIGN, NOT CODE. No arm exists for any of it.
+
+================================================================================
+11. WHAT I GOT WRONG IN THIS BATCH -- EIGHT THINGS
+================================================================================
+
+1. MY ABLATION CHECK MATCHED PROSE ABOUT THE CODE.
+   `!ablated.includes('UNKNOWN_ACTION')` FAILED ON A CORRECT ABLATION, because
+   KNOWN_ACTIONS' own header comment says "the UNKNOWN_ACTION refusal below".
+   An ablation check that cannot tell a removed guard from a described one is
+   not a control. It now asserts the code literal.
+
+2. I WROTE THE ABLATED COPY TO os.tmpdir(), where `require('./_lib/license')`
+   cannot resolve -- a MODULE_NOT_FOUND that presents as an arm failure. The
+   copy now lands in api/.
+
+3. I SHIPPED THE NEW SUITE UNTRACED WHILE CLOSING A ROW ABOUT AN UNTRACED
+   SUITE. Caught by RE-RUNNING the generator instead of assuming the count
+   moved. Fixed by renaming the file so a row could cite it.
+
+4. I NAMED ONLY `invoices` ON THE TIER A OBLIGATION AND LEFT OUT `employees`.
+   handlePush upserts {jobs, invoices, employees} together; I reasoned from
+   what the LIVE CALLER fills rather than from the handler's own shape. The
+   gate found it IN MY OWN ARM D2 -- my test named the resource my record left
+   out.
+
+5. MY PUSH LOOP RAN `git add -A docs/` DURING A CONFLICTED REBASE and staged a
+   file with live conflict markers. The gate caught it and told me the cause in
+   its own words. The loop now stages by name and stops on any unmerged path.
+
+6. THE FIRST DEFECT-REGISTER RECORD WAS PINNED TO A SHA A REBASE DESTROYED.
+   62825f3d no longer resolves -- precisely the COULD-NOT-TELL state the 522h
+   obligation discharged earlier in this same batch had been stuck in for 120
+   hours. Re-derived AFTER the final rebase and verified: exactly 1 record
+   cites the live sha, 0 cite the dead one.
+
+7. A COMMIT MESSAGE USED BACKTICKS INSIDE A DOUBLE-QUOTED SHELL STRING, so the
+   shell executed `reconcile` as a command and the word vanished from the
+   message. Repaired with --amend -F. Every long message after that went
+   through a file.
+
+8. I ASSUMED `git rebase` WOULD SUCCEED IN THE PUSH LOOP. It refused on a dirty
+   tree -- the doc-reseat hook had rewritten generated documents -- so five
+   attempts reported a non-fast-forward that was really an unconsumed working
+   tree, and the gate had not run at all on any of them. THE GATE'S SILENCE ON
+   THE CHECKS IS NOT THE CHECKS PASSING; that is b20's lesson and I still had
+   to relearn the specific shape.
+
+================================================================================
+12. WHAT IS OPEN -- SUMMARY. FULL NEXT-STEPS IN THE HANDOFF, SECTION 4.
+================================================================================
+
+  A  `office_manager` is an unasserted excluded role on the alf_facility gate.
+     One-token change to ALF_NON_MGMT, then RE-RUN THE ABLATION -- an arm that
+     stays green under it is testing nothing. cody's file.
+  B  the deployed alf_facility role gate is UNVERIFIED (probe exits 2).
+  C  the two b18 items have NO LIVE PROOF -- needs a real licence and session.
+  D  stonedesk.html: the two Field Map catch arms must stop naming the Maps API
+     key, and :7795 must send a real action or be deleted. fourth's file.
+  E  an ABSENT ?action= on api/bridge.js is still accepted. Arm D1 asserts it.
+     If that changes, D1 is the arm to update -- do not delete it.
+  F  the three SQL files are STILL UNRUN. Run one file at a time and run each
+     verification block before the next.
+  G  the attestation mechanism is designed and not built. ANSWER THE
+     SOLO-PRACTITIONER QUESTION FIRST -- it changes which alternative is right.
+  H  cody's two b19 routed changes are STILL UNAPPLIED, re-measured this batch.
+  I  the three red arms in api/b19-iolta-reconcile-carveout.test.js, unchanged.
+  J  TWO OPEN TIER A OBLIGATIONS NOW OWED TO ME BY OTHERS (154h, 150h, 127h
+     from cody) and ONE I OPENED THIS BATCH, assigned to fourth.
+
+================================================================================
+13. TRANSCRIPT AND CONTEXT
+================================================================================
+
+  C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-hank\c6aa6115-6c83-4e85-839e-9d1825f2115a.jsonl
+
+CONTEXT 61.8% of 1,000,000 -- 617,692 tokens, measured.
+Printed by `python tools/context_verify.py --digest-line` and pasted verbatim,
+not self-reported and not hand-edited -- cc's b21 gate (--check-digest) refuses
+a hand-typed percentage over a real count. SAIRN-digest-hank-b21.txt carries
+the same line as measured at ITS moment of writing; if the two figures differ,
+the session kept running between them and each is true of the last assistant
+turn at the instant it was taken.
+
+DRIVE
+  SQL bundle  https://drive.google.com/file/d/1j0bFg1rVn-d4VpaHEXIxPvFhX3Ja2k93/view
+
+THE SHA256 ON THE NEXT LINE is of the BODY of this file -- every byte from
+line 2 to the line immediately above it, LF-joined. It does NOT cover line 1,
+the SHA256 line itself, or the END-OF-REPORT line, because a digest cannot
+cover itself. That is the TAIL layout tools/report_sha_check.py defines, and
+the figure was produced by calling that tool's own parts()/verdict() rather
+than a hand-rolled slice -- a seal computed by one rule and checked by another
+is not a seal. Verify with:
+  python tools/report_sha_check.py SAIRN-report-hank-b21.txt
+
+SHA256 45c6e34c1f09039536ea27240b4f46ba70fbabeaa318ef717af9ad4427424061
+END-OF-REPORT

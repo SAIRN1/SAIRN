@@ -1,0 +1,129 @@
+HANK b21 DIGEST -- 2026-10-19 -- all six items closed, the platform's oldest review obligation discharged, FIVE real gate refusals fed or recorded, zero overrides
+
+CONTEXT 63.6% of 1,000,000 -- 636,421 tokens, measured.
+  WRITTEN BY THE TOOL, NOT BY HAND. `python tools/context_verify.py
+  --digest-line` printed the line above and it was pasted verbatim; cc's b21
+  gate (`--check-digest`) refuses a hand-edited percentage over a real count.
+  Transcript it read:
+  ~/.claude/projects/C--Users-marsh-Documents-SAIRN-hank/c6aa6115-6c83-4e85-839e-9d1825f2115a.jsonl
+  last assistant turn, prompt = input_tokens + cache_read + cache_creation.
+  SAIRN-report-hank-b21.txt carries 61.8%, measured minutes earlier by the same
+  tool. THE TWO DIFFER BECAUSE THE SESSION KEPT RUNNING, not because either is
+  wrong -- each is true of the last assistant turn at the instant it was taken.
+  THE AGE MATTERS AS MUCH AS THE FIGURE.
+
+SQL-FILE 1j0bFg1rVn-d4VpaHEXIxPvFhX3Ja2k93
+
+STATUS
+All six dispatched items closed, plus the review obligation dispatched ahead of
+them. LANDED on origin/main, tip 29ed1be51 at read-back, verified by comparing
+origin/main to HEAD BY SHA after a fresh fetch -> 0 ahead, 0 behind. NOT
+FORCED. ZERO OVERRIDES: no SAIRN_GATE_EXEMPT, no SAIRN_SKIP, no
+SAIRN_SEED_GATE. Every artefact confirmed on origin by `git cat-file -e`.
+  * THE 522h OBLIGATION DISCHARGED -- the oldest on the platform, fourth's,
+    opened 2026-09-28. ACCEPTED with two findings. Lister re-run to confirm:
+    15 open/12 overdue -> 14/11.
+  * ITEM 1: both b18 items LANDED at 144dfb715 (ancestor of origin/main
+    verified). Sign guard 11/0 with an ablation arm; trust lock 14/0. LIVE
+    PROOF IS NOT OBTAINABLE -- all three deployed probes answer 401, which is
+    licence-gate evidence and none about either fix. Third state, not a pass.
+  * ITEM 2: api/bridge.js's unknown-action fall-through CLOSED. 14 arms, 0
+    failed, including the negative control and an ABLATION.
+  * ITEM 3: SKIPPED, correctly. CLAIM HOLDER IS fourth (b34) -- BLOCKED by
+    name, `same app: stonedesk`. Premise verified live first.
+  * ITEM 4: the three unrun SQL files bundled VERBATIM (proved, not claimed)
+    and verified on Drive THROUGH THE API, not just the sync mount.
+  * ITEM 5: the attestation DESIGNED, no code, with the one question it cannot
+    answer named rather than guessed.
+  * ITEM 6: THREE open-work rows, not two, with a driven acceptance test.
+
+DECISION-NEEDED
+1. CAN A SOLO PRACTITIONER ATTEST THEIR OWN IOLTA RECONCILIATION? This blocks
+   the whole attestation build and it is the first thing in the design note's
+   final section. Under the recommended MODE_ALWAYS they CANNOT -- there is no
+   second bar-admitted signer -- and a large share of real firms are one
+   attorney plus staff, so the mechanism would make attestation IMPOSSIBLE
+   rather than REQUIRED, which is worse than today where it is merely absent.
+   Three answers, not equivalent: (a) MODE_ALWAYS always, cleanest control,
+   locks out solo firms; (b) a per-firm setting -- but SAIRNlaw's countersign
+   schema EXPLICITLY REFUSED a policy table once, on the grounds that a legal
+   requirement is not something a licensee turns off in Settings; (c) a named
+   SINGLE-SIGNER mode where a solo attorney's own attestation is recorded AS
+   single-signer. (c) is where the honesty is, because it changes what the
+   record CLAIMS rather than weakening what it requires. Your call.
+2. `office_manager` IS AN UNASSERTED EXCLUDED ROLE on the alf_facility write
+   gate -- the finding the 522h record did not name. Real sairncare role, in
+   BOTH dropdowns, in ROLES_BY_APP, zero roleSet() hits, and NOT in
+   ALF_NON_MGMT. Five of seven roles are excluded and only four are asserted.
+   One-token fix in cody's file. Confirm cody takes it, or reassign.
+3. SHOULD AN ABSENT ?action= ON api/bridge.js ALSO BE REFUSED? I refused an
+   UNKNOWN action because that is what was dispatched, and arm D1 ASSERTS the
+   absent-action residual on purpose. stonedesk.html:7795 sends neither an
+   action nor a data_type and upserts a row of three nulls. If the answer is
+   yes, D1 is the arm to update -- it must not be deleted to go green.
+4. THREE SQL FILES ARE STILL UNRUN and all three locks answer 503
+   NOT_PROVISIONED until they are. The bundle is ready and the Drive id is on
+   the SQL-FILE line above.
+5. cody HAS APPLIED NEITHER b19 ROUTED CHANGE, re-measured against origin this
+   batch. api/sd-data.js:18804 still carries roleSet({ owner: true }); decide()
+   is still called with THREE arguments at :16610.
+
+CHANGED
+  api/bridge.js                          KNOWN_ACTIONS + the UNKNOWN_ACTION
+                                         refusal, derived not re-listed
+  api/b21-bridge-unknown-action.test.js  NEW -- 14 arms incl. the negative
+                                         control and an ablation
+  docs/tier-a-reviews.json               the 522h discharge + a new obligation
+                                         opened and then amended
+  docs/defect-density-register.json      the bridge defect record, 4 factors
+  docs/SAIRN-OPEN-WORK-INDEX.md          THREE new rows (+ shards, reconciled)
+  docs/2026-10-19-hank-b21-attestation-design.md   NEW -- design only
+  SAIRN-sql-hank-b21.txt                 NEW -- 49,450 bytes, on Drive
+  docs/MASTER-PLAN.md                    regenerated (996->997 files)
+  docs/traceability-matrix.md            regenerated (771->773 traced)
+  SAIRN-ACTIVE-WORK-hank.md              the b21 entry
+
+EVIDENCE-path
+  SAIRN-handoff-hank-b21.md              the full account, next step per item
+  SAIRN-report-hank-b21.txt              sealed TAIL layout, verified OK by
+                                         python tools/report_sha_check.py
+  SAIRN-sql-hank-b21.txt                 Drive 1j0bFg1rVn-d4VpaHEXIxPvFhX3Ja2k93
+  docs/2026-10-19-hank-b21-attestation-design.md
+  transcript: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-hank\c6aa6115-6c83-4e85-839e-9d1825f2115a.jsonl
+
+UNVERIFIED
+  * NO LIVE PROBE OF THE BRIDGE REFUSAL -- it is not deployed at the time of
+    writing. The 14 arms prove what the HANDLER answers, not what the URL does.
+  * NO LIVE PROOF FOR EITHER b18 ITEM. Three deployed probes answer 401. That
+    is evidence about the licence gate and NONE about the sign guard or the
+    trust lock. A 401 means UNVERIFIED, not verified-good.
+  * THE 522h REVIEW IS AGAINST A MOCK, and against CURRENT HEAD rather than the
+    recorded sha, which does not resolve in this clone. The deployed
+    alf_facility role gate is UNVERIFIED -- its probe exits 2 COULD NOT RUN.
+  * NO WHOLE-TREE SUITE RUN. Suites were chosen by what the diff touches.
+  * NO RENDERED PASS ANYWHERE. Nothing visual was looked at.
+  * THE THREE SQL FILES HAVE NOT BEEN EXECUTED against any database. The
+    bundle's own negative inserts are unverified until somebody runs them.
+  * THE ATTESTATION IS A DESIGN. No arm exists for any of it.
+  * rf_claims AND rf_jobs ON MY NEW TIER A OBLIGATION ARE A MIS-ATTRIBUTION --
+    flagged only because the SQL bundle QUOTES the 2026-08-26 incident in a
+    caution. I declared it rather than rewording the caution to dodge the
+    matcher, because that paragraph is the most useful one in the bundle.
+
+NEXT
+1. Answer DECISION-NEEDED 1 -- the solo-practitioner question -- BEFORE any
+   attestation code. It decides which alternative is correct.
+2. Run the three SQL files, one at a time, running each verification block
+   INCLUDING the negative inserts before moving to the next. A partial apply is
+   indistinguishable from a full one from the outside.
+3. Route `office_manager` into ALF_NON_MGMT, then RE-RUN THE ABLATION -- an arm
+   that stays green under it is testing nothing.
+4. fourth: the two Field Map catch arms must stop naming the Maps API key, and
+   :7795 must send a real action or be deleted. NOTE the status code changes
+   from 401 to 400 UNKNOWN_ACTION once b21 deploys.
+5. fourth also owes the Tier A review I opened this batch, on invoices /
+   law_trusttx / leg_cremations / employees (+ two declared mis-attributions).
+6. Live-verify the bridge refusal once deployed -- not with bare curl;
+   tools/sairn_http.py or the Vercel fetch.
+
+END-OF-DIGEST
