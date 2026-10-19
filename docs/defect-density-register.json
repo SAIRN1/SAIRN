@@ -33703,6 +33703,81 @@
       "recurrence_open": "The fixtures lock the SPLIT only. Nothing checks that the index's own rows are well formed -- a row that genuinely carries the wrong number of columns is still only noticed if somebody counts, and the three undeclared near-duplicate pairs this tool reports remain unresolved and belong to the rows' authors. Nor does anything compare this tool's parse against the parse used by open_work_shard.py or by any renderer, so a second naive split elsewhere would not be caught by this fixture set."
     },
     {
+      "commit": "218a3abf73e7",
+      "date": "2026-10-19",
+      "subject": "fix(tests): bld_bids could lose its pending tracking END TO END with the suite green, and bld_draws had no arm at all",
+      "files": [
+        "SAIRN-handoff-cody-b23.md",
+        "docs/2026-10-19-cody-b23-green-but-worthless-sweep.md",
+        "docs/b23-logs/ablate_bld_server_wins.py",
+        "docs/b23-logs/ablate_sweep_fixes.py",
+        "docs/b23-logs/green_but_worthless_sweep.py",
+        "docs/tier-a-reviews.json",
+        "tests/sairnbuild_server_wins.js",
+        "tests/sairndental_amount_construction.js",
+        "tests/sairndental_rollup_panel.js"
+      ],
+      "lines_added": 1587,
+      "lines_removed": 29,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "mutation-testing",
+      "summary": "SIX TEST ARMS ACROSS THREE SUITES WERE SATISFIED BY TEXT THAT DOES NOT EXECUTE, so four properties could be lost from shipped apps with every suite green. (1) tests/sairnbuild_server_wins.js: bld_bids could lose its pending tracking END TO END -- enrolment satisfied by a LINE comment (N1), a real bldPendingMark call site deleted with a COMMENT carrying the literal (N5), and the retry gate satisfied by a BLOCK comment (N4) and separately by a STRING literal (N6) -- all four ACCEPTED at 25 passed 0 failed. A bld_bids record whose push failed would then never be retried and hydration would overwrite it. (2) Same suite: bld_draws had NO ARM at all; flipping its BLD_SESSION_REQUIRED entry to false, dropping it, or leaving only a comment carrying it were each ACCEPTED, so a draw write would be sent with no employee session and refused by its own branch. (3) tests/sairndental_amount_construction.js: the MONEY ordering arm compared the index of the refusal against the index of the id mint over a RAW function body, and addChargeEntry's first line is a comment naming the refusal -- so the arm read a comment's position and a charge could be minted with an amount the app had already refused. (4) tests/sairndental_rollup_panel.js: four TIER A PHI wiring arms read raw html, so a commented-out panel div, a commented-out sidebar button, a JS comment carrying nav()'s dispatch, and a comment carrying dnt_rollup after the real sdnData read was deleted were each ACCEPTED -- the exact unreachable state that suite exists to detect.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "docs/b23-logs/ablate_bld_server_wins.py and docs/b23-logs/ablate_sweep_fixes.py (b23); fourth's own b28 ablation found N1 and N4 first, with a scratchpad driver",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "SIX ARMS ACROSS THREE SUITES AND SEVERAL BATCHES -- there is no single injection commit and naming one would be a guess dressed as a fact. Three DIFFERENT shapes contributed: an arm written correctly and made inert later by the APP gaining a comment or a map member (so the injecting commit is in sairnbuild.html or sairndental.html, not in tests/); an arm introduced by a PREVIOUS REPAIR of this same class (b17, b27); and an arm that was never written at all (bld_draws). Candidates exist for the bld_draws gap -- the commit that generalised the inline equality test to a map read -- but the arm it should have gained was never there, so that commit INTRODUCED the second member rather than the defect. Recorded as unknown rather than attributed."
+      },
+      "citation_note": "1.1 is the rule in terms: each of these arms had stopped checking and said nothing. Every one still ran, still printed ok, and still counted toward a green suite. What makes this 1.1 rather than a plain missing-assertion is that the arms were WRITTEN CORRECTLY and were later made inert BY THE APP MOVING -- a comment added to explain a refactor, a map gaining a second member, a resource gaining extensive prose about itself -- so nothing in any diff shows the moment the guard went dead.",
+      "phase_note": "CODING, and specifically the repair phase. Three of the six arms were introduced or last touched BY A PREVIOUS REPAIR of this same class -- b17's comment-satisfied assertion, b27's line-comment-only stripper, and the bld_bids arm that was updated to follow the BLD_SESSION_REQUIRED map but only for its original member. The defect was written into the fix.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "An assertion whose subject is SOURCE TEXT is satisfied by any prose containing the spelling, and a comment explaining a refactor is exactly such prose. Six arms across three suites read raw file text.",
+          "action_status": "done",
+          "action": "Two views of the source in tests/sairnbuild_server_wins.js -- code() strips comments and keeps strings so WHICH string a call was passed is still visible; struct() also collapses every string so whatever matches is executable. Every assertion states which view it uses and which named mutation that closes. code() added to the two sairndental suites, plus markup = html with HTML comments stripped for the Tier A wiring arms."
+        },
+        {
+          "kind": "technical",
+          "factor": "WHOLE-FILE SCOPE. A substring test over 400KB answers \"does this text occur anywhere\", which is a question no property of the app depends on -- and it is also unsafe to strip, because a naive comment stripper over a whole app blanks URLs inside strings and regex literals.",
+          "action_status": "done",
+          "action": "Every repaired assertion is bounded to one function body or a two-declaration window before stripping. windowBetween() fails CLOSED if either anchor is absent, occurs more than once, or the declarations swap order. The HTML-comment strip is the one deliberate exception and is whole-file because the HTML comment delimiters are unambiguous."
+        },
+        {
+          "kind": "technical",
+          "factor": "ORDERING BY indexOf OVER UNSTRIPPED TEXT compares the position of whichever mention comes first, which can be a comment. addChargeEntry's FIRST LINE is a comment naming the refusal the arm was checking the position of.",
+          "action_status": "done",
+          "action": "The money ordering arm now reads comment-stripped source and carries a precondition that BOTH anchors exist in executable code before their positions are compared -- an order comparison between two absent anchors is a comparison of two -1s and asserts nothing."
+        },
+        {
+          "kind": "process",
+          "factor": "A CONDITION THAT BECAME A SET KEPT AN ARM NAMING ONE MEMBER. bld_bids' session requirement was generalised from an inline equality test to a map read at three call sites; the arm was updated to follow the map but only for its original member, so every member added later was uncovered on arrival.",
+          "action_status": "done",
+          "action": "The new bld_draws arm ITERATES BLD_SESSION_REQUIRED rather than naming a second member, so a third resource is covered on the day it is added. It also asserts the map parses as a set of at least two, and that the call sites INDEX the map rather than hardcoding a member."
+        },
+        {
+          "kind": "detection",
+          "factor": "THE CARELESS MUTATIONS WERE CAUGHT AND THE PLAUSIBLE ONES WERE NOT. Deleting the declaration and flipping its value both went red, which made every one of these arms read as working from every angle except an ablation.",
+          "action_status": "done",
+          "action": "Both ablations land as re-runnable scripts rather than one-off scratchpad drivers -- docs/b23-logs/ablate_bld_server_wins.py (16 mutations, controls included) and docs/b23-logs/ablate_sweep_fixes.py, which carries a --before leg that drives the identical mutations against the suites taken out of git so the pre/post differential is measured and not asserted."
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "NO TOOL ON THIS PLATFORM LOOKED FOR THE SHAPE until b23, so across five previous instances the only thing that had ever found one was a session choosing to ablate. A class whose detection depends on somebody deciding to be thorough recurs.",
+          "action_status": "done",
+          "action": "docs/b23-logs/green_but_worthless_sweep.py scans every test file for the shape and exits 1 while any candidate stands in scope: 617 scanned, 102 candidates, 16 attributable to cody, 6 confirmed by reading, 10 refuted. It is NOT wired to any hook or gate, which is stated in the recurrence_open field rather than left to be discovered."
+        }
+      ],
+      "recurrence_open": "THREE THINGS THE ACTIONS ABOVE DO NOT CLOSE. (1) THE SWEEP IS NOT WIRED TO ANYTHING -- no hook, no push gate, no suite invokes it, which is precisely the tooling_inventory finding that a tool which exists is not a mechanism and a tool that RUNS is. Nothing stops the 102 candidates from growing. (2) THE 86 CANDIDATES THAT ARE NOT cody's ARE NOT READ and are not counted as clean. (3) AND THE SWEEP IS BLIND TO ONE MEMBER OF ITS OWN CLASS: b22's B6 arm was satisfied by a CONSTANT'S note FIELD -- real executable data carrying prose -- which looks like nothing to a text scanner because it IS code. Detecting that needs the value flow, not the text, and no tool here does it. Convention 36 was written about this class one batch before b23 and did not prevent b23 writing a B6-shaped arm of its own, which is the measurement that says prose is not a control."
+    },
+    {
       "commit": "9a7f73dab468",
       "date": "2026-10-19",
       "subject": "fix(hover): citation_class_check's sentence splitter is abbreviation-safe now, h1 b55",
