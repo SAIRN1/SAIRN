@@ -1,0 +1,104 @@
+HANK b18 DIGEST -- 2026-10-19
+
+STATUS
+hank b18 complete and LANDED. The batch landed at 09fbf47ee and another
+session pushed on top within seconds -- five sessions, one branch -- so
+RE-DERIVE with `git rev-parse --short origin/main` rather than trusting any
+sha in the handoff, report or digest. Verified by READING ORIGIN, not HEAD:
+`git show origin/main:<file>` for all EIGHT new files plus FIFTEEN content
+checks, INCLUDING ONE ABSENCE CHECK. NO OVERRIDE FORM USED -- not
+SAIRN_SEED_GATE=off, not SAIRN_GATE_EXEMPT=seed, not SAIRN_SKIP. SIX gate
+refusals across FIVE named gates, all six satisfied, zero overridden --
+register_feed_gate (non-fast-forward, which the gate said was not a finding
+about my commits), register-feed, tier-a, derived-docs, CREDENTIAL-SQL and
+SUBJECT-REUSE. 295 api/ suites run individually, 291 exit 0; all FOUR red are
+pre-existing and the unregistered one was MEASURED on the pre-b18 tree by
+stashing, not assumed. Live probe 12 verified / 0 failed / 4 could not run,
+and RUN THREE TIMES -- one leg moved to COULD-NOT-RUN on an SSL timeout, never
+to VERIFIED.
+
+CONTEXT
+WHAT LANDED -- the four remaining practitioner answers, the trust-lock
+ORDERING fix underneath them, and three stonedesk residuals of the 2026-08-06
+"Granting..." class.
+
+THE ORDERING FIX IS THE ONE TO READ. api/_lib/law-roles.js's header has said
+since the file was written that the IOLTA trust lock is "a separate structure
+consulted BEFORE the table"; decide() consulted it AFTER, and the code's own
+comment at that line said so. That is fourth's b26 H1 one layer deeper than
+the test gap b17 closed -- and the consequence that mattered has nothing to do
+with H1: WITH THE LOCK LAST, C2's EXCEPTION COULD ONLY BE EXPRESSED BY WIDENING
+THE TABLE, i.e. by weakening the thing the lock exists to survive. The lock now
+runs FIRST and owns trust policy including its one exception. b17's suite is
+14/0/0 and the 2x2 still lands on the same four cells -- checked by running it.
+
+F1 (cremation authorisation needs a second named person) is MODE_ALWAYS --
+every write INCLUDING THE OWNER'S, because a rule the owner is exempt from is
+not that rule. C2 (a paralegal may PREPARE for an attorney to authorise) is
+MODE_PREPARED_ONLY -- an attorney writes law_trusttx exactly as before b18,
+because C2 asked whether a paralegal may prepare and did NOT ask whether an
+attorney now needs a second attorney. THAT ASYMMETRY IS THE MOST LIKELY THING
+IN b18 TO BE WRONG and it is attack point (a) of the Tier A obligation. One
+mechanism serves both apps, which DEPARTS from the sv-witness/sairncare-witness
+copy-and-narrow precedent -- those two differ in SHAPE, these two differ in
+three VALUES -- and the file argues it rather than assuming it.
+
+C1 adds `bookkeeper`, nineteen cells written out, and it CANNOT reach the
+matter file or client trust. C3's LAW_BAR_ADMITTED_ROLES is what makes that
+safe: a property of the ROLE decided once, not nineteen cells somebody has to
+get right. The monotonicity relation became a PARTIAL ORDER because bookkeeper
+and paralegal are deliberately incomparable and a chain would have had to call
+one of them an inversion.
+
+F2's setting CHANGES LESS THAN IT LOOKS and that is measured, not hedged: the
+MONEY band already gives livery nothing, so no price visibility moves under
+either answer. What it decides is whether leg_liverybookings is GRANTABLE.
+F3's config is complete and callable AND NOTHING STORES IT -- there is no
+leg_settings resource, checked not assumed, so its countersign branch is
+unreachable in production.
+
+THE PUSH GATE CAUGHT b18's OWN CODE TWICE. preauth_oracle_check.py reported
+both new endpoints as "UNDECLARED PUBLIC -- no auth boundary", because they
+delegated their whole handler to a lib and the file that IS the route showed
+nothing; restructured, not declared, with its own register record. And the
+credential-shape gate refused a 19-character fixture token assigned to a field
+named `token` -- correctly; the test commit was REWRITTEN and the literal now
+declares itself as a placeholder.
+
+NINE THINGS I GOT WRONG IN THIS BATCH ARE IN THE REPORT, each recorded rather
+than quietly fixed -- including an ablation that measured the RESTORED tree and
+reported it as a result, an arm that claimed a guard was load-bearing when it
+is not, a test harness whose DOM stub made two correct arms fail, and -- the
+ninth, found AFTER the other eight were written down -- the handoff and the
+report QUOTING the rejected credential literal while describing the gate that
+had just refused it. The gate refused the artefact push for exactly that, and
+it was right: describing a secret is not the same as pasting it. The list had
+to be re-counted rather than left at the number it reached first.
+
+NEXT
+1. Michael runs sql/sairnlegacy_countersign_schema.sql and
+   sql/sairnlaw_countersign_schema.sql and reads each grant check -- exactly
+   INSERT, SELECT, UPDATE (3, not 4) -- and each VERIFY block's constraint
+   list: if only ONE of the two CHECKs is listed, the paste applied partway and
+   THE SELF-SIGNATURE REFUSAL MAY BE THE MISSING ONE. Until then every token
+   lookup answers 503 NOT_PROVISIONED, which is a REFUSAL and not a bypass.
+2. Michael runs the `bookkeeper` CHECK widening block at the bottom of
+   sql/sairnlaw_employee_auth_schema.sql. Until then the picker offers a role
+   Postgres refuses with 23514, and the picker says so at the <select>.
+3. MICHAEL CONFIRMS THE SIX PRACTITIONER ANSWERS, because they are recorded
+   NOWHERE IN THE REPO. Everything in this batch rests on my reading of them
+   off the dispatch, and if one is wrong no test here can see it.
+4. fourth discharges the Tier A obligation over 24 resources, and the item I
+   most want attacked is the F1/C2 MODE asymmetry -- attack point (a).
+5. Storage for F3's apprentice config and F2's livery setting, plus the
+   per-employee livery GRANT table b17 named and did not build.
+6. The client UI for both countersignature endpoints -- there is no "needs
+   your signature" list, no prepare button, no status badge, and the indexes in
+   both SQL files exist to serve exactly that query. The helper comes back in
+   the SAME change as its caller.
+7. Drive C2 with a real DISBURSEMENT, not a Deposit -- the arms use a Deposit
+   so they do not depend on a mock of the balance-guard RPC, and the real C2
+   case is a disbursement.
+8. The two stonedesk SWEEPS are UNMEASURED and three register records say so:
+   how many other empty states render a failed read as "none yet", and how
+   many other .then( chains have no .catch, in a 2.2MB file.

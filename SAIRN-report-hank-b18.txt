@@ -1,0 +1,236 @@
+HANK b18 REPORT -- 2026-10-19
+=============================================================================
+Every number below was RE-DERIVED from the log or tool that records it,
+immediately before being written down. A remembered count drifts toward the
+flattering one.
+
+-----------------------------------------------------------------------------
+WHAT WAS DISPATCHED, AND THE ONE ITEM THAT WAS ALREADY DONE
+-----------------------------------------------------------------------------
+  straight-time-floor sign guard .......... ALREADY LANDED IN b17. VERIFIED by
+                                            content at origin, NOT re-done.
+  trust-lock hard-lock fix ................ DONE -- and it turned out to be an
+                                            ORDERING defect, not a test gap
+  Grant App Login Access stuck-on-Granting  THE ORIGINAL IS FIXED (2026-08-06).
+                                            THREE RESIDUALS OF ITS CLASS WERE
+                                            NOT, and now are.
+  Passkey / Employee Profile E2E .......... DONE, 37/0/0, functions LIFTED and
+                                            RUN, with in-memory ablations
+  F1  cremation countersignature .......... DONE, MODE_ALWAYS
+  C2  two-stage trust disbursement ........ DONE, MODE_PREPARED_ONLY
+  F2  livery billing per-home setting ..... DONE, and it changes less than it
+                                            looks -- measured, said so
+  F3  apprentice permission config ........ DONE, with its storage named MISSING
+  C1  bookkeeper role ..................... DONE, with a limit worth reading
+  C3  bar-admitted-acts constant .......... DONE, and it is what makes C1 safe
+  push + confirm landed ................... DONE, live-verified
+
+-----------------------------------------------------------------------------
+THE ASSUMPTION EVERYTHING RESTS ON
+-----------------------------------------------------------------------------
+MICHAEL'S ANSWERS TO THE SIX PRACTITIONER QUESTIONS ARE RECORDED NOWHERE IN
+THE REPO. The dispatch named the implementations and I read each answer off
+its implementation. The reading is complete and self-consistent and it is
+still a reading. If one of the six is wrong, the code built on it is wrong in
+a way NO TEST HERE CAN SEE. Open item 3.
+
+-----------------------------------------------------------------------------
+TESTS -- THE WHOLE api/ TREE, NOT A SELECTION
+-----------------------------------------------------------------------------
+  docs/hank-evidence/b18/all_api_suites.log
+    295 suites run individually, 291 exit 0, 4 red.
+
+  ALL FOUR RED ARE PRE-EXISTING, and the fourth was MEASURED not assumed:
+    sd-data-customer-soft-delete .... registered in known-red-suites.json
+    sd-data-family-contacts ......... registered
+    sd-data-scp-licence-only ........ registered
+    api/_resources/extra-actions .... NOT REGISTERED. Driven on the PRE-b18
+                                      tree by stashing every b18 change:
+                                      exit 1 there too. Open item 8.
+
+  THREE SUITES THIS BATCH BROKE AND FIXED:
+    preauth-envelope-ordering ....... A REAL FINDING against b18's own new
+                                      endpoints. 59/0 after the fix.
+    sd-data-leg-session-gate ........ a STALE EXPECTATION its own comment had
+                                      PREDICTED IN WRITING. 20/0.
+    sd-data-cross-tenant-dispatchers  the leg_cremations [W] arm reported
+                                      itself UNREACHED. 418/0.
+
+  RE-AIMED WITH NO BREAKAGE:
+    sd-data-law-role-matrix ......... 29/0  (partial order + D2 + 2 new plants)
+    sd-data-leg-role-matrix ......... 37/0  (L6 re-aimed, L6b-L6e, L10b)
+    b17-trust-lock-hard ............. 14/0/0 (T4 anchor, T4b, T4c)
+
+  NEW:
+    b18-countersign-lock ............ 59/0/0, THREE ABLATIONS
+    b18-passkey-profile-e2e ......... 37/0/0, FOUR ablations + one clean half
+
+-----------------------------------------------------------------------------
+GUARDIAN AND THE DRIFT CHECKS
+-----------------------------------------------------------------------------
+  Check 0a  checkblocks stonedesk.html .......... 131 blocks, 0 failed
+            checkblocks sairnlaw.html ...........   4 blocks, 0 failed
+            node --check, 13 changed/new JS ..... all clean
+  literal_drift_check ........................... 0 GATED FINDINGS
+  role_maps_have_no_prototype.js ................ 60 of 60, ALL 13 PASS
+  preauth_oracle_check.py ....................... PREAUTH_DISCLOSURES:0
+  role-picker-vs-check-constraint ............... 17 apps clean, 0 refused
+  defect_register.py --check .................... OK, 648 records
+
+  TWO tests/ PROBES EXIT 2 (COULD NOT RUN) AND BOTH ARE PRE-EXISTING:
+    law_reconcile_role_vocab_check.py -- "could not find
+      `const ROLES_BY_APP = {...};` in api/_lib/auth.js". ITS REGEX WAS RUN
+      AGAINST origin/main's auth.js AS WELL AS MINE AND MATCHES NEITHER, so
+      it is not b18. tests/ is cody's.
+    law_resources_phase_boundary_probe.py -- same class, not diagnosed.
+
+-----------------------------------------------------------------------------
+LIVE VERIFICATION -- 12 verified / 0 failed / 4 could not run
+-----------------------------------------------------------------------------
+  docs/hank-evidence/b18/live_probe.log
+
+  AND THE STABILITY, AS A SECOND NUMBER:
+    run 1: 12 / 0 / 4
+    run 2: 11 / 0 / 5   -- one leg hit an SSL handshake timeout
+    run 3: 12 / 0 / 4
+  THE LEG THAT MOVES MOVED TO COULD-NOT-RUN, NEVER TO VERIFIED. That is the
+  direction a flaky leg has to fail in and is why the probe has three states.
+
+  VERIFIED (12):
+    leg-countersign  405 on GET ........ the handler RAN
+    law-countersign  405 on GET ........ the handler RAN
+    leg-countersign  401 NO_LICENSE .... THE BOUNDARY THE PUSH GATE REFUSED
+    law-countersign  401 NO_LICENSE .... THE FIRST DRAFT FOR NOT HAVING
+    setPending() present
+    sdReadFailedNote('employee profiles') present
+    sdAuthWasRefused('employee_profile') present
+    "Could not complete the save -- nothing was confirmed" present
+    ABSENT: the old "Network error -- check your connection" wording
+    ABSENT: the unguarded btn.textContent='Granting...' line
+    ABSENT: the old empty-state adjacency in the profile render
+    sairnlaw picker offers Bookkeeper
+
+  THREE OF THE TWELVE ARE ABSENCE CHECKS. An absence check is the only way to
+  verify a DELETION deployed.
+
+  COULD NOT RUN (4) -- NOT PASSES:
+    an unknown action is a 400 naming the three actions .. needs a licence key
+    F1 leg_cremations happy path ........................ SQL NOT RUN
+    C2 law_trusttx two-stage happy path ................. SQL NOT RUN
+    C1 bookkeeper credential creation ................... CHECK WIDENING NOT RUN
+
+  SO THE THING THIS BATCH IS MOSTLY ABOUT IS INERT IN PRODUCTION TODAY. Every
+  countersignature token lookup answers 503 NOT_PROVISIONED and Postgres
+  refuses `bookkeeper` with 23514. THAT IS A REFUSAL AND NOT A BYPASS -- the
+  write is refused rather than filed unsigned, and arms A1/A2 of
+  api/b18-countersign-lock.test.js assert that shape against the real
+  dispatcher.
+
+-----------------------------------------------------------------------------
+THE PUSH -- SIX REFUSALS, FIVE GATES, ZERO OVERRIDDEN
+-----------------------------------------------------------------------------
+  NO OVERRIDE FORM USED. Not SAIRN_SEED_GATE=off, not SAIRN_GATE_EXEMPT=seed,
+  not SAIRN_SKIP.
+
+  register_feed_gate  no ref lines, non-fast-forward .... rebased
+  register-feed       the stonedesk fix had no record ... five records
+  tier-a              no covering obligation ............ 24 resources, fourth
+  derived-docs        MASTER-PLAN + traceability stale .. regenerated by tools
+  credential-sql      a credential-shaped ADDED line .... COMMIT REWRITTEN
+  subject-reuse       my push loop reused one subject ... loop fixed
+
+  TWO ARE WORTH READING:
+
+  (1) preauth_oracle_check.py caught b18's OWN two new endpoints as
+      "UNDECLARED PUBLIC -- no auth boundary". Both delegated their entire
+      handler to a lib, so the file a reader opens to ask "what reaches this
+      URL unauthenticated" showed NOTHING. The requests WERE authenticated --
+      so it was not an open endpoint, it was an endpoint whose boundary was
+      unreadable at the route. RESTRUCTURED, not declared. It has its own
+      register record.
+
+  (2) The credential-shape gate refused a FIXTURE TOKEN, correctly: the
+      literal was 19 bearer-shaped characters assigned to a field named
+      `token` -- `cs-token-` plus a word this file deliberately does not
+      complete on the same line. The gate reads ADDED LINES of every commit,
+      so deleting it later would not clear it. THE TEST COMMIT WAS REWRITTEN
+      and the literal is now a named constant containing the word
+      `placeholder` -- one of the tool's own PLACEHOLDER_MARKERS -- so the
+      fixture DECLARES ITSELF rather than being exempted.
+
+      AND THE SAME GATE THEN REFUSED THIS REPORT AND THE HANDOFF FOR QUOTING
+      IT. Also correctly. It reads added lines and does not care that the line
+      is prose: a credential-shaped string in a committed DOCUMENT ships just
+      as surely as one in a source file. Worth knowing before writing the next
+      incident up -- describing a secret is not the same as pasting it, and a
+      write-up that pastes it HAS PUBLISHED IT.
+
+-----------------------------------------------------------------------------
+THINGS I GOT WRONG IN THIS BATCH, EACH RECORDED RATHER THAN QUIETLY FIXED
+-----------------------------------------------------------------------------
+  1. THE COUNTERSIGN GATE WENT IN THE WRONG CALL SITE FIRST. The LAW_RESOURCES
+     prelude, which law_trusttx NEVER ENTERS -- it is one of the four named
+     individually inside SD_SESSION_GATED. Cost a round of red arms.
+
+  2. THE AUTH BOUNDARY WAS IN THE LIB, NOT THE ROUTE. Caught by a checker,
+     fixed by restructuring my code rather than patching the checker.
+
+  3. AN ABLATION MEASURED THE RESTORED TREE. The first draft of J2 ran the leg
+     matrix suite AFTER ablate() returned -- i.e. after the finally had already
+     restored the file -- and reported a clean answer as an ablation result.
+     `alsoRun` now runs it INSIDE the mutated window.
+
+  4. E3 ASSERTED THE WRONG LAYER. It claimed the `typeof showToast` guard was
+     load-bearing. IT IS NOT -- the per-step try already covers it. E3 was
+     re-pointed at the layer that does hold the property, and E3b records the
+     measured redundancy. An arm asserting otherwise would have been a green
+     claim about a layer doing no work.
+
+  5. THE E2E HARNESS MODELLED THE DOM WRONG. innerHTML and textContent were
+     independent strings, so arms B5/B6 FAILED ON CORRECT CODE. A real element
+     replaces one when you set the other. A harness that models the platform
+     badly produces findings about the harness.
+
+  6. AN ARM'S ANCHOR WAS THE ROLE NAME. L6 asserted the F1 refusal does not
+     contain the word "director" -- and the refusal says "Ask another licensed
+     DIRECTOR to review and countersign it", for a good reason. Re-anchored to
+     `Your role (`, which is what actually identifies the generic sentence.
+
+  7. I CALLED TWO REGISTER RECORDS A DUPLICATE. A grep for the render
+     function's name matched both; the missing-.catch record names that
+     function in its own summary. Comparing them FIELD BY FIELD is the only
+     reason the right answer came out.
+
+  8. MY PUSH LOOP WROTE ONE FIXED COMMIT SUBJECT, which the push gate refuses
+     as reuse-on-a-different-file-set, and it RE-FETCHED BEFORE PUSHING,
+     widening the race it was built to lose less often. Both fixed in v2 and
+     both recorded in the script's own header.
+
+  9. I WROTE THE REJECTED CREDENTIAL LITERAL INTO THIS REPORT AND INTO THE
+     HANDOFF, describing the gate that had just refused it -- and the gate
+     refused the artefact push for exactly that. A credential-shaped string in
+     a committed DOCUMENT ships as surely as one in a source file, and the
+     gate reads added lines without caring that the line is prose. DESCRIBING
+     A SECRET IS NOT THE SAME AS PASTING IT. This item is NINTH because it was
+     found after the eight above were written down, which is itself the point:
+     the list had to be re-counted rather than left at the number it reached
+     first.
+
+-----------------------------------------------------------------------------
+WHAT IS OPEN -- 15 items, full detail in SAIRN-handoff-hank-b18.md
+-----------------------------------------------------------------------------
+  MICHAEL'S:   1 run two countersignature SQL files + read the grant checks
+               2 run the bookkeeper CHECK widening block
+               3 confirm the six practitioner answers so they are RECORDED
+  fourth's:    4 discharge the Tier A obligation -- attack point (a) FIRST
+  ANYBODY'S:   5 storage for F3's config and F2's setting (no leg_settings)
+               6 the client UI for both countersignature endpoints
+               7 drive C2 with a real Disbursement, not a Deposit
+               8 a known-red row for extra-actions (cody holds that file)
+               9 the two stonedesk SWEEPS -- unmeasured, three records say so
+  cc's:       10 gate-driver wiring for both new b18 suites
+              11 FMEA drafts for eight new/changed files
+  CARRIED:    12 the seam check still says COULD-NOT-TELL (b16, b17, b18)
+              13 the 31 fixed-width source windows (b16 item 1)
+              14 ARM A still passes the trusttx suite (b17 item 9)
+              15 known-red-suites.json last measured 2026-10-06 -- 13 days

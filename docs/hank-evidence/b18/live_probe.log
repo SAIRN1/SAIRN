@@ -1,0 +1,25 @@
+b18 live verification -- the deployed URLs, not the repo.
+
+  VERIFIED       leg-countersign is routed and answers 405 on GET  -- the handler ran -- POST only, which is its first line
+  VERIFIED       law-countersign is routed and answers 405 on GET  -- the handler ran -- POST only, which is its first line
+  VERIFIED       leg-countersign refuses a bearer-less POST 401 NO_LICENSE  -- the boundary is in the route file and it RUNS
+  VERIFIED       law-countersign refuses a bearer-less POST 401 NO_LICENSE  -- the boundary is in the route file and it RUNS
+  COULD NOT RUN  an unknown action is a 400 naming prepare/countersign/status  -- needs a valid licence key, which this probe deliberately does not carry. api/b18-countersign-lock.test.js arm K14 drives it against the real handler
+  COULD NOT RUN  F1 leg_cremations happy path (prepare -> countersign -> write)  -- sql/sairnlegacy_countersign_schema.sql HAS NOT BEEN RUN, so the token table does not exist and every lookup answers 503 NOT_PROVISIONED. Needs a signed session for TWO different licensed directors as well
+  COULD NOT RUN  C2 law_trusttx two-stage happy path  -- sql/sairnlaw_countersign_schema.sql HAS NOT BEEN RUN. Needs a paralegal session AND a bar-admitted session on one licence
+  COULD NOT RUN  C1 bookkeeper credential creation  -- the bookkeeper CHECK-constraint widening block at the bottom of sql/sairnlaw_employee_auth_schema.sql HAS NOT BEEN RUN, so Postgres refuses the role with 23514. The picker offers it and says so
+  VERIFIED       PRESENT: function setPending(on){  -- the grant button reset is ONE function, called from all three exits
+  VERIFIED       PRESENT: sdReadFailedNote('employee profiles')  -- a FAILED profile read says so instead of "No profiles set yet."
+  VERIFIED       PRESENT: sdAuthWasRefused('employee_profile')  -- and a REFUSED read is a third message, not an absence
+  VERIFIED       PRESENT: Could not complete the save -- nothing was confirmed  -- the profile save has a .catch and it reports
+  VERIFIED       ABSENT: errEl.textContent='Network error -- check your connection   -- THE OLD WORDING IS GONE -- it reported a CREATED credential as a network failure. An absence check is the only way to verify a deletion deployed
+  VERIFIED       ABSENT: btn.textContent='Granting...';btn.disabled=true;  -- the unguarded btn dereference is gone, replaced by setPending()
+  VERIFIED       ABSENT: listEl.innerHTML='<div style="color:var(--muted)">No profi  -- the three-state branch really is between the empty test and the render -- this exact adjacency no longer exists
+  VERIFIED       PRESENT: the sairnlaw provisioning picker offers Bookkeeper  -- C1 is reachable from the UI -- and the comment beside it says the database will refuse it until the migration runs
+
+  12 verified, 0 failed, 4 could not run
+  COULD NOT RUN (these are NOT passes):
+    - an unknown action is a 400 naming prepare/countersign/status
+    - F1 leg_cremations happy path (prepare -> countersign -> write)
+    - C2 law_trusttx two-stage happy path
+    - C1 bookkeeper credential creation

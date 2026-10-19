@@ -43,3 +43,14 @@ ALL FOUR VERIFIED PRE-EXISTING.
   api/sd-data-cross-tenant-dispatchers.test.js -- the leg_cremations [W] arm reported
     itself UNREACHED. Added to WRITE_BLOCKED with its reason, the same call the list
     already made for sv_controlled. READ isolation covered, WRITE disclosed as not.
+
+=== STABILITY, MEASURED OVER THREE RUNS rather than quoted from one ===
+run 1: 12 verified / 0 failed / 4 could-not-run
+run 2: 11 verified / 0 failed / 5 could-not-run  -- 'leg-countersign is routed' hit an SSL handshake timeout
+run 3 (this log): see the count line above
+
+THE ONE LEG THAT MOVES IS A TRANSPORT TIMEOUT, not a verdict about the
+deployed code -- and it moved to COULD NOT RUN, never to VERIFIED. That is
+the direction a flaky leg has to fail in, and it is why the probe has three
+states. ACCURACY AND STABILITY ARE TWO NUMBERS (cross-domain discipline:
+report them separately, never as one).

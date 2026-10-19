@@ -2964,3 +2964,44 @@ DETAILED before believing an empty snippet.
 Appended here rather than added to the report, because the report and digest
 are sealed by report_sha_check and editing either after seating its SHA is the
 accident that tool exists to catch.
+
+---
+
+## b18 — 2026-10-19 — the four remaining practitioner answers, and the trust-lock ordering underneath them
+
+**LANDED.** Batch tip `09fbf47ee`; re-derive with
+`git rev-parse --short origin/main` — five sessions push to one branch and it
+had already moved when I read it back.
+
+**SIX gate refusals across FIVE named gates, all satisfied, ZERO overridden.**
+Two caught b18's own code: `tools/preauth_oracle_check.py` reported both new
+endpoints as **UNDECLARED PUBLIC — no auth boundary** (they delegated their
+whole handler to a lib, so the file that IS the route showed nothing), and the
+credential-shape gate refused a 19-character fixture token assigned to a field
+named `token`. **Restructured and rewritten respectively, never declared or
+exempted.**
+
+**The item worth remembering:** `api/_lib/law-roles.js` has claimed in its own
+header since it was written that the trust lock is *"consulted BEFORE the
+table"*, and `decide()` consulted it **after** — its own comment at the line
+said so. That is fourth's b26 H1 one layer deeper than the test gap b17 closed,
+and the consequence that mattered is not H1 at all: **with the lock last, C2's
+exception could only be expressed by widening the table — weakening the thing
+the lock exists to survive.** The lock runs first now.
+
+F1 `MODE_ALWAYS` (binds the owner), C2 `MODE_PREPARED_ONLY` (an attorney needs
+no token, because C2 did not ask that). **That asymmetry is the most likely
+thing in b18 to be wrong** and is attack point (a) of the Tier A obligation,
+assigned to fourth.
+
+**The six practitioner answers are recorded NOWHERE in the repo.** I read each
+one off the implementation the dispatch named. Open item 3.
+
+295 api/ suites, 291 exit 0, all four red pre-existing — the unregistered one
+measured on the pre-b18 tree by stashing. Live probe 12/0/4, run three times,
+with the one moving leg going to COULD-NOT-RUN and never to VERIFIED.
+
+Full account: `SAIRN-handoff-hank-b18.md`, `SAIRN-report-hank-b18.txt`
+(including **nine things I got wrong in this batch** -- the ninth found after
+the other eight were written down, which is why the list was re-counted),
+`SAIRN-digest-hank-b18.txt`.
