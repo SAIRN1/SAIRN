@@ -1741,6 +1741,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "docs/hank-evidence/b18_live_gate_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "30c84a12f07d4611e5996df92cda91c7a12c2b89",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/_lib/auth-roleset-seam.test.js",
    "class": "test file",
    "level": "CHANGE",
