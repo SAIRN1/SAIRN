@@ -252,6 +252,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#128993; `api/b20-countersign-open.test.js` IS TRACED TO NOTHING &mdash; 15 arms over a new API action, cited by no open-work row, so `traceability_matrix.py` counts it in the UNTRACED population** <!-- B20-OPEN-ACTION-UNTRACED-HANK-2026-10-19 --> | **OPEN 2026-10-19 (hank, b21). THIS ROW IS THE CITATION, and opening it is the fix &mdash; not a code change.** `python tools/traceability_matrix.py` moved the untraced count **224 &rarr; 225** when t | `api/b20-countersign-open.test.js` |
 | **&#9989; THE `git rev-parse` CONVERSION WAS DONE AND THE UNCHECKED `__file__` FALLBACK UNDERNEATH IT STILL RETURNED THE HOME REPOSITORY &mdash; a warning on stderr beside a usable wrong path** <!-- WORKTREE-ROOT-FALLBACK-HANK-2026-10-06 --> | **FIXED 2026-10-06 (hank), `6a4ee580`**, in all three subjects &mdash; `tools/probe_public_book_guardian.py`, `tools/rf_claim_gate_live_probe.py` and `tools/rf_roundtrip_probe.py`. `tests/run_worktree | `tests/run_worktree_root_home_repo_probe.py` |
 | **&#128993; `tooling_inventory.py` REFUSES LOUDLY ON A MISSING `PURPOSES` ENTRY AND IS SILENT ON A DUPLICATE ONE &mdash; measured, with a probe that is also the acceptance test** <!-- PURPOSES-DUP-KEY-ROUTED-HANK-2026-10-06 --> | **ROUTED 2026-10-06 by hank to CODY BY NAME.** `tools/tooling_inventory.py` is cody's under a live claim (queue19, re-checked at HEAD), so this is routed and **not touched**. The artifact is `tests/ru | `tests/run_purposes_duplicate_key_probe.py` |
 | **&#128308; NOTHING COUNTS *UNSCOPED* `verifySessionToken` CALLS &mdash; a branch gate that DROPPED its app scope entirely passes ALL FOURTEEN stubs on this platform, including the two that are the reference shape** <!-- CCBATCH2-2026-10-05 --> | **NEW 2026-10-05 (CC). Found while fixing the twelve suites `c8b5e5b1` turned red (`ac9c21df`, `395f7f2a`); carried in BOTH of today&rsquo;s register records&rsquo; recurrence notes** | `api/_lib/dnt-rollup-endpoint.test.js`, `api/_lib/law-trust-reconcile-endpoint.test.js` |
@@ -700,6 +701,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#128993; THREE LIVE `api/bridge` CALL SITES ASK FOR ACTIONS THAT DO NOT EXIST, and one of them writes a row of three nulls &mdash; the unknown-action fall-through is CLOSED, the callers are not** <!-- BRIDGE-DEAD-CALL-SITES-HANK-2026-10-19 --> | **OPEN 2026-10-19 (hank, b21). The ENDPOINT half is fixed and pushed; the CALLER half is `stonedesk.html`, which fourth holds under a live b34 claim (BLOCKED by name: `same app: stonedesk`), so it is  | `api/b21-bridge-unknown-action.test.js` |
 | **&#9989; A TEST ARM THAT FAILED GREEN &mdash; a fixed 200-byte window over a 96-byte function body, with a POSITIVE assertion, so the suppression could be removed and the suite would still report 23/23** <!-- FOURTH-ROUTED-F1-APPLIED-HANK-2026-10-06 --> | **FIXED 2026-10-06 (hank), applying fourth's routed finding 1 in full and reproducing its premise first.** `tests/stonedesk_server_backup.js` **EXIT=0, 23 passed 0 failed**; `tests/run_fn_span_control | `tests/run_fn_span_control.js`, `tests/stonedesk_server_backup.js` |
 | **&#9888; [0072]&rsquo;s material-risk DENOMINATOR counts work that was never fabricated &mdash; and it flips a RED verdict to OK** | **REVIEWED 2026-09-22 (Fourth)** &mdash; `tests/material_risk_denominator_review_probe.js`, report-only, exit 0, 19 checks. **1 finding, NOT fixed by me** &mdash; the population is cc&rsquo;s design d | `tests/material_risk_denominator_review_probe.js` |
 | **&#9989; An `admin` could deactivate the last active `owner` &mdash; the FOURTH instance of the last-admin defect, in a Tier A auth path, behind a comment calling it &ldquo;unreachable by construction&rdquo;** | **FIXED 2026-09-21 (Hank)** &mdash; `GUARD_ROLES = [SOLE_ROLE]` in `api/sd-auth.js`; new `api/sd-auth-last-admin.test.js` **8 arms**, new `tests/run_sd_auth_last_admin_sabotage_probe.py` **8 mutations | `api/sd-auth-last-admin.test.js`, `tests/run_sd_auth_last_admin_sabotage_probe.py` |
@@ -733,20 +735,20 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 224 test files are traced to no stated requirement
+### 223 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 774 of 998 traced, 77.6%.
+For context and not as the headline: 776 of 999 traced, 77.7%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 774 citations come from
+### Where the 776 citations come from
 
 | source | citations |
 |---|---|
 | `declared` | 342 |
-| `index` | 325 |
+| `index` | 327 |
 | `declared+index` | 70 |
 | `GUARD_TESTS` | 18 |
 | `GUARD_TESTS+declared` | 12 |
@@ -760,7 +762,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | kind | count | what it means | the fix |
 |---|---|---|---|
 | **bound to a subject, tied to no requirement** | 40 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 184 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **no subject binding either** | 183 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
 **These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 40 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
@@ -774,7 +776,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/agent/enqueue.test.js`
 - `api/ai-safeguards.test.js`
 - `api/b19-iolta-reconcile-carveout.test.js`
-- `api/b20-countersign-open.test.js`
 - `api/leg-aftercare-key-unambiguous.test.js`
 - `api/provisioner-health-rate-limit.test.js`
 - `api/sairndental/complaint-race.test.js`
@@ -1007,8 +1008,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 998   tests/**, api/** (both walked)
-  open-work rows citing a test       393   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 999   tests/**, api/** (both walked)
+  open-work rows citing a test       395   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 37   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                78   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     82   report_only_checks.NOT_PROMOTED

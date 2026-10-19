@@ -1,6 +1,6 @@
-// api/bridge-unknown-action.test.js
+// api/b21-bridge-unknown-action.test.js
 //
-// Run:  node api/bridge-unknown-action.test.js
+// Run:  node api/b21-bridge-unknown-action.test.js
 //
 // REQUIREMENT (b21): api/bridge.js refuses an UNKNOWN `?action=` outright and
 // never lets it fall through to `handlePush`.

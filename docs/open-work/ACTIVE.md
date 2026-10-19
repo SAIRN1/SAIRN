@@ -257,47 +257,47 @@ closed-ish word. Every row, open or not, is in its shard in full.
 | SAIRNfreedom     | ~~⚠ AWAITING INDEPENDENT VERIFICATION &mdash; 55889165, this app’s FIRS~ | BUILT 2026-09-10 (CC); INDE~ | CC (author)~ | `open-work/sairnfreedom.md:20` |
 | SAIRNfreedom     | &#128993; sf_trustee_audits is DEVICE-LOCAL &mdash; the trustee audit i~ | BLOCKED, NOT FORGOTTEN, 202~ | hank, or wh~ | `open-work/sairnfreedom.md:21` |
 | SAIRNfreedom     | &#128993; Two more compliance-critical settings are held DEVICE-ONLY by~ | OPEN. Named by cloud's 2026~ | unassigned ~ | `open-work/sairnfreedom.md:22` |
-| SAIRNlaw         | &#128993; law_strike_log is a local-only collection with NO declaration~ | FOUND 2026-09-29 (hank). ho~ | unassigned   | `open-work/sairnlaw.md:9` |
-| SAIRNlaw         | &#9989; FIFTEEN of SAIRNlaw&rsquo;s eighteen server resources have NEVE~ | LIVE NOW, MEASURED 2026-09-~ | &mdash; (pr~ | `open-work/sairnlaw.md:11` |
-| SAIRNlaw         | law_trusttx VOID path still answers ok:true over the REQUEST when the v~ | RECORDED 2026-09-21 (Fourth~ | unassigned   | `open-work/sairnlaw.md:14` |
-| SAIRNlaw         | &#128308; There is NO LEDES export, and three files plus a user-facing ~ | OPEN &mdash; the false clai~ | &mdash;      | `open-work/sairnlaw.md:24` |
-| SAIRNlaw         | 🚨 The advisory lock was doing NOTHING under REPEATABLE READ &mdash; on ~ | SWEPT AND GUARDED 2026-09-1~ | Hank (the s~ | `open-work/sairnlaw.md:30` |
-| SAIRNlaw         | A client&rsquo;s executed e-signature on a matter document is filed as ~ | MEASURED 2026-09-15 (CC), N~ | CC (the mea~ | `open-work/sairnlaw.md:31` |
-| SAIRNlaw         | IOLTA #46/#47 &mdash; the reconciliation that existed could not fail on~ | BUILT 2026-09-15 (Fourth) &~ | Fourth       | `open-work/sairnlaw.md:33` |
-| SAIRNlaw         | 🚫 PRE-LAUNCH BLOCKER — law_deadline_rules / law_holidays have no authen~ | Open — deliberately deferre~ | Michael      | `open-work/sairnlaw.md:38` |
-| SAIRNlaw         | CourtListener limiter is atomic in CODE but the RPC migration has not b~ | Open — built and verified 2~ | Michael      | `open-work/sairnlaw.md:39` |
-| SAIRNlaw         | "Which holidays actually count" — ONE bundled lawyer's question across ~ | Open — legal judgment        | Michael      | `open-work/sairnlaw.md:48` |
-| SAIRNlaw         | Deadline engine coverage: STALE FIGURE, corrected 2026-09-01 (Hank): li~ | Batch 4 in progress          | Hank         | `open-work/sairnlaw.md:49` |
-| SAIRNlaw         | &#9989; Maine SEEDED &mdash; 14 rows on the statutory twelve-day calend~ | SEEDED 2026-09-21 (Fourth) ~ | unassigned   | `open-work/sairnlaw.md:51` |
-| SAIRNlaw         | Indiana: PASS WITH CONDITIONS &mdash; the first gate in this run that d~ | GATED 2026-09-18 (Fourth), ~ | Fourth (the~ | `open-work/sairnlaw.md:52` |
-| SAIRNlaw         | Michigan GATE PASSED &mdash; the first state with a FULLY DERIVABLE hol~ | GATED 2026-09-17 (Fourth), ~ | Fourth (the~ | `open-work/sairnlaw.md:53` |
-| SAIRNlaw         | Ohio GATE PASSED &mdash; the only unseeded state whose computation stan~ | GATED 2026-09-17 (Fourth), ~ | Fourth (the~ | `open-work/sairnlaw.md:54` |
-| SAIRNlaw         | STANDING GATE CHECK: the weekend-coverage question — run it on every fu~ | Open (reference, run every ~ | unassigned   | `open-work/sairnlaw.md:59` |
-| SAIRNlaw         | Arkansas GATED — rules PASS and current to 4 June 2026, but the HOLIDAY~ | Blocked 2026-08-27 ⚠         | unassigned   | `open-work/sairnlaw.md:60` |
-| SAIRNlaw         | Connecticut: SOURCES PASS but NOT seedable in the shape this engine mod~ | Blocked 2026-08-26 ⚠️        | unassigned   | `open-work/sairnlaw.md:61` |
-| SAIRNlaw         | Oklahoma gate PASSED — has Louisiana’s rollover SHAPE but not its probl~ | ✅ SEEDED 2026-08-28          | unassigned   | `open-work/sairnlaw.md:62` |
-| SAIRNlaw         | Oregon gate PASSED — the Council-on-Court-Procedures wrinkle is REAL bu~ | ✅ SEEDED 2026-08-28          | unassigned   | `open-work/sairnlaw.md:63` |
-| SAIRNlaw         | ENGINE CHANGE: express EXCLUSIVE-vs-COMBINED service methods — URCP 6(c~ | ✅ APPEARS BUILT — this row ~ | unassigned ~ | `open-work/sairnlaw.md:65` |
-| SAIRNlaw         | SOURCE-ACCESS STATUS CORRECTED for mass.gov and njcourts.gov — one got ~ | Recorded 2026-08-27 ✅        | —            | `open-work/sairnlaw.md:68` |
-| SAIRNlaw         | Iowa GATED — do not seed; the weekend rollover is SPLIT BY DEADLINE TYP~ | Blocked 2026-08-27 ⚠         | unassigned   | `open-work/sairnlaw.md:69` |
-| SAIRNlaw         | ⚠ RAISED FOR A DECISION: the FEDERAL seed attaches Rule 6(d) to the ans~ | Open — needs a call, not a ~ | unassigned   | `open-work/sairnlaw.md:71` |
-| SAIRNlaw         | Rule-4-vs-Rule-5 extension sweep across ALL seeded jurisdictions — two ~ | Open — Florida needs a sour~ | unassigned   | `open-work/sairnlaw.md:72` |
-| SAIRNlaw         | ⚠ LIVE: Florida’s +5 carries “by ONLY mail” — Utah’s exclusivity condit~ | Open — needs a call; arithm~ | unassigned   | `open-work/sairnlaw.md:73` |
-| SAIRNlaw         | ENGINE CHANGE, PRIORITIZED: a per-jurisdiction WEEKEND-ROLLOVER flag — ~ | ✅ BUILT AND LIVE 2026-09-01~ | unassigned ~ | `open-work/sairnlaw.md:74` |
-| SAIRNlaw         | Louisiana gate: SOURCES PASS but NOT SEEDABLE — the blocker is in the E~ | Blocked 2026-08-26 ⚠️        | unassigned   | `open-work/sairnlaw.md:75` |
-| SAIRNlaw         | South Carolina gate PASSED — first STATE-plus-FEDERAL holiday union, a ~ | ✅ SEEDED 2026-08-28          | unassigned   | `open-work/sairnlaw.md:77` |
-| SAIRNlaw         | Colorado gate SPLIT — statutes PASS outright, RULES blocked behind an “~ | Blocked 2026-08-26 ⚠️        | Michael (on~ | `open-work/sairnlaw.md:78` |
-| SAIRNlaw         | DECISION: Maryland’s <=7-day / mail-extension interaction — ship DISCLO~ | Open — decision made 2026-0~ | Michael      | `open-work/sairnlaw.md:81` |
-| SAIRNlaw         | ENGINE GAP: a discovery floor that CHAINS OFF A COMPUTED DATE — highest~ | Open — own row on Michael’s~ | unassigned   | `open-work/sairnlaw.md:82` |
-| SAIRNlaw         | Tennessee FAILED the gate — rules pass, but the holiday statute they re~ | Failed 2026-08-25 — decisio~ | —            | `open-work/sairnlaw.md:83` |
-| SAIRNlaw         | Arizona gated out — a NEAR MISS, not a dead end like Kentucky            | Blocked 2026-08-25 ⚠️        | Michael (on~ | `open-work/sairnlaw.md:85` |
-| SAIRNlaw         | Kentucky: blocker 1 may be DEAD — the free Westlaw government edition c~ | Needs Michael's call, 2026-~ | Michael      | `open-work/sairnlaw.md:89` |
-| SAIRNlaw         | Kentucky blocker 2 (the fatal one): "legal holiday" undefined, KRS 2.11~ | Blocked 2026-08-25 ⚠️        | Michael      | `open-work/sairnlaw.md:90` |
-| SAIRNlaw         | N.C. R. Civ. P. 6(f): the blocker MOVED, it did not vanish — the amount~ | Open — own row as of 2026-0~ | unassigned   | `open-work/sairnlaw.md:94` |
-| SAIRNlaw         | FRCP 15(a)(3) needs a supplied date that is itself a COMPUTED DEADLINE ~ | Open (linked to the trigger~ | unassigned   | `open-work/sairnlaw.md:97` |
-| SAIRNlaw         | Georgia holiday calendar is a FROZEN 2022 federal snapshot — must not b~ | Open (standing caution on t~ | unassigned   | `open-work/sairnlaw.md:98` |
-| SAIRNlaw         | Service-extension SEQUENCING must be read per rule — two of three state~ | Open (pattern, watch on eve~ | Hank         | `open-work/sairnlaw.md:99` |
-| SAIRNlaw         | Two deadline-rule authorities rest on secondary sources, recorded rathe~ | Open (accepted, documented)  | unassigned   | `open-work/sairnlaw.md:102` |
+| SAIRNlaw         | &#128993; law_strike_log is a local-only collection with NO declaration~ | FOUND 2026-09-29 (hank). ho~ | unassigned   | `open-work/sairnlaw.md:10` |
+| SAIRNlaw         | &#9989; FIFTEEN of SAIRNlaw&rsquo;s eighteen server resources have NEVE~ | LIVE NOW, MEASURED 2026-09-~ | &mdash; (pr~ | `open-work/sairnlaw.md:12` |
+| SAIRNlaw         | law_trusttx VOID path still answers ok:true over the REQUEST when the v~ | RECORDED 2026-09-21 (Fourth~ | unassigned   | `open-work/sairnlaw.md:15` |
+| SAIRNlaw         | &#128308; There is NO LEDES export, and three files plus a user-facing ~ | OPEN &mdash; the false clai~ | &mdash;      | `open-work/sairnlaw.md:25` |
+| SAIRNlaw         | 🚨 The advisory lock was doing NOTHING under REPEATABLE READ &mdash; on ~ | SWEPT AND GUARDED 2026-09-1~ | Hank (the s~ | `open-work/sairnlaw.md:31` |
+| SAIRNlaw         | A client&rsquo;s executed e-signature on a matter document is filed as ~ | MEASURED 2026-09-15 (CC), N~ | CC (the mea~ | `open-work/sairnlaw.md:32` |
+| SAIRNlaw         | IOLTA #46/#47 &mdash; the reconciliation that existed could not fail on~ | BUILT 2026-09-15 (Fourth) &~ | Fourth       | `open-work/sairnlaw.md:34` |
+| SAIRNlaw         | 🚫 PRE-LAUNCH BLOCKER — law_deadline_rules / law_holidays have no authen~ | Open — deliberately deferre~ | Michael      | `open-work/sairnlaw.md:39` |
+| SAIRNlaw         | CourtListener limiter is atomic in CODE but the RPC migration has not b~ | Open — built and verified 2~ | Michael      | `open-work/sairnlaw.md:40` |
+| SAIRNlaw         | "Which holidays actually count" — ONE bundled lawyer's question across ~ | Open — legal judgment        | Michael      | `open-work/sairnlaw.md:49` |
+| SAIRNlaw         | Deadline engine coverage: STALE FIGURE, corrected 2026-09-01 (Hank): li~ | Batch 4 in progress          | Hank         | `open-work/sairnlaw.md:50` |
+| SAIRNlaw         | &#9989; Maine SEEDED &mdash; 14 rows on the statutory twelve-day calend~ | SEEDED 2026-09-21 (Fourth) ~ | unassigned   | `open-work/sairnlaw.md:52` |
+| SAIRNlaw         | Indiana: PASS WITH CONDITIONS &mdash; the first gate in this run that d~ | GATED 2026-09-18 (Fourth), ~ | Fourth (the~ | `open-work/sairnlaw.md:53` |
+| SAIRNlaw         | Michigan GATE PASSED &mdash; the first state with a FULLY DERIVABLE hol~ | GATED 2026-09-17 (Fourth), ~ | Fourth (the~ | `open-work/sairnlaw.md:54` |
+| SAIRNlaw         | Ohio GATE PASSED &mdash; the only unseeded state whose computation stan~ | GATED 2026-09-17 (Fourth), ~ | Fourth (the~ | `open-work/sairnlaw.md:55` |
+| SAIRNlaw         | STANDING GATE CHECK: the weekend-coverage question — run it on every fu~ | Open (reference, run every ~ | unassigned   | `open-work/sairnlaw.md:60` |
+| SAIRNlaw         | Arkansas GATED — rules PASS and current to 4 June 2026, but the HOLIDAY~ | Blocked 2026-08-27 ⚠         | unassigned   | `open-work/sairnlaw.md:61` |
+| SAIRNlaw         | Connecticut: SOURCES PASS but NOT seedable in the shape this engine mod~ | Blocked 2026-08-26 ⚠️        | unassigned   | `open-work/sairnlaw.md:62` |
+| SAIRNlaw         | Oklahoma gate PASSED — has Louisiana’s rollover SHAPE but not its probl~ | ✅ SEEDED 2026-08-28          | unassigned   | `open-work/sairnlaw.md:63` |
+| SAIRNlaw         | Oregon gate PASSED — the Council-on-Court-Procedures wrinkle is REAL bu~ | ✅ SEEDED 2026-08-28          | unassigned   | `open-work/sairnlaw.md:64` |
+| SAIRNlaw         | ENGINE CHANGE: express EXCLUSIVE-vs-COMBINED service methods — URCP 6(c~ | ✅ APPEARS BUILT — this row ~ | unassigned ~ | `open-work/sairnlaw.md:66` |
+| SAIRNlaw         | SOURCE-ACCESS STATUS CORRECTED for mass.gov and njcourts.gov — one got ~ | Recorded 2026-08-27 ✅        | —            | `open-work/sairnlaw.md:69` |
+| SAIRNlaw         | Iowa GATED — do not seed; the weekend rollover is SPLIT BY DEADLINE TYP~ | Blocked 2026-08-27 ⚠         | unassigned   | `open-work/sairnlaw.md:70` |
+| SAIRNlaw         | ⚠ RAISED FOR A DECISION: the FEDERAL seed attaches Rule 6(d) to the ans~ | Open — needs a call, not a ~ | unassigned   | `open-work/sairnlaw.md:72` |
+| SAIRNlaw         | Rule-4-vs-Rule-5 extension sweep across ALL seeded jurisdictions — two ~ | Open — Florida needs a sour~ | unassigned   | `open-work/sairnlaw.md:73` |
+| SAIRNlaw         | ⚠ LIVE: Florida’s +5 carries “by ONLY mail” — Utah’s exclusivity condit~ | Open — needs a call; arithm~ | unassigned   | `open-work/sairnlaw.md:74` |
+| SAIRNlaw         | ENGINE CHANGE, PRIORITIZED: a per-jurisdiction WEEKEND-ROLLOVER flag — ~ | ✅ BUILT AND LIVE 2026-09-01~ | unassigned ~ | `open-work/sairnlaw.md:75` |
+| SAIRNlaw         | Louisiana gate: SOURCES PASS but NOT SEEDABLE — the blocker is in the E~ | Blocked 2026-08-26 ⚠️        | unassigned   | `open-work/sairnlaw.md:76` |
+| SAIRNlaw         | South Carolina gate PASSED — first STATE-plus-FEDERAL holiday union, a ~ | ✅ SEEDED 2026-08-28          | unassigned   | `open-work/sairnlaw.md:78` |
+| SAIRNlaw         | Colorado gate SPLIT — statutes PASS outright, RULES blocked behind an “~ | Blocked 2026-08-26 ⚠️        | Michael (on~ | `open-work/sairnlaw.md:79` |
+| SAIRNlaw         | DECISION: Maryland’s <=7-day / mail-extension interaction — ship DISCLO~ | Open — decision made 2026-0~ | Michael      | `open-work/sairnlaw.md:82` |
+| SAIRNlaw         | ENGINE GAP: a discovery floor that CHAINS OFF A COMPUTED DATE — highest~ | Open — own row on Michael’s~ | unassigned   | `open-work/sairnlaw.md:83` |
+| SAIRNlaw         | Tennessee FAILED the gate — rules pass, but the holiday statute they re~ | Failed 2026-08-25 — decisio~ | —            | `open-work/sairnlaw.md:84` |
+| SAIRNlaw         | Arizona gated out — a NEAR MISS, not a dead end like Kentucky            | Blocked 2026-08-25 ⚠️        | Michael (on~ | `open-work/sairnlaw.md:86` |
+| SAIRNlaw         | Kentucky: blocker 1 may be DEAD — the free Westlaw government edition c~ | Needs Michael's call, 2026-~ | Michael      | `open-work/sairnlaw.md:90` |
+| SAIRNlaw         | Kentucky blocker 2 (the fatal one): "legal holiday" undefined, KRS 2.11~ | Blocked 2026-08-25 ⚠️        | Michael      | `open-work/sairnlaw.md:91` |
+| SAIRNlaw         | N.C. R. Civ. P. 6(f): the blocker MOVED, it did not vanish — the amount~ | Open — own row as of 2026-0~ | unassigned   | `open-work/sairnlaw.md:95` |
+| SAIRNlaw         | FRCP 15(a)(3) needs a supplied date that is itself a COMPUTED DEADLINE ~ | Open (linked to the trigger~ | unassigned   | `open-work/sairnlaw.md:98` |
+| SAIRNlaw         | Georgia holiday calendar is a FROZEN 2022 federal snapshot — must not b~ | Open (standing caution on t~ | unassigned   | `open-work/sairnlaw.md:99` |
+| SAIRNlaw         | Service-extension SEQUENCING must be read per rule — two of three state~ | Open (pattern, watch on eve~ | Hank         | `open-work/sairnlaw.md:100` |
+| SAIRNlaw         | Two deadline-rule authorities rest on secondary sources, recorded rathe~ | Open (accepted, documented)  | unassigned   | `open-work/sairnlaw.md:103` |
 | SAIRNlegacy      | &#128308; TWO OF THE FUNERAL RULE&rsquo;S THREE MANDATED PRICE LISTS AR~ | NEW 2026-10-05 (CC), 88ee8f~ | unassigned   | `open-work/sairnlegacy.md:10` |
 | SAIRNmechanical  | &#128993; mech_takeoffs and mech_quotes still carry the WITHDRAWN &ldqu~ | NEW 2026-10-05 (CC). FOUND ~ | unassigned   | `open-work/sairnmechanical.md:9` |
 | SAIRNmechanical  | &#128308; mech_checks is a CHEQUE REGISTER rated B/B on &ldquo;neither ~ | TWO INDEPENDENT READS, 2026~ | unassigned   | `open-work/sairnmechanical.md:10` |
@@ -324,75 +324,75 @@ closed-ish word. Every row, open or not, is in its shard in full.
 | SAIRNvet         | The app holding the DEA-relevant controlled-substance register is the o~ | FOUND 2026-09-13 (Fourth) w~ | —            | `open-work/sairnvet.md:17` |
 | SAIRNvet         | No employee authentication subsystem at all — this is a MISSING SUBSYST~ | Open — flagged 2026-09-03 s~ | unassigned   | `open-work/sairnvet.md:20` |
 | SAIRNveterans    | Phases 2, 4 and 5 were built FIFTEEN DAYS AGO &mdash; and a keyword pas~ | DERIVED 2026-09-16 (Hank), ~ | Hank (the d~ | `open-work/sairnveterans.md:10` |
-| StoneDesk        | &#128993; supplier_lead_times &mdash; a REAL derived computation feeds ~ | ROUTED 2026-09-29 (hank) fr~ | unassigned   | `open-work/stonedesk.md:11` |
-| StoneDesk        | &#128993; sd_inventory stores cost qty feeding a stockValue KPI and a r~ | ROUTED 2026-09-29 (hank) fr~ | unassigned   | `open-work/stonedesk.md:12` |
-| StoneDesk        | &#128993; sd_owner_pin is preserved by the demo wipe and written by NOT~ | FOUND 2026-09-29 (hank), CO~ | unassigned   | `open-work/stonedesk.md:13` |
-| StoneDesk        | The pricing backtest had NO suite at all, which is why it spent its who~ | BUILT 2026-09-18 (Fourth) &~ | Fourth       | `open-work/stonedesk.md:20` |
-| StoneDesk        | Competitive gaps re-derived against HEAD &mdash; the two remaining rows~ | RE-DERIVED 2026-09-17 (Hank~ | Michael (ro~ | `open-work/stonedesk.md:22` |
-| StoneDesk        | Carolyn&rsquo;s drawing-tool requirements &mdash; and half the premise ~ | BUILT 2026-09-15 (Hank) &md~ | Hank (the m~ | `open-work/stonedesk.md:23` |
-| StoneDesk        | The competitive-gap STATUS doc is stale in exactly the way it was writt~ | RE-VERIFIED 2026-09-14 (Cod~ | Cody         | `open-work/stonedesk.md:25` |
-| StoneDesk        | Sales-lead privacy: VERIFIED BUILT, not rebuilt &mdash; it was item 1 o~ | VERIFIED 2026-09-26 (Hank).~ | &mdash;      | `open-work/stonedesk.md:26` |
-| StoneDesk        | The three-way match is now CONSTRUCTIBLE &mdash; a real PO sequence, a ~ | BUILT 2026-09-14 (CC) &mdas~ | CC           | `open-work/stonedesk.md:27` |
-| StoneDesk        | 🚫 The entire public storefront has NO TABLES — sql/stonedesk_public_sur~ | Open — VERIFIED READY TO RU~ | Michael      | `open-work/stonedesk.md:34` |
-| StoneDesk        | StoneDesk ships customers a dead intake link while reporting success — ~ | BUILT 2026-09-03/04 (Hank),~ | Hank (built~ | `open-work/stonedesk.md:37` |
-| StoneDesk        | Stone-texture visualization — accepted cosmetic nits                     | Open (accepted)              | unassigned   | `open-work/stonedesk.md:44` |
-| StoneDesk        | Chamfer setback input does not live-refresh when a run is shrunk after ~ | Open (display only)          | unassigned   | `open-work/stonedesk.md:55` |
-| StoneDesk        | Three drawing-tool feature gaps: no 45° corner angle-snap; raised bar c~ | Open                         | unassigned   | `open-work/stonedesk.md:56` |
-| StoneDesk        | Worktree branch worktree-stonedesk-chamfered-corners is five features p~ | Open                         | unassigned   | `open-work/stonedesk.md:57` |
-| StoneDesk        | Dormant custAddNew()/custSave() form missing the rating field            | Open (quarantined)           | unassigned   | `open-work/stonedesk.md:58` |
-| StoneDesk        | Four safety render functions have no containers and no callers           | Open (accepted gap)          | unassigned   | `open-work/stonedesk.md:59` |
-| StoneDesk        | Several SDD workspaces under .superpowers/sdd/ never cleaned up          | Open                         | unassigned   | `open-work/stonedesk.md:62` |
-| Tooling          | &#128993; tooling_inventory.py REFUSES LOUDLY ON A MISSING PURPOSES ENT~ | ROUTED 2026-10-06 by hank t~ | cody         | `open-work/tooling.md:10` |
-| Tooling          | &#9989; tooling_inventory_duplicate_row is a FALSE POSITIVE &mdash; 55 ~ | ROUTED 2026-10-06 by hank f~ | &mdash;      | `open-work/tooling.md:11` |
-| Tooling          | &#128308; A RE-RUN OF dead_rule_sweep FINDS 35 DEAD RULES WHERE THE CLA~ | ROUTED 2026-10-06 by hank f~ | cody         | `open-work/tooling.md:13` |
-| Tooling          | &#9989;&#65039;&#8203; CLOSED AS UNANSWERABLE: the github-advanced-secu~ | CHECKED AND RETRIED 2026-10~ | &mdash;      | `open-work/tooling.md:15` |
-| Tooling          | &#128993; tools/seam_cannot_tell_watch.py LANDED UNWIRED &mdash; it is ~ | NEW 2026-10-05 (CC), 6469d2~ | unassigned   | `open-work/tooling.md:17` |
-| Tooling          | &#9989; The 8 mergeable regfresh/ branches are MERGED &mdash; and the o~ | MERGED AND RE-VERIFIED 2026~ | CC           | `open-work/tooling.md:19` |
-| Tooling          | &#128993; FOURTEEN citation drifts need a human READ and cannot be repo~ | MEASURED 2026-09-28 (CC)     | unassigned   | `open-work/tooling.md:20` |
-| Tooling          | &#128993; SIX role gates cannot be reached by the only sound instrument~ | CONFIRMED PER GATE 2026-09-~ | unassigned   | `open-work/tooling.md:21` |
-| Tooling          | &#128993; The role-gate screen&rsquo;s NOT-DRIVEN bucket over-reports b~ | MEASURED 2026-09-28 (CC), a~ | unassigned   | `open-work/tooling.md:22` |
-| Tooling          | &#128993; tier_a_review_gate.py --open records a FLAG NAME as the oblig~ | CONFIRMED STILL LIVE 2026-0~ | unassigned   | `open-work/tooling.md:25` |
-| Tooling          | &#128993; FIVE sabotage anchors match MORE THAN ONE place, so each prob~ | FOUND 2026-09-27 (CC) by to~ | CC (found, ~ | `open-work/tooling.md:26` |
-| Tooling          | &#128993; TEN review records in docs/tier-a-reviews.json cite a sha tha~ | MEASURED 2026-09-25 (Hank) ~ | unassigned ~ | `open-work/tooling.md:27` |
-| Tooling          | ~~&#9989; The four narrow freshness tools are NOT retired &mdash; the p~ | MEASURED 2026-09-25 (Hank) ~ | Hank (the a~ | `open-work/tooling.md:28` |
-| Tooling          | &#128993; A none (...) isolation declaration&rsquo;s REASON is prose NO~ | DECIDED 2026-09-24 (CC), in~ | unassigned   | `open-work/tooling.md:31` |
-| Tooling          | &#128308; tools/sync_write_result_check.py is blind to FOUR whole apps ~ | FOUND 2026-09-24 (CC) while~ | unassigned ~ | `open-work/tooling.md:32` |
-| Tooling          | &#128993; tier_a_review_gate.py&rsquo;s matcher counts an ENGLISH WORD ~ | FOUND 2026-09-25 (CC), whil~ | unassigned   | `open-work/tooling.md:33` |
-| Tooling          | &#9989; The scoped-on-push probe selector is BUILT with its acceptance ~ | BUILT 2026-09-25 (CC) &mdas~ | CC (done)    | `open-work/tooling.md:36` |
-| Tooling          | &#128308; tests/run_cross_tenant_scope_probe.py is RED on main &mdash; ~ | FOUND 2026-09-24 (CC) while~ | unassigned ~ | `open-work/tooling.md:38` |
-| Tooling          | &#128993; A hover H1/H2 disagreement-tracking layer is SELF-BUILDABLE b~ | BOUNDARY CHECKED, NOT BUILT~ | hover1 / ho~ | `open-work/tooling.md:39` |
-| Tooling          | &#128308; confidentiality_candidate_flagger.py splits HTML from JS with~ | FOUND 2026-09-22 (Hank) whi~ | unassigned   | `open-work/tooling.md:41` |
-| Tooling          | FOUR malformed open-work rows in one day, all the same two characters &~ | MEASURED 2026-09-21 (Cody),~ | unassigned   | `open-work/tooling.md:62` |
-| Tooling          | The hover-separation push rejection was NOT propagation lag &mdash; a r~ | INVESTIGATED 2026-09-16 (Ha~ | Michael (th~ | `open-work/tooling.md:66` |
-| Tooling          | &#9888; A COMMIT ON origin/main WEARS THE WRONG MESSAGE, AND THAT DEFEA~ | FOUND 2026-09-16 (CC) while~ | whoever wro~ | `open-work/tooling.md:67` |
-| Tooling          | The duplicate-claim defect is FIXED and its evidence is HISTORICAL &mda~ | MEASURED AND MADE LEGIBLE 2~ | CC           | `open-work/tooling.md:73` |
-| Tooling          | The restore-checker blocker I named was WRONG &mdash; the mock target a~ | CORRECTED 2026-09-14 (Cody)~ | Cody         | `open-work/tooling.md:77` |
-| Tooling          | Three anti-pattern shapes, each narrowed to the signature a REAL platfo~ | BUILT 2026-09-14 (Fourth), ~ | unassigned   | `open-work/tooling.md:86` |
-| Tooling          | Item 28 folded in as a GENERATOR &mdash; and what it emits REFUSES unti~ | BUILT 2026-09-14 (Fourth) &~ | unassigned   | `open-work/tooling.md:87` |
-| Tooling          | R5: the purpose question one level down &mdash; was the FUNCTION invoke~ | BUILT 2026-09-14 (Fourth) &~ | unassigned   | `open-work/tooling.md:88` |
-| Tooling          | Register drift cleared to ZERO on the tier file &mdash; and the twelve ~ | CLEARED 2026-09-26 (Hank) &~ | unassigned ~ | `open-work/tooling.md:89` |
-| Tooling          | Item 52: the two checker-quality signals fused &mdash; by MINIMUM, and ~ | BUILT 2026-09-14 (CC) &mdas~ | CC           | `open-work/tooling.md:90` |
-| Tooling          | Item 57: Benford digit distribution &mdash; the automated form of the f~ | BUILT 2026-09-14 (CC) &mdas~ | CC           | `open-work/tooling.md:91` |
-| Tooling          | RECONCILED for Cody: the report-only sweep timeout is REAL but it is NO~ | MEASURED 2026-09-14 (CC) on~ | Cody (claim~ | `open-work/tooling.md:92` |
-| Tooling          | Item 18: metamorphic relations &mdash; does a checker's ANSWER survive ~ | BUILT 2026-09-13 (CC) &mdas~ | CC           | `open-work/tooling.md:93` |
-| Tooling          | Item 32: sharper reachability &mdash; does this code still serve a PURP~ | BUILT 2026-09-13 (CC) &mdas~ | CC           | `open-work/tooling.md:94` |
-| Tooling          | Item 14: flaky-checker quarantine &mdash; a verdict that flips on UNCHA~ | BUILT 2026-09-13 (Hank) &md~ | Hank         | `open-work/tooling.md:95` |
-| Tooling          | Every promoted checker must have a control that PROVES it can fire &mda~ | BUILT 2026-09-12 (Fourth) &~ | Fourth       | `open-work/tooling.md:106` |
-| Tooling          | Checker determinism &mdash; a checker whose output depends on PYTHONHAS~ | SWEPT 2026-09-12 (Fourth) &~ | Fourth       | `open-work/tooling.md:107` |
-| Tooling          | Self-referential guards -- a guard that derives its SUBJECT from the th~ | BOTH HALVES SWEPT 2026-09-1~ | Fourth       | `open-work/tooling.md:114` |
-| Tooling          | tools/gate_column_check.py reads 4% of its subject while its output rea~ | HANDED TO CC 2026-09-11 (Fo~ | CC           | `open-work/tooling.md:116` |
-| Tooling          | ~~Nothing could tell whether an app writes a resource to the server and~ | BUILT 2026-09-05 (CC) — too~ | CC           | `open-work/tooling.md:119` |
-| Tooling          | Nothing could tell whether an app keeps a business COLLECTION that reac~ | BUILT 2026-09-08 (CC), then~ | CC           | `open-work/tooling.md:120` |
-| Tooling          | discarded_verdict_check.py finds only SAME-FILE cases — a verdict retur~ | ANSWERED 2026-09-04 (Cody) ~ | Cody         | `open-work/tooling.md:123` |
-| Tooling          | The tooling inventory was hand-derived and went STALE IN THREE DAYS &md~ | BUILT 2026-09-12 (Cody) &md~ | Cody         | `open-work/tooling.md:128` |
-| Tooling          | control_char_check.py PROMOTED TO BLOCKING as push-gate check 11 &mdash~ | PROMOTED 2026-09-13 (Michae~ | Cody         | `open-work/tooling.md:134` |
-| Tooling          | Fourth promotion batch &mdash; and one checker HELD BACK rather than si~ | PROMOTED 2026-09-10 (Cody),~ | Cody         | `open-work/tooling.md:137` |
-| Tooling          | Third promotion batch, and the decision for every checker NOT going in   | PROMOTED 2026-09-10 (Cody),~ | Cody &mdash~ | `open-work/tooling.md:138` |
-| Tooling          | Second promotion batch &mdash; six more unwired checkers run against re~ | PROMOTED 2026-09-10 (Cody),~ | Cody &mdash~ | `open-work/tooling.md:139` |
-| Tooling          | The 28 unwired checkers have no way to be promoted, and none had ever r~ | REPORT-ONLY PATH BUILT, 3 P~ | Cody &mdash~ | `open-work/tooling.md:140` |
-| Tooling          | No inventory of the standalone tooling built this session — nothing sai~ | FIRST INVENTORY BUILT 2026-~ | Michael (wh~ | `open-work/tooling.md:141` |
-| Tooling          | Rebuild graphify's knowledge graph, properly scoped                      | Open — SCOPED 2026-09-09 (F~ | Michael (pi~ | `open-work/tooling.md:142` |
-| Tooling          | A PROBE fixture commit reached origin/main three hours after check 8 sh~ | CHECK 10 ADDED 2026-09-10 (~ | Cody         | `open-work/tooling.md:145` |
-| Tooling          | A 35-table migration is 35 chances to half-run, and a half-run one is i~ | BUILT AND RUN 2026-09-10 (C~ | CC           | `open-work/tooling.md:154` |
+| StoneDesk        | &#128993; supplier_lead_times &mdash; a REAL derived computation feeds ~ | ROUTED 2026-09-29 (hank) fr~ | unassigned   | `open-work/stonedesk.md:12` |
+| StoneDesk        | &#128993; sd_inventory stores cost qty feeding a stockValue KPI and a r~ | ROUTED 2026-09-29 (hank) fr~ | unassigned   | `open-work/stonedesk.md:13` |
+| StoneDesk        | &#128993; sd_owner_pin is preserved by the demo wipe and written by NOT~ | FOUND 2026-09-29 (hank), CO~ | unassigned   | `open-work/stonedesk.md:14` |
+| StoneDesk        | The pricing backtest had NO suite at all, which is why it spent its who~ | BUILT 2026-09-18 (Fourth) &~ | Fourth       | `open-work/stonedesk.md:21` |
+| StoneDesk        | Competitive gaps re-derived against HEAD &mdash; the two remaining rows~ | RE-DERIVED 2026-09-17 (Hank~ | Michael (ro~ | `open-work/stonedesk.md:23` |
+| StoneDesk        | Carolyn&rsquo;s drawing-tool requirements &mdash; and half the premise ~ | BUILT 2026-09-15 (Hank) &md~ | Hank (the m~ | `open-work/stonedesk.md:24` |
+| StoneDesk        | The competitive-gap STATUS doc is stale in exactly the way it was writt~ | RE-VERIFIED 2026-09-14 (Cod~ | Cody         | `open-work/stonedesk.md:26` |
+| StoneDesk        | Sales-lead privacy: VERIFIED BUILT, not rebuilt &mdash; it was item 1 o~ | VERIFIED 2026-09-26 (Hank).~ | &mdash;      | `open-work/stonedesk.md:27` |
+| StoneDesk        | The three-way match is now CONSTRUCTIBLE &mdash; a real PO sequence, a ~ | BUILT 2026-09-14 (CC) &mdas~ | CC           | `open-work/stonedesk.md:28` |
+| StoneDesk        | 🚫 The entire public storefront has NO TABLES — sql/stonedesk_public_sur~ | Open — VERIFIED READY TO RU~ | Michael      | `open-work/stonedesk.md:35` |
+| StoneDesk        | StoneDesk ships customers a dead intake link while reporting success — ~ | BUILT 2026-09-03/04 (Hank),~ | Hank (built~ | `open-work/stonedesk.md:38` |
+| StoneDesk        | Stone-texture visualization — accepted cosmetic nits                     | Open (accepted)              | unassigned   | `open-work/stonedesk.md:45` |
+| StoneDesk        | Chamfer setback input does not live-refresh when a run is shrunk after ~ | Open (display only)          | unassigned   | `open-work/stonedesk.md:56` |
+| StoneDesk        | Three drawing-tool feature gaps: no 45° corner angle-snap; raised bar c~ | Open                         | unassigned   | `open-work/stonedesk.md:57` |
+| StoneDesk        | Worktree branch worktree-stonedesk-chamfered-corners is five features p~ | Open                         | unassigned   | `open-work/stonedesk.md:58` |
+| StoneDesk        | Dormant custAddNew()/custSave() form missing the rating field            | Open (quarantined)           | unassigned   | `open-work/stonedesk.md:59` |
+| StoneDesk        | Four safety render functions have no containers and no callers           | Open (accepted gap)          | unassigned   | `open-work/stonedesk.md:60` |
+| StoneDesk        | Several SDD workspaces under .superpowers/sdd/ never cleaned up          | Open                         | unassigned   | `open-work/stonedesk.md:63` |
+| Tooling          | &#128993; tooling_inventory.py REFUSES LOUDLY ON A MISSING PURPOSES ENT~ | ROUTED 2026-10-06 by hank t~ | cody         | `open-work/tooling.md:11` |
+| Tooling          | &#9989; tooling_inventory_duplicate_row is a FALSE POSITIVE &mdash; 55 ~ | ROUTED 2026-10-06 by hank f~ | &mdash;      | `open-work/tooling.md:12` |
+| Tooling          | &#128308; A RE-RUN OF dead_rule_sweep FINDS 35 DEAD RULES WHERE THE CLA~ | ROUTED 2026-10-06 by hank f~ | cody         | `open-work/tooling.md:14` |
+| Tooling          | &#9989;&#65039;&#8203; CLOSED AS UNANSWERABLE: the github-advanced-secu~ | CHECKED AND RETRIED 2026-10~ | &mdash;      | `open-work/tooling.md:16` |
+| Tooling          | &#128993; tools/seam_cannot_tell_watch.py LANDED UNWIRED &mdash; it is ~ | NEW 2026-10-05 (CC), 6469d2~ | unassigned   | `open-work/tooling.md:18` |
+| Tooling          | &#9989; The 8 mergeable regfresh/ branches are MERGED &mdash; and the o~ | MERGED AND RE-VERIFIED 2026~ | CC           | `open-work/tooling.md:20` |
+| Tooling          | &#128993; FOURTEEN citation drifts need a human READ and cannot be repo~ | MEASURED 2026-09-28 (CC)     | unassigned   | `open-work/tooling.md:21` |
+| Tooling          | &#128993; SIX role gates cannot be reached by the only sound instrument~ | CONFIRMED PER GATE 2026-09-~ | unassigned   | `open-work/tooling.md:22` |
+| Tooling          | &#128993; The role-gate screen&rsquo;s NOT-DRIVEN bucket over-reports b~ | MEASURED 2026-09-28 (CC), a~ | unassigned   | `open-work/tooling.md:23` |
+| Tooling          | &#128993; tier_a_review_gate.py --open records a FLAG NAME as the oblig~ | CONFIRMED STILL LIVE 2026-0~ | unassigned   | `open-work/tooling.md:26` |
+| Tooling          | &#128993; FIVE sabotage anchors match MORE THAN ONE place, so each prob~ | FOUND 2026-09-27 (CC) by to~ | CC (found, ~ | `open-work/tooling.md:27` |
+| Tooling          | &#128993; TEN review records in docs/tier-a-reviews.json cite a sha tha~ | MEASURED 2026-09-25 (Hank) ~ | unassigned ~ | `open-work/tooling.md:28` |
+| Tooling          | ~~&#9989; The four narrow freshness tools are NOT retired &mdash; the p~ | MEASURED 2026-09-25 (Hank) ~ | Hank (the a~ | `open-work/tooling.md:29` |
+| Tooling          | &#128993; A none (...) isolation declaration&rsquo;s REASON is prose NO~ | DECIDED 2026-09-24 (CC), in~ | unassigned   | `open-work/tooling.md:32` |
+| Tooling          | &#128308; tools/sync_write_result_check.py is blind to FOUR whole apps ~ | FOUND 2026-09-24 (CC) while~ | unassigned ~ | `open-work/tooling.md:33` |
+| Tooling          | &#128993; tier_a_review_gate.py&rsquo;s matcher counts an ENGLISH WORD ~ | FOUND 2026-09-25 (CC), whil~ | unassigned   | `open-work/tooling.md:34` |
+| Tooling          | &#9989; The scoped-on-push probe selector is BUILT with its acceptance ~ | BUILT 2026-09-25 (CC) &mdas~ | CC (done)    | `open-work/tooling.md:37` |
+| Tooling          | &#128308; tests/run_cross_tenant_scope_probe.py is RED on main &mdash; ~ | FOUND 2026-09-24 (CC) while~ | unassigned ~ | `open-work/tooling.md:39` |
+| Tooling          | &#128993; A hover H1/H2 disagreement-tracking layer is SELF-BUILDABLE b~ | BOUNDARY CHECKED, NOT BUILT~ | hover1 / ho~ | `open-work/tooling.md:40` |
+| Tooling          | &#128308; confidentiality_candidate_flagger.py splits HTML from JS with~ | FOUND 2026-09-22 (Hank) whi~ | unassigned   | `open-work/tooling.md:42` |
+| Tooling          | FOUR malformed open-work rows in one day, all the same two characters &~ | MEASURED 2026-09-21 (Cody),~ | unassigned   | `open-work/tooling.md:63` |
+| Tooling          | The hover-separation push rejection was NOT propagation lag &mdash; a r~ | INVESTIGATED 2026-09-16 (Ha~ | Michael (th~ | `open-work/tooling.md:67` |
+| Tooling          | &#9888; A COMMIT ON origin/main WEARS THE WRONG MESSAGE, AND THAT DEFEA~ | FOUND 2026-09-16 (CC) while~ | whoever wro~ | `open-work/tooling.md:68` |
+| Tooling          | The duplicate-claim defect is FIXED and its evidence is HISTORICAL &mda~ | MEASURED AND MADE LEGIBLE 2~ | CC           | `open-work/tooling.md:74` |
+| Tooling          | The restore-checker blocker I named was WRONG &mdash; the mock target a~ | CORRECTED 2026-09-14 (Cody)~ | Cody         | `open-work/tooling.md:78` |
+| Tooling          | Three anti-pattern shapes, each narrowed to the signature a REAL platfo~ | BUILT 2026-09-14 (Fourth), ~ | unassigned   | `open-work/tooling.md:87` |
+| Tooling          | Item 28 folded in as a GENERATOR &mdash; and what it emits REFUSES unti~ | BUILT 2026-09-14 (Fourth) &~ | unassigned   | `open-work/tooling.md:88` |
+| Tooling          | R5: the purpose question one level down &mdash; was the FUNCTION invoke~ | BUILT 2026-09-14 (Fourth) &~ | unassigned   | `open-work/tooling.md:89` |
+| Tooling          | Register drift cleared to ZERO on the tier file &mdash; and the twelve ~ | CLEARED 2026-09-26 (Hank) &~ | unassigned ~ | `open-work/tooling.md:90` |
+| Tooling          | Item 52: the two checker-quality signals fused &mdash; by MINIMUM, and ~ | BUILT 2026-09-14 (CC) &mdas~ | CC           | `open-work/tooling.md:91` |
+| Tooling          | Item 57: Benford digit distribution &mdash; the automated form of the f~ | BUILT 2026-09-14 (CC) &mdas~ | CC           | `open-work/tooling.md:92` |
+| Tooling          | RECONCILED for Cody: the report-only sweep timeout is REAL but it is NO~ | MEASURED 2026-09-14 (CC) on~ | Cody (claim~ | `open-work/tooling.md:93` |
+| Tooling          | Item 18: metamorphic relations &mdash; does a checker's ANSWER survive ~ | BUILT 2026-09-13 (CC) &mdas~ | CC           | `open-work/tooling.md:94` |
+| Tooling          | Item 32: sharper reachability &mdash; does this code still serve a PURP~ | BUILT 2026-09-13 (CC) &mdas~ | CC           | `open-work/tooling.md:95` |
+| Tooling          | Item 14: flaky-checker quarantine &mdash; a verdict that flips on UNCHA~ | BUILT 2026-09-13 (Hank) &md~ | Hank         | `open-work/tooling.md:96` |
+| Tooling          | Every promoted checker must have a control that PROVES it can fire &mda~ | BUILT 2026-09-12 (Fourth) &~ | Fourth       | `open-work/tooling.md:107` |
+| Tooling          | Checker determinism &mdash; a checker whose output depends on PYTHONHAS~ | SWEPT 2026-09-12 (Fourth) &~ | Fourth       | `open-work/tooling.md:108` |
+| Tooling          | Self-referential guards -- a guard that derives its SUBJECT from the th~ | BOTH HALVES SWEPT 2026-09-1~ | Fourth       | `open-work/tooling.md:115` |
+| Tooling          | tools/gate_column_check.py reads 4% of its subject while its output rea~ | HANDED TO CC 2026-09-11 (Fo~ | CC           | `open-work/tooling.md:117` |
+| Tooling          | ~~Nothing could tell whether an app writes a resource to the server and~ | BUILT 2026-09-05 (CC) — too~ | CC           | `open-work/tooling.md:120` |
+| Tooling          | Nothing could tell whether an app keeps a business COLLECTION that reac~ | BUILT 2026-09-08 (CC), then~ | CC           | `open-work/tooling.md:121` |
+| Tooling          | discarded_verdict_check.py finds only SAME-FILE cases — a verdict retur~ | ANSWERED 2026-09-04 (Cody) ~ | Cody         | `open-work/tooling.md:124` |
+| Tooling          | The tooling inventory was hand-derived and went STALE IN THREE DAYS &md~ | BUILT 2026-09-12 (Cody) &md~ | Cody         | `open-work/tooling.md:129` |
+| Tooling          | control_char_check.py PROMOTED TO BLOCKING as push-gate check 11 &mdash~ | PROMOTED 2026-09-13 (Michae~ | Cody         | `open-work/tooling.md:135` |
+| Tooling          | Fourth promotion batch &mdash; and one checker HELD BACK rather than si~ | PROMOTED 2026-09-10 (Cody),~ | Cody         | `open-work/tooling.md:138` |
+| Tooling          | Third promotion batch, and the decision for every checker NOT going in   | PROMOTED 2026-09-10 (Cody),~ | Cody &mdash~ | `open-work/tooling.md:139` |
+| Tooling          | Second promotion batch &mdash; six more unwired checkers run against re~ | PROMOTED 2026-09-10 (Cody),~ | Cody &mdash~ | `open-work/tooling.md:140` |
+| Tooling          | The 28 unwired checkers have no way to be promoted, and none had ever r~ | REPORT-ONLY PATH BUILT, 3 P~ | Cody &mdash~ | `open-work/tooling.md:141` |
+| Tooling          | No inventory of the standalone tooling built this session — nothing sai~ | FIRST INVENTORY BUILT 2026-~ | Michael (wh~ | `open-work/tooling.md:142` |
+| Tooling          | Rebuild graphify's knowledge graph, properly scoped                      | Open — SCOPED 2026-09-09 (F~ | Michael (pi~ | `open-work/tooling.md:143` |
+| Tooling          | A PROBE fixture commit reached origin/main three hours after check 8 sh~ | CHECK 10 ADDED 2026-09-10 (~ | Cody         | `open-work/tooling.md:146` |
+| Tooling          | A 35-table migration is 35 chances to half-run, and a half-run one is i~ | BUILT AND RUN 2026-09-10 (C~ | CC           | `open-work/tooling.md:155` |
 
-368 open row(s) of 814 total.
+368 open row(s) of 817 total.
