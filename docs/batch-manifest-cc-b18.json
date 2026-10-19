@@ -7,32 +7,32 @@
     {
       "id": 1,
       "title": "",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "tools/sairn_board_publish.py --selftest 30/30 incl. new arms A29 and A30, exit 0; live board now renders hank 46%, cody 45.1% (naming the 240-char source line) and H1/H2 UNKNOWN with the reason; commit 56d267e3"
     },
     {
       "id": 2,
       "title": "",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "docs/2026-10-19-cc-b18-github-render-confirmation.py exit 0 -- GitHub /markdown HTTP 200, code spans identical to markdown-it, no backslash either side; tools/status_board_bridge_check.py --fixtures 30/30 exit 0 with the tolerance NOTE and --api-readback/--api-published-at arms"
     },
     {
       "id": 3,
       "title": "",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "tools/index_duplicate_hook.py --selftest ALL ARMS PASS exit 0 incl. four criteria_lock arms driven failing-first; tools/index_duplicate_check.py --fixtures 14/14 exit 0 with index line 645 pinned verbatim and the naive split's 11-cell reading as the ablation; commit ab592044"
     },
     {
       "id": 4,
       "title": "",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "status_board_bridge_check --agent cc --nonce B18-BRIDGE-3728541b exit 0 CLEAN; Drive API read of 19GSUTWQLddPwZiLEUNfssAjrMxK4vVE1 shows the FIXED cells in a board republished by hover2's clone at 09:16:11, so the fix propagated past its author; --api-published-at 2026-10-19T09:16:11 drove the revision comparison; SAIRN-handoff-cc-b18.md names what is still H1/H2's"
     },
     {
       "id": 5,
       "title": "",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "docs/2026-10-19-cc-b18-concepts.md, committed at 25c9c0b5 BEFORE 56d267e3 which implements it -- the ordering is provable from git log rather than asserted"
     }
   ]
 }
