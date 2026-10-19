@@ -464,7 +464,7 @@ module.exports = async (req, res) => {
         const m = /\/clusters\/(\d+)\//.exec(clusterUrl || '');
         if (!m) return null;
         const clusterId = Number(m[1]);
-        const cacheR = await fetch(sb.rest('cl_case_cache?cl_cluster_id=eq.' + clusterId + '&limit=1'), { headers: sb.headers });
+        const cacheR = await fetch(sb.rest('cl_case_cache?cl_cluster_id=eq.' + encodeURIComponent(clusterId) + '&limit=1'), { headers: sb.headers });
         const cacheRows = await cacheR.json();
         if (Array.isArray(cacheRows) && cacheRows[0]) return cacheRows[0].case_name;
         const clusterData = await cl.clCluster(clusterId);
@@ -491,7 +491,7 @@ module.exports = async (req, res) => {
       // report views of the same case.
       let citedCaseCiteCount = null;
       try {
-        const citedCacheR = await fetch(sb.rest('cl_case_cache?cl_cluster_id=eq.' + citedClusterId + '&limit=1'), { headers: sb.headers });
+        const citedCacheR = await fetch(sb.rest('cl_case_cache?cl_cluster_id=eq.' + encodeURIComponent(citedClusterId) + '&limit=1'), { headers: sb.headers });
         const citedCacheRows = await citedCacheR.json();
         if (Array.isArray(citedCacheRows) && citedCacheRows[0] && citedCacheRows[0].cite_count !== null) {
           citedCaseCiteCount = citedCacheRows[0].cite_count;

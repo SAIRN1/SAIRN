@@ -74,7 +74,7 @@ module.exports = async (req, res) => {
   const headers = { apikey: SERVICE_KEY, Authorization: 'Bearer ' + SERVICE_KEY, 'Content-Type': 'application/json' };
 
   try {
-    const agentRes = await fetch(SUPABASE_URL + '/rest/v1/sairn_agents?id=eq.' + agent_id + '&select=id,status,plan_status,trial_ends_at', { headers });
+    const agentRes = await fetch(SUPABASE_URL + '/rest/v1/sairn_agents?id=eq.' + encodeURIComponent(agent_id) + '&select=id,status,plan_status,trial_ends_at', { headers });
     const agents = await agentRes.json();
     if (!agentRes.ok || !Array.isArray(agents) || agents.length === 0) {
       res.status(404).json({ error: { message: 'Unknown agent_id' } });

@@ -52,7 +52,7 @@ module.exports = async (req, res) => {
   try {
     // Verify this token owns the agent that owns this command before accepting the result.
     const lookupRes = await fetch(
-      SUPABASE_URL + '/rest/v1/sairn_agents?token_hash=eq.' + tokenHash + '&select=id,status',
+      SUPABASE_URL + '/rest/v1/sairn_agents?token_hash=eq.' + encodeURIComponent(tokenHash) + '&select=id,status',
       { headers }
     );
     const agents = await lookupRes.json();
@@ -63,7 +63,7 @@ module.exports = async (req, res) => {
     const agentId = agents[0].id;
 
     const cmdRes = await fetch(
-      SUPABASE_URL + '/rest/v1/sairn_agent_commands?id=eq.' + command_id + '&agent_id=eq.' + agentId + '&select=id',
+      SUPABASE_URL + '/rest/v1/sairn_agent_commands?id=eq.' + encodeURIComponent(command_id) + '&agent_id=eq.' + encodeURIComponent(agentId) + '&select=id',
       { headers }
     );
     const cmds = await cmdRes.json();
@@ -76,7 +76,7 @@ module.exports = async (req, res) => {
       ? { status: 'completed', result: result || {}, completed_at: new Date().toISOString() }
       : { status: 'failed', error: String(error || 'Unknown agent error'), completed_at: new Date().toISOString() };
 
-    const updateRes = await fetch(SUPABASE_URL + '/rest/v1/sairn_agent_commands?id=eq.' + command_id, {
+    const updateRes = await fetch(SUPABASE_URL + '/rest/v1/sairn_agent_commands?id=eq.' + encodeURIComponent(command_id), {
       method: 'PATCH',
       headers: { ...headers, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
       body: JSON.stringify(patchBody)

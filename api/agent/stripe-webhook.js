@@ -174,7 +174,7 @@ async function handleEvent(event, SUPABASE_URL, SERVICE_KEY) {
 }
 
 async function setPlanStatus(SUPABASE_URL, headers, agentId, planStatus) {
-  const res = await fetch(SUPABASE_URL + '/rest/v1/sairn_agents?id=eq.' + agentId, {
+  const res = await fetch(SUPABASE_URL + '/rest/v1/sairn_agents?id=eq.' + encodeURIComponent(agentId), {
     method: 'PATCH',
     headers: { ...headers, Prefer: 'return=minimal' },
     body: JSON.stringify({ plan_status: planStatus })

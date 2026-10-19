@@ -44,7 +44,7 @@ module.exports = async (req, res) => {
 
   try {
     const lookupRes = await fetch(
-      SUPABASE_URL + '/rest/v1/sairn_agents?token_hash=eq.' + tokenHash + '&select=id,customer_id,agent_name,status,plan_status,trial_ends_at',
+      SUPABASE_URL + '/rest/v1/sairn_agents?token_hash=eq.' + encodeURIComponent(tokenHash) + '&select=id,customer_id,agent_name,status,plan_status,trial_ends_at',
       { headers: { apikey: SERVICE_KEY, Authorization: 'Bearer ' + SERVICE_KEY } }
     );
     const rows = await lookupRes.json();
@@ -59,7 +59,7 @@ module.exports = async (req, res) => {
     }
 
     const updateRes = await fetch(
-      SUPABASE_URL + '/rest/v1/sairn_agents?id=eq.' + agent.id,
+      SUPABASE_URL + '/rest/v1/sairn_agents?id=eq.' + encodeURIComponent(agent.id),
       {
         method: 'PATCH',
         headers: {

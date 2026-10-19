@@ -60,7 +60,7 @@ module.exports = async (req, res) => {
   let agent;
   try {
     const lookupRes = await fetch(
-      SUPABASE_URL + '/rest/v1/sairn_agents?token_hash=eq.' + tokenHash + '&select=id,status,plan_status,trial_ends_at',
+      SUPABASE_URL + '/rest/v1/sairn_agents?token_hash=eq.' + encodeURIComponent(tokenHash) + '&select=id,status,plan_status,trial_ends_at',
       { headers }
     );
     const rows = await lookupRes.json();
@@ -90,7 +90,7 @@ module.exports = async (req, res) => {
   }
 
   // Update last_seen_at (fire-and-forget; not critical to block the poll on this).
-  fetch(SUPABASE_URL + '/rest/v1/sairn_agents?id=eq.' + agent.id, {
+  fetch(SUPABASE_URL + '/rest/v1/sairn_agents?id=eq.' + encodeURIComponent(agent.id), {
     method: 'PATCH',
     headers: { ...headers, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
     body: JSON.stringify({ last_seen_at: new Date().toISOString() })
@@ -101,7 +101,7 @@ module.exports = async (req, res) => {
     while (Date.now() < deadline) {
       const cmdRes = await fetch(
         SUPABASE_URL +
-          '/rest/v1/sairn_agent_commands?agent_id=eq.' + agent.id +
+          '/rest/v1/sairn_agent_commands?agent_id=eq.' + encodeURIComponent(agent.id) +
           '&status=eq.pending&expires_at=gt.' + encodeURIComponent(new Date().toISOString()) +
           '&order=created_at.asc&limit=1',
         { headers }
@@ -109,7 +109,7 @@ module.exports = async (req, res) => {
       const cmds = await cmdRes.json();
       if (Array.isArray(cmds) && cmds.length > 0) {
         const cmd = cmds[0];
-        await fetch(SUPABASE_URL + '/rest/v1/sairn_agent_commands?id=eq.' + cmd.id, {
+        await fetch(SUPABASE_URL + '/rest/v1/sairn_agent_commands?id=eq.' + encodeURIComponent(cmd.id), {
           method: 'PATCH',
           headers: { ...headers, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
           body: JSON.stringify({ status: 'delivered', delivered_at: new Date().toISOString() })

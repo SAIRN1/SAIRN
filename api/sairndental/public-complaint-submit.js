@@ -85,7 +85,7 @@ module.exports = async (req, res) => {
       .digest('hex');
     const sinceISO = new Date(Date.now() - 10 * 60 * 1000).toISOString();
     const dupRes = await fetch(rest('dnt_complaints?license_hash=eq.' + encodeURIComponent(licenseHash) +
-      '&submission_key=eq.' + submissionKey +
+      '&submission_key=eq.' + encodeURIComponent(submissionKey) +
       '&updated_at=gte.' + encodeURIComponent(sinceISO) +
       '&select=complaint_id,access_token&limit=1'), { headers: supabaseHeaders() });
     if (dupRes.ok) {
