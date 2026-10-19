@@ -3106,3 +3106,40 @@ because there is no second bar-admitted signer. Three answers, not equivalent.
 Full account: `SAIRN-handoff-hank-b21.md`, `SAIRN-report-hank-b21.txt`,
 `SAIRN-digest-hank-b21.txt`, `SAIRN-sql-hank-b21.txt` (Drive
 `1j0bFg1rVn-d4VpaHEXIxPvFhX3Ja2k93`).
+
+## b22 — 2026-10-19 — the absent-action refusal, 15 raw filter splices, and a forgeable log line
+
+**The item worth remembering:** b21 censused `api/bridge.js`'s callers by
+grepping the literal URL and found THREE. b22 censused the same thing
+including the ones that go through a `BRIDGE` / `SAIRN_BRIDGE` / `FM_API`
+constant and found **EIGHT** — and one of the newly-found ones is worse than
+anything b21 recorded. `stonedesk.html:19939 sairnSyncAll` does not fail
+quietly: `fetch` only rejects on a transport error, so a **401 RESOLVES**, its
+`catch` never runs, and it sets *"Last sync: &lt;time&gt;"* and toasts
+*"All apps synced"* having synced nothing. **A grep for a URL is not a census
+of callers**, and the difference was a false success claim to the user's face.
+
+**Finding #1599 named three identifiers; the sweep found 15 sites in 7 files.**
+The worst shape is the one the finding singles out: `api/agent/enqueue.js`
+encoded `agent_id` at `:126` and spliced **the same value** raw at `:77`. A
+reviewer who greps for `encodeURIComponent` finds it PRESENT and moves on —
+**the hit that matters is the one that is ABSENT.**
+
+**I wrote the "literal control bytes in a regex" defect twice in one hour** —
+once in `api/claude.js`'s sanitiser and once in the test file that asserts
+against it, which would have been a checker carrying the defect it checks for.
+`node --check` caught both on the first run. Arm E1 now asserts the escapes.
+
+**F2 and F3 are policy nothing consults, and b22 turned that from a paragraph
+into an arm.** `api/sd-data.js:16594` calls `legRoles.decide` with THREE
+arguments; `decide()` takes FIVE. Arm D1 asserts the arity and **fails the day
+somebody wires it** — and its failure message says that is good news, because
+an arm whose failure reads as a regression gets silenced instead of actioned.
+
+**Item 5 CLOSED and live-verified by an ABSENCE**: `a98def399` is on
+origin/main, and the deployed page no longer contains
+`btn.textContent='Granting...';btn.disabled=true;`. A deletion cannot be
+verified by finding something.
+
+Full account: `SAIRN-handoff-hank-b22.md`, `SAIRN-report-hank-b22.txt`,
+`SAIRN-digest-hank-b22.txt`, `docs/2026-10-19-hank-b22-notes.md`.
