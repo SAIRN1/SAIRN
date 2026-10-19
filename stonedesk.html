@@ -35919,17 +35919,58 @@ document.addEventListener('DOMContentLoaded', function() {
   window.sdAskRevokeAccess=sdAskRevokeAccess;
   window.sdDoRevokeAccess=sdDoRevokeAccess;
   window.sdLoadRevokeAccess=sdLoadRevokeAccess;
+  // ── THE FALSE-EMPTY, AND THE LABEL THAT COULD STICK (2026-10-17, b18) ────
+  // TWO DEFECTS OF THE SAME CLASS AS THE 2026-08-06 "Granting..." BUG, found
+  // while re-verifying that one. That bug was a synchronous throw after the
+  // button had been disabled, so the reset code -- "confirmed present and
+  // correct on every path, checked repeatedly" -- never ran. The class is: a
+  // pending state entered before a path that can fail without clearing it.
+  //
+  // DEFECT 1 -- A FAILED READ RENDERED AS "No profiles set yet."
+  // `sdData` returns NULL on every failure: a 404, a 403, a 500, a 15-second
+  // timeout, a network throw. All of them arrived here as `!rows` and drew the
+  // empty state. EMPTY AND UNFETCHED LOOKED IDENTICAL, and only one of them
+  // means there is nothing to do -- the same finding this file already records
+  // for the intake panel on 2026-09-03, with the same fix: `sdReadFailed`,
+  // `sdAuthRefusedNote` and `sdReadFailedNote` already exist for exactly this
+  // and are used rather than reworded.
+  //
+  // DEFECT 2 -- NO `.catch`, SO "Loading..." COULD STICK FOREVER.
+  // `sdData` is written never to reject (its own catch is guarded for that
+  // reason) but the HANDLER here can throw: `escAttrJs` or `escHtml` missing
+  // from this realm, a row that is not an object, `rows.map` on a non-array.
+  // Any of those left the panel reading "Loading..." with no error anywhere --
+  // which is the 2026-08-06 bug exactly, one layer over. A failure path that
+  // can itself fail is the shape this file records paying for twice.
   function sdRenderEmployeeProfiles(){
     var listEl=document.getElementById('emp-prof-list');
     if(!listEl||typeof sdData!=='function')return;
     listEl.textContent='Loading...';
     sdData('read','employee_profile',{all:true}).then(function(rows){
-      if(!rows||!rows.length){listEl.innerHTML='<div style="color:var(--muted)">No profiles set yet.</div>';return;}
+      if(!rows||!rows.length){
+        // THE THREE STATES ARE NOW THREE MESSAGES. Checked in this order
+        // because "you may not have this" and "there is none of this" are
+        // different facts, and a refusal must not read as an absence.
+        if(typeof sdAuthWasRefused==='function'&&sdAuthWasRefused('employee_profile')){
+          listEl.innerHTML=sdAuthRefusedNote('employee profiles');return;
+        }
+        if(typeof sdReadFailed==='function'&&sdReadFailed('employee_profile')){
+          listEl.innerHTML=sdReadFailedNote('employee profiles');return;
+        }
+        listEl.innerHTML='<div style="color:var(--muted)">No profiles set yet.</div>';return;
+      }
       var expLbl={new:'New',developing:'Developing',experienced:'Experienced',veteran:'Veteran'};
       var styLbl={detailed:'Detailed',balanced:'Balanced',terse:'Terse'};
       listEl.innerHTML=rows.map(function(p){
         return '<div style="display:flex;justify-content:space-between;padding:6px 8px;background:var(--bg);border-radius:6px"><span><strong>'+escHtml(p.employee_id)+'</strong> &mdash; '+(expLbl[p.experience_level]||p.experience_level)+' / '+(styLbl[p.communication_style]||p.communication_style)+'</span><a href="#" onclick="sdEditEmployeeProfile(\''+escAttrJs(p.employee_id)+'\',\''+escAttrJs(p.experience_level)+'\',\''+escAttrJs(p.communication_style)+'\');return false;" style="color:var(--muted)">Edit</a></div>';
       }).join('');
+    }).catch(function(e){
+      // IT CLEARS THE PENDING LABEL AND SAYS SO. Not a silent swallow: the
+      // console line is what makes a rendering bug findable, and the panel
+      // must not be left claiming it is still loading something it has
+      // stopped loading.
+      try{console.warn('StoneDesk: employee profiles did not render',e);}catch(_e){}
+      listEl.innerHTML=sdReadFailedNote('employee profiles');
     });
   }
   window.sdRenderEmployeeProfiles=sdRenderEmployeeProfiles;
@@ -35954,6 +35995,18 @@ document.addEventListener('DOMContentLoaded', function() {
       idEl.value='';notesEl.value='';
       if(typeof showToast==='function')showToast('Profile saved for '+employeeId,'success');
       sdRenderEmployeeProfiles();
+    }).catch(function(e){
+      // b18: NO `.catch` MEANT A SAVE COULD FAIL IN COMPLETE SILENCE. `errEl`
+      // is hidden on the line above the call, so a throw here -- from
+      // `sdRenderEmployeeProfiles`, or from `sdData` itself if `sdLicenseKey`
+      // throws (that call is OUTSIDE sdData's own try, which its own comment
+      // at :30192 records as the shape it already paid for once) -- left the
+      // form looking exactly as it does before a click. Same class as the
+      // 2026-08-06 "Granting..." bug: a path that can fail without clearing
+      // what it set.
+      try{console.warn('StoneDesk: employee profile save did not complete',e);}catch(_e){}
+      errEl.textContent='Could not complete the save -- nothing was confirmed. Check the list below before trying again.';
+      errEl.style.display='block';
     });
   };
   window.sdGrantLoginAccess=function(){
@@ -35976,30 +36029,75 @@ document.addEventListener('DOMContentLoaded', function() {
     var token='';
     try{token=sessionStorage.getItem('sd_session_token')||'';}catch(e){}
     if(!lic||!token){errEl.textContent='Your session has expired -- sign out and back in, then try again';errEl.style.display='block';return;}
-    btn.textContent='Granting...';btn.disabled=true;
+    // ── THE RESET IS ONE FUNCTION NOW (2026-10-17, b18) ────────────────────
+    // The 2026-08-06 bug was that the reset lines "confirmed present and
+    // correct on every path, checked repeatedly" never ran, because a
+    // synchronous throw happened before them. Re-verified today: THAT CAUSE IS
+    // FIXED -- SD_AUTH_API is declared locally at the top of this IIFE and
+    // `node --check` plus the suite drive the function -- so the button no
+    // longer sticks on the undefined-reference. TWO RESIDUALS OF THE SAME
+    // CLASS WERE STILL OPEN AND ARE CLOSED HERE.
+    //
+    // RESIDUAL 1 -- `btn` WAS DEREFERENCED UNGUARDED while everything around
+    // it is `if(btn)` / `if(errEl)`. If the card is absent (a trimmed build, a
+    // renamed id) this threw on the pending-label line itself.
+    //
+    // RESIDUAL 2 -- A SUCCESSFUL GRANT COULD BE REPORTED AS A NETWORK ERROR.
+    // `showToast` and `escHtml` are called below WITHOUT the `typeof` guard
+    // its sibling sdSaveEmployeeProfile uses twenty lines up. A throw from
+    // either lands in the trailing `.catch`, which says "Network error --
+    // check your connection" -- for a credential the server HAD ALREADY
+    // CREATED. The user then grants it again, or tells the employee their
+    // login was not set up. Guarded, and the catch no longer claims to know
+    // the cause.
+    function setPending(on){
+      if(!btn)return;
+      btn.textContent=on?'Granting...':'Grant Access';
+      btn.disabled=!!on;
+    }
+    setPending(true);
     fetch(SD_AUTH_API,{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+lic,'X-SD-Auth':token},
       body:JSON.stringify({action:'setup',employee_id:employeeId,display_name:displayName,pin:pin,role:role})
     }).then(function(r){return r.json().catch(function(){return null;}).then(function(d){return {ok:r.ok,body:d};});})
     .then(function(res){
-      btn.textContent='Grant Access';btn.disabled=false;
+      setPending(false);
       if(!res.ok||!res.body||!res.body.ok){
         errEl.textContent=(res.body&&res.body.error&&res.body.error.message)||'Could not grant access -- try again';
         errEl.style.display='block';
         return;
       }
-      showToast('Login access granted to '+employeeId+' ('+role+') — share the PIN with them directly, never in writing','success');
-      if(successEl){
-        var roleLabel={install:'Install',sales:'Sales',admin:'Manager (admin)',owner:'Owner'}[role]||role;
-        successEl.innerHTML='&#9989; Access granted &mdash; <strong>'+escHtml(displayName||employeeId)+'</strong> (Employee ID: <strong>'+escHtml(employeeId)+'</strong>, role: '+escHtml(roleLabel)+'). Share the PIN with them directly, never in writing.';
-        successEl.style.display='block';
-      }
-      [idEl,nameEl,pinEl].forEach(function(el){el.value='';});
-      roleEl.value='install';
-    }).catch(function(){
-      btn.textContent='Grant Access';btn.disabled=false;
-      errEl.textContent='Network error -- check your connection and try again';
+      // ── EVERYTHING FROM HERE ON IS AFTER A CONFIRMED SERVER SUCCESS ──────
+      // So it must not be able to turn into a failure message. Each step is
+      // guarded individually rather than wrapped in one try: a missing toast
+      // must not cost the persistent inline confirmation, which is the one
+      // Michael reported needing on 2026-08-06 because a 3-second fading
+      // toast at the bottom of the screen is easy to miss entirely.
+      try{
+        if(typeof showToast==='function'){
+          showToast('Login access granted to '+employeeId+' ('+role+') — share the PIN with them directly, never in writing','success');
+        }
+      }catch(_t){}
+      try{
+        if(successEl){
+          var roleLabel={install:'Install',sales:'Sales',admin:'Manager (admin)',owner:'Owner'}[role]||role;
+          var esc=(typeof escHtml==='function')?escHtml:function(s){return String(s==null?'':s);};
+          successEl.innerHTML='&#9989; Access granted &mdash; <strong>'+esc(displayName||employeeId)+'</strong> (Employee ID: <strong>'+esc(employeeId)+'</strong>, role: '+esc(roleLabel)+'). Share the PIN with them directly, never in writing.';
+          successEl.style.display='block';
+        }
+      }catch(_s){}
+      try{
+        [idEl,nameEl,pinEl].forEach(function(el){if(el)el.value='';});
+        if(roleEl)roleEl.value='install';
+      }catch(_c){}
+    }).catch(function(e){
+      setPending(false);
+      // IT NO LONGER NAMES THE CAUSE IT CANNOT KNOW. This catch is reached by
+      // a network failure AND by any throw in the chain above, and the old
+      // wording sent people to check their connection for a bug in this file.
+      try{console.warn('StoneDesk: grant login access failed',e);}catch(_e){}
+      errEl.textContent='Could not complete the request -- nothing was confirmed. Check the Sign-In Access list below before trying again, in case the account was created.';
       errEl.style.display='block';
     });
   };
