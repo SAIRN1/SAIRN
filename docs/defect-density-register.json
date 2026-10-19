@@ -34229,6 +34229,20 @@
       "limits": "This measures the CHANGE, not the tool. It says no artefact lost a genuine suite TODAY; it does not say the colon rule is the right rule -- driven separately, a set literal, a list, a tuple, a dict VALUE and a comment naming the artefact all still read as coverage, and the one file that motivated the fix is a dict only because its entries carry reason strings. Nothing here checks artefacts outside tools/ and api/_lib/, and the corpus is whatever load_tests() collects, so a suite living somewhere it does not look is invisible to both regexes equally.",
       "confirmed": "2026-09-18",
       "confirmed_by": "cody"
+    },
+    {
+      "commit": "fb0c90c842ba",
+      "date": "2026-10-19",
+      "subject": "parse(labels)+guard(race): a field ends where its section ends, and a stale clone refuses to revert a newer board",
+      "app": "tooling",
+      "layer": "tooling",
+      "method": "live-verification",
+      "claim": "TIER 0 item 1, the Drive status-bridge, is landed end to end: a status write reaches the published board, the board renders each row's own state, updated stamp and task, the CONTEXT cell renders a figure or UNKNOWN-with-a-reason rather than a paragraph, the bridge check's two b17 unverifieds are closed, and the index-hook criteria-lock gap is shut.",
+      "driven": "Driven, not read, across b17-b19: status_board_bridge_check.py --fixtures 30/30 and live over all six agent rows CLEAN with a deliberate nonce crossing both ends (B18-BRIDGE-3728541b, row 2026-10-19T08:34:45); a Drive-side API read of board file id 19GSUTWQLddPwZiLEUNfssAjrMxK4vVE1 showing the corrected cells in a board republished by HOVER2'S clone at 09:16:11, which proves the fix propagated past its author; sairn_board_publish.py --selftest 36/36 arms including A29/A30 (figure cell), A31/A32 (field termination plus its control) and A33-A36 (the race guard plus two controls); index_duplicate_hook.py --selftest ALL ARMS PASS with four criteria-lock arms driven failing-first; index_duplicate_check.py --fixtures 14/14 with index line 645 pinned; and docs/2026-10-19-cc-b18-github-render-confirmation.py exit 0 against GitHub's own /markdown API.",
+      "verdict": "sound-with-limits",
+      "limits": "THIS IS NOT AN INDEPENDENT CONFIRMATION AND MUST NOT BE READ AS ONE: cc wrote the bridge check, the board publisher and this record, so every arm above is the author checking his own work. The one structurally independent element is the Drive-side API read, which goes through Google rather than the mount, and the one independent OBSERVATION is that hover2's clone -- not cc's -- published the board that was read back. H1/H2's own re-drive is still OWED and the handoff names the exact three commands. Further limits: the stale-board tolerance is 90 seconds and now merely visible rather than tighter; --api-published-at compares ONE field, so two boards with the same stamp and different bodies would pass it; the race guard cannot stop a clone running a publisher older than revision 2026-10-19.1, because such a clone neither writes nor reads the field; and no live deployed-URL check applies, since none of this touches api/, sql/ or an app file.",
+      "confirmed": "2026-10-19",
+      "confirmed_by": "cc"
     }
   ]
 }
