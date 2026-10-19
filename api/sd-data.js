@@ -2340,8 +2340,7 @@ module.exports = async (req, res) => {
         const sfoRows = await fetch(rest('sf_officers?license_hash=eq.' + enc(licHash) +
           '&select=officer_id,data'), { headers });
         if (sfoRows.status === 404 || sfoRows.status === 400) {
-          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNfreedom data tables are not set up yet — run sql/sairnfreedom_data_schema.sql in Supabase first.' } });
-          return;
+          return notProvisioned(res, sfoRows, 'SAIRNfreedom data tables are not set up yet — run sql/sairnfreedom_data_schema.sql in Supabase first.');
         }
         let sfoList = null;
         try { sfoList = await sfoRows.json(); } catch (e) { sfoList = null; }
@@ -2674,6 +2673,7 @@ module.exports = async (req, res) => {
       if (action === 'read') {
         const r = await fetch(rest(sel), { headers });
         if (r.status === 404 || r.status === 400) {
+          if (await unreadableNotEmpty(res, r, resource)) return;
           res.status(200).json({ ok: true, data: [], provisioned: false });
           return;
         }
@@ -2706,8 +2706,7 @@ module.exports = async (req, res) => {
       // lost observation. Same reasoning as the style profile.
       const cur = await fetch(rest(sel + '&supplier=eq.' + enc(supplier) + '&material=eq.' + enc(material) + '&limit=1'), { headers });
       if (cur.status === 404 || cur.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Supplier lead times table is not set up — run sql/sd_supplier_lead_times_schema.sql' } });
-        return;
+        return notProvisioned(res, cur, 'Supplier lead times table is not set up — run sql/sd_supplier_lead_times_schema.sql');
       }
       const curRows = await cur.json();
       if (!cur.ok) return upstream(res, curRows);
@@ -2798,6 +2797,7 @@ module.exports = async (req, res) => {
         }
         const r = await fetch(rest(q), { headers });
         if (r.status === 404 || r.status === 400) {
+          if (await unreadableNotEmpty(res, r, resource)) return;
           res.status(200).json({ ok: true, data: [], provisioned: false });
           return;
         }
@@ -3236,6 +3236,7 @@ module.exports = async (req, res) => {
         // Fails CLOSED, showing nothing, rather than an empty board that reads
         // as "no policies recorded" on a registry that was never provisioned.
         if (r.status === 404 || r.status === 400) {
+          if (await unreadableNotEmpty(res, r, resource)) return;
           res.status(200).json({ ok: true, data: [], provisioned: false });
           return;
         }
@@ -3387,6 +3388,7 @@ module.exports = async (req, res) => {
       if (action === 'read' || action === 'eligibility') {
         const r = await fetch(rest(sel), { headers });
         if (r.status === 404 || r.status === 400) {
+          if (await unreadableNotEmpty(res, r, resource)) return;
           res.status(200).json({ ok: true, data: [], provisioned: false });
           return;
         }
@@ -3508,6 +3510,7 @@ module.exports = async (req, res) => {
         const r = await fetch(rest('sd_approvals?license_hash=eq.' + enc(licHash) +
           '&select=' + cols + '&order=created_at.desc'), { headers });
         if (r.status === 404 || r.status === 400) {
+          if (await unreadableNotEmpty(res, r, resource)) return;
           res.status(200).json({ ok: true, data: [], provisioned: false });
           return;
         }
@@ -3740,14 +3743,14 @@ module.exports = async (req, res) => {
           return;
         }
         const r = await fetch(rest('sd_employee_profiles?license_hash=eq.' + enc(licHash) + '&select=employee_id,experience_level,communication_style,notes'), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         res.status(200).json({ ok: true, data: rows || [], provisioned: true });
         return;
       }
       const r = await fetch(rest('sd_employee_profiles?license_hash=eq.' + enc(licHash) + '&employee_id=eq.' + enc(session.employee_id) + '&select=employee_id,experience_level,communication_style,notes&limit=1'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: null, provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: null, provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       const row = Array.isArray(rows) && rows[0];
@@ -3824,7 +3827,7 @@ module.exports = async (req, res) => {
     // pointing at an id that resolves to nothing.
     if (resource === 'locations' && action === 'read') {
       const r = await fetch(rest('sd_locations?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -3882,7 +3885,7 @@ module.exports = async (req, res) => {
     // refusing to show a non-Available remnant is what covers the same ground.
     if (resource === 'remnants' && action === 'read') {
       const r = await fetch(rest('sd_remnants?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -4245,7 +4248,7 @@ module.exports = async (req, res) => {
       const cfg = SD_LINEAGE[resource];
       if (action === 'read') {
         const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=' + cfg.idCol + ',data'), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         // -- THE COLUMN WINS, NOT THE BLOB (2026-10-15, b16) --------------
@@ -4336,7 +4339,7 @@ module.exports = async (req, res) => {
         // Un-run migration degrades to "nothing recorded yet" rather than breaking the page,
         // same as the lineage tables -- but provisioned:false is reported so the client can
         // say so out loud instead of showing a convincing empty list.
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         // THE COLUMN WINS, NOT THE BLOB -- the same fix and the same reason
@@ -4439,7 +4442,7 @@ module.exports = async (req, res) => {
       if (action === 'tombstones') {
         const r = await fetch(rest('sd_customers?license_hash=eq.' + enc(licHash) +
           '&data->>_deleted_at=not.is.null&select=customer_id,data'), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         res.status(200).json({ ok: true, provisioned: true,
@@ -4455,7 +4458,7 @@ module.exports = async (req, res) => {
         // makes the deletion stick; the client cannot do it, because a record
         // it has deleted is a record it no longer knows to skip.
         const r = await fetch(rest('sd_customers?license_hash=eq.' + enc(licHash) + '&data->>_deleted_at=is.null&select=customer_id,data'), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         res.status(200).json({ ok: true, provisioned: true,
@@ -4495,8 +4498,7 @@ module.exports = async (req, res) => {
         const ccur = await fetch(rest('sd_customers?license_hash=eq.' + enc(licHash) +
           '&customer_id=eq.' + enc(String(payload.id)) + '&select=data&limit=1'), { headers });
         if (ccur.status === 404 || ccur.status === 400) {
-          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Customer records are not set up on the server yet - run sql/stonedesk_public_surface_schema.sql in Supabase first.' } });
-          return;
+          return notProvisioned(res, ccur, 'Customer records are not set up on the server yet - run sql/stonedesk_public_surface_schema.sql in Supabase first.');
         }
         if (!ccur.ok) {
           console.error('sd-data: sd_customers soft_delete read failed, HTTP', ccur.status);
@@ -4740,7 +4742,7 @@ module.exports = async (req, res) => {
       }
       if (action === 'read') {
         const r = await fetch(rest('sd_public_shop?license_hash=eq.' + enc(licHash) + '&select=shop_slug,published,data&limit=1'), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: null, provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: null, provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         const row = (Array.isArray(rows) && rows[0]) || null;
@@ -4813,7 +4815,7 @@ module.exports = async (req, res) => {
       if (action === 'tombstones') {
         const r = await fetch(rest('sd_quote_requests?license_hash=eq.' + enc(licHash) +
           '&data->>_deleted_at=not.is.null&select=request_id,data'), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         res.status(200).json({ ok: true, provisioned: true,
@@ -4828,7 +4830,7 @@ module.exports = async (req, res) => {
         // NULL for it, so `is.null` matches every request written before this
         // existed. Nothing already in the table changes visibility.
         const r = await fetch(rest('sd_quote_requests?license_hash=eq.' + enc(licHash) + '&data->>_deleted_at=is.null&select=request_id,status,created_at,data'), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         res.status(200).json({ ok: true, provisioned: true,
@@ -4852,7 +4854,7 @@ module.exports = async (req, res) => {
       if (action === 'soft_delete') {
         if (!payload || !payload.id) { res.status(400).json({ error: { message: 'sd_quote_requests payload.id is required' } }); return; }
         const dcur = await fetch(rest('sd_quote_requests?license_hash=eq.' + enc(licHash) + '&request_id=eq.' + enc(String(payload.id)) + '&select=data&limit=1'), { headers });
-        if (dcur.status === 404 || dcur.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The public catalog tables are not set up yet - run sql/stonedesk_public_surface_schema.sql in Supabase first.' } }); return; }
+        if (dcur.status === 404 || dcur.status === 400) { return notProvisioned(res, dcur, 'The public catalog tables are not set up yet - run sql/stonedesk_public_surface_schema.sql in Supabase first.'); }
         // The same distinction the status write above had to be taught on
         // 2026-09-04: a failed READ is not a missing request, and telling
         // staff it is gone is the one answer that stops them looking for it.
@@ -4953,7 +4955,7 @@ module.exports = async (req, res) => {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       const r = await fetch(rest('sd_crm?license_hash=eq.' + enc(licHash) + '&select=lead_id,assigned_employee_id,data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       // Management sees every lead. A non-management caller sees only leads
@@ -4979,8 +4981,7 @@ module.exports = async (req, res) => {
       const isManagement = !!CRM_MANAGEMENT_ROLES[session.role];
       const existingR = await fetch(rest('sd_crm?license_hash=eq.' + enc(licHash) + '&lead_id=eq.' + enc(payload.id) + '&select=assigned_employee_id'), { headers });
       if (existingR.status === 404 || existingR.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'CRM sync is not set up yet — run sql/sd_crm_schema.sql in Supabase first.' } });
-        return;
+        return notProvisioned(res, existingR, 'CRM sync is not set up yet — run sql/sd_crm_schema.sql in Supabase first.');
       }
       const existingRows = await existingR.json();
       if (!existingR.ok) return upstream(res, existingRows);
@@ -5094,7 +5095,7 @@ module.exports = async (req, res) => {
 
     if (resource === 'properties' && action === 'read') {
       const r = await fetch(rest('grd_properties?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5115,7 +5116,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'jobs' && action === 'read') {
       const r = await fetch(rest('grd_jobs?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5136,7 +5137,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'quotes' && action === 'read') {
       const r = await fetch(rest('grd_quotes?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5157,7 +5158,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'golf_zones' && action === 'read') {
       const r = await fetch(rest('grd_golf_zones?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5193,7 +5194,7 @@ module.exports = async (req, res) => {
     // list were updated to match in the same push.
     if (resource === 'grd_schedule' && action === 'read') {
       const r = await fetch(rest('grd_schedule?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5227,7 +5228,7 @@ module.exports = async (req, res) => {
     // do the same upsert.
     if (resource === 'grd_progress_photos' && action === 'read') {
       const r = await fetch(rest('grd_progress_photos?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5254,7 +5255,7 @@ module.exports = async (req, res) => {
           return;
         }
         const existingPhoto = await fetch(rest('grd_progress_photos?license_hash=eq.' + enc(licHash) + '&photo_id=eq.' + enc(String(payload.id)) + '&select=data&limit=1'), { headers });
-        if (existingPhoto.status === 404 || existingPhoto.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema.sql in Supabase first.' } }); return; }
+        if (existingPhoto.status === 404 || existingPhoto.status === 400) { return notProvisioned(res, existingPhoto, 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema.sql in Supabase first.'); }
         const existingPhotoRows = await existingPhoto.json();
         if (!existingPhoto.ok) return upstream(res, existingPhotoRows);
         const existingPhotoRow = Array.isArray(existingPhotoRows) && existingPhotoRows[0];
@@ -5291,7 +5292,7 @@ module.exports = async (req, res) => {
     // session report for the full list.
     if (resource === 'grd_invoices' && action === 'read') {
       const r = await fetch(rest('grd_invoices?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5312,7 +5313,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'grd_dreamclose' && action === 'read') {
       const r = await fetch(rest('grd_dreamclose?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5341,7 +5342,7 @@ module.exports = async (req, res) => {
     // file own header for why); everything else here is grd_-prefixed.
     if (resource === 'grd_invasive_sightings' && action === 'read') {
       const r = await fetch(rest('grd_invasive_sightings?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5362,7 +5363,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'grd_ecosystem_reports' && action === 'read') {
       const r = await fetch(rest('grd_ecosystem_reports?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5395,7 +5396,7 @@ module.exports = async (req, res) => {
     // the line where localStorage stops being enough.
     if (resource === 'grd_rounds' && action === 'read') {
       const r = await fetch(rest('grd_rounds?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5416,7 +5417,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'grd_cart_orders' && action === 'read') {
       const r = await fetch(rest('grd_cart_orders?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5437,7 +5438,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'grd_designs' && action === 'read') {
       const r = await fetch(rest('grd_designs?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5458,7 +5459,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'grd_irr_controllers' && action === 'read') {
       const r = await fetch(rest('grd_irr_controllers?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5479,7 +5480,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'grd_irr_zones' && action === 'read') {
       const r = await fetch(rest('grd_irr_zones?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5500,7 +5501,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'grd_irr_schedules' && action === 'read') {
       const r = await fetch(rest('grd_irr_schedules?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5521,7 +5522,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'grd_water_features' && action === 'read') {
       const r = await fetch(rest('grd_water_features?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5542,7 +5543,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'grd_training_courses' && action === 'read') {
       const r = await fetch(rest('grd_training_courses?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5563,7 +5564,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'grd_training_completions' && action === 'read') {
       const r = await fetch(rest('grd_training_completions?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5584,7 +5585,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'grd_boq_rates' && action === 'read') {
       const r = await fetch(rest('grd_boq_rates?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5605,7 +5606,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'grd_vendors' && action === 'read') {
       const r = await fetch(rest('grd_vendors?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5626,7 +5627,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'msb_products' && action === 'read') {
       const r = await fetch(rest('msb_products?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5647,7 +5648,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'msb_sales' && action === 'read') {
       const r = await fetch(rest('msb_sales?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5682,7 +5683,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'msb_licenses' && action === 'read') {
       const r = await fetch(rest('msb_licenses?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5703,7 +5704,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'msb_inventory_log' && action === 'read') {
       const r = await fetch(rest('msb_inventory_log?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5724,7 +5725,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'msb_bottle_scans' && action === 'read') {
       const r = await fetch(rest('msb_bottle_scans?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5745,7 +5746,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'msb_food_scans' && action === 'read') {
       const r = await fetch(rest('msb_food_scans?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5766,7 +5767,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'msb_food_waste' && action === 'read') {
       const r = await fetch(rest('msb_food_waste?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5787,7 +5788,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'msb_food_cost_log' && action === 'read') {
       const r = await fetch(rest('msb_food_cost_log?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5808,7 +5809,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'msb_sale_hours' && action === 'read') {
       const r = await fetch(rest('msb_sale_hours?license_hash=eq.' + enc(licHash) + '&select=data&limit=1'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       const row = Array.isArray(rows) && rows[0];
@@ -5835,7 +5836,7 @@ module.exports = async (req, res) => {
     // 'jobs'/'quotes') specifically to avoid the collision noted in the RESOURCES comment above.
     if (resource === 'customers' && action === 'read') {
       const r = await fetch(rest('scp_customers?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5856,7 +5857,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'scp_jobs' && action === 'read') {
       const r = await fetch(rest('scp_jobs?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5877,7 +5878,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'scp_quotes' && action === 'read') {
       const r = await fetch(rest('scp_quotes?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5898,7 +5899,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'schedule' && action === 'read') {
       const r = await fetch(rest('scp_schedule?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5919,7 +5920,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'invoices' && action === 'read') {
       const r = await fetch(rest('scp_invoices?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5977,7 +5978,7 @@ module.exports = async (req, res) => {
     // shared resources.
     if (resource === 'scp_designs' && action === 'read') {
       const r = await fetch(rest('scp_designs?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -5998,7 +5999,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'scp_irr_controllers' && action === 'read') {
       const r = await fetch(rest('scp_irr_controllers?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -6019,7 +6020,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'scp_irr_zones' && action === 'read') {
       const r = await fetch(rest('scp_irr_zones?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -6040,7 +6041,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'scp_irr_schedules' && action === 'read') {
       const r = await fetch(rest('scp_irr_schedules?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -6061,7 +6062,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'scp_water_features' && action === 'read') {
       const r = await fetch(rest('scp_water_features?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -6082,7 +6083,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'scp_vendors' && action === 'read') {
       const r = await fetch(rest('scp_vendors?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -6108,7 +6109,7 @@ module.exports = async (req, res) => {
     // reason 'scp_jobs'/'scp_quotes' already exist.
     if (resource === 'scp_progress_photos' && action === 'read') {
       const r = await fetch(rest('scp_progress_photos?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -6127,7 +6128,7 @@ module.exports = async (req, res) => {
           return;
         }
         const existingPhoto = await fetch(rest('scp_progress_photos?license_hash=eq.' + enc(licHash) + '&photo_id=eq.' + enc(String(payload.id)) + '&select=data&limit=1'), { headers });
-        if (existingPhoto.status === 404 || existingPhoto.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema.sql in Supabase first.' } }); return; }
+        if (existingPhoto.status === 404 || existingPhoto.status === 400) { return notProvisioned(res, existingPhoto, 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema.sql in Supabase first.'); }
         const existingPhotoRows = await existingPhoto.json();
         if (!existingPhoto.ok) return upstream(res, existingPhotoRows);
         const existingPhotoRow = Array.isArray(existingPhotoRows) && existingPhotoRows[0];
@@ -6158,6 +6159,7 @@ module.exports = async (req, res) => {
       const r = await fetch(rest(
         'sd_render_usage?license_hash=eq.' + enc(licHash) + '&month=eq.' + enc(month) + '&select=count&limit=1'), { headers });
       if (r.status === 404 || r.status === 400) {
+        if (await unreadableNotEmpty(res, r, resource)) return;
         // Migration not run yet — see sql/sd_render_usage_schema.sql. Report 0/not-provisioned
         // rather than erroring the whole panel over a missing table.
         res.status(200).json({ ok: true, data: { count: 0, provisioned: false } });
@@ -6209,6 +6211,7 @@ module.exports = async (req, res) => {
     if (resource === 'shared_knowledge' && action === 'read') {
       const r = await fetch(rest('sd_shared_knowledge?license_hash=eq.' + enc(licHash) + '&select=data&limit=1'), { headers });
       if (r.status === 404 || r.status === 400) {
+        if (await unreadableNotEmpty(res, r, resource)) return;
         res.status(200).json({ ok: true, data: { topics: {}, totalQuestions: 0 }, provisioned: false });
         return;
       }
@@ -6290,7 +6293,7 @@ module.exports = async (req, res) => {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairndesign');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       const r = await fetch(rest('sdn_clients?license_hash=eq.' + enc(licHash) + '&select=client_id,assigned_employee_id,data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       // Management sees every client. A non-management (designer) caller sees only clients
@@ -6312,8 +6315,7 @@ module.exports = async (req, res) => {
       const isManagement = !!SDN_CLIENT_MANAGEMENT_ROLES[session.role];
       const existingR = await fetch(rest('sdn_clients?license_hash=eq.' + enc(licHash) + '&client_id=eq.' + enc(payload.id) + '&select=assigned_employee_id'), { headers });
       if (existingR.status === 404 || existingR.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Client assignment tracking is not set up yet — run sql/sairndesign_clients_assignment_migration.sql in Supabase first.' } });
-        return;
+        return notProvisioned(res, existingR, 'Client assignment tracking is not set up yet — run sql/sairndesign_clients_assignment_migration.sql in Supabase first.');
       }
       const existingRows = await existingR.json();
       if (!existingR.ok) return upstream(res, existingRows);
@@ -6449,7 +6451,7 @@ module.exports = async (req, res) => {
 
       if (action === 'wip') {
         const r = await fetch(rest('bld_draws?license_hash=eq.' + enc(licHash) + '&select=' + bSelect), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, provisioned: false, data: [], totals: null }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, provisioned: false, data: [], totals: null }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         const draws = (rows || []).map((x) => Object.assign({ draw_id: x.draw_id }, x.data || {}));
@@ -6512,8 +6514,7 @@ module.exports = async (req, res) => {
       const cur = await fetch(rest('bld_draws?license_hash=eq.' + enc(licHash) +
         '&draw_id=eq.' + enc(drawId) + '&select=' + bSelect + '&limit=1'), { headers });
       if (cur.status === 404 || cur.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Draw requests are not set up yet — run sql/sairnbuild_data_schema.sql in Supabase first.' } });
-        return;
+        return notProvisioned(res, cur, 'Draw requests are not set up yet — run sql/sairnbuild_data_schema.sql in Supabase first.');
       }
       const curRows = await cur.json();
       if (!cur.ok) return upstream(res, curRows);
@@ -6659,7 +6660,7 @@ module.exports = async (req, res) => {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnbuild');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       const r = await fetch(rest('bld_bids?license_hash=eq.' + enc(licHash) + '&select=bid_id,assigned_employee_id,data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       // Management sees every bid. A non-management (PM) caller sees only bids assigned to
@@ -6681,8 +6682,7 @@ module.exports = async (req, res) => {
       const isManagement = !!BLD_BID_MANAGEMENT_ROLES[session.role];
       const existingR = await fetch(rest('bld_bids?license_hash=eq.' + enc(licHash) + '&bid_id=eq.' + enc(payload.id) + '&select=assigned_employee_id'), { headers });
       if (existingR.status === 404 || existingR.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Bid assignment tracking is not set up yet — run sql/sairnbuild_bids_schema.sql in Supabase first.' } });
-        return;
+        return notProvisioned(res, existingR, 'Bid assignment tracking is not set up yet — run sql/sairnbuild_bids_schema.sql in Supabase first.');
       }
       const existingRows = await existingR.json();
       if (!existingR.ok) return upstream(res, existingRows);
@@ -6742,7 +6742,7 @@ module.exports = async (req, res) => {
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       const r = await fetch(rest('bld_tna_assessments?license_hash=eq.' + enc(licHash) +
         '&select=subject_employee_id,perspective,assessor_employee_id,responses,disc_responses,disc_profile,submitted_at,updated_at'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       let out = rows || [];
@@ -6829,7 +6829,7 @@ module.exports = async (req, res) => {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       const r = await fetch(rest('sen_clients?license_hash=eq.' + enc(licHash) + '&select=client_id,assigned_employee_id,data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       // Management AND coordinator/scheduler (broad-read tier) see every client. Only a
@@ -6852,8 +6852,7 @@ module.exports = async (req, res) => {
       const isBroadRead = !!SEN_CLIENT_BROAD_READ_ROLES[session.role];
       const existingR = await fetch(rest('sen_clients?license_hash=eq.' + enc(licHash) + '&client_id=eq.' + enc(payload.id) + '&select=assigned_employee_id'), { headers });
       if (existingR.status === 404 || existingR.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Client tracking is not set up yet — run sql/sairnsenior_clients_schema.sql in Supabase first.' } });
-        return;
+        return notProvisioned(res, existingR, 'Client tracking is not set up yet — run sql/sairnsenior_clients_schema.sql in Supabase first.');
       }
       const existingRows = await existingR.json();
       if (!existingR.ok) return upstream(res, existingRows);
@@ -6964,7 +6963,7 @@ module.exports = async (req, res) => {
       const idCol = SEN_REFERRAL_RESOURCES[resource];
       if (action === 'read') {
         const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=' + idCol + ',data'), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         const data = (rows || []).map((x) => Object.assign({ id: x[idCol] }, x.data));
@@ -7125,7 +7124,7 @@ module.exports = async (req, res) => {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       const r = await fetch(rest('sen_caregivers?license_hash=eq.' + enc(licHash) + '&select=caregiver_id,data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       const canSeeHr = !!SEN_CAREGIVER_HR_FIELD_ROLES[session.role];
@@ -7212,7 +7211,7 @@ module.exports = async (req, res) => {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       const r = await fetch(rest('sen_visits?license_hash=eq.' + enc(licHash) + '&select=visit_id,assigned_employee_id,data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       let out = rows || [];
@@ -7270,8 +7269,7 @@ module.exports = async (req, res) => {
       if (!payload || !payload.id) { res.status(400).json({ error: { message: 'sen_visits payload.id is required' } }); return; }
       const cr = await fetch(rest('sen_visits?license_hash=eq.' + enc(licHash) + '&visit_id=eq.' + enc(payload.id) + '&select=assigned_employee_id,data'), { headers });
       if (cr.status === 404 || cr.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Visit/EVV tracking is not set up yet — run sql/sairnsenior_visits_schema.sql in Supabase first.' } });
-        return;
+        return notProvisioned(res, cr, 'Visit/EVV tracking is not set up yet — run sql/sairnsenior_visits_schema.sql in Supabase first.');
       }
       const crRows = await cr.json();
       if (!cr.ok) return upstream(res, crRows);
@@ -7374,8 +7372,7 @@ module.exports = async (req, res) => {
       const isScheduler = !!SEN_VISIT_SCHEDULER_ROLES[session.role];
       const existingR = await fetch(rest('sen_visits?license_hash=eq.' + enc(licHash) + '&visit_id=eq.' + enc(payload.id) + '&select=assigned_employee_id,data'), { headers });
       if (existingR.status === 404 || existingR.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Visit/EVV tracking is not set up yet — run sql/sairnsenior_visits_schema.sql in Supabase first.' } });
-        return;
+        return notProvisioned(res, existingR, 'Visit/EVV tracking is not set up yet — run sql/sairnsenior_visits_schema.sql in Supabase first.');
       }
       const existingRows = await existingR.json();
       if (!existingR.ok) return upstream(res, existingRows);
@@ -7687,8 +7684,7 @@ module.exports = async (req, res) => {
       }
       const ar = await fetch(rest('sen_visits?license_hash=eq.' + enc(licHash) + '&visit_id=eq.' + enc(payload.id) + '&select=assigned_employee_id,data'), { headers });
       if (ar.status === 404 || ar.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Visit/EVV tracking is not set up yet — run sql/sairnsenior_visits_schema.sql in Supabase first.' } });
-        return;
+        return notProvisioned(res, ar, 'Visit/EVV tracking is not set up yet — run sql/sairnsenior_visits_schema.sql in Supabase first.');
       }
       const arRows = await ar.json();
       if (!ar.ok) return upstream(res, arRows);
@@ -7760,7 +7756,7 @@ module.exports = async (req, res) => {
       }
       if (action === 'read') {
         const r = await fetch(rest('sen_claims?license_hash=eq.' + enc(licHash) + '&select=claim_id,data'), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         const data = (rows || []).map((r) => Object.assign({ id: r.claim_id }, r.data));
@@ -7968,6 +7964,7 @@ module.exports = async (req, res) => {
           + '&select=closing_id,data,created_by,created_role,created_at&order=created_at.asc'),
           { headers });
         if (rr.status === 404 || rr.status === 400) {
+          if (await unreadableNotEmpty(res, rr, resource)) return;
           res.status(200).json({ ok: true, data: [], provisioned: false,
             message: 'The pay-period freeze record is not set up yet -- run '
               + 'sql/sairnsenior_period_closings_schema.sql in Supabase.' });
@@ -8211,7 +8208,7 @@ module.exports = async (req, res) => {
       if (!SEN_READINESS_ROLES[session.role]) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'EVV readiness is available to management, coordinators and schedulers' } }); return; }
 
       const vr = await fetch(rest('sen_visits?license_hash=eq.' + enc(licHash) + '&select=visit_id,assigned_employee_id,data'), { headers });
-      if (vr.status === 404 || vr.status === 400) { res.status(200).json({ ok: true, provisioned: false, data: null }); return; }
+      if (vr.status === 404 || vr.status === 400) { if (await unreadableNotEmpty(res, vr, resource)) return; res.status(200).json({ ok: true, provisioned: false, data: null }); return; }
       const vrows = await vr.json();
       if (!vr.ok) return upstream(res, vrows);
       const visitList = (vrows || []).map((x) => Object.assign(
@@ -8299,8 +8296,7 @@ module.exports = async (req, res) => {
       // over a table that could not be read pays everybody nothing and looks
       // exactly like a period in which nobody worked.
       if (pvr.status === 404 || pvr.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Visits could not be read — run sql/sairnsenior_visits_schema.sql in Supabase first. Nothing was computed.' } });
-        return;
+        return notProvisioned(res, pvr, 'Visits could not be read — run sql/sairnsenior_visits_schema.sql in Supabase first. Nothing was computed.');
       }
       const pvrows = await pvr.json();
       if (!pvr.ok) return upstream(res, pvrows);
@@ -8309,8 +8305,7 @@ module.exports = async (req, res) => {
       // and worse: every visit would fall into no_rate and the run would look
       // like a data-entry problem in the rate table rather than a failed read.
       if (prr.status === 404 || prr.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Pay rates could not be read — run sql/sairnsenior_pay_rates_schema.sql in Supabase first. Nothing was computed.' } });
-        return;
+        return notProvisioned(res, prr, 'Pay rates could not be read — run sql/sairnsenior_pay_rates_schema.sql in Supabase first. Nothing was computed.');
       }
       const prrows = await prr.json();
       if (!prr.ok) return upstream(res, prrows);
@@ -8399,7 +8394,7 @@ module.exports = async (req, res) => {
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       if (action === 'read') {
         const r = await fetch(rest('sen_branches?license_hash=eq.' + enc(licHash) + '&select=branch_id,data'), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         // ── THE READ IS NOW TIERED, NOT OPEN (2026-10-14, b9) ──────────────
@@ -8497,7 +8492,7 @@ module.exports = async (req, res) => {
       }
       if (action === 'read') {
         const r = await fetch(rest('sen_payer_contracts?license_hash=eq.' + enc(licHash) + '&select=contract_id,data'), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         res.status(200).json({ ok: true, data: (rows || []).map((x) => Object.assign({ id: x.contract_id }, x.data)), provisioned: true });
@@ -8572,7 +8567,7 @@ module.exports = async (req, res) => {
           return;
         }
         const r = await fetch(rest('sen_authorizations?license_hash=eq.' + enc(licHash) + '&select=auth_id,data'), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         res.status(200).json({ ok: true, data: (rows || []).map((x) => Object.assign({ id: x.auth_id }, x.data)), provisioned: true });
@@ -8661,7 +8656,7 @@ module.exports = async (req, res) => {
       }
       if (action === 'read') {
         const r = await fetch(rest('sen_pay_rates?license_hash=eq.' + enc(licHash) + '&select=rate_id,data'), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         res.status(200).json({ ok: true, data: (rows || []).map((x) => Object.assign({ id: x.rate_id }, x.data)), provisioned: true });
@@ -8739,7 +8734,7 @@ module.exports = async (req, res) => {
       }
       if (action === 'read') {
         const r = await fetch(rest('sen_franchise_agreements?license_hash=eq.' + enc(licHash) + '&select=agreement_id,data'), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         res.status(200).json({ ok: true, data: (rows || []).map((x) => Object.assign({ id: x.agreement_id }, x.data)), provisioned: true });
@@ -8812,7 +8807,7 @@ module.exports = async (req, res) => {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       const r = await fetch(rest('sen_settings?license_hash=eq.' + enc(licHash) + '&select=setting_key,data,updated_by,updated_at'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       // ── TIERED, FOR THE SAME REASON AS sen_branches ABOVE (2026-10-14, b9) ─
@@ -9011,7 +9006,7 @@ module.exports = async (req, res) => {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       const r = await fetch(rest('alf_clients?license_hash=eq.' + enc(licHash) + '&select=client_id,assigned_employee_id,data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       let out = rows || [];
@@ -9034,8 +9029,7 @@ module.exports = async (req, res) => {
       const isBroadEdit = !!ALF_EDIT_ROLES[session.role];
       const existingR = await fetch(rest('alf_clients?license_hash=eq.' + enc(licHash) + '&client_id=eq.' + enc(payload.id) + '&select=assigned_employee_id,data'), { headers });
       if (existingR.status === 404 || existingR.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Resident tracking is not set up yet — run sql/sairncare_clients_schema.sql in Supabase first.' } });
-        return;
+        return notProvisioned(res, existingR, 'Resident tracking is not set up yet — run sql/sairncare_clients_schema.sql in Supabase first.');
       }
       const existingRows = await existingR.json();
       if (!existingR.ok) return upstream(res, existingRows);
@@ -9186,7 +9180,7 @@ module.exports = async (req, res) => {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       const r = await fetch(rest('rf_jobs?license_hash=eq.' + enc(licHash) + '&select=job_id,job_class,assigned_employee_id,location_id,data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       let out = rows || [];
@@ -9205,8 +9199,7 @@ module.exports = async (req, res) => {
       const isBroadRead = !!RF_BROAD_READ_ROLES[session.role];
       const existingR = await fetch(rest('rf_jobs?license_hash=eq.' + enc(licHash) + '&job_id=eq.' + enc(payload.id) + '&select=assigned_employee_id,location_id,data'), { headers });
       if (existingR.status === 404 || existingR.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Job tracking is not set up yet — run sql/sairnroofing_jobs_schema.sql in Supabase first.' } });
-        return;
+        return notProvisioned(res, existingR, 'Job tracking is not set up yet — run sql/sairnroofing_jobs_schema.sql in Supabase first.');
       }
       const existingRows = await existingR.json();
       if (!existingR.ok) return upstream(res, existingRows);
@@ -9395,8 +9388,7 @@ module.exports = async (req, res) => {
       if (!jobId) { res.status(400).json({ error: { message: 'rf_photos payload.job_id is required' } }); return; }
       const jobR = await fetch(rest('rf_jobs?license_hash=eq.' + enc(licHash) + '&job_id=eq.' + enc(jobId) + '&select=assigned_employee_id'), { headers });
       if (jobR.status === 404 || jobR.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Job tracking is not set up yet — run sql/sairnroofing_jobs_schema.sql in Supabase first.' } });
-        return;
+        return notProvisioned(res, jobR, 'Job tracking is not set up yet — run sql/sairnroofing_jobs_schema.sql in Supabase first.');
       }
       const jobRows = await jobR.json();
       if (!jobR.ok) return upstream(res, jobRows);
@@ -9407,7 +9399,7 @@ module.exports = async (req, res) => {
 
       if (action === 'read') {
         const r = await fetch(rest('rf_photos?license_hash=eq.' + enc(licHash) + '&job_id=eq.' + enc(jobId) + '&select=id,captured_by,data,created_at&order=created_at.asc'), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         const data = (rows || []).map((p) => Object.assign({ id: p.id, captured_by: p.captured_by, created_at: p.created_at }, p.data));
@@ -9464,7 +9456,7 @@ module.exports = async (req, res) => {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       const r = await fetch(rest('rf_cert_rules?license_hash=eq.' + enc(licHash) + '&select=rule_id,state,requirement_type,role,effective_from,effective_to,status,data,verified_by'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false, coverage: { covered_states: [], uncovered_states: [], detail: [] } }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false, coverage: { covered_states: [], uncovered_states: [], detail: [] } }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       const data = (rows || []).map((x) => ({
@@ -9517,7 +9509,7 @@ module.exports = async (req, res) => {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       const r = await fetch(rest('rf_certifications?license_hash=eq.' + enc(licHash) + '&select=entry_id,employee_id,record_type,data,recorded_at&order=recorded_at.asc'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       let out = (rows || []).map((x) => Object.assign({}, x.data || {}, {
@@ -9611,7 +9603,7 @@ module.exports = async (req, res) => {
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       const today = (payload && payload.today) || nowISO().slice(0, 10);
       const cr = await fetch(rest('rf_certifications?license_hash=eq.' + enc(licHash) + '&select=entry_id,employee_id,record_type,data,recorded_at'), { headers });
-      if (cr.status === 404 || cr.status === 400) { res.status(200).json({ ok: true, provisioned: false, board: null }); return; }
+      if (cr.status === 404 || cr.status === 400) { if (await unreadableNotEmpty(res, cr, resource)) return; res.status(200).json({ ok: true, provisioned: false, board: null }); return; }
       const credRows = await cr.json();
       if (!cr.ok) return upstream(res, credRows);
       const rr = await fetch(rest('rf_cert_rules?license_hash=eq.' + enc(licHash) + '&select=rule_id,state,requirement_type,role,effective_from,effective_to,status,data'), { headers });
@@ -9661,7 +9653,7 @@ module.exports = async (req, res) => {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       const r = await fetch(rest('rf_claims?license_hash=eq.' + enc(licHash) + '&select=claim_id,job_id,assigned_employee_id,status,data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       let data = (rows || []).map((x) => Object.assign({}, x.data || {}, {
@@ -9685,7 +9677,7 @@ module.exports = async (req, res) => {
       // reassign it, and never touch an unassigned one. Checked against the
       // stored row, not against what the caller sent.
       const existingR = await fetch(rest('rf_claims?license_hash=eq.' + enc(licHash) + '&claim_id=eq.' + enc(payload.id) + '&select=assigned_employee_id'), { headers });
-      if (existingR.status === 404 || existingR.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Claims are not set up yet — run sql/sairnroofing_claims_schema.sql in Supabase first.' } }); return; }
+      if (existingR.status === 404 || existingR.status === 400) { return notProvisioned(res, existingR, 'Claims are not set up yet — run sql/sairnroofing_claims_schema.sql in Supabase first.'); }
       const existingRows = await existingR.json();
       const existing = Array.isArray(existingRows) && existingRows[0];
       // Same predicate as every other claim gate. ownsRow() returns false for a
@@ -9800,7 +9792,7 @@ module.exports = async (req, res) => {
       const claimId = payload && payload.claim_id;
       if (!claimId) { res.status(400).json({ error: { message: 'rf_claim_photos read requires payload.claim_id' } }); return; }
       const claimR = await fetch(rest('rf_claims?license_hash=eq.' + enc(licHash) + '&claim_id=eq.' + enc(claimId) + '&select=assigned_employee_id'), { headers });
-      if (claimR.status === 404 || claimR.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (claimR.status === 404 || claimR.status === 400) { if (await unreadableNotEmpty(res, claimR, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const claimRows = await claimR.json();
       const claim = Array.isArray(claimRows) && claimRows[0];
       if (!claim) { res.status(200).json({ ok: true, data: [] }); return; }
@@ -9809,7 +9801,7 @@ module.exports = async (req, res) => {
         return;
       }
       const r = await fetch(rest('rf_claim_photos?license_hash=eq.' + enc(licHash) + '&claim_id=eq.' + enc(claimId) + '&select=photo_id,claim_id,captured_by,data,created_at&order=created_at.asc'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, provisioned: true, data: (rows || []).map((x) => Object.assign({}, x.data || {}, { photo_id: x.photo_id, claim_id: x.claim_id, captured_by: x.captured_by, created_at: x.created_at })) });
@@ -9822,7 +9814,7 @@ module.exports = async (req, res) => {
       if (problems.length) { res.status(400).json({ error: { message: 'rf_claim_photos: ' + problems.join('; ') } }); return; }
       // Must be able to see the claim to attach evidence to it.
       const claimR = await fetch(rest('rf_claims?license_hash=eq.' + enc(licHash) + '&claim_id=eq.' + enc(payload.claim_id) + '&select=assigned_employee_id'), { headers });
-      if (claimR.status === 404 || claimR.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Claims are not set up yet — run sql/sairnroofing_claims_schema.sql in Supabase first.' } }); return; }
+      if (claimR.status === 404 || claimR.status === 400) { return notProvisioned(res, claimR, 'Claims are not set up yet — run sql/sairnroofing_claims_schema.sql in Supabase first.'); }
       const claimRows = await claimR.json();
       const claim = Array.isArray(claimRows) && claimRows[0];
       if (!claim) { res.status(404).json({ error: { code: 'NO_CLAIM', message: 'No such claim — create the claim before attaching evidence to it' } }); return; }
@@ -9897,7 +9889,7 @@ module.exports = async (req, res) => {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       const r = await fetch(rest('rf_settings?license_hash=eq.' + enc(licHash) + '&select=setting_key,data,updated_by,updated_at'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       // ── TIERED, THE SAME WAY sen_settings WAS (2026-10-14, b10) ───────────
@@ -10019,7 +10011,7 @@ module.exports = async (req, res) => {
         const r = await fetch(rest('subcontractors?license_hash=eq.' + enc(licHash) +
           '&app_id=eq.' + enc(APP) +
           '&select=sub_id,name,trade,phone,email,active,coi_carrier,coi_policy_no,coi_expiry,licence_no,licence_expiry,w9_on_file,data,updated_at'), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         // `today` comes from the CALLER, and the engine refuses to run without
@@ -10094,7 +10086,7 @@ module.exports = async (req, res) => {
         const r = await fetch(rest('sub_assignments?license_hash=eq.' + enc(licHash) +
           '&app_id=eq.' + enc(APP) +
           '&select=assignment_id,sub_id,job_id,scheduled_date,status,amount,payments,data,created_by,updated_at'), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         // The raw `payments` array rides along beside the summary. Not folded
@@ -10230,7 +10222,7 @@ module.exports = async (req, res) => {
       if (resource === 'rf_prequal_documents' && (action === 'read' || action === 'readiness')) {
         const r = await fetch(rest('rf_prequal_documents?license_hash=eq.' + enc(licHash) +
           '&select=' + PQ_SELECT + '&order=kind.asc'), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         if (action === 'readiness') {
@@ -10287,7 +10279,7 @@ module.exports = async (req, res) => {
       if (resource === 'rf_bonding' && (action === 'read' || action === 'capacity')) {
         const r = await fetch(rest('rf_bonding?license_hash=eq.' + enc(licHash) +
           '&select=' + BOND_SELECT + '&order=effective_on.desc'), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         if (action !== 'capacity') { res.status(200).json({ ok: true, provisioned: true, data: rows || [] }); return; }
@@ -10417,7 +10409,7 @@ module.exports = async (req, res) => {
       if (resource === 'rf_safety_equipment' && (action === 'read' || action === 'board')) {
         const r = await fetch(rest('rf_safety_equipment?license_hash=eq.' + enc(licHash) +
           '&select=' + EQ_SELECT + '&order=kind.asc'), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         if (action === 'board') {
@@ -10476,7 +10468,7 @@ module.exports = async (req, res) => {
         let q = 'rf_job_hazard_assessments?license_hash=eq.' + enc(licHash) + '&select=' + JHA_SELECT + '&order=assessed_on.desc';
         if (payload && payload.job_id) q += '&job_id=eq.' + enc(String(payload.job_id));
         const r = await fetch(rest(q), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         const validFor = (payload && typeof payload.valid_for_days === 'number' && isFinite(payload.valid_for_days)) ? Math.floor(payload.valid_for_days) : null;
@@ -10595,7 +10587,7 @@ module.exports = async (req, res) => {
         let q = 'rf_draws?license_hash=eq.' + enc(licHash) + '&select=' + drawSelect + '&order=period_end.desc';
         if (payload && payload.job_id) q += '&job_id=eq.' + enc(String(payload.job_id));
         const r = await fetch(rest(q), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         const df = await drawEntityFilter();
@@ -10619,7 +10611,7 @@ module.exports = async (req, res) => {
 
       if (action === 'wip') {
         const r = await fetch(rest('rf_draws?license_hash=eq.' + enc(licHash) + '&select=' + drawSelect), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, provisioned: false, wip: null }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, provisioned: false, wip: null }); return; }
         const drawsAll = await r.json();
         if (!r.ok) return upstream(res, drawsAll);
         const wf = await drawEntityFilter();
@@ -10742,7 +10734,7 @@ module.exports = async (req, res) => {
       if (resource === 'rf_buildings' && action === 'read') {
         const r = await fetch(rest('rf_buildings?license_hash=eq.' + enc(licHash) +
           '&select=building_id,name,customer,address,location_id,active,notes,data,updated_by&order=name.asc'), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         res.status(200).json({ ok: true, provisioned: true, data: rows || [] });
@@ -10795,7 +10787,7 @@ module.exports = async (req, res) => {
           '&select=section_id,building_id,name,system_type,area_sqft,installed_on,expected_life_years,life_source,condition_score,condition_on,warranty_id,status,notes,data,updated_by&order=building_id.asc';
         if (payload && payload.building_id) q += '&building_id=eq.' + enc(String(payload.building_id));
         const r = await fetch(rest(q), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         // Replaced and removed sections stay in the table (they are history)
@@ -10875,7 +10867,7 @@ module.exports = async (req, res) => {
         // on every building screen while still counting in the portfolio
         // totals -- a silent orphan, which is worse than a refusal.
         const br = await fetch(rest('rf_buildings?license_hash=eq.' + enc(licHash) + '&building_id=eq.' + enc(bid) + '&select=building_id&limit=1'), { headers });
-        if (br.status === 404 || br.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The asset registry is not set up yet — run sql/sairnroofing_asset_registry_schema.sql in Supabase first.' } }); return; }
+        if (br.status === 404 || br.status === 400) { return notProvisioned(res, br, 'The asset registry is not set up yet — run sql/sairnroofing_asset_registry_schema.sql in Supabase first.'); }
         const brows = await br.json();
         if (!(Array.isArray(brows) && brows[0])) { res.status(404).json({ error: { code: 'NO_BUILDING', message: 'No such building — add the building before adding a roof section to it' } }); return; }
         const badDate = ['installed_on', 'condition_on'].filter((k) => {
@@ -10957,7 +10949,7 @@ module.exports = async (req, res) => {
         }
         const r = await fetch(rest('rf_warranty_tiers?license_hash=eq.' + enc(licHash) +
           '&select=tier_id,manufacturer,tier_name,requires_program_id,source,notes,active,data,updated_by&order=manufacturer.asc'), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         // The availability verdict needs the company's programme standing, so
@@ -11014,7 +11006,7 @@ module.exports = async (req, res) => {
       if (resource === 'rf_job_warranties' && action === 'read') {
         const r = await fetch(rest('rf_job_warranties?license_hash=eq.' + enc(licHash) +
           '&select=warranty_id,job_id,manufacturer,tier_id,tier_name,status,installed_on,registered_on,register_within_days,registration_number,coverage_years,coverage_expires_on,notes,data,updated_by&order=installed_on.desc'), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         // Registration deadlines and coverage are COMPUTED ON READ, never
@@ -11096,7 +11088,7 @@ module.exports = async (req, res) => {
       const claimId = payload && payload.claim_id;
       if (!claimId) { res.status(400).json({ error: { message: 'assess_damage requires payload.claim_id' } }); return; }
       const cr = await fetch(rest('rf_claims?license_hash=eq.' + enc(licHash) + '&claim_id=eq.' + enc(claimId) + '&select=claim_id,assigned_employee_id,data'), { headers });
-      if (cr.status === 404 || cr.status === 400) { res.status(200).json({ ok: true, provisioned: false, assessment: null }); return; }
+      if (cr.status === 404 || cr.status === 400) { if (await unreadableNotEmpty(res, cr, resource)) return; res.status(200).json({ ok: true, provisioned: false, assessment: null }); return; }
       const cRows = await cr.json();
       const claim = Array.isArray(cRows) && cRows[0];
       if (!claim) { res.status(404).json({ error: { code: 'NO_CLAIM', message: 'No such claim' } }); return; }
@@ -11122,8 +11114,7 @@ module.exports = async (req, res) => {
       } else {
         const sr = await fetch(rest('rf_settings?license_hash=eq.' + enc(licHash) + '&setting_key=eq.damage_threshold&select=data'), { headers });
         if (sr.status === 404 || sr.status === 400) {
-          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Company settings are not set up yet — run sql/sairnroofing_settings_schema.sql in Supabase first.' } });
-          return;
+          return notProvisioned(res, sr, 'Company settings are not set up yet — run sql/sairnroofing_settings_schema.sql in Supabase first.');
         }
         const sRows = await sr.json();
         if (!sr.ok) return upstream(res, sRows);
@@ -11175,7 +11166,7 @@ module.exports = async (req, res) => {
       const claimId = payload && payload.claim_id;
       if (!claimId) { res.status(400).json({ error: { message: 'reconcile requires payload.claim_id' } }); return; }
       const cr = await fetch(rest('rf_claims?license_hash=eq.' + enc(licHash) + '&claim_id=eq.' + enc(claimId) + '&select=claim_id,job_id,assigned_employee_id,data'), { headers });
-      if (cr.status === 404 || cr.status === 400) { res.status(200).json({ ok: true, provisioned: false, worksheet: null }); return; }
+      if (cr.status === 404 || cr.status === 400) { if (await unreadableNotEmpty(res, cr, resource)) return; res.status(200).json({ ok: true, provisioned: false, worksheet: null }); return; }
       const cRows = await cr.json();
       const claim = Array.isArray(cRows) && cRows[0];
       if (!claim) { res.status(404).json({ error: { code: 'NO_CLAIM', message: 'No such claim' } }); return; }
@@ -11241,7 +11232,7 @@ module.exports = async (req, res) => {
       const gate = await rfJobGate(licHash, headers, jobId, session, res);
       if (!gate.ok) return;
       const r = await fetch(rest('rf_proposals?license_hash=eq.' + enc(licHash) + '&job_id=eq.' + enc(jobId) + '&select=proposal_id,job_id,event_type,supersedes,recorded_by,data,created_at&order=created_at.asc'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false, state: null }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false, state: null }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       // Same reasoning as rf_claim_agreements: an acceptance signature is up to
@@ -11350,7 +11341,7 @@ module.exports = async (req, res) => {
         let q = 'rf_invoices?license_hash=eq.' + enc(licHash) + '&select=invoice_id,invoice_number,invoice_seq,job_id,location_id,claim_id,status,issue_date,due_date,data,payments,created_by&order=created_at.desc';
         if (payload && payload.job_id) q += '&job_id=eq.' + enc(String(payload.job_id));
         const r = await fetch(rest(q), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         res.status(200).json({
@@ -11385,7 +11376,7 @@ module.exports = async (req, res) => {
         // table that does not exist would import as "this roofer billed
         // nothing this month", which is a claim about the business rather than
         // about the schema.
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, provisioned: false, result: null }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, provisioned: false, result: null }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         const invoices = (rows || []).map((x) => shape(x));
@@ -11619,7 +11610,7 @@ module.exports = async (req, res) => {
         return;
       }
       const r = await fetch(rest('rf_company_programs?license_hash=eq.' + enc(licHash) + '&select=program_id,manufacturer,program_name,status,obtained_on,expires_on,has_expiry,requirements,data,updated_by&order=manufacturer.asc'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({
@@ -11681,7 +11672,7 @@ module.exports = async (req, res) => {
       }
       const today = (payload && payload.today) || nowISO().slice(0, 10);
       const pr = await fetch(rest('rf_company_programs?license_hash=eq.' + enc(licHash) + '&select=program_id,manufacturer,program_name,status,obtained_on,expires_on,has_expiry,requirements'), { headers });
-      if (pr.status === 404 || pr.status === 400) { res.status(200).json({ ok: true, provisioned: false, programs: [] }); return; }
+      if (pr.status === 404 || pr.status === 400) { if (await unreadableNotEmpty(res, pr, resource)) return; res.status(200).json({ ok: true, provisioned: false, programs: [] }); return; }
       const progRows = await pr.json();
       if (!pr.ok) return upstream(res, progRows);
       // The roster and the certification records are read WHOLE here, not
@@ -11791,7 +11782,7 @@ module.exports = async (req, res) => {
       }
 
       const er = await fetch(rest('rf_entities?license_hash=eq.' + enc(licHash) + '&select=' + ENT_SELECT + '&order=legal_name.asc'), { headers });
-      if (er.status === 404 || er.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (er.status === 404 || er.status === 400) { if (await unreadableNotEmpty(res, er, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const ents = await er.json();
       if (!er.ok) return upstream(res, ents);
       if (action === 'read') { res.status(200).json({ ok: true, provisioned: true, data: ents || [] }); return; }
@@ -11903,7 +11894,7 @@ module.exports = async (req, res) => {
         entityProvisioned = false;
         r = await fetch(rest('rf_locations?license_hash=eq.' + enc(licHash) + '&select=location_id,name,active,data&order=name.asc'), { headers });
       }
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       // `is_default` PER ROW (2026-10-19, Michael's decision). The client asked
@@ -11981,7 +11972,7 @@ module.exports = async (req, res) => {
       if (payload && payload.from) q += '&scheduled_date=gte.' + enc(String(payload.from));
       if (payload && payload.to) q += '&scheduled_date=lte.' + enc(String(payload.to));
       const r = await fetch(rest(q), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       // The narrow-tier filter needs each row's JOB assignee, so the job
@@ -12017,7 +12008,7 @@ module.exports = async (req, res) => {
       // taking one from the caller -- a crew day cannot be attributed to a
       // branch the job does not belong to.
       const jr = await fetch(rest('rf_jobs?license_hash=eq.' + enc(licHash) + '&job_id=eq.' + enc(payload.job_id) + '&select=job_id,location_id'), { headers });
-      if (jr.status === 404 || jr.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Jobs are not set up yet — run sql/sairnroofing_jobs_schema.sql in Supabase first.' } }); return; }
+      if (jr.status === 404 || jr.status === 400) { return notProvisioned(res, jr, 'Jobs are not set up yet — run sql/sairnroofing_jobs_schema.sql in Supabase first.'); }
       const jRows = await jr.json();
       const job = Array.isArray(jRows) && jRows[0];
       if (!job) { res.status(404).json({ error: { code: 'NO_JOB', message: 'No such job — create the job before scheduling a day on it' } }); return; }
@@ -12106,7 +12097,7 @@ module.exports = async (req, res) => {
       const r = await fetch(rest('rf_schedule?license_hash=eq.' + enc(licHash) +
         '&scheduled_date=gte.' + enc(String(from)) + '&scheduled_date=lte.' + enc(String(to)) +
         '&select=schedule_id,job_id,scheduled_date,status,crew'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, provisioned: false, load: null }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, provisioned: false, load: null }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       const ev = cap.crewLoad({ schedule: rows || [], from: from, to: to });
@@ -12128,7 +12119,7 @@ module.exports = async (req, res) => {
       // it is added to already happens for the canSeeSchedule gate -- one more
       // column, not one more round trip.
       const sr = await fetch(rest('rf_schedule?license_hash=eq.' + enc(licHash) + '&schedule_id=eq.' + enc(schedId) + '&select=schedule_id,job_id,crew,data'), { headers });
-      if (sr.status === 404 || sr.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Scheduling is not set up yet — run sql/sairnroofing_locations_schema.sql in Supabase first.' } }); return; }
+      if (sr.status === 404 || sr.status === 400) { return notProvisioned(res, sr, 'Scheduling is not set up yet — run sql/sairnroofing_locations_schema.sql in Supabase first.'); }
       const sRows = await sr.json();
       const entry = Array.isArray(sRows) && sRows[0];
       if (!entry) { res.status(404).json({ error: { code: 'NO_SCHEDULE', message: 'No such scheduled day' } }); return; }
@@ -12259,7 +12250,7 @@ module.exports = async (req, res) => {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       const r = await fetch(rest('rf_contingency_rules?license_hash=eq.' + enc(licHash) + '&select=rule_id,state,trigger_event,count,unit,business_day_basis,status,data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: rows || [], provisioned: true });
@@ -12312,7 +12303,7 @@ module.exports = async (req, res) => {
       const gate = await rfClaimGate(licHash, headers, claimId, session, res);
       if (!gate.ok) return;
       const r = await fetch(rest('rf_claim_agreements?license_hash=eq.' + enc(licHash) + '&claim_id=eq.' + enc(claimId) + '&select=agreement_id,claim_id,event_type,supersedes,recorded_by,data,created_at'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       // The signature image is up to 1.5MB and NOTHING in the panel renders it
@@ -12472,7 +12463,7 @@ module.exports = async (req, res) => {
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       const broadStaffRead = !!ALF_CRED_READ_ROLES[session.role];
       const r = await fetch(rest('alf_staff?license_hash=eq.' + enc(licHash) + '&select=staff_id,data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false, scoped_projection: !broadStaffRead }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false, scoped_projection: !broadStaffRead }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       // PROJECTED BEFORE THE RESPONSE IS BUILT, not filtered out of a finished
@@ -12620,7 +12611,7 @@ module.exports = async (req, res) => {
       // select created_at, and alf_signals already selects recorded_at, which
       // is the column it orders by. Two reads were missing it, not six.
       const r = await fetch(rest('alf_mar?license_hash=eq.' + enc(licHash) + '&select=entry_id,resident_id,assigned_employee_id,entry_type,data,created_at&order=created_at.desc'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       let out = rows || [];
@@ -12662,8 +12653,7 @@ module.exports = async (req, res) => {
       // own-assigned-only restriction against real, current data.
       const residentR = await fetch(rest('alf_clients?license_hash=eq.' + enc(licHash) + '&client_id=eq.' + enc(payload.resident_id) + '&select=assigned_employee_id'), { headers });
       if (residentR.status === 404 || residentR.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Resident tracking is not set up yet — run sql/sairncare_clients_schema.sql in Supabase first.' } });
-        return;
+        return notProvisioned(res, residentR, 'Resident tracking is not set up yet — run sql/sairncare_clients_schema.sql in Supabase first.');
       }
       const residentRows = await residentR.json();
       if (!residentR.ok) return upstream(res, residentRows);
@@ -12874,7 +12864,7 @@ module.exports = async (req, res) => {
         return;
       }
       const r = await fetch(rest('alf_billing?license_hash=eq.' + enc(licHash) + '&select=entry_id,resident_id,data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       const data = (rows || []).map((r) => Object.assign({ id: r.entry_id, resident_id: r.resident_id }, r.data));
@@ -13300,8 +13290,7 @@ module.exports = async (req, res) => {
       if (!payload || !payload.id) { res.status(400).json({ error: { message: 'alf_incidents payload.id is required' } }); return; }
       const existingR = await fetch(rest('alf_incidents?license_hash=eq.' + enc(licHash) + '&entry_id=eq.' + enc(String(payload.id)) + '&select=id'), { headers });
       if (existingR.status === 404 || existingR.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Incident tracking is not set up yet — run sql/sairncare_incidents_schema.sql in Supabase first.' } });
-        return;
+        return notProvisioned(res, existingR, 'Incident tracking is not set up yet — run sql/sairncare_incidents_schema.sql in Supabase first.');
       }
       const existingRows = await appendOnlyExisting(res, existingR, 'alf_incidents'); if (!existingRows) return;
       const alreadyExists = Array.isArray(existingRows) && existingRows.length > 0;
@@ -13368,7 +13357,7 @@ module.exports = async (req, res) => {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       const r = await fetch(rest('alf_activities?license_hash=eq.' + enc(licHash) + '&select=entry_id,data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       const data = (rows || []).map((r) => Object.assign({ id: r.entry_id }, r.data));
@@ -13456,7 +13445,7 @@ module.exports = async (req, res) => {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       const r = await fetch(rest('alf_facility?license_hash=eq.' + enc(licHash) + '&select=facility_id,data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       const canSeeRates = !!ALF_MANAGEMENT_ROLES[session.role];
@@ -13543,6 +13532,7 @@ module.exports = async (req, res) => {
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       const r = await fetch(rest('alf_signals?license_hash=eq.' + enc(licHash) + '&select=entry_id,resident_id,signal_type,data,recorded_at&order=recorded_at.desc'), { headers });
       if (r.status === 404 || r.status === 400) {
+        if (await unreadableNotEmpty(res, r, resource)) return;
         res.status(200).json({ ok: true, data: [], provisioned: false, coverage: { have: 0, need: ALF_SIGNAL_TYPES.length } });
         return;
       }
@@ -13643,6 +13633,7 @@ module.exports = async (req, res) => {
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       const r = await fetch(rest('alf_payer_rules?license_hash=eq.' + enc(licHash) + '&select=rule_id,state,program,effective_from,effective_to,status,data,verified_by'), { headers });
       if (r.status === 404 || r.status === 400) {
+        if (await unreadableNotEmpty(res, r, resource)) return;
         res.status(200).json({ ok: true, data: [], provisioned: false, coverage: { have: 0, need: 0, covered_states: [], uncovered_states: [] } });
         return;
       }
@@ -13740,8 +13731,7 @@ module.exports = async (req, res) => {
       }
       const rr = await fetch(rest('alf_payer_rules?license_hash=eq.' + enc(licHash) + '&select=rule_id,state,program,effective_from,effective_to,status,data'), { headers });
       if (rr.status === 404 || rr.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Billing rules are not set up yet — run sql/sairncare_payer_rules_schema.sql in Supabase first.' } });
-        return;
+        return notProvisioned(res, rr, 'Billing rules are not set up yet — run sql/sairncare_payer_rules_schema.sql in Supabase first.');
       }
       const ruleRows = await rr.json();
       if (!rr.ok) return upstream(res, ruleRows);
@@ -13790,7 +13780,7 @@ module.exports = async (req, res) => {
         return;
       }
       const r = await fetch(rest('alf_claim_routes?license_hash=eq.' + enc(licHash) + '&select=entry_id,resident_id,service_month,data,decided_by,created_at&order=created_at.desc'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       const data = (rows || []).map((x) => Object.assign({
@@ -14056,6 +14046,7 @@ module.exports = async (req, res) => {
             + '&assigned_employee_id=eq.' + enc(String(session.employee_id))
             + '&select=client_id'), { headers });
           if (ar.status === 404 || ar.status === 400) {
+            if (await unreadableNotEmpty(res, ar, resource)) return;
             res.status(200).json({ ok: true, data: [], provisioned: false });
             return;
           }
@@ -14084,6 +14075,7 @@ module.exports = async (req, res) => {
         if (famP.resident_id) q += '&resident_id=eq.' + enc(String(famP.resident_id));
         const fr = await fetch(rest(q), { headers });
         if (fr.status === 404 || fr.status === 400) {
+          if (await unreadableNotEmpty(res, fr, resource)) return;
           res.status(200).json({ ok: true, data: [], provisioned: false });
           return;
         }
@@ -14188,9 +14180,7 @@ module.exports = async (req, res) => {
             + '&assigned_employee_id=eq.' + enc(String(session.employee_id))
             + '&select=client_id'), { headers });
           if (mar_ar.status === 404 || mar_ar.status === 400) {
-            res.status(503).json({ error: { code: 'NOT_PROVISIONED', message:
-              'Residents are not set up - run the SAIRNcare schema' } });
-            return;
+            return notProvisioned(res, mar_ar, 'Residents are not set up - run the SAIRNcare schema');
           }
           const mar_arows = await mar_ar.json();
           if (!mar_ar.ok) return upstream(res, mar_arows);
@@ -14209,8 +14199,7 @@ module.exports = async (req, res) => {
         const cr = await fetch(rest('alf_family_contacts?license_hash=eq.' + enc(licHash)
           + '&contact_id=eq.' + enc(String(famP.contact_id)) + '&select=' + famCols), { headers });
         if (cr.status === 404 || cr.status === 400) {
-          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Family contacts are not set up - run sql/sairncare_family_contacts_schema.sql' } });
-          return;
+          return notProvisioned(res, cr, 'Family contacts are not set up - run sql/sairncare_family_contacts_schema.sql');
         }
         const crows = await cr.json();
         if (!cr.ok) return upstream(res, crows);
@@ -14292,8 +14281,7 @@ module.exports = async (req, res) => {
             + '&order=created_at.asc&limit=' + FAM_MAR_PAGE
             + '&offset=' + mrows.length), { headers });
           if (mr.status === 404 || mr.status === 400) {
-            res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The MAR is not set up - run sql/sairncare_mar_schema.sql' } });
-            return;
+            return notProvisioned(res, mr, 'The MAR is not set up - run sql/sairncare_mar_schema.sql');
           }
           const page = await mr.json();
           if (!mr.ok) return upstream(res, page);
@@ -14416,9 +14404,7 @@ module.exports = async (req, res) => {
           + enc(licHash) + '&contact_id=eq.' + enc(String(famP.contact_id))
           + '&select=' + famCols), { headers });
         if (gcr.status === 404 || gcr.status === 400) {
-          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message:
-            'Family contacts are not set up - run sql/sairncare_family_contacts_schema.sql' } });
-          return;
+          return notProvisioned(res, gcr, 'Family contacts are not set up - run sql/sairncare_family_contacts_schema.sql');
         }
         const gcrows = await gcr.json();
         if (!gcr.ok) return upstream(res, gcrows);
@@ -14508,6 +14494,7 @@ module.exports = async (req, res) => {
         + '&contact_id=eq.' + enc(String(famP.contact_id))
         + '&select=mar_consent,consent_granted_at,consent_granted_by,consent_revoked_at,active,revoked_at'), { headers });
       if (famPriorR.status === 404 || famPriorR.status === 400) {
+        if (await unreadableNotEmpty(res, famPriorR, resource)) return;
         res.status(200).json({ ok: true, provisioned: false, data: null });
         return;
       }
@@ -14616,6 +14603,7 @@ module.exports = async (req, res) => {
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       const r = await fetch(rest('alf_compliance_rules?license_hash=eq.' + enc(licHash) + '&select=rule_id,state,requirement_type,facility_class,effective_from,effective_to,status,data,verified_by'), { headers });
       if (r.status === 404 || r.status === 400) {
+        if (await unreadableNotEmpty(res, r, resource)) return;
         res.status(200).json({ ok: true, data: [], provisioned: false, coverage: { have: 0, need: 0, detail: [], uncovered_states: [] } });
         return;
       }
@@ -14700,8 +14688,7 @@ module.exports = async (req, res) => {
       }
       const rr = await fetch(rest('alf_compliance_rules?license_hash=eq.' + enc(licHash) + '&select=rule_id,state,requirement_type,facility_class,effective_from,effective_to,status,data'), { headers });
       if (rr.status === 404 || rr.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Compliance rules are not set up yet — run sql/sairncare_compliance_schema.sql in Supabase first.' } });
-        return;
+        return notProvisioned(res, rr, 'Compliance rules are not set up yet — run sql/sairncare_compliance_schema.sql in Supabase first.');
       }
       const ruleRows = await rr.json();
       if (!rr.ok) return upstream(res, ruleRows);
@@ -14768,8 +14755,7 @@ module.exports = async (req, res) => {
           const sr = await fetch(rest('alf_staff?license_hash=eq.' + enc(licHash)
             + '&select=staff_id,data'), { headers });
           if (sr.status === 404 || sr.status === 400) {
-            res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The staff roster is not set up yet — run sql/sairncare_schema.sql in Supabase first. No per-staff verdict is produced, because a roster read that answered "no staff" would report a facility with no obligations.' } });
-            return;
+            return notProvisioned(res, sr, 'The staff roster is not set up yet — run sql/sairncare_schema.sql in Supabase first. No per-staff verdict is produced, because a roster read that answered "no staff" would report a facility with no obligations.');
           }
           const staffRows = await sr.json();
           if (!sr.ok) return upstream(res, staffRows);
@@ -14779,8 +14765,7 @@ module.exports = async (req, res) => {
           const cr = await fetch(rest('alf_staff_credentials?license_hash=eq.' + enc(licHash)
             + '&record_type=eq.training_hours&select=staff_id,data'), { headers });
           if (cr.status === 404 || cr.status === 400) {
-            res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Staff credential records are not set up yet — run sql/sairncare_staff_credentials_schema.sql in Supabase first. No per-staff verdict is produced: an empty read here is indistinguishable from nobody having done any training, and reporting every staff member as non-compliant is a worse answer than none.' } });
-            return;
+            return notProvisioned(res, cr, 'Staff credential records are not set up yet — run sql/sairncare_staff_credentials_schema.sql in Supabase first. No per-staff verdict is produced: an empty read here is indistinguishable from nobody having done any training, and reporting every staff member as non-compliant is a worse answer than none.');
           }
           const credRows = await cr.json();
           if (!cr.ok) return upstream(res, credRows);
@@ -14870,7 +14855,7 @@ module.exports = async (req, res) => {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       const r = await fetch(rest('alf_staff_credentials?license_hash=eq.' + enc(licHash) + '&select=entry_id,staff_id,record_type,data,recorded_by,created_at&order=created_at.desc'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       let out = rows || [];
@@ -14970,6 +14955,7 @@ module.exports = async (req, res) => {
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       const r = await fetch(rest('alf_op_audits?license_hash=eq.' + enc(licHash) + '&select=entry_id,record_type,observed_on,passed,data,recorded_by,reviewed_by,reviewed_at,created_at&order=created_at.desc'), { headers });
       if (r.status === 404 || r.status === 400) {
+        if (await unreadableNotEmpty(res, r, resource)) return;
         res.status(200).json({ ok: true, data: [], provisioned: false, summary: opAudit.summarise([]) });
         return;
       }
@@ -15009,8 +14995,7 @@ module.exports = async (req, res) => {
       // reused id is only accepted when it is genuinely a review of an existing record.
       const existingR = await fetch(rest('alf_op_audits?license_hash=eq.' + enc(licHash) + '&entry_id=eq.' + enc(String(payload.id)) + '&select=entry_id,record_type,observed_on,passed,data,recorded_by'), { headers });
       if (existingR.status === 404 || existingR.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The operational audit log is not set up yet — run sql/sairncare_op_audit_schema.sql in Supabase first.' } });
-        return;
+        return notProvisioned(res, existingR, 'The operational audit log is not set up yet — run sql/sairncare_op_audit_schema.sql in Supabase first.');
       }
       const existingRows = await appendOnlyExisting(res, existingR, 'alf_op_audits'); if (!existingRows) return;
       const existing = Array.isArray(existingRows) && existingRows[0];
@@ -15189,7 +15174,7 @@ module.exports = async (req, res) => {
     if (SDN_RESOURCES[resource] && action === 'read') {
       const idCol = SDN_RESOURCES[resource];
       const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -15457,7 +15442,7 @@ module.exports = async (req, res) => {
       // empty WITH provisioned:false rather than as rows, so the client can
       // tell "nothing saved yet" apart from "this was never migrated" -- the
       // distinction dnt_referrals needed and the reason its gap was visible.
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -15581,7 +15566,7 @@ module.exports = async (req, res) => {
       // 404/400 means the table does not exist yet. Reported as an honest empty
       // WITH provisioned:false rather than as rows, so the client can tell
       // "nothing saved yet" from "this was never migrated".
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -15744,8 +15729,7 @@ module.exports = async (req, res) => {
           '&select=' + idColAO + '&limit=1'
         ), { headers });
         if (exq.status === 404 || exq.status === 400) {
-          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNvet data tables are not set up yet — run sql/sairnvet_data_schema.sql in Supabase first.' } });
-          return;
+          return notProvisioned(res, exq, 'SAIRNvet data tables are not set up yet — run sql/sairnvet_data_schema.sql in Supabase first.');
         }
         const exRows = await exq.json();
         if (!exq.ok) return upstream(res, exRows);
@@ -15776,7 +15760,7 @@ module.exports = async (req, res) => {
       // 404/400 means the table does not exist yet. An honest empty WITH
       // provisioned:false, so the client can tell "nothing saved yet" from
       // "this was never migrated" and leaves local data alone for the second.
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       let total = null;
@@ -15965,7 +15949,7 @@ module.exports = async (req, res) => {
     };
     if (SF_RESOURCES[resource] && action === 'read') {
       const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -16033,7 +16017,7 @@ module.exports = async (req, res) => {
       const rowId = String(payload.id);
       const cur = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) +
         '&' + idCol + '=eq.' + enc(rowId) + '&select=data'), { headers });
-      if (cur.status === 404 || cur.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'StoneDesk data tables are not set up yet — run sql/stonedesk_data_schema.sql in Supabase first.' } }); return; }
+      if (cur.status === 404 || cur.status === 400) { return notProvisioned(res, cur, 'StoneDesk data tables are not set up yet — run sql/stonedesk_data_schema.sql in Supabase first.'); }
       const curRows = await cur.json();
       if (!cur.ok) return upstream(res, curRows);
       if (!Array.isArray(curRows) || curRows.length === 0) {
@@ -16228,7 +16212,7 @@ module.exports = async (req, res) => {
         // 404/400 means the table does not exist yet. Reported as an honest
         // empty WITH provisioned:false rather than as rows, so the client can
         // tell "nothing saved yet" apart from "this was never migrated".
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -16474,7 +16458,7 @@ module.exports = async (req, res) => {
       // 404/400 means the table does not exist yet. Reported as an honest
       // empty WITH provisioned:false rather than as rows, so the client can
       // tell "nothing saved yet" apart from "this was never migrated".
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -16635,8 +16619,7 @@ module.exports = async (req, res) => {
           '&select=' + idColAO + '&limit=1'
         ), { headers });
         if (exq.status === 404 || exq.status === 400) {
-          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlegacy data tables are not set up yet — run sql/sairnlegacy_data_schema.sql in Supabase first.' } });
-          return;
+          return notProvisioned(res, exq, 'SAIRNlegacy data tables are not set up yet — run sql/sairnlegacy_data_schema.sql in Supabase first.');
         }
         const exRows = await exq.json();
         if (!exq.ok) return upstream(res, exRows);
@@ -16689,7 +16672,7 @@ module.exports = async (req, res) => {
     }
     if (LEG_RESOURCES[resource] && action === 'read') {
       const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -17166,7 +17149,7 @@ module.exports = async (req, res) => {
       const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) +
         (DNT_SOFT_DELETE_RESOURCES[resource] ? '&data->>_deleted_at=is.null' : '') +
         '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       let dntOut = (rows || []).map((x) => x.data);
@@ -17745,7 +17728,7 @@ module.exports = async (req, res) => {
     if (DNT_VENDOR_OBJECTS[resource] && action === 'read') {
       if (!dntGate(res)) return;
       const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -17801,7 +17784,7 @@ module.exports = async (req, res) => {
       const supId = String(payload.id);
       const cur = await fetch(rest('dnt_supplies?license_hash=eq.' + enc(licHash) +
         '&supply_id=eq.' + enc(supId) + '&select=data'), { headers });
-      if (cur.status === 404 || cur.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdental vendor tables are not set up yet \u2014 run sql/sairndental_vendor_schema.sql in Supabase first.' } }); return; }
+      if (cur.status === 404 || cur.status === 400) { return notProvisioned(res, cur, 'SAIRNdental vendor tables are not set up yet \u2014 run sql/sairndental_vendor_schema.sql in Supabase first.'); }
       const curRows = await cur.json();
       if (!cur.ok) return upstream(res, curRows);
       if (!Array.isArray(curRows) || curRows.length === 0) {
@@ -17863,7 +17846,7 @@ module.exports = async (req, res) => {
       // 404/400 means the table does not exist yet. An honest empty WITH
       // provisioned:false, so the client can tell "nothing saved yet" from
       // "this was never migrated" and leaves local data alone for the second.
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -18045,7 +18028,7 @@ module.exports = async (req, res) => {
     if (resource === 'dnt_settings' && action === 'read') {
       if (!dntGate(res)) return;
       const r = await fetch(rest('dnt_settings?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -18150,7 +18133,7 @@ module.exports = async (req, res) => {
     if (resource === 'dnt_complaints' && action === 'read') {
       if (!dntGate(res)) return;
       const r = await fetch(rest('dnt_complaints?license_hash=eq.' + enc(licHash) + '&select=data,updated_at&order=updated_at.desc'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => Object.assign({}, x.data, { updated_at: x.updated_at })), provisioned: true });
@@ -18219,7 +18202,7 @@ module.exports = async (req, res) => {
         dntApptFilter = '&provider_id=eq.' + enc(link.providerId);
       }
       const r = await fetch(rest('dnt_appointments?license_hash=eq.' + enc(licHash) + dntApptFilter + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -18306,8 +18289,7 @@ module.exports = async (req, res) => {
         const exAppt = await fetch(rest('dnt_appointments?license_hash=eq.' + enc(licHash) +
           '&appointment_id=eq.' + enc(String(payload.id)) + '&select=provider_id&limit=1'), { headers });
         if (exAppt.status === 404 || exAppt.status === 400) {
-          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdental data tables are not set up yet — run sql/sairndental_data_schema.sql and sql/sairndental_availability_booking_schema.sql in Supabase first.' } });
-          return;
+          return notProvisioned(res, exAppt, 'SAIRNdental data tables are not set up yet — run sql/sairndental_data_schema.sql and sql/sairndental_availability_booking_schema.sql in Supabase first.');
         }
         let exRows = null;
         try { exRows = await exAppt.json(); } catch (e) { exRows = null; }
@@ -18436,7 +18418,7 @@ module.exports = async (req, res) => {
     if (resource === 'dnt_cred_rules' && action === 'read') {
       if (!dntGate(res)) return;
       const r = await fetch(rest('dnt_cred_rules?license_hash=eq.' + enc(licHash) + '&select=rule_id,state,requirement_type,role,effective_from,effective_to,status,data,verified_by'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false, coverage: { covered_states: [], uncovered_states: [], detail: [] } }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false, coverage: { covered_states: [], uncovered_states: [], detail: [] } }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       const data = (rows || []).map((x) => ({
@@ -18496,7 +18478,7 @@ module.exports = async (req, res) => {
     if (resource === 'dnt_credentials' && action === 'read') {
       if (!dntGate(res)) return;
       const r = await fetch(rest('dnt_credentials?license_hash=eq.' + enc(licHash) + '&select=entry_id,provider_id,record_type,data,recorded_at&order=recorded_at.asc'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({
@@ -18588,7 +18570,7 @@ module.exports = async (req, res) => {
       if (!dntGate(res)) return;
       const today = (payload && payload.today) || nowISO().slice(0, 10);
       const rr = await fetch(rest('dnt_credentials?license_hash=eq.' + enc(licHash) + '&select=entry_id,provider_id,record_type,data,recorded_at'), { headers });
-      if (rr.status === 404 || rr.status === 400) { res.status(200).json({ ok: true, provisioned: false, board: null }); return; }
+      if (rr.status === 404 || rr.status === 400) { if (await unreadableNotEmpty(res, rr, resource)) return; res.status(200).json({ ok: true, provisioned: false, board: null }); return; }
       const credRows = await rr.json();
       if (!rr.ok) return upstream(res, credRows);
       const ruleRes = await fetch(rest('dnt_cred_rules?license_hash=eq.' + enc(licHash) + '&select=rule_id,state,requirement_type,role,effective_from,effective_to,status,data'), { headers });
@@ -18658,7 +18640,7 @@ module.exports = async (req, res) => {
     //    and was stale for the same reason.
     if (resource === 'law_clients' && action === 'read') {
       const r = await fetch(rest('law_clients?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -18679,7 +18661,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'law_matters' && action === 'read') {
       const r = await fetch(rest('law_matters?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -18718,7 +18700,7 @@ module.exports = async (req, res) => {
     // check), so the plain shape is correct here rather than under-built.
     if (resource === 'law_deadlines' && action === 'read') {
       const r = await fetch(rest('law_deadlines?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -18840,7 +18822,7 @@ module.exports = async (req, res) => {
 
     if (resource === 'law_trusttx' && action === 'read') {
       const r = await fetch(rest('law_trusttx?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
@@ -19156,8 +19138,7 @@ module.exports = async (req, res) => {
         // as "KX not required" for every beneficiary in the practice -- the
         // denial direction, produced entirely by the read.
         if (accR.status === 404 || accR.status === 400) {
-          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'sc_claims could not be read — run sql/sairncode_claims_schema.sql in Supabase first. Nothing was accumulated.' } });
-          return;
+          return notProvisioned(res, accR, 'sc_claims could not be read — run sql/sairncode_claims_schema.sql in Supabase first. Nothing was accumulated.');
         }
         const accRows = await accR.json();
         if (!accR.ok) return upstream(res, accRows);
@@ -19196,7 +19177,7 @@ module.exports = async (req, res) => {
       if (action === 'tombstones') {
         const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) +
           '&data->>_deleted_at=not.is.null&select=entry_id,data'), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         res.status(200).json({ ok: true, provisioned: true,
@@ -19217,7 +19198,7 @@ module.exports = async (req, res) => {
         // though it meant something.
         const scSoftFilter = scIsSoftDeleteOnly(resource) ? '&data->>_deleted_at=is.null' : '';
         const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + scSoftFilter + '&select=entry_id,data&order=created_at.asc'), { headers });
-        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (r.status === 404 || r.status === 400) { if (await unreadableNotEmpty(res, r, resource)) return; res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         res.status(200).json({ ok: true, data: rows.map(function (row) { return row.data; }), provisioned: true });
@@ -19427,7 +19408,7 @@ module.exports = async (req, res) => {
         const scRowId = String(payload.id);
         const scCur = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) +
           '&entry_id=eq.' + enc(scRowId) + '&select=data'), { headers });
-        if (scCur.status === 404 || scCur.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: scNotProvisionedMessage(resource) } }); return; }
+        if (scCur.status === 404 || scCur.status === 400) { return notProvisioned(res, scCur, scNotProvisionedMessage(resource)); }
         const scCurRows = await scCur.json();
         if (!scCur.ok) return upstream(res, scCurRows);
         if (!Array.isArray(scCurRows) || scCurRows.length === 0) {
@@ -19686,6 +19667,41 @@ function notProvisionedDecide(res, r, message, raw, body) {
       + 'cap. Nothing was saved and re-running the migration will not help.' } });
     return;
   }
+  // ── A MISSING COLUMN IS NOT A MISSING TABLE, ON THE WRITE SIDE TOO ───────
+  // ── FOUND BY THE b26 CONVERSION, 2026-10-19 (cody) ───────────────────────
+  //
+  // THE CONCEPT: a column that is gone means the table EXISTS, so it must be
+  //   classified BEFORE the missing-relation test rather than after -- because
+  //   the missing-relation test below is a bare `does not exist` substring and
+  //   a Postgres 42703 message is LITERALLY "column X.y does not exist", so it
+  //   satisfies that test and every undefined column has been answering "run
+  //   the migration" on a table that is already there.
+  //
+  // THIS WAS NOT A GUESS AND IT WAS NOT FOUND BY READING. It is arm C1 of
+  // tests/sd_data_not_provisioned_misclass.js, which has been RED ON PURPOSE
+  // since 2026-10-17 and was routed to hank as "the same one-line fix as A1,
+  // one guard earlier: route it through notProvisioned(res, existingR, <the
+  // same message>)". b26 did route that guard through the helper -- and C1
+  // STAYED RED, because the one-line fix was NOT sufficient: the helper itself
+  // folds 42703 into NOT_PROVISIONED. **The routed fix was correct about the
+  // call site and wrong about where the defect was**, and only driving it
+  // showed that. The repair is here, in ONE place, for every call site at once
+  // rather than 43 times at the branches.
+  //
+  // THE ORDER IS THE WHOLE FIX. Putting this arm after the test below would
+  // change nothing at all: the broad test matches first and returns.
+  //
+  // SAME CODE AND SAME 503 AS THE READ SIDE's unreadableNotEmpty(), on
+  // purpose -- one wire-level name for one condition, so a client cannot see
+  // the same database state under two names depending on which verb it used.
+  if (r.status === 400 && (pgCode === '42703' || /undefined_column/i.test(raw))) {
+    res.status(503).json({ error: { code: 'SCHEMA_OUTDATED', message:
+      'The table exists but is missing a column this app writes, so nothing '
+      + 'was saved. This is NOT a missing table — re-run that table\'s sql/ '
+      + 'schema file in Supabase; they carry idempotent ALTERs and are safe '
+      + 'to re-run. (' + message + ')' } });
+    return;
+  }
   if (r.status === 404 || /relation .* does not exist|PGRST205|does not exist/i.test(raw)) {
     res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: message } });
     return;
@@ -19694,6 +19710,78 @@ function notProvisionedDecide(res, r, message, raw, body) {
     'The data store refused this request and the reason could not be '
     + 'classified, so it is reported as-is rather than guessed at. The table '
     + 'does exist — this is NOT a missing migration. Nothing was saved.' } });
+}
+
+// ── THE READ-SIDE SIBLING. A READ THAT COULD NOT BE PERFORMED IS NOT AN ─────
+// ── EMPTY TABLE (2026-10-19, cody b26) ──────────────────────────────────────
+//
+// THE CONCEPT: a read that could not be performed is not an empty table, so a
+//   400 is CLASSIFIED before any `provisioned: false` is sent -- an
+//   undefined-column 400 means the table EXISTS and may be full, so it answers
+//   503 SCHEMA_OUTDATED and says so; a genuine missing relation falls through
+//   to the caller's own `provisioned: false`, which is the one case where that
+//   answer is TRUE; and a 400 that cannot be classified answers 502
+//   UPSTREAM_UNCLASSIFIED rather than being folded into either, because "I
+//   could not read this" is not "there is nothing to read".
+//
+// THIS IS THE READ HALF OF THE DEFECT notProvisioned() FIXED ON THE WRITE
+// HALF, AND IT WAS LEFT OPEN AS A STATED DECISION FOR SIX BATCHES (b17-b25:
+// "the 151/57 sibling NOT_PROVISIONED guards are still NOT converted -- a
+// decision, not a backlog"). MEASURED on this file rather than quoted: 150
+// read guards answered HTTP 200 `provisioned: false` for EVERY 400, and the
+// true population behind the "151" was 150 real guards plus one occurrence
+// INSIDE A COMMENT and one brace-less closure guard that returns a value --
+// see docs/b26-logs/guard_census.py, which reconciles both counts.
+//
+// THE ONE SITE THAT WAS ALREADY WRITTEN THIS WAY IS WHERE THE SHAPE COMES
+// FROM, not from a new design: the mech_site_assets read branch (the
+// SCHEMA_OUTDATED answer above it in this file) was hand-written for exactly
+// this on 2026-10-15 after fourth/H1 routed it, and its own comment states the
+// reasoning -- "a compliance board for a refrigerant registry that says 'no
+// assets on file' while the table holds fifty of them". This helper is that
+// one branch's logic, named once, so the other 150 get it without 150 copies.
+//
+// IT RETURNS TRUE HAVING ALREADY ANSWERED. FALSE means "genuinely missing --
+// send your own `provisioned: false`". The caller's own literal is preserved
+// rather than reproduced here ON PURPOSE: the 150 sites send TWENTY-ONE
+// distinct 200-shapes (`data: []`, `data: null`, `board: null`, `wip: null`,
+// `coverage: {...}`, `scoped_projection`, ...), measured not assumed, and a
+// helper that sent the answer itself would have had to flatten them.
+//
+// A 404 IS NOT READ AT ALL. PostgREST sends no useful body for one and a 404
+// is already decided; reading it would consume a stream for nothing. This is
+// also why the helper is safe at every converted site: the only sites it was
+// applied to are ones where NOTHING had consumed the body upstream, asserted
+// per site by the converter rather than assumed from the shape. The write-side
+// rollout at :19628 broke five sites by assuming exactly that.
+//
+// IT NEVER THROWS. A failure to read the body is itself the unclassifiable
+// case -- a helper on a failure path that can fail is the shape this file has
+// paid for twice.
+//
+// THE TRADE IS NAMED RATHER THAN DISCOVERED: a malformed-filter 400 caused by
+// a bug in this file used to render as an empty board and now renders as a
+// 502. That is louder, and it is the point -- it was always a defect and it
+// was always invisible.
+async function unreadableNotEmpty(res, r, what) {
+  if (r.status !== 400) return false;
+  let raw = '';
+  try { raw = await r.text(); } catch (e) { raw = ''; }
+  if (/42703|undefined_column/i.test(raw)) {
+    res.status(503).json({ error: { code: 'SCHEMA_OUTDATED', message:
+      'The data for "' + what + '" exists but is missing columns this app '
+      + 'reads, so it could not be loaded. It has NOT been reported as empty, '
+      + 'because it may hold records. Re-run that table\'s sql/ schema file in '
+      + 'Supabase — they carry idempotent ALTERs and are safe to re-run.' } });
+    return true;
+  }
+  if (/relation .* does not exist|PGRST205|does not exist/i.test(raw)) return false;
+  console.error('sd-data: unclassified 400 reading ' + what + ':', raw);
+  res.status(502).json({ error: { code: 'UPSTREAM_UNCLASSIFIED', message:
+    'The data for "' + what + '" could not be read and the reason was not '
+    + 'recognised, so it is reported rather than guessed at. It has NOT been '
+    + 'reported as empty.' } });
+  return true;
 }
 
 // ── AN APPEND-ONLY CHECK THAT COULD NOT RUN IS NOT A CLEAN BILL (2026-09-04) ─

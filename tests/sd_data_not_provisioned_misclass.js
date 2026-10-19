@@ -200,7 +200,18 @@ while ((m = SHAPE.exec(HANDLER_SRC)) !== null) {
   POP.total += 1;
   const ln = HANDLER_SRC.slice(0, m.index).split('\n').length;
   const win = SRC_LINES.slice(ln - 1, ln + 5).join('\n');
-  if (win.indexOf('notProvisioned(') >= 0) POP.helper += 1;
+  // ── `unreadableNotEmpty` IS A HELPER AND MUST BE TESTED FIRST ───────────
+  // ADDED 2026-10-19 (cody b26) and it is a CORRECTION, not a widening. b26
+  // converted 150 read guards by INSERTING a classification line and LEAVING
+  // the caller's own `provisioned: false` literal in place -- deliberately,
+  // because those 150 sites send twenty-one distinct 200-shapes. So a
+  // converted read branch contains BOTH the helper call and the literal, and
+  // without this test first every one of them still counted as `raw200`:
+  // THIS COUNTER WOULD HAVE REPORTED 151 GUARDS STILL RAW WHILE 150 OF THEM
+  // WERE PROTECTED. A population figure that cannot see the repair is the
+  // same defect as a stale number typed into a document, one layer in.
+  if (win.indexOf('unreadableNotEmpty(') >= 0) POP.helper += 1;
+  else if (win.indexOf('notProvisioned(') >= 0) POP.helper += 1;
   else if (win.indexOf('503') >= 0 && win.indexOf('NOT_PROVISIONED') >= 0) POP.raw503 += 1;
   else if (win.indexOf('provisioned: false') >= 0) POP.raw200 += 1;
   else POP.other += 1;
@@ -253,17 +264,34 @@ if (opaHasShape && mechHasShape) {
 const OPA_CODE = OPA_BRANCH.split('\n')
   .map((l) => l.replace(/\/\/.*$/, ''))
   .join('\n');
-if (/notProvisioned\(\s*res\s*,/.test(OPA_CODE)) {
-  ok('P5. the alf_op_audits upsert guard DOES route through '
-     + '`notProvisioned(res, …)` -- hank\'s fix is present, so A1 below is a '
-     + 'REGRESSION arm. If this ever reverts, P5 goes red before A1 does and '
-     + 'names why. MEASURED ON COMMENT-STRIPPED SOURCE, because the branch '
-     + 'carries a comment naming the helper and a substring test passed on it '
-     + 'after the call was removed');
+// ── AND IT WAS NARROWED AGAIN 2026-10-19 (cody b26), BECAUSE A SECOND CALL
+//    SITE APPEARED IN THE SAME BRANCH AND P5 COULD NO LONGER TELL THEM APART
+// The test was `/notProvisioned\(\s*res\s*,/` over the whole branch. b26
+// converted the EXISTENCE-CHECK guard in this same branch, so the branch now
+// contains `notProvisioned(res, existingR, …)` as well as hank's
+// `notProvisioned(res, w, …)` -- and the A2 ablation CAUGHT IT IMMEDIATELY:
+// with hank's upsert call reverted in the copy, A1 went red and **P5 STAYED
+// GREEN**, satisfied by the OTHER call. A precondition that names "the fix" is
+// worthless once there are two fixes in scope and it matches either.
+//
+// THE ARM NOW REQUIRES THE RESPONSE VARIABLE, `w`, which is the upsert's. That
+// is a property of the call site rather than of the helper's name, and it is
+// the narrowest thing that still fails when the subject reverts. This is the
+// FIFTH measurement-tool defect in four batches and the second in this one
+// file -- each found by an ablation rather than by review.
+if (/notProvisioned\(\s*res\s*,\s*w\s*,/.test(OPA_CODE)) {
+  ok('P5. the alf_op_audits UPSERT guard DOES route through '
+     + '`notProvisioned(res, w, …)` -- hank\'s fix is present, so A1 below is '
+     + 'a REGRESSION arm. If this ever reverts, P5 goes red before A1 does '
+     + 'and names why. MEASURED ON COMMENT-STRIPPED SOURCE, because the '
+     + 'branch carries a comment naming the helper and a substring test '
+     + 'passed on it after the call was removed; AND ON THE RESPONSE '
+     + 'VARIABLE `w`, because b26 added a SECOND notProvisioned(res, …) call '
+     + 'to this same branch and the bare name matched either one');
 } else {
-  bad('P5. the alf_op_audits branch no longer CALLS notProvisioned(res, …) '
-      + '-- THE FIX HAS BEEN REVERTED. A1 is about to fail for a real reason '
-      + 'and this arm is the one that says so',
+  bad('P5. the alf_op_audits UPSERT guard no longer CALLS '
+      + 'notProvisioned(res, w, …) -- THE FIX HAS BEEN REVERTED. A1 is about '
+      + 'to fail for a real reason and this arm is the one that says so',
       OPA_CODE.slice(-400));
 }
 
@@ -678,10 +706,16 @@ const PG_404 = { code: 'PGRST205',
   if (notes.length) {
     section('MEASURED, NOT ASSERTED -- the answers as shipped');
     notes.forEach((n) => console.log('  * ' + n));
-    console.log('  Which of the ' + POP.raw200 + ' sibling read guards and '
-              + POP.raw503 + ' sibling write guards carry a real risk is a '
-              + 'per-branch\n  judgement and belongs to whoever owns api/. '
-              + 'This file drives the two\n  fourth observed.');
+    console.log('  ' + POP.raw200 + ' sibling read guards and ' + POP.raw503
+              + ' sibling write guards are STILL RAW. The rest were converted'
+              + '\n  in b26 (2026-10-19, cody) -- reads through '
+              + 'unreadableNotEmpty(), writes through\n  notProvisioned(). '
+              + 'THE REMAINDER IS NOT A BACKLOG REMNANT: each one was HELD by '
+              + 'the\n  converter with a printed reason -- a body already '
+              + 'consumed upstream, two answers\n  in one branch, or a branch '
+              + 'that already discriminates -- and every hold is a\n  '
+              + 'per-branch judgement. See docs/b26-logs/'
+              + 'convert_sibling_guards.py, which prints them.');
   }
 
   console.log('\n' + pass + ' passed, ' + failed.length + ' failed');
