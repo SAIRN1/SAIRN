@@ -3693,6 +3693,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b21-bridge-unknown-action.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "60838683d4a09c47a42a3366e98ca20f2a197425",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/sairn_push_gate_hook.py",
    "class": "push-gate logic",
    "level": "WEAKENING",
@@ -3974,6 +3982,32 @@
     }
    ],
    "sha": "6942098b0fed7589606621735bddc08169ef0569",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b21-bridge-unknown-action.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'blocklist wearing an allowlist\\'s name', async () => {"
+    }
+   ],
+   "sha": "69a30f1e00858f21bb7386cf17b870f148704b8f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/bridge-unknown-action.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "assertions NET REMOVED",
+     "detail": "41 removed, 0 added; first removed: const assert = require('assert');"
+    }
+   ],
+   "sha": "69a30f1e00858f21bb7386cf17b870f148704b8f",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -9084,6 +9118,19 @@
     }
    ],
    "sha": "de2608c30ed5acbe0ba1cbd2706beaa3ac084a67",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/bridge-unknown-action.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'blocklist wearing an allowlist\\'s name', async () => {"
+    }
+   ],
+   "sha": "df599a0369b412b03389127c9cdfcde87a58bde2",
    "criteria_version": "2026-10-06.1"
   },
   {
