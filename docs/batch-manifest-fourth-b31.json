@@ -1,0 +1,44 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "fourth",
+  "batch": "b31",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "",
+      "status": "done",
+      "evidence": "150 of 153 findings fixed across 13 apps, app by app, each verified by re-running the checker on that file before moving on: 153 -> 3. The 3 remaining are ALL sairnroofing.html, which cody holds under an active claim naming that exact file, so it was NOT touched and is flagged back. Every fix is a token or an exact counted declaration; the counted assertion REFUSED three attempts that would have been half-done (sairncode 31-vs-33, sairnmechanical 2-vs-6, stonedesk 2-vs-3) before anything was written. All 13 apps pass checkblocks with 0 failed script blocks."
+    },
+    {
+      "id": 2,
+      "title": "",
+      "status": "done",
+      "evidence": "stonedesk --surface/--surface-2 root cause FOUND: not a deleted :root block -- git log -S shows NO commit ever defined them in stonedesk.html. They arrived with markup copied from the archived SAIRNaccounting app, which does define them (--surface:#FFFFFF, --surface-2:#EDF7F1). Fixed by defining them against this app's own equivalents (--card, --stone) in :root; 56 dropped background declarations now render, and re-measuring produced NO new contrast failures from the newly-visible surfaces"
+    },
+    {
+      "id": 3,
+      "title": "",
+      "status": "done",
+      "evidence": "no rendered gate profiles built -- Michael's call stands; the APPS table still carries sairndental alone and tools/wcag_contrast_check.py's docstring already records why (7 of 17 products have no licence gate, 5 no panel switcher, 3 no panels)"
+    },
+    {
+      "id": 4,
+      "title": "",
+      "status": "done",
+      "evidence": "python tools/wcag_contrast_check.py --gate <13 changed html> --baseline -> BASELINE DEBT 0, NEW FINDINGS 0, exit 0. CHECK 5b's FIRST REAL FIRING, on commit 50f67cfe which changed 13 HTML files: it ran and PASSED and allowed the push. Its silence is informative rather than ambiguous because all 4 of its deny sites -- missing checker, exit 1, exit 2, exception -- emit a Blocked block into the same output, and the first push attempt carried exactly 1 Blocked block and it was register-feed. Two denials on the way in, neither the contrast gate: register-feed wanted a defect record, and one attempt lost a concurrent ref race."
+    },
+    {
+      "id": 5,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/cloud-research/pest-control-worldwide-competitive-gap-audit-2026-10-19.md -- structural pest control, PICKED to test whether the series can say yes (a field-service trade with recurring routes, the shape 5 SAIRN apps already serve). Two primary FR citations pulled from the API: 82 FR 952 doc 2016-30332 eff 2017-03-06, and 87 FR 50953 doc 2022-17823. Platform fit measured n of 17; routing is 0 of 17. TWO measurement artefacts caught by reading matches instead of counts: a loose route pattern returned 17 of 17 and every hit was one shared comment, and chemical/applicator returned 3 with one being SAIRNvet chemical contraception"
+    },
+    {
+      "id": 6,
+      "title": "",
+      "status": "done",
+      "evidence": "pushed without force; origin/main...HEAD = 0 0; the b31 commits read back OFF origin/main (50f67cfe fix, 87038f9c register, 46c9c66d audit); defect record cites 50f67cfe and merge-base --is-ancestor confirms it resolves on origin/main; report and digest uploaded to Drive 14Xc5oT0xzSLa_rTSOSXWVK3Kko1Fbx09 as 1GdzqkTfH4BEuf25OAyJV35_LhMlaRVfY and 1qp7rslIgElqvQZ2PoMg6dLGpkbHDu_Q6, API-verified at 18461 and 6896 bytes equal to local"
+    }
+  ]
+}

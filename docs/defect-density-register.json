@@ -33778,33 +33778,63 @@
       "recurrence_open": "THREE THINGS THE ACTIONS ABOVE DO NOT CLOSE. (1) THE SWEEP IS NOT WIRED TO ANYTHING -- no hook, no push gate, no suite invokes it, which is precisely the tooling_inventory finding that a tool which exists is not a mechanism and a tool that RUNS is. Nothing stops the 102 candidates from growing. (2) THE 86 CANDIDATES THAT ARE NOT cody's ARE NOT READ and are not counted as clean. (3) AND THE SWEEP IS BLIND TO ONE MEMBER OF ITS OWN CLASS: b22's B6 arm was satisfied by a CONSTANT'S note FIELD -- real executable data carrying prose -- which looks like nothing to a text scanner because it IS code. Detecting that needs the value flow, not the text, and no tool here does it. Convention 36 was written about this class one batch before b23 and did not prevent b23 writing a B6-shaped arm of its own, which is the measurement that says prose is not a control."
     },
     {
-      "commit": "9a7f73dab468",
+      "commit": "4b2bfc8b6ee2",
       "date": "2026-10-19",
-      "subject": "fix(hover): citation_class_check's sentence splitter is abbreviation-safe now, h1 b55",
+      "subject": "test(b18): the two new suites, four re-aimed, and the ablations that prove each gate is load-bearing",
       "files": [
-        ".claude/skills/sairn-hover-auditor/tools/citation_class_check.py"
+        "api/b17-trust-lock-hard.test.js",
+        "api/b18-countersign-lock.test.js",
+        "api/b18-passkey-profile-e2e.test.js",
+        "api/sd-data-cross-tenant-dispatchers.test.js",
+        "api/sd-data-law-role-matrix.test.js",
+        "api/sd-data-leg-role-matrix.test.js",
+        "api/sd-data-leg-session-gate.test.js",
+        "docs/hank-evidence/b18/all_api_suites.log",
+        "docs/hank-evidence/b18/guardian_checks.log"
       ],
-      "lines_added": 96,
-      "lines_removed": 1,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "low",
-      "detection_method": "hover-audit",
-      "summary": "citation_class_check.py's sentence splitter treated any abbreviation period (e.g. 'St.' in 'St. Louis Fed') as a sentence end, stranding two different-file citations in the remaining fragment with only each other's filenames as anchor candidates -- which anchor_ok's own-stem exclusion guarantees fails, misclassifying a correct citation as WRONG-AT-DERIVATION. Found while writing a real hover log entry (h1 b55) after two prior occurrences (b53, b54) were worked around by rephrasing rather than root-caused.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover",
+      "lines_added": 2566,
+      "lines_removed": 64,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "b18's two new route files, api/leg-countersign.js and api/law-countersign.js, delegated their ENTIRE handler to a factory in api/_lib/countersign-endpoint.js -- so the method check, the bearer check and validateLicenseKey() were all one `require` away, and the file a reader opens to ask 'what can reach this URL unauthenticated' showed nothing at all. tools/preauth_oracle_check.py reported both as 'UNDECLARED PUBLIC -- no auth boundary and no entry in tools/public_endpoint_declarations.json', and api/preauth-envelope-ordering.test.js went red on its own oracle arm. THE CHECKER'S PREMISE IS RIGHT AND THE FIRST DRAFT WAS WRONG. The requests were in fact authenticated -- the factory does validate -- so this is not an open endpoint; it is an endpoint whose boundary was unreadable at the route, which is the property every other handler on this platform has and which the checker exists to keep. Restructured: ~30 lines of preamble now appear in BOTH route files, mirroring all fifteen api/*-auth.js handlers, and the ~200 lines of lock logic still appear once.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/preauth_oracle_check.py",
+      "found_by_session": null,
       "injection": {
-        "commit": "d1a9e5276a88",
-        "date": "2026-09-29",
-        "subject": "feat(hover-tools): three-class citation classifier (wrong-at-derivation / moved-since / not-a-repo-path) with blob-sha support and misclassification control",
-        "lag_days": 20
+        "commit": "241984078b88",
+        "date": "2026-10-19",
+        "subject": "feat(sairnlaw,sairnlegacy): the four remaining practitioner answers, and the trust lock finally decides before the table",
+        "lag_days": 0
       },
-      "citation_note": "no existing cross-domain-disciplines section names naive sentence-boundary splitting around abbreviation periods; this is a new-shaped defect, not a recurrence of a named rule",
-      "factors_unknown_reason": "found and fixed in one sitting with the fix itself as the record; no separate RCA factor pass was run beyond what the commit message already states"
+      "phase_note": "the factory shape was a deliberate choice made to avoid a second copy of the lock logic, and it traded away a property the platform relies on. That trade was made at design time and was wrong.",
+      "contributing_factors": [
+        {
+          "factor": "one mechanism serving two apps is the right call for the LOCK and the wrong call for the BOUNDARY, and nothing in the first draft separated those two questions",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the boundary is per-route and the mechanism is shared; api/_lib/countersign-endpoint.js's header now states that split and why the checker was right"
+        },
+        {
+          "factor": "runCountersignAction() receives an already-validated licence envelope, which a future route could pass unvalidated",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "it RE-ASSERTS valid/active/license_hash and refuses 401 otherwise, because 'the route checked it' is an assumption and the function is reachable from any future route"
+        },
+        {
+          "factor": "the full-tree sweep is what surfaced it -- no gate driver references either new suite, and a selective run would have missed it entirely",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "gate-driver wiring for the b18 suites is cc's (tools/), and is named in the handoff with the grep that shows it absent today"
+        }
+      ],
+      "recurrence_open": "THE CHECKER CANNOT FOLLOW A DELEGATION, and that is unchanged. A future route that delegates its boundary will be reported the same way and the right answer will again be to restructure -- but a route that delegates to a module the checker DOES see a boundary in would pass while being just as unreadable. tools/ is cc's; the limitation is named rather than patched."
     },
     {
       "commit": "5107fcafd084",
@@ -33834,6 +33864,71 @@
       },
       "citation_note": "same root cause as 9a7f73da (h1 b55): naive sentence-boundary splitting around abbreviation periods, independently duplicated in a second file -- no existing cross-domain-disciplines section names this shape",
       "factors_unknown_reason": "duplicate-copy follow-up to an already-registered defect (9a7f73da); the fix and its own regression coverage are the record, no separate RCA factor pass run"
+    },
+    {
+      "commit": "54d6e95d9678",
+      "date": "2026-10-19",
+      "subject": "feat(sairnlaw,sairnlegacy): the four remaining practitioner answers, and the trust lock finally decides before the table",
+      "files": [
+        "api/_lib/auth.js",
+        "api/_lib/countersign-endpoint.js",
+        "api/_lib/countersign.js",
+        "api/_lib/law-roles.js",
+        "api/_lib/leg-roles.js",
+        "api/law-countersign.js",
+        "api/leg-countersign.js",
+        "api/sd-data.js",
+        "sairnlaw.html",
+        "sql/sairnlaw_countersign_schema.sql",
+        "sql/sairnlaw_employee_auth_schema.sql",
+        "sql/sairnlegacy_countersign_schema.sql"
+      ],
+      "lines_added": 2015,
+      "lines_removed": 54,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "api/_lib/law-roles.js's header has stated since the file was written that the IOLTA trust lock is 'a separate structure consulted BEFORE the table rather than a value inside it', because 'a policy expressed only as a default is a policy an override can erase'. decide() consulted it AFTER the table had already agreed, and the code's own comment at that line said so in as many words: 're-asserted AFTER the table agrees, not instead of it'. TWO CONSEQUENCES. (a) fourth's b26 H1: on the shipped table the paralegal cell for both locked resources is '', so the table denied and the lock line was unreachable -- deleting LAW_TRUST_LOCKED changed no behaviour, which b17 closed with structural arms while recording the ORDER as 'deliberate and correct'. (b) THE ONE THAT MATTERED: it made Michael's practitioner answer C2 unimplementable without widening the table. A two-stage disbursement needs trust policy to carry a named exception, and with the lock last the only place to put one was a WIDER TABLE GRANT -- widening the thing the lock exists to survive. Policy that can only be extended by weakening its own guard is policy in the wrong place.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the file was written in one commit on 2026-10-12 with the header and the ordering already disagreeing, so there is no earlier commit where the two agreed. Naming that commit as an injection would be naming the feature's own birth, which is true and useless; recorded as unknown rather than dressed up as a regression."
+      },
+      "phase_note": "the header and the implementation disagreed from the first line of the file. That is a design-time split, not a coding slip.",
+      "contributing_factors": [
+        {
+          "factor": "the lock's placement was defensible read alone -- as a SECOND defence after the table it is correct, and b17 wrote that down as a finding about the TEST rather than the code",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "the lock now runs FIRST and the table is not consulted for a locked resource held by a non-bar-admitted role, which is what the header always claimed"
+        },
+        {
+          "factor": "nothing compared the file's own prose against its own control flow, so a header saying BEFORE sat above code doing AFTER for five days with both read as correct",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "arms T4b and T4c of api/b17-trust-lock-hard.test.js now assert that decide() AGREES with denyMessage -- the message and the decision were two code paths and nothing made them agree"
+        },
+        {
+          "factor": "the exception C2 required could only be expressed by widening the table, and a reviewer approving that widening would have been approving the exact erasure the lock exists to prevent",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "LAW_TRUST_TWO_STAGE, LAW_TRUST_PREPARE_ROLES and LAW_PREPARE_ACTION live INSIDE the lock, so the table still reads paralegal: '' on both trust rows"
+        },
+        {
+          "factor": "LAW_BAR_ADMITTED_ROLES did not exist, so 'who may touch client trust' was expressed as two inline string comparisons (role !== 'owner' && role !== 'attorney')",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "C3's licensure tier is now the constant the lock reads, modelled on api/sv-auth.js's PRESCRIBER_ROLES, and it is what makes C1's new bookkeeper role safe by construction"
+        }
+      ],
+      "recurrence_open": "NOTHING COMPARES A FILE'S PROSE TO ITS CONTROL FLOW, on this file or any other. The arms added here check that two FUNCTIONS agree; they do not check that the header's word 'BEFORE' matches the order decide() uses. A second ordering claim in a second file would be invisible the same way. Also: the lock is still consulted only from inside decide(), so an override layer that bypassed decide() entirely would reach trust -- no such layer exists today and nothing prevents one."
     },
     {
       "commit": "56d267e3b169",
@@ -33888,6 +33983,101 @@
         }
       ],
       "recurrence_open": "The STATUS and NEXT fields are parsed the same way and still swallow unlabelled prose; they are bounded by their own 900-character slices, so they degrade quietly rather than wrongly, and nothing here changes that. Nothing requires a digest to use only the nine labels the board knows. And the fix is in a SHARED publisher that every clone runs its own copy of -- measured during this batch, fourth's clone republished the board 20 minutes after cc's corrected version with its own pre-fix copy, so the platform-wide effect of this fix only arrives as each clone fetches."
+    },
+    {
+      "commit": "50f67cfe8ccf",
+      "date": "2026-10-19",
+      "subject": "fix(contrast): 153 findings down to 3, app by app, and the 3 left are cody's file",
+      "files": [
+        "docs/batch-manifest-fourth-b31.json",
+        "docs/wcag-contrast-baseline.json",
+        "sairnbiz.html",
+        "sairnbuild.html",
+        "sairncare.html",
+        "sairncash.html",
+        "sairncode.html",
+        "sairndesign.html",
+        "sairngrounds.html",
+        "sairnlegacy.html",
+        "sairnmechanical.html",
+        "sairnscape.html",
+        "sairnsenior.html",
+        "sairnvet.html",
+        "stonedesk.html"
+      ],
+      "lines_added": 166,
+      "lines_removed": 209,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "87 WCAG 2.2 AA CONTRAST FAILURES AND 66 UNDEFINED CUSTOM PROPERTIES ACROSS 14 OF THE 17 ROOT PRODUCTS, measured by tools/wcag_contrast_check.py and fixed here app by app: 153 -> 3. The AA half is one repeated design decision, not fourteen bugs -- white text on each app's bright brand token, from 1.98:1 in sairnmechanical to 4.47:1 in sairndesign against a 4.5 requirement. The undefined half is worse than a wrong colour: an unresolvable var() is invalid at computed-value time, so the whole declaration is DROPPED rather than falling back -- stonedesk alone had 56 background declarations that had never rendered. Every fix carries a before/after ratio in SAIRN-report-fourth-b31.txt.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/wcag_contrast_check.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The failing palette is the HOUSE pattern and predates the per-app batch record -- white text on each app's bright brand token was the token set chosen at each app's birth, so there is no injection commit to cite rather than one that is merely unknown to me."
+      },
+      "citation_note": "Convention 39 (land a new gate with a baseline) is the rule that MADE this finding visible rather than one it broke; the defect predates both the convention and the checker.",
+      "contributing_factors": [
+        {
+          "factor": "White text on the bright brand colour was the house button pattern, repeated into every app at birth, so one design decision produced 87 AA failures across fourteen products",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Only the SURFACES UNDER WHITE TEXT move to the darker token each app already defined; the bright token keeps every border, accent and focus ring, so no app changed identity"
+        },
+        {
+          "factor": "Nothing on this platform could compute a contrast ratio until b29, so for nineteen apps the question was unanswerable rather than unanswered",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tools/wcag_contrast_check.py static mode, wired as push-gate CHECK 5b in b30; this batch is the first clearing of the debt it measured"
+        },
+        {
+          "factor": "stonedesk referenced --surface and --surface-2 fifty-six times and defined them nowhere -- markup copied from the archived SAIRNaccounting app, which does define them -- so 56 background declarations were invalid at computed-value time and DROPPED",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Defined against this app own --card and --stone; re-measured and no new contrast failures appeared from the newly visible surfaces"
+        },
+        {
+          "factor": "A wide sweep across thirteen single-file apps is exactly where a find-replace silently does too much or too little",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Every edit asserts its expected occurrence count and refuses on mismatch; it refused three times (33 not 31, 6 not 2, 3 not 2) before anything was written"
+        }
+      ],
+      "recurrence_open": "sairnroofing.html keeps its 3 findings -- cody holds that file under an active claim naming it, so it was flagged back rather than worked around. And the static half still cannot see ancestor-dependent pairs: 4,420 UNRESOLVED platform-wide."
+    },
+    {
+      "commit": "9a7f73dab468",
+      "date": "2026-10-19",
+      "subject": "fix(hover): citation_class_check's sentence splitter is abbreviation-safe now, h1 b55",
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools/citation_class_check.py"
+      ],
+      "lines_added": 96,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": "citation_class_check.py's sentence splitter treated any abbreviation period (e.g. 'St.' in 'St. Louis Fed') as a sentence end, stranding two different-file citations in the remaining fragment with only each other's filenames as anchor candidates -- which anchor_ok's own-stem exclusion guarantees fails, misclassifying a correct citation as WRONG-AT-DERIVATION. Found while writing a real hover log entry (h1 b55) after two prior occurrences (b53, b54) were worked around by rephrasing rather than root-caused.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "d1a9e5276a88",
+        "date": "2026-09-29",
+        "subject": "feat(hover-tools): three-class citation classifier (wrong-at-derivation / moved-since / not-a-repo-path) with blob-sha support and misclassification control",
+        "lag_days": 20
+      },
+      "citation_note": "no existing cross-domain-disciplines section names naive sentence-boundary splitting around abbreviation periods; this is a new-shaped defect, not a recurrence of a named rule",
+      "factors_unknown_reason": "found and fixed in one sitting with the fix itself as the record; no separate RCA factor pass was run beyond what the commit message already states"
     },
     {
       "commit": "a98def399e4f",
@@ -34032,130 +34222,6 @@
         }
       ],
       "recurrence_open": "E3b MEASURED THE typeof GUARD ALONE AND IT CHANGES NOTHING -- the per-step try covers it, so the guard is defence in depth and NOT the load-bearing layer. Recorded because an arm claiming otherwise would have been a green claim about a layer doing no work. And the pattern is unswept: other handlers in this file call unguarded globals after a confirmed success and nothing counts them."
-    },
-    {
-      "commit": "54d6e95d9678",
-      "date": "2026-10-19",
-      "subject": "feat(sairnlaw,sairnlegacy): the four remaining practitioner answers, and the trust lock finally decides before the table",
-      "files": [
-        "api/_lib/auth.js",
-        "api/_lib/countersign-endpoint.js",
-        "api/_lib/countersign.js",
-        "api/_lib/law-roles.js",
-        "api/_lib/leg-roles.js",
-        "api/law-countersign.js",
-        "api/leg-countersign.js",
-        "api/sd-data.js",
-        "sairnlaw.html",
-        "sql/sairnlaw_countersign_schema.sql",
-        "sql/sairnlaw_employee_auth_schema.sql",
-        "sql/sairnlegacy_countersign_schema.sql"
-      ],
-      "lines_added": 2015,
-      "lines_removed": 54,
-      "app": "sairnlaw",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "api/_lib/law-roles.js's header has stated since the file was written that the IOLTA trust lock is 'a separate structure consulted BEFORE the table rather than a value inside it', because 'a policy expressed only as a default is a policy an override can erase'. decide() consulted it AFTER the table had already agreed, and the code's own comment at that line said so in as many words: 're-asserted AFTER the table agrees, not instead of it'. TWO CONSEQUENCES. (a) fourth's b26 H1: on the shipped table the paralegal cell for both locked resources is '', so the table denied and the lock line was unreachable -- deleting LAW_TRUST_LOCKED changed no behaviour, which b17 closed with structural arms while recording the ORDER as 'deliberate and correct'. (b) THE ONE THAT MATTERED: it made Michael's practitioner answer C2 unimplementable without widening the table. A two-stage disbursement needs trust policy to carry a named exception, and with the lock last the only place to put one was a WIDER TABLE GRANT -- widening the thing the lock exists to survive. Policy that can only be extended by weakening its own guard is policy in the wrong place.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "the file was written in one commit on 2026-10-12 with the header and the ordering already disagreeing, so there is no earlier commit where the two agreed. Naming that commit as an injection would be naming the feature's own birth, which is true and useless; recorded as unknown rather than dressed up as a regression."
-      },
-      "phase_note": "the header and the implementation disagreed from the first line of the file. That is a design-time split, not a coding slip.",
-      "contributing_factors": [
-        {
-          "factor": "the lock's placement was defensible read alone -- as a SECOND defence after the table it is correct, and b17 wrote that down as a finding about the TEST rather than the code",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "the lock now runs FIRST and the table is not consulted for a locked resource held by a non-bar-admitted role, which is what the header always claimed"
-        },
-        {
-          "factor": "nothing compared the file's own prose against its own control flow, so a header saying BEFORE sat above code doing AFTER for five days with both read as correct",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "arms T4b and T4c of api/b17-trust-lock-hard.test.js now assert that decide() AGREES with denyMessage -- the message and the decision were two code paths and nothing made them agree"
-        },
-        {
-          "factor": "the exception C2 required could only be expressed by widening the table, and a reviewer approving that widening would have been approving the exact erasure the lock exists to prevent",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "LAW_TRUST_TWO_STAGE, LAW_TRUST_PREPARE_ROLES and LAW_PREPARE_ACTION live INSIDE the lock, so the table still reads paralegal: '' on both trust rows"
-        },
-        {
-          "factor": "LAW_BAR_ADMITTED_ROLES did not exist, so 'who may touch client trust' was expressed as two inline string comparisons (role !== 'owner' && role !== 'attorney')",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "C3's licensure tier is now the constant the lock reads, modelled on api/sv-auth.js's PRESCRIBER_ROLES, and it is what makes C1's new bookkeeper role safe by construction"
-        }
-      ],
-      "recurrence_open": "NOTHING COMPARES A FILE'S PROSE TO ITS CONTROL FLOW, on this file or any other. The arms added here check that two FUNCTIONS agree; they do not check that the header's word 'BEFORE' matches the order decide() uses. A second ordering claim in a second file would be invisible the same way. Also: the lock is still consulted only from inside decide(), so an override layer that bypassed decide() entirely would reach trust -- no such layer exists today and nothing prevents one."
-    },
-    {
-      "commit": "4b2bfc8b6ee2",
-      "date": "2026-10-19",
-      "subject": "test(b18): the two new suites, four re-aimed, and the ablations that prove each gate is load-bearing",
-      "files": [
-        "api/b17-trust-lock-hard.test.js",
-        "api/b18-countersign-lock.test.js",
-        "api/b18-passkey-profile-e2e.test.js",
-        "api/sd-data-cross-tenant-dispatchers.test.js",
-        "api/sd-data-law-role-matrix.test.js",
-        "api/sd-data-leg-role-matrix.test.js",
-        "api/sd-data-leg-session-gate.test.js",
-        "docs/hank-evidence/b18/all_api_suites.log",
-        "docs/hank-evidence/b18/guardian_checks.log"
-      ],
-      "lines_added": 2566,
-      "lines_removed": 64,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "static-checker",
-      "summary": "b18's two new route files, api/leg-countersign.js and api/law-countersign.js, delegated their ENTIRE handler to a factory in api/_lib/countersign-endpoint.js -- so the method check, the bearer check and validateLicenseKey() were all one `require` away, and the file a reader opens to ask 'what can reach this URL unauthenticated' showed nothing at all. tools/preauth_oracle_check.py reported both as 'UNDECLARED PUBLIC -- no auth boundary and no entry in tools/public_endpoint_declarations.json', and api/preauth-envelope-ordering.test.js went red on its own oracle arm. THE CHECKER'S PREMISE IS RIGHT AND THE FIRST DRAFT WAS WRONG. The requests were in fact authenticated -- the factory does validate -- so this is not an open endpoint; it is an endpoint whose boundary was unreadable at the route, which is the property every other handler on this platform has and which the checker exists to keep. Restructured: ~30 lines of preamble now appear in BOTH route files, mirroring all fifteen api/*-auth.js handlers, and the ~200 lines of lock logic still appear once.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": "tools/preauth_oracle_check.py",
-      "found_by_session": null,
-      "injection": {
-        "commit": "241984078b88",
-        "date": "2026-10-19",
-        "subject": "feat(sairnlaw,sairnlegacy): the four remaining practitioner answers, and the trust lock finally decides before the table",
-        "lag_days": 0
-      },
-      "phase_note": "the factory shape was a deliberate choice made to avoid a second copy of the lock logic, and it traded away a property the platform relies on. That trade was made at design time and was wrong.",
-      "contributing_factors": [
-        {
-          "factor": "one mechanism serving two apps is the right call for the LOCK and the wrong call for the BOUNDARY, and nothing in the first draft separated those two questions",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "the boundary is per-route and the mechanism is shared; api/_lib/countersign-endpoint.js's header now states that split and why the checker was right"
-        },
-        {
-          "factor": "runCountersignAction() receives an already-validated licence envelope, which a future route could pass unvalidated",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "it RE-ASSERTS valid/active/license_hash and refuses 401 otherwise, because 'the route checked it' is an assumption and the function is reachable from any future route"
-        },
-        {
-          "factor": "the full-tree sweep is what surfaced it -- no gate driver references either new suite, and a selective run would have missed it entirely",
-          "kind": "detection",
-          "action_status": "planned",
-          "action": "gate-driver wiring for the b18 suites is cc's (tools/), and is named in the handoff with the grep that shows it absent today"
-        }
-      ],
-      "recurrence_open": "THE CHECKER CANNOT FOLLOW A DELEGATION, and that is unchanged. A future route that delegates its boundary will be reported the same way and the right answer will again be to restructure -- but a route that delegates to a module the checker DOES see a boundary in would pass while being just as unreadable. tools/ is cc's; the limitation is named rather than patched."
     }
   ],
   "started": "2026-09-09",

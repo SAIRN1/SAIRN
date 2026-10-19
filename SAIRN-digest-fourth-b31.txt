@@ -1,0 +1,111 @@
+DIGEST fourth b31 2026-10-19
+
+STATUS
+  6 of 6 closed, pushed, landed. origin/main...HEAD = 0 0. No force, NO
+  override of any kind.
+  THE PLATFORM-WIDE CONTRAST DEBT IS CLOSED: 153 findings -> 3, app by app
+  across 13 apps, every fix carrying its before/after ratio in the report.
+  THE THREE LEFT ARE ALL sairnroofing.html AND THAT IS DELIBERATE -- cody holds
+  an active claim naming that exact file, so it was flagged back rather than
+  worked around.
+  STONEDESK'S 56 UNDEFINED TOKENS HAD A ROOT CAUSE AND IT WAS NOT A DELETION:
+  `git log -S` shows NO commit ever defined --surface or --surface-2 in
+  stonedesk.html. They arrived with markup copied from the archived
+  SAIRNaccounting app, which does define them. 56 background declarations had
+  never rendered. Defined now against this app's own --card and --stone, and
+  re-measuring produced NO new failures from the newly visible surfaces.
+  CHECK 5b's FIRST REAL FIRING: on a push changing 13 HTML files it RAN,
+  PASSED, exit 0, and allowed the push. Detail below.
+
+DECISION-NEEDED
+  1. NOTHING WAS RENDERED THIS BATCH. All 150 fixes were verified by the STATIC
+     checker reading the file; no app was opened in a browser and no screenshot
+     was taken. Thirteen customer-facing apps changed colour on the strength of
+     arithmetic. The brand-identity argument -- that --p keeps every border and
+     accent so each app still reads as itself -- is reasoned from the CSS, NOT
+     seen. Want a rendered pass over the changed apps before this reaches a
+     customer?
+  2. ROUTING IS 0 OF 17, and the pest-control audit makes it the first BUILD
+     gap the series has surfaced that SAIRN could simply close. Closing it
+     would widen every field app already shipped -- StoneDesk, roofing,
+     grounds, scape, mechanical -- rather than serving one new vertical. That
+     is a bigger decision than any vertical in the queue.
+  3. THE AUDIT SERIES HAS NOW FAILED FOUR TIMES FOR THREE REASONS, none of them
+     market size or regulatory difficulty: no owner for a standing regulatory
+     matrix (3 of 4), no capacity to sell an administered service (trucking),
+     and no routing primitive (pest control). A fifth audit before one of those
+     is settled measures the same wall again.
+
+CHANGED
+  13 app files      sairnbiz, sairnbuild, sairncare, sairncash, sairncode,
+                    sairndesign, sairngrounds, sairnlegacy, sairnmechanical,
+                    sairnscape, sairnsenior, sairnvet, stonedesk.
+                    Twelve needed the same one-line move b29 made in dental:
+                    the bright brand token keeps every border, accent and focus
+                    ring; ONLY the surfaces under white text move to the darker
+                    token the app ALREADY defined. No new palette invented.
+                    Worst: sairnmechanical 1.98:1 on seven surfaces. Subtlest:
+                    sairndesign 4.47:1, failing AA by three hundredths.
+                    sairncash ran the other way -- it is the one DARK theme, so
+                    its muted text was LIGHTENED against two dark surfaces.
+  docs/wcag-contrast-baseline.json   153 -> 3. First time the ratchet's
+                    baseline has ever been SHRUNK; a baseline never shrunk is
+                    an amnesty.
+  docs/defect-density-register.json  one record for 50f67cfe -- one design
+                    decision repeated, not fourteen bugs.
+  docs/cloud-research/pest-control-worldwide-competitive-gap-audit-2026-10-19.md  NEW
+  docs/cloud-research/PARKED-VERTICALS.md  pest control and trucking added as
+                    AUDITED-NOT-DECIDED
+  NOT TOUCHED: sairnroofing.html (cody's claim), api/, sql/, tests/,
+  .claude/settings.json, .githooks/, auditor clones. No rendered gate profiles
+  were built -- decision 3 stands.
+
+EVIDENCE-path
+  C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\b621dce3-b1b4-4681-a633-54da35b654a4\scratchpad\b31\
+    before.json   the 153, per app and per finding
+    after.json    the 3 that remain, all sairnroofing
+    ratios.txt    every fix's before/after, from the checker's own contrast()
+    pick.py       the colour picker -- minimum change that clears the bar
+    fix.py        the counted-edit applier that refused three times
+  transcript  C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\b621dce3-b1b4-4681-a633-54da35b654a4.jsonl
+
+  CHECK 5b, ITEM 4, IN FULL: it ran on commit 50f67cfe (13 HTML files) and
+  passed. Its silence is informative rather than ambiguous because all FOUR of
+  its deny sites -- missing checker, checker exit 1, checker exit 2, exception
+  -- emit a "Blocked:" block into the same push output, and the first push
+  attempt carried EXACTLY ONE Blocked block: "this push closes a defect and
+  does not feed the register" (register-feed, not contrast). A defect record
+  was written and it went through; one further attempt lost a concurrent ref
+  race. At no point did the contrast gate deny. Re-run by hand on the same 13
+  files: BASELINE DEBT 0, NEW FINDINGS 0, exit 0.
+
+UNVERIFIED
+  - NOTHING RENDERED. No browser, no screenshot, 13 apps changed colour. The
+    rendered sweep still covers ONE app of seventeen.
+  - The static half cannot see ancestor-dependent pairs: 3,874 UNRESOLVED
+    across the files touched, 4,420 platform-wide -- the majority of every
+    app's text, and the honest size of what this gate does not check.
+  - sairnroofing's 3 findings stay until cody's claim releases.
+  - No keyboard, focus-order or screen-reader pass, in any app.
+  - The pest-control audit drove no product and interviewed nobody. Every
+    per-state figure is reported and unverified; only 82 FR 952 and 87 FR 50953
+    are primary. Most sources are vendor-adjacent buyer guides, several
+    published by products they rank.
+  - TWO MEASUREMENT ARTEFACTS were caught by reading matches instead of counts:
+    a loose route pattern returned 17 of 17 (every hit one shared comment; real
+    answer 0 of 17), and chemical/applicator returned 3 with one being
+    SAIRNvet's "chemical contraception". Second consecutive audit where a loose
+    pattern returned exactly the universe size.
+  - One cosmetic staleness: the register commit's SUBJECT names 8c5717d1, the
+    pre-rebase sha. The RECORD cites 50f67cfe and resolves on origin/main.
+
+NEXT
+  1. A rendered pass over the 13 changed apps, if decision 1 says so -- a
+    colour correct in the file can still be wrong on the screen, which is
+    convention 38, written by this agent two batches ago.
+  2. sairnroofing's 3 findings, the moment cody's claim releases.
+  3. Routing as a platform primitive, if decision 2 says so. It is 0 of 17 and
+    it is the first thing the series has found that SAIRN could just build.
+
+CONTEXT 61.9% of 1000k (618,509 tokens, max usage sum over this session's
+transcript -- the same session as b29 and b30)

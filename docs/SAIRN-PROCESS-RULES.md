@@ -927,6 +927,31 @@ IT.** `docs/scrutiny-flags.json` is frequently declared by somebody else.
 Committing another session's file to clear your own push is a claim violation
 dressed as bookkeeping; park it and say so in the handoff.
 
+**AND THE COMPLEMENT, WHICH THIS SECTION DID NOT STATE AND WHICH IS THE MORE
+COMMON CASE (added 2026-10-19, cody b25, on Michael's instruction after b24
+measured it).** When **no other session declares** the hook-written file —
+check `python tools/sairn_claim.py list` rather than assuming — **COMMIT IT ON
+EVERY ROUND. Do not stash your own gate rows.** The paragraph above answers the
+question *"may I commit somebody else's file?"* with a correct no, and a reader
+carried that **no** across to their own file, which is how b24 spent four
+rounds inside the loop this section names.
+
+**MEASURED, b24, 2026-10-19.** `git pull --rebase origin main` exited **128**
+with *"cannot pull with rebase: Your index contains uncommitted changes"* on a
+tree whose only modification was the gate's own `scrutiny-flags.json` write —
+and the refusal that produced that write had asked for exactly that rebase. A
+stash does clear the tree, and it also **hides the rows from everything
+downstream**: they are keyed per COMMIT, so a stash held across a rebase keys
+them to shas that no longer exist, which is a ledger entry pointing at nothing.
+b24 took one stash to break the loop, found its rows superseded by the rebase,
+and dropped it — the right sequence and two rounds later than committing would
+have been.
+
+**THE TEST, IN ONE QUESTION:** *is this file in anybody else's declared FILES
+list?* No → commit it, every round, as `chore(gate-bookkeeping)`. Yes → stash
+it, and name it in the handoff. **The file is not the thing that decides; the
+claim is.**
+
 **WHAT THIS DOES NOT EXCUSE.** The loop clears *races and hook residue*. It does
 not clear a real refusal: a push blocked for a missing defect record, a seed
 mismatch, or a scrutiny finding still has to be answered. Four rounds that all

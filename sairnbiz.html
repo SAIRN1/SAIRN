@@ -16,7 +16,8 @@
         integrity="sha384-JBR+x8blGwjDRO63aHCGiZMD4VNiTR4ZUGA+N6ZKLf3zNt1fK8IBpcgPaMrxqWBp"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
-:root{--p:#14B8A6;--pd:#0F766E;--pt:#F0FDFA;--pb:#5EEAD4;--bg:#F8FAFC;--card:#fff;--border:#E2E8F0;--text:#0F172A;--muted:#64748B;--danger:#EF4444;--warn:#F59E0B;--ok:#22C55E;--sh:0 1px 4px rgba(0,0,0,.08);}
+/* b31: white text needs 4.5:1 and the bright brand token never gave it. --p keeps every border, accent and focus ring; only the SURFACES UNDER WHITE TEXT move to --pd, which this app already defined and which already passes. --pdd is new and exists ONLY so :hover stays a visible state change now that --pd is the resting colour. Per-fix ratios: SAIRN-report-fourth-b31.txt. */
+:root{--p:#14B8A6;--pd:#0F766E;--pdd:#0A524C;--pt:#F0FDFA;--pb:#5EEAD4;--bg:#F8FAFC;--card:#fff;--border:#E2E8F0;--text:#0F172A;--muted:#64748B;--danger:#EF4444;--warn:#F59E0B;--ok:#22C55E;--sh:0 1px 4px rgba(0,0,0,.08);}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Segoe UI','Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
 /* GATE */
@@ -26,7 +27,7 @@ body{font-family:'Segoe UI','Apple Color Emoji','Segoe UI Emoji','Noto Color Emo
 .gsub{color:var(--muted);font-size:13px;margin-bottom:28px;}
 .ginp{width:100%;border:2px solid var(--border);border-radius:8px;padding:12px 14px;font-size:15px;outline:none;text-align:center;letter-spacing:2px;margin-bottom:12px;transition:border .2s;}
 .ginp:focus{border-color:var(--p);}
-.gbtn{width:100%;background:var(--p);color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;}
+.gbtn{width:100%;background:var(--pd);color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;}
 .gbtn:hover{background:var(--pd);}
 .gerr{color:var(--danger);font-size:13px;margin-top:8px;min-height:18px;}
 /* PIN */
@@ -73,8 +74,8 @@ main{flex:1;overflow-y:auto;padding:24px;}
 .psub{color:var(--muted);font-size:13px;margin-top:2px;}
 .pa{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
 .btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;}
-.bp{background:var(--p);color:#fff;}
-.bp:hover{background:var(--pd);}
+.bp{background:var(--pd);color:#fff;}
+.bp:hover{background:var(--pdd);}
 .bo{background:#fff;border:1px solid var(--border);color:var(--text);}
 .bo:hover{border-color:var(--p);color:var(--p);}
 .bs{padding:6px 12px;font-size:12px;}
@@ -116,13 +117,13 @@ textarea{resize:vertical;min-height:80px;}
 .sbar input{flex:1;}
 /* AI */
 .achat{background:var(--bg);border-radius:10px;padding:14px;min-height:180px;max-height:320px;overflow-y:auto;font-size:13px;line-height:1.6;margin-bottom:12px;}
-.amu{background:var(--p);color:#fff;border-radius:10px 10px 2px 10px;padding:8px 12px;margin:6px 0 6px 40px;font-size:13px;}
+.amu{background:var(--pd);color:#fff;border-radius:10px 10px 2px 10px;padding:8px 12px;margin:6px 0 6px 40px;font-size:13px;}
 .ama{background:#fff;border:1px solid var(--border);border-radius:10px 10px 10px 2px;padding:8px 12px;margin:6px 40px 6px 0;font-size:13px;}
 .air{display:flex;gap:8px;}
 .air input{flex:1;}
 .qts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
 .qt{background:var(--pt);border:1px solid var(--pb);color:var(--pd);border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;}
-.qt:hover{background:var(--p);color:#fff;}
+.qt:hover{background:var(--pd);color:#fff;}
 /* TOAST */
 #toast{position:fixed;bottom:24px;right:24px;background:#0F172A;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:99999;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;max-width:320px;}
 #toast.on{opacity:1;transform:translateY(0);}

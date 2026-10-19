@@ -4044,8 +4044,8 @@
       "task": "b31: fix the 153 WCAG AA contrast + undefined-token findings app by app (darken the brand surface, b29 dental pattern), with a before/after ratio logged per fix; stonedesk --surface/--surface-2 root-cause and fix; next worldwide competitive-gap vertical; watch CHECK 5b's first real firing. FILES: stonedesk.html sairnbiz.html sairnbuild.html sairncare.html sairncash.html sairncode.html sairndesign.html sairngrounds.html sairnlegacy.html sairnmechanical.html sairnscape.html sairnsenior.html sairnvet.html docs/wcag-contrast-baseline.json docs/cloud-research/ docs/2026-09-13-cross-domain-disciplines.md docs/batch-manifest-fourth-b31.json NOT-sairnroofing-cody-holds-it",
       "claimed_at": "2026-10-19T13:53:02Z",
       "claimed_at_epoch": 1792417982.6878133,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-19T15:10:12Z",
       "files": [
         "docs/2026-09-13-cross-domain-disciplines.md",
         "docs/batch-manifest-fourth-b31.json",
@@ -4063,6 +4063,25 @@
         "sairnsenior.html",
         "sairnvet.html",
         "stonedesk.html"
+      ]
+    },
+    {
+      "id": "fourth-1792423170",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "b32: rendered pass over the 13 apps whose colours changed in b31 (screenshots, brand-identity check); sairnroofing 3 remaining undefined-token findings now that cody released it; routing primitive phase 1 SCOPE ONLY (schema + API surface, shared module, no app code); the three recurring blockers written up; methodology -- search the codebase for any existing route/stop sequencing before designing. FILES: sairnroofing.html docs/2026-10-19-fourth-b32-routing-primitive-scope.md docs/cloud-research/ docs/wcag-contrast-baseline.json docs/batch-manifest-fourth-b32.json SAIRN-handoff-fourth-b32.md SAIRN-report-fourth-b32.txt SAIRN-digest-fourth-b32.txt",
+      "claimed_at": "2026-10-19T15:19:30Z",
+      "claimed_at_epoch": 1792423170.981363,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b32.txt",
+        "SAIRN-handoff-fourth-b32.md",
+        "SAIRN-report-fourth-b32.txt",
+        "docs/2026-10-19-fourth-b32-routing-primitive-scope.md",
+        "docs/batch-manifest-fourth-b32.json",
+        "docs/wcag-contrast-baseline.json",
+        "sairnroofing.html"
       ]
     }
   ],

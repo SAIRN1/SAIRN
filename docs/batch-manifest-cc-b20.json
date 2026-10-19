@@ -1,0 +1,48 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "cc",
+  "batch": "b20",
+  "id_lock": "acc5585cac164c2c",
+  "items": [
+    {
+      "id": 1,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/2026-10-19-cc-b20-concepts.md committed at b1637033, BEFORE tools/context_verify.py existed at fb336bac -- provable from git log; it states the window source, the session-id resolution and that cache_read AND cache_creation are counted, with the measurement that forced each"
+    },
+    {
+      "id": 2,
+      "title": "",
+      "status": "done",
+      "evidence": "tools/context_verify.py --fixtures 23/23 exit 0; live over the four build agents exit 0; hover/hover2 absent from BUILD_AGENTS and that absence is itself a fixture"
+    },
+    {
+      "id": 3,
+      "title": "",
+      "status": "done",
+      "evidence": "docs/2026-10-19-cc-b20-context-verify-validation.md: used_tokens() agrees to the token on all four, figures MOVE between two reads (cc 671,427 -> 674,406), bytes-per-token 6.6-7.9 across four transcripts; hank 70.3% verified against a 46%/UNKNOWN self-report"
+    },
+    {
+      "id": 4,
+      "title": "",
+      "status": "done",
+      "evidence": "tools/sairn_board_publish.py --selftest 39/39 exit 0 incl. A37 (both figures present, not one), A38 (fails soft on a raising verifier), A39 (auditors render '-' and the board says it is a DECISION); live board carries the CONTEXT (VERIFIED) column"
+    },
+    {
+      "id": 5,
+      "title": "",
+      "status": "done",
+      "evidence": "tools/sairn_board_publish.py --selftest arms A33-A36 all PASS after the new write path and --ablation reports every layer load-bearing; a synthetic higher-revision board still refuses this clone while the real live board still allows it; A29 and A31 went red on ANCHOR ROT from the label rename and were re-anchored rather than loosened"
+    }
+  ],
+  "closed": {
+    "drive_verify": "PASS",
+    "verified_by": "python tools/drive_upload_verify.py --agent cc --batch b20 --verify-only",
+    "criteria": "2026-10-13.1",
+    "deliverables": [
+      "SAIRN-handoff-cc-b20.md sha256 2f8c88a67f48c721",
+      "SAIRN-report-cc-b20.txt sha256 eebd65fc45cd68ac",
+      "SAIRN-digest-cc-b20.txt sha256 133a124a6e97aaea"
+    ]
+  }
+}

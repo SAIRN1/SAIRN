@@ -1,0 +1,314 @@
+REPORT fourth b31 2026-10-19 -- 153 contrast findings down to 3, the stonedesk token mystery solved, and the gate's first real firing
+
+================================================================================
+WHAT WAS ASKED, AND WHAT CAME BACK
+================================================================================
+
+  1  fix all 153 AA findings across the 14 flagged apps, app by app,
+     logging a before/after ratio per fix              150 FIXED, 3 LEFT
+  2  investigate stonedesk's 56 undefined-token findings  ROOT CAUSE FOUND
+  3  skip rendered gate profiles                          SKIPPED, as decided
+  4  watch CHECK 5b's first real firing                   IT RAN AND PASSED
+  5  next unaudited vertical                              structural pest control
+  6  push without force, confirm landed                   LANDED
+
+THE THREE NOT FIXED ARE ALL sairnroofing.html, AND THAT IS NOT AN OVERSIGHT.
+cody holds an active claim naming that exact file (b24, api/_lib/roofing-
+locations.js + sairnroofing.html + others). Flagged back, not worked around.
+Its three findings are undefined var(--bd) in three border declarations and
+they are the entire remainder of the platform's debt.
+
+METHODOLOGY, AS INSTRUCTED: a one-line concept was written before any new
+logic. For item 2 -- "search stonedesk's history for a definition of
+--surface/--surface-2; if one existed and was deleted, restore it; if it never
+existed, the references are the defect." For item 1's fixer -- "every edit is
+an exact rule string the checker named, replaced once, with the occurrence
+count asserted before and after." For item 1's colour picker -- "hold hue and
+saturation, walk lightness one step at a time toward contrast, stop at the
+FIRST value that clears the bar, so every fix is the minimum change that
+passes rather than a taste call."
+
+================================================================================
+1. ITEM 1 -- EVERY FIX, WITH ITS BEFORE/AFTER RATIO
+================================================================================
+
+Ratios from the checker's own contrast() function, not from a colour picker.
+"n" is how many findings that one change closed.
+
+app               fix                                            before    after    n
+----------------- ---------------------------------------------- ------   ------   ---
+sairnbiz          --p -> --pd on 4 white-text surfaces             2.49     5.47     4
+sairnbuild        --p -> --pd on 2 white-text surfaces             2.15     5.02     2
+sairnbuild        .t-watch text, --tier-watch -> #1C5CEA           4.24     4.57     1
+sairncare         --p -> --pd on 2 white-text surfaces             3.74     7.58     2
+sairncare         --line DEFINED -> --border                     dropped  renders    1
+sairndesign       --p -> --pd on 4 white-text surfaces             4.47     7.90     4
+sairndesign       --muted #64748B -> #606F85 on --pt               4.26     4.57     1
+sairndesign       --line DEFINED -> --border                     dropped  renders    2
+sairngrounds      --p -> --pd on 4 white-text surfaces             3.30     5.02     4
+sairngrounds      inline done-button green -> #178841              2.28     4.53     1
+sairnlegacy       --line DEFINED -> --border                     dropped  renders    2
+sairnscape        brand green #22C55E -> #178841                   2.28     4.53     6
+sairncode         #F87171 -> #DF0B0B, as a SURFACE                 2.77     5.01     4
+sairncode         ...the same value as TEXT on #fef2f2             2.53     4.58     2
+sairnvet          --danger #EF4444 -> #DE1313 on a tint            3.44     4.56     1
+sairnsenior       --bad DEFINED #DC2626 (was dropped)              4.83     4.83     2
+sairnmechanical   --c -> --d on 7 white-text surfaces              1.98     7.08     7
+sairnmechanical   --green #16A34A -> #117F3A, text on --gl         3.00     4.64     2
+sairnmechanical   ...the same value as a SURFACE under white       3.30     5.10     1
+sairnmechanical   --red #DC2626 -> #C82020, text on --rl           3.95     4.67     1
+sairnmechanical   --g500 #6B7280 -> #626875 on --g200              3.90     4.52     1
+sairnmechanical   cross-sell teal #14B8A6 -> #0E8174               2.49     4.76     2
+sairncash         --glow #7C6FFF -> #695BFF (DARK theme)           3.77     4.62     7
+sairncash         --dim #4A4963 -> #8483A3 on #111220              2.14     5.09     1
+sairncash         --dim on #1A1B2E, the harder of the two          1.95     4.64     2
+stonedesk         --brand2 #16C762 -> #0F8742                      2.24     4.60    15
+stonedesk         step green, text on #DCFCE7                      3.00     4.64     1
+stonedesk         step green, surface under white                  3.30     5.10     3
+stonedesk         grey #6B7280 -> #626875 on #F3F4F6               4.39     5.08     4
+stonedesk         grey on #E5E7EB                                  3.90     4.52     1
+stonedesk         danger #ef4444 -> #EB1515 under white            3.76     4.52     1
+stonedesk         amber #f59e0b -> #A36907 under white             2.15     4.58     1
+stonedesk         cross-sell teal, both roles                      2.49     4.76     4
+stonedesk         --surface/--surface-2 DEFINED                  dropped  renders   56
+
+  TOTAL 150. Platform re-measured: 153 -> 3, all three in sairnroofing.
+
+THE PATTERN b30 PREDICTED HELD. Twelve of the thirteen apps needed the same
+one-line move b29 made in SAIRNdental: the bright brand token keeps every
+border, accent and focus ring, and ONLY THE SURFACES UNDER WHITE TEXT move to
+the darker token the app ALREADY DEFINED. No new palette was invented for any
+app. --pdd was added where :hover would otherwise have collapsed into the new
+resting colour; sairnmechanical already had --d and needed nothing new.
+
+THE EXTREMES ARE WORTH NAMING. sairnmechanical's lime was 1.98:1 under white
+text on seven surfaces -- the worst on the platform. sairndesign's was 4.47:1,
+which fails AA by three hundredths and is exactly the kind of thing no eye can
+adjudicate and no code review would ever catch.
+
+TWO FIXES RAN THE OTHER WAY, AND SAYING SO MATTERS. sairncash is the one
+DARK-themed app, so its muted text was LIGHTENED against two dark surfaces
+rather than the surface being darkened; --dim had to clear both #111220 and
+#1A1B2E, so it took the lighter of the two answers. And for every failure that
+was TEXT ON A TINT, the text was darkened rather than the tint washed out --
+lightening #FEE2E2 to #FFF6F6 would have "fixed" the ratio by deleting the
+design.
+
+TWO COLOURS HAD TO SATISFY BOTH ROLES AT ONCE. sairncode's #F87171 is both a
+surface under white AND text on #fef2f2; #DF0B0B clears both at 5.01 and 4.58.
+The same was true of the greens in sairnmechanical and stonedesk: #117F3A is
+5.10 under white and 4.64 as text on #DCFCE7.
+
+THE COUNTED ASSERTION EARNED ITS KEEP THREE TIMES. Every edit declares how many
+occurrences it expects and REFUSES on a mismatch rather than writing:
+
+  sairncode        expected 31, found 33   -- `grep -c` counts LINES, and two
+                                              lines carry the colour twice
+  sairnmechanical  expected 2, found 6     -- the cross-sell teal appears in a
+                                              block beyond the two flagged rules
+  stonedesk        expected 2, found 3     -- one CSS rule and two inline
+                                              buttons share the declaration
+
+Each of those would have been a half-done edit that reads exactly like a
+finished one. TWO OF THEM WIDENED THE FIX DELIBERATELY AND IT IS DISCLOSED: in
+sairnmechanical and stonedesk the SAIRNbiz cross-sell teal moved in all six and
+all nine places rather than only the four that were findings, because the
+colour is one brand and splitting it would have left the block mismatched.
+
+================================================================================
+2. ITEM 2 -- STONEDESK'S 56 UNDEFINED TOKENS: NOT A DELETION
+================================================================================
+
+CONCEPT FIRST, THEN THE SEARCH. The hypothesis was a deleted :root block. It
+was wrong, and the search said so immediately:
+
+  git log -S"--surface-2:" -- stonedesk.html   ->   NO COMMITS
+  git log -S"--surface:"   -- stonedesk.html   ->   NO COMMITS
+
+NO COMMIT EVER DEFINED THEM IN THIS FILE. They were never deleted; they were
+never there. The references came in with markup copied from the ARCHIVED
+SAIRNaccounting app, which does define them:
+
+  archive/.../sairnaccounting UPLOAD TO GITHUB 911.html
+     --surface:#FFFFFF      --surface-2:#EDF7F1
+
+So 56 background declarations in StoneDesk have been invalid at computed-value
+time since the day they were written -- DROPPED, not drawn in a fallback. Every
+hover row, chip, message bubble and tracker surface that was meant to tint has
+been rendering flat.
+
+FIXED by defining them against StoneDesk's OWN equivalents rather than importing
+the accounting palette:
+
+  --surface:var(--card);      /* #FFFFFF */
+  --surface-2:var(--stone);   /* #f0f4fb */
+
+AND THE CHECK THAT MATTERED: re-measuring after the definitions landed produced
+NO NEW contrast failures from the newly visible surfaces. A fix that makes 56
+backgrounds render could easily have created 56 new text-on-tint problems; it
+did not, and that was verified rather than assumed.
+
+================================================================================
+3. ITEM 4 -- CHECK 5b's FIRST REAL FIRING
+================================================================================
+
+b30 shipped this gate and could not test it on a real push, because the push
+that added it was gated by the OLDER hook -- the gate's own freshness notice
+said so. This batch's push changed THIRTEEN HTML files, which is the trigger.
+
+WHAT IT ACTUALLY DID: IT RAN, IT PASSED, AND IT ALLOWED THE PUSH.
+
+AND THE SILENCE IS INFORMATIVE RATHER THAN AMBIGUOUS, which is the part worth
+reading. CHECK 5b has FOUR deny sites -- missing checker, checker exit 1,
+checker exit 2, and an exception -- and every one of them emits a "Blocked:"
+block into the same push output. The first push attempt carried EXACTLY ONE
+Blocked block:
+
+  Blocked: this push closes a defect and does not feed the register.
+
+That is register-feed, not contrast. A fix() commit needs a defect-density
+record; one was written and the push went through. The second attempt was
+rejected by a concurrent ref race (another session moved main under me). The
+third landed. AT NO POINT DID THE CONTRAST GATE DENY.
+
+Re-run by hand on the same thirteen files:
+
+  python tools/wcag_contrast_check.py --gate <13 files> --baseline
+  -> BASELINE DEBT STILL OUTSTANDING: 0 finding(s)
+     NEW FINDINGS (not in the baseline): 0
+     exit 0
+
+THE BASELINE WAS REWRITTEN TO 3, so the gate's debt line now prints what is
+genuinely outstanding -- sairnroofing.html 3 -- rather than the 153 it was
+carrying this morning. A ratchet whose baseline is never shrunk is an amnesty;
+this is the first time it has been shrunk, and it went 153 -> 3 in one batch.
+
+================================================================================
+4. ITEM 5 -- STRUCTURAL PEST CONTROL, AND WHY IT IS THE MOST USEFUL OF THE FOUR
+================================================================================
+
+docs/cloud-research/pest-control-worldwide-competitive-gap-audit-2026-10-19.md
+
+b30 recommended stopping the series until two company questions were settled.
+That was raised and the instruction was repeated, so the audit was done in
+full. It was also PICKED to make the repetition informative: the first three
+failed on company capability, so a fourth with the same dependencies was
+guaranteed to produce a fourth no. Structural pest control is a FIELD-SERVICE
+TRADE WITH RECURRING ROUTES -- the exact shape StoneDesk, roofing, grounds,
+scape and mechanical already serve. If a yes were available, it should have
+been here.
+
+IT IS NOT, AND THE REASON IS NEW: the market is already served.
+
+  - the software field is crowded and already LADDERED BY OPERATOR SIZE:
+    GorillaDesk and Housecall Pro at 1-3 technicians, FieldRoutes, PestPac and
+    Briostack at 5-15 trucks, FieldRoutes as the stated default above that
+  - nothing surfaced that the incumbents are documented as failing to do.
+    Behavioral health had a cottage industry of supervision-hour trackers
+    proving unmet demand; this has no equivalent.
+  - AND THE CORE PRIMITIVE IS ABSENT HERE: route optimisation is what the buyer
+    literature says operators buy first, and routing is 0 of 17 on this
+    platform. SAIRN's field apps are JOB-shaped, not ROUTE-shaped.
+
+PRIMARY CITATIONS, Federal Register API:
+  82 FR 952     doc 2016-30332   Certification of Pesticide Applicators,
+                                 eff 2017-03-06 -- 5-year recertification cap,
+                                 minimum age, specialised fumigation/aerial
+  87 FR 50953   doc 2022-17823   state-plan conformance extended to 2023-11-04
+
+BOTH DEADLINES ARE PAST. Unlike trucking, there is no live federal cliff. The
+live layer is per-state -- one-to-three-year terms, 4 to 24 CEUs per cycle, and
+renewal dates that differ per state and licence class (TN 2026-06-30, MN
+2026-03-01, NC 2026-06-30/09-30, OH 2026-01-15). All of that is REPORTED and
+unverified; no state register was read.
+
+THE DENOMINATOR IS A RANGE, NOT A NUMBER: NPMA 16,565 firms, BLS 17,933
+establishments, IBISWorld 31,307 businesses. Those count three different
+things and a single figure would be a fabrication. 81.4% of firms run 1-2
+locations, which is the one structural fact that genuinely favours SAIRN.
+
+TWO MEASUREMENT ARTEFACTS CAUGHT BY READING THE MATCHES INSTEAD OF THE COUNT:
+
+  - a loose route pattern returned 17 OF 17. Every hit is the same sentence in
+    a comment copied into every app -- "classify a single route because 13
+    of...". The real count is 0 of 17. SECOND CONSECUTIVE AUDIT where a loose
+    pattern returned exactly the universe size; b30's was \bhos\b matching
+    "those" and "hostile".
+  - chemical|applicator|pesticide returned 3 of 17, one being SAIRNvet's
+    "chemical contraception". Corrected to 2, both incidental.
+
+WHAT FOUR AUDITS HAVE NOW ESTABLISHED, which is the real output of the series:
+the blocker has never once been market size or regulatory difficulty. It has
+been no owner for a standing regulatory matrix (three of four), no capacity to
+sell an administered service (trucking), and now no routing primitive. THE
+FIRST TWO ARE COMPANY DECISIONS. THE THIRD IS THE FIRST FINDING IN THIS SERIES
+THAT IS A BUILD GAP SAIRN COULD SIMPLY CLOSE -- and closing it would widen
+every field app already shipped rather than serving one new vertical.
+
+================================================================================
+5. THE PUSH
+================================================================================
+
+  git rev-list --left-right --count origin/main...HEAD   ->   0   0
+
+  50f67cfe  fix(contrast): 153 findings down to 3 ...
+  87038f9c  chore(defect register): the platform-wide contrast record
+  46c9c66d  research(pest control): the fourth audit fails for a NEW reason
+  (+ this report, the digest and the parked-verticals update)
+
+No force. NO OVERRIDE OF ANY KIND -- no SAIRN_SEED_GATE, no SAIRN_GATE_EXEMPT,
+no SAIRN_SKIP, and the contrast gate was not skipped on its own first firing.
+Nothing was written under api/, sql/ or tests/, and no auditor clone was
+entered.
+
+ONE COSMETIC STALENESS, DISCLOSED: the register commit's SUBJECT line names
+8c5717d1, the sha the fix commit had before a rebase moved it to 50f67cfe. The
+RECORD itself was re-seated and cites 50f67cfe, which resolves on origin/main;
+only the prose in the commit subject is stale.
+
+ALL 13 CHANGED APPS PASS checkblocks WITH 0 FAILED SCRIPT BLOCKS, including
+stonedesk at 131 blocks.
+
+================================================================================
+6. WHAT IS LEFT UNPROVEN -- NONE OF IT RECORDED AS CHECKED
+================================================================================
+
+  - NOTHING WAS RENDERED. Every one of the 150 fixes was verified by the STATIC
+    checker reading the file. No app was opened in a browser this batch, and
+    the rendered sweep still covers ONE app of seventeen. A colour that is
+    correct in the file can still be wrong on the screen -- that is convention
+    38, written by this same agent two batches ago.
+  - sairnroofing.html's 3 findings are untouched and will stay until cody's
+    claim releases.
+  - The static half still cannot see ancestor-dependent pairs: 3,874 UNRESOLVED
+    across the thirteen files touched, 4,420 platform-wide. That is the honest
+    size of what this gate does not check, and it is the majority of every
+    app's text.
+  - NO VISUAL REVIEW. Thirteen apps changed colour and no human or screenshot
+    looked at any of them. The brand identity argument -- that --p keeps every
+    border and accent so the apps still read the same -- is reasoned from the
+    CSS, NOT seen.
+  - No keyboard, focus-order or screen-reader pass, in any app.
+  - The pest-control audit drove no product and interviewed nobody; every
+    per-state figure is reported and unverified, and most sources are
+    vendor-adjacent buyer guides.
+
+================================================================================
+EVIDENCE
+================================================================================
+
+  repo        13 app files, docs/wcag-contrast-baseline.json (153 -> 3),
+              docs/defect-density-register.json (the 50f67cfe record),
+              docs/cloud-research/pest-control-worldwide-competitive-gap-audit-2026-10-19.md,
+              docs/cloud-research/PARKED-VERTICALS.md,
+              docs/batch-manifest-fourth-b31.json
+  scratchpad  C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\b621dce3-b1b4-4681-a633-54da35b654a4\scratchpad\b31\
+              before.json (the 153), after.json (the 3), ratios.txt,
+              pick.py (the colour picker), fix.py (the counted-edit applier)
+  transcript  C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\b621dce3-b1b4-4681-a633-54da35b654a4.jsonl
+
+CONTEXT AT THIS LINE: 61.9% of 1000k (618,509 tokens, max usage sum over this
+session's transcript -- the same session as b29 and b30).
+
+SHA256 (docs/wcag-contrast-baseline.json): 5edc7e99c3174d9b
+END-OF-REPORT

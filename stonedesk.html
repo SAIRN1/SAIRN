@@ -115,11 +115,20 @@ if ('caches' in window) {
 *{margin:0;padding:0;box-sizing:border-box}
 
 :root{
+  /* b31 -- --surface and --surface-2 were REFERENCED 56 times in this file and
+     DEFINED NOWHERE, and `git log -S` shows no commit ever defined them here:
+     they came in with markup copied from the archived SAIRNaccounting app,
+     which does define them (--surface:#FFFFFF, --surface-2:#EDF7F1). An
+     unresolvable var() is invalid at computed-value time, so all 56 background
+     declarations were DROPPED -- not drawn in a fallback. Pointed at this
+     app's own equivalents rather than at the accounting palette. */
+  --surface:var(--card);
+  --surface-2:var(--stone);
   --bg:#f5f7fa;
   --card:#FFFFFF;
   --a:#1B3A6B;
   --a2:#2a5298;
-  --brand2:#16C762;
+  --brand2:#0F8742;
   --grad:linear-gradient(135deg,var(--a),#2a5298);
   --ar:rgba(201,112,8,0.1);
   --ab:rgba(201,112,8,0.35);
@@ -1599,7 +1608,7 @@ body.is-exec .exec-only-block{display:block}
 .sairn-modal-title { font-size:19px;font-weight:800;color:#111827; }
 .sairn-modal-close {
   width:30px;height:30px;border:none;background:#F3F4F6;border-radius:50%;
-  cursor:pointer;font-size:16px;color:#6B7280;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:16px;color:#626875;display:flex;align-items:center;justify-content:center;
 }
 .sairn-modal-close:hover { background:#E5E7EB; }
 .sairn-step-row {
@@ -1611,14 +1620,14 @@ body.is-exec .exec-only-block{display:block}
   font-weight:600;color:#9CA3AF;border-right:1px solid #F3F4F6;
 }
 .sairn-step:last-child { border-right:none; }
-.sairn-step.done  { color:#16A34A;background:#DCFCE7; }
+.sairn-step.done  { color:#117F3A;background:#DCFCE7; }
 .sairn-step.active{ color:#0A3D1F;background:#F0FEF6; }
 .sairn-step-num {
   width:20px;height:20px;border-radius:50%;background:#E5E7EB;
-  color:#6B7280;font-size:10px;font-weight:700;display:flex;
+  color:#626875;font-size:10px;font-weight:700;display:flex;
   align-items:center;justify-content:center;margin:0 auto 3px;
 }
-.sairn-step.done  .sairn-step-num { background:#16A34A;color:#fff; }
+.sairn-step.done  .sairn-step-num { background:#117F3A;color:#fff; }
 .sairn-step.active .sairn-step-num { background:var(--brand2);color:#fff; }
 .sairn-chip-row { display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px; }
 .sairn-chip {
@@ -6513,7 +6522,7 @@ function sdCsvCell(v){var s=v==null?'':String(v);if(/^[=+\-@\t\r]/.test(s)&&!(s!
         <div id="adm-demo-confirm" style="display:none;margin-top:-2px;padding:12px 14px;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;font-size:12px;color:#92400e;line-height:1.6">
           Turning this off permanently clears demo data from all 30 seeded modules (Quote History, Intakes, Warranty, Schedule, Slab Tracker, Vendors, Comms, CRM, Job Costing, Timesheets, Remnants, POS, Receiving, Manifest, Sintered, Reviews, Contractors, Referrals, Price Intel, Equipment, Employees, Stoneyard, Subs, Bids, Damage, Training, Bulletins, Waste, NPS, AP) — it does <strong>not</strong> touch your license key, PINs, shop name, rep name, or settings. This cannot be undone.
           <div style="display:flex;gap:8px;margin-top:10px">
-            <button class="q-btn" style="background:#ef4444;color:#fff;border-color:#dc2626;flex:1" onclick="sdClearDemoDataConfirmed()">Yes, clear demo data</button>
+            <button class="q-btn" style="background:#EB1515;color:#fff;border-color:#dc2626;flex:1" onclick="sdClearDemoDataConfirmed()">Yes, clear demo data</button>
             <button class="q-btn" style="flex:1" onclick="sdDemoToggleCancel()">Cancel</button>
           </div>
         </div>
@@ -12205,7 +12214,7 @@ function invPrint(id) {
       '</div>' +
     '</div>' +
     '<div style="border:1px solid #E5E7EB;border-radius:10px;overflow:hidden;margin-bottom:20px">' +
-      '<div style="display:grid;grid-template-columns:1fr 120px;padding:10px 16px;background:#F3F4F6;font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase">' +
+      '<div style="display:grid;grid-template-columns:1fr 120px;padding:10px 16px;background:#F3F4F6;font-size:11px;font-weight:700;color:#626875;text-transform:uppercase">' +
         '<span>Description</span><span style="text-align:right">Amount</span></div>' +
       '<div style="padding:14px 16px;display:grid;grid-template-columns:1fr 120px">' +
         '<span style="font-size:14px">' + (inv.desc || 'Stone fabrication services') + '</span>' +
@@ -19605,7 +19614,7 @@ if(typeof switchCamTab === 'undefined') window.switchCamTab = function(t){  };
       <div class="sairn-suite-live">● Live</div>
     </div>
     <div class="sairn-suite-grid"><div class="sairn-suite-tile" onclick="window.open('https://sairn.vercel.app/sairnbiz','_blank')">
-  <div class="sairn-suite-icon" style="background:#14B8A6">SB</div>
+  <div class="sairn-suite-icon" style="background:#0E8174">SB</div>
   <div class="sairn-suite-tile-name">SAIRNbiz</div>
   <div class="sairn-suite-tile-desc">HR & Payroll</div>
 </div><div class="sairn-suite-tile" onclick="window.open('https://sairn.vercel.app/sairnbuild','_blank')">
@@ -22073,7 +22082,7 @@ var APP_COLOR = (function(){
   if (p.includes('lingual'))return '#F97316';
   if (p.includes('senior')) return '#EAB308';
   if (p.includes('home'))   return '#FB923C';
-  if (p.includes('roam'))   return '#14B8A6';
+  if (p.includes('roam'))   return '#0E8174';
   return 'var(--brand2)';
 })();
 
@@ -22424,7 +22433,7 @@ var APP_COLOR = (function(){
   if (p.includes('lingual'))return '#F97316';
   if (p.includes('senior')) return '#EAB308';
   if (p.includes('home'))   return '#FB923C';
-  if (p.includes('roam'))   return '#14B8A6';
+  if (p.includes('roam'))   return '#0E8174';
   return 'var(--brand2)';
 })();
 
@@ -24614,7 +24623,7 @@ var APP_COLOR = (function(){
   if (p.includes('lingual')) return '#F97316';
   if (p.includes('senior'))  return '#EAB308';
   if (p.includes('home'))    return '#FB923C';
-  if (p.includes('roam'))    return '#14B8A6';
+  if (p.includes('roam'))    return '#0E8174';
   if (p.includes('fabricor'))return '#C9A84C';
   return 'var(--brand2)';
 })();
@@ -34831,7 +34840,7 @@ document.addEventListener('DOMContentLoaded', function() {
         +'<div style="display:flex;align-items:center;gap:8px">'
         +'<div style="font-size:16px">'+stars(r.rating)+'</div>'
         +(r.responded?'<span style="background:var(--brand2)20;color:var(--brand2);padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700">Responded</span>'
-          :'<span style="background:#f59e0b20;color:#f59e0b;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700">Needs Reply</span>')
+          :'<span style="background:#A3690720;color:#f59e0b;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700">Needs Reply</span>')
         +'</div></div>'
         +'<div style="font-size:13px;color:var(--text);line-height:1.5;font-style:italic">"'+r.text+'"</div>'
         +'</div>';
@@ -36350,7 +36359,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function subxCompliancePill(s){
     var c = s && s.compliance;
     if (_subxCompliance === false) {
-      return '<span title="Run sql/sd_subs_compliance_2026-09-01.sql" style="background:#f3f4f6;color:#6b7280;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700">COMPLIANCE N/A</span>';
+      return '<span title="Run sql/sd_subs_compliance_2026-09-01.sql" style="background:#f3f4f6;color:#626875;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700">COMPLIANCE N/A</span>';
     }
     if (!c) return '';
     if (c.blocking && c.blocking.length) {
@@ -36360,7 +36369,7 @@ document.addEventListener('DOMContentLoaded', function() {
       return '<span style="background:#fef3c7;color:#92400e;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700">EXPIRING: '+escHtml(c.expiring.join(' + ').toUpperCase())+'</span>';
     }
     if (c.coi === 'untracked' && c.licence === 'untracked') {
-      return '<span style="background:#f3f4f6;color:#6b7280;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700">NOT TRACKED</span>';
+      return '<span style="background:#f3f4f6;color:#626875;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700">NOT TRACKED</span>';
     }
     return '<span style="background:#dcfce7;color:#166534;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700">COMPLIANT</span>';
   }
@@ -37510,7 +37519,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('nps-bar').innerHTML=
       '<div style="display:flex;height:28px;border-radius:6px;overflow:hidden;margin-bottom:8px">'
       +'<div style="background:var(--brand2);width:'+Math.round(prom/total*100)+'%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700">'+prom+'</div>'
-      +'<div style="background:#f59e0b;width:'+Math.round(pass/total*100)+'%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700">'+pass+'</div>'
+      +'<div style="background:#A36907;width:'+Math.round(pass/total*100)+'%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700">'+pass+'</div>'
       +'<div style="background:#dc2626;width:'+Math.round(det/total*100)+'%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700">'+det+'</div>'
       +'</div>'
       +'<div style="display:flex;gap:16px;font-size:12px">'
@@ -43044,7 +43053,7 @@ function taxExport(){
     var banner=document.createElement('div');
     banner.id='biz-admin-banner';
     banner.style.cssText='background:#F0FDFA;border:1px solid #5EEAD4;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;';
-    banner.innerHTML='<span style="font-size:20px;">&#129302;</span><div style="flex:1"><div style="font-weight:700;font-size:13px;color:#0F766E;">Powered by SAIRNbiz</div><div style="font-size:12px;color:#64748B;">Employee roster and company profile sync from SAIRNbiz</div></div><button onclick="syncBizProfile()" style="background:#14B8A6;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;">Sync Profile</button><button onclick="loadBizEmployees(function(e){if(e.length)showToast(e.length+\' employees loaded from SAIRNbiz\');else showToast(\'No SAIRNbiz employees found\');})" style="background:#fff;color:#14B8A6;border:1px solid #14B8A6;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;margin-left:4px;">Sync Employees</button>';
+    banner.innerHTML='<span style="font-size:20px;">&#129302;</span><div style="flex:1"><div style="font-weight:700;font-size:13px;color:#0F766E;">Powered by SAIRNbiz</div><div style="font-size:12px;color:#64748B;">Employee roster and company profile sync from SAIRNbiz</div></div><button onclick="syncBizProfile()" style="background:#0E8174;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;">Sync Profile</button><button onclick="loadBizEmployees(function(e){if(e.length)showToast(e.length+\' employees loaded from SAIRNbiz\');else showToast(\'No SAIRNbiz employees found\');})" style="background:#fff;color:#0E8174;border:1px solid #0E8174;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;margin-left:4px;">Sync Employees</button>';
     adminPanel.insertBefore(banner,adminPanel.firstChild);
   }
 
@@ -43055,7 +43064,7 @@ function taxExport(){
     var banner=document.createElement('div');
     banner.id='biz-ts-banner';
     banner.style.cssText='background:#F0FDFA;border:1px solid #5EEAD4;border-radius:10px;padding:10px 16px;margin-bottom:14px;display:flex;align-items:center;gap:10px;';
-    banner.innerHTML='<span style="font-size:16px;">&#129302;</span><span style="font-size:12px;color:#0F766E;font-weight:600;">Employee roster managed by SAIRNbiz</span><button onclick="loadBizEmployees(function(e){if(e.length)showToast(e.length+\' employees loaded\');else showToast(\'Sync employees in SAIRNbiz first\');})" style="margin-left:auto;background:#14B8A6;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">Sync from SAIRNbiz</button>';
+    banner.innerHTML='<span style="font-size:16px;">&#129302;</span><span style="font-size:12px;color:#0F766E;font-weight:600;">Employee roster managed by SAIRNbiz</span><button onclick="loadBizEmployees(function(e){if(e.length)showToast(e.length+\' employees loaded\');else showToast(\'Sync employees in SAIRNbiz first\');})" style="margin-left:auto;background:#0E8174;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">Sync from SAIRNbiz</button>';
     var firstChild=tsPanel.querySelector('div');
     if(firstChild)firstChild.insertBefore(banner,firstChild.firstChild);
     else tsPanel.insertBefore(banner,tsPanel.firstChild);
@@ -43068,7 +43077,7 @@ function taxExport(){
     var banner=document.createElement('div');
     banner.id='biz-jc-banner';
     banner.style.cssText='background:#F0FDFA;border:1px solid #5EEAD4;border-radius:10px;padding:10px 16px;margin-bottom:14px;display:flex;align-items:center;gap:10px;';
-    banner.innerHTML='<span style="font-size:16px;">&#129302;</span><span style="font-size:12px;color:#0F766E;font-weight:600;">Labor rates powered by SAIRNbiz payroll</span><button onclick="loadBizEmployees(function(e){if(e.length){var avg=e.reduce(function(s,x){return s+(parseFloat(x.hourly_rate)||0);},0)/e.length;showToast(\'Avg labor rate: $\'+avg.toFixed(2)+\'/hr from SAIRNbiz\');}else showToast(\'Sync employees in SAIRNbiz first\');})" style="margin-left:auto;background:#14B8A6;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">Get Rates from SAIRNbiz</button>';
+    banner.innerHTML='<span style="font-size:16px;">&#129302;</span><span style="font-size:12px;color:#0F766E;font-weight:600;">Labor rates powered by SAIRNbiz payroll</span><button onclick="loadBizEmployees(function(e){if(e.length){var avg=e.reduce(function(s,x){return s+(parseFloat(x.hourly_rate)||0);},0)/e.length;showToast(\'Avg labor rate: $\'+avg.toFixed(2)+\'/hr from SAIRNbiz\');}else showToast(\'Sync employees in SAIRNbiz first\');})" style="margin-left:auto;background:#0E8174;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">Get Rates from SAIRNbiz</button>';
     var firstChild=jcPanel.querySelector('div');
     if(firstChild)firstChild.insertBefore(banner,firstChild.firstChild);
     else jcPanel.insertBefore(banner,jcPanel.firstChild);
@@ -43306,7 +43315,7 @@ if (document.readyState === 'loading') {
     <div id="sd-progchk-error" role="alert" style="display:none;color:#dc2626;font-size:12px;margin-bottom:8px"></div>
     <button id="sd-progchk-analyze-btn" onclick="sdProgChkAnalyze()" disabled style="width:100%;background:#111827;color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px;min-height:44px">Analyze with Claude</button>
     <div id="sd-progchk-result" style="display:none;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:12px;font-size:13px;line-height:1.6;color:#111827;white-space:pre-wrap;margin-bottom:12px;max-height:220px;overflow-y:auto"></div>
-    <button id="sd-progchk-save-btn" onclick="sdProgChkSave()" style="display:none;width:100%;background:#16A34A;color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px;min-height:44px">Save to Job Record</button>
+    <button id="sd-progchk-save-btn" onclick="sdProgChkSave()" style="display:none;width:100%;background:#117F3A;color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px;min-height:44px">Save to Job Record</button>
     <button onclick="sdCloseProgressPhoto()" style="width:100%;background:#fff;border:1px solid #E5E7EB;color:#374151;border-radius:8px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;min-height:44px">Close</button>
   </div>
 </div>
@@ -43544,7 +43553,7 @@ window.sdQcQueueRefresh = async function() {
         + '<div style="font-weight:700;font-size:13px">' + escHtml(p.job_id) + ' <span style="font-weight:400;color:#6B7280;font-size:11px">(' + escHtml(p.captured_by_type === 'sub' ? 'sub: ' + p.captured_by_id : p.captured_by_id) + ')</span></div>'
         + '<div style="font-size:11px;color:#374151;margin-top:2px;white-space:pre-wrap">' + escHtml((p.ai_analysis || '').slice(0, 200)) + '</div>'
         + '<div style="display:flex;gap:8px;margin-top:8px">'
-        + '<button onclick="sdQcDecide(\'' + escAttrJs(p.id) + '\',\'approved\')" style="background:#16A34A;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;min-height:36px">Approve</button>'
+        + '<button onclick="sdQcDecide(\'' + escAttrJs(p.id) + '\',\'approved\')" style="background:#117F3A;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;min-height:36px">Approve</button>'
         + '<button onclick="sdQcDecide(\'' + escAttrJs(p.id) + '\',\'rejected\')" style="background:#fff;border:1px solid #DC2626;color:#DC2626;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;min-height:36px">Reject</button>'
         + '</div></div></div>';
     }).join('');

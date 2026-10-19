@@ -903,6 +903,39 @@ def context_figure(body):
                 '%d character(s)' % min(len(body), 400))
 
 
+# ── THE VERIFIED FIGURE (cc b20 item 4) ────────────────────────────────────
+# Read from the agent's OWN transcript by tools/context_verify.py, which never
+# reads a self-report of any kind. Published BESIDE the self-reported cell, not
+# instead of it: a figure that silently overwrote the thing it was built to
+# check would leave nothing to compare.
+#
+# FAILS SOFT, because this is a side effect of every status write and a board
+# is better than no board: if the tool cannot be imported or raises, the cell
+# says so in its own words and the rest of the board publishes. A missing
+# verified figure is never rendered as a number.
+#
+# hover/hover2 get `-` and the board's own footer says why -- the separation
+# boundary, which is a decision rather than a gap.
+def verified_context(token):
+    """-> a short cell string. Never raises, never invents a figure."""
+    try:
+        import context_verify as CV
+    except Exception as exc:                                     # noqa: BLE001
+        return 'UNKNOWN -- context_verify.py would not import (%s)' \
+            % str(exc)[:60]
+    if token not in CV.BUILD_AGENTS:
+        return '-'
+    try:
+        r = CV.verify(token)
+    except Exception as exc:                                     # noqa: BLE001
+        return 'UNKNOWN -- context_verify raised (%s)' % str(exc)[:60]
+    if r.get('pct') is None:
+        return 'UNKNOWN -- %s' % (r.get('why') or 'no reason given')
+    return '%.1f%% (%s tokens of %s, turn %sh old)' % (
+        r['pct'], '{:,}'.format(r['prompt']), '{:,}'.format(r['window']),
+        '?' if r['age_h'] is None else r['age_h'])
+
+
 def context_for(row, dfields, dbatch):
     """(text, source). The live reading wins; the digest is the fallback."""
     live = (row or {}).get('context_pct')
@@ -999,6 +1032,16 @@ def collect(ddir=None):
             'claims': claims_of(row),
             'context': ctx,
             'context_source': ctx_src,
+            # ── THE INDEPENDENT CHECK, BESIDE THE SELF-REPORT (b20 item 4) ─
+            # NOT a replacement. `context` above is whatever the agent said
+            # about itself; this is read out of the agent's own transcript by
+            # tools/context_verify.py, which never reads a self-report. Both
+            # are published so a disagreement is VISIBLE rather than averaged
+            # -- and they measure different moments, so each carries its age.
+            # Only the four BUILD agents have one: hover/hover2 are excluded
+            # by the separation boundary, so their cell reads `-` and the
+            # board says why.
+            'verified': verified_context(token),
             'digest_batch': dbatch,
             'digest_status': dfields['status'],
             'digest_next': dfields['next'],
@@ -1070,15 +1113,16 @@ def render_board(rows, problems, extra_rows, extra_digests, reason, ddir):
             L += ['> - Drive digests: %s' % ', '.join(extra_digests)]
         L += ['']
     L += ['## At a glance', '',
-          '| agent | state | liveness | batch | CONTEXT | claims | blocked on | row age |',
-          '|---|---|---|---|---|---|---|---|']
+          '| agent | state | liveness | batch | CONTEXT (self) | CONTEXT '
+          '(VERIFIED) | claims | blocked on | row age |',
+          '|---|---|---|---|---|---|---|---|---|']
     for r in rows:
         batch = ('b%s' % r['digest_batch']) if r['digest_batch'] else 'UNKNOWN'
         if r['live_batch'] and r['digest_batch'] and \
                 r['live_batch'] != r['digest_batch']:
             batch = 'b%s live / last digest b%s' % (r['live_batch'],
                                                     r['digest_batch'])
-        L.append('| **%s** | %s | %s | %s | %s | %d | %s | %s |' % (
+        L.append('| **%s** | %s | %s | %s | %s | %s | %d | %s | %s |' % (
             r['label'], _cell(r['state'], 'UNKNOWN'),
             _cell(r['liveness'], '-'), batch,
             # A GLANCE COLUMN IS A FIGURE OR THE WORD UNKNOWN. Slicing an
@@ -1087,10 +1131,28 @@ def render_board(rows, problems, extra_rows, extra_digests, reason, ddir):
             # figure fix just removed, one column over. The REASON belongs in
             # the per-agent section below, where it is printed whole.
             ('UNKNOWN' if r['context'].startswith('UNKNOWN')
-             else r['context'][:40]), len(r['claims']),
+             else r['context'][:40]),
+            # THE VERIFIED CELL. Same discipline as the self-reported one next
+            # to it: a figure, a dash, or the bare word UNKNOWN -- never a
+            # 40-character slice of a sentence.
+            ('UNKNOWN' if r['verified'].startswith('UNKNOWN')
+             else r['verified'].split(' (')[0]),
+            len(r['claims']),
             _cell(r['blocked_on'], '-'),
             ('%sh' % r['age_h']) if r['age_h'] is not None else '-'))
-    L += ['', 'CONTEXT is the agent\'s own reading. Its source is named per '
+    L += ['', 'CONTEXT (VERIFIED) is read from the agent\'s OWN Claude Code '
+              'transcript by `tools/context_verify.py`, which never reads a '
+              'self-report: the last assistant turn\'s whole prompt '
+              '(input + cache_read + cache_creation) over the smallest '
+              'published window that prompt fits in. It is published BESIDE '
+              'the self-reported figure rather than instead of it, and the '
+              'two measure different moments -- the self-report is whenever '
+              'the agent last wrote one, the verified figure is its last '
+              'turn -- so a gap is usually elapsed time rather than a wrong '
+              'claim. **H1 and H2 read `-` by DECISION, not omission:** '
+              'reading an auditor\'s transcript from a build clone is the '
+              'separation boundary running the wrong way.', '']
+    L += ['CONTEXT (self) is the agent\'s own reading. Its source is named per '
               'agent below -- a live row and a figure copied out of a digest '
               'written hours ago are not the same claim.', '']
     for r in rows:
@@ -1106,8 +1168,10 @@ def render_board(rows, problems, extra_rows, extra_digests, reason, ddir):
             L += ['- **task:** %s' % _cell(r['task'])]
             if r['blocked_on']:
                 L += ['- **BLOCKED ON:** %s' % r['blocked_on']]
-        L += ['- **CONTEXT:** %s  _(source: %s)_' % (r['context'],
-                                                     r['context_source'])]
+        L += ['- **CONTEXT (self-reported):** %s  _(source: %s)_'
+              % (r['context'], r['context_source']),
+              '- **CONTEXT (VERIFIED from its own transcript, no '
+              'self-report read):** %s' % r['verified']]
         L += ['- **chain tip:** %s' % r['chain']]
         if r['claims']:
             L += ['- **claims held (%d):**' % len(r['claims'])]
@@ -1168,8 +1232,9 @@ def render_latest(r, reason):
          '- **task:** %s' % _cell(r['task'])]
     if r['blocked_on']:
         L += ['- **BLOCKED ON:** %s' % r['blocked_on']]
-    L += ['- **CONTEXT:** %s  _(source: %s)_' % (r['context'],
-                                                 r['context_source']),
+    L += ['- **CONTEXT (self-reported):** %s  _(source: %s)_'
+          % (r['context'], r['context_source']),
+          '- **CONTEXT (VERIFIED):** %s' % r['verified'],
           '- **chain tip:** %s' % r['chain'],
           '']
     L += ['## Last digest (b%s) -- its own STATUS line' % (
@@ -2236,7 +2301,12 @@ def _a17(sdir, ddir):
     txt = _board_for(sdir, ddir)[0]
     # The figure prints, the prose does not, and the cell says where the
     # figure was cut from.
-    ok = ('**CONTEXT:** 46%' in txt
+    # RE-ANCHORED in b20: this batch renamed the label to
+    # `CONTEXT (self-reported)` and both A29 and A31 went red on the
+    # STRING while the behaviour was unchanged -- the anchor-rot shape
+    # docs/2026-09-13-cross-domain-disciplines.md item 8 names. Pinned
+    # to the new label, not loosened to match either.
+    ok = ('**CONTEXT (self-reported):** 46%' in txt
           and 'WHAT LANDED' not in txt
           and 'ERASABLE' not in txt
           and 'parsed out of a' in txt)
@@ -2256,7 +2326,7 @@ def _a18(sdir, ddir):
     # H1's real wording, which has no figure in it at all. UNKNOWN with the
     # reason; never 0%, and never the sentence itself in a figure column.
     ok = ('UNKNOWN -- the digest\'s CONTEXT line carries no percentage' in txt
-          and 'CONTEXT:** 0%' not in txt
+          and 'CONTEXT (self-reported):** 0%' not in txt
           and 'no tool available here' not in txt)
     return ok, txt
 
@@ -2285,7 +2355,7 @@ def _a31(sdir, ddir):
     ok = (f['context'].strip() == '46%'
           and 'WHAT LANDED' not in f['context']
           and any('ended at the digest' in n for n in f['notes'])
-          and '**CONTEXT:** 46%' in txt)
+          and '**CONTEXT (self-reported):** 46%' in txt)
     return ok, '%r / notes=%r' % (f['context'][:60], f['notes'][:1])
 
 
@@ -2390,6 +2460,59 @@ def _a36(sdir, ddir):
     refuse, why = overwrite_refusal(p, incoming)
     ok = refuse and 'walk the board backwards' in why
     return ok, why[:140]
+
+
+@arm('A37-verified-replaces-self', 'the VERIFIED context figure replaces the '
+                                   'self-reported one instead of sitting '
+                                   'beside it, leaving nothing to compare')
+def _a37(sdir, ddir):
+    txt = _board_for(sdir, ddir)[0]
+    # BOTH labels present, both columns in the glance table, and the footer
+    # explaining that they measure different moments.
+    ok = ('CONTEXT (self-reported):' in txt
+          and 'CONTEXT (VERIFIED' in txt
+          and '| CONTEXT (self) | CONTEXT (VERIFIED) |' in txt
+          and 'never reads a self-report' in txt)
+    return ok, txt[:200]
+
+
+@arm('A38-verified-fails-soft', 'a broken context_verify takes the whole board '
+                                'down, or worse renders a number it did not '
+                                'measure')
+def _a38(sdir, ddir):
+    # THE BOARD IS A SIDE EFFECT OF EVERY STATUS WRITE, so this one must fail
+    # soft: an unimportable or exploding verifier must leave the cell saying
+    # UNKNOWN in its own words and publish the rest.
+    import context_verify as CV
+    keep = CV.verify
+
+    def boom(*a, **k):
+        raise RuntimeError('the verifier exploded')
+    CV.verify = boom
+    try:
+        cell = verified_context('cc')
+        txt = _board_for(sdir, ddir)[0]
+    finally:
+        CV.verify = keep
+    ok = (cell.startswith('UNKNOWN') and 'raised' in cell
+          and 'UNKNOWN' in txt and '# SAIRN board' in txt)
+    return ok, cell[:140]
+
+
+@arm('A39-auditors-not-read', 'the board reads an AUDITOR\'s transcript for a '
+                              'verified figure, which is the separation '
+                              'boundary running the wrong way')
+def _a39(sdir, ddir):
+    # H1/H2 must render `-`, and the board must SAY it is a decision. The
+    # arm also pins the agent list itself, so dropping an auditor into
+    # BUILD_AGENTS has to argue with a red arm.
+    import context_verify as CV
+    cells = (verified_context('h1'), verified_context('h2'))
+    txt = _board_for(sdir, ddir)[0]
+    ok = (cells == ('-', '-')
+          and not [a for a in CV.BUILD_AGENTS if a.startswith('hover')]
+          and 'by DECISION, not omission' in txt)
+    return ok, '%r' % (cells,)
 
 
 def _run_arms(verbose=True, only=None):

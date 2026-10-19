@@ -1,0 +1,312 @@
+REPORT cc b20
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-19
+HEAD      == origin/main, 0 ahead / 0 behind, zero stashes. The handoff was
+          read back OUT OF ORIGIN -- `git show origin/main:SAIRN-handoff-cc-
+          b20.md` -- rather than from a push command's exit code
+FORCE     none, in any spelling
+OVERRIDE  NONE, in any of the three forms. docs/BYPASS-LOG.jsonl gained NO row
+          from this batch. An audit rather than an assertion: the gate records
+          an override ATTEMPT before deciding whether to honour it, so an
+          absent row is an unused override and not a silence
+HOOKS     none added or restored. .claude/settings.json never committed
+BOUNDARY  no auditor clone entered, and NO AUDITOR TRANSCRIPT READ. Their
+          project folders are on this machine and this batch's tool could
+          have read them; it does not, and a fixture asserts the omission
+TRANSCRIPT
+          C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cc\
+          4d4f63b1-1aa9-48c9-b832-ddd1c2674580.jsonl -- 5,106,945 bytes,
+          carrying b16's wrap, b17, b18, b19 AND b20
+
+
+================================================================================
+THE REAL CONTEXT FIGURE -- MEASURED, NOT ESTIMATED
+================================================================================
+
+From this session's own transcript, LAST ASSISTANT TURN 2026-10-19T14:58:41Z,
+model `claude-opus-5`:
+
+    input_tokens                      2
+    cache_read_input_tokens     696,083
+    cache_creation_input_tokens     621
+
+    input_tokens + cache_read_input_tokens  =  696,085  ->  69.6% of 1,000,000
+    the whole prompt (+ cache_creation)     =  696,706  ->  69.7% of 1,000,000
+
+69.6% IS THE FIGURE THE DISPATCH'S ARITHMETIC ASKS FOR and the one in the
+digest. Both are given rather than picking the flattering one; they differ by
+0.1 point.
+
+THE WINDOW IS 1,000,000 BY EVIDENCE, NOT ASSUMPTION. The transcript carries no
+window field -- searched for `context_window`, `1m`, `200000` and `1000000`,
+and every hit is prose or an echoed command of cc's own -- and `claude-opus-5`
+is the string BOTH the 1M and the 200k variant record. So the window is the
+smallest published size the measured prompt fits in, and 696,085 tokens does
+not fit 200,000.
+
+AND IT IS NOT b20's FIGURE ALONE: this transcript carries five batches. The
+same number read three times during the batch came out 671,427 then 674,406
+then 696,085, which is the property a real context reading has.
+
+
+================================================================================
+WHAT LANDED
+================================================================================
+
+  b1637033  concepts(cc b20): what real context% means, committed before
+            context_verify.py exists
+  fb336bac  verify(context)+board(column): a real context figure read from
+            each build agent's own transcript, published beside the
+            self-report
+  (this wrap) handoff(cc b20), then this report, the digest and the closed
+            manifest
+
+  Files: NEW tools/context_verify.py, NEW docs/2026-10-19-cc-b20-concepts.md,
+  NEW docs/2026-10-19-cc-b20-context-verify-validation.md,
+  tools/sairn_board_publish.py, tools/tooling_inventory.py +
+  docs/TOOLING-INVENTORY.md, docs/batch-manifest-cc-b20.json. No api/, no
+  sql/, no app HTML, no tests/ file.
+
+
+================================================================================
+ITEM 1 -- THE CONCEPT, BEFORE THE CODE
+================================================================================
+
+docs/2026-10-19-cc-b20-concepts.md is commit b1637033; tools/context_verify.py
+first exists in fb336bac. The ordering is provable from `git log` rather than
+asserted by the file claiming it.
+
+  ONE LINE: REAL context% is the LAST ASSISTANT TURN's whole prompt --
+  input_tokens + cache_read_input_tokens + cache_creation_input_tokens -- over
+  the smallest published window for that turn's own model that the measured
+  prompt actually fits in, read out of each agent's newest transcript in its
+  own project folder; and anything that cannot be resolved is COULD NOT TELL
+  rather than a percentage.
+
+THREE MEASUREMENTS CHANGED THE DESIGN BEFORE A LINE WAS WRITTEN.
+
+  CACHE_READ IS COUNTED, AND SO IS CACHE_CREATION, because `input_tokens`
+  ALONE IS TWO on all four build agents:
+
+      hank    input_tokens 2   cache_creation 112    cache_read 670,816
+      cc      input_tokens 2   cache_creation 1,501  cache_read 654,276
+      cody    input_tokens 2   cache_creation 596    cache_read 616,217
+      fourth  input_tokens 2   cache_creation 523    cache_read 584,884
+
+  A figure built on input_tokens would report every agent at 0.0% while each
+  carried over half a million tokens of prompt.
+
+  THE WINDOW IS NOT IN THE TRANSCRIPT. Measured, not assumed -- and because
+  the model string is identical across variants, the window is the smallest
+  tabled size the observed maximum prompt fits in. A prompt fitting none is
+  COULD NOT TELL, never a percentage over 100 on a denominator already known
+  to be wrong.
+
+  THE SESSION ID is the newest *.jsonl by mtime in
+  ~/.claude/projects/C--Users-marsh-Documents-SAIRN-<agent>/. mtime is a PROXY
+  for current: hank has 44 transcripts, cc 46, cody 44, fourth 46, so picking
+  the wrong one is a real failure mode. The tool prints the session id and the
+  age so a reader sees what it chose.
+
+
+================================================================================
+ITEM 2 -- tools/context_verify.py
+================================================================================
+
+Criteria 2026-10-19.1, 23/23 fixtures, exit 0. SCOPED TO THE FOUR BUILD AGENTS
+per the item 6 correction. hover/hover2 are excluded by the SEPARATION
+BOUNDARY: reading an auditor's own transcript from a build clone is that
+boundary running the wrong way. The exclusion is a FIXTURE --
+
+    hover and hover2 are NOT in the agent list -- the separation boundary,
+    stated as an arm so a later edit has to argue with it
+
+-- so a future session that "fixes the omission" gets a red arm rather than a
+comment to overrule.
+
+WHAT THE FIXTURES PIN, in both directions: the three-field sum; the ablation
+showing input_tokens alone is 2; output_tokens excluded; a usage with no
+prompt key is None rather than a prompt of zero; the 200k window for a 150k
+prompt and the 1M window for a 657k prompt ON THE SAME MODEL STRING; the [1m]
+marker and a dated build name both resolving; a prompt over every window
+reported as COULD NOT TELL with its reason; an unknown model falling back
+rather than crashing; a missing folder and an EMPTY folder each a
+could-not-tell rather than 0%; the LAST assistant turn winning over the first
+and over the largest; and a decoy user record whose text contains the word
+`usage` NOT being counted as a turn.
+
+LIVE, all four, exit 0:
+
+    agent     REAL %       prompt      window   age h
+    hank       67.1%      670,930   1,000,000    0.13
+    cc         67.1%      671,427   1,000,000    0.0
+    cody       63.4%      633,965   1,000,000    0.0
+    fourth     58.8%      588,142   1,000,000    0.0
+
+
+================================================================================
+ITEM 3 -- VALIDATED ON HANK AND CC BEFORE BEING WIRED ANYWHERE
+================================================================================
+
+THE CROSS-CHECK. tools/sairn_status_line.used_tokens() is different code,
+written for a different purpose (the status line), reading the same
+transcripts. Not independent evidence -- same source -- but an independent
+IMPLEMENTATION, and a disagreement would have meant one of them was parsing
+the wrong record:
+
+    agent   context_verify   used_tokens   agree   bytes/token
+    hank           670,930       670,930    True          6.66
+    cc             674,406       674,406    True          7.24
+    cody           635,215       635,215    True          6.79
+    fourth         592,390       592,390    True          7.85
+
+THE FIGURES MOVE, WHICH IS WHAT RULES OUT A PLACEHOLDER. cc read 671,427 then
+674,406 then 696,085 across the batch; cody 633,965 then 635,215. A constant
+would not move, and a hardcoded one would not have matched b19's
+independently-quoted 619,477 either.
+
+PLAUSIBILITY RATHER THAN "THE TOOL SAID SO": bytes per token lands between
+6.55 and 7.85 across four independent transcripts -- above plain English's ~4
+because transcript bytes carry JSON envelopes, tool results and repeated
+system text. THE FOUR AGREE WITH EACH OTHER WITHOUT BEING EQUAL: percentages
+span 58.8 to 70.3 and prompts differ by 83,000 tokens.
+
+HANK, THE SECOND DATA POINT, AND A DISAGREEMENT WORTH HAVING:
+
+    context_verify  hank  67.1% then 70.3%, transcript minutes old
+    the board's self-reported cell for hank  46% (digest b17), then UNKNOWN
+
+BOTH ARE RIGHT. hank's self-report is what hank wrote into a digest on
+2026-10-16; the verified figure is hank's last assistant turn minutes ago. The
+gap is three days of work, not a lie -- which is precisely why item 4 puts them
+side by side with the age of each. AND IT SHOWS SOMETHING THE SELF-REPORT
+COULD NOT: hank's status row was last written 2026-10-17T10:20, 46 hours old,
+while hank's transcript was appended minutes before the measurement. hank is
+WORKING with a stale row, and only the verified column makes that visible.
+
+WHAT THE VALIDATION DOES NOT ESTABLISH, written down beside it rather than
+discovered later: it proves the window is NOT 200,000 rather than proving it
+is 1,000,000; it proves nothing about whether a session is CURRENT; it cannot
+see a compaction, across which two readings compare different things; and
+NEITHER DATA POINT WAS INDEPENDENTLY RE-DERIVED BY ANOTHER AGENT, because cc
+wrote the tool and ran it.
+
+
+================================================================================
+ITEM 4 -- THE COLUMN, BESIDE THE SELF-REPORT AND NOT INSTEAD OF IT
+================================================================================
+
+    | agent | state | liveness | batch | CONTEXT (self) | CONTEXT (VERIFIED) |
+    | hank   | working | LIVE | ... | UNKNOWN | 70.3% |
+    | cc     | working | LIVE | ... |   61.9% | 68.8% |
+    | cody   | working | LIVE | ... |   59.2% | 66.3% |
+    | fourth | working | LIVE | ... |   48.0% | 60.0% |
+    | H1     | idle    | LIVE | ... | UNKNOWN |     - |
+    | H2     | idle    | DEAD | ... | UNKNOWN |     - |
+
+A figure that silently overwrote the thing it was built to check would leave
+nothing to compare, so the self-report stays and both carry their age. The
+board's own footer explains that the two measure different moments, so a gap
+is usually elapsed time rather than a wrong claim -- and that H1/H2 read `-`
+BY DECISION, not omission.
+
+IT FAILS SOFT, because the board is a side effect of every status write: an
+unimportable or raising verifier leaves the cell saying UNKNOWN in its own
+words and the rest of the board publishes. Driven, not asserted -- arm A38
+patches the verifier to explode and requires the board to still render.
+
+THREE ARMS: A37 both figures present and both columns in the glance table;
+A38 fails soft; A39 auditors render `-`, the agent list carries no hover
+entry, and the board says it is a decision. 39/39 arms fire on the defect they
+name.
+
+AND THE FIRST LIVE RENDER IS ALREADY A FINDING: EVERY BUILD AGENT'S
+SELF-REPORT UNDER-READS ITS REAL CONTEXT, by 7 to 12 points, and hank's is
+UNKNOWN against a verified 70.3%.
+
+
+================================================================================
+ITEM 5 -- b19's RACE GUARD DID NOT REGRESS
+================================================================================
+
+    A33-stale-clone-reverts     PASS
+    A34-rev-compare-is-numeric  PASS
+    A35-fresh-board-publishes   PASS   (control)
+    A36-stale-rows-walk-back    PASS
+    --ablation                  every layer load-bearing; `manifest` names
+                                A35-fresh-board-publishes among the arms it
+                                breaks
+
+AND AGAINST THE REAL LIVE BOARD, not only fixtures: a synthetic
+higher-revision copy still REFUSES this clone with its reason, and the real
+live board still ALLOWS it. The new column did not change either verdict.
+
+TWO ARMS DID GO RED FIRST AND IT WAS ANCHOR ROT, NOT A REGRESSION. A29 and
+A31 matched the literal `**CONTEXT:**`, which this batch renamed to
+`**CONTEXT (self-reported):**`. The behaviour was unchanged and the STRING
+moved -- convention 8's shape, caught by running the suite rather than by
+review. RE-ANCHORED ON THE NEW LABEL RATHER THAN LOOSENED: a substring
+matching either label would have stopped proving which line carries the
+figure.
+
+
+================================================================================
+CHECKS, WITH REAL EXIT CODES
+================================================================================
+
+  tools/context_verify.py --fixtures             23/23            exit 0
+  tools/context_verify.py (live, four agents)    all resolved     exit 0
+  tools/sairn_board_publish.py --selftest        39/39 arms       exit 0
+  tools/sairn_board_publish.py --ablation        all load-bearing exit 0
+  tools/sairn_board_publish.py (live publish)    read-back
+                                                 verified         exit 0
+  tools/tooling_inventory.py --check             matches repo     exit 0
+  tools/digest_lint.py (this batch's digest)     CLEAN            exit 0
+  tools/drive_upload_verify.py --agent cc
+      --batch b20                                3 PASS           exit 0
+
+
+================================================================================
+UNVERIFIED
+================================================================================
+
+  NOTHING IN THIS BATCH WAS INDEPENDENTLY RE-DERIVED. cc wrote the tool, the
+  column and this report. H1/H2 re-driving one of the four figures from a raw
+  transcript is what would make it independent, and it is not done.
+
+  THE TOOL CANNOT TELL A CURRENT SESSION FROM A STOPPED ONE. The figure is the
+  newest transcript's last turn; the age is printed for exactly that reason.
+
+  IT CANNOT SEE A COMPACTION. The prompt drops and the figure drops with it,
+  correctly -- but two readings across one are not comparable.
+
+  THE WINDOW TABLE IS DECLARED, NOT DISCOVERED. If a published size existed
+  between 200k and 1M, the tool would pick that one and this report's 69.6%
+  would be wrong by the ratio.
+
+  A CLONE OLDER THAN PUBLISHER REVISION 2026-10-19.1 can still revert the
+  board.
+
+  CODY'S SAIRNSCAPE PII FINDING IS STILL OPEN AND UNTOUCHED, because hank
+  holds api/sd-data.js.
+
+  THREE b12 TEST-FILE-FLOOR LAYERS REMAIN UNARMED, carried from b14 through
+  b19 unchanged. tests/ is cody's.
+
+  NO LIVE DEPLOYED-URL CHECK: no api/, sql/ or app file changed. Structural,
+  not skipped.
+
+
+================================================================================
+METHOD NOTE
+================================================================================
+
+RENAMING A LABEL BREAKS EVERY ARM ANCHORED ON IT, AND THAT IS NOT A
+REGRESSION -- it is the thing to expect and to re-anchor deliberately. Two
+arms went red the moment `CONTEXT` became `CONTEXT (self-reported)`; the
+temptation is to loosen the match so both spellings pass, and that would have
+destroyed what the arm proved. Pin to the new string.
+
+SHA256 1de6910ea9a1bc3fb2c9cb54a9cb5460782c1191d356a4ade45733c6cdc92af5
+END-OF-REPORT
