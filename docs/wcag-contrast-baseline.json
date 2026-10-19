@@ -1,12 +1,8 @@
 {
  "_what_this_is": "Contrast and undefined-token findings that EXISTED when tools/wcag_contrast_check.py was wired into the push gate on 2026-10-19. The gate denies on findings NOT in here. This is a ratchet and a debt list, not an exemption: every gate run prints what is still outstanding, and this file only grows by an explicit --baseline-write, which is a commit somebody can refuse to approve.",
- "counts": {
-  "sairnroofing.html|undefined-var|inline <canvas#agr-sig>|border|--bd": 1,
-  "sairnroofing.html|undefined-var|inline <canvas#jb-sig>|border|--bd": 1,
-  "sairnroofing.html|undefined-var|inline <div>|border|--bd": 1
- },
+ "counts": {},
  "regenerate": "python tools/wcag_contrast_check.py --static --all --baseline-write",
- "total": 3,
+ "total": 0,
  "written": "2026-10-19",
  "written_by": "fourth b30"
 }

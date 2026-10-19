@@ -1,0 +1,44 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "fourth",
+  "batch": "b32",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "",
+      "status": "blocked",
+      "evidence": "STOPPED BEFORE STARTING, on direct instruction mid-batch. The rendered pass over the 13 recoloured apps was not begun: no browser opened, no screenshot taken, nothing measured. docs/batch-manifest-fourth-b32.json records it as blocked rather than done."
+    },
+    {
+      "id": 2,
+      "title": "",
+      "status": "done",
+      "evidence": "cody's claim on sairnroofing.html HAS released -- its current b25 claim names api/sd-data.js and docs/CRITICALITY-TIERS.md, not that file, and no active claim mentions it. All 3 findings closed: var(--bd) was referenced and defined nowhere, so three border:1px solid var(--bd) declarations were dropped at computed-value time; two of the three are the agreement and job-board SIGNATURE CANVASES where that border is the only thing showing a customer where to sign. python tools/wcag_contrast_check.py --gate sairnroofing.html -> 0 findings; baseline rewritten 3 -> 0, so the platform now carries ZERO contrast debt"
+    },
+    {
+      "id": 3,
+      "title": "",
+      "status": "blocked",
+      "evidence": "STOPPED BEFORE STARTING. Routing-primitive phase 1 scope doc was not written -- no schema, no API surface, no first-app choice. It was correctly sequenced BEHIND item 5 (the archaeology), and item 5's first search command is where the stop landed, so nothing was designed from scratch and nothing was designed at all."
+    },
+    {
+      "id": 4,
+      "title": "",
+      "status": "blocked",
+      "evidence": "STOPPED BEFORE STARTING. The one-page write-up of the three recurring blockers was not written. No file exists in docs/cloud-research/ for it."
+    },
+    {
+      "id": 5,
+      "title": "",
+      "status": "blocked",
+      "evidence": "STARTED AND STOPPED MID-COMMAND. The archaeology for existing route/stop sequencing got as far as one git grep over tracked files for route_order|stop_order|optimizeRoute|waypoint and two follow-ups for itinerary/TSP vocabulary and geo primitives; the tool call was interrupted before any output was read. ZERO findings are recorded because zero output was seen -- this is NOT a nil result."
+    },
+    {
+      "id": 6,
+      "title": "",
+      "status": "open",
+      "evidence": ""
+    }
+  ]
+}
