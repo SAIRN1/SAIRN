@@ -18,10 +18,11 @@ whether either has been applied, and the answer is **no, neither.**
 `git rev-list --left-right --count origin/main...HEAD` after each one.**
 **The WORK is the seven commits below, tip `b3fad2fe4`.** The three standing
 documents and the gate's own re-seated scrutiny rows landed after that —
-`5a9f934ff`/`c62aa5233`, then a correction pass at `07218786e` — which a
-handoff cannot table exhaustively because it would have to name its own sha.
+`5a9f934ff`/`c62aa5233`, then a correction pass at `07218786e`, then this
+handoff's own correction at `082c9f26d` — which a handoff cannot table
+exhaustively because it would have to name its own sha.
 **Re-derive the tip with `git rev-parse --short origin/main`** rather than
-trusting any sha here: five sessions push to one branch and it moved seven
+trusting any sha here: five sessions push to one branch and it moved eight
 times during this batch.
 
 | # | sha | commit | what |
@@ -44,7 +45,7 @@ Files: `api/_lib/law-roles.js`, `api/_lib/countersign-endpoint.js`,
 **The two parked stashes were NOT TOUCHED**, per the dispatch. `git stash list`
 is unchanged by this batch.
 
-### THE PUSH TOOK SEVEN ATTEMPTS ACROSS TWO PUSHES. **THREE WERE REAL GATE REFUSALS AND ALL THREE WERE FIXED, NOT OVERRIDDEN.**
+### THE PUSH TOOK EIGHT ATTEMPTS ACROSS FOUR PUSHES. **THREE WERE REAL GATE REFUSALS AND ALL THREE WERE FIXED, NOT OVERRIDDEN.**
 
 **ZERO gate overrides. No `SAIRN_GATE_EXEMPT`, no `SAIRN_SKIP`, no
 `SAIRN_SEED_GATE`.** Nothing was skipped, so there is nothing to disclose
@@ -122,10 +123,21 @@ than writing it, and the checker's own `find_hits()` reports `[]` on each.
 Verified before re-pushing; the push then landed
 `c3b3f6580..c62aa5233  main -> main`, **0 ahead / 0 behind**.
 
-**The whole-batch count, so it is not re-derived from the narrative:** seven
+**AND ONE MORE LESSON, FROM MY OWN RETRY LOOP RATHER THAN FROM A GATE.** The
+loop I wrote to retry the push tested success with `grep "main -> main"` — and
+git's REJECTION line contains that exact string
+(`! [remote rejected] main -> main (cannot lock ref …)`). **So the loop
+reported LANDED on a push that had been refused.** Caught by re-checking
+`git rev-list --left-right --count origin/main...HEAD`, which said `1 1`. The
+corrected test compares `origin/main` to `HEAD` by sha after a fresh fetch.
+**A success test that matches the failure string is the same defect class as
+everything else in this batch, written by me, in the tool meant to confirm the
+work landed.**
+
+**The whole-batch count, so it is not re-derived from the narrative:** eight
 push attempts, **three real refusals** (credential-in-suite, two
-generated-documents, credential-in-documents), four non-refusals (three
-non-fast-forward, one lost ref-lock race), **zero overrides**.
+generated-documents, credential-in-documents), five non-refusals (three
+non-fast-forward, two lost ref-lock races), **zero overrides**.
 
 ### THE GATE RAISED TWO EXTRA-SCRUTINY FLAGS AND BOTH ARE FALSE POSITIVES
 
@@ -531,3 +543,27 @@ against the transcript.
 5. **The push log's silence on the checks looked like the checks passing.** It
    was a non-fast-forward; the gate had not run. Recorded in §1 because the
    next session will hit it.
+6. **I quoted a refused credential literal into this handoff and into the
+   report in order to explain the refusal, and the gate refused those documents
+   too.** Correctly. A document is not a safe place to put a credential, and
+   the string ships in a commit either way.
+7. **My own push-retry loop reported LANDED on a refused push.** Its success
+   test was `grep "main -> main"`, and git's rejection line contains that exact
+   string. Caught only by re-checking ahead/behind against origin. **A success
+   test that matches the failure string** — written by me, in the tool meant
+   to confirm the work had landed.
+8. **Three counts in these documents were written at different points in a
+   moving push sequence and disagreed with each other** — "seven commits",
+   "two refusals", "five attempts". All were re-derived from the push logs and
+   corrected in named commits rather than quietly fixed.
+
+---
+
+## 8. DRIVE
+
+    handoff  https://drive.google.com/file/d/1QEoHtTt9VFfrZ9Mlh13Aem5yAALOkqKb/view
+    digest   https://drive.google.com/file/d/1efma9AJFZxtkMc_LBAGluNz8KtxQWmKB/view
+
+Uploaded as plain `text/markdown` / `text/plain` with Google-type conversion
+DISABLED, so what is in Drive is byte-for-byte what is in the repo rather than
+a Doc that reflowed the tables and the fenced JSON.

@@ -20,9 +20,9 @@ STATUS
 All seven dispatched items closed. LANDED on origin/main, verified by
 `git rev-list --left-right --count origin/main...HEAD` -> 0 ahead, 0 behind.
 The WORK landed in seven commits at b3fad2fe4; the three standing documents
-and the gate's own re-seated scrutiny row followed in two more. RE-DERIVE THE
-TIP -- origin moved seven times during this batch. NOT FORCED. ZERO OVERRIDES:
-no SAIRN_GATE_EXEMPT, no SAIRN_SKIP, no SAIRN_SEED_GATE.
+and the gate's own re-seated scrutiny rows followed in three more. RE-DERIVE
+THE TIP -- origin moved eight times during this batch. NOT FORCED. ZERO
+OVERRIDES: no SAIRN_GATE_EXEMPT, no SAIRN_SKIP, no SAIRN_SEED_GATE.
   * paralegal is OFF LAW_RECONCILE_ROLES. THREE arms went red, not the one the
     dispatch predicted -- R1c, R1f, R2. Not suppressed, not re-aimed by me.
   * no-defect-record trailer written, and the judgement was DRIVEN three ways:
@@ -53,6 +53,13 @@ THREE REAL GATE REFUSALS, ALL FIXED AT THE SOURCE, NONE OVERRIDDEN:
       either way. Both now DESCRIBE the old value instead of writing it. The
       gate working on its own incident documentation is the most useful thing
       this batch learned about the gate.
+AND ONE FAILURE THAT WAS MINE, NOT A GATE'S: the retry loop I wrote to push
+tested success with `grep "main -> main"`, and git's REJECTION line contains
+that exact string -- so it reported LANDED on a push that had been refused.
+Caught by re-checking ahead/behind against origin, which said 1 1. A SUCCESS
+TEST THAT MATCHES THE FAILURE STRING, in the tool meant to confirm the work
+landed. The corrected test compares shas after a fresh fetch, and every
+"LANDED" in these documents was re-verified that way.
 13 suites driven. NO full-tree sweep, NO live probe of anything b20 built, and
 NO rendered pass on the new panel -- all three stated, none implied.
 
@@ -107,6 +114,10 @@ EVIDENCE-path
   docs/2026-10-19-hank-b20-concepts.md       the concepts, with the spec correction
   docs/hank-evidence/b18_live_gate_probe.py  12 verified / 0 failed / 4 COULD NOT RUN
   transcript: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-hank\c6aa6115-6c83-4e85-839e-9d1825f2115a.jsonl
+  Drive handoff: 1QEoHtTt9VFfrZ9Mlh13Aem5yAALOkqKb
+  Drive digest:  1efma9AJFZxtkMc_LBAGluNz8KtxQWmKB
+  Both uploaded with Google-type conversion DISABLED, so Drive holds the same
+  bytes as the repo rather than a Doc that reflowed the tables.
 
 UNVERIFIED
   * NO LIVE PROBE OF ANYTHING b20 BUILT. The `open` action is not deployed at

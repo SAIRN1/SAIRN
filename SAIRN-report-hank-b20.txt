@@ -496,6 +496,25 @@ That is a third state, not a pass, and it is reported here for that reason.
    this explicitly; I had not read far enough up the log. Recorded because the
    next session will hit the same thing with five agents on one branch.
 
+6. I QUOTED A REFUSED CREDENTIAL LITERAL INTO THIS REPORT AND INTO THE HANDOFF
+   in order to explain the refusal, and the gate refused those documents too.
+   Correctly. A document is not a safe place to put a credential, and the
+   string ships in a commit either way.
+
+7. MY OWN PUSH-RETRY LOOP REPORTED LANDED ON A REFUSED PUSH. Its success test
+   was a grep for `main -> main`, and git's REJECTION line contains that exact
+   string: `! [remote rejected] main -> main (cannot lock ref ...)`. Caught
+   only by re-checking ahead/behind against origin, which said 1 1. A SUCCESS
+   TEST THAT MATCHES THE FAILURE STRING -- written by me, in the tool meant to
+   confirm the work had landed. Every LANDED in these documents was re-verified
+   by comparing shas after a fresh fetch.
+
+8. THREE COUNTS IN THESE DOCUMENTS DISAGREED WITH EACH OTHER because each was
+   written at a different point in a push sequence that kept moving -- seven
+   commits, two refusals, five attempts. All were re-derived from the push logs
+   and corrected in named commits rather than quietly fixed. The counts in a
+   report are the part that is supposed to be countable.
+
 ================================================================================
 9. WHAT IS OPEN -- SUMMARY. FULL NEXT-STEPS IN THE HANDOFF, SECTION 4.
 ================================================================================
@@ -543,6 +562,13 @@ THE FIGURE MOVED WHILE THIS BATCH RAN -- 23.0% at item 3, 28.3% when the
 handoff was written -- so it is re-measured at the moment of writing rather
 than quoted from earlier in the same session.
 
+DRIVE
+  handoff  https://drive.google.com/file/d/1QEoHtTt9VFfrZ9Mlh13Aem5yAALOkqKb/view
+  digest   https://drive.google.com/file/d/1efma9AJFZxtkMc_LBAGluNz8KtxQWmKB/view
+  Uploaded as plain text/markdown and text/plain with Google-type conversion
+  DISABLED, so Drive holds the same bytes as the repo rather than a Doc that
+  reflowed the tables.
+
 THE SHA256 ON THE NEXT LINE is of the BODY of this file -- every byte from
 line 2 to the line immediately above it, LF-joined. It does NOT cover line 1
 (the REPORT line), the SHA256 line itself, or the END-OF-REPORT line, because
@@ -553,5 +579,5 @@ a seal computed by one rule and checked by another is not a seal.
 Verify with:
   python tools/report_sha_check.py SAIRN-report-hank-b20.txt
 
-SHA256 9989764d3bfd6b922fa80350aa295c2a72d1af233d36698e0f5d3e837fd6c895
+SHA256 e37e1783afac3d7cde0351614d0623547da98931a5da56a192ab35f93299cd6b
 END-OF-REPORT
