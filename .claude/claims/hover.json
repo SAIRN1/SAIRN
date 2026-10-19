@@ -978,8 +978,8 @@
       "task": "b54: poll hank b18 only (not cody, H2 owns it); undirected sweep next category after TODO/FIXME/XXX; #1512 spot-check; one new queue item or idle; handoff+push",
       "claimed_at": "2026-10-19T11:36:54Z",
       "claimed_at_epoch": 1792409814.271382,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-19T11:48:48Z",
       "files": null
     }
   ],
