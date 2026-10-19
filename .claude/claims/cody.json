@@ -4125,6 +4125,21 @@
         "docs/known-red-suites.json",
         "tests/sd_data_not_provisioned_misclass.js"
       ]
+    },
+    {
+      "id": "cody-1792441239",
+      "session": "cody",
+      "subject": "platform",
+      "task": "b26 landing: push the report, digest and the handoff correction. The work itself (four tier reads, the 150/43 guard conversion, the known-red tail census, the sweep bleed measurement) is ALREADY on origin/main and confirmed by reading the files back off the remote; this claim covers only the three reporting files. FILES: SAIRN-report-cody-b26.txt SAIRN-digest-cody-b26.txt SAIRN-handoff-cody-b26.md",
+      "claimed_at": "2026-10-19T20:20:39Z",
+      "claimed_at_epoch": 1792441239.6694586,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-cody-b26.txt",
+        "SAIRN-handoff-cody-b26.md",
+        "SAIRN-report-cody-b26.txt"
+      ]
     }
   ],
   "refusals": [
