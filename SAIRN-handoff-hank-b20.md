@@ -40,7 +40,7 @@ Files: `api/_lib/law-roles.js`, `api/_lib/countersign-endpoint.js`,
 **The two parked stashes were NOT TOUCHED**, per the dispatch. `git stash list`
 is unchanged by this batch.
 
-### THE PUSH TOOK FIVE ATTEMPTS. **TWO WERE REAL GATE REFUSALS AND BOTH WERE FIXED, NOT OVERRIDDEN.**
+### THE PUSH TOOK SEVEN ATTEMPTS ACROSS TWO PUSHES. **THREE WERE REAL GATE REFUSALS AND ALL THREE WERE FIXED, NOT OVERRIDDEN.**
 
 **ZERO gate overrides. No `SAIRN_GATE_EXEMPT`, no `SAIRN_SKIP`, no
 `SAIRN_SEED_GATE`.** Nothing was skipped, so there is nothing to disclose
@@ -106,7 +106,22 @@ into it once before reading the message properly.
 **Attempt 4 passed every check and was rejected by the network:**
 `! [remote rejected] main -> main (cannot lock ref … is at e777c49fa … but
 expected d0792165…)` — fourth landed b33 during the gate run. **Attempt 5
-landed:** `e777c49fa..b3fad2fe4  main -> main`.
+landed the work:** `e777c49fa..b3fad2fe4  main -> main`.
+
+**THE THIRD REAL REFUSAL CAME ON THE NEXT PUSH — the one carrying these
+documents.** The credential gate matched this handoff and the report, because
+both quoted the fixture assignment from refusal 1 **verbatim** in order to
+explain it. Correct, for the same reason as the original: the string ships in a
+commit either way, and a handoff is not a safe place to put a credential. That
+commit was rewritten too, both documents now **describe** the old value rather
+than writing it, and the checker's own `find_hits()` reports `[]` on each.
+Verified before re-pushing; the push then landed
+`c3b3f6580..c62aa5233  main -> main`, **0 ahead / 0 behind**.
+
+**The whole-batch count, so it is not re-derived from the narrative:** seven
+push attempts, **three real refusals** (credential-in-suite, two
+generated-documents, credential-in-documents), four non-refusals (three
+non-fast-forward, one lost ref-lock race), **zero overrides**.
 
 ### THE GATE RAISED TWO EXTRA-SCRUTINY FLAGS AND BOTH ARE FALSE POSITIVES
 

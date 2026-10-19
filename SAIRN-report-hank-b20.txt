@@ -18,8 +18,14 @@ to one branch and it moved five times during this batch.
   b3fad2fe4  chore(b20)            the scrutiny row the push gate wrote
 
 ZERO GATE OVERRIDES. No SAIRN_GATE_EXEMPT, no SAIRN_SKIP, no SAIRN_SEED_GATE.
-Two real refusals were satisfied at the source, not routed around. Nothing to
-disclose under PR 3.3 because nothing was skipped.
+THREE real refusals were satisfied at the source, not routed around -- two on
+the work push and a third on the push that carried these documents, because
+this report quoted the literal the first one refused. Nothing to disclose under
+PR 3.3 because nothing was skipped.
+
+THESE SEVEN ARE THE WORK. The three standing documents and the gate's own
+re-seated scrutiny row landed in two further commits after this count, which a
+report cannot contain because it would have to name its own sha.
 
 The two parked stashes were NOT TOUCHED, per the dispatch.
 
@@ -428,7 +434,16 @@ ATTEMPT 4 PASSED EVERY CHECK and was rejected by the network:
   ! [remote rejected] main -> main (cannot lock ref ... is at e777c49fa ... but
   expected d0792165...)  -- fourth landed b33 during the gate run.
 
-ATTEMPT 5 LANDED: e777c49fa..b3fad2fe4  main -> main
+ATTEMPT 5 LANDED THE WORK: e777c49fa..b3fad2fe4  main -> main
+
+AND A THIRD REAL REFUSAL CAME ON THE NEXT PUSH -- the one carrying these
+documents. The credential gate matched the handoff and this report, because
+both quoted the fixture assignment from (a) verbatim in order to explain it.
+CORRECT, for the same reason as (a): the string ships in a commit either way,
+and a report is not a safe place to put a credential. That commit was rewritten
+too, both documents now DESCRIBE the old value rather than writing it, and the
+checker's own find_hits() reports [] on each. Verified before re-pushing, and
+the push then landed: c3b3f6580..c62aa5233  main -> main, 0 ahead / 0 behind.
 
 TWO EXTRA-SCRUTINY FLAGS WERE RAISED AND BOTH ARE FALSE POSITIVES. Recorded in
 docs/scrutiny-flags.json and COMMITTED rather than suppressed -- the row is the
@@ -538,5 +553,5 @@ a seal computed by one rule and checked by another is not a seal.
 Verify with:
   python tools/report_sha_check.py SAIRN-report-hank-b20.txt
 
-SHA256 07b5212dda73439f0e3eea2995eb55d6c87771ed1cc3775922198d6dc596a906
+SHA256 9989764d3bfd6b922fa80350aa295c2a72d1af233d36698e0f5d3e837fd6c895
 END-OF-REPORT
