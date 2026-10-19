@@ -1,0 +1,44 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "fourth",
+  "batch": "b36",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "",
+      "status": "done",
+      "evidence": "Schema re-read against the module and all four consumers. NO COLUMN-NAME OR TYPE MISMATCH -- all four send exactly {job_ref,address,locked,status}; schema declares all four on rt_stops; status enum ('pending','done','skipped') matches what the consumers send and what isPinned() tests; source enum matches STORED_BASES exactly; route-level app_id/assignee_id/route_date all present. SO NOTHING WAS EDITED, per instruction. BUT ONE REAL CONTRADICTION FOUND AND REPORTED RATHER THAN FIXED, because it is a CHECK-CONSTRAINT conflict and not a name or type mismatch: constraint rtroutes_saved_sane says saved_seconds >= 0, while the module DELIBERATELY returns negative savings un-clamped (routes.js comment 'A NEGATIVE RESULT IS RETURNED AS-IS AND IS NOT CLAMPED'), a test arm asserts it is negative, and all four consumers render it as 'this order is about N min LONGER'. A negative would make Postgres reject the whole upsert. Published verbatim to Drive as SAIRN-sql-rt_routes_schema.sql, sha256 2c9488e38554e320, 8777 bytes."
+    },
+    {
+      "id": 2,
+      "title": "",
+      "status": "blocked",
+      "evidence": "STOPPED AND REPORTED, WHICH IS THE ANSWER -- NOT A MODULE CHANGE AND NOT A SKIPPED ITEM. Read the data model first as instructed, and SAIRNmechanical HAS NO SCHEDULE DATA LAYER. Its 7 registered resources are mech_credentials, mech_site_assets, mech_insurance_policies, mech_quotes, mech_checks, mech_docs, mech_takeoffs -- none is a schedule, an assignment, or a dated visit. mech_site_assets DOES carry site_address and customer_name, so addresses exist, but it has NO assignee and NO scheduled date: recorded_by is who entered the row and installed_on is an install date. A route needs stops + an assignee + a date; two of the three do not exist. THE APP SAYS SO ITSELF, TWICE: the Dispatch panel markup reads 'This panel has no backend; building one is separate scoped work', and aiDispatch() refuses outright -- 'There is no data layer for this app yet... Do NOT restore a fixture prompt -- wire it to real records.' Wiring a Route-order card would mean either inventing that layer (explicitly out of scope) or shipping a dead control over an empty state that can never populate (a Check 0d defect). THE MODULE IS UNCHANGED AND CORRECT; the prerequisite is absent. NEXT STEP: build mech_schedule (job/asset ref + assignee + date) as its own scoped work, then the card is the same three edits as scape."
+    },
+    {
+      "id": 3,
+      "title": "",
+      "status": "done",
+      "evidence": "MEASURED, NOT ESTIMATED -- and the b35 question had a FALSE PREMISE. Rate of complete:false is 100.0%: 193 samples (185 paragraph chunks harvested from six real repo files + 8 synthetic docs built to the AI_SCANNED_TEXT shapes and seeded with every identifier class), complete===true 0, complete===false 193. Method re-runnable: node scratchpad/b36/measure_redaction.js. AND THE STRUCTURAL REASON BEATS THE SAMPLED ONE: all three 'complete:' literals in api/_lib/mech-redact.js are false and the source says 'NEVER TRUE. Stated as a constant rather than computed, because there is no input for which this pass is complete.' So b35's premise that B rested on complete:true being normal was wrong -- it is never true. SHARPER RESULT FROM AN INDEPENDENT PATTERN SET (not the redactor's own regexes, which would only prove self-consistency): 'Customer: Diane Ferraro' IS redacted at line start because LABELLED_NAME is line-anchored, and the same string SURVIVES mid-line; 'Marcus Webb' in prose survives, which the shipped NOT_REDACTED_NOTE discloses. TIER UNCHANGED AT B but on NEW grounds, and the row now names a sharper next test -- does a real ai_memories corpus carry prose names -- which needs production rows this clone does not have."
+    },
+    {
+      "id": 4,
+      "title": "",
+      "status": "done",
+      "evidence": "sairndental a11y pass -- FIRST ON ANY SAIRN APP. FOUR MECHANICAL FIXES APPLIED AND RE-RENDERED TO CONFIRM, each with a counted assertion in scratchpad/b36/a11y_fix.py. (A) VISIBLE FOCUS: the global rule at :122 set outline:none on every input/select/textarea and the only remaining signal was a 1px border-colour change. Added :focus-visible outlines, leaving the outline:none declarations in place and overriding them -- deleting them changes the RESTING look of every control. MEASURED across 5 panels: visible ring 8/26 -> 26/26, missing 0. (B) LABELS: 144 labels associated by for=/id; unlabelled inputs 147 -> 3. (C) 7 modals got role=dialog + aria-modal=true, 0 -> 7. (D) Escape closes an open modal -- confirmed true in the browser. checkblocks 5/0; wcag gate 0 findings. AN ASSERTION CAUGHT A REAL HAZARD: the Escape listener first anchored on '</body>', of which there are TWO -- the first is inside a JS string at :5750 building a print document, so a blind replace would have injected it into generated print markup and left the real page without it. Anchored on the last and re-asserted. AND THE FIRST VERIFY RUN READ FROM BROWSER CACHE and showed all four fixes absent -- a cache-buster was needed; without it this would have been reported as a false failure."
+    },
+    {
+      "id": 5,
+      "title": "",
+      "status": "done",
+      "evidence": "PREMISE CHECKED FIRST AND IT DID NOT HOLD: all four named verticals already have a current audit -- sairnlaw 2 (newest 2026-09-26), sairncode 2 (2026-09-26), sairnbiz 1 (2026-09-26), sairndesign 1 (2026-10-05); none older than four weeks. THREE apps have ZERO audits: sairndental, sairnmechanical, sairnroofing. Took sairndental -- no audit at all, and already open for this batch's a11y pass so the code recon is first-hand. docs/cloud-research/sairndental-competitive-gap-audit-2026-10-19.md written with real web research and a full source list. THE RESULT INVERTS THE SERIES: the four previous audits each found a market gap SAIRN could not fill; this one found the gap the 2026 dental market most loudly names -- eligibility + denials + credentialing in ONE tool -- and SAIRNdental already holds THREE of the four pieces as registered resources (dnt_denial, dnt_credentials/dnt_cred_rules, dnt_coverage_rules, plus dnt_gfe which incumbents mostly lack). THE BLOCKER IS FLAGGED AS A COMPANY DECISION, NOT BUILDABLE: real-time eligibility is an X12 270/271 transaction that requires a COMMERCIAL CLEARINGHOUSE CONTRACT (DentalXChange, Vyne et al), reported at 0-60K integration + 0-40K/yr + /usr/bin/bash.15-0.51 per transaction. Same class as trucking's administered-service blocker, narrower in scope. Four of five series blockers are now company decisions."
+    },
+    {
+      "id": 6,
+      "title": "",
+      "status": "open",
+      "evidence": ""
+    }
+  ]
+}

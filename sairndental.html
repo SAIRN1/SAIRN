@@ -121,6 +121,18 @@ tr:hover td{background:var(--pt);}
 label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
 input,select,textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;background:#fff;transition:border .2s;font-family:inherit;}
 input:focus,select:focus,textarea:focus{border-color:var(--p);}
+/* VISIBLE FOCUS INDICATOR (2026-10-19, fourth b36 -- WCAG 2.4.7).
+   The rule above this one sets `outline:none` on every input, select and
+   textarea, and the only remaining focus signal was a 1px border-colour
+   change -- which is not a visible focus indicator and disappears entirely
+   for anyone who cannot distinguish the two border colours. The two
+   `outline:none` declarations are deliberately LEFT IN PLACE and overridden
+   here rather than deleted: deleting them changes the RESTING appearance of
+   every control in the app, where this changes only the focused state.
+   :focus-visible rather than :focus so a mouse click does not draw a ring. */
+:focus-visible{outline:3px solid var(--p);outline-offset:2px;border-radius:4px;}
+input:focus-visible,select:focus-visible,textarea:focus-visible,.ginp:focus-visible{outline:3px solid var(--p);outline-offset:2px;}
+button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--p);outline-offset:2px;}
 textarea{resize:vertical;min-height:80px;}
 .fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .sbar{display:flex;gap:8px;margin-bottom:14px;}
@@ -327,31 +339,31 @@ label.chk input{width:auto;}
         </div>
         <div class="card"><div class="ch"><div class="ct">Add Patient</div></div><div class="cb">
           <div class="fr">
-            <div class="fg"><label>Name</label><input type="text" id="pt-add-name" placeholder="Full name"></div>
-            <div class="fg"><label>Date of Birth</label><input type="date" id="pt-add-dob" onchange="onPtDobChange()"></div>
+            <div class="fg"><label for="pt-add-name">Name</label><input type="text" id="pt-add-name" placeholder="Full name"></div>
+            <div class="fg"><label for="pt-add-dob">Date of Birth</label><input type="date" id="pt-add-dob" onchange="onPtDobChange()"></div>
           </div>
           <div class="fr">
-            <div class="fg"><label>Phone</label><input type="text" id="pt-add-phone" placeholder="(555) 555-5555"></div>
-            <div class="fg"><label>Email</label><input type="email" id="pt-add-email" placeholder="patient@example.com"></div>
+            <div class="fg"><label for="pt-add-phone">Phone</label><input type="text" id="pt-add-phone" placeholder="(555) 555-5555"></div>
+            <div class="fg"><label for="pt-add-email">Email</label><input type="email" id="pt-add-email" placeholder="patient@example.com"></div>
           </div>
           <div class="fr">
-            <div class="fg"><label>Insurance Payer</label><input type="text" id="pt-add-payer" placeholder="e.g. Delta Dental"></div>
-            <div class="fg"><label>Member ID</label><input type="text" id="pt-add-memberid" placeholder="Member ID"></div>
+            <div class="fg"><label for="pt-add-payer">Insurance Payer</label><input type="text" id="pt-add-payer" placeholder="e.g. Delta Dental"></div>
+            <div class="fg"><label for="pt-add-memberid">Member ID</label><input type="text" id="pt-add-memberid" placeholder="Member ID"></div>
           </div>
           <div class="fr">
-            <div class="fg"><label>Recall interval for this patient, in months (blank to use the procedure's)</label><input type="number" id="pt-add-recall" min="1" step="1" placeholder="blank unless this patient differs"></div>
+            <div class="fg"><label for="pt-add-recall">Recall interval for this patient, in months (blank to use the procedure's)</label><input type="number" id="pt-add-recall" min="1" step="1" placeholder="blank unless this patient differs"></div>
             <div class="fg" style="display:flex;align-items:flex-end"><div class="psub" style="margin:0">Recall intervals are meant to be risk-based per patient, so this overrides the procedure's interval where a clinician has decided it should.</div></div>
           </div>
           <!-- Pediatric fields (2026-08-13): hidden unless pt-add-dob implies
                a minor (see onPtDobChange()/isMinorPatient()) -- supplements,
                never replaces, the patient's own phone/email fields above. -->
           <div class="fr" id="pt-add-guardian-group" style="display:none">
-            <div class="fg"><label>Guardian Name</label><input type="text" id="pt-add-guardian-name" placeholder="Full name"></div>
-            <div class="fg"><label>Relationship</label><select id="pt-add-guardian-relationship"><option>Mother</option><option>Father</option><option>Legal Guardian</option><option>Other</option></select></div>
+            <div class="fg"><label for="pt-add-guardian-name">Guardian Name</label><input type="text" id="pt-add-guardian-name" placeholder="Full name"></div>
+            <div class="fg"><label for="pt-add-guardian-relationship">Relationship</label><select id="pt-add-guardian-relationship"><option>Mother</option><option>Father</option><option>Legal Guardian</option><option>Other</option></select></div>
           </div>
           <div class="fr" id="pt-add-guardian-group2" style="display:none">
-            <div class="fg"><label>Guardian Phone</label><input type="text" id="pt-add-guardian-phone" placeholder="(555) 555-5555"></div>
-            <div class="fg"><label>Guardian Email</label><input type="email" id="pt-add-guardian-email" placeholder="guardian@example.com"></div>
+            <div class="fg"><label for="pt-add-guardian-phone">Guardian Phone</label><input type="text" id="pt-add-guardian-phone" placeholder="(555) 555-5555"></div>
+            <div class="fg"><label for="pt-add-guardian-email">Guardian Email</label><input type="email" id="pt-add-guardian-email" placeholder="guardian@example.com"></div>
           </div>
           <button class="btn bp" onclick="addPatient()">Add Patient</button>
         </div></div>
@@ -366,18 +378,18 @@ label.chk input{width:auto;}
         </div>
         <div class="card"><div class="ch"><div class="ct">Add Referral</div></div><div class="cb">
           <div class="fr">
-            <div class="fg"><label>Direction</label><select id="rf-add-direction"><option value="incoming">Incoming</option><option value="outgoing">Outgoing</option></select></div>
-            <div class="fg"><label>Patient Name</label><input type="text" id="rf-add-patient-name" placeholder="Full name"></div>
+            <div class="fg"><label for="rf-add-direction">Direction</label><select id="rf-add-direction"><option value="incoming">Incoming</option><option value="outgoing">Outgoing</option></select></div>
+            <div class="fg"><label for="rf-add-patient-name">Patient Name</label><input type="text" id="rf-add-patient-name" placeholder="Full name"></div>
           </div>
           <div class="fr">
-            <div class="fg"><label>Link to Existing Patient (optional)</label><select id="rf-add-patient"><option value="">(none yet)</option></select></div>
-            <div class="fg"><label>External Practice/Provider</label><input type="text" id="rf-add-external" placeholder="e.g. Dr. Jones Oral Surgery"></div>
+            <div class="fg"><label for="rf-add-patient">Link to Existing Patient (optional)</label><select id="rf-add-patient"><option value="">(none yet)</option></select></div>
+            <div class="fg"><label for="rf-add-external">External Practice/Provider</label><input type="text" id="rf-add-external" placeholder="e.g. Dr. Jones Oral Surgery"></div>
           </div>
           <div class="fr">
-            <div class="fg"><label>This Practice's Provider (optional)</label><select id="rf-add-provider"><option value="">(none)</option></select></div>
-            <div class="fg"><label>Date</label><input type="date" id="rf-add-date"></div>
+            <div class="fg"><label for="rf-add-provider">This Practice's Provider (optional)</label><select id="rf-add-provider"><option value="">(none)</option></select></div>
+            <div class="fg"><label for="rf-add-date">Date</label><input type="date" id="rf-add-date"></div>
           </div>
-          <div class="fg"><label>Reason</label><input type="text" id="rf-add-reason" placeholder="e.g. Root canal consult"></div>
+          <div class="fg"><label for="rf-add-reason">Reason</label><input type="text" id="rf-add-reason" placeholder="e.g. Root canal consult"></div>
           <button class="btn bp" onclick="addReferral()">Add Referral</button>
         </div></div>
         <div class="card"><div class="ch"><div class="ct">On File</div></div><div class="cb" style="padding:0">
@@ -408,7 +420,7 @@ label.chk input{width:auto;}
       <div class="panel" id="panel-icap">
         <div class="ph"><div><div class="ptitle">Insurance Capture</div><div class="psub">Photograph a patient's insurance card &mdash; Claude extracts the details, you review before saving</div></div></div>
         <div class="card"><div class="cb">
-          <div class="fg"><label>Patient</label><select id="icap-patient"></select></div>
+          <div class="fg"><label for="icap-patient">Patient</label><select id="icap-patient"></select></div>
           <div class="icap-drop" onclick="document.getElementById('icap-file').click()">
             <div style="font-size:28px;margin-bottom:6px">&#128248;</div>
             <div style="font-weight:600;color:var(--pd)">Tap to photograph insurance card</div>
@@ -419,12 +431,12 @@ label.chk input{width:auto;}
           <div id="icap-status" style="font-size:13px;color:var(--muted);text-align:center;margin-top:10px"></div>
           <div id="icap-review" style="display:none;margin-top:16px">
             <div class="fr">
-              <div class="fg"><label>Payer</label><input type="text" id="icap-out-payer"></div>
-              <div class="fg"><label>Member ID</label><input type="text" id="icap-out-memberid"></div>
+              <div class="fg"><label for="icap-out-payer">Payer</label><input type="text" id="icap-out-payer"></div>
+              <div class="fg"><label for="icap-out-memberid">Member ID</label><input type="text" id="icap-out-memberid"></div>
             </div>
             <div class="fr">
-              <div class="fg"><label>Group Number</label><input type="text" id="icap-out-group"></div>
-              <div class="fg"><label>Plan Type</label><input type="text" id="icap-out-plantype"></div>
+              <div class="fg"><label for="icap-out-group">Group Number</label><input type="text" id="icap-out-group"></div>
+              <div class="fg"><label for="icap-out-plantype">Plan Type</label><input type="text" id="icap-out-plantype"></div>
             </div>
             <div style="font-size:11px;color:var(--muted);margin-bottom:12px">Review every field above &mdash; Claude's reading of the card, not verified against the payer. Edit anything before saving.</div>
             <button class="btn bp" onclick="icapSaveToPatient()">Save to Patient Record</button>
@@ -444,12 +456,12 @@ label.chk input{width:auto;}
         <div id="pv-owner-tools">
           <div class="card"><div class="ch"><div class="ct">Add Provider</div></div><div class="cb">
             <div class="fr">
-              <div class="fg"><label>Name</label><input type="text" id="pv-add-name" placeholder="Dr. Jane Smith"></div>
-              <div class="fg"><label>Role</label><select id="pv-add-role"><option>Dentist</option><option>Hygienist</option></select></div>
+              <div class="fg"><label for="pv-add-name">Name</label><input type="text" id="pv-add-name" placeholder="Dr. Jane Smith"></div>
+              <div class="fg"><label for="pv-add-role">Role</label><select id="pv-add-role"><option>Dentist</option><option>Hygienist</option></select></div>
             </div>
             <div class="fr">
-              <div class="fg"><label>Default Operatory</label><select id="pv-add-operatory"></select></div>
-              <div class="fg"><label>Linked Sign-In</label><select id="pv-add-login"></select></div>
+              <div class="fg"><label for="pv-add-operatory">Default Operatory</label><select id="pv-add-operatory"></select></div>
+              <div class="fg"><label for="pv-add-login">Linked Sign-In</label><select id="pv-add-login"></select></div>
             </div>
             <div style="font-size:11px;color:var(--muted);margin-bottom:12px">A provider only sees the patients they have appointments with. Until their sign-in is linked here, they see none &mdash; and are told to ask you to link it.</div>
             <button class="btn bp" onclick="addProvider()">Add Provider</button>
@@ -477,17 +489,17 @@ label.chk input{width:auto;}
       <!-- Provider edit. The FIRST edit path in this app: before 2026-08-27 every
            roster here was add-or-remove only, which made an existing provider
            impossible to link without deleting and re-adding them. -->
-      <div class="modal" id="pv-edit-modal">
+      <div class="modal" id="pv-edit-modal" role="dialog" aria-modal="true">
         <div class="mbox">
           <div class="mtitle">Edit Provider</div>
           <input type="hidden" id="pv-edit-id">
           <div class="fr">
-            <div class="fg"><label>Name</label><input type="text" id="pv-edit-name"></div>
-            <div class="fg"><label>Role</label><select id="pv-edit-role"><option>Dentist</option><option>Hygienist</option></select></div>
+            <div class="fg"><label for="pv-edit-name">Name</label><input type="text" id="pv-edit-name"></div>
+            <div class="fg"><label for="pv-edit-role">Role</label><select id="pv-edit-role"><option>Dentist</option><option>Hygienist</option></select></div>
           </div>
           <div class="fr">
-            <div class="fg"><label>Default Operatory</label><select id="pv-edit-operatory"></select></div>
-            <div class="fg"><label>Linked Sign-In</label><select id="pv-edit-login"></select></div>
+            <div class="fg"><label for="pv-edit-operatory">Default Operatory</label><select id="pv-edit-operatory"></select></div>
+            <div class="fg"><label for="pv-edit-login">Linked Sign-In</label><select id="pv-edit-login"></select></div>
           </div>
           <div id="pv-edit-err" style="color:var(--danger);font-size:12px;min-height:16px;margin-bottom:10px"></div>
           <div style="display:flex;gap:8px">
@@ -509,8 +521,8 @@ label.chk input{width:auto;}
         </div>
         <div class="card"><div class="ch"><div class="ct">Add Credential Record</div></div><div class="cb">
           <div class="fr">
-            <div class="fg"><label>Provider</label><select id="cd-add-provider"></select></div>
-            <div class="fg"><label>Record Type</label><select id="cd-add-type" onchange="cdTypeChanged()">
+            <div class="fg"><label for="cd-add-provider">Provider</label><select id="cd-add-provider"></select></div>
+            <div class="fg"><label for="cd-add-type">Record Type</label><select id="cd-add-type" onchange="cdTypeChanged()">
               <option value="state_license">State Licence</option>
               <option value="dea_registration">DEA Registration</option>
               <option value="ce_cycle">CE Cycle</option>
@@ -520,47 +532,47 @@ label.chk input{width:auto;}
           </div>
           <div id="cd-f-license">
             <div class="fr">
-              <div class="fg"><label>State</label><input type="text" id="cd-state" placeholder="OH" maxlength="2" style="text-transform:uppercase"></div>
-              <div class="fg"><label>Licence Number</label><input type="text" id="cd-number" placeholder="As printed on the licence"></div>
+              <div class="fg"><label for="cd-state">State</label><input type="text" id="cd-state" placeholder="OH" maxlength="2" style="text-transform:uppercase"></div>
+              <div class="fg"><label for="cd-number">Licence Number</label><input type="text" id="cd-number" placeholder="As printed on the licence"></div>
             </div>
             <div class="fr">
-              <div class="fg"><label>Issued</label><input type="date" id="cd-issued"></div>
-              <div class="fg"><label>Expires</label><input type="date" id="cd-expires"></div>
+              <div class="fg"><label for="cd-issued">Issued</label><input type="date" id="cd-issued"></div>
+              <div class="fg"><label for="cd-expires">Expires</label><input type="date" id="cd-expires"></div>
             </div>
           </div>
           <div id="cd-f-dea" style="display:none">
             <div class="fr">
-              <div class="fg"><label>DEA Number</label><input type="text" id="cd-dea-number" placeholder="As printed on the certificate"></div>
-              <div class="fg"><label>Expires</label><input type="date" id="cd-dea-expires"></div>
+              <div class="fg"><label for="cd-dea-number">DEA Number</label><input type="text" id="cd-dea-number" placeholder="As printed on the certificate"></div>
+              <div class="fg"><label for="cd-dea-expires">Expires</label><input type="date" id="cd-dea-expires"></div>
             </div>
-            <div class="fg"><label>Schedules</label><input type="text" id="cd-dea-schedules" placeholder="e.g. II, III, IV, V"></div>
+            <div class="fg"><label for="cd-dea-schedules">Schedules</label><input type="text" id="cd-dea-schedules" placeholder="e.g. II, III, IV, V"></div>
             <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:6px">
               <input type="checkbox" id="cd-dea-mate"> MATE Act 8-hour training completed and attested
             </label>
-            <div class="fg"><label>MATE Attested On</label><input type="date" id="cd-dea-mate-on"></div>
+            <div class="fg"><label for="cd-dea-mate-on">MATE Attested On</label><input type="date" id="cd-dea-mate-on"></div>
             <div style="font-size:11px;color:var(--muted);margin-bottom:12px">A one-time attestation, not a recurring one &mdash; 8 hours, checked off on the DEA registration form at your next submission. This records that you did it; it does not make the attestation for you.</div>
           </div>
           <div id="cd-f-ce" style="display:none">
             <div class="fr">
-              <div class="fg"><label>State</label><input type="text" id="cd-ce-state" placeholder="OH" maxlength="2" style="text-transform:uppercase"></div>
-              <div class="fg"><label>Role</label><select id="cd-ce-role"><option value="dentist">Dentist</option><option value="hygienist">Hygienist</option></select></div>
+              <div class="fg"><label for="cd-ce-state">State</label><input type="text" id="cd-ce-state" placeholder="OH" maxlength="2" style="text-transform:uppercase"></div>
+              <div class="fg"><label for="cd-ce-role">Role</label><select id="cd-ce-role"><option value="dentist">Dentist</option><option value="hygienist">Hygienist</option></select></div>
             </div>
             <div class="fr">
-              <div class="fg"><label>Cycle Start</label><input type="date" id="cd-ce-start"></div>
-              <div class="fg"><label>Cycle End</label><input type="date" id="cd-ce-end"></div>
+              <div class="fg"><label for="cd-ce-start">Cycle Start</label><input type="date" id="cd-ce-start"></div>
+              <div class="fg"><label for="cd-ce-end">Cycle End</label><input type="date" id="cd-ce-end"></div>
             </div>
             <div class="fr">
-              <div class="fg"><label>Hours Logged</label><input type="number" id="cd-ce-logged" min="0" step="0.5" placeholder="0"></div>
-              <div class="fg"><label>Hours Required</label><input type="number" id="cd-ce-required" min="0" step="0.5" placeholder="leave blank to use your state's rule"></div>
+              <div class="fg"><label for="cd-ce-logged">Hours Logged</label><input type="number" id="cd-ce-logged" min="0" step="0.5" placeholder="0"></div>
+              <div class="fg"><label for="cd-ce-required">Hours Required</label><input type="number" id="cd-ce-required" min="0" step="0.5" placeholder="leave blank to use your state's rule"></div>
             </div>
             <div style="font-size:11px;color:var(--muted);margin-bottom:12px">Leave Hours Required blank and the figure comes from the loaded rule for your state and role, with its citation. If your state has no loaded rule, the cycle is shown as unresolved rather than given a number.</div>
           </div>
           <div id="cd-f-cert" style="display:none">
             <div class="fr">
-              <div class="fg"><label>Credential</label><input type="text" id="cd-cert-name" placeholder="e.g. BLS (CPR)"></div>
-              <div class="fg"><label>Issuer</label><input type="text" id="cd-cert-issuer" placeholder="e.g. American Heart Association"></div>
+              <div class="fg"><label for="cd-cert-name">Credential</label><input type="text" id="cd-cert-name" placeholder="e.g. BLS (CPR)"></div>
+              <div class="fg"><label for="cd-cert-issuer">Issuer</label><input type="text" id="cd-cert-issuer" placeholder="e.g. American Heart Association"></div>
             </div>
-            <div class="fg"><label>Expires</label><input type="date" id="cd-cert-expires"></div>
+            <div class="fg"><label for="cd-cert-expires">Expires</label><input type="date" id="cd-cert-expires"></div>
           </div>
           <!-- PAYER ENROLMENT is not licensure and the copy says so, because
                the two wear a similar word and conflating them is the whole
@@ -569,16 +581,16 @@ label.chk input{width:auto;}
                the payer's own letter -- nothing is derived from a payer name. -->
           <div id="cd-f-payer" style="display:none">
             <div class="fr">
-              <div class="fg"><label>Payer</label><input type="text" id="cd-pe-payer" placeholder="Exactly as you write it on the patient record, e.g. Delta Dental"></div>
-              <div class="fg"><label>Provider number with this payer</label><input type="text" id="cd-pe-number" placeholder="As issued by the payer"></div>
+              <div class="fg"><label for="cd-pe-payer">Payer</label><input type="text" id="cd-pe-payer" placeholder="Exactly as you write it on the patient record, e.g. Delta Dental"></div>
+              <div class="fg"><label for="cd-pe-number">Provider number with this payer</label><input type="text" id="cd-pe-number" placeholder="As issued by the payer"></div>
             </div>
             <div class="fr">
-              <div class="fg"><label>Network status</label><select id="cd-pe-network"><option value="applied">Applied / in process</option><option value="par">Participating (in network)</option><option value="non_par">Non-participating</option><option value="terminated">Terminated</option></select></div>
-              <div class="fg"><label>Effective on</label><input type="date" id="cd-pe-effective"></div>
+              <div class="fg"><label for="cd-pe-network">Network status</label><select id="cd-pe-network"><option value="applied">Applied / in process</option><option value="par">Participating (in network)</option><option value="non_par">Non-participating</option><option value="terminated">Terminated</option></select></div>
+              <div class="fg"><label for="cd-pe-effective">Effective on</label><input type="date" id="cd-pe-effective"></div>
             </div>
             <div class="fr">
-              <div class="fg"><label>Terminated on</label><input type="date" id="cd-pe-term"></div>
-              <div class="fg"><label>Revalidation due</label><input type="date" id="cd-pe-reval"></div>
+              <div class="fg"><label for="cd-pe-term">Terminated on</label><input type="date" id="cd-pe-term"></div>
+              <div class="fg"><label for="cd-pe-reval">Revalidation due</label><input type="date" id="cd-pe-reval"></div>
             </div>
             <div style="font-size:11px;color:var(--muted);margin-bottom:12px">Leave Effective on blank while the application is still in process &mdash; the record then reads <strong>in process</strong>, which is the truth, rather than being given a date. The payer name must match what you type on the patient record; that is how a claim is matched back to an enrolment.</div>
           </div>
@@ -610,7 +622,7 @@ label.chk input{width:auto;}
       <div class="panel" id="panel-operatories">
         <div class="ph"><div><div class="ptitle">Operatories</div><div class="psub">Physical chairs/rooms being scheduled against</div></div></div>
         <div class="card"><div class="ch"><div class="ct">Add Operatory</div></div><div class="cb">
-          <div class="fg"><label>Name</label><input type="text" id="op-add-name" placeholder="e.g. Operatory 1"></div>
+          <div class="fg"><label for="op-add-name">Name</label><input type="text" id="op-add-name" placeholder="e.g. Operatory 1"></div>
           <button class="btn bp" onclick="addOperatory()">Add Operatory</button>
         </div></div>
         <div class="card"><div class="ch"><div class="ct">On File</div></div><div class="cb" style="padding:0">
@@ -621,11 +633,11 @@ label.chk input{width:auto;}
       <div class="panel" id="panel-hours">
         <div class="ph"><div><div class="ptitle">Provider Hours</div><div class="psub">Real recurring weekly availability &mdash; feeds the scheduling engine (separate follow-up build)</div></div></div>
         <div class="card"><div class="ch"><div class="ct">Add Hours Block</div></div><div class="cb">
-          <div class="fg"><label>Provider</label><select id="ph-add-provider"></select></div>
+          <div class="fg"><label for="ph-add-provider">Provider</label><select id="ph-add-provider"></select></div>
           <div class="fr">
-            <div class="fg"><label>Day of Week</label><select id="ph-add-day"><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option></select></div>
-            <div class="fg"><label>Start Time</label><input type="time" id="ph-add-start"></div>
-            <div class="fg"><label>End Time</label><input type="time" id="ph-add-end"></div>
+            <div class="fg"><label for="ph-add-day">Day of Week</label><select id="ph-add-day"><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option></select></div>
+            <div class="fg"><label for="ph-add-start">Start Time</label><input type="time" id="ph-add-start"></div>
+            <div class="fg"><label for="ph-add-end">End Time</label><input type="time" id="ph-add-end"></div>
           </div>
           <button class="btn bp" onclick="addProviderHours()">Add Hours Block</button>
         </div></div>
@@ -649,23 +661,23 @@ label.chk input{width:auto;}
                inherited from currentcolor. -->
           <div id="pc-edit-banner" class="psub" style="display:none;margin-bottom:10px;padding:8px;border-left:3px solid var(--p)"></div>
           <div class="fr">
-            <div class="fg"><label>CDT Code</label><input type="text" id="pc-add-code" placeholder="e.g. D0120"></div>
-            <div class="fg"><label>Description</label><input type="text" id="pc-add-desc" placeholder="e.g. Periodic oral evaluation"></div>
+            <div class="fg"><label for="pc-add-code">CDT Code</label><input type="text" id="pc-add-code" placeholder="e.g. D0120"></div>
+            <div class="fg"><label for="pc-add-desc">Description</label><input type="text" id="pc-add-desc" placeholder="e.g. Periodic oral evaluation"></div>
           </div>
           <div class="fr">
-            <div class="fg"><label>Default Fee</label><input type="number" id="pc-add-fee" placeholder="0.00" min="0" step="0.01"></div>
-            <div class="fg"><label>Default Length (minutes)</label><input type="number" id="pc-add-length" placeholder="30" min="1"></div>
+            <div class="fg"><label for="pc-add-fee">Default Fee</label><input type="number" id="pc-add-fee" placeholder="0.00" min="0" step="0.01"></div>
+            <div class="fg"><label for="pc-add-length">Default Length (minutes)</label><input type="number" id="pc-add-length" placeholder="30" min="1"></div>
           </div>
           <div class="fr">
-            <div class="fg"><label>CDT edition this code is from</label><input type="text" id="pc-add-version" placeholder="e.g. CDT 2026"></div>
-            <div class="fg"><label>Effective from</label><input type="date" id="pc-add-efffrom"></div>
+            <div class="fg"><label for="pc-add-version">CDT edition this code is from</label><input type="text" id="pc-add-version" placeholder="e.g. CDT 2026"></div>
+            <div class="fg"><label for="pc-add-efffrom">Effective from</label><input type="date" id="pc-add-efffrom"></div>
           </div>
           <div class="fr">
-            <div class="fg"><label>Retired after (blank if still current)</label><input type="date" id="pc-add-effto"></div>
-            <div class="fg"><label>Replaced by (code, if retired)</label><input type="text" id="pc-add-superseded" placeholder="e.g. D0121"></div>
+            <div class="fg"><label for="pc-add-effto">Retired after (blank if still current)</label><input type="date" id="pc-add-effto"></div>
+            <div class="fg"><label for="pc-add-superseded">Replaced by (code, if retired)</label><input type="text" id="pc-add-superseded" placeholder="e.g. D0121"></div>
           </div>
           <div class="fr">
-            <div class="fg"><label>Recall interval in months (blank if this is not a recall procedure)</label><input type="number" id="pc-add-recall" min="1" step="1" placeholder="leave blank unless you recall on it"></div>
+            <div class="fg"><label for="pc-add-recall">Recall interval in months (blank if this is not a recall procedure)</label><input type="number" id="pc-add-recall" min="1" step="1" placeholder="leave blank unless you recall on it"></div>
             <div class="fg" style="display:flex;align-items:flex-end"><div class="psub" style="margin:0">Set this only on procedures you actually recall patients for. There is deliberately no default &mdash; see the Recall panel for why six months is not assumed.</div></div>
           </div>
           <button class="btn bp" id="pc-save-btn" onclick="addProcedureType()">Add Procedure Type</button>
@@ -682,10 +694,10 @@ label.chk input{width:auto;}
         <div class="ph"><div><div class="ptitle">Coverage Rules</div><div class="psub">Payer + procedure-type coverage estimates &mdash; feeds the checkout-balance engine (separate follow-up build). Estimates only, not verified per-plan figures.</div></div></div>
         <div class="card"><div class="ch"><div class="ct">Add Coverage Rule</div></div><div class="cb">
           <div class="fr">
-            <div class="fg"><label>Payer</label><input type="text" id="cv-add-payer" placeholder="e.g. Delta Dental"></div>
-            <div class="fg"><label>Procedure Type</label><select id="cv-add-procedure"></select></div>
+            <div class="fg"><label for="cv-add-payer">Payer</label><input type="text" id="cv-add-payer" placeholder="e.g. Delta Dental"></div>
+            <div class="fg"><label for="cv-add-procedure">Procedure Type</label><select id="cv-add-procedure"></select></div>
           </div>
-          <div class="fg"><label>Coverage Percent</label><input type="number" id="cv-add-percent" placeholder="80" min="0" max="100"></div>
+          <div class="fg"><label for="cv-add-percent">Coverage Percent</label><input type="number" id="cv-add-percent" placeholder="80" min="0" max="100"></div>
           <button class="btn bp" id="cv-save-btn" onclick="saveCoverageRule()">Add Coverage Rule</button>
           <button class="btn bo" id="cv-cancel-btn" style="display:none" onclick="cancelCoverageEdit()">Cancel</button>
         </div></div>
@@ -697,15 +709,15 @@ label.chk input{width:auto;}
       <div class="panel" id="panel-booking-settings">
         <div class="ph"><div><div class="ptitle">Booking Settings</div><div class="psub">Your practice's public self-scheduling link &mdash; the license key never appears on that page, this link is separate and safe to share.</div></div></div>
         <div class="card"><div class="ch"><div class="ct">Practice Info</div></div><div class="cb">
-          <div class="fg"><label>Practice Name</label><input type="text" id="bs-practice-name" placeholder="e.g. Pinnacle Dental"></div>
-          <div class="fg"><label>Practice Phone</label><input type="text" id="bs-practice-phone" placeholder="e.g. (555) 123-4567"></div>
-          <div class="fg"><label>Practice Address</label><input type="text" id="bs-practice-address" placeholder="e.g. 123 Main St, Springfield, IL 62701"></div>
+          <div class="fg"><label for="bs-practice-name">Practice Name</label><input type="text" id="bs-practice-name" placeholder="e.g. Pinnacle Dental"></div>
+          <div class="fg"><label for="bs-practice-phone">Practice Phone</label><input type="text" id="bs-practice-phone" placeholder="e.g. (555) 123-4567"></div>
+          <div class="fg"><label for="bs-practice-address">Practice Address</label><input type="text" id="bs-practice-address" placeholder="e.g. 123 Main St, Springfield, IL 62701"></div>
           <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Used on every appointment reminder email &mdash; name and phone in the body, address in the footer.</div>
         </div></div>
         <div class="card"><div class="cb">
-          <div class="fg"><label>Public Booking Link Slug</label><input type="text" id="bs-slug" placeholder="e.g. pinnacle-dental"></div>
+          <div class="fg"><label for="bs-slug">Public Booking Link Slug</label><input type="text" id="bs-slug" placeholder="e.g. pinnacle-dental"></div>
           <div style="font-size:11px;color:var(--muted);margin-bottom:14px" id="bs-link-preview"></div>
-          <div class="fg"><label>Practice Timezone</label><input type="text" id="bs-timezone" placeholder="e.g. America/New_York"></div>
+          <div class="fg"><label for="bs-timezone">Practice Timezone</label><input type="text" id="bs-timezone" placeholder="e.g. America/New_York"></div>
           <div class="fg"><label>Publicly Bookable Procedure Types</label><div id="bs-procedure-checks" style="font-size:13px"></div></div>
           <button class="btn bp" onclick="saveBookingSettings()">Save Settings</button>
         </div></div>
@@ -731,13 +743,13 @@ label.chk input{width:auto;}
         </div>
         <div id="bill-pending"></div>
         <div class="card">
-          <div class="fg"><label>Patient</label><select id="bill-patient" onchange="rBilling()"></select></div>
+          <div class="fg"><label for="bill-patient">Patient</label><select id="bill-patient" onchange="rBilling()"></select></div>
         </div>
         <div class="krow" id="bill-kpis" style="grid-template-columns:repeat(4,1fr)"></div>
         <div class="card"><div class="ch"><div class="ct">Add Charge</div></div><div class="cb">
           <div class="fr">
-            <div class="fg"><label>Procedure Type</label><select id="ch-add-procedure" onchange="onChargeProcedureChange()"></select></div>
-            <div class="fg"><label>Amount</label><input type="number" id="ch-add-amount" min="0" step="0.01"></div>
+            <div class="fg"><label for="ch-add-procedure">Procedure Type</label><select id="ch-add-procedure" onchange="onChargeProcedureChange()"></select></div>
+            <div class="fg"><label for="ch-add-amount">Amount</label><input type="number" id="ch-add-amount" min="0" step="0.01"></div>
           </div>
           <div class="msg" id="ch-add-coverage-note" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
           <button class="btn bp" onclick="submitCharge()">Add Charge</button>
@@ -747,8 +759,8 @@ label.chk input{width:auto;}
         </div></div>
         <div class="card"><div class="ch"><div class="ct">Add Payment</div></div><div class="cb">
           <div class="fr">
-            <div class="fg"><label>Amount</label><input type="number" id="pm-add-amount" min="0" step="0.01"></div>
-            <div class="fg"><label>Method</label><select id="pm-add-method"><option>Cash</option><option>Card</option><option>Check</option></select></div>
+            <div class="fg"><label for="pm-add-amount">Amount</label><input type="number" id="pm-add-amount" min="0" step="0.01"></div>
+            <div class="fg"><label for="pm-add-method">Method</label><select id="pm-add-method"><option>Cash</option><option>Card</option><option>Check</option></select></div>
           </div>
           <button class="btn bp" onclick="submitPayment()">Add Payment</button>
         </div></div>
@@ -778,12 +790,12 @@ label.chk input{width:auto;}
         <div class="card"><div class="ch"><div class="ct">Practice identity &mdash; required on every estimate</div></div><div class="cb">
           <div class="psub" style="margin-bottom:10px">45 CFR 149.610(c)(1)(v) requires the name, <strong>National Provider Identifier</strong> and <strong>Tax Identification Number</strong> of each provider or facility on the estimate, plus the State and location where services are furnished. Without these an estimate is missing a required element, and this panel will say so rather than produce a document that looks finished.</div>
           <div class="fr">
-            <div class="fg"><label>Practice legal name</label><input type="text" id="gfe-legal-name" placeholder="as it appears on the TIN"></div>
-            <div class="fg"><label>Practice NPI (Type 2)</label><input type="text" id="gfe-npi" placeholder="10 digits"></div>
+            <div class="fg"><label for="gfe-legal-name">Practice legal name</label><input type="text" id="gfe-legal-name" placeholder="as it appears on the TIN"></div>
+            <div class="fg"><label for="gfe-npi">Practice NPI (Type 2)</label><input type="text" id="gfe-npi" placeholder="10 digits"></div>
           </div>
           <div class="fr">
-            <div class="fg"><label>Tax Identification Number</label><input type="text" id="gfe-tin" placeholder="EIN"></div>
-            <div class="fg"><label>State where services are furnished</label><input type="text" id="gfe-state" placeholder="e.g. OH"></div>
+            <div class="fg"><label for="gfe-tin">Tax Identification Number</label><input type="text" id="gfe-tin" placeholder="EIN"></div>
+            <div class="fg"><label for="gfe-state">State where services are furnished</label><input type="text" id="gfe-state" placeholder="e.g. OH"></div>
           </div>
           <button class="btn bp" onclick="saveGfeIdentity()">Save Practice Identity</button>
           <div id="gfe-identity-status" style="margin-top:10px"></div>
@@ -791,35 +803,35 @@ label.chk input{width:auto;}
 
         <div class="card"><div class="ch"><div class="ct">Draft an estimate</div></div><div class="cb">
           <div class="fr">
-            <div class="fg"><label>Patient</label><select id="gfe-patient" onchange="onGfePatientChange()"></select></div>
-            <div class="fg"><label>Provider</label><select id="gfe-provider"></select></div>
+            <div class="fg"><label for="gfe-patient">Patient</label><select id="gfe-patient" onchange="onGfePatientChange()"></select></div>
+            <div class="fg"><label for="gfe-provider">Provider</label><select id="gfe-provider"></select></div>
           </div>
           <div id="gfe-eligibility" style="margin-bottom:12px"></div>
           <div class="fr">
-            <div class="fg"><label>What started the clock</label><select id="gfe-trigger" onchange="rGfeDeadlinePreview()">
+            <div class="fg"><label for="gfe-trigger">What started the clock</label><select id="gfe-trigger" onchange="rGfeDeadlinePreview()">
               <option value="scheduled">The patient scheduled a service</option>
               <option value="request">The patient asked what it will cost</option>
             </select></div>
-            <div class="fg"><label>Date it was scheduled or asked</label><input type="date" id="gfe-trigger-date" onchange="rGfeDeadlinePreview()"></div>
+            <div class="fg"><label for="gfe-trigger-date">Date it was scheduled or asked</label><input type="date" id="gfe-trigger-date" onchange="rGfeDeadlinePreview()"></div>
           </div>
           <div class="fr">
-            <div class="fg"><label>Date of service (blank if not scheduled)</label><input type="date" id="gfe-service-date" onchange="rGfeDeadlinePreview()"></div>
-            <div class="fg"><label>Primary item or service</label><select id="gfe-primary" onchange="rGfeDeadlinePreview()"></select></div>
+            <div class="fg"><label for="gfe-service-date">Date of service (blank if not scheduled)</label><input type="date" id="gfe-service-date" onchange="rGfeDeadlinePreview()"></div>
+            <div class="fg"><label for="gfe-primary">Primary item or service</label><select id="gfe-primary" onchange="rGfeDeadlinePreview()"></select></div>
           </div>
           <div class="psub" style="margin-bottom:10px">&sect;149.610(a)(2) defines the <strong>primary item or service</strong> as the one that is the initial reason for the visit. &sect;149.610(b)(1)(iv) is worth knowing: a convening provider must treat <em>any discussion or inquiry regarding the potential costs</em> as a request &mdash; a patient asking "what will this run me?" starts the 3-business-day clock whether or not anyone called it a request.</div>
           <div id="gfe-deadline-preview" style="margin-bottom:12px"></div>
 
           <div class="ch" style="padding-left:0;border-bottom:none"><div class="ct">Itemised list</div></div>
           <div class="fr">
-            <div class="fg"><label>Add procedure</label><select id="gfe-line-proc"></select></div>
-            <div class="fg"><label>Expected charge</label><input type="number" id="gfe-line-charge" min="0" step="0.01" placeholder="defaults to the procedure fee"></div>
+            <div class="fg"><label for="gfe-line-proc">Add procedure</label><select id="gfe-line-proc"></select></div>
+            <div class="fg"><label for="gfe-line-charge">Expected charge</label><input type="number" id="gfe-line-charge" min="0" step="0.01" placeholder="defaults to the procedure fee"></div>
           </div>
           <div class="fr">
-            <div class="fg"><label>Diagnosis code (if one applies)</label><input type="text" id="gfe-line-dx" placeholder="e.g. K02.51 -- leave blank if none applies"></div>
+            <div class="fg"><label for="gfe-line-dx">Diagnosis code (if one applies)</label><input type="text" id="gfe-line-dx" placeholder="e.g. K02.51 -- leave blank if none applies"></div>
             <div class="fg" style="display:flex;align-items:flex-end"><button class="btn bo" onclick="addGfeLine()" style="width:100%">+ Add to Estimate</button></div>
           </div>
           <div id="gfe-lines"></div>
-          <div class="fg" style="margin-top:12px"><label>Items or services that need separate scheduling &mdash; 149.610(c)(1)(vi)</label><textarea id="gfe-separate" rows="2" placeholder="e.g. Oral surgery referral, orthodontic consult -- listed but not priced here"></textarea></div>
+          <div class="fg" style="margin-top:12px"><label for="gfe-separate">Items or services that need separate scheduling &mdash; 149.610(c)(1)(vi)</label><textarea id="gfe-separate" rows="2" placeholder="e.g. Oral surgery referral, orthodontic consult -- listed but not priced here"></textarea></div>
           <button class="btn bp" onclick="saveGfe()">Save Draft Estimate</button>
         </div></div>
 
@@ -875,25 +887,25 @@ label.chk input{width:auto;}
         <div id="rc-notes" style="margin-top:12px"></div>
       </div>
 
-      <div class="modal" id="recalloutreachmodal"><div class="mbox">
+      <div class="modal" id="recalloutreachmodal" role="dialog" aria-modal="true"><div class="mbox">
         <div class="mtitle">Log an outreach</div>
-        <div class="fg"><label>Patient</label><input type="text" id="rc-out-patient" disabled></div>
-        <div class="fg"><label>Procedure recalled for</label><input type="text" id="rc-out-procedure" disabled></div>
+        <div class="fg"><label for="rc-out-patient">Patient</label><input type="text" id="rc-out-patient" disabled></div>
+        <div class="fg"><label for="rc-out-procedure">Procedure recalled for</label><input type="text" id="rc-out-procedure" disabled></div>
         <div class="fr">
-          <div class="fg"><label>How they were contacted</label><select id="rc-out-channel">
+          <div class="fg"><label for="rc-out-channel">How they were contacted</label><select id="rc-out-channel">
             <option value="phone">Phone</option><option value="email">Email</option>
             <option value="text">Text</option><option value="mail">Letter</option><option value="in_person">In person</option>
           </select></div>
-          <div class="fg"><label>On</label><input type="date" id="rc-out-on"></div>
+          <div class="fg"><label for="rc-out-on">On</label><input type="date" id="rc-out-on"></div>
         </div>
-        <div class="fg"><label>Outcome</label><select id="rc-out-outcome">
+        <div class="fg"><label for="rc-out-outcome">Outcome</label><select id="rc-out-outcome">
           <option value="no_answer">No answer / left a message</option>
           <option value="booked">Booked an appointment</option>
           <option value="declined">Declined for now</option>
           <option value="bad_contact">Contact details are wrong</option>
           <option value="other">Other</option>
         </select></div>
-        <div class="fg"><label>Note</label><input type="text" id="rc-out-note" placeholder="recorded as typed"></div>
+        <div class="fg"><label for="rc-out-note">Note</label><input type="text" id="rc-out-note" placeholder="recorded as typed"></div>
         <div class="note" style="margin-bottom:12px">Logging this records that a person made contact. It does not send anything, and marking &quot;booked&quot; does not create an appointment &mdash; book it in Appointments so the record is real.</div>
         <div style="display:flex;gap:10px;justify-content:flex-end">
           <button class="btn bo" onclick="closeRecallOutreachModal()">Cancel</button>
@@ -939,32 +951,32 @@ label.chk input{width:auto;}
         </div></div>
       </div>
 
-      <div class="modal" id="txplanmodal"><div class="mbox" style="max-width:640px">
+      <div class="modal" id="txplanmodal" role="dialog" aria-modal="true"><div class="mbox" style="max-width:640px">
         <div class="mtitle" id="tp-modal-title">Treatment Plan</div>
         <div class="fr">
-          <div class="fg"><label>Patient</label><select id="tp-patient"></select></div>
-          <div class="fg"><label>Presenting provider</label><select id="tp-provider"></select></div>
+          <div class="fg"><label for="tp-patient">Patient</label><select id="tp-patient"></select></div>
+          <div class="fg"><label for="tp-provider">Presenting provider</label><select id="tp-provider"></select></div>
         </div>
         <div class="fr">
-          <div class="fg"><label>Title</label><input type="text" id="tp-title" placeholder="e.g. Quadrant 1 restorative + perio"></div>
-          <div class="fg"><label>Status</label><select id="tp-status" onchange="onTxStatusChange()">
+          <div class="fg"><label for="tp-title">Title</label><input type="text" id="tp-title" placeholder="e.g. Quadrant 1 restorative + perio"></div>
+          <div class="fg"><label for="tp-status">Status</label><select id="tp-status" onchange="onTxStatusChange()">
             <option value="proposed">Proposed &mdash; not yet shown to the patient</option>
             <option value="presented">Presented &mdash; patient has seen it</option>
             <option value="accepted">Accepted</option>
             <option value="declined">Declined</option>
           </select></div>
         </div>
-        <div class="fg" id="tp-decided-row" style="display:none"><label>Decided on</label><input type="date" id="tp-decided"></div>
-        <div class="fg"><label>Clinical note shown with the plan</label><textarea id="tp-note" rows="2" placeholder="recorded as typed"></textarea></div>
+        <div class="fg" id="tp-decided-row" style="display:none"><label for="tp-decided">Decided on</label><input type="date" id="tp-decided"></div>
+        <div class="fg"><label for="tp-note">Clinical note shown with the plan</label><textarea id="tp-note" rows="2" placeholder="recorded as typed"></textarea></div>
 
         <div class="ch" style="padding-left:0;border-bottom:none"><div class="ct">Items</div></div>
         <div class="fr">
-          <div class="fg"><label>Procedure</label><select id="tp-item-proc" onchange="onTxItemProcChange()"></select></div>
-          <div class="fg"><label>Phase</label><input type="number" id="tp-item-phase" min="1" step="1" value="1"></div>
+          <div class="fg"><label for="tp-item-proc">Procedure</label><select id="tp-item-proc" onchange="onTxItemProcChange()"></select></div>
+          <div class="fg"><label for="tp-item-phase">Phase</label><input type="number" id="tp-item-phase" min="1" step="1" value="1"></div>
         </div>
         <div class="fr">
-          <div class="fg"><label>Fee</label><input type="number" id="tp-item-fee" min="0" step="0.01" placeholder="defaults to the procedure fee"></div>
-          <div class="fg"><label>Tooth / area (optional)</label><input type="text" id="tp-item-tooth" placeholder="e.g. #14 MOD"></div>
+          <div class="fg"><label for="tp-item-fee">Fee</label><input type="number" id="tp-item-fee" min="0" step="0.01" placeholder="defaults to the procedure fee"></div>
+          <div class="fg"><label for="tp-item-tooth">Tooth / area (optional)</label><input type="text" id="tp-item-tooth" placeholder="e.g. #14 MOD"></div>
         </div>
         <div class="fg"><label>Planned for (optional &mdash; used to check the code against the day it would be done)</label><input type="date" id="tp-item-planned"></div>
         <button class="btn bo" onclick="addTxItem()">+ Add Item</button>
@@ -1018,26 +1030,26 @@ label.chk input{width:auto;}
         </div></div>
       </div>
 
-      <div class="modal" id="denialmodal"><div class="mbox" style="max-width:600px">
+      <div class="modal" id="denialmodal" role="dialog" aria-modal="true"><div class="mbox" style="max-width:600px">
         <div class="mtitle" id="dn-modal-title">Record a denial</div>
         <div class="fr">
-          <div class="fg"><label>Patient</label><select id="dn-patient" onchange="onDenialPatientChange()"></select></div>
-          <div class="fg"><label>Charge being denied</label><select id="dn-charge" onchange="onDenialChargeChange()"></select></div>
+          <div class="fg"><label for="dn-patient">Patient</label><select id="dn-patient" onchange="onDenialPatientChange()"></select></div>
+          <div class="fg"><label for="dn-charge">Charge being denied</label><select id="dn-charge" onchange="onDenialChargeChange()"></select></div>
         </div>
         <div class="fr">
-          <div class="fg"><label>Payer</label><input type="text" id="dn-payer" placeholder="as it appears on the remittance"></div>
-          <div class="fg"><label>Denied on</label><input type="date" id="dn-on"></div>
+          <div class="fg"><label for="dn-payer">Payer</label><input type="text" id="dn-payer" placeholder="as it appears on the remittance"></div>
+          <div class="fg"><label for="dn-on">Denied on</label><input type="date" id="dn-on"></div>
         </div>
         <div class="fr">
-          <div class="fg"><label>Amount denied</label><input type="number" id="dn-amount" min="0" step="0.01"></div>
-          <div class="fg"><label>Code as given by the payer</label><input type="text" id="dn-code" placeholder="e.g. CARC 197"></div>
+          <div class="fg"><label for="dn-amount">Amount denied</label><input type="number" id="dn-amount" min="0" step="0.01"></div>
+          <div class="fg"><label for="dn-code">Code as given by the payer</label><input type="text" id="dn-code" placeholder="e.g. CARC 197"></div>
         </div>
-        <div class="fg"><label>Reason, in the payer&rsquo;s own words</label><input type="text" id="dn-reason" placeholder="copied from the remittance, not summarised"></div>
+        <div class="fg"><label for="dn-reason">Reason, in the payer&rsquo;s own words</label><input type="text" id="dn-reason" placeholder="copied from the remittance, not summarised"></div>
         <div class="note" style="margin-bottom:12px">The code and reason are stored exactly as the payer gave them. This app does not interpret a denial into a root cause it guessed &mdash; a wrong cause sends the appeal at the wrong argument.</div>
 
         <div class="ch" style="padding-left:0;border-bottom:none"><div class="ct">Appeal</div></div>
         <div class="fr">
-          <div class="fg"><label>Stage</label><select id="dn-stage" onchange="onDenialStageChange()">
+          <div class="fg"><label for="dn-stage">Stage</label><select id="dn-stage" onchange="onDenialStageChange()">
             <option value="none">Not appealed</option>
             <option value="drafted">Drafted</option>
             <option value="submitted">Submitted</option>
@@ -1046,13 +1058,13 @@ label.chk input{width:auto;}
             <option value="lost">Lost</option>
             <option value="abandoned">Abandoned &mdash; not worth pursuing</option>
           </select></div>
-          <div class="fg" id="dn-submitted-row" style="display:none"><label>Submitted on</label><input type="date" id="dn-submitted"></div>
+          <div class="fg" id="dn-submitted-row" style="display:none"><label for="dn-submitted">Submitted on</label><input type="date" id="dn-submitted"></div>
         </div>
         <div class="fr" id="dn-decided-row" style="display:none">
-          <div class="fg"><label>Decided on</label><input type="date" id="dn-decided"></div>
-          <div class="fg"><label>Amount recovered</label><input type="number" id="dn-recovered" min="0" step="0.01"></div>
+          <div class="fg"><label for="dn-decided">Decided on</label><input type="date" id="dn-decided"></div>
+          <div class="fg"><label for="dn-recovered">Amount recovered</label><input type="number" id="dn-recovered" min="0" step="0.01"></div>
         </div>
-        <div class="fg"><label>Working note</label><textarea id="dn-note" rows="2" placeholder="recorded as typed"></textarea></div>
+        <div class="fg"><label for="dn-note">Working note</label><textarea id="dn-note" rows="2" placeholder="recorded as typed"></textarea></div>
         <div id="dn-window-preview" style="margin-bottom:12px"></div>
         <div style="display:flex;gap:10px;justify-content:flex-end">
           <button class="btn bo" onclick="closeDenialModal()">Cancel</button>
@@ -1060,14 +1072,14 @@ label.chk input{width:auto;}
         </div>
       </div></div>
 
-      <div class="modal" id="payertermsmodal"><div class="mbox">
+      <div class="modal" id="payertermsmodal" role="dialog" aria-modal="true"><div class="mbox">
         <div class="mtitle">Payer appeal windows</div>
         <div class="note" style="margin-bottom:12px">There is <strong>no universal appeal deadline</strong>. It is set by your contract with each payer and differs between them, so nothing is assumed here. A denial from a payer with no window on file reads <em>no deadline on file</em> &mdash; not timely, and not late.</div>
         <div class="fr">
-          <div class="fg"><label>Payer</label><input type="text" id="pw-payer" placeholder="exactly as it appears on remittances"></div>
-          <div class="fg"><label>Days to appeal</label><input type="number" id="pw-days" min="1" step="1" placeholder="from your contract"></div>
+          <div class="fg"><label for="pw-payer">Payer</label><input type="text" id="pw-payer" placeholder="exactly as it appears on remittances"></div>
+          <div class="fg"><label for="pw-days">Days to appeal</label><input type="number" id="pw-days" min="1" step="1" placeholder="from your contract"></div>
         </div>
-        <div class="fg"><label>Where this came from</label><input type="text" id="pw-source" placeholder="e.g. provider agreement s.7.3, dated 2025-04-01"></div>
+        <div class="fg"><label for="pw-source">Where this came from</label><input type="text" id="pw-source" placeholder="e.g. provider agreement s.7.3, dated 2025-04-01"></div>
         <button class="btn bo" onclick="savePayerTerm()">Save window</button>
         <div class="tw" style="margin-top:12px"><table><thead><tr><th>Payer</th><th>Days</th><th>Source</th><th></th></tr></thead><tbody id="payerterms-tbody"></tbody></table></div>
         <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
@@ -1091,17 +1103,17 @@ label.chk input{width:auto;}
         </div></div>
         <div class="card"><div class="ch"><div class="ct">Negotiated Pricing</div></div><div class="cb">
           <div class="fr">
-            <div class="fg"><label>Vendor Discount %</label><input type="number" id="vp-vendor-discount" min="0" max="100" step="0.1"></div>
+            <div class="fg"><label for="vp-vendor-discount">Vendor Discount %</label><input type="number" id="vp-vendor-discount" min="0" max="100" step="0.1"></div>
             <div class="fg"><label>&nbsp;</label><button class="btn bo bs" onclick="vSetVendorDiscount()">Set</button></div>
           </div>
           <div class="fr">
-            <div class="fg"><label>Category</label><select id="vp-cat-select"></select></div>
-            <div class="fg"><label>Category Discount %</label><input type="number" id="vp-cat-discount" min="0" max="100" step="0.1"></div>
+            <div class="fg"><label for="vp-cat-select">Category</label><select id="vp-cat-select"></select></div>
+            <div class="fg"><label for="vp-cat-discount">Category Discount %</label><input type="number" id="vp-cat-discount" min="0" max="100" step="0.1"></div>
           </div>
           <button class="btn bo bs" onclick="vSetCategoryDiscount()">Set Category Discount</button>
           <div class="fr" style="margin-top:10px">
-            <div class="fg"><label>Product SKU</label><input type="text" id="vp-sku" placeholder="e.g. HS-PPE-NGM"></div>
-            <div class="fg"><label>Override Price</label><input type="number" id="vp-override-price" min="0" step="0.01"></div>
+            <div class="fg"><label for="vp-sku">Product SKU</label><input type="text" id="vp-sku" placeholder="e.g. HS-PPE-NGM"></div>
+            <div class="fg"><label for="vp-override-price">Override Price</label><input type="number" id="vp-override-price" min="0" step="0.01"></div>
           </div>
           <button class="btn bo bs" onclick="vSetProductOverride()">Set Product Override</button>
         </div></div>
@@ -1117,7 +1129,7 @@ label.chk input{width:auto;}
         </div></div>
       </div>
 
-      <div class="modal" id="vendorSpendModal">
+      <div class="modal" id="vendorSpendModal" role="dialog" aria-modal="true">
         <div class="mbox">
           <div class="mtitle">Vendor Spend Report</div>
           <div id="vendor-spend-content"></div>
@@ -1132,16 +1144,16 @@ label.chk input{width:auto;}
         <div class="krow" id="supplies-kpis" style="grid-template-columns:repeat(3,1fr)"></div>
         <div class="card"><div class="ch"><div class="ct">Add Supply Item</div></div><div class="cb">
           <div class="fr">
-            <div class="fg"><label>Name</label><input type="text" id="sp-add-name" placeholder="e.g. Nitrile Exam Gloves, Medium"></div>
-            <div class="fg"><label>Category</label><select id="sp-add-category"></select></div>
+            <div class="fg"><label for="sp-add-name">Name</label><input type="text" id="sp-add-name" placeholder="e.g. Nitrile Exam Gloves, Medium"></div>
+            <div class="fg"><label for="sp-add-category">Category</label><select id="sp-add-category"></select></div>
           </div>
           <div class="fr">
-            <div class="fg"><label>Quantity on Hand</label><input type="number" id="sp-add-qty" min="0" value="0"></div>
-            <div class="fg"><label>Reorder Threshold</label><input type="number" id="sp-add-threshold" min="0" value="0"></div>
+            <div class="fg"><label for="sp-add-qty">Quantity on Hand</label><input type="number" id="sp-add-qty" min="0" value="0"></div>
+            <div class="fg"><label for="sp-add-threshold">Reorder Threshold</label><input type="number" id="sp-add-threshold" min="0" value="0"></div>
           </div>
           <div class="fr">
-            <div class="fg"><label>Unit Cost</label><input type="number" id="sp-add-cost" min="0" step="0.01"></div>
-            <div class="fg"><label>Vendor SKU (optional, for low-stock matching in Vendor Catalog)</label><input type="text" id="sp-add-sku" placeholder="e.g. HS-PPE-NGM"></div>
+            <div class="fg"><label for="sp-add-cost">Unit Cost</label><input type="number" id="sp-add-cost" min="0" step="0.01"></div>
+            <div class="fg"><label for="sp-add-sku">Vendor SKU (optional, for low-stock matching in Vendor Catalog)</label><input type="text" id="sp-add-sku" placeholder="e.g. HS-PPE-NGM"></div>
           </div>
           <button class="btn bp" onclick="addSupply()">Add Item</button>
         </div></div>
@@ -1210,8 +1222,8 @@ label.chk input{width:auto;}
         <div id="bi-owner-tools">
           <div class="card"><div class="ch"><div class="ct">Create a feed</div></div><div class="cb">
             <div class="fr">
-              <div class="fg"><label>Name it</label><input type="text" id="bi-label" placeholder="Owner Power BI" maxlength="80"></div>
-              <div class="fg"><label>Whose access it uses</label><select id="bi-employee"></select></div>
+              <div class="fg"><label for="bi-label">Name it</label><input type="text" id="bi-label" placeholder="Owner Power BI" maxlength="80"></div>
+              <div class="fg"><label for="bi-employee">Whose access it uses</label><select id="bi-employee"></select></div>
             </div>
             <div style="font-size:12px;color:var(--muted);margin-bottom:12px">
               A feed can never show more than the person it belongs to can see in this app. A provider's feed carries only their own patients and no financial data; an owner's or front desk's carries the practice. If that person is deactivated or has their role changed, the feed follows within one refresh.
@@ -1228,8 +1240,7 @@ label.chk input{width:auto;}
 
           <!-- Shown once, then never again. Only a hash is stored. -->
           <div class="card" id="bi-new-card" style="display:none"><div class="ch"><div class="ct">Copy this now &mdash; it is not shown again</div></div><div class="cb">
-            <div class="fg"><label>Feed URL (paste into Power BI &rarr; Get Data &rarr; Web)</label>
-              <input type="text" id="bi-new-url" readonly onclick="this.select()"></div>
+            <div class="fg"><label for="bi-new-url">Feed URL (paste into Power BI &rarr; Get Data &rarr; Web)</label><input type="text" id="bi-new-url" readonly onclick="this.select()"></div>
             <div style="font-size:12px;color:var(--muted);margin-bottom:10px">
               Only a fingerprint of this token was saved, so there is no way to show it to you again. If you lose it, revoke the feed below and create another. Anyone holding this URL can read what it returns &mdash; treat it like a password, and prefer sending it as an <code>Authorization: Bearer</code> header where your tool supports one, since URLs end up in logs and shared workbook files.
             </div>
@@ -1253,11 +1264,11 @@ label.chk input{width:auto;}
         </div></div>
       </div>
 
-      <div class="modal" id="completeVisitModal">
+      <div class="modal" id="completeVisitModal" role="dialog" aria-modal="true">
         <div class="mbox">
           <div class="mtitle">Complete Visit</div>
-          <div class="fg"><label>Procedure</label><input type="text" id="cv-procedure-label" disabled></div>
-          <div class="fg"><label>Amount</label><input type="number" id="cv-amount" min="0" step="0.01"></div>
+          <div class="fg"><label for="cv-procedure-label">Procedure</label><input type="text" id="cv-procedure-label" disabled></div>
+          <div class="fg"><label for="cv-amount">Amount</label><input type="number" id="cv-amount" min="0" step="0.01"></div>
           <div class="msg" id="cv-coverage-note" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
           <div id="cv-cdt-note" style="font-size:12px;margin-bottom:10px"></div>
           <div style="display:flex;gap:8px">
@@ -7153,6 +7164,20 @@ function init(){
   dntFlushAndReport(true);
   window.addEventListener('online',function(){dntFlushAndReport();});
 }
+</script>
+<script>
+// ESCAPE CLOSES AN OPEN MODAL (2026-10-19, fourth b36 -- WCAG 2.1.2 in part).
+// Closes by removing the SAME `on` class every existing close handler in this
+// file removes, so this cannot drift away from them as modals are added.
+// DELIBERATELY NOT A FOCUS TRAP. A trap needs per-modal first/last focusable
+// bookkeeping and a return-focus target; half of one is worse than none,
+// because it reads as done. The trap is reported as outstanding.
+document.addEventListener('keydown', function (e) {
+  if (e.key !== 'Escape') return;
+  var open = document.querySelector('.modal.on');
+  if (!open) return;
+  open.classList.remove('on');
+});
 </script>
 </body>
 </html>
