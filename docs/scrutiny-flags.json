@@ -1272,6 +1272,23 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/_lib/routes.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "t('BANDS ARE ADDED, NOT AVERAGED \u2014 20 + 10 is over the 25 m ceiling', () => {"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "section('3. WHAT MAY NOT MOVE \u2014 locked, done, skipped');"
+    }
+   ],
+   "sha": "1ebe661fcf4d139390e60d97e426aad64ebf6612",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/b17-trust-lock-hard.test.js",
    "class": "test file",
    "level": "CHANGE",
