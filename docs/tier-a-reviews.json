@@ -6924,6 +6924,31 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-10-19T18:12:04Z",
+      "opened_at_sha": "1ebe661fcf4d139390e60d97e426aad64ebf6612",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 7,
+      "resources": [
+        "rt_routes",
+        "rt_stops"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/_resources/routes.js",
+        "sairngrounds.html",
+        "stonedesk.html"
+      ],
+      "what": "rt_routes and rt_stops: the shared routing primitive, both Tier A on CONFIDENTIALITY because rt_stops joins a street address to a named assignee and a date. WHAT CHANGED: api/_lib/routes.js (new, the ordering and the three-state basis), api/_resources/routes.js (new registry), sql/rt_routes_schema.sql (new, NOT RUN against Supabase), plus two consumers -- stonedesk.html fmRunOptimize repointed off a dead api/bridge.js action, sairngrounds.html a new Route-order card on Scheduling. WHAT A REVIEWER SHOULD ATTACK FIRST, in order: (1) the confidentiality argument itself -- is A right, and does sd_field_stops at B/B holding the same shape mean one of the two is wrong; (2) the three-state basis -- can any path return an order it did not compute, or fold could-not-run into a result; (3) saved_seconds NULL-means-not-computed, including both client renderers, since the defect being avoided is the original's Math.max(0,...); (4) the grant line in the schema -- delete IS granted on rt_stops and the argument for it is in the file; (5) the handler branch in docs/2026-10-19-fourth-b34-routing-phase1.md section 3, which is NOT applied because cody holds api/sd-data.js, and which no suite covers. NOT VERIFIED BY ME: nothing live -- the licence gate answers 401 ahead of resource dispatch for a known-good resource and a nonsense one alike, so an unauthenticated probe cannot tell registered from unregistered.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-19T18:12:04Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
