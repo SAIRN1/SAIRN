@@ -630,7 +630,15 @@ assistant turn's message.usage in this session's own jsonl: input_tokens 2 +
 cache_creation_input_tokens 365 + cache_read_input_tokens 464,076. MEASURED,
 not estimated.
 
-HANDOFF SHA256 ec13a95a232d003b01b31f783d36642baa58a70be749c6dd55002f3e4ea78f7f
+HANDOFF SHA256 9ba8a1cba32b6a7c1d9d9ef2e41aa976950aed86b41194730ffdc87dcc7d2e52
+  (RE-STAMPED. The handoff was corrected after this report was first written:
+   my own edit had inserted three new 7.x sections without renumbering the
+   existing ones, leaving TWO 7.2s and TWO 7.3s, and its header and closing
+   line still said item 4's census was "in flight" after it had finished. A
+   standing document saying a measurement is pending reads as a measurement
+   nobody took, and a fresh session reads the handoff first -- so it was
+   corrected and both hashes re-stamped rather than left agreeing with each
+   other and with nothing else.)
 
-SHA256 e80ca5546617d7edcc9b696bc38f0dae1f26abc33f42d847baa27c9582d4faf4  (sha256 of every byte ABOVE this line; this line and the next are excluded. Reproduce with: python -c "import hashlib,io;s=io.open('SAIRN-report-cody-b26.txt',encoding='utf-8',newline='').read();b=s[:s.index(chr(10)+'SHA256 ')+1];print(hashlib.sha256(b.encode()).hexdigest())")
+SHA256 8e6b75605bfadd78bd78b00133eef4b4891bf8c914708ac2784805ef3abb2de2  (sha256 of every byte ABOVE this line; this line and the next are excluded. Reproduce with: python -c "import hashlib,io;s=io.open('SAIRN-report-cody-b26.txt',encoding='utf-8',newline='').read();b=s[:s.index(chr(10)+'SHA256 ')+1];print(hashlib.sha256(b.encode()).hexdigest())")
 END-OF-REPORT

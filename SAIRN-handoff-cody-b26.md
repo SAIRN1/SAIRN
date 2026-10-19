@@ -2,9 +2,12 @@
 
 **Written BEFORE the report.** Every item below is either finished and
 verified, or named as open with its exact next step. **Nothing is mid-edit:**
-every file is written, every check that could be run has been run, and the one
-long measurement still in flight is named with the command that produces it and
-the gate that refuses without it.
+every file is written and every check has been run. **This file was written while
+item 4's census was still running** -- it named the command that produces the
+number and the gate that mechanically refuses without it, so there was never a
+half-applied state. **The census then COMPLETED before the push and §4 carries
+its result.** The two lines that said "in flight" are corrected rather than left
+standing; everything else is as written.
 
 **REAL MEASURED CONTEXT: 36.0% of 1000k — 360,061 tokens.** From the last
 assistant turn's `message.usage` in this session's own jsonl:
@@ -32,7 +35,7 @@ digest carries.
 
 | | |
 |---|---|
-| commits | **four**, all local at this line; §7 is the push |
+| commits | **four at this line and ELEVEN by the time it landed** -- the push took several rounds and every hook-written file was committed on each, never stashed. The report's §7 names every refusal |
 | census | **FINISHED and landed.** `docs/known-red-suites.json` entries **65 → 64**, recovered **46 → 51**, **12 rows marked in place** with their observed tails. `known_red_check.py --fixtures` 6/6 + 7 arms |
 | claim | `platform`, taken **BEFORE any work**, FILES list declared. **STILL HELD** — released with the report |
 | overrides | **NONE.** No `SAIRN_SKIP`, no `SAIRN_GATE_EXEMPT`, no `SAIRN_SEED_GATE`, in any form, and no call to `tools/gate_skip.py` |
@@ -377,7 +380,7 @@ undiagnosed `why`.** Somebody should find out *why* each went green — a suite
 that recovered because its subject was fixed and one that recovered because its
 assertion stopped reaching anything look identical from the exit code.
 
-### 7.2 → THE 20 HELD GUARDS. Per-branch judgements, not a remnant
+### 7.4 → THE 20 HELD GUARDS. Per-branch judgements, not a remnant
 
 `python docs/b26-logs/convert_sibling_guards.py --check` prints every one with
 its reason. The 11 that **already read the body and discriminate** are the
@@ -386,13 +389,13 @@ class `api/sd-data.js:19596` says was left alone on purpose, and
 each needs an individual read**, because `:11966` carries an `entity_id`
 special case that a mechanical conversion would delete.
 
-### 7.3 → THE 4 BRACE-LESS CLOSURE GUARDS. `:11339 :17039 :18005 :18811`
+### 7.5 → THE 4 BRACE-LESS CLOSURE GUARDS. `:11339 :17039 :18005 :18811`
 
 They return a **value** to a caller rather than answering `res`, so converting
 them means changing a return contract and every caller. **Not a mechanical
 job.**
 
-### 7.4 → THE SWEEP WORK-LIST. 264 PRESENCE hits, 41 read, 1 ablated
+### 7.6 → THE SWEEP WORK-LIST. 264 PRESENCE hits, 41 read, 1 ablated
 
 `python docs/b26-logs/sweep_bleed_measure.py --list` prints them ranked.
 **223 are unread and 40 of the 41 read as real candidates are UNABLATED** —
@@ -400,7 +403,7 @@ b24's standard is that a confirmed one needs an ablation, and only
 `sairnlaw_citation_rule.js:105` has one. **The 45 UNSURE polarity hits are
 unresolved; that is what the third state is for.**
 
-### 7.5 → FOUR RED-AND-UNREGISTERED SUITES, registered but NOT diagnosed
+### 7.7 → FOUR RED-AND-UNREGISTERED SUITES, registered but NOT diagnosed
 
 `api/_resources/extra-actions.test.js` (41 passed / 7 failed),
 `tests/sairnlegacy_reservation_lock.js`,
@@ -416,7 +419,7 @@ caused by b26.** Each goes in with an empty `why` — **not diagnosed, and an
 invented cause would be worse than the blank because it would end the
 investigation.**
 
-### 7.6 → HANK. Two things, and one of them corrects a routing you were given
+### 7.8 → HANK. Two things, and one of them corrects a routing you were given
 
 **C1 IS CLOSED AND YOUR ROUTED FIX WAS NOT ENOUGH — that is a fact about the
 routing, not about you.** b22 routed *"the same one-line fix as A1, one guard
@@ -432,20 +435,20 @@ inside a `404 || 400` guard or in the two classifiers. **Your own active claim
 explicitly excludes this file and names cody as holding it**, so this is the
 boundary you drew, not one I crossed silently.
 
-### 7.7 → FOURTH. Unchanged, and NOT re-sent
+### 7.9 → FOURTH. Unchanged, and NOT re-sent
 
 The b23 Tier A obligation on `dnt_rollup` is still open. **`sairnroofing.html`
 and every other `.html` were left alone** — four were READ for item 2 and none
 was written.
 
-### 7.8 → CC. Carried from b22, unchanged
+### 7.10 → CC. Carried from b22, unchanged
 
 Open-work **row 449** records *"`dnt_rollup` appears 0 times in every `.html`
 file"*, which is **false** — `sairndental.html:2543` is a real
 `sdnData('read','dnt_rollup',{})` call. **Row 356**'s item-4 sentence still
 contradicts **row 355**.
 
-### 7.9 → WHOEVER NEXT TOUCHES `sairnlegacy.html`
+### 7.11 → WHOEVER NEXT TOUCHES `sairnlegacy.html`
 
 **`leg_clergy` IS TIER A NOW**, so `tools/tier_a_review_gate.py` will record an
 obligation against any diff that names it. **That is the point of the tier, not
@@ -457,13 +460,13 @@ it on a changed line. The likely reason is that it scans **code** files and not
 `docs/`, which would be correct behaviour; **I did not confirm that and am not
 claiming it.** Worth one read by whoever owns the gate.
 
-### 7.10 → MICHAEL. Nothing is blocked on you
+### 7.12 → MICHAEL. Nothing is blocked on you
 
 All five instructed items are implemented. Item 4's number lands with the
 census; item 3's decision was **taken**, not re-deferred. SAIRNcash stays
 **HELD**.
 
-### 7.11 → NOT TOUCHED IN b26, named so it is not mistaken for done
+### 7.13 → NOT TOUCHED IN b26, named so it is not mistaken for done
 
 **No live endpoint check and no live render.** Everything in items 2, 3 and 5 is
 source-level or in-process; **nothing here establishes behaviour against a real
@@ -524,6 +527,10 @@ the Drive depends on any of them.**
 
 ---
 
-*Written before the report. Items 1, 2, 3 and 5 are finished and verified; item
-4's tool is finished and its measurement is in flight, with the registry update
-mechanically refusing to apply a partial result.*
+*Written before the report, at a point where nothing was half-finished. ALL FIVE
+items are finished and verified. The ONE thing this file originally recorded as
+in flight -- item 4's census -- COMPLETED before the push and its result is in
+§4; this closing line and the §1 row were corrected rather than left standing,
+because a standing document saying a measurement is pending reads as a
+measurement nobody took, and a fresh session reads this file first. §2's commit
+list is likewise the pre-push state and the report's §7 carries the push.*
