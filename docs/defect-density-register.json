@@ -33890,7 +33890,7 @@
       "recurrence_open": "The STATUS and NEXT fields are parsed the same way and still swallow unlabelled prose; they are bounded by their own 900-character slices, so they degrade quietly rather than wrongly, and nothing here changes that. Nothing requires a digest to use only the nine labels the board knows. And the fix is in a SHARED publisher that every clone runs its own copy of -- measured during this batch, fourth's clone republished the board 20 minutes after cc's corrected version with its own pre-fix copy, so the platform-wide effect of this fix only arrives as each clone fetches."
     },
     {
-      "commit": "1f085196ff7b",
+      "commit": "7575392034da",
       "date": "2026-10-19",
       "subject": "fix(stonedesk): three residuals of the 2026-08-06 \"Granting...\" class, in the panel it was found in",
       "files": [
@@ -33938,7 +33938,7 @@
       "recurrence_open": "THE SWEEP WAS NOT RUN. Only this panel was fixed, and the 2026-09-03 precedent is that fixing one panel leaves the others. How many other empty states in stonedesk.html render a failed read as 'none yet' is UNMEASURED -- the handoff names the grep and nobody has run it."
     },
     {
-      "commit": "1f085196ff7b",
+      "commit": "7575392034da",
       "date": "2026-10-19",
       "subject": "fix(stonedesk): three residuals of the 2026-08-06 \"Granting...\" class, in the panel it was found in",
       "files": [
@@ -33986,7 +33986,7 @@
       "recurrence_open": "ONLY THE THREE FUNCTIONS IN ONE PANEL ARE COVERED. stonedesk.html has 131 script blocks and an unknown number of other `.then(` chains with no `.catch`; the suite drives three functions and nothing counts the rest. A file-wide count is named in the handoff and was not run."
     },
     {
-      "commit": "1f085196ff7b",
+      "commit": "7575392034da",
       "date": "2026-10-19",
       "subject": "fix(stonedesk): three residuals of the 2026-08-06 \"Granting...\" class, in the panel it was found in",
       "files": [
@@ -34034,7 +34034,7 @@
       "recurrence_open": "E3b MEASURED THE typeof GUARD ALONE AND IT CHANGES NOTHING -- the per-step try covers it, so the guard is defence in depth and NOT the load-bearing layer. Recorded because an arm claiming otherwise would have been a green claim about a layer doing no work. And the pattern is unswept: other handlers in this file call unguarded globals after a confirmed success and nothing counts them."
     },
     {
-      "commit": "241984078b88",
+      "commit": "e86c9b18766c",
       "date": "2026-10-19",
       "subject": "feat(sairnlaw,sairnlegacy): the four remaining practitioner answers, and the trust lock finally decides before the table",
       "files": [
@@ -34099,7 +34099,7 @@
       "recurrence_open": "NOTHING COMPARES A FILE'S PROSE TO ITS CONTROL FLOW, on this file or any other. The arms added here check that two FUNCTIONS agree; they do not check that the header's word 'BEFORE' matches the order decide() uses. A second ordering claim in a second file would be invisible the same way. Also: the lock is still consulted only from inside decide(), so an override layer that bypassed decide() entirely would reach trust -- no such layer exists today and nothing prevents one."
     },
     {
-      "commit": "e2c10172cf08",
+      "commit": "abee0d2a7788",
       "date": "2026-10-19",
       "subject": "test(b18): the two new suites, four re-aimed, and the ablations that prove each gate is load-bearing",
       "files": [
