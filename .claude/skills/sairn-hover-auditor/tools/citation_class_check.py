@@ -43,6 +43,58 @@ REPO = os.path.join(os.path.expanduser('~'), 'Documents', 'SAIRN-hover')
 FILELINE = re.compile(
     r'(?<![\w/])((?:[\w.-]+/)*[\w.-]+\.(?:py|js|html|md|sql|json)):(\d{2,6})\b')
 
+# ── ABBREVIATION-SAFE SENTENCE SPLIT, h1 b55 ────────────────────────────────
+# Found 2026-10-19 after THREE occurrences of the same symptom logged as a
+# citation-guard refusal (h1 b53, b54, b55) and worked around each time by
+# rephrasing rather than root-caused. The real cause: the plain
+# `re.split(r'(?<=[.!?])\*{0,2}\s+', para)` split treats ANY period as a
+# sentence end, including an abbreviation's -- "the Federal Reserve Bank's
+# FRED/St. Louis Fed API" split mid-phrase at "St.", discarding the half of
+# the sentence that carried the real anchor text and leaving only the two
+# cited files' OWN names as anchor candidates. anchor_ok() in
+# hover_editor_review_criteria deliberately excludes a citation's own file
+# stem from its candidate set -- so with two different-file citations
+# stranded in a fragment whose only candidates are each other's filenames,
+# BOTH were guaranteed to fail: each citation's only remaining candidate is
+# the OTHER file's name, which never appears near the correct line in the
+# wrong file. Not a cross-file line-binding bug; a sentence-boundary false
+# split that only shows symptoms when it strands two different-file
+# citations together. A short, explicit list -- not a general abbreviation
+# detector -- because the real cases seen are all this shape.
+_ABBREV_TAILS = ('st', 'mr', 'mrs', 'ms', 'dr', 'prof', 'vs', 'etc', 'eg',
+                  'ie', 'inc', 'ltd', 'corp', 'jr', 'sr', 'no', 'approx',
+                  'u.s', 'co')
+
+
+def _ends_with_abbreviation(fragment):
+    """True if `fragment` ends right after a token from _ABBREV_TAILS
+    followed by the period the split just broke on (the period itself was
+    already consumed by the split, so the fragment ends in the bare word)."""
+    tail = fragment.rstrip()
+    if not tail:
+        return False
+    word = re.split(r'[\s(]', tail)[-1].rstrip('.').lower()
+    return word in _ABBREV_TAILS
+
+
+def split_sentences(para):
+    """The shared, abbreviation-safe replacement for the bare
+    `re.split(r'(?<=[.!?])\\*{0,2}\\s+', para)` call. Splits exactly where
+    the bare regex would, then merges a fragment back into the next one
+    whenever the split point was immediately after a known abbreviation --
+    the one and only correction, so every other boundary (including the
+    bolded-period case F22 already locks) behaves identically to before."""
+    raw = re.split(r'(?<=[.!?])\*{0,2}\s+', para)
+    if len(raw) <= 1:
+        return raw
+    out = []
+    for part in raw:
+        if out and _ends_with_abbreviation(out[-1]):
+            out[-1] = out[-1] + ' ' + part
+        else:
+            out.append(part)
+    return out
+
 
 def blob_lines(repo, sha, path):
     """hover_log's source_shas record BLOB shas (git cat-file -p reads
@@ -108,7 +160,7 @@ def classify(entry, repo=REPO, skip_derivation=False):
     s = entry.get('summary', '')
     shas = entry.get('source_shas') or {}
     for para in s.split('\n'):
-        for sent in re.split(r'(?<=[.!?])\*{0,2}\s+', para):
+        for sent in split_sentences(para):
             for m in FILELINE.finditer(sent):
                 path, line = m.group(1), int(m.group(2))
                 tracked = subprocess.run(
@@ -163,6 +215,11 @@ def _fixtures():
         g('init', '-q')
         body = ['# pad'] * 9 + ['def frobnicate():', '    return 1'] + ['# t'] * 5
         open(os.path.join(d, 'app.py'), 'w').write('\n'.join(body) + '\n')
+        # A SECOND file, same commit, for the abbreviation-split regression
+        # below -- each carries its own distinctive anchor word near its
+        # own cited line, in a different file than app.py's.
+        wbody = ['# pad'] * 9 + ['def sprocketize():', '    return 2'] + ['# t'] * 5
+        open(os.path.join(d, 'widget.py'), 'w').write('\n'.join(wbody) + '\n')
         g('add', '-A'); g('commit', '-q', '-m', 'v1')
         sha1 = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=d,
                               capture_output=True, text=True).stdout.strip()
@@ -204,6 +261,44 @@ def _fixtures():
            classify(notrepo, repo=d)[0][2] == 'NOT-A-REPO-PATH')
         ck('a citation that still holds at HEAD classifies HOLDS',
            classify(holds, repo=d)[0][2] == 'HOLDS')
+
+        # ── REGRESSION, h1 b55: two different-file citations stranded in
+        # the same sentence by an abbreviation-triggered false split.
+        # Reproduces the real failure exactly: "St." mid-sentence used to
+        # split app.py:10's citation away from "frobnicate" (its real
+        # anchor), leaving only widget.py's name as a candidate -- which
+        # is excluded as app.py's OWN-file check does not apply to it, but
+        # never appears near app.py's line 10 either. BOTH must now HOLD.
+        two_file_abbrev = {
+            'summary': ("`frobnicate` lives in the St. Louis build of this "
+                        "app, at app.py:10, and `sprocketize` is the matching "
+                        "widget.py:10 helper."),
+            'source_shas': {'app.py': {'sha': sha1}, 'widget.py': {'sha': sha1}}}
+        tfa_result = {p: c for p, l, c in classify(two_file_abbrev, repo=d)}
+        # app.py genuinely MOVED (the v2 commit above shifted it by 5) --
+        # the correct, HONEST classification here is MOVED-SINCE, not
+        # HOLDS. The actual regression this locks: BEFORE the fix, the
+        # "St." split stranded this citation's anchor ("`frobnicate`")
+        # in the OTHER fragment, so the anchor check failed even against
+        # app.py's OWN recorded v1 blob and misclassified it as
+        # WRONG-AT-DERIVATION -- a false "defect in this record" on a
+        # citation that was correct when written. MOVED-SINCE is the
+        # proof the derivation-time anchor now succeeds.
+        ck('REGRESSION (h1 b55): app.py:10 classifies MOVED-SINCE (its '
+           'real anchor `frobnicate` holds at derivation), NOT the false '
+           'WRONG-AT-DERIVATION the "St."-split anchor failure used to '
+           'produce',
+           tfa_result.get('app.py') == 'MOVED-SINCE')
+        ck('REGRESSION (h1 b55): widget.py:10 HOLDS too -- the other '
+           'citation in the same abbreviation-split sentence, unmoved',
+           tfa_result.get('widget.py') == 'HOLDS')
+        ck('UNIT: split_sentences keeps an abbreviation period from ending '
+           'a sentence ("St. Louis" stays in one fragment)',
+           len(split_sentences('Visit the St. Louis office. Then leave.')) == 2)
+        ck('UNIT: split_sentences still splits a REAL sentence boundary '
+           '(F22\'s bolded-period case is untouched -- the separator\'s '
+           'own ** markers are consumed by the split, same as before)',
+           split_sentences('First.** Second.') == ['First.', 'Second.'])
         ck('KNOWN-BAD CONTROL: the BROKEN classifier (derivation check '
            'skipped) MISREADS the moved-since plant as wrong-at-derivation '
            '-- proving the derivation check is the load-bearing difference',
