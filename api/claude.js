@@ -89,6 +89,51 @@ const KNOWN_APP_IDS = [
 // being type-whitelisted like server tools. A tool counts as "custom" if it
 // has no `type` field, or an explicit `type: 'custom'` -- both are valid
 // Anthropic custom-tool shapes.
+// ── RENDERING A CLIENT-SUPPLIED app_id INTO A LOG LINE (b22) ──────────────
+// The `auth_observe` line below logs `body.app_id` on every call, BEFORE the
+// allowlist check, including on unauthenticated requests. That made a forged
+// log line possible: a `\n` in the value writes a second entry that looks like
+// a real one, with an attacker-chosen `state=`.
+//
+// THREE RULES, AND EACH ONE CLOSES A DIFFERENT HOLE:
+//   1. VALIDATE FIRST. A value in KNOWN_APP_IDS is a known-safe token and
+//      prints verbatim. Nothing else is ever printed as if it were an app id.
+//   2. STRIP CONTROL CHARACTERS, not just newlines. `\n` is the obvious one;
+//      `\r` alone forges a line on a CR-splitting reader, and ESC (0x1b) can
+//      drive a terminal that renders the log -- so the whole C0/C1 range and
+//      DEL go, rather than the two characters that happen to be in the
+//      proof-of-concept.
+//   3. CAP THE LENGTH. Without a cap an unrecognised value is an unbounded
+//      write into every log line on every call -- a cheap way to make the log
+//      useless without forging anything in it.
+//
+// The cap is 40: long enough that every real app_id (the longest is 15) and a
+// recognisable prefix of a typo survive, short enough that the line stays one
+// line. Exported for the arms, because a sanitiser nothing drives is a
+// sanitiser nobody has evidence of.
+const LOG_APP_ID_MAX = 40;
+function logSafeAppId(raw) {
+  if (raw === undefined || raw === null || raw === '') return '(none)';
+  if (typeof raw === 'string' && KNOWN_APP_IDS.includes(raw)) return raw;
+  // NOT a string is its own answer rather than being coerced quietly: a
+  // caller sending `app_id: {}` or an array is sending something this
+  // endpoint has never accepted, and `String({})` would print
+  // "[object Object]" as though it were a value somebody typed.
+  const s = typeof raw === 'string' ? raw : '(non-string:' + typeof raw + ')';
+  // THE CLASS IS WRITTEN WITH ESCAPES, NEVER WITH THE LITERAL BYTES.
+  // The first draft of this line embedded real control characters in the
+  // character class, which is the "regex shipped with a literal backspace"
+  // defect this platform already has a standing rule about: invisible in
+  // review, broken the moment an editor or a diff normalises it. Here it was
+  // a hard SyntaxError and `node --check` caught it on the first run.
+  const cleaned = s
+    .replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g, '')
+    .slice(0, LOG_APP_ID_MAX);
+  // LABELLED, so a recognised id and a sanitised unrecognised one can never
+  // be confused by a reader or by a grep.
+  return '(unrecognised:' + cleaned + ')';
+}
+
 const ALLOWED_SERVER_TOOL_TYPES = ['web_search_20250305'];
 const MAX_TOOL_USES_CEILING = 5;
 
@@ -320,7 +365,30 @@ async function claudeProxyHandler(req, res) {
       console.error('api/claude auth check failed (allowing): ' + err.message);
     }
   }
-  console.log('api/claude auth_observe app_id=' + (body.app_id || '(none)') +
+  // ── THIS LOG LINE TOOK AN UNVALIDATED, PRE-AUTH, CLIENT-SUPPLIED STRING
+  // ── (fixed b22) ───────────────────────────────────────────────────────
+  // It read `(body.app_id || '(none)')`. `body.app_id` is whatever the request
+  // body says, it reaches here BEFORE the allowlist check at the `!app_id ||
+  // !KNOWN_APP_IDS.includes(app_id)` branch below, and it is logged on EVERY
+  // call including unauthenticated ones -- so a newline in it writes a second
+  // line into the platform log that looks exactly like a real one:
+  //
+  //   app_id=x\napi/claude auth_observe app_id=stonedesk state=valid mode=enforce
+  //
+  // A forged `state=valid` is the point. These lines are what an operator
+  // reads to decide whether auth is working, and `auth_observe` exists
+  // precisely because the mode defaults to `observe` and the log IS the
+  // evidence. A log an attacker can write entries into is not evidence.
+  //
+  // THE VALUE IS NOT DROPPED, and that is deliberate rather than cautious.
+  // This file's own history is the argument: SAIRNsenior's every AI call
+  // 400ed silently for weeks and was found because a refusal NAMED the
+  // unrecognised app_id. Erasing an unrecognised value to be safe would
+  // remove the one diagnostic that has actually paid for itself here. So a
+  // recognised id prints verbatim, and anything else prints SANITISED and
+  // LABELLED as unrecognised -- a reader can still see what was sent and can
+  // never mistake it for a real app.
+  console.log('api/claude auth_observe app_id=' + logSafeAppId(body.app_id) +
     ' state=' + authState + ' mode=' + claudeAuthMode);
   if (claudeAuthMode === 'enforce' && (authState === 'absent' || authState === 'invalid')) {
     res.status(401).json({ error: { code: 'NO_LICENSE',
@@ -556,6 +624,11 @@ claudeProxyHandler.MAX_TOKENS_CEILING = MAX_TOKENS_CEILING;
 // be asserting against its own copy and would stay green through a change to
 // the real one. Read-only to every consumer; nothing here mutates them.
 claudeProxyHandler.KNOWN_APP_IDS = KNOWN_APP_IDS;
+// Exported for api/b22-claude-logline.test.js. A sanitiser nothing drives is a
+// sanitiser nobody has evidence of, and the arms assert its three rules
+// (validate, strip, cap) directly as well as through the handler.
+claudeProxyHandler.logSafeAppId = logSafeAppId;
+claudeProxyHandler.LOG_APP_ID_MAX = LOG_APP_ID_MAX;
 claudeProxyHandler.ALLOWED_SERVER_TOOL_TYPES = ALLOWED_SERVER_TOOL_TYPES;
 claudeProxyHandler.MAX_TOOL_USES_CEILING = MAX_TOOL_USES_CEILING;
 module.exports = claudeProxyHandler;
