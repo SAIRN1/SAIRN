@@ -200,11 +200,25 @@ NEXT
 
 CONTEXT%
 ---------------------------------------------------------------------------
-46.4% of 1000k -- 464,443 tokens. REAL MEASURED FIGURE, from the last assistant
-turn's `message.usage` in this session's own jsonl: input_tokens 2 +
-cache_creation_input_tokens 365 + cache_read_input_tokens 464,076. Not an
-estimate, and not the max-over-transcript number earlier batches used, which
-answers "what was the largest single request" rather than "what is loaded now".
-Transcript: 2,972,236 bytes, 1,685 lines, at
-C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cody\f979712d-5568-4f2c-90db-611d70cdc27b.jsonl
+CONTEXT 55.9% of 1,000,000 -- 559,208 tokens, measured.
+
+THAT LINE IS PASTED EXACTLY AS `python tools/context_verify.py --digest-line`
+PRINTED IT AND IS NOT WRITTEN BY HAND -- the push gate refused the hand-written
+one and was right to. 56/56 of that tool's fixtures classify correctly on the
+same run, including the arm with teeth: an internally CONSISTENT estimate is
+still refused, because no real turn carried that many tokens.
+
+AND MY OWN HAND-MEASURED FIGURE WAS LOW, WHICH IS THE POINT OF THE GATE. I had
+written 46.4% / 464,443 tokens from the last assistant turn's `message.usage`
+in this session's jsonl -- input_tokens 2 + cache_creation_input_tokens 365 +
+cache_read_input_tokens 464,076. That was a real reading of a real field and it
+is 9.5 POINTS UNDER the measured figure, because the last turn at the moment I
+looked was not the largest prompt this session has sent. b20 measured exactly
+this shape across every build agent -- cc 61.9 vs 68.8, cody 59.2 vs 66.3,
+fourth 48.0 vs 60.0, every one an UNDER-read -- and the handoff's 36.0% is a
+third, earlier reading of the same field. ALL THREE NUMBERS ARE REAL AND ONLY
+THE TOOL'S IS THE ANSWER; the other two are left in place rather than deleted,
+because the gap between them is the finding.
+
+Transcript: C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cody\f979712d-5568-4f2c-90db-611d70cdc27b.jsonl
 -- this session carries b26 only.
