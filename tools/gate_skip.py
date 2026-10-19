@@ -3,12 +3,29 @@
 # written 2026-10-13, batch b6, queue item 1 -- the approved per-gate skip
 """A SCOPED, LOGGED, EXPIRING exemption for ONE named gate.
 
+IT IS TWO COMMANDS AND THE FIRST ONE IS NOT `git push`:
+
     SAIRN_SKIP=seed-gate SAIRN_SKIP_WHY="the seed files are mid-migration and
-    Michael is running sql/x.sql now; the drift IS the migration" git push ...
+    Michael is running sql/x.sql now; the drift IS the migration" \\
+        python tools/gate_skip.py      # GRANTS, 30 minutes
+    git push origin main               # HONOURS it, for that gate only
 
     python tools/gate_skip.py --gates          # the valid ids, derived
     python tools/gate_skip.py --check          # is a skip active for this push?
     python tools/gate_skip.py --fixtures       # the criteria lock
+
+PUTTING THE VARIABLES IN FRONT OF `git push` GRANTS NOTHING, and this docstring
+showed exactly that form until 2026-10-17. Measured: with both variables set
+and nothing else run, `active()` returns None, the push hook's `_scoped_skip()`
+returns False, no record file exists and the gate denies. The push path has
+ZERO calls to `grant()` and ZERO to `requested()` -- one call to `active()`,
+which reads a record that must ALREADY EXIST. This file is the only caller of
+`grant()` anywhere outside its own probe.
+
+MICHAEL DECIDED (2026-10-17) to KEEP THE TWO-STEP rather than add an
+auto-grant-from-environment path to the push: the grant being its own act is
+what makes it auditable -- validated once, written once, logged once -- and a
+push able to grant itself a skip in passing is the blanket form growing back.
 
 Exit 0 clean, 1 findings, 2 COULD NOT RUN.
 
@@ -288,10 +305,18 @@ BLANKET_REFUSAL = [
     'taking that shape. Nobody chose to switch off everything; it was the only',
     'thing available.',
     '',
-    'USE THE SCOPED FORM. One gate, a real reason, an expiry:',
+    'USE THE SCOPED FORM. One gate, a real reason, an expiry -- AND IT IS TWO',
+    'COMMANDS, THE FIRST OF WHICH IS NOT `git push`:',
     '',
     '    SAIRN_SKIP=<gate> SAIRN_SKIP_WHY="<what this gate would have refused',
-    '    and why that is acceptable on this push>" git push origin main',
+    '    and why that is acceptable on this push>" python tools/gate_skip.py',
+    '    git push origin main',
+    '',
+    'THE FIRST COMMAND GRANTS AND THE SECOND HONOURS. Those variables in front',
+    'of `git push` grant NOTHING and are read by nobody -- the push path calls',
+    'active() only, which reads a record that must ALREADY EXIST. This text',
+    'showed the one-call form until 2026-10-17 and it cost four pushes to find',
+    'out.',
     '',
     '    python tools/gate_skip.py --gates     # the ids',
     '',

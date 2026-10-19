@@ -1123,9 +1123,27 @@ def prepush_base():
 # the check that just denied them, which is a worse failure than the one being
 # fixed. So the scoped form is named FIRST and is named WITH ITS SCOPE, and
 # the reader is told to re-read EXEMPTABLE rather than trust this sentence for
-# the list. Both forms go at the FRONT of the push command for the same
-# reason: as a PreToolUse hook this runs inside Claude Code's process and
-# inherits ITS environment, not the environment of the command it inspects.
+# the list. SAIRN_GATE_EXEMPT and SAIRN_SEED_GATE go at the FRONT of the push
+# command for the same reason: as a PreToolUse hook this runs inside Claude
+# Code's process and inherits ITS environment, not the environment of the
+# command it inspects, so both are read out of the command TEXT.
+# ── CORRECTED AGAIN 2026-10-17 (cc b17 item 1), MICHAEL'S DECISION ─────────
+# The gate_skip form is NOT one of those, and saying "both forms go at the
+# FRONT" made it look like one. MEASURED rather than read: with SAIRN_SKIP and
+# SAIRN_SKIP_WHY set in the environment and nothing else run,
+# gate_skip.active('tier-a') is None ("no skip recorded for cc/tier-a"),
+# _scoped_skip returns False, no record file exists and the gate denies. The
+# push path contains ZERO calls to gate_skip.grant() and ZERO to
+# gate_skip.requested() -- one call to active(), which reads a record that must
+# already exist. Running `SAIRN_SKIP=... python tools/gate_skip.py` first
+# writes that record, and then _scoped_skip returns True.
+#
+# MICHAEL DECIDED (2026-10-17) to KEEP THE TWO-STEP and NOT to add an
+# auto-grant-from-environment path: the two-step is the audited mechanism --
+# the grant is validated and written as its own act, with its own record and
+# its own BYPASS-LOG row -- and a push that could grant itself a skip in
+# passing is the blanket form growing back. So the TEXT moves to match the
+# mechanism, which is the opposite of what b16 left open.
 # ── CORRECTED AGAIN 2026-10-14 (cc b12 item 5), ROUTED BY cody b11 ─────────
 # b11 fixed this line to name `SAIRN_GATE_EXEMPT=seed` before
 # `SAIRN_SEED_GATE=off`, and it was ALREADY SUPERSEDED when it landed. On
@@ -1156,13 +1174,27 @@ def _override_hint():
         sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
         import gate_skip
         gates = ', '.join('`%s`' % g for g in sorted(gate_skip.GATES))
+        # THE PATH IS DERIVED FROM THE MODULE, not typed. A hint that names a
+        # command is only as good as the path in it, and that path moved once
+        # already when the tools directory was reorganised.
+        gs_cmd = 'python ' + os.path.relpath(
+            os.path.abspath(gate_skip.__file__),
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        ).replace(os.sep, '/')
         scoped = (
+            "IT IS TWO COMMANDS AND THE FIRST ONE IS NOT `git push`. "
             "`%s=<gate> %s_WHY=\"<what this gate would have refused and why "
-            "that is acceptable on this push>\" git push ...` skips ONE named "
-            "gate and leaves every other able to deny. The gates are: %s -- "
-            "read `python tools/gate_skip.py --gates` rather than trusting "
-            "this line, because that list is what moves. "
-            % (gate_skip.ENV_GATE, gate_skip.ENV_GATE, gates))
+            "that is acceptable on this push>\" %s` GRANTS the skip -- it is "
+            "the only caller of gate_skip.grant() anywhere -- and then a "
+            "plain `git push origin main` within the expiry HONOURS it for "
+            "that one gate, leaving every other able to deny. "
+            "PUTTING THOSE VARIABLES IN FRONT OF `git push` GRANTS NOTHING "
+            "AND IS READ BY NOBODY: the push path calls gate_skip.active() "
+            "only, which reads a record that must ALREADY EXIST. Measured "
+            "2026-10-17, and it cost four pushes to find out the first time. "
+            "The gates are: %s -- read `%s --gates` rather than trusting this "
+            "line, because that list is what moves. "
+            % (gate_skip.ENV_GATE, gate_skip.ENV_GATE, gs_cmd, gates, gs_cmd))
     except Exception as exc:                            # noqa: BLE001
         scoped = (
             "tools/gate_skip.py would not import (%s), so the scoped form "
@@ -1184,8 +1216,13 @@ def _override_hint():
         "docs/BYPASS-LOG.jsonl are that shape, taken because it was the only "
         "thing available rather than because anybody chose to switch off "
         "every check. "
-        "Any of these goes at the FRONT of the push command itself, not in a "
-        "separate export. Say so out loud whichever you use.")
+        "WHERE THE VARIABLES GO IS NOT THE SAME FOR ALL THREE, and that is "
+        "the mistake this hint used to make: SAIRN_GATE_EXEMPT and "
+        "SAIRN_SEED_GATE are read off the push command itself, so they go at "
+        "the FRONT of it rather than in a separate export -- but the gate_skip "
+        "form above is a SEPARATE COMMAND run before the push, and in front of "
+        "`git push` it does nothing at all. Say so out loud whichever you "
+        "use.")
 
 
 OVERRIDE_HINT = _override_hint()
@@ -4352,6 +4389,109 @@ def selftest():
            'recommends nor the fact the one it did name had been refused',
            _gs_env in b11, False)
 
+    # ── THE TWO-STEP (cc b17 item 1, MICHAEL'S DECISION) ──────────────────
+    # The arms above lock that the scoped form is NAMED and named FIRST. None
+    # of them can tell a reader HOW to invoke it, and the hint said `SAIRN_SKIP
+    # =<gate> ... git push ...` -- one command -- which grants nothing. Those
+    # arms were all green over that sentence, which is the b11 shape again:
+    # the text passed every test there was and was still false.
+    if _gs_ok:
+        ck('the hint names the GRANT as its own command, run BEFORE the push -- '
+           'a reader who copies the one-call form gets a denied push and no '
+           'record, and nothing in the old arms could see that',
+           'gate_skip.py' in h and 'TWO COMMANDS' in h)
+        ck('...and says in so many words that the variables in front of `git '
+           'push` grant NOTHING, because "it is two commands" alone reads as '
+           'style advice rather than a mechanism',
+           'GRANTS NOTHING' in h)
+        ck('...and does NOT show the one-call form `%s=<gate> ... git push`, '
+           'which is the exact string that cost four pushes' % _gs_env,
+           not re.search(re.escape(_gs_env) + r'=[^`]{0,200}?git push', h))
+        ck('...and still tells the reader where the OTHER two forms go, which '
+           'IS the front of the push command -- the fix must not flatten three '
+           'mechanisms into one rule',
+           'FRONT' in h and 'not the same for all three' in h.lower())
+
+        # THE BEHAVIOURAL HALF. Everything above is about a string. These two
+        # arms drive the real mechanism with the skip directory redirected to a
+        # scratchpad and gate_skip.log/record_findings replaced by no-ops, so
+        # the arm cannot write a real record or a real BYPASS-LOG row.
+        import tempfile as _tf
+        _keep = (_gs._skip_dir, _gs.log, _gs.record_findings)
+        _sandbox = _tf.mkdtemp(prefix='pushgate-selftest-skip-')
+        _why = ('the gate matched a table name that appears only inside a '
+                'fixture string, so no code in this diff serves it')
+        try:
+            _gs._skip_dir = lambda: _sandbox
+            _gs.log = lambda *a, **k: True
+            _gs.record_findings = lambda *a, **k: True
+            _agent = _gs.session_name()
+            _env_only = _scoped_skip('tier-a', ['a finding'])
+            ck('DRIVEN, NOT READ: with %s set in the environment and nothing '
+               'else run, the gate is NOT skipped -- this is the measurement '
+               'the hint now describes' % _gs_env, _env_only, False)
+            _gs.grant('tier-a', _why, 30, _agent)
+            _granted = _scoped_skip('tier-a', ['a finding'])
+            ck('DRIVEN: ...and after the grant command has run, the SAME call '
+               'returns True. Without this control the arm above would also '
+               'pass if _scoped_skip were broken outright', _granted, True)
+            ck('...and the grant wrote exactly one record, in the sandbox and '
+               'not in the real skip directory',
+               sorted(os.listdir(_sandbox)) == ['%s-tier-a.json' % _agent])
+        finally:
+            _gs._skip_dir, _gs.log, _gs.record_findings = _keep
+            try:
+                for _f in os.listdir(_sandbox):
+                    os.remove(os.path.join(_sandbox, _f))
+                os.rmdir(_sandbox)
+            except OSError:
+                pass
+
+        # ── THIRD ABLATION: THE b16 HINT, green on every arm above it ──────
+        # This is the text this constant carried from b12 to b17. It named the
+        # scoped form, named it first, derived the gate list, said the blanket
+        # form no longer works -- eleven arms, all green -- and told the reader
+        # to run a command that grants nothing.
+        b16 = ("Override, SCOPED FORM FIRST and derived from the tool that "
+               "owns the list: `SAIRN_SKIP=<gate> SAIRN_SKIP_WHY=\"<what this "
+               "gate would have refused>\" git push ...` skips ONE named gate "
+               "and leaves every other able to deny. SECOND SCOPED FORM, "
+               "narrower: `SAIRN_GATE_EXEMPT=seed git push ...`. BLANKET "
+               "FORM, and it no longer works at all: `SAIRN_SEED_GATE=off git "
+               "push ...` is RECORDED and then REFUSED. Any of these goes at "
+               "the FRONT of the push command itself, not in a separate "
+               "export.")
+        ck('ABLATION 3 CONTROL: the b16 hint PASSES the scoped-form-present, '
+           'scoped-form-first and no-longer-works arms -- it was green for '
+           'five batches', (_gs_env in b16,
+                            b16.find(_gs_env) < b16.find('SAIRN_GATE_EXEMPT'),
+                            'no longer works' in b16.lower()),
+           (True, True, True))
+        ck('ABLATION 3: ...and FAILS the grant-is-its-own-command arm',
+           'gate_skip.py' in b16 and 'TWO COMMANDS' in b16, False)
+        ck('ABLATION 3: ...and FAILS the grants-nothing arm',
+           'GRANTS NOTHING' in b16, False)
+        ck('ABLATION 3: ...and FAILS the no-one-call-form arm, which is the '
+           'one that would have caught it on the day it was written',
+           not re.search(re.escape(_gs_env) + r'=[^`]{0,200}?git push', b16),
+           False)
+
+        # THE OTHER TWO TEXTS THE SAME READER MEETS. BLANKET_REFUSAL is
+        # gate_skip's and is printed by this hook (see _blanket_refusal), and
+        # the module docstring is what anyone sent to "read that file" reads.
+        # Both showed the one-call form too, so fixing only the hint would have
+        # left two copies of the defect behind -- which is the b11 failure.
+        _br = '\n'.join(_gs.BLANKET_REFUSAL)
+        ck('gate_skip.BLANKET_REFUSAL -- printed by THIS hook -- names the '
+           'grant command and not a one-call push',
+           'gate_skip.py' in _br
+           and not re.search(re.escape(_gs_env) + r'=[^\n]{0,300}?git push',
+                             _br))
+        ck('gate_skip\'s own module docstring, which is where a reader is sent '
+           'next, does not show the one-call form either',
+           not re.search(re.escape(_gs_env) + r'=[^"]{0,400}?git push',
+                         _gs.__doc__ or ''))
+
     # ── THE EXIT-3 CHANNEL (cc b13 item 4) ────────────────────────────────
     # Added when wiring the first exit-3 guard test that is NOT a platform
     # skip. The old message asserted "SKIPPED as not applicable on this
@@ -4435,6 +4575,79 @@ def selftest():
        'report one failure as two',
        len({e[0] for e in GUARD_TESTS}) == len(GUARD_TESTS))
 
+    # ── THE LOCK'S OWN ERROR POLICY (cc b17 item 3) ───────────────────────
+    # Driven through the real seam. See _locked_entry's comment for how this
+    # was found: by a broken arm in this very batch exiting 0.
+    print('')
+    print('PUSH GATE -- a crashed lock is COULD NOT RUN, not a pass')
+    print('  NOTE: the traceback printed below is DELIBERATE -- one arm drives '
+          'a crashing')
+    print('  lock on purpose. The end-to-end form, through __main__ on a copy '
+          'with a crash')
+    print('  injected, is docs/2026-10-17-cc-b17-locked-entry-crash-'
+          'injection.py.')
+
+    def _boom():
+        raise RuntimeError('an arm referenced a name that is not bound')
+
+    ck('a lock entry point that RETURNS a code keeps it -- 0 and 1 are '
+       'untouched by this policy', (_locked_entry('--x', lambda: 0),
+                                    _locked_entry('--x', lambda: 1)), (0, 1))
+    ck('THE DEFECT: a lock entry point that RAISES is exit 2 COULD NOT RUN. It '
+       'exited 0 until 2026-10-17, because the gate path\'s fail-open handler '
+       'covered the lock too -- a crashed criteria lock read as a clean one, '
+       'which is the one failure that disarms every arm above at once',
+       _locked_entry('--x', _boom), 2)
+    def _exiter():
+        sys.exit(7)
+    try:
+        _locked_entry('--x', _exiter)
+        _passthrough = 'swallowed'
+    except SystemExit as _se:
+        _passthrough = _se.code
+    ck('...and a SystemExit passes straight through unchanged, so an entry '
+       'point that exits deliberately is not rewritten into a could-not-run',
+       _passthrough, 7)
+
+    # ABLATION: the pre-fix policy, which is the `except Exception` arm of the
+    # block below __main__ restored as its own function. The arm above must go
+    # red on it, or it is about nothing.
+    def _prefix_locked_entry(name, fn):
+        try:
+            return fn()
+        except SystemExit:
+            raise
+        except Exception:                               # noqa: BLE001
+            return 0                                    # <- the defect
+    ck('ABLATION: the PRE-FIX policy returns 0 for the same crashing lock, so '
+       'the arm above is about this change and not about any integer',
+       _prefix_locked_entry('--x', _boom), 0)
+    ck('ABLATION CONTROL: the pre-fix policy was RIGHT about the passing and '
+       'failing cases -- it only ever lied about the crash. An ablation that '
+       'moves every number proves nothing about which one mattered',
+       (_prefix_locked_entry('--x', lambda: 0),
+        _prefix_locked_entry('--x', lambda: 1)), (0, 1))
+
+    # AND THE WIRING, because the policy is only worth as much as its
+    # placement: the dispatch must sit OUTSIDE the fail-open try. This is a
+    # read of this file's own text, and that limit is stated rather than
+    # hidden -- it cannot prove behaviour, only that the lines have not moved
+    # back inside, which is exactly how the defect arrived.
+    try:
+        _src = io.open(os.path.abspath(__file__), encoding='utf-8',
+                       errors='replace').read()
+        _main_at = _src.rindex("if __name__ == '__main__':")
+        _tail = _src[_main_at:]
+        _dispatch = _tail.find("_locked_entry('--selftest'")
+        _try_at = _tail.find('\n    try:')
+        _wiring = (_dispatch != -1 and _try_at != -1 and _dispatch < _try_at)
+    except Exception:                                   # noqa: BLE001
+        _wiring = None
+    ck('WIRING: the --selftest dispatch sits BEFORE the fail-open `try:` in '
+       '__main__. A TEXT read of this file, which cannot prove behaviour -- it '
+       'can only notice the two lines swapping back, which is how the defect '
+       'arrived in the first place', _wiring, True)
+
     print('  %d/%d arm(s) pass' % (total - bad, total))
     if bad:
         print('  THE REFUSAL TEXT IS NOT WHAT THIS GATE CLAIMS IT IS.')
@@ -4442,12 +4655,49 @@ def selftest():
     return 0
 
 
-if __name__ == '__main__':
+# ── A LOCK THAT CRASHES IS NOT A LOCK THAT PASSED (cc b17 item 3) ───────────
+# FOUND BY THIS BATCH'S OWN BROKEN ARM, which is the only reason it was found.
+# `--selftest` and `--preflight` were dispatched from INSIDE the `try:` below,
+# whose handler is `except Exception: sys.exit(0)` -- correct for the gate path,
+# because a hook bug must never block a legitimate push, and WRONG here. A
+# NameError in a new arm printed 23 of 50 arms, no summary line, and exited 0.
+# A caller reading the exit code saw a clean criteria lock over a selftest that
+# never finished, which is PR 1.11's third state in the most load-bearing place
+# on the platform: the gate that decides whether every other check is honest.
+#
+# So the lock entry points get their own error policy. A crash is exit 2 COULD
+# NOT RUN, with the traceback, and it is never folded into 0 or 1:
+#   0  the lock ran and passed
+#   1  the lock ran and FOUND something
+#   2  the lock could not run -- and that is a third state, not a pass
+def _locked_entry(name, fn):
+    """Run a LOCK entry point under could-not-run semantics. Never exit 0 on a
+    crash: that is indistinguishable from a pass to everything downstream."""
     try:
-        if '--selftest' in sys.argv:
-            sys.exit(selftest())
-        if '--preflight' in sys.argv:
-            sys.exit(preflight())
+        return fn()
+    except SystemExit:
+        raise
+    except Exception:                                   # noqa: BLE001
+        import traceback
+        traceback.print_exc()
+        print('')
+        print('COULD NOT RUN (exit 2): %s raised before it finished, so NO '
+              'verdict about this gate is available from this run.' % name)
+        print('  This is NOT a pass and NOT a finding. The arms printed above '
+              'are the ones that ran; the rest did not.')
+        print('  Until 2026-10-17 this path exited 0 -- the gate path\'s '
+              'fail-open policy covered the lock as well, and a crashed lock '
+              'read as a clean one.')
+        return 2
+
+
+if __name__ == '__main__':
+    # OUTSIDE the fail-open try, deliberately. See _locked_entry above.
+    if '--selftest' in sys.argv:
+        sys.exit(_locked_entry('--selftest', selftest))
+    if '--preflight' in sys.argv:
+        sys.exit(_locked_entry('--preflight', preflight))
+    try:
         if '--pre-push' in sys.argv:
             MODE = 'prepush'
         if os.environ.get('SAIRN_SEED_GATE', '').lower() == 'off':
