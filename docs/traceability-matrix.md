@@ -47,6 +47,8 @@ Source: `GUARD_TESTS` in `tools/sairn_push_gate_hook.py`. These are the only tes
 | PLATFORM | an adjustment cannot push a period below its straight-time floor, and an overpayment is reported rather than netted away | `api/b17-straight-time-floor.test.js` | Run to a known exit code BEFORE wiring, which is this list's own admission bar: exit 0, 0.11s, "11 passed, 0 failed, 0 unproven". hank b14-b17. |
 | PLATFORM | the Tier A resource count the register states and the count the gate derives agree | `api/b17-tier-a-count-agreement.test.js` | Run to a known exit code BEFORE wiring, which is this list's own admission bar: exit 0, 0.08s, "7 passed, 0 failed, 0 unproven". hank b14-b17. |
 | PLATFORM | LAW_TRUST_LOCKED is asserted directly rather than inferred, so a trust write cannot land through a path that never read the lock | `api/b17-trust-lock-hard.test.js` | Run to a known exit code BEFORE wiring, which is this list's own admission bar: exit 0, 1.64s, "12 passed, 0 failed, 0 unproven". hank b14-b17. |
+| sairnlaw | the countersignature lock the ROLE MODULE defines is the lock the dispatcher actually applies, and each gate is proved load-bearing by removing it | `api/b18-countersign-lock.test.js` | A SEAM: api/_lib/countersign.js decides and api/sd-data.js enforces, and the two are edited by different work. THE DEFECT ON RECORD IS WHY IT CARRIES ABLATIONS -- fourth's b26 finding H1 was that SAIRNlaw's trust hard-lock could be DELETED ENTIRELY with every suite still green: the defence existed, was written down, was believed, and no arm could see it because the thing in front of it was working. This suite removes each gate on purpose and asserts what goes red PER ARM rather than per exit code. Its A1 arm is the one to read before trusting the rest: neither SQL file has been run, so both locks answer 503 NOT_PROVISIONED in production today, and A1 asserts exactly that -- "the lock is inert until Michael runs SQL" and "the lock lets writes through until Michael runs SQL" are opposite facts and only one of them is safe. Run to a known exit code BEFORE wiring: exit 0, 2.40s, "59 passed, 0 failed, 0 unproven". Routed by hank; FMEA draft written in the same batch. |
+| stonedesk | the three employee-panel client functions LIFTED OUT OF stonedesk.html and run -- so a later edit to the page cannot quietly reintroduce the stuck-label and failed-read-as-empty class | `api/b18-passkey-profile-e2e.test.js` | A SEAM BETWEEN A SUITE AND A 2MB PAGE, which is the shape that rots silently. THE DEFECT ON RECORD IS stonedesk.html's own 2026-08-06 "Granting..." bug, and the sentence that earns this a place here is in that comment: the reset code was "confirmed present and correct on every path, CHECKED REPEATEDLY" and never ran, because a synchronous ReferenceError happened first. READING THE CODE WAS THE METHOD AND THE METHOD FAILED, so nothing but driving it can hold the three residuals b18 fixed. IT FAILS CLOSED ON ITS OWN EXTRACTION, which is what makes it safe to wire: the functions are lifted by anchor out of stonedesk.html and COMPILED, a lift that is missing or will not parse is reported UNPROVEN and never as a pass, and Section Z asserts the extraction itself before any arm depends on it. That is the stale-anchor class cc b22 fixed in run_push_gate_preflight_probe.py, already handled here -- and exit 3 routes to exit3_reason() above rather than to a silent skip. Run to a known exit code BEFORE wiring: exit 0, 1.38s, "37 passed, 0 failed, 0 unproven". Routed by hank. |
 
 ## 2. Mechanically enforced at the push gate
 
@@ -731,22 +733,22 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 226 test files are traced to no stated requirement
+### 224 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 772 of 998 traced, 77.4%.
+For context and not as the headline: 774 of 998 traced, 77.6%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 772 citations come from
+### Where the 774 citations come from
 
 | source | citations |
 |---|---|
 | `declared` | 342 |
 | `index` | 325 |
 | `declared+index` | 70 |
-| `GUARD_TESTS` | 16 |
+| `GUARD_TESTS` | 18 |
 | `GUARD_TESTS+declared` | 12 |
 | `GUARD_TESTS+index` | 6 |
 | `GUARD_TESTS+declared+index` | 1 |
@@ -758,7 +760,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | kind | count | what it means | the fix |
 |---|---|---|---|
 | **bound to a subject, tied to no requirement** | 40 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 186 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **no subject binding either** | 184 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
 **These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 40 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
@@ -771,8 +773,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/_lib/sen-evv-clock.test.js`
 - `api/agent/enqueue.test.js`
 - `api/ai-safeguards.test.js`
-- `api/b18-countersign-lock.test.js`
-- `api/b18-passkey-profile-e2e.test.js`
 - `api/b19-iolta-reconcile-carveout.test.js`
 - `api/b20-countersign-open.test.js`
 - `api/leg-aftercare-key-unambiguous.test.js`
@@ -1009,7 +1009,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
   app files                           22   git ls-files '*.html'
   test files on disk                 998   tests/**, api/** (both walked)
   open-work rows citing a test       393   docs\SAIRN-OPEN-WORK-INDEX.md
-  GUARD_TESTS entries                 35   sairn_push_gate_hook.GUARD_TESTS
+  GUARD_TESTS entries                 37   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                78   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     82   report_only_checks.NOT_PROMOTED
   numbered gate checks                17   sairn_push_gate_hook.py
