@@ -1674,6 +1674,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/bridge-unknown-action.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'blocklist wearing an allowlist\\'s name', async () => {"
+    }
+   ],
+   "sha": "27f2053ddef0312bc1e33094f9b077b47ec14d4a",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/faults/grd_write_faults.js",
    "class": "test file",
    "level": "CHANGE",
@@ -7085,6 +7098,32 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b21-bridge-unknown-action.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'blocklist wearing an allowlist\\'s name', async () => {"
+    }
+   ],
+   "sha": "ab023e5336db7d2c3fb58a3c69501c4f86bbcd73",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/bridge-unknown-action.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "assertions NET REMOVED",
+     "detail": "41 removed, 0 added; first removed: const assert = require('assert');"
+    }
+   ],
+   "sha": "ab023e5336db7d2c3fb58a3c69501c4f86bbcd73",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/faults/grd_write_faults.js",
    "class": "test file",
    "level": "CHANGE",
@@ -8468,6 +8507,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "caa3cb3e0e282e4424691858daa32ca5e484462c",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b21-bridge-unknown-action.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "cafc79551ddf1d79551332967e98a8bad1548ecc",
    "criteria_version": "2026-10-06.1"
   },
   {
