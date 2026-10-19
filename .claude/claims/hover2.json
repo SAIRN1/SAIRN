@@ -605,6 +605,17 @@
       "status": "released",
       "released_at": "2026-10-19T11:40:29Z",
       "files": null
+    },
+    {
+      "id": "hover2-1792411093",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "b54: own coverage-ledger undirected-sweep + rolling re-scan draw continuing from b53; parity-tool pickup only if a real spec now exists; check fourth b29 if landed on Drive else skip; handoff+push",
+      "claimed_at": "2026-10-19T11:58:13Z",
+      "claimed_at_epoch": 1792411093.1839547,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
