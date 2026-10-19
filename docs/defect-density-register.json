@@ -33651,62 +33651,6 @@
       "single_factor_note": "not applicable -- three factors"
     },
     {
-      "commit": "45d9a9132305",
-      "date": "2026-10-19",
-      "subject": "fix(sairnroofing): the last 3 contrast findings on the platform, and two of them were signature borders",
-      "files": [
-        "docs/batch-manifest-fourth-b32.json",
-        "docs/wcag-contrast-baseline.json",
-        "sairnroofing.html"
-      ],
-      "lines_added": 48,
-      "lines_removed": 7,
-      "app": "sairnroofing",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "static-checker",
-      "summary": "sairnroofing.html referenced var(--bd) three times and defined it NOWHERE, so three border:1px solid var(--bd) declarations were invalid at computed-value time and the border was DROPPED -- not drawn in a fallback colour. TWO OF THE THREE ARE THE AGREEMENT AND JOB-BOARD SIGNATURE CANVASES, where that border is the only thing showing a customer where to sign. These were the last 3 of the 153 contrast and undefined-token findings b30 measured across the platform; the ratchet baseline goes 3 -> 0 and the platform now carries zero contrast debt.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": "tools/wcag_contrast_check.py",
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The references predate the per-app batch record and no commit introduced them as a change; the token was never defined in this file at any point, so there is no injection commit to cite rather than one merely unknown to me."
-      },
-      "citation_note": "The could-not-tell shape in markup: the declaration did not fall back and did not error -- it was dropped, and a dropped border looks exactly like a design with no border.",
-      "contributing_factors": [
-        {
-          "factor": "var(--bd) was referenced three times and defined nowhere in the file, and an unresolvable custom property makes the whole declaration invalid at computed-value time so the property is DROPPED rather than falling back",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Pointed at --border, which this app already defines; re-measured to 0 findings"
-        },
-        {
-          "factor": "Two of the three are SIGNATURE CANVASES on the agreement and job board, where the border is the only thing showing a customer where to sign, so the visible consequence is on a customer-facing legal artefact rather than on chrome",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Same one-line fix covers all three; the markup now carries why"
-        },
-        {
-          "factor": "No check on this platform read computed or declared CSS until b29, so the class was invisible rather than this instance being missed",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "tools/wcag_contrast_check.py static mode, wired as push-gate CHECK 5b in b30; this is the last of the 153 it measured"
-        },
-        {
-          "factor": "The finding was known in b31 and deliberately NOT fixed then, because another session held the file under an active claim",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Flagged back in b31 rather than worked around, and picked up here the moment the claim released -- the claim record did its job in both directions"
-        }
-      ],
-      "recurrence_open": "The static half still cannot see ancestor-dependent pairs: 4,420 UNRESOLVED platform-wide, which is the majority of every app text. And nothing has been RENDERED since b29 -- the b31 and b32 colour changes across 14 apps are verified by arithmetic only."
-    },
-    {
       "commit": "1d97c4b9446c",
       "date": "2026-10-19",
       "subject": "fix(index check): the rows hank reported as malformed were already repaired, and the real defect was in the tool reading them",
@@ -33832,6 +33776,62 @@
         }
       ],
       "recurrence_open": "THREE THINGS THE ACTIONS ABOVE DO NOT CLOSE. (1) THE SWEEP IS NOT WIRED TO ANYTHING -- no hook, no push gate, no suite invokes it, which is precisely the tooling_inventory finding that a tool which exists is not a mechanism and a tool that RUNS is. Nothing stops the 102 candidates from growing. (2) THE 86 CANDIDATES THAT ARE NOT cody's ARE NOT READ and are not counted as clean. (3) AND THE SWEEP IS BLIND TO ONE MEMBER OF ITS OWN CLASS: b22's B6 arm was satisfied by a CONSTANT'S note FIELD -- real executable data carrying prose -- which looks like nothing to a text scanner because it IS code. Detecting that needs the value flow, not the text, and no tool here does it. Convention 36 was written about this class one batch before b23 and did not prevent b23 writing a B6-shaped arm of its own, which is the measurement that says prose is not a control."
+    },
+    {
+      "commit": "45d9a9132305",
+      "date": "2026-10-19",
+      "subject": "fix(sairnroofing): the last 3 contrast findings on the platform, and two of them were signature borders",
+      "files": [
+        "docs/batch-manifest-fourth-b32.json",
+        "docs/wcag-contrast-baseline.json",
+        "sairnroofing.html"
+      ],
+      "lines_added": 48,
+      "lines_removed": 7,
+      "app": "sairnroofing",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "sairnroofing.html referenced var(--bd) three times and defined it NOWHERE, so three border:1px solid var(--bd) declarations were invalid at computed-value time and the border was DROPPED -- not drawn in a fallback colour. TWO OF THE THREE ARE THE AGREEMENT AND JOB-BOARD SIGNATURE CANVASES, where that border is the only thing showing a customer where to sign. These were the last 3 of the 153 contrast and undefined-token findings b30 measured across the platform; the ratchet baseline goes 3 -> 0 and the platform now carries zero contrast debt.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/wcag_contrast_check.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The references predate the per-app batch record and no commit introduced them as a change; the token was never defined in this file at any point, so there is no injection commit to cite rather than one merely unknown to me."
+      },
+      "citation_note": "The could-not-tell shape in markup: the declaration did not fall back and did not error -- it was dropped, and a dropped border looks exactly like a design with no border.",
+      "contributing_factors": [
+        {
+          "factor": "var(--bd) was referenced three times and defined nowhere in the file, and an unresolvable custom property makes the whole declaration invalid at computed-value time so the property is DROPPED rather than falling back",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Pointed at --border, which this app already defines; re-measured to 0 findings"
+        },
+        {
+          "factor": "Two of the three are SIGNATURE CANVASES on the agreement and job board, where the border is the only thing showing a customer where to sign, so the visible consequence is on a customer-facing legal artefact rather than on chrome",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Same one-line fix covers all three; the markup now carries why"
+        },
+        {
+          "factor": "No check on this platform read computed or declared CSS until b29, so the class was invisible rather than this instance being missed",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tools/wcag_contrast_check.py static mode, wired as push-gate CHECK 5b in b30; this is the last of the 153 it measured"
+        },
+        {
+          "factor": "The finding was known in b31 and deliberately NOT fixed then, because another session held the file under an active claim",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Flagged back in b31 rather than worked around, and picked up here the moment the claim released -- the claim record did its job in both directions"
+        }
+      ],
+      "recurrence_open": "The static half still cannot see ancestor-dependent pairs: 4,420 UNRESOLVED platform-wide, which is the majority of every app text. And nothing has been RENDERED since b29 -- the b31 and b32 colour changes across 14 apps are verified by arithmetic only."
     },
     {
       "commit": "4b2bfc8b6ee2",
@@ -34105,6 +34105,177 @@
         }
       ],
       "recurrence_open": "The STATUS and NEXT fields are parsed the same way and still swallow unlabelled prose; they are bounded by their own 900-character slices, so they degrade quietly rather than wrongly, and nothing here changes that. Nothing requires a digest to use only the nine labels the board knows. And the fix is in a SHARED publisher that every clone runs its own copy of -- measured during this batch, fourth's clone republished the board 20 minutes after cc's corrected version with its own pre-fix copy, so the platform-wide effect of this fix only arrives as each clone fetches."
+    },
+    {
+      "commit": "634f7d709a87",
+      "date": "2026-10-19",
+      "subject": "fix(filters): three selections that silently picked the wrong set and reported clean over it",
+      "files": [
+        "docs/2026-10-19-cc-b22-case-and-stems.md",
+        "docs/2026-10-19-context-line-paragraph-for-dispatches.md",
+        "docs/wcag-contrast-baseline.json",
+        "tests/run_push_gate_preflight_probe.py",
+        "tools/status_board_bridge_check.py",
+        "tools/wcag_contrast_check.py"
+      ],
+      "lines_added": 606,
+      "lines_removed": 23,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/wcag_contrast_check.py product_files() excluded any root HTML stem containing a hyphen, so docs/wcag-contrast-baseline.json was generated over 17 files while the push gate judges every changed .html (22). The five sub-apps were outside the baseline and inside the gate, and the two carrying debt (sairndental-book 6 findings, sairndental-complaint 2) denied any push touching them on PRE-EXISTING debt with no route but a skip.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "467baf7493e0",
+        "date": "2026-09-22",
+        "subject": "fix(hover): a sha the auditor CITED was counted as one it CLAIMS -- attribution gains a third state",
+        "lag_days": 27
+      },
+      "contributing_factors": [
+        {
+          "factor": "the exclusion was written as a hyphen test rather than as a product test, so it read as a narrowing of the product list and was in fact a removal of five products",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "replaced with is_product_stem(), a prefix rule over the whole stem, with 17 new fixture arms including one ablation that fails on the pre-fix expression"
+        },
+        {
+          "factor": "the baseline generator and the gate consumed DIFFERENT file sets and nothing compared them -- the generator never recorded its own universe",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the baseline now carries a files_scanned list, so its universe is in the artifact rather than implied by a function"
+        },
+        {
+          "factor": "the gate shipped as a ratchet against a baseline whose coverage was never measured against the gate it feeds",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "add a check comparing the baseline files_scanned list against the set of files the gate can be handed, and deny when the first is narrower; routed to fourth as the owner of wcag_contrast_check.py, not built here"
+        }
+      ],
+      "recurrence_open": "nothing yet refuses a baseline whose files_scanned list is narrower than the gate's own universe, so a future narrowing of either side is still silent. The files_scanned field makes it visible to a reader, not to a checker."
+    },
+    {
+      "commit": "634f7d709a87",
+      "date": "2026-10-19",
+      "subject": "fix(filters): three selections that silently picked the wrong set and reported clean over it",
+      "files": [
+        "docs/2026-10-19-cc-b22-case-and-stems.md",
+        "docs/2026-10-19-context-line-paragraph-for-dispatches.md",
+        "docs/wcag-contrast-baseline.json",
+        "tests/run_push_gate_preflight_probe.py",
+        "tools/status_board_bridge_check.py",
+        "tools/wcag_contrast_check.py"
+      ],
+      "lines_added": 606,
+      "lines_removed": 23,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "hover-audit",
+      "summary": "tools/status_board_bridge_check.py answered 'is this agent selected' with two different expressions: the row filter matched the board LABEL or the registry token, the nonce gate matched the token ONLY. BOARD_TOKEN['H1'] is 'h1', so --agent H1 checked the row, silently dropped the nonce, and printed CLEAN and the nonce crossed both ends -- a sentence keyed on a nonce being SUPPLIED rather than CHECKED. An --agent matching no row was the same shape one step out: CLEAN at exit 0 over an empty set.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "467baf7493e0",
+        "date": "2026-09-22",
+        "subject": "fix(hover): a sha the auditor CITED was counted as one it CLAIMS -- attribution gains a third state",
+        "lag_days": 27
+      },
+      "contributing_factors": [
+        {
+          "factor": "one question had two answers a hundred lines apart, so a correct row filter and an incorrect nonce gate could disagree without either looking wrong",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "a single selects(label, token, agents) now serves both call sites, case-insensitive on both sides, with H1 b63 negative control made permanent as synthetic fixtures and ABLATED -- the pre-fix expression scores 36/42"
+        },
+        {
+          "factor": "the summary line asserted the nonce had crossed on the basis that one was supplied, so the skipped check printed as a verified pass",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the CLEAN clause now derives from a nonce_checked COUNT and names it; nonce supplied with zero checked prints a loud should-be-unreachable line"
+        },
+        {
+          "factor": "an --agent value that selected nothing produced a verdict over an empty set at exit 0",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "an --agent matching no board row is now COULD NOT RUN exit 2, naming the valid names in both forms; driven with --agent zzz"
+        },
+        {
+          "factor": "the fixtures covered the nonce logic through classify() only, never through the two selection sites, so no arm could see them disagree",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "six new arms drive both call sites together, and the load-bearing one asserts uppercase and lowercase give the SAME answer rather than asserting the uppercase verdict, which would pass again on the next drift in the other direction"
+        }
+      ],
+      "recurrence_open": "the fixtures reproduce live() selection logic rather than calling live(), because live() needs a registry and a Drive mount. A future change to live() that stops calling selects() at one of the two sites would not be caught by these arms -- only by the live drive, which is manual."
+    },
+    {
+      "commit": "634f7d709a87",
+      "date": "2026-10-19",
+      "subject": "fix(filters): three selections that silently picked the wrong set and reported clean over it",
+      "files": [
+        "docs/2026-10-19-cc-b22-case-and-stems.md",
+        "docs/2026-10-19-context-line-paragraph-for-dispatches.md",
+        "docs/wcag-contrast-baseline.json",
+        "tests/run_push_gate_preflight_probe.py",
+        "tools/status_board_bridge_check.py",
+        "tools/wcag_contrast_check.py"
+      ],
+      "lines_added": 606,
+      "lines_removed": 23,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "probe-control",
+      "summary": "tests/run_push_gate_preflight_probe.py injected its test main() at the FIRST occurrence of \"if __name__ == '__main__':\". That anchor occurs twice in tools/sairn_push_gate_hook.py and the first is inside a double-quoted string on a real code line, added to the hook after the probe was written. The multi-line injection left that literal unterminated, compile() raised, and arms E1/E2/E3 were RED for days reporting only RAISED SyntaxError -- three arms over the gate's multi-denial and fail-open behaviour testing nothing.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "run_push_gate_preflight_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "467baf7493e0",
+        "date": "2026-09-22",
+        "subject": "fix(hover): a sha the auditor CITED was counted as one it CLAIMS -- attribution gains a third state",
+        "lag_days": 27
+      },
+      "contributing_factors": [
+        {
+          "factor": "a textual anchor into another file is a coupling nothing re-derives, and the hook gained a second occurrence of it in a string literal with no signal to the probe",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "the injection anchors on the LAST occurrence via rfind, which is what the hook own selftest already did for the same reason; measured both ways on the real source -- old gives unterminated string literal at line 4849, new compiles"
+        },
+        {
+          "factor": "the failure reported as RAISED SyntaxError with no file, line or cause, so three red arms carried no diagnosis for days",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "an absent anchor now RAISES with the anchor and the file named, rather than injecting nothing and letting every arm pass while judging an unmodified gate"
+        },
+        {
+          "factor": "the suite was red and had no row in docs/known-red-suites.json, so nothing distinguished it from a suite nobody had run",
+          "kind": "process",
+          "action_status": "declined",
+          "note": "not added -- the suite is GREEN as of this commit, so a known-red row would be stale the moment it was written. The underlying gap, that a red suite with no row is invisible, is cody file and already routed."
+        }
+      ],
+      "recurrence_open": "nothing checks that a probe which injects into another file still injects successfully. The refusal added here fires when the anchor is ABSENT, not when it matches the wrong occurrence -- a third occurrence appearing before the real one would be caught only because compile() would raise again, which is luck rather than a control."
     },
     {
       "commit": "9a7f73dab468",
