@@ -220,14 +220,77 @@ def newest_digest(token, ddir):
     return best, best_path
 
 
+# ── THE LABEL SET, AND WHY IT GREW THE WAY IT DID (cc b19, 2026-10-19) ─────
+# MICHAEL'S DECISION was "the board's label list grows -- add explicit
+# STATUS/DECISION-NEEDED/NEXT". MEASURED FIRST, and read out of this tuple
+# rather than remembered: ALL of those were ALREADY here. What was missing,
+# against the six live digests on the mount, is `IDENTITY` (hank's first line)
+# and `DIGEST` (cc's and fourth's). Both are added.
+#
+# THE RUN-ON HAD ONE LIVE INSTANCE AND A BLANKET FIX WOULD HAVE BEEN WORSE.
+# hank b17's CONTEXT body measured 4,673 characters, because CONTEXT sits at
+# offset 1506 and the next RECOGNISED label at 6193, with three of hank's own
+# section headings in between (`WHAT LANDED --`, `THE METHODOLOGY ITEM CAUGHT
+# ITS OWN AUTHOR...`, `AND THREE SUITES WENT RED...`) -- each a real heading:
+# own line, column 0, preceded by a blank line.
+#
+# BUT THE SAME SHAPE LIVES INSIDE FIELDS THAT ARE SUPPOSED TO CONTAIN IT.
+# cody b23's CHANGED carries `ITEM 1 --`, `ITEM 2 --`, `A DEFECT RECORD WAS
+# WRITTEN`; its NEXT carries `WHOEVER TAKES THE NEXT SWEEP REPAIR`, `HANK --`,
+# `CC --`. All blank-line-preceded, all upper case, and all genuinely part of
+# the field a reader wants. Terminating there would cut cody's CHANGED to one
+# paragraph and call it the whole field.
+#
+# SO THE RULE IS SCOPED BY WHAT THE FIELD IS:
+#   CONTEXT is a FIGURE field -- a few words -- so a blank-line-preceded
+#   heading inside it is always the next section, and it terminates there.
+#   STATUS and NEXT are PROSE fields that legitimately carry their author's
+#   headings, so they still end only at a known label or at end of file, and
+#   when one of them CONTAINS such a heading the fields dict says so. A bound
+#   nobody can see is a bound that widens (b18's tolerance note, same shape).
+LABELS = ('IDENTITY', 'DIGEST', 'STATUS', 'DECISION-NEEDED', 'CHANGED',
+          'EVIDENCE-path', 'UNVERIFIED', 'NEXT', 'CONTEXT', 'SHA256',
+          'END-OF-REPORT')
+
+# A heading of the author's own: column 0, at least four characters of upper
+# case before any lower case, and preceded by a blank line. The blank-line
+# requirement is what separates it from a wrapped sentence that happens to
+# begin with an emphasised word -- cody's digest has six of those and not one
+# is preceded by a blank line.
+OWN_HEADING_RE = re.compile(r'^[A-Z][A-Z0-9 /&\'’,.()-]{3,}$')
+
+
+def own_headings(body_lines):
+    """Indices of the author's own block headings within a field's lines."""
+    # THE LENGTH GUARD GOES ON THE HEAD, NOT THE LINE, and the first version
+    # of this function put it on the line -- which skipped every one of hank's
+    # headings, because his are `WHAT LANDED -- <a paragraph>` on a single
+    # line. Measured: CONTEXT stayed at 4,673 characters and the arm that was
+    # supposed to catch it reported nothing, which is the fires-on-absence
+    # direction this repo keeps paying for.
+    out = []
+    for i, line in enumerate(body_lines):
+        s = line.strip()
+        if not s:
+            continue
+        head = re.split(r'\s--\s|:', s, 1)[0].strip()
+        if not (4 <= len(head) <= 60) or not OWN_HEADING_RE.match(head):
+            continue
+        if i == 0 or not body_lines[i - 1].strip():
+            out.append(i)
+    return out
+
+
 def digest_fields(path):
-    """{status, next, context} from a digest's own labelled lines.
+    """{status, next, context, notes} from a digest's own labelled lines.
 
     Each value is the text after the label up to the next labelled line, so a
     STATUS that wraps is not truncated at the newline. A label that is absent
     yields '' and the caller says UNKNOWN -- it does not borrow another line.
+    `notes` names any prose field that carries the author's own headings, which
+    is reported rather than silently sliced.
     """
-    out = {'status': '', 'next': '', 'context': ''}
+    out = {'status': '', 'next': '', 'context': '', 'notes': []}
     if not path:
         return out
     try:
@@ -235,18 +298,37 @@ def digest_fields(path):
             text = fh.read()
     except OSError:
         return out
-    labels = ('STATUS', 'DECISION-NEEDED', 'CHANGED', 'EVIDENCE-path',
-              'UNVERIFIED', 'NEXT', 'CONTEXT', 'SHA256', 'END-OF-REPORT')
     # A label starts a line and is followed by ':' or whitespace -- h2 writes
     # `CONTEXT:` and cc writes `CONTEXT `, and both are the same field.
-    pat = re.compile(r'^(%s)\s*:?\s*' % '|'.join(labels), re.M)
+    pat = re.compile(r'^(%s)\s*:?\s*' % '|'.join(LABELS), re.M)
     hits = [(m.group(1), m.start(), m.end()) for m in pat.finditer(text)]
     for i, (name, _s, e) in enumerate(hits):
         end = hits[i + 1][1] if i + 1 < len(hits) else len(text)
-        body = ' '.join(text[e:end].split())
-        key = {'STATUS': 'status', 'NEXT': 'next', 'CONTEXT': 'context'}.get(name)
-        if key and not out[key]:
-            out[key] = body
+        key = {'STATUS': 'status', 'NEXT': 'next',
+               'CONTEXT': 'context'}.get(name)
+        if not key or out[key]:
+            continue
+        raw = text[e:end]
+        lines = raw.split(chr(10))
+        heads = own_headings(lines)
+        if key == 'context' and heads:
+            # THE FIGURE FIELD STOPS AT THE NEXT SECTION. hank's 4,673
+            # characters become the forty that are actually the reading.
+            cut = heads[0] if heads[0] > 0 else 1
+            was = len(raw)
+            raw = chr(10).join(lines[:cut])
+            out['notes'].append(
+                'CONTEXT ended at the digest\'s own next heading (%r): %d '
+                'character(s) kept of the %d that ran to the next known label'
+                % (lines[heads[0]].strip()[:60], len(raw), was))
+        elif heads:
+            out['notes'].append(
+                '%s carries %d of the digest\'s own heading(s) (first: %r); '
+                'the field is NOT cut there because a prose field legitimately '
+                'contains them, but the 900-character display slice may land '
+                'inside another section'
+                % (name, len(heads), lines[heads[0]].strip()[:60]))
+        out[key] = ' '.join(raw.split())
     return out
 
 
@@ -956,6 +1038,13 @@ def render_board(rows, problems, extra_rows, extra_digests, reason, ddir):
          '',
          '- **Published at:** %s (local)' % time.strftime('%Y-%m-%dT%H:%M:%S'),
          '- **Trigger:** %s' % reason,
+         # THE FIELD THE RACE GUARD READS. A clone running a lower revision
+         # refuses to overwrite a board written by a higher one -- see
+         # overwrite_refusal(). It is published rather than kept internal so
+         # the guard reads the BOARD rather than trusting its own copy.
+         '- **Written by publisher revision %s** -- a clone on a lower '
+         'revision refuses to overwrite this file rather than reverting it'
+         % PUBLISHER_REVISION,
          '- **Status registry:** `%s` -- outside every clone, no fetch needed'
          % ST.STATUS_DIR,
          '- **Drive mount:** `%s` (folder id `%s`)' % (ddir, DUV.DRIVE_FOLDER_ID),
@@ -1344,6 +1433,84 @@ def render_mirror_notice(token, ddir, reason):
     return NL.join(L) + NL
 
 
+# ── THE PUBLISHER RACE (cc b19 item 2, from b18's own NEXT note) ───────────
+# MEASURED IN b18: cc's clone published a corrected board at 08:34; FOURTH'S
+# CLONE REPUBLISHED AT 08:55 with its own pre-fix copy of this file, and the
+# broken cells came back with no error anywhere. It resolved itself when other
+# clones pulled, which is luck rather than a mechanism.
+#
+# AND THE DATA WAS NOT STALE -- THE CODE WAS. Every clone renders from the same
+# registry outside git, so fourth's rows were as fresh as cc's: a
+# last-write-wins check on row timestamps would have let that publish straight
+# through. What differed was the publisher each clone was running. So the guard
+# compares TWO things, and the first is the one a timestamp check would miss.
+#
+# REFUSE, NOT MERGE. Merging two renderings of six agents' state produces a
+# board describing no moment that ever existed.
+#
+# AND REFUSING MUST NOT BREAK THE CALLER: publishing is a side effect of a
+# status or claim write, so the write still succeeds and the board is reported
+# NOT PUBLISHED with the command that fixes it.
+#
+# THE LIMIT, STATED HERE: a clone running a publisher older than this revision
+# neither writes the field nor reads it, so it cannot be stopped by this. The
+# guard protects every clone from this revision forward, and the push is what
+# distributes it.
+PUBLISHER_REVISION = '2026-10-19.1'
+REV_RE = re.compile(r'publisher revision\s+([0-9]{4}-[0-9]{2}-[0-9]{2}\.[0-9]+)')
+ROW_WRITTEN_RE = re.compile(r'row written ([0-9]{4}-[0-9]{2}-[0-9]{2}T'
+                            r'[0-9]{2}:[0-9]{2}:[0-9]{2})')
+
+
+def _rev_tuple(text):
+    """'2026-10-19.10' -> (2026, 10, 19, 10). Compared as numbers, because
+    '2026-10-19.10' < '2026-10-19.9' as strings and that would invert the
+    guard exactly once a revision reached double digits."""
+    try:
+        date, serial = str(text).rsplit('.', 1)
+        y, m, d = date.split('-')
+        return (int(y), int(m), int(d), int(serial))
+    except Exception:                                            # noqa: BLE001
+        return None
+
+
+def overwrite_refusal(board_path, incoming):
+    """-> (refuse, why). Would writing `incoming` revert a newer board?
+
+    Pure apart from reading the existing file. Returns (False, '') whenever it
+    cannot tell -- an unreadable or absent board is not evidence of a race,
+    and refusing to publish because the mount is empty would be a new way to
+    have no board at all.
+    """
+    try:
+        existing = io.open(board_path, encoding='utf-8', errors='replace').read()
+    except OSError:
+        return False, ''
+    mine = _rev_tuple(PUBLISHER_REVISION)
+    m = REV_RE.search(existing)
+    theirs = _rev_tuple(m.group(1)) if m else None
+    if mine and theirs and theirs > mine:
+        return True, ('the board on the mount was written by publisher '
+                      'revision %s and this clone is running %s. A lower '
+                      'revision replacing a higher one is the b18 race: a '
+                      'stale clone silently reverting a fix.'
+                      % (m.group(1), PUBLISHER_REVISION))
+    # ROW RECENCY, per agent. The board prints each row's own `row written`
+    # stamp; if the published board shows a row NEWER than the one this
+    # process just read, this clone's registry read is behind.
+    old_rows = ROW_WRITTEN_RE.findall(existing)
+    new_rows = ROW_WRITTEN_RE.findall(incoming)
+    if old_rows and new_rows:
+        newest_old, newest_new = max(old_rows), max(new_rows)
+        if newest_old > newest_new:
+            return True, ('the board on the mount renders a status row '
+                          'written %s and the newest row this clone can see '
+                          'is %s -- the registry read behind it is stale, so '
+                          'publishing would walk the board backwards.'
+                          % (newest_old, newest_new))
+    return False, ''
+
+
 def publish(reason='manual run', ddir=None, dry_run=False, quiet=False):
     """(exit_code, lines). The whole job: collect, render, write, verify."""
     out = []
@@ -1388,6 +1555,16 @@ def publish(reason='manual run', ddir=None, dry_run=False, quiet=False):
         return EXIT_COULD_NOT_RUN, [
             'COULD NOT RUN -- no Drive mount at %s. The board was NOT '
             'published and nothing here reports otherwise.' % ddir]
+    # ── THE RACE GUARD, BEFORE A SINGLE BYTE IS WRITTEN (cc b19 item 2) ────
+    refuse, why = overwrite_refusal(os.path.join(ddir, BOARD_NAME), board)
+    if refuse:
+        return EXIT_FINDING, [
+            'BOARD NOT PUBLISHED -- this clone would have REVERTED a newer '
+            'board.', '  %s' % why,
+            '  Your status or claim write SUCCEEDED; only the Drive board was '
+            'left alone.',
+            '  Fix: git pull --rebase origin main, then re-run any status '
+            'command to republish.']
     bad = []
     observed = []
     for name, text in files:
@@ -2082,6 +2259,137 @@ def _a18(sdir, ddir):
           and 'CONTEXT:** 0%' not in txt
           and 'no tool available here' not in txt)
     return ok, txt
+
+
+@arm('A31-context-runs-on', 'a CONTEXT field runs past its own section into '
+                            'the next one, so the board stores thousands of '
+                            'characters of the wrong section')
+def _a31(sdir, ddir):
+    # HANK b17's REAL SHAPE: CONTEXT, a blank line, then his own all-caps
+    # heading with a paragraph welded to it on ONE line -- which is why the
+    # first version of own_headings() (length guard on the LINE) caught
+    # nothing and reported a clean parse over a 4,673-character field.
+    d = json.load(io.open(os.path.join(sdir, 'cc.json'), encoding='utf-8'))
+    d.pop('context_pct')
+    _write(os.path.join(sdir, 'cc.json'), json.dumps(d))
+    body = (
+        'DIGEST cc b7', '', 'STATUS: s.', '', 'CONTEXT: 46%', '',
+        'WHAT LANDED -- four routed fixes, each failing-first with an '
+        'ablation, and a paragraph long enough that a line-length guard '
+        'would skip it entirely.', '',
+        'AND THREE SUITES WENT RED -- all three fixed and named here.', '',
+        'NEXT: n.')
+    _write(os.path.join(ddir, 'SAIRN-digest-cc-b7.txt'), NL.join(body) + NL)
+    f = digest_fields(os.path.join(ddir, 'SAIRN-digest-cc-b7.txt'))
+    txt = _board_for(sdir, ddir)[0]
+    ok = (f['context'].strip() == '46%'
+          and 'WHAT LANDED' not in f['context']
+          and any('ended at the digest' in n for n in f['notes'])
+          and '**CONTEXT:** 46%' in txt)
+    return ok, '%r / notes=%r' % (f['context'][:60], f['notes'][:1])
+
+
+@arm('A32-prose-field-not-cut', 'a PROSE field is cut at the author\'s own '
+                                'heading, losing content the board is meant '
+                                'to show')
+def _a32(sdir, ddir):
+    # THE CONTROL FOR A31, and the reason the rule is scoped by field. cody
+    # b23's CHANGED carries ITEM 1/ITEM 2 and its NEXT carries HANK --/CC --;
+    # terminating there would cut the field to one paragraph and call it whole.
+    body = ('DIGEST cc b7', '', 'STATUS: the first paragraph.', '',
+            'ITEM 1 -- a heading of my own inside STATUS, which belongs to it.',
+            '', 'NEXT: the first next paragraph.', '',
+            'HANK -- a heading of my own inside NEXT, which belongs to it.',
+            '', 'CONTEXT: 40%')
+    _write(os.path.join(ddir, 'SAIRN-digest-cc-b7.txt'), NL.join(body) + NL)
+    f = digest_fields(os.path.join(ddir, 'SAIRN-digest-cc-b7.txt'))
+    ok = ('ITEM 1' in f['status']            # kept, not cut
+          and 'HANK' in f['next']
+          and any('carries' in n and 'NOT cut' in n for n in f['notes']))
+    return ok, 'status=%r next=%r' % (f['status'][:50], f['next'][:50])
+
+
+@arm('A33-stale-clone-reverts', 'a clone running an OLDER publisher overwrites '
+                                'a newer board and silently reverts a fix')
+def _a33(sdir, ddir):
+    # b18's race, driven. The board on the mount was written by a HIGHER
+    # revision than this process is running; publishing must refuse.
+    p = os.path.join(ddir, BOARD_NAME)
+    _write(p, NL.join([
+        '# SAIRN board -- all six agents, one file', '',
+        '- **Published at:** 2026-10-19T09:00:00 (local)',
+        '- **Written by publisher revision 2099-01-01.1** -- a clone on a '
+        'lower revision refuses to overwrite this file', '']) + NL)
+    refuse, why = overwrite_refusal(p, 'whatever this clone would write')
+    before = io.open(p, encoding='utf-8').read()
+    old = ST.STATUS_DIR
+    ST.STATUS_DIR = sdir
+    try:
+        code, lines = publish(reason='selftest', ddir=ddir)
+    finally:
+        ST.STATUS_DIR = old
+    after = io.open(p, encoding='utf-8').read()
+    ok = (refuse and 'revision 2099-01-01.1' in why
+          and code == EXIT_FINDING
+          and 'would have REVERTED a newer board' in NL.join(lines)
+          and 'git pull' in NL.join(lines)
+          and after == before)             # and it really did not write
+    return ok, 'refuse=%s exit=%s untouched=%s' % (refuse, code,
+                                                   after == before)
+
+
+@arm('A34-rev-compare-is-numeric', 'revision 10 is treated as OLDER than '
+                                   'revision 9 because the compare is textual')
+def _a34(sdir, ddir):
+    # The one that inverts the guard exactly once a serial reaches two digits.
+    hi, lo = _rev_tuple('2026-10-19.10'), _rev_tuple('2026-10-19.9')
+    ok = (hi is not None and lo is not None and hi > lo
+          and '2026-10-19.10' < '2026-10-19.9')   # the textual trap, asserted
+    return ok, 'hi=%r lo=%r' % (hi, lo)
+
+
+@arm('A35-fresh-board-publishes', 'the race guard refuses a publish it should '
+                                  'have allowed, so no board is ever written')
+def _a35(sdir, ddir):
+    # THE CONTROL. A guard that refuses everything is worse than the race.
+    p = os.path.join(ddir, BOARD_NAME)
+    _write(p, NL.join([
+        '# SAIRN board', '',
+        '- **Published at:** 2026-10-19T09:00:00 (local)',
+        '- **Written by publisher revision 2000-01-01.1** -- older than mine',
+        '- **state:** working (liveness LIVE, row written '
+        '2000-01-01T00:00:00, 0.0h old)', '']) + NL)
+    refuse_old, _w = overwrite_refusal(p, 'rendered by this clone')
+    os.unlink(p)
+    refuse_absent, _w2 = overwrite_refusal(p, 'rendered by this clone')
+    old = ST.STATUS_DIR
+    ST.STATUS_DIR = sdir
+    try:
+        code, _lines = publish(reason='selftest', ddir=ddir)
+    finally:
+        ST.STATUS_DIR = old
+    ok = (not refuse_old and not refuse_absent and code == EXIT_CLEAN
+          and os.path.isfile(p))
+    return ok, ('older=%s absent=%s exit=%s'
+                % (refuse_old, refuse_absent, code))
+
+
+@arm('A36-stale-rows-walk-back', 'a clone whose registry read is BEHIND the '
+                                 'published board overwrites it anyway')
+def _a36(sdir, ddir):
+    # The second half of the guard: same publisher revision, older data.
+    p = os.path.join(ddir, BOARD_NAME)
+    _write(p, NL.join([
+        '# SAIRN board', '',
+        '- **Written by publisher revision %s** -- same as mine'
+        % PUBLISHER_REVISION,
+        '- **state:** working (liveness LIVE, row written '
+        '2099-01-01T00:00:00, 0.0h old)', '']) + NL)
+    incoming = ('- **state:** working (liveness LIVE, row written '
+                '2026-10-19T09:00:00, 0.0h old)')
+    refuse, why = overwrite_refusal(p, incoming)
+    ok = refuse and 'walk the board backwards' in why
+    return ok, why[:140]
 
 
 def _run_arms(verbose=True, only=None):
