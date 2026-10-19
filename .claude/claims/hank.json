@@ -4082,8 +4082,8 @@
       "task": "b19: C1 bookkeeper IOLTA three-way reconciliation carve-out in the ROLE MODULE (named reconcile verb, legal-side roles only, bookkeeper keeps the operating account); leg_settings SCHEMA and the leg-roles settings normaliser for F2 livery-billing and F3 apprentice-clearance; the needs-your-authorisation panel in sairnlaw.html; read-only confirmation of the Grant App Login Access status. EXCLUDES api/sd-data.js (cody holds it on Michael's explicit instruction for b25) and EXCLUDES sairnlegacy.html (fourth holds it for the b31 contrast pass) -- both are routed as pasteable changes instead. FILES: api/_lib/law-roles.js api/_lib/leg-roles.js sairnlaw.html sql/sairnlegacy_settings_schema.sql api/b19-iolta-reconcile-carveout.test.js api/b19-leg-settings.test.js docs/2026-10-19-hank-b19-concepts.md docs/2026-10-19-hank-b19-routed-to-cody-and-fourth.md SAIRN-handoff-hank-b19.md SAIRN-report-hank-b19.txt SAIRN-digest-hank-b19.txt",
       "claimed_at": "2026-10-19T14:41:30Z",
       "claimed_at_epoch": 1792420890.4419165,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-19T15:58:47Z",
       "files": [
         "SAIRN-digest-hank-b19.txt",
         "SAIRN-handoff-hank-b19.md",
