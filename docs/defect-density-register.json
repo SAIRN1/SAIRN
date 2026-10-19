@@ -33651,6 +33651,62 @@
       "single_factor_note": "not applicable -- three factors"
     },
     {
+      "commit": "45d9a9132305",
+      "date": "2026-10-19",
+      "subject": "fix(sairnroofing): the last 3 contrast findings on the platform, and two of them were signature borders",
+      "files": [
+        "docs/batch-manifest-fourth-b32.json",
+        "docs/wcag-contrast-baseline.json",
+        "sairnroofing.html"
+      ],
+      "lines_added": 48,
+      "lines_removed": 7,
+      "app": "sairnroofing",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "sairnroofing.html referenced var(--bd) three times and defined it NOWHERE, so three border:1px solid var(--bd) declarations were invalid at computed-value time and the border was DROPPED -- not drawn in a fallback colour. TWO OF THE THREE ARE THE AGREEMENT AND JOB-BOARD SIGNATURE CANVASES, where that border is the only thing showing a customer where to sign. These were the last 3 of the 153 contrast and undefined-token findings b30 measured across the platform; the ratchet baseline goes 3 -> 0 and the platform now carries zero contrast debt.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/wcag_contrast_check.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The references predate the per-app batch record and no commit introduced them as a change; the token was never defined in this file at any point, so there is no injection commit to cite rather than one merely unknown to me."
+      },
+      "citation_note": "The could-not-tell shape in markup: the declaration did not fall back and did not error -- it was dropped, and a dropped border looks exactly like a design with no border.",
+      "contributing_factors": [
+        {
+          "factor": "var(--bd) was referenced three times and defined nowhere in the file, and an unresolvable custom property makes the whole declaration invalid at computed-value time so the property is DROPPED rather than falling back",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Pointed at --border, which this app already defines; re-measured to 0 findings"
+        },
+        {
+          "factor": "Two of the three are SIGNATURE CANVASES on the agreement and job board, where the border is the only thing showing a customer where to sign, so the visible consequence is on a customer-facing legal artefact rather than on chrome",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Same one-line fix covers all three; the markup now carries why"
+        },
+        {
+          "factor": "No check on this platform read computed or declared CSS until b29, so the class was invisible rather than this instance being missed",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tools/wcag_contrast_check.py static mode, wired as push-gate CHECK 5b in b30; this is the last of the 153 it measured"
+        },
+        {
+          "factor": "The finding was known in b31 and deliberately NOT fixed then, because another session held the file under an active claim",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Flagged back in b31 rather than worked around, and picked up here the moment the claim released -- the claim record did its job in both directions"
+        }
+      ],
+      "recurrence_open": "The static half still cannot see ancestor-dependent pairs: 4,420 UNRESOLVED platform-wide, which is the majority of every app text. And nothing has been RENDERED since b29 -- the b31 and b32 colour changes across 14 apps are verified by arithmetic only."
+    },
+    {
       "commit": "1d97c4b9446c",
       "date": "2026-10-19",
       "subject": "fix(index check): the rows hank reported as malformed were already repaired, and the real defect was in the tool reading them",
@@ -33837,6 +33893,72 @@
       "recurrence_open": "THE CHECKER CANNOT FOLLOW A DELEGATION, and that is unchanged. A future route that delegates its boundary will be reported the same way and the right answer will again be to restructure -- but a route that delegates to a module the checker DOES see a boundary in would pass while being just as unreadable. tools/ is cc's; the limitation is named rather than patched."
     },
     {
+      "commit": "50f67cfe8ccf",
+      "date": "2026-10-19",
+      "subject": "fix(contrast): 153 findings down to 3, app by app, and the 3 left are cody's file",
+      "files": [
+        "docs/batch-manifest-fourth-b31.json",
+        "docs/wcag-contrast-baseline.json",
+        "sairnbiz.html",
+        "sairnbuild.html",
+        "sairncare.html",
+        "sairncash.html",
+        "sairncode.html",
+        "sairndesign.html",
+        "sairngrounds.html",
+        "sairnlegacy.html",
+        "sairnmechanical.html",
+        "sairnscape.html",
+        "sairnsenior.html",
+        "sairnvet.html",
+        "stonedesk.html"
+      ],
+      "lines_added": 166,
+      "lines_removed": 209,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "87 WCAG 2.2 AA CONTRAST FAILURES AND 66 UNDEFINED CUSTOM PROPERTIES ACROSS 14 OF THE 17 ROOT PRODUCTS, measured by tools/wcag_contrast_check.py and fixed here app by app: 153 -> 3. The AA half is one repeated design decision, not fourteen bugs -- white text on each app's bright brand token, from 1.98:1 in sairnmechanical to 4.47:1 in sairndesign against a 4.5 requirement. The undefined half is worse than a wrong colour: an unresolvable var() is invalid at computed-value time, so the whole declaration is DROPPED rather than falling back -- stonedesk alone had 56 background declarations that had never rendered. Every fix carries a before/after ratio in SAIRN-report-fourth-b31.txt.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/wcag_contrast_check.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The failing palette is the HOUSE pattern and predates the per-app batch record -- white text on each app's bright brand token was the token set chosen at each app's birth, so there is no injection commit to cite rather than one that is merely unknown to me."
+      },
+      "citation_note": "Convention 39 (land a new gate with a baseline) is the rule that MADE this finding visible rather than one it broke; the defect predates both the convention and the checker.",
+      "contributing_factors": [
+        {
+          "factor": "White text on the bright brand colour was the house button pattern, repeated into every app at birth, so one design decision produced 87 AA failures across fourteen products",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Only the SURFACES UNDER WHITE TEXT move to the darker token each app already defined; the bright token keeps every border, accent and focus ring, so no app changed identity"
+        },
+        {
+          "factor": "Nothing on this platform could compute a contrast ratio until b29, so for nineteen apps the question was unanswerable rather than unanswered",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tools/wcag_contrast_check.py static mode, wired as push-gate CHECK 5b in b30; this batch is the first clearing of the debt it measured"
+        },
+        {
+          "factor": "stonedesk referenced --surface and --surface-2 fifty-six times and defined them nowhere -- markup copied from the archived SAIRNaccounting app, which does define them -- so 56 background declarations were invalid at computed-value time and DROPPED",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Defined against this app own --card and --stone; re-measured and no new contrast failures appeared from the newly visible surfaces"
+        },
+        {
+          "factor": "A wide sweep across thirteen single-file apps is exactly where a find-replace silently does too much or too little",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Every edit asserts its expected occurrence count and refuses on mismatch; it refused three times (33 not 31, 6 not 2, 3 not 2) before anything was written"
+        }
+      ],
+      "recurrence_open": "sairnroofing.html keeps its 3 findings -- cody holds that file under an active claim naming it, so it was flagged back rather than worked around. And the static half still cannot see ancestor-dependent pairs: 4,420 UNRESOLVED platform-wide."
+    },
+    {
       "commit": "5107fcafd084",
       "date": "2026-10-19",
       "subject": "fix(hover): hover_editor_review's sentences() gets the same abbreviation-safe split, h1 b56",
@@ -33983,72 +34105,6 @@
         }
       ],
       "recurrence_open": "The STATUS and NEXT fields are parsed the same way and still swallow unlabelled prose; they are bounded by their own 900-character slices, so they degrade quietly rather than wrongly, and nothing here changes that. Nothing requires a digest to use only the nine labels the board knows. And the fix is in a SHARED publisher that every clone runs its own copy of -- measured during this batch, fourth's clone republished the board 20 minutes after cc's corrected version with its own pre-fix copy, so the platform-wide effect of this fix only arrives as each clone fetches."
-    },
-    {
-      "commit": "50f67cfe8ccf",
-      "date": "2026-10-19",
-      "subject": "fix(contrast): 153 findings down to 3, app by app, and the 3 left are cody's file",
-      "files": [
-        "docs/batch-manifest-fourth-b31.json",
-        "docs/wcag-contrast-baseline.json",
-        "sairnbiz.html",
-        "sairnbuild.html",
-        "sairncare.html",
-        "sairncash.html",
-        "sairncode.html",
-        "sairndesign.html",
-        "sairngrounds.html",
-        "sairnlegacy.html",
-        "sairnmechanical.html",
-        "sairnscape.html",
-        "sairnsenior.html",
-        "sairnvet.html",
-        "stonedesk.html"
-      ],
-      "lines_added": 166,
-      "lines_removed": 209,
-      "app": "stonedesk",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "static-checker",
-      "summary": "87 WCAG 2.2 AA CONTRAST FAILURES AND 66 UNDEFINED CUSTOM PROPERTIES ACROSS 14 OF THE 17 ROOT PRODUCTS, measured by tools/wcag_contrast_check.py and fixed here app by app: 153 -> 3. The AA half is one repeated design decision, not fourteen bugs -- white text on each app's bright brand token, from 1.98:1 in sairnmechanical to 4.47:1 in sairndesign against a 4.5 requirement. The undefined half is worse than a wrong colour: an unresolvable var() is invalid at computed-value time, so the whole declaration is DROPPED rather than falling back -- stonedesk alone had 56 background declarations that had never rendered. Every fix carries a before/after ratio in SAIRN-report-fourth-b31.txt.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": "tools/wcag_contrast_check.py",
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The failing palette is the HOUSE pattern and predates the per-app batch record -- white text on each app's bright brand token was the token set chosen at each app's birth, so there is no injection commit to cite rather than one that is merely unknown to me."
-      },
-      "citation_note": "Convention 39 (land a new gate with a baseline) is the rule that MADE this finding visible rather than one it broke; the defect predates both the convention and the checker.",
-      "contributing_factors": [
-        {
-          "factor": "White text on the bright brand colour was the house button pattern, repeated into every app at birth, so one design decision produced 87 AA failures across fourteen products",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Only the SURFACES UNDER WHITE TEXT move to the darker token each app already defined; the bright token keeps every border, accent and focus ring, so no app changed identity"
-        },
-        {
-          "factor": "Nothing on this platform could compute a contrast ratio until b29, so for nineteen apps the question was unanswerable rather than unanswered",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "tools/wcag_contrast_check.py static mode, wired as push-gate CHECK 5b in b30; this batch is the first clearing of the debt it measured"
-        },
-        {
-          "factor": "stonedesk referenced --surface and --surface-2 fifty-six times and defined them nowhere -- markup copied from the archived SAIRNaccounting app, which does define them -- so 56 background declarations were invalid at computed-value time and DROPPED",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Defined against this app own --card and --stone; re-measured and no new contrast failures appeared from the newly visible surfaces"
-        },
-        {
-          "factor": "A wide sweep across thirteen single-file apps is exactly where a find-replace silently does too much or too little",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Every edit asserts its expected occurrence count and refuses on mismatch; it refused three times (33 not 31, 6 not 2, 3 not 2) before anything was written"
-        }
-      ],
-      "recurrence_open": "sairnroofing.html keeps its 3 findings -- cody holds that file under an active claim naming it, so it was flagged back rather than worked around. And the static half still cannot see ancestor-dependent pairs: 4,420 UNRESOLVED platform-wide."
     },
     {
       "commit": "9a7f73dab468",
