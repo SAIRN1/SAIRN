@@ -1296,6 +1296,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sd_data_not_provisioned_misclass.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "1c9ad7cf09dcda9e2f96105c07f07628b938a619",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_read_unreadable_not_empty.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "1c9ad7cf09dcda9e2f96105c07f07628b938a619",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "docs/hank-evidence/b18_live_gate_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -3911,6 +3927,14 @@
     }
    ],
    "sha": "6a37ed38ebe00be6e3dc3235533ab432b44d9ce1",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/roofing_claim_gate_single_source.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6b2f8727895e622a1bc578479cd0c714b6820e85",
    "criteria_version": "2026-10-06.1"
   },
   {
