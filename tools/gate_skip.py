@@ -124,6 +124,8 @@ GATES = {
                 'undefined-token finding',
     'context-digest': "a digest's CONTEXT line must be a measurement, not a "
                       'typed estimate',
+    'path-scope': 'a push must stay inside the pushing population\'s declared '
+                  'paths, and out of the auditor\'s',
 }
 
 UNSKIPPABLE = {

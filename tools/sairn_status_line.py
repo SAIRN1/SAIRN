@@ -52,9 +52,45 @@ import sys
 TOOLS = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, TOOLS)
 
-CRITERIA_VERSION = '2026-10-14.2'
+CRITERIA_VERSION = '2026-10-19.1'
 
-RED_AT = 70                  # Michael's threshold, batch b8
+# ── THE RED THRESHOLD IS PER POPULATION, NOT PER PLATFORM (b24) ────────────
+# Michael's b8 decision was one threshold at 70 for everybody, and his b24
+# decision moves it to 80 FOR THE FOUR BUILD AGENTS ONLY, with every other
+# population's threshold explicitly unchanged.
+#
+# A BARE `RED_AT = 80` WOULD HAVE BEEN THE WRONG EDIT AND IT IS WORTH SAYING
+# WHY. This file is wired as `statusLine` in `~/.claude/settings.json`, which
+# is USER-LEVEL: one entry renders the line in ALL SIX agent folders. So the
+# single constant is not a per-agent setting that happens to be shared -- it
+# is the only setting there is, and raising it would have moved hover's and
+# hover2's threshold at the same time, which the instruction forbids. The
+# auditors set their own context policy in their own tooling; it is not
+# cc's to touch and this change does not touch it.
+RED_AT_DEFAULT = 70          # Michael's threshold, batch b8. UNCHANGED.
+RED_AT_BUILD = 80            # Michael's threshold for the build agents, b24.
+
+# The four BUILD agents, and the same tuple the rest of this platform uses.
+# hover/hover2 are deliberately absent: they are a different population with
+# a different threshold, decided by them.
+BUILD_AGENTS = ('hank', 'cc', 'cody', 'fourth')
+
+
+def red_at(agent):
+    """The context percentage at which this agent's line goes red.
+
+    Keyed on the agent's own identity, which `agent_name()` reads from the
+    per-clone marker inside .git/ rather than from the folder name -- so a
+    renamed clone cannot inherit another population's threshold, which is
+    hover finding #258 applied to a number instead of to a name.
+
+    AN UNKNOWN AGENT GETS THE DEFAULT, NOT THE HIGHER ONE. An unprovisioned
+    clone, a worktree, or anything this cannot identify keeps 70: if the
+    identity is not established, the safer threshold is the one that warns
+    EARLIER. Raising the bar for a session nobody can name is the direction
+    that costs a batch.
+    """
+    return RED_AT_BUILD if agent in BUILD_AGENTS else RED_AT_DEFAULT
 BIG_WINDOW = 1000000         # Opus 5 / any explicit [1m]
 SONNET_WINDOW = 967000       # Sonnet 5's REAL window -- not 200K and not 1M
 TAIL_BYTES = 262144          # first look: the last 256KB of the transcript
@@ -195,7 +231,7 @@ def render(payload, colour=True):
     else:
         pct = int(round(100.0 * used / window))
         txt = 'ctx %d%% of %dk' % (pct, window // 1000)
-        if colour and pct >= RED_AT:
+        if colour and pct >= red_at(agent):
             txt = '%s%s%s' % (RED, txt, RESET)
         bits.append(txt)
     out = ' | '.join(bits)
@@ -356,6 +392,78 @@ def run_fixtures():
               'unknown rather than picking either window',
               'ctx ??%' in render(pay(p, model='claude-haiku-4-5-20251001')),
               True)
+
+        # ── THE PER-POPULATION RED THRESHOLD (b24 item 4) ──────────────────
+        # THE ARM: a build agent goes red at 80, not at 70.
+        for a in BUILD_AGENTS:
+            check('%s is a BUILD agent and goes red at 80' % a,
+                  red_at(a), 80)
+        # THE NEGATIVE CONTROL. Without this the arm above would pass on a
+        # change that simply raised the number for everybody, which is the
+        # edit the instruction forbids.
+        for a in ('hover', 'hover2'):
+            check('%s is NOT a build agent and its threshold is UNCHANGED at '
+                  '70 -- the auditors set their own context policy and this '
+                  'change does not reach it' % a, red_at(a), 70)
+        check('an UNIDENTIFIED clone keeps the EARLIER warning, not the later '
+              'one -- an unprovisioned clone or a worktree must not inherit '
+              'the higher bar', red_at(''), 70)
+        check('...and neither does a name that merely looks like one',
+              red_at('cc-probe'), 70)
+
+        # THE BOUNDARY, BOTH SIDES, DRIVEN THROUGH render() ON A PROVISIONED
+        # CLONE. The arms above are the pure function; this is the one that
+        # proves the threshold reaches the rendered line.
+        import subprocess as _sp
+        clone = os.path.join(tmp, 'SAIRN-buildprobe')
+        os.makedirs(clone)
+        _ok = False
+        try:
+            _sp.run(['git', 'init', '-q', clone], capture_output=True,
+                    timeout=60)
+            gitdir = os.path.join(clone, '.git')
+            if os.path.isdir(gitdir):
+                io.open(os.path.join(gitdir, 'sairn-session'), 'w',
+                        encoding='utf-8', newline='\n').write('cc\n')
+                _ok = agent_name(clone) == 'cc'
+        except Exception:                                        # noqa: BLE001
+            _ok = False
+        if not _ok:
+            # COULD NOT RUN IS NOT A PASS. The pure arms above still ran; this
+            # one says it did not rather than being silently absent.
+            check('COULD NOT RUN: a provisioned tmp clone could not be made, '
+                  'so the END-TO-END half of the threshold change was NOT '
+                  'driven. The pure arms above are not a substitute.',
+                  'could-not-run', 'driven')
+        else:
+            def payc(path, **kw):
+                d = pay(path, **kw)
+                d['workspace'] = {'current_dir': clone}
+                d['cwd'] = clone
+                return d
+            p75 = transcript('t_b24_75.jsonl', [usage(750000)])
+            p80 = transcript('t_b24_80.jsonl', [usage(800000)])
+            line75 = render(payc(p75))
+            line80 = render(payc(p80))
+            check('75% on a BUILD agent is NOT red any more -- this is the '
+                  'change, and it is the arm that fails on the pre-b24 code',
+                  ('ctx 75%' in line75, RED in line75), (True, False))
+            check('...and 80% IS red, so the boundary moved rather than being '
+                  'removed', ('ctx 80%' in line80, RED in line80),
+                  (True, True))
+            check('...and the agent is named from its MARKER, not its folder',
+                  line75.startswith('cc'), True)
+            # THE ABLATION: the same 75% under a NON-build identity is still
+            # red, which is what shows the threshold is keyed on population
+            # and not simply raised.
+            io.open(os.path.join(clone, '.git', 'sairn-session'), 'w',
+                    encoding='utf-8', newline='\n').write('hover\n')
+            line75h = render(payc(p75))
+            check('ABLATION ON THE IDENTITY ALONE: the identical 75%% under '
+                  '`hover` is STILL RED. Same transcript, same model, same '
+                  'window -- only the population differs, so the threshold '
+                  'cannot have been raised platform-wide',
+                  RED in line75h, True)
 
         # THE COULD-NOT-TELL PATH RENDERS A LINE RATHER THAN NOTHING.
         line = render(pay(os.path.join(tmp, 'gone.jsonl')), colour=False)

@@ -2753,6 +2753,85 @@ def main():
                     OVERRIDE_HINT,
                 ]), gate='contrast')
 
+    # ── CHECK 5d: PATH SCOPE -- THE OWNER SPLIT (2026-10-19, cc b24 item 5) ─
+    # MICHAEL'S INSTRUCTION: a push touching a path outside the pushing
+    # population's scope, or touching any auditor-tooling path, is rejected
+    # BEFORE IT LEAVES THE CLONE. Client-side, through the pre-push hook that
+    # already exists -- no settings.json entry and no other hook mechanism.
+    #
+    # THE OWNERSHIP IS DATA, NOT CODE. docs/sairn-path-manifest.json carries
+    # the split with its own reasons in it; tools/sairn_path_manifest.py
+    # classifies against it. A rule written into this file would be invisible
+    # to everybody who is not reading Python and could not be reviewed by the
+    # populations it governs.
+    #
+    # IT REFUSES THE PUSH WHOLE. Two in-scope paths do not license a third:
+    # a partial refusal would mean splitting a commit to get past it, which
+    # is how an out-of-scope edit arrives in two pieces instead of one.
+    #
+    # WHAT IT HONESTLY IS NOT: a security boundary. It runs in the pushing
+    # clone and anyone who can push can also edit the manifest. It closes
+    # DRIFT AND ACCIDENT -- a session editing another population's file
+    # without noticing -- and nothing more. Gate id `path-scope`.
+    _pm = os.path.join(repo, 'tools', 'sairn_path_manifest.py')
+    if not os.path.isfile(_pm):
+        deny(chr(10).join([
+            "Blocked: tools/sairn_path_manifest.py is not in this clone, so nothing",
+            "checked whether this push stays inside this population's scope.",
+            "",
+            "  expected: %s" % _pm,
+            "",
+            "A missing checker is not a clean result.",
+            OVERRIDE_HINT,
+        ]), gate='path-scope')
+    elif changed:
+        try:
+            _pr = subprocess.run(
+                [sys.executable, _pm, '--check'] + list(changed),
+                capture_output=True, text=True, encoding='utf-8',
+                errors='replace', timeout=300, cwd=repo,
+                env=dict(os.environ, PYTHONIOENCODING='utf-8',
+                         PYTHONUTF8='1'))
+            _ptail = chr(10).join(
+                [ln for ln in ((_pr.stdout or '') + (_pr.stderr or '')
+                               ).splitlines()
+                 if not ln.startswith('  ok ') and
+                 'arms classify' not in ln])[-2500:]
+            if _pr.returncode == 1:
+                deny(chr(10).join([
+                    "Blocked: this push ships a path outside this population's declared scope.",
+                    "",
+                    _ptail,
+                    "",
+                    "The owner split lives in docs/sairn-path-manifest.json, not in this hook.",
+                    "If this is assigned work in another population's area, DECLARE IT there --",
+                    "`assigned_overrides` is the route, and a declaration somebody can read is",
+                    "the point. Pushing past this instead leaves no record that the area was",
+                    "entered deliberately.",
+                    OVERRIDE_HINT,
+                ]), gate='path-scope')
+            elif _pr.returncode != 0:
+                # COULD NOT RUN IS A THIRD STATE. An unreadable manifest or an
+                # unestablished identity means the question was never asked.
+                deny(chr(10).join([
+                    "Blocked: the path-scope check COULD NOT RUN (exit %d), which is a third"
+                    % _pr.returncode,
+                    "state and not a pass.",
+                    "",
+                    _ptail,
+                    "",
+                    OVERRIDE_HINT,
+                ]), gate='path-scope')
+        except Exception as e:                                   # noqa: BLE001
+            deny(chr(10).join([
+                "Blocked: the path-scope check could not be run, so this push is unchecked",
+                "for it.",
+                "",
+                "  %s: %s" % (type(e).__name__, e),
+                "",
+                OVERRIDE_HINT,
+            ]), gate='path-scope')
+
     # ── CHECK 5c: A DIGEST'S CONTEXT LINE IS A MEASUREMENT (2026-10-19, b21)
     # b20 measured every build agent's self-reported context against its own
     # transcript and found all four UNDER-READING by 7 to 12 points -- cc 61.9

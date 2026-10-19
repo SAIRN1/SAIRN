@@ -225,6 +225,50 @@ def cells(line):
     return out[1:-1] if len(out) >= 2 else []
 
 
+DECLARED_APP = re.compile(r'^\s*app\s*:\s*[\'"]([A-Za-z0-9_-]+)[\'"]',
+                          re.MULTILINE)
+
+
+def declared_app(path):
+    """The app name a resource module DECLARES about itself, or None.
+
+    ── THE SKIP IS A PROPERTY OF THE MODULE, NOT A NAME IN THIS FILE ────────
+    This replaced `if app in ('index', 'shared'): continue`, which was wrong
+    about half its own list and FAILED OPEN IN BOTH DIRECTIONS. `index.js`
+    belongs out of the scan -- it is the merger. `shared.js` does not: it is a
+    registry with seven real resources on it, including `employees`, which is
+    Tier A on both axes. So the completeness arm reported CLEAN over all seven
+    for as long as they had no row, AND rejected the rows once they were
+    written -- seven NOT A RESOURCE findings plus one GONE. The register could
+    not be made correct while the skip existed. Measured and routed by fourth
+    in docs/2026-10-19-fourth-b35-shared-tiers-and-consumers.md section 3.
+
+    MICHAEL'S DECISION, b24: a property each module declares, not a hard-coded
+    name list. A tuple of names goes stale silently the next time a file is
+    added; a property cannot, because the answer travels with the file.
+
+    THE PROPERTY IS `app:` IN THE MODULE'S OWN `module.exports`. Every
+    registry declares one and names itself; the merger declares none and
+    `require()`s its siblings instead. MEASURED over all 20 files in
+    api/_resources/ on 2026-10-19: exactly one lacks `app:`, and it is
+    index.js. So the distinction is structural rather than nominal.
+
+    WHY THIS SHAPE AND NOT AN EXPLICIT OPT-OUT FLAG: an explicit
+    `__notARegistry = true` would be clearer still, and it would need an edit
+    inside api/, which is hank's directory this batch. Reading a declaration
+    the modules ALREADY make needs no edit anywhere and no coordination. If a
+    future file is a merger that does declare `app:`, that is the case to add
+    an explicit flag for -- and the arm named `A MERGER THAT DECLARED app:`
+    in the fixtures below says what would happen so it is not a surprise.
+    """
+    try:
+        src = io.open(path, encoding='utf-8').read()
+    except Exception:                                            # noqa: BLE001
+        return None
+    m = DECLARED_APP.search(src)
+    return m.group(1) if m else None
+
+
 def apps_with_registries():
     out = {}
     if not os.path.isdir(RESOURCES):
@@ -233,7 +277,20 @@ def apps_with_registries():
         if not f.endswith('.js') or f.endswith('.test.js'):
             continue
         app = f[:-3]
-        if app in ('index', 'shared'):
+        # ── NOT A NAME LIST. See declared_app(). ────────────────────────────
+        # A file that declares no `app:` is not a registry and is skipped
+        # because IT says so, not because this line knows its name.
+        decl = declared_app(os.path.join(RESOURCES, f))
+        if decl is None:
+            continue
+        if decl != app:
+            # A DISAGREEMENT IS REPORTED, NEVER RESOLVED BY PREFERENCE. The
+            # filename and the declared name are two answers to one question
+            # and silently picking either is how a resource ends up filed
+            # under an app that does not own it.
+            out[app] = SHAPE_ERROR(
+                'declares app %r while its filename says %r. Two answers to '
+                'one question; neither is assumed.' % (decl, app))
             continue
         names, err = resource_names(os.path.join(RESOURCES, f))
         if err:
@@ -724,14 +781,92 @@ FIXTURE_CASES = (
 )
 
 
+def registry_property_arms():
+    """[] when the module-declared registry property classifies correctly.
+
+    THE ARM, THE NEGATIVE CONTROL AND THE ABLATION for b24 item 1, on
+    hand-built sources so none of it depends on what is in api/ today.
+    """
+    import tempfile
+    bad = []
+
+    def write(name, src):
+        d = tempfile.mkdtemp(prefix='tierprop-')
+        p = os.path.join(d, name)
+        io.open(p, 'w', encoding='utf-8', newline='\n').write(src)
+        return p
+
+    REGISTRY = ("module.exports = {\n  app: 'shared',\n"
+                "  resources: [\n    'employees',\n  ],\n};\n")
+    MERGER = ("const all = [\n  require('./shared'),\n"
+              "  require('./stonedesk'),\n];\nmodule.exports = merge(all);\n")
+
+    cases = [
+        # THE ARM: a registry declares itself and is scanned.
+        ('shared.js', REGISTRY, 'shared',
+         'a module that DECLARES app: is a registry and must be scanned -- '
+         'shared.js carries seven real resources and was invisible'),
+        # THE NEGATIVE CONTROL: the merger declares nothing and is skipped,
+        # and it is skipped for a reason that is not its name.
+        ('index.js', MERGER, None,
+         'a module that declares NO app: is not a registry. This is the '
+         'control: without it the arm above would pass on a checker that '
+         'scanned everything'),
+        # ...AND THE SAME CONTENT UNDER A DIFFERENT NAME GETS THE SAME ANSWER,
+        # which is what makes this a property rather than a name list.
+        ('merger_renamed.js', MERGER, None,
+         'THE ABLATION OF THE NAME: the merger renamed is still skipped. The '
+         'old `app in (\'index\', \'shared\')` tuple would have SCANNED this '
+         'file and skipped a real registry called shared.js -- the arm fails '
+         'on the pre-b24 expression and passes on this one'),
+        ('shared_renamed.js', REGISTRY, 'shared',
+         '...and a registry renamed is still scanned, and still reports the '
+         'app it DECLARES rather than the name of the file it sits in'),
+    ]
+    for name, src, want, why in cases:
+        got = declared_app(write(name, src))
+        if got != want:
+            bad.append('EXPECTED %r, got %r -- %s' % (want, got, why))
+
+    # A MERGER THAT DID DECLARE app: WOULD BE SCANNED, and that is stated as
+    # an arm rather than left to be discovered. No such file exists today
+    # (measured over all 20 in api/_resources/ on 2026-10-19); the day one
+    # does, an explicit opt-out flag is the fix and this arm is where to add
+    # it.
+    got = declared_app(write('odd.js', "module.exports = {\n  app: 'odd',\n"
+                                       "};\n" + MERGER))
+    if got != 'odd':
+        bad.append('EXPECTED %r, got %r -- a merger that DECLARED app: would '
+                   'be treated as a registry. Documented limit, asserted so '
+                   'it cannot be a surprise.' % ('odd', got))
+
+    # AND THE DISAGREEMENT PATH: declared name vs filename is reported, never
+    # resolved by preference.
+    p = write('stonedesk.js', REGISTRY)           # declares 'shared'
+    if declared_app(p) == 'stonedesk':
+        bad.append('a file whose declared app disagrees with its filename '
+                   'must NOT read as agreeing -- that is how a resource gets '
+                   'filed under an app that does not own it')
+    return bad
+
+
+# How many arms run_fixtures() actually drives. DERIVED AND RETURNED, never
+# printed from len(FIXTURE_CASES): adding the b24 registry-property arms made
+# that literal say "6/6" while ELEVEN checks ran, which is a count that does
+# not move when the thing it counts does -- the defect class this repo keeps
+# paying for one level up from wherever it appears.
+REGISTRY_PROPERTY_ARMS = 6
+
+
 def run_fixtures():
-    """[] when every hand-built case classifies correctly."""
+    """-> (problems, arms_run). [] when every hand-built case classifies."""
     bad = []
     for kind, src, want, why in FIXTURE_CASES:
         got = len(cells(src)) if kind == 'cells' else asserts_access_control(src)
         if got != want:
             bad.append('EXPECTED %r, got %r -- %s' % (want, got, why))
-    return bad
+    bad.extend(registry_property_arms())
+    return bad, len(FIXTURE_CASES) + REGISTRY_PROPERTY_ARMS
 
 
 def main(argv):
@@ -743,16 +878,16 @@ def main(argv):
     # with a shorter name, and the reader of a clean register is not asking.
     # A failing lock is exit 2, because a tier verdict derived from criteria
     # that cannot classify a hand-built row is not a verdict.
-    _bad = run_fixtures()
+    _bad, _arms = run_fixtures()
     if _bad:
         print('CRITERIA LOCK FAILED -- %d of %d fixtures misclassified. NOTHING '
-              'REAL WAS JUDGED:' % (len(_bad), len(FIXTURE_CASES)))
+              'REAL WAS JUDGED:' % (len(_bad), _arms))
         for b in _bad:
             print('  ! %s' % b)
         return 2
     if not quiet:
         print('criteria lock: %d/%d fixtures classify correctly, on hand-built '
-              'rows only' % (len(FIXTURE_CASES), len(FIXTURE_CASES)))
+              'rows and hand-built registry modules only' % (_arms, _arms))
 
     if '--fix-rollup-list' in argv:
         if not os.path.isfile(REGISTER):

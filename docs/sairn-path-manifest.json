@@ -1,0 +1,63 @@
+{
+  "_what_this_is": "The four build populations' allowed paths, by owner split. tools/sairn_path_manifest.py classifies a push against this file and tools/sairn_push_gate_hook.py refuses one that falls outside the pushing population's scope, BEFORE it leaves the clone. The manifest is DATA and the hook is MECHANISM: an ownership rule written into the hook would be invisible to everyone who is not reading Python.",
+  "_written": "2026-10-19",
+  "_written_by": "cc b24 item 5, on Michael's instruction",
+  "_the_owner_split_is_michaels_and_is_quoted_verbatim": "api/ hank, tests/ cody, tools/ cc, docs/ fourth, .html fourth",
+
+  "_two_allowance_classes_exist_and_here_is_the_measurement_that_forced_them": "THE SPLIT ALONE WOULD REFUSE THE PLATFORM'S NORMAL OPERATION, measured over 2026-10-18..19 rather than argued: all four agents wrote docs/ (hank 8, cc 18, cody 3, fourth 13 commits) and all four wrote .claude/claims/ (hank 8, cc 13, cody 11, fourth 16), and every batch's handoff/report/digest sits at the repository root. A hook that refuses every agent's own batch artefacts and every agent's own claim is a hook switched off within the hour, which this platform has written down more than once. So two classes are allowed ON TOP of the split, both NARROW and both named here rather than hidden in code: SELF_NAMED (a path that carries the pushing agent's OWN session name) and SHARED_LEDGERS (an explicit path list, never a prefix, of files whose declared merge policy is union-by-identity and which every population appends to by design).",
+
+  "_the_deviation_michael_should_decide": "cody pushed 13 .html commits in two days under Michael's own explicit assignment (sairnroofing, sairnscape), and the split gives .html to fourth. That is a REAL conflict between the split and standing practice, not a gap in this file. It is resolved here by `assigned_overrides`, which is EMPTY by default so nothing is silently permitted -- an agent needing another population's area declares it and the declaration is visible in this file. Until an entry exists, cody pushing .html is REFUSED. Flagged rather than decided.",
+
+  "_what_this_does_NOT_do": "It is a CLIENT-SIDE check in the pushing clone. It cannot stop a push from a clone that does not run it, it cannot stop a direct write on the remote, and it is not a security boundary. What it closes is DRIFT AND ACCIDENT: a session editing another population's file without noticing. Said plainly because a mechanism described as stronger than it is gets cited as proof of something it never checked.",
+
+  "populations": {
+    "hank":   { "owns": ["api/"] },
+    "cody":   { "owns": ["tests/"] },
+    "cc":     { "owns": ["tools/", ".githooks/"] },
+    "fourth": { "owns": ["docs/", "*.html"] }
+  },
+
+  "assigned_overrides": {},
+
+  "_auditor_paths_are_denied_to_every_build_population": "The hover auditor's scope is .claude/skills/sairn-hover-auditor/ and nothing else. A build agent must not reach into it -- INCLUDING to arm its own gates, which is the same boundary problem running the other way. tools/hover_auditor_scope_gate.py prevents and tools/hover_separation_audit.py detects; this is the third layer, at the push.",
+  "auditor_paths": [
+    ".claude/skills/sairn-hover-auditor/",
+    "docs/hover-audit-log/",
+    "docs/hover-evidence/"
+  ],
+
+  "_self_named_patterns_are_matched_against_the_PUSHING_agents_own_name": "Each `%s` is filled with the pushing session's name, read from .git/sairn-session rather than from the folder. So `SAIRN-handoff-cc-b24.md` is cc's to push and nobody else's, and the pattern cannot be widened by renaming a directory.",
+  "self_named": [
+    "SAIRN-handoff-%s-*",
+    "SAIRN-report-%s-*",
+    "SAIRN-digest-%s-*",
+    "SAIRN-ACTIVE-WORK-%s.md",
+    "SAIRN-ACTIVE-WORK-%s-*.md",
+    ".claude/claims/%s.json",
+    "docs/batch-manifest-%s-*.json",
+    "docs/*-%s-b*",
+    "docs/%s-evidence/*"
+  ],
+
+  "_shared_ledgers_are_listed_INDIVIDUALLY_and_the_reason_is_the_prefix": "A prefix would re-open the whole of docs/ to everybody and the split would mean nothing. Every entry below is a file whose own header declares a union/append merge policy, or which a tool -- not a human -- writes.",
+  "shared_ledgers": [
+    "docs/defect-density-register.json",
+    "docs/tier-a-reviews.json",
+    "docs/SAIRN-OPEN-WORK-INDEX.md",
+    "docs/open-work/",
+    "docs/scrutiny-flags.json",
+    "docs/BYPASS-LOG.jsonl",
+    "docs/known-red-suites.json",
+    "docs/CRITICALITY-TIERS.md",
+    "docs/TOOLING-INVENTORY.md",
+    "docs/MASTER-PLAN.md",
+    "docs/traceability-matrix.md",
+    "docs/wcag-contrast-baseline.json",
+    "docs/fmea/",
+    "docs/sairn-path-manifest.json"
+  ],
+
+  "_unowned_paths_are_ALLOWED_and_that_is_a_decision": "A path matching no population's `owns` prefix -- sql/, .gitattributes, README -- is not refused. The manifest's job is to stop one population editing ANOTHER'S declared area, not to become an allowlist for the whole repository: an allowlist would refuse every new directory on the day it is created, and the refusal would carry no information. An unowned path is reported in the hook's output so the set stays visible.",
+
+  "populations_in_scope": ["hank", "cc", "cody", "fourth"]
+}
