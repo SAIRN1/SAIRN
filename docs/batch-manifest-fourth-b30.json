@@ -7,26 +7,26 @@
     {
       "id": 1,
       "title": "",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "Michael's decisions 1 and 2 recorded, not acted on: the b29 contrast fix stays (no revert), and behavioral health is parked as an idea only with nothing built -- logged in docs/cloud-research/PARKED-VERTICALS.md"
     },
     {
       "id": 2,
       "title": "",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "docs/cloud-research/PARKED-VERTICALS.md -- behavioral health recorded as PARKED by Michael's decision 2026-10-19, nothing built (no schema, no app file, no API route, no panel), with the four conditions that would change the answer and the three perishable regulatory facts flagged for re-derivation. Childcare listed as AUDITED-NOT-DECIDED so the pair is visible without implying a decision nobody made"
     },
     {
       "id": 3,
       "title": "",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "CHECK 5b in tools/sairn_push_gate_hook.py runs tools/wcag_contrast_check.py --gate <changed html> --baseline on every push that changes HTML; gate id 'contrast' added to tools/gate_skip.py (9 skippable now); ABLATED THROUGH THE REAL HOOK in an isolated worktree: arm A comment-only = no contrast block, arm B new failing rule = Blocked naming .b30gateprobe 2.77:1 need 4.5, arm C undefined token = Blocked naming undefined var(--b30nosuchtoken); missing checker / exit 2 / exception all DENY"
     },
     {
       "id": 4,
       "title": "",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "all 17 root products measured, derived not listed: 153 findings across 14 of them -- 87 AA failures and 66 undefined custom properties; the pattern is the house pattern (every .gbtn/.bp is white on the brand colour); stonedesk alone carries 87 including 56 references to --surface/--surface-2 which are defined nowhere; recorded in docs/wcag-contrast-baseline.json and in scratchpad b30/b30_static_all.json. Also found and FIXED one b29 missed: sairndental .gbtn at 2.77:1, unreachable by the rendered sweep because it only visits signed-in panels"
     },
     {
       "id": 5,
