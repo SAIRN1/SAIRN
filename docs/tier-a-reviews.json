@@ -6961,7 +6961,8 @@
         "law_trusttx",
         "leg_cremations",
         "rf_claims",
-        "rf_jobs"
+        "rf_jobs",
+        "employees"
       ],
       "rules": [],
       "irreversible": [],
@@ -6975,7 +6976,29 @@
       "owner_assigned_at": "2026-10-19T19:19:42Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "amendments": [
+        {
+          "at": "2026-10-19T20:32:51Z",
+          "by": "hank",
+          "added_files": [],
+          "added_resources": [
+            "employees"
+          ],
+          "files_before": [
+            "SAIRN-sql-hank-b21.txt",
+            "api/b21-bridge-unknown-action.test.js"
+          ],
+          "resources_before": [
+            "invoices",
+            "law_trusttx",
+            "leg_cremations",
+            "rf_claims",
+            "rf_jobs"
+          ],
+          "why": "b21, hank. ADDING `employees`, and this one is a REAL omission on my part rather than another mis-attribution -- said plainly because the same obligation already declares two resources that ARE mis-attributed and the difference matters to whoever reviews it. api/bridge.js's handlePush builds its stored blob as {jobs, invoices, employees} and upserts all three columns together, so every unknown ?action= that reached that handler could write the EMPLOYEES slot exactly as it could write the invoices slot. My first body named `invoices` because that is the field StoneDesk's crSendToBridge actually fills with payee/amount/memo/GL data, and I reasoned from the live caller instead of from the handler's own shape -- which is the narrower read of the two and the wrong one for a write path. The gate found it in api/b21-bridge-unknown-action.test.js, where arm D2 asserts the stored blob is {jobs:null, invoices:null, employees:null}; my own arm named the resource my own obligation left out. Nothing about the FIX changes: the refusal covers all three slots because it refuses before handlePush is reached at all. What changes is the scope of the review, and `employees` is a cross-app shared resource read by other SAIRN apps through api/sd-data.js, so it is the one of the three most worth a second pair of eyes."
+        }
+      ]
     }
   ]
 }
