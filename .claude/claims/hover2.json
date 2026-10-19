@@ -660,6 +660,28 @@
       "status": "released",
       "released_at": "2026-10-19T13:02:28Z",
       "files": null
+    },
+    {
+      "id": "hover2-1792415401",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "b59: this role's own coverage-ledger rotation draw next items; chain and mirror verify; handoff+push",
+      "claimed_at": "2026-10-19T13:10:01Z",
+      "claimed_at_epoch": 1792415401.9960175,
+      "status": "released",
+      "released_at": "2026-10-19T13:16:10Z",
+      "files": null
+    },
+    {
+      "id": "hover2-1792416683",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "b60: expanded coverage-ledger rotation draw; re-check fourth wcag push-gate wiring landed status; build own property-based test generator (fast-check/Hypothesis) wrapping sweep/ablation work, own scope only; build own cross-agent independence check vs H1, built independently not coordinated; handoff+push. I WRITE ONLY under .claude/skills/sairn-hover-auditor/ (own external tooling) plus my own root deliverables; no api/ sql/ tools/ tests/ file in the platform repo edited.",
+      "claimed_at": "2026-10-19T13:31:23Z",
+      "claimed_at_epoch": 1792416683.0383406,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [

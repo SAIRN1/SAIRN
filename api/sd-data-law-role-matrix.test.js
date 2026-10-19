@@ -1,9 +1,11 @@
 // api/sd-data-law-role-matrix.test.js
 //
 // REQUIREMENT: every one of SAIRNlaw's 19 role-gated resources has a rule for
-//   every one of its 3 roles; the rules are MONOTONIC (paralegal ⊆ attorney ⊆
-//   owner); the trust lock cannot be opened by anything; and the table is
-//   actually WIRED into both of api/sd-data.js's two law gates.
+//   every one of its 4 roles; the rules are MONOTONIC as a PARTIAL order
+//   (paralegal ⊆ attorney ⊆ owner, bookkeeper ⊆ attorney ⊆ owner, and
+//   paralegal/bookkeeper deliberately INCOMPARABLE); the trust lock cannot be
+//   opened by anything; and the table is actually WIRED into both of
+//   api/sd-data.js's two law gates.
 //
 // Run:  node api/sd-data-law-role-matrix.test.js
 //
@@ -30,10 +32,21 @@
 //                  keeps paying for. Retyping it would make COMPLETENESS
 //                  vacuous on the day a resource is added.
 //   MONOTONICITY   a METAMORPHIC RELATION rather than an expected value: for
-//                  every resource and every action, allowed(paralegal) implies
+//                  every resource and every action, each ORDERED PAIR holds --
+//                  allowed(paralegal) implies allowed(attorney),
+//                  allowed(bookkeeper) implies allowed(attorney), and
 //                  allowed(attorney) implies allowed(owner). It needs no table
 //                  of right answers, so it keeps working when the policy
 //                  changes -- which an expected-value test does not.
+//
+//                  b18: IT IS A PARTIAL ORDER AND NOT A CHAIN, and that is
+//                  load-bearing. C1's `bookkeeper` is neither above nor below
+//                  `paralegal` -- it writes invoices a paralegal may only
+//                  read, and may not read matter documents a paralegal
+//                  writes. A chain would have had to call one of those an
+//                  inversion. Section D2 asserts the incomparability in both
+//                  directions, so a later edit that collapses the two roles
+//                  into one is visible rather than merely consistent.
 //   WIRED          the table is called from both gates in the handler. A
 //                  perfect table nothing reads is the defect with extra steps.
 //
@@ -170,8 +183,26 @@ async function call(resource, action, role, payload) {
 // Takes a table rather than reading the module's, so the control pair below can
 // hand it a deliberately broken one. Returns the list of violations; an empty
 // list is the clean answer.
-const ORDER = ['paralegal', 'attorney', 'owner'];
-function monotonicityViolations(table, trustLocked) {
+//
+// ── b18: A TOTAL CHAIN BECAME A PARTIAL ORDER, AND THAT IS THE POINT ──────
+// This was `ORDER = ['paralegal','attorney','owner']` -- a single chain, which
+// was correct while there were three roles and is WRONG the moment C1's
+// `bookkeeper` exists. bookkeeper has `rw` on law_invoices where paralegal has
+// `r`, and paralegal has `rw` on law_matters where bookkeeper has `r`. Neither
+// contains the other and neither is meant to.
+//
+// A CHAIN WOULD HAVE FORCED A FALSE ANSWER IN ONE OF TWO DIRECTIONS: slot
+// bookkeeper below paralegal and the invoices cell is a violation; slot it
+// above and the matter cells are. So the relation is now a list of PAIRS --
+// the edges that really are ordered -- and the two roles that are incomparable
+// are asserted to BE incomparable in section D2, so nothing quietly collapses
+// them later.
+const ORDER_PAIRS = [
+  ['paralegal', 'attorney'],
+  ['bookkeeper', 'attorney'],
+  ['attorney', 'owner']
+];
+function monotonicityViolations(table, trustLocked, barAdmitted) {
   const out = [];
   const allows = (row, role, action) => {
     const g = String((row && row[role]) || '');
@@ -180,21 +211,34 @@ function monotonicityViolations(table, trustLocked) {
   Object.keys(table).forEach((resource) => {
     const row = table[resource];
     ACTIONS.forEach((action) => {
-      for (let i = 0; i < ORDER.length - 1; i++) {
-        const lower = ORDER[i], higher = ORDER[i + 1];
+      ORDER_PAIRS.forEach((pair) => {
+        const lower = pair[0], higher = pair[1];
         if (allows(row, lower, action) && !allows(row, higher, action)) {
           out.push(resource + '/' + action + ': ' + lower + ' allowed but '
                    + higher + ' is not');
         }
-      }
+      });
     });
     // The lock is part of the relation, not a separate idea: a locked resource
-    // allowed to anyone below attorney breaks the ordering AND the lock.
+    // allowed to anyone who is not bar-admitted breaks the ordering AND the
+    // lock.
+    //
+    // b18: EVERY NON-BAR-ADMITTED ROLE, DERIVED, not the single name
+    // `paralegal`. Adding bookkeeper to the vocabulary without widening this
+    // arm would have left the new role unchecked against the lock by exactly
+    // the mechanism C3's own argument predicts -- a per-resource denial and a
+    // licensure tier look identical until a fourth role appears.
     if (trustLocked && trustLocked[resource]) {
-      ACTIONS.forEach((action) => {
-        if (allows(row, 'paralegal', action)) {
-          out.push(resource + '/' + action + ': TRUST-LOCKED but paralegal is allowed');
-        }
+      const tiered = barAdmitted || { owner: true, attorney: true };
+      Object.keys(row).forEach((role) => {
+        if (role === 'band' || role === 'why') return;
+        if (tiered[role] === true) return;
+        ACTIONS.forEach((action) => {
+          if (allows(row, role, action)) {
+            out.push(resource + '/' + action + ': TRUST-LOCKED but ' + role
+                     + ' is allowed');
+          }
+        });
       });
     }
   });
@@ -218,7 +262,7 @@ function completenessGaps(table, expectedResources, roles) {
 }
 
 (async function () {
-  console.log('SAIRNlaw role matrix -- 19 resources x 3 roles (hover2 seq 757)');
+  console.log('SAIRNlaw role matrix -- 19 resources x 4 roles (hover2 seq 757; bookkeeper added b18/C1)');
 
   const SRC = lawResourcesFromSource();
   const ROLES = (ROLES_BY_APP[APP] || []).slice();
@@ -238,16 +282,16 @@ function completenessGaps(table, expectedResources, roles) {
     });
 
   await test('...and ROLES_BY_APP.sairnlaw is exactly owner / attorney / '
-    + 'paralegal, so the 3 in "19 x 3" is derived too', () => {
+    + 'paralegal / bookkeeper, so the 4 in "19 x 4" is derived too', () => {
       assert.deepStrictEqual(ROLES.slice().sort(),
-        ['attorney', 'owner', 'paralegal'],
+        ['attorney', 'bookkeeper', 'owner', 'paralegal'],
         'ROLES_BY_APP.' + APP + ' is ' + JSON.stringify(ROLES));
     });
 
   section('B. COMPLETENESS -- the check the batch asked for by name');
 
   await test('every one of the 19 has a row, and every row has a rule for all '
-    + '3 roles. FAILS IF ANY LAW RESOURCE HAS NO RULE', () => {
+    + '4 roles. FAILS IF ANY LAW RESOURCE HAS NO RULE', () => {
       const gaps = completenessGaps(lawRoles.LAW_ROLE_MATRIX, SRC.all, ROLES);
       assert.deepStrictEqual(gaps, [],
         gaps.length + ' gap(s):\n       ' + gaps.join('\n       '));
@@ -300,10 +344,11 @@ function completenessGaps(table, expectedResources, roles) {
 
   section('D. MONOTONICITY -- the metamorphic relation (batch item 3)');
 
-  await test('paralegal implies attorney implies owner, for every resource and '
-    + 'every action', () => {
+  await test('paralegal implies attorney, bookkeeper implies attorney, '
+    + 'attorney implies owner, for every resource and every action', () => {
       const v = monotonicityViolations(lawRoles.LAW_ROLE_MATRIX,
-                                      lawRoles.LAW_TRUST_LOCKED);
+                                      lawRoles.LAW_TRUST_LOCKED,
+                                      lawRoles.LAW_BAR_ADMITTED_ROLES);
       assert.deepStrictEqual(v, [],
         v.length + ' violation(s):\n       ' + v.join('\n       '));
     });
@@ -312,10 +357,16 @@ function completenessGaps(table, expectedResources, roles) {
     + 'raw table, so the FUNCTION cannot disagree with the data', () => {
       const bad = [];
       lawRoles.resources().forEach((r) => ACTIONS.forEach((a) => {
-        const p = lawRoles.decide(r, 'paralegal', a) === lawRoles.ALLOW;
-        const t = lawRoles.decide(r, 'attorney', a) === lawRoles.ALLOW;
-        const o = lawRoles.decide(r, 'owner', a) === lawRoles.ALLOW;
-        if (p && !t) bad.push(r + '/' + a + ': paralegal but not attorney');
+        const allow = (role) => lawRoles.decide(r, role, a) === lawRoles.ALLOW;
+        const t = allow('attorney');
+        const o = allow('owner');
+        ORDER_PAIRS.forEach((pair) => {
+          if (allow(pair[0]) && !allow(pair[1])) {
+            bad.push(r + '/' + a + ': ' + pair[0] + ' but not ' + pair[1]);
+          }
+        });
+        // Named explicitly as well as through the pairs: the attorney->owner
+        // edge is the one a reader looks for and a loop can hide.
         if (t && !o) bad.push(r + '/' + a + ': attorney but not owner');
       }));
       assert.deepStrictEqual(bad, [], bad.join('; '));
@@ -323,10 +374,13 @@ function completenessGaps(table, expectedResources, roles) {
 
   section('D1. CONTROL PAIR FOR MONOTONICITY -- plant a violation, then clean');
 
+  const LOCKED = () => lawRoles.LAW_TRUST_LOCKED;
+  const TIER = () => lawRoles.LAW_BAR_ADMITTED_ROLES;
+
   await test('PLANTED: paralegal granted where attorney is not -- FIRES', () => {
     const broken = JSON.parse(JSON.stringify(lawRoles.LAW_ROLE_MATRIX));
     broken.law_invoices.attorney = '';
-    const v = monotonicityViolations(broken, lawRoles.LAW_TRUST_LOCKED);
+    const v = monotonicityViolations(broken, LOCKED(), TIER());
     assert.ok(v.some((x) => /law_invoices\/read: paralegal allowed but attorney is not/.test(x)),
       'the relation did not fire on a planted inversion: ' + JSON.stringify(v));
   });
@@ -334,30 +388,96 @@ function completenessGaps(table, expectedResources, roles) {
   await test('PLANTED: attorney granted where owner is not -- FIRES', () => {
     const broken = JSON.parse(JSON.stringify(lawRoles.LAW_ROLE_MATRIX));
     broken.law_matters.owner = 'r';
-    const v = monotonicityViolations(broken, lawRoles.LAW_TRUST_LOCKED);
+    const v = monotonicityViolations(broken, LOCKED(), TIER());
     assert.ok(v.some((x) => /law_matters\/write: attorney allowed but owner is not/.test(x)),
       'the relation did not fire on a write-level inversion: ' + JSON.stringify(v));
   });
+
+  // b18: THE NEW EDGE GETS ITS OWN PLANT. Adding bookkeeper->attorney to
+  // ORDER_PAIRS without an arm that fires on it is the shape where a widened
+  // relation is believed on the strength of the arms that already existed.
+  await test('PLANTED: bookkeeper granted where attorney is not -- FIRES, '
+    + 'which is the b18 edge proving itself', () => {
+      const broken = JSON.parse(JSON.stringify(lawRoles.LAW_ROLE_MATRIX));
+      broken.law_optx.attorney = '';
+      const v = monotonicityViolations(broken, LOCKED(), TIER());
+      assert.ok(v.some((x) => /law_optx\/write: bookkeeper allowed but attorney is not/.test(x)),
+        'the bookkeeper edge did not fire: ' + JSON.stringify(v));
+    });
 
   await test('PLANTED: a TRUST-LOCKED resource opened to paralegal -- FIRES, '
     + 'and this is the one a pure ordering check would have MISSED', () => {
       const broken = JSON.parse(JSON.stringify(lawRoles.LAW_ROLE_MATRIX));
       broken.law_trusttx.paralegal = 'r';
-      const v = monotonicityViolations(broken, lawRoles.LAW_TRUST_LOCKED);
+      const v = monotonicityViolations(broken, LOCKED(), TIER());
       assert.ok(v.some((x) => /law_trusttx\/read: TRUST-LOCKED but paralegal is allowed/.test(x)),
         'the lock arm did not fire: ' + JSON.stringify(v));
       // The point of this arm: owner and attorney still have rw, so the
       // ORDERING is intact and a monotonicity-only check reports clean.
-      const orderingOnly = monotonicityViolations(broken, null);
+      const orderingOnly = monotonicityViolations(broken, null, TIER());
       assert.deepStrictEqual(orderingOnly, [],
         'ordering alone should NOT have caught this -- if it did, this arm is '
         + 'not demonstrating what it claims: ' + JSON.stringify(orderingOnly));
     });
 
+  // b18: and the SAME plant on the NEW role, because the lock arm now derives
+  // its subject list from the tier instead of naming paralegal. If that
+  // derivation regressed to a literal, this is the arm that says so.
+  await test('PLANTED: a TRUST-LOCKED resource opened to BOOKKEEPER -- FIRES, '
+    + 'so the lock arm really is derived from the tier and not from a name', () => {
+      const broken = JSON.parse(JSON.stringify(lawRoles.LAW_ROLE_MATRIX));
+      broken.law_bankstatements.bookkeeper = 'r';
+      const v = monotonicityViolations(broken, LOCKED(), TIER());
+      assert.ok(v.some((x) => /law_bankstatements\/read: TRUST-LOCKED but bookkeeper is allowed/.test(x)),
+        'the lock arm is still name-bound to paralegal: ' + JSON.stringify(v));
+    });
+
   await test('CLEAN: the real table reports no violation -- the silent half of '
     + 'the pair', () => {
       assert.deepStrictEqual(
-        monotonicityViolations(lawRoles.LAW_ROLE_MATRIX, lawRoles.LAW_TRUST_LOCKED), []);
+        monotonicityViolations(lawRoles.LAW_ROLE_MATRIX, LOCKED(), TIER()), []);
+    });
+
+  section('D2. INCOMPARABILITY -- paralegal and bookkeeper are deliberately '
+    + 'NOT ordered, and that is asserted rather than assumed');
+
+  // C1's whole purpose is a role that is neither above nor below the existing
+  // one: "money access and no matter-file access". If a later edit made
+  // bookkeeper a subset of paralegal, or paralegal a subset of bookkeeper, the
+  // app would still be internally consistent and the FOURTH ROLE WOULD HAVE
+  // STOPPED BEING NECESSARY -- and nothing would say so. So both directions
+  // are required to be non-empty, with the witnessing cells named.
+  await test('each role allows at least one thing the other does not, in BOTH '
+    + 'directions', () => {
+      const allow = (role, r, a) => lawRoles.decide(r, role, a) === lawRoles.ALLOW;
+      const paraOnly = [], bookOnly = [];
+      lawRoles.resources().forEach((r) => ACTIONS.forEach((a) => {
+        if (allow('paralegal', r, a) && !allow('bookkeeper', r, a)) paraOnly.push(r + '/' + a);
+        if (allow('bookkeeper', r, a) && !allow('paralegal', r, a)) bookOnly.push(r + '/' + a);
+      }));
+      assert.ok(paraOnly.length > 0,
+        'paralegal can do NOTHING bookkeeper cannot -- bookkeeper has become a '
+        + 'superset and the roles are no longer incomparable');
+      assert.ok(bookOnly.length > 0,
+        'bookkeeper can do NOTHING paralegal cannot -- the fourth role grants '
+        + 'nothing new and C1 is not actually implemented');
+      console.log('         paralegal-only: ' + paraOnly.length
+                  + '  bookkeeper-only: ' + bookOnly.length
+                  + '  e.g. ' + paraOnly[0] + ' / ' + bookOnly[0]);
+    });
+
+  await test('and the bookkeeper CANNOT reach the matter file -- the line C1 '
+    + 'exists to draw, asserted by resource and not by count', () => {
+      const MATTER_FILE = ['law_matterdocs', 'law_picases', 'law_pimedical',
+                           'law_portalesign', 'law_portalmessages'];
+      const reachable = [];
+      MATTER_FILE.forEach((r) => ACTIONS.forEach((a) => {
+        if (lawRoles.decide(r, 'bookkeeper', a) === lawRoles.ALLOW) {
+          reachable.push(r + '/' + a);
+        }
+      }));
+      assert.deepStrictEqual(reachable, [],
+        'bookkeeper reaches ' + JSON.stringify(reachable));
     });
 
   section('E. THE TRUST LOCK HOLDS AGAINST A TABLE EDIT, not just against the '

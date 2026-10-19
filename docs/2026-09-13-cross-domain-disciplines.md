@@ -2453,6 +2453,93 @@ the denominator notes below exist to stop.
 
 ---
 
+## 39. A CHECK IS WORTH WHERE IT RUNS — choose the enforcement point by where it CAN run, and land a new gate with a BASELINE or it lands as a bypass
+
+**Paid for 2026-10-19 (b30), on an instruction to wire an existing check into
+the push gate. Both halves of the cost showed up before the gate ran once.**
+
+**HALF ONE — THE CHECK YOU WANT TO ENFORCE AND THE CHECK YOU CAN ENFORCE ARE
+DIFFERENT CHECKS, AND THE GAP IS A FINDING.** `tools/wcag_contrast_check.py`
+had a rendered mode that drives the live app: it is the deeper check, it found
+41 real failures, and it is the obvious thing to put in the gate. **It cannot
+be the gate.** It needs playwright, a chromium binary, network reach, a live
+database, a demo credential and a per-app sign-in profile — and a survey of the
+seventeen root products found **seven with no licence-gate element, five with
+no panel switcher and three with no panel elements at all**. A rendered gate
+would have exited **2 COULD NOT RUN on most of the platform**, which under the
+fail-closed rule means DENY, which means every push on four of five clones
+blocked on a browser that is not installed.
+
+So the gate runs a **static** half that reads the file and needs nothing. **That
+is a real reduction in what is enforced and it is written into the gate's own
+comment rather than quietly absorbed**: the static half cannot see an
+ancestor-dependent pair at all, and it reports those **UNRESOLVED** — a third
+state, never folded into a pass. **The two halves are not redundant and neither
+subsumes the other**, which is the part worth generalising: the rendered sweep
+found 41 failures no file can show, and the static half immediately found
+`.gbtn` — the Activate and Sign In buttons — **which the rendered sweep could
+never have reached, because it only ever visits SIGNED-IN panels.** Moving the
+check to where it could run did not only cost coverage; it bought some.
+
+**HALF TWO — A NEW GATE MEETS THE DEBT THAT WAS ALREADY THERE, AND IF IT
+DENIES ON ALL OF IT, IT TEACHES EVERYONE TO OVERRIDE IT.** Measured before
+wiring: **153 findings across 14 of the 17 products**, because the failing
+pattern *is the house pattern* — every app's primary button is white text on
+that app's brand colour. A gate that denied on any finding in a changed file
+would have blocked every push touching fourteen apps **on the day it landed**.
+This platform already knows how that ends: **80 of the 94 rows in
+`docs/BYPASS-LOG.jsonl` are an override taken because it was the only thing
+available.** A gate everyone must override on day one is one nobody obeys on
+day two.
+
+So it lands as a **ratchet**: existing findings are recorded in a baseline, a
+push is denied only for findings **not** in it, and the thing that stops the
+baseline becoming an amnesty is written into the mechanism rather than into
+somebody's memory —
+
+* **every run prints the outstanding debt per file**, so the number is in front
+  of whoever is pushing rather than in a file nobody opens;
+* the baseline **only grows by an explicit command**, which is a commit a
+  reviewer can refuse;
+* the key is the **finding**, not the line number, so an unrelated edit
+  thousands of lines above does not re-present old debt as new work — and a
+  **second** copy of an accepted finding is still NEW, because adding another
+  failing button where one already sat is a regression.
+
+**The rule.** Before wiring any check into a gate, answer two questions in
+writing: *on how many of the places this must run can it actually run* — and
+*what does the existing codebase already fail*. The first decides which
+variant of the check is the enforcement point and what that choice gives up.
+The second decides whether it lands as a cliff or a ratchet. **Neither answer
+is discoverable after the gate is wired, because by then the only visible
+outcome is people skipping it.**
+
+**And the thing that makes this testable rather than a preference: ablate the
+gate THROUGH THE REAL HOOK, not through the checker.** b30's was three commits
+differing by one line each, run against `--pre-push` in an isolated worktree:
+a comment-only change produced no contrast block, a new failing rule produced
+`2.77:1 (need 4.5)`, and an undefined token produced `undefined
+var(--b30nosuchtoken)`. **The control arm's silence only means something
+because the other two fired on the same path** — item 20, applied to the wiring
+rather than to the check.
+
+**Relationship to the neighbours.** **1.11** (fail closed) is the rule this
+item does NOT weaken and the distinction matters: the static gate still denies
+on could-not-run, on a missing checker and on an exception. What changed is
+*which check is at that position*, decided before wiring rather than
+discovered by a clone that cannot run it. **11** gates auto-remediation on a
+human; 39 gates ENFORCEMENT on reachability. **8** is instrument drift over
+time; 39 is instrument *placement* at birth. **20** supplies the ablation
+discipline the second half leans on. **NOT a member of the cannot-fire group**
+— a rendered gate on a clone with no browser would have failed **loudly** and
+blocked, which is the opposite of a check that reads as coverage and silently
+cannot fire. Its failure mode is a gate that gets skipped, not one that lies.
+
+**Cause tag:**
+`enforcement/check-placed-where-it-cannot-run-and-a-new-gate-landed-against-pre-existing-debt-without-a-ratchet`.
+
+---
+
 ---
 
 
@@ -2460,7 +2547,18 @@ the denominator notes below exist to stop.
 
 ---
 
-## The failure mode THIRTEEN of the thirty-eight share
+## The failure mode THIRTEEN of the thirty-nine share
+
+*(Denominator moved 2026-10-19 when fourth's 39 was landed, and the membership
+question was asked rather than assumed. **39 IS NOT A MEMBER; the group stays
+at THIRTEEN.** The group is A CHECK THAT READS AS COVERAGE AND STRUCTURALLY
+CANNOT FIRE, and 39's subject is the opposite failure: a rendered gate on a
+clone with no browser would have exited 2 and **DENIED, loudly**, on every
+push. Nothing about it reads as coverage — it reads as an obstacle, and its
+real failure mode is that people route around it, which is a BYPASS problem
+rather than a silent-pass one. **The heading's denominator was changed from
+"thirty-eight" to "thirty-nine" rather than left to drift, and the THIRTEEN is
+untouched.**)*
 
 *(Denominator moved 2026-10-17 when fourth's 38 was landed, and the membership
 question was asked rather than assumed. **38 IS A THIRTEENTH MEMBER, on its app

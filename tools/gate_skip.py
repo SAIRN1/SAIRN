@@ -120,6 +120,8 @@ GATES = {
     'scrutiny-ledger': 'self-checking files changed in a push get a row',
     'credential-sql': 'SQL writing credential rows needs the recoverability guard',
     'control-bytes': 'no control characters in tracked text',
+    'contrast': 'a changed app file must not add a NEW contrast or '
+                'undefined-token finding',
 }
 
 UNSKIPPABLE = {

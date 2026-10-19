@@ -344,7 +344,30 @@ const WRITE_BLOCKED = {
   // and the READ arm still asserts list isolation for this resource.
   sv_controlled: 'the controlled-substance register requires a witness '
     + 'co-signature (api/sv-witness.js); forging one here would be forging the '
-    + 'control. READ isolation is covered; WRITE is not.'
+    + 'control. READ isolation is covered; WRITE is not.',
+  // ── A SECOND MEMBER OF THAT CLASS, 2026-10-17 (b18, answer F1) ─────────
+  // `leg_cremations` now requires a countersignature from a DIFFERENT licensed
+  // director (api/leg-countersign.js, MODE_ALWAYS), so the [W] arm answered
+  // 403 COUNTERSIGN_REQUIRED and reported itself UNREACHED -- correctly, and
+  // proving nothing about tenancy.
+  //
+  // DISCLOSED RATHER THAN FORGED, the same call this list already made for
+  // sv_controlled. A token could be synthesised here: the content hash is
+  // computable and the mock store is ours. THAT IS EXACTLY WHY NOT. The
+  // signature is the control, and a tenancy suite that mints one to get past
+  // it is a suite that would keep passing if the lock were removed -- which
+  // is the unreachable-lock shape fourth's b26 H1 found and this same batch
+  // spent its ablations closing.
+  //
+  // WHAT IS AND IS NOT COVERED, stated so the gap is not read as absent:
+  // READ isolation for leg_cremations is covered by the [L] arm below. WRITE
+  // tenancy on this one resource is NOT, and the thing that would cover it is
+  // a live two-director drive once sql/sairnlegacy_countersign_schema.sql has
+  // been run -- named in the b18 handoff.
+  leg_cremations: 'a cremation authorisation requires a countersignature from '
+    + 'a second licensed director (api/leg-countersign.js, MODE_ALWAYS); '
+    + 'minting one here would be minting the control. READ isolation is '
+    + 'covered; WRITE is not.'
 };
 const UNITS = [
   { map: 'DNT_RESOURCES', app: 'sairndental', role: 'owner', members: [

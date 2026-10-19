@@ -33888,6 +33888,274 @@
         }
       ],
       "recurrence_open": "The STATUS and NEXT fields are parsed the same way and still swallow unlabelled prose; they are bounded by their own 900-character slices, so they degrade quietly rather than wrongly, and nothing here changes that. Nothing requires a digest to use only the nine labels the board knows. And the fix is in a SHARED publisher that every clone runs its own copy of -- measured during this batch, fourth's clone republished the board 20 minutes after cc's corrected version with its own pre-fix copy, so the platform-wide effect of this fix only arrives as each clone fetches."
+    },
+    {
+      "commit": "a98def399e4f",
+      "date": "2026-10-19",
+      "subject": "fix(stonedesk): three residuals of the 2026-08-06 \"Granting...\" class, in the panel it was found in",
+      "files": [
+        "stonedesk.html"
+      ],
+      "lines_added": 112,
+      "lines_removed": 14,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "stonedesk.html sdRenderEmployeeProfiles() drew 'No profiles set yet.' for a read that FAILED. sdData() returns null for a 404, a 403, a 500, a 15-second timeout and a network throw alike, and every one of them arrived at `if(!rows||!rows.length)` and rendered the empty state. A manager whose session had expired, or whose profiles table was never migrated, was told there were no employee profiles -- and the correct response to that is to create them, which is the wrong action in every one of those cases. SAME CLASS AS THE INTAKE PANEL FIXED IN THIS FILE ON 2026-09-03, whose own commit says 'the empty state no longer says No pending submissions yet when the read failed (empty and unfetched looked identical, and only one means there is nothing to do)'. The helpers that fix it -- sdAuthWasRefused, sdReadFailedNote, sdAuthRefusedNote -- already existed in this file for exactly this and this panel did not call them.",
+      "rules": [
+        "1.7"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the panel was written on 2026-08-06 in the same commit as the 'Granting...' bugfix, before sdReadFailed/_sdAuthRefused existed (2026-09-11 and later). So the defect predates its own fix's machinery and there is no commit that introduced it against an available alternative."
+      },
+      "phase_note": "the three-state distinction was a known platform convention by the time this panel was last touched; the panel simply never adopted it.",
+      "contributing_factors": [
+        {
+          "factor": "sdData() signals failure by returning null, which is indistinguishable at the call site from an empty result",
+          "kind": "technical",
+          "action_status": "not-actionable",
+          "note": "changing the transport's return contract would touch every caller in a 2.2MB file. The platform's answer is the separate _sdReadFailed/_sdAuthRefused flags, which exist and are now read here"
+        },
+        {
+          "factor": "the fix for the identical defect in the intake panel (2026-09-03) was applied to that panel only, and nothing swept the file for other `if(!rows)` empty states",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "a sweep over every empty-state render in stonedesk.html that does not consult sdReadFailed -- named in the b18 handoff rather than claimed here, because it was not run"
+        },
+        {
+          "factor": "nothing drove these client functions at all, so the only method available was reading -- and the 2026-08-06 comment in this same file records reading failing on this same function",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/b18-passkey-profile-e2e.test.js lifts the real functions out of stonedesk.html and runs them, with arms B1/B2/B3 driving all three states and ablation E2 reproducing the false-empty on purpose"
+        }
+      ],
+      "recurrence_open": "THE SWEEP WAS NOT RUN. Only this panel was fixed, and the 2026-09-03 precedent is that fixing one panel leaves the others. How many other empty states in stonedesk.html render a failed read as 'none yet' is UNMEASURED -- the handoff names the grep and nobody has run it."
+    },
+    {
+      "commit": "a98def399e4f",
+      "date": "2026-10-19",
+      "subject": "fix(stonedesk): three residuals of the 2026-08-06 \"Granting...\" class, in the panel it was found in",
+      "files": [
+        "stonedesk.html"
+      ],
+      "lines_added": 112,
+      "lines_removed": 14,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "Neither stonedesk.html employee-profile function had a .catch, so a throw inside the promise handler produced NOTHING a user could see. sdRenderEmployeeProfiles() sets `listEl.textContent='Loading...'` and then renders inside a .then that calls escHtml and escAttrJs; a throw from either -- or rows.map on a non-array -- left the panel reading 'Loading...' permanently, with the error surfacing only as an unhandled rejection in a console nobody is watching. sdSaveEmployeeProfile() is worse: it HIDES its error element on the line above the call, so a throw left the form in exactly the state it is in before a click -- indistinguishable from not having clicked. THIS IS THE 2026-08-06 'Granting...' BUG ONE LAYER OVER: a pending state entered before a path that can fail without clearing it. That commit's own comment is the reason this was worth re-reading -- the reset code was 'confirmed present and correct on every path, checked repeatedly' and never ran.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "both functions have had no .catch since they were written on 2026-08-06; the defect is coeval with the feature."
+      },
+      "phase_note": "a missing .catch on a promise chain whose handler calls three potentially-absent globals is a coding omission, not a design decision -- the sibling function twenty lines up guards showToast with typeof, so the convention was present in the same file.",
+      "contributing_factors": [
+        {
+          "factor": "sdData() is written never to reject, which made a .catch look redundant -- but the HANDLER can throw, and sdLicenseKey() at stonedesk.html:30205 is called OUTSIDE sdData's own try, which that line's comment already records as a shape this file paid for once",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "both chains now carry a .catch that clears the pending label, logs, and says nothing was confirmed"
+        },
+        {
+          "factor": "a pending label and the code that clears it were separated by every line that could throw, with no single place responsible for the reset",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the grant button's reset is now one setPending() function called from all three exits"
+        },
+        {
+          "factor": "an unhandled rejection is invisible in a browser, so the failure mode produced no signal anywhere",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "arm E1 of api/b18-passkey-profile-e2e.test.js removes the .catch and asserts BOTH that 'Loading...' is left standing AND that the error becomes an unhandled rejection"
+        }
+      ],
+      "recurrence_open": "ONLY THE THREE FUNCTIONS IN ONE PANEL ARE COVERED. stonedesk.html has 131 script blocks and an unknown number of other `.then(` chains with no `.catch`; the suite drives three functions and nothing counts the rest. A file-wide count is named in the handoff and was not run."
+    },
+    {
+      "commit": "a98def399e4f",
+      "date": "2026-10-19",
+      "subject": "fix(stonedesk): three residuals of the 2026-08-06 \"Granting...\" class, in the panel it was found in",
+      "files": [
+        "stonedesk.html"
+      ],
+      "lines_added": 112,
+      "lines_removed": 14,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "stonedesk.html sdGrantLoginAccess() called showToast() and escHtml() UNGUARDED after a confirmed server success, inside a promise chain whose trailing .catch sets 'Network error -- check your connection and try again'. A throw from either -- the realm missing the helper, a toast implementation changed, an unexpected value -- therefore reported a credential THE SERVER HAD ALREADY CREATED as a network failure. The user's next action is to grant it again, or to tell the employee their login was not set up. SEVERITY HIGH on a false negative about a credential, not on the likelihood: the same function's sibling sdSaveEmployeeProfile() twenty lines up guards showToast with a typeof test, so the file's own convention was present and not followed. The catch also named a cause it could not know -- it is reached by a real network failure AND by any throw in the chain above it, and the old wording sent people to check their connection for a bug in this file.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the unguarded calls and the trailing catch were written together on 2026-08-06 and 2026-08-06 respectively (the persistent inline confirmation was added the same day). No commit introduced the mismatch against a correct earlier state."
+      },
+      "phase_note": "the guarded form existed in the same file, in the adjacent function, written by the same batch.",
+      "contributing_factors": [
+        {
+          "factor": "one .catch covered both the transport AND every line of the success handler, so 'the request failed' and 'the success path threw' were one branch with one message",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "each success step is in its own try, and the trailing catch now says nothing was CONFIRMED and points at the Sign-In Access list rather than naming a cause"
+        },
+        {
+          "factor": "a failure path that can itself fail -- the shape this file's own sdData() catch records paying for twice, in its comment at :30293",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "the reset is a function, the toast is guarded, and escHtml has a local fallback, so no step can cost a later one"
+        },
+        {
+          "factor": "nothing drove the success path at all, let alone a success path whose helpers throw",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "arms A5 and A6 drive exactly that, and ablation E3 reproduces the false error by removing the per-step try"
+        }
+      ],
+      "recurrence_open": "E3b MEASURED THE typeof GUARD ALONE AND IT CHANGES NOTHING -- the per-step try covers it, so the guard is defence in depth and NOT the load-bearing layer. Recorded because an arm claiming otherwise would have been a green claim about a layer doing no work. And the pattern is unswept: other handlers in this file call unguarded globals after a confirmed success and nothing counts them."
+    },
+    {
+      "commit": "54d6e95d9678",
+      "date": "2026-10-19",
+      "subject": "feat(sairnlaw,sairnlegacy): the four remaining practitioner answers, and the trust lock finally decides before the table",
+      "files": [
+        "api/_lib/auth.js",
+        "api/_lib/countersign-endpoint.js",
+        "api/_lib/countersign.js",
+        "api/_lib/law-roles.js",
+        "api/_lib/leg-roles.js",
+        "api/law-countersign.js",
+        "api/leg-countersign.js",
+        "api/sd-data.js",
+        "sairnlaw.html",
+        "sql/sairnlaw_countersign_schema.sql",
+        "sql/sairnlaw_employee_auth_schema.sql",
+        "sql/sairnlegacy_countersign_schema.sql"
+      ],
+      "lines_added": 2015,
+      "lines_removed": 54,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "api/_lib/law-roles.js's header has stated since the file was written that the IOLTA trust lock is 'a separate structure consulted BEFORE the table rather than a value inside it', because 'a policy expressed only as a default is a policy an override can erase'. decide() consulted it AFTER the table had already agreed, and the code's own comment at that line said so in as many words: 're-asserted AFTER the table agrees, not instead of it'. TWO CONSEQUENCES. (a) fourth's b26 H1: on the shipped table the paralegal cell for both locked resources is '', so the table denied and the lock line was unreachable -- deleting LAW_TRUST_LOCKED changed no behaviour, which b17 closed with structural arms while recording the ORDER as 'deliberate and correct'. (b) THE ONE THAT MATTERED: it made Michael's practitioner answer C2 unimplementable without widening the table. A two-stage disbursement needs trust policy to carry a named exception, and with the lock last the only place to put one was a WIDER TABLE GRANT -- widening the thing the lock exists to survive. Policy that can only be extended by weakening its own guard is policy in the wrong place.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the file was written in one commit on 2026-10-12 with the header and the ordering already disagreeing, so there is no earlier commit where the two agreed. Naming that commit as an injection would be naming the feature's own birth, which is true and useless; recorded as unknown rather than dressed up as a regression."
+      },
+      "phase_note": "the header and the implementation disagreed from the first line of the file. That is a design-time split, not a coding slip.",
+      "contributing_factors": [
+        {
+          "factor": "the lock's placement was defensible read alone -- as a SECOND defence after the table it is correct, and b17 wrote that down as a finding about the TEST rather than the code",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "the lock now runs FIRST and the table is not consulted for a locked resource held by a non-bar-admitted role, which is what the header always claimed"
+        },
+        {
+          "factor": "nothing compared the file's own prose against its own control flow, so a header saying BEFORE sat above code doing AFTER for five days with both read as correct",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "arms T4b and T4c of api/b17-trust-lock-hard.test.js now assert that decide() AGREES with denyMessage -- the message and the decision were two code paths and nothing made them agree"
+        },
+        {
+          "factor": "the exception C2 required could only be expressed by widening the table, and a reviewer approving that widening would have been approving the exact erasure the lock exists to prevent",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "LAW_TRUST_TWO_STAGE, LAW_TRUST_PREPARE_ROLES and LAW_PREPARE_ACTION live INSIDE the lock, so the table still reads paralegal: '' on both trust rows"
+        },
+        {
+          "factor": "LAW_BAR_ADMITTED_ROLES did not exist, so 'who may touch client trust' was expressed as two inline string comparisons (role !== 'owner' && role !== 'attorney')",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "C3's licensure tier is now the constant the lock reads, modelled on api/sv-auth.js's PRESCRIBER_ROLES, and it is what makes C1's new bookkeeper role safe by construction"
+        }
+      ],
+      "recurrence_open": "NOTHING COMPARES A FILE'S PROSE TO ITS CONTROL FLOW, on this file or any other. The arms added here check that two FUNCTIONS agree; they do not check that the header's word 'BEFORE' matches the order decide() uses. A second ordering claim in a second file would be invisible the same way. Also: the lock is still consulted only from inside decide(), so an override layer that bypassed decide() entirely would reach trust -- no such layer exists today and nothing prevents one."
+    },
+    {
+      "commit": "4b2bfc8b6ee2",
+      "date": "2026-10-19",
+      "subject": "test(b18): the two new suites, four re-aimed, and the ablations that prove each gate is load-bearing",
+      "files": [
+        "api/b17-trust-lock-hard.test.js",
+        "api/b18-countersign-lock.test.js",
+        "api/b18-passkey-profile-e2e.test.js",
+        "api/sd-data-cross-tenant-dispatchers.test.js",
+        "api/sd-data-law-role-matrix.test.js",
+        "api/sd-data-leg-role-matrix.test.js",
+        "api/sd-data-leg-session-gate.test.js",
+        "docs/hank-evidence/b18/all_api_suites.log",
+        "docs/hank-evidence/b18/guardian_checks.log"
+      ],
+      "lines_added": 2566,
+      "lines_removed": 64,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "b18's two new route files, api/leg-countersign.js and api/law-countersign.js, delegated their ENTIRE handler to a factory in api/_lib/countersign-endpoint.js -- so the method check, the bearer check and validateLicenseKey() were all one `require` away, and the file a reader opens to ask 'what can reach this URL unauthenticated' showed nothing at all. tools/preauth_oracle_check.py reported both as 'UNDECLARED PUBLIC -- no auth boundary and no entry in tools/public_endpoint_declarations.json', and api/preauth-envelope-ordering.test.js went red on its own oracle arm. THE CHECKER'S PREMISE IS RIGHT AND THE FIRST DRAFT WAS WRONG. The requests were in fact authenticated -- the factory does validate -- so this is not an open endpoint; it is an endpoint whose boundary was unreadable at the route, which is the property every other handler on this platform has and which the checker exists to keep. Restructured: ~30 lines of preamble now appear in BOTH route files, mirroring all fifteen api/*-auth.js handlers, and the ~200 lines of lock logic still appear once.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/preauth_oracle_check.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "241984078b88",
+        "date": "2026-10-19",
+        "subject": "feat(sairnlaw,sairnlegacy): the four remaining practitioner answers, and the trust lock finally decides before the table",
+        "lag_days": 0
+      },
+      "phase_note": "the factory shape was a deliberate choice made to avoid a second copy of the lock logic, and it traded away a property the platform relies on. That trade was made at design time and was wrong.",
+      "contributing_factors": [
+        {
+          "factor": "one mechanism serving two apps is the right call for the LOCK and the wrong call for the BOUNDARY, and nothing in the first draft separated those two questions",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the boundary is per-route and the mechanism is shared; api/_lib/countersign-endpoint.js's header now states that split and why the checker was right"
+        },
+        {
+          "factor": "runCountersignAction() receives an already-validated licence envelope, which a future route could pass unvalidated",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "it RE-ASSERTS valid/active/license_hash and refuses 401 otherwise, because 'the route checked it' is an assumption and the function is reachable from any future route"
+        },
+        {
+          "factor": "the full-tree sweep is what surfaced it -- no gate driver references either new suite, and a selective run would have missed it entirely",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "gate-driver wiring for the b18 suites is cc's (tools/), and is named in the handoff with the grep that shows it absent today"
+        }
+      ],
+      "recurrence_open": "THE CHECKER CANNOT FOLLOW A DELEGATION, and that is unchanged. A future route that delegates its boundary will be reported the same way and the right answer will again be to restructure -- but a route that delegates to a module the checker DOES see a boundary in would pass while being just as unreadable. tools/ is cc's; the limitation is named rather than patched."
     }
   ],
   "started": "2026-09-09",

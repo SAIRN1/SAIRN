@@ -32,7 +32,10 @@ create table if not exists sairnlaw_employee_auth (
   license_hash text not null,
   employee_id text not null,
   display_name text,
-  role text not null check (role in ('owner','attorney','paralegal')),
+  -- 'bookkeeper' added 2026-10-17 (b18, practitioner answer C1). THE INLINE
+  -- LIST HERE DOES NOTHING ON AN EXISTING TABLE -- see the widening block at
+  -- the bottom of this file, which is the half that has to be run.
+  role text not null check (role in ('owner','attorney','paralegal','bookkeeper')),
   pin_hash text not null,
   pin_salt text not null,
   active boolean not null default true,
@@ -84,3 +87,55 @@ grant select, insert, update on public.sairnlaw_employee_auth to service_role;
 -- encrypted MFA secrets, and is only ever reached through the server using
 -- the service-role key. Revoking explicitly rather than assuming.
 revoke all on public.sairnlaw_employee_auth from anon, authenticated;
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- THE bookkeeper WIDENING -- 2026-10-17 (b18, practitioner answer C1)
+-- ═══════════════════════════════════════════════════════════════════════════
+-- RUN THIS. The `create table if not exists` above does NOT amend an existing
+-- table -- it SKIPS it, constraint and all -- so on the live database
+-- 'bookkeeper' is REJECTED until these two statements run, even though the
+-- inline list above now carries it. A re-run of the file alone reports success
+-- and changes nothing: the same silent no-op that cost thirteen audit logs
+-- their tamper-evidence until 2026-10-13, and the same one SAIRNcare's
+-- office_manager widening was written for on 2026-10-14. THIS BLOCK IS THAT
+-- ONE, RE-QUALIFIED FOR THIS TABLE -- not copied on the strength of a diff:
+-- the constraint NAME, the EXISTING value list and the row count a validation
+-- scan would walk are all different, and all three were read out of this file
+-- rather than carried across.
+--
+-- WHAT IS BROKEN UNTIL IT RUNS: api/_lib/auth.js mints the role,
+-- api/law-auth.js accepts it at `setup`, api/_lib/law-roles.js has a complete
+-- nineteen-cell policy for it -- and the INSERT is then refused 23514 by the
+-- database. The app believes the role exists and credential creation fails at
+-- the last step with no validation message. sairnlaw.html's Role picker says
+-- so at the <select> rather than leaving it to be found.
+--
+-- IDEMPOTENT BY CONSTRUCTION: `drop constraint if exists` makes the `add` safe
+-- on a second run, and the name is the one Postgres generates for the inline
+-- CHECK above (<table>_<column>_check).
+--
+-- SAFE AGAINST EXISTING ROWS: the new list is a strict SUPERSET of the old
+-- three, so every stored row satisfies it and the validation scan cannot fail.
+--
+-- THE FULL LIST IS RESTATED rather than appended to, because `add constraint`
+-- replaces the whole predicate. Dropping a value here would REVOKE it, so the
+-- three already permitted are all present below -- checked against the inline
+-- CHECK above, not retyped from memory.
+--
+-- ONE TRANSACTION, and that is not decoration. Between the DROP and the ADD
+-- this table has NO role check at all, and a paste that applies only partway
+-- leaves it that way while the Supabase editor reports success for the
+-- statements it did run -- the failure the SAIRNroofing cleanup actually hit
+-- on 2026-08-26. Wrapped, either both land or neither does.
+begin;
+alter table public.sairnlaw_employee_auth
+  drop constraint if exists sairnlaw_employee_auth_role_check;
+alter table public.sairnlaw_employee_auth
+  add constraint sairnlaw_employee_auth_role_check
+  check (role in ('owner','attorney','paralegal','bookkeeper'));
+commit;
+
+-- VERIFY. Expect exactly 1 row, and the definition must contain 'bookkeeper'.
+select pg_get_constraintdef(c.oid) as role_check
+  from pg_constraint c
+ where c.conname = 'sairnlaw_employee_auth_role_check';

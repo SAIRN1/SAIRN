@@ -232,32 +232,329 @@ const LEG_LIVERY_GRANTOR_ROLES = Object.freeze(Object.assign(Object.create(null)
   owner: true, director: true
 }));
 
+// ══ F2 (2026-10-17, b18): IS LIVERY INVOICED THROUGH THE HOME? A SETTING ══
+// Michael's answer to practitioner question F2: IT IS A PER-HOME SETTING. Both
+// arrangements are real, so neither is the platform's answer, and the home
+// that signs up tells the app which one it runs.
+//
+// ── WHAT THE SETTING ACTUALLY DECIDES, AND WHAT IT DELIBERATELY DOES NOT ──
+// F2's own text names ONE consequence: "the band decides whether the `livery`
+// role gets any MONEY read at all". MEASURED BEFORE BUILDING ANYTHING: the
+// MONEY band already gives `livery: NO`, so a driver can see no price under
+// EITHER answer today, and a setting that "narrowed" that would narrow nothing.
+// Saying so is the measurement; pretending the setting fixed a leak would be
+// the fabrication.
+//
+// SO IT DECIDES WHETHER leg_liverybookings IS GRANTABLE, which is the one
+// thing that follows from the answer rather than from a preference:
+//
+//   through_the_home   The booking IS a purchase order the home owes money on.
+//                      It is the home's commercial record, it is not the
+//                      driver's, and it is NOT grantable. This is the shipped
+//                      behaviour and the DEFAULT.
+//   direct_to_family   The booking is the livery company's own contract with
+//                      the family and the home is a referrer. A driver reading
+//                      THEIR OWN booking is then the operational case, so the
+//                      resource becomes grantable -- still per-employee, still
+//                      READ only, still only by owner or director, and still
+//                      nothing by default.
+//
+// NOTHING WIDENS BY DEFAULT AND NOTHING WIDENS AUTOMATICALLY. A setting of
+// `direct_to_family` does not grant a single driver anything; it makes a grant
+// POSSIBLE, which personnel above them still have to perform per F2's own
+// companion answer from 2026-10-15.
+//
+// leg_liveryvendors IS NOT GRANTABLE UNDER EITHER SETTING, and that is the
+// row worth being firm about: the vendor record carries the pricing the
+// invoice is built from, so there is no arrangement under which a driver needs
+// it. F2's warning is about exactly this -- "a driver who can see what a
+// grieving family is being charged for a casket is a real problem".
+const LEG_LIVERY_BILLING_VALUES = Object.freeze([
+  'through_the_home',
+  'direct_to_family'
+]);
+const LEG_LIVERY_BILLING_DEFAULT = 'through_the_home';
+// Which resources become grantable UNDER WHICH SETTING. A map rather than an
+// `if`, so "what does this setting change" is one readable answer and a second
+// resource cannot be added by a condition nobody re-reads.
+const LEG_LIVERY_BILLING_GRANTABLE = Object.freeze(Object.assign(Object.create(null), {
+  through_the_home: Object.freeze(Object.create(null)),
+  direct_to_family: Object.freeze(Object.assign(Object.create(null), {
+    leg_liverybookings: true
+  }))
+}));
+
+/**
+ * The setting, normalised. AN UNKNOWN OR MISSING VALUE IS THE NARROW ONE --
+ * not an error and not the permissive one. A home that has never answered F2
+ * gets the shipped behaviour, and a typo in a stored setting cannot open a
+ * resource.
+ */
+function liveryBilling(setting) {
+  const v = String(setting || '');
+  return (LEG_LIVERY_BILLING_VALUES.indexOf(v) === -1)
+    ? LEG_LIVERY_BILLING_DEFAULT
+    : v;
+}
+
+// ══ F3 (2026-10-17, b18): WHAT AN APPRENTICE MAY NOT SIGN -- A CONFIG ═════
+// Michael's answer to practitioner question F3: IT IS A CONFIG. F3 asked for
+// the licensing board's wording precisely because the answer is per-state, and
+// a per-state legal constraint modelled as one platform rule is the failure
+// mode F3's own last paragraph names: "a supervision rule modelled wrongly is
+// worse than one left unmodelled with a note, because the wrong model LOOKS
+// like compliance."
+//
+// SO THE APP CARRIES THE THREE SHAPES F3 ENUMERATED, as three separate fields,
+// and a home fills in the ones its board actually imposes:
+//
+//   countersign  "an apprentice may do the work, a director must sign the
+//                record" -- the SAME countersignature lock as F1, which is why
+//                F3 said the two should be built together. An apprentice gets
+//                `prepare` on these resources and never `write`.
+//   forbidden    "an apprentice may not touch these records at all" -- a
+//                NARROWING of named rows. It can only ever remove access:
+//                consulted after the band, never instead of it.
+//   presence     "a director must be physically present" -- THE APP CANNOT
+//                EXPRESS THIS AND DOES NOT PRETEND TO. It is a disclosure
+//                string, not a gate, and `presence_disclosure` being true is
+//                what makes the UI say so. A gate here would be the wrong
+//                model that looks like compliance.
+//
+// THE DEFAULT IS THE SHIPPED BEHAVIOUR AND GRANTS NOTHING NEW. Empty
+// countersign, empty forbidden, disclosure ON -- so a home that has not
+// answered F3 keeps exactly today's policy (apprentice reads the regulated
+// band, writes none of it) and is TOLD the app cannot enforce supervision.
+// An empty default is also the only honest one: we do not know any particular
+// home's board.
+const LEG_APPRENTICE_POLICY_DEFAULT = Object.freeze({
+  // Resources an apprentice may PREPARE for a licensed director to sign.
+  // Empty by default; a home names its board's list.
+  countersign: Object.freeze([]),
+  // Resources an apprentice may not touch at all. Narrowing only.
+  forbidden: Object.freeze([]),
+  // The app cannot model physical presence. ON by default, because a home
+  // that has said nothing has not told us supervision is unnecessary.
+  presence_disclosure: true,
+  recorded: '2026-10-17 (b18), Michael -- "apprentice permission config"'
+});
+
+// The sentence the UI shows when `presence_disclosure` is on. HERE and not in
+// the HTML, because it is the honest limit of a compliance claim and belongs
+// with the policy it qualifies -- and because two apps must not grow two
+// wordings of one limitation.
+const LEG_APPRENTICE_PRESENCE_DISCLOSURE =
+  'This record was entered by an apprentice. SAIRNlegacy cannot verify that a '
++ 'licensed director was physically present, and nothing here should be read '
++ 'as evidence that one was. If your state requires supervision in person, '
++ 'that remains your record to keep.';
+
+/**
+ * The apprentice config, normalised, with every field present and of the right
+ * shape. A STORED CONFIG IS UNTRUSTED INPUT: a string where a list belongs, or
+ * a resource name that is not in the table, must not be able to widen
+ * anything.
+ *
+ * TWO FILTERS, BOTH NARROWING:
+ *  - a name that is not a resource in LEG_ROLE_MATRIX is DROPPED, so a typo
+ *    grants nothing rather than matching nothing silently in a later lookup
+ *  - `countersign` and `forbidden` overlapping resolves to FORBIDDEN. "May not
+ *    touch it at all" and "may prepare it" cannot both be true, and the
+ *    narrower reading is the only safe one to guess.
+ */
+function apprenticePolicy(cfg) {
+  const src = (cfg && typeof cfg === 'object') ? cfg : {};
+  const known = (list) => (Array.isArray(list) ? list : [])
+    .filter((r) => typeof r === 'string'
+                && Object.prototype.hasOwnProperty.call(LEG_ROLE_MATRIX, r));
+  const forbidden = known(src.forbidden);
+  const countersign = known(src.countersign)
+    .filter((r) => forbidden.indexOf(r) === -1);
+  return {
+    countersign: countersign,
+    forbidden: forbidden,
+    // Anything other than an explicit `false` leaves the disclosure ON. A
+    // missing, null or malformed value must not silently remove a disclosure.
+    presence_disclosure: src.presence_disclosure !== false,
+    disclosure_text: LEG_APPRENTICE_PRESENCE_DISCLOSURE
+  };
+}
+
+// The action name, spelled once, matching api/_lib/law-roles.js's
+// LAW_PREPARE_ACTION by construction -- one verb across the platform, so the
+// countersignature endpoint does not have to know which app it is serving.
+const LEG_PREPARE_ACTION = 'prepare';
+
+// ══ F1 (2026-10-17, b18): A CREMATION NEEDS A SECOND NAMED PERSON ═════════
+// Michael's answer to practitioner question F1: YES. A cremation
+// authorisation takes a second named, signing person.
+//
+// SO leg_cremations JOINS THE COUNTERSIGNATURE LOCK, and the pattern is
+// api/sv-witness.js's -- the one SAIRNvet ships for a controlled-substance
+// entry and SAIRNcare lifted for a two-person count. F1's own text said that
+// pattern "lifts onto leg_cremations directly", and the three things that make
+// it work are not restated here: read api/sv-witness.js.
+//
+// ── RE-QUALIFIED FOR THIS RESOURCE, NOT COPIED ON THE STRENGTH OF A DIFF ──
+// Item 7 of docs/2026-09-13-cross-domain-disciplines.md: byte-identical is not
+// safe-in-context. Three things are different here and each one is a decision:
+//
+//   1. THE FIRST SIGNATURE IS ALREADY TRUSTWORTHY, as in SAIRNcare and unlike
+//      SAIRNvet: `leg_cremations` is written by owner or director only and the
+//      session names the writer. Only the SECOND signature was unverified.
+//
+//   2. A SELF-COUNTERSIGNED AUTHORISATION IS REFUSED, NOT FLAGGED. Same call
+//      as SAIRNcare's and for the same reason: an authorisation whose second
+//      signature is the first person is NOT a two-person authorisation, and
+//      recording it as one is the false record. There is no undoing a
+//      cremation, so a flag on a wrong record helps nobody.
+//
+//   3. THERE IS NO `require_two_person` SETTING. SAIRNvet made it per-licence
+//      because a one-vet practice cannot staff a second witness and the count
+//      still has to happen. HERE THE ANSWER IS A STATE-LAW READING, NOT A
+//      STAFFING QUESTION -- F1 asked whether the state requires it or the
+//      house does, and a legal requirement is not something a licensee turns
+//      off in Settings. A home that cannot produce a second signer cannot
+//      file the authorisation, which is the paper position too.
+//
+// WHO MAY COUNTERSIGN. owner and director -- the two roles with RW on the
+// REGULATED band, which in this app is what "a licensed funeral director"
+// means. DERIVED from the band rather than retyped: see
+// LEG_REGULATED_WRITE_ROLES below, which is computed from the table so a band
+// change cannot leave this list behind.
+const LEG_COUNTERSIGN_REQUIRED = Object.freeze(Object.assign(Object.create(null), {
+  leg_cremations: true
+}));
+
+// COMPUTED FROM THE TABLE, NOT TYPED. The one row that defines the REGULATED
+// write set is leg_cremations itself; deriving the countersigner list from it
+// means a band edit moves both together. Re-typing role names in two places is
+// the drift this platform has already paid for, and here the two places would
+// be an irreversible authorisation and the list of people who may approve it.
+const LEG_REGULATED_WRITE_ROLES = Object.freeze((function () {
+  const out = Object.create(null);
+  const row = LEG_ROLE_MATRIX.leg_cremations;
+  Object.keys(row).forEach((role) => {
+    if (role === 'band' || role === 'why') return;
+    if (String(row[role] || '') === 'rw') out[role] = true;
+  });
+  return out;
+})());
+
+/** Does this resource require a second named signature before it is filed? */
+function requiresCountersignature(resource) {
+  return !!LEG_COUNTERSIGN_REQUIRED[resource];
+}
+
+/**
+ * The countersignature refusal, as its own message, because it is not a role
+ * problem and must not read as one. A director told "your role does not have
+ * access" to a cremation they ARE allowed to authorise would go and ask for a
+ * permission they already have.
+ */
+function countersignatureMessage(resource) {
+  const noun = (resource === 'leg_cremations')
+    ? 'A cremation authorisation' : 'This record';
+  return noun + ' needs a second named, signing person before it can be '
+       + 'filed. Ask another licensed director to review and countersign it. '
+       + 'Nothing was saved and nothing was authorised.';
+}
+
 /**
  * @param {object} [grants] OPTIONAL per-employee grants, shape
- *   { <resource>: true }. Only consulted for role 'livery' and only for the
- *   two resources in LEG_LIVERY_GRANTABLE, and only ever yields READ.
+ *   { <resource>: true }. Only consulted for role 'livery', only for the
+ *   resources that are grantable under the home's F2 setting, and only ever
+ *   yields READ.
+ * @param {object} [home] OPTIONAL per-home settings, shape
+ *   { livery_billing: <string>, apprentice: { countersign, forbidden,
+ *   presence_disclosure } }. Both are normalised to their NARROW default, so
+ *   omitting this argument reproduces the pre-b18 answer exactly.
+ *
+ * ── THE ORDER OF THE FOUR THINGS BELOW IS THE POLICY (b18) ───────────────
+ *   1. F3 `forbidden`      NARROWS. First, so nothing downstream can grant a
+ *                          resource a board has said an apprentice may not
+ *                          touch -- including the band and including a
+ *                          countersignature route.
+ *   2. the band            the table, unchanged.
+ *   3. F3 `countersign`    WIDENS, and only for the `prepare` verb. An
+ *                          apprentice may prepare; they still cannot write.
+ *   4. F2 + b17 grants     WIDENS, read only, role `livery` only, and only
+ *                          for a resource grantable under this home's F2
+ *                          setting.
+ *
+ * NARROWING BEFORE WIDENING IS NOT STYLE. If `forbidden` were consulted last
+ * it would be unable to refuse anything an earlier branch had already
+ * returned ALLOW for, which is the shape that made the trust lock unreachable
+ * in api/_lib/law-roles.js until this same batch.
  */
-function decide(resource, role, action, grants) {
+function decide(resource, role, action, grants, home) {
   if (!resource || !Object.prototype.hasOwnProperty.call(LEG_ROLE_MATRIX, resource)) {
     return (String(resource || '').indexOf('leg_') === 0)
       ? DENY        // a NEW leg_ resource nobody added to the table: fail closed
       : NOT_LEG;
   }
+  const settings = (home && typeof home === 'object') ? home : {};
+  const wantsWrite = (action !== 'read');
+  const wantsPrepare = (action === LEG_PREPARE_ACTION);
+
+  // ── 1. F3 FORBIDDEN -- narrowing, and it runs first ─────────────────────
+  if (role === 'apprentice') {
+    const pol = apprenticePolicy(settings.apprentice);
+    if (pol.forbidden.indexOf(resource) !== -1) return DENY;
+  }
+
   const r = LEG_ROLE_MATRIX[resource];
   const grant = (role && Object.prototype.hasOwnProperty.call(r, role))
     ? String(r[role] || '')
     : '';
-  const wantsWrite = (action !== 'read');
+  // ── 2. THE BAND ─────────────────────────────────────────────────────────
+  // `prepare` is NOT a read and is NOT a write grant: it is handled by branch
+  // 3 alone. Treating it as WRITE-class here is what makes branch 3 the only
+  // route in, so a future verb still cannot ride in on a read grant.
   const allowed = wantsWrite ? (grant === 'rw') : (grant === 'rw' || grant === 'r');
-  if (allowed) return ALLOW;
-  // b17: the granted exception, and it is the LAST thing consulted so it can
-  // only ever widen a refusal and never narrow an allowance.
+  if (allowed && !wantsPrepare) return ALLOW;
+
+  // ── 3. F3 COUNTERSIGN -- widening, `prepare` only, apprentice only ──────
+  // An apprentice on this list may PREPARE the record. Preparing is not
+  // filing: the row is pending and a licensed director's countersignature is
+  // what files it (api/leg-countersign.js). THE RESOURCE MUST ALSO BE ONE THE
+  // PLATFORM KNOWS HOW TO COUNTERSIGN -- a home naming a resource with no
+  // countersignature route would otherwise get a prepare nobody can complete.
+  if (wantsPrepare && role === 'apprentice') {
+    const pol = apprenticePolicy(settings.apprentice);
+    if (pol.countersign.indexOf(resource) !== -1
+        && LEG_COUNTERSIGN_REQUIRED[resource] === true) {
+      return ALLOW;
+    }
+  }
+  // A `prepare` by anyone already holding RW is an ALLOW -- a director may of
+  // course prepare what they may file. Checked after the apprentice branch so
+  // the narrower case is decided first, and never for a role the band denies.
+  if (wantsPrepare && grant === 'rw') return ALLOW;
+
+  // ── 4. F2 + b17 -- the granted livery exception, read only, LAST ────────
+  // It is last so it can only ever widen a refusal and never narrow an
+  // allowance. b18 adds the F2 half: `grantableForHome` is the b17 pair PLUS
+  // whatever this home's livery-billing answer makes grantable.
   if (!wantsWrite && role === 'livery'
-      && LEG_LIVERY_GRANTABLE[resource]
+      && liveryGrantable(resource, settings.livery_billing)
       && grants && grants[resource] === true) {
     return ALLOW;
   }
   return DENY;
+}
+
+/**
+ * Is this resource grantable to `livery` at this home? The b17 pair always,
+ * plus the F2-dependent set. ONE FUNCTION so the handler, the grant/revoke
+ * path and any UI cannot disagree about which resources a grant may name --
+ * the disagreement that cost SAIRNsenior a real bug when two halves each
+ * called effectiveClock() and only one passed the as-of.
+ */
+function liveryGrantable(resource, liveryBillingSetting) {
+  if (LEG_LIVERY_GRANTABLE[resource] === true) return true;
+  const byBilling = LEG_LIVERY_BILLING_GRANTABLE[liveryBilling(liveryBillingSetting)];
+  return !!(byBilling && byBilling[resource] === true);
 }
 
 /** Does this resource carry the append-only rule? */
@@ -304,5 +601,13 @@ module.exports = {
   // assert them and a future implementer reads the decision rather than
   // re-deriving it.
   LEG_EMBALMER_TIER, LEG_PREP_ROOM_RESOURCES,
-  LEG_LIVERY_GRANTABLE, LEG_LIVERY_GRANTOR_ROLES
+  LEG_LIVERY_GRANTABLE, LEG_LIVERY_GRANTOR_ROLES,
+  // b18, the remaining three funeral answers. F1 the countersignature lock,
+  // F2 the livery-billing setting, F3 the apprentice config.
+  LEG_COUNTERSIGN_REQUIRED, LEG_REGULATED_WRITE_ROLES,
+  requiresCountersignature, countersignatureMessage,
+  LEG_LIVERY_BILLING_VALUES, LEG_LIVERY_BILLING_DEFAULT,
+  LEG_LIVERY_BILLING_GRANTABLE, liveryBilling, liveryGrantable,
+  LEG_APPRENTICE_POLICY_DEFAULT, LEG_APPRENTICE_PRESENCE_DISCLOSURE,
+  apprenticePolicy, LEG_PREPARE_ACTION
 };

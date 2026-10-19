@@ -181,6 +181,29 @@ def run_fixtures():
           'crash', len(split_cells('| a | b ' + BS)), 3)
     check('a cell that is ONLY an escaped pipe is one non-empty cell',
           split_cells('| ' + BS + '| |')[1].strip(), '|')
+
+    # ── THE REAL ROW, PINNED (cc b18 item 3) ──────────────────────────────
+    # Every fixture above is synthetic, which is right -- they keep meaning the
+    # same thing when the index changes. But the defect had ONE live instance,
+    # index line 645, and a synthetic fixture cannot prove THAT row parses. So
+    # its opening is pinned here verbatim: if the split ever regresses, this arm
+    # names the row a reader can go and look at instead of an invented one.
+    REAL_645 = ('| **Platform** | **`(x ' + BS + '|' + BS + '| 0)`** in a '
+                'numeric fold CONCATENATES a string instead of adding it** '
+                '&mdash; made mechanical | **BUILT** | cc | - | - | - |')
+    cells = split_cells(REAL_645)
+    check('THE REAL ROW: index line 645 parses into its 7 columns plus two '
+          'edges', len(cells), 9)
+    check('...and its ITEM cell is the whole item, not the seven characters '
+          'the naive split left (`**`(x ' + BS + '`)',
+          cells[2].strip().startswith('**`(x || 0)`** in a numeric fold'), True)
+    check('ABLATION on the real row: the naive split reads it as ELEVEN '
+          'cells, which is how its item became 7 characters and the row '
+          'vanished from the comparison', len(REAL_645.split('|')), 11)
+    check('...and the naive split\'s item cell really is that short, measured '
+          'rather than asserted',
+          len(REAL_645.split('|')[2].strip()) < 12, True)
+
     print('  %d/%d fixtures classify correctly' % (total - bad, total))
     return 1 if bad else 0
 

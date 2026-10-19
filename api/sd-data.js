@@ -2160,8 +2160,52 @@ module.exports = async (req, res) => {
       // explicit DENY stops a request. Folding NOT_LAW into ALLOW would have
       // made every non-law resource read as "the law policy approved it".
       if (lawRoles.decide(resource, gateSession.role, action) === lawRoles.DENY) {
-        res.status(403).json({ error: { code: 'FORBIDDEN', message: lawRoles.denyMessage(resource, gateSession.role) } });
-        return;
+        // ── C2's TWO-STAGE DEFERRAL (2026-10-17, b18) ────────────────────
+        // A WRITE the caller could legitimately perform BY PRESENTING A
+        // COUNTERSIGNED TOKEN is not refused here; the check below requires
+        // that token and refuses without it.
+        //
+        // THIS IS THE GATE law_trusttx ACTUALLY PASSES THROUGH, and finding
+        // that out cost a round of red arms: the first draft put the deferral
+        // in the LAW_RESOURCES prelude only, which law_trusttx never enters --
+        // it is one of the FOUR named individually inside SD_SESSION_GATED.
+        // The prelude carries the same three lines for the fifteen, the same
+        // way `lawRoles.decide` is called from both, and
+        // api/b18-countersign-lock.test.js drives THIS path end to end so a
+        // future two-stage resource in either list cannot be the one with no
+        // arm.
+        //
+        // Three conditions, all required, each narrowing: not a read, the
+        // resource is in LAW_TRUST_TWO_STAGE, and this ROLE may prepare it.
+        const gateDeferToCountersign =
+          action !== 'read'
+          && lawRoles.LAW_TRUST_TWO_STAGE[resource] === true
+          && lawRoles.decide(resource, gateSession.role, lawRoles.LAW_PREPARE_ACTION)
+             === lawRoles.ALLOW;
+        if (!gateDeferToCountersign) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: lawRoles.denyMessage(resource, gateSession.role, action) } });
+          return;
+        }
+      }
+      // ── AND THE COUNTERSIGNATURE ITSELF (b18) ──────────────────────────
+      // One call, in api/_lib/countersign.js, reached through
+      // api/law-countersign.js's PROFILE. It returns null immediately for a
+      // read and for every resource that is not two-stage, so this line is
+      // inert for the other 69 action-pairs this gate covers.
+      if (action !== 'read' && lawRoles.LAW_TRUST_TWO_STAGE[resource] === true) {
+        const csLibGate = require('./_lib/countersign');
+        const lawCsGate = require('./law-countersign');
+        const csRefusal = await csLibGate.requireCountersignature(lawCsGate.PROFILE, {
+          resource: resource,
+          payload: payload,
+          licHash: licHash,
+          rest: rest,
+          headers: headers,
+          token: req.headers['x-law-countersign'] || (body && body.countersign_token) || '',
+          callerRole: gateSession.role,
+          callerEmployeeId: gateSession.employee_id
+        });
+        if (csRefusal) { res.status(csRefusal.status).json(csRefusal.body); return; }
       }
       // ── AND THE SAME THING FOR ALL 36 SAIRNfreedom RESOURCES (2026-10-13) ─
       // MICHAEL'S DECISION (b6 instruction b), built on the SAIRNlaw precedent
@@ -16319,8 +16363,65 @@ module.exports = async (req, res) => {
       // disprove by clicking. The message names the role rather than the
       // policy.
       if (lawRoles.decide(resource, lawSess.role, action) === lawRoles.DENY) {
-        res.status(403).json({ error: { code: 'FORBIDDEN', message: lawRoles.denyMessage(resource, lawSess.role) } });
-        return;
+        // ── C2's TWO-STAGE DEFERRAL (2026-10-17, b18) ────────────────────
+        // A WRITE the caller could legitimately perform BY PRESENTING A
+        // COUNTERSIGNED TOKEN is not refused here. The write branch below
+        // requires that token and refuses without it, so the decision moves
+        // to the gate nearest the data rather than being made twice.
+        //
+        // THIS IS THE ONE PLACE A 403 WAS REMOVED IN b18 AND IT IS WORTH
+        // READING TWICE. Three conditions, all required, and each one
+        // narrows:
+        //   * the verb is not 'read' -- a paralegal still cannot READ the
+        //     trust ledger, and no token changes that
+        //   * the resource is in LAW_TRUST_TWO_STAGE -- law_trusttx only,
+        //     never law_bankstatements
+        //   * `decide(..., PREPARE)` says this ROLE may prepare it
+        // If any fails, the 403 is unchanged.
+        //
+        // WHY DEFER AT ALL rather than keep the 403 and have the signer
+        // perform the write: because then the token would never be checked.
+        // The role table lets a bar-admitted caller write law_trusttx
+        // directly (MODE_PREPARED_ONLY), so if the signer also had to do the
+        // saving, the countersignature would be verified on no path at all --
+        // which is precisely the unreachable-lock defect fourth's b26 H1
+        // found in api/_lib/law-roles.js and this same batch fixed. The
+        // PREPARER saves, carrying the signature.
+        const lawDeferToCountersign =
+          action !== 'read'
+          && lawRoles.LAW_TRUST_TWO_STAGE[resource] === true
+          && lawRoles.decide(resource, lawSess.role, lawRoles.LAW_PREPARE_ACTION)
+             === lawRoles.ALLOW;
+        if (!lawDeferToCountersign) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: lawRoles.denyMessage(resource, lawSess.role, action) } });
+          return;
+        }
+      }
+      // ── AND THE COUNTERSIGNATURE ITSELF, BEFORE EITHER BRANCH ──────────
+      // One call, in api/_lib/countersign.js, reached through
+      // api/law-countersign.js's PROFILE -- so there is exactly one
+      // implementation of "is this authorised" and the endpoint and the write
+      // path cannot drift about it.
+      //
+      // PLACED HERE, not inside the write branch, for the same reason the
+      // role gate is here: a check written at one call site and not the other
+      // is indistinguishable from no check when read one branch at a time.
+      // It returns null immediately for a read and for every resource that is
+      // not locked.
+      if (action !== 'read' && lawRoles.LAW_TRUST_TWO_STAGE[resource] === true) {
+        const csLib = require('./_lib/countersign');
+        const lawCs = require('./law-countersign');
+        const refusal = await csLib.requireCountersignature(lawCs.PROFILE, {
+          resource: resource,
+          payload: payload,
+          licHash: licHash,
+          rest: rest,
+          headers: headers,
+          token: req.headers['x-law-countersign'] || (body && body.countersign_token) || '',
+          callerRole: lawSess.role,
+          callerEmployeeId: lawSess.employee_id
+        });
+        if (refusal) { res.status(refusal.status).json(refusal.body); return; }
       }
     }
     if (LAW_RESOURCES[resource] && action === 'read') {
@@ -16498,6 +16599,47 @@ module.exports = async (req, res) => {
           res.status(409).json({ error: { code: 'APPEND_ONLY', message: legRoles.appendOnlyMessage(resource) } });
           return;
         }
+      }
+      // ── F1: A CREMATION AUTHORISATION NEEDS A SECOND NAMED PERSON ──────
+      // (2026-10-17, b18, practitioner answer F1.) Checked AFTER the role
+      // table agrees and independently of it, exactly like LEG_APPEND_ONLY
+      // above and for the same reason: no role grant may reach past it. The
+      // mode is MODE_ALWAYS, so this binds the OWNER too -- a rule the owner
+      // is exempt from is not "the paperwork takes a second named person".
+      //
+      // ONE CALL, in api/_lib/countersign.js, reached through
+      // api/leg-countersign.js's PROFILE. There is one implementation of "is
+      // this signed" and the endpoint and the write path cannot drift.
+      //
+      // ── NO HOME SETTINGS ARE PASSED, AND THAT IS MEASURED, NOT FORGOTTEN
+      // F3's per-home apprentice config (LEG_APPRENTICE_POLICY_DEFAULT in
+      // api/_lib/leg-roles.js) is complete and callable, and NOTHING STORES
+      // IT: there is no leg_settings resource in LEG_RESOURCES and no
+      // SAIRNlegacy settings table anywhere -- checked, not assumed. So the
+      // fifth argument to `decide` is omitted here, which means every
+      // apprentice gets the EMPTY default: read on the regulated band, no
+      // write, no prepare. That is exactly today's behaviour, which is the
+      // correct direction for a missing store to fail in.
+      //
+      // THE CONSEQUENCE, SAID OUT LOUD RATHER THAN LEFT TO BE FOUND: F3's
+      // countersign branch cannot be exercised in production until that
+      // storage exists, and the b18 handoff carries it as an open item with
+      // its next step. What IS live is F1 -- owner and director both hold
+      // `rw` on leg_cremations, so the lock is reached on every real write.
+      if (action !== 'read' && legRoles.requiresCountersignature(resource)) {
+        const csLib = require('./_lib/countersign');
+        const legCs = require('./leg-countersign');
+        const refusal = await csLib.requireCountersignature(legCs.PROFILE, {
+          resource: resource,
+          payload: payload,
+          licHash: licHash,
+          rest: rest,
+          headers: headers,
+          token: req.headers['x-leg-countersign'] || (body && body.countersign_token) || '',
+          callerRole: legSess.role,
+          callerEmployeeId: legSess.employee_id
+        });
+        if (refusal) { res.status(refusal.status).json(refusal.body); return; }
       }
     }
     if (LEG_RESOURCES[resource] && action === 'read') {

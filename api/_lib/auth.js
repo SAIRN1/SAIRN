@@ -135,7 +135,32 @@ const ROLES_BY_APP = roleSet({
   // is what makes MFA and genuine session independence possible at all --
   // MFA authenticates a specific person, and a "session" that's really
   // just a shared role PIN has no single person to independently log out.
-  sairnlaw: ['owner', 'attorney', 'paralegal'],
+  // ── THE FOURTH ROLE, `bookkeeper` (2026-10-17, b18, practitioner C1) ──
+  // Michael's answer to practitioner question C1: the person who enters
+  // time, raises invoices and reconciles the operating account at a firm IS
+  // A MEMBER OF STAFF. With three roles a firm had to either give its
+  // bookkeeper an `attorney` token -- handing a non-lawyer every matter
+  // document and every client file -- or give a `paralegal` token the
+  // billing surface it is only allowed to read. Both were wrong and the app
+  // offered no third answer.
+  //
+  // IT IS NOT A TIER ABOVE OR BELOW paralegal. It writes invoices,
+  // operating-account rows and time entries; it CANNOT reach the matter
+  // file; and it CANNOT reach client trust, because it is absent from
+  // api/_lib/law-roles.js's LAW_BAR_ADMITTED_ROLES and that lock is
+  // consulted before the table. The whole policy is the `bookkeeper` column
+  // of LAW_ROLE_MATRIX -- nineteen cells, each with its reason on the row.
+  //
+  // THE DATABASE CHECK CONSTRAINT LAGS THIS LINE UNTIL MICHAEL RUNS THE
+  // MIGRATION, and that lag is the exact defect
+  // api/role-picker-vs-check-constraint.test.js exists for: the server will
+  // mint the role the moment Vercel deploys, and Postgres will refuse it
+  // with 23514 until the `bookkeeper` widening block at the bottom of
+  // `sql/sairnlaw_employee_auth_schema.sql` has been run. The picker in
+  // sairnlaw.html offers it and says so at the <select>, which is the
+  // SAIRNcare `office_manager` precedent of 2026-10-14 rather than a new
+  // answer to the same question.
+  sairnlaw: ['owner', 'attorney', 'paralegal', 'bookkeeper'],
   // SAIRNcode (2026-08-18, real-data-layer + auth pass): matches the app's
   // existing role vocabulary exactly (its old client-only PIN gate already
   // had these 4 names -- coder/biller/auditor/admin -- just as one shared,

@@ -89,6 +89,20 @@ function pgMock(calls, opts) {
         { license_hash: HASH, employee_id: 'emp-1', role: 'owner', active: true }] };
     }
     calls.push({ url: u, method: (init && init.method) || 'GET' });
+    // ── b18: THE F1 COUNTERSIGNATURE TABLE ──────────────────────────────
+    // `opts.countersignRow` present = a prepared-and-signed token exists for
+    // this exact payload. Absent = the lookup finds nothing, which is what a
+    // real unsigned write sees and is the DEFAULT here on purpose: every
+    // pre-b18 arm keeps driving the unsigned path without being edited.
+    if (/_countersign_tokens\?/.test(u)) {
+      if (init && init.method === 'PATCH') {
+        // The compare-and-set spend. Non-empty = this request won the token.
+        return { ok: true, status: 200,
+                 json: async () => (opts.countersignRow ? [{ id: 'tok-1' }] : []) };
+      }
+      return { ok: true, status: 200,
+               json: async () => (opts.countersignRow ? [opts.countersignRow] : []) };
+    }
     if (opts.existing && /select=custodylog_id/.test(u)) {
       return { ok: true, status: 200,
                json: async () => [{ custodylog_id: opts.existing }] };
@@ -114,18 +128,34 @@ function loadHandler(fetchImpl) {
   return require('./sd-data.js');
 }
 
+// THE FIXTURE TOKEN IS A NAMED CONSTANT CONTAINING THE WORD `placeholder`,
+// and that is not cosmetic. tools/redaction_check.py's
+// `generic_credential_assignment` pattern matches
+// `token: "<16+ chars>"` and the push gate REFUSED this file on it -- which is
+// correct behaviour on a literal that looks like a bearer credential, and the
+// gate deliberately does not print the match. `placeholder` is one of its
+// PLACEHOLDER_MARKERS, so the fixture declares itself as one rather than being
+// exempted.
+const FIXTURE_TOKEN = 'cs-token-placeholder';
+
 async function call(resource, action, role, payload, mockOpts) {
   const calls = [];
   const h = loadHandler(pgMock(calls, mockOpts));
   const res = mockRes();
   const body = { action: action, resource: resource };
   if (action === 'write') body.payload = payload || { id: 'X1' };
-  await h({ method: 'POST',
-            headers: { authorization: 'Bearer ' + KEY,
-                       'x-sd-auth': signSessionToken({
-                         app: APP, employee_id: 'emp-1', role: role,
-                         license_hash: HASH }) },
-            body: body }, res);
+  const headers = { authorization: 'Bearer ' + KEY,
+                    'x-sd-auth': signSessionToken({
+                      app: APP, employee_id: 'emp-1', role: role,
+                      license_hash: HASH }) };
+  // b18: the F1 countersignature header is sent ONLY when the mock has a token
+  // row to find. Without this the lock refuses on `!token` before any lookup,
+  // and every "signed path" arm would be measuring the no-token refusal
+  // instead -- which is a green arm testing the wrong thing.
+  if (mockOpts && mockOpts.countersignRow) {
+    headers['x-leg-countersign'] = FIXTURE_TOKEN;
+  }
+  await h({ method: 'POST', headers: headers, body: body }, res);
   return { res: res, calls: calls };
 }
 
@@ -271,14 +301,48 @@ console.log('SAIRNlegacy role matrix -- 36 resources, 8 roles, criteria '
     ['L2', 'leg_deathrecords', 'read', 'livery', 403, 'a livery token reads death records'],
     ['L3', 'leg_cremations', 'write', 'apprentice', 403, 'an apprentice writes a cremation authorisation'],
     ['L4', 'leg_custodylog', 'write', 'office', 403, 'an office token writes the custody log'],
-    ['L6', 'leg_cremations', 'write', 'director', 200, 'CONTROL -- a director writes a cremation authorisation'],
+    // L6 RE-AIMED 2026-10-17 (b18, practitioner answer F1). It expected 200
+    // and that was the right expectation until F1 was answered: Michael's
+    // answer is that a cremation authorisation takes a SECOND NAMED, SIGNING
+    // PERSON, so an UNSIGNED director write is now a 403 COUNTERSIGN_REQUIRED
+    // and the 200 moved to L6b, which drives the signed path.
+    // NOT LOOSENED -- the expectation moved and a second arm was added, so
+    // both halves of the pair are still measured. A control that was changed
+    // from "must succeed" to "may fail" would be the bad version of this.
+    ['L6', 'leg_cremations', 'write', 'director', 403, 'F1 -- a director writes a cremation authorisation with NO countersignature', 'COUNTERSIGN_REQUIRED'],
     ['L7', 'leg_invoices', 'write', 'arranger', 200, 'CONTROL -- an arranger writes an invoice'],
     ['L7b', 'leg_documents', 'read', 'arranger', 200, 'CONTROL -- an arranger reads documents']
   ];
   for (const t of L) {
     const r = await call(t[1], t[2], t[3]);
     const got = r.res.statusCode;
-    if (t[4] === 403) {
+    if (t[6]) {
+      // A NAMED NON-ROLE REFUSAL. b18's F1 lock is not a role problem and its
+      // message must NOT name the role -- a director told "your role does not
+      // have access" to a cremation they ARE allowed to authorise would go and
+      // ask for a permission they already hold. So the assertions invert:
+      // the expected code, NOT the generic role sentence, and above all NO
+      // upsert.
+      //
+      // THE ANCHOR IS `Your role (`, NOT the role NAME. First draft asserted
+      // the role name was absent and FAILED ON CORRECT CODE: the F1 refusal
+      // says "Ask another licensed DIRECTOR to review and countersign it",
+      // which contains the word `director` for a good reason -- it names who
+      // to go to. The property that matters is that this is not
+      // `legRoles.denyMessage`, and the generic sentence's own opening is the
+      // only thing that identifies it.
+      //
+      // The token lookup itself IS a fetch, so `calls.length === 0` cannot be
+      // asserted here -- `no POST` is the property that matters.
+      is(got === t[4] && eCode(r.res) === t[6]
+         && eMsg(r.res).indexOf('Your role (') === -1
+         && !r.calls.some((c) => c.method === 'POST'),
+         t[0] + '. ' + t[5] + ' -> ' + t[4] + ' ' + t[6] + ', the body is NOT '
+       + 'the generic role refusal (it is not a role problem), and NO upsert '
+       + 'was sent',
+         got + ' ' + eCode(r.res) + ' / ' + eMsg(r.res)
+         + ' / posts=' + r.calls.filter((c) => c.method === 'POST').length);
+    } else if (t[4] === 403) {
       is(got === 403 && eCode(r.res) === 'FORBIDDEN'
          && eMsg(r.res).indexOf(t[3]) !== -1 && r.calls.length === 0,
          t[0] + '. ' + t[5] + ' -> 403, the body NAMES THE ROLE, and NO data '
@@ -291,6 +355,75 @@ console.log('SAIRNlegacy role matrix -- 36 resources, 8 roles, criteria '
          got + ' ' + eCode(r.res) + ' ' + eMsg(r.res));
     }
   }
+
+  // ── L6b (b18): THE OTHER HALF OF THE PAIR -- THE SIGNED PATH LANDS ─────
+  // L6 proves the lock refuses. WITHOUT THIS ARM THAT IS HALF A MEASUREMENT:
+  // a lock that refuses everything passes L6 and makes the app unusable, and
+  // "refuses an unsigned write" would be indistinguishable from "refuses a
+  // cremation authorisation".
+  //
+  // The token row is built with the REAL contentHash over the REAL payload, so
+  // the content binding is exercised rather than stubbed past -- a row with a
+  // made-up hash would be refused by COUNTERSIGN_CONTENT_MISMATCH and this arm
+  // would be measuring the wrong refusal.
+  const csLib = require('./_lib/countersign');
+  const CREM_PAYLOAD = { id: 'CR-1' };
+  function signedRow(over) {
+    return Object.assign({
+      id: 'tok-1',
+      content_hash: csLib.contentHash('leg_cremations', CREM_PAYLOAD),
+      prepared_by: 'emp-1', prepared_role: 'director',
+      countersign_employee_id: 'emp-2', countersign_role: 'director',
+      countersigned_at: new Date(Date.now() - 60000).toISOString(),
+      spent_at: null, spent_on_resource: null,
+      expires_at: new Date(Date.now() + 5 * 60000).toISOString()
+    }, over || {});
+  }
+  const l6b = await call('leg_cremations', 'write', 'director', CREM_PAYLOAD,
+                         { countersignRow: signedRow() });
+  is(l6b.res.statusCode === 200
+     && l6b.calls.some((c) => c.method === 'POST'
+                              && /leg_cremations/.test(c.url)),
+     'L6b. CONTROL -- the SAME director write WITH a valid countersignature '
+   + 'from a different employee is accepted, and the upsert really is sent. '
+   + 'The lock is a workflow, not a wall',
+     l6b.res.statusCode + ' ' + eCode(l6b.res) + ' ' + eMsg(l6b.res)
+     + ' / posts=' + l6b.calls.filter((c) => c.method === 'POST').length);
+
+  // AND THE SELF-SIGNATURE, re-checked at the WRITE and not only at
+  // `countersign`. The endpoint refuses it, the database CHECK refuses it,
+  // and this is the third place -- because the first two are in a different
+  // process and a future write path that skipped them would leave no trace.
+  const l6c = await call('leg_cremations', 'write', 'director', CREM_PAYLOAD,
+                         { countersignRow: signedRow({ countersign_employee_id: 'emp-1' }) });
+  is(l6c.res.statusCode === 409 && eCode(l6c.res) === 'COUNTERSIGN_SAME_PERSON'
+     && !l6c.calls.some((c) => c.method === 'POST' && /leg_cremations/.test(c.url)),
+     'L6c. a token whose signer IS its preparer is refused AT THE WRITE with '
+   + 'COUNTERSIGN_SAME_PERSON, and nothing is upserted -- a second click by '
+   + 'one hand is not a second named person',
+     l6c.res.statusCode + ' ' + eCode(l6c.res) + ' ' + eMsg(l6c.res));
+
+  // AND AN UNQUALIFIED SIGNER. The role on the ROW is what is re-derived, not
+  // the caller's -- it is the signer's standing the record claims.
+  const l6d = await call('leg_cremations', 'write', 'director', CREM_PAYLOAD,
+                         { countersignRow: signedRow({ countersign_role: 'arranger' }) });
+  is(l6d.res.statusCode === 403 && eCode(l6d.res) === 'COUNTERSIGN_NOT_QUALIFIED'
+     && !l6d.calls.some((c) => c.method === 'POST' && /leg_cremations/.test(c.url)),
+     'L6d. a signature from a role with no `rw` on the REGULATED band is '
+   + 'refused COUNTERSIGN_NOT_QUALIFIED at the write, derived from the row\'s '
+   + 'stored role and not from the caller',
+     l6d.res.statusCode + ' ' + eCode(l6d.res) + ' ' + eMsg(l6d.res));
+
+  // AND A TOKEN FOR A DIFFERENT RECORD. The content binding, driven rather
+  // than asserted structurally: without it a signature for a $0 authorisation
+  // could file any other.
+  const l6e = await call('leg_cremations', 'write', 'director', { id: 'CR-2' },
+                         { countersignRow: signedRow() });
+  is(l6e.res.statusCode === 409 && eCode(l6e.res) === 'COUNTERSIGN_CONTENT_MISMATCH'
+     && !l6e.calls.some((c) => c.method === 'POST' && /leg_cremations/.test(c.url)),
+     'L6e. a signature issued for CR-1 cannot file CR-2 -- '
+   + 'COUNTERSIGN_CONTENT_MISMATCH, nothing upserted',
+     l6e.res.statusCode + ' ' + eCode(l6e.res) + ' ' + eMsg(l6e.res));
 
   // L5 -- append-only, and it binds the OWNER. Two arms: a NEW entry from the
   // owner is accepted, an EDIT of an existing one is refused.
@@ -369,18 +502,49 @@ console.log('SAIRNlegacy role matrix -- 36 resources, 8 roles, criteria '
                           start_time: '2026-12-01T10:00:00.000Z',
                           end_time: '2026-12-01T11:00:00.000Z' }
   };
+  // ── b18: THE COUNTERSIGNED RESOURCES GET A SIGNED TOKEN, NOT AN EXEMPTION
+  // F1 is MODE_ALWAYS and BINDS THE OWNER -- a rule the owner is exempt from
+  // is not "the paperwork takes a second named person". So an unsigned owner
+  // write of leg_cremations is a 403 BY DESIGN and this arm must not simply
+  // skip the resource: skipping it would stop measuring whether the owner can
+  // file a cremation authorisation AT ALL, which is exactly what L10 exists to
+  // catch. It is given a VALID SIGNATURE instead, so the arm still asserts 200
+  // on all 36 and the thing being proved is "an owner who follows the workflow
+  // is not locked out".
   const ownerFails = [];
   for (const r of inTable) {
     const rd = await call(r, 'read', 'owner');
     if (rd.res.statusCode !== 200) ownerFails.push(r + '/read:' + rd.res.statusCode);
-    const wr = await call(r, 'write', 'owner', OWNER_PAYLOAD[r] || { id: 'X1' });
+    const wPayload = OWNER_PAYLOAD[r] || { id: 'X1' };
+    const wOpts = legRoles.requiresCountersignature(r)
+      ? { countersignRow: {
+            id: 'tok-L10',
+            content_hash: csLib.contentHash(r, wPayload),
+            prepared_by: 'emp-1', prepared_role: 'owner',
+            countersign_employee_id: 'emp-2', countersign_role: 'director',
+            countersigned_at: new Date(Date.now() - 60000).toISOString(),
+            spent_at: null, spent_on_resource: null,
+            expires_at: new Date(Date.now() + 5 * 60000).toISOString() } }
+      : undefined;
+    const wr = await call(r, 'write', 'owner', wPayload, wOpts);
     if (wr.res.statusCode !== 200) ownerFails.push(r + '/write:' + wr.res.statusCode);
   }
   is(ownerFails.length === 0,
-     'L10. an owner gets 200 on all 36 resources, read and write (72 calls). '
-   + 'An owner locked out of their own app is the failure mode that gets a '
-   + 'gate deleted',
+     'L10. an owner gets 200 on all 36 resources, read and write (72 calls), '
+   + 'the countersigned ones WITH a valid second signature. An owner locked '
+   + 'out of their own app is the failure mode that gets a gate deleted',
      JSON.stringify(ownerFails).slice(0, 380));
+
+  // AND THE COUNT OF COUNTERSIGNED RESOURCES IS ASSERTED, so the arm above
+  // cannot quietly become "36 resources, none of them locked" if
+  // LEG_COUNTERSIGN_REQUIRED is ever emptied -- which would make L10 pass by
+  // measuring nothing, the same unreachable-lock shape as fourth's b26 H1.
+  const counterSigned = inTable.filter((r) => legRoles.requiresCountersignature(r));
+  is(counterSigned.length === 1 && counterSigned[0] === 'leg_cremations',
+     'L10b. EXACTLY ONE of the 36 requires a countersignature and it is '
+   + 'leg_cremations -- so L10 really did drive the signed path, and a third '
+   + 'locked resource cannot appear unannounced',
+     JSON.stringify(counterSigned));
 
   // ── E. THE DETERMINISTIC AFTERCARE KEY, BOTH HALVES ─────────────────────
   console.log('\nE. leg_aftercare -- the key is the fix, and both halves agree');
