@@ -34,5 +34,15 @@
       "status": "done",
       "evidence": "docs/2026-10-19-cc-b19-concepts.md committed at the batch's first commit, before tools/sairn_board_publish.py changed -- provable from git log; both concepts record what the fix rules OUT, and both measurements changed the fix"
     }
-  ]
+  ],
+  "closed": {
+    "drive_verify": "PASS",
+    "verified_by": "python tools/drive_upload_verify.py --agent cc --batch b19 --verify-only",
+    "criteria": "2026-10-13.1",
+    "deliverables": [
+      "SAIRN-handoff-cc-b19.md sha256 3ff958602cbe1e89",
+      "SAIRN-report-cc-b19.txt sha256 1273ccec5037bb7d",
+      "SAIRN-digest-cc-b19.txt sha256 258ecec8aacf59a9"
+    ]
+  }
 }
