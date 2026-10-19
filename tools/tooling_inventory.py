@@ -86,6 +86,27 @@ GATE = os.path.join('tools', 'sairn_push_gate_hook.py')
 # LIVE means it makes a real network or database request, so it cannot be wired
 # into a hook without making every push talk to the outside world.
 PURPOSES = {
+    'context_verify.py': ('CHECKER',
+        'an agent whose SELF-REPORTED context figure is wrong, stale or '
+        'absent while its real window is filling -- measured instead from the '
+        'agent\'s own Claude Code transcript, so it cannot be fooled by what '
+        'any agent says about itself. Takes the LAST ASSISTANT TURN\'s whole '
+        'prompt (input_tokens + cache_read_input_tokens + '
+        'cache_creation_input_tokens) over the smallest published window for '
+        'that turn\'s model that the measured prompt actually fits in. All '
+        'three token fields are counted because `input_tokens` ALONE IS TWO '
+        'on every live build agent -- a figure built on it reports 0.0% over '
+        'a 650,000-token prompt. The window is evidence-driven rather than '
+        'assumed: the transcript carries no window field and the 1M and 200k '
+        'variants record the same model string, so a prompt that fits no '
+        'tabled window is COULD NOT TELL rather than a percentage over 100. '
+        'SCOPED TO THE FOUR BUILD AGENTS -- hover/hover2 are excluded by the '
+        'separation boundary, asserted by a fixture so a later edit has to '
+        'argue with it. A missing folder, an empty folder or a transcript '
+        'with no assistant turn yet is a could-not-tell with a reason, never '
+        '0%. It CANNOT tell a current session from a stopped one: the figure '
+        'is the newest transcript\'s last turn and the age is printed beside '
+        'it for exactly that reason.'),
     'status_board_bridge_check.py': ('CHECKER',
         'a published SAIRN-board.md that renders an OLDER status write than '
         'the live registry row it claims to show -- the failure that is '
