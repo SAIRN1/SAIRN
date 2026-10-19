@@ -4147,8 +4147,8 @@
       "task": "b22: api/bridge.js absent-action refusal + D1 update; finding 1599 raw PostgREST filter interpolation sweep; api/claude.js:323 pre-auth app_id log validation; funeral F1/F2/F3 audit+build in lane; grant-app-login status; handoff/report/digest. FILES: api/bridge.js api/b21-bridge-unknown-action.test.js api/claude.js api/b22-claude-logline.test.js api/_lib/leg-roles.js api/leg-countersign.js docs/2026-10-19-hank-b22-notes.md SAIRN-handoff-hank-b22.md SAIRN-report-hank-b22.txt SAIRN-digest-hank-b22.txt SAIRN-ACTIVE-WORK-hank.md NOT-api-sd-data-js-codys NOT-tools-ccs NOT-stonedesk-html-claimed",
       "claimed_at": "2026-10-19T20:48:53Z",
       "claimed_at_epoch": 1792442933.8513184,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-19T22:18:10Z",
       "files": [
         "SAIRN-ACTIVE-WORK-hank.md",
         "SAIRN-digest-hank-b22.txt",
