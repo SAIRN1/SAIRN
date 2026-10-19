@@ -4008,8 +4008,8 @@
       "task": "b30: wire wcag_contrast_check.py into the push gate; APPS profile per app + measure the other sixteen for the same contrast pattern; park the behavioral-health vertical as an idea only; next worldwide competitive-gap vertical; methodology item. FILES: tools/wcag_contrast_check.py tools/sairn_push_gate_hook.py docs/cloud-research/ docs/2026-09-13-cross-domain-disciplines.md docs/batch-manifest-fourth-b30.json",
       "claimed_at": "2026-10-19T12:31:51Z",
       "claimed_at_epoch": 1792413111.1457639,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-19T12:53:01Z",
       "files": [
         "docs/2026-09-13-cross-domain-disciplines.md",
         "docs/batch-manifest-fourth-b30.json",
