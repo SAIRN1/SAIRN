@@ -648,6 +648,53 @@ GUARD_TESTS = [
     ('api/b17-trust-lock-hard.test.js',
      'LAW_TRUST_LOCKED is asserted directly rather than inferred, so a trust write cannot land through a path that never read the lock',
      'Run to a known exit code BEFORE wiring, which is this list\'s own\n     admission bar: exit 0, 1.64s, "12 passed, 0 failed, 0 unproven". hank b14-b17.'),
+    # ── HANK'S TWO b18 SUITES, WIRED 2026-10-19 (cc b23 item 3) ────────────
+    # ROUTED BY HANK, not volunteered: its 2026-10-19T14:14:24 registry note
+    # reads "FOR cc: no gate driver references either new b18 suite (grep -rlE
+    # 'b18-(countersign|passkey)' tools/ returns nothing)". Re-measured before
+    # wiring and the grep still returned nothing from tools/.
+    #
+    # BOTH MEET THIS LIST'S OWN ADMISSION BAR, checked rather than assumed:
+    # a SEAM between two independently-maintained sides, a recorded defect
+    # behind it, and run to a known exit code first.
+    ('api/b18-countersign-lock.test.js',
+     'the countersignature lock the ROLE MODULE defines is the lock the '
+     'dispatcher actually applies, and each gate is proved load-bearing by '
+     'removing it',
+     'A SEAM: api/_lib/countersign.js decides and api/sd-data.js enforces, '
+     'and the two are edited by different work. THE DEFECT ON RECORD IS WHY '
+     'IT CARRIES ABLATIONS -- fourth\'s b26 finding H1 was that SAIRNlaw\'s '
+     'trust hard-lock could be DELETED ENTIRELY with every suite still green: '
+     'the defence existed, was written down, was believed, and no arm could '
+     'see it because the thing in front of it was working. This suite removes '
+     'each gate on purpose and asserts what goes red PER ARM rather than per '
+     'exit code. Its A1 arm is the one to read before trusting the rest: '
+     'neither SQL file has been run, so both locks answer 503 NOT_PROVISIONED '
+     'in production today, and A1 asserts exactly that -- "the lock is inert '
+     'until Michael runs SQL" and "the lock lets writes through until Michael '
+     'runs SQL" are opposite facts and only one of them is safe. Run to a '
+     'known exit code BEFORE wiring: exit 0, 2.40s, "59 passed, 0 failed, 0 '
+     'unproven". Routed by hank; FMEA draft written in the same batch.'),
+    ('api/b18-passkey-profile-e2e.test.js',
+     'the three employee-panel client functions LIFTED OUT OF stonedesk.html '
+     'and run -- so a later edit to the page cannot quietly reintroduce the '
+     'stuck-label and failed-read-as-empty class',
+     'A SEAM BETWEEN A SUITE AND A 2MB PAGE, which is the shape that rots '
+     'silently. THE DEFECT ON RECORD IS stonedesk.html\'s own 2026-08-06 '
+     '"Granting..." bug, and the sentence that earns this a place here is in '
+     'that comment: the reset code was "confirmed present and correct on '
+     'every path, CHECKED REPEATEDLY" and never ran, because a synchronous '
+     'ReferenceError happened first. READING THE CODE WAS THE METHOD AND THE '
+     'METHOD FAILED, so nothing but driving it can hold the three residuals '
+     'b18 fixed. IT FAILS CLOSED ON ITS OWN EXTRACTION, which is what makes '
+     'it safe to wire: the functions are lifted by anchor out of '
+     'stonedesk.html and COMPILED, a lift that is missing or will not parse '
+     'is reported UNPROVEN and never as a pass, and Section Z asserts the '
+     'extraction itself before any arm depends on it. That is the stale-anchor '
+     'class cc b22 fixed in run_push_gate_preflight_probe.py, already handled '
+     'here -- and exit 3 routes to exit3_reason() above rather than to a '
+     'silent skip. Run to a known exit code BEFORE wiring: exit 0, 1.38s, '
+     '"37 passed, 0 failed, 0 unproven". Routed by hank.'),
 ]
 
 

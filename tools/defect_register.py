@@ -1229,8 +1229,152 @@ def subject_index():
     return idx
 
 
-def resolve(rec, idx):
-    """(sha, how) -- how is 'sha', 'subject', 'ambiguous' or None.
+_ANCESTORS = {}
+
+
+def citation_refs():
+    """The refs a CITATION may be reachable from. -> (refs, label, why).
+
+    ── origin/main OR HEAD, AND THE "OR" IS THE WHOLE DESIGN (b23) ───────────
+    The first draft of b23 used `reseat_base()`, which prefers origin/main and
+    falls back to HEAD. That is right for `--reseat` -- you want to know what
+    another clone will actually fetch -- and WRONG for `--check`, measured the
+    same hour: `tests/run_defect_register_probe.py` went from 152/152 to
+    6 FAILED, because `--add` records a commit the moment it is made and the
+    probe plants records citing commits it creates in its own throwaway
+    worktree. Those commits are real, are on that clone's HEAD, and are not on
+    origin/main yet. Calling them unreachable would make the register red for
+    the entire normal window between committing and pushing.
+
+    THE b22 FAILURE IS STILL CAUGHT, and this is measured rather than argued.
+    `634f7d70` -- the orphan a rebase left behind -- is an ancestor of
+    NEITHER origin/main NOR HEAD, because the rebase replaced it. Its
+    successor `a61abc5a` is an ancestor of both. So the union admits
+    legitimate pre-push work and still refuses a reflog orphan, which is
+    exactly the line the b22 defect fell across.
+
+    Order matters for the LABEL only: origin/main is named first because it is
+    the stronger claim. A missing ref is skipped rather than failing the whole
+    question -- a fresh worktree has HEAD and a clone with no remote has no
+    origin/main.
+    """
+    refs = [r for r in ('origin/main', 'HEAD')
+            if git('rev-parse', '--verify', r)]
+    if not refs:
+        return [], '', ('neither origin/main nor HEAD could be read, so there '
+                        'is no ref to measure a citation against')
+    return refs, ' or '.join(refs), ''
+
+
+def ancestor_set(base):
+    """Every ancestor of `base` as a set of 12-char prefixes, built ONCE.
+
+    `base` may be a single ref or a tuple/list of refs, in which case the set
+    is their UNION -- see citation_refs() for why a citation is allowed to be
+    on either.
+
+    ── ONE SUBPROCESS, NOT 653 (b23, measured the same hour it was written) ──
+    The first version of b23's change called `reachable()` per record, which is
+    a `git merge-base --is-ancestor` each time. MEASURED ON THIS MACHINE: 66ms
+    per call, 653 non-external records, so 43 SECONDS added to a `--check`
+    that `report_only_checks.py` runs on every push -- and
+    `tests/run_defect_register_probe.py`, which drives `--check` several
+    times, went from passing to a 420-second TIMEOUT.
+
+    THAT IS NOT A COSMETIC COST. A check slow enough to time out is a check
+    that gets excluded from the sweep, and an excluded check reports nothing
+    while looking exactly like one that passed -- the same shape the b23 fix
+    exists to close, one layer out. `git rev-list` answers the whole question
+    in ONE call: 0.33s for all 9,804 commits.
+
+    Cached per base within a process. The cache is NOT shared across
+    processes and is not written to disk: a stale ancestor set would be a
+    confident wrong answer about exactly the thing under test.
+    """
+    # ── KEYED BY REPO AS WELL AS BY REF, AND THAT IS NOT DEFENSIVENESS ─────
+    # The first version keyed on the refs alone. `REPO` is a MODULE GLOBAL and
+    # tests/run_defect_register_superseded_probe.py reassigns it to drive
+    # cmd_check() in-process against a throwaway repository -- so the 9,804
+    # real ancestors leaked into the sandbox's check and one arm went red.
+    # This docstring already warned that a stale ancestor set would be "a
+    # confident wrong answer about exactly the thing under test" while nothing
+    # stopped one. Measured, not reasoned: the arm named it within the hour.
+    key = (REPO, tuple([base] if isinstance(base, str) else base))
+    refs = key[1]
+    if key in _ANCESTORS:
+        return _ANCESTORS[key]
+    got = set()
+    for ref in refs:
+        out = git('rev-list', ref)
+        if out is None:
+            # NOT an empty set, and NOT a partial one. An empty or half-built
+            # set would make records unreachable and re-seat the register on
+            # the strength of not being able to look.
+            _ANCESTORS[refs] = None
+            return None
+        got |= {s.strip()[:12] for s in out.split('\n') if s.strip()}
+    _ANCESTORS[refs] = got
+    return got
+
+
+def reachable_fast(sha, base, anc):
+    """reachable(), answered from a prebuilt set. -> True/False/None.
+
+    None when the set could not be built or the sha is too short to key on --
+    the caller falls back to the one-subprocess form rather than guessing.
+    """
+    s = str(sha or '').strip()
+    if anc is None or len(s) < 12:
+        return None
+    return s[:12] in anc
+
+
+def resolve(rec, idx, base=None, anc=None):
+    """(sha, how) -- how is 'sha', 'subject', 'ambiguous', 'dangling' or None.
+
+    ── RESOLVABLE WAS NOT ENOUGH, AND THAT REVERSES A RECORDED DECISION ──────
+    REVERSED 2026-10-19 (cc b23), ON EVIDENCE. `reachable()` below has said
+    since 2026-09-16, in its own words, that *"`--check`'s acceptance contract
+    is deliberately unchanged"* -- resolvable, not reachable. That decision is
+    being overturned here rather than quietly contradicted, and the reason is
+    a measured failure rather than a preference.
+
+    On 2026-10-19 cc's b22 rebase left three fresh records citing `634f7d70`.
+    `.githooks/post-rewrite` reseated them correctly IN THE WORKING TREE and
+    nothing committed it, so the push landed the pre-rebase citation:
+    **origin/main carried three records naming a commit that exists in no
+    clone but the author's own reflog.** `--check` printed OK throughout,
+    because `rev-parse --verify` accepts a dangling object for as long as the
+    reflog holds it.
+
+    THE OLD CONTRACT WAS TRUE OF ONE CLONE AND FALSE OF EVERY OTHER. "A record
+    pointing at a real object is not a register pointing at nothing" holds
+    only where that object exists. In any other clone the identical records
+    fail on a commit that is simply absent -- so the check's verdict depended
+    on WHO RAN IT, which is the one thing a shared register cannot afford.
+
+    WHAT IS NOT CHANGED, because the 2026-09-11 reasoning behind it still
+    stands: a sha that is unreachable is NOT a failure on its own. It falls
+    through to the SUBJECT, exactly as an unresolvable one already did, and a
+    unique subject match is reported as a RESEAT rather than as a problem.
+    Rebasing is normal with five clones on one branch and a register that goes
+    red for it is a register somebody switches off. The only records that now
+    fail are the ones where neither the reachable sha nor the subject answers
+    -- which is the real case this check exists for.
+
+    MEASURED BEFORE THE CHANGE, so the cost is known rather than hoped: of 653
+    non-external records, 648 resolve AND are ancestors of origin/main, 0
+    resolve-but-dangle, and 5 do not resolve at all and were already being
+    re-seated by subject. So this change makes no existing record fail today.
+    A zero is a weak test, which is why the reproduction is driven
+    deliberately instead of inferred from it -- see `--selfcheck-reachability`.
+
+    `base` is the ref reachability is measured against, from `reseat_base()`.
+    WITH NO BASE THE REACHABILITY QUESTION IS NOT ASKED AND NOT FAKED: the
+    caller gets 'sha' on a bare resolve and is told, loudly, that the stronger
+    half did not run (PR 1.11). Treating an unreadable base as "unreachable"
+    would re-seat the whole register on the strength of not being able to look,
+    which is the failure `reseat_base` itself was written to avoid.
 
     ── A REBASED SHA IS NOT A RECORD POINTING AT NOTHING (2026-09-11) ────────
     This used to fail outright on any SHA that would not resolve, and the
@@ -1260,8 +1404,37 @@ def resolve(rec, idx):
     # the summary line mean less for every record above it.
     if is_external(rec.get('commit')):
         return rec['commit'], 'external'
-    if git('rev-parse', '--verify', rec['commit'] + '^{commit}'):
+    # ── MEMBERSHIP OF THE ANCESTOR SET ANSWERS BOTH HALVES AT ONCE ─────────
+    # A sha on the trunk necessarily exists, so the `rev-parse` is skipped for
+    # it. That is not only the b23 reachability question being answered -- it
+    # removes 648 of the 661 `rev-parse` subprocesses this function was
+    # ALREADY making before b23, and those were 46 of the 50 seconds
+    # `--check` took. Measured, in the same session: 50.5s -> see below.
+    if reachable_fast(rec.get('commit'), base, anc) is True:
         return rec['commit'], 'sha'
+    _r = git('rev-parse', '--verify', rec['commit'] + '^{commit}')
+    if _r:
+        if not base:
+            # The reachability half did not run. Reported by the caller.
+            return rec['commit'], 'sha'
+        _fast = reachable_fast(rec['commit'], base, anc)
+        if _fast is None:
+            # The set could not answer -- no set, or a sha too short to key
+            # on. Ask git per ref rather than guessing either way.
+            _refs = [base] if isinstance(base, str) else list(base or ())
+            if any(reachable(rec['commit'], r) for r in _refs):
+                return rec['commit'], 'sha'
+        elif _fast is True:
+            return rec['commit'], 'sha'
+        # A DANGLING OBJECT. Fall through to the subject, which is the
+        # record's real identity -- the same route an unresolvable sha has
+        # taken since 2026-09-11.
+        hits = idx.get(rec.get('subject') or '\x00absent', [])
+        if len(hits) == 1:
+            return hits[0][:12], 'subject'
+        if len(hits) > 1:
+            return None, 'ambiguous'
+        return None, 'dangling'
     hits = idx.get(rec.get('subject') or '\x00absent', [])
     if len(hits) == 1:
         return hits[0][:12], 'subject'
@@ -1278,14 +1451,42 @@ def cmd_check(argv=()):
     could_not_check = 0
     known = known_rules()
     idx = subject_index()
+    # ── THE REACHABILITY BASE, RESOLVED ONCE (b23) ─────────────────────────
+    # A citation is only a citation if the commit is on the published trunk.
+    # See resolve()'s docstring for the measured failure that reversed the
+    # 2026-09-16 "resolvable is enough" decision.
+    _refs, _base, _base_why = citation_refs()
+    # ONE rev-list per ref for all 653 records. See ancestor_set() for the
+    # 43-second regression the per-record form caused and the probe timeout it
+    # produced, and citation_refs() for why it is origin/main OR HEAD.
+    _anc = ancestor_set(_refs) if _refs else None
+    # A SET THAT COULD NOT BE BUILT IS NOT A MISSING BASE: every record falls
+    # back to the per-ref subprocess, which still answers. Only an absent ref
+    # means the question was never asked.
+    if not _refs:
+        _base = None
+    _unreach = 0
     for r in reg['records']:
-        sha, how = resolve(r, idx)
+        sha, how = resolve(r, idx, _refs, _anc)
         if how == 'subject':
             reseat.append((r['commit'], sha, r['subject']))
+            if resolves(r['commit']):
+                # It resolves HERE and is not on the trunk: a dangling object,
+                # not a stale pointer. Named apart because the cause and the
+                # cure differ -- this one is an uncommitted post-rewrite
+                # reseat, which is how b22 landed three of them.
+                _unreach += 1
         elif how == 'ambiguous':
             bad.append('%s -- its subject matches more than one commit, so the '
                        'record cannot be re-seated without guessing: %r'
                        % (r['commit'], r['subject']))
+        elif how == 'dangling':
+            bad.append('%s -- the commit RESOLVES IN THIS CLONE BUT IS NOT AN '
+                       'ANCESTOR of %s, and its subject matches no commit '
+                       'either. A dangling object kept alive by a local reflog '
+                       'is not a citation: in every other clone this record '
+                       'names nothing. Subject: %r'
+                       % (r['commit'], _base, r.get('subject')))
         elif how is None:
             bad.append('%s -- neither the commit nor its subject is in this '
                        'repo: %r' % (r['commit'], r.get('subject')))
@@ -1593,11 +1794,34 @@ def cmd_check(argv=()):
         for r in exts:
             e = r.get('external') or {}
             print('      %-28s %s' % (r['commit'], (e.get('note') or '')[:88]))
-    print('OK: %d record(s)%s, every commit resolves and every field is in '
-          'vocabulary.%s'
-          % (len(reg['records']),
-             (' (%d of them external and unverified)' % len(exts)) if exts else '',
-             ' %d by subject.' % len(reseat) if reseat else ''))
+    # ── THE SENTENCE SAYS WHICH QUESTION WAS ASKED (b23) ───────────────────
+    # It said "every commit resolves" while asking only that -- and a dangling
+    # object resolves. The claim now names the REF, because the strong form of
+    # this check is relative to a trunk and a reader needs to know which one.
+    if _base is None:
+        print('COULD NOT CHECK REACHABILITY: %s. Every commit below was '
+              'checked for RESOLVABILITY ONLY, which a dangling object kept '
+              'alive by a local reflog satisfies -- so this is NOT the strong '
+              'form of the check and is not reported as one. Fetch origin and '
+              're-run.' % _base_why)
+        print('OK ON THE WEAKER QUESTION: %d record(s)%s, every commit '
+              'resolves in THIS clone and every field is in vocabulary.%s'
+              % (len(reg['records']),
+                 (' (%d of them external and unverified)' % len(exts)) if exts else '',
+                 ' %d by subject.' % len(reseat) if reseat else ''))
+    else:
+        print('OK: %d record(s)%s, every commit is an ancestor of %s or '
+              're-seats by subject, and every field is in vocabulary.%s'
+              % (len(reg['records']),
+                 (' (%d of them external and unverified)' % len(exts)) if exts else '',
+                 _base,
+                 ' %d by subject.' % len(reseat) if reseat else ''))
+        if _unreach:
+            print('    %d of those re-seats is a DANGLING OBJECT, not a stale '
+                  'pointer: it resolves here and is not on %s. The usual cause '
+                  'is a .githooks/post-rewrite reseat that was never committed '
+                  '-- run `git status` and commit docs/%s.'
+                  % (_unreach, _base, os.path.basename(REG)))
     print('    standing-rule citations: %d cited, %d deliberately not-citable, '
           'every id checked against %s'
           % (cited, len(reg['records']) - cited, RULES_DOC))
@@ -2486,7 +2710,142 @@ def cmd_planned():
     return 0
 
 
+def cmd_selfcheck_reachability():
+    """The criteria lock for b23's change, in BOTH directions.
+
+    ── WHY THE DANGLING COMMIT IS SYNTHESISED AND NOT NAMED ─────────────────
+    The real instance was `634f7d709a87`, b22's pre-rebase sha, which resolves
+    in cc's clone only for as long as its reflog holds it. Hard-coding that
+    would make this lock pass today, pass nowhere else, and quietly stop
+    testing anything the day the reflog expired -- which is discipline 8
+    arriving inside the fix for a reachability defect.
+
+    `git commit-tree` creates a commit object referenced by nothing: it
+    RESOLVES and is an ancestor of NOTHING, in any clone, with no reflog
+    involved. That is the condition under test, constructed rather than found.
+    """
+    print('defect_register --selfcheck-reachability')
+    bad = total = 0
+
+    def ck(name, got, want):
+        nonlocal bad, total
+        total += 1
+        ok = (got == want)
+        if not ok:
+            bad += 1
+        print('  %s %-72s got %r' % ('ok  ' if ok else 'FAIL', name, got))
+
+    refs, label, why = citation_refs()
+    if not refs:
+        print('COULD NOT RUN: %s' % why)
+        return 2
+    base = refs
+    tree = git('rev-parse', 'HEAD^{tree}')
+    orphan = git('commit-tree', tree, '-m',
+                 'defect_register selfcheck: an orphan, referenced by nothing')
+    if not (tree and orphan):
+        print('COULD NOT RUN: could not synthesise an orphan commit, so the '
+              'condition under test does not exist and nothing was checked.')
+        return 2
+    orphan = orphan.strip()[:12]
+    live = (git('rev-parse', refs[0]) or '').strip()[:12]
+
+    anc = ancestor_set(refs)
+    ck('the refs a citation may live on are origin/main OR HEAD -- the union, '
+       'because --add records a commit before it is pushed', label,
+       ' or '.join(refs))
+    ck('the synthesised orphan RESOLVES -- without this the arms below would '
+       'pass for the wrong reason', resolves(orphan), True)
+    ck('...and is an ancestor of NEITHER ref, which is the condition under '
+       'test', reachable_fast(orphan, refs, anc), False)
+    ck('a real commit on the trunk is reachable, so this is not a check that '
+       'refuses everything', reachable_fast(live, refs, anc), True)
+    # THE ARM THAT THE FIRST DRAFT OF b23 BROKE. Using origin/main alone took
+    # tests/run_defect_register_probe.py from 152/152 to 6 FAILED, because a
+    # commit made and recorded before it is pushed is on HEAD and not on
+    # origin/main. That window is the normal case, not an edge one.
+    ck('A COMMIT ON HEAD BUT NOT ON origin/main IS A VALID CITATION -- the '
+       'whole window between committing and pushing, which the first draft of '
+       'this change refused',
+       reachable_fast((git('rev-parse', 'HEAD') or '')[:12], refs, anc), True)
+    ck('...and the ancestor set is the UNION rather than one ref, asserted on '
+       'the set itself', (ancestor_set(('origin/main',)) or set()) <= (anc or set()),
+       True)
+
+    idx = subject_index()
+    # A UNIQUE SUBJECT, DERIVED. The first draft used the tip commit's subject
+    # and two arms came back 'ambiguous': `chore(claims): cc releases cc`
+    # appears dozens of times in this history, so the reseat path could not
+    # pick one. A fixture whose input is ambiguous tests the ambiguity branch,
+    # not the branch it names.
+    subj = next((s for s, hits in idx.items() if len(hits) == 1), '')
+    if not subj:
+        print('COULD NOT RUN: no commit subject in this history is unique, so '
+              'the reseat arms have no valid input and would test the '
+              'ambiguity branch while claiming to test the reseat one.')
+        return 2
+    # A DANGLING SHA WHOSE SUBJECT STILL ANSWERS: a reseat, NOT a failure.
+    # The 2026-09-11 reasoning is preserved deliberately -- rebasing is normal
+    # with five clones and a register that goes red for it gets switched off.
+    r = {'commit': orphan, 'subject': subj}
+    ck('A DANGLING SHA WITH A LIVE SUBJECT IS A RESEAT, not a failure -- the '
+       '2026-09-11 contract is kept', resolve(r, idx, base)[1], 'subject')
+    # THE HOLE b22 FELL THROUGH: dangling AND nothing to re-seat onto.
+    r2 = {'commit': orphan,
+          'subject': 'a subject no commit in this repository carries'}
+    ck('DANGLING WITH NO SUBJECT MATCH IS A FAILURE -- pre-b23 this returned '
+       '"sha" and PASSED, which is how origin carried three records citing a '
+       'commit no other clone had', resolve(r2, idx, base)[1], 'dangling')
+    ck('...and the pre-b23 expression would have called that same record good, '
+       'stated as an arm so the regression has to argue with it',
+       bool(git('rev-parse', '--verify', orphan + '^{commit}')), True)
+    # A COMMIT THAT RESOLVES NOWHERE still takes the old route.
+    r3 = {'commit': 'dead' * 3, 'subject': subj}
+    ck('an UNRESOLVABLE sha with a live subject is still a reseat, unchanged',
+       resolve(r3, idx, base)[1], 'subject')
+    r4 = {'commit': 'dead' * 3, 'subject': 'no commit carries this either'}
+    ck('...and unresolvable with no subject is still the original failure, '
+       'reported as None rather than mislabelled dangling',
+       resolve(r4, idx, base)[1], None)
+    # NO BASE: the question is not asked and not faked (PR 1.11).
+    ck('WITH NO BASE the reachability half does not run and does not pretend '
+       'to -- the caller gets the weak answer and cmd_check says so',
+       resolve(r, idx, None)[1], 'sha')
+    ck('an EXTERNAL citation is untouched by any of this',
+       resolve({'commit': 'external:repo:abcdef1', 'subject': ''},
+               idx, base)[1], 'external')
+    # THE CACHE KEY. `REPO` is a module global that the superseded probe
+    # reassigns to drive cmd_check() in-process against a throwaway
+    # repository, and keying the ancestor set on the refs alone leaked 9,804
+    # real ancestors into that sandbox. One arm caught it; this one keeps it
+    # caught.
+    _before = len(_ANCESTORS)
+    ancestor_set(refs)
+    ck('the ancestor set is CACHED, so the rev-list is not repeated per '
+       'record', len(_ANCESTORS), _before)
+    global REPO
+    _real = REPO
+    try:
+        REPO = os.path.join(REPO, 'no', 'such', 'repo')
+        ck('...and the cache is keyed by REPO, so another repository does NOT '
+           'inherit this one\'s ancestors -- an unreadable repo is None, '
+           'never a stale set', ancestor_set(refs), None)
+    finally:
+        REPO = _real
+    ck('...and the real repo still answers from its own entry afterwards',
+       bool(ancestor_set(refs)), True)
+
+    print('  %d/%d arms classify correctly' % (total - bad, total))
+    print('')
+    print('  THE ORPHAN IS NOT CLEANED UP AND DOES NOT NEED TO BE: it is '
+          'referenced by nothing,')
+    print('  so `git gc` removes it. It was never a ref and never on a branch.')
+    return 1 if bad else 0
+
+
 def main(argv):
+    if '--selfcheck-reachability' in argv or '--fixtures' in argv:
+        return cmd_selfcheck_reachability()
     if '--add' in argv:
         return cmd_add(argv)
     # BEFORE --check, same reasoning as --confirm below: this is a WRITE and
