@@ -4227,8 +4227,8 @@
       "task": "b24 criticality_tier_check shared.js skip becomes a module-declared property rather than a name list; Tier A review of rt_routes and rt_stops recorded in docs/tier-a-reviews.json with a landing obligation for the sd-data branch; open-work index rows 449 and 356 corrected from source; agent board red-flag context threshold 70 to 80 for the four build agents only; path-manifest pre-push separation hook rejecting an out-of-scope push before it leaves the clone. FILES: tools/criticality_tier_check.py tools/sairn_path_manifest.py tools/sairn_push_gate_hook.py tools/sairn_board_publish.py docs/sairn-path-manifest.json docs/tier-a-reviews.json docs/SAIRN-OPEN-WORK-INDEX.md docs/defect-density-register.json docs/2026-10-19-cc-b24-notes.md SAIRN-handoff-cc-b24.md SAIRN-report-cc-b24.txt SAIRN-digest-cc-b24.txt NOT-api-NOT-tests-NOT-html",
       "claimed_at": "2026-10-19T21:01:06Z",
       "claimed_at_epoch": 1792443666.1227896,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-19T22:33:21Z",
       "files": [
         "SAIRN-digest-cc-b24.txt",
         "SAIRN-handoff-cc-b24.md",
