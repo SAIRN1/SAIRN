@@ -1,0 +1,177 @@
+cody b24 -- 2026-10-19 -- DIGEST
+===========================================================================
+
+STATUS
+---------------------------------------------------------------------------
+LANDED on origin/main, CONFIRMED AGAINST THE REMOTE and not by git push's own
+exit. Remote tip at confirmation 10e90006d632123be4906715e3f1d2127ad98039 via
+`git ls-remote origin refs/heads/main`; my four b24 commits each proved an
+ANCESTOR of it by `git merge-base --is-ancestor` -- 0407d207e (the work),
+7333ed1bb (derived docs), 9c9640622 and 10e90006d (the scrutiny ledger). All
+ten b24 files then read back out of that exact tree with `git cat-file -e
+<tip>:<path>`. ANCESTRY, NOT TIP-EQUALITY: five sessions push to this trunk, so
+whether a sha is the tip goes stale in seconds. Tree clean, stash list empty,
+both checked rather than assumed. PUSHED WITHOUT --force. NOTHING OVERRIDDEN --
+no SAIRN_SKIP, no SAIRN_GATE_EXEMPT, no SAIRN_SEED_GATE, and no call to
+tools/gate_skip.py. FIVE PUSH ATTEMPTS, every refusal read: twice the
+derived-docs gate (a new test file moved the census -- fixed by RUNNING the
+generators), three times a remote ref lock as other clones landed. AND ONE LOOP
+WORTH NAMING: the gate WRITES docs/scrutiny-flags.json on every attempt
+including refused ones, the dirty tree then makes `git pull --rebase` exit 128,
+and the gate's refusal asks for that rebase -- COMMIT THE ROWS EACH TIME, do
+not stash them. BOUNDARY DECLARED RATHER THAN ASSUMED:
+api/_lib/roofing-locations.js and api/sd-data.js are normally HANK'S and I took
+them on MICHAEL'S EXPLICIT DECISION, said so in the claim string, and confirmed
+hank holds no active claim; api/sd-data.js is +11/-1 with the diff shape checked
+before committing. NO sql/ and NO tools/ file touched -- fourth holds four
+tools/ files and sairndental.html, none in my set. The live tree was never
+written by any ablation and that is ASSERTED: git status --porcelain captured
+before and after each run and diffed. CLAIM `platform` RELEASED after the work
+was confirmed present.
+
+DECISION-NEEDED
+---------------------------------------------------------------------------
+NOTHING IS BLOCKED ON MICHAEL. The isDefaultLocation() decision given this
+batch is IMPLEMENTED AND ABLATED, and the judgement call carried across three
+batches is now closed. SAIRNcash stays HELD. The one open question is NOT
+blocking: whether the B6-class check (item 3) is worth building given b24's
+measured 1-of-4 precision on the easier population. MY RECOMMENDATION IS YES
+BUT NOT YET -- the cheap form is a hit on b22's own B6 arm, which is real
+evidence it would find something, and the precondition is a precision number on
+a real sample rather than more design.
+
+CHANGED
+---------------------------------------------------------------------------
+ITEM 1 -- is_default PER ROW, Michael's decision. CONCEPT, stated before the
+code and carried in all three files: the server says which location is the
+implicit default -- is_default on every row and default_location_id on the
+response -- and the client reads that answer instead of carrying its own copy of
+the sentinel, so the constant is defined in one module and no UI can drift.
+isDefaultLocation() was added to the shared module FOR two sairnroofing.html
+sites and THEY COULD NOT REACH IT (CommonJS module, single-file app, no loader,
+no build step), so arm E proved the function WORKS and not that anything USES
+it. Now: roofing-locations.js re-exports it, sd-data.js stamps is_default per
+row WITH THAT FUNCTION, the client reads it, and ZERO sentinel literals remain
+in executable code. default_location_id STAYS on the response because the
+sentinel may have NO ROW OF ITS OWN -- the normal case, an empty registry. NULL
+MEANS NOT ASKED YET AND IS NOT FALSE: the select compares !== true so an
+unknown keeps the explicit id; rfLocationName compares === true so an unknown
+never prints "Main". A truthiness test would have given the select the same
+answer BY ACCIDENT RATHER THAN BY DECISION. NEW arm F (no app file spells the
+sentinel in executable code, comment-stripped or it would fail on the note
+explaining its own fix) and a NEW 15-arm suite with a precondition PAIR that
+tells comment-stripping apart from a file that never mentioned the string.
+
+ITEM 2 -- the trust-ledger ordering. CONCEPT: lawSetClearance() performs the
+local write and the re-render in EXECUTABLE code BEFORE its await, and a suite
+that CAN FAIL asserts it. It was worse than b23 routed it: the only place the
+fact was recorded is a REPORT-ONLY probe whose contract is "exit 0 by design",
+so it COMPUTED and PRINTED the ordering and a false value failed nothing --
+while its own closing sentence names "moving rTrust() after the await" as the
+edit to watch. And an ABSENT anchor read as in-order, because -1 is less than
+every real position. The probe keeps its contract with its computation repaired
+(comments stripped, anchors required, null printed as COULD NOT TELL); the
+guard that can go red is a new arm in tests/sairnlaw_trust_clearance.js.
+
+ITEM 3 -- a SCOPE with NO CODE, by instruction. The B6 class is an arm
+satisfied by executable DATA carrying prose, which no comment stripper reaches.
+CONCEPT: for each arm asserting a literal substring against output the suite
+PRODUCED, count how many distinct string literals in the subject's own source
+could contribute it -- one is attributable, TWO OR MORE is AMBIGUOUS, zero is a
+third state. Report, never fail. On b22's own B6 the cheapest implementation is
+a hit. Not built: the hard half is finding the arms, measured at 1-of-4.
+
+ITEM 4 -- the sweep continued. All four of b23's routed candidates repaired,
+each with its concept in the file. TWO ASSERTIONS IN EACH OF TWO FILES
+DELIBERATELY LEFT ON RAW SOURCE -- "IS saved on this device", "localStorage
+write FAILED", "NOT ON THE VENDOR LIST", "FUTURE year already marked Paid" are
+about THE MESSAGE A USER READS, so their subject genuinely IS the prose. Same
+file, opposite correct treatment. Sweep re-run 102 -> 95, cody's 16 -> 10. A
+subject classifier was added (FILE-DERIVED / RUNTIME / UNTRACED, never folding
+UNTRACED into either) AND ITS FIRST VERSION DISCRIMINATED NOTHING: 83/12/0 over
+95, because nearly every file reads an app into `html` and then calls
+html.indexOf(sig) INSIDE A grab() HELPER -- an indexOf in a slicing helper is
+EXTRACTION, NOT A CLAIM. Scoping to asserting statements gave 64/31/0. STILL
+ONLY A PARTIAL, MEASURED ON MY OWN FOUR: ONE OF FOUR WAS REAL, residual cause
+named as WINDOW BLEED, left matching rather than narrowed. The one real finding
+repaired: tests/sairncode_pt_gp_modifier.js -- the pt-gp input exists as LIVE
+MARKUP and runPtCheck reads it in LIVE CODE, with TWO STRIPS not one and a
+third arm reporting COULD NOT LOCATE.
+
+AND THE ABLATION HARNESS HAD A SILENT CLOBBER -- THE THIRD SUCH DEFECT IN TWO
+BATCHES, each in a tool written TO HONOUR a discipline. api/_lib is copied
+wholesale; the first version wrote the suite FIRST and copied api/_lib OVER it,
+so for a suite living inside api/_lib the --before leg silently drove the DISK
+copy. MEASURED, NOT SUSPECTED: L1 came back REFUSED in the PRE leg WITH ARM F
+NAMED, and arm F does not exist at HEAD -- that impossibility is the only reason
+it was caught. The written file is now READ BACK AND COMPARED.
+
+EVIDENCE-path
+---------------------------------------------------------------------------
+  SAIRN-report-cody-b24.txt       REPORT first line, SHA256 second-to-last,
+                                  END-OF-REPORT last. sha256
+                                  4ed1bca62f5cf27cf68feaad11ff32661de71a7312fa2b6361005c79434b7f3e
+                                  over every byte above that line; the line
+                                  carries the command that reproduces it, and
+                                  it was reproduced before this digest was
+                                  written
+  SAIRN-handoff-cody-b24.md       written BEFORE the report, at a point where
+                                  nothing was half-finished
+  docs/2026-10-19-cody-b24-sweep-continued.md   all four items in full
+  docs/b24-logs/ablate_b24_repairs.py           both legs, --before included
+  docs/b23-logs/green_but_worthless_sweep.py    the subject classifier
+  api/_lib/location-scope.test.js arm F
+  tests/sairnroofing_default_location_from_server.js   the client behaviour
+  tests/sairnlaw_trust_clearance.js             the ordering guard that can fail
+  transcript C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cody\9fe1b8da-047e-4787-9e87-9983dd2e2635.jsonl
+
+UNVERIFIED
+---------------------------------------------------------------------------
+NO LIVE RENDER, AND THIS IS THE BATCH WHERE IT MATTERS MOST. is_default is a
+LIVE RESPONSE-SHAPE CHANGE on a real endpoint, and the platform's own rule is
+that a migration is done when THE DESTINATION IS QUERIED BACK. IT WAS NOT
+QUERIED BACK: one real `read rf_locations` against the deployed endpoint,
+confirming is_default appears on each row, is the check this batch is missing.
+THE 85 NON-cody SWEEP CANDIDATES ARE UNREAD and are not counted as clean.
+THE SIX UNTRACED ROWS in cody's scope are not upgraded from b23's reading to a
+measurement -- UNTRACED means the tool could not tell.
+THE CLASSIFIER'S WINDOW BLEED IS NOT FIXED: named, measured at 1-of-4 on the
+FILE-DERIVED class.
+NO B6-CLASS CHECK IS BUILT -- item 3 is a scope, which is what was asked for.
+THE SEAM CHECK SAID COULD NOT TELL for at least one endpoint/engine pair during
+the push; nothing was verified about that seam.
+
+NEXT
+---------------------------------------------------------------------------
+AN OWNER FOR THE B6-CLASS CHECK -- routed to chat, scoped in section 3 of
+docs/2026-10-19-cody-b24-sweep-continued.md. DO NOT BUILD IT WITHOUT A
+PRECISION NUMBER ON A REAL SAMPLE; that is the whole lesson of item 4.
+WHOEVER TAKES THE NEXT SWEEP BATCH -- 85 candidates, not mine; read the
+window-bleed caveat first, the FILE-DERIVED class is roughly 1-in-4 real on the
+one sample checked.
+WHOEVER OWNS A LIVE VERIFICATION LANE -- the is_default response shape needs one
+real read against the deployed endpoint.
+HANK -- unchanged and NOT re-sent: C1 in
+tests/sd_data_not_provisioned_misclass.js is still red on purpose; route the
+alf_op_audits EXISTENCE SELECT through notProvisioned(res, existingR, <the same
+message>), one guard earlier than A1's fix; re-derive the line number; :14316
+still named and not driven. AND A COURTESY NOTE BECAUSE I CROSSED YOUR
+BOUNDARY: api/sd-data.js is +11/-1, one stamping expression plus its comment,
+and roofing-locations.js gained one re-export -- both on Michael's decision,
+both declared in the claim string, nothing else in api/ touched.
+FOURTH -- the b23 Tier A obligation on dnt_rollup is still open, assigned by the
+gate, and is NOT a substitute for your own live render pass.
+CC -- row 449's "dnt_rollup appears 0 times in every .html file" is FALSE, and
+row 356's item-4 sentence still contradicts row 355.
+EVERY SESSION -- the push gate writes docs/scrutiny-flags.json on every attempt
+including refused ones; commit the rows each time rather than stashing them, or
+the rebase the gate asks for cannot run.
+CODY -- the b17/b18 carry-overs are untouched; the 151/57 sibling
+NOT_PROVISIONED guards are still NOT converted, a DECISION and not a backlog;
+the known-red-tail census is unmeasured; irs.gov/instructions/i8846 unread.
+
+CONTEXT%
+---------------------------------------------------------------------------
+59.2% of 1000k -- 592,471 tokens, max usage sum over this session's transcript
+(2,147 lines / 4,015,073 bytes), which also carries b22 and b23. MEASURED from
+the transcript, not estimated.
