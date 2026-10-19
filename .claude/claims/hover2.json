@@ -814,6 +814,17 @@
       "status": "released",
       "released_at": "2026-10-19T22:41:27Z",
       "files": null
+    },
+    {
+      "id": "hover2-1792450051",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "b73 SHORT BATCH (76.9% context at start, 80% wrap-up threshold): semgrep last-hit triage + calibration resolutions only; items 1/2/4 deferred for headroom",
+      "claimed_at": "2026-10-19T22:47:31Z",
+      "claimed_at_epoch": 1792450051.1747684,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
