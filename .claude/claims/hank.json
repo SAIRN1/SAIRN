@@ -4118,6 +4118,27 @@
         "sairnlaw.html",
         "sql/sairnlegacy_settings_schema.sql"
       ]
+    },
+    {
+      "id": "hank-1792432743",
+      "session": "hank",
+      "subject": "hank",
+      "task": "b21: discharge review obligations; b18 re-derive (straight-time-floor sign guard, trust-lock hard-lock); api/bridge.js unknown-action refusal + negative control + ablation; concat 3 sql files to Drive; attestation design note; 2 open-work rows. FILES: api/bridge.js api/bridge-unknown-action.test.js docs/2026-10-19-hank-b21-attestation-design.md docs/SAIRN-OPEN-WORK-INDEX.md SAIRN-handoff-hank-b21.md SAIRN-report-hank-b21.txt SAIRN-digest-hank-b21.txt SAIRN-ACTIVE-WORK-hank.md NOT-stonedesk.html-fourth-holds-it",
+      "claimed_at": "2026-10-19T17:59:03Z",
+      "claimed_at_epoch": 1792432743.3738687,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "NOT-stonedesk.html",
+        "SAIRN-ACTIVE-WORK-hank.md",
+        "SAIRN-digest-hank-b21.txt",
+        "SAIRN-handoff-hank-b21.md",
+        "SAIRN-report-hank-b21.txt",
+        "api/bridge-unknown-action.test.js",
+        "api/bridge.js",
+        "docs/2026-10-19-hank-b21-attestation-design.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md"
+      ]
     }
   ],
   "refusals": [
