@@ -144,6 +144,20 @@ function proxyGuard() {
 const ALLOWED_PROXY_HOSTS = ['api.stlouisfed.org', 'homebuyer.com'];
 const MAX_PUSH_BYTES = 64 * 1024; // matches api/sd-data.js's write cap
 
+// ── THE ONLY ACTIONS THIS ENDPOINT HAS (b21) ──────────────────────────────
+// Spelled once, and the UNKNOWN_ACTION refusal below derives its message from
+// this array rather than restating it -- the same reason
+// api/_lib/countersign-endpoint.js builds its own refusal from ACTIONS. A
+// fourth action added here changes the gate and the message together; a
+// fourth action added to the gate alone cannot happen.
+//
+// `pull` IS NOT HERE AND MUST NOT BE RE-ADDED without a read side keyed on
+// license_hash and gated on a session. It was removed 2026-09-17 because it
+// served one tenant's jobs, invoices and employees to an unauthenticated GET
+// keyed on a RAW LICENCE KEY. Re-adding the name to this array would make the
+// refusal claim an action exists that does not.
+const KNOWN_ACTIONS = ['push', 'proxy_get'];
+
 // req.query is populated by Vercel's Node runtime, but this endpoint has no
 // prior usage in this codebase to confirm that against -- every existing
 // api/*.js handler takes params from the body, not the query string. Parse
@@ -202,6 +216,49 @@ module.exports = async (req, res) => {
   // actual live callers rather than requiring them to change.
   if (action === 'proxy_get' || body.data_type === 'proxy_get') {
     return handleProxyGet(body, res);
+  }
+
+  // ── AN UNKNOWN ?action= IS REFUSED, NOT TREATED AS A PUSH (b21) ────────
+  // This line used to be `return handlePush(body, res, req)` with nothing
+  // between it and the proxy_get branch, so EVERY ?action= value this file
+  // does not know became a push attempt. That is not a theoretical hole --
+  // THREE live call sites land on it today, measured by grepping every app
+  // file for this URL rather than reasoned about:
+  //
+  //   stonedesk.html:12814  ?action=maps-static    -- no such action
+  //   stonedesk.html:12927  ?action=maps-optimize  -- no such action
+  //   stonedesk.html:7795   no ?action= at all, a sairn-mobile-sync event
+  //                         envelope body {app_id, event_type:'pos_sale', ...}
+  //
+  // All three reach `handlePush`, which answers 401 NO_LICENCE or 403 and
+  // names a LICENCE as the problem. So a caller asking for an action that has
+  // never existed is told its credentials are wrong. That is the wrong
+  // diagnosis pointed at the wrong layer, and it is exactly the shape that
+  // sent a previous session hunting for a RESEND_API_KEY that was present and
+  // correct the whole time (Guardian check 30's general rule).
+  //
+  // THE REFUSAL NAMES WHAT IS ACTUALLY WRONG AND WHAT IS ACCEPTED, derived
+  // from KNOWN_ACTIONS rather than written out, so a fourth action cannot be
+  // added without the message following it.
+  //
+  // AN ABSENT ?action= IS DELIBERATELY *NOT* REFUSED HERE, and that is a
+  // declared residual rather than an oversight. The instruction was to refuse
+  // an UNKNOWN action; an absent one is a different case with a different
+  // blast radius -- stonedesk.html:7795 sends no action and no data_type, and
+  // narrowing it in the same change would be two decisions in one line. It
+  // already fails (401, inside a `.catch(){}` that swallows it, so nobody has
+  // ever seen the error), and it is routed as open work rather than widened or
+  // quietly narrowed. The named-verb lesson from api/_lib/law-roles.js applies:
+  // a verb this file NAMES is defined on a named set and is meaningless off
+  // it, and an unknown verb must not ride in on another handler's gate.
+  if (action !== null && action !== undefined && action !== ''
+      && KNOWN_ACTIONS.indexOf(action) === -1) {
+    res.status(400).json({ error: { code: 'UNKNOWN_ACTION', message:
+      'No such action: ' + JSON.stringify(String(action)) + '. This endpoint '
+      + 'accepts ' + KNOWN_ACTIONS.map(function (a) { return '?action=' + a; })
+        .join(' or ') + ' (proxy_get may also be signalled by '
+      + 'data_type in the body). Nothing was read and nothing was written.' } });
+    return;
   }
   return handlePush(body, res, req);
 };
