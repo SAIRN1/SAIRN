@@ -627,6 +627,17 @@
       "status": "released",
       "released_at": "2026-10-19T12:19:15Z",
       "files": null
+    },
+    {
+      "id": "hover2-1792413118",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "b56: land-check fourth b29/b30 if landed; coverage-ledger rotation draw next segment; parity-tool only if real spec exists; handoff+push",
+      "claimed_at": "2026-10-19T12:31:58Z",
+      "claimed_at_epoch": 1792413118.7052593,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
