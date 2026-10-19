@@ -4243,6 +4243,25 @@
         "tools/sairn_path_manifest.py",
         "tools/sairn_push_gate_hook.py"
       ]
+    },
+    {
+      "id": "cc-1792449489",
+      "session": "cc",
+      "subject": "cc",
+      "task": "b25 assigned_overrides entry scoped to cody's already-pushed html files only with the reason recorded and a proof that a new html push is still refused; sabotage-test pre-push CHECK 5d from a scratch clone for all four build agents plus an auditor path; currency sweep of cc-owned skills tools methodology and rules against the current standing rules; register status for four named items; the next 11 FMEA drafts. FILES: docs/sairn-path-manifest.json tools/sairn_path_manifest.py docs/fmea/ docs/2026-10-19-cc-b25-notes.md docs/batch-manifest-cc-b25.json SAIRN-handoff-cc-b25.md SAIRN-report-cc-b25.txt SAIRN-digest-cc-b25.txt NOT-api-NOT-tests-NOT-html",
+      "claimed_at": "2026-10-19T22:38:09Z",
+      "claimed_at_epoch": 1792449489.2888813,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-cc-b25.txt",
+        "SAIRN-handoff-cc-b25.md",
+        "SAIRN-report-cc-b25.txt",
+        "docs/2026-10-19-cc-b25-notes.md",
+        "docs/batch-manifest-cc-b25.json",
+        "docs/sairn-path-manifest.json",
+        "tools/sairn_path_manifest.py"
+      ]
     }
   ],
   "refusals": [
