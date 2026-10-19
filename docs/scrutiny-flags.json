@@ -223,6 +223,70 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/_lib/location-scope.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0407d207e7209bdee92766bf41ba7e15d02d05d5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnbiz_undated_payee_notes.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0407d207e7209bdee92766bf41ba7e15d02d05d5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairncode_pt_gp_modifier.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0407d207e7209bdee92766bf41ba7e15d02d05d5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnfreedom_server_backup.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0407d207e7209bdee92766bf41ba7e15d02d05d5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlaw_trust_clearance.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0407d207e7209bdee92766bf41ba7e15d02d05d5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnlaw_trust_clearance_review_probe.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0407d207e7209bdee92766bf41ba7e15d02d05d5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnroofing_default_location_from_server.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0407d207e7209bdee92766bf41ba7e15d02d05d5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_blob_scope_ten_routed_sites.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0407d207e7209bdee92766bf41ba7e15d02d05d5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/ai-safeguards.test.js",
    "class": "test file",
    "level": "WEAKENING",
