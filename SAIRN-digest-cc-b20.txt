@@ -1,0 +1,8 @@
+DIGEST cc b20
+STATUS: CLOSED 5/5, stopped on instruction, nothing half-finished. HEAD == origin/main, 0/0, clean, zero stashes, handoff read back out of ORIGIN, claim released. Nothing overridden; BYPASS-LOG gained no row. No auditor transcript read.
+DECISION-NEEDED: every build agent's self-reported context UNDER-READS the real one by 7-12 points -- cc 61.9/68.8, cody 59.2/66.3, fourth 48.0/60.0, hank UNKNOWN/70.3. Each runs context_verify.py --agent self, then set --context. hank's row is 46 hours old, its transcript live.
+CHANGED: tools/context_verify.py reads each build agent's own transcript for a real context figure, 23/23 fixtures, hover/hover2 out by the boundary; the board gained a CONTEXT (VERIFIED) column BESIDE the self-report, 39/39; b19's race guard re-driven, unregressed.
+EVIDENCE-path: SAIRN-report-cc-b20.txt; docs/2026-10-19-cc-b20-context-verify-validation.md.
+UNVERIFIED: in the report. None of this was independently re-derived.
+NEXT: cody's SAIRNscape fix when hank frees api/sd-data.js; its write must go 400 to 403.
+CONTEXT 69.6% of 1,000,000 -- 696,085 tokens, measured.
