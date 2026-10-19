@@ -6949,6 +6949,33 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-19T19:19:42Z",
+      "opened_at_sha": "3c739d040165ea2f0cdc97257b2379550191d917",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 7,
+      "resources": [
+        "invoices",
+        "law_trusttx",
+        "leg_cremations",
+        "rf_claims",
+        "rf_jobs"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "SAIRN-sql-hank-b21.txt",
+        "api/b21-bridge-unknown-action.test.js"
+      ],
+      "what": "b21, hank. TWO DIFFERENT THINGS ARE IN THIS RANGE AND ONLY ONE OF THEM IS REAL TIER A CODE -- read this before reviewing, because the gate's own resource list is misleading here and I am declaring it rather than rewording the file to slip past the matcher.\n\n(1) THE REAL CHANGE, and it is `invoices`: api/bridge.js's dispatch refused nothing. It ended `return handlePush(body, res, req)` with nothing between it and the proxy_get branch, so EVERY `?action=` the endpoint did not know became a push attempt -- and `handlePush` upserts `bridge_data`, which StoneDesk's crSendToBridge fills with EXPENSE INVOICES carrying payee, amount, memo and a GL account. THREE LIVE CALL SITES land there, measured by grepping every app file for the URL rather than reasoned about: stonedesk.html:12814 (`?action=maps-static`), :12927 (`?action=maps-optimize`), and :7795, which sends NO action and NO data_type and a sairn-mobile-sync envelope body, reaches handlePush, and UPSERTS A ROW OF `{jobs:null, invoices:null, employees:null}`. The fix adds `KNOWN_ACTIONS = ['push','proxy_get']`, spelled once, with the `400 UNKNOWN_ACTION` refusal DERIVING its message from that array so the gate and the message cannot drift apart. `pull` is deliberately absent and arm B2 asserts the absence: it was removed 2026-09-17 for serving one tenant's data to an unauthenticated GET keyed on a RAW LICENCE KEY, and a refusal that advertises a withdrawn read side is worse than no refusal.\n\nWHAT TO ATTACK ON (1), and these are my own doubts rather than a summary of the arms. FIRST: an ABSENT `?action=` is STILL ACCEPTED and still reaches handlePush. Arm D1 asserts that residual on purpose -- I refused an UNKNOWN action because that is what was dispatched, and narrowing an ABSENT one is a second decision with a different blast radius, since :7795 sends neither. If you think that is the wrong call, D1 is the arm that encodes it and api/bridge.js's comment is the prose that has to change with it. SECOND: the refusal sits ABOVE every credential gate, so an UNAUTHENTICATED caller now learns which action names this endpoint accepts. Arm A4 asserts that deliberately -- naming the real fault beats a false credential diagnosis -- but it IS a small disclosure to an unauthenticated caller and somebody should disagree with me if it matters. THIRD: every arm is against the HANDLER through a recorded PostgREST stand-in. THE REFUSAL IS NOT DEPLOYED at the time of this record, so there is no live evidence of any of it; a 401 from the deployed endpoint today is evidence about the licence gate and none about this change. FOURTH: `KNOWN_ACTIONS` is a second place the action names live, after the file's own header prose -- I derived the MESSAGE from the array but the header is still hand-written and can still go stale.\n\n(2) `rf_claims` AND `rf_jobs` ARE A MIS-ATTRIBUTION AND NOTHING ABOUT THEM CHANGED. They are flagged solely because `SAIRN-sql-hank-b21.txt` -- a concatenation of three UNRUN schema files, uploaded for Michael to paste -- quotes the 2026-08-26 partial-apply incident in its header caution: \"a multi-statement cleanup on this platform was reported run and clean while both rf_claims rows and the rf_jobs row were still live\". That is PROSE ABOUT AN INCIDENT in a text artefact. The bundle contains no statement touching either resource; grep it. This is the same gate blindness fourth recorded on 2026-09-28 and cody on 2026-09-21, running the same direction: a NAME inside a quoted sentence raises an obligation about a resource. I have NOT edited tools/tier_a_review_gate.py -- cody holds it -- and I have NOT reworded the caution to dodge the matcher, because the caution is the most useful paragraph in the bundle and rewording it to satisfy a matcher is how a real warning gets lost. Declared here instead, which is what the gate asks for.\n\n(3) ALSO IN THE RANGE, for completeness and not for review as Tier A code: the 522h review obligation discharged (fourth's, opened 2026-09-28, with office_manager named as a gap the record did not), three open-work rows, the attestation DESIGN NOTE (no code), and the regenerated MASTER-PLAN / traceability-matrix. None of those touch a Tier A write path.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-10-19T19:19:42Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
