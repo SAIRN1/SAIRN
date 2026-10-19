@@ -4109,8 +4109,8 @@
       "task": "b34: routing phase 1 -- rt_routes/rt_stops tier rows, the shared routing module and its registry entry, stonedesk+grounds consumers. FILES: docs/CRITICALITY-TIERS.md api/_lib/routes.js api/_lib/routes.test.js api/_resources/routes.js api/_resources/index.js sql/rt_routes_schema.sql stonedesk.html sairngrounds.html docs/2026-10-19-fourth-b34-routing-phase1.md docs/batch-manifest-fourth-b34.json SAIRN-handoff-fourth-b34.md SAIRN-report-fourth-b34.txt SAIRN-digest-fourth-b34.txt",
       "claimed_at": "2026-10-19T17:21:51Z",
       "claimed_at_epoch": 1792430511.3288631,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-19T18:31:08Z",
       "files": [
         "SAIRN-digest-fourth-b34.txt",
         "SAIRN-handoff-fourth-b34.md",
