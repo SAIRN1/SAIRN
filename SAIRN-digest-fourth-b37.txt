@@ -70,10 +70,11 @@ DECISION-NEEDED
      carve-out, so a product that prompts a lawyer to report is prompting a
      PRIVILEGE DETERMINATION. Getting that wrong in software is worse than not
      building it. Same class as the dental clearinghouse contract.
-  6. CARRIED AND STILL YOURS FROM b36: run sql/rt_routes_schema.sql, and
-     CONSIDER DROPPING rtroutes_saved_sane FIRST -- as written it rejects any
-     route whose optimised order is worse than the human's. Full text is in the
-     b36 digest under SQL; nothing new was produced this batch.
+  6. CLOSED 2026-10-19 (b38), NOT CARRIED: Michael ran
+     sql/rt_routes_schema.sql WITH rtroutes_saved_sane REMOVED -- the outcome
+     this item asked for. The repo file is reconciled to what ran. NOTE THE
+     CONSEQUENCE: the tables now EXIST, so editing that file no longer changes
+     the database and any further change needs an ALTER in its own sql/ file.
 
 CHANGED
   sairndental.html                     3 labels, a .sronly utility, one
@@ -192,17 +193,17 @@ NEXT
      them.
   8. sairndental: A REAL SCREEN-READER TEST. The one thing in the a11y work
      still unproven after two batches.
-  9. CARRIED FROM b36, unchanged: rtroutes_saved_sane vs negative savings;
-     mech_schedule as scoped work; the rt_routes handler branch cody holds,
-     which leaves all four wired consumers unreachable at runtime;
-     sql/rt_routes_schema.sql never run; the dental clearinghouse decision;
-     sairnmechanical and sairnroofing still have ZERO competitive-gap audits.
+  9. CARRIED FROM b36: mech_schedule as scoped work; the rt_routes handler
+     branch cody holds, which leaves all four wired consumers unreachable at
+     runtime; the dental clearinghouse decision; sairnmechanical and
+     sairnroofing still have ZERO competitive-gap audits. NO LONGER CARRIED:
+     rtroutes_saved_sane and the unrun schema -- both closed, see item 6.
 
 SQL
-  NONE. No SQL was produced this batch, so nothing was written to sql/ and
-  there is no path to cite here. The outstanding SQL is still b36's
-  sql/rt_routes_schema.sql, unrun, and its full text is in the b36 digest --
-  not reproduced here, because a second copy is a second thing to go stale.
+  NONE PRODUCED IN b37. CORRECTED 2026-10-19 (b38): this section said the
+  outstanding SQL was sql/rt_routes_schema.sql, UNRUN. IT HAS SINCE BEEN RUN,
+  by Michael, with rtroutes_saved_sane removed. There is no outstanding SQL
+  from b36 or b37. The file is reconciled to what ran.
 
 CONTEXT 30.5% of 1,000,000 -- 304,831 tokens, measured.
   python tools/context_verify.py --digest-line

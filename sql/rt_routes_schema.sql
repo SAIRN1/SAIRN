@@ -1,8 +1,23 @@
 -- sql/rt_routes_schema.sql
 -- The shared routing primitive — Supabase schema for `rt_routes` + `rt_stops`.
 --
--- Run this once in the Supabase SQL editor before the `rt_routes` / `rt_stops`
--- resources will work. Scope and the reasoning behind every column:
+-- ── THIS HAS BEEN RUN. 2026-10-19, by Michael, in the Supabase SQL editor ───
+-- IT IS NO LONGER A PRE-FLIGHT SCRIPT, AND THAT CHANGES WHAT AN EDIT TO THIS
+-- FILE MEANS. The tables exist. `create table if not exists` makes a re-run a
+-- no-op, so FROM NOW ON editing a column, a check or a key HERE CHANGES
+-- NOTHING IN THE DATABASE -- it only changes what a reader believes is there.
+-- Any further change needs an `ALTER TABLE` in its own `sql/` file, applied
+-- separately, and then reflected here. A schema file that silently stops being
+-- the source of truth is the staleness class this platform keeps paying for.
+--
+-- WHAT RAN DIFFERS FROM WHAT THIS FILE SAID AT THE TIME, IN EXACTLY ONE PLACE:
+-- `constraint rtroutes_saved_sane` was REMOVED before the run, deliberately.
+-- The full reason is on the `saved_seconds` column below. This file was
+-- reconciled to the real state on 2026-10-19 (fourth b38); the window in which
+-- the repo and the database disagreed was hours, and it is recorded rather
+-- than quietly closed.
+--
+-- Scope and the reasoning behind every column:
 -- docs/2026-10-19-fourth-b33-routing-primitive-scope.md.
 --
 -- WHY THIS IS NOT PER-APP. StoneDesk, SAIRNgrounds, SAIRNscape, SAIRNroofing
@@ -72,8 +87,30 @@ create table if not exists public.rt_routes (
   -- One route per assignee per app per day. The upsert key.
   unique (license_hash, app_id, assignee_id, route_date),
 
-  constraint rtroutes_saved_sane
-    check (saved_seconds is null or saved_seconds >= 0),
+  -- ── THERE IS NO NON-NEGATIVE CHECK ON `saved_seconds`, DELIBERATELY ──────
+  -- A `constraint rtroutes_saved_sane check (saved_seconds is null or
+  -- saved_seconds >= 0)` stood here until 2026-10-19 and WAS REMOVED BEFORE
+  -- THIS FILE WAS EVER RUN. It contradicted the module it exists to store for:
+  -- api/_lib/routes.js returns a NEGATIVE saving UN-CLAMPED on purpose -- "a
+  -- caller that stores a negative saving has learned something true" -- a test
+  -- arm asserts it is negative, and all four wired consumers render it as
+  -- "this order is about N min LONGER than the one you had". With the
+  -- constraint in place Postgres would have rejected the ENTIRE upsert and the
+  -- route write would have failed, so the only way to satisfy it was to clamp
+  -- in the module, which re-introduces the exact 2026-06-18 defect the
+  -- `saved_seconds` comment above exists to prevent: "we could not tell" and
+  -- "we saved nothing" rendering as the same figure.
+  --
+  -- A NEGATIVE SAVING IS A REAL MEASUREMENT, NOT BAD DATA. The three states
+  -- this column must keep distinct are NULL (not computed), negative (the
+  -- optimised order is worse than the human's, which happens and is worth
+  -- knowing) and positive. Only NULL is special, and
+  -- `rtroutes_saving_has_a_basis` below is the constraint that guards it.
+  --
+  -- Do not re-add a non-negative check. If a future reader believes one is
+  -- needed, the thing to change is the module's contract first, and that
+  -- contract is the reason this line is a comment instead of a constraint.
+
   -- A computed saving with no basis and no timestamp is a number from nowhere.
   constraint rtroutes_saving_has_a_basis
     check (saved_seconds is null

@@ -3336,7 +3336,8 @@ function trustFigures(){
 // produced an answer at all, and it is NEVER rendered as agreement.
 //
 // THE ROLE CASE IS SEPARATED FROM THE FAILURE CASE ON PURPOSE. The endpoint is
-// owner-only (api/sd-data.js:12439, and the open question of whether `attorney`
+// owner-only (the branch is `if (resource === 'law_trust_reconcile' && action
+// === 'read')` in api/sd-data.js, and the open question of whether `attorney`
 // belongs in that set is recorded there, not decided here) while this app shows
 // the Trust tab to every signed-in role. An attorney opening this panel gets
 // 403, and that is a PERMISSION answer, not a reconciliation answer -- shown as

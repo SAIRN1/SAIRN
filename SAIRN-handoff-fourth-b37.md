@@ -361,10 +361,21 @@ clearest argument in the audit for pulling primary sources.**
 7. **sairndental: a real screen-reader test (§4).** The one thing in the a11y
    work still unproven.
 8. **cc: the `shared.js` skip (§5)** — measured again here at 8 findings.
-9. **Carried from b36, unchanged:** `rtroutes_saved_sane` vs negative savings;
-   `mech_schedule`; the `rt_routes` handler branch cody holds, which leaves all
-   four wired consumers unreachable at runtime; `sql/rt_routes_schema.sql` never
-   run; the dental clearinghouse decision; sairnmechanical and sairnroofing
+9. ~~**`rtroutes_saved_sane` vs negative savings**~~ — **CLOSED 2026-10-19
+   (fourth b38). Michael ran `sql/rt_routes_schema.sql` in Supabase WITH THE
+   CONSTRAINT REMOVED**, which is the outcome this item argued for; the repo
+   file is reconciled to what actually ran and the column now carries the
+   reason as a comment so nobody re-adds it. **AND THE FILE HAS NOW RUN, WHICH
+   CHANGES WHAT EDITING IT MEANS** — `create table if not exists` makes a
+   re-run a no-op, so a further change to a column or key in that file changes
+   nothing in the database. Anything else needs an `ALTER TABLE` in its own
+   `sql/` file. **That makes cc's composite-foreign-key recommendation on
+   `rt_stops.license_hash` (open-work index row, `docs/SAIRN-OPEN-WORK-INDEX.md`
+   line 454) A MIGRATION RATHER THAN AN EDIT**, and it is not re-scoped here
+   because the schema is mine and the handler is cody's.
+10. **Carried from b36, unchanged:** `mech_schedule`; the `rt_routes` handler
+   branch cody holds, which leaves all four wired consumers unreachable at
+   runtime; the dental clearinghouse decision; sairnmechanical and sairnroofing
    still have zero audits.
 
 ---
