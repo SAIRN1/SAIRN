@@ -482,6 +482,28 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         <div class="card" id="sch-load-card" style="display:none;"><div class="ch"><div class="ct">Crew load</div></div>
           <div class="cb" id="sch-load"><div class="empty">--</div></div>
         </div>
+        <!-- ROUTE ORDER (2026-10-19, fourth b35). The FOURTH consumer of the
+             shared routing primitive, after StoneDesk, SAIRNgrounds and
+             SAIRNscape. Module api/_lib/routes.js, resource rt_routes.
+             TWO THINGS ARE GENUINELY DIFFERENT HERE and they are the reason
+             this app was worth wiring rather than a fourth copy of the same
+             card: rf_schedule.crew is an ARRAY of names, not one string, so a
+             day belongs to several people at once; and this app is
+             SERVER-FIRST -- rfSchedule is loaded from the server by
+             rfLoadSchedule(), not read out of localStorage. The ordering is
+             therefore per PERSON across the days already loaded, and it reads
+             the in-memory list rather than issuing its own query. -->
+        <div class="card" id="sch-route-card"><div class="ch"><div class="ct">Route order for one person's day</div></div>
+          <div class="cb">
+            <div class="note">Orders the stops a human already assigned &mdash; it does <strong>not</strong> decide who goes where. A roofing day belongs to a <strong>crew</strong>, so this orders the days of one named crew member. Addresses come from each job's own record; a scheduled day whose job has no address is <strong>listed as excluded</strong> rather than silently dropped. <strong>Where drive times are unavailable the stored order is left exactly as it is</strong> and this says so.</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:10px;">
+              <div class="fg" style="margin:0;"><label>Crew member</label><select id="rf-rtcrew"></select></div>
+              <div class="fg" style="margin:0;"><label>Date</label><input type="date" id="rf-rtdate"></div>
+              <button class="btn bp" onclick="rfRouteOptimize()">Order this day</button>
+            </div>
+            <div id="rf-rt-result" style="margin-top:12px;"></div>
+          </div>
+        </div>
         <div class="card" id="sch-loc-card" style="display:none;"><div class="ch"><div class="ct">Locations / Branches</div></div><div class="cb">
           <div class="note">Deactivate a branch rather than deleting it &mdash; jobs point at it by id, and a deleted branch would orphan their attribution.</div>
           <div id="sch-loc-list" style="margin-top:10px;"></div>
@@ -4983,6 +5005,7 @@ function rfLoadSchedule(){
     if(!r.ok){$('sch-list').innerHTML='<div class="empty">Could not load the schedule.</div>';return;}
     rfSchedule=(r.data&&r.data.data)||[];
     rfRenderSchedule();
+    rfFillRouteCrews();
     return rfLoadCrewLoad(p.from,p.to);
   });
 }
@@ -5094,6 +5117,139 @@ function rfRenderSchedule(){
         '<td><select onchange="rfSetScheduleStatus(\''+rfEsc(sc.schedule_id)+'\',this.value)">'+opts+'</select></td>'+
         '<td>'+(MANAGEMENT_ROLES[rfSession&&rfSession.role]?'<button class="btn bo bs" onclick="openScheduleModal(\''+rfEsc(sc.schedule_id)+'\')">Edit</button>':'')+'</td></tr>';
     }).join('')+'</tbody></table></div>';
+}
+
+// ── ROUTE ORDER — the FOURTH consumer of the shared routing primitive ──────
+// 2026-10-19, fourth b35. StoneDesk, SAIRNgrounds and SAIRNscape are the first
+// three. All four call the same resource, rt_routes, handled by
+// api/_lib/routes.js. Four apps, four data models, one
+// {job_ref, address, locked, status} seam.
+//
+// WHAT IS DIFFERENT HERE, and it is the reason this one is worth having:
+//   * `rf_schedule.crew` is an ARRAY. A roofing day is assigned to several
+//     people, so there is no single assignee_id on the record. The ordering
+//     unit is therefore ONE NAMED PERSON across the days they appear on --
+//     which is the right unit anyway, since a route is driven by a person.
+//   * This app is SERVER-FIRST. rfSchedule is populated by rfLoadSchedule()
+//     from the server with role-scoped visibility already applied, so this
+//     reads the in-memory list rather than issuing a second query that could
+//     return a different set.
+function rfRouteCrewNames(){
+  var seen={}, out=[];
+  (rfSchedule||[]).forEach(function(sc){
+    (sc.crew||[]).forEach(function(n){
+      var t=String(n||'').trim();
+      if(t&&!seen[t]){seen[t]=1;out.push(t);}
+    });
+  });
+  return out.sort();
+}
+function rfFillRouteCrews(){
+  var sel=$('rf-rtcrew'); if(!sel) return;
+  var names=rfRouteCrewNames(), cur=sel.value;
+  sel.innerHTML=names.length
+    ? names.map(function(n){return '<option value="'+rfEsc(n)+'">'+rfEsc(n)+'</option>';}).join('')
+    : '<option value="">-- nobody is on a crew in the loaded range --</option>';
+  if(cur&&names.indexOf(cur)>=0) sel.value=cur;
+}
+function rfJobAddress(jobId){
+  var j=(currentJobs||[]).filter(function(x){return x.id===jobId;})[0];
+  return j&&j.address?String(j.address).trim():'';
+}
+function rfRouteOptimize(){
+  var who=(($('rf-rtcrew')||{}).value||'').trim();
+  var dateStr=(($('rf-rtdate')||{}).value||'').trim();
+  var out=$('rf-rt-result'); if(!out) return;
+  if(!who){out.innerHTML='<div class="note">Pick a crew member first.</div>';return;}
+  if(!dateStr){out.innerHTML='<div class="note">Pick a date first.</div>';return;}
+
+  var days=(rfSchedule||[]).filter(function(sc){
+    if(sc.scheduled_date!==dateStr) return false;
+    return (sc.crew||[]).some(function(n){return String(n||'').trim()===who;});
+  });
+  // EXCLUSIONS ARE LISTED, NOT DROPPED. A day this cannot route is still a day
+  // somebody has to work, and a quietly shorter list is how a stop stops
+  // existing.
+  var routable=[], excluded=[];
+  days.forEach(function(sc){
+    var addr=rfJobAddress(sc.job_id);
+    if(addr) routable.push({rec:sc, address:addr}); else excluded.push(sc);
+  });
+  var jobName=function(id){
+    var j=(currentJobs||[]).filter(function(x){return x.id===id;})[0];
+    return (j&&j.name)||id;
+  };
+  var exclHtml=excluded.length
+    ? '<div class="note" style="margin-top:10px;"><strong>'+excluded.length+' day'+(excluded.length===1?'':'s')+' excluded from the ordering</strong> because the job has no address on record: '
+      +excluded.map(function(sc){return rfEsc(jobName(sc.job_id));}).join(', ')
+      +'. They are still scheduled &mdash; add an address on the Jobs panel to include them.</div>'
+    : '';
+
+  if(routable.length<2){
+    out.innerHTML='<div class="note">'+routable.length+' routable day'+(routable.length===1?'':'s')
+      +' for '+rfEsc(who)+' on '+rfEsc(dateStr)+'. Ordering needs at least two.</div>'+exclHtml;
+    return;
+  }
+
+  out.innerHTML='<div class="note">Ordering '+routable.length+' stops&hellip;</div>';
+  rfDataRaw('optimize','rt_routes',{
+    app_id:'sairnroofing', assignee_id:who, route_date:dateStr,
+    stops:routable.map(function(r){
+      return {job_ref:r.rec.schedule_id||r.rec.id, address:r.address, locked:false,
+              status:(r.rec.status==='done')?'done':(r.rec.status==='cancelled'?'skipped':'pending')};
+    })
+  }).then(function(r){
+    if(!r.ok||!r.data){
+      // rfDataRaw already carries the reason -- use it rather than inventing a
+      // cause this function cannot see.
+      out.innerHTML='<div class="note">Route ordering did not run &mdash; '+rfEsc(r.msg||'the server did not answer')+'. Nothing was changed.</div>'+exclHtml;
+      return;
+    }
+    var data=r.data;
+    if(data.basis==='unavailable'){
+      // THE REASON IS NAMED. "Could not optimise" with no reason is what sent a
+      // StoneDesk reader to check the wrong environment variable for months.
+      var why={'no-key':'no routing key is configured on the server',
+               'upstream-status':'the routing provider refused the request',
+               'upstream-shape':'the routing provider sent something unreadable',
+               'network':'the routing provider could not be reached',
+               'no-reachable-pair':'no driving route exists between these stops',
+               'not-orderable':'these stops could not be ordered',
+               'too-few-stops':'there are not enough stops to order',
+               'nothing-movable':'every stop is locked or already done'}[data.reason]
+               ||('the server reported "'+rfEsc(String(data.reason||'no reason given'))+'"');
+      out.innerHTML='<div class="note"><strong>Not reordered</strong> &mdash; '+why+'. The schedule is unchanged.</div>'+exclHtml;
+      return;
+    }
+    var order=data.order;
+    if(!order||order.length!==routable.length){
+      out.innerHTML='<div class="note"><strong>Not reordered</strong> &mdash; the server returned an order that does not match the stops sent. The schedule is unchanged.</div>'+exclHtml;
+      return;
+    }
+    // saved_seconds === null MEANS NOT COMPUTED. Rendered as no claim at all,
+    // never as "saves 0 min".
+    var secs=data.saved_seconds, savedHtml;
+    if(secs===null||secs===undefined||!isFinite(secs)){
+      savedHtml='<span class="note">drive-time saving not computed</span>';
+    }else if(secs>0){
+      savedHtml='saves about '+Math.round(secs/60)+' min of driving';
+    }else if(secs===0){
+      savedHtml='no driving time saved &mdash; the order you had was already as good';
+    }else{
+      savedHtml='<span class="note">this order is about '+Math.round(-secs/60)+' min LONGER than the one you had</span>';
+    }
+    var basisHtml=(data.basis==='great-circle')
+      ? '<div class="note" style="margin-top:8px;"><strong>Straight-line order.</strong> Real drive times were unavailable ('+rfEsc(String(data.drive_unavailable_because||'reason not given'))+'), so this is ordered by distance as the crow flies. It is not a drive-time ordering and carries no time saving.</div>'
+      : '';
+    out.innerHTML='<div class="tw"><table><thead><tr><th>#</th><th>Job</th><th>Address</th></tr></thead><tbody>'
+      +order.map(function(srcIdx,pos){
+          var rr=routable[srcIdx];
+          return '<tr><td>'+(pos+1)+'</td><td>'+rfEsc(jobName(rr.rec.job_id))+'</td><td>'+rfEsc(rr.address)+'</td></tr>';
+        }).join('')
+      +'</tbody></table></div>'
+      +'<div class="note" style="margin-top:8px;">'+savedHtml+'. Basis: <strong>'+rfEsc(String(data.basis))+'</strong>.</div>'
+      +basisHtml+exclHtml;
+  });
 }
 
 function rfSetScheduleStatus(id,status){

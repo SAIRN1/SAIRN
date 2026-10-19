@@ -1571,6 +1571,24 @@ if (document.readyState === 'loading') {
 <div class="scp-panel" id="scp-panel-schedule">
   <div class="scp-ph"><div><div class="scp-ptitle">Scheduling</div><div class="scp-psub">Recurring routes + one-off jobs</div></div>
   <div class="scp-pa"><button class="scp-btn scp-bp scp-bs" onclick="scpOpenSchedModal()">+ Add to Schedule</button></div></div>
+  <!-- ROUTE ORDER (2026-10-19, fourth b35) — the THIRD consumer of the shared
+       routing primitive, after StoneDesk's Field Map and SAIRNgrounds.
+       Module api/_lib/routes.js, resource rt_routes. No app owns it.
+       THIS APP'S SHAPE IS ITS OWN: scp_schedule rows carry customer_id, and
+       the address lives on the CUSTOMER record — where SAIRNgrounds reaches
+       it through a property. The module sees the same
+       {job_ref, address, locked, status} either way, which is the seam. -->
+  <div class="scp-card" style="margin-bottom:14px"><div class="scp-cb">
+    <div style="font-weight:700;font-size:14px;margin-bottom:8px">Route order for a crew's day</div>
+    <div class="scp-note" style="margin-bottom:10px;font-size:12px;color:#64748B">Orders the stops a human already assigned &mdash; it does <strong>not</strong> decide who goes where. Addresses come from each customer's own record; a visit whose customer has no address is <strong>listed as excluded</strong> rather than silently dropped. <strong>Where drive times are unavailable the stored order is left exactly as it is</strong> and this says so, rather than reporting an unchanged list as an optimised one.</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+      <div class="scp-fg" style="max-width:220px;margin:0"><label>Crew</label><select id="scp-rtcrew"></select></div>
+      <div class="scp-fg" style="max-width:200px;margin:0"><label>Date</label><input type="date" id="scp-rtdate"></div>
+      <button class="scp-btn scp-bp scp-bs" onclick="scpRouteOptimize()">Order this day</button>
+    </div>
+    <div id="scp-rt-result" style="margin-top:12px"></div>
+  </div></div>
+
   <div class="scp-card"><div class="scp-cb">
     <div class="scp-tw"><table><thead><tr><th>Customer</th><th>Frequency</th><th>Next Date</th><th>Crew</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody id="scp-stbody"></tbody></table></div>
@@ -3313,8 +3331,131 @@ function scpRSched(){
       (status==='complete'?'':' <button class="scp-btn scp-bp scp-bs" onclick="scpMarkScheduleComplete(\''+s.id+'\')">Mark Complete</button>')+
       '</td></tr>';
   }).join(''):'<tr><td colspan="6" style="text-align:center;color:#64748B;padding:20px">Nothing scheduled yet</td></tr>';
+  scpFillRouteCrews();
   rScpQcQueue();
 }
+
+// ── ROUTE ORDER — the THIRD consumer of the shared routing primitive ───────
+// 2026-10-19, fourth b35. StoneDesk's Field Map is the first, SAIRNgrounds'
+// Scheduling panel the second. All three call the same resource, rt_routes,
+// handled by api/_lib/routes.js.
+//
+// THIS APP'S DATA SHAPE IS NOT SAIRNgrounds'. A scp_schedule row is
+// {id, customer_id, freq, next, crew, status} and the address lives on the
+// CUSTOMER record; SAIRNgrounds reaches its address through a PROPERTY, and
+// StoneDesk carries the address on the stop itself. Three different models
+// arriving at one {job_ref, address, locked, status} seam is the thing that
+// makes this a platform primitive rather than a function somebody shares.
+function scpRouteCrews(){
+  var seen={}, out=[];
+  scpLd('scp_schedule',[]).forEach(function(s){
+    var c=(s.crew||'').trim();
+    if(c&&!seen[c]){seen[c]=1;out.push(c);}
+  });
+  return out.sort();
+}
+function scpFillRouteCrews(){
+  var sel=scp$('scp-rtcrew'); if(!sel) return;
+  var crews=scpRouteCrews(), cur=sel.value;
+  sel.innerHTML=crews.length
+    ? crews.map(function(c){return '<option value="'+scpH(c)+'">'+scpH(c)+'</option>';}).join('')
+    : '<option value="">-- no crew named on any scheduled visit --</option>';
+  if(cur&&crews.indexOf(cur)>=0) sel.value=cur;
+}
+function scpCustAddress(id){
+  var c=scpLd('scp_customers',[]).find(function(x){return x.id===id;});
+  return c&&c.address?String(c.address).trim():'';
+}
+async function scpRouteOptimize(){
+  var crew=((scp$('scp-rtcrew')||{}).value||'').trim();
+  var dateStr=((scp$('scp-rtdate')||{}).value||'').trim();
+  var out=scp$('scp-rt-result'); if(!out) return;
+  if(!crew){out.innerHTML='<div class="scp-note">Pick a crew first.</div>';return;}
+  if(!dateStr){out.innerHTML='<div class="scp-note">Pick a date first.</div>';return;}
+
+  var visits=scpLd('scp_schedule',[]).filter(function(s){
+    return (s.crew||'').trim()===crew && s.next===dateStr;
+  });
+  // EXCLUSIONS ARE LISTED, NOT DROPPED. A visit this cannot route is still a
+  // visit the crew has to make, and a quietly shorter list is how a stop stops
+  // existing.
+  var routable=[], excluded=[];
+  visits.forEach(function(s){
+    var addr=scpCustAddress(s.customer_id);
+    if(addr) routable.push({rec:s, address:addr}); else excluded.push(s);
+  });
+  var exclHtml=excluded.length
+    ? '<div class="scp-note" style="margin-top:10px;font-size:12px"><strong>'+excluded.length+' visit'+(excluded.length===1?'':'s')+' excluded from the ordering</strong> because the customer has no address on record: '
+      +excluded.map(function(s){return scpH(scpCustName(s.customer_id));}).join(', ')
+      +'. They are still scheduled &mdash; add an address on the Customers panel to include them.</div>'
+    : '';
+
+  if(routable.length<2){
+    out.innerHTML='<div class="scp-note">'+routable.length+' routable visit'+(routable.length===1?'':'s')
+      +' for '+scpH(crew)+' on '+scpH(dateStr)+'. Ordering needs at least two.</div>'+exclHtml;
+    return;
+  }
+
+  out.innerHTML='<div class="scp-note">Ordering '+routable.length+' stops&hellip;</div>';
+  var data=await scpData('optimize','rt_routes',{
+    app_id:'sairnscape', assignee_id:crew, route_date:dateStr,
+    stops:routable.map(function(r){
+      return {job_ref:r.rec.id, address:r.address, locked:false,
+              status:r.rec.status==='complete'?'done':'pending'};
+    })
+  });
+
+  if(!data){
+    out.innerHTML='<div class="scp-note">Route ordering did not run &mdash; the server did not answer. Nothing was changed.</div>'+exclHtml;
+    return;
+  }
+  if(data.basis==='unavailable'){
+    // THE REASON IS NAMED. "Could not optimise" with no reason is what sent a
+    // StoneDesk reader to check the wrong environment variable for months.
+    var why={'no-key':'no routing key is configured on the server',
+             'upstream-status':'the routing provider refused the request',
+             'upstream-shape':'the routing provider sent something unreadable',
+             'network':'the routing provider could not be reached',
+             'no-reachable-pair':'no driving route exists between these stops',
+             'not-orderable':'these stops could not be ordered',
+             'too-few-stops':'there are not enough stops to order',
+             'nothing-movable':'every stop is locked or already done'}[data.reason]
+             ||('the server reported "'+scpH(String(data.reason||'no reason given'))+'"');
+    out.innerHTML='<div class="scp-note"><strong>Not reordered</strong> &mdash; '+why+'. The schedule is unchanged.</div>'+exclHtml;
+    return;
+  }
+  var order=data.order;
+  if(!order||order.length!==routable.length){
+    out.innerHTML='<div class="scp-note"><strong>Not reordered</strong> &mdash; the server returned an order that does not match the stops sent. The schedule is unchanged.</div>'+exclHtml;
+    return;
+  }
+
+  // saved_seconds === null MEANS NOT COMPUTED. Rendered as no claim at all,
+  // never as "saves 0 min".
+  var secs=data.saved_seconds, savedHtml;
+  if(secs===null||secs===undefined||!isFinite(secs)){
+    savedHtml='<span style="color:#64748B">drive-time saving not computed</span>';
+  }else if(secs>0){
+    savedHtml='saves about '+Math.round(secs/60)+' min of driving';
+  }else if(secs===0){
+    savedHtml='no driving time saved &mdash; the order you had was already as good';
+  }else{
+    savedHtml='<span style="color:#64748B">this order is about '+Math.round(-secs/60)+' min LONGER than the one you had</span>';
+  }
+  var basisHtml=(data.basis==='great-circle')
+    ? '<div class="scp-note" style="margin-top:8px;font-size:12px"><strong>Straight-line order.</strong> Real drive times were unavailable ('+scpH(String(data.drive_unavailable_because||'reason not given'))+'), so this is ordered by distance as the crow flies. It is not a drive-time ordering and carries no time saving.</div>'
+    : '';
+
+  out.innerHTML='<div class="scp-tw"><table><thead><tr><th>#</th><th>Customer</th><th>Address</th></tr></thead><tbody>'
+    +order.map(function(srcIdx,pos){
+        var r=routable[srcIdx];
+        return '<tr><td>'+(pos+1)+'</td><td>'+scpH(scpCustName(r.rec.customer_id))+'</td><td>'+scpH(r.address)+'</td></tr>';
+      }).join('')
+    +'</tbody></table></div>'
+    +'<div class="scp-note" style="margin-top:8px;font-size:12px">'+savedHtml+'. Basis: <strong>'+scpH(String(data.basis))+'</strong>.</div>'
+    +basisHtml+exclHtml;
+}
+
 function scpOpenSchedModal(id){
   scpSid=id||null;scpFillCustomerSelects();
   var s=id?scpLd('scp_schedule',[]).find(function(x){return x.id===id;}):null;

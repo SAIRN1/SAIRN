@@ -1,0 +1,44 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "fourth",
+  "batch": "b35",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "",
+      "status": "done",
+      "evidence": "CONTRADICTION RESOLVED AT THE WRITE SITE, and only ONE row moved. The deciding test was written into the register's gaps section in b34 BEFORE the read, so the answer could not be fitted to the result: is a stored stop joined to a NAMED person? YES, twice over -- fmSaveStop() (stonedesk.html:12879) REFUSES to save without person+address+date, defaults person from currentUser.name, and the row also carries a free-text Customer name (:8446). AND IT LEAVES THE DEVICE: sd_field_stops is in SD_SYNCED (:2035). So it carries STRICTLY MORE than rt_stops, which has no customer-name field. sd_field_stops re-tiered B->A on CONFIDENTIALITY; rt_stops re-read and STANDS at A/A. Integrity left at B with the reason stated. Verify: grep '^| .sd_field_stops.' docs/CRITICALITY-TIERS.md"
+    },
+    {
+      "id": 2,
+      "title": "",
+      "status": "done",
+      "evidence": "ALL SEVEN READ AT THEIR OWN WRITE SITE IN api/sd-data.js, none classified by the stated rule. profile B/B, memory B/B, employees A/A, slabs A/B, render_usage B/B, shared_knowledge B/B, employee_profile A/A. BOTH FLAGGED ROWS MOVED. employees: api/sd-data.js:2478's own comment PREDATES the row and says it carries hourly_rate so Manager gets it stripped and only Owner sees pay -- nobody builds that for Tier B; and stonedesk.html:43148 averages hourly_rate into a labour-rate figure, so the money path crosses an app boundary. employee_profile: the READ branch (:3731) derives the subject server-side so one employee cannot read a colleague's row -- that gate is the evidence. MY OWN ERROR CAUGHT BY THE CHECKER: I first typed employee_profile Tier B beside Confidentiality A; COMPUTED TIER MISMATCH refused it, correctly -- the Tier is derived as the worse of the two. memory's B is left with a NAMED open question on it: nobody has measured how often redactDocumentText returns complete:false."
+    },
+    {
+      "id": 3,
+      "title": "",
+      "status": "done",
+      "evidence": "ROUTED TO cc, NOT APPLIED -- tools/ is her directory and it was not touched. docs/2026-10-19-fourth-b35-shared-tiers-and-consumers.md section 3 carries the one-line fix. THE EFFECT WAS MEASURED, NOT ASSERTED: scratchpad/b35/simulate_cc_fix.py applies it in an ISOLATED WORKTREE over the b35 register and diffs the findings -- PROBLEMS 11 -> 3, REGISTERED 394 -> 401, CLEARED 8 (one GONE plus all seven NOT A RESOURCE), INTRODUCED 0. The 3 remaining are pre-existing and not mine. The gap fails open in BOTH directions and that is the finding: it never demands a row for the seven, AND it rejects the rows as orphans once written -- so the register could not be made correct without the fix."
+    },
+    {
+      "id": 4,
+      "title": "",
+      "status": "done",
+      "evidence": "SAIRNscape wired as the THIRD consumer. CONCEPT STATED FIRST: scp_schedule rows are {id, customer_id, freq, next, crew, status} and the address lives on the CUSTOMER record, reached through customer_id -- where SAIRNgrounds reaches its address through a PROPERTY and StoneDesk carries it on the stop itself. A Route-order card on the Scheduling panel calling scpData('optimize','rt_routes'). checkblocks sairnscape.html -> 7 blocks, 0 failed. DRIVEN IN A REAL BROWSER over four answer paths plus the exclusion path: unavailable names its reason, drive-matrix reorders with 'saves about 8 min', saved_seconds NULL renders 'drive-time saving not computed' NOT '0 min', and a customer with no address is LISTED AS EXCLUDED by name."
+    },
+    {
+      "id": 5,
+      "title": "",
+      "status": "done",
+      "evidence": "SAIRNroofing wired as the FOURTH consumer, and it is the one that actually tested the seam. CONCEPT STATED FIRST: rf_schedule rows are {schedule_id, job_id, scheduled_date, status, crew:[ARRAY of names], notes}; the address lives on the JOB, and crew is an ARRAY so there is NO single assignee on the record -- the ordering unit is one NAMED PERSON across the days they appear on. Also the first SERVER-FIRST consumer: rfSchedule is loaded by rfLoadSchedule() with role-scoped visibility already applied, so the card reads the in-memory list rather than issuing a second query that could return a different set. checkblocks sairnroofing.html -> 3 blocks, 0 failed. DRIVEN IN A REAL BROWSER over FIVE answer paths: drive-matrix 'saves about 11 min', saved_seconds NULL with no time claim, great-circle labelled with its reason, a not-signed-in response reporting the server's own message, and an order whose length does not match the stops sent REFUSED with the schedule unchanged. Crew-array flattening confirmed: ['Ana Reyes','Tom Cole'] and ['Ana Reyes'] across three days produced exactly two picker entries, deduped and sorted."
+    },
+    {
+      "id": 6,
+      "title": "",
+      "status": "open",
+      "evidence": ""
+    }
+  ]
+}
