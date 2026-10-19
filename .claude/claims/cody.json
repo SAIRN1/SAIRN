@@ -4075,8 +4075,8 @@
       "task": "b24 MICHAEL'S DECISION: is_default boolean per row from the roofing locations endpoint, and both sairnroofing.html sites read it off the row instead of comparing the LOC-DEFAULT sentinel; sweep repair tests/sairnlaw_trust_clearance_review_probe.js ordering arm concept-first then ablate both legs; scope a B6-class check without building it; continue the green-but-worthless sweep from b23's 102 candidates; handoff b24; push. NOTE: api/_lib/roofing-locations.js and api/roofing-locations.js ARE NORMALLY HANK'S AND I AM TAKING THEM ON MICHAEL'S EXPLICIT DECISION this batch, declared rather than assumed; hank holds no active claim. tools/ is cc's and fourth holds sairn_push_gate_hook.py, gate_skip.py, tooling_inventory.py, wcag_contrast_check.py, sairndental.html -- NONE of those is in my set. FILES: api/_lib/roofing-locations.js api/_lib/location-scope.js sairnroofing.html tests/sairnlaw_trust_clearance_review_probe.js docs/b24-logs docs/2026-10-19-cody-b24-sweep-continued.md SAIRN-handoff-cody-b24.md SAIRN-report-cody-b24.txt SAIRN-digest-cody-b24.txt",
       "claimed_at": "2026-10-19T13:06:39Z",
       "claimed_at_epoch": 1792415199.3006203,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-19T14:09:22Z",
       "files": [
         "SAIRN-digest-cody-b24.txt",
         "SAIRN-handoff-cody-b24.md",
