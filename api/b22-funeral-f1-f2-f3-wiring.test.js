@@ -1,0 +1,300 @@
+// api/b22-funeral-f1-f2-f3-wiring.test.js
+//
+// Run:  node api/b22-funeral-f1-f2-f3-wiring.test.js
+//
+// REQUIREMENT (b22, item 4): the three SAIRNlegacy practitioner answers --
+// F1 (cremation second signer), F2 (livery billing per home), F3 (apprentice
+// clearance owner-configurable) -- are POLICY IN api/_lib/leg-roles.js, and
+// two of the three are consulted by NOTHING in production. This suite asserts
+// both halves: that the policy is right, and that it is INERT.
+//
+// ── WHY THE INERTNESS NEEDS AN ARM AND NOT A PARAGRAPH ────────────────────
+// `api/sd-data.js` calls `legRoles.decide(resource, role, action)` with THREE
+// arguments. `decide()` takes FIVE -- `(resource, role, action, grants, home)`
+// -- so every apprentice gets the empty F3 default and every livery driver
+// gets the default F2 setting, no matter what a home configured. That has been
+// recorded in prose in the b19, b20 and b21 handoffs and in a comment at the
+// call site, and a paragraph in a handoff is not a mechanism: it is re-read by
+// whoever happens to open that handoff.
+//
+// THIS SUITE IS THE MECHANISM. Arm C1 asserts the arity of the live call site
+// and FAILS THE DAY SOMEBODY WIRES IT -- which is the intended outcome. A
+// failing C1 means "the wiring landed; delete this arm and move the F2/F3
+// behaviour arms from module-level to handler-level". A failing C1 is GOOD
+// NEWS and the arm says so in its own message, because an arm whose failure
+// reads as a regression gets silenced instead of actioned.
+//
+// ── WHAT THIS SUITE DOES NOT TOUCH ────────────────────────────────────────
+// `api/sd-data.js` is cody's and is READ ONLY here -- the arms parse it, they
+// never edit it. No SQL is run by anything in this file.
+//
+// Exit: 0 all arms passed - 1 an arm FAILED
+
+'use strict';
+const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
+
+const legRoles = require('./_lib/leg-roles.js');
+const cs = require('./_lib/countersign.js');
+const legCs = require('./leg-countersign.js');
+
+const SD_DATA = path.join(__dirname, 'sd-data.js');
+
+let pass = 0, fail = 0;
+const failed = [];
+function t(name, fn) {
+  try { fn(); console.log('  ok   ' + name); pass++; }
+  catch (e) {
+    console.log('  FAIL ' + name + '\n       ' + e.message);
+    fail++; failed.push(name.split('.')[0]);
+  }
+}
+function section(s) { console.log('\n' + s); }
+
+console.log('b22 -- SAIRNlegacy F1/F2/F3: the policy, and what consults it');
+
+// ══ F1 ════════════════════════════════════════════════════════════════════
+section('A. F1 -- the cremation second signer. BUILT, and the lock is armed.');
+
+t('A1. leg_cremations is the ONLY resource in LEG_COUNTERSIGN_REQUIRED. A lock '
+  + 'that crept onto a second resource would be a separate decision with a '
+  + 'separate answer behind it, so the set is asserted and not just read', () => {
+  const req = Object.keys(legRoles.LEG_COUNTERSIGN_REQUIRED);
+  assert.deepStrictEqual(req, ['leg_cremations'], JSON.stringify(req));
+  assert.ok(Object.isFrozen(legRoles.LEG_COUNTERSIGN_REQUIRED),
+    'the set is not frozen -- a caller could add one at runtime');
+});
+
+t('A2. the endpoint profile locks leg_cremations in MODE_ALWAYS, so the OWNER '
+  + 'is bound too. This is the difference from SAIRNlaw C2 lock '
+  + '(MODE_PREPARED_ONLY) and it is the whole content of "the paperwork needs a '
+  + 'second named person" -- a rule the owner is exempt from is not that rule',
+  () => {
+    const p = legCs.PROFILE;
+    assert.deepStrictEqual(Object.keys(p.lockedResources), ['leg_cremations']);
+    assert.strictEqual(p.lockedResources.leg_cremations, cs.MODE_ALWAYS,
+      'leg_cremations is not MODE_ALWAYS: ' + p.lockedResources.leg_cremations);
+  });
+
+t('A3. the SIGNER set is IMPORTED from leg-roles, not re-listed in the '
+  + 'endpoint. Two copies of a role set is an access-control surface and an '
+  + 'irreversible-write surface disagreeing about who may sign', () => {
+  assert.strictEqual(legCs.PROFILE.signerRoles, legRoles.LEG_REGULATED_WRITE_ROLES,
+    'signerRoles is not the same object as LEG_REGULATED_WRITE_ROLES -- it has '
+    + 'been copied, and a copy can drift');
+});
+
+t('A4. and the regulated write set is { owner, director } -- the licensed roles. '
+  + 'A task role appearing here is what the lock exists to prevent', () => {
+  const signers = Object.keys(legRoles.LEG_REGULATED_WRITE_ROLES).sort();
+  assert.deepStrictEqual(signers, ['director', 'owner'], JSON.stringify(signers));
+});
+
+// ══ F2 ════════════════════════════════════════════════════════════════════
+section('B. F2 -- livery billing per home. POLICY BUILT. Driven, not read.');
+
+t('B1. the setting has exactly TWO values and an unrecognised one falls to the '
+  + 'NARROW default. A typo must not open a resource -- `direct-to-family` with '
+  + 'a hyphen is the realistic mistake and it resolves to through_the_home',
+  () => {
+    assert.deepStrictEqual(legRoles.LEG_LIVERY_BILLING_VALUES.slice(),
+      ['through_the_home', 'direct_to_family']);
+    assert.strictEqual(legRoles.liveryBilling(undefined), 'through_the_home');
+    assert.strictEqual(legRoles.liveryBilling('direct-to-family'), 'through_the_home');
+    assert.strictEqual(legRoles.liveryBilling('direct_to_family'), 'direct_to_family');
+    assert.strictEqual(legRoles.liveryBilling({}), 'through_the_home');
+  });
+
+t('B2. THE DISPATCH\'S OWN WORDING -- "default no money read" -- holds, and it '
+  + 'is stronger than stated: leg_liveryvendors carries the pricing an invoice '
+  + 'is built from and is DENY to livery under EVERY setting, even with an '
+  + 'explicit per-employee grant. There is no arrangement that needs it', () => {
+  for (const setting of [undefined, 'through_the_home', 'direct_to_family']) {
+    const d = legRoles.decide('leg_liveryvendors', 'livery', 'read',
+      { leg_liveryvendors: true }, { livery_billing: setting });
+    assert.strictEqual(d, legRoles.DENY,
+      'leg_liveryvendors readable under ' + String(setting) + ': ' + d);
+  }
+});
+
+t('B3. the setting\'s ONE effect, in both directions -- under direct_to_family a '
+  + 'GRANTED driver may read their own booking, and under the default the SAME '
+  + 'grant yields nothing. A setting with no measurable effect would be dormant '
+  + 'code dressed as a policy', () => {
+  const granted = { leg_liverybookings: true };
+  assert.strictEqual(
+    legRoles.decide('leg_liverybookings', 'livery', 'read', granted,
+      { livery_billing: 'direct_to_family' }), legRoles.ALLOW);
+  assert.strictEqual(
+    legRoles.decide('leg_liverybookings', 'livery', 'read', granted), legRoles.DENY);
+});
+
+t('B4. NOTHING WIDENS WITHOUT A GRANT. Setting direct_to_family alone grants no '
+  + 'driver anything -- personnel above them still have to perform the grant, '
+  + 'which is F2\'s companion answer', () => {
+  assert.strictEqual(
+    legRoles.decide('leg_liverybookings', 'livery', 'read', null,
+      { livery_billing: 'direct_to_family' }), legRoles.DENY);
+});
+
+// ══ F3 ════════════════════════════════════════════════════════════════════
+section('C. F3 -- apprentice clearance owner-configurable. POLICY BUILT.');
+
+t('C1. the default grants NOTHING NEW and turns the disclosure ON. A home that '
+  + 'has not answered F3 keeps exactly the shipped policy and is TOLD the app '
+  + 'cannot enforce supervision', () => {
+  const pol = legRoles.apprenticePolicy(undefined);
+  assert.deepStrictEqual(pol.countersign, []);
+  assert.deepStrictEqual(pol.forbidden, []);
+  assert.strictEqual(pol.presence_disclosure, true);
+  assert.ok(/cannot verify/i.test(pol.disclosure_text), pol.disclosure_text);
+});
+
+t('C2. the config is OWNER-CONFIGURABLE and not fixed -- a countersign entry '
+  + 'makes `prepare` reachable for an apprentice where the default refuses it. '
+  + 'That is the "not fixed" half of the dispatch\'s wording', () => {
+  assert.strictEqual(
+    legRoles.decide('leg_cremations', 'apprentice', 'prepare'), legRoles.DENY);
+  assert.strictEqual(
+    legRoles.decide('leg_cremations', 'apprentice', 'prepare', null,
+      { apprentice: { countersign: ['leg_cremations'] } }), legRoles.ALLOW);
+});
+
+t('C3. `forbidden` NARROWS and runs FIRST, so it cannot be outvoted by the band '
+  + 'or by a countersign route. Narrowing-before-widening is the ordering that '
+  + 'made the trust lock reachable in the sibling module', () => {
+  const both = { apprentice: { forbidden: ['leg_cremations'],
+                               countersign: ['leg_cremations'] } };
+  assert.strictEqual(
+    legRoles.decide('leg_cremations', 'apprentice', 'prepare', null, both),
+    legRoles.DENY, 'forbidden lost to countersign -- the order is wrong');
+  assert.strictEqual(
+    legRoles.decide('leg_cremations', 'apprentice', 'read', null, both),
+    legRoles.DENY);
+});
+
+t('C4. a STORED CONFIG IS UNTRUSTED INPUT: a resource name that is not in the '
+  + 'table is DROPPED, and a string where a list belongs cannot widen anything. '
+  + 'A typo must grant nothing rather than match nothing silently later', () => {
+  const pol = legRoles.apprenticePolicy({ countersign: ['leg_not_a_resource'],
+                                          forbidden: 'leg_cremations' });
+  assert.deepStrictEqual(pol.countersign, [], JSON.stringify(pol.countersign));
+  assert.deepStrictEqual(pol.forbidden, [], JSON.stringify(pol.forbidden));
+  assert.strictEqual(
+    legRoles.decide('leg_cremations', 'apprentice', 'prepare', null,
+      { apprentice: { countersign: ['leg_not_a_resource'] } }), legRoles.DENY);
+});
+
+t('C5. anything other than an explicit `false` leaves the disclosure ON. A '
+  + 'missing, null or malformed value must not silently remove a disclosure',
+  () => {
+    for (const v of [undefined, null, 0, '', 'false', {}]) {
+      assert.strictEqual(
+        legRoles.apprenticePolicy({ presence_disclosure: v }).presence_disclosure,
+        true, 'the disclosure was removed by ' + JSON.stringify(v));
+    }
+    assert.strictEqual(
+      legRoles.apprenticePolicy({ presence_disclosure: false }).presence_disclosure,
+      false, 'an explicit false must be honoured');
+  });
+
+// ══ THE INERTNESS, AS A MECHANISM ═════════════════════════════════════════
+section('D. F2 AND F3 ARE CONSULTED BY NOTHING. This is the arm, not a paragraph.');
+
+t('D1. api/sd-data.js calls legRoles.decide with THREE arguments, so `grants` '
+  + 'and `home` are undefined on every real request and F2/F3 are policy '
+  + 'nothing consults. *** A FAILURE HERE IS GOOD NEWS: it means the wiring '
+  + 'landed. Do not silence it -- delete this arm and promote the F2/F3 arms '
+  + 'above from module-level to handler-level. ***', () => {
+  const src = fs.readFileSync(SD_DATA, 'utf8');
+  const calls = [];
+  const re = /legRoles\.decide\(([^;]*?)\)\s*===/g;
+  let m;
+  while ((m = re.exec(src)) !== null) {
+    const argc = m[1].split(',').length;
+    const line = src.slice(0, m.index).split('\n').length;
+    calls.push({ line: line, argc: argc, text: m[1].trim().slice(0, 90) });
+  }
+  assert.ok(calls.length >= 1,
+    'no legRoles.decide call site found in api/sd-data.js at all -- either the '
+    + 'handler stopped using the module (a much bigger finding) or this arm is '
+    + 'looking for the wrong shape');
+  const wired = calls.filter((c) => c.argc >= 5);
+  assert.strictEqual(wired.length, 0,
+    'THE WIRING HAS LANDED -- ' + wired.length + ' call site(s) now pass '
+    + 'grants/home:\n       '
+    + wired.map((c) => 'sd-data.js:' + c.line + '  ' + c.text).join('\n       ')
+    + '\n       This arm has done its job. DELETE IT and move the F2/F3 arms to '
+    + 'handler level.');
+  console.log('       call site(s), for the record: '
+    + calls.map((c) => 'sd-data.js:' + c.line + ' (' + c.argc + ' args)').join(', '));
+});
+
+t('D2. ...and `leg_settings` is registered as a resource NOWHERE in '
+  + 'api/sd-data.js, so there is no row to pass even if the call took it. The '
+  + 'only occurrence is the handler\'s own comment saying exactly that', () => {
+  const src = fs.readFileSync(SD_DATA, 'utf8');
+  const lines = src.split('\n');
+  const hits = [];
+  lines.forEach((l, i) => {
+    if (l.indexOf('leg_settings') !== -1) {
+      hits.push({ line: i + 1, comment: l.trim().indexOf('//') === 0 });
+    }
+  });
+  const code = hits.filter((h) => !h.comment);
+  assert.strictEqual(code.length, 0,
+    'leg_settings now appears in CODE at sd-data.js:'
+    + code.map((h) => h.line).join(', ') + ' -- the registration may have '
+    + 'landed. Check it, then update D1 and D2 together.');
+  assert.ok(hits.length >= 1,
+    'the handler no longer even mentions leg_settings -- the comment that '
+    + 'records this gap has been deleted, which is worse than the gap');
+});
+
+t('D3. NEGATIVE CONTROL ON D1 AND D2: decide() really does take five '
+  + 'parameters, so the three-argument call site is genuinely dropping two. '
+  + 'Without this, D1 could be asserting an arity that does not exist and would '
+  + 'pass on a module that never accepted grants or home at all', () => {
+  assert.strictEqual(legRoles.decide.length, 5,
+    'decide() takes ' + legRoles.decide.length + ' parameters, not 5 -- D1 is '
+    + 'measuring against the wrong contract');
+  // And the two dropped arguments demonstrably CHANGE the answer, so they are
+  // not vestigial parameters nobody reads.
+  const g = { leg_liverybookings: true };
+  const h = { livery_billing: 'direct_to_family' };
+  assert.notStrictEqual(
+    legRoles.decide('leg_liverybookings', 'livery', 'read'),
+    legRoles.decide('leg_liverybookings', 'livery', 'read', g, h),
+    'passing grants and home changes nothing, so the wiring gap would be '
+    + 'harmless and D1 would not be worth asserting');
+});
+
+// ══ F1'S OWN GAP ══════════════════════════════════════════════════════════
+section('E. F1 is wired but its table is not provisioned -- the third state.');
+
+t('E1. the endpoint names the SQL file a reader has to run, so a 503 from it is '
+  + 'actionable rather than mysterious. The lock is ARMED IN CODE and INERT IN '
+  + 'THE DATABASE, and those are different facts', () => {
+  assert.strictEqual(legCs.PROFILE.sqlFile,
+    'sql/sairnlegacy_countersign_schema.sql', legCs.PROFILE.sqlFile);
+  assert.ok(fs.existsSync(path.join(__dirname, '..', legCs.PROFILE.sqlFile)),
+    'the profile names a SQL file that does not exist in the repo');
+});
+
+t('E2. and the schema carries BOTH constraints the lock depends on -- the '
+  + 'self-signature refusal and the complete-signature refusal. A table applied '
+  + 'without them looks identical to a reader and accepts every row the lock '
+  + 'exists to refuse', () => {
+  const sql = fs.readFileSync(
+    path.join(__dirname, '..', legCs.PROFILE.sqlFile), 'utf8');
+  for (const c of ['sairnlegacy_countersign_not_self',
+                   'sairnlegacy_countersign_complete']) {
+    assert.ok(sql.indexOf('constraint ' + c) !== -1,
+      'the schema does not declare ' + c);
+  }
+});
+
+console.log('\nb22 funeral f1/f2/f3: ' + pass + ' passed, ' + fail + ' failed');
+if (fail) console.log('FAILED: ' + failed.join(', '));
+process.exit(fail ? 1 : 0);
