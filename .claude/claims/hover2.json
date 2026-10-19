@@ -759,6 +759,17 @@
       "status": "released",
       "released_at": "2026-10-19T18:37:58Z",
       "files": null
+    },
+    {
+      "id": "hover2-1792435370",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "b68: groq key test call, cross-vendor second-opinion checker, hash-only transparency log, undirected sweep, push",
+      "claimed_at": "2026-10-19T18:42:50Z",
+      "claimed_at_epoch": 1792435370.1009066,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
