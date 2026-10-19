@@ -723,8 +723,8 @@
       "task": "b64: expand mutation_tester.py to more targets, spot-check it against a weak test, undirected sweep x2, push",
       "claimed_at": "2026-10-19T15:37:53Z",
       "claimed_at_epoch": 1792424273.8491657,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-19T15:48:39Z",
       "files": null
     }
   ],
