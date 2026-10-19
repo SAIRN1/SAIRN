@@ -490,6 +490,47 @@ function withToken(app, role) {
         'answered ' + res.statusCode + ' ' + JSON.stringify(res.body));
     });
 
+    // ── THE GATE MUST FIRE BEFORE THE HANDLER READS THE PAYLOAD ───────────
+    // THE CONCEPT: an unauthenticated write with a payload the handler would
+    // REJECT still answers 403, not the handler's own 400 -- because a 400
+    // proves the gate did NOT fire and discloses the validation rules to a
+    // caller who has not signed in.
+    //
+    // THE ARM ABOVE CANNOT SEE THIS AND THAT IS WHY THIS ONE EXISTS. It sends
+    // a VALID payload, so it stays green whether the gate runs before or after
+    // validation -- the refusal arrives either way. The ORDERING is only
+    // observable with a payload the body would refuse.
+    //
+    // AND THE ORIGINAL FINDING WAS EXACTLY THIS SHAPE, which is why it is an
+    // arm rather than a note. The 2026-10-05 note on `customers` in
+    // api/sd-data.js records that on SCP-DEMO-2026 with no session token,
+    // `write customers` WITH AN ID-LESS PAYLOAD answered **400 "customer
+    // payload.id is required"** -- the handler body, so the gate had not
+    // fired. Re-measured live 2026-10-19 (cody b25): the same request now
+    // answers **403 FORBIDDEN**, as do the id-ful write and the read, with
+    // `invoices` and `scp_quotes` as controls. This arm is that measurement
+    // made permanent.
+    //
+    // THE PAYLOAD IS DELIBERATELY EMPTY. Every gated resource here validates
+    // SOMETHING -- an id, a customer_id, a date -- so `{}` is refused by every
+    // handler body in the list, which is what makes one arm cover all twelve
+    // without encoding each validator's rules.
+    await atest(resource + ' write with NO session AND A PAYLOAD THE HANDLER '
+      + 'WOULD REFUSE still answers 403, not 400 -- the gate precedes the body',
+      async function () {
+        const res = await callWith(BEARER,
+          { action: 'write', resource: resource, payload: {} });
+        assert.strictEqual(res.statusCode, 403,
+          'answered ' + res.statusCode + ' ' + JSON.stringify(res.body)
+          + ' -- a 400 here means the handler body ran before the session gate, '
+          + 'so an unauthenticated caller learns the validation rules and the '
+          + 'refusal is coming from the wrong place. This is the exact shape of '
+          + 'the 2026-10-05 `customers` finding.');
+        assert.strictEqual(res.body.error.code, 'FORBIDDEN',
+          'the refusal carries code ' + JSON.stringify(res.body.error && res.body.error.code)
+          + ' rather than FORBIDDEN, so it is not the session gate refusing');
+      });
+
     await atest(resource + ' read WITH a valid SAIRNscape session is allowed',
       async function () {
         // THE PAIRED POSITIVE, and the half that matters most: a gate that

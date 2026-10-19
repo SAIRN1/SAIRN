@@ -151,12 +151,34 @@ particular is the app CLAUDE.md calls the canonical demo licence.
 
 **One licence does not exist:**
 
-- `RF-AUDIT-2026` returns `401 INVALID_LICENSE`, which means
+- ~~`RF-AUDIT-2026` returns `401 INVALID_LICENSE`, which means
   `sql/sairnroofing_audit_license_seed.sql` was written and **never run**. Its
   row in the credentials SQL is inert until that seed runs — it does not error,
   it simply belongs to a licence hash nothing will ever present. Run that seed
   first if you want SAIRNroofing verification on an audit licence rather than on
-  the customer one.
+  the customer one.~~
+
+  **SUPERSEDED 2026-10-19 (cody b25) — `RF-AUDIT-2026` WORKS. The seed has been
+  run since this was written, and this sentence is the kind of staleness that
+  stops a task before it starts.** Measured: `POST /api/rf-auth` with
+  `{"action":"login","employee_id":"sairn-demo-owner","pin":"17462059"}` answers
+  **200 with a session token**, and that token then reads `rf_locations` through
+  `/api/sd-data` successfully. The struck-through text is kept because it was
+  true when written and because it names the seed, which is the thing that
+  changed.
+
+  **THE COST IS WHY THIS CORRECTION IS HERE RATHER THAN ONLY IN A COMMIT
+  MESSAGE.** b25 was sent to live-verify a SAIRNroofing endpoint. Read
+  literally, this entry says there is no usable licence and the task cannot be
+  done; the only reason it was done is that the verifier **tried the login and
+  read the answer instead of the document**. A standing document that says a
+  capability is absent is strictly more expensive than one that says nothing,
+  because it closes the question.
+
+  **`RF-PINNACLE-2026` IS STILL UNUSABLE and was re-measured in the same run**
+  — `401 INVALID_CREDENTIALS` with that PIN — so this section is corrected, not
+  emptied. One of the two licences named here is genuinely still dead and the
+  other is not, which is exactly the distinction a blanket heading loses.
 
 **One app has employee auth but no credential yet — CORRECTED 2026-09-22, and
 both halves of what stood here were wrong, in OPPOSITE directions:**

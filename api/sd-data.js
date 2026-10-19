@@ -1485,13 +1485,48 @@ module.exports = async (req, res) => {
       //    LETTER was not, and the letter is what the sweep reads. So the gate
       //    is now AHEAD of the register.
       //
-      //    THE RETIER IS OWED AND IT IS NOT MINE TO MAKE: hank holds
+      //    ~~THE RETIER IS OWED AND IT IS NOT MINE TO MAKE: hank holds
       //    docs/CRITICALITY-TIERS.md under a live claim (2026-10-05T12:57:55Z).
       //    Confidentiality B -> A, integrity stays B, tier follows the worse
       //    axis -- the rule `sd_sms_log` is already carried under in that file.
       //    Until it lands, a reader comparing the gate to the register will
-      //    find them disagreeing, and THIS COMMENT IS THE ANSWER TO WHY.
+      //    find them disagreeing, and THIS COMMENT IS THE ANSWER TO WHY.~~
       //    Routed in docs/2026-10-05-sairnscape-customers-licence-key-alone.md.
+      //
+      //    ── THE RETIER LANDED 2026-10-19 (cody b25), ON MICHAEL'S EXPLICIT
+      //       DECISION, AND THE GATE AND THE REGISTER NOW AGREE ────────────
+      //    docs/CRITICALITY-TIERS.md line 535 carries `customers` at **A/A**:
+      //    confidentiality B -> A because its own basis cell already read "A
+      //    CUSTOMER's NAME, PHONE, EMAIL AND STREET ADDRESS", and the TIER
+      //    follows to A because this register takes the worse axis. Integrity
+      //    is untouched and is still genuinely B. The file was NOT held when
+      //    the edit was made and the crossing was declared in the claim
+      //    string rather than assumed.
+      //
+      //    THE PARAGRAPH ABOVE IS STRUCK THROUGH RATHER THAN DELETED, because
+      //    it is the record of why the gate shipped AHEAD of the register for
+      //    two weeks -- which was the right call and is the thing a reader
+      //    needs in order to trust the next one.
+      //
+      //    AND IT BROKE A STATED CLASS DECISION, WHICH IS OPEN WORK AND NOT
+      //    BOOKKEEPING. The retiered row was held at B on a CLASS shared with
+      //    `bld_suppliers`, `sf_vendors`, `leg_clergy` and
+      //    `dnt_vendor_contacts`. Those four are NOT retiered -- each needs its
+      //    own individual read, and retiering four rows off one row's decision
+      //    is the class-default reasoning that register keeps correcting. They
+      //    now disagree with `customers`, and that is named in
+      //    docs/2026-10-19-cody-b25-live-verify-and-scape-pii.md.
+      //
+      //    THE 400 THIS NOTE RECORDS IS GONE, MEASURED LIVE 2026-10-19 rather
+      //    than inferred from the lists: on SCP-DEMO-2026 with NO session
+      //    token, `read customers`, `write customers` WITH AN ID-LESS PAYLOAD
+      //    and `write customers` with a valid payload ALL THREE answered 403
+      //    FORBIDDEN. So the gate fires before the handler body reads the
+      //    payload. The id-less case is the one that matters and it now has an
+      //    arm: api/sd-data-scp-session-gate.test.js asserts it for every
+      //    gated resource, because the suite's existing write arm sends a
+      //    VALID payload and would stay green if the gate moved back behind
+      //    validation.
       //
       //    THE CLIENT NEEDED NO CHANGE AND THAT WAS CHECKED, NOT ASSUMED.
       //    `customers` is read at sairnscape.html:2734 inside
