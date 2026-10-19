@@ -33701,6 +33701,35 @@
         }
       ],
       "recurrence_open": "The fixtures lock the SPLIT only. Nothing checks that the index's own rows are well formed -- a row that genuinely carries the wrong number of columns is still only noticed if somebody counts, and the three undeclared near-duplicate pairs this tool reports remain unresolved and belong to the rows' authors. Nor does anything compare this tool's parse against the parse used by open_work_shard.py or by any renderer, so a second naive split elsewhere would not be caught by this fixture set."
+    },
+    {
+      "commit": "9a7f73dab468",
+      "date": "2026-10-19",
+      "subject": "fix(hover): citation_class_check's sentence splitter is abbreviation-safe now, h1 b55",
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools/citation_class_check.py"
+      ],
+      "lines_added": 96,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": "citation_class_check.py's sentence splitter treated any abbreviation period (e.g. 'St.' in 'St. Louis Fed') as a sentence end, stranding two different-file citations in the remaining fragment with only each other's filenames as anchor candidates -- which anchor_ok's own-stem exclusion guarantees fails, misclassifying a correct citation as WRONG-AT-DERIVATION. Found while writing a real hover log entry (h1 b55) after two prior occurrences (b53, b54) were worked around by rephrasing rather than root-caused.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "d1a9e5276a88",
+        "date": "2026-09-29",
+        "subject": "feat(hover-tools): three-class citation classifier (wrong-at-derivation / moved-since / not-a-repo-path) with blob-sha support and misclassification control",
+        "lag_days": 20
+      },
+      "citation_note": "no existing cross-domain-disciplines section names naive sentence-boundary splitting around abbreviation periods; this is a new-shaped defect, not a recurrence of a named rule",
+      "factors_unknown_reason": "found and fixed in one sitting with the fix itself as the record; no separate RCA factor pass was run beyond what the commit message already states"
     }
   ],
   "started": "2026-09-09",
