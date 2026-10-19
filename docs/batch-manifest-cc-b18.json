@@ -34,5 +34,15 @@
       "status": "done",
       "evidence": "docs/2026-10-19-cc-b18-concepts.md, committed at 25c9c0b5 BEFORE 56d267e3 which implements it -- the ordering is provable from git log rather than asserted"
     }
-  ]
+  ],
+  "closed": {
+    "drive_verify": "PASS",
+    "verified_by": "python tools/drive_upload_verify.py --agent cc --batch b18 --verify-only",
+    "criteria": "2026-10-13.1",
+    "deliverables": [
+      "SAIRN-handoff-cc-b18.md sha256 fe6e7078123119d5",
+      "SAIRN-report-cc-b18.txt sha256 6a99fcd040e32c62",
+      "SAIRN-digest-cc-b18.txt sha256 3b32fc1d27e88954"
+    ]
+  }
 }
