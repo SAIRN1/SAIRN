@@ -693,6 +693,17 @@
       "status": "released",
       "released_at": "2026-10-19T14:11:39Z",
       "files": null
+    },
+    {
+      "id": "hover2-1792419806",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "b62: live property-harness run vs real SAIRN target, rotation draw, meta-check H1's property harness, push",
+      "claimed_at": "2026-10-19T14:23:26Z",
+      "claimed_at_epoch": 1792419806.38303,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
