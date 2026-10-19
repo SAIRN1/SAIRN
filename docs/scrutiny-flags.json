@@ -3186,6 +3186,62 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b17-trust-lock-hard.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6578acf821dbe8d311236213804111484978c8dd",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b18-countersign-lock.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6578acf821dbe8d311236213804111484978c8dd",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b18-passkey-profile-e2e.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6578acf821dbe8d311236213804111484978c8dd",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-cross-tenant-dispatchers.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6578acf821dbe8d311236213804111484978c8dd",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-law-role-matrix.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6578acf821dbe8d311236213804111484978c8dd",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-leg-role-matrix.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6578acf821dbe8d311236213804111484978c8dd",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-leg-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6578acf821dbe8d311236213804111484978c8dd",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/sairn_push_gate_hook.py",
    "class": "push-gate logic",
    "level": "CHANGE",
