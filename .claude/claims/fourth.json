@@ -4101,6 +4101,31 @@
         "docs/batch-manifest-fourth-b33.json",
         "docs/cloud-research/2026-10-19-three-recurring-blockers.md"
       ]
+    },
+    {
+      "id": "fourth-1792430511",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "b34: routing phase 1 -- rt_routes/rt_stops tier rows, the shared routing module and its registry entry, stonedesk+grounds consumers. FILES: docs/CRITICALITY-TIERS.md api/_lib/routes.js api/_lib/routes.test.js api/_resources/routes.js api/_resources/index.js sql/rt_routes_schema.sql stonedesk.html sairngrounds.html docs/2026-10-19-fourth-b34-routing-phase1.md docs/batch-manifest-fourth-b34.json SAIRN-handoff-fourth-b34.md SAIRN-report-fourth-b34.txt SAIRN-digest-fourth-b34.txt",
+      "claimed_at": "2026-10-19T17:21:51Z",
+      "claimed_at_epoch": 1792430511.3288631,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b34.txt",
+        "SAIRN-handoff-fourth-b34.md",
+        "SAIRN-report-fourth-b34.txt",
+        "api/_lib/routes.js",
+        "api/_lib/routes.test.js",
+        "api/_resources/index.js",
+        "api/_resources/routes.js",
+        "docs/2026-10-19-fourth-b34-routing-phase1.md",
+        "docs/CRITICALITY-TIERS.md",
+        "docs/batch-manifest-fourth-b34.json",
+        "sairngrounds.html",
+        "sql/rt_routes_schema.sql",
+        "stonedesk.html"
+      ]
     }
   ],
   "refusals": [
@@ -4345,6 +4370,21 @@
       "other_claimed_at": "2026-10-15T16:55:20Z",
       "shared_files": [
         "docs/tier-a-reviews.json"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-19T17:21:26Z",
+      "my_subject": "fourth",
+      "my_task": "b34: routing phase 1 -- rt_routes/rt_stops tier rows, shared routing module, stonedesk+grounds consumers. FILES: docs/CRITICALITY-TIERS.md api/_lib/routes.js api/_lib/routes.test.js api/_resources/routes.js api/_resources/index.js sql/rt_routes_schema.sql stonedesk.html sairngrounds.html docs/2026-10-19-fourth-b34-routing-phase1.md docs/batch-manifest-fourth-b34.json SAIRN-handoff-fourth-b34.md SAIRN-report-fourth-b34.txt SAIRN-digest-fourth-b34.txt. NOT CLAIMED AND NOT TOUCHED: api/sd-data.js -- cody holds it on b26",
+      "other_session": "cody",
+      "other_subject": "platform",
+      "other_task": "b26: per-row tier reads for bld_suppliers sf_vendors leg_clergy dnt_vendor_contacts off their own sql schema and write site (RECORD, not retier); convert the 151/57 sibling NOT_PROVISIONED guards in api/sd-data.js to the shipped notProvisioned()/notProvisionedDecide() pattern; measure the known-red tail census; continue the 85-candidate green_but_worthless sweep. FILES: api/sd-data.js docs/2026-10-19-cody-b26-tier-reads-and-guard-conversion.md docs/b26-logs/ tests/sd_data_not_provisioned_misclass.js docs/known-red-suites.json SAIRN-handoff-cody-b26.md SAIRN-report-cody-b26.txt SAIRN-digest-cody-b26.txt",
+      "other_claimed_at": "2026-10-19T15:33:58Z",
+      "shared_files": [
+        "api/sd-data.js"
       ],
       "source": "status-registry",
       "why": "same declared FILES",
