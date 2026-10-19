@@ -31,8 +31,8 @@
     {
       "id": 5,
       "title": "",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "docs/cloud-research/trucking-dot-compliance-worldwide-competitive-gap-audit-2026-10-19.md -- small-fleet DOT/FMCSA compliance, chosen because it fails for a DIFFERENT reason than the first two; two primary FR citations pulled from the API (90 FR 46509 doc 2025-18869; 91 FR 7044 doc 2026-02965 effective 2026-03-16) with six further reported items listed SEPARATELY as unverified; platform fit measured n of 17 with CDL/USDOT, HOS/ELD and screening all 0 of 17; one homograph false positive found and removed (sairncode's healthcare claims clearinghouse), and two loose patterns that returned 17 of 17 re-measured with word boundaries before anything was written"
     },
     {
       "id": 6,
