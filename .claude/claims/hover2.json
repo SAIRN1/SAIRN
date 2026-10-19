@@ -770,6 +770,17 @@
       "status": "released",
       "released_at": "2026-10-19T19:15:46Z",
       "files": null
+    },
+    {
+      "id": "hover2-1792441233",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "b69: own-audit-effectiveness research+build, red-flag threshold 70->80%, cross-vendor checker on 3 tier-1 findings, transparency-log anchor+verify 3 findings, undirected sweep, push",
+      "claimed_at": "2026-10-19T20:20:33Z",
+      "claimed_at_epoch": 1792441233.2338278,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
