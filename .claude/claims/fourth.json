@@ -4126,6 +4126,27 @@
         "sql/rt_routes_schema.sql",
         "stonedesk.html"
       ]
+    },
+    {
+      "id": "fourth-1792435256",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "b35: sd_field_stops vs rt_stops contradiction resolved at the write site, seven shared.js resources tiered at their own write sites, scape+roofing as third and fourth route consumers, the tier-checker fail-open routed to cc. FILES: docs/CRITICALITY-TIERS.md stonedesk.html sairnscape.html sairnroofing.html docs/2026-10-19-fourth-b35-shared-tiers-and-consumers.md docs/batch-manifest-fourth-b35.json SAIRN-handoff-fourth-b35.md SAIRN-report-fourth-b35.txt SAIRN-digest-fourth-b35.txt",
+      "claimed_at": "2026-10-19T18:40:56Z",
+      "claimed_at_epoch": 1792435256.9055824,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b35.txt",
+        "SAIRN-handoff-fourth-b35.md",
+        "SAIRN-report-fourth-b35.txt",
+        "docs/2026-10-19-fourth-b35-shared-tiers-and-consumers.md",
+        "docs/CRITICALITY-TIERS.md",
+        "docs/batch-manifest-fourth-b35.json",
+        "sairnroofing.html",
+        "sairnscape.html",
+        "stonedesk.html"
+      ]
     }
   ],
   "refusals": [
