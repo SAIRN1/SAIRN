@@ -734,8 +734,8 @@
       "task": "b65: expand mutation_tester.py to more money/commission targets, write up actionable gap doc, undirected sweep x2, push",
       "claimed_at": "2026-10-19T16:14:24Z",
       "claimed_at_epoch": 1792426464.52736,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-19T16:35:43Z",
       "files": null
     }
   ],
