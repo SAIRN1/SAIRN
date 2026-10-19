@@ -1,0 +1,345 @@
+REPORT cc b18
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-19
+HEAD      93a6b765  ==  origin/main  (git rev-list --left-right --count
+          origin/main...HEAD  ->  0  0), zero stashes
+FORCE     none, in any spelling
+OVERRIDE  NONE, in any of the three forms. docs/BYPASS-LOG.jsonl gained NO row
+          from this batch, which is an audit rather than an assertion: the
+          gate records an override ATTEMPT before deciding whether to honour
+          it, so an absent row is an unused override and not a silence
+HOOKS     none added or restored. .claude/settings.json never committed
+TRANSCRIPT
+          C--Users-marsh-Documents-SAIRN-cc\4d4f63b1-1aa9-48c9-b832-
+          ddd1c2674580.jsonl -- 3,781,091 bytes, 541,192 tokens, 54.1% of the
+          1M window, by tools/sairn_status_line.used_tokens(). SHARED WITH
+          b16's WRAP AND ALL OF b17, so the figure covers three batches
+CLONES    no auditor clone entered or written. No api/, sql/, app HTML or
+          tests/ file in the diff
+
+
+================================================================================
+WHAT LANDED
+================================================================================
+
+  25c9c0b5  concepts(cc b18): what each fix should DO, committed before the
+            commits that do it
+  56d267e3  fix(board)+harden(bridge): a figure cell now contains a figure,
+            and the render claim is confirmed against GitHub itself
+  1066de30  record(defects): the board's figure column could contain prose,
+            and the FMEA loop scored it MISSED
+  f61f1872  reseat(register): the rebase moved the board-cell fix and its
+            citation followed
+  a60edde5  reseat(register): the second rebase moved it again
+  ab592044  lock(index hook): the fixtures existed and the path that fires at
+            the moment of the defect never ran them
+  93a6b765  handoff(cc b18)   <- AS LANDED after a rebase
+
+  THREE REBASES AND ONE `cannot lock ref` RACE. Re-derive any sha with
+  `git log --oneline` rather than trusting a number in a document: the
+  register's citation had to be re-seated twice for the same record.
+
+
+================================================================================
+ITEM 5 FIRST, BECAUSE IT IS THE ORDER THAT MATTERS
+================================================================================
+
+The ask was to state the concept before writing the code, for item 1 and item
+2. docs/2026-10-19-cc-b18-concepts.md was COMMITTED FIRST, at 25c9c0b5, and
+the implementing commit is 56d267e3 -- so the ordering is provable from
+`git log` instead of being asserted in the file that claims it.
+
+  ITEM 1, one line: a CONTEXT cell carries a measured percentage and nothing
+  else -- parse the figure out of whatever the digest says and print the
+  figure; when no figure is parseable print UNKNOWN with the reason, never the
+  prose that happened to follow the label.
+
+  ITEM 2, one line: a claim about how a file renders must be measured against
+  the renderer that actually serves it -- so drive the same fragment through
+  GitHub's own API and compare, and then either the b17 UNVERIFIED closes or
+  the b17 verdict was wrong and gets corrected in the same breath.
+
+The concepts file also records what each rules OUT, which is the half that
+stopped the obvious wrong fixes: for item 1, "truncate it shorter" (the
+current cell is ALREADY truncated -- truncation is what makes a paragraph look
+like a value) and "fix the digests" (the board READS six other agents' files
+and cannot require them to be shaped differently); for item 2, "read the spec
+and reason about it" (the spec is evidence about what GitHub SHOULD do, and
+b17 already agreed with it) and "add a third local library" (a second copy of
+the same opinion, where convention 6 wants a structurally different method).
+
+
+================================================================================
+ITEM 1 -- A FIGURE CELL NOW CONTAINS A FIGURE
+================================================================================
+
+MEASURED BEFORE EDITING ANYTHING. tools/sairn_board_publish.py's
+digest_fields() returns the text from a digest's CONTEXT label to the next
+RECOGNISED label, and two of six agents continue past that label with
+unlabelled headings of their own:
+
+    hank b17 CONTEXT body    4,673 characters
+    cody b22 CONTEXT body   10,717 characters
+
+The cell printed the first 120 of that and the glance table the first 40, so
+hank's column read
+
+    46% WHAT LANDED -- fourth's b26, four ro
+
+-- a real, correctly measured figure with a paragraph welded to it and cut
+mid-word, in the one column a reader scans to compare six agents' remaining
+capacity.
+
+THE FIX IS context_figure(): the FIRST percentage in range 0-100, not the
+largest. First, because a context line's own reading precedes any figure it
+goes on to discuss -- hank's paragraph contains 2026, 144 and 1000000 -- and
+`max` would pick whichever number in the prose happened to be biggest. Out of
+range is refused, because a context reading is a share of a window and 4,673%
+is a parse accident.
+
+The cell NAMES THE LENGTH IT WAS CUT FROM, so a reader seeing a clean 46%
+knows the source line was 4,673 characters. A body with no parseable
+percentage renders UNKNOWN WITH THE REASON -- never a plausible 0%, which is
+the fabricated-value shape Guardian 0b exists for. And the glance column
+renders the bare word UNKNOWN rather than a 40-character slice of the reason,
+which was the same cut-mid-word shape one column over.
+
+LIVE, AFTER THE FIX:
+
+    | **hank**   | ... | 46%     | ...
+    | **cody**   | ... | 45.1%   | ...
+    | **H1**     | ... | UNKNOWN | ...
+    - **CONTEXT:** 46%   _(source: digest b17, parsed out of a 4673-character
+      CONTEXT line)_
+    - **CONTEXT:** UNKNOWN -- the digest's CONTEXT line carries no percentage
+      in its first 107 character(s)  _(source: digest b57)_
+
+TWO ARMS, A29 AND A30, built from the real hank and H1 shapes rather than
+invented text, each driven failing-first. BOTH WERE RENUMBERED OFF A
+COLLISION: A17 and A18 already existed in that file, and two arms sharing an
+id is the name-collision class this repo keeps paying for -- caught by
+counting the ids, not by review. 30/30 arms fire on the defect they name.
+
+WHAT THIS DOES NOT DO, stated in the source: extracting a figure cannot tell a
+STALE figure from a current one. The source half of the cell -- "live status
+row, set <when>" versus "digest bN" -- is still the only thing that
+distinguishes them, and it is printed beside every cell.
+
+
+================================================================================
+ITEM 2 -- THE RENDER CLAIM, AND A CORRECTION TO THE DISPATCH
+================================================================================
+
+THE FLAG DID NOT BELONG WHERE IT WAS ATTACHED, and that is said rather than
+worked around: the dispatch named status_board_bridge_check.py, and the
+markdown-it measurement was b17 ITEM 4, about index_duplicate_check.py and the
+open-work index's table rows. Both halves were done -- the render claim
+confirmed, and the bridge check's OWN unverifieds hardened.
+
+THE RENDER CLAIM IS CONFIRMED AGAINST THE REAL TARGET. GitHub's own /markdown
+API, HTTP 200, 534 bytes, driven through tools/sairn_http.py rather than bare
+curl:
+
+    GitHub      <td>six inert <code class="notranslate">||</code> alias ...
+    markdown-it <td>six inert <code>||</code> alias ...
+
+    code spans, GitHub      ['||', 'x || new Date().toISOString()', '(x || 0)']
+    code spans, markdown-it ['||', 'x || new Date().toISOString()', '(x || 0)']
+    backslash in either output: False
+
+So b17's verdict holds against the renderer that actually serves the file,
+hank's premise is false, and the standing UNVERIFIED closes. The driver is
+committed as docs/2026-10-19-cc-b18-github-render-confirmation.py; it exits 2
+COULD NOT RUN on any non-200 or a missing markdown-it, because a failed
+request is not a measurement, and exits 1 if they ever disagree -- which would
+be a correction owed to hank rather than a footnote.
+
+ITS FIRST COMPARATOR WAS WRONG IN THE DIRECTION THE FILE ITSELF WARNS ABOUT.
+It matched `<code>` exactly, found ZERO spans on GitHub's side -- which emits
+`<code class="notranslate">` -- and printed AGREE: False. A difference about
+DECORATION reported as a difference about the escape, two lines under a comment
+saying exactly that would be the trap. Kept in the committed file as a comment
+rather than tidied away.
+
+THE BRIDGE CHECK'S OWN TWO UNVERIFIEDS ARE CLOSED.
+
+  THE 90-SECOND TOLERANCE IS NO LONGER A BLIND SPOT. b17 shipped it and said
+  so in its own words: "a board 30 seconds behind a write would not be
+  reported". A gap with a number on it is the kind that widens while nothing
+  in the output changes -- the publisher getting slower, a mount flush taking
+  longer. Inside the window is now a NOTE naming the gap in seconds and the
+  tolerance; still not a finding, and no longer silence.
+
+  THE MOUNT-IS-NOT-THE-API HALF IS COMPARED RATHER THAN EYEBALLED. b17 left it
+  to a reader's eye over a 17KB file, which is not a comparison. Two forms,
+  both with fixtures: --api-readback <path> compares by sha256, and
+  --api-published-at <stamp> compares the board's own Published-at line, which
+  exists because 17KB of base64 does not cross a chat turn reliably and the
+  comparison that gets MADE is the one that is cheap to make. A match is a
+  note naming the hash or the revision; a difference is a finding that names a
+  lagging Drive revision and a concurrent republish as ordinary causes and
+  refuses to call it a failed upload; no readback at all is a note saying the
+  Drive-side half is still OWED. The tool still cannot make the request and
+  that limit stays printed.
+
+  30/30 fixtures, both directions.
+
+
+================================================================================
+ITEM 3 -- THE FIXTURES EXISTED AND THE PATH THAT FIRES NEVER RAN THEM
+================================================================================
+
+NOT THE GAP THE ASK ASSUMED, and this is the measurement. b17 gave
+index_duplicate_check.py a criteria lock -- 10 fixtures over the pipe-aware
+cell split, with an ablation against the naive one -- and made its CLI run
+that lock before any live verdict, exiting 2 COULD NOT RUN if it failed.
+
+tools/index_duplicate_hook.py NEVER RAN IT. The PostToolUse wrapper calls
+idc.rows() straight, and rows() is exactly the function those fixtures are
+about. So the one invocation path that fires AT THE MOMENT THE DEFECT IS
+INTRODUCED -- a Write or Edit to the index -- had an unchecked parse under it,
+which is the same gap one layer down from the one the wrapper was built to
+close. And report_only_checks.py's registry entry for the same checker reports
+`reach=DID NOT RUN in the last measured sweep`, so the hook was the path that
+mattered.
+
+THE WRAPPER NOW RUNS THE CHECKER'S OWN LOCK before trusting its parse, cached
+once per process -- ten fixtures per keystroke is a check somebody turns off --
+and a lock that is RED, that RAISES, or that is ABSENT is reported through the
+same channel as an absent checker: no duplicate check ran. Four arms, each
+driven failing-first against a module whose lock is red, explodes, or has no
+run_fixtures at all. The crashed-lock arm is the same shape cc b17 found in
+the push gate, one tool over.
+
+AND THE REAL ROW IS PINNED. Every fixture was synthetic, which is correct for
+keeping their meaning stable as the index changes -- but the defect had ONE
+live instance and nothing proved THAT row parses. Index line 645's text is
+pinned verbatim, with the naive split's ELEVEN-cell reading as the ablation
+beside it and its 7-character item cell measured rather than asserted. 14/14.
+
+THE PUSH GATE WAS NOT TOUCHED AND THAT IS DECLARED, NOT WORKED AROUND.
+tools/sairn_push_gate_hook.py is FOURTH'S by docs/tool-owner-map.json
+(CONTESTED, owner fourth) and sits in fourth's live b30 FILES list. Wiring the
+fixtures into GUARD_TESTS would have been the blunter route; the claim tool
+recorded a REFUSAL row naming the overlap at claim time, and the hook route
+was taken instead.
+
+
+================================================================================
+ITEM 4 -- TIER 0 #1 CONTINUED, AND WHAT IS HANDED TO H1/H2
+================================================================================
+
+  nonce B18-BRIDGE-3728541b written to cc's row at 2026-10-19T08:34:45
+  status_board_bridge_check --agent cc --nonce ...         CLEAN, exit 0
+  Drive API read of 19GSUTWQLddPwZiLEUNfssAjrMxK4vVE1      the FIXED cells
+  that board's own Published at                            09:16:11
+  that board's own Trigger                                 claim change by
+                                                           hover2
+
+THE PART THAT MATTERS: the board carrying cc's figure fix was republished by
+HOVER2'S CLONE, not cc's, and was read back through the API. A fix to a shared
+publisher propagating past its author is the one thing a single-clone
+verification cannot show.
+
+AND THE FAILURE ON THE WAY THERE, WORTH MORE THAN THE SUCCESS: fourth's clone
+republished over cc's corrected board TWENTY MINUTES EARLIER with its own
+PRE-FIX copy, and the prose cells came back. A fix to the shared publisher is
+not live platform-wide until every clone fetches it -- so a publisher fix
+verified BEFORE it is pushed measures a board another clone is about to
+overwrite. It resolved itself as clones pulled; nothing had to be done.
+
+WHAT H1/H2 NO LONGER NEED CC FOR:
+
+    python tools/sairn_status.py set --state <s> --task "<t> NONCE-<x>"
+    python tools/status_board_bridge_check.py --agent <H1|H2> --nonce NONCE-<x>
+    python tools/status_board_bridge_check.py --api-published-at <API stamp>
+
+WHAT IS STILL THEIRS, named in the handoff rather than implied:
+  * their rows now read UNKNOWN with the reason, which is CORRECT for digests
+    that say "not measured this batch" -- if they want a figure, the digest
+    needs one;
+  * the 19 stale numbered copies of their latest files are unchanged from b17
+    and are not cc's to delete;
+  * whether --api-published-at is the contract they want, or whether they
+    would rather compare whole bytes with --api-readback.
+
+
+================================================================================
+CHECKS, WITH REAL EXIT CODES
+================================================================================
+
+  tools/sairn_board_publish.py --selftest        30/30 arms        exit 0
+  tools/status_board_bridge_check.py --fixtures  30/30 fixtures    exit 0
+  tools/status_board_bridge_check.py (live)      CLEAN, nonce
+                                                 crossed           exit 0
+  tools/status_board_bridge_check.py
+      --api-published-at <real stamp>            1 finding, the
+                                                 revision lag      exit 1
+  tools/index_duplicate_check.py --fixtures      14/14             exit 0
+  tools/index_duplicate_check.py (live)          838 compared, 11
+                                                 not compared, 3
+                                                 undeclared pairs  exit 1
+  tools/index_duplicate_hook.py --selftest       ALL ARMS PASS     exit 0
+  docs/2026-10-19-cc-b18-github-render-
+      confirmation.py                            CONFIRMED         exit 0
+  tools/defect_register.py --check               644 records       exit 0
+  tools/tooling_inventory.py --check             matches the repo  exit 0
+
+  PRE-FIX DRIVES RECORDED, not just post-fix passes: the 4,673- and
+  10,717-character CONTEXT bodies; the naive split's eleven cells and
+  7-character item on the real row; the red, crashed and absent locks against
+  the wrapper; and the first comparator's false AGREE: False.
+
+  ONE DEFECT RECORD, four contributing factors -- three actioned, one recorded
+  as PLANNED rather than closed.
+
+
+================================================================================
+UNVERIFIED
+================================================================================
+
+  STATUS AND NEXT SWALLOW UNLABELLED PROSE THE SAME WAY CONTEXT DID. They are
+  bounded by their own 900-character slices, so they degrade quietly rather
+  than wrongly, and nothing here changed that. The fix is a decision -- the
+  board's label list grows, or digests stop using unlabelled headings -- and
+  it belongs to more than one agent.
+
+  THE RENDER CONFIRMATION IS ONE REQUEST AT ONE MOMENT. GitHub's renderer
+  agreeing today is not a guarantee it agrees next month; the driver is
+  committed so the question is cheap to re-ask, and it needs network.
+
+  THE PINNED ROW IS AN EXCERPT of index line 645, not the whole row -- its
+  opening plus a 7-column shape. A regression in a LATER cell of that row
+  would not be caught by it.
+
+  --api-published-at COMPARES ONE FIELD. Two boards with the same Published-at
+  stamp and different bodies would pass it; that is what --api-readback's
+  sha256 is for, and it needs a real download rather than a chat turn.
+
+  THE 90-SECOND TOLERANCE IS STILL 90 SECONDS. It is now visible rather than
+  silent, which is a different thing from being tighter.
+
+  CODY'S SAIRNSCAPE PII FINDING IS STILL OPEN AND UNTOUCHED, because hank b18
+  holds api/sd-data.js. Declared, not worked around.
+
+  THREE b12 TEST-FILE-FLOOR LAYERS REMAIN UNARMED, carried from b14, b15, b16
+  and b17 unchanged. tests/ is cody's.
+
+  NO LIVE DEPLOYED-URL CHECK: no api/, sql/ or app file changed. Structural,
+  not skipped.
+
+
+================================================================================
+METHOD NOTE
+================================================================================
+
+A BACKSLASH IN A CLI BODY IS MANGLED, AND THIS IS THE THIRD BATCH RUNNING. A
+quoted heredoc turned `\n` into a real newline inside a Python string literal
+and produced an unterminated-literal error in a file that had just been
+written correctly a moment before. The fix is not care: WRITE THE PROGRAM TO A
+FILE WITH THE EDITOR AND RUN THE FILE. "Be careful" has now failed three
+times, in b17 twice and here once.
+
+SHA256 3cb65ece4cbe65f61bc6cc26ae170b9b85f8c50ba05c8e8cb7191082209d0e6c
+END-OF-REPORT

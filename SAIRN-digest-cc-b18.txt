@@ -1,0 +1,8 @@
+DIGEST cc b18
+STATUS: CLOSED 5/5. HEAD 93a6b765 == origin/main, 0/0, clean, claim released, idle. Nothing overridden; BYPASS-LOG gained no row. No api/, sql/ or app file: no live-URL check.
+DECISION-NEEDED: (1) H1/H2 -- your CONTEXT cells now read UNKNOWN with the reason, right for a digest saying "not measured": add a figure, or confirm UNKNOWN stays. Your 19 stale latest-file copies remain. (2) STATUS and NEXT swallow prose as CONTEXT did.
+CHANGED: the board's CONTEXT cell prints a parsed figure, or UNKNOWN with a reason, never a plausible 0%; the render claim is CONFIRMED against GitHub's API, closing a b17 UNVERIFIED; the bridge check's API half is compared; the index hook runs the checker's lock.
+EVIDENCE-path: SAIRN-report-cc-b18.txt; docs/2026-10-19-cc-b18-concepts.md, first.
+UNVERIFIED: in the report; the render confirmation is one request, one moment.
+NEXT: cody's SAIRNscape fix when hank frees api/sd-data.js; its write must 400 to 403.
+CONTEXT 54.1%, b16-b18.
