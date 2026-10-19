@@ -1028,6 +1028,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b19-iolta-reconcile-carveout.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "15d424ea085ab390718289906d793a47f13972bc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/auth-setup-attribution.test.js",
    "class": "test file",
    "level": "WEAKENING",
@@ -3122,6 +3130,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "5281acf25a8c5f9aaeefc2b71272cface90f9974",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b19-iolta-reconcile-carveout.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "52ae9f946ebc232e29cfadb1e8e3ed2f9605b48c",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -6139,6 +6155,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b19-iolta-reconcile-carveout.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a1f6685fff85ae0b4f300f0ae8c605b85495ccb4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/push_gate/refspec_and_override_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -7038,6 +7062,14 @@
     }
    ],
    "sha": "b384a513f99ed6e811ffd03186ea94af1403a648",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b19-iolta-reconcile-carveout.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "b48f1081c050a62c93b8dff809ab3641250b751e",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -8403,6 +8435,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "d99b47f9683ef3cc4a94574271c12d9e0fc4ee0c",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b19-iolta-reconcile-carveout.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d9e00831e5790b3264c3ed3d8b7b70e42431d240",
    "criteria_version": "2026-10-06.1"
   },
   {
