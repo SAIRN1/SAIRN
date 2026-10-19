@@ -118,6 +118,20 @@ def newest_token_seq(log_dir=LOG_DIR):
     return max(usable), None
 
 
+def token_refresh_hint(tip, t_gap, log_dir=LOG_DIR):
+    """Pure, so the fix (name the real LOG_DIR, never a bare '.') is
+    actually asserted in _selftest rather than only readable in a code
+    comment. A bare '.' here is what wrote the token to cwd (repo root)
+    instead of this tool's own LOG_DIR, twice (b57, then again at b58) --
+    the hint never named the directory this tool globs, so '.' read as
+    "the obvious default" instead of "wherever your shell happens to be"."""
+    return ('token is %d behind tip (> %d) -- refresh: python '
+            'hover_timestamp.py --request %d <hash> <date> --outdir %s   '
+            '(this must be LOG_DIR, where this tool globs for '
+            'chain-tip-seq*.tsr -- NOT cwd, NOT a Drive-mirror path)'
+            % (t_gap, MAX_GAP, tip, log_dir))
+
+
 def cmd_check(argv):
     tip, total, tip_err = chain_tip()
     if tip_err:
@@ -143,9 +157,7 @@ def cmd_check(argv):
         findings.append('beacon is %d behind tip (> %d) -- republish: '
                          'python hover_tip_beacon.py --publish' % (b_gap, MAX_GAP))
     if t_gap > MAX_GAP:
-        findings.append('token is %d behind tip (> %d) -- refresh: '
-                         'python hover_timestamp.py --request %d <hash> '
-                         '<date> --outdir .' % (t_gap, MAX_GAP, tip))
+        findings.append(token_refresh_hint(tip, t_gap))
     if findings:
         print('FINDING:')
         for f in findings:
@@ -252,6 +264,20 @@ def _selftest():
         tip2, total2, err2 = chain_tip(empty_log)
         ck('C4 FAIL-CLOSED: an empty log returns an error, not seq None '
            'read as a silent 0', tip2 is None and err2 is not None)
+
+        # THE B57/B58 REGRESSION: the token-refresh hint must name the REAL
+        # log_dir, never a bare '.' -- '.' is exactly what sent the token to
+        # cwd instead of LOG_DIR, twice, before this fix.
+        hint = token_refresh_hint(999, 30, log_dir=tmp)
+        ck('D1 hint names the real log_dir, not a bare "."',
+           tmp in hint and '--outdir .' not in hint)
+        old_shape_hint = ('token is 30 behind tip (> 15) -- refresh: python '
+                           'hover_timestamp.py --request 999 <hash> <date> '
+                           '--outdir .')
+        ck('D2 KNOWN-BAD CONTROL: the pre-fix hint shape (bare ".") fails '
+           'the identical assertion D1 just passed -- proves D1 would '
+           'have caught the original bug, not just the fixed string',
+           not (tmp in old_shape_hint and '--outdir .' not in old_shape_hint))
 
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

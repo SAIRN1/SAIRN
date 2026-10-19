@@ -20,6 +20,21 @@ scoped report-only at log #588. Same narrow exception as every other tool
 in this directory: this protects this role's OWN tamper-evident record,
 not platform code.
 
+THIS TOOL EXISTS IN TWO PLACES, AND THEY ARE NOT INTERCHANGEABLE. The
+OPERATIONAL copy lives per-clone under the user's .claude/projects/
+C--Users-marsh-Documents-SAIRN-<instance>/hover-audit-log/
+hover_backup_mirror.py -- that is where .mirror-token, .mirror-config.json
+and the real LOG_NAME file actually sit, and the only place --mirror/
+--push/--restore-test do anything real. A second, ARCHIVAL copy is
+versioned in the platform repo at .claude/skills/sairn-hover-auditor/
+tools/hover_backup_mirror.py, kept only so the tool survives a disk loss
+of the per-clone directory (see "Where the tooling lives now" in
+SKILL.md) -- it is not where this tool is meant to be run from, and
+several of its own selftests legitimately fail there by design (see
+`ensure_repo()`'s foreign-worktree guard). If you are reading this inside
+the platform repo, you are reading the archival copy; go run the one in
+hover-audit-log/ instead.
+
 THE EXPOSURE THIS CLOSES (#588): the hash-chained self-log exists on
 exactly one disk with zero copies anywhere. Chain, tip beacon and the
 emailed anchor are all DETECTION: none can reconstruct a byte after disk
@@ -48,12 +63,28 @@ SECURITY RULES, enforced mechanically, all fail CLOSED (exit 2):
      exchange, not the URL string -- and is not refused on this basis
      (fixed 2026-09-29, hover2's seq 289; see _embeds_credential()).
 
-Run:
+Run (from THIS directory, hover-audit-log/ -- the operational home):
   python hover_backup_mirror.py --mirror            # init-once + commit snapshot (LOCAL ONLY)
   python hover_backup_mirror.py --push              # commit, then push to 'backup' remote (gated)
   python hover_backup_mirror.py --set-remote <url>  # configure the backup remote (gated, no push)
   python hover_backup_mirror.py --restore-test      # full scratch drill, read-only on the live dir
   python hover_backup_mirror.py --selftest          # fixture checks, no network, no push
+
+REQUIRES PYTHONPATH POINTED AT hover_tip_beacon.py'S REAL LOCATION, every
+invocation, from THIS directory -- `import hover_tip_beacon as TB` above
+is a plain same-directory import, and hover_tip_beacon.py itself was
+retired FROM this directory at H1 batch b33 (see
+hover_tip_beacon.py.RETIRED-h1-b33-merged-into-tracked-copy, kept as a
+marker, not live code) and merged into the single tracked copy at
+.claude/skills/sairn-hover-auditor/tools/hover_tip_beacon.py. Running
+`python hover_backup_mirror.py ...` here with no further setup fails with
+ModuleNotFoundError. The real, working invocation (confirmed live, H1
+b62) sets PYTHONPATH first, e.g. (PowerShell):
+  $env:PYTHONPATH = "C:/Users/marsh/Documents/SAIRN-hover/.claude/skills/sairn-hover-auditor/tools"
+  python hover_backup_mirror.py --push
+Do not "fix" this by copying hover_tip_beacon.py back into this
+directory -- that recreates the exact two-copies-drifting problem b33's
+retirement closed; set PYTHONPATH instead, every time.
 
 RESTORE PROCEDURE (the drill below exercises exactly this, in a scratch
 directory, from the local mirror commit -- the real event differs only in
