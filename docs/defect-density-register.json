@@ -33805,6 +33805,35 @@
       },
       "citation_note": "no existing cross-domain-disciplines section names naive sentence-boundary splitting around abbreviation periods; this is a new-shaped defect, not a recurrence of a named rule",
       "factors_unknown_reason": "found and fixed in one sitting with the fix itself as the record; no separate RCA factor pass was run beyond what the commit message already states"
+    },
+    {
+      "commit": "c6c9f8607441",
+      "date": "2026-10-19",
+      "subject": "fix(hover): hover_editor_review's sentences() gets the same abbreviation-safe split, h1 b56",
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools/hover_editor_review.py"
+      ],
+      "lines_added": 64,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": "hover_editor_review.py's sentences() carried an identical, independently-duplicated copy of citation_class_check.py's abbreviation-unsafe sentence splitter (registered as 9a7f73da, h1 b55) -- named as a known gap in that batch rather than fixed under time pressure, fixed here with the identical abbreviation-list merge approach plus two new unit-level fixtures (F32/F33), sabotage-verified against an isolated copy.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "f37d66af2b2d",
+        "date": "2026-09-29",
+        "subject": "feat(hover): land hover's own tooling in the platform repo -- Michael's decision, mirror repo restricted to log/anchors/beacon only",
+        "lag_days": 20
+      },
+      "citation_note": "same root cause as 9a7f73da (h1 b55): naive sentence-boundary splitting around abbreviation periods, independently duplicated in a second file -- no existing cross-domain-disciplines section names this shape",
+      "factors_unknown_reason": "duplicate-copy follow-up to an already-registered defect (9a7f73da); the fix and its own regression coverage are the record, no separate RCA factor pass run"
     }
   ],
   "started": "2026-09-09",
