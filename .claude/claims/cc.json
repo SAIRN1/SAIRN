@@ -4136,6 +4136,27 @@
         "docs/defect-density-register.json",
         "tools/sairn_board_publish.py"
       ]
+    },
+    {
+      "id": "cc-1792420255",
+      "session": "cc",
+      "subject": "cc",
+      "task": "b20: build tools/context_verify.py reading the four BUILD agents' own transcripts for a real context% independent of any self-report; validate against hank and cc live; wire it into the board as its own column beside the self-reported figure; confirm b19's publisher-race guard did not regress with the new write path. hover and hover2 are OUT OF SCOPE by the separation boundary and are not read. FILES: tools/context_verify.py tools/sairn_board_publish.py docs/2026-10-19-cc-b20-concepts.md docs/TOOLING-INVENTORY.md docs/batch-manifest-cc-b20.json SAIRN-handoff-cc-b20.md SAIRN-report-cc-b20.txt SAIRN-digest-cc-b20.txt SAIRN-ACTIVE-WORK-cc.md",
+      "claimed_at": "2026-10-19T14:30:55Z",
+      "claimed_at_epoch": 1792420255.4359076,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-cc.md",
+        "SAIRN-digest-cc-b20.txt",
+        "SAIRN-handoff-cc-b20.md",
+        "SAIRN-report-cc-b20.txt",
+        "docs/2026-10-19-cc-b20-concepts.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/batch-manifest-cc-b20.json",
+        "tools/context_verify.py",
+        "tools/sairn_board_publish.py"
+      ]
     }
   ],
   "refusals": [
