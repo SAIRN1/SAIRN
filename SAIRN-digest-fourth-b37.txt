@@ -1,0 +1,208 @@
+DIGEST fourth b37 2026-10-19
+
+STATUS
+  4 DONE, 2 CLAIM-BLOCKED AND FLAGGED BACK. Landed as a52311fa (a11y),
+  4938f432 (the two docs) and b2c28034 (handoff + manifest). 0 ahead / 0
+  behind, read from the remote after a fetch. NO FORCE AND NO OVERRIDE OF ANY
+  FORM -- three push attempts were rejected by the remote moving under me and
+  all three were resolved with git pull --rebase.
+  THE HANDOFF WAS WRITTEN AND UPLOADED BEFORE THIS DIGEST, as instructed.
+  THE CLAIM IS RELEASED IN FULL -- no file in it has unfinished work.
+  NO SQL WAS PRODUCED THIS BATCH, so nothing was written to sql/.
+
+  1  stonedesk Field Map catch arm, Maps key    BLOCKED -- flagged back, NOT
+                                                skipped, NOT reworded past the
+                                                matcher, NOT edited
+  2  stonedesk.html:7795 dead call              BLOCKED -- same claim
+  3  sairndental a11y remainder                 DONE -- 3->0 labels, 7/7 trap,
+                                                23/23 announced, REAL keys,
+                                                plus a negative control
+  4  Tier A review of six rows                  DONE -- 6 confirmed, 0 wrong
+                                                tier, 0 unreadable
+  5  sairnlaw worldwide audit, primary sources   DONE -- 8 primary sources,
+                                                6 jurisdictions, 0 vendor pages
+  6  push without force, confirm landed         DONE
+
+  I GOT THE CLAIM FLAG WRONG BEFORE I GOT IT RIGHT, AND CORRECTED IT IN THE
+  SAME SESSION. I told Michael the block was a substring false positive on
+  hank's own NOT-stonedesk-html-claimed token -- true about the MECHANISM --
+  then read the two call sites read-only and found both items ARE the client
+  half of hank's b22 api/bridge.js absent-action work. The block was
+  substantively right by accident. Both facts matter and they are not the same
+  fact: do not loosen that matcher on the strength of the NOT- token.
+
+DECISION-NEEDED
+  1. ITEMS 1 AND 2 NEED A ROUTING CALL FROM YOU, and the order matters.
+     api/bridge.js:228 AND hank's own api/b21-bridge-unknown-action.test.js:15
+     ALREADY NAME stonedesk.html:12814 BY LINE as "no such action". The :12818
+     catch arm says "check GOOGLE_MAPS_API_KEY is set"; that env var is read at
+     exactly ONE site, api/_lib/routes.js:304, which the request never reaches.
+     stonedesk.html:7795 POSTs to the same endpoint with NO action field at all.
+     ITEM 1'S HONEST MESSAGE DEPENDS ON WHAT HANK'S REFUSAL RETURNS, so writing
+     it before that lands would hard-code a cause that is about to change.
+     RECOMMEND: hank takes both alongside api/bridge.js. If you would rather I
+     did them, say go and I will -- the evidence is already gathered.
+  2. ON ITEM 2 SPECIFICALLY -- RECOMMEND DELETE, NOT AN ACTION. The only
+     candidate is `push`, which api/bridge.js documents as requiring NO
+     Authorization header at all ("anyone can write to any shop_id") and then
+     says is "NOT defensible for personal or financial data". The payload is an
+     invoice carrying a signature, which is exactly that.
+  3. SAIRNLAW B1 IS THE HIGHEST VALUE PER LINE ON THE PLATFORM RIGHT NOW AND IT
+     IS SMALL. law_trust_reconcile registers ONE action, `read`
+     (api/sd-data.js:18747); there is no write branch and no table. So the
+     reconciliation is COMPUTED AND THROWN AWAY, while SRA r.8.3 requires it
+     SIGNED by the COFA, LSO By-Law 9 requires it created by the 25th, signed,
+     and retained 10 years plus the current year, and NY 22 NYCRR 1200 r.1.15
+     puts SEVEN YEARS on the same records. A firm can run it correctly every
+     month and have nothing to produce on inspection, and nothing in the app
+     says so. NOTE: a stored reconciliation record is a NEW TIER A RESOURCE and
+     will need a register row and a review obligation.
+  4. SAIRNLAW HAS A ROADMAP RISK A VENDOR PAGE WOULD NEVER HAVE DISCLOSED. The
+     SRA consulted in 2025 on whether solicitors should hold client money AT
+     ALL, and in December 2025 decided not to decide -- strengthening the
+     current regime now, returning to the wider question later. The most
+     valuable thing SAIRNlaw has in England and Wales is a trust-accounting
+     engine. Worth knowing before any E&W investment.
+  5. SAIRNLAW'S AML GAP IS A COMPANY DECISION, FLAGGED AS ONE. Zero
+     AML/CDD/beneficial-owner content in sairnlaw.html against EU AMLR
+     2024/1624 applying 10 JULY 2027 and UK MLR 2017 already in force. The hard
+     part is not the schema -- both FATF R.23 and AMLR draw a privilege
+     carve-out, so a product that prompts a lawyer to report is prompting a
+     PRIVILEGE DETERMINATION. Getting that wrong in software is worse than not
+     building it. Same class as the dental clearinghouse contract.
+  6. CARRIED AND STILL YOURS FROM b36: run sql/rt_routes_schema.sql, and
+     CONSIDER DROPPING rtroutes_saved_sane FIRST -- as written it rejects any
+     route whose optimised order is worse than the human's. Full text is in the
+     b36 digest under SQL; nothing new was produced this batch.
+
+CHANGED
+  sairndental.html                     3 labels, a .sronly utility, one
+                                       aria-live region, one line in nav(), and
+                                       one new script block: the focus trap.
+                                       +98 lines, -3.
+  docs/2026-10-19-fourth-b37-tier-a-review.md
+                                       NEW. Six Tier A rows read at the write
+                                       site, with verdicts.
+  docs/cloud-research/sairnlaw-worldwide-competitive-gap-audit-2026-10-19.md
+                                       NEW. Primary regulation only.
+  SAIRN-handoff-fourth-b37.md          NEW.
+  docs/batch-manifest-fourth-b37.json  NEW. 4 done, 2 blocked; validates.
+
+  NOT CHANGED, ON PURPOSE:
+  stonedesk.html          items 1 and 2 are blocked. 0 of my commits touch it.
+  docs/tier-a-reviews.json CC HOLDS IT in its active b24 claim. The six
+                          verdicts are in the review doc in the shape that
+                          append needs -- a routed obligation, not a
+                          discharged one.
+  api/sd-data.js          cody holds it. The rf_jobs fix is routed, not taken.
+  docs/CRITICALITY-TIERS.md two grounds cells are wrong and the corrections are
+                          written out; whoever next holds that file applies
+                          them. NEVER edit a row by splitting on `|`.
+
+UNVERIFIED
+  - NO SCREEN READER WAS RUN. NVDA, JAWS and VoiceOver were not used. What was
+    done is a mechanical DOM audit driven through a real browser -- assertions
+    on textContent and document.activeElement plus real key presses. THIS IS
+    THE LARGEST GAP IN THE BATCH AND IT IS THE SECOND BATCH RUNNING TO SAY SO.
+  - THE rf_jobs PROJECTION INVERSION IS REASONED, NOT REPRODUCED. It is read
+    from Object.assign semantics and storedBlob's strip list. No row was
+    written and no response was observed. The ABSENCE of a historical leak
+    window IS measured, with git log -S: assigned_employee_id stripped from
+    2c349af8 and location_id stripped in 68668ece, the same commit that
+    introduced it -- so no stored row carries a blob copy of either.
+  - THE employees `|| emp` FALLBACK'S REACHABILITY WAS READ, NOT EXERCISED. It
+    does accept an arbitrary caller object, so the register's "whole employee
+    record" claim is REACHABLE but NOT REALISED -- the one shipped caller sends
+    emp.data.
+  - ITEMS 1 AND 2 WERE READ, NOT FIXED. The line-by-line evidence is a scope
+    statement for whoever takes them, not a verified fix.
+  - NOTHING LIVE. No deployed URL was driven this batch -- unchanged from
+    b34/b35/b36 and for the same measured reason.
+  - THE SAIRNLAW AUDIT DROVE NO COMPETITOR PRODUCT, QUOTES NO MARKET SIZE
+    ANYWHERE, AND INTERVIEWED NOBODY. That is deliberate -- a vendor-sourced
+    market number is exactly the defect b36 disclosed -- AND THE COST IS REAL:
+    this audit CANNOT tell you whether anyone else already does any of B1-B5.
+    The two 2026-09 SAIRNlaw audits are the competitor-facing half.
+  - MOST PRIMARY SOURCES WERE READ VIA DOMAIN-RESTRICTED SEARCH SNIPPETS, NOT
+    THE FULL INSTRUMENT. WebFetch on the EUR-Lex summary returned an EMPTY BODY
+    and that failure is reported rather than silently replaced with a secondary
+    source. No consolidated-text or amendment check on SI 2017/692 or the NSW
+    rules, both of which have been amended since enactment. Treat the rule
+    NUMBERS as load-bearing and the PARAPHRASES as needing the full text before
+    anything is built on them.
+  - sairndental's panels were not audited for correctness, only for
+    accessibility. Existing and being right are different claims.
+
+  THREE THINGS A COUNTED ASSERTION CAUGHT THAT WOULD OTHERWISE HAVE SHIPPED
+  WRONG:
+  (a) THE THREE INPUTS NEEDED THREE DIFFERENT FIXES. #gkey has no visible label
+      to point at; #icap-file is display:none so a <label for> would be
+      unreachable -- both take aria-label. Only #tp-item-planned gets a real
+      programmatic association. A single uniform fix would have been wrong
+      twice.
+  (b) THE LIVE REGION HAD TO GO OUTSIDE #app, which has `on` toggled on
+      sign-out. A live region in a subtree that gets hidden STOPS ANNOUNCING.
+  (c) THE REGION IS CLEARED BEFORE IT IS SET, because assigning the SAME
+      textContent is not a mutation -- a re-nav to the panel already shown
+      would otherwise have announced nothing at all.
+  AND THE CSS IS LOAD-BEARING: .sronly uses clip-path, NOT display:none or
+  visibility:hidden, both of which remove text from the accessibility tree and
+  would have made the region permanently silent while looking right in the DOM.
+
+  TWO STALENESS DEFECTS FOUND WHILE MEASURING, REPORTED NOT FIXED:
+  (d) api/_lib/law-trust-reconcile.js's header describes
+      "sairnlaw.html:3134 reconcileTrust()" IN THE PRESENT TENSE and that
+      function no longer exists -- the one hit for the name in sairnlaw.html is
+      a comment at :3288 saying it is gone. The tense makes a next reader
+      believe a FIXED defect is LIVE.
+  (e) THE law_trust_reconcile BRANCH IS CITED AT THREE LINE NUMBERS IN THREE
+      PLACES AND TWO ARE WRONG. api/sd-data.js:1352 says :11690 (a SAIRNcare
+      roster .map()); sairnlaw.html:3339 says :12439 (an alf_compliance_rules
+      comment); the real location is api/sd-data.js:18747.
+
+  AND THE SAIRNLAW AUDIT CORRECTED ITS OWN FIRST DRAFT rather than leaving it
+  standing. The draft said the client used the tautological reconcileTrust(),
+  on the authority of the module's own stale header. It does not --
+  trustFigures() (sairnlaw.html:3315) displays the figures and is forbidden
+  from deciding agreement, and the server reconciler with its four-outcome
+  verdict is really called. The app is better than the draft said.
+
+NEXT
+  1. MICHAEL: the routing call on items 1 and 2 -- hank, or me on a go-ahead.
+     See DECISION-NEEDED 1 and 2.
+  2. HANK: items 1 and 2 are routed to you in the shared status registry with
+     every line number. Your own b21 test file already names the call site.
+  3. CODY: rf_jobs' two inverted projections -- flip api/sd-data.js:9190 and
+     :9375 so the real columns are the LAST Object.assign source, matching
+     rf_claims/read at :9660, plus a test arm that plants assigned_employee_id
+     and location_id in the payload and asserts the response carries the
+     server-resolved values. Inert today; one point of failure in two
+     directions.
+  4. CC: append the six Tier A verdicts to docs/tier-a-reviews.json from
+     docs/2026-10-19-fourth-b37-tier-a-review.md section 0. And the shared.js
+     skip in tools/criticality_tier_check.py:236 -- re-measured here at 8
+     findings, matching your b35 figure.
+  5. WHOEVER NEXT HOLDS docs/CRITICALITY-TIERS.md: rewrite the leg_cremations
+     and employees grounds cells as traced chains. DO NOT RETIER -- both are
+     wrong in the direction of over-claiming, which does not change a tier.
+     Also correct the rf_jobs write citation, :5254 -> :5477.
+  6. SAIRNLAW B1 -- persist and sign the reconciliation. Small, scoped, and the
+     four regimes in the audit are its specification. See DECISION-NEEDED 3.
+  7. The two reconcile staleness defects (d) and (e) above. Cheap; nobody holds
+     them.
+  8. sairndental: A REAL SCREEN-READER TEST. The one thing in the a11y work
+     still unproven after two batches.
+  9. CARRIED FROM b36, unchanged: rtroutes_saved_sane vs negative savings;
+     mech_schedule as scoped work; the rt_routes handler branch cody holds,
+     which leaves all four wired consumers unreachable at runtime;
+     sql/rt_routes_schema.sql never run; the dental clearinghouse decision;
+     sairnmechanical and sairnroofing still have ZERO competitive-gap audits.
+
+SQL
+  NONE. No SQL was produced this batch, so nothing was written to sql/ and
+  there is no path to cite here. The outstanding SQL is still b36's
+  sql/rt_routes_schema.sql, unrun, and its full text is in the b36 digest --
+  not reproduced here, because a second copy is a second thing to go stale.
+
+CONTEXT 30.5% of 1,000,000 -- 304,831 tokens, measured.
+  python tools/context_verify.py --digest-line

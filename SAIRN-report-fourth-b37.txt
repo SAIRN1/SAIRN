@@ -1,0 +1,577 @@
+REPORT fourth b37 2026-10-19
+
+
+WHAT WAS ASKED, AND WHERE EACH ITEM ACTUALLY STANDS
+
+  1  stonedesk Field Map catch arms: stop naming the Maps key
+     BLOCKED ON THE CLAIM RECORD AND FLAGGED BACK. Not skipped, not reworded
+     past the matcher, not edited. Read-only evidence gathered. Section 1.
+
+  2  stonedesk.html:7795: real action or delete the dead call
+     BLOCKED ON THE SAME CLAIM. Same treatment. Section 1.
+
+  3  sairndental a11y remainder
+     DONE AND DRIVEN IN THE BROWSER. Labels 3 -> 0 of 155. Focus trap 7 of 7
+     modals. Panel announcement 23 of 23 panels. Real key presses, plus a
+     negative control. Section 2.
+
+  4  Tier A review of six rows
+     DONE. 6 CONFIRMED on tier, 0 wrong tier, 0 unreadable. The instruction's
+     premise did not hold and the result inverts it. Section 3.
+
+  5  sairnlaw worldwide competitive-gap audit, primary regulation
+     DONE. 8 regulator/legislature sources, 6 jurisdictions, 0 vendor pages.
+     The headline is a compliance gap in shipped code. Section 4.
+
+  6  push without force, confirm it landed
+     DONE. 0 ahead / 0 behind. No force, no override of any form. Section 5.
+
+  TWO ITEMS ARE BLOCKED AND BOTH ARE THE SAME BLOCK. I GOT THE FLAG WRONG
+  BEFORE I GOT IT RIGHT, AND CORRECTED IT IN THE SAME SESSION RATHER THAN
+  LETTING IT STAND. That correction is the first thing in this report because
+  it is the thing most likely to be acted on.
+
+
+1. ITEMS 1 AND 2 -- BLOCKED, FLAGGED, AND THE FLAG CORRECTED
+
+  WHAT THE CLAIM TOOL SAID
+
+    python tools/sairn_claim.py check fourth "<the b37 task string>"
+    -> BLOCKED -- another session already claimed overlapping work
+       session: hank   blocked by: same app: stonedesk
+
+  WHAT I SAID FIRST, AND WHY IT WAS A REASONABLE READ OF THE MECHANISM
+  hank's active b22 claim does not list stonedesk.html. The token the matcher
+  hit is literally
+
+    NOT-stonedesk-html-claimed
+
+  which is hank's own negative declaration that the file is UNCLAIMED. Its b21
+  claim went further and said NOT-stonedesk.html-fourth-holds-it. So I flagged
+  it to Michael as a substring false positive and recommended a go-ahead.
+
+  WHAT CHANGED THE ANSWER: READING THE TWO CALL SITES, READ-ONLY
+  Both items turn out to be the CLIENT HALF of hank's b22 work, whose own claim
+  string is "api/bridge.js absent-action refusal + D1 update".
+
+  ITEM 1, measured not inferred:
+    stonedesk.html:12814  POSTs FM_API + '?action=maps-static'
+    stonedesk.html:12547  FM_API = 'https://sairn.vercel.app/api/bridge'
+    api/bridge.js:228                         "no such action"
+    api/b21-bridge-unknown-action.test.js:15  "no such action"
+  Both of those files ALREADY NAME stonedesk.html:12814 BY LINE. The second is
+  hank's own test file from b21.
+
+  The catch arm at :12818 renders
+
+    "Map unavailable -- check GOOGLE_MAPS_API_KEY is set."
+
+  and grep -rn GOOGLE_MAPS_API_KEY api/ returns exactly ONE site --
+  api/_lib/routes.js:304 -- which this request never reaches. So the message
+  sends the reader to an env var that is irrelevant to the actual failure.
+
+  THIS IS THE IDENTICAL DEFECT b34 ALREADY FIXED ON THE SIBLING CALL. The
+  comment it left at :12933 says the old message "told the reader to go and
+  check a Maps API key the request never reached." One of the pair was fixed in
+  b34 and this is the other one.
+
+  ITEM 2, measured:
+    stonedesk.html:7795 POSTs to the same endpoint with NO action field at all
+      {app_id:'stonedesk', event_type:'pos_sale', source_device:'mobile',
+       timestamp: ..., payload: inv}
+    grep -n "action ===" api/bridge.js  ->  ONE line, :217, proxy_get only
+  So it falls through dispatch exactly like item 1. Its .catch is annotated
+  "bridge sync optional -- sale is already saved locally", which is true and is
+  also why nobody noticed for months.
+
+  SO THE BLOCK WAS SUBSTANTIVELY RIGHT BY ACCIDENT, AND THAT IS WORTH KNOWING
+  BEFORE ANYBODY LOOSENS THE MATCHER ON THE STRENGTH OF THE NOT- TOKEN. The
+  mechanism was a substring hit on a negative declaration. The conclusion it
+  reached was correct. Both facts are true and they are not the same fact.
+
+  WHAT I DID INSTEAD OF PROCEEDING
+  Stopped both items, flagged them to Michael in prose with a recommendation,
+  worked the four uncontested items, and routed the full evidence to hank
+  through the shared status registry with every line number. stonedesk.html
+  appears in ZERO of my commits -- checked, not asserted:
+    git show --name-only --format="" a52311fa 4938f432 93a9bf70
+
+  RECOMMENDATION ON ITEM 2, since it is a judgment and not a mechanical fix
+  DELETE the call rather than giving it an action. The only candidate is `push`,
+  and api/bridge.js documents itself as requiring NO Authorization header at all
+  on that path -- "anyone can write to any shop_id" -- which it then says is
+  "NOT defensible for personal or financial data." An invoice carrying a
+  signature is exactly that. Confirm with hank; do not act on this alone.
+
+  RECOMMENDATION ON ORDER
+  Item 1's honest message DEPENDS ON WHAT HANK'S REFUSAL RETURNS. Writing it
+  before that lands would hard-code a cause that is about to change, which is
+  the same defect in a new coat.
+
+
+2. ITEM 3 -- SAIRNDENTAL A11Y, THE b36 REMAINDER, CLOSED AND DRIVEN
+
+  THE CONCEPTS WERE STATED BEFORE ANY CODE WAS WRITTEN, as instructed.
+
+  THE TRAP, in one sentence: one document-level mechanism with zero per-modal
+  code -- a MutationObserver on each .modal's class records
+  document.activeElement as the return target the moment the modal gains .on
+  and restores it when .on is removed, while a single keydown handler cycles Tab
+  inside whichever .modal.on is open, RECOMPUTING THE FOCUSABLE LIST AT KEYPRESS
+  TIME rather than caching first and last.
+
+  THE ANNOUNCEMENT, in one sentence: nav() writes the newly shown panel's OWN
+  VISIBLE .ptitle text into one aria-live="polite" region, so the spoken name is
+  derived from the heading the sighted user sees and cannot drift as panels are
+  added.
+
+  b36 DECLINED TO BUILD THE TRAP AND ITS STATED REASON DOES NOT HOLD. It said a
+  trap "needs per-modal first/last bookkeeping and a return-focus target, and
+  half of one reads as done." The bookkeeping is not needed if the list is
+  recomputed at keypress time -- and that version is ALSO the only one that
+  stays correct for the modals here whose controls appear while they are open
+  (tx-plan items, the denial form, the payer-terms list). The weaker design was
+  the one that needed the bookkeeping.
+
+  MEASURED, EVERY FIGURE WITH ITS COMMAND
+
+    labels      UNLABELLED 3 -> 0 of 155 controls
+                python <scratchpad>/b37/count_unlabelled.py sairndental.html
+                BY HTML PARSE, not grep -- CLAUDE.md Check 0a's reason applies
+                to counting tags as much as to counting script blocks. Then
+                RECOUNTED INDEPENDENTLY IN THE LIVE DOM via el.labels and
+                getAttribute('aria-label') -> 155 controls, 0 unlabelled.
+                Two methods, two agreements.
+
+    trap        7 of 7 modals FULL PASS -- focus moved inside, Escape closed,
+                focus returned to the opener, per modal.
+
+    real keys   20 x Tab and 20 x shift+Tab inside a 13-focusable modal: focus
+                stayed inside in both directions. Real Escape closed it and
+                returned focus to sb-dashboard. SYNTHETIC KeyboardEvents WOULD
+                HAVE PROVED LESS -- my own handler calls preventDefault and
+                .focus(), so a synthetic event tests my code and not the
+                browser's default Tab. The real presses test both.
+
+    negative    With NO modal open, 6 real Tab presses visited 6 DISTINCT
+    control     elements and none inside a modal. WITHOUT THIS ARM A TRAP THAT
+                FIRED UNCONDITIONALLY WOULD HAVE PASSED EVERY ASSERTION ABOVE.
+
+    announce    23 of 23 panels announced their own name, each compared at run
+                time against that panel's own .ptitle rather than against a
+                list in the test. 23 panels, 23 .ptitle elements, none missing.
+
+    gates       checkblocks 6/0
+                wcag_contrast_check --gate  0 findings
+                373 ids / 373 unique / 0 duplicates, BY PARSE
+                sairn_strict_args_check  clean
+
+  THREE THINGS THAT WOULD HAVE SHIPPED WRONG WITHOUT A COUNTED ASSERTION
+
+  (a) THE THREE INPUTS NEEDED THREE DIFFERENT FIXES, NOT ONE. #gkey has no
+      visible label anywhere to point aria-labelledby at; #icap-file is
+      display:none, so a <label for> would be unreachable -- a label the user
+      can never see or click is not an association. Both take aria-label. Only
+      #tp-item-planned gets a real programmatic association, because a real
+      visible label already sat beside it and simply never pointed at it. A
+      single uniform fix would have been wrong twice.
+
+  (b) THE LIVE REGION HAD TO GO OUTSIDE #app. #app has `on` toggled on sign-in
+      and sign-out, and a live region inside a subtree that gets hidden STOPS
+      ANNOUNCING. Placing it next to #toast at the top of body is not cosmetic.
+
+  (c) THE REGION IS CLEARED BEFORE IT IS SET. Assigning the SAME textContent is
+      not a mutation, so a re-nav to the panel already shown would have
+      announced nothing at all. One extra line, and the failure it prevents is
+      silent.
+
+  THE CSS CHOICE IS ALSO LOAD-BEARING AND IS COMMENTED AS SUCH: .sronly uses
+  clip-path, NOT display:none or visibility:hidden. Both of those remove the
+  text from the accessibility tree, which would have made the live region
+  permanently silent while looking correct in the DOM.
+
+  WHAT IS STILL NOT PROVEN, AND IT IS THE SAME GAP b36 LEFT
+  NO SCREEN READER WAS RUN. NVDA, JAWS and VoiceOver were not used. What was
+  done is a mechanical DOM audit driven through the browser: assertions on
+  textContent and document.activeElement, plus real key presses. A screen
+  reader is a different and stronger check and this is the second batch running
+  that has said so.
+
+
+3. ITEM 4 -- SIX TIER A ROWS, AND THE PREMISE INVERTED
+
+  Full detail: docs/2026-10-19-fourth-b37-tier-a-review.md
+
+  resource         tier (I/C)  verdict
+  invoices         A / B       CONFIRMED
+  law_trusttx      A / A       CONFIRMED, grounds UNDERSTATED
+  leg_cremations   A / A       CONFIRMED on tier, GROUNDS WRONG
+  employees        A / A       CONFIRMED on tier, GROUNDS WRONG
+  rf_claims        A / B       CONFIRMED, declared defect FIXED at HEAD
+  rf_jobs          A / B       CONFIRMED, declared shape STILL PRESENT, inert
+
+  6 confirmed. 0 wrong tier. 0 unreadable -- all six write sites, all six
+  server branches and the consumers were located and read.
+
+  THE INSTRUCTION'S PREMISE DID NOT HOLD, AND IT IS REPORTED RATHER THAN
+  WORKED AROUND
+  The instruction named rf_claims and rf_jobs as "the 2 declared
+  mis-attributions". The declaration is real and I found it -- in
+  docs/defect-density-register.json, and it is about ACTING-EMPLOYEE
+  ATTRIBUTION ON THE WRITE, not about tier:
+
+    "The last 7 of 15 write branches ... that persisted a row recording no
+     acting employee ... two SAIRNroofing (rf_claims/write,
+     rf_schedule/set_status)"
+
+    "a blob-carried assigned_employee_id would overwrite the server-resolved
+     value in what the client receives -- false ATTRIBUTION on a Tier A bid ...
+     The same shape was then found in rf_jobs' response construction"
+
+  Searched and NOT found: any declaration that these two rows' TIER is
+  mis-attributed. grep -n "mis-attribut\|misattribut" over
+  docs/CRITICALITY-TIERS.md returns NOTHING, and both rows are properly
+  registered in api/_resources/sairnroofing.js at :15 and :31.
+
+  AND THE RESULT INVERTS THE PREMISE. The two rows whose GROUNDS TEXT is
+  genuinely mis-attributed are the two that were NOT named.
+
+  leg_cremations -- THE GROUNDS NAME CONTENT THE ROW DOES NOT CARRY
+  The confidentiality-A cell says "A deceased person's identity, cause or
+  circumstances, or the government identifiers attached to them, are
+  disclosed", and "The record carries the authorisation and the identifiers it
+  rests on."
+
+  Read against the 13 fields at sairnlegacy.html:3190, it does not. There is NO
+  decedent name, NO cause, NO circumstance and NO government identifier on this
+  row. There is case_id, a reference. authorization_on_file is a BOOLEAN, not
+  the authorisation -- the phrase "carries the authorisation" describes a
+  document this row does not store.
+
+  THE TIER STILL STANDS and the review says why rather than just saying so:
+  case_id + scheduled_datetime + crematory_name + disposition_details, joined
+  to the case, discloses the disposition of a named decedent, and
+  disposition_details is free text into which a funeral director will write
+  exactly the circumstance the grounds are about. THAT IS AN A-BY-CHAIN
+  ARGUMENT AND THE CELL SHOULD SAY SO, the way the rf_jobs row does.
+
+  THE INTEGRITY HALF IS ON-ROW AND STRONG, for the record: authorization_on_file,
+  id_verified and waiting_period_observed are REGULATED DETERMINATIONS STORED AS
+  BOOLEANS. The irreversibility argument holds.
+
+  employees -- THE GROUNDS QUOTE THE WRONG BLOB
+  The cell says the stored data blob is "SAIRNbiz's whole employee record --
+  {fn, ln, role, dept, type, rate, pay_freq, start, phone, email, status, ec,
+  notes}, from saveEmp() in sairnbiz.html".
+
+  That is the LOCALSTORAGE shape. syncEmps() at sairnbiz.html:5069-5072 is what
+  actually ships, and it sends NINE fields:
+
+    {first_name, last_name, role, department, employment_type, hourly_rate,
+     start_date, phone, email}
+
+  So ec (THE EMERGENCY CONTACT) and notes are CITED AS CONFIDENTIALITY GROUNDS
+  AND ARE NOT ON THE ROW. pay_freq is not either, and status is a real column
+  rather than blob content. Confidentiality A still holds on hourly_rate alone
+  -- compensation, which the C-A definition names explicitly -- plus phone and
+  email. The tier is right; the sentence under it over-claims.
+
+  ONE THING THE CELL IS RIGHT ABOUT IN A WAY WORTH KEEPING: the write is
+  data: emp.data || emp (api/sd-data.js:2630), and the || emp fallback DOES
+  accept an arbitrary caller object. So "whole employee record" is REACHABLE but
+  NOT REALISED, because the one shipped caller sends emp.data. A cell should
+  make that distinction rather than collapse it.
+
+  AND ONE CHAIN THAT LOOKS BROKEN AND IS NOT -- CHECKED, BECAUSE EITHER END
+  ALONE IS INDISTINGUISHABLE FROM A BREAK
+  saveEmp() writes the field as `rate`. StoneDesk's reducer reads
+  `parseFloat(x.hourly_rate)`. On those two lines the average labour rate would
+  be $0.00 for every roster and the register's whole integrity-A argument would
+  describe a hazard that cannot occur. IT HOLDS BECAUSE syncEmps() RENAMES ON
+  THE WAY OUT -- hourly_rate: e.rate at :5072.
+
+  THE INTEGRITY-A CITATION stonedesk.html:43148 HOLDS EXACTLY, RE-DERIVED
+  RATHER THAN TRUSTED. It is the line, unmoved, and it does what the cell says:
+  averages hourly_rate across the roster and renders "Avg labor rate: $.../hr
+  from SAIRNbiz" into panel-jobcost. Cross-app, which is the part a per-app
+  reading misses.
+
+  law_trusttx -- CONFIRMED, AND THE GROUNDS ARE NARROWER THAN THE ROW
+  The cell rests confidentiality A on privilege. True, and sufficient. What it
+  does not say: method can be `Check`, and reference_number is then A CHECK
+  NUMBER DRAWN ON THE FIRM'S IOLTA ACCOUNT. That is financial-account detail
+  belonging to a third party, which the register's OWN C-A definition catches
+  INDEPENDENTLY OF PRIVILEGE. Worth adding because a single-ground A row is one
+  re-reading away from being argued down.
+
+  invoices -- CONFIRMED, nothing to correct
+  5 fields {id, customer_id, amount, status, issued}. Money on-row, folding
+  into an at-risk sum on the dashboard and into an AI tool export. The cell's
+  claim that no PII sits on the row is TRUE field by field -- customer_id is a
+  reference and the name, phone, email and address live on scp_customers. The
+  gate claims were re-verified rather than inherited: 'invoices' is in
+  SD_SESSION_GATED at :1466 and SD_GATE_APP at :1871.
+
+  rf_claims -- CONFIRMED, AND BOTH DECLARED DEFECTS ARE CLOSED AT HEAD
+  1. The acting-employee stamp exists, at api/sd-data.js:9728, and it is the
+     LAST Object.assign source on purpose -- the source says "a caller-supplied
+     updatedBy surviving in the payload is overwritten HERE. First position
+     would let the payload win."
+  2. assigned_employee_id is stripped on the way in, at :9711.
+  Its money is ON-ROW -- rcv, depreciation, acv, deductible,
+  recoverable_depreciation_released -- so it is NOT an A-by-chain row at all,
+  which is worth stating because it is the opposite of rf_jobs one row below it
+  in the same app.
+
+  rf_jobs -- CONFIRMED, AND THE DECLARED SHAPE IS STILL PRESENT
+  rf_claims' read puts the REAL COLUMNS LAST, which is the safe order:
+    :9660  Object.assign({}, x.data || {}, { claim_id, job_id, ... })
+  rf_jobs INVERTS IT IN BOTH DIRECTIONS, so the BLOB wins:
+    :9190  Object.assign({ id, job_class, assigned_employee_id, location_id }, r.data)
+    :9375  Object.assign({ id, job_class, assigned_employee_id, location_id }, jobData)
+
+  IT IS NOT AN ACCESS-CONTROL BYPASS, and saying so precisely matters: the
+  row-level privacy filter at :9188 tests r.assigned_employee_id -- the real
+  column -- BEFORE the overlay, so a narrow role still receives only its own
+  rows. What the inversion can corrupt is the ATTRIBUTION THE CLIENT IS TOLD,
+  on a Tier A row whose entire A-grounds are branch attribution.
+
+  IT IS INERT TODAY AND IT HAS NEVER NOT BEEN -- MEASURED, NOT ASSUMED. It is
+  inert only because storedBlob's strip list at :9346 covers all four keys. I
+  looked for a historical window in which a smuggled copy could have been
+  persisted and there is none:
+
+    assigned_employee_id  stripped from 2c349af8 (Phase 1), introduced in the
+                          same commit                             -> no window
+    location_id           stripped in 68668ece (Phase 4a), introduced in the
+                          SAME COMMIT                             -> no window
+
+  git log -S on both strings, plus git show 2c349af8:api/sd-data.js. SO NO
+  STORED rf_jobs ROW CARRIES A BLOB COPY OF EITHER COLUMN, and the hazard is
+  purely forward-looking.
+
+  WHY IT IS STILL WORTH FIXING RATHER THAN CLOSING AS INERT: the strip list and
+  the projection order are the SAME SINGLE POINT OF FAILURE IN TWO DIRECTIONS
+  AT ONCE. Remove one name from that list, or add a fifth real column and
+  forget to list it, and the read AND the write response both start serving the
+  caller's value in the same move. rf_claims does not have that dependency
+  because its order is safe on its own.
+
+  THE rf_jobs WRITE CITATION IN THE REGISTER HAS DRIFTED. It says
+  sairnroofing.html:5254; that line is now rfSetScheduleStatus(). The write is
+  at :5477, and the field list the cell quotes is exactly right.
+
+  ONE FINDING NOT RE-REPORTED AS NEW, DELIBERATELY
+  python tools/criticality_tier_check.py says "NOT A RESOURCE  employees has a
+  row and is not registered in any api/_resources/*.js". It IS registered, at
+  api/_resources/shared.js:55. apps_with_registries() skips `shared` by name at
+  tools/criticality_tier_check.py:236. MEASURED: that one skip accounts for 7
+  of the 14 PROBLEMS -- profile, memory, employees, slabs, render_usage,
+  shared_knowledge, employee_profile, all confirmed present in shared.js --
+  PLUS the "GONE shared has a rollup line and no resource registry" line, which
+  is 8, MATCHING cc's b35 figure exactly. It is cc's open item and the count
+  agrees, so it is cited rather than re-raised.
+
+  NOT WRITTEN TO docs/tier-a-reviews.json -- CC HOLDS IT in its active b24
+  claim. The six verdicts are in the review doc in the shape that append needs.
+  That is a routed obligation, not a discharged one.
+
+
+4. ITEM 5 -- SAIRNLAW, AUDITED AGAINST REGULATORS INSTEAD OF VENDORS
+
+  Full detail:
+  docs/cloud-research/sairnlaw-worldwide-competitive-gap-audit-2026-10-19.md
+
+  THE INSTRUCTION NAMED THE EXACT DEFECT b36 DISCLOSED ABOUT ITSELF -- "no
+  primary regulatory citation was pulled, and several sources sell into this
+  exact gap" -- AND IT WAS FOLLOWED MECHANICALLY, NOT ASPIRATIONALLY: every
+  search was DOMAIN-RESTRICTED AT QUERY TIME rather than filtered afterwards.
+  Eight sources across six jurisdictions plus the standard-setter. ZERO vendor
+  pages, zero analyst reports, zero law-firm marketing posts.
+
+    fatf-gafi.org            R.22 / R.23 -- lawyers inside the DNFBP perimeter
+    eur-lex.europa.eu        Reg (EU) 2024/1624 AMLR, applies 10 July 2027
+                             (10 July 2029 for Art 3(3)(n)/(o))
+    legislation.gov.uk       SI 2017/692 reg. 40 -- five years
+    sra.org.uk               Accounts Rules 2019 r.2 / r.8, and the December
+                             2025 client-money consultation outcome
+    lso.ca                   By-Law 9 -- monthly by the 25th, signed, 10 years
+                             plus the current year
+    legislation.nsw.gov.au   Uniform General Rules 2015 + s.155 external
+                             examination, filed within 60 days
+    nycourts.gov             22 NYCRR 1200 r.1.15 -- seven years
+    calbar.ca.gov            Title 2 Div 1.5 CTAPP -- annual registration,
+                             self-assessment and certification per licensee
+
+  THE HEADLINE IS A COMPLIANCE GAP IN SHIPPED CODE, NOT A MARKET GAP -- AND IT
+  WAS ONLY FINDABLE BY READING REGULATORS
+
+    grep -n "law_trust_reconcile" api/sd-data.js
+    -> :18747    ONE action, `read`. There is no write branch.
+    grep -n "trust_reconcile" sql/*.sql
+    -> nothing.  There is no table.
+
+  SAIRNlaw has a genuinely good three-way IOLTA reconciliation -- server-side,
+  pure, integer cents, four outcomes (AGREES / DISAGREES / PARTIAL /
+  CANNOT_RECONCILE) plus a client-side UNAVAILABLE, and it "deliberately refuses
+  a single boolean". A 403 for a non-owner role renders as "not available to
+  your role", never as agreement. That is the right shape and it is already
+  shipped.
+
+  AND IT IS COMPUTED AND THROWN AWAY.
+
+    SRA r.8.3        the reconciliation must be a RECORD, SIGNED OFF by the
+                     COFA or a manager of the firm
+    LSO By-Law 9     created within 25 days of month end, SIGNED by the
+                     licensee who prepared or approved it, RETAINED 10 years
+                     plus the current year
+    NY r.1.15        SEVEN YEARS on the records of the same account
+
+  A read-only computation is none of those. A FIRM CAN RUN IT CORRECTLY EVERY
+  MONTH AND HAVE NOTHING TO PRODUCE ON INSPECTION, AND NOTHING IN THE APP WOULD
+  TELL THEM. That is the platform's own silent-failure class, arriving as a
+  missing artefact rather than a wrong number.
+
+  THREE MORE MEASURED GAPS
+
+  NO CADENCE AND NO DUE DATE ANYWHERE IN THE TRUST LAYER. grep for signed /
+  period / cadence / monthly in api/_lib/law-trust-reconcile.js returns SEVEN
+  hits and ALL SEVEN ARE THE ARITHMETIC WORD "signed" (deposits positive,
+  cheques negative). No five-week clock, no 25th-of-the-month clock, no 60-day
+  external-examination clock, no annual CTAPP clock.
+
+  AND THE APP ALREADY KNOWS HOW TO DO THIS FOR A DIFFERENT ARTEFACT, which is
+  what makes it a gap rather than a research question: there are 33 US state
+  deadline calendars driving law_deadlines. THE "THIS IS DUE ON THIS DATE IN
+  THIS JURISDICTION" MACHINERY EXISTS AND HAS NEVER BEEN POINTED AT THE FIRM'S
+  OWN COMPLIANCE OBLIGATIONS -- only at its matters' court deadlines.
+
+  ZERO AML CAPABILITY AGAINST A DATED OBLIGATION.
+    grep -nic "money launder\|anti-money\|AML\|know your client\|customer due
+               diligence\|beneficial owner" sairnlaw.html   ->  0
+  Against EU AMLR applying 10 July 2027, and UK MLR 2017 already in force. The
+  app has law_clients and a client intake, which is EXACTLY where CDD attaches
+  -- so this is the one place SAIRNlaw is structurally close. The hard part is
+  the privilege carve-out, which both R.23 and AMLR draw, and which means a
+  product prompting a lawyer to report is prompting a PRIVILEGE DETERMINATION.
+  Getting that wrong in software is worse than not building it, and that is
+  flagged as a decision-gate question rather than a schema question.
+
+  ZERO NON-US JURISDICTION DATA.
+    ls sql/sairnlaw_deadline_calendars_*.json | grep -v 2027_2031 | wc -l -> 33
+  All 33 are US states, alabama through wisconsin. The international footprint
+  is case-law research only and is a DELIBERATE scope decision stated as data
+  in api/_lib/intl-caselaw.js: United States (CourtListener) and the United
+  Kingdom, England and Wales only (Find Case Law). "That is the whole list."
+
+  ONE ROADMAP RISK NO VENDOR PAGE WOULD HAVE DISCLOSED
+  The SRA consulted in 2025 on WHETHER SOLICITORS SHOULD HOLD CLIENT MONEY AT
+  ALL (closed 21 February 2025), and in December 2025 DECIDED NOT TO DECIDE --
+  strengthening the current regime now, returning to the wider question later.
+  The most valuable asset SAIRNlaw has in England and Wales is a
+  trust-accounting engine, and the E&W regulator has an open, un-withdrawn
+  question about whether the firms will hold the money. THAT IS THE SINGLE
+  CLEAREST ARGUMENT IN THE AUDIT FOR PULLING PRIMARY SOURCES.
+
+  THE AUDIT CORRECTED ITS OWN FIRST DRAFT RATHER THAN LEAVING IT STANDING
+  The draft said the client used the tautological reconcileTrust(), on the
+  authority of the reconcile module's own header. IT DOES NOT. That function was
+  removed; trustFigures() (sairnlaw.html:3315) displays the three figures and
+  is explicitly forbidden from deciding agreement, and the server reconciler is
+  really called. The audit is better than its first draft and says so in place.
+
+  TWO STALENESS DEFECTS FOUND WHILE MEASURING, REPORTED NOT FIXED
+  Both are the discipline-#8 class -- nothing announces the day a reference
+  stops matching.
+
+  (a) api/_lib/law-trust-reconcile.js's header describes
+      "sairnlaw.html:3134 reconcileTrust() already compares three figures" IN
+      THE PRESENT TENSE, and that function no longer exists. The one hit for
+      the name in sairnlaw.html is a comment at :3288 saying it is gone. The
+      dissection is valuable history; the tense makes a next reader believe a
+      FIXED defect is LIVE.
+
+  (b) THE BRANCH IS CITED AT THREE DIFFERENT LINE NUMBERS IN THREE PLACES AND
+      TWO OF THE THREE ARE WRONG. Re-derived:
+        api/sd-data.js:1352 says :11690   -> a SAIRNcare roster .map()
+        sairnlaw.html:3339  says :12439   -> an alf_compliance_rules comment
+        real location                     -> api/sd-data.js:18747
+      grep -n "law_trust_reconcile" api/sd-data.js is the one-line check. This
+      is CLAUDE.md's "do not write the number down" rule applied to a line
+      number instead of a count.
+
+  WHAT THE AUDIT DELIBERATELY DID NOT DO, AND THE COST IS REAL
+  No competitor product was driven and NO MARKET SIZE IS QUOTED ANYWHERE in the
+  file -- a market number sourced from a vendor would have been the exact defect
+  b36 disclosed. THE CONSEQUENCE IS THAT THIS AUDIT CANNOT TELL YOU WHETHER
+  ANYONE ELSE ALREADY DOES ANY OF IT, and that is a genuine hole rather than a
+  style choice. The two 2026-09 SAIRNlaw audits are the competitor-facing half.
+  Nobody was interviewed. Most primary sources were read via domain-restricted
+  SEARCH SNIPPETS rather than the full instrument; WebFetch on the EUR-Lex
+  summary returned an empty body and THAT FAILURE IS REPORTED rather than
+  silently replaced with a secondary source. No consolidated-text or amendment
+  check on SI 2017/692 or the NSW rules.
+
+
+5. ITEM 6 -- THE PUSH
+
+    git rev-list --left-right --count origin/main...HEAD   ->  0  0
+    git merge-base --is-ancestor a52311fa origin/main      ->  LANDED
+    git merge-base --is-ancestor 4938f432 origin/main      ->  LANDED
+    git merge-base --is-ancestor b2c28034 origin/main      ->  LANDED
+    git stash list                                         ->  0
+    git status --porcelain                                 ->  clean
+
+  THREE SEPARATE PUSH ATTEMPTS WERE REJECTED BY THE REMOTE MOVING UNDER ME --
+  five sessions are pushing -- AND EVERY ONE WAS RESOLVED WITH git pull
+  --rebase. NO --force. NO --force-with-lease. NO SAIRN_GATE_EXEMPT, no
+  SAIRN_SKIP, no SAIRN_SEED_GATE, no override of any form.
+
+  FILES TOUCHED: exactly 4 across three commits.
+    sairndental.html
+    docs/2026-10-19-fourth-b37-tier-a-review.md
+    docs/cloud-research/sairnlaw-worldwide-competitive-gap-audit-2026-10-19.md
+    SAIRN-handoff-fourth-b37.md + docs/batch-manifest-fourth-b37.json
+
+  FORBIDDEN PATHS: 0 -- no api/sd-data.js, no tools/, no .githooks, no
+  settings.json, no sql/. SCOPED TO MY OWN COMMITS RATHER THAN A RANGE, for
+  b35's recorded reason: a range answers "did anybody touch this in this
+  window", which is a different question and once answered 1 for somebody
+  else's commit.
+
+  GATES RUN BEFORE PUSHING: checkblocks 6/0, wcag_contrast_check --gate 0
+  findings, duplicate-id parse 373/373/0, sairn_strict_args_check clean, and
+  the push gate's own copy-exactly and register-feed checks passed on each
+  attempt. The push gate printed its usual "remote base is not an object in
+  this clone" NOTICE and said itself it is not a finding about my commits.
+
+
+6. WHAT b37 PROVED vs WHAT IT LEFT UNPROVEN
+
+  PROVED, measured or driven:
+    - sairndental: unlabelled 3 -> 0 of 155 by TWO INDEPENDENT METHODS; 7/7
+      modals trapped and returning focus; 23/23 panels announced; REAL Tab,
+      shift+Tab and Escape; and a negative control that would have caught an
+      unconditional trap
+    - six Tier A rows read at the real write site; the employees cross-app
+      citation re-derived and unmoved; the rf_jobs location chain re-traced at
+      HEAD; the ABSENCE of a historical leak window measured with git log -S
+    - law_trust_reconcile has one action and no table; sairnlaw.html has zero
+      AML content; 33 state calendars and 0 non-US -- all by command
+    - items 1 and 2 ARE hank's work, established from api/bridge.js:228 and
+      hank's own test file naming the same call site
+    - 0 forbidden paths, no force, both deliverable commits ancestors of origin
+
+  LEFT UNPROVEN:
+    - NO SCREEN READER WAS RUN. Largest gap in the batch, two batches running.
+    - The rf_jobs inversion is REASONED from Object.assign semantics and the
+      strip list, NOT REPRODUCED. No row was written.
+    - The employees `|| emp` fallback's reachability was READ, not exercised.
+    - NOTHING LIVE. No deployed URL was driven -- unchanged from b34/b35/b36.
+    - The sairnlaw audit drove no competitor product, interviewed nobody, read
+      most instruments via search snippets, and did no amendment check.
+    - ITEMS 1 AND 2 WERE READ, NOT FIXED. The evidence in section 1 is a scope
+      statement, not a verified fix.
+
+
+END-OF-REPORT
