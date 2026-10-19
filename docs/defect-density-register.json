@@ -33651,7 +33651,7 @@
       "single_factor_note": "not applicable -- three factors"
     },
     {
-      "commit": "548e9eddce1d",
+      "commit": "297823a06c77",
       "date": "2026-10-19",
       "subject": "fix(bridge b21): an unknown ?action= is refused, not silently treated as a push",
       "files": [
