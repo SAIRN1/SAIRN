@@ -28,6 +28,7 @@ seven findings; pushed without `--force` and read back off the remote.
 | pushed | **PUSH_TIP_PLACEHOLDER** |
 | claim | `platform`, taken **BEFORE any work** with a FILES list. **RELEASED at the end of the batch** |
 | overrides | **NONE.** No `SAIRN_SKIP`, no `SAIRN_GATE_EXEMPT`, no `SAIRN_SEED_GATE`, no call to `tools/gate_skip.py` |
+| rebase | **31 commits behind at push time**, rebased onto `origin/main` with no conflicts. **Two of the sweep's seven findings were closed by cc's b27 inside that rebase** and the sweep says so rather than dropping them — §2 and §3.2 of `docs/2026-10-20-cody-b28-currency-sweep.md` |
 | boundaries honoured | **`tools/` NOT TOUCHED** (cc's) — six were RUN. **`.claude/skills/` NOT TOUCHED** — one was READ, and §3.1 of the sweep is a report about it, not an edit. **`CLAUDE.md` NOT TOUCHED**, treated as shared by judgment and said so. **`docs/sairn-path-manifest.json` NOT TOUCHED** (hank holds it) — which is why the b27 override could not be pruned, see §4.9. **No `.html`** (fourth's). **`docs/CRITICALITY-TIERS.md` NOT TOUCHED** (fourth's). **`api/_lib/law-roles.js` NOT TOUCHED** (hank's) — item 3's fix went in `api/_lib/countersign.js`, which no active claim holds |
 | live writes | **NONE. Asserted, not intended.** `tests/rt_routes_live_probe.py` is read-only by construction and arm A4b re-reads the probe key afterwards and FAILS if a row appeared. It did not |
 | SQL for Michael | **NONE.** No new `sql/` file. Both caps were raised to numbers the database **already** carries |
@@ -188,16 +189,19 @@ unproven path.
 
 ### 4.6 → Michael. The handoff naming convention describes 3 of 83 handoffs
 
-**MEASURED:** 80 files match `SAIRN-handoff-<session>-b<NN>.md`; **3** match the
-documented `APP-YYYY-MM-DD-subject-handoff.md`. `CLAUDE.md:22` tells a fresh
-session to *"sort by the date in the filename"* — **unexecutable for 80 of 83
-files, because there is no date in the filename.** A fresh session following it
-literally finds three handoffs, none recent.
+**MEASURED, AND RE-MEASURED AFTER THE REBASE:** **83** files match
+`SAIRN-handoff-<session>-b<NN>.md`; **3** match the documented
+`APP-YYYY-MM-DD-subject-handoff.md`. `CLAUDE.md:33` tells a fresh session to
+*"Sort by the date in the filename"* — **unexecutable for 83 of 86 files,
+because there is no date in the filename.** A fresh session following it
+literally finds three handoffs, none recent. **It was 80 before the rebase and
+83 after**, so this is getting worse at roughly three files a day, and cc's b27
+edit to `CLAUDE.md` touched the four deliverable rules and left this one.
 
 **Not fixed, because it is not obvious which side is wrong** and both documents
 are shared. Two opposite candidate fixes with pasteable text are in the sweep
 §3.1; **the recommendation is Option A** — record the practice, since the scheme
-in use is per-session and so cannot collide between sessions, and renaming 80
+in use is per-session and so cannot collide between sessions, and renaming 83
 files to fix a sentence is the more expensive direction.
 
 ### 4.7 → cody. `SAIRN-ACTIVE-WORK-cody.md` is 795,238 bytes, 2.0× the ceiling
@@ -213,9 +217,17 @@ way the ceiling exists to prevent.
 **b27 wrapped at 92.0% context, not 80%**. b5–b10 were compliant, the rule broke
 at b11 and never recovered. **Fourteen of my digests carry no `CONTEXT` line at
 all, which is the worse number** — an unmeasured batch cannot be reported either
-way. **Next step is not mine alone:** neither rule is written in `CLAUDE.md`,
-`docs/SAIRN-PROCESS-RULES.md` or the disciplines document — fourth measured that
-in b38 and I re-measured it independently, unchanged. §2 of the sweep.
+way. **AND BOTH RULES NOW EXIST IN WRITING, which they did not when either breach
+happened.** The rebase before this push brought cc's b27, which added a *"Batch
+deliverables"* section to `CLAUDE.md` naming the 80% trigger (with
+`python tools/context_verify.py --digest-line` as the only thing that may write
+a digest's `CONTEXT` line) and the 30-line cap (mechanically checked by
+`tools/drive_upload_verify.py --max-lines 30`). **The sweep's §2 measured those
+four rules as absent and was true when measured and false four minutes later** —
+kept and marked rather than deleted, because that is the most useful thing the
+sweep found: a snapshot of a five-session repository has a shelf life measured
+in minutes. **b28's own digest used `context_verify.py`**, so from here the
+figure is a tool's output rather than an estimate.
 
 ### 4.9 → hank holds it. The b27 path-manifest override is still there
 

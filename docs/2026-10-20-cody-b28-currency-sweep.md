@@ -5,7 +5,7 @@ your own skills/tools/methodology vs the standing rules (report shared items,
 do not edit them)."*
 
 **SCOPE BOUNDARY, APPLIED AND NOT NEGOTIATED.** Nothing under
-`.claude/skills/`, `tools/` or `CLAUDE.md` was edited in this batch — five
+`.claude/skills/`, `tools/` or `CLAUDE.md` was edited in this batch — six
 shared tools were RUN, which is the permitted half. `git show --name-only` on
 every b28 commit is the check. Every finding in §3 is in a shared file and
 every one of them is reported with pasteable text and left alone.
@@ -23,15 +23,22 @@ reached independently and stated rather than assumed.
 **Two of my own rule-compliance records are measurably bad, two findings a
 shared checker attributes to my files are NOT my defects, and the single
 largest finding is that the documented handoff naming convention describes 3 of
-83 handoffs on disk.**
+86 handoffs on disk.**
+
+**AND TWO OF THE SEVEN WERE CLOSED BY ANOTHER SESSION BETWEEN THE MEASUREMENT
+AND THIS WRITE-UP** — the `git rebase origin/main` before the push brought 31
+commits including cc's b27, which wrote the four unwritten rules into
+`CLAUDE.md` and corrected the ceiling count. Both are kept below, marked,
+rather than quietly deleted: **a sweep is a snapshot, and in a five-session
+repository a snapshot's shelf life is minutes.** §2 is the account.
 
 | # | finding | mine or shared | state |
 |---|---|---|---|
 | 1 | **16 of 23 cody digests exceed the 30-line rule**, b4 by 10.8× | **mine** | measured, §1.1 |
 | 2 | **b27 wrapped at 92% context, not 80%** | **mine** | measured, §1.2 |
 | 3 | `SAIRN-ACTIVE-WORK-cody.md` is **795,238 bytes**, 2.0× the 400KB ceiling | **mine** | measured, §1.3 |
-| 4 | **80 of 83 handoffs use a COUNTER; the convention says DATE and calls the counter superseded** | shared | §3.1 |
-| 5 | `CLAUDE.md` says **7** documents are over the ceiling; the tool it cites says **8**, with a different list | shared | §3.2 |
+| 4 | **83 of 86 handoffs use a COUNTER; the convention says DATE and calls the counter superseded** | shared | **still open**, §3.1 |
+| 5 | ~~`CLAUDE.md` says **7** documents are over the ceiling; the tool says **8**~~ — **CLOSED by cc b27 between the measurement and this write-up** | shared | §3.2 |
 | 6 | `unproven_arm_check` A1 against `tests/run_floor_layers_probe.py` is a **false positive** | shared tool, my file | §3.3 |
 | 7 | `unproven_arm_check` A4 is satisfied by **any** durable write, so 5 of 9 files pass it without persisting a verdict | shared tool | §3.4 |
 
@@ -103,25 +110,41 @@ named rather than done hurriedly at the end of a batch.
 
 ---
 
-## 2. THE RULES THEMSELVES — STILL NOT WRITTEN DOWN
+## 2. THE RULES THEMSELVES — AND THIS SECTION WENT STALE WHILE IT WAS BEING WRITTEN
 
-fourth measured this in b38 and found four of six rules absent from every
-document a fresh session reads. **RE-MEASURED INDEPENDENTLY, 2026-10-20, and
-nothing has changed:**
+**MEASURED BEFORE THE REBASE, 2026-10-20:** all four of fourth's unwritten rules
+were still absent from `CLAUDE.md`, `docs/SAIRN-PROCESS-RULES.md` and
+`docs/2026-09-13-cross-domain-disciplines.md` — a second session independently
+confirming fourth's b38 finding, which is the thing that makes a finding worth
+acting on rather than a reading.
 
-    grep -rln "80%"       CLAUDE.md docs/SAIRN-PROCESS-RULES.md
-    grep -rln "30 lines"  CLAUDE.md docs/SAIRN-PROCESS-RULES.md
+**AND THEN THE REBASE ONTO `origin/main` BROUGHT 31 COMMITS, INCLUDING cc's b27,
+WHICH FIXED IT.** `CLAUDE.md` now carries a *"Batch deliverables — the shape, not
+just the existence"* section naming all four:
 
-* **wrap-up at 80%** — absent. §1.2 is what an unwritten threshold costs.
-* **digests 30 lines max** — absent. §1.1 is what it costs.
-* **SQL in files, digest gives only the path** — absent.
-* **the done-line format** — absent.
+* **wrap-up at 80% of REAL context**, with the tool that measures it —
+  `python tools/context_verify.py --digest-line`, which is now declared the only
+  thing that may write a digest's `CONTEXT` line, enforced by push-gate CHECK 5c.
+* **the digest is 30 lines maximum**, and **mechanically checked** as of
+  2026-10-20 — `tools/drive_upload_verify.py` defaults to `--max-lines 30`.
+* **SQL goes in `sql/<name>.sql`, the digest gives the PATH ONLY.**
+* **the final chat message is exactly `done b<n> <Drive file id>`.**
 
-**This is a confirmation of fourth's finding by a second session, not a new
-one.** Two independent sessions reaching the same measurement is the thing that
-makes it worth acting on; one session's sweep is a reading. Neither of us has
-edited `CLAUDE.md` to fix it, and that is now a decision Michael should make
-rather than two agents each declining to make it — §3.2 carries the text.
+**THIS IS THE MOST USEFUL THING IN THE SWEEP AND IT IS NOT A FINDING, IT IS A
+DEMONSTRATION.** The paragraph above was true when it was measured and false
+four minutes later, because another session landed the fix in the same window.
+**Item 8 of `docs/2026-09-13-cross-domain-disciplines.md` is exactly this:
+nothing announces the day a check stops testing anything.** A currency sweep is
+itself a snapshot, and a snapshot of a five-session repository has a shelf life
+measured in minutes. **The correct conclusion is not "fourth and I were wrong" —
+we were both right on measurement — it is that a sweep must be re-measured
+AFTER the rebase that precedes the push, and this one was.**
+
+**STILL TRUE AFTER THE REBASE, re-grepped:** §1.1 and §1.2 are unchanged as
+records. Sixteen of my digests were over the cap and b27 did wrap at 92%
+**before** either rule was written down anywhere. That is history and it stays
+recorded; what changes is that from b28 on, both have a tool behind them and
+neither is a matter of memory.
 
 ---
 
@@ -142,12 +165,19 @@ the date in the filename."*
 
 **MEASURED:**
 
-    ls | grep -cE "^SAIRN-handoff-[a-z0-9]+-b[0-9]+\.md$"          -> 80
+    ls | grep -cE "^SAIRN-handoff-[a-z0-9]+-b[0-9]+\.md$"          -> 83
     ls | grep -cE "^[A-Z]+-20[0-9]{2}-[0-9]{2}-[0-9]{2}-.*-handoff\.md$" -> 3
 
-**All four build agents, for eighty handoffs, use the session+counter scheme the
+**RE-MEASURED AFTER THE REBASE — 83, not 80.** Three more counter-named handoffs
+landed from other sessions in the 31 commits this batch rebased onto, and
+`CLAUDE.md:33` still says *"Sort by the date in the filename"*. **cc's b27 edit
+to `CLAUDE.md` touched the four deliverable rules and left this one**, so unlike
+§3.2 this finding is still open and is getting worse at roughly three files a
+day.
+
+**All four build agents, for eighty-three handoffs, use the session+counter scheme the
 skill says was superseded two months ago.** This is not a style quibble: the
-startup instruction is *unexecutable* against 80 of 83 files, because there is no
+startup instruction is *unexecutable* against 83 of 86 files, because there is no
 date in the filename to sort by. A fresh session that follows `CLAUDE.md:22`
 literally finds three handoffs, none of them recent, and the most recent real
 handoff is invisible to the procedure meant to find it.
@@ -166,39 +196,35 @@ opposite:**
 > collision, and replace "sort by the date in the filename" with "sort by the
 > batch number within your own session's prefix".
 >
-> **Option B — the documents are right, 80 files are mis-named.** Then the
+> **Option B — the documents are right, 83 files are mis-named.** Then the
 > rename is mechanical but the *references* are not: every digest, batch
 > document and open-work row citing a handoff by name would need re-pointing,
 > and `tools/` reads these names in at least one place.
 
 **Option A is the recommendation.** The scheme in use is per-session, so it
-cannot collide between sessions, and renaming 80 files to fix a sentence is the
+cannot collide between sessions, and renaming 83 files to fix a sentence is the
 more expensive direction.
 
-### 3.2 `CLAUDE.md` says 7 documents are over the ceiling; the tool says 8
+### 3.2 ~~`CLAUDE.md` says 7 documents are over the ceiling; the tool says 8~~ — CLOSED BY cc BEFORE THIS SWEEP SHIPPED
 
-`CLAUDE.md:52`: *"Note that **7 tracked documents are over the ceiling, not
-one** — these four, `docs/SAIRN-OPEN-WORK-INDEX.md`,
-`docs/CRITICALITY-TIERS.md` and the unsuffixed `SAIRN-ACTIVE-WORK.md`."*
+**MEASURED BEFORE THE REBASE:** `CLAUDE.md:52` read *"7 tracked documents are
+over the ceiling"* and named four active-work files;
+`python tools/tooling_inventory.py --standing-doc-sizes` (exit 1) reported
+**8**, with `SAIRN-ACTIVE-WORK-fourth.md` dropped off (369,849 bytes, split by
+fourth) and `docs/open-work/platform.md` (847,894) plus
+`docs/TOOLING-INVENTORY.md` (442,976) over and named nowhere.
 
-    python tools/tooling_inventory.py --standing-doc-sizes      # exit 1
-    -> 8 DOCUMENT(S) OVER THE CEILING
+**ALREADY FIXED AT HEAD.** `CLAUDE.md:52` now reads *"**8 tracked documents are
+over the ceiling, not one** — and the set is not the one this paragraph named
+until 2026-10-20"*, and names the two it never carried. **fourth's b38 sweep
+reported this and could not fix it (shared file); cc b27 held the file and
+fixed it.** That is the report-don't-edit boundary working as designed, over two
+batches, with the fix landing in the hands of whoever held the file.
 
-**The count is wrong and so is the list.** `SAIRN-ACTIVE-WORK-fourth.md` is
-369,849 bytes and is now UNDER (fourth split it); `docs/open-work/platform.md`
-(847,894) and `docs/TOOLING-INVENTORY.md` (442,976) are over and are named in
-neither place.
-
-**The paragraph partly defends itself** — it already says *"Run the tool rather
-than trusting this list; it is the thing that moves."* That sentence is why this
-is a low-severity finding rather than a trap. Pasteable replacement for the
-sentence that does move:
-
-> Note that **several tracked documents are over the ceiling, not one.** The
-> count and the list both move — `python tools/tooling_inventory.py
-> --standing-doc-sizes` prints them and exits 1 while any exists. Do not quote a
-> number from here; it was 7 on 2026-10-08 and 8 on 2026-10-20, with two
-> documents swapped in and one out.
+**Nothing is owed here.** Kept in the document rather than deleted, because the
+measurement is what makes §2's point: a finding in a shared file can be closed
+by another session between the measurement and the write-up, and a sweep that
+quietly dropped it would look like it had never seen it.
 
 ### 3.3 `unproven_arm_check` A1 against `tests/run_floor_layers_probe.py` is a false positive
 
