@@ -21,7 +21,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**359 files in `tools/`.** By what actually invokes them:
+**360 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -30,7 +30,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 5 | session-start or prompt hooks, informational |
 | **DECIDED** | 79 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 79 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 90 | nothing runs these at all |
+| **UNWIRED** | 91 | nothing runs these at all |
 
 **THE HOOK-DERIVED HALF OF THE TABLE ABOVE IS THE RECORDED WIRING, NOT THE LIVE ONE.** This clone's `.claude/settings.json` carries an EMPTY `hooks` object, committed on 2026-10-13 after Michael disabled every hook on 2026-10-11 because they were causing agent compaction. The 19 tool wirings behind BLOCKING / REPORT-ONLY / ADVISORY are read from `docs\hooks-disabled-2026-10-13.json`, which records all 23 commands verbatim. **A tool shown as ADVISORY here is wired as a SessionStart or prompt hook in that record and is NOT running in this clone today.** The alternative was believing the zero, and that is what the generator did until 2026-10-16: ADVISORY came out empty, the push gate itself came out SUITE-ONLY, and three arms of `tests/run_tooling_inventory_probe.py` were red against a `--check` that said the document matched the repo -- both ends of that comparison came from the same blind reader.
 
@@ -44,7 +44,7 @@ By what they are, independent of wiring:
 | GENERATOR | 23 |
 | GUARD | 2 |
 | LIBRARY | 27 |
-| LIVE | 27 |
+| LIVE | 28 |
 | PUSH-GATE | 1 |
 | REPORT | 1 |
 | REPORT-ONLY | 1 |
@@ -143,7 +143,7 @@ The 75, by name, so this is actionable rather than a statistic:
 | `verify_citator_feedback.py` | UNWIRED | Guardian Check 29's missing half for cl_feedback_log: a REAL write through the real table, read back, in both directions -- with an employee and without one. Written 2026-10-13 because b4 closed hover2 seq 951 at the application and schema layers with no database access, so the suite asserts the row that WOULD be written and nothing has proved the stored value. RUN IT AFTER Michael runs sql/sairnlaw_citator_schema.sql, never before. Refuses to write without --write, because the rows it leaves are indistinguishable from an attorney's real feedback in the table whose whole subject is attribution. Every arm reads the row back by id rather than trusting a 201, since the defect being closed was a 200 with no employee on the row. COULD-NOT-TELL is a third state throughout. |
 | `wait_for.py` | UNWIRED | a watcher that outlives its subject -- it catches the case where the thing being waited on DIES and the wait continues for ever. Measured cost: on 2026-09-25 an inline `until grep` loop polled for FOURTEEN HOURS after the process producing its sentinel was killed, because the loop's only terminal state was the happy path. Exits 3 WATCHED PID GONE -- explicitly NOT 0 -- when the pid exits without the condition being met, 4 on timeout, 2 on bad arguments, and re-checks the condition once after seeing the pid gone so a subject's final write is not discarded as a failure. An unreadable process table is UNKNOWN rather than dead, counted and reported |
 
-**Separately, 13 tool(s) make a LIVE network or database request.** Those are
+**Separately, 14 tool(s) make a LIVE network or database request.** Those are
 correctly manual: wiring one into a hook would make every push talk to the
 outside world. Unwired is the right state for them and is not a finding.
 
@@ -505,7 +505,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (90)
+## UNWIRED (91)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -559,6 +559,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `inventory2.py` | GENERATOR | chain link 2 of 3: re-derives the out-of-git script list with the repo-copy sandbox directories pruned by name, into i6_raw2.json, and subtracts every script whose basename is already tracked. A COUNT THAT INCLUDES A COPY OF THE THING IT IS MEANT TO BE DISTINGUISHED FROM IS NOT A MEASUREMENT -- pass 1's 2,521 became 64. --out is REQUIRED with no default: it used to drop its raw beside itself, which was harmless in a scratchpad and became a live-path fallback the moment the file was committed to a tracked directory. An archived one-shot, not wired | &mdash; |
 | `js_code_only_diff.py` | LIBRARY | a diff with comment-only changes removed | &mdash; |
 | `law_billing_code_trim_live_probe.py` | LIVE | a SAIRNlaw time entry whose UTBMS billing_code is STORED with padding the validator already removed -- read back from the DATABASE rather than from the write's echo, because a server that normalised only its reply would pass a response-only check; the sharp arm sends a code that is over MAX_BILLING_CODE_CHARS by padding alone, which the gate judges trimmed and would have refused had it been asked about the thing being written. Reports an unprovisioned table, a dead PIN or a bot challenge as UNVERIFIED rather than as a pass, and DISCLOSES the one row it writes and cannot delete -- SAIRNlaw declares no delete verb | &mdash; |
+| `law_trust_lock_live_probe.py` | LIVE | a SAIRNlaw trust hard-lock that has stopped holding on the DEPLOYED endpoint -- fourth's b26 finding H1 was that this lock could be DELETED ENTIRELY with every suite still green, and both suites that answered it drive a MOCK. With a REAL paralegal session it catches four distinguishable things: a paralegal reading or writing law_trusttx or law_bankstatements at all (must be 403 FORBIDDEN); C2's two-stage carve-out COLLAPSING INTO THE SAME REFUSAL AS THE LOCK, since a paralegal WRITE to law_trusttx must be COUNTERSIGN_REQUIRED and not FORBIDDEN and those are opposite findings; the lock having become a blanket refusal, via four negative controls (paralegal reads of law_clients and law_timeentries, and OWNER reads of both locked resources, must all be 200); and a teardown that did not happen, because it deactivates its own paralegal and READS THAT BACK by attempting the login. Writes two fixed-id credential rows on the AUDIT licence only | &mdash; |
 | `leg_session_gate_live_probe.py` | LIVE | a SAIRNlegacy leg_ resource -- the death record and the chain-of-custody log for human remains -- answering a caller who holds the licence key and NO employee session, on the DEPLOYED function rather than the handler in this clone; it asserts the gate's own NO_SESSION code rather than merely a non-200 (a dead licence also refuses), reads an ungated resource alongside so four refusals are a SPLIT rather than a lockout, and reports an absent licence row or a bot challenge as UNVERIFIED rather than as a pass | &mdash; |
 | `load_deadline_seed.py` | LIVE | loads a deadline seed into a live licence | &mdash; |
 | `mech_panels_live_check.py` | LIVE | a SAIRNmechanical panel that looks wired and does not reach its table, and -- with --static, needing no licence -- a dropdown offering a value the endpoint REFUSES. That second one is the reason it exists rather than being a one-off run: nothing else compares the Equipment panel's asset-type `<option>` list to api/_lib/mech-assets.js ASSET_TYPES, and a disagreement hands every user a 400 UNKNOWN_ASSET_TYPE from a form that offered the value. It asserts the ROUND TRIP rather than the columns: column metadata proves the DDL, and only a write-then-read proves the app preserves the three-state NULLs both tables are designed around (an unweighed charge must not come back 0, an unstated gwp_over_150 must not come back false, an unrecorded expiry must not read as current). Neither table grants DELETE by design, so the verification row is RETIRED or SUPERSEDED rather than removed and the run says so -- and the ids carry a per-run timestamp so a re-run cannot collide with the last one. --static is a COULD-NOT-TELL about the panels and prints that rather than a pass | &mdash; |
@@ -636,7 +637,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      359   git ls-files tools/
+  tools on disk                      360   git ls-files tools/
   hook entries                        19   docs\hooks-disabled-2026-10-13.json (RECORDED wiring -- this clone's live hooks are the committed disarm, and the record is read rather than the zero being believed)
   push-gate invocations               17   tools\sairn_push_gate_hook.py
   report-only registry                78   report_only_checks.REGISTRY
