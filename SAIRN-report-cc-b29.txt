@@ -1,0 +1,169 @@
+REPORT cc b29
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-20
+RANGE     from 43a3513a (sql+tier-a(cc b29): 37 never-created tables from 28 files...) to origin/main.
+          Claim fb41521b, taken before the first edit. No --force, NO OVERRIDE, no BYPASS-LOG row.
+STARTUP   b28 handoff read from Drive (1SsWOINxB614USfLUp9YZlMExZbYTVQv_). Local state matched it:
+          cb0d94f5 and d0a9e73a both ancestors of HEAD, tree clean, 0 stashes. Pulled 15 commits
+          from other agents, then claimed.
+CONTEXT   32.0% of 1,000,000 at wrap (measured). Red-flag threshold confirmed at 85
+          (tools/builder_context_watch.py THRESHOLD = 85.0).
+
+== ITEM 1: THE LIST. 37 TABLES FROM 28 FILES; "23 FROM 18" WAS A FLOOR ==
+
+PREMISE CORRECTED. The schema files are not missing. All 28 exist in sql/, and none has ever been run.
+No second copy was written, because a duplicate is a second source that goes stale on its own.
+
+The deliverable is sql/b29_never_run_tables_verify.sql (READ-ONLY):
+  - the 28 files in run order, with the tables each creates;
+  - one query that ALWAYS returns 37 rows, each PRESENT or MISSING, plus a TOTAL row
+    ("37 present of 37" is the pass).
+
+WHY 37 AND NOT 23
+  tools/schema_snapshot_freshness.py:103 QUERY_RE matches only a literal /rest/v1/<t> or rest('<t>').
+  14 tables are reached through a table-name constant (TOKEN_TABLE = '...') or a generic handler
+  that builds the URL from the resource name, and the tool files them under "NOT queried by api/".
+  The 14:
+    dnt_gfe, dnt_recall_outreach, dnt_txplans, sairndental_bi_tokens, sf_trustee_audits,
+    sairncare_witness_policy/_tokens, sairnvet_witness_policy/_tokens,
+    sen_referral_sources, sen_referrals, sen_training_rules, sen_training_records, sen_applicants
+  They live in 10 more files.
+  Method: absent from db/schema_snapshot.json (07:55Z) AND quoted on a non-comment, non-test api/ line.
+  6 of the 43 absent tables were excluded because api/ names them only in comments or not at all.
+  Checked mechanically:
+    - the two value lists in the file are identical (37 and 37, 37 unique);
+    - every one of the 37 is absent from the snapshot;
+    - the freshness tool's 23 are a subset of the 37;
+    - every table is CREATEd in the file its row names.
+
+COLUMN SHAPE
+  Six read-only agents compared each file against every api/ read, write, filter, select and on_conflict.
+  They resolved literal URLs and bodies; nothing was inferred from a variable name.
+    - 0 column mismatches
+    - 0 NOT NULL-without-default columns left unsupplied
+    - 0 on_conflict targets without a UNIQUE
+  CONFIDENCE HIGH ON ALL 37. NO TABLE NEEDED A GUESSED SHAPE.
+  tools/sairn_sql_preflight.py --live db/schema_snapshot.json: 0 findings, 28 of 28.
+  MEDIUM is about GRANT END STATE only, not columns. It covers 7 files (3 sen_*, 4 dental) that do not
+  revoke service_role before granting. RLS is on in all of them.
+
+TWO NEVER-RUN FILES TIGHTENED BEFORE THEIR FIRST RUN (each re-preflighted: 0 findings)
+  sql/sairnscape_org_intel_schema.sql
+    Had NO RLS and NO revoke, so the table would have been anon-key readable and writable through
+    PostgREST, around api/org-intel.js. Now: RLS on; revoke all from anon, authenticated and
+    service_role; grant select, insert; schema-qualified; read-only verify query added.
+  sql/sairnroofing_supplier_documents_schema.sql
+    A bare GRANT is additive, so the file could not make its own "Expect exactly: INSERT, SELECT"
+    verify come true. It now revokes everything first.
+
+== ITEM 2: ROOT CAUSE. SWALLOWED BY DESIGN AT TWO LAYERS; NOT A DIFFERENT TABLE ==
+
+API LAYER
+  A missing-table READ returns HTTP 200 {ok:true, data:[], provisioned:false}
+  (api/sd-data.js unreadableNotEmpty :20404-20423, the same shape in every bespoke branch).
+  This is deliberate, so that missing can be told apart from empty.
+  PROVEN LIVE, signed in, through the real endpoint. All four came back MISSING:
+    - rf_job_warranties, rf_warranty_tiers (RF-AUDIT-2026)
+    - sen_payer_contracts (SEN-PINNACLE-2026)
+    - dnt_gfe (DNT-PINNACLE-2026)
+
+CLIENT LAYER
+  - provisioned:false is ignored almost everywhere: sdData returns j.data only; senHydrate*,
+    sfServerWinsMerge and the dental sync merge [] as a no-op.
+  - Every write saves to localStorage FIRST. The server then answers 503 and the user sees a
+    "saved on this device only" toast.
+  - On the device that entered the data, the app looks exactly right. The data never leaves that browser.
+
+WHERE IT IS NOT SILENT, IT FAILS CLOSED
+  - The SAIRNcare witness gate refuses every alf_mar count entry: 503 NOT_PROVISIONED,
+    api/sairncare-witness.js:428-432.
+  - SAIRNvet sends no witness token at all, so it gets 403 regardless of the tables.
+
+NOT CLAIMED: whether any real customer reached these paths. That needs licence or traffic data the
+repo does not have.
+
+URGENCY, AS THE ROOT CAUSE CHANGES IT
+  1. dnt_gfe: a federal record that exists in one browser
+  2. SAIRNcare witness: a function refused outright
+  3. sen authorisations and payer contracts: a local-only rate or authorisation applied to claims
+  4. everything else: invisible loss, not wrong output
+
+== ITEM 3: BATCH MANIFEST. PRODUCED; THE PRACTICE WAS WRONG, NOT THE CONTRACT ==
+
+docs/batch-manifest-cc-b29.json: 6 ids, id_lock, evidence per item, closed with a Drive verify.
+fourth has produced one for every batch from b35 to b42. cc's last was b20.
+tools/batch_manifest.py says CHAT writes the ids. When chat does not, the agent must, or there is
+nothing to close against. Created this batch with --new.
+THE CLOSE WAS HOLLOW, FIXED: every --close since 16c4715c (b27) wrote "deliverables": [] over a passing
+verify -- the verifier inserted a line count between "bytes" and "sha256" and the parser required them
+adjacent. tools/batch_manifest.py: deliverable_shas() anchors on both ends; a PASS naming fewer than 3 is
+exit 2, not a close. Fixtures 39/39; failing-first shown; positive control closes with 3. Criteria 2026-10-20.1.
+
+== ITEM 4: TIER A dnt_gfe + dnt_credentials (fourth, 2026-10-20T06:38:48Z). DISCHARGED ==
+
+(a) lateBy===0 DRIVEN
+    A node harness slices the page's own code by line, anchored so it exits 2 if a line moves. It is
+    compared against a UTC integer-day oracle, a structurally different method.
+    Scope: every trigger date 2026-2027 x 3 limbs x issue offsets -3..+60 = 140,160 cases per zone.
+    Zones: New_York, Los_Angeles, UTC, Auckland, Santiago, Havana, Lord_Howe, Calcutta, Sao_Paulo,
+    each set in-process and asserted by Intl.
+    Result: 0 mismatches. lateBy===0 renders IN TIME in 2,190 of 2,190 cases.
+    Controls:
+      >  ->  >=         2,190 mismatches
+      round -> floor    10,594 mismatches in NY, 0 in UTC
+      round -> ceil     10,594 mismatches in NY, 0 in UTC
+    The NY-versus-UTC split proves the DST transitions were really exercised.
+(b) "All N issued in time" is unreachable while unknownIssued > 0. Shown by structure; the unknown
+    case was driven.
+(c) All three rCredentials branches overwrite every tile and the badge, so no stale '?' can survive.
+    Shown by structure, NOT in a browser.
+(d) RE-DECIDED FROM 149.610's "not later than", not from the tile label. The due date is the last
+    timely day: an unissued estimate due today counts as due-today, and one issued on the due date
+    counts as in time. Both halves agree. fourth's call stands.
+(e) HIGH: dnt_gfe does not exist in production. The render is correct, but the record it renders is
+    not stored server-side. The 503 toast names the WRONG file (api/sd-data.js:18047 says
+    sairndental_data_schema.sql); routed to cody.
+
+== ITEM 5: CONCEPTS (stated before each file; notes section 4) ==
+
+  org_intel     the table must not be reachable with the public anon key
+  supplier_docs an append-only grant must be exactly SELECT, INSERT whatever the defaults gave
+  verify        one read-only query, always 37 rows
+
+== ITEM 6: PUSH ==
+
+8eeabd1c..43a3513a. No force. git fetch, then rev-list --left-right --count origin/main...HEAD
+gave 0 0. There were two remote-moved rejections; each was answered with pull --rebase and none
+was overridden. Artefacts read back from origin/main.
+
+== ROUTED, NOT FIXED (api/ and .html were excluded) ==
+
+  cody    api/accounting.js:296   revoke PATCH unchecked: FALSE SUCCESS on a credential discard
+  cody    api/accounting.js       :142 and :260 report any 400 as NOT_PROVISIONED
+  cody    api/sd-data.js:18047    wrong file named in the dental 503
+  cody    api/sd-data.js          :10468 and :10570 return a generic 502 on a missing table
+  hank    stonedesk.html:30672    style profile checks the wrong level, so it never reaches the page
+  hank    sd_quote_request_photos written (stonedesk-public.js:317) and never read anywhere
+  fourth  sairnroofing.html:4175 and :4833   an error or a missing table renders as "none recorded"
+  fourth  sairnsenior.html        a local-only contract or authorisation is applied to claims;
+                                  the prior-auth warning is skipped with no contract
+
+== UNVERIFIED ==
+
+- NO SQL WAS RUN. All 28 files and b28's three rt_stops files are written and unrun.
+- Grant end state on 7 files depends on pg_default_acl, which the repo cannot show.
+- rCredentials (c) was shown by structure, not in a browser.
+- Whether real customers ever hit these paths: unknown.
+- tools/schema_snapshot_freshness.py is NOT fixed. It still says 23.
+- MY OWN CONTROL FAILED FIRST: Git Bash dropped the TZ= prefix, so the first nine-zone run was nine
+  runs of New York and all passed. Caught by printing the resolved zone before reporting. The
+  harness now exits 2 on a mismatch.
+
+== EVIDENCE ==
+
+docs/2026-10-20-cc-b29-notes.md (harness in Appendix A), sql/b29_never_run_tables_verify.sql,
+docs/tier-a-reviews.json, docs/batch-manifest-cc-b29.json, SAIRN-handoff-cc-b29.md
+
+SHA256 ee0eae7373640e14c22dcc281fceef6266d11b536d6124d043c2f3dec73fc7e1
+END-OF-REPORT

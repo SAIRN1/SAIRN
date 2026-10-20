@@ -1,0 +1,27 @@
+DIGEST cc b29
+STATUS: 6 items, ALL SIX CLOSED. Push range STARTS at 43a3513a; 0/0 against the REMOTE, no --force, NO OVERRIDE, no BYPASS-LOG row. NO SQL WAS RUN.
+ITEM 1 PREMISE CORRECTED: the schema files are NOT missing. All 28 exist in sql/ and NONE HAS EVER BEEN RUN. No duplicate was written.
+THE LIST IS 37 TABLES FROM 28 FILES, NOT 23 FROM 18. The freshness tool's regex misses 14 tables reached through a constant or a generic handler.
+One of the 14 is dnt_gfe, confirmed MISSING by a signed-in live read.
+Column shape checked against every api/ read, write, filter and on_conflict: 0 mismatches in 37 tables. NO table needed a guessed shape.
+Preflight --live: 0 findings on 28 of 28.
+TWO NEVER-RUN FILES TIGHTENED: sairnscape_org_intel had NO RLS and would have been anon-key readable and writable; rf_supplier_documents could not meet its own grant verify.
+ITEM 2 ROOT CAUSE: SWALLOWED BY DESIGN, NOT A DIFFERENT TABLE. The API answers a missing-table read with HTTP 200 provisioned:false (proven live on 4 tables).
+Clients merge [] as a no-op and save to localStorage first, so a 503 becomes "saved on this device only". The data never leaves that browser.
+Where it is not silent it fails CLOSED: SAIRNcare witness refuses every controlled-substance count today. Real-customer exposure: unknown, not claimed.
+ITEM 3: docs/batch-manifest-cc-b29.json produced and closed; the contract was right, cc's practice had lapsed since b20. AND every --close since b27 recorded deliverables:[] (verifier format drift) -- fixed in tools/batch_manifest.py, a PASS naming <3 is now exit 2; fixtures 39/39.
+ITEM 4 TIER A DISCHARGED: lateBy===0 DRIVEN, 140,160 cases x 9 zones, 0 mismatches, all 2,190 on-due-date cases render in time.
+Three mutation controls each fail it. due<=today re-decided from 149.610 "not later than"; fourth's call stands.
+HIGH: dnt_gfe DOES NOT EXIST in production, so the GFE issued date lives in one browser.
+CAUGHT IN MY OWN CONTROL: Git Bash dropped TZ=, so the first 9-zone run was 9x New York and all passed. The harness now exits 2 on a zone mismatch.
+DECISION-NEEDED: (1) Michael runs the 28 files in the order printed in the verify file, highest first: 18 dnt_gfe, 22 SAIRNcare witness, 12/13 sen contracts and auths.
+Then its query must read "37 present of 37", then re-capture the snapshot. (2) b28's three rt_stops files are still unrun.
+CHANGED: sql/ (1 new read-only verify file, 2 never-run schema files tightened), docs/tier-a-reviews.json (1 record discharged), docs/batch-manifest-cc-b29.json, docs/2026-10-20-cc-b29-notes.md. tools/batch_manifest.py (close parser). No api/, tests/ or .html touched.
+SQL: sql/b29_never_run_tables_verify.sql (run order plus a read-only check); sql/sairnscape_org_intel_schema.sql and sql/sairnroofing_supplier_documents_schema.sql amended. NOT RUN.
+ROUTED: cody accounting.js:296 FALSE SUCCESS on credential discard; sd-data.js:18047 names the wrong file. hank: intake photos written, never read. fourth: roofing and senior renders.
+EVIDENCE-path: SAIRN-report-cc-b29.txt, SAIRN-handoff-cc-b29.md, docs/2026-10-20-cc-b29-notes.md (harness in Appendix A)
+UNVERIFIED: no SQL run. Grant end state on 7 files depends on pg_default_acl. rCredentials shown by structure, not in a browser. The freshness tool is NOT fixed and still says 23.
+NEXT: Michael runs the SQL. cc next batch with tools/ in scope: fix freshness QUERY_RE, fixtures first, target 37. cc notes from cody, hank (b18, b26) still waiting.
+CONTEXT 32.0% of 1,000,000 -- 320,322 tokens, measured.
+SHA256 a48167c78a33605068e3e62b95ed40f7de57fe3c937a23bab1f6536e0cd58ec8
+END-OF-REPORT

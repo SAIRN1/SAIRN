@@ -65,6 +65,7 @@ NO HOOK. This is a command an agent runs and a validator that refuses, not a
 wiring change; `--check` over every manifest in docs/ is the sweep that finds a
 batch that stopped without closing.
 """
+import contextlib
 import hashlib
 import io
 import json
@@ -113,7 +114,7 @@ if hasattr(sys.stderr, 'reconfigure'):
 # child has already died.
 CHILD_ENV = dict(os.environ, PYTHONIOENCODING='utf-8', PYTHONUTF8='1')
 
-CRITERIA_VERSION = '2026-10-13.1'
+CRITERIA_VERSION = '2026-10-20.1'
 NL = chr(10)
 DOCS = os.path.join(REPO, 'docs')
 
@@ -385,6 +386,17 @@ def drive_verify(agent, batch, runner=None):
     return p.returncode, p.stdout.decode('utf-8', 'replace')
 
 
+def deliverable_shas(out):
+    """(name, sha) for each PASS line of drive_upload_verify.py's output.
+
+    Anchored on the two ends of the line, not on what sits between them: the
+    verifier inserted a line-count field between `bytes` and `sha256` in b27,
+    and a pattern that required them to be adjacent matched NOTHING from then
+    on without saying so."""
+    return re.findall(r'PASS\s+(SAIRN-\S+)\s+\d+ bytes\b[^\n]*?\bsha256 ([0-9a-f]+)',
+                      out or '')
+
+
 def cmd_close(agent, batch, runner=None):
     doc, why = load(agent, batch)
     if doc is None:
@@ -430,8 +442,15 @@ def cmd_close(agent, batch, runner=None):
               % rc)
         return EXIT_FINDING
 
-    shas = re.findall(r'PASS\s+(SAIRN-\S+)\s+\d+ bytes\s+sha256 ([0-9a-f]+)',
-                      out or '')
+    shas = deliverable_shas(out)
+    if len(shas) != 3:
+        print('NOT CLOSED: the Drive verify exited 0 but %d deliverable line(s) '
+              'could be read out of it, not 3. A PASS this cannot name is a '
+              'could-not-tell, and recording it would write a closed block '
+              'whose deliverables list is empty -- which is what every close '
+              'did from 16c4715c (b27) until cc b29, when the verifier began '
+              'printing a line count between "bytes" and "sha256".' % len(shas))
+        return EXIT_COULD_NOT_RUN
     doc['closed'] = {
         'drive_verify': 'PASS',
         'verified_by': 'python %s --agent %s --batch %s --verify-only'
@@ -632,6 +651,46 @@ def run_fixtures():
     check('...and the rest of the environment is CARRIED, not replaced -- an '
           'env= that dropped PATH would break the child in a new way',
           bool(env) and len(env) > 2, True)
+
+    # ── THE CLOSE RECORD NAMES WHAT IT VERIFIED (cc b29) ──────────────────
+    # FAILING-FIRST: against the pre-b29 pattern the CURRENT-shape arm reads
+    # 0 deliverables, which is how cc b29's first close wrote
+    # "deliverables": [] over a verify that had passed all three.
+    old_shape = ('  PASS SAIRN-digest-cc-b15.txt    3421 bytes  sha256 492cd7a409f49b96'
+                 '  first line: \'DIGEST cc b15\'')
+    cur_shape = ('  PASS SAIRN-handoff-cc-b29.md   8749 bytes  181 lines (no cap)  '
+                 'sha256 cd26cc30b801b07e  first line: \'# SAIRN handoff\'\n'
+                 '  PASS SAIRN-report-cc-b29.txt   9515 bytes  165 lines (no cap)  '
+                 'sha256 b94043b8e194ee71  first line: \'REPORT cc b29\'\n'
+                 '  PASS SAIRN-digest-cc-b29.txt   3421 bytes   27 lines/30  '
+                 'sha256 492cd7a409f49b96  first line: \'DIGEST cc b29\'')
+    check('a PASS line in the pre-b27 shape (bytes then sha256) is read',
+          deliverable_shas(old_shape) ==
+          [('SAIRN-digest-cc-b15.txt', '492cd7a409f49b96')], True)
+    check('...and the CURRENT shape, with a line count between, reads all '
+          'three', len(deliverable_shas(cur_shape)) == 3, True)
+    check('...and a FAIL line is never read as a deliverable',
+          deliverable_shas(cur_shape.replace('PASS', 'FAIL')) == [], True)
+
+    def _pass_naming_nothing(cmd, env=None):
+        return EXIT_CLEAN, 'PASS: all three deliverables are on the Drive.'
+    import tempfile
+    keep_docs = DOCS
+    tmp = tempfile.mkdtemp()
+    try:
+        globals()['DOCS'] = tmp
+        d = settled()
+        d['agent'], d['batch'] = 'cc', 'bfix'
+        with io.open(manifest_path('cc', 'bfix'), 'w', encoding='utf-8') as fh:
+            json.dump(d, fh)
+        with contextlib.redirect_stdout(io.StringIO()):
+            rc = cmd_close('cc', 'bfix', runner=_pass_naming_nothing)
+        check('a verify that exits 0 but names NO deliverable is NOT a close '
+              '(exit 2, nothing written)', rc == EXIT_COULD_NOT_RUN and
+              'closed' not in json.load(io.open(manifest_path('cc', 'bfix'),
+                                                encoding='utf-8')), True)
+    finally:
+        globals()['DOCS'] = keep_docs
 
     print('  %d/%d fixtures classify correctly' % (total - bad, total))
     return EXIT_FINDING if bad else EXIT_CLEAN
