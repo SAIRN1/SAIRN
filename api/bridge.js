@@ -225,9 +225,9 @@ module.exports = async (req, res) => {
   // THREE live call sites land on it today, measured by grepping every app
   // file for this URL rather than reasoned about:
   //
-  //   stonedesk.html:12814  ?action=maps-static    -- no such action
-  //   stonedesk.html:12927  ?action=maps-optimize  -- no such action
-  //   stonedesk.html:7795   no ?action= at all, a sairn-mobile-sync event
+  //   stonedesk.html:12814  ?action=maps-static    -- no such action  [b27: REPOINTED, the page no longer calls bridge for this]
+  //   stonedesk.html:12927  ?action=maps-optimize  -- no such action  [fourth b34: REPOINTED at rt_routes]
+  //   stonedesk.html:7795   no ?action= at all, a sairn-mobile-sync event  [b26: DELETED -- the call no longer exists]
   //                         envelope body {app_id, event_type:'pos_sale', ...}
   //
   // All three reach `handlePush`, which answers 401 NO_LICENCE or 403 and
@@ -261,7 +261,7 @@ module.exports = async (req, res) => {
   //
   //   NOT LEGITIMATE -- three callers naming an action this endpoint has never
   //   had, all of which omit `?action=` AND omit `data_type`:
-  //     stonedesk.html:7795     {app_id, event_type:'pos_sale', ...}
+  //     stonedesk.html:7795     {app_id, event_type:'pos_sale', ...}   [b26: DELETED]
   //     stonedesk.html:2954     {from, to:'network',  type:'learn'}
   //     stonedesk.html:19939    {from, to:'all', type:'full-sync'}
   //
@@ -272,7 +272,7 @@ module.exports = async (req, res) => {
   //
   // WHAT THE THREE ILLEGITIMATE CALLERS DO TODAY, and one is worse than b21
   // recorded: all three reach `handlePush`, which answers 401 NO_LICENCE
-  // because none sends an Authorization header. :7795 and :2954 swallow it in
+  // because none sends an Authorization header. :7795 (deleted b26) and :2954 swallow it in
   // a bare `.catch(){}`. **:19939 DOES NOT EVEN FAIL QUIETLY -- IT REPORTS
   // SUCCESS.** `fetch` only rejects on a transport error, so a 401 RESOLVES,
   // its `catch` never runs, and `sairnSyncAll` sets "Last sync: <time>" and

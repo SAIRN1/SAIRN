@@ -1,0 +1,47 @@
+-- sql/mint_sen_audit_2026.sql
+--
+-- CONCEPT. A test that has to WRITE payroll rows needs a licence that holds no
+-- customer data and is never shown to a prospect; minting that licence is ONE
+-- idempotent insert into public.license_keys and nothing else.
+--
+-- Mints SEN-AUDIT-2026 (app_id sairnsenior), the audit licence SAIRNsenior never
+-- had. Same shape, same reason and same `on conflict` as
+-- sql/audit_license_seed_mech_law_2026-09-28.sql and
+-- sql/sairnroofing_audit_license_seed.sql; read the first for the long argument.
+--
+-- WHY IT IS NEEDED: the straight-time-floor sign guard in the SAIRNsenior payroll
+-- run (`if (dMin > 0)`) can only be exercised by a DOWNWARD delta, which needs a
+-- visit in a closed pay period, an approved clock correction and a pay rate --
+-- three writes to sen_visits / sen_pay_rates / sen_settings. `sen_visits` has no
+-- delete verb, so those writes are permanent, and they must not land on
+-- SEN-PINNACLE-2026, the demo-facing licence.
+--
+-- NO CREDENTIAL ROW. This file touches ONLY public.license_keys, so it cannot
+-- reach the zero-active-provisioner state that CLAUDE.md PR 3.4 guards: a licence
+-- insert writes no sairnsenior_employee_auth row. The account is created AFTER,
+-- through the app's own bootstrap action, which is available precisely because
+-- the licence has no credential rows yet (sen-auth PROVISIONING_ROLES = ['owner']):
+--
+--   POST https://sairn.vercel.app/api/sen-auth
+--     Authorization: Bearer SEN-AUDIT-2026
+--     {"action":"bootstrap","employee_id":"audit-owner",
+--      "display_name":"Audit Owner","pin":"<choose one>"}
+--
+--   401 INVALID_LICENSE     -> this file has not run
+--   200 {"ok":true,...}     -> ready
+--   409 ALREADY_PROVISIONED -> already bootstrapped; do NOT delete rows to force it
+--
+-- IF RUN TWICE: the second run inserts nothing and changes nothing. `on conflict
+-- (key) do nothing` leaves the existing row exactly as it is -- including its
+-- status, so a licence someone has since suspended STAYS suspended. It does not
+-- error, and it does not touch any other licence.
+--
+-- AFTER RUNNING: run sql/verify_sen_audit_2026.sql, then add SEN-AUDIT-2026 to
+-- KNOWN_AUDIT_KEYS in tools/audit_licence.py (cc's file). That edit is hygiene,
+-- not a blocker: require_audit_licence() accepts an audit-SHAPED key it does not
+-- yet know and prints a NOTE, so the straight-time-floor probe runs either way.
+-- ---------------------------------------------------------------------------
+
+insert into public.license_keys (key, status, customer_email, app_id, plan, stripe_subscription_id)
+values ('SEN-AUDIT-2026', 'active', 'audit@sairnsenior.example', 'sairnsenior', 'demo', null)
+on conflict (key) do nothing;

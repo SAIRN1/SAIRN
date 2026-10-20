@@ -12,9 +12,9 @@
 // file for the URL rather than reasoned about -- three live call sites land
 // there today:
 //
-//   stonedesk.html:12814  ?action=maps-static    -- no such action
-//   stonedesk.html:12927  ?action=maps-optimize  -- no such action
-//   stonedesk.html:7795   NO ?action= at all, a sairn-mobile-sync envelope
+//   stonedesk.html:12814  ?action=maps-static    -- no such action  [b27: REPOINTED]
+//   stonedesk.html:12927  ?action=maps-optimize  -- no such action  [fourth b34: REPOINTED]
+//   stonedesk.html:7795   NO ?action= at all, a sairn-mobile-sync envelope  [b26: DELETED]
 //
 // All three reached `handlePush` and were answered 401 NO_LICENCE / 403. So a
 // caller asking for an action that has never existed was told its CREDENTIALS

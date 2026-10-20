@@ -1,0 +1,44 @@
+{
+  "_what_this_is": "The ONE source for the three straight-time-floor fixtures. docs/2026-10-20-hank-b27-sen-straight-time-floor-live-probe.py writes them to SEN-AUDIT-2026 and api/b27-sen-straight-time-floor-fixtures.test.js feeds the same objects to the real api/_lib/sen-payroll.js, so the numbers the live run expects were proven offline first and cannot drift between the two readers.",
+  "caregiver_id": "hank-b27-caregiver",
+  "rate": {
+    "id": "zz-b27-rate",
+    "rate_per_hour": 20,
+    "effective_on": "2026-01-01",
+    "burden_pct": 0
+  },
+  "closing": {
+    "kind": "close",
+    "closing_id": "zz-b27-close-2026-08",
+    "period_start": "2026-08-01",
+    "period_end": "2026-08-15",
+    "paid_at": "2026-08-16T00:00:00Z"
+  },
+  "schedule": {
+    "client_id": "zz-b27-client",
+    "client_name": "Probe Client",
+    "scheduled_date": "2026-08-05",
+    "scheduled_start": "09:00",
+    "scheduled_end": "13:00",
+    "service_type": "personal_care"
+  },
+  "clock": {
+    "clock_in_at": "2026-08-05T09:00:00Z",
+    "clock_out_at": "2026-08-05T13:00:00Z"
+  },
+  "visits": [
+    {
+      "id": "zz-b27-down",
+      "role": "DOWNWARD: the clock-out is corrected 60 minutes EARLIER, so wages were overpaid",
+      "proposed_clock_out_at": "2026-08-05T12:00:00Z",
+      "expect": { "bucket": "overpayments", "minutes": 60, "cents": 2000 }
+    },
+    {
+      "id": "zz-b27-up",
+      "role": "UPWARD CONTROL: the clock-out is corrected 60 minutes LATER, so wages were underpaid",
+      "proposed_clock_out_at": "2026-08-05T14:00:00Z",
+      "expect": { "bucket": "adjustments", "minutes": 60, "cents": 2000 }
+    }
+  ],
+  "correction_reason_code": "transcription_error"
+}

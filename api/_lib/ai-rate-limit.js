@@ -431,7 +431,11 @@ async function consumeRacy(client, appId, limit) {
 // says so in `tenant_scoped`.
 async function checkAiRateLimit(appId, tenantKey) {
   const limit = dailyLimit();
-  const enforcing = isEnforcing();
+  // `configured` rides on EVERY return, degraded or not (b27): api/claude.js
+  // echoes it, so the deployed mode is observable from outside instead of being
+  // inferred from a burst that cannot tell observe from a high ceiling.
+  const resolved = enforcementMode();
+  const enforcing = resolved.mode === 'enforce';
   // FAILING OPEN IS THE RIGHT CALL AND IT STAYS. This is a COST control, not a
   // security control -- blocking every AI request in a practice because a
   // counter table is unreachable is worse for the customer than letting the
@@ -446,6 +450,7 @@ async function checkAiRateLimit(appId, tenantKey) {
   const base = {
     limited: false, count: null, limit: limit,
     mode: enforcing ? 'enforce' : 'observe',
+    configured: resolved.configured,
     counted: false, allowed: true, atomic: false, rowId: null,
     limited_by: null, tenant_scoped: false, tenant_count: null, tenant_limit: null,
     degraded: true, degraded_reason: 'unknown'
@@ -495,6 +500,7 @@ async function checkAiRateLimit(appId, tenantKey) {
       count: res.count,
       limit: limit,
       mode: mode,
+      configured: resolved.configured,
       counted: res.counted,
       atomic: atomic,
       // WHICH ceiling stopped it: 'app', 'tenant', or null when nothing did.

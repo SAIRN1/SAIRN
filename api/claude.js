@@ -607,6 +607,19 @@ async function claudeProxyHandler(req, res) {
     result.data.rate_limit_degraded = true;
     result.data.rate_limit_degraded_reason = rateLimitDegradedReason || 'unknown';
   }
+  // ── THE LIMITER REPORTS WHAT IT RESOLVED (b27) ──────────────────────────
+  // b25 measured that a 12-call burst of 200s cannot tell `observe` from
+  // `enforce` under a high ceiling, and that the response carried no mode, so
+  // the deployed value was unobservable from outside. These three keys close
+  // that: `rate_limit_configured:false` means the variable is absent or
+  // misspelled and the control is ENFORCING because of it. Only a request that
+  // REACHES the limiter carries them -- an unauthenticated call is refused
+  // upstream and reveals nothing, which is the right default for a config echo.
+  if (result.data && typeof result.data === 'object' && !Array.isArray(result.data)) {
+    result.data.rate_limit_mode = rl.mode;
+    result.data.rate_limit_configured = rl.configured === true;
+    result.data.rate_limit_limit = rl.limit;
+  }
   res.status(200).json(result.data);
 
   // ── RECORD WHAT THIS ACTUALLY COST (2026-09-02) ───────────────────────────

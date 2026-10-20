@@ -12546,7 +12546,6 @@ var quoteCounter = parseInt(localStorage.getItem('quoteCounter')||'0');
 var quoteHistory = (function(){ try{ return JSON.parse(localStorage.getItem('stonedesk_quote_history')||'[]'); }catch(e){ return []; } })();
 var currentQuoteNum = 'Q-' + quoteCounter;
 // == FIELD MAP / ROUTE OPTIMIZER =================================
-var FM_API = 'https://sairn.vercel.app/api/bridge';
 var sdFieldStops = [];   // manual stops only -- owner/manager appts, anything not tied to a job/remake
 var sdFieldOrder = {};   // key 'person|date' -> ordered array of stop ids (optimization memory)
 var fmCurrentTab = 'myday';
@@ -12812,12 +12811,31 @@ function fmRenderMap(containerId, stops){
   var el=document.getElementById(containerId); if(!el) return;
   var addrs=stops.map(function(s){return s.address;}).filter(Boolean);
   if(!addrs.length){ el.innerHTML='<div class="fm-map-placeholder">No addresses to map yet.</div>'; return; }
-  el.innerHTML='<div class="fm-map-placeholder">Loading map...</div>';
-  fetch(FM_API+'?action=maps-static', {method:'POST', headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({addresses:addrs})})
-    .then(function(r){ return r.ok?r.json():Promise.reject(r.status); })
-    .then(function(data){ if(data.imageUrl) el.innerHTML='<img src="'+escHtml(data.imageUrl)+'" alt="Route map">'; else el.innerHTML='<div class="fm-map-placeholder">Map unavailable.</div>'; })
-    .catch(function(){ el.innerHTML='<div class="fm-map-placeholder">Map unavailable.</div>'; });
+  // REPOINTED 2026-10-20 (hank b27). This POSTed `?action=maps-static` to
+  // api/bridge.js, an action that has never existed on main: every call answered
+  // 400 UNKNOWN_ACTION, so the map never rendered, and it sent every stop's
+  // customer address to an endpoint that refused it. THE SHARED ROUTING
+  // PRIMITIVE CANNOT STAND IN: rt_routes offers upsert / reorder / optimize and
+  // returns an ORDER, never an image (grep api/_resources/routes.js and
+  // api/_lib/routes.js -- no static, image or geocode verb). A server-built
+  // static-map image would also have to put a Maps key in a URL the page can read.
+  //
+  // So the map is a Google Maps DIRECTIONS LINK built here from the stops in the
+  // order they are shown: no key, no server call, and the addresses reach Google
+  // only when the person clicks it. Google's Maps URLs documentation gives nine
+  // waypoints at most, so eight intermediate stops are used; stops past that are
+  // said to be left off rather than dropped without a word.
+  var MAXWAY=8;
+  var mid=addrs.length>2?addrs.slice(1,-1):[];
+  var cut=mid.length>MAXWAY;
+  if(cut) mid=mid.slice(0,MAXWAY);
+  var u='https://www.google.com/maps/dir/?api=1&travelmode=driving&destination='
+    +encodeURIComponent(addrs[addrs.length-1]);
+  if(addrs.length>1) u+='&origin='+encodeURIComponent(addrs[0]);
+  if(mid.length) u+='&waypoints='+mid.map(encodeURIComponent).join('%7C');
+  el.innerHTML='<div class="fm-map-placeholder"><a href="'+escHtml(u)+'" target="_blank" rel="noopener noreferrer">Open this route in Google Maps</a>'
+    +'<div style="margin-top:6px">'+addrs.length+' stop'+(addrs.length===1?'':'s')+', in the order listed.'
+    +(cut?' Stops after the '+(MAXWAY+2)+'th are left off the link.':'')+'</div></div>';
 }
 
 // HARD GATE (2026-08-06): a stop cannot be marked Done until a QC-APPROVED
