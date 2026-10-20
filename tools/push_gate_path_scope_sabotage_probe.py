@@ -66,6 +66,15 @@ CASES = [
 
 
 def run(args, cwd, stdin=''):
+    # TWO SHAPES HERE ARE SCRUTINY-FLAGGED AS WEAKENING AND BOTH ARE
+    # DELIBERATE, so the reason sits next to them rather than in a commit
+    # message nobody re-reads.
+    #
+    # `timeout=600`: the subject is a FULL PRE-PUSH RUN, fifteen-plus checks
+    # over a scratch worktree, five times. A shorter bound would turn a slow
+    # gate into a probe failure and the two must not look alike. A timeout
+    # raises here, which aborts the whole probe loudly -- it is never read as
+    # an ALLOWED.
     return subprocess.run(args, cwd=cwd, input=stdin, capture_output=True,
                           text=True, encoding='utf-8', errors='replace',
                           timeout=600,
@@ -146,6 +155,14 @@ def main():
         # b26 lost untracked work to exactly that sequence.
         run(['git', 'worktree', 'remove', '--force', wt], REPO)
         run(['git', 'worktree', 'prune'], REPO)
+        # `ignore_errors=True` is the second flagged shape. It is swallowing a
+        # failure to DELETE A SYSTEM TEMP DIRECTORY -- outside the repo,
+        # containing nothing but this probe's own scratch worktree. The cost of
+        # a swallowed failure here is leftover temp bytes; the cost of raising
+        # is that a cleanup error replaces the verdict table the probe exists
+        # to print. b26's loss ran the OTHER way -- a removal that reached work
+        # it should not have -- which is why the two `git worktree` calls above
+        # name an explicit path and run with REPO as cwd, never from inside.
         shutil.rmtree(base, ignore_errors=True)
 
     code, lines = tally(rows)
