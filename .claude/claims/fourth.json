@@ -4370,6 +4370,40 @@
         "sairnsenior.html",
         "sairnvet.html"
       ]
+    },
+    {
+      "id": "fourth-1792495117",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "b43: sairnbiz vendor ids; anti-framing across 16 root apps incl sairncode (its buster measured ineffective); sairndesign audit increment + live verify; push. FILES: sairnbiz.html sairnbuild.html sairncare.html sairncash.html sairncode.html sairndental.html sairndesign.html sairnfreedom.html sairngrounds.html sairnlaw.html sairnlegacy.html sairnmechanical.html sairnroofing.html sairnscape.html sairnsenior.html sairnvet.html docs/cloud-research/sairndesign-worldwide-competitive-gap-audit-2026-10-20.md docs/defect-density-register.json docs/batch-manifest-fourth-b43.json SAIRN-handoff-fourth-b43.md SAIRN-report-fourth-b43.txt SAIRN-digest-fourth-b43.txt NOT-stonedesk-html-HANKS NOT-api-ANYTHING NOT-tests NOT-tools NOT-vercel-json-NO-REWRITE-MIGRATION NOT-CLAUDE-md NOT-dot-claude-skills",
+      "claimed_at": "2026-10-20T11:18:37Z",
+      "claimed_at_epoch": 1792495117.9902334,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b43.txt",
+        "SAIRN-handoff-fourth-b43.md",
+        "SAIRN-report-fourth-b43.txt",
+        "docs/batch-manifest-fourth-b43.json",
+        "docs/cloud-research/sairndesign-worldwide-competitive-gap-audit-2026-10-20.md",
+        "docs/defect-density-register.json",
+        "sairnbiz.html",
+        "sairnbuild.html",
+        "sairncare.html",
+        "sairncash.html",
+        "sairncode.html",
+        "sairndental.html",
+        "sairndesign.html",
+        "sairnfreedom.html",
+        "sairngrounds.html",
+        "sairnlaw.html",
+        "sairnlegacy.html",
+        "sairnmechanical.html",
+        "sairnroofing.html",
+        "sairnscape.html",
+        "sairnsenior.html",
+        "sairnvet.html"
+      ]
     }
   ],
   "refusals": [
