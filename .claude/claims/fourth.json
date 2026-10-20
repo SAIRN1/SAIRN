@@ -4337,6 +4337,39 @@
         "tests/sairnbiz_benefits_and_overtime.js",
         "tests/sairnbiz_ot_threshold_coalesce.js"
       ]
+    },
+    {
+      "id": "fourth-1792494292",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "b43: sairnbiz vendor ids sbNextId; frame-buster across unprotected root apps; sairndesign worldwide audit next increment + live verify; push. FILES: sairnbiz.html sairnbuild.html sairncare.html sairncash.html sairndental.html sairndesign.html sairnfreedom.html sairngrounds.html sairnlaw.html sairnlegacy.html sairnmechanical.html sairnroofing.html sairnscape.html sairnsenior.html sairnvet.html docs/cloud-research/sairndesign-worldwide-competitive-gap-audit-2026-10-20.md docs/defect-density-register.json docs/batch-manifest-fourth-b43.json SAIRN-handoff-fourth-b43.md SAIRN-report-fourth-b43.txt SAIRN-digest-fourth-b43.txt NOT-stonedesk-html NOT-sairncode-html-ALREADY-PROTECTED NOT-api-ANYTHING NOT-tests NOT-tools NOT-vercel-json-NO-REWRITE-MIGRATION NOT-CLAUDE-md NOT-dot-claude-skills",
+      "claimed_at": "2026-10-20T11:04:52Z",
+      "claimed_at_epoch": 1792494292.3642857,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b43.txt",
+        "SAIRN-handoff-fourth-b43.md",
+        "SAIRN-report-fourth-b43.txt",
+        "docs/batch-manifest-fourth-b43.json",
+        "docs/cloud-research/sairndesign-worldwide-competitive-gap-audit-2026-10-20.md",
+        "docs/defect-density-register.json",
+        "sairnbiz.html",
+        "sairnbuild.html",
+        "sairncare.html",
+        "sairncash.html",
+        "sairndental.html",
+        "sairndesign.html",
+        "sairnfreedom.html",
+        "sairngrounds.html",
+        "sairnlaw.html",
+        "sairnlegacy.html",
+        "sairnmechanical.html",
+        "sairnroofing.html",
+        "sairnscape.html",
+        "sairnsenior.html",
+        "sairnvet.html"
+      ]
     }
   ],
   "refusals": [
