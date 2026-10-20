@@ -4247,6 +4247,17 @@
       "status": "released",
       "released_at": "2026-10-20T13:08:37Z",
       "files": null
+    },
+    {
+      "id": "cody-1792505095",
+      "session": "cody",
+      "subject": "cody",
+      "task": "b32 rf_jobs projection flip api/sd-data.js api/b32-rf-jobs-projection.test.js",
+      "claimed_at": "2026-10-20T14:04:55Z",
+      "claimed_at_epoch": 1792505095.248835,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
