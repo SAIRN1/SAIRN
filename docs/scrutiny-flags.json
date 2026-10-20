@@ -1328,6 +1328,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/_resources/extra-actions.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "1b1f5fd3be0d0923d37e92ee48c570516f72eef7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b30-cap-per-action.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "+ 'ceiling) is NOT refused for size',"
+    }
+   ],
+   "sha": "1b1f5fd3be0d0923d37e92ee48c570516f72eef7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/sd-data-leg-overlap.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -4328,6 +4349,27 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "64a1e5e899c0178fb8db16fffd74c8cff0e82e84",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_resources/extra-actions.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "64c02622ab6350c35ffd25d0eb8c4b45b1f27f70",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b30-cap-per-action.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "+ 'ceiling) is NOT refused for size',"
+    }
+   ],
+   "sha": "64c02622ab6350c35ffd25d0eb8c4b45b1f27f70",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -8584,6 +8626,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/_resources/extra-actions.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "b007b3b0861b70841bfe5ea2713d1700435eef88",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b30-cap-per-action.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "+ 'ceiling) is NOT refused for size',"
+    }
+   ],
+   "sha": "b007b3b0861b70841bfe5ea2713d1700435eef88",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/b21-bridge-unknown-action.test.js",
    "class": "test file",
    "level": "WEAKENING",
@@ -12399,6 +12462,27 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "ff0d6778f3f72a2996ad7c27a905855fc4704f3c",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_resources/extra-actions.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ff94f9bba54b8f2c60c6c186c4b88474549c7794",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b30-cap-per-action.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "+ 'ceiling) is NOT refused for size',"
+    }
+   ],
+   "sha": "ff94f9bba54b8f2c60c6c186c4b88474549c7794",
    "criteria_version": "2026-10-06.1"
   }
  ],
