@@ -4188,6 +4188,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b29-stonedesk-sync-honesty.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "assertions NET REMOVED",
+     "detail": "7 removed, 6 added; first removed: ok('A1[' + st + ']. a ' + st + ' is reported as a FAILURE naming the status',"
+    }
+   ],
+   "sha": "6131e5a900b07b35b057f9f3121d7db96bb15fff",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_push_gate_preflight_probe.py",
    "class": "test file",
    "level": "CHANGE",

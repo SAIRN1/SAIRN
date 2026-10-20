@@ -35352,7 +35352,7 @@
       "recurrence_open": "NOT CLOSED. While the timesheet holds SIX days the maximum recordable week is 144 hours, so thresholds 145-167 are equally unreachable and still honoured; the exact bound is the record own maximum and moves to 168 only when day seven lands (held on api/sd-data.js, cody b29)."
     },
     {
-      "commit": "8ea00b19ef9d",
+      "commit": "6131e5a900b0",
       "date": "2026-10-20",
       "subject": "fix(stonedesk b31): remove the Sync All Apps button, which stamped \"Last sync\" on every click whatever the server said",
       "files": [
