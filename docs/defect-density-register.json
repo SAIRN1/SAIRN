@@ -34899,6 +34899,67 @@
       "recurrence_open": "An ABSENT ?action= is STILL accepted and still reaches handlePush -- arm D1 asserts that residual deliberately, because refusing it is a second decision with a different blast radius (stonedesk.html:7795 sends neither an action nor a data_type). The THREE CALLERS are unchanged: stonedesk.html is held by fourth under a live b34 claim, so the caller half is routed rather than fixed, and until it lands :7795 keeps upserting a bridge_data row of three nulls. AND THE REFUSAL IS NOT DEPLOYED at the time of this record, so every arm is against the handler and none against the live URL -- a 401 from the deployed endpoint today is evidence about the licence gate and none about this fix."
     },
     {
+      "commit": "0543598cd4b0",
+      "date": "2026-10-20",
+      "subject": "control(sabotage b27): a probe must prove the path under test ran before it reports a verdict",
+      "files": [
+        "tools/push_gate_path_scope_sabotage_probe.py",
+        "tools/sabotage.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 368,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "probe-control",
+      "summary": "cc's b26 sabotage harness for pre-push CHECK 5d REPORTED A VERDICT ON A TEST IT NEVER RAN, and reported it in the friendliest possible direction: population hank came back ALLOWED, which reads as \"the gate did not refuse an out-of-scope path\". The defective construct is named rather than paraphrased: the harness planted the out-of-scope path, ran git add plus git commit, and then compared h.returncode from driving tools/sairn_push_gate_hook.py --pre-push WITHOUT FIRST ASSERTING THE PLANTED PATH WAS IN origin/main...HEAD. The pre-COMMIT hook had refused that commit -- commit_tool_entry_check, a tools/*.py with no tooling_inventory entry -- so the commit never happened, the outgoing range was empty, and the pre-push hook correctly allowed a clean tree. Four of the five cases were real refusals and the fifth was untested, so the figure 4/5 was four passes and one non-answer presented as one number. THE PRE-EXISTING LIBRARY DID NOT COVER THIS: tools/sabotage.py already applies PRESENCE, UNIQUENESS and MATERIALISATION to every plant, and write_and_verify would have confirmed the plant was in the bytes on disk, which it was the whole time -- \"is the defect in the file?\" is a different question from \"did the thing under test look at the file?\", and nothing in the module asked the second. FIX, two parts because either alone is thin. (1) tools/sabotage.py gains verdict(decided, subject, examined, label), the only function in the module that hands back a verdict, which returns INCONCLUSIVE unless the subject appears in what the test path ACTUALLY examined -- the outgoing range here, not the probe's intent and not the disk -- refuses INCONCLUSIVE as an INPUT so a caller cannot skip the evidence and declare it, and refuses an empty subject so nothing matches everything; plus tally(rows), which lands an INCONCLUSIVE row in its own bucket, never in passed and never in failed, prints all three counts whether or not they are zero, exits 2 rather than 0 when anything did not run, and prints DO NOT QUOTE n/m naming the untested cases, because the b26 write-up's own instruction not to quote 4/5 was a sentence a human had to remember. (2) The harness is now a file, tools/push_gate_path_scope_sabotage_probe.py, and plants with git commit --no-verify: THE PLANT IS SETUP AND THE SUBJECT UNDER TEST IS THE PRE-PUSH HOOK, so letting a different hook adjudicate the setup makes the probe's coverage depend on rules it is not testing. Changing hank's plant to a .txt, which is what b26 did, only moves the dependency to whichever rule has not been written yet. ARMS: tools/sabotage.py --selftest, 15 new arms across sections 7 and 8 including the b26 shape itself (exit 0 over an EMPTY range is INCONCLUSIVE, and the string ALLOWED is asserted NOT to come back), a non-empty range that merely lacks the subject, the INCONCLUSIVE-as-input refusal, the empty-subject refusal, a counterfactual arm showing the same inputs yield a VERDICT without the ran-check, and on tally the 4-plus-1 table at exit 2 with DO NOT QUOTE present, a real failure outranking an unknown with both still printed, and an EMPTY table reported as 0 of 0 rather than as a pass. tools/push_gate_path_scope_sabotage_probe.py --selftest locks the criteria against fixtures before the live run, 10 arms, and includes REFUSED-UNNAMED as a FAIL: a refusal that does not name the planted path is not reviewable. RE-DRIVEN LIVE after the fix, from a scratch worktree, each population provisioned by its own marker: 5 of 5 decided and matched, 0 did not match, 0 INCONCLUSIVE, exit 0. That is the real count and it supersedes b26's 5/5, which was correct but came from a harness that could not have told anyone if it were not.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/push_gate_path_scope_sabotage_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the harness was written and run entirely inside cc's b26 session scratchpad and was never committed, so there is no injection commit to cite; the scratchpad copy survives at ...c44c9acc.../scratchpad/b26/sabotage.py and its lines 53-66 are the inline ran-check added AFTER the false pass, not the defective version"
+      },
+      "contributing_factors": [
+        {
+          "factor": "The harness read an exit code as a verdict. h.returncode from the pre-push hook is a statement about WHATEVER TREE THE HOOK WAS HANDED, and the harness treated it as a statement about the plant without ever establishing the two were the same tree.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "sabotage.verdict() is now the only route to a verdict and requires the subject to appear in the examined text; the probe passes the outgoing range origin/main...HEAD as that evidence."
+        },
+        {
+          "factor": "The plant's setup was adjudicated by a hook the probe was not testing. commit_tool_entry_check refused the commit for an unrelated and entirely correct reason, and the probe's coverage silently became conditional on rules outside its subject.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The plant commits with --no-verify. b26's own fix was to change hank's plant to a .txt, which moves the dependency to the next rule nobody has written yet rather than removing it."
+        },
+        {
+          "factor": "An empty outgoing range and a clean-and-correctly-allowed push are the same exit code. There is no observable difference between the gate passing and the gate having nothing to judge, so the untested case could only ever surface as a wrong verdict.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "INCONCLUSIVE is now a third state with its own bucket in tally(), and the arm asserting an exit 0 over an EMPTY range yields INCONCLUSIVE is the one that reproduces this exact shape."
+        },
+        {
+          "factor": "The harness was a scratchpad script with no name, no selftest and no criteria lock, so nothing could ablate it and nobody could re-run its result. The same scratchpad cleanup destroyed twelve uncommitted FMEA drafts in the same batch.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "It is tools/push_gate_path_scope_sabotage_probe.py with a --selftest that locks the criteria against fixtures in both directions before the live run, and a tooling_inventory entry saying what it CATCHES."
+        },
+        {
+          "factor": "The 4/5 figure was carried in prose with a human-readable instruction not to quote it. A warning sentence in a handoff is not a mechanism, and the number itself was still a single number over a mixed population.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "tally() prints passed, failed and INCONCLUSIVE as three separate counts whether or not any is zero, exits 2 when anything did not run, and emits DO NOT QUOTE n/m naming the untested cases."
+        }
+      ],
+      "recurrence_open": "verdict() and tally() are OPT-IN and nothing makes a probe call them. The b26 recurrence_open said no other probe in the repo asserts its own plant landed, and that is still true of all of them -- this adds the primitive and one caller, not a sweep. tools/sabotage_control_check.py MEASURES the plant-landed class and does not yet recognise or require the ran-check, so the platform figure it reports is silent on this failure entirely. Nothing refuses a probe that drives a hook over a range it never inspected."
+    },
+    {
       "commit": "21a4b3ceb2a7",
       "date": "2026-10-20",
       "subject": "fix(sairndental): an estimate issued 46 days late now says so, and four zeros stop standing in for an unchecked board",
@@ -35009,60 +35070,6 @@
       "recurrence_open": "NOT CLOSED FOR THE CLASS, and it is the same open class as the GFE record filed against this commit: a summary that cannot distinguish nothing-wrong from nothing-known. Specifically still open here: the four null conditions are still not distinguished from each other in the UI, so a practice cannot tell a missing licence key from an unreachable server. And nothing sweeps the platform for hardcoded KPI defaults that an early return leaves standing -- every app on this platform renders tiles from markup defaults the same way."
     },
     {
-      "commit": "f92444ddf917",
-      "date": "2026-10-20",
-      "subject": "fix(hover b71): a passing restore drill now discharges its own push-count mark",
-      "files": [
-        ".claude/skills/sairn-hover-auditor/tools/hover_backup_mirror.py"
-      ],
-      "lines_added": 23,
-      "lines_removed": 1,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "low",
-      "detection_method": "hover-audit",
-      "summary": "hover_backup_mirror.drill_due() returned DUE on push_count%4==0 even immediately after a PASSING restore drill, because drill rows carried no push_count and the function could not tell an undischarged mark from a discharged one; it would have kept reporting DUE until the next push moved the counter",
-      "rules": [
-        "1.13"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover",
-      "injection": {
-        "unknown_reason": "the function has carried this shape since the drill cadence was added; no single injecting commit was identified and none is guessed"
-      },
-      "citation_note": "Cited as the SIGNAL analog, not a literal waiter, and said that way rather than stretched: 1.13's test is whether a watcher can report the answer that matters, and this indicator had only one reachable terminal state (DUE), so it could never distinguish needs-doing from already-done. It errs toward MORE checking, so this is a clarity defect and not a silent failure -- stated so the severity is not inflated.",
-      "contributing_factors": [
-        {
-          "factor": "The drill row written by record_drill() carried no push_count, so the record of a passing drill did not name the trigger it discharged",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "record_drill() now stamps the current push_count and drill_due() compares it, driven on the real store from DRILL DUE to not-due"
-        },
-        {
-          "factor": "The every-fourth-push trigger is derived from a counter that only moves on the next push, so any condition keyed on it alone is unsatisfiable within the same push",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "the discharge check is keyed on equality with that same counter rather than on time alone, so the mark clears at the push it fired on"
-        },
-        {
-          "factor": "Nothing exercised --drill-due AFTER a passing drill; the 51-arm selftest covers the restore path and the refusals but never the indicator's post-drill answer",
-          "kind": "detection",
-          "action_status": "planned",
-          "action": "Add a selftest arm that runs a passing drill at a multiple-of-four push count and asserts --drill-due then answers not-due. NAMED AS THE NEXT STEP IN THE b71 HANDOFF rather than written at the end of a batch, because the arm needs a drill to run inside a fixture and the existing 51 arms do not have that scaffolding yet."
-        },
-        {
-          "factor": "A pre-b71 drill row has no push_count, so history cannot be re-evaluated and old rows deliberately do NOT discharge the mark",
-          "kind": "process",
-          "action_status": "declined",
-          "note": "treating an unstamped row as a discharge would retroactively satisfy marks nothing was recorded against, which is worse than one extra drill"
-        }
-      ],
-      "recurrence_open": "The detection factor is NOT closed: no selftest arm yet asserts the post-drill answer, so a regression would again be found only by a human checking after a drill rather than by the suite."
-    },
-    {
       "commit": "2eb738de4e6f",
       "date": "2026-10-20",
       "subject": "fix(sairndental b41): the credential board's first paint said a request had failed while it was still in flight",
@@ -35116,55 +35123,6 @@
         }
       ],
       "recurrence_open": "NOT CLOSED. (1) addCredential() still calls rCredentials() after a local add, which replaces a real board with the not-checked view during the write -- a different defect, not fixed here. (2) Out-of-order completion is unguarded: two evaluations render in the order they SETTLE, so an older response can overwrite a newer one. (3) Nothing sweeps for the class across the other apps."
-    },
-    {
-      "commit": "da64a94b38d2",
-      "date": "2026-10-20",
-      "subject": "fix(sairnbiz b42): invoice and employee ids were the last four digits of the clock -- now sequential and unique per device series",
-      "files": [
-        "sairnbiz.html"
-      ],
-      "lines_added": 50,
-      "lines_removed": 2,
-      "app": "sairnbiz",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "Found by source read in fourth b41 (sairnbiz worldwide audit, VAT Directive Art 226(2)). REPRODUCED RED in Chromium: 50 invoices minted in one millisecond got ONE id, 50 employees likewise, editing one employee then matched 50 records, and a second device minted ids the first already held. Consequence: the invoice id is the GL source_id, the employee id is the server upsert key (on_conflict=customer_email,employee_id) and hydrate merges by id, so a collision silently overwrites or merges records. FIXED: <prefix>-<series>-<000001>, one series per device, counter synchronous and never below the highest stored number, taken ids skipped. GREEN 11/11 (RED 2/11). Employee id injected 901ccc2d; invoice id 10db5d3c.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "901ccc2dcaec",
-        "date": "2026-06-29",
-        "subject": "feat: Add SAIRNbiz - HR + Accounting backbone [Session 54]",
-        "lag_days": 113
-      },
-      "citation_note": "No coding rule in the register covers this class; recorded so the class is countable. Proposed: a record id must be unique by construction, never derived from a clock alone.",
-      "contributing_factors": [
-        {
-          "factor": "An id generator was a display string: the last four digits of the millisecond clock repeat every 10 s and are identical within one millisecond.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "sbNextId(): per-device series plus a synchronous persisted counter, never below the highest stored number."
-        },
-        {
-          "factor": "The id is load-bearing in three places that do not check for duplicates: GL source_id, the server employees upsert key, and hydrate merge-by-id.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "Uniqueness now holds by construction across devices (series) and within one (counter + taken check)."
-        },
-        {
-          "factor": "Nothing tested two records created close together; every existing suite created one record at a time.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "The b42 drive freezes Date.now and mints 50 of each, plus reload, lost-counter and second-device arms."
-        }
-      ],
-      "recurrence_open": "NOT CLOSED. (1) Vendor ids use the same shape (\"V\"+Date.now() last 4, sairnbiz.html saveVendor) and were not in scope. (2) Two TABS of one browser minting in the same instant share the counter and can race. (3) Nothing sweeps the platform for Date.now()-derived ids; stonedesk.html has INV-+Date.now() at two sites."
     },
     {
       "commit": "5217024d6958",
@@ -35337,55 +35295,6 @@
       "recurrence_open": "NOT CLOSED. While the timesheet holds SIX days the maximum recordable week is 144 hours, so thresholds 145-167 are equally unreachable and still honoured; the exact bound is the record own maximum and moves to 168 only when day seven lands (held on api/sd-data.js, cody b29)."
     },
     {
-      "commit": "cf1e3cd19ca1",
-      "date": "2026-10-20",
-      "subject": "fix(sairndental b42): the latest credential ask wins, a stale answer no longer overwrites a newer one, and adding a credential no longer blanks the board",
-      "files": [
-        "sairndental.html"
-      ],
-      "lines_added": 32,
-      "lines_removed": 14,
-      "app": "sairndental",
-      "layer": "product",
-      "severity": "low",
-      "detection_method": "fault-injection",
-      "summary": "Left open by fourth b41 (recorded recurrence). RED on the LIVE page 4/8: a slow older answer replaced a fast newer one (stale 5 expired over the current 1), a newer failure was overwritten by an older success, an older null painted the rules and enrolment-risk panels as not-checked beside a Checking table (Guardian A3), and addCredential replaced a real board with the not-checked view during the write. GREEN 8/8: sequence-numbered asks, only the latest renders, pending = latest unsettled or a write in flight; b41 suite still 37/37.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": "scratchpad drive_dental2.py (Playwright, scripted delayed fetch; not in repo)",
-      "found_by_session": null,
-      "injection": {
-        "commit": "876bd84cfad4",
-        "date": "2026-08-24",
-        "subject": "feat(sairndental): licensing/credentialing -- state licences, DEA/MATE, CE pacing",
-        "lag_days": 57
-      },
-      "citation_note": "No coding rule covers this class: async answers rendered in SETTLE order rather than REQUEST order. Proposed: any render driven by a request that can overlap another must drop answers older than the latest request.",
-      "contributing_factors": [
-        {
-          "factor": "b41 fixed first paint with a COUNT of evaluations in flight but still rendered each answer as it settled.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Sequence numbers; an answer older than the latest ask is dropped for all three panels."
-        },
-        {
-          "factor": "The rules and enrolment-risk panels were painted from the same answer as the table but not gated by the same pending rule.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "All three render together from the latest answer only."
-        },
-        {
-          "factor": "addCredential reused the could-not-run render as a 'refresh', a second meaning for one rendering.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Pending during the write; the board is re-asked afterwards whether or not the write landed."
-        }
-      ],
-      "recurrence_open": "NOT CLOSED. Nothing in tests/ drives the credential panel; both drives live in the scratchpad. The server half (api/sd-data.js evaluate) remains unread by this session."
-    },
-    {
       "commit": "8f2036615c6b",
       "date": "2026-10-20",
       "subject": "fix(agent+claude b25): a revoke silently overwritten, a zero-row PATCH logged as a plan change, and two controls that permitted when unset",
@@ -35446,108 +35355,67 @@
       "recurrence_open": "the deployed rate-limit mode is NOT OBSERVABLE from outside: the response carries no mode and a burst of 12 calls is equally consistent with observe and with a daily ceiling above twelve. So if SAIRN_AI_RATE_LIMIT_MODE is absent or misspelled in Vercel, this change switches the cost limiter ON at the daily ceiling on deploy. vercel env ls production is the check and it is the first open item in the handoff"
     },
     {
-      "commit": "ebe472e14e9b",
+      "commit": "8f2ce7146b78",
       "date": "2026-10-20",
-      "subject": "fix(sairncode b42): a rejected coded item was counted among those that \"cleared every check\"",
+      "subject": "fix(reseat b28): a repair is judged on what it CHANGED, not on the state it inherited",
       "files": [
-        "sairncode.html"
+        "tools/defect_register.py"
       ],
-      "lines_added": 40,
-      "lines_removed": 9,
-      "app": "sairncode",
-      "layer": "product",
-      "severity": "low",
-      "detection_method": "code-review",
-      "summary": "Found by fourth b41 while reproducing the (B)(7) measure; fixed b42. scRouteCodedItems() split needs_human_review from everything else and the queue line plus the \"Auto-assigned -- these cleared every check\" table read everything else. RED on the LIVE page: 1 auto, 2 rejected, 1 accepted, 1 pending read \"4 other items cleared every check\" and the cleared table held 4 rows. GREEN: three groups, a Decided-by-a-coder table, unknown statuses fail closed into the queue, the line names all three counts.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "f9a3b3813fb9",
-        "date": "2026-08-20",
-        "subject": "feat: SAIRNcode Phase 2 item 3 -- exception-based routing + two real confidence signals",
-        "lag_days": 61
-      },
-      "citation_note": "No coding rule covers this class: a two-way partition whose ELSE branch is described as if it were one specific state. Proposed: a router over an enumerated status names every member and fails closed on the rest.",
-      "contributing_factors": [
-        {
-          "factor": "A two-way split whose else-branch was labelled with one member's meaning (cleared every check).",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Three named groups; unknown statuses go to the queue."
-        },
-        {
-          "factor": "The panel line and B1's human-oversight claim both leaned on this, so the error overstated how much needed no human.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "Line now separates auto-assigned from coder decisions."
-        }
-      ],
-      "recurrence_open": "NOT CLOSED. No suite in tests/ covers the coded-items panel at all; the b42 drive lives in the scratchpad, not the repo."
-    },
-    {
-      "commit": "0543598cd4b0",
-      "date": "2026-10-20",
-      "subject": "control(sabotage b27): a probe must prove the path under test ran before it reports a verdict",
-      "files": [
-        "tools/push_gate_path_scope_sabotage_probe.py",
-        "tools/sabotage.py",
-        "tools/tooling_inventory.py"
-      ],
-      "lines_added": 368,
-      "lines_removed": 1,
+      "lines_added": 170,
+      "lines_removed": 3,
       "app": "tooling",
       "layer": "tooling",
       "severity": "moderate",
-      "detection_method": "probe-control",
-      "summary": "cc's b26 sabotage harness for pre-push CHECK 5d REPORTED A VERDICT ON A TEST IT NEVER RAN, and reported it in the friendliest possible direction: population hank came back ALLOWED, which reads as \"the gate did not refuse an out-of-scope path\". The defective construct is named rather than paraphrased: the harness planted the out-of-scope path, ran git add plus git commit, and then compared h.returncode from driving tools/sairn_push_gate_hook.py --pre-push WITHOUT FIRST ASSERTING THE PLANTED PATH WAS IN origin/main...HEAD. The pre-COMMIT hook had refused that commit -- commit_tool_entry_check, a tools/*.py with no tooling_inventory entry -- so the commit never happened, the outgoing range was empty, and the pre-push hook correctly allowed a clean tree. Four of the five cases were real refusals and the fifth was untested, so the figure 4/5 was four passes and one non-answer presented as one number. THE PRE-EXISTING LIBRARY DID NOT COVER THIS: tools/sabotage.py already applies PRESENCE, UNIQUENESS and MATERIALISATION to every plant, and write_and_verify would have confirmed the plant was in the bytes on disk, which it was the whole time -- \"is the defect in the file?\" is a different question from \"did the thing under test look at the file?\", and nothing in the module asked the second. FIX, two parts because either alone is thin. (1) tools/sabotage.py gains verdict(decided, subject, examined, label), the only function in the module that hands back a verdict, which returns INCONCLUSIVE unless the subject appears in what the test path ACTUALLY examined -- the outgoing range here, not the probe's intent and not the disk -- refuses INCONCLUSIVE as an INPUT so a caller cannot skip the evidence and declare it, and refuses an empty subject so nothing matches everything; plus tally(rows), which lands an INCONCLUSIVE row in its own bucket, never in passed and never in failed, prints all three counts whether or not they are zero, exits 2 rather than 0 when anything did not run, and prints DO NOT QUOTE n/m naming the untested cases, because the b26 write-up's own instruction not to quote 4/5 was a sentence a human had to remember. (2) The harness is now a file, tools/push_gate_path_scope_sabotage_probe.py, and plants with git commit --no-verify: THE PLANT IS SETUP AND THE SUBJECT UNDER TEST IS THE PRE-PUSH HOOK, so letting a different hook adjudicate the setup makes the probe's coverage depend on rules it is not testing. Changing hank's plant to a .txt, which is what b26 did, only moves the dependency to whichever rule has not been written yet. ARMS: tools/sabotage.py --selftest, 15 new arms across sections 7 and 8 including the b26 shape itself (exit 0 over an EMPTY range is INCONCLUSIVE, and the string ALLOWED is asserted NOT to come back), a non-empty range that merely lacks the subject, the INCONCLUSIVE-as-input refusal, the empty-subject refusal, a counterfactual arm showing the same inputs yield a VERDICT without the ran-check, and on tally the 4-plus-1 table at exit 2 with DO NOT QUOTE present, a real failure outranking an unknown with both still printed, and an EMPTY table reported as 0 of 0 rather than as a pass. tools/push_gate_path_scope_sabotage_probe.py --selftest locks the criteria against fixtures before the live run, 10 arms, and includes REFUSED-UNNAMED as a FAIL: a refusal that does not name the planted path is not reviewable. RE-DRIVEN LIVE after the fix, from a scratch worktree, each population provisioned by its own marker: 5 of 5 decided and matched, 0 did not match, 0 INCONCLUSIVE, exit 0. That is the real count and it supersedes b26's 5/5, which was correct but came from a harness that could not have told anyone if it were not.",
+      "detection_method": "code-review",
+      "summary": "tools/defect_register.py --reseat REVERTED EVERY CORRECT RE-SEAT WHENEVER --check FAILED FOR ANY REASON, INCLUDING A REASON THE RUN NEITHER CAUSED NOR COULD FIX. The defective construct is named rather than paraphrased: cmd_reseat() ran `rc = cmd_check()` AFTER save(reg) and then `if rc != 0:` restored the pre-image, with nothing anywhere establishing whether the write was what made rc non-zero. The guard was added on 2026-10-07 in 6860aee4 for a real reason -- a re-seat had returned 0 over a register its own --check refused, four duplicates -- and it was correct about that case and silently wrong about the other one. BLAST RADIUS, MEASURED: cody's record ce15ddaa6a3c cites a sha that exists nowhere in the repository (`git cat-file -t` says \"not a valid object name\", `git log --all --grep` finds no such subject), it was already on origin before cc's b27, and no re-seat can repair it because a re-seat maps a stale sha forward BY SUBJECT and that subject resolves to nothing. So --check exited 1 in every clone, permanently, and therefore --reseat printed \"RE-SEAT REVERTED ... nothing was kept\" on every run in every clone. ONE SESSION'S UNRESOLVABLE RECORD BLOCKED EVERY OTHER SESSION'S CORRECT REPAIR. It fired TWICE inside cc's b27 alone, and the consequence was not merely a wasted command: cc's own b27 defect record was left citing its pre-rebase sha aabc1c659b5b and resolving only by subject, which is the exact fragile state the re-seat exists to remove, so the tool's failure mode made the register slowly less reachable the longer the blockage lasted. THE FIX, and the concept first: A REPAIR IS JUDGED ON WHAT IT CHANGED, NOT ON THE STATE IT INHERITED. --check is now captured BEFORE the write as well as after, and a new pure function _reseat_verdict(rc_before, problems_before, rc_after, problems_after) returns ('keep'|'revert', why): revert if and only if this run INTRODUCED a problem. A pre-existing failure is KEPT and the output says in a full sentence that every problem was already there, because \"your repair broke the register\" and \"it was already broken\" are different facts and the reader must be able to tell them apart from the output alone. THE COMPARISON IS BY PROBLEM SET AND NEVER BY COUNT, and that is not a style choice: a run that fixes one problem and introduces another leaves the count unchanged, so a count-based test would call it clean, and one fixture drives exactly that trade. The problem lines are parsed out of the captured --check report between the `FAIL: n register problem(s)` header and the next unindented line, and three further fixtures cover that parser because the whole comparison rests on it -- including that an UNINDENTED trailer after the FAIL block (`planned actions owed: 201`) is not mistaken for a problem, and that a report with no FAIL header yields an EMPTY set rather than a phantom one. COULD NOT CHECK (exit 2) IS STILL ALWAYS A REVERT and that is deliberate rather than an oversight: exit 2 means the validation did not run, so there is no evidence either way about what the write did, and PR 1.11 forbids folding a could-not-tell into a pass -- a repair kept on the strength of an unperformed check is the exact shape this register exists to count. Two fixtures pin it, including the case where the check also could not run BEFORE the write. ARMS: `python tools/defect_register.py --fixtures` is 29/29, up from 16, with 13 new arms -- the b28 incident itself (same pre-existing problem before and after -> KEEP, plus an arm asserting the REASON contains \"ALREADY THERE\" rather than blaming the repair), the 2026-10-07 defect this must not regress (clean before, broken after -> REVERT), a new problem alongside an old one, the traded-problem count case, the fix-it case, both could-not-check cases, and the three parser arms. DRIVEN LIVE on the real 2MB register, which is the half a fixture cannot reach: it re-seated THREE records AND KEPT THEM -- 250099e90013, aabc1c659b5b (cc's own b27 record, finally off its pre-rebase sha) and 172a6e96d28a -- named ce15ddaa6a3c as the pre-existing failure, left the f9a4e5a0032b destination collision alone, and exited 1 rather than reverting to 2. The identical run before this change kept nothing. NOT CLOSED BY THIS FIX, declared rather than left to be found: ce15ddaa6a3c is still broken and is still cody's to reseat or supersede, so --check still exits 1 platform-wide; what changed is only that it no longer takes everybody else's repairs with it.",
       "rules": [
         "1.11"
       ],
-      "citation_confidence": "clean",
+      "citation_confidence": "arguable",
       "injection_phase": "coding",
       "phase_confidence": "stated",
-      "found_by_tool": "tools/push_gate_path_scope_sabotage_probe.py",
+      "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "unknown_reason": "the harness was written and run entirely inside cc's b26 session scratchpad and was never committed, so there is no injection commit to cite; the scratchpad copy survives at ...c44c9acc.../scratchpad/b26/sabotage.py and its lines 53-66 are the inline ran-check added AFTER the false pass, not the defective version"
+        "commit": "6860aee4a4d3",
+        "date": "2026-10-07",
+        "subject": "fix(defect register): --reseat returned 0 over a register its own --check REFUSES -- two guards, and a correction to my own routed claim",
+        "lag_days": 13
       },
+      "citation_note": "1.11 is cited for the COULD-NOT-CHECK arm, which is a clean instance: exit 2 means the validation did not run and the fix refuses to keep a repair on that basis. The CORE defect is adjacent rather than inside 1.11 -- a repair judged on the state it INHERITED instead of on the delta it CAUSED -- and the process rules carry no entry for that shape, so the citation is arguable and is marked so rather than stretched to clean.",
       "contributing_factors": [
         {
-          "factor": "The harness read an exit code as a verdict. h.returncode from the pre-push hook is a statement about WHATEVER TREE THE HOOK WAS HANDED, and the harness treated it as a statement about the plant without ever establishing the two were the same tree.",
+          "factor": "The post-write check asked the wrong question. `rc = cmd_check()` answers \"does the register pass\", and the question a repair tool needs answered is \"did MY write make anything worse\". The second cannot be derived from the first without a baseline, and no baseline was taken.",
           "kind": "technical",
           "action_status": "done",
-          "action": "sabotage.verdict() is now the only route to a verdict and requires the subject to appear in the examined text; the probe passes the outgoing range origin/main...HEAD as that evidence."
+          "action": "--check is now captured BEFORE the write as well as after, and _reseat_verdict() compares the two. Revert iff this run INTRODUCED a problem."
         },
         {
-          "factor": "The plant's setup was adjudicated by a hook the probe was not testing. commit_tool_entry_check refused the commit for an unrelated and entirely correct reason, and the probe's coverage silently became conditional on rules outside its subject.",
+          "factor": "The guard was correct about the case it was written for and silently wrong about its complement. 6860aee4 (2026-10-07) added it because a re-seat had returned 0 over a register --check refused; nothing in that change considered a register that was ALREADY failing, because at the time none was.",
           "kind": "latent-condition",
           "action_status": "done",
-          "action": "The plant commits with --no-verify. b26's own fix was to change hank's plant to a .txt, which moves the dependency to the next rule nobody has written yet rather than removing it."
+          "action": "The 2026-10-07 case is now a named fixture (clean before, broken after -> REVERT) so the original defect cannot regress while the complement is fixed."
         },
         {
-          "factor": "An empty outgoing range and a clean-and-correctly-allowed push are the same exit code. There is no observable difference between the gate passing and the gate having nothing to judge, so the untested case could only ever surface as a wrong verdict.",
+          "factor": "The blockage was CROSS-SESSION and nothing made that visible. One session's unrepairable record disabled a repair tool in four clones at once, and the only symptom was each session separately reading \"RE-SEAT REVERTED\" and concluding its own run had failed. Nobody could see from the output that the cause belonged to somebody else.",
           "kind": "detection",
           "action_status": "done",
-          "action": "INCONCLUSIVE is now a third state with its own bucket in tally(), and the arm asserting an exit 0 over an EMPTY range yields INCONCLUSIVE is the one that reproduces this exact shape."
+          "action": "The kept-over-a-failure path now prints, in full sentences, that every problem predates the run, that this run neither caused it nor can fix it, and that somebody has to repair the record itself -- so the next reader routes it instead of re-running."
         },
         {
-          "factor": "The harness was a scratchpad script with no name, no selftest and no criteria lock, so nothing could ablate it and nobody could re-run its result. The same scratchpad cleanup destroyed twelve uncommitted FMEA drafts in the same batch.",
+          "factor": "A repair tool that reports failure on every run gets stopped being run. The four superseded-record pointers had already caused exactly this once -- this file's own comment records that --reseat exiting 1 permanently is \"a recurring finding nobody can act on, which is precisely how a checker gets switched off\" -- and the same shape returned through a different field.",
           "kind": "process",
           "action_status": "done",
-          "action": "It is tools/push_gate_path_scope_sabotage_probe.py with a --selftest that locks the criteria against fixtures in both directions before the live run, and a tooling_inventory entry saying what it CATCHES."
+          "action": "The exit codes now distinguish three outcomes: 0 clean, 1 kept over a pre-existing failure with the reason printed, 2 reverted. Only 2 means the run broke something."
         },
         {
-          "factor": "The 4/5 figure was carried in prose with a human-readable instruction not to quote it. A warning sentence in a handoff is not a mechanism, and the number itself was still a single number over a mixed population.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "tally() prints passed, failed and INCONCLUSIVE as three separate counts whether or not any is zero, exits 2 when anything did not run, and emits DO NOT QUOTE n/m naming the untested cases."
+          "factor": "The all-or-nothing revert had no granularity at all. It restored a pre-image of the WHOLE 2MB file, so N correct re-seats were discarded to undo zero incorrect ones, and the per-record repair that was already attributable was thrown away as a block.",
+          "kind": "technical",
+          "action_status": "planned",
+          "action": "Per-record revert is NOT built. The verdict is still file-wide: if this run does introduce a problem, every re-seat in it is still discarded together. That is the right default while a re-seat is cheap to re-run, and it is named here rather than left to be discovered."
         }
       ],
-      "recurrence_open": "verdict() and tally() are OPT-IN and nothing makes a probe call them. The b26 recurrence_open said no other probe in the repo asserts its own plant landed, and that is still true of all of them -- this adds the primitive and one caller, not a sweep. tools/sabotage_control_check.py MEASURES the plant-landed class and does not yet recognise or require the ran-check, so the platform figure it reports is silent on this failure entirely. Nothing refuses a probe that drives a hook over a range it never inspected."
+      "recurrence_open": "PER-RECORD REVERT IS NOT BUILT: if a run does introduce a problem, every re-seat in it is still discarded together, because the pre-image is the whole file. Acceptable while a re-seat is cheap to re-run, and named rather than hidden. AND THE SAME ALL-OR-NOTHING SHAPE IS NOT SWEPT FOR ELSEWHERE -- nothing checks whether another repair or generator tool in tools/ judges itself on a whole-file validator it does not baseline first; this fixed one instance, not the class. FINALLY, ce15ddaa6a3c IS STILL BROKEN and --check still exits 1 platform-wide; that record is cody's to reseat or supersede and this fix does not touch it."
     },
     {
       "commit": "cc919c308efd",
@@ -35603,6 +35471,201 @@
         }
       ],
       "recurrence_open": "NOT CLOSED. (1) THE FIRST-PAINT FLASH IS NARROWED, NOT ELIMINATED: rCredentials(null) still runs before the evaluation resolves, so a sub-second render of \"the reason was not recorded\" remains. Closing it needs a pending state the panel does not have. (2) NOTHING SWEEPS FOR THE CLASS. sdnEvaluateCredentials was found by hand; no check anywhere asks whether every fetch path in a file writes the same per-resource error record, and a file with one such facility and several fetch paths is the normal shape on this platform. (3) THE SERVER HALF IS UNREAD -- dnt_credentials/evaluate lives in api/sd-data.js, which is cody's, so no claim is made about whether the board itself is right when it DOES arrive."
+    },
+    {
+      "commit": "cf1e3cd19ca1",
+      "date": "2026-10-20",
+      "subject": "fix(sairndental b42): the latest credential ask wins, a stale answer no longer overwrites a newer one, and adding a credential no longer blanks the board",
+      "files": [
+        "sairndental.html"
+      ],
+      "lines_added": 32,
+      "lines_removed": 14,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "fault-injection",
+      "summary": "Left open by fourth b41 (recorded recurrence). RED on the LIVE page 4/8: a slow older answer replaced a fast newer one (stale 5 expired over the current 1), a newer failure was overwritten by an older success, an older null painted the rules and enrolment-risk panels as not-checked beside a Checking table (Guardian A3), and addCredential replaced a real board with the not-checked view during the write. GREEN 8/8: sequence-numbered asks, only the latest renders, pending = latest unsettled or a write in flight; b41 suite still 37/37.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "scratchpad drive_dental2.py (Playwright, scripted delayed fetch; not in repo)",
+      "found_by_session": null,
+      "injection": {
+        "commit": "876bd84cfad4",
+        "date": "2026-08-24",
+        "subject": "feat(sairndental): licensing/credentialing -- state licences, DEA/MATE, CE pacing",
+        "lag_days": 57
+      },
+      "citation_note": "No coding rule covers this class: async answers rendered in SETTLE order rather than REQUEST order. Proposed: any render driven by a request that can overlap another must drop answers older than the latest request.",
+      "contributing_factors": [
+        {
+          "factor": "b41 fixed first paint with a COUNT of evaluations in flight but still rendered each answer as it settled.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Sequence numbers; an answer older than the latest ask is dropped for all three panels."
+        },
+        {
+          "factor": "The rules and enrolment-risk panels were painted from the same answer as the table but not gated by the same pending rule.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "All three render together from the latest answer only."
+        },
+        {
+          "factor": "addCredential reused the could-not-run render as a 'refresh', a second meaning for one rendering.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Pending during the write; the board is re-asked afterwards whether or not the write landed."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. Nothing in tests/ drives the credential panel; both drives live in the scratchpad. The server half (api/sd-data.js evaluate) remains unread by this session."
+    },
+    {
+      "commit": "da64a94b38d2",
+      "date": "2026-10-20",
+      "subject": "fix(sairnbiz b42): invoice and employee ids were the last four digits of the clock -- now sequential and unique per device series",
+      "files": [
+        "sairnbiz.html"
+      ],
+      "lines_added": 50,
+      "lines_removed": 2,
+      "app": "sairnbiz",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "Found by source read in fourth b41 (sairnbiz worldwide audit, VAT Directive Art 226(2)). REPRODUCED RED in Chromium: 50 invoices minted in one millisecond got ONE id, 50 employees likewise, editing one employee then matched 50 records, and a second device minted ids the first already held. Consequence: the invoice id is the GL source_id, the employee id is the server upsert key (on_conflict=customer_email,employee_id) and hydrate merges by id, so a collision silently overwrites or merges records. FIXED: <prefix>-<series>-<000001>, one series per device, counter synchronous and never below the highest stored number, taken ids skipped. GREEN 11/11 (RED 2/11). Employee id injected 901ccc2d; invoice id 10db5d3c.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "901ccc2dcaec",
+        "date": "2026-06-29",
+        "subject": "feat: Add SAIRNbiz - HR + Accounting backbone [Session 54]",
+        "lag_days": 113
+      },
+      "citation_note": "No coding rule in the register covers this class; recorded so the class is countable. Proposed: a record id must be unique by construction, never derived from a clock alone.",
+      "contributing_factors": [
+        {
+          "factor": "An id generator was a display string: the last four digits of the millisecond clock repeat every 10 s and are identical within one millisecond.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "sbNextId(): per-device series plus a synchronous persisted counter, never below the highest stored number."
+        },
+        {
+          "factor": "The id is load-bearing in three places that do not check for duplicates: GL source_id, the server employees upsert key, and hydrate merge-by-id.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Uniqueness now holds by construction across devices (series) and within one (counter + taken check)."
+        },
+        {
+          "factor": "Nothing tested two records created close together; every existing suite created one record at a time.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The b42 drive freezes Date.now and mints 50 of each, plus reload, lost-counter and second-device arms."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. (1) Vendor ids use the same shape (\"V\"+Date.now() last 4, sairnbiz.html saveVendor) and were not in scope. (2) Two TABS of one browser minting in the same instant share the counter and can race. (3) Nothing sweeps the platform for Date.now()-derived ids; stonedesk.html has INV-+Date.now() at two sites."
+    },
+    {
+      "commit": "ebe472e14e9b",
+      "date": "2026-10-20",
+      "subject": "fix(sairncode b42): a rejected coded item was counted among those that \"cleared every check\"",
+      "files": [
+        "sairncode.html"
+      ],
+      "lines_added": 40,
+      "lines_removed": 9,
+      "app": "sairncode",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "Found by fourth b41 while reproducing the (B)(7) measure; fixed b42. scRouteCodedItems() split needs_human_review from everything else and the queue line plus the \"Auto-assigned -- these cleared every check\" table read everything else. RED on the LIVE page: 1 auto, 2 rejected, 1 accepted, 1 pending read \"4 other items cleared every check\" and the cleared table held 4 rows. GREEN: three groups, a Decided-by-a-coder table, unknown statuses fail closed into the queue, the line names all three counts.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "f9a3b3813fb9",
+        "date": "2026-08-20",
+        "subject": "feat: SAIRNcode Phase 2 item 3 -- exception-based routing + two real confidence signals",
+        "lag_days": 61
+      },
+      "citation_note": "No coding rule covers this class: a two-way partition whose ELSE branch is described as if it were one specific state. Proposed: a router over an enumerated status names every member and fails closed on the rest.",
+      "contributing_factors": [
+        {
+          "factor": "A two-way split whose else-branch was labelled with one member's meaning (cleared every check).",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Three named groups; unknown statuses go to the queue."
+        },
+        {
+          "factor": "The panel line and B1's human-oversight claim both leaned on this, so the error overstated how much needed no human.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Line now separates auto-assigned from coder decisions."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. No suite in tests/ covers the coded-items panel at all; the b42 drive lives in the scratchpad, not the repo."
+    },
+    {
+      "commit": "f92444ddf917",
+      "date": "2026-10-20",
+      "subject": "fix(hover b71): a passing restore drill now discharges its own push-count mark",
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools/hover_backup_mirror.py"
+      ],
+      "lines_added": 23,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": "hover_backup_mirror.drill_due() returned DUE on push_count%4==0 even immediately after a PASSING restore drill, because drill rows carried no push_count and the function could not tell an undischarged mark from a discharged one; it would have kept reporting DUE until the next push moved the counter",
+      "rules": [
+        "1.13"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "the function has carried this shape since the drill cadence was added; no single injecting commit was identified and none is guessed"
+      },
+      "citation_note": "Cited as the SIGNAL analog, not a literal waiter, and said that way rather than stretched: 1.13's test is whether a watcher can report the answer that matters, and this indicator had only one reachable terminal state (DUE), so it could never distinguish needs-doing from already-done. It errs toward MORE checking, so this is a clarity defect and not a silent failure -- stated so the severity is not inflated.",
+      "contributing_factors": [
+        {
+          "factor": "The drill row written by record_drill() carried no push_count, so the record of a passing drill did not name the trigger it discharged",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "record_drill() now stamps the current push_count and drill_due() compares it, driven on the real store from DRILL DUE to not-due"
+        },
+        {
+          "factor": "The every-fourth-push trigger is derived from a counter that only moves on the next push, so any condition keyed on it alone is unsatisfiable within the same push",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "the discharge check is keyed on equality with that same counter rather than on time alone, so the mark clears at the push it fired on"
+        },
+        {
+          "factor": "Nothing exercised --drill-due AFTER a passing drill; the 51-arm selftest covers the restore path and the refusals but never the indicator's post-drill answer",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "Add a selftest arm that runs a passing drill at a multiple-of-four push count and asserts --drill-due then answers not-due. NAMED AS THE NEXT STEP IN THE b71 HANDOFF rather than written at the end of a batch, because the arm needs a drill to run inside a fixture and the existing 51 arms do not have that scaffolding yet."
+        },
+        {
+          "factor": "A pre-b71 drill row has no push_count, so history cannot be re-evaluated and old rows deliberately do NOT discharge the mark",
+          "kind": "process",
+          "action_status": "declined",
+          "note": "treating an unstamped row as a discharge would retroactively satisfy marks nothing was recorded against, which is worse than one extra drill"
+        }
+      ],
+      "recurrence_open": "The detection factor is NOT closed: no selftest arm yet asserts the post-drill answer, so a regression would again be found only by a human checking after a drill rather than by the suite."
     }
   ],
   "started": "2026-09-09",
