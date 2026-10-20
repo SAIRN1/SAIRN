@@ -262,8 +262,8 @@ module.exports = async (req, res) => {
   //   NOT LEGITIMATE -- three callers naming an action this endpoint has never
   //   had, all of which omit `?action=` AND omit `data_type`:
   //     stonedesk.html:7795     {app_id, event_type:'pos_sale', ...}   [b26: DELETED]
-  //     stonedesk.html:2954     {from, to:'network',  type:'learn'}
-  //     stonedesk.html:19939    {from, to:'all', type:'full-sync'}
+  //     stonedesk.html:2954     {from, to:'network',  type:'learn'}   [b29: DELETED]
+  //     stonedesk.html:19939    {from, to:'all', type:'full-sync'}   [b29: now reports the failure]
   //
   // THE PROXY_GET BODY SIGNAL IS MATCHED ABOVE THIS BLOCK, so every legitimate
   // action-less caller has already returned by the time control reaches here.

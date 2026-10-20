@@ -2938,24 +2938,14 @@ function learnFromResponse(question, answer) {
       st(APP_ID + '_memory', memory);
     }
 
-    // Push to SAIRN Intelligence Network (async, non-blocking)
-    sendToNetwork({
-      app:    APP_ID,
-      type:   'insight',
-      q:      question.substring(0, 100),
-      a:      answer.substring(0, 200),
-      ts:     new Date().toISOString()
-    });
+    // REMOVED 2026-10-20 (hank b29): a push of the user's AI question (100 chars)
+    // and answer (200 chars) to api/bridge sat here. The bridge has no `learn`
+    // action and refused it 400 on every exchange, so it never stored anything,
+    // and it must not be taught to: api/network.js is the Intelligence Network
+    // and accepts ONLY identifier-shaped patterns by construction, precisely so
+    // free text cannot be stored. The live path is sendNetworkInsight(), which
+    // sends that and nothing else. Memory storage above is unchanged.
   } catch(e) { /* never crash on learning */ }
-}
-
-// --- sendToNetwork: post to SAIRN Bridge (non-blocking) ---
-function sendToNetwork(data) {
-  fetch(BRIDGE, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: APP_ID, to: 'network', type: 'learn', payload: data })
-  }).catch(function() { /* silent — network is optional */ });
 }
 
 // --- getBusinessContext: read everything we know ---
@@ -19956,10 +19946,23 @@ function sairnInitSig() {
 window.sairnSyncAll = async function() {
   sairnToast('Syncing all connected apps...');
   try {
-    await fetch(SAIRN_BRIDGE, {
+    const syncRes = await fetch(SAIRN_BRIDGE, {
       method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({from:SAIRN_APP_ID,to:'all',type:'full-sync',timestamp:new Date().toISOString()})
     });
+    // FIXED 2026-10-20 (hank b29). CONCEPT: a sync is reported as done only when
+    // the server said ok; a non-ok answer is shown as a failure and the "Last
+    // sync" time is left alone. `fetch` RESOLVES on a 4xx/5xx and only rejects on
+    // a transport error, so with no check here a 400 fell straight through to
+    // "All apps synced". It measurably did: the bridge answers this request 400
+    // UNKNOWN_ACTION (it has no `full-sync` action), and the page said the apps
+    // had synced and stamped the time. Found by the hover auditor in b22 and by
+    // fourth independently. The request itself still cannot succeed today, so
+    // the honest message here is the correct one rather than a transient one.
+    if (!syncRes.ok) {
+      sairnToast('Sync failed (HTTP '+syncRes.status+') -- nothing was synced');
+      return;
+    }
     const ts = new Date().toLocaleTimeString();
     const el = document.getElementById('sairn-last-sync');
     if (el) el.textContent = 'Last sync: '+ts;
