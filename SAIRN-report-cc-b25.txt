@@ -1,0 +1,128 @@
+REPORT cc b25
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-19
+WRAPPED   ON INSTRUCTION at 81.0% real context, mid-batch. One item finished
+          to a clean stopping point; items 2-5 NOT STARTED, with no partial
+          artefacts -- nothing to revert and nothing left uncommitted.
+START     b2c28034, clean, zero stashes.
+CLAIM     5ac8f8ad, taken BEFORE the first edit.
+WORK      ef623db0, plus register b44d4f1e and three post-rewrite reseats
+          (497745c9, cf187713, 26e87a89), and handoff 15bb9b3d.
+OVERRIDES none. No SAIRN_SKIP, no SAIRN_GATE_EXEMPT, no SAIRN_SEED_GATE.
+          docs/BYPASS-LOG.jsonl gains no row. register-feed refused once and
+          was SATISFIED, NOT SKIPPED.
+EXCLUSION api/, tests/, every .html and ~/.claude/settings.json untouched.
+
+------------------------------------------------------------------------------
+1. ITEM 1 -- THE ANSWER IS THAT NO OVERRIDE ENTRY SHOULD EXIST
+------------------------------------------------------------------------------
+
+The instruction was an assigned_overrides entry "covering only cody's
+already-pushed .html commits under Michael's assignment".
+
+MEASURED FIRST: CODY HAS PUSHED ZERO .html FILES. All 13 .html paths behind
+b24's "cody 50 path(s), 14 REFUSED" come from ONE commit -- 50f67cfe, author
+`fx`, subject "fix(contrast): 153 findings down to 3, app by app, and the 3
+left are cody's file". That is FOURTH's commit pushing FOURTH's own files,
+entirely in scope. The word `cody` appears in it only as a possessive.
+
+So b24's figure was 100% FALSE POSITIVES for that population, the
+DECISION-NEEDED it produced is WITHDRAWN, and an override would have widened
+cody's manifest on the strength of a measurement error -- the opposite of the
+instruction's own "do not widen cody's manifest". assigned_overrides stays {}
+and the reason is recorded in the commit, the handoff and here.
+
+THE REFUSAL IS RE-DRIVEN AND STILL CORRECT, which was item 1's second half:
+`--agent cody stonedesk.html` -> FOREIGN, exit 1, naming fourth as the owner
+and assigned_overrides as the route; `--agent cody tests/x.js` -> OWNED,
+exit 0.
+
+AND THE DRIVE EXPOSED A REAL DEFECT IN MY OWN b24 TOOL, NOW FIXED. `--check`
+collected every argument after itself that did not begin with `--`, SWALLOWING
+THE VALUE OF `--agent`: `--check --agent cody a.html` classified a path
+literally named `cody` and reported FOUR paths where three were given.
+
+THE PUSH VERDICT WAS STILL RIGHT, WHICH IS WHY IT SURVIVED THE BATCH THAT
+SHIPPED IT. `cody` matched no ownership prefix, read UNOWNED, and the three
+real paths were still refused -- so the exit code was correct while the OUTPUT
+carried a row about a file nobody named. A wrong line inside a refusal
+somebody is meant to act on is worse than a wrong exit code, because the exit
+code is the part a reader re-derives and the prose is the part they believe.
+
+Extracted as paths_from_argv(), pure and locked: 31 -> 37 arms. The real
+invocation is the ARM; a flag-AFTER-paths case is the NEGATIVE CONTROL so the
+fix is not position-dependent; and an ABLATION states the pre-b25 expression
+returning the agent name as a path, so the regression has to argue with it.
+
+Recorded in the register with the INJECTION COMMIT NAMED AS MY OWN b24
+38bbd455, so the discovery lag is one batch and is measured rather than left
+unknown. --check OK at 661 records.
+
+------------------------------------------------------------------------------
+2. WHAT IS OPEN
+------------------------------------------------------------------------------
+
+(a) --history's ATTRIBUTION IS UNSOUND AND THE MODE IS UNCHANGED. It searches
+    the commit SUBJECT for an agent name. It CANNOT be fixed by switching to
+    the author field: measured, every commit in this repo is authored by
+    `Michael Dibert`, `SAIRN1` or `fx`, so git carries no per-population
+    signal at all. The claims files are definitive but only for claim/release
+    commits -- 237 of the last 800 -- and those carry no work paths. Left OPEN
+    rather than half-changed during a wrap-up; it is the `planned` action on
+    the new record's third contributing factor.
+
+(b) ITEMS 2-5 WERE NOT STARTED: the scratch-clone sabotage test of CHECK 5d
+    for all four populations plus an auditor path; the currency sweep and the
+    Agents.md consolidation status; the register status of the four named
+    items; and the next 11 FMEA drafts. No partial artefacts exist.
+
+(c) tools/sairn_path_manifest.py HAS NO FMEA DRAFT. The register said so on
+    this very record. One command, not done.
+
+(d) CARRIED: nothing notices an uncommitted post-rewrite reseat -- it happened
+    THREE times in this batch's own push loop and each was committed by hand;
+    and nothing checks a probe for having become too slow to run. Plus the b24
+    carry-overs: cody's rt_stops.license_hash landing obligation, the egress
+    disclosure for fourth, and two stale justifications in fourth's files.
+
+------------------------------------------------------------------------------
+3. UNVERIFIED
+------------------------------------------------------------------------------
+
+NOTHING WAS INDEPENDENTLY RE-DERIVED. Every figure is from a command run in
+this session and named beside it.
+
+THE "ZERO .html PUSHES" CLAIM IS AN ABSENCE, and absences are the weaker kind
+of measurement. It rests on a full-history walk of every root .html path
+cross-referenced to its commit's author and subject; a cody .html commit whose
+subject names no agent would not have been found by the subject pass, but the
+AUTHOR pass covers that and shows no per-population signal either -- which is
+itself the finding in 2(a). What is solid: the 13 paths blamed on cody are
+one identified commit of fourth's.
+
+THE 37 ARMS ARE PURE. paths_from_argv() is locked as a function; the end-to-end
+drive through the real tool was done by hand twice (FOREIGN and OWNED) and is
+not an arm.
+
+------------------------------------------------------------------------------
+4. PUSH
+------------------------------------------------------------------------------
+
+Pushed as its own command, NO FORCE. register-feed refused once and was
+satisfied with one real record. Five further attempts were non-fast-forward or
+ref-lock rejections while other sessions pushed, and THREE post-rewrite
+reseats of docs/defect-density-register.json were produced by the rebases and
+each was COMMITTED rather than pushed past -- the behaviour the b23 ancestor
+check exists to require.
+
+CONFIRMED BY READING THE REMOTE: `git fetch origin main` then
+`git rev-list --left-right --count origin/main...HEAD` -> 0 0. Clean tree,
+zero stashes. Read back out of origin: tools/sairn_path_manifest.py carries
+paths_from_argv, and docs/sairn-path-manifest.json carries
+assigned_overrides: {} -- still empty, which is the item-1 answer.
+
+CONTEXT 81.0% of 1,000,000 -- 810,385 tokens, measured.
+
+SHA256 692b6741bc729d6e5f366caa27c59fe2865f67bcd0281200ad861758f548d00e
+END-OF-REPORT

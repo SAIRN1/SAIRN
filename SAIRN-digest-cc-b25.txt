@@ -1,0 +1,10 @@
+DIGEST cc b25
+STATUS: WRAPPED at 81% on instruction. 1 of 6 closed, items 2-5 NOT STARTED, no partial artefacts. Landed ef623db0; 0/0 from the REMOTE; no overrides.
+DECISION-NEEDED: none. b24's is WITHDRAWN -- cody has pushed ZERO .html files, so no assigned_overrides entry should exist; one would widen cody's manifest on a measurement error.
+CHANGED: b24's contrary figure was ONE commit, 50f67cfe by fx, naming cody possessively. The refusal re-drives correctly. The drive also found a defect in my own b24 tool: --check swallowed the VALUE of --agent, so a path named `cody` was classified and four reported where three were given. The exit code stayed right -- hence it shipped.
+EVIDENCE-path: SAIRN-report-cc-b25.txt, SAIRN-handoff-cc-b25.md
+UNVERIFIED: in the report. git carries no per-population signal, so --history cannot use the author field.
+NEXT: reframe or remove --history; items 2-5 unstarted.
+CONTEXT 81.9% of 1,000,000 -- 818,512 tokens, measured.
+SHA256 5a21dcc6ed5b05a9576f6d819744e809bcc8852e1e2e4234ad39380e085116c2
+END-OF-REPORT
