@@ -3143,3 +3143,76 @@ verified by finding something.
 
 Full account: `SAIRN-handoff-hank-b22.md`, `SAIRN-report-hank-b22.txt`,
 `SAIRN-digest-hank-b22.txt`, `docs/2026-10-19-hank-b22-notes.md`.
+
+## b23 — 2026-10-19/20 — the attestation gets its solo answer, and a census that found its own holes
+
+**THE IOLTA ATTESTATION IS BUILT, and the one question b21's design could not
+close is answered.** Michael's answer to §6: a per-firm single-signer setting,
+**accepted only while the firm has exactly one active owner/attorney**, and every
+such attestation stored as `signer_mode: 'single'` on the row. The hybrid of the
+design's answers (2) and (3), and neither half stands alone — (2) alone is the
+policy table SAIRNlaw's own countersign schema already refused once, (3) alone
+leaves a solo attorney no route.
+
+**THE ENFORCEMENT POINT THAT MATTERS IS THE SECOND ONE.** The roster is
+re-counted on EVERY single-signer attestation, not trusted from when the setting
+was accepted — so a firm that switched it on as a solo and later hired a second
+attorney loses the route without anyone touching the setting. A check that runs
+only at set time is an authorisation that outlives its own precondition. And the
+count **fails closed**: `null` means the roster could not be read and refuses
+503, never "one, so go ahead".
+
+**api/_lib/countersign.js IS NOT WEAKENED.** Its header says it has no policy
+table, no `set_policy` and NO SELF-SIGNATURE EVER. The single-signer path does
+not go through the countersignature token at all — a solo attestation is a
+DIFFERENT KIND OF RECORD, not the same record with a check switched off, and the
+shared lock still refuses a self-countersignature (arm F3, live in the suite).
+
+**A SECOND PROFILE, NOT A WIDER ONE, AND ARM E3 STAYED GREEN BECAUSE OF IT.**
+The design expected `law_trust_attestation` to join api/law-countersign.js's
+`lockedResources` and predicted arm E3 of b18 would need re-aiming. That
+profile carries ONE `preparerRoles` — `{ paralegal }` — so adding it there
+would have meant **only a paralegal could prepare an attestation and an attorney
+could not**, and widening the list would have changed C2's decided answer as a
+side effect. Own route, own profile: b18 still 59/0.
+
+**THE ABLATION CAUGHT A TEST PASSING FOR THE WRONG REASON.** Arm F2 asserts the
+attester is the COUNTERSIGNER and not the saver. Its first draft let the caller
+default to the same person as the countersigner, so attributing the row either
+way produced the same answer — ablation I3 mutated the read-back, nothing went
+red, and **the arm was the thing at fault**. Three people now: saver, preparer,
+signer.
+
+**A CENSUS DERIVED BY VALUE FOUND TWO HOLES IN ITSELF, both b21's class one
+level deeper.** b21 grepped a URL (3 of 8); b22 used three constant NAMES (8);
+b23 derives *any identifier whose assignment mentions the URL*. Draft 1 demanded
+a quoted literal straight after `=` and missed
+`var bridgeUrl = (typeof BRIDGE !== 'undefined' ? BRIDGE : '…')` — **the
+definition behind the only real push caller.** Draft 2's transitive pass accepted
+any RHS mentioning a handle, and in files whose COMMENTS name the URL it turned
+single-letter locals into handles and then matched every assignment —
+**70 "handles"**. A detector that over-matches is not safer, it is wrong in a
+direction that looks thorough.
+
+**AND THE MEMBERSHIP MOVED WHILE THE COUNT DID NOT.** Still eight callers — but
+`:12927 ?action=maps-optimize` is GONE (fourth's b34 repointed it) and
+`:12814 ?action=maps-static` is on the list, carrying **the exact misdirecting
+"check GOOGLE_MAPS_API_KEY is set" message b34 removed from its twin 113 lines
+later**. A batch that re-checked only the NUMBER would have concluded nothing
+changed.
+
+**The live column, honestly split: one proven, one shape-only, one unprovable
+from here.** The trust hard-lock is PROVEN LIVE with a real paralegal session and
+four negative controls (`tools/law_trust_lock_live_probe.py`, exit 0) — and its
+TEARDOWN caught itself, because `set_active` needs a `reason` and the
+read-back failed until it had one. The straight-time-floor guard is proven only
+in SHAPE (the deployed payroll response carries `overpayments[]` and the
+recovery disclosure); the behaviour needs fixtures and **SAIRNsenior has no audit
+licence**, so they were not written to the demo-facing one. The claude.js log line
+**cannot be proven from here at all**: the response never contains the app_id, so
+the sink is the Vercel function log and the Vercel MCP is unauthenticated.
+`SAIRN_CLAUDE_AUTH_MODE` is **enforce** in production, which the fix's own
+comment does not assume.
+
+Full account: `SAIRN-handoff-hank-b23.md`, `SAIRN-report-hank-b23.txt`,
+`SAIRN-digest-hank-b23.txt`, `docs/2026-10-19-hank-b23-notes.md`.
