@@ -79,3 +79,9 @@ grant select, insert on public.sairnsenior_audit_log to service_role;
 
 -- Verify after running (expect 0 rows, no error):
 --   select count(*) from public.sairnsenior_audit_log;
+
+-- ── ON AN EXISTING TABLE THE CHECK ABOVE DOES NOTHING (b33, 2026-10-20) ─────
+-- `create table if not exists` skips a table that is already there, constraint
+-- and all. The live table predates 'pay_period_closed'/'pay_period_reopened', so
+-- every pay-period close answered 503 AUDIT_UNAVAILABLE. The widening is
+-- sql/sairnsenior_audit_log_event_types_widen_2026-10-20.sql -- run that.

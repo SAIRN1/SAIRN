@@ -225,7 +225,7 @@ def main():
     st, b = sd(key, owner_tok, 'sen_period_closings', 'read')
     d = body_of(b)
     rows = d.get('data') or d.get('periods') or []
-    arm('A2b. ...and READ BACK as closed', st, '', 200, None,
+    closed_ok = arm('A2b. ...and READ BACK as closed', st, '', 200, None,
         any(x.get('closing_id') == cl['closing_id']
             or x.get('period_start') == cl['period_start'] for x in rows))
 
@@ -267,6 +267,23 @@ def main():
             and ex.get('clock_out_at') == FIX['clock']['clock_out_at'])
 
     print('\nB. THE PAY RUN')
+    # ── B IS ONLY MEASURABLE WITH THE CLOSING ON THE SERVER (b33) ────────────
+    # The first live run (2026-10-20) failed A2/A2b with 503 AUDIT_UNAVAILABLE
+    # and then B1, B2 and B4 -- and api/b27-sen-straight-time-floor-fixtures
+    # .test.js section 4 reproduces exactly that pattern from the missing
+    # closing alone: with no closed period there is no carry-forward to find,
+    # whatever the sign guard does. Reporting B as FAILED blamed the guard for a
+    # precondition. So B is NOT MEASURED, said in words, and the run still
+    # fails on A.
+    if not closed_ok:
+        print('  NOT MEASURED -- the August closing is not on the server (A2/A2b), so no')
+        print('  carry-forward can exist and B1/B2/B4 would fail for that reason alone.')
+        print('  Fix A2 first: sql/sairnsenior_audit_log_event_types_widen_2026-10-20.sql.')
+        print('')
+        print('FAILED -- %d arm(s):' % len(failures))
+        for f in failures:
+            print('  - ' + f)
+        return EXIT_FAILED
     ps, pe = current_month_utc()
     st, b = sd(key, owner_tok, 'sen_visits', 'payroll',
                {'period_start': ps, 'period_end': pe, 'week_start_day': 'sunday'})

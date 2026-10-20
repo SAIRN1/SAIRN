@@ -124,5 +124,28 @@ ok('3c. ...and the downward visit is no longer an overpayment (it was silently n
   (abl.overpayments || []).length === 0, JSON.stringify(abl.overpayments));
 ok('3d. no ablation copy left behind', !fs.existsSync(ablFile));
 
+section('4. b33: the LIVE run failed A2/A2b/B1/B2/B4 -- reproduce it with the closing ABSENT');
+// The live close answered 503 AUDIT_UNAVAILABLE, so NO closed period existed when
+// the pay run ran. computePayroll only computes a carry-forward for a visit that
+// is `inClosed && !inPeriod`, so with no closing the two August visits are simply
+// outside the run. If that explains the live result, this run must fail exactly
+// B1, B2 and B4 and still pass B3 -- which is what the live probe reported.
+const noClose = (function () {
+  delete require.cache[require.resolve('./_lib/sen-payroll')];
+  return require('./_lib/sen-payroll').computePayroll({
+    visits: visitsAsStored, period_start: PERIOD_START, period_end: PERIOD_END,
+    week_start_day: 'sunday', closed_periods: [],
+    resolveRate: () => ({ status: 'applied', rate_per_hour: FIX.rate.rate_per_hour })
+  });
+})();
+const ncg = noClose.caregivers || [];
+ok('4a. B1 shape: NO overpayment for the downward visit', (noClose.overpayments || []).length === 0, JSON.stringify(noClose.overpayments));
+ok('4b. B2 shape: NO adjustment for the upward visit', (noClose.adjustments || []).length === 0, JSON.stringify(noClose.adjustments));
+ok('4c. B4 shape: overpayment_cents is 0, not 2000', noClose.overpayment_cents === 0, noClose.overpayment_cents);
+ok('4d. B3 STILL HOLDS: total_payable_cents >= gross_cents (the invariant is not what failed)',
+  ncg.every((c) => c.total_payable_cents >= c.gross_cents), JSON.stringify(ncg));
+ok('4e. so the sign guard is NOT implicated: with the closing present (section 2) the same visits land where they should',
+  (out.overpayments || []).length === 1 && (out.adjustments || []).length === 1);
+
 console.log('\n' + (fail ? 'FAILED' : 'ok') + '  b27 straight-time-floor fixtures: ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);
