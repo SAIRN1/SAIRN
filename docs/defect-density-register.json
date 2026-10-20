@@ -35125,7 +35125,7 @@
       "recurrence_open": "NOT CLOSED. (1) addCredential() still calls rCredentials() after a local add, which replaces a real board with the not-checked view during the write -- a different defect, not fixed here. (2) Out-of-order completion is unguarded: two evaluations render in the order they SETTLE, so an older response can overwrite a newer one. (3) Nothing sweeps for the class across the other apps."
     },
     {
-      "commit": "436c11f02500",
+      "commit": "1e104d4b2f2d",
       "date": "2026-10-20",
       "subject": "fix(claude+stonedesk b27): the limiter reports its mode, the Field Map map stops calling a dead action, and the SEN audit licence + straight-time-floor fixtures are ready",
       "files": [
