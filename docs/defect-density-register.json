@@ -35121,6 +35121,121 @@
       "recurrence_open": "the cross-device half is DETECTED and not PREVENTED: two devices both offline at the moment of issue can still mint the same number and nothing client-side can stop it. The complete fix is a server-side per-year sequence in api/sd-data.js, which is cody's file and is routed"
     },
     {
+      "commit": "8f2036615c6b",
+      "date": "2026-10-20",
+      "subject": "fix(agent+claude b25): a revoke silently overwritten, a zero-row PATCH logged as a plan change, and two controls that permitted when unset",
+      "files": [
+        "api/_lib/ai-rate-limit-tenant.test.js",
+        "api/_lib/ai-rate-limit.js",
+        "api/_lib/fail-closed-mode.js",
+        "api/agent/register.js",
+        "api/agent/stripe-webhook.js",
+        "api/b25-revoke-race-and-failclosed.test.js",
+        "api/claude.js",
+        "docs/2026-10-20-hank-b25-notes.md"
+      ],
+      "lines_added": 900,
+      "lines_removed": 8,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "THREE defects that all REPORT SUCCESS. (1) api/agent/register.js read an agent's status, refused if revoked, then wrote status=active with an ID-ONLY filter, so a revoke landing in that window was SILENTLY OVERWRITTEN and the caller got ok:true. (2) api/agent/stripe-webhook.js used Prefer: return=minimal, so a PATCH matching NO ROW answered 204 like a successful one and the handler logged 'plan_status set to paid' for a row that does not exist -- the only record that endpoint leaves, read during a billing dispute. (3) SAIRN_CLAUDE_AUTH_MODE and SAIRN_AI_RATE_LIMIT_MODE each defaulted PERMISSIVE when absent AND treated every misspelling as observe, because only an exact 'enforce' took the other branch, and nothing anywhere measured the deployed values",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "--phase"
+      },
+      "contributing_factors": [
+        {
+          "factor": "api/agent/register.js read status, checked it, then wrote with an ID-ONLY filter -- a check-then-act gap wide enough for a revoke to land between the two, and the write had no way to express the condition it had just tested",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the PATCH carries &status=neq.revoked, a compare-and-set in one statement; arms A1/A2 and ablation D1"
+        },
+        {
+          "factor": "Prefer: return=minimal made the row count UNREADABLE on both the register PATCH and the Stripe webhook PATCH -- PostgREST answers 204 whether it changed one row or none, so even a correct database condition was invisible to the handler",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "both use return=representation and branch on the row count; ablation D2 removes only the handler half and A1 still reddens, D4 restores minimal and B1 reddens"
+        },
+        {
+          "factor": "api/agent/stripe-webhook.js logged plan_status set to the requested value on a zero-row PATCH, and that log line is the ONLY record the endpoint leaves -- Stripe gets 200, never retries, and nothing reconciles the two sides",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "three outcomes on two streams, the success line carrying the row count; it deliberately does not throw, because retrying an event that names a missing row can never succeed"
+        },
+        {
+          "factor": "SAIRN_CLAUDE_AUTH_MODE and SAIRN_AI_RATE_LIMIT_MODE both defaulted PERMISSIVE when absent, and both treated every misspelling as observe because only an exact enforce took the other branch; nothing measured the deployed values",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "api/_lib/fail-closed-mode.js resolves both -- absent, empty or unknown is ENFORCE with configured:false and a reason naming the variable. MEASURED LIVE: the auth half is already enforce in production, and the rate-limit mode is NOT OBSERVABLE from outside at all"
+        }
+      ],
+      "recurrence_open": "the deployed rate-limit mode is NOT OBSERVABLE from outside: the response carries no mode and a burst of 12 calls is equally consistent with observe and with a daily ceiling above twelve. So if SAIRN_AI_RATE_LIMIT_MODE is absent or misspelled in Vercel, this change switches the cost limiter ON at the daily ceiling on deploy. vercel env ls production is the check and it is the first open item in the handoff"
+    },
+    {
+      "commit": "2eb738de4e6f",
+      "date": "2026-10-20",
+      "subject": "fix(sairndental b41): the credential board's first paint said a request had failed while it was still in flight",
+      "files": [
+        "sairndental.html"
+      ],
+      "lines_added": 47,
+      "lines_removed": 13,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "fault-injection",
+      "summary": "REPRODUCED with a delayed stubbed fetch before the change: first paint was the could-not-run view with NO_REASON on a first visit, and on a revisit the PREVIOUS attempt's FORBIDDEN \"your session is not authorised ... sign in again\" while a request that would succeed was in flight. FIXED with a pending state: refreshCredentialBoard(paintPending) counts in-flight evaluations and paints \"Checking the credential board\" with pending tiles and badge. DRIVEN 37/37: ok/403/500/network each pending-then-outcome, no-licence settles without sticking, overlap holds pending until the last settles, the background refresh leaves a real board up, a throw cannot leave it stuck. MUTATION CONTROL: the pending branch disabled in a routed copy of the page makes the first-paint assertion fail. Severity LOW: transient until the request settles, no data changed -- but the revisit case mis-stated whose problem it was.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "scratchpad drive_dental.py (Playwright, delayed stubbed fetch; not in repo)",
+      "found_by_session": null,
+      "injection": {
+        "commit": "876bd84cfad4",
+        "date": "2026-08-24",
+        "subject": "feat(sairndental): licensing/credentialing -- state licences, DEA/MATE, CE pacing",
+        "lag_days": 57
+      },
+      "citation_note": "No coding rule in the register covers this class: a render path that paints a TERMINAL state (failed) for a request still IN FLIGHT. It is the could-not-tell/passed confusion of PR 1.11 one state over -- not-yet-known folded into failed. The rule that would cover it: any panel that renders before an async evaluation settles must have a distinct pending rendering, and the pending flag must be set before the first paint, not inside the request.",
+      "contributing_factors": [
+        {
+          "factor": "The panel had renderings for checked, could-not-run and never-asked, and NONE for in-flight. nav('credentials') painted rCredentials(null) -- the could-not-run view -- before calling the evaluation, so every first paint claimed a failure for a request that had not answered.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "In flight is a fourth state: refreshCredentialBoard(paintPending) increments a pending COUNT before it paints and rCredentials(null) renders 'Checking the credential board...' with pending tiles and badge while it is non-zero."
+        },
+        {
+          "factor": "On a REVISIT the first paint showed the PREVIOUS attempt's diagnosis. Driven: a stale FORBIDDEN 'sign in again' stood on screen while a request that would SUCCEED was in flight -- an instruction to the wrong person for a problem that did not exist.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The pending view names no reason and no code, so nothing stale can be shown during the request."
+        },
+        {
+          "factor": "b40's mitigation did not reach the case it was written for, and its comment said it did. Clearing dntLastErr on entry to sdnEvaluateCredentials runs AFTER nav() painted, so the first paint still read the previous record. b40 recorded the flash as 'narrowed'; for revisits it was not narrowed at all.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Comment corrected in place to say what the clear does and does not do; the repro that exposed it drives a revisit, not only a first visit."
+        },
+        {
+          "factor": "Overlap and background refresh were unguarded shapes of the same state: two evaluations in flight, or the sync refresh re-asking while a real board is up.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "A count rather than a flag, so pending holds until the last evaluation settles; only nav passes paintPending, so the background refresh leaves a real board on screen; a throw is caught so the panel cannot stick on checking. Each driven."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. (1) addCredential() still calls rCredentials() after a local add, which replaces a real board with the not-checked view during the write -- a different defect, not fixed here. (2) Out-of-order completion is unguarded: two evaluations render in the order they SETTLE, so an older response can overwrite a newer one. (3) Nothing sweeps for the class across the other apps."
+    },
+    {
       "commit": "aabc1c659b5b",
       "date": "2026-10-20",
       "subject": "control(sabotage b27): a probe must prove the path under test ran before it reports a verdict",
@@ -35235,66 +35350,6 @@
         }
       ],
       "recurrence_open": "NOT CLOSED. (1) THE FIRST-PAINT FLASH IS NARROWED, NOT ELIMINATED: rCredentials(null) still runs before the evaluation resolves, so a sub-second render of \"the reason was not recorded\" remains. Closing it needs a pending state the panel does not have. (2) NOTHING SWEEPS FOR THE CLASS. sdnEvaluateCredentials was found by hand; no check anywhere asks whether every fetch path in a file writes the same per-resource error record, and a file with one such facility and several fetch paths is the normal shape on this platform. (3) THE SERVER HALF IS UNREAD -- dnt_credentials/evaluate lives in api/sd-data.js, which is cody's, so no claim is made about whether the board itself is right when it DOES arrive."
-    },
-    {
-      "commit": "8f2036615c6b",
-      "date": "2026-10-20",
-      "subject": "fix(agent+claude b25): a revoke silently overwritten, a zero-row PATCH logged as a plan change, and two controls that permitted when unset",
-      "files": [
-        "api/_lib/ai-rate-limit-tenant.test.js",
-        "api/_lib/ai-rate-limit.js",
-        "api/_lib/fail-closed-mode.js",
-        "api/agent/register.js",
-        "api/agent/stripe-webhook.js",
-        "api/b25-revoke-race-and-failclosed.test.js",
-        "api/claude.js",
-        "docs/2026-10-20-hank-b25-notes.md"
-      ],
-      "lines_added": 900,
-      "lines_removed": 8,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "THREE defects that all REPORT SUCCESS. (1) api/agent/register.js read an agent's status, refused if revoked, then wrote status=active with an ID-ONLY filter, so a revoke landing in that window was SILENTLY OVERWRITTEN and the caller got ok:true. (2) api/agent/stripe-webhook.js used Prefer: return=minimal, so a PATCH matching NO ROW answered 204 like a successful one and the handler logged 'plan_status set to paid' for a row that does not exist -- the only record that endpoint leaves, read during a billing dispute. (3) SAIRN_CLAUDE_AUTH_MODE and SAIRN_AI_RATE_LIMIT_MODE each defaulted PERMISSIVE when absent AND treated every misspelling as observe, because only an exact 'enforce' took the other branch, and nothing anywhere measured the deployed values",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "--phase"
-      },
-      "contributing_factors": [
-        {
-          "factor": "api/agent/register.js read status, checked it, then wrote with an ID-ONLY filter -- a check-then-act gap wide enough for a revoke to land between the two, and the write had no way to express the condition it had just tested",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "the PATCH carries &status=neq.revoked, a compare-and-set in one statement; arms A1/A2 and ablation D1"
-        },
-        {
-          "factor": "Prefer: return=minimal made the row count UNREADABLE on both the register PATCH and the Stripe webhook PATCH -- PostgREST answers 204 whether it changed one row or none, so even a correct database condition was invisible to the handler",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "both use return=representation and branch on the row count; ablation D2 removes only the handler half and A1 still reddens, D4 restores minimal and B1 reddens"
-        },
-        {
-          "factor": "api/agent/stripe-webhook.js logged plan_status set to the requested value on a zero-row PATCH, and that log line is the ONLY record the endpoint leaves -- Stripe gets 200, never retries, and nothing reconciles the two sides",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "three outcomes on two streams, the success line carrying the row count; it deliberately does not throw, because retrying an event that names a missing row can never succeed"
-        },
-        {
-          "factor": "SAIRN_CLAUDE_AUTH_MODE and SAIRN_AI_RATE_LIMIT_MODE both defaulted PERMISSIVE when absent, and both treated every misspelling as observe because only an exact enforce took the other branch; nothing measured the deployed values",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "api/_lib/fail-closed-mode.js resolves both -- absent, empty or unknown is ENFORCE with configured:false and a reason naming the variable. MEASURED LIVE: the auth half is already enforce in production, and the rate-limit mode is NOT OBSERVABLE from outside at all"
-        }
-      ],
-      "recurrence_open": "the deployed rate-limit mode is NOT OBSERVABLE from outside: the response carries no mode and a burst of 12 calls is equally consistent with observe and with a daily ceiling above twelve. So if SAIRN_AI_RATE_LIMIT_MODE is absent or misspelled in Vercel, this change switches the cost limiter ON at the daily ceiling on deploy. vercel env ls production is the check and it is the first open item in the handoff"
     }
   ],
   "started": "2026-09-09",
