@@ -35063,7 +35063,7 @@
       "recurrence_open": "The detection factor is NOT closed: no selftest arm yet asserts the post-drill answer, so a regression would again be found only by a human checking after a drill rather than by the suite."
     },
     {
-      "commit": "9c08ad4d9116",
+      "commit": "5941a119c8a7",
       "date": "2026-10-20",
       "subject": "fix(sairnbiz b24): two recordable injuries printed as the same OSHA case number",
       "files": [

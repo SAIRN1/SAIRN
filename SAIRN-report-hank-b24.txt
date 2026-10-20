@@ -1,0 +1,181 @@
+REPORT hank b24 2026-10-20 -- the attestation proven on the real store, a duplicate OSHA case number, and an ablation pass that found two more arms passing for the wrong reason
+
+CONTEXT 69.0% of 1,000,000 -- 690,355 tokens, measured.
+
+STATUS
+All six items closed. LANDED on origin/main, 0 ahead 0 behind by sha after a
+fresh fetch. NOT FORCED. ZERO gate overrides -- no SAIRN_SKIP, no
+SAIRN_GATE_EXEMPT, no SAIRN_SEED_GATE. The register-feed gate refused six
+attempts in a row and was FED, not escaped.
+
+1. THE ATTESTATION, END TO END. GUARDIAN CHECK 29 SATISFIED.
+   sql/sairnlaw_trust_attestations.sql HAS BEEN RUN -- measured rather than
+   assumed: the first probe found `policy` answering 200 where b23 recorded 503.
+
+   CONCEPT, before the probe existed: an attestation is proven only when THE ROW
+   COMES BACK FROM THE DATABASE saying single-signer with one name in both
+   places; a one-cent-different comparison is refused against a token signed for
+   another; and the single-signer route STOPS WORKING the moment a second
+   attorney is active.
+
+   tools/law_attest_live_probe.py -- 28 arms, exit 0, two real bar-admitted
+   sessions on LAW-AUDIT-2026:
+     * the write, then THE READ-BACK FROM THE DATABASE -- single-signer, one name
+       in both places, the three legs as the integer cents sent, verdict AGREES,
+       a 64-char content hash, and NO token anywhere in the list answer. The
+       read-back is the arm that satisfies check 29: a server that normalised
+       only its reply would pass a response-only check, which is the defect
+       SAIRNlaw's deadline engine shipped with 84 of 84 isolation tests green.
+     * THE BOUNDARY IN BOTH DIRECTIONS -- a float leg, AGREES with legs ONE CENT
+       apart, and an unknown comparison field all refused with their own codes;
+       THE SAME UNEQUAL LEGS WITH DISAGREES ACCEPTED, so "refuses an
+       inconsistent verdict" cannot be confused with "refuses a real
+       discrepancy"; a reused attestation_id its own 409.
+     * THE STALE SETTING, LIVE. A second attorney is provisioned, the setting is
+       STILL ON, and attest is 403 SINGLE_SIGNER_NOT_SOLO while set_policy is
+       409. No mock arm can see this property.
+     * the two-signer path end to end, including the preparer refused their own
+       countersignature, THE ROW NAMING THE COUNTERSIGNER AND NOT THE SAVER, a
+       spent token refused, and a token spent on a comparison one cent different
+       refused.
+     * teardown READ BACK TWICE -- the deactivated attorney 401, and policy's
+       count back at 1, so the state moved and not just the reply.
+
+   THE RESIDUE IS PERMANENT AND BOUNDED, AND THAT IS STATED RATHER THAN
+   SOFTENED. The table is granted SELECT and INSERT and NOT DELETE, by design,
+   so nothing can remove an attestation. The two ids are FIXED CONSTANTS, so a
+   re-run asserts the existing rows instead of adding more: two rows, ever.
+
+2. THE STALE PRESENT-TENSE HEADER. FIXED.
+   api/_lib/law-trust-reconcile.js said "`reconcileTrust()` ALREADY COMPARES
+   three figures" and "COMPARES an ALL-TIME ledger balance". That function does
+   not exist -- deleted when the client was repointed at this module, recorded
+   at sairnlaw.html:3287 -- and the cited line :3134 now points at an unrelated
+   toast.
+
+   REWRITTEN RATHER THAN DELETED: the dissection is the whole argument for the
+   file existing, and a reader who cannot find the function it dissects
+   concludes the argument is about code that is not there. Now past tense, names
+   where the deletion is recorded, and adds the half that IS still live --
+   trustLedgerBalance()/clientLedgerBalance() at sairnlaw.html:3281/:3284 still
+   read one device's store. Line numbers re-derived with grep -n. 33/0 and 12/0.
+
+3. THE DUPLICATE OSHA CASE NUMBER. REPRODUCED, FIXED, ARMED.
+   Issued at sairnbiz.html sbNextCaseNo() -- max+1 over ONE BROWSER'S
+   localStorage -- while sb_incidents is in SB_SYNCED and sbServerWinsMerge()
+   matches rows BY `id`.
+
+   THE REPRODUCTION RAN FIRST AND B1 RAN RED. A1 two devices both issue 1; A2
+   after the merge both rows print 2026-1; A3 THE YTD COUNT IS CORRECT AT 2 --
+   which is exactly why nothing caught it: the 300A totals are right while
+   Column A is wrong, and an inspector reads both. B1 caught a second hole on
+   ONE device: a row with no `year` field was invisible to the max scan, so the
+   next save re-issued a number that row already held.
+
+   THE FIX: the date as the year fallback; sbCaseNoCollisions(), one finding per
+   duplicated NUMBER and silent on a row with no number at all; and a DUPLICATE
+   warning rendered IN COLUMN A ITSELF, because that is where a reader
+   transcribing onto Form 300 is already looking. NOTHING RENUMBERS -- resolving
+   a duplicate on a filed Form 300 is a human act on a regulatory record.
+
+   25 arms, 0 failed. A defect-register record with four contributing factors,
+   TWO OF THEM DETECTION rather than technical, injection commit found with
+   `git log -S` rather than guessed.
+
+   AND IT BROKE A GREEN SUITE, reported rather than quietly patched:
+   tests/sairnbiz_incidents_kpi.js lifts rIncidents into a vm and lacked its new
+   dependency -- nine arms died, 25/25 -> 16/25. Fixed by lifting the dependency.
+   A `typeof === 'function'` guard in the app was REJECTED: in the browser both
+   functions are in the same file, so such a guard could only fire in a harness
+   that lifted one and not the other, and it would make that harness report the
+   render as fine while the warning never appeared.
+
+   THE RESIDUAL IS NAMED: two devices BOTH offline at the moment of issue can
+   still collide. The complete fix is a server-side per-year sequence in
+   api/sd-data.js -- cody's, routed.
+
+4. THE CURRENCY SWEEP. REPORT-ONLY ON EVERYTHING SHARED.
+   Nothing in ~/.claude/ was edited. Each figure measured, with its command.
+
+     skippable gates          CLAUDE.md says "eight"      -> MEASURED 11
+     cross-domain conventions CLAUDE.md says "Twelve"     -> MEASURED 39
+     docs over 400kB          CLAUDE.md names seven       -> MEASURED eight,
+                              and the MEMBERSHIP moved (open-work/platform.md
+                              and TOOLING-INVENTORY.md are over;
+                              ACTIVE-WORK-fourth.md no longer is)
+     that tool's exit code    "exits 1 while any exists"  -> exit 1, CORRECT
+     WRITE_ACTIONS            17 verbs                    -> `attest` ABSENT
+
+   THE SHARPEST FINDING: control-bytes, credential-sql, register-feed and
+   scrutiny-ledger are skippable ON PAPER -- the tool says a skip for them is
+   GRANTED AND THEN IGNORED, because no deny() passes that id yet. b23 and b24
+   were EACH refused by credential-sql and register-feed, so the scoped form
+   would have granted a skip, changed nothing, and still been refused. The only
+   route for those four is to feed them. Recorded in hank's persistent memory.
+
+   MEMORY ALSO PRUNED: hank-b1-progress.md was a per-item checkpoint for a batch
+   23 batches old. Deleted, with its MEMORY.md pointer.
+
+5. THE ABLATION PASS ACROSS b18-b23. SIX OF NINE HAD ONE. THREE DID NOT.
+   Censused by measurement -- does the suite MUTATE a layer and measure a NAMED
+   arm -- not by reading. b19 (cody's, 4 expected reds) is ROUTED;
+   b20-countersign-open and b22-funeral-f1-f2-f3-wiring had none and now do.
+
+   b20: 15 -> 20 arms. The stage ladder's ORDER (signed ahead of expired -> A3
+   red, A1/C1 green), the unspent filter (-> D1 red), and token_hash added to
+   the shared select (-> C1/C2 red, which proves the absence-over-the-whole-
+   response assertion catches a field nobody named). Its cannot() is a FAIL and
+   not a third state, with the reason written at the function.
+
+   b22-funeral: 18 -> 23 arms, AND F2 FAILED ON ITS FIRST DRAFT -- the second
+   instance of b23's F2 class. It ablated apprenticePolicy()'s second narrowing
+   and NOTHING WENT RED, because decide() already returns DENY earlier. Re-aimed
+   at the real layer, where C3 reddens; and the redundant layer is now ASSERTED
+   AS REDUNDANT rather than deleted, so nobody mistakes it for a control.
+
+   b24's own arms were ablated too, and F3 INITIALLY DID NOT REDDEN D2 -- the
+   third instance: D1/D2 were satisfied by a COMMENT containing the words they
+   searched for. Comments are stripped now, with D0 asserting the strip took
+   whole comment lines and nothing else.
+
+   AND THEN D1 OF b22-funeral FIRED FOR REAL. It asserted that no api/sd-data.js
+   call site passed decide()'s grants/home and said in its own text that a
+   failure would be GOOD NEWS. cody's b27 wired it at sd-data.js:16702, the arm
+   named the site, and F0/F2b went red with it because an ablation measured
+   against a red baseline measures nothing. RE-AIMED RATHER THAN DELETED: the
+   gap stopped being the risk and a REGRESSION became one, so the arm now
+   requires the wiring and its failure message says it has been reverted.
+
+   Every ablation restores its file BYTE-FOR-BYTE -- md5sum before and after,
+   Buffer-based, trying the CRLF spelling of each anchor, because this repo has
+   mixed line endings file by file.
+
+6. PUSHED WITHOUT FORCE, confirmed by sha. Six gate interactions on the way: the
+   register fed, a PURPOSES entry written, three assigned_overrides declared,
+   A REAL MERGE CONFLICT in docs/sairn-path-manifest.json resolved BY HAND as a
+   union after tools/sairn_rebase_resolve.py refused it ("a human has to read
+   these" -- the right answer for a policy file), and two ref-lock races that
+   were not gate findings at all.
+
+WHAT THIS DOES NOT COVER
+* NO RENDERED PASS. The Column A warning is asserted on the rendered string and
+  was never seen in a browser; sairnlaw.html still has no attestation UI at all.
+* No whole-tree suite run -- suites chosen by what the diff touches.
+* The cross-device OSHA collision is DETECTED, not prevented.
+* api/sd-data.js still unswept for the raw-PostgREST-filter class.
+* Three FMEA drafts named by the register's own loop and not written.
+
+THINGS I GOT WRONG
+1. My fix broke a green suite and I found it by RUNNING it, not by thinking
+   about it -- nine arms, 25/25 -> 16/25.
+2. Arm D2 of my own new suite was satisfied by a COMMENT, and only the ablation
+   could see it. Third instance of this class in two batches.
+3. My first ablation of b22-funeral targeted the wrong layer, and I nearly
+   recorded "this layer is not load-bearing" instead of "my anchor is in the
+   wrong place".
+4. I read `tail`'s exit code and reported it as the tool's. Re-measured, and
+   CLAUDE.md was right about that one.
+5. I wrote the register record FOUR TIMES before it validated -- wrong --factors
+   form, a field the method does not accept, then two invalid enum values. The
+   tool refused each time rather than storing a half-record; the waste was mine
+   for not reading a stored record first.
