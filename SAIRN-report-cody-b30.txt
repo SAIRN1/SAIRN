@@ -1,0 +1,262 @@
+REPORT -- cody, batch b30, 2026-10-20. Three done, one routed, one held, one push.
+
+================================================================================
+0. THE RESULT
+================================================================================
+
+FINAL REMOTE TIP 9d198c8929ac, 0 ahead / 0 behind, PUSHED WITHOUT --force. The
+work commit a0504cd8cadf proved an ANCESTOR by git merge-base --is-ancestor;
+eight files read back off the remote tree at the expected sizes.
+
+NOTHING OVERRIDDEN. NO LIVE WRITES. NO SQL. Wrapped at 78% measured, against the
+85% hard trigger.
+
+MY FIRST b30 CLAIM WAS REFUSED and that shaped the batch: fourth holds
+docs/defect-density-register.json on a live claim, so item 2's EDIT is routed and
+only its diagnosis is done here. The refusal is recorded in
+.claude/claims/cody.json rather than worked around.
+
+================================================================================
+1. ITEM 1 -- THE CAP GATE COVERED ONE VERB CLASS OF THIRTY-EIGHT
+================================================================================
+
+THE CONCEPT, STATED BEFORE THE CODE (item 5): a payload cap belongs to the
+(resource, action) PAIR that writes, because WHICH VERB WRITES is a fact about
+the handler and HOW BIG A ROW MAY BE is a fact about the table -- and the gate
+asked NEITHER. It read `if (action === 'write')`.
+
+This is cody's own b29 finding, closed here. 38 declared verbs across 77
+resources bypassed the payload cap entirely. rf_invoices carries
+rfinv_data_size <= 262144 and writes ONLY through issue / add_payment /
+reconcile_claim / gl_export, so it was not under-capped, IT WAS UNCAPPED: a 10MB
+payload reached Postgres and came back as an opaque constraint error, which is
+the exact failure the MAX_PAYLOAD_BYTES comment records paying for on slabs.
+
+WHAT CHANGED
+
+  api/_resources/index.js   ACTION_CLASS, a declared map of all 38 verbs to
+                            write-class or compute-only, with a LOAD-TIME
+                            completeness assertion that THROWS and names any
+                            unclassified verb.
+  api/sd-data.js            the gate is now `if (action !== 'read')`, and the
+                            cap resolves in three steps through one function,
+                            payloadCapFor(): a (resource, action) entry, then
+                            b28/b29's per-resource entry, then 64KB.
+
+IT IS FAIL-CLOSED ON THE VERB, AND THAT ORDERING IS THE WHOLE SAFETY ARGUMENT.
+The gate caps EVERY action except `read` rather than every action on a declared
+write-class list. So a verb MISCLASSIFIED in ACTION_CLASS is still capped, and a
+wrong entry there costs a comment rather than a hole. `read` is excluded because
+a read payload is a FILTER: it writes no row, and capping it would be a new
+restriction on something that was never the defect. Arm G4 asserts that
+boundary, which is what stops the fix being widened past its reason.
+
+STEP 2 IS WHY THE b28/b29 CAPS NOW REACH EVERY VERB. Those six resources had
+their own caps and those applied only to `write`; a 300KB `agreement_status` on
+rf_claim_agreements is now allowed by its 1572864 per-resource cap rather than
+refused by the default. Arm G5.
+
+AND THE ONE PLACE "THIS BREAKS NOTHING" FAILS IS rt_routes, WHICH IS WHY STEP 1
+EXISTS. `upsert` and `optimize` carry the whole stop LIST, not one row:
+api/_lib/routes.js permits 200 stops (:464) with 500-character addresses (:470),
+so a full 200-stop route is 109KB MEASURED of legitimate payload and the 64KB
+default would have refused it. THAT IS THE REGRESSION b29 DECLINED TO SHIP
+BLIND, in its own words, and it is why that batch routed this item instead of
+closing it.
+
+The ceiling is DERIVED, not typed: RT_STOPS_MAX * RT_STOP_WORST_BYTES + 32768,
+with both constants naming their source lines in api/_lib/routes.js -- the same
+"one bound plus one stated allowance" form the dental photo-size migration uses
+and defends. Arm R1 sends the real 200-stop payload; R2 proves the ceiling is a
+CAP and not an exemption; R3 asserts `reorder` is deliberately absent, because
+it carries a `seq` array of ids rather than stops and because "we forgot
+reorder" and "reorder does not need it" look identical in a table.
+
+THE CLASS MAP IS A DECLARATION, AND ARM M1 IS WHY THAT IS HONEST
+
+The brief asked for the split into write-class and compute-only. The honest
+first attempt was to DERIVE it: scan api/sd-data.js for each verb's
+`action === '<verb>'` branch and test the span for a POST/PATCH/DELETE or an
+/rpc/ call. THAT SCAN IS NOT TRUSTWORTHY AND THE MEASUREMENT SAID SO -- it
+reported `consolidate` as having NO BRANCH AT ALL (0 found), and `reserve` and
+`release_retainage` as compute-only, which is wrong for a verb whose whole job
+is to reserve a slab. The span ends at the next `if (resource ===` boundary and
+several branches put the write after a nested resource test.
+
+So the class is declared by hand, and arm M1 RUNS THE REJECTED DERIVATION ANYWAY
+and asserts the disagreements are EXACTLY the three pinned verbs. A new
+disagreement means the scan has a new blind spot or a verb's class changed; a
+disagreement that DISAPPEARS means the pin is stale. Neither can happen quietly,
+and the gate does not depend on the declaration being right -- which is the
+point of fail-closing on the verb.
+
+18 arms, 7 red under ablation (the two b30 source files stashed and the suite
+re-run, so the figure is reproducible rather than a remembered first run).
+
+================================================================================
+2. ITEM 2 -- DIAGNOSED HERE, EDIT ROUTED TO FOURTH
+================================================================================
+
+docs/defect-density-register.json is held by FOURTH on a live claim, and that
+claim REFUSED cody's first b30 claim on exactly that file. So the hard half is
+done here and the one-field edit is routed, which is the correct boundary
+behaviour and not a deferral of the work.
+
+THE TRAP, AND IT IS WHY THIS WAS WORTH DOING CAREFULLY
+
+    git cat-file -t ce15ddaa6a3c            -> commit (resolves ONLY in this clone)
+    git merge-base --is-ancestor ce15ddaa... -> NOT an ancestor of origin/main
+
+Two surviving candidates carry a b27(cody) rt_routes subject:
+
+    977bec59a   NOT an ancestor   patch-id 4cd1594a3df2...  <- IDENTICAL to the
+                                  dangling commit's, and the subject matches too
+    864e6b764   ANCESTOR          patch-id fe524a2b5bd6...
+
+SO THE SUBJECT AND THE PATCH-ID BOTH POINT AT 977bec59a, AND 977bec59a IS NOT ON
+origin/main EITHER. Matching on either would have re-seated the record onto a
+second commit that names nothing in any other clone -- the same defect with a
+fresh sha.
+
+THE DECIDING EVIDENCE IS THE RECORD'S OWN MEASUREMENTS. It names two files and
+two numbers:
+
+    files        ['api/_lib/routes.test.js', 'api/_resources/index.js']
+    lines_added  287        lines_removed 0
+
+    git show --numstat 864e6b764 -- api/_lib/routes.test.js api/_resources/index.js
+    -> 239  0  api/_lib/routes.test.js
+    ->  48  0  api/_resources/index.js        = 287 added, 0 removed
+
+EXACT MATCH, on the files the record itself chose to name. 864e6b764 is the
+squash that reached origin/main, and b27's own handoff recorded it as the work
+commit proved an ancestor. That is the target.
+
+THE PASTEABLE CHANGE -- two fields in the record whose commit is ce15ddaa6a3c:
+
+    "commit":  "864e6b76490904c6649f5a45eaa6c86b35bab080",
+    "subject": "b27(cody): rt_routes made reachable, three routed role changes,
+                and three routings that were incomplete"
+
+THE SUBJECT MUST MOVE WITH THE COMMIT -- the register's check matches on subject
+as a fallback, so leaving the old wording would make the record fail for a
+different reason. Nothing else changes: app, layer, severity, files,
+lines_added and lines_removed are all already correct for 864e6b764, which is
+what the numstat above proves.
+
+--reseat WILL NOT DO THIS AND THAT IS BY DESIGN: it refuses a record whose
+commit resolves locally but is not an ancestor, because automating it would pick
+a sha out of a reflog. Hand edit, then
+`python tools/defect_register.py --check` should go from 1 problem to 0.
+
+RED AT HEAD BEFORE b30 and recorded in b29's handoff section 4.5 with the same
+diagnosis owed.
+
+================================================================================
+3. ITEM 3 -- THE SPLIT, AND TWO REFUSALS FOUND THE SHAPE
+================================================================================
+
+THE CONCEPT: an append-only log is split on an ENTRY boundary, and the cut is
+only safe if the entry SET is provably unchanged -- so it is verified by hashing
+the entry multiset before and after, NEVER by comparing byte counts, because two
+files that sum to the original size can still have lost one entry and gained a
+duplicate of another.
+
+SAIRN-ACTIVE-WORK-cody.md was 795,238 bytes against a 400,000 ceiling, listed by
+`python tools/tooling_inventory.py --standing-doc-sizes` since b28 and recorded
+as owed in b29's handoff section 4.7, where the remedy was explicitly "a
+decision about where the cut goes".
+
+  attempt 1   one archive part -- REFUSED. No single cut leaves both files under
+              the ceiling. fourth hit the identical wall on 2026-10-12 and also
+              went to two parts.
+  attempt 2   N parts, treating everything before the first `## ` as a document
+              header -- REFUSED on "not even one section fits the live file",
+              because that "header" is 425,249 BYTES.
+  attempt 3   three regions -- WRITTEN.
+
+THE SECOND REFUSAL IS THE FINDING: THIS LOG HAS TWO FORMATS IN ONE FILE. The
+oldest 88 entries are bullets in the original format (423,683 bytes); the newer
+127 are `## <date> (Cody) -- <subject>` sections (369,891 bytes). A script that
+had GUESSED instead of refusing would have written a live file still over the
+ceiling and reported success -- which is the silent-failure shape this platform
+keeps paying for.
+
+So the bullets archive and the sections stay live, which is BOTH the correct size
+split AND the correct editorial one: the recent work is what a fresh session
+needs.
+
+  before   795,238 bytes, 215 entries, multiset 23779075228a6557
+  after    SAIRN-ACTIVE-WORK-cody-closed-1.md   395,093 bytes   79 entries
+           SAIRN-ACTIVE-WORK-cody-closed-2.md    33,368 bytes    9 entries
+           SAIRN-ACTIVE-WORK-cody.md            372,166 bytes  127 entries
+           multiset 23779075228a6557 over the UNION of all three, RE-READ FROM
+           DISK after the write
+
+The in-memory check proves the plan; the read-back proves the write. Each archive
+header carries the reason byte counts were not enough, the two refusals, and the
+instruction that if an entry turns out to be live it must be MOVED back rather
+than copied -- two homes for one entry being the drift this platform keeps
+paying for.
+
+The ceiling tool now reports 7 over-ceiling documents where it reported 8.
+
+================================================================================
+4. ITEM 4 -- HELD, NOT DONE, ON INSTRUCTION
+================================================================================
+
+CLAUDE.md:33 and .claude/skills/sairn-session-handoff/SKILL.md still describe a
+naming convention that 3 of 86 handoffs follow. b29 routed the correction to cc
+with pasteable text; b30's instruction was to HOLD until cc's next report
+settles it rather than act unilaterally on a shared standing document. Nothing in
+b30 touches either file, and the path manifest's own _why key says HELD rather
+than merely unclaimed -- the two are different facts and a reader should not have
+to infer which.
+
+THE ONE FACT WORTH CARRYING: it is getting worse at roughly three files a day.
+The count was 80 at b28, 83 at b29 and 86 now. That makes the cost of holding
+measurable and small, which is the argument for holding rather than against it.
+
+================================================================================
+5. OPEN -- SEE THE HANDOFF FOR THE EXACT NEXT STEP PER ITEM
+================================================================================
+
+SAIRN-handoff-cody-b30.md sections 4.1 to 4.7. In short:
+
+  4.1  -> fourth   the register reseat. Target CONFIRMED by the record's own
+                   numstat; two fields, pasteable; --reseat refuses by design.
+  4.2  -> cody     rf_invoices is capped at the DEFAULT, not its own 262144
+                   ceiling. Item 1 made it capped, not right. Measure the
+                   largest real `issue` payload first -- raising a cap without
+                   measuring is the opposite mistake.
+  4.3  -> cc       the Tier A obligation, six resources, FIVE things to try to
+                   break. The one I least trust: is 700 bytes per stop really
+                   the worst case? job_ref has no length bound I checked and arm
+                   R1 uses short ones, so if I am wrong my own arm cannot tell.
+  4.4  -> cc       CLAUDE.md:33, HELD.
+  4.5  -> anybody  api/_resources/extra-actions.test.js is 41/7 RED AT HEAD,
+                   unchanged by b30 and proved so by stashing and re-running.
+  4.6  -> cody     my push-retry loop commits the gate's own scrutiny write-back
+                   on every attempt; four lost races produced four near-identical
+                   commits, squashed before the push landed. Use --amend.
+  4.7  -> Michael  nothing is blocked on you. No SQL owed.
+
+================================================================================
+6. BOUNDARIES
+================================================================================
+
+docs/defect-density-register.json NOT touched -- fourth's, live claim, routed.
+CLAUDE.md and .claude/skills/ NOT touched -- HELD on instruction, which is
+stronger than unclaimed. tools/ NOT touched (cc's) -- three were RUN. No sql/,
+no .html, no docs/CRITICALITY-TIERS.md. The b29 path override is REPLACED, not
+extended: eight of eleven paths dropped, three remain, and each of the three is
+justified in the manifest's own _why key -- including why ACTION_CLASS has to
+live in api/_resources/index.js rather than in sd-data.js, which is that
+EXTRA_ACTIONS is assembled there from every per-app registry and a class map
+anywhere else would be a second list free to disagree with the registry it
+describes.
+
+Transcript:
+C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cody\cc73112b-c907-4081-b7af-37c09862bb32.jsonl
+This window carries b28, b29 and b30; b30 begins at the dispatch naming the six
+items and the 85% hard wrap-up rule.

@@ -7565,6 +7565,23 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b30-cap-per-action.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "'R2. past the derived ceiling (' + bytesOf(over) + ' bytes) -> 413 '"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'naming rt_routes/upsert -- a cap, not an exemption',"
+    }
+   ],
+   "sha": "a0504cd8cadf2adca732a55be4d437bbab995bcf",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sd_data_write_attribution_three_apps.js",
    "class": "test file",
    "level": "CHANGE",
