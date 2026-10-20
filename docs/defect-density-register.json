@@ -35061,6 +35061,64 @@
         }
       ],
       "recurrence_open": "The detection factor is NOT closed: no selftest arm yet asserts the post-drill answer, so a regression would again be found only by a human checking after a drill rather than by the suite."
+    },
+    {
+      "commit": "9c08ad4d9116",
+      "date": "2026-10-20",
+      "subject": "fix(sairnbiz b24): two recordable injuries printed as the same OSHA case number",
+      "files": [
+        "api/b24-osha-caseno-collision.test.js",
+        "sairnbiz.html",
+        "tests/sairnbiz_incidents_kpi.js"
+      ],
+      "lines_added": 550,
+      "lines_removed": 2,
+      "app": "sairnbiz",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "sairnbiz.html sbNextCaseNo() issues the OSHA Form 300 Column A case number as max(case_no for that year)+1 over ld('sb_incidents'), which is ONE DEVICE'S localStorage, while sb_incidents is in SB_SYNCED and sbServerWinsMerge() matches rows BY id -- so two devices each issue case number 1 for the same year, both rows survive the merge, and TWO DIFFERENT RECORDABLE INJURIES PRINT AS THE SAME CASE NUMBER on a log an OSHA inspector reads. Nothing caught it because the 300A totals are computed per row and stay CORRECT while Column A is wrong. A second, narrower hole on one device: the year test was String(r.year)!==String(year), so a row whose year FIELD was absent was invisible to the max scan and the next save re-issued a number that row already held",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "fb85a4d95102",
+        "date": "2026-09-10",
+        "subject": "feat(sairnbiz): the OSHA Form 300 injury log, so the Safety Incidents tile counts something",
+        "lag_days": 40
+      },
+      "contributing_factors": [
+        {
+          "factor": "The case number is issued from a DEVICE-LOCAL store (ld('sb_incidents')) while the server merge identity is a PER-DEVICE id ('IN'+Date.now()), so neither device can see the number the other issued",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "DETECTED, not prevented: sbCaseNoCollisions() names the duplicate and rIncidents() shows it in Column A. The complete fix is a server-side per-year sequence in api/sd-data.js, routed to cody"
+        },
+        {
+          "factor": "The max scan skipped any row whose literal year FIELD was absent, so a row that reached the device by any route other than saveIncident() was invisible and the next save re-issued a number that row already held",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "sbNextCaseNo() falls back to the year of the row's date; arm B1 of api/b24-osha-caseno-collision.test.js failed before the fix and passes after, and ablation F1 reddens it on demand"
+        },
+        {
+          "factor": "The 300A summary counts ROWS, so every figure on the summary stayed CORRECT while Column A was wrong -- the half that looks authoritative was the half that was right",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "arm A3 asserts the count is 2 at the same moment two rows print as 2026-1, so the suite records WHY nothing caught it rather than only that something was wrong"
+        },
+        {
+          "factor": "No arm existed on case_no uniqueness at all: tests/sairnbiz_incidents_kpi.js tested the YTD COUNT and the render, never the number",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/b24-osha-caseno-collision.test.js, 25 arms including three ablations that redden B1, C4 and D2 by name"
+        }
+      ],
+      "recurrence_open": "the cross-device half is DETECTED and not PREVENTED: two devices both offline at the moment of issue can still mint the same number and nothing client-side can stop it. The complete fix is a server-side per-year sequence in api/sd-data.js, which is cody's file and is routed"
     }
   ],
   "started": "2026-09-09",
