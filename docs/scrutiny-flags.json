@@ -11436,6 +11436,35 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairnbiz_benefits_and_overtime.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "assert.ok(callIdx.length >= 5, 'expected the definition + 4 callers of sbWeekPay"
+    }
+   ],
+   "sha": "ece9de35ba0847b848c7600792e2877a3076eeab",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnbiz_pay_frequency.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ece9de35ba0847b848c7600792e2877a3076eeab",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnbiz_timesheet_hours.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ece9de35ba0847b848c7600792e2877a3076eeab",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/greeting.test.js",
    "class": "test file",
    "level": "CHANGE",

@@ -1,0 +1,21 @@
+SAIRN DIGEST -- fourth b45 -- 2026-10-20
+CONTEXT 77.2% of 1,000,000 -- 772,207 tokens, measured.
+STATE: 6/6 done; origin/main 0/0; no force; claim released.
+READ: SAIRN-handoff-fourth-b45.md (whole state). Detail: SAIRN-report-fourth-b45.txt.
+SQL: none this batch.
+COMMITS: ece9de35b Z7 | b5eef18d5 dental x7 | 687d60360 stonedesk anti-framing | 41f825dbb Field Map
+LIVE: Z7 9/9 | stonedesk+hr framed 2/2 hidden | dental settle 8/8 | route 10/10 | markers in all 4 pages
+1 sairnbiz Z7: payroll paid OT at straight rate (50 h = $1,000 vs $1,100); sbWeekPay() now
+  prices every figure. 3 cody suites updated (declared in assigned_overrides).
+2 sairndental: 7 client defects fixed, RED 4/19 -> GREEN 19/19, 5/5 mutants (agent-built).
+3 stonedesk + stonedesk-hr: hank's b33 patch applied as written.
+4 Field Map: lock persisted + sent; manual confirm; 0-saving wording. No coordinates exist.
+NEXT, in order:
+  a cody: DEA rows keyed per registration (api/_lib/dental-credentials.js:241)
+  b server gfeMissing reads the issued snapshot (api/_lib/dental-gfe.js)
+  c sairnbiz Z8/Z9: per-employee pay lines, pay date/period, address/DOB/rate history
+  d Field Map coordinates need a geocoding decision first
+  e cody: review the 4 test arms, then drop fourth's assigned_overrides
+ROUTED: cody -- (a)(b)(e), day seven. cc -- Tier A review on rt_routes (b44).
+UNPROVEN: no real tenant (server stubbed/intercepted); Chromium only; no legal review.
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\fc1f8565-6013-48a4-b66b-d27902506016.jsonl

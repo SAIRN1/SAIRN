@@ -1,0 +1,44 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "fourth",
+  "batch": "b45",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "",
+      "status": "done",
+      "evidence": "fix(sairnbiz b45) Z7 + register; scratchpad/b45/drive_z7.py RED 3/9 -> GREEN 9/9 local AND live; 18 sairnbiz suites pass (3 cody suites updated, declared in assigned_overrides)."
+    },
+    {
+      "id": 2,
+      "title": "",
+      "status": "done",
+      "evidence": "fix(sairndental b45) 7 client defects + register; scratchpad/b45/agent_dental/driver.py RED 4/19 -> GREEN 19/19, 5/5 mutants; live 8/8 settle-order; deployed marker gfeSnapshot. DEA keying is server-side (cody) -- not fixed, routed."
+    },
+    {
+      "id": 3,
+      "title": "",
+      "status": "done",
+      "evidence": "fix(stonedesk b45) anti-framing applied from docs/2026-10-20-hank-b33-stonedesk-held.patch as written + register; framed HIDDEN both modes, top-level usable; live 2/2 protected."
+    },
+    {
+      "id": 4,
+      "title": "",
+      "status": "done",
+      "evidence": "fix(stonedesk b45) Field Map lock + manual confirm + 0-saving wording + register; scratchpad/b45/agent_route/drive_route.py RED 14/33 -> GREEN 33/33; coordinates NOT sent: StoneDesk stores none (grep evidence in commit)."
+    },
+    {
+      "id": 5,
+      "title": "",
+      "status": "done",
+      "evidence": "concept lines in commit messages ece9de35b (sbWeekPay), b5eef18d5 (gfeSnapshot etc.), 41f825dbb (lock/confirm/wording) and as code comments in sairnbiz.html sbWeekPay, sairndental.html gfeSnapshot, stonedesk.html fmSavedText"
+    },
+    {
+      "id": 6,
+      "title": "",
+      "status": "done",
+      "evidence": "land.sh no force; git rev-list --left-right --count origin/main...HEAD = 0 0; live drives listed in SAIRN-report-fourth-b45.txt."
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+SAIRN REPORT -- fourth b45 -- 2026-10-20
+
+RESULT: 6 of 6 done; origin/main 0/0; no force; live-verified. Wrapped at
+~77% real context. Handoff: SAIRN-handoff-fourth-b45.md.
+
+1. SAIRNBIZ Z7                                              ece9de35b
+   CONCEPT: a recorded week is priced ONCE -- straight time up to the OT
+   threshold, 1.5x above -- by sbWeekPay(); payroll gross, annual gross, the
+   timesheet's Est. Pay and the CSV all call it.
+   RED 3/9: 50 h at $20 = $1,000 in payroll vs $1,100 on the timesheet.
+   GREEN 9/9 local AND live (weekly 1100, biweekly 2200, 40 h 800, threshold
+   35 -> 850, annual 57200, one 1.5x site). 18/18 sairnbiz suites pass after
+   updating three cody suites that pinned the old split (declared in
+   assigned_overrides with the b42 entries).
+
+2. SAIRNDENTAL, 7 CLIENT DEFECTS (b44 audit)                b5eef18d5
+   On-time appeal judged on submitted_on; GFE check and print read one
+   snapshot; (c)(1)(vi) and (x) disclaimers completed from the eCFR text;
+   the holiday sentence says LATER and the 31-Dec New Year is caught; the
+   binding date is the earlier (A) date; revalidation_days rendered; (xi)
+   wording and the CE tile label. RED 4/19 -> GREEN 19/19, 5/5 mutants.
+   Live 8/8 settle-order. NOT fixed: DEA keying + server gfeMissing (api/).
+
+3. STONEDESK + STONEDESK-HR ANTI-FRAMING                    687d60360
+   hank's b33 patch applied as written (two html hunks). Framed HIDDEN in
+   both modes; top-level usable; live 2/2.
+
+4. FIELD MAP                                                41f825dbb
+   LOCK persisted on the person|day order record and sent; manual press
+   confirms with saving + basis; savings wording null / <=0 / <60 s / mins.
+   RED 14/33 -> GREEN 33/33, 3 mutation controls. COORDINATES not done:
+   StoneDesk stores none.
+
+5. Concept lines: in each commit message and as code comments.
+
+6. PUSH: no force; two register rebase conflicts re-added via the tool;
+   one GitHub timeout retried. 0/0.
+
+DELEGATION: items 2 and 4 were implemented by agents editing under this
+claim without committing; every driver, prior drive and syntax check was
+re-run here before each commit.
