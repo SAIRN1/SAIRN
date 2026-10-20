@@ -1788,6 +1788,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b29-rt-stops-hash.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "29330043d57fb769811ec6f255758a5e1000ba49",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_save_reviews_retry_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -9077,6 +9085,76 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "bc24af59f3dbcbdeada5f47ec4e20502bb2ba15f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b19-iolta-reconcile-carveout.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc5ca0d18cb4b2b991f7e52f075116b16ea160dd",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b27-leg-settings.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc5ca0d18cb4b2b991f7e52f075116b16ea160dd",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b28-photo-cap.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "+ 'the 64KB ceiling\" -- and it was' },"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ '-- remove the exemption');"
+    }
+   ],
+   "sha": "bc5ca0d18cb4b2b991f7e52f075116b16ea160dd",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b29-error-detail.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc5ca0d18cb4b2b991f7e52f075116b16ea160dd",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b29-funeral-f2-f3.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc5ca0d18cb4b2b991f7e52f075116b16ea160dd",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b29-law-reconcile-prepare.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bc5ca0d18cb4b2b991f7e52f075116b16ea160dd",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b29-rt-stops-hash.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "'T2. a top-level `license_hash` is ignored by BOTH writes -- the route '"
+    }
+   ],
+   "sha": "bc5ca0d18cb4b2b991f7e52f075116b16ea160dd",
    "criteria_version": "2026-10-06.1"
   },
   {
