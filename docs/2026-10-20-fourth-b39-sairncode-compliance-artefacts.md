@@ -246,3 +246,103 @@ the answer could be *yes*.
   likely to be a *yes* and they are the exact next step.
 * **No legal review.** Four instruments were read in full and one is cited from
   b38's read. What they mean for this product is advice, and this is not it.
+
+---
+
+# ADDENDUM — b40, 2026-10-20: the two panels, and the first measured leaf
+
+## A1. B4's NAMED NEXT STEP POINTED AT THE WRONG PANELS
+
+§3 above said *"EXACT NEXT STEP: `hcc` and `drg`. Both are age/sex-weighted by
+construction … both are the rows where the answer could be yes."* **Read now,
+and the prediction was wrong in both directions.**
+
+| panel | 92.210 variable? | evidence |
+|---|---|---|
+| `hcc` | **NO** | `renderHcc()` (`sairncode.html:4497`) reads `{cat, patient, value, status}`. The panel body is a **1,434-char shell** with a four-column table. No age, no sex, no gender, no DOB anywhere in it |
+| `drg` | **NO** | same shape, a **1,391-char shell**. Zero matches |
+| **`transport`** | **YES — AGE, determinatively** | `<input type="number" id="tr-age" placeholder="Patient age (months)">` (`:1386`) |
+| **`esrd`** | **YES — AGE, determinatively** | `<input type="number" id="esrd-age" placeholder="Age at end of month">` (`:1690`), and the panel's own copy: *"The code is fixed by the age at the **end of the month**"* (`:1684`) |
+
+**`sex` and `gender`: ZERO occurrences anywhere in the file.** There is no sex
+variable in SAIRNcode at all, and the only 92.210 variable in use is **age**.
+
+**THE USE IS LAWFUL AND THAT IS NOT THE POINT.** A dialysis MCP code and a
+paediatric transport code are **fixed by age by the rule being implemented** —
+the clearest possible legitimate use, and `92.210(c)`'s mitigation duty has
+little to bite on. **But `92.210(b)` is a duty to IDENTIFY, and these two were
+not on the inventory.** An inventory that misses the only two panels using a
+protected-class variable has failed at its one job.
+
+**CORRECTED ROWS, to be read with §3:**
+
+| panel | DSI? | 92.210 variable | status |
+|---|---|---|---|
+| `hcc` | yes | **none on the client** | the computation, if any, is server-side in `api/sd-data.js` — **cody's, NOT READ** |
+| `drg` | yes | **none on the client** | same |
+| `transport` | yes | **AGE (months)**, determinative | disclosed; lawful; **must stay on the inventory** |
+| `esrd` | yes | **AGE at end of month**, determinative | disclosed; lawful; **must stay on the inventory** |
+
+**THE SERVER CAVEAT IS LOAD-BEARING, NOT A HEDGE.** *"No 92.210 variable on the
+client"* is not *"no 92.210 variable"*. `hcc` and `drg` could read age or sex
+server-side and the client would look exactly like this. That half is
+unreadable to me by claim and is named as the next step rather than guessed.
+
+---
+
+## A2. (B)(7) GETS ITS FIRST MEASURED LEAF, AND THE DATA ALREADY EXISTS
+
+§1 left all five `(iv)(B)(7)` leaves NOT ESTABLISHED and proposed one cheap
+real measure. **The store already carries it.**
+
+`scRouteCodedItems()` (`:7393`) partitions on `review_status`, and
+`reviewCodedItem()` (`:7345`) refuses any value other than
+`reviewed_accepted` / `reviewed_rejected` — so a decided item is **settled,
+whichever way it went**. Four states:
+
+    needs_human_review | auto_assigned | reviewed_accepted | reviewed_rejected
+
+**THE MEASURE, defined so it cannot drift:**
+
+```
+HUMAN-REJECTION RATE
+  = count(review_status === 'reviewed_rejected')
+  / count(review_status === 'reviewed_rejected' || === 'reviewed_accepted')
+
+DECIDED ITEMS ONLY IN THE DENOMINATOR. needs_human_review is NOT a rejection
+-- it is an item nobody has looked at, and counting it either way is the
+collapse-three-states-into-two defect this platform keeps finding.
+auto_assigned is NOT an acceptance either: no human looked at it.
+```
+
+**A SECOND, SHARPER FIGURE from the same store**, because the first measures the
+coder's disagreement with everything rather than the grounding specifically:
+
+```
+CITATION-HELD RATE
+  = count(items whose confidence_basis names an unverifiable citation)
+  / count(all coded items)
+```
+
+`confidence_basis` is a real array built at `:7201-7203`
+(`review_status = basis.length ? 'needs_human_review' : 'auto_assigned'`) and
+`escalation_reason` already renders it as *"Held for a human coder because:
+…"*. **The reasons are already per-item and already structured.**
+
+**WHY IT IS A GENUINE `(B)(7)` LEAF AND NOT A VANITY METRIC:** `(B)(7)(i)` asks
+for *validity of the intervention in test data derived from the same source as
+the initial training data*. **There is no training data** — §1 (B)(4)(i) — so
+the nearest honest analogue is **validity in local data under human
+adjudication**, which is also what `(B)(8)(ii)` asks for by name: *"Validity of
+intervention in local data."*
+
+**NOT BUILT, AND THE REASON IS SCOPE RATHER THAN DIFFICULTY.**
+`sairncode.html` is **DOCS-ONLY in b40's claim** and appears in **0** of b40's
+commits. This is the specification; it is two `filter().length` calls over a
+store that already exists.
+
+**AND IT MUST SHIP WITH ITS DENOMINATOR VISIBLE.** A rejection rate of *"0%"*
+over two decided items is not a performance measure, and `(B)(7)` would be
+**worse** for it than for the honest NOT ESTABLISHED it replaces. **Render it as
+`N of M decided`, or not at all** — the rule SAIRNdental's denials panel already
+follows with *"N of M argued"*.
