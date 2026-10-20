@@ -4255,8 +4255,8 @@
       "task": "b32 rf_jobs projection flip api/sd-data.js api/b32-rf-jobs-projection.test.js",
       "claimed_at": "2026-10-20T14:04:55Z",
       "claimed_at_epoch": 1792505095.248835,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T14:20:04Z",
       "files": null
     }
   ],
