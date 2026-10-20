@@ -1053,8 +1053,8 @@
       "task": "b73 H1-ONLY: fix vendor-reviewer injection (comment-strip mode + refuse-on-injection + raw-counts/Wilson, fresh hashed seed set), parser-based detector for the hard2 misses with a fresh hashed set, independent re-derivation of the live auth/rate-limit probe (read-only, non-destructive, no api edits), per-file token-cost bounding in my own sampler, close out remaining b71 items, push. Overlap with hank b25 verified word-level only (zero path overlap, reasoning in chain #1637) -- hank's api/claude.js register.js stripe-webhook.js fixes are READ ONLY for cross-reference, never edited. FILES: .claude/skills/sairn-hover-auditor/ SAIRN-handoff-H1-b73.md SAIRN-report-H1-b73.txt SAIRN-digest-H1-b73.txt NOT-api-NOT-tools-shared-NOT-dot-claude-user-store NOT-tools-hover2 NOT-hanks-files",
       "claimed_at": "2026-10-20T09:04:21Z",
       "claimed_at_epoch": 1792487061.3246355,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T10:40:46Z",
       "files": [
         "SAIRN-digest-H1-b73.txt",
         "SAIRN-handoff-H1-b73.md",
