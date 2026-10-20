@@ -35063,6 +35063,128 @@
       "recurrence_open": "The detection factor is NOT closed: no selftest arm yet asserts the post-drill answer, so a regression would again be found only by a human checking after a drill rather than by the suite."
     },
     {
+      "commit": "2eb738de4e6f",
+      "date": "2026-10-20",
+      "subject": "fix(sairndental b41): the credential board's first paint said a request had failed while it was still in flight",
+      "files": [
+        "sairndental.html"
+      ],
+      "lines_added": 47,
+      "lines_removed": 13,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "fault-injection",
+      "summary": "REPRODUCED with a delayed stubbed fetch before the change: first paint was the could-not-run view with NO_REASON on a first visit, and on a revisit the PREVIOUS attempt's FORBIDDEN \"your session is not authorised ... sign in again\" while a request that would succeed was in flight. FIXED with a pending state: refreshCredentialBoard(paintPending) counts in-flight evaluations and paints \"Checking the credential board\" with pending tiles and badge. DRIVEN 37/37: ok/403/500/network each pending-then-outcome, no-licence settles without sticking, overlap holds pending until the last settles, the background refresh leaves a real board up, a throw cannot leave it stuck. MUTATION CONTROL: the pending branch disabled in a routed copy of the page makes the first-paint assertion fail. Severity LOW: transient until the request settles, no data changed -- but the revisit case mis-stated whose problem it was.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "scratchpad drive_dental.py (Playwright, delayed stubbed fetch; not in repo)",
+      "found_by_session": null,
+      "injection": {
+        "commit": "876bd84cfad4",
+        "date": "2026-08-24",
+        "subject": "feat(sairndental): licensing/credentialing -- state licences, DEA/MATE, CE pacing",
+        "lag_days": 57
+      },
+      "citation_note": "No coding rule in the register covers this class: a render path that paints a TERMINAL state (failed) for a request still IN FLIGHT. It is the could-not-tell/passed confusion of PR 1.11 one state over -- not-yet-known folded into failed. The rule that would cover it: any panel that renders before an async evaluation settles must have a distinct pending rendering, and the pending flag must be set before the first paint, not inside the request.",
+      "contributing_factors": [
+        {
+          "factor": "The panel had renderings for checked, could-not-run and never-asked, and NONE for in-flight. nav('credentials') painted rCredentials(null) -- the could-not-run view -- before calling the evaluation, so every first paint claimed a failure for a request that had not answered.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "In flight is a fourth state: refreshCredentialBoard(paintPending) increments a pending COUNT before it paints and rCredentials(null) renders 'Checking the credential board...' with pending tiles and badge while it is non-zero."
+        },
+        {
+          "factor": "On a REVISIT the first paint showed the PREVIOUS attempt's diagnosis. Driven: a stale FORBIDDEN 'sign in again' stood on screen while a request that would SUCCEED was in flight -- an instruction to the wrong person for a problem that did not exist.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The pending view names no reason and no code, so nothing stale can be shown during the request."
+        },
+        {
+          "factor": "b40's mitigation did not reach the case it was written for, and its comment said it did. Clearing dntLastErr on entry to sdnEvaluateCredentials runs AFTER nav() painted, so the first paint still read the previous record. b40 recorded the flash as 'narrowed'; for revisits it was not narrowed at all.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Comment corrected in place to say what the clear does and does not do; the repro that exposed it drives a revisit, not only a first visit."
+        },
+        {
+          "factor": "Overlap and background refresh were unguarded shapes of the same state: two evaluations in flight, or the sync refresh re-asking while a real board is up.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "A count rather than a flag, so pending holds until the last evaluation settles; only nav passes paintPending, so the background refresh leaves a real board on screen; a throw is caught so the panel cannot stick on checking. Each driven."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. (1) addCredential() still calls rCredentials() after a local add, which replaces a real board with the not-checked view during the write -- a different defect, not fixed here. (2) Out-of-order completion is unguarded: two evaluations render in the order they SETTLE, so an older response can overwrite a newer one. (3) Nothing sweeps for the class across the other apps."
+    },
+    {
+      "commit": "5217024d6958",
+      "date": "2026-10-20",
+      "subject": "fix(claude+stonedesk b26): ceiling 200->1000 now that absent means enforce, two dead calls out of the Field Map/POS, five FMEA drafts",
+      "files": [
+        "api/_lib/ai-rate-limit-tenant.test.js",
+        "api/_lib/ai-rate-limit.js",
+        "api/_lib/ai-rate-limit.test.js",
+        "docs/2026-10-20-hank-b26-notes.md",
+        "docs/2026-10-20-hank-b26-path-scope-probe-registry-entry.py.txt",
+        "docs/2026-10-20-hank-b26-path-scope-probe-run1.log",
+        "docs/fmea/api__lib_ai-rate-limit.js.json",
+        "docs/fmea/api__lib_fail-closed-mode.js.json",
+        "docs/fmea/api_agent_register.js.json",
+        "docs/fmea/api_agent_stripe-webhook.js.json",
+        "docs/fmea/api_b25-revoke-race-and-failclosed.test.js.json",
+        "docs/sairn-path-manifest.json",
+        "stonedesk.html"
+      ],
+      "lines_added": 7898,
+      "lines_removed": 11,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "b25 made an absent SAIRN_AI_RATE_LIMIT_MODE mean ENFORCE and left the 200/day per-app ceiling sized for observe mode, so on deploy the shared AI pool of every app was a live refusal at a number nobody had measured against real traffic; the same change left api/_lib/ai-rate-limit.test.js red. Raised to 1000 (a stated judgment), test re-aimed. The commit also deletes the stonedesk.html pos_sale push (invoice and signature sent to an endpoint that refuses it, answer swallowed) and the Field Map catch arm that named a Maps key the request never reached.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "8f2036615c6b",
+        "date": "2026-10-20",
+        "subject": "fix(agent+claude b25): a revoke silently overwritten, a zero-row PATCH logged as a plan change, and two controls that permitted when unset",
+        "lag_days": 0
+      },
+      "citation_note": "No standing rule names it: a default was changed from permissive to enforcing and the NUMBER behind the default was not re-qualified for the new meaning. Nearest is discipline 7 (byte-identical is not safe-in-context), which is about propagation rather than a changed default.",
+      "contributing_factors": [
+        {
+          "factor": "b25 changed an ABSENT SAIRN_AI_RATE_LIMIT_MODE from 'do not enforce' to ENFORCE and did not re-qualify the ceiling it exposed. 200/day per app was sized for observe mode, where exceeding it cost nothing; as an enforced pool shared by every tenant of an app (tenant cap 100) a busy firm or a demo day crosses it in business hours. Production has the variable absent (Michael, Vercel).",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "DEFAULT_DAILY_LIMIT 200 -> 1000; tenant share and contention floor follow at 500/500; the reasoning is in the file next to the constant."
+        },
+        {
+          "factor": "api/_lib/ai-rate-limit.test.js went RED at b25 and shipped red: its observe arms relied on an unset mode meaning observe, the exact meaning b25 removed. b25 ran the suites its diff named and this one sits beside the changed file.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The suite sets SAIRN_AI_RATE_LIMIT_MODE=observe explicitly; 0 failed. The absent case is held by b25-revoke-race-and-failclosed.test.js."
+        },
+        {
+          "factor": "stonedesk.html pushed every Mobile POS sale to /api/bridge with no ?action= and no Authorization header, carrying the invoice AND the customer signature, to an endpoint that has refused it since b22 and before that answered 401; a bare catch swallowed the answer. The Field Map catch arm separately sent the reader to check a Maps key the request never reached.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The pos_sale push is deleted (grep: nothing reads a pos_sale event); the Field Map catch arm no longer names GOOGLE_MAPS_API_KEY."
+        },
+        {
+          "factor": "The 1000 is a JUDGMENT. No per-app daily call count has ever been read from sairn_ai_rate_limit_log, so neither 200 nor 1000 was chosen from the platform's own traffic.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Read the per-app daily maximum from sairn_ai_rate_limit_log and set the default from it."
+        }
+      ],
+      "recurrence_open": "Nothing closes the missing measurement: the ceiling is still not derived from sairn_ai_rate_limit_log, and the deployed rate-limit mode is still not observable from outside (no mode on the response)."
+    },
+    {
       "commit": "5941a119c8a7",
       "date": "2026-10-20",
       "subject": "fix(sairnbiz b24): two recordable injuries printed as the same OSHA case number",
@@ -35179,61 +35301,6 @@
         }
       ],
       "recurrence_open": "the deployed rate-limit mode is NOT OBSERVABLE from outside: the response carries no mode and a burst of 12 calls is equally consistent with observe and with a daily ceiling above twelve. So if SAIRN_AI_RATE_LIMIT_MODE is absent or misspelled in Vercel, this change switches the cost limiter ON at the daily ceiling on deploy. vercel env ls production is the check and it is the first open item in the handoff"
-    },
-    {
-      "commit": "2eb738de4e6f",
-      "date": "2026-10-20",
-      "subject": "fix(sairndental b41): the credential board's first paint said a request had failed while it was still in flight",
-      "files": [
-        "sairndental.html"
-      ],
-      "lines_added": 47,
-      "lines_removed": 13,
-      "app": "sairndental",
-      "layer": "product",
-      "severity": "low",
-      "detection_method": "fault-injection",
-      "summary": "REPRODUCED with a delayed stubbed fetch before the change: first paint was the could-not-run view with NO_REASON on a first visit, and on a revisit the PREVIOUS attempt's FORBIDDEN \"your session is not authorised ... sign in again\" while a request that would succeed was in flight. FIXED with a pending state: refreshCredentialBoard(paintPending) counts in-flight evaluations and paints \"Checking the credential board\" with pending tiles and badge. DRIVEN 37/37: ok/403/500/network each pending-then-outcome, no-licence settles without sticking, overlap holds pending until the last settles, the background refresh leaves a real board up, a throw cannot leave it stuck. MUTATION CONTROL: the pending branch disabled in a routed copy of the page makes the first-paint assertion fail. Severity LOW: transient until the request settles, no data changed -- but the revisit case mis-stated whose problem it was.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": "scratchpad drive_dental.py (Playwright, delayed stubbed fetch; not in repo)",
-      "found_by_session": null,
-      "injection": {
-        "commit": "876bd84cfad4",
-        "date": "2026-08-24",
-        "subject": "feat(sairndental): licensing/credentialing -- state licences, DEA/MATE, CE pacing",
-        "lag_days": 57
-      },
-      "citation_note": "No coding rule in the register covers this class: a render path that paints a TERMINAL state (failed) for a request still IN FLIGHT. It is the could-not-tell/passed confusion of PR 1.11 one state over -- not-yet-known folded into failed. The rule that would cover it: any panel that renders before an async evaluation settles must have a distinct pending rendering, and the pending flag must be set before the first paint, not inside the request.",
-      "contributing_factors": [
-        {
-          "factor": "The panel had renderings for checked, could-not-run and never-asked, and NONE for in-flight. nav('credentials') painted rCredentials(null) -- the could-not-run view -- before calling the evaluation, so every first paint claimed a failure for a request that had not answered.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "In flight is a fourth state: refreshCredentialBoard(paintPending) increments a pending COUNT before it paints and rCredentials(null) renders 'Checking the credential board...' with pending tiles and badge while it is non-zero."
-        },
-        {
-          "factor": "On a REVISIT the first paint showed the PREVIOUS attempt's diagnosis. Driven: a stale FORBIDDEN 'sign in again' stood on screen while a request that would SUCCEED was in flight -- an instruction to the wrong person for a problem that did not exist.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "The pending view names no reason and no code, so nothing stale can be shown during the request."
-        },
-        {
-          "factor": "b40's mitigation did not reach the case it was written for, and its comment said it did. Clearing dntLastErr on entry to sdnEvaluateCredentials runs AFTER nav() painted, so the first paint still read the previous record. b40 recorded the flash as 'narrowed'; for revisits it was not narrowed at all.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Comment corrected in place to say what the clear does and does not do; the repro that exposed it drives a revisit, not only a first visit."
-        },
-        {
-          "factor": "Overlap and background refresh were unguarded shapes of the same state: two evaluations in flight, or the sync refresh re-asking while a real board is up.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "A count rather than a flag, so pending holds until the last evaluation settles; only nav passes paintPending, so the background refresh leaves a real board on screen; a throw is caught so the panel cannot stick on checking. Each driven."
-        }
-      ],
-      "recurrence_open": "NOT CLOSED. (1) addCredential() still calls rCredentials() after a local add, which replaces a real board with the not-checked view during the write -- a different defect, not fixed here. (2) Out-of-order completion is unguarded: two evaluations render in the order they SETTLE, so an older response can overwrite a newer one. (3) Nothing sweeps for the class across the other apps."
     },
     {
       "commit": "aabc1c659b5b",

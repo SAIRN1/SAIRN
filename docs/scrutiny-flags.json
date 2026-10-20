@@ -2138,6 +2138,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/_lib/ai-rate-limit-tenant.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold CHANGED",
+     "detail": "was: assert.strictEqual(rpc.body.p_tenant_limit, 100, 'default sh  now: assert.strictEqual(rpc.body.p_tenant_limit, 500, 'default sh"
+    }
+   ],
+   "sha": "33a6d195c7bc5836cfe7f4a237c17a19ce56557d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/ai-rate-limit.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "33a6d195c7bc5836cfe7f4a237c17a19ce56557d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/_lib/courtlistener-rate-limit.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -8592,6 +8613,27 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "b7f6fb54116e42a0af1ea0681d9f195473588929",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/ai-rate-limit-tenant.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold CHANGED",
+     "detail": "was: assert.strictEqual(rpc.body.p_tenant_limit, 100, 'default sh  now: assert.strictEqual(rpc.body.p_tenant_limit, 500, 'default sh"
+    }
+   ],
+   "sha": "b923c092591f0c5627f9f5cba4b97ef7d8232a6d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/ai-rate-limit.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "b923c092591f0c5627f9f5cba4b97ef7d8232a6d",
    "criteria_version": "2026-10-06.1"
   },
   {
