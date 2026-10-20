@@ -4412,8 +4412,8 @@
       "task": "b44: satellites driven with real URL params; sairndesign B4 occupancy+heights 902.3/226.1; sairnbiz audit increment; sairndental correctness audit GFE/denials/credentialing; push. Field Map optimiser HELD (hank holds stonedesk.html). FILES: sairndental-book.html sairndental-complaint.html stonedesk-catalog.html stonedesk-intake.html sairndesign.html sairndental.html docs/cloud-research/sairndesign-worldwide-competitive-gap-audit-2026-10-20.md docs/cloud-research/sairnbiz-worldwide-competitive-gap-audit-2026-10-20.md docs/2026-10-20-fourth-b44-sairndental-correctness-audit.md docs/defect-density-register.json docs/batch-manifest-fourth-b44.json SAIRN-handoff-fourth-b44.md SAIRN-report-fourth-b44.txt SAIRN-digest-fourth-b44.txt NOT-stonedesk-html-HANKS NOT-sairnbiz-html-AUDIT-ONLY NOT-api NOT-tests NOT-tools NOT-CLAUDE-md NOT-dot-claude-skills",
       "claimed_at": "2026-10-20T12:39:37Z",
       "claimed_at_epoch": 1792499977.6919987,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T13:51:08Z",
       "files": [
         "SAIRN-digest-fourth-b44.txt",
         "SAIRN-handoff-fourth-b44.md",
@@ -4438,8 +4438,8 @@
       "task": "b44: Field Map optimiser -- sdData drops the optimize envelope, order validation; plus satellites, B4, audits. hank released stonedesk.html. FILES: stonedesk.html sairndental-book.html sairndental-complaint.html stonedesk-catalog.html stonedesk-intake.html sairndesign.html docs/cloud-research/sairnbiz-worldwide-competitive-gap-audit-2026-10-20.md docs/2026-10-20-fourth-b44-sairndental-correctness-audit.md docs/defect-density-register.json docs/batch-manifest-fourth-b44.json SAIRN-handoff-fourth-b44.md SAIRN-report-fourth-b44.txt SAIRN-digest-fourth-b44.txt NOT-api NOT-tests NOT-tools NOT-CLAUDE-md NOT-dot-claude-skills",
       "claimed_at": "2026-10-20T13:08:14Z",
       "claimed_at_epoch": 1792501694.4395816,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T13:51:08Z",
       "files": [
         "SAIRN-digest-fourth-b44.txt",
         "SAIRN-handoff-fourth-b44.md",
