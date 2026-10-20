@@ -12,8 +12,8 @@ BUILT: api/law-attest.js + api/_lib/law-attest.js + 66 arms, 0 failed. TWO
   attorney loses the route without touching the setting; the count fails CLOSED
   (null -> 503, never "one, so go ahead"). countersign.js NOT weakened: no
   self-signature, ever -- the solo path is its own. A SECOND profile, so arm E3
-  of b18 STAYED GREEN (59/0) where the design predicted a re-aim.
-  SQL path: sql/sairnlaw_trust_attestations.sql.
+  of b18 STAYED GREEN (59/0) where the design predicted a re-aim. SQL path:
+  sql/sairnlaw_trust_attestations.sql.
 LIVE: absent ?action= now 400 UNKNOWN_ACTION (b22 recorded 401/UNVERIFIED), and
   a body-signalled proxy_get still reaches the proxy handler -- a DIFFERENT 400,
   so the branch order is proven, not asserted. /api/law-attest deployed and
@@ -24,9 +24,7 @@ DECISION-NEEDED
    AND the positive control. Until then the attestation is inert and GUARDIAN
    CHECK 29 IS NOT SATISFIED -- no real write against the real store is possible.
 2. stonedesk.html:12814 is the UNFIXED TWIN of the defect b34 closed 113 lines
-   later -- same "check GOOGLE_MAPS_API_KEY" message for a request that never
-   reached Google. fourth holds it.
-3. Arm A1 of b19 is RED by design (implemented false->true). RE-AIM, do not
-   delete. cody holds that suite.
-NOT PROVEN: the straight-time-floor guard (SHAPE only -- no SEN audit licence to
-  write fixtures to) and the claude.js log line (the sink is the Vercel log).
+   later -- same "check GOOGLE_MAPS_API_KEY" for a request that never reached
+   Google. fourth holds it. 3. Arm A1 of b19 is RED by design (implemented
+   false->true): RE-AIM it, do not delete. cody holds that suite.
+NOT PROVEN: the straight-time-floor guard (SHAPE only -- no SEN audit licence to write fixtures to) and the claude.js log line (its sink is the Vercel log).
