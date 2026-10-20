@@ -43,8 +43,18 @@
     {
       "id": 7,
       "title": "Push, no force, confirm landed",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "git push to origin/main in six parts, 2288e151..6da9b98d; rev-list --left-right --count = 0 0"
     }
-  ]
+  ],
+  "closed": {
+    "drive_verify": "PASS",
+    "verified_by": "python tools/drive_upload_verify.py --agent cc --batch b31 --verify-only",
+    "criteria": "2026-10-20.1",
+    "deliverables": [
+      "SAIRN-handoff-cc-b31.md sha256 b3c554069209ca2d",
+      "SAIRN-report-cc-b31.txt sha256 9082e1df7f6ce516",
+      "SAIRN-digest-cc-b31.txt sha256 003c0624fcece59c"
+    ]
+  }
 }

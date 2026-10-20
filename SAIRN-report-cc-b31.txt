@@ -1,0 +1,98 @@
+REPORT cc b31
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-20
+RANGE     from b2b02bbd (chore(snapshot b31): commit Michael's 13:13Z re-capture...) to origin/main.
+          Claim 0860564f. No --force, NO OVERRIDE, no BYPASS-LOG row.
+STARTUP   b30 tip c2dea289 on origin; 0 stashes; pulled. FOUND db/schema_snapshot.json MODIFIED
+          (Michael's re-capture, mtime 09:54 local).
+
+== 0. SNAPSHOT RE-CAPTURE (closes b30 item 4) ==
+The capture arrived wrapped as {"tables": {...}}; read as-is, every reader saw 1 table. Unwrapped
+mechanically (asserting the inner object equals the original) and committed as b2b02bbd.
+schema_snapshot_freshness: 498 tables, 0 absent-and-queried, 6 absent and comment-only.
+The Tier A gate refused the push because the snapshot names Tier A resources. Recorded with --open
+(3f9e48e0, assigned to cody), not skipped.
+MY OWN LOOP RETRIED THAT REFUSAL 4 TIMES before stopping, and the gate escalated at 3. A gate
+refusal is deterministic; only fetch-first and lock-ref races may be retried.
+
+== 1. ITEM 1: "hank 10-16" = hank b17 obligation 2026-10-16T13:03:47Z -- DISCHARGED ==
+b30's NEXT line named it correctly. The b30 digest's discharges were different records
+(hank 10-19 IOLTA, cody 10-16 misclass).
+CONCEPT: drive the real replay with stubbed reads to see whether a ledger close named
+legacy:<start>..<end> silently replaces a legacy freeze.
+FINDING, MEDIUM, LATENT: it does. September is unfrozen, and December sits under the legacy id.
+The write is accepted: closing_id is free text, CLOSING_IMMUTABLE checks ledger events only,
+PERIOD_ALREADY_CLOSED checks dates only. It is latent because no agency has a legacy row.
+Also:
+  (d) overlapping closings: still accepted at HEAD; driven, insertion order decides.
+  (c) recommend owner-only reopen -- Michael's call.
+  (a), (b), (e): hold.
+  trust-lock suite: 14/14.
+
+== 2. ITEM 4: cody 2026-10-20T11:47:22Z -- DISCHARGED; 700 B/STOP IS NOT A WORST CASE ==
+CONCEPT: build the largest 200-stop payload validateStops accepts and measure it as the gate does.
+Cap 172,768 bytes, read from source.
+  realistic ..................................... 47,110   admitted
+  500 ASCII address + 200-char job_ref .......... 170,910  admitted
+  500 CJK address ............................... 335,110  413
+  500 accented address .......................... 235,110  413
+  500 quote characters .......................... 235,110  413
+  break-even job_ref: 210 chars
+Root causes: job_ref is unbounded everywhere; the address limit is CHARACTERS while the cap is BYTES.
+(a) api/sd-sub-data.js:171 caps only action==='write'; qc-review PATCHes an unbounded qc_notes.
+(c) nothing reachable.
+(d) consolidate does NOT write -- mislabelled; isWriteClassAction has no production consumer.
+(e) no pure read block writes.
+
+== 3. ITEM 5: cody 2026-10-20T13:03:28Z (sc_claims/sc_dme) -- DISCHARGED ==
+extra-actions 48/48. tombstones has a real ids-only handler. HARD is assert-guarded.
+The comment-only claim was verified against c79d4e59. Note on the rf_invoices jsonb-text ceiling.
+
+== 4. ITEM 2: --save FIXED -- AND b30's DIAGNOSIS WAS WRONG ==
+Two paths save fine, so "a multi-path --save writes nothing" was false.
+The real defect: the save ran AFTER the render, so a closed stdout (b30's own `| head -40`) killed the
+process before any write. Reproduced: 0 of 8 through `head -3`.
+CONCEPT: a save must not depend on anybody reading the report -- write first, print second.
+_save_drafts() fixes it: 8 of 8 through the same pipe.
+SECOND defect: one unwritable target raised out of the loop and lost every later draft (0 of 81).
+The write is now per target, and a failure reports NOT saved by name; 80 named on the CRLF control.
+--selftest 9/9.
+720 drafts saved. Owed (b30 definition) fell 745 -> 18: 16 hover-auditor files, 2 refused by the
+tool as defect records. Owed for a build agent: 0.
+PUSH: 720 files in one commit made the path-scope and control-byte checks fail CLOSED on WinError 206
+(command line too long). Answered by splitting into six commits and pushing each, 0/0 after every one.
+
+== 5. ITEM 3: CONVENTION CORRECTED, NOT FILES RENAMED ==
+Root census, 157 *handoff* files:
+  SAIRN-handoff-<session>-b<N>.md ... 103
+  APP-YYYY-MM-DD-subject ............ 8
+  APP-SESSION-N ..................... 46
+Michael's b29 decision (cody b29 section 3.3): record the practice.
+The August case against counters does not apply: that collision was two clones on ONE counter; a
+per-session prefix has one writer. CLAUDE.md step 1 and the handoff skill are corrected, with "compare
+N as a number" added. The skill is mirrored to the user store; diff after tr -d '\r' is clean.
+
+== 6. ITEM 6: concept lines in notes sections 1, 2, 4. ==
+== 7. ITEM 7: pushed; 0 0 after each part; read back from origin. ==
+
+== OPEN ==
+- Routed to hank: legacy: id collision, overlapping closings.
+- Routed to cody: job_ref / byte cap; sd-sub-data write-only cap; consolidate label.
+- Michael: owner-only reopen?
+- cody: review 3f9e48e0.
+- cc next: fourth 2026-10-20T13:42:06Z (rt_routes optimiser).
+- b29's eight routed defects are still waiting.
+
+== UNVERIFIED ==
+- The legacy-id collision was driven against the replay, not end to end through a live write.
+- (3) premium_may_be_owed in the hank record: not reviewed.
+- The content quality of the 720 drafts: not reviewed. They are predictions, scored later by
+  fmea_prediction_check.
+
+== EVIDENCE ==
+docs/2026-10-20-cc-b31-notes.md, docs/tier-a-reviews.json, tools/fmea_draft.py, docs/fmea/,
+db/schema_snapshot.json, CLAUDE.md, .claude/skills/sairn-session-handoff/SKILL.md, SAIRN-handoff-cc-b31.md
+
+SHA256 3461f5764c5a3c6e3f3d9840e7b799bca9a720f0678da895f42d6d5aa0ed95ca
+END-OF-REPORT

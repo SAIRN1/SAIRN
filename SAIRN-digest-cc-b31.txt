@@ -1,0 +1,25 @@
+DIGEST cc b31
+STATUS: 7 of 7 closed, plus Michael's snapshot re-capture committed. Push range STARTS at b2b02bbd; 0/0 against the REMOTE after every part; no --force, NO OVERRIDE.
+SNAPSHOT: Michael's 13:13Z capture was uncommitted in this clone and wrapped as {"tables":...}, which every reader saw as 1 table. Unwrapped and committed.
+The freshness tool now reports 498 tables, 0 absent-and-queried. Tier A obligation recorded with --open (cody), not skipped.
+ITEM 1: "hank 10-16" is hank's b17 obligation 2026-10-16T13:03:47Z. DISCHARGED. MEDIUM, latent: a ledger close named legacy:<start>..<end> REPLACES a legacy freeze (driven; Sept unfrozen).
+Overlapping closings are still accepted. Owner-only reopen recommended -- Michael's call.
+ITEM 4: 700 BYTES/STOP IS NOT A WORST CASE. A 210-char job_ref, or a 500-char CJK/accented/quoted address, gets 413 on a VALID route (cap 172,768).
+job_ref is unbounded; the address limit is characters, the cap is bytes. Also: sd-sub-data.js caps only 'write'; consolidate is mislabelled write-class.
+ITEM 5: sc_claims/sc_dme DISCHARGED -- 48/48, tombstones has a real ids-only handler, HARD assert-guarded, comment-only claim verified against the diff.
+ITEM 2: b30's "multi-path --save writes nothing" WAS WRONG. The cause was the closed pipe from my own | head killing the process before the save phase.
+Fixed: save first, print second -- 0/8 -> 8/8. Second fix: one bad target no longer loses the batch. 720 drafts saved; owed 745 -> 18 (16 hover-auditor files, 2 refused).
+ITEM 3: the CONVENTION was wrong, not the practice -- 103 of 157 handoffs are SAIRN-handoff-<session>-b<N>.md, and only 8 follow the documented scheme.
+CLAUDE.md and the skill now describe the practice (per-session counter, one writer, compare N as a number). Mirrored to the user store. No renames, per Michael's b29 decision.
+PUSH: 720 files in one commit made two checks fail CLOSED (WinError 206, command line too long). Split into six commits, each pushed and confirmed.
+CAUGHT IN MYSELF: my push loop retried a deterministic Tier A refusal 4 times, and the gate escalated at 3. Retry only fetch-first and lock-ref races.
+DECISION-NEEDED: Michael -- may only the owner reopen a closed pay period, or the owner plus billing (today's set)?
+CHANGED: db/schema_snapshot.json; tools/fmea_draft.py; docs/fmea/ (720); docs/tier-a-reviews.json (1 opened, 3 discharged); CLAUDE.md; handoff skill.
+SQL: none.
+EVIDENCE-path: SAIRN-report-cc-b31.txt, SAIRN-handoff-cc-b31.md, docs/2026-10-20-cc-b31-notes.md
+UNVERIFIED: the legacy-id collision was driven on the replay, not on a live write. The 720 drafts' content was not reviewed. premium_may_be_owed was not reviewed.
+ROUTED: hank -- legacy id, overlapping closings. cody -- job_ref and byte cap, sd-sub-data cap, consolidate label, review of 3f9e48e0. b29's eight defects still waiting.
+NEXT: cc -- fourth's rt_routes optimiser Tier A obligation (2026-10-20T13:42:06Z).
+CONTEXT 57.4% of 1,000,000 -- 573,789 tokens, measured.
+SHA256 a9a31bec3898ab9220f0d434a1fc6a9a9e6fad9d8d047fea8729df981d288a4a
+END-OF-REPORT
