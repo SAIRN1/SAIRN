@@ -33988,56 +33988,6 @@
       "factors_unknown_reason": "duplicate-copy follow-up to an already-registered defect (9a7f73da); the fix and its own regression coverage are the record, no separate RCA factor pass run"
     },
     {
-      "commit": "ef623db04063",
-      "date": "2026-10-19",
-      "subject": "fix(path-manifest): a flag's value is not a path, and the proxy it exposed is withdrawn",
-      "files": [
-        "tools/sairn_path_manifest.py"
-      ],
-      "lines_added": 59,
-      "lines_removed": 2,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "tools/sairn_path_manifest.py's `--check` collected every argument after itself that did not begin with `--`, which swallowed the VALUE of `--agent`. Driven on the real tool: `--check --agent cody sairnroofing.html sairnscape.html stonedesk.html` classified a path literally named `cody` and reported FOUR paths where three were given. THE PUSH VERDICT WAS STILL RIGHT, which is why it survived the batch that shipped it: `cody` matched no ownership prefix, read UNOWNED, and the three real paths were still refused, so the exit code was correct while the OUTPUT carried a row about a file nobody named. A wrong line inside a refusal somebody is meant to act on is worse than a wrong exit code, because the exit code is the part a reader re-derives and the prose is the part they believe. The same batch's `--history` mode then reported \"cody 50 paths, 14 REFUSED\" on a commit-subject proxy; re-measured here, all 13 of those .html paths come from ONE commit, 50f67cfe, authored by `fx` with the subject \"fix(contrast): 153 findings down to 3, app by app, and the 3 left are cody's file\" -- fourth's commit, fourth's own files, entirely in scope, with `cody` appearing only as a possessive. So the figure was 100% false positives for that population and the DECISION-NEEDED it produced is withdrawn rather than acted on.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "38bbd45518f1",
-        "date": "2026-10-19",
-        "subject": "feat(scope): a name list becomes a property, a threshold becomes a population, and a push learns its own scope",
-        "lag_days": 0
-      },
-      "contributing_factors": [
-        {
-          "factor": "the path collector tested for a `--` prefix instead of knowing which flags take a value, so any flag value became a path",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "extracted as paths_from_argv(), pure and locked -- 31 to 37 arms, with the real invocation as the arm, a flag-after-paths negative control so the fix is not position-dependent, and an ablation showing the pre-b25 expression returning the agent name as a path"
-        },
-        {
-          "factor": "the wrong output rode inside a CORRECT exit code, so every arm and every drive in the shipping batch agreed with it",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "the arms now assert the collected path LIST rather than the verdict, so a phantom row fails even when the refusal is right"
-        },
-        {
-          "factor": "the same batch attributed commits to populations by searching the commit SUBJECT for an agent name, and reported a per-population refusal count built on it",
-          "kind": "process",
-          "action_status": "planned",
-          "action": "reframe or remove --history: measured, git carries no per-population signal at all in this repo -- every commit is authored by Michael Dibert, SAIRN1 or fx -- so the mode cannot be fixed by switching to the author field and must stop attributing rather than attribute badly"
-        }
-      ],
-      "recurrence_open": "Nothing checks a tool's OUTPUT against its inputs -- only its exit code. This defect produced a correct refusal with a fabricated row in it and every control in the shipping batch passed. And the --history proxy is still present and still prints a per-population table; it is disclosed in its own output as a proxy, which is weaker than not printing a figure nobody can act on."
-    },
-    {
       "commit": "54d6e95d9678",
       "date": "2026-10-19",
       "subject": "feat(sairnlaw,sairnlegacy): the four remaining practitioner answers, and the trust lock finally decides before the table",
@@ -34842,6 +34792,56 @@
       "recurrence_open": "api/sd-data.js WAS NOT SWEPT and is NOT covered by this record. It is cody's file this batch, it is the largest handler on the platform, and it uses an enc() helper throughout -- so it is LIKELY clean, and LIKELY IS NOT MEASURED. Routed. The standing arm D1 walks only api/ and would catch a new splice there on the next run, which is the mitigation, not a measurement of today. Separately: D1 allowlists the namespaced-encoder shape (`spec.enc(...)`) by pattern, so a file that invents a THIRD encoder spelling would be silently skipped until somebody notices."
     },
     {
+      "commit": "ef623db04063",
+      "date": "2026-10-19",
+      "subject": "fix(path-manifest): a flag's value is not a path, and the proxy it exposed is withdrawn",
+      "files": [
+        "tools/sairn_path_manifest.py"
+      ],
+      "lines_added": 59,
+      "lines_removed": 2,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/sairn_path_manifest.py's `--check` collected every argument after itself that did not begin with `--`, which swallowed the VALUE of `--agent`. Driven on the real tool: `--check --agent cody sairnroofing.html sairnscape.html stonedesk.html` classified a path literally named `cody` and reported FOUR paths where three were given. THE PUSH VERDICT WAS STILL RIGHT, which is why it survived the batch that shipped it: `cody` matched no ownership prefix, read UNOWNED, and the three real paths were still refused, so the exit code was correct while the OUTPUT carried a row about a file nobody named. A wrong line inside a refusal somebody is meant to act on is worse than a wrong exit code, because the exit code is the part a reader re-derives and the prose is the part they believe. The same batch's `--history` mode then reported \"cody 50 paths, 14 REFUSED\" on a commit-subject proxy; re-measured here, all 13 of those .html paths come from ONE commit, 50f67cfe, authored by `fx` with the subject \"fix(contrast): 153 findings down to 3, app by app, and the 3 left are cody's file\" -- fourth's commit, fourth's own files, entirely in scope, with `cody` appearing only as a possessive. So the figure was 100% false positives for that population and the DECISION-NEEDED it produced is withdrawn rather than acted on.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "38bbd45518f1",
+        "date": "2026-10-19",
+        "subject": "feat(scope): a name list becomes a property, a threshold becomes a population, and a push learns its own scope",
+        "lag_days": 0
+      },
+      "contributing_factors": [
+        {
+          "factor": "the path collector tested for a `--` prefix instead of knowing which flags take a value, so any flag value became a path",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "extracted as paths_from_argv(), pure and locked -- 31 to 37 arms, with the real invocation as the arm, a flag-after-paths negative control so the fix is not position-dependent, and an ablation showing the pre-b25 expression returning the agent name as a path"
+        },
+        {
+          "factor": "the wrong output rode inside a CORRECT exit code, so every arm and every drive in the shipping batch agreed with it",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the arms now assert the collected path LIST rather than the verdict, so a phantom row fails even when the refusal is right"
+        },
+        {
+          "factor": "the same batch attributed commits to populations by searching the commit SUBJECT for an agent name, and reported a per-population refusal count built on it",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "reframe or remove --history: measured, git carries no per-population signal at all in this repo -- every commit is authored by Michael Dibert, SAIRN1 or fx -- so the mode cannot be fixed by switching to the author field and must stop attributing rather than attribute badly"
+        }
+      ],
+      "recurrence_open": "Nothing checks a tool's OUTPUT against its inputs -- only its exit code. This defect produced a correct refusal with a fabricated row in it and every control in the shipping batch passed. And the --history proxy is still present and still prints a per-population table; it is disclosed in its own output as a proxy, which is weaker than not printing a figure nobody can act on."
+    },
+    {
       "commit": "fed240ec418b",
       "date": "2026-10-19",
       "subject": "fix(bridge b21): an unknown ?action= is refused, not silently treated as a push",
@@ -34897,6 +34897,60 @@
         }
       ],
       "recurrence_open": "An ABSENT ?action= is STILL accepted and still reaches handlePush -- arm D1 asserts that residual deliberately, because refusing it is a second decision with a different blast radius (stonedesk.html:7795 sends neither an action nor a data_type). The THREE CALLERS are unchanged: stonedesk.html is held by fourth under a live b34 claim, so the caller half is routed rather than fixed, and until it lands :7795 keeps upserting a bridge_data row of three nulls. AND THE REFUSAL IS NOT DEPLOYED at the time of this record, so every arm is against the handler and none against the live URL -- a 401 from the deployed endpoint today is evidence about the licence gate and none about this fix."
+    },
+    {
+      "commit": "250099e90013",
+      "date": "2026-10-20",
+      "subject": "fix(hover b71): a passing restore drill now discharges its own push-count mark",
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools/hover_backup_mirror.py"
+      ],
+      "lines_added": 23,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": "hover_backup_mirror.drill_due() returned DUE on push_count%4==0 even immediately after a PASSING restore drill, because drill rows carried no push_count and the function could not tell an undischarged mark from a discharged one; it would have kept reporting DUE until the next push moved the counter",
+      "rules": [
+        "1.13"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "the function has carried this shape since the drill cadence was added; no single injecting commit was identified and none is guessed"
+      },
+      "citation_note": "Cited as the SIGNAL analog, not a literal waiter, and said that way rather than stretched: 1.13's test is whether a watcher can report the answer that matters, and this indicator had only one reachable terminal state (DUE), so it could never distinguish needs-doing from already-done. It errs toward MORE checking, so this is a clarity defect and not a silent failure -- stated so the severity is not inflated.",
+      "contributing_factors": [
+        {
+          "factor": "The drill row written by record_drill() carried no push_count, so the record of a passing drill did not name the trigger it discharged",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "record_drill() now stamps the current push_count and drill_due() compares it, driven on the real store from DRILL DUE to not-due"
+        },
+        {
+          "factor": "The every-fourth-push trigger is derived from a counter that only moves on the next push, so any condition keyed on it alone is unsatisfiable within the same push",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "the discharge check is keyed on equality with that same counter rather than on time alone, so the mark clears at the push it fired on"
+        },
+        {
+          "factor": "Nothing exercised --drill-due AFTER a passing drill; the 51-arm selftest covers the restore path and the refusals but never the indicator's post-drill answer",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "Add a selftest arm that runs a passing drill at a multiple-of-four push count and asserts --drill-due then answers not-due. NAMED AS THE NEXT STEP IN THE b71 HANDOFF rather than written at the end of a batch, because the arm needs a drill to run inside a fixture and the existing 51 arms do not have that scaffolding yet."
+        },
+        {
+          "factor": "A pre-b71 drill row has no push_count, so history cannot be re-evaluated and old rows deliberately do NOT discharge the mark",
+          "kind": "process",
+          "action_status": "declined",
+          "note": "treating an unstamped row as a discharge would retroactively satisfy marks nothing was recorded against, which is worse than one extra drill"
+        }
+      ],
+      "recurrence_open": "The detection factor is NOT closed: no selftest arm yet asserts the post-drill answer, so a regression would again be found only by a human checking after a drill rather than by the suite."
     }
   ],
   "started": "2026-09-09",
