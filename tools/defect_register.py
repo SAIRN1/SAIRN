@@ -2171,6 +2171,79 @@ def cmd_post_rewrite(stream=None):
     return 0
 
 
+def _check_problems(text):
+    """The SET of problem lines out of a captured `--check` report.
+
+    Everything between the `FAIL: n register problem(s)` header and the next
+    unindented line. Returned as a SET because the comparison that matters is
+    WHICH problems exist, never how many -- a count can stay the same while one
+    problem is traded for another.
+    """
+    out, inside = set(), False
+    for raw in (text or '').split(chr(10)):
+        if raw.startswith('FAIL:') and 'register problem' in raw:
+            inside = True
+            continue
+        if inside:
+            if raw.startswith('  ') and raw.strip():
+                out.add(raw.strip())
+            elif raw.strip():
+                inside = False
+    return out
+
+
+def _reseat_verdict(rc_before, before_problems, rc_after, after_problems):
+    """-> ('keep' | 'revert', why). The whole judgement, as a pure function.
+
+    ── THE DEFECT THIS EXISTS BECAUSE OF (2026-10-20, cc b28) ──────────────
+    `--reseat` used to run `--check` AFTER writing and revert every re-seat on
+    any non-zero exit. That is right when the re-seat BROKE something and wrong
+    when the register was already broken: on 2026-10-20 cody's record
+    `ce15ddaa6a3c` cited a sha that exists nowhere in the repository -- already
+    on origin, caused by nobody's re-seat and fixable by no re-seat -- and
+    `--reseat` printed "RE-SEAT REVERTED ... nothing was kept" TWICE in one
+    batch, discarding correct repairs each time. ONE SESSION'S UNRESOLVABLE
+    RECORD BLOCKED EVERY OTHER SESSION'S CORRECT REPAIR, in every clone, until
+    somebody fixed a record they did not write.
+
+    **A REPAIR MUST BE JUDGED ON WHAT IT CHANGED, NOT ON THE STATE IT
+    INHERITED.** So the verdict is a comparison, not an exit code: revert iff
+    this run INTRODUCED a problem. If every problem after the write was already
+    there before it, the re-seats are kept and the surviving failure is named as
+    pre-existing -- which is a different sentence from "your repair broke the
+    register", and the reader needs to be able to tell them apart.
+
+    THE COMPARISON IS BY PROBLEM, NOT BY COUNT. A run that fixes one problem
+    and introduces another leaves the count unchanged, and a count-based test
+    would call that clean. Set difference cannot.
+
+    COULD NOT CHECK (exit 2) IS STILL ALWAYS A REVERT, and that is deliberate
+    rather than an oversight: exit 2 means the validation did not run, so there
+    is no evidence either way about what this write did, and PR 1.11 forbids
+    folding a could-not-tell into a pass. A repair kept on the strength of an
+    unperformed check is the exact shape this whole file exists to count.
+    """
+    if rc_after == 2:
+        return 'revert', ('--check COULD NOT RUN after the write (exit 2), so '
+                          'there is no evidence about what this write did. A '
+                          'could-not-tell is never folded into a pass.')
+    if rc_after == 0:
+        return 'keep', ''
+    introduced = after_problems - before_problems
+    if introduced:
+        return 'revert', ('this run INTRODUCED %d problem(s) that were not '
+                          'there before it: %s'
+                          % (len(introduced), '; '.join(sorted(introduced))[:400]))
+    if rc_before == 0:
+        return 'revert', ('--check passed before the write and fails after it, '
+                          'and the problem lines could not be attributed -- '
+                          'the safe reading of an unexplained regression is '
+                          'that this run caused it.')
+    return 'keep', ('the register still fails --check, and every problem was '
+                    'ALREADY THERE before this run. None was introduced here '
+                    'and none is fixable by a re-seat.')
+
+
 def cmd_reseat():
     """Write re-seated SHAs back. A separate command on purpose: `--check` is
     read-only, and a checker that edits the thing it checks is not a checker."""
@@ -2195,6 +2268,28 @@ def cmd_reseat():
               'pre-image (%s). Nothing was written -- a repair with no way back '
               'is not a repair.' % e)
         return 2
+    # ── THE BASELINE, TAKEN BEFORE ANYTHING IS WRITTEN (2026-10-20, b28) ───
+    # Without this the post-write check has nothing to compare against and the
+    # only question it can answer is "does the register pass", which is the
+    # wrong question for a repair tool. See _reseat_verdict().
+    _sink0 = io.StringIO()
+    _real0 = sys.stdout
+    try:
+        sys.stdout = _sink0
+        rc_before = cmd_check()
+    except Exception as e:                                      # noqa: BLE001
+        sys.stdout = _real0
+        rc_before, _sink0 = 2, io.StringIO('%s: %s' % (type(e).__name__, e))
+    finally:
+        sys.stdout = _real0
+    problems_before = _check_problems(_sink0.getvalue())
+    if rc_before != 0:
+        print('NOTE: --check already fails BEFORE this run (exit %d, %d '
+              'problem(s)). That is not a reason to refuse the repair, and it '
+              'is not a reason to pretend afterwards that it passed -- the '
+              'verdict below is whether THIS run made anything worse.'
+              % (rc_before, len(problems_before)))
+
     keys = {(r['commit'], r.get('summary')) for r in reg['records']}
     n = 0
     collided = 0
@@ -2350,7 +2445,12 @@ def cmd_reseat():
     finally:
         sys.stdout = _real
 
-    if rc != 0:
+    # ── REVERT ONLY WHAT THIS RUN BROKE (2026-10-20, b28) ──────────────────
+    # The judgement is a comparison against the pre-write baseline, not the
+    # bare exit code. _reseat_verdict() carries the argument and the incident.
+    verdict, vwhy = _reseat_verdict(rc_before, problems_before, rc,
+                                    _check_problems(_sink.getvalue()))
+    if verdict == 'revert':
         try:
             io.open(_p, 'w', encoding='utf-8', newline='').write(before)
             restored = (io.open(_p, encoding='utf-8', newline='').read() == before)
@@ -2361,8 +2461,8 @@ def cmd_reseat():
                   'git before doing anything else:' % e)
             print('    git checkout -- %s' % REG)
             return 2
-        print('RE-SEAT REVERTED -- the %d re-seat(s) made the register fail its '
-              'own --check (exit %d), so nothing was kept.' % (n, rc))
+        print('RE-SEAT REVERTED -- the %d re-seat(s) are NOT kept, because %s'
+              % (n, vwhy))
         print('  the register on disk is byte-identical to what it was: %s'
               % ('CONFIRMED' if restored else 'NOT CONFIRMED -- '
                  'use `git checkout -- %s`' % REG))
@@ -2370,6 +2470,22 @@ def cmd_reseat():
         for ln in _sink.getvalue().rstrip().split(chr(10)):
             print('    %s' % ln)
         return 2
+
+    if rc != 0:
+        # KEPT OVER A FAILING --check, which is only ever right when every
+        # problem predates this run. It is said in full rather than reduced to
+        # an exit code, because "your repair broke it" and "it was already
+        # broken" are different facts and the reader must be able to tell.
+        print('re-seated %d record(s) AND KEPT THEM: %s' % (n, vwhy))
+        print('  THE REGISTER STILL FAILS --check (exit %d) FOR A PRE-EXISTING '
+              'REASON. This run neither caused it nor can fix it; somebody has '
+              'to repair the record itself:' % rc)
+        for ln in _sink.getvalue().rstrip().split(chr(10)):
+            print('    %s' % ln)
+        if collided:
+            print('  %d record(s) LEFT ALONE on a destination collision.'
+                  % collided)
+        return 1
 
     print('re-seated %d record(s).' % n)
     if superseded_skipped:
@@ -2835,6 +2951,57 @@ def cmd_selfcheck_reachability():
     ck('...and the real repo still answers from its own entry afterwards',
        bool(ancestor_set(refs)), True)
 
+    # ── b28: --reseat MUST NOT REVERT OVER A PRE-EXISTING FAILURE ───────────
+    # The incident, as fixtures. A repair is judged on what it CHANGED, so
+    # every arm here is about the DELTA and not about either exit code alone.
+    print('')
+    print('  --reseat verdict: judge the change, not the inherited state')
+    P_CODY = ("ce15ddaa6a3c -- neither the commit nor its subject is in this "
+              "repo: 'b27(cody): the rt_routes primitive made reachable'")
+    P_NEW = 'abc123456789 -- duplicate identity (commit, summary)'
+
+    ck('THE b28 INCIDENT: the SAME pre-existing problem before and after -> '
+       'KEEP, because this run introduced nothing',
+       _reseat_verdict(1, {P_CODY}, 1, {P_CODY})[0], 'keep')
+    ck('...and the reason says the problem was ALREADY THERE, not that the '
+       'repair broke something',
+       'ALREADY THERE' in _reseat_verdict(1, {P_CODY}, 1, {P_CODY})[1], True)
+    ck('clean before, broken after -> REVERT. This is the 2026-10-07 defect '
+       'and it must keep failing the same way',
+       _reseat_verdict(0, set(), 1, {P_NEW})[0], 'revert')
+    ck('a NEW problem alongside the old one -> REVERT, even though the '
+       'register was already failing',
+       _reseat_verdict(1, {P_CODY}, 1, {P_CODY, P_NEW})[0], 'revert')
+    ck('...and it NAMES the introduced problem rather than the count',
+       P_NEW in _reseat_verdict(1, {P_CODY}, 1, {P_CODY, P_NEW})[1], True)
+    ck('ONE TRADED FOR ANOTHER, same COUNT -> REVERT. A count-based test would '
+       'have called this clean, which is why the comparison is by SET',
+       _reseat_verdict(1, {P_CODY}, 1, {P_NEW})[0], 'revert')
+    ck('a run that FIXES the pre-existing problem -> KEEP, exit 0 after',
+       _reseat_verdict(1, {P_CODY}, 0, set())[0], 'keep')
+    ck('COULD NOT CHECK after the write -> REVERT, always: no evidence either '
+       'way, and PR 1.11 forbids folding that into a pass',
+       _reseat_verdict(1, {P_CODY}, 2, set())[0], 'revert')
+    ck('...even when it could not check BEFORE either',
+       _reseat_verdict(2, set(), 2, set())[0], 'revert')
+    ck('clean before AND clean after -> KEEP',
+       _reseat_verdict(0, set(), 0, set())[0], 'keep')
+
+    print('  problem-line parsing, because the comparison is only as good as '
+          'this')
+    _rep = ('reachability measured against origin/main' + chr(10)
+            + 'FAIL: 2 register problem(s)' + chr(10)
+            + '  ' + P_CODY + chr(10)
+            + '  ' + P_NEW + chr(10)
+            + 'planned actions owed: 201' + chr(10))
+    ck('both problem lines are parsed out', _check_problems(_rep),
+       {P_CODY, P_NEW})
+    ck('...and the UNINDENTED trailer after them is not mistaken for a problem',
+       'planned actions owed: 201' in _check_problems(_rep), False)
+    ck('a report with no FAIL header yields an EMPTY set, not a false problem',
+       _check_problems('OK: 669 record(s)' + chr(10) + '  all fine'), set())
+
+    print('')
     print('  %d/%d arms classify correctly' % (total - bad, total))
     print('')
     print('  THE ORPHAN IS NOT CLEANED UP AND DOES NOT NEED TO BE: it is '
