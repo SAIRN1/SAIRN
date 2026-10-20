@@ -4351,6 +4351,25 @@
         "docs/batch-manifest-cc-b29.json",
         "docs/tier-a-reviews.json"
       ]
+    },
+    {
+      "id": "cc-1792496819",
+      "session": "cc",
+      "subject": "cc",
+      "task": "b29 (same batch, widened): sql never-run list + root cause + manifest + Tier A dnt_gfe, AND batch_manifest --close records deliverables:[] since the verifier added a line-count field; fix the parser, fail closed on a PASS naming nothing, fixtures both shapes.  FILES: sql/ docs/tier-a-reviews.json docs/batch-manifest-cc-b29.json docs/2026-10-20-cc-b29-notes.md tools/batch_manifest.py SAIRN-handoff-cc-b29.md SAIRN-report-cc-b29.txt SAIRN-digest-cc-b29.txt NOT-api NOT-html NOT-tests",
+      "claimed_at": "2026-10-20T11:46:59Z",
+      "claimed_at_epoch": 1792496819.1404083,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-cc-b29.txt",
+        "SAIRN-handoff-cc-b29.md",
+        "SAIRN-report-cc-b29.txt",
+        "docs/2026-10-20-cc-b29-notes.md",
+        "docs/batch-manifest-cc-b29.json",
+        "docs/tier-a-reviews.json",
+        "tools/batch_manifest.py"
+      ]
     }
   ],
   "refusals": [
