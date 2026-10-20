@@ -4378,8 +4378,8 @@
       "task": "b30: freshness QUERY_RE widened (fixtures first, target the known 37); live-verify the 37 via signed-in reads; act on cc-owned notes from cody and hank b18/b26; FMEA drafts + tier-a backlog; push.  FILES: tools/schema_snapshot_freshness.py tools/report_only_checks.py tools/tooling_inventory.py CLAUDE.md docs/CRITICALITY-TIERS.md docs/SAIRN-OPEN-WORK-INDEX.md docs/tier-a-reviews.json docs/fmea/ docs/TOOLING-INVENTORY.md docs/2026-10-20-cc-b30-notes.md docs/batch-manifest-cc-b30.json SAIRN-handoff-cc-b30.md SAIRN-report-cc-b30.txt SAIRN-digest-cc-b30.txt NOT-api NOT-html NOT-tests NOT-sql",
       "claimed_at": "2026-10-20T12:30:23Z",
       "claimed_at_epoch": 1792499423.9960628,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T12:57:58Z",
       "files": [
         "CLAUDE.md",
         "SAIRN-digest-cc-b30.txt",
