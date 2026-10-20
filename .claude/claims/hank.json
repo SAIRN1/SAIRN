@@ -4418,8 +4418,8 @@
       "task": "b34 tools/audit_event_type_check.py live snapshot comparison and three blind spots. FILES: tools/audit_event_type_check.py docs/sairn-path-manifest.json docs/2026-10-20-hank-b34-notes.md SAIRN-handoff-hank-b34.md SAIRN-report-hank-b34.txt SAIRN-digest-hank-b34.txt",
       "claimed_at": "2026-10-20T14:23:57Z",
       "claimed_at_epoch": 1792506237.7231221,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T14:26:04Z",
       "files": [
         "SAIRN-digest-hank-b34.txt",
         "SAIRN-handoff-hank-b34.md",
