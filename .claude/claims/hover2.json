@@ -885,6 +885,21 @@
         "SAIRN-handoff-H2-b77.md",
         "SAIRN-report-H2-b77.txt"
       ]
+    },
+    {
+      "id": "hover2-1792513530",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "b78 hover2-only: vendor complete-coverage pass first (Groq daily budget), vendor + retuned semgrep arms as own registered real-fix runs, seq1053/1054 + b74 owner status, status-line 70-vs-85 display bug diagnosis, push log repo. FILES: SAIRN-handoff-H2-b78.md SAIRN-report-H2-b78.txt SAIRN-digest-H2-b78.txt tools-hover2/ NOT-tools-shared-REPORT-ONLY NOT-dot-claude-REPORT-ONLY NOT-api-NOT-html-NOT-sql NOT-H1-skill-dir NOT-permission-fix NOT-stryker-install",
+      "claimed_at": "2026-10-20T16:25:30Z",
+      "claimed_at_epoch": 1792513530.1680698,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-H2-b78.txt",
+        "SAIRN-handoff-H2-b78.md",
+        "SAIRN-report-H2-b78.txt"
+      ]
     }
   ],
   "refusals": [
