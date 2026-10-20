@@ -35355,7 +35355,7 @@
       "recurrence_open": "the deployed rate-limit mode is NOT OBSERVABLE from outside: the response carries no mode and a burst of 12 calls is equally consistent with observe and with a daily ceiling above twelve. So if SAIRN_AI_RATE_LIMIT_MODE is absent or misspelled in Vercel, this change switches the cost limiter ON at the daily ceiling on deploy. vercel env ls production is the check and it is the first open item in the handoff"
     },
     {
-      "commit": "8f2ce7146b78",
+      "commit": "8ebeb1213e91",
       "date": "2026-10-20",
       "subject": "fix(reseat b28): a repair is judged on what it CHANGED, not on the state it inherited",
       "files": [
