@@ -2430,10 +2430,58 @@ function editEmp(id){
   $('ephone').value=e.phone||'';$('eemail').value=e.email||'';$('estatus').value=e.status||'Active';
   $('eec').value=e.ec||'';$('enotes').value=e.notes||'';$('empmodal').classList.add('on');
 }
+// ── SEQUENTIAL, UNIQUE IDS (b42) ───────────────────────────────────────────
+// Invoice and employee ids were the LAST FOUR DIGITS OF Date.now(): not
+// sequential (VAT Directive Art. 226(2) wants "a sequential number, based on
+// one or more series, which uniquely identifies the invoice"), and not unique
+// -- two records 10,000 ms apart, or in the same millisecond, got the same id.
+// That is data loss, not cosmetics: the invoice id is the GL source_id, the
+// employee id is the server upsert key (on_conflict=customer_email,
+// employee_id), and sbServerWinsMerge() merges hydrated rows BY id.
+//
+// THE SHAPE: <prefix>-<series>-<000001>. ONE SERIES PER DEVICE, which Art.
+// 226(2) allows ("one or more series"), so two devices can never mint the same
+// id without a server allocator, and each device's numbers run 1, 2, 3...
+//   * same millisecond: the counter is read and written synchronously, so two
+//     calls get n and n+1 whatever the clock says;
+//   * reload: the counter is persisted, AND the next number is never below the
+//     highest one already stored in that series, so losing the counter key
+//     cannot restart the sequence;
+//   * second device: its own random series (32^6, about 1.07e9 values), and
+//     any id already present -- e.g. hydrated from another device -- is
+//     skipped rather than reused.
+// RESIDUAL, stated: two TABS of one browser minting in the same instant share
+// the counter and can race; the taken-id check narrows that to records neither
+// tab has saved yet. Legacy ids (E1234, INV-5678) are left as they are; the
+// new shape cannot equal them.
+var SB_ID_SERIES_KEY='sb_id_series',SB_ID_SEQ_KEY='sb_id_seq';
+function sbDeviceSeries(){
+  var s=null;try{s=localStorage.getItem(SB_ID_SERIES_KEY);}catch(e){}
+  if(s&&/^[0-9A-Z]{6}$/.test(s))return s;
+  var abc='0123456789ABCDEFGHJKMNPQRSTVWXYZ',a=new Uint8Array(6);
+  crypto.getRandomValues(a);
+  s=Array.prototype.map.call(a,function(b){return abc.charAt(b%32);}).join('');
+  try{localStorage.setItem(SB_ID_SERIES_KEY,s);}catch(e){}
+  return s;
+}
+function sbNextId(prefix,list){
+  var head=prefix+'-'+sbDeviceSeries()+'-',seq=ld(SB_ID_SEQ_KEY,{});
+  if(!seq||typeof seq!=='object')seq={};
+  var n=Number(seq[head])||0,taken={};
+  (list||[]).forEach(function(r){
+    if(!r||r.id===undefined||r.id===null)return;
+    var id=String(r.id);taken[id]=true;
+    if(id.indexOf(head)===0){var k=parseInt(id.slice(head.length),10);if(k>n)n=k;}
+  });
+  var id;
+  do{n++;id=head+('00000'+n).slice(-Math.max(6,String(n).length));}while(taken[id]);
+  seq[head]=n;st(SB_ID_SEQ_KEY,seq);
+  return id;
+}
 function saveEmp(){
   var emps=ld('sb_emps',[]);
   var existing=eid?emps.find(function(x){return x.id===eid;}):null;
-  var r={id:eid||('E'+String(Date.now()).slice(-4)),fn:$('efn').value.trim(),ln:$('eln').value.trim(),role:$('erole').value.trim(),dept:$('edept2').value,type:$('etype').value,rate:parseFloat($('ehr').value)||0,pay_freq:(($('efreq')||{}).value)||SB_PAY_FREQ_DEFAULT,start:$('estart').value,phone:$('ephone').value.trim(),email:$('eemail').value.trim(),status:$('estatus').value,ec:$('eec').value.trim(),notes:$('enotes').value.trim()};
+  var r={id:eid||sbNextId('E',emps),fn:$('efn').value.trim(),ln:$('eln').value.trim(),role:$('erole').value.trim(),dept:$('edept2').value,type:$('etype').value,rate:parseFloat($('ehr').value)||0,pay_freq:(($('efreq')||{}).value)||SB_PAY_FREQ_DEFAULT,start:$('estart').value,phone:$('ephone').value.trim(),email:$('eemail').value.trim(),status:$('estatus').value,ec:$('eec').value.trim(),notes:$('enotes').value.trim()};
   if(existing&&existing.ben)r.ben=existing.ben;
   if(!r.fn||!r.ln){toast('Name required');return;}
   if(eid){var i=emps.findIndex(function(x){return x.id===eid;});if(i>-1)emps[i]=r;else emps.push(r);}else emps.push(r);
@@ -2637,7 +2685,7 @@ function saveInv(){
   var status=$('ivstat2').value;
   var paid=parseFloat($('ivpaidamt').value)||(status==='Paid'?amt:0);
   var invs=ld('sb_invs',[]);
-  var r={id:'INV-'+String(Date.now()).slice(-4),cust:cust,date:$('ivdate').value||sbLocalToday(),due:$('ivdue2').value,amt:amt,paid:paid,status:status,cat:$('ivcat').value};
+  var r={id:sbNextId('INV',invs),cust:cust,date:$('ivdate').value||sbLocalToday(),due:$('ivdue2').value,amt:amt,paid:paid,status:status,cat:$('ivcat').value};
   if(status==='Paid')r.paidDate=r.date;
   invs.push(r);st('sb_invs',invs);closeInvModal();rInvs();rDash();rPay();rAR();toast('Invoice created - '+r.id);
   // Revenue is credited in FULL; the debit splits between cash actually
