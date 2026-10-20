@@ -20,7 +20,7 @@ this batch**.
 | Push | **LANDED, no force.** `8eeabd1c..43a3513a`. `git fetch` then `git rev-list --left-right --count origin/main...HEAD` gave **0 0**. Two rejections before that were remote moves (fetch-first, then cannot-lock-ref); each was answered with `git pull --rebase` and nothing was skipped |
 | **Overrides** | **NONE.** No `SAIRN_SKIP`, no `SAIRN_GATE_EXEMPT`, no `--force`. `docs/BYPASS-LOG.jsonl` gained no row |
 | Claims held | **`cc`**, released after this handoff, the report and the digest land |
-| Exclusions honoured | `api/`, `tests/` and every `.html` file **untouched**; in `tools/` only `batch_manifest.py`, under a widened claim (`17db78de`) |
+| Exclusions honoured | `api/`, `tests/` and every `.html` file **untouched**; in `tools/` only `batch_manifest.py`, under a widened claim (`06bf7389`, re-taken after release `7f21e39c`) |
 | Context at wrap | **32.0% of 1,000,000** (320,322 tokens, measured). The red-flag threshold is **85%**: `tools/builder_context_watch.py` `THRESHOLD = 85.0`, read, not assumed |
 
 **The range end is not named.** The start commit never moves; the tip moves
