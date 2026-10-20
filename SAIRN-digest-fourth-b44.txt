@@ -1,0 +1,26 @@
+SAIRN DIGEST -- fourth b44 -- 2026-10-20
+CONTEXT 69.4% of 1,000,000 -- 693,786 tokens, measured.
+STATE: 6/6 done; origin/main 0/0; no force, no override; claim released.
+READ: SAIRN-handoff-fourth-b44.md (whole state). Detail: SAIRN-report-fourth-b44.txt.
+SQL: none this batch.
+COMMITS: 7cce0d6d satellites | b3758e78 B4 | 046bbdd3 biz audit s6 | b952ae04 dental audit
+         72dfaf5c Field Map optimiser | Tier A obligation 3c35dfdf (assigned cc)
+LIVE (sairn.vercel.app): optimiser 10/10 | B4 28/28 | framing 20/20 hidden | satellites 4/4
+1 satellites: real params; dental-book is a link page, not an embed; complaint was
+  clickable framed -> guarded. No StoneDesk shop has a published catalog to drive.
+2 sairndesign B4: occupancy + surface heights -> 902.3 per item, 226.1 N of M.
+3 sairnbiz US limb (29 CFR 516): payroll gross pays OT at STRAIGHT rate (:3681). Not fixed.
+4 sairndental audit: 9 confirmed defects incl. on-time appeal shown late, GFE DOB '--',
+  short disclaimers, holiday text backwards, 'undefinedd' badge, DEA row replacement.
+5 Field Map optimiser had NEVER applied a successful answer (sdData drops the envelope);
+  fixed via named sdDataEnvelope() per the bare-envelope suite; order = permutation.
+NEXT, in order:
+  a sairnbiz Z7: one OT-aware gross function for payroll, timesheet and CSV
+  b dental: appeal vs submitted_on; GFE snapshot check; disclaimers; badge; holidays
+  c stonedesk + stonedesk-hr anti-framing (stonedesk now unclaimed)
+  d Field Map: locked, coordinates, manual-press confirmation, 0-saving wording
+  e cody: DEA keying (server); derive DATA_LESS from the endpoint; day seven
+ROUTED: cc -- Tier A review on rt_routes. cody -- (e).
+UNPROVEN: no StoneDesk login (optimiser proven vs exact server shape, not a tenant);
+  audits are static/local reads; Chromium only.
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\fc1f8565-6013-48a4-b66b-d27902506016.jsonl

@@ -1,0 +1,44 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "fourth",
+  "batch": "b44",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "",
+      "status": "done",
+      "evidence": "7cce0d6d + register f0fbbd1c; scratchpad/b44/drive_sat.py: real params (dental slug verify-test-slug resolves live; no StoneDesk shop slug resolves); embed intent checked first (public link only, no embed snippet); RED complaint CLICKABLE framed on LIVE -> 4/4 HIDDEN x2 modes live."
+    },
+    {
+      "id": 2,
+      "title": "",
+      "status": "done",
+      "evidence": "b3758e78; scratchpad/b44/drive_b4.py RED 1/4 on LIVE -> GREEN 28/28 local AND live (902.3 inclusive edges, 226.1 N of M with ceil 5%, unknowns -> not established, occupancy persistence, mutation control)."
+    },
+    {
+      "id": 3,
+      "title": "",
+      "status": "done",
+      "evidence": "046bbdd3; docs/cloud-research/sairnbiz-worldwide-competitive-gap-audit-2026-10-20.md section 6 (29 CFR 516, 26 CFR 31.6001-1 from source); payroll gross pays OT at straight rate (sbGrossPerPeriod :3681) found and specified as Z7."
+    },
+    {
+      "id": 4,
+      "title": "",
+      "status": "done",
+      "evidence": "b952ae04; docs/2026-10-20-fourth-b44-sairndental-correctness-audit.md: 9 confirmed defects vs 45 CFR 149.610/.620, 21 CFR 1301.12/.13, most reproduced (scratchpad/b44/agent_dental/)."
+    },
+    {
+      "id": 5,
+      "title": "",
+      "status": "done",
+      "evidence": "72dfaf5c + register bb2658ca + Tier A obligation 3c35dfdf (assigned cc); scratchpad/b44/drive_route.py RED 5/10 -> GREEN 10/10 local AND live; bare-envelope + write-result suites pass; full suite no new failures."
+    },
+    {
+      "id": 6,
+      "title": "",
+      "status": "done",
+      "evidence": "land.sh no force; git rev-list --left-right --count origin/main...HEAD = 0 0; live: route 10/10, B4 28/28, framing 20/20 protected, satellites 4/4 hidden."
+    }
+  ]
+}

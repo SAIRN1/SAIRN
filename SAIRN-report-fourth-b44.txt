@@ -1,0 +1,60 @@
+SAIRN REPORT -- fourth b44 -- 2026-10-20
+
+RESULT: 6 of 6 done. origin/main 0/0, no force, no override. Live checks on
+sairn.vercel.app for everything touched. Wrapped at ~69% real context.
+Handoff: SAIRN-handoff-fourth-b44.md.
+
+1. SATELLITES                                  7cce0d6d, reg f0fbbd1c
+   CONCEPT: drive each satellite with the identifier its owner hands out --
+   the dental ?slug= from Booking Settings, the StoneDesk ?shop= from its
+   share link; a value is "real" only if the live API resolves it.
+   Embed intent checked FIRST: Booking Settings offers only a public link and
+   no embed snippet exists in either owner app -> link pages, not widgets.
+   Live: verify-test-slug resolves (200) but has no bookable procedures; the
+   seeded pinnacle-dental-demo slug 404s; every StoneDesk shop slug in the
+   repo answers NOT_FOUND "No published catalog at this address".
+   RED: sairndental-complaint CLICKABLE (3 controls) in a cross-origin frame.
+   GREEN live: 4/4 HIDDEN, normal and sandboxed.
+
+2. SAIRNDESIGN B4                               b3758e78
+   CONCEPT: occupancy on the project, surface type + top height on the item;
+   902.3 per item, 226.1 as N of M; unknown is never "met".
+   RED 1/4 on LIVE -> GREEN 28/28 local AND live; mutation (34 exclusive)
+   trips; b41's 66-arm cert suite still passes.
+
+3. SAIRNBIZ AUDIT (US limb)                     046bbdd3
+   The worldwide audit already existed (b41, EU). Section 6 reads 29 CFR 516
+   and 26 CFR 31.6001-1 from source; 516.2(a)'s 12 records mapped -- most
+   missing per employee. HEADLINE: sbGrossPerPeriod() (:3681) pays every
+   recorded hour at the plain rate; rTS() and the CSV use 1.5x above the
+   threshold. Audit only; Z7 specified.
+
+4. SAIRNDENTAL CORRECTNESS AUDIT                b952ae04
+   Against 45 CFR 149.610/.620 and 21 CFR 1301.12/.13. 9 confirmed defects:
+   GFE DOB printed "--" after passing completeness; two disclaimers short of
+   (c)(1)(x) and (c)(1)(vi); holiday warning says "earlier" (it is later);
+   31-Dec New Year observance missed; advice vs tracking disagree; an appeal
+   filed on time shown past its window; "undefinedd" on payer revalidation;
+   (server) a second DEA registration replaces the first. Correct-as-checked
+   kept separate (timing tiers, weekends, holidays, $400/120 days).
+
+5. FIELD MAP ROUTE OPTIMISER                    72dfaf5c, reg bb2658ca, Tier A 3c35dfdf
+   CONCEPT: an envelope-shaped answer is fetched through a transport that
+   returns the envelope; an order is applied only if it is a permutation.
+   RED 5/10: every successful optimise discarded (sdData returns j.data,
+   undefined here); "server did not answer" shown on a 200. First fix was a
+   carve-out in sdData -- two cody suites refused it by design; replaced
+   with the named sdDataEnvelope() they prescribe. GREEN 10/10 local AND
+   live; suites pass; full suite no new failures. Tier A review obligation
+   recorded, assigned to cc.
+
+6. PUSH: land.sh, no force; one Tier A gate refusal answered by recording
+   the obligation (not skipped). 0/0.
+
+LIVE COUNTS: optimiser 10/10 | B4 28/28 | framing 20/20 guarded pages
+hidden x2 modes | satellites 4/4 | stonedesk + stonedesk-hr still
+clickable (not in scope; next step written).
+
+DELEGATED: three read-only subagent passes (dental audit, sairnbiz US limb,
+optimiser check); every headline finding re-read or reproduced here before
+it was written down or fixed.
