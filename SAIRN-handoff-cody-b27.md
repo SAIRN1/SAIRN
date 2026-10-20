@@ -2,7 +2,7 @@
 
 **Written at a point where nothing is half-finished.** A wrap-up order arrived
 while item 4 was mid-edit. **The one half-finished thing was REVERTED, not left
-to look closed**, and §4 says exactly why. Everything else is committed, green
+to look closed**, and §4 says exactly why. Everything else is committed, pushed, green
 and verified.
 
 ---
@@ -29,7 +29,7 @@ and verified.
 | | |
 |---|---|
 | commits | **ONE, squashed, and PUSHED.** `b27(cody): rt_routes made reachable, three routed role changes, and three routings that were incomplete` |
-| pushed | **LANDED AND VERIFIED BY READING THE REMOTE**, not by the push's exit: remote tip `864e6b764909`, the commit proved an ANCESTOR of it by `git merge-base --is-ancestor`, and four files (`SAIRN-handoff-cody-b27.md`, `api/b27-leg-settings.test.js`, the batch document, `docs/b27-logs/ablate_b27.py`) read back off the remote tree. `0 ahead, 0 behind`. **PUSHED WITHOUT --force** |
+| pushed | **LANDED AND VERIFIED BY READING THE REMOTE**, not by the push's exit: remote tip `864e6b764909` for the work and `90d2f6abc` for the handoff; the commit proved an ANCESTOR by `git merge-base --is-ancestor`, and four files (`SAIRN-handoff-cody-b27.md` -- 15,041 bytes, `api/b27-leg-settings.test.js`, the batch document, `docs/b27-logs/ablate_b27.py`) read back off the remote tree. `0 ahead, 0 behind`. **PUSHED WITHOUT --force** |
 | why squashed | **TWO DEFECTS IN MY OWN PUSH LOOP, not in the content.** (1) It ran `git add -A` on an UNMERGED `docs/defect-density-register.json` and committed **15 CONFLICT MARKERS** into a 34,000-line JSON register every gate parses -- `git add` is how you RESOLVE a conflict, so it cannot tell "resolved" from "never looked". (2) Its rebases produced **duplicate-subject** bookkeeping commits and the gate refused them out loud: *"a commit in this push wears a message ANOTHER commit already used, on a completely different set of files."* Squashing removes every such commit from history. The pre-squash branches are kept at `b27-backup` and `b27-backup2` |
 | claim | `platform`, taken **BEFORE any work** with a FILES list. **STILL HELD** as this is written — released with the report |
 | overrides | **NONE.** No `SAIRN_SKIP`, no `SAIRN_GATE_EXEMPT`, no `SAIRN_SEED_GATE`, no call to `tools/gate_skip.py` |
@@ -113,7 +113,10 @@ EXIT=0  node api/sd-data-alf-isolation.test.js      30 (was 28)
 EXIT=0  node api/sd-data-leg-role-matrix.test.js    37, regression
 EXIT=0  node api/sd-data-leg-overlap.test.js        36, regression
 EXIT=0  node api/sd-data-session-gate.test.js       22, regression
+EXIT=0  node tests/role_maps_have_no_prototype.js   13, the guard that caught me
 EXIT=0  python tools/md_table_check.py              all files clean
+EXIT=0  python tools/defect_register.py --check     662 records
+EXIT=0  python tools/sairn_path_manifest.py --outgoing   all paths IN SCOPE
 EXIT=0  python docs/b27-logs/ablate_b27.py          4 legs, EVERY subject arm
         RED and every named control GREEN; live tree asserted unwritten
 EXIT=1  python docs/b27-logs/stable_last_line.py --drive   0 of 12 -- §4
@@ -121,12 +124,13 @@ EXIT=1  python docs/b27-logs/stable_last_line.py --drive   0 of 12 -- §4
         figure b26 registered it known-red at -- NOT a regression
 ```
 
-**THREE POST-CONDITIONS AND CONTROLS WERE WRONG ON THEIR FIRST SPELLING AND
-EACH REFUSED OR FAILED RATHER THAN PASSING QUIETLY.** The lander's "branch is
+**FOUR POST-CONDITIONS AND CONTROLS WERE WRONG ON THEIR FIRST SPELLING AND EACH
+REFUSED OR FAILED RATHER THAN PASSING QUIETLY.** The lander's "branch is
 above the fallthrough" arm compared against a string that appears **three
 times**, twice in comments. D5's ablation control was **inside the blast
-radius**. L1's ablation subject could not move at all. Each is recorded where
-it happened.
+radius**. L1's ablation subject could not move at all. H0 matched only `= {` and went
+COULD NOT TELL the moment the literal was correctly wrapped in `roleSet()`.
+Each is recorded where it happened.
 
 **THE LIVE TREE WAS NEVER WRITTEN BY ANY ABLATION**, asserted rather than
 intended: `git status --porcelain` captured before and after the whole run and
@@ -191,7 +195,13 @@ Supabase.** The branch is landed, reachable in the dispatcher, and unproven in
 production. The deployed `alf_facility` role gate is **still UNVERIFIED** —
 `tools/alf_facility_role_gate_live_probe.py` exits 2 for want of `ALF_LICENSE`.
 
-### 6.9 → MICHAEL. Nothing is blocked on you, and no SQL is owed
+### 6.9 → THE b27 PATH-MANIFEST OVERRIDE SHOULD BE PRUNED
+
+`docs/sairn-path-manifest.json`'s `assigned_overrides.cody` is nine exact paths
+scoped to b27 and it says so in its own `_why` key. **An override nobody prunes
+becomes an allowlist.** Remove it when this batch closes.
+
+### 6.10 → MICHAEL. Nothing is blocked on you, and no SQL is owed
 
 No new `sql/` file. All five instructed items are implemented or reverted with
 a measured reason.
@@ -235,7 +245,11 @@ a measured reason.
 written after the successful push. It is the gate's bookkeeping, not content,
 and the gate regenerates it on the next push, so it was NOT worth re-entering a
 contention loop for. **Say so rather than let a dirty tree look like an
-oversight.**## 8. Scratch and transcript
+oversight.**
+
+---
+
+## 8. Scratch and transcript
 
 **Transcript:**
 `C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cody\f979712d-5568-4f2c-90db-611d70cdc27b.jsonl`
@@ -248,7 +262,7 @@ printed it, which is the only form the push gate accepts.
 
 **Scratch:**
 `C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-cody\f979712d-5568-4f2c-90db-611d70cdc27b\scratchpad\`
-— `push27.sh`, `push27.log`, `b27_dispatch_section.js`.
+— `push27.sh`, `push27.log`, `b27_dispatch_section.js`, `pf3..pf6.log`.
 
 **Worktrees: BOTH b27 ONES ARE OUT OF `git worktree list`.** `b27drive` was
 removed cleanly; **`b27census` refused with `Permission denied` and its
@@ -256,12 +270,12 @@ registration was cleared by `git worktree prune`, so the DIRECTORY REMAINS ON
 DISK** and can be deleted by hand. `b27rollup` was removed when its measurement
 finished. Nothing in the repo depends on any of them.
 
-Four worktrees registered against this clone are **not mine** and were left
+Five worktrees registered against this clone are **not mine** and were left
 alone: `gate-probe3-17976`, `gate12-27236-2`, `gate12-37660-1`,
 `sairn-gate-base-4938f4321584` (locked), `sairn-gate-tip-a1f366786b7e`.
 
 ---
 
 *Written at a point where nothing is half-finished: item 4's ineffective commit
-is reverted and recorded, every other item is committed and green, and §6 gives
-the exact next step for each open one.*
+is reverted and recorded, every other item is committed, pushed and green, and
+§6 gives the exact next step for each open one.*
