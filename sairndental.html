@@ -2905,9 +2905,40 @@ function cdTypeChanged(){
 // sdnData() returns d.data; 'evaluate' puts its result at the top level
 // alongside coverage, so it needs the whole body. Separate helper rather than
 // changing sdnData(), which every other panel depends on.
+// ── THIS NOW FEEDS dntLastErr, WHICH IT NEVER DID (2026-10-20, fourth b40) ──
+// b39 made could-not-run a visible third state in the panel -- four `--` tiles
+// and a `?` badge instead of four zeros -- and left this open, recorded as
+// `planned` in the defect register: all the failures said the same thing, and
+// they are fixed by DIFFERENT PEOPLE. No licence key is the practice's own and
+// takes ten seconds; a 403 is a sign-in; a 5xx is support's; a dropped
+// connection is wait-and-retry.
+//
+// THE FIX IS NOT A NEW MECHANISM. `dntLastErr` at :1647 already is one, with
+// dntLastErrCode(), dntLastErrText() and dntWriteRefused() reading it, and its
+// own comments carry the same reasoning -- "a stale server sentence reads as a
+// real diagnosis and is worse than the generic fallback". THIS FUNCTION WAS
+// SIMPLY A SECOND FETCH PATH THAT NEVER FED IT. Writing a parallel variable
+// instead would have been a second copy of a facility that already works, and
+// the second copy is the one that goes stale.
+//
+// THE `status` CONVENTION IS KEPT EXACTLY, because dntLastErrText() depends on
+// it: `status` PRESENT means a server answered and its words may be shown;
+// ABSENT means the sentence is browser-authored and must not be. So the
+// no-licence and catch paths deliberately set NO status, same as sdnData.
 function sdnEvaluateCredentials(today,lines){
+  // CLEARED ON ENTRY, AND THIS IS A SECOND-ORDER FIX FOUND BY DRIVING IT.
+  // nav('credentials') calls rCredentials(null) BEFORE this resolves, so that
+  // first paint renders whatever reason the PREVIOUS attempt left -- a drive of
+  // four failure modes in a row showed NO_LICENCE still on screen while a 403
+  // was in flight. Clearing here shrinks the window to the request itself and
+  // makes the pre-paint say "the reason was not recorded", which is true.
+  // The flash is NOT fully closed: see the b40 notes.
+  delete dntLastErr['dnt_credentials'];
   var lic=dntLicenseKey();
-  if(!lic)return Promise.resolve(null);
+  if(!lic){
+    dntLastErr['dnt_credentials']={code:'NO_LICENCE',message:''};
+    return Promise.resolve(null);
+  }
   return fetch(DATA_API,{
     method:'POST',
     // dntHeaders() so the session rides along -- this endpoint is session-gated
@@ -2916,9 +2947,50 @@ function sdnEvaluateCredentials(today,lines){
     body:JSON.stringify({action:'evaluate',resource:'dnt_credentials',app_id:APP_ID,
       payload:{today:today||dntLocalToday(),lines:Array.isArray(lines)?lines:[]}})
   }).then(function(r){return r.json().then(function(d){
-    if(!r.ok||!d||!d.ok){console.warn('credential evaluate failed ('+r.status+'):',(d&&d.error&&(d.error.code||d.error.message))||'unknown');return null;}
+    if(!r.ok||!d||!d.ok){
+      dntLastErr['dnt_credentials']={code:(d&&d.error&&d.error.code)||('HTTP_'+r.status),
+        message:(d&&d.error&&d.error.message)||'',status:r.status};
+      console.warn('credential evaluate failed ('+r.status+'):',dntLastErr['dnt_credentials'].code);
+      return null;
+    }
+    // CLEARED ON SUCCESS, same as sdnData. A reason left behind after a
+    // successful evaluation would be shown against the next failure as though
+    // it were this one's.
+    delete dntLastErr['dnt_credentials'];
     return d;
-  });}).catch(function(e){console.warn('credential evaluate network error:',e.message);return null;});
+  });}).catch(function(e){
+    dntLastErr['dnt_credentials']={code:'NETWORK',message:e.message};
+    console.warn('credential evaluate network error:',e.message);
+    return null;
+  });
+}
+// ── ONE SENTENCE PER REASON, AND IT NAMES WHOSE PROBLEM IT IS ──────────────
+// dntLastErrText() deliberately returns ONLY the server's own words and only
+// when a server answered, so it is empty on the two browser-authored paths.
+// This supplies the browser's half, which is the part that tells somebody what
+// to DO -- the defect b38 found in StoneDesk's Field Map was a message that
+// sent the reader to the wrong place, and "could not be evaluated" sends all
+// four here to the same dead end.
+function dntCredFailureText(){
+  var e=dntLastErr['dnt_credentials'];
+  if(!e) return '';
+  if(e.code==='NO_LICENCE')
+    return 'There is no licence key on this install, so the credential board was never '+
+           'asked. Enter the practice licence key and reopen this panel. (This practice.)';
+  if(e.code==='NETWORK')
+    return 'The credential board could not be reached, so nothing here has been checked. '+
+           'Check the connection and reopen this panel. (The connection.)';
+  if(e.status===401||e.status===403)
+    return 'Your session is not authorised to evaluate credentials (HTTP '+e.status+'), so '+
+           'nothing here has been checked. This panel is owner-only -- sign in again or ask '+
+           'an owner. (Your sign-in.)';
+  if(e.status)
+    return 'The server refused the request (HTTP '+e.status+'), so nothing here has been '+
+           'checked. If dnt_credentials is not set up yet, run its schema first. '+
+           '(The server.)'+(dntLastErrText('dnt_credentials')?' Server said: '+
+           dntLastErrText('dnt_credentials'):'');
+  return 'The credential board could not be evaluated and the reason was not recorded. '+
+         'Treat everything here as unchecked.';
 }
 
 async function addCredential(){
@@ -3069,13 +3141,15 @@ function rCredentials(board){
     tbody.innerHTML=local.length
       ? local.map(function(c){
           return '<tr><td>'+H(pname(c.provider_id))+'</td><td>'+H(c.record_type)+'</td><td>'+H(c.label||'--')+'</td>'+
-            '<td>'+H(c.expires_on||'--')+'</td><td><span class="badge bw">Not checked yet</span></td></tr>';
+            '<td>'+H(c.expires_on||'--')+'</td><td><span class="badge bw" title="'+
+            H(dntCredFailureText())+'">Not checked &mdash; '+
+            H(dntLastErrCode('dnt_credentials')||'NO_REASON')+'</span></td></tr>';
         }).join('')
       : '<tr><td colspan="5" style="color:var(--muted);text-align:center">'+
         '<strong>The credential board could not be evaluated</strong>, so nothing here has been checked &mdash; '+
-        'this is NOT the same as having no credentials to check. '+
-        'sdnEvaluateCredentials() returns nothing when there is no licence key on this install, '+
-        'when the server refuses, or when the network fails.</td></tr>';
+        'this is NOT the same as having no credentials to check.<br>'+
+        '<span class="badge br">'+H(dntLastErrCode('dnt_credentials')||'NO_REASON')+'</span> '+
+        H(dntCredFailureText())+'</td></tr>';
     // ── COULD-NOT-RUN IS A THIRD STATE AND MUST NOT RENDER AS ZERO ──────────
     // (2026-10-20, b39.) These four tiles are hardcoded `0` in the markup and
     // this branch used to return without touching them, so FOUR ZEROS -- the
@@ -3093,13 +3167,14 @@ function rCredentials(board){
       .forEach(function(p){
         var el=$(p[0]); if(!el)return;
         el.textContent='--';
-        el.title=p[1]+' was NOT evaluated: the credential board could not be reached. '+
-                 'This is not zero.';
+        el.title=p[1]+' was NOT evaluated. This is not zero. ['+
+                 (dntLastErrCode('dnt_credentials')||'NO_REASON')+'] '+dntCredFailureText();
       });
     var cbadge=$('credentials-badge');
     if(cbadge){
       cbadge.textContent='?';
-      cbadge.title='The credential board could not be evaluated. Nothing has been checked.';
+      cbadge.title='Nothing has been checked. ['+
+                   (dntLastErrCode('dnt_credentials')||'NO_REASON')+'] '+dntCredFailureText();
       cbadge.style.display='';
     }
     return;
