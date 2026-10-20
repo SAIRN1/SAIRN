@@ -2,6 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+<!-- ANTI-FRAMING (b43). The page is HIDDEN until it proves it is the top
+     window. Framed, it tries to break out and otherwise STAYS hidden, so a
+     framed copy -- including a sandboxed frame with scripts switched off --
+     has nothing to click. Measured on the live site before this: 18 of 22
+     pages were clickable inside a cross-origin frame, including the two
+     that already reassigned top.location, because Chrome silently blocks
+     that navigation from a cross-origin frame without a user gesture and
+     the app keeps rendering. frame-ancestors in a <meta> CSP is ignored by
+     browsers; the header form is the vercel.json migration, not done here.
+     No <noscript> fallback on purpose: a sandboxed frame without scripts
+     would render it, and that is the bypass this closes. -->
+<style id="sairn-antiframe">html{display:none!important}</style>
+<script>(function(){if(window.self===window.top){var s=document.getElementById('sairn-antiframe');if(s)s.parentNode.removeChild(s);return;}try{window.top.location.replace(window.self.location.href);}catch(e){}})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SAIRNvet — Veterinary Platform | Diagnoses, Drugs, AI</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">

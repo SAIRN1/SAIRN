@@ -45,6 +45,19 @@
          affecting all 14 app routes, which is a separate platform-wide
          change, not part of a SAIRNcode security pass. Flagged, not bundled. -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://sairn.vercel.app https://ejrlrrkvhtllxbbypdjb.supabase.co https://clinicaltables.nlm.nih.gov; object-src 'none'; base-uri 'none'; form-action 'none'">
+<!-- ANTI-FRAMING (b43). The page is HIDDEN until it proves it is the top
+     window. Framed, it tries to break out and otherwise STAYS hidden, so a
+     framed copy -- including a sandboxed frame with scripts switched off --
+     has nothing to click. Measured on the live site before this: 18 of 22
+     pages were clickable inside a cross-origin frame, including the two
+     that already reassigned top.location, because Chrome silently blocks
+     that navigation from a cross-origin frame without a user gesture and
+     the app keeps rendering. frame-ancestors in a <meta> CSP is ignored by
+     browsers; the header form is the vercel.json migration, not done here.
+     No <noscript> fallback on purpose: a sandboxed frame without scripts
+     would render it, and that is the bypass this closes. -->
+<style id="sairn-antiframe">html{display:none!important}</style>
+<script>(function(){if(window.self===window.top){var s=document.getElementById('sairn-antiframe');if(s)s.parentNode.removeChild(s);return;}try{window.top.location.replace(window.self.location.href);}catch(e){}})();</script>
 
     <!-- Clickjacking / frame-busting (2026-08-20, firewall audit layer 12).
          Real JS because the meta-tag route above cannot do this. Runs before
@@ -126,22 +139,11 @@
   };
 })();
 </script>
-<script>
-        (function () {
-            if (window.top === window.self) return;
-            try {
-                // Same-origin or permissive parent: break out cleanly.
-                window.top.location = window.self.location;
-            } catch (e) {
-                // Cross-origin parent blocks the navigation. Refuse to render
-                // rather than display a framable, clickjackable UI.
-                document.documentElement.innerHTML =
-                    '<body style="font-family:sans-serif;padding:40px;color:#991b1b">' +
-                    'SAIRNcode cannot be displayed inside another site. ' +
-                    'Open it directly at sairn.vercel.app/sairncode.</body>';
-            }
-        })();
-    </script>
+<!-- b43: the earlier frame-buster that stood here was REMOVED. On a cross-origin
+     frame Chrome blocks the top navigation, its catch then replaced
+     documentElement.innerHTML mid-parse, which wiped the b43 guard in <head>
+     and the rest of the page parsed back in, clickable. Driven, not inferred.
+     The ANTI-FRAMING block at the top of <head> is the one mechanism now. -->
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
