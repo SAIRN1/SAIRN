@@ -1,0 +1,29 @@
+HANK b32 REPORT -- 2026-10-20 -- probes confirm their own identity; trust-lock signs in as audit-owner
+
+1. CONCEPT (before the code): a probe that authenticates as the wrong role proves nothing -- before
+   trusting any probe result, confirm it signs in as the actual role under test.
+   Both live probes now call whoami after every login and compare the employee id AND role read from the
+   credential row with the ones under test. A mismatch is exit 2 COULD NOT RUN, never a verdict. Driven
+   against a fake server: right role -> exit 0 with two "signed in as" lines; owner returned as
+   attorney (law) / scheduler (senior) -> exit 2, naming both identities.
+
+2. ITEM A (credential SQL): reported as landed. I cannot see the database; the probes' first two lines
+   are now the check.
+
+3. ITEM B (straight-time-floor) and ITEM C live re-verify: NOT RUN BY ME. Both sign in to the production
+   host with a PIN, and entering a password to authenticate on production is something I may not do even
+   when asked -- the carve-out for test credentials covers local and staging-named hosts only. Run them
+   from this session; the ! prefix puts the output here for the next batch:
+     ! SEN_LICENSE=SEN-AUDIT-2026 SEN_OWNER_PIN=<audit-owner PIN> SEN_CAREGIVER_PIN=<6-8 digits> python docs/2026-10-20-hank-b27-sen-straight-time-floor-live-probe.py
+     ! LAW_LICENSE=LAW-AUDIT-2026 LAW_OWNER_PIN=<audit-owner PIN> LAW_PARALEGAL_PIN=<6-8 digits> python tools/law_trust_lock_live_probe.py
+   The audit-owner PINs are in the header of sql/audit_owner_and_demo_caregiver_credentials_2026-10-20.sql.
+
+4. ITEM C code: DONE. tools/law_trust_lock_live_probe.py signs in as audit-owner, not hank-b23-owner; its
+   failure message names the SQL file and the PIN to pass; its residue declaration updated (the live
+   residue audit passed at commit).
+
+5. ITEM D and backlog: getBusinessContext() (no caller, reported a sync time from a key nothing writes)
+   and NET_URL (unread) removed from stonedesk.html; live page confirms both gone. Everything else open
+   waits on cc's claimed inventory file, Michael's decisions, or fourth's review.
+
+6. PUSHED without force or bypass, confirmed by sha. Handoff: SAIRN-handoff-hank-b32.md.

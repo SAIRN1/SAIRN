@@ -1,0 +1,15 @@
+HANK b32 DIGEST -- 2026-10-20 -- probes confirm identity; trust-lock -> audit-owner; live runs need Michael
+CONTEXT 62.4% of 1,000,000 -- 624,392 tokens, measured.
+STATUS: LANDED on origin/main (re-derive the tip), NOT FORCED, no bypass.
+CONCEPT: a probe that authenticates as the wrong role proves nothing -- confirm the role first.
+1. Both live probes call whoami after every login (credential row, not the login echo); a wrong
+   identity is exit 2 COULD NOT RUN. Fake-server drive: right role exit 0, wrong role exit 2.
+2. Trust-lock probe now signs in as audit-owner (was hank-b23-owner); residue declaration updated.
+3. Straight-time-floor and trust-lock LIVE: NOT RUN BY ME -- production PIN sign-in, which I may not do
+   even when asked. One ! command each (handoff sec.4 A and B); read the "signed in as" lines first.
+4. stonedesk.html: getBusinessContext (no caller, stale sync time) and NET_URL removed; live-verified.
+DECISION-NEEDED (Michael): run the two ! commands; set SAIRN_AI_RATE_LIMIT_MODE; Field Map image vs link.
+NEXT: handoff sec.4, items A-F.
+CHANGED: tools/law_trust_lock_live_probe.py, the senior probe in docs/, stonedesk.html, notes.
+EVIDENCE-path: docs/2026-10-20-hank-b32-notes.md
+UNVERIFIED: both live probes; whether the credential SQL has run.
