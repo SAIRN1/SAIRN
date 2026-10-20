@@ -4280,6 +4280,30 @@
         "docs/batch-manifest-cc-b26.json",
         "tools/sairn_path_manifest.py"
       ]
+    },
+    {
+      "id": "cc-1792478738",
+      "session": "cc",
+      "subject": "cc",
+      "task": "b27: harness false-pass defect record; ran-check INCONCLUSIVE arm so a probe with no executed test path never reports a verdict; CHECK 5d re-drive with real count; regenerate+commit the 12 lost FMEA drafts; currency sweep of cc-owned skills/tools/methodology + Agents.md status report; CLAUDE.md deliverables section; sairn-session-handoff digest half; drive_upload_verify --max-lines; rt_stops.license_hash composite FK migration; register status check. THE SIX TIER A VERDICTS ARE DEFERRED, NOT DROPPED -- docs/tier-a-reviews.json is held LIVE by fourth b39 and will be claimed separately when fourth releases. FILES: tools/sabotage.py tools/drive_upload_verify.py docs/defect-density-register.json docs/fmea/ Agents.md CLAUDE.md .claude/skills/sairn-session-handoff/SKILL.md sql/rt_stops_license_hash_composite_fk.sql docs/2026-10-20-cc-b27-notes.md SAIRN-ACTIVE-WORK-cc.md SAIRN-handoff-cc-b27.md SAIRN-report-cc-b27.txt SAIRN-digest-cc-b27.txt NOT-docs-tier-a-reviews-json-DEFERRED-fourth-holds-it NOT-api-NOT-html-NOT-tests NOT-sairndental-html-fourths NOT-api-sd-data-js-codys NOT-CRITICALITY-TIERS-md-this-batch",
+      "claimed_at": "2026-10-20T06:45:38Z",
+      "claimed_at_epoch": 1792478738.6030748,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        ".claude/skills/sairn-session-handoff/SKILL.md",
+        "Agents.md",
+        "CLAUDE.md",
+        "SAIRN-ACTIVE-WORK-cc.md",
+        "SAIRN-digest-cc-b27.txt",
+        "SAIRN-handoff-cc-b27.md",
+        "SAIRN-report-cc-b27.txt",
+        "docs/2026-10-20-cc-b27-notes.md",
+        "docs/defect-density-register.json",
+        "sql/rt_stops_license_hash_composite_fk.sql",
+        "tools/drive_upload_verify.py",
+        "tools/sabotage.py"
+      ]
     }
   ],
   "refusals": [
@@ -4533,6 +4557,21 @@
       "other_claimed_at": "2026-10-19T12:31:51Z",
       "shared_files": [
         "tools/sairn_push_gate_hook.py"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-20T06:45:17Z",
+      "my_subject": "cc",
+      "my_task": "b27: harness false-pass defect record; ran-check INCONCLUSIVE arm so a probe with no executed test path never reports a verdict; CHECK 5d re-drive with real count; regenerate+commit the 12 lost FMEA drafts; currency sweep of cc-owned skills/tools/methodology + Agents.md status report; CLAUDE.md deliverables section; sairn-session-handoff digest half; drive_upload_verify --max-lines; rt_stops.license_hash composite FK migration; six Tier A verdicts appended to tier-a-reviews.json; register status check. FILES: tools/sabotage.py tools/drive_upload_verify.py docs/defect-density-register.json docs/fmea/ Agents.md CLAUDE.md .claude/skills/sairn-session-handoff/SKILL.md sql/rt_stops_license_hash_composite_fk.sql docs/tier-a-reviews.json docs/2026-10-20-cc-b27-notes.md SAIRN-ACTIVE-WORK-cc.md SAIRN-handoff-cc-b27.md SAIRN-report-cc-b27.txt SAIRN-digest-cc-b27.txt NOT-api-NOT-html-NOT-tests NOT-sairndental-html-fourths NOT-api-sd-data-js-codys NOT-CRITICALITY-TIERS-md-this-batch",
+      "other_session": "fourth",
+      "other_subject": "fourth",
+      "other_task": "b39: sairndental two render fixes (GFE issued_at vs dueDate lateness; credentialing KPI tiles telling clean from unchecked) + Tier A review obligation + browser verification of both; re-read the 5 sibling leg_* rows and finish the CRITICALITY-TIERS pass; sairncode B1/B3/B4 artefacts off the full text of 45 CFR 170.315(b)(11); sairndesign worldwide competitive-gap audit; push; handoff/report/digest. FILES: sairndental.html docs/CRITICALITY-TIERS.md docs/tier-a-reviews.json docs/cloud-research/ docs/2026-10-20-fourth-b39-notes.md SAIRN-handoff-fourth-b39.md SAIRN-report-fourth-b39.txt SAIRN-digest-fourth-b39.txt docs/batch-manifest-fourth-b39.json NOT-stonedesk-html-hanks NOT-api-sd-data-js-codys NOT-tools-shared-REPORT-ONLY NOT-dot-claude-shared-REPORT-ONLY NOT-sairncode-html-DOCS-ONLY-THIS-BATCH",
+      "other_claimed_at": "2026-10-20T06:25:48Z",
+      "shared_files": [
+        "docs/tier-a-reviews.json"
       ],
       "source": "status-registry",
       "why": "same declared FILES",
