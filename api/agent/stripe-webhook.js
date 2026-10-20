@@ -173,15 +173,58 @@ async function handleEvent(event, SUPABASE_URL, SERVICE_KEY) {
   // one this endpoint acts on.
 }
 
+// ── A ZERO-ROW PATCH USED TO LOG A SUCCESS (fixed 2026-10-20, b25) ────────
+// CONCEPT: the log line must say what the WRITE DID, not what was ASKED for --
+// so a PATCH that matched no row is reported as having changed nothing, and
+// never as a plan_status that was set.
+//
+// WHAT IT DID BEFORE. `Prefer: return=minimal` makes PostgREST answer 204 for
+// one row updated AND for none, so `res.ok` is true either way. An
+// `agent_id` in Stripe metadata that names no row in `sairn_agents` -- a
+// deleted agent, a typo in a metadata field a human filled in, a subscription
+// moved between environments -- produced:
+//
+//     Agent <id> plan_status set to "paid" via Stripe webhook.
+//
+// for a row that does not exist. THAT LINE IS THE ONLY RECORD THIS ENDPOINT
+// LEAVES. Stripe gets its 200 and never retries, nothing else reconciles the
+// two sides, and the one artefact an operator would read during a billing
+// dispute says the opposite of what happened. A paid customer whose agent row
+// was never updated looks, in the log, exactly like one whose was.
+//
+// IT IS NOT AN ERROR AND IS NOT THROWN. Throwing would make Stripe retry an
+// event that will never succeed, forever. The distinction this needs is
+// between "did it" and "did nothing", and both are normal outcomes of a
+// webhook whose payload references a row this database may not have.
 async function setPlanStatus(SUPABASE_URL, headers, agentId, planStatus) {
   const res = await fetch(SUPABASE_URL + '/rest/v1/sairn_agents?id=eq.' + encodeURIComponent(agentId), {
     method: 'PATCH',
-    headers: { ...headers, Prefer: 'return=minimal' },
+    // `return=representation` so the row count is READABLE. With `minimal`
+    // the answer is 204 either way and this function cannot tell the two
+    // cases apart -- which is the whole defect, not an implementation detail.
+    headers: { ...headers, Prefer: 'return=representation' },
     body: JSON.stringify({ plan_status: planStatus })
   });
   if (!res.ok) {
     const text = await res.text();
     throw new Error('Failed to set plan_status for agent ' + agentId + ': ' + text);
   }
-  console.log('Agent ' + agentId + ' plan_status set to "' + planStatus + '" via Stripe webhook.');
+  const rows = await res.json().catch(() => null);
+  if (!Array.isArray(rows)) {
+    // COULD NOT TELL is its own line and is not folded into either answer.
+    console.error('Stripe webhook: plan_status "' + planStatus + '" for agent '
+      + agentId + ' was accepted by the data store but the number of rows '
+      + 'changed COULD NOT BE READ. Treat this as UNCONFIRMED, not as set.');
+    return { changed: null, rows: null };
+  }
+  if (rows.length === 0) {
+    console.error('Stripe webhook: NO AGENT ROW MATCHED id ' + agentId
+      + ' -- plan_status "' + planStatus + '" was NOT set and nothing changed. '
+      + 'The Stripe metadata names an agent this database does not have. '
+      + 'Stripe is answered 200 deliberately: retrying will not create the row.');
+    return { changed: 0, rows: 0 };
+  }
+  console.log('Agent ' + agentId + ' plan_status set to "' + planStatus
+    + '" via Stripe webhook (' + rows.length + ' row(s) changed).');
+  return { changed: rows.length, rows: rows.length };
 }

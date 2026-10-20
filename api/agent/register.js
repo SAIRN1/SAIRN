@@ -58,15 +58,38 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // ── THE REVOKE WINDOW, CLOSED 2026-10-20 (b25) ──────────────────────
+    // CONCEPT: a registration must not RESURRECT a revoked agent, so the
+    // not-revoked condition travels IN THE SAME STATEMENT as the update and a
+    // zero-row result is a REFUSAL -- never a success.
+    //
+    // THE RACE, AND IT IS REPRODUCED IN api/b25-agent-revoke-race.test.js.
+    // The read above happens, the `status === 'revoked'` check passes, and
+    // THEN the write fires with an id-only filter. Anything that revokes the
+    // agent inside that window -- a support action, the Stripe webhook, a
+    // second concurrent register -- is SILENTLY OVERWRITTEN with 'active',
+    // and the caller is told `ok: true`. The read cannot hold a lock and the
+    // check cannot see the future; only the WRITE can carry the condition.
+    //
+    // `&status=neq.revoked` makes it a COMPARE-AND-SET, the same shape
+    // api/_lib/countersign.js uses for `&spent_at=is.null` and for the same
+    // reason: the check-then-act gap is exactly wide enough.
+    //
+    // `return=representation` RATHER THAN `return=minimal`, and that is the
+    // other half. With `minimal` PostgREST answers 204 whether it changed one
+    // row or none, so the condition would be enforced in the database and
+    // INVISIBLE to this handler -- a guard nothing can read is a guard that
+    // reports success on a refusal.
     const updateRes = await fetch(
-      SUPABASE_URL + '/rest/v1/sairn_agents?id=eq.' + encodeURIComponent(agent.id),
+      SUPABASE_URL + '/rest/v1/sairn_agents?id=eq.' + encodeURIComponent(agent.id)
+        + '&status=neq.revoked',
       {
         method: 'PATCH',
         headers: {
           apikey: SERVICE_KEY,
           Authorization: 'Bearer ' + SERVICE_KEY,
           'Content-Type': 'application/json',
-          Prefer: 'return=minimal'
+          Prefer: 'return=representation'
         },
         body: JSON.stringify({ status: 'active', last_seen_at: new Date().toISOString() })
       }
@@ -75,6 +98,22 @@ module.exports = async (req, res) => {
       const errText = await updateRes.text();
       console.error('agent register update failed:', errText);
       res.status(502).json({ error: { message: 'Registration update failed — try again' } });
+      return;
+    }
+    // ZERO ROWS MEANS SOMEBODY REVOKED IT WHILE WE WERE LOOKING. Refused with
+    // the SAME 403 and the same message as the pre-write check, because it is
+    // the same fact arriving a moment later -- a caller must not be able to
+    // tell the race from the ordinary refusal and try to win it.
+    //
+    // A NON-ARRAY BODY IS ALSO A REFUSAL. "Could not tell whether the row was
+    // updated" is a third state and it is never folded into success: the
+    // alternative is answering `ok: true` for a write this handler cannot
+    // confirm happened.
+    const updated = await updateRes.json().catch(() => null);
+    if (!Array.isArray(updated) || updated.length === 0) {
+      console.error('agent register: 0 rows updated for agent ' + agent.id
+        + ' -- revoked inside the read-then-write window, or the row moved');
+      res.status(403).json({ error: { message: 'This agent has been revoked' } });
       return;
     }
 

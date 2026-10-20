@@ -117,8 +117,32 @@ function dailyLimit() {
   return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_DAILY_LIMIT;
 }
 
+// ── THIS DEFAULTED PERMISSIVE AND NOW FAILS CLOSED (2026-10-20, b25) ──────
+// It was `String(process.env.SAIRN_AI_RATE_LIMIT_MODE || '').toLowerCase()
+// === 'enforce'`, so an ABSENT variable meant "do not enforce" -- and so did
+// every MISSPELLING, because any value that is not exactly `enforce` fell into
+// the same branch as `observe`. Nothing anywhere measured the deployed value.
+//
+// api/_lib/fail-closed-mode.js carries the rule, and api/claude.js makes the
+// identical call for SAIRN_CLAUDE_AUTH_MODE, so the two controls cannot drift
+// into disagreeing about what an unset flag means.
+//
+// THIS IS THE CONFIGURATION AXIS ONLY, AND THE DISTINCTION IS LOAD-BEARING.
+// "The operator did not say" now means ENFORCE. "I could not reach the
+// counter" still means DEGRADED and still fails open -- that is a measurement
+// failure, not a configuration one, and enforcing a limit nobody could count
+// is the worst of both worlds this file's own header warns about.
+const failClosedMode = require('./fail-closed-mode');
+
 function isEnforcing() {
-  return String(process.env.SAIRN_AI_RATE_LIMIT_MODE || '').toLowerCase() === 'enforce';
+  return failClosedMode.isEnforcing(
+    'SAIRN_AI_RATE_LIMIT_MODE', process.env.SAIRN_AI_RATE_LIMIT_MODE);
+}
+
+/** The resolution, for a caller that wants to LOG an unconfigured flag. */
+function enforcementMode() {
+  return failClosedMode.resolveMode(
+    'SAIRN_AI_RATE_LIMIT_MODE', process.env.SAIRN_AI_RATE_LIMIT_MODE);
 }
 
 // ── THE SUB-BUDGET KNOBS (2026-09-15) ────────────────────────────────────

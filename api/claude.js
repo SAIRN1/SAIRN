@@ -31,6 +31,9 @@
 const { checkAiRateLimit, recordAiUsage } = require('./_lib/ai-rate-limit');
 // Phase 1 of the licence-key requirement -- see the block in the handler.
 const { validateLicenseKey } = require('./_lib/license');
+// b25: observe/enforce flags resolve HERE, failing closed on absent or
+// misspelled, so this file and api/_lib/ai-rate-limit.js cannot disagree.
+const failClosedMode = require('./_lib/fail-closed-mode');
 
 const KNOWN_APP_IDS = [
   'stonedesk', 'sairnbiz', 'sairnscape', 'sairncode', 'sairnbuild',
@@ -330,8 +333,24 @@ async function claudeProxyHandler(req, res) {
   // to send, which needs a different answer than a bug. Invalid means it tried
   // and the key is wrong. Collapsing them would hide the case that changes the
   // plan.
-  const claudeAuthMode = String(process.env.SAIRN_CLAUDE_AUTH_MODE || 'observe')
-    .trim().toLowerCase();
+  // ── THIS DEFAULTED PERMISSIVE AND NOW FAILS CLOSED (2026-10-20, b25) ────
+  // It was `String(process.env.SAIRN_CLAUDE_AUTH_MODE || 'observe')`, so an
+  // ABSENT variable meant observe -- and so did a MISSPELLED one, because
+  // every spelling that is not exactly `enforce` falls into the same branch as
+  // `observe`. A deploy to a new environment, a renamed variable, or
+  // `enforcs` in a dashboard field each turned the auth refusal off with no
+  // error anywhere. api/_lib/fail-closed-mode.js carries the rule and the same
+  // call sits in api/_lib/ai-rate-limit.js, so the two cannot drift.
+  const claudeAuthModeResolved = failClosedMode.resolveMode(
+    'SAIRN_CLAUDE_AUTH_MODE', process.env.SAIRN_CLAUDE_AUTH_MODE);
+  const claudeAuthMode = claudeAuthModeResolved.mode;
+  // SAID OUT LOUD, ONCE PER REQUEST, AND ONLY WHEN IT WAS NOT CONFIGURED. A
+  // control that silently HARDENED is as hard to operate as one that silently
+  // relaxed -- the operator needs to know the refusal came from an absent flag
+  // rather than from a decision.
+  if (!claudeAuthModeResolved.configured) {
+    console.error('api/claude auth mode: ' + claudeAuthModeResolved.reason);
+  }
   const claudeAuthz = req.headers['authorization'] || '';
   const claudeLicenceKey = claudeAuthz.startsWith('Bearer ')
     ? claudeAuthz.slice(7).trim() : null;

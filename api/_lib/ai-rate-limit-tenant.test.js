@@ -169,6 +169,19 @@ const RAW_KEY = 'DNT-PINNACLE-2026';  // the bearer secret that must never appea
 
   section('which ceiling stopped it is part of the answer');
 
+  // ── RE-AIMED 2026-10-20 (hank b25). THIS ARM ASSERTED THE OLD DEFAULT. ──
+  // It read `allowed === true` with the comment "observe mode must still
+  // allow", while the harness DELETES SAIRN_AI_RATE_LIMIT_MODE at the top of
+  // this file. So what it was really asserting is that an UNSET flag permits
+  // -- which is the fail-open default b25 closed. `isEnforcing()` now resolves
+  // an absent or misspelled flag to ENFORCE (api/_lib/fail-closed-mode.js), so
+  // an unset flag BLOCKS.
+  //
+  // RE-AIMED RATHER THAN DELETED: what this arm is FOR is `limited_by` -- that
+  // a tenant ceiling is reported as a tenant ceiling and not as the app's. The
+  // `allowed` assertion is incidental to that and is now set EXPLICITLY on
+  // both sides, so the arm says which mode it is testing instead of inheriting
+  // one from a deleted variable.
   await test('a TENANT limit reports limited_by tenant, not app', async () => {
     const f = rpcStub({ reply: { limited: true, limited_by: 'tenant', prior_count: 120, tenant_prior_count: 100, tenant_limit: 100 } });
     const m = load(f);
@@ -176,7 +189,11 @@ const RAW_KEY = 'DNT-PINNACLE-2026';  // the bearer secret that must never appea
     assert.strictEqual(r.limited, true);
     assert.strictEqual(r.limited_by, 'tenant');
     assert.strictEqual(r.tenant_count, 100);
-    assert.strictEqual(r.allowed, true, 'observe mode must still allow');
+    assert.strictEqual(r.allowed, false,
+      'an UNSET SAIRN_AI_RATE_LIMIT_MODE now ENFORCES (b25 fail-closed), so a '
+      + 'limited request is not allowed. If this fails, the fail-closed '
+      + 'resolution has been reverted -- check api/_lib/fail-closed-mode.js '
+      + 'before changing this expectation back');
   });
 
   await test('an APP limit still reports limited_by app', async () => {
