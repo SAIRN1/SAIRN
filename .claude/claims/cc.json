@@ -4288,8 +4288,8 @@
       "task": "b27: harness false-pass defect record; ran-check INCONCLUSIVE arm so a probe with no executed test path never reports a verdict; CHECK 5d re-drive with real count; regenerate+commit the 12 lost FMEA drafts; currency sweep of cc-owned skills/tools/methodology + Agents.md status report; CLAUDE.md deliverables section; sairn-session-handoff digest half; drive_upload_verify --max-lines; rt_stops.license_hash composite FK migration; register status check. THE SIX TIER A VERDICTS ARE DEFERRED, NOT DROPPED -- docs/tier-a-reviews.json is held LIVE by fourth b39 and will be claimed separately when fourth releases. FILES: tools/sabotage.py tools/drive_upload_verify.py docs/defect-density-register.json docs/fmea/ Agents.md CLAUDE.md .claude/skills/sairn-session-handoff/SKILL.md sql/rt_stops_license_hash_composite_fk.sql docs/2026-10-20-cc-b27-notes.md SAIRN-ACTIVE-WORK-cc.md SAIRN-handoff-cc-b27.md SAIRN-report-cc-b27.txt SAIRN-digest-cc-b27.txt NOT-docs-tier-a-reviews-json-DEFERRED-fourth-holds-it NOT-api-NOT-html-NOT-tests NOT-sairndental-html-fourths NOT-api-sd-data-js-codys NOT-CRITICALITY-TIERS-md-this-batch",
       "claimed_at": "2026-10-20T06:45:38Z",
       "claimed_at_epoch": 1792478738.6030748,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T08:35:14Z",
       "files": [
         ".claude/skills/sairn-session-handoff/SKILL.md",
         "Agents.md",
