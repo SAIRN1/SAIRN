@@ -113,6 +113,10 @@ record and it is the one a certification body would open with.**
 
 ### (B)(7) Quantitative measures of performance
 
+**[b41: ONE LEAF NOW MEASURED — validity in local data under human
+adjudication, the analogue §A2 argues for. Built and driven; see §A3. The
+other leaves remain NOT ESTABLISHED as written below.]**
+
 **NOT ESTABLISHED, all five leaves** — no validity or fairness figure on
 same-source test data, none on external data, and no outcome evaluation.
 
@@ -346,3 +350,59 @@ over two decided items is not a performance measure, and `(B)(7)` would be
 **worse** for it than for the honest NOT ESTABLISHED it replaces. **Render it as
 `N of M decided`, or not at all** — the rule SAIRNdental's denials panel already
 follows with *"N of M argued"*.
+
+---
+
+## A3. b41 — THE LEAF IS BUILT, AND IT SHIPS WITH BOTH DENOMINATORS
+
+**fourth / b41, 2026-10-20.** §A2's specification, built in `sairncode.html`
+and attached to §1 B1 as **the first measured `(B)(7)` leaf**.
+
+**WHAT "CITATION-REJECTION RATE" WAS TAKEN TO MEAN, STATED RATHER THAN
+ASSUMED.** §A2 defined two figures from the same store and the dispatch named
+one phrase. **Both are built, side by side**, because each answers half of it:
+
+| figure | numerator | denominator | where |
+|---|---|---|---|
+| **coder rejection** | `reviewed_rejected` | `reviewed_rejected` + `reviewed_accepted` — **decided only** | `scCitationMeasures()` `sairncode.html:7432` |
+| **citation held** | items whose citation is **missing or not confirmed in the note** | every coded item on record | same function |
+
+Rendered by `scRenderCitationMeasures()` (`:7444`) into `#coded-items-perf`
+(`:880`) on the Coded Items panel, on every `renderCodedItems()`.
+
+**ONE PREDICATE, NOT TWO COPIES.** "Citation did not check out" is now
+`scCitationState()` (`:7115`) — `missing | unverified | verified`, failing
+closed (only a real `true` in `quote_verified` counts). **The routing in
+`scDeriveCodedItemConfidence()` and the measure both call it**, so the figure
+counts exactly what holds an item for a human, by construction. Counting
+`confidence_basis` *strings* was rejected: a measure that matches a sentence
+stops measuring the day the sentence is reworded, and nothing would say so.
+
+**THE DENOMINATOR RULE, AS SHIPPED:** `N of M` is always shown; a percentage
+appears only beside it; **over zero nothing is computed** — the panel reads
+*"no rejection rate yet: 0 of 0 items have a human decision"*. Undecided items
+(awaiting review **or** auto-assigned) are counted in **neither** rejection
+figure and the panel says how many there are.
+
+**REPRODUCED FIRST:** before the change `#coded-items-perf` did not exist and
+`scCitationMeasures` was `undefined`. **DRIVEN 27/27** in Chromium: empty
+store, undecided-only (no percentage), `needs_human_review` ≠ rejection,
+`auto_assigned` ≠ acceptance, mixed 2-of-4, all-rejected, singular grammar,
+every exit of `scCitationState` (no quote, whitespace quote, `false`, missing,
+the *string* `"true"`, verified, `null`), null store entries, the derivation's
+two messages unchanged, and the **live Reject button** moving the figure to
+1 of 2. **MUTATION CONTROL:** counting `needs_human_review` as a rejection
+gives 3 of 5 instead of 2 of 4 → **CONTROL_PASS true**.
+
+**WHAT THIS LEAF IS NOT.** It is a **per-install figure over that practice's
+own items**. **No value is quoted here because none was measured on real
+data** — there is no production store this session can read, and quoting a
+seed-data figure would be the fabricated-percentage history §1 already records.
+It is not a validity measure against ground truth: a coder's rejection is a
+human judgement, not a labelled outcome.
+
+**FOUND WHILE REPRODUCING, NOT FIXED — a separate defect.** The queue line
+above the measure reads *"N other items cleared every check and need no
+action"*, and `scRouteCodedItems()` (`:7402`) puts **`reviewed_rejected`**
+items in that group. A rejected item did not clear every check. Recorded, not
+folded into this change.

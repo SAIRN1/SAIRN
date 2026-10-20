@@ -877,6 +877,7 @@
                 this app never picks a best guess on your behalf.
             </div>
             <div id="coded-items-queue-count" style="font-size:13px;font-weight:600;margin-bottom:10px;"></div>
+            <div id="coded-items-perf" style="font-size:12px;color:#374151;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:8px 12px;margin-bottom:10px;"></div>
 
             <!-- Exception-based routing (Phase 2 item 3): the exceptions ARE
                  the work queue. Auto-assigned items are kept in their own
@@ -7108,11 +7109,19 @@ How to answer:
         // from the Fraud panel in the 2026-08-18 audit. What IS real is which
         // concrete checks passed or failed, so that is what gets stored and
         // shown: a label plus the exact list of reasons behind it.
+        // 'missing' | 'unverified' | 'verified'. Shared by the confidence
+        // derivation below and by scCitationMeasures(), so the routing and the
+        // (B)(7) figure count the same thing by construction.
+        function scCitationState(item){
+            if (!item || !item.quote || !String(item.quote).trim()) return 'missing';
+            return item.quote_verified === true ? 'verified' : 'unverified';
+        }
         function scDeriveCodedItemConfidence(item, context){
             var basis = [];
-            if (!item.quote || !String(item.quote).trim()) {
+            var cit = scCitationState(item);
+            if (cit === 'missing') {
                 basis.push('No supporting phrase was cited from the note.');
-            } else if (item.quote_verified !== true) {
+            } else if (cit === 'unverified') {
                 // Deliberately `!== true`, not `=== false`. This gate must
                 // fail CLOSED: an item whose verification result is missing
                 // or unknown is not evidence that the quote checked out, and
@@ -7403,8 +7412,55 @@ How to answer:
             return { exceptions: exceptions, auto: auto };
         }
 
+        // ── (B)(7) FIRST MEASURED LEAF (b41) ─────────────────────────────
+        // docs/2026-10-20-fourth-b39-sairncode-compliance-artefacts.md, A2/A3.
+        // There is no training data, so the nearest honest analogue of
+        // (b)(11)(iv)(B)(7)(i) is validity in LOCAL data under human
+        // adjudication -- which (B)(8)(ii) asks for by name. Two counts:
+        //
+        //   rejected / decided  -- a coder's verdict on items a human decided.
+        //     DECIDED ONLY: needs_human_review is an item nobody has looked
+        //     at, and auto_assigned is not an acceptance -- no human looked at
+        //     it either. Counting either way collapses three states into two.
+        //   held / coded -- items whose citation was missing or not confirmed
+        //     in the note (scCitationState, the same predicate the routing
+        //     uses), out of every coded item on record.
+        //
+        // NO FIGURE WITHOUT ITS DENOMINATOR. "0%" over two decided items is
+        // not a performance measure; N of M is always shown, the percentage
+        // only beside it, and nothing at all is computed over zero.
+        function scCitationMeasures(list){
+            var m = { rejected: 0, decided: 0, held: 0, coded: 0, undecided: 0 };
+            (list || []).forEach(function(r){
+                if (!r) return;
+                m.coded++;
+                if (scCitationState(r) !== 'verified') m.held++;
+                if (r.review_status === 'reviewed_rejected') { m.rejected++; m.decided++; }
+                else if (r.review_status === 'reviewed_accepted') m.decided++;
+                else m.undecided++;
+            });
+            return m;
+        }
+        function scRenderCitationMeasures(list){
+            var el = document.getElementById('coded-items-perf');
+            if (!el) return;
+            var m = scCitationMeasures(list);
+            var pct = function(n, d){ return d ? ' (' + Math.round(n / d * 100) + '%)' : ''; };
+            el.innerHTML = '<b>Measured on this practice\'s own items</b> &mdash; '
+                + (m.decided
+                    ? 'coders rejected <b>' + m.rejected + ' of ' + m.decided + '</b> decided item' + (m.decided === 1 ? '' : 's') + pct(m.rejected, m.decided)
+                    : 'no rejection rate yet: <b>0 of 0</b> items have a human decision')
+                + '. ' + (m.coded
+                    ? '<b>' + m.held + ' of ' + m.coded + '</b> coded item' + (m.coded === 1 ? '' : 's') + pct(m.held, m.coded) + ' had a citation missing or not found in the note'
+                    : 'no coded items on record')
+                + '.' + (m.undecided
+                    ? ' <span style="color:#6b7280;">' + m.undecided + ' item' + (m.undecided === 1 ? ' is' : 's are') + ' undecided (awaiting review or auto-assigned) and counted in neither rejection figure.</span>'
+                    : '');
+        }
+
         function renderCodedItems(){
             var list = getCodedItems();
+            scRenderCitationMeasures(list);
             var tbody = document.getElementById('coded-items-tbody');
             if (!tbody) return;
             var routed = scRouteCodedItems(list);
