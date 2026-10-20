@@ -34951,6 +34951,116 @@
         }
       ],
       "recurrence_open": "The detection factor is NOT closed: no selftest arm yet asserts the post-drill answer, so a regression would again be found only by a human checking after a drill rather than by the suite."
+    },
+    {
+      "commit": "0916bf890f75",
+      "date": "2026-10-20",
+      "subject": "fix(sairndental): an estimate issued 46 days late now says so, and four zeros stop standing in for an unchecked board",
+      "files": [
+        "sairndental.html"
+      ],
+      "lines_added": 86,
+      "lines_removed": 5,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "rGfe() never compared the stored rec.issued_at to the 149.610(b)(1)(vi) due date, so an estimate issued 46 days past its date rendered identically to one issued on time. REPRODUCED in a browser BEFORE the fix: requested 2026-09-01, due 2026-09-04, marked Issued 2026-10-20, and the Due tile went 1 -> 0 with the nav badge disappearing and the row badge neutral. issueGfe() had stored issued_at since the panel shipped in a002b2dc and NOTHING EVER READ IT, so the whole obligation -- which in (b)(1)(vi) is a DATE -- was dropped while the data to keep it sat on the record. Fixed by rendering three outcomes (issued LATE with the day count, issued in time, issued with timing not on file) plus a late count in the Issued tile sub-line, because fixing only the row would have left the tiles reading clean and the tiles are what gets read.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "a002b2dc41be",
+        "date": "2026-09-02",
+        "subject": "feat(sairndental): good faith estimates -- the deadline, the required elements, and the two limbs that conflict",
+        "lag_days": 48
+      },
+      "citation_note": "No coding rule in the register covers this class. It is not a syntax, fabrication, contrast or grant defect -- it is a RENDERED STATUS that a stored field could have falsified and nothing read. The nearest existing discipline is the silent-failure sweep, which is a skill rather than a registered rule, so the honest citation is not-citable with the class named here. A rule for it would have to be: a status rendered from a subset of the fields that determine it is a finding.",
+      "contributing_factors": [
+        {
+          "factor": "issueGfe() stored rec.issued_at from the day the panel shipped and no renderer ever read it. The DATA to keep the obligation was present the whole time; only the comparison was missing.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "rGfe() now derives lateBy from issued_at minus dueDate and renders three outcomes."
+        },
+        {
+          "factor": "The Due tile means still-owed, and an Issued record leaving that count looked like the record being satisfied rather than the question moving. One counter was carrying two meanings.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The lateness moved to its own figure in the Issued tile sub-line, leaving the Due tile meaning exactly still-owed."
+        },
+        {
+          "factor": "Nothing in the panel distinguished a record issued before issued_at existed from one issued on time, so any fix that only had two outcomes would have asserted on-time for records where nothing established it.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "A third outcome, timing not on file, is rendered and counted separately."
+        },
+        {
+          "factor": "No fabrication check or contrast gate can see this class: every figure traced to a real function and the page rendered correctly. It was only findable by asking what the regulation requires and then looking.",
+          "kind": "detection",
+          "action_status": "not-actionable",
+          "note": "A static scanner cannot know that a stored field ought to be compared to another. b38 found it by reading 45 CFR 149.610 first and the code second, which is a review method rather than a tool."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED FOR THE CLASS. This is a compliance summary collapsing three states into two, and the SAME defect was found in the same batch in the credentialing panel of the same app. Nothing sweeps for it: there is no check anywhere that asks whether a stored field that could falsify a rendered status is actually read. The two instances were found by reading the regulation first and the renderer second, which does not scale and is not a tool. The denials panel in the same file gets it right deliberately, so the capability exists in the codebase and was simply not applied twice."
+    },
+    {
+      "commit": "0916bf890f75",
+      "date": "2026-10-20",
+      "subject": "fix(sairndental): an estimate issued 46 days late now says so, and four zeros stop standing in for an unchecked board",
+      "files": [
+        "sairndental.html"
+      ],
+      "lines_added": 86,
+      "lines_removed": 5,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "rCredentials(null) returned before touching the four KPI tiles, which are hardcoded 0 in the markup, so a panel that had checked nothing showed Expired 0 / Expiring Soon 0 / CE Behind Pace 0 / MATE Outstanding 0 with the nav badge hidden. REPRODUCED in a browser BEFORE the fix with the licence key blanked and two credentials on file expired 21 and 28 months (2025-01-31 and 2024-06-30 against 2026-10-20): all four tiles read 0. Reachable on FOUR silent conditions in sdnEvaluateCredentials() -- no licence key, any non-ok status, an ok status with a non-ok body, any network error -- all four console.warn and return null. Could-not-run is a third state and folding it into passed is PR 1.11 arriving in a KPI tile instead of a gate. Fixed to -- per tile with a tooltip, a ? nav badge, and an empty-table message that says the board could not be evaluated. A NEGATIVE CONTROL was driven because it was needed: a successful board must CLEAR the marks, or a tile that is now a real 0 keeps a tooltip saying it was never checked.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "876bd84cfad4",
+        "date": "2026-08-24",
+        "subject": "feat(sairndental): licensing/credentialing -- state licences, DEA/MATE, CE pacing",
+        "lag_days": 57
+      },
+      "citation_note": "No coding rule in the register covers this class. It is not a syntax, fabrication, contrast or grant defect -- it is a RENDERED STATUS that a stored field could have falsified and nothing read. The nearest existing discipline is the silent-failure sweep, which is a skill rather than a registered rule, so the honest citation is not-citable with the class named here. A rule for it would have to be: a status rendered from a subset of the fields that determine it is a finding.",
+      "contributing_factors": [
+        {
+          "factor": "The four KPI tiles are hardcoded 0 in the markup and the !board branch returned before touching them, so could-not-evaluate inherited the all-clear value from the HTML.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The !board branch now sets all four to -- with a per-tile tooltip naming the reason, and shows the nav badge as ? rather than hiding it."
+        },
+        {
+          "factor": "sdnEvaluateCredentials() returns null on FOUR separate conditions -- no licence key, non-ok status, non-ok body, network error -- each console.warn only, so every one of them is silent to the user.",
+          "kind": "technical",
+          "action_status": "planned",
+          "action": "The client now says the board could not be evaluated, but it does not yet say WHICH of the four. Distinguishing them would tell a practice whether to fix a licence key or call support."
+        },
+        {
+          "factor": "The row-level render was honest (Not checked yet per row) while the summary was not, and the summary is what gets read. A half-honest panel reads as honest.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The summary now carries the same third state as the rows, and the empty-table message says the board could not be evaluated rather than that there are no records."
+        },
+        {
+          "factor": "The worse variant was missed by the b38 audit that found this: with NO local records the table reads No credential records yet beside four zeros, so nothing anywhere says the board was never evaluated. It was only found by REPRODUCING rather than re-reading.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Both variants were driven in a browser and the empty-table message was rewritten as part of the fix."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED FOR THE CLASS, and it is the same open class as the GFE record filed against this commit: a summary that cannot distinguish nothing-wrong from nothing-known. Specifically still open here: the four null conditions are still not distinguished from each other in the UI, so a practice cannot tell a missing licence key from an unreachable server. And nothing sweeps the platform for hardcoded KPI defaults that an early return leaves standing -- every app on this platform renders tiles from markup defaults the same way."
     }
   ],
   "started": "2026-09-09",
