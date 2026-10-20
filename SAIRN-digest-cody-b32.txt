@@ -1,0 +1,15 @@
+DIGEST -- cody b32, 2026-10-20. Six queue items: one new change, one already real, two already landed in b27, two process. PUSHED, no --force.
+STATUS: tip 6ad90f520 verified by READING THE REMOTE (0 ahead / 0 behind, four files read back at identical sizes, claim published). NOTHING OVERRIDDEN. NO LIVE WRITES. NO SQL. Not live-verified: no audit-licence credentials in this environment.
+CHANGED: api/sd-data.js (two rf_jobs Object.assign projections), api/b32-rf-jobs-projection.test.js (new), docs/sairn-path-manifest.json, docs/tier-a-reviews.json, SAIRN-handoff-cody-b32.md.
+ITEM 2 -- CONCEPT: a projection that tells the client who a job is assigned to and which branch owns it must apply the authoritative columns LAST, so the server's value wins by construction, not because a strip list happens to keep a blob copy from existing.
+ITEM 2 -- both rf_jobs projections (read, write response) had the blob last (fourth b37 review 7.1). Flipped. No behaviour change today. 7/0; R1 tampered blob on read, W1 runs the real write handler from a copy with the strip list EMPTIED; ablation turns R1, W1, S1 red (4/3).
+ITEM 1 -- ALREADY REAL since b31: rf_invoices|write = 294,912 is in sd-data.js, W1/W2 green (22/0). W3 NOT flipped: it pins issue at 65536, which is already right under write-not-issue; flipping it would contradict W1/W2. Say so if that reading is wrong.
+ITEMS 3+4 -- ALREADY LANDED b27, live-probed b28: rt_routes branch + extraActions (routes.js:74); decide() fifth argument legHome (sd-data ~17064). b27-leg-settings 18/0, b22 funeral wiring 23/0. If the queue meant a different task, I do not know it.
+PUSH: three stops, all correct. tier-a-reviews.json ledger conflict resolved by UNION (279+1+1=281, count up, validated), never --ours; generated MASTER-PLAN/traceability regenerated and folded into the unpublished bookkeeping commit; one loop attempt hit push_retry's 120s subprocess bound while the gate was still running.
+GATES: path scope -> new test declared in assigned_overrides, b31 list replaced (6 dropped, 2 kept). Tier A -> rf_jobs obligation OPENED and assigned to cc.
+DECISION-NEEDED: (1) Michael -- confirm the W3 reading above. (2) Michael -- H1 #1613/#1614 stays HELD for H1's report. (3) cc -- discharge the rf_jobs obligation (and b31 sc_claims/sc_dme).
+LIMIT: no sweep of other Object.assign(columns, blob) projections on Tier A rows; push_retry.py git() 120s timeout is shorter than the push gate now takes (cc's file, not fixed).
+UNVERIFIED: the deployed endpoint (no credentials); whether the queue's items 3 and 4 meant something other than the b27 work; the follow-up commit with report and digest is confirmed in chat, not in this file.
+NEXT: (1) cc discharges Tier A; (2) sweep for the same inverted order elsewhere if wanted; (3) raise push_retry's push timeout.
+EVIDENCE-path: SAIRN-handoff-cody-b32.md, SAIRN-report-cody-b32.txt, api/b32-rf-jobs-projection.test.js, docs/2026-10-19-fourth-b37-tier-a-review.md
+CONTEXT 29.5% of 1,000,000 -- 295,357 tokens, measured.

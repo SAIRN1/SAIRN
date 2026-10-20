@@ -1,0 +1,75 @@
+REPORT -- cody, batch b32, 2026-10-20. Six queue items: one new change, one already real, two already landed in b27, two process.
+
+0. THE RESULT
+PUSHED WITHOUT --force. Remote tip 6ad90f520, 0 ahead / 0 behind (git fetch,
+rev-list --left-right --count). Four files read back off the remote tree at
+identical sizes (api/sd-data.js 1342966, api/b32-rf-jobs-projection.test.js
+7184, SAIRN-handoff-cody-b32.md 5611, docs/sairn-path-manifest.json 14287).
+The claim is published (sairn_claim list shows it). NOTHING OVERRIDDEN. NO LIVE
+WRITES. NO SQL. Wrapped at 29.5% measured, far below the 85% trigger.
+
+1. THE QUEUE READ LIKE A REPLAY OF b27; EACH ITEM WAS CHECKED BEFORE ANY EDIT
+Item 1 rf_invoices|write cap 294,912   ALREADY REAL since b31 (c79d4e59b), pushed.
+Item 2 rf_jobs projection flip          DONE (section 2).
+Item 3 rt_routes branch + extraActions  ALREADY LANDED b27 (864e6b764), live-probed b28.
+Item 4 leg_settings 5th arg             ALREADY LANDED b27: decide(..., legGrants, legHome).
+Item 5 concept before code              DONE (test header + code comment).
+Item 6 push                             DONE, verified above.
+
+2. ITEM 2 -- THE rf_jobs PROJECTIONS
+CONCEPT, before the code: a projection that tells the client who a job is
+assigned to and which branch owns it must apply the authoritative columns LAST,
+so the server's value wins by construction and not only because a strip list on
+the write path happens to keep a competing blob copy from existing.
+Source: docs/2026-10-19-fourth-b37-tier-a-review.md 7.1. Both Object.assign calls
+(read, write response) had the blob last. Flipped: Object.assign({}, blob, {id,
+job_class, assigned_employee_id, location_id}). No behaviour change today:
+storedBlob strips the four keys, and fourth measured no historical window.
+api/b32-rf-jobs-projection.test.js, 7/0: R1 a blob carrying tampered copies of
+all four keys does not override the columns; R2 control, ordinary blob fields
+still flow; W1 runs the real write handler from a temporary copy of sd-data.js
+with the strip list EMPTIED and asserts job_class is the server's 'residential'
+and not the payload's EVIL-CLASS; S1 structure. ABLATION: restoring the old order
+turns R1, W1, S1 red (4 pass / 3 fail); restored, 7/0. The temp copy is removed
+in a finally; none left behind.
+
+3. ITEM 1 -- WHY W3 WAS NOT FLIPPED (reading, not an omission)
+W3 pins `issue` at 65536. The one-line inversion in my b31 report applied only to
+the alternative decision (a per-resource cap). With write-not-issue confirmed, W3
+is already the correct arm; flipping it to write would assert write is capped at
+65536 and contradict W1/W2, which are the write-path arms and are green (22/0).
+If that reading is wrong, say so. NOT LIVE-VERIFIED: no SD_LICENSE / SD_OWNER_PIN
+in this environment, so no request was sent to the deployed endpoint.
+
+4. ITEMS 3 AND 4 -- EVIDENCE THEY ARE PRESENT
+rt_routes: branch in api/sd-data.js; api/_resources/routes.js:74 grants
+['upsert','reorder','optimize']. leg_settings: sd-data.js ~17064 passes legHome
+as decide()'s fifth argument. api/b27-leg-settings.test.js 18/0;
+api/b22-funeral-f1-f2-f3-wiring.test.js 23/0. If the queue meant a DIFFERENT
+rt_routes / leg_settings task, I do not know what it is.
+
+5. THE PUSH
+Stopped three times, all correctly: (a) a rebase conflict in
+docs/tier-a-reviews.json, an append-only ledger, resolved by union through
+tools/sairn_rebase_resolve.py (279 ancestor + 1 upstream + 1 mine = 281, count
+UP, validated) -- NOT with --ours; (b) a GENERATED-document block (MASTER-PLAN,
+traceability matrix), regenerated and folded into the unpublished bookkeeping
+commit; (c) one push_retry.py attempt timed out at its 120s subprocess bound
+(the gate takes longer than that now) and the push was run directly with a long
+timeout. Path scope: the new test is a new file in hank's api/, declared in
+assigned_overrides with b31's list REPLACED (six dropped, two kept). Tier A:
+rf_jobs obligation opened and assigned to cc.
+
+6. VERIFICATION (commands run)
+EXIT=0 b32-rf-jobs-projection 7/0; b30-cap-per-action 22/0; extra-actions 48/0;
+b27-leg-settings 18/0; b22 funeral wiring 23/0; sd-data-cross-tenant-dispatchers
+418/0; eight further rf_jobs-touching suites green and identical to HEAD under a
+stash differential; node --check api/sd-data.js.
+
+7. LIMITS AND DECISIONS
+- Not swept: other Object.assign(columns, blob) projections on Tier A rows.
+- push_retry.py's git() has a 120s timeout that the push gate now exceeds; a
+  push inside the loop reports "timed out" while the gate may still be running.
+  Not fixed (cc's file, not in this queue).
+- H1 #1613/#1614: HELD per Michael, waiting on H1's own report.
+- cc: discharge the rf_jobs obligation (and b31's sc_claims / sc_dme).
