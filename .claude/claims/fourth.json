@@ -4463,8 +4463,8 @@
       "task": "b45: sairnbiz Z7 OT-aware gross; sairndental audit defects; stonedesk+hr anti-framing via hank b33 patch; Field Map lock/confirm/0-saving; push. FILES: sairnbiz.html sairndental.html stonedesk.html stonedesk-hr.html docs/defect-density-register.json docs/batch-manifest-fourth-b45.json SAIRN-handoff-fourth-b45.md SAIRN-report-fourth-b45.txt SAIRN-digest-fourth-b45.txt NOT-docs-tier-a-reviews-json-CCS NOT-api NOT-tests NOT-tools NOT-CLAUDE-md NOT-dot-claude-skills",
       "claimed_at": "2026-10-20T14:20:08Z",
       "claimed_at_epoch": 1792506008.7591429,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T14:54:30Z",
       "files": [
         "SAIRN-digest-fourth-b45.txt",
         "SAIRN-handoff-fourth-b45.md",
