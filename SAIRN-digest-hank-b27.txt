@@ -1,0 +1,16 @@
+HANK b27 DIGEST -- 2026-10-20 -- 6 of 6 done, 2 need Michael, zero overrides
+CONTEXT 43.0% of 1,000,000 -- 430,279 tokens, measured.
+STATUS: LANDED on origin/main (re-derive the tip), NOT FORCED.
+1. SEN audit licence: sql/mint_sen_audit_2026.sql and sql/verify_sen_audit_2026.sql. NOT RUN.
+   Twice: mint changes nothing the second time; verify is read-only and identical.
+   FOR CC: add SEN-AUDIT-2026 to KNOWN_AUDIT_KEYS (hygiene, nothing waits on it).
+2. MODE ECHO LIVE: unauthenticated = 401 and reveals nothing; authenticated reads
+   enforce / configured:false / 1000. PRODUCTION IS ENFORCING BECAUSE THE VARIABLE IS UNSET.
+3. auth_observe log fix proven in-process, ablated, no production traffic (30 arms).
+4. Field Map: routing primitive has no image verb, so a Maps directions link. Driven live.
+5. Straight-time-floor: 18-arm offline proof; live probe never touched a server.
+DECISION-NEEDED (Michael): run the two SEN SQL files; set SAIRN_AI_RATE_LIMIT_MODE in Vercel.
+NEXT: handoff sec.4 has the exact step per open item (A-H).
+CHANGED: ai-rate-limit.js, claude.js, stonedesk.html fmRenderMap, bridge.js comments, 2 SQL, 3 new files.
+EVIDENCE-path: docs/2026-10-20-hank-b27-notes.md
+UNVERIFIED: both SQL files; the live straight-time-floor probe; trust-lock (b26 carry-over).
