@@ -12579,7 +12579,27 @@ function fmAllStopsForDate(dateStr){
     stops.push({id:'manual-'+s.id, sourceType:'manual', sourceId:s.id, type:s.type||'other', person:(s.person||'').trim()||'Unassigned',
       address:s.address, customer:s.customer||'', date:dateStr, status:s.status||'not-started', notes:s.notes||''});
   });
+  // LOCK COPY-THROUGH (b45): a lock lives in the person|day order record (job/remake stops are read-only here), and is copied onto every stop so the optimise payload can send it.
+  stops.forEach(function(s){ var locked=fmLockedIds(s.person, dateStr); s.locked=locked.indexOf(s.id)!==-1; });
   return stops;
+}
+
+// LOCK STORE (b45): locked stop ids for one person's day, read from the same sd_field_order record saveFM() already persists; the old plain-array record shape has none.
+function fmLockedIds(person, dateStr){
+  var rec=sdFieldOrder[person+'|'+dateStr];
+  return (rec && !Array.isArray(rec) && Array.isArray(rec.locked)) ? rec.locked : [];
+}
+
+// LOCK TOGGLE (b45): flips one stop's lock in its person|day record and persists it; a legacy plain-array record is upgraded to the object shape with its order kept.
+function fmToggleStopLock(person, dateStr, stopId){
+  var key=person+'|'+dateStr, rec=sdFieldOrder[key];
+  if(Array.isArray(rec)) rec={order:rec, insight:''};
+  if(!rec) rec={order:[], insight:''};
+  var locked=Array.isArray(rec.locked)?rec.locked:[];
+  rec.locked=locked.indexOf(stopId)===-1 ? locked.concat([stopId]) : locked.filter(function(id){ return id!==stopId; });
+  sdFieldOrder[key]=rec;
+  saveFM();
+  fmRefreshCurrentView(person, dateStr);
 }
 
 function fmDistinctPeople(){
@@ -12781,6 +12801,12 @@ function fmStopCardHtml(s, orderNum){
       '<button onclick="fmDeleteStop(\''+escAttrJs(s.sourceId)+'\')" style="font-size:10px;padding:2px 7px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;cursor:pointer">Delete</button>';
   } else {
     statusControls = '<div style="font-size:10px;color:var(--muted);text-align:right">status from '+(s.sourceType==='job'?'Schedule':'Remakes')+'</div>';
+  }
+  // LOCK CONTROL (b45): every not-done stop gets a toggle that pins it at its position when the route is optimised (done stops are pinned by the server already).
+  if(s.status!=='done'){
+    statusControls =
+      '<button onclick="fmToggleStopLock(\''+escAttrJs(s.person)+'\',\''+escAttrJs(s.date)+'\',\''+escAttrJs(s.id)+'\')" aria-pressed="'+(s.locked?'true':'false')+'" title="'+(s.locked?'Optimise will keep this stop where it is. Click to let it move.':'Keep this stop at its position when the route is optimised')+'" style="font-size:10px;padding:2px 7px;background:'+(s.locked?'rgba(37,99,235,0.12)':'transparent')+';color:var(--text);border:1px solid var(--border);border-radius:5px;cursor:pointer">'+(s.locked?'&#128274; Locked':'Lock position')+'</button>'+
+      statusControls;
   }
   return '<div class="fm-stop-card '+s.status+'">'+
     '<div class="fm-stop-order">'+orderNum+'</div>'+
@@ -13053,20 +13079,13 @@ function fmRunOptimize(person, dateStr, silent){
       var reordered=order.map(function(i){return notDone[i];});
       var finalOrder=done.concat(reordered);
       var key=person+'|'+dateStr;
-      sdFieldOrder[key]={order:finalOrder.map(function(s){return s.id;}), insight:''};
+      // KEEP THE LOCKS (b45): the new order record replaces the old one, so the locked ids are carried across rather than wiped by the optimise they constrained.
+      sdFieldOrder[key]={order:finalOrder.map(function(s){return s.id;}), insight:'', locked:fmLockedIds(person,dateStr)};
       saveFM();
       fmRefreshCurrentView(person, dateStr);
-      if(silent){
-        // null = NOT COMPUTED -> no claim at all. 0 = genuinely no saving ->
-        // say so. These are different facts and the banner keeps them apart.
-        var secs=data.saved_seconds;
-        var savedTxt='';
-        if(secs!==null&&secs!==undefined&&isFinite(secs)&&secs>0){
-          savedTxt=' -- saves ~'+Math.round(secs/60)+' min';
-        }
-        var basisTxt=(data.basis==='great-circle')?' (straight-line order; drive times were unavailable)':'';
-        fmShowReoptBanner(escHtml(person)+'\'s route updated'+savedTxt+basisTxt+'.');
-      }
+      // CONFIRM EVERY SUCCESS (b45): the banner used to sit inside if(silent), so a manual press applied a new order and said nothing; both paths now name the saving and the basis.
+      var basisTxt=(data.basis==='great-circle')?' (straight-line order; drive times were unavailable)':(data.basis==='drive-matrix')?' (by drive times)':'';
+      fmShowReoptBanner(escHtml(person)+'\'s route reordered'+fmSavedText(data.saved_seconds)+basisTxt+'.');
       fmGenerateDaySummary(person, dateStr, finalOrder);
     })
     .catch(function(){ if(!silent) showToast('Route optimisation did not run. Your stop order is unchanged.'); });
@@ -13101,6 +13120,14 @@ function fmGenerateDaySummary(person, dateStr, orderedStops){
       fmRefreshCurrentView(person, dateStr);
     })
     .catch(function(){ /* insight is a nice-to-have, fail silently */ });
+}
+
+// SAVING WORDING (b45): null/undefined = NOT COMPUTED -> no claim; 0 or less -> already the shortest (no minutes); 1-59 s -> under a minute, never "~0 min"; 60+ -> ~N min.
+function fmSavedText(secs){
+  if(typeof secs!=='number'||!isFinite(secs)) return '';
+  if(secs<=0) return ' -- already the shortest order we found';
+  if(secs<60)return ' -- saves under a minute';
+  return ' -- saves ~'+Math.round(secs/60)+' min';
 }
 
 function fmShowReoptBanner(msg){
