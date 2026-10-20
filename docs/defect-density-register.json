@@ -35364,6 +35364,51 @@
       "recurrence_open": "verdict() and tally() are OPT-IN and nothing makes a probe call them. The b26 recurrence_open said no other probe in the repo asserts its own plant landed, and that is still true of all of them -- this adds the primitive and one caller, not a sweep. tools/sabotage_control_check.py MEASURES the plant-landed class and does not yet recognise or require the ran-check, so the platform figure it reports is silent on this failure entirely. Nothing refuses a probe that drives a hook over a range it never inspected."
     },
     {
+      "commit": "bbb17411f48f",
+      "date": "2026-10-20",
+      "subject": "fix(sairnbiz b42): an overtime threshold of 168 was honoured, though no hour can ever exceed it",
+      "files": [
+        "sairnbiz.html",
+        "tests/sairnbiz_benefits_and_overtime.js",
+        "tests/sairnbiz_ot_threshold_coalesce.js"
+      ],
+      "lines_added": 20,
+      "lines_removed": 8,
+      "app": "sairnbiz",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "The bound was n>168 while the function comment said a threshold AT or above 168 is unreachable. OT is hours in excess of the threshold (29 CFR 778.103) and a workweek is 168 hours (778.105), so 168 produced no overtime ever and no note said the setting was unusable. RED: the rejectable-values arm with 168 failed. GREEN: n>=168 falls back to 40 and is reported. Two existing arms pinned the old bound (one asserted 168 is reachable) and were changed with the old reasoning quoted.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "2d9f81ba34cb",
+        "date": "2026-09-26",
+        "subject": "fix(sairnbiz): the plan cards stop asserting Ohio to every customer, and the overtime threshold is read",
+        "lag_days": 24
+      },
+      "citation_note": "No coding rule covers this class: an inclusive or exclusive bound that disagrees with the comment describing it. Proposed: a boundary test at the exact edge value, in both directions, for every refusal bound.",
+      "contributing_factors": [
+        {
+          "factor": "An inclusive/exclusive boundary disagreed with its own comment: >168 coded, >=168 described.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "n>=168 falls back; note wording no longer says 1-168."
+        },
+        {
+          "factor": "A test arm asserted the wrong reading ('168 is reachable'), conflating reachable HOURS with reachable OVERTIME, so the suite defended the defect.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Arm B4 rewritten with the old reasoning quoted and answered from 29 CFR 778.103/.105."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. While the timesheet holds SIX days the maximum recordable week is 144 hours, so thresholds 145-167 are equally unreachable and still honoured; the exact bound is the record own maximum and moves to 168 only when day seven lands (held on api/sd-data.js, cody b29)."
+    },
+    {
       "commit": "cc919c308efd",
       "date": "2026-10-20",
       "subject": "fix(sairndental): the credential board says WHICH failure, through the facility the app already had",
