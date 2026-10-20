@@ -4265,8 +4265,8 @@
       "task": "b26 push-gate path-scope probe wiring, AI rate-limit default ceiling, stonedesk.html Field Map dead push call, b18/b22 live proofs, five FMEA drafts. FILES: tools/ docs/fmea/ api/_lib/ai-rate-limit.js api/claude.js stonedesk.html docs/2026-10-20-hank-b26-notes.md SAIRN-handoff-hank-b26.md SAIRN-report-hank-b26.txt SAIRN-digest-hank-b26.txt",
       "claimed_at": "2026-10-20T09:11:49Z",
       "claimed_at_epoch": 1792487509.8274076,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T09:38:25Z",
       "files": [
         "SAIRN-digest-hank-b26.txt",
         "SAIRN-handoff-hank-b26.md",
