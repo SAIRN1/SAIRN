@@ -3207,7 +3207,8 @@ function saveVendor(){
   var name=$('vnname').value.trim();
   if(!name){toast('Vendor name required');return;}
   var v=ld('sb_vends',[]);
-  v.push({id:'V'+String(Date.now()).slice(-4),name:name,cat:$('vncat').value,contact:$('vncontact').value.trim(),phone:$('vnphone').value.trim(),ytd:0,terms:$('vnterms').value,w9:$('vnw9').value});
+  // b43: the same per-device series as invoices and employees (sbNextId, b42).
+  v.push({id:sbNextId('V',v),name:name,cat:$('vncat').value,contact:$('vncontact').value.trim(),phone:$('vnphone').value.trim(),ytd:0,terms:$('vnterms').value,w9:$('vnw9').value});
   st('sb_vends',v);closeVendModal();rVends();toast('Vendor added - '+name);
 }
 
