@@ -6257,6 +6257,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b29-stonedesk-sync-honesty.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "assertions NET REMOVED",
+     "detail": "7 removed, 6 added; first removed: ok('A1[' + st + ']. a ' + st + ' is reported as a FAILURE naming the status',"
+    }
+   ],
+   "sha": "8ea00b19ef9df36e5c1a7fab88cc195400fae015",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/push_gate/preauth_exemption_anchor_probe.py",
    "class": "test file",
    "level": "CHANGE",
