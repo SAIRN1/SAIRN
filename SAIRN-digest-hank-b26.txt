@@ -1,0 +1,20 @@
+HANK b26 DIGEST -- 2026-10-20 -- 4 of 6 closed, 2 blocked on cc/Michael, zero overrides
+CONTEXT 24.2% of 1,000,000 -- 242,479 tokens, measured.
+STATUS: LANDED origin/main 3ac248927 (verify the tip), NOT FORCED.
+1. Path-scope probe: DRIVEN 5/5 exit 0 (~520s). Registry entry WRITTEN, NOT LANDED:
+   runner caps an entry at 300s, and a PURPOSES line in cc's tooling_inventory.py
+   makes the generator exit 2. Entry: docs/2026-10-20-hank-b26-path-scope-probe-registry-entry.py.txt
+2. Limiter: was 200/day/app, keyed licence-app (or anon:<app>), tenant = licence hash.
+   Now 1000 (500/500) -- A JUDGMENT, NOT MEASURED. Settle it: query in notes sec.7.
+   ai-rate-limit.test.js was red since b25; fixed. Burst NOT run (needs a licence).
+3. DONE and live-verified: pos_sale push deleted, Field Map catch no longer names the key.
+4. Live proofs -- PROVEN: bridge absent-action, IOLTA solo attestation. UNPROVEN:
+   straight-time-floor (needs SEN-AUDIT-2026), claude.js log fix (forged probe blocked
+   by the permission classifier). STALE: trust-lock (needs the two PINs).
+5. 5 FMEA drafts committed. FOR CC: CLAUDE.md:256 eight -> 11 skippable (7 wired, 4 not)
+   +3 unskippable; CLAUDE.md:302 Twelve -> 39.
+DECISION-NEEDED (Michael): OK the two forged-app_id POSTs; mint SEN-AUDIT-2026; run the query.
+NEXT: handoff SAIRN-handoff-hank-b26.md sec.4 has the exact step per open item (A-J).
+GATE NOTE: path-scope refused my own stonedesk.html + docs; fixed by an assigned_overrides
+  entry (remove once fourth reviews) and docs/*-hank-b* names.
+Notes: docs/2026-10-20-hank-b26-notes.md

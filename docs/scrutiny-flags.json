@@ -3597,6 +3597,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/_lib/ai-rate-limit-tenant.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold CHANGED",
+     "detail": "was: assert.strictEqual(rpc.body.p_tenant_limit, 100, 'default sh  now: assert.strictEqual(rpc.body.p_tenant_limit, 500, 'default sh"
+    }
+   ],
+   "sha": "5217024d6958697e823221e81cc5ce5d9509d927",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/_lib/ai-rate-limit.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "5217024d6958697e823221e81cc5ce5d9509d927",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": ".githooks/pre-commit",
    "class": "CI / hook configuration",
    "level": "WEAKENING",

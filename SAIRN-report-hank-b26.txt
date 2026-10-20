@@ -1,0 +1,18 @@
+HANK b26 REPORT -- 2026-10-20 -- origin/main 3ac248927, not forced, zero overrides
+
+1. PATH-SCOPE PROBE -> report_only_checks: driven (5/5, exit 0, ~520s), entry written
+   and validated, NOT landed. Blockers measured: 300s per-entry timeout in the runner;
+   a PURPOSES line in cc's tooling_inventory.py makes the generator exit 2.
+2. RATE LIMITER: was 200/day/app (24h sliding), keyed on licence-verified app or
+   anon:<app>, tenant = licence hash (cap 100 past floor 100). Reachable on a busy
+   day. Default now 1000 (500/500) -- a judgment, not measured; query in notes sec.7.
+   ai-rate-limit.test.js had been red since b25: fixed. Burst not run (needs a licence
+   and spends that app's shared day; unauth is a 401 before the limiter).
+3. FIELD MAP / POS: pos_sale push deleted (grep: no reader), catch arm no longer names
+   the Maps key. Live page verified. node --check 128/0.
+4. LIVE PROOFS: proven -- bridge absent-action, IOLTA solo attestation. Unproven --
+   straight-time-floor (needs SEN-AUDIT-2026), claude.js log fix (forged probe blocked
+   by the permission classifier). Stale -- trust-lock (needs the two PINs).
+5. FMEA: 5 drafts committed with the code. CLAUDE.md for cc: line 256 eight -> 11
+   skippable (7 wired, 4 not) + 3 unskippable; line 302 Twelve -> 39.
+6. PUSHED, confirmed by sha. Handoff: SAIRN-handoff-hank-b26.md.
