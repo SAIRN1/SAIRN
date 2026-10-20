@@ -202,11 +202,24 @@ t('C5. anything other than an explicit `false` leaves the disclosure ON. A '
 // ══ THE INERTNESS, AS A MECHANISM ═════════════════════════════════════════
 section('D. F2 AND F3 ARE CONSULTED BY NOTHING. This is the arm, not a paragraph.');
 
-t('D1. api/sd-data.js calls legRoles.decide with THREE arguments, so `grants` '
-  + 'and `home` are undefined on every real request and F2/F3 are policy '
-  + 'nothing consults. *** A FAILURE HERE IS GOOD NEWS: it means the wiring '
-  + 'landed. Do not silence it -- delete this arm and promote the F2/F3 arms '
-  + 'above from module-level to handler-level. ***', () => {
+// ── D1 FIRED, AND IT WAS GOOD NEWS. RE-AIMED 2026-10-20 (hank b24). ───────
+// This arm asserted that NO call site passed `grants`/`home`, and said in its
+// own text: "A FAILURE HERE IS GOOD NEWS -- it means the wiring landed."
+// IT FAILED. cody's b27 wired it, and the arm named the site:
+//
+//   api/sd-data.js:16702  resource, legSess.role, action, null, legHome
+//
+// RE-AIMED RATHER THAN DELETED, and that is the whole discipline: the arm's own
+// instruction was "delete this arm and promote the F2/F3 arms to handler
+// level". Deleting it HERE would leave nothing asserting that the wiring is
+// still there -- the gap stopped being the risk and a REGRESSION became one.
+// Promoting the module-level F2/F3 arms to handler level is cody's lane (their
+// wiring, their batch) and is ROUTED in SAIRN-handoff-hank-b24.md, not done
+// here. What this arm does now is hold the new truth.
+t('D1. api/sd-data.js NOW calls legRoles.decide with FIVE arguments, so `home` '
+  + 'reaches the policy and F2/F3 are consulted. This arm asserted the OPPOSITE '
+  + 'until cody\'s b27 wired it; it is re-aimed, not deleted, so a revert '
+  + 'cannot pass unnoticed', () => {
   const src = fs.readFileSync(SD_DATA, 'utf8');
   const calls = [];
   const re = /legRoles\.decide\(([^;]*?)\)\s*===/g;
@@ -221,14 +234,13 @@ t('D1. api/sd-data.js calls legRoles.decide with THREE arguments, so `grants` '
     + 'handler stopped using the module (a much bigger finding) or this arm is '
     + 'looking for the wrong shape');
   const wired = calls.filter((c) => c.argc >= 5);
-  assert.strictEqual(wired.length, 0,
-    'THE WIRING HAS LANDED -- ' + wired.length + ' call site(s) now pass '
-    + 'grants/home:\n       '
-    + wired.map((c) => 'sd-data.js:' + c.line + '  ' + c.text).join('\n       ')
-    + '\n       This arm has done its job. DELETE IT and move the F2/F3 arms to '
-    + 'handler level.');
-  console.log('       call site(s), for the record: '
-    + calls.map((c) => 'sd-data.js:' + c.line + ' (' + c.argc + ' args)').join(', '));
+  assert.ok(wired.length >= 1,
+    'NO call site passes grants/home any more -- the wiring has been REVERTED, '
+    + 'and F2/F3 are policy nothing consults again. Call sites found:\n       '
+    + calls.map((c) => 'sd-data.js:' + c.line + ' (' + c.argc + ' args)')
+        .join('\n       '));
+  console.log('       wired call site(s): '
+    + wired.map((c) => 'sd-data.js:' + c.line + '  ' + c.text).join(', '));
 });
 
 t('D2. ...and `leg_settings` is registered as a resource NOWHERE in '
