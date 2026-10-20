@@ -1,0 +1,32 @@
+HANK b23 DIGEST -- 2026-10-19/20 -- 6/6, five gate refusals fed, zero overrides
+CONTEXT 50.7% of 1,000,000 -- 507,200 tokens, measured.
+STATUS: LANDED on origin/main, verified by sha after a fresh fetch, NOT FORCED.
+CONCEPT, stated before any code: a reconciliation becomes ATTESTED only when a
+bar-admitted person signs a hash of the exact comparison; a firm with EXACTLY
+ONE active owner/attorney may switch on a per-firm single-signer setting and
+attest alone, stored as signer_mode 'single' -- so the record never claims two
+people looked when one did. Michael's answer to b21's one open question.
+BUILT: api/law-attest.js + api/_lib/law-attest.js + 66 arms, 0 failed. TWO
+  enforcement points and the SECOND matters -- the roster is RE-COUNTED on every
+  attestation, so a firm that opted in as a solo and later hired a second
+  attorney loses the route without touching the setting; the count fails CLOSED
+  (null -> 503, never "one, so go ahead"). countersign.js NOT weakened: no
+  self-signature, ever -- the solo path is its own. A SECOND profile, so arm E3
+  of b18 STAYED GREEN (59/0) where the design predicted a re-aim.
+  SQL path: sql/sairnlaw_trust_attestations.sql.
+LIVE: absent ?action= now 400 UNKNOWN_ACTION (b22 recorded 401/UNVERIFIED), and
+  a body-signalled proxy_get still reaches the proxy handler -- a DIFFERENT 400,
+  so the branch order is proven, not asserted. /api/law-attest deployed and
+  FAILS CLOSED 503, with a 200 control on the same session. Trust hard-lock
+  PROVEN LIVE, real paralegal session + 4 controls (new tools/ probe, exit 0).
+DECISION-NEEDED
+1. RUN sql/sairnlaw_trust_attestations.sql, including its FOUR negative inserts
+   AND the positive control. Until then the attestation is inert and GUARDIAN
+   CHECK 29 IS NOT SATISFIED -- no real write against the real store is possible.
+2. stonedesk.html:12814 is the UNFIXED TWIN of the defect b34 closed 113 lines
+   later -- same "check GOOGLE_MAPS_API_KEY" message for a request that never
+   reached Google. fourth holds it.
+3. Arm A1 of b19 is RED by design (implemented false->true). RE-AIM, do not
+   delete. cody holds that suite.
+NOT PROVEN: the straight-time-floor guard (SHAPE only -- no SEN audit licence to
+  write fixtures to) and the claude.js log line (the sink is the Vercel log).

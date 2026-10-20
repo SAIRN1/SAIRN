@@ -1,0 +1,214 @@
+REPORT hank b23 2026-10-19/20 -- the IOLTA attestation gets its solo answer, the bridge refusal is live-proven, and a census that found two holes in itself
+
+CONTEXT 50.7% of 1,000,000 -- 507,200 tokens, measured.
+
+STATUS
+All six items closed. LANDED on origin/main, verified by comparing origin/main
+to HEAD BY SHA after a fresh fetch -> 0 ahead, 0 behind. NOT FORCED. ZERO gate
+overrides -- no SAIRN_SKIP, no SAIRN_GATE_EXEMPT, no SAIRN_SEED_GATE.
+Six push attempts; FIVE refusals, every one FED rather than escaped, listed
+below. Working tree clean (the two .claude/*.bak files predate this session).
+
+THE ONE-LINE CONCEPT, STATED BEFORE ANY CODE
+  A completed three-way reconciliation becomes an ATTESTED record only when a
+  bar-admitted person signs a hash of the exact comparison that was run; a firm
+  that has EXACTLY ONE active owner/attorney may switch on a per-firm
+  single-signer setting and attest alone, and every attestation taken that way
+  is stored as signer_mode 'single' -- so the record never claims two people
+  looked when one did.
+
+That is Michael's answer to the one question the b21 design note could not
+close. It is a HYBRID of that note's answers (2) and (3), and neither half
+stands alone: (2) on its own is the policy table SAIRNlaw's own countersign
+schema already refused once ("a legal requirement is not something a licensee
+turns off in Settings"), and (3) on its own leaves a solo attorney no route.
+
+THE SIX ITEMS
+
+1. THE DEPLOYED ABSENT-?action= REFUSAL -- LIVE-PROVEN. 400 UNKNOWN_ACTION,
+   "No action was given", and the EMPTY-value form (?action=) answers the same
+   way, so the falsy test covers both. b22 pushed this, probed it, got 401, and
+   recorded UNVERIFIED without retrying; it is deployed now.
+
+   THE PROBE THAT MATTERS IS NOT THE ONE UNDER TEST. A body-signalled
+   proxy_get with no ?action= reaches the PROXY HANDLER and returns a DIFFERENT
+   400 -- "payload.url is required for proxy_get", no error code. Two 400s that
+   mean opposite things. A probe reading only the status code would have
+   reported the legitimate caller as refused. The branch order (proxy_get
+   matched ABOVE the refusal) is now live-proven rather than asserted.
+
+2. THREE LIVE PROOFS, AND THEY COME OUT THREE DIFFERENT WAYS.
+
+   2a. THE TRUST-LOCK HARD-LOCK -- PROVEN LIVE. tools/law_trust_lock_live_probe.py
+       (new), exit 0, with a real paralegal session on LAW-AUDIT-2026:
+         paralegal READ law_trusttx / law_bankstatements  -> 403 FORBIDDEN
+         paralegal WRITE law_bankstatements               -> 403 FORBIDDEN
+         paralegal WRITE law_trusttx -> 403 COUNTERSIGN_REQUIRED, A DIFFERENT
+           REFUSAL -- C2's two-stage carve-out, live. A probe that accepted
+           "some 403" could not tell the carve-out from the lock.
+         FOUR NEGATIVE CONTROLS: paralegal reads of law_clients and
+           law_timeentries 200; OWNER reads of both locked resources 200.
+       Three 403s alone are equally consistent with a broken session, a dead
+       licence, or an endpoint that refuses everything.
+
+       THE TEARDOWN CAUGHT ITSELF. set_active(false) answered 400 because
+       `reason` is required, and the read-back (attempt the login, require 401)
+       FAILED. A probe asserting only the set_active reply would have reported
+       a clean teardown and left a working paralegal sign-in on the licence.
+
+   2b. THE b18 STRAIGHT-TIME-FLOOR SIGN GUARD -- NOT PROVEN (behaviour).
+       THE SHAPE IS: the deployed payroll run returns overpayments[],
+       overpayment_cents and the recovery disclosure, which the pre-fix build
+       did not have. (It also answers 400 NO_WEEK_START without a workweek
+       start -- a live proof in its own right.) The guard needs a downward
+       delta, which needs visit + rate + closed-period fixtures, and
+       SAIRNSENIOR HAS NO AUDIT LICENCE -- sen_visits declares no delete verb,
+       so anything written to the demo-facing licence is permanent. Not done.
+
+   2c. THE claude.js auth_observe LOG LINE -- NOT PROVEN, AND NOT PROVABLE FROM
+       HERE. The response never contains the app_id in any form, so the
+       sanitiser's sink is the Vercel function log and the Vercel MCP is
+       unauthenticated in this session. Measured on the way: unauthenticated
+       calls answer 401 NO_LICENSE, so SAIRN_CLAUDE_AUTH_MODE is ENFORCE in
+       production -- which that fix's own comment does not assume. The log line
+       still runs before the 401, so the fix still matters.
+
+3. THE IOLTA ATTESTATION -- BUILT. api/law-attest.js (route), api/_lib/law-attest.js
+   (policy, no I/O), sql/sairnlaw_trust_attestations.sql, 66 arms.
+
+   TWO ENFORCEMENT POINTS AND THE SECOND IS THE ONE THAT MATTERS. set_policy
+   refuses to switch it on for a firm with two bar-admitted employees; ATTEST
+   RE-COUNTS THE ROSTER EVERY TIME, so a firm that opted in as a solo and later
+   hired a second attorney loses the route without anyone touching the setting.
+   A check that runs only at set time is an authorisation that outlives its own
+   precondition. The count FAILS CLOSED: null is 503 ELIGIBILITY_UNKNOWN.
+
+   api/_lib/countersign.js IS NOT WEAKENED. It states it has no policy table,
+   no set_policy and NO SELF-SIGNATURE EVER. The single-signer path does not
+   touch the countersignature token at all -- a solo attestation is a DIFFERENT
+   KIND OF RECORD, not the same record with a check switched off.
+
+   A SECOND PROFILE, NOT A WIDER ONE, and that is a constraint rather than
+   taste: api/law-countersign.js carries ONE preparerRoles, { paralegal }, so
+   adding law_trust_attestation there would have meant only a paralegal could
+   prepare an attestation and an attorney could not. ARM E3 OF
+   api/b18-countersign-lock.test.js THEREFORE STAYED GREEN (59/0) where the
+   design note predicted it would need re-aiming.
+
+   THE DATABASE REFUSES A SELF-SIGNATURE UNLESS THE ROW ADMITS IT, in both
+   directions: signer_mode 'dual' requires two names, 'single' requires one.
+   Grants are SELECT+INSERT, no UPDATE, no DELETE, behind a leading revoke all.
+   Four negative inserts AND a positive control, because four erroring inserts
+   are equally consistent with "the constraints work" and "this table rejects
+   everything".
+
+   THE ABLATION FOUND A TEST PASSING FOR THE WRONG REASON -- the find of the
+   batch. Arm F2 asserts the attester is the COUNTERSIGNER and not the saver.
+   Its first draft let the caller default to the same person as the
+   countersigner, so attributing the row either way gave the same answer:
+   ablation I3 mutated the read-back, NOTHING WENT RED, and the arm was at
+   fault. Three distinct people now -- saver, preparer, signer.
+
+   `paralegal` is deliberately NOT restored to LAW_RECONCILE_ROLES. The grant
+   is inert today and would go live the day cody wires the gate, possibly
+   BEFORE the SQL is run -- the state b20 withdrew it to avoid.
+
+4. THE RAW-POSTGREST-FILTER ARM, SABOTAGE-TESTED -- IT CATCHES IT. In a scratch
+   copy of api/ (491 files, deleted afterwards; the live clone's git status
+   checked before and after). Baseline 9/0. One raw command_id splice
+   reintroduced -- the patcher REFUSED a non-unique anchor and it had to be
+   widened, because that value is spliced at two sites. Result 5 passed,
+   4 FAILED, with D1 naming "agent/result.js:66  command_id". A1/C1/C2 reddened
+   too and that is the arms working: C1/C2's anchors reference the ENCODED text
+   and said "RE-SEAT THE ANCHOR, do not delete the arm". Restored: 9/0.
+   The filter rule is now STANDING, per Michael, and is in hank's persistent
+   memory so it outlives this session.
+
+5. THE CALLER RE-CENSUS -- EIGHT CALLERS, NO UNEXPECTED REFUSAL, ONE NEW
+   FINDING. Derived by VALUE (any identifier whose assignment mentions the URL)
+   rather than from a list of names. No caller answers 400 or 401 unexpectedly:
+   every 400 goes to a caller naming an action the endpoint has never had, or
+   naming none, and the single licence-gated caller sends a licence and a
+   session.
+
+   THE METHOD FOUND TWO HOLES IN ITSELF, both b21's class one level deeper.
+   Draft 1 demanded a quoted literal straight after `=` and missed
+   `var bridgeUrl = (typeof BRIDGE !== 'undefined' ? BRIDGE : '...')` -- the
+   definition behind the ONLY real push caller. Draft 2's transitive pass
+   accepted any RHS mentioning a handle and, in files whose COMMENTS name the
+   URL, turned single-letter locals into handles and then matched every
+   assignment: 70 "handles". A detector that over-matches is not safer than one
+   that under-matches; it is wrong in a direction that looks thorough.
+
+   AND THE MEMBERSHIP MOVED WHILE THE COUNT DID NOT. :12927 ?action=maps-optimize
+   is GONE (fourth's b34 repointed it at rt_routes) and :12814 ?action=maps-static
+   is on the list -- still eight. A batch re-checking only the NUMBER would have
+   concluded nothing changed.
+
+6. PUSHED WITHOUT FORCE and confirmed by sha after a fresh fetch.
+
+THE NEW FINDING THAT MATTERS MOST
+stonedesk.html:12814 fmRenderMap is THE UNFIXED TWIN of the defect fourth's b34
+closed 113 lines later. It POSTs ?action=maps-static -- an action that has never
+existed on main, and there is NO static-map route anywhere in api/ -- then
+renders "Map unavailable -- check GOOGLE_MAPS_API_KEY is set." That is the exact
+misdirecting message b34 removed from :12927. It does not claim false success,
+so the harm is misdirection rather than fabrication: it sends whoever reads it
+to check a Maps API key the request never reached. fourth holds the file; routed.
+
+THE FIVE GATE REFUSALS, EVERY ONE FED
+1. commit_tool_entry_check (at the COMMIT) -- a new tools/*.py with no
+   description. Answered with a PURPOSES entry naming what the probe CATCHES.
+2. path-scope -- 2 of 10 paths inside tools/, which is cc's. Answered the way
+   the gate prescribes: the first two entries assigned_overrides has ever
+   carried, as EXACT FILENAMES rather than the tools/ prefix, with a note saying
+   to remove them once cc has reviewed. An override nobody prunes becomes an
+   allowlist.
+3. the tool-owner header -- "# OWNER: hank", one line.
+4. derived-docs -- MASTER-PLAN, TOOLING-INVENTORY and traceability regenerated
+   by their own generators AFTER the final rebase. Test files 1002 -> 1003.
+5. credential-sql -- AND THE GATE WAS RIGHT. The probe's residue-delete removes
+   hank-b23-owner, and SAIRNlaw's PROVISIONING_ROLES is ['owner'], so the day a
+   third credential exists on that licence the delete becomes "remove the only
+   active provisioner and strand the rest". Now guarded, INSIDE A TRANSACTION,
+   because a guard that cannot roll the delete back is a report.
+6. register-feed -- answered with a real no-defect-record sentence: that SQL
+   file was created earlier in the SAME push and has never been on origin, so
+   there is no shipped behaviour to have been wrong.
+(A seventh refusal was the non-fast-forward detector and said so itself.)
+
+LIVE AFTER THE PUSH
+/api/law-attest is DEPLOYED and FAILS CLOSED: GET 405; no bearer 401; unknown
+action 400 naming all eight actions; attest with no session 401; policy, attest
+and set_policy with a real session 503 NOT_PROVISIONED, each NAMING
+sql/sairnlaw_trust_attestations.sql. THE CONTROL is what makes those three mean
+something -- the same licence and session read law_trusttx through /api/sd-data
+and got 200, so the 503s are the absent table and nothing else.
+
+WHAT THIS DOES NOT COVER
+* No SQL was run. The attestation is armed in code and inert in the database.
+* GUARDIAN CHECK 29 IS NOT SATISFIED -- it requires a real write against the
+  real store for any change touching a storage validator or schema constraint,
+  and this change is both. It cannot be done until the table exists. Named
+  rather than glossed.
+* No rendered pass anywhere; sairnlaw.html has no attestation UI at all yet.
+* The straight-time-floor guard has no behavioural live evidence, and the
+  log-line fix has none at all.
+* api/sd-data.js is still unswept for the raw-filter class.
+* The seam check reported COULD NOT TELL for at least one endpoint/engine pair
+  and was not run.
+
+THINGS I GOT WRONG
+1. I wrote a route that turned a could-not-tell into a generic 502: a failed
+   roster read threw and the catch-all made it "Data store error". Safe --
+   nothing was written -- but it lost the one thing that makes the refusal
+   actionable. Arm E5 caught it; the policy module had the right answer the
+   whole time and the route never asked.
+2. Arm F2 passed in both worlds and only the ablation could see it.
+3. Arm F8 deactivated the person who was also the caller, so it measured the
+   401 session gate and never reached the settling step it exists to test.
+4. Arm C10a failed on a CORRECT file by comparing a sorted list against the
+   SQL's policy order. An arm that fails on spelling rather than meaning is a
+   false positive somebody eventually silences.
+5. My caller census had two holes, both b21's mistake one level deeper.
+6. The live probe's teardown reported itself done and had not been.
