@@ -2261,3 +2261,13 @@ not from the brief. Items 1-4 were already done (3 pushed as `2a8ab911`).
 - **this file is 1,008,974 bytes, over the 400,000 ceiling.** `tooling_inventory.py --standing-doc-sizes` exits 1 with 7 documents over; the split arrives routed from cc's batch W item 13.
 
 Full account: `docs/handoff-fourth-2026-10-08.md`, `docs/2026-10-07-fourth-routed.md` SEQ b4-A..b4-D.
+
+## batch b41 -- 2026-10-20, CLOSED 6/6
+
+- sairndesign B1-B3 (`078f3cf3`): spec-item certification, three states, vendor+SKU join on product facts only, portal answer. Audit's B1 corrected to the 770.45(c)(2) finished-good label. CPR/GPSR/REACH read from source.
+- sairndental (`2eb738de`): pending state for the credential board's first paint; register record `f7b6845e`.
+- sairncode (`6407cc4d`): (B)(7) first measured leaf, both A2 figures, one shared predicate.
+- docs (`0cb4538e`): AMLR operative carve-outs Arts 70(2)/24(4)/21(2); AI Act Arts 8-15 + Annex IV gap map against B1, and B1 (B)(2)(iv) corrected.
+- sairnbiz audit (`8e4cb106`): PTD Art 7, WTD + C-55/18 (no day seven), VAT Art 226 (Date.now() ids), GDPR Art 9.
+
+Full account: `SAIRN-handoff-fourth-b41.md`.

@@ -1,0 +1,27 @@
+SAIRN DIGEST -- fourth b41 -- 2026-10-20
+CONTEXT 36.9% of 1,000,000 -- 369,242 tokens, measured.
+STATE: 6/6 done; origin/main 0 ahead 0 behind; no force, no override; claim released.
+READ: SAIRN-handoff-fourth-b41.md (whole state). Detail: SAIRN-report-fourth-b41.txt.
+SQL: none this batch.
+COMMITS: 078f3cf3 design | 2eb738de dental | 6407cc4d code | 7951d9aa review fixes
+         f7b6845e register | 0cb4538e AMLR+AI Act docs | 8e4cb106 sairnbiz audit
+LIVE: all three pages carry the change; drives pass vs sairn.vercel.app 66/66, 37/37, 27/27.
+1 sairndesign B1-B3 built. B1 CORRECTED: finished-good label 770.45(c)(2), not panel
+  fields. CPR/GPSR/REACH read; REACH Art 33(2) = EU "upon request" twin. B6-B8 specced.
+2 sairndental: revisit first paint showed the PREVIOUS FORBIDDEN while a request that
+  would succeed was in flight; b40's mitigation never reached it. Pending state, fixed.
+3 sairncode (B)(7): both A2 figures built (rejected/decided, held/coded), one shared
+  predicate, N of M on screen. Attached to B1 as the first measured leaf.
+4 AMLR: three operative carve-outs (Arts 70(2), 24(4), 21(2)) that differ; 70(3) lets
+  Member States narrow. AI Act 8-15/Annex IV gap map; B1 (B)(2)(iv) was FALSE, fixed.
+5 sairnbiz: PTD Art 7 has no size threshold and roster has no sex field; timesheet has
+  NO DAY SEVEN and no start/end (WTD + C-55/18); invoice ids = Date.now() last 4.
+NEXT, in order:
+  a sairnbiz Z1: sequential/unique invoice + employee ids (:2634, :2433) -- claim first
+  b sairnbiz Z2: timesheet day seven (:3427), then start/end; read 29 CFR 778 first
+  c sairncode: queue line counts reviewed_rejected as "cleared every check" (:7402)
+  d sairndental: addCredential repaint; settle-order race; Guardian A3
+  e one real cert write + read-back on the real endpoint (needs a licence key)
+ROUTED: cody -- register record ce15ddaa6a3c fails defect_register --check.
+UNPROVEN: no server I/O; no consolidated EU text; no transposition; no legal review.
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\fc1f8565-6013-48a4-b66b-d27902506016.jsonl

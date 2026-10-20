@@ -1,0 +1,44 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "fourth",
+  "batch": "b41",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "",
+      "status": "done",
+      "evidence": "078f3cf3 + 7951d9aa; docs/cloud-research/sairndesign-worldwide-competitive-gap-audit-2026-10-20.md section 6; drive scratchpad/b41/drive_design.py 66/66 local AND live, mutation control trips. CPR 32024R3110, GPSR 32023R0988, REACH 32006R1907 (PDF) read from source."
+    },
+    {
+      "id": 2,
+      "title": "",
+      "status": "done",
+      "evidence": "2eb738de + 7951d9aa + register f7b6845e; drive scratchpad/b41/drive_dental.py 37/37 local AND live, routed-copy mutation control trips."
+    },
+    {
+      "id": 3,
+      "title": "",
+      "status": "done",
+      "evidence": "6407cc4d; docs/2026-10-20-fourth-b39-sairncode-compliance-artefacts.md section A3; drive scratchpad/b41/drive_code.py 27/27 local AND live, mutation control trips."
+    },
+    {
+      "id": 4,
+      "title": "",
+      "status": "done",
+      "evidence": "0cb4538e; docs/cloud-research/2026-10-20-eu-law-route-and-the-three-audits-eu-limbs.md section 6 (AMLR Arts 21(2), 24(4), 70(2)-(3)); artefacts doc section A4 (AI Act Arts 8-15, Annex IV)."
+    },
+    {
+      "id": 5,
+      "title": "",
+      "status": "done",
+      "evidence": "8e4cb106; docs/cloud-research/sairnbiz-worldwide-competitive-gap-audit-2026-10-20.md; 6 instruments + CJEU C-55/18 read via CELEX."
+    },
+    {
+      "id": 6,
+      "title": "",
+      "status": "done",
+      "evidence": "git rev-list --left-right --count origin/main...HEAD = 0 0; every b41 sha merge-base --is-ancestor origin/main; no force; live pages fetched via tools/sairn_http.py and all three drives re-run against https://sairn.vercel.app."
+    }
+  ]
+}

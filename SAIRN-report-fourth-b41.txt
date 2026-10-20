@@ -1,0 +1,167 @@
+SAIRN REPORT -- fourth b41 -- 2026-10-20
+
+RESULT: 6 of 6 DONE. All on origin/main, 0 ahead / 0 behind, every b41 sha an
+ancestor, no force, no override of any form. Wrapped at ~36% real context
+(tools/context_verify.py --digest-line). Handoff: SAIRN-handoff-fourth-b41.md.
+
+METHOD, held on every code item: reproduce the failing state first, state the
+concept, patch with count-asserted anchors, node --check every script block
+(HTML-parser extraction), drive every branch in Chromium, and prove each drive
+can fail with a mutation control. Then re-run every drive against the LIVE
+origin https://sairn.vercel.app/.
+
+------------------------------------------------------------------------------
+ITEM 1 -- sairndesign B1-B3, and CPR / GPSR / REACH            078f3cf3, 7951d9aa
+------------------------------------------------------------------------------
+CONCEPT: a spec item carries a cert record; a 16 CFR 1640.3(e)/1640.2(a)
+predicate and a 40 CFR 770.3/770.2(e)(4) predicate decide whether each regime
+applies; each applicable regime resolves to compliant / not compliant / not
+established, and unanswered is NEVER n/a and NEVER compliant.
+
+REPRODUCED: seeded spec item had 14 keys, none for compliance; modal 11
+inputs; portal 4 cards; sdnCertState undefined.
+
+CORRECTION TO THE AUDIT'S OWN B1: b39 said the composite-wood block should
+hold producer name, lot number and TPC number. Those are the 770.45(a) PANEL
+label. A designer specifies FINISHED GOODS, and 770.45(c)(2) gives them their
+own label: fabricator, month/year produced, "TSCA Title VI compliant". The
+build records that. Re-read from the CFR text, not recalled.
+
+Two scope edges came out of the same read and are encoded: 770.2(e)(4)
+(composite wood made before 1 Jun 2018 may be sold at any time -- vintage) and
+1640.2(a) (made, imported OR REUPHOLSTERED on/after 25 Jun 2021).
+
+THE JOIN: vendor + SKU copies PRODUCT facts only (scope answers, contains-
+composite-wood, fabricator). Label sightings, dates and evidence belong to
+the unit in hand and never join -- copying a sighting from another project's
+sofa would certify a label nobody looked at.
+
+B3: Client Portal card quotes the 1640.4(b) statement or the 770.45(c)(2)
+line where established, says not established / not compliant with the
+reason where not, keeps "N of M" on screen, does not show internal evidence.
+
+DRIVEN 66/66 local AND live. Mutation control (undetermined -> n/a) makes the
+blank-record assertion fail: CONTROL_PASS true. Reservation path keeps cert.
+
+EU, read from source, one CELEX each:
+  CPR   32024R3110  applies 8 Jan 2026 (Art 96); Art 25(3) display duty
+        BEFORE the contract binds -- i.e. on the proposal.
+  GPSR  32023R0988  applies 13 Dec 2024 (Art 52); Art 12(1) distributor
+        verification of 9(5)-(7); Art 13(2)-(3) SUBSTANTIAL MODIFICATION MAKES
+        YOU THE MANUFACTURER (reupholstery); Art 2(2)(i) excludes antiques --
+        vintage is not antique.
+  REACH 32006R1907  no XHTML manifestation (404); PDF 849 pages. Art 33(2):
+        a supplier of an article (Art 3(33), distributors included) gives a
+        consumer SVHC info within 45 days, free -- the EU twin of 770.45's
+        "upon request". ORIGINAL OJ TEXT, not consolidated.
+B6-B8 specified in the audit section 6.3, not built.
+
+------------------------------------------------------------------------------
+ITEM 2 -- sairndental: the credential board's first paint       2eb738de, 7951d9aa
+------------------------------------------------------------------------------
+CONCEPT: in flight is a fourth state; the pending flag is set by whoever
+starts the evaluation, BEFORE the first paint.
+
+REPRODUCED, and worse than b40 recorded: on a REVISIT the first paint showed
+the PREVIOUS attempt's FORBIDDEN "your session is not authorised ... sign in
+again" while a request that would SUCCEED was in flight. b40's clear-on-entry
+runs after nav() painted, so it never reached first paint; its comment said
+it did and is corrected in place.
+
+FIX: refreshCredentialBoard(paintPending) keeps a pending COUNT (overlap-safe);
+rCredentials(null) renders "Checking the credential board..." with pending
+tiles and badge; only nav() paints pending, so the background sync refresh
+leaves a real board up; paint and evaluation inside try, so a throw cannot
+leave it stuck (that last part was Guardian's advisory A2).
+
+DRIVEN 37/37 local AND live: ok/403/500/network each pending-then-outcome,
+no licence, overlap, background, throw. Mutation control (pending branch
+disabled in a routed copy of the page) trips.
+
+REGISTER: record filed, f7b6845e -- severity LOW, fault-injection,
+injection 876bd84c, rule not-citable with the proposed rule. The register was
+declared by cc b27 at batch start, so it was left out of my claim; it was
+added only after cc's b28 claim dropped it and the check came back CLEAR.
+
+------------------------------------------------------------------------------
+ITEM 3 -- sairncode (B)(7): the first measured leaf              6407cc4d
+------------------------------------------------------------------------------
+"Citation-rejection rate" matched both of b40 section A2's figures, so both
+are built side by side rather than one picked silently:
+  coder rejection = reviewed_rejected / DECIDED (needs review and
+                    auto-assigned are in neither side)
+  citation held   = citation missing or unconfirmed / every coded item --
+                    the exact property B1 (B)(9) recommended monitoring.
+One predicate, scCitationState(), now feeds BOTH the routing and the
+measure, so they count the same thing by construction rather than by
+matching basis strings. N of M always; % only beside it; nothing over zero.
+DRIVEN 27/27 local AND live incl. the live Reject button. Mutation control
+(needs review counted as rejection: 3 of 5 instead of 2 of 4) trips.
+No production value is quoted: none was measured on real data.
+
+FOUND, NOT FIXED: the queue line counts reviewed_rejected items among those
+that "cleared every check" (scRouteCodedItems, sairncode.html:7402).
+
+------------------------------------------------------------------------------
+ITEM 4 -- AMLR operative text; AI Act Arts 8-15 + Annex IV       0cb4538e
+------------------------------------------------------------------------------
+AMLR 32024R1624: THREE operative carve-outs, and they differ.
+  Art 70(2)  FIU reporting (69(1))            "before, during or after": yes
+  Art 24(4)  BO-register discrepancy reports   same wording, different limit
+  Art 21(2)  terminate-or-refrain (21(1))      "before, during or after": NO
+The "inferred from objective factual circumstances" clause b40 found in
+recital (143) is OPERATIVE at 70(2)(c) and 21(2)(c). Art 70(3): Member States
+may narrow the exemption per transaction type. A single "privileged" flag on
+a matter cannot answer the three duties.
+
+AI ACT 32024R1689: still not binding on SAIRNcode (b40's actor test); a gap
+map for the payer/public-authority boundary. Art 10(6): no training data
+still leaves TESTING data duties -- B1's "not applicable" is too wide. Art
+14(4)(b): the auto-assigned list is the automation-bias case. B1's own
+(B)(2)(iv) "every suggestion enters a human-review queue" WAS FALSE --
+cleared items are auto_assigned and reach no coder. Corrected in place.
+Annex IV: B1 has no version, no model identity, no architecture, no
+cybersecurity, no signed tests.
+
+------------------------------------------------------------------------------
+ITEM 5 -- sairnbiz worldwide audit                               8e4cb106
+------------------------------------------------------------------------------
+First in the series citing EU law from source from the start. Read:
+Pay Transparency Directive 32023L0970 (transposition PASSED 7 Jun 2026),
+WTD 32003L0088 (PDF) + CJEU C-55/18 (62018CJ0055), TPWC 32019L1152,
+VAT Directive 32006L0112 Art 226, GDPR 32016R0679 Arts 9/88.
+  PAY    Art 7 (no size threshold, two months): no sex field, no equal-value
+         category -> the average by sex cannot be computed.
+  HOURS  six daily totals Mon-Sat, no start/end, NO DAY SEVEN -> WTD 3/5/6
+         cannot be evaluated, and C-55/18 makes recording the duty.
+  INVOICE ids are 'INV-'+Date.now() last 4 digits: not sequential (Art
+         226(2)) and not unique (1 in 10,000 per pair). The invoice id is the
+         GL source_id. Employee ids the same shape. A DEFECT regardless of
+         jurisdiction -- not fixed, sairnbiz.html was audit-only.
+  HEALTH the OSHA log is Art 9 data; lawful basis is national (9(2)(b), 88).
+
+------------------------------------------------------------------------------
+ITEM 6 -- the push
+------------------------------------------------------------------------------
+Two land loops, no force. A register rebase conflict was resolved by taking
+upstream's register and re-adding the record with the tool -- never by
+staging a conflicted file. Live pages fetched with tools/sairn_http.py (all
+three carry the change) and all three drives re-run against them.
+
+------------------------------------------------------------------------------
+REVIEW
+------------------------------------------------------------------------------
+Guardian v2, 31 checks (read from the skill's own heading), over 078f3cf3 and
+2eb738de: NO FAIL. Advisories A1 (raw id in an onclick) and A2 (pending paint
+outside the try) applied in 7951d9aa, re-driven. A3 (overlap paints rules as
+could-not-run beside a pending table) left open.
+
+------------------------------------------------------------------------------
+NOT DONE / NOT PROVEN
+------------------------------------------------------------------------------
+* No server-side read or write: every drive stubbed the server; no licence key
+  was available, so cert has never been written to the real endpoint.
+* No consolidated EU text: REACH, VAT and WTD are original OJ text.
+* No national transposition of any Directive; no US source read this batch.
+* No legal review; no screen-reader test.
+* register --check exits 1 on cody's ce15ddaa6a3c -- not mine, not touched.
