@@ -229,14 +229,22 @@ sweep found: a snapshot of a five-session repository has a shelf life measured
 in minutes. **b28's own digest used `context_verify.py`**, so from here the
 figure is a tool's output rather than an estimate.
 
-### 4.9 → hank holds it. The b27 path-manifest override is still there
+### 4.9 ~~→ hank holds it. The b27 path-manifest override is still there~~ — PRUNED
 
-`docs/sairn-path-manifest.json`'s `assigned_overrides.cody` is nine exact paths
-scoped to **b27** and says so in its own `_why`. b27's handoff said to prune it
-when that batch closed. **It was NOT pruned, because hank's active claim holds
-that file** — and reaching into it is the boundary problem b28 is otherwise
-careful about. **An override nobody prunes becomes an allowlist.** Next step: one
-deletion of that key, by hank or by cody once hank releases.
+**CLOSED IN THIS BATCH, and the opening it took is worth recording.** b27's
+handoff §6.9 said *"an override nobody prunes becomes an allowlist"* and then
+could not prune it, because hank's active claim held
+`docs/sairn-path-manifest.json`. **That claim has since expired and hank's b25
+claim does not list the file**, checked with `sairn_claim.py list --full` rather
+than assumed — so the prune happened here, in the same edit that declared b28's
+paths. **Six of b27's nine paths are DROPPED**, not carried forward: b28 does not
+touch them.
+
+**REPLACED RATHER THAN EXTENDED, and that is the whole point.** An override list
+that is only ever appended to becomes the split not existing, one batch at a
+time. The new `_why` key says the next batch should replace it the same way, and
+cites b27 as the evidence that *"remove it when the batch closes"* does not
+happen on its own.
 
 ### 4.10 Still open from b27, unchanged
 
@@ -394,11 +402,46 @@ real run, not this file's.
 
 ---
 
-## 7. The push
+## 7. The push — FOUR GATES REFUSED AND ALL FOUR WERE SATISFIED AT CAUSE
 
-PUSH_GATES_PLACEHOLDER
+**NOTHING WAS OVERRIDDEN. No `SAIRN_SKIP`, no `SAIRN_GATE_EXEMPT`, no
+`SAIRN_SEED_GATE`, no call to `tools/gate_skip.py`.**
 
----
+1. **`derived-docs`** — `docs/MASTER-PLAN.md`, `docs/TOOLING-INVENTORY.md` and
+   `docs/traceability-matrix.md` stopped matching their sources at this tip.
+   Regenerated with the three generators the refusal names. **Twice**: two of
+   them conflicted on the second rebase, resolved by taking the UPSTREAM side,
+   asserting zero conflict markers, and **regenerating afterwards** — a
+   generated document is never merged by hand, and `git add` on a conflicted
+   file is how you RESOLVE one, so it cannot tell "resolved" from "never
+   looked". That is b27's 15-conflict-markers defect, avoided by naming the two
+   files explicitly instead of `git add -A`.
+2. **`tier-a`** — six Tier A resources with no open obligation
+   (`dnt_appointments`, `dnt_patients`, `rf_claim_agreements`,
+   `rf_claim_photos`, `rf_invoices`, `rf_proposals`; five more were already
+   covered). **Obligation OPENED**, assigned to hank, naming **five things to
+   try to break** rather than a summary — including the claim that four of the
+   six are named only because the drift arms MENTION them and no code serving
+   them changed, which is exactly the kind of claim a reviewer should check
+   against the diff rather than take on my word.
+3. **`path-scope`** — resolved by the manifest, not a skip. See §4.9: the b27
+   override **replaced**, six paths dropped, `api/_lib/countersign.js` declared
+   with the reason it is not one of hank's `api/*-countersign.js` endpoints.
+   Re-measured after: **31 of 31 paths IN SCOPE.**
+4. **`register-feed` could not tell what was being pushed** — a clone 3 ahead
+   and 11 behind, so git was about to refuse the non-fast-forward itself and the
+   hook got no ref lines. **Not a finding about the commits**, and the gate says
+   so. Fixed by `git pull --rebase origin main`.
+
+**AND ONE PRE-COMMIT GATE, before any of these:** the live-probe residue audit
+refused `LIVE_PROBE_CLASS = 'read-only'` — see §5, item 5. Re-declared
+`VERIFICATION`; audit exit 0.
+
+**ONE THING IS LEFT ON THE TREE AND IT IS RECORDED RATHER THAN HIDDEN.** The
+push gate writes its own `docs/scrutiny-flags.json` row on each attempt. It was
+stashed once to allow a rebase, then committed with the batch, so it is content
+in this push rather than a dirty tree — unlike b27, which left it as a stash
+entry for the next session to drop.
 
 ## 8. Scratch, transcript and where the detail is
 
