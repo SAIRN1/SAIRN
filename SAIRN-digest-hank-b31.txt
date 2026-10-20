@@ -1,0 +1,17 @@
+HANK b31 DIGEST -- 2026-10-20 -- sync button removed + live-verified; credential SQL written, not run
+CONTEXT 58.8% of 1,000,000 -- 587,575 tokens, measured.
+STATUS: LANDED on origin/main (re-derive the tip), NOT FORCED, zero overrides. Fix sha 6131e5a90.
+CONCEPT: a control that can never do what its label says is removed, not left to fail or "fixed".
+1. SYNC BUTTON REMOVED: button, Last sync element, sairnSyncAll, sairnUpdateLastSync, SAIRN_BRIDGE.
+   FOUND: the onclick stamped "Last sync" on every click regardless of the server -- b29 missed it
+   because its live drive called the function, not the button. Live after deploy: all gone, CSV intact.
+2. CREDENTIAL SQL: sql/audit_owner_and_demo_caregiver_credentials_2026-10-20.sql. NOT RUN.
+   audit-owner on SEN-AUDIT-2026 and LAW-AUDIT-2026, demo-caregiver on SEN-PINNACLE-2026.
+   PINs: in the report and the SQL header (audit/demo licences, platform precedent).
+   Platform hashPin + verifyPin round trip; PR 3.4 guard; salt check; idempotent.
+DECISION-NEEDED (Michael): run the SQL; then the straight-time-floor probe (handoff item B).
+   The trust-lock probe signs in as hank-b23-owner, not audit-owner (handoff item C).
+NEXT: handoff sec.4, items A-E.
+CHANGED: stonedesk.html, api/b29-stonedesk-sync-honesty.test.js, 1 SQL file, notes, ledgers.
+EVIDENCE-path: docs/2026-10-20-hank-b31-notes.md
+UNVERIFIED: the SQL has never executed; both live probes still pending it.

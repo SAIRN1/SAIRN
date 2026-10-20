@@ -1,0 +1,30 @@
+HANK b31 REPORT -- 2026-10-20 -- sync button removed and live-verified; credential SQL written, not run
+
+3. CONCEPT (stated before the diff): a control that can never do what its label says is removed -- not
+   left to fail, and not "fixed" into a write nobody reads.
+
+1. SYNC BUTTON: REMOVED from stonedesk.html -- the button, its "Last sync" element, sairnSyncAll,
+   sairnUpdateLastSync and its on-load restore, and the SAIRN_BRIDGE constant only it used. CSV Export
+   untouched. FOUND ON THE WAY: the onclick was sairnSyncAll();sairnUpdateLastSync(), and the second call
+   stamped "Last sync" on every click whatever the server said -- so b29's fix never reached the screen.
+   b29's live drive called the function instead of clicking the button; that is my miss, recorded in the
+   register. Live after deploy: no button, no sairnSyncAll, no Last sync element, no full-sync request;
+   CSV Export present. Test re-aimed: 6 arms assert the absence, each red against the old page.
+
+2. CREDENTIAL SQL: sql/audit_owner_and_demo_caregiver_credentials_2026-10-20.sql. NOT RUN -- Michael runs
+   it in Supabase. Hashes from the platform's own hashPin(), checked with its own verifyPin(); PR 3.4
+   recoverability guard on each licence; a salt check proving each PIN below is the one stored; one
+   transaction; idempotent (a re-run re-applies the same three rows and PINs).
+
+   THE CREDENTIALS (also in the SQL header, as the platform's precedent does for audit and demo licences):
+     SEN-AUDIT-2026     employee_id audit-owner     role owner      PIN 83816873
+     LAW-AUDIT-2026     employee_id audit-owner     role owner      PIN 75380237
+     SEN-PINNACLE-2026  employee_id demo-caregiver  role caregiver  PIN 79948511
+
+   ASSUMPTION: "a caregiver demo account for SAIRNsenior" was placed on the DEMO licence SEN-PINNACLE-2026.
+   The straight-time-floor probe creates its own caregiver on SEN-AUDIT-2026, so it does not need this one.
+   NOTE: tools/law_trust_lock_live_probe.py signs in as hank-b23-owner, not audit-owner, so the LAW PIN
+   above does not drive it until that probe takes the owner id from the environment (handoff item C).
+
+4. PUSHED without force, confirmed by sha; the register cites the landed fix sha 6131e5a90.
+   Handoff: SAIRN-handoff-hank-b31.md.
