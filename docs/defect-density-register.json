@@ -35174,6 +35174,67 @@
         }
       ],
       "recurrence_open": "NOT CLOSED. (1) THE FIRST-PAINT FLASH IS NARROWED, NOT ELIMINATED: rCredentials(null) still runs before the evaluation resolves, so a sub-second render of \"the reason was not recorded\" remains. Closing it needs a pending state the panel does not have. (2) NOTHING SWEEPS FOR THE CLASS. sdnEvaluateCredentials was found by hand; no check anywhere asks whether every fetch path in a file writes the same per-resource error record, and a file with one such facility and several fetch paths is the normal shape on this platform. (3) THE SERVER HALF IS UNREAD -- dnt_credentials/evaluate lives in api/sd-data.js, which is cody's, so no claim is made about whether the board itself is right when it DOES arrive."
+    },
+    {
+      "commit": "aabc1c659b5b",
+      "date": "2026-10-20",
+      "subject": "control(sabotage b27): a probe must prove the path under test ran before it reports a verdict",
+      "files": [
+        "tools/push_gate_path_scope_sabotage_probe.py",
+        "tools/sabotage.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 368,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "probe-control",
+      "summary": "cc's b26 sabotage harness for pre-push CHECK 5d REPORTED A VERDICT ON A TEST IT NEVER RAN, and reported it in the friendliest possible direction: population hank came back ALLOWED, which reads as \"the gate did not refuse an out-of-scope path\". The defective construct is named rather than paraphrased: the harness planted the out-of-scope path, ran git add plus git commit, and then compared h.returncode from driving tools/sairn_push_gate_hook.py --pre-push WITHOUT FIRST ASSERTING THE PLANTED PATH WAS IN origin/main...HEAD. The pre-COMMIT hook had refused that commit -- commit_tool_entry_check, a tools/*.py with no tooling_inventory entry -- so the commit never happened, the outgoing range was empty, and the pre-push hook correctly allowed a clean tree. Four of the five cases were real refusals and the fifth was untested, so the figure 4/5 was four passes and one non-answer presented as one number. THE PRE-EXISTING LIBRARY DID NOT COVER THIS: tools/sabotage.py already applies PRESENCE, UNIQUENESS and MATERIALISATION to every plant, and write_and_verify would have confirmed the plant was in the bytes on disk, which it was the whole time -- \"is the defect in the file?\" is a different question from \"did the thing under test look at the file?\", and nothing in the module asked the second. FIX, two parts because either alone is thin. (1) tools/sabotage.py gains verdict(decided, subject, examined, label), the only function in the module that hands back a verdict, which returns INCONCLUSIVE unless the subject appears in what the test path ACTUALLY examined -- the outgoing range here, not the probe's intent and not the disk -- refuses INCONCLUSIVE as an INPUT so a caller cannot skip the evidence and declare it, and refuses an empty subject so nothing matches everything; plus tally(rows), which lands an INCONCLUSIVE row in its own bucket, never in passed and never in failed, prints all three counts whether or not they are zero, exits 2 rather than 0 when anything did not run, and prints DO NOT QUOTE n/m naming the untested cases, because the b26 write-up's own instruction not to quote 4/5 was a sentence a human had to remember. (2) The harness is now a file, tools/push_gate_path_scope_sabotage_probe.py, and plants with git commit --no-verify: THE PLANT IS SETUP AND THE SUBJECT UNDER TEST IS THE PRE-PUSH HOOK, so letting a different hook adjudicate the setup makes the probe's coverage depend on rules it is not testing. Changing hank's plant to a .txt, which is what b26 did, only moves the dependency to whichever rule has not been written yet. ARMS: tools/sabotage.py --selftest, 15 new arms across sections 7 and 8 including the b26 shape itself (exit 0 over an EMPTY range is INCONCLUSIVE, and the string ALLOWED is asserted NOT to come back), a non-empty range that merely lacks the subject, the INCONCLUSIVE-as-input refusal, the empty-subject refusal, a counterfactual arm showing the same inputs yield a VERDICT without the ran-check, and on tally the 4-plus-1 table at exit 2 with DO NOT QUOTE present, a real failure outranking an unknown with both still printed, and an EMPTY table reported as 0 of 0 rather than as a pass. tools/push_gate_path_scope_sabotage_probe.py --selftest locks the criteria against fixtures before the live run, 10 arms, and includes REFUSED-UNNAMED as a FAIL: a refusal that does not name the planted path is not reviewable. RE-DRIVEN LIVE after the fix, from a scratch worktree, each population provisioned by its own marker: 5 of 5 decided and matched, 0 did not match, 0 INCONCLUSIVE, exit 0. That is the real count and it supersedes b26's 5/5, which was correct but came from a harness that could not have told anyone if it were not.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/push_gate_path_scope_sabotage_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the harness was written and run entirely inside cc's b26 session scratchpad and was never committed, so there is no injection commit to cite; the scratchpad copy survives at ...c44c9acc.../scratchpad/b26/sabotage.py and its lines 53-66 are the inline ran-check added AFTER the false pass, not the defective version"
+      },
+      "contributing_factors": [
+        {
+          "factor": "The harness read an exit code as a verdict. h.returncode from the pre-push hook is a statement about WHATEVER TREE THE HOOK WAS HANDED, and the harness treated it as a statement about the plant without ever establishing the two were the same tree.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "sabotage.verdict() is now the only route to a verdict and requires the subject to appear in the examined text; the probe passes the outgoing range origin/main...HEAD as that evidence."
+        },
+        {
+          "factor": "The plant's setup was adjudicated by a hook the probe was not testing. commit_tool_entry_check refused the commit for an unrelated and entirely correct reason, and the probe's coverage silently became conditional on rules outside its subject.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The plant commits with --no-verify. b26's own fix was to change hank's plant to a .txt, which moves the dependency to the next rule nobody has written yet rather than removing it."
+        },
+        {
+          "factor": "An empty outgoing range and a clean-and-correctly-allowed push are the same exit code. There is no observable difference between the gate passing and the gate having nothing to judge, so the untested case could only ever surface as a wrong verdict.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "INCONCLUSIVE is now a third state with its own bucket in tally(), and the arm asserting an exit 0 over an EMPTY range yields INCONCLUSIVE is the one that reproduces this exact shape."
+        },
+        {
+          "factor": "The harness was a scratchpad script with no name, no selftest and no criteria lock, so nothing could ablate it and nobody could re-run its result. The same scratchpad cleanup destroyed twelve uncommitted FMEA drafts in the same batch.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "It is tools/push_gate_path_scope_sabotage_probe.py with a --selftest that locks the criteria against fixtures in both directions before the live run, and a tooling_inventory entry saying what it CATCHES."
+        },
+        {
+          "factor": "The 4/5 figure was carried in prose with a human-readable instruction not to quote it. A warning sentence in a handoff is not a mechanism, and the number itself was still a single number over a mixed population.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "tally() prints passed, failed and INCONCLUSIVE as three separate counts whether or not any is zero, exits 2 when anything did not run, and emits DO NOT QUOTE n/m naming the untested cases."
+        }
+      ],
+      "recurrence_open": "verdict() and tally() are OPT-IN and nothing makes a probe call them. The b26 recurrence_open said no other probe in the repo asserts its own plant landed, and that is still true of all of them -- this adds the primitive and one caller, not a sweep. tools/sabotage_control_check.py MEASURES the plant-landed class and does not yet recognise or require the ran-check, so the platform figure it reports is silent on this failure entirely. Nothing refuses a probe that drives a hook over a range it never inspected."
     }
   ],
   "started": "2026-09-09",
