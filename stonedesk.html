@@ -12827,15 +12827,15 @@ function fmRenderMap(containerId, stops){
   // said to be left off rather than dropped without a word.
   var MAXWAY=8;
   var mid=addrs.length>2?addrs.slice(1,-1):[];
-  var cut=mid.length>MAXWAY;
-  if(cut) mid=mid.slice(0,MAXWAY);
+  var dropped=Math.max(0,mid.length-MAXWAY);
+  if(dropped) mid=mid.slice(0,MAXWAY);
   var u='https://www.google.com/maps/dir/?api=1&travelmode=driving&destination='
     +encodeURIComponent(addrs[addrs.length-1]);
   if(addrs.length>1) u+='&origin='+encodeURIComponent(addrs[0]);
   if(mid.length) u+='&waypoints='+mid.map(encodeURIComponent).join('%7C');
   el.innerHTML='<div class="fm-map-placeholder"><a href="'+escHtml(u)+'" target="_blank" rel="noopener noreferrer">Open this route in Google Maps</a>'
     +'<div style="margin-top:6px">'+addrs.length+' stop'+(addrs.length===1?'':'s')+', in the order listed.'
-    +(cut?' Stops after the '+(MAXWAY+2)+'th are left off the link.':'')+'</div></div>';
+    +(dropped?' '+dropped+' stop'+(dropped===1?'':'s')+' between the first '+(MAXWAY+1)+' and the last '+(dropped===1?'is':'are')+' left off the link.':'')+'</div></div>';
 }
 
 // HARD GATE (2026-08-06): a stop cannot be marked Done until a QC-APPROVED
