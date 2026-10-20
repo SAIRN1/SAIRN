@@ -17,6 +17,18 @@
 //
 // ALSO HERE: sendToNetwork is gone and the memory write it sat beside is not.
 //
+// ── RE-AIMED IN b31: THE BUTTON IS GONE, SO SECTION A NOW ASSERTS ITS ABSENCE ──
+// Michael's decision: remove "Sync All Apps" rather than leave a control that
+// can never succeed (nothing reads bridge_data) or "fix" it into a latest-wins
+// write that would overwrite the expense queue. CONCEPT: a control that can
+// never do what its label says is removed. b29's arms tested the function's
+// honesty; the function no longer exists, so they would throw on the lift. They
+// are replaced, not deleted silently. ONE THING b29 MISSED, found while
+// removing it: the button's onclick ALSO called sairnUpdateLastSync()
+// unconditionally, so the time was stamped on every click whatever the server
+// said -- b29's live drive called window.sairnSyncAll() directly and never
+// clicked the button, which is why it did not see that.
+//
 // Exit: 0 all arms passed - 1 an arm FAILED
 
 'use strict';
@@ -39,47 +51,15 @@ function lift(src, startMarker, endMarker) {
   if (j === -1) throw new Error('end marker not found after: ' + startMarker);
   return src.slice(i, j + endMarker.length);
 }
-const SYNC_SRC = lift(HTML, 'window.sairnSyncAll = async function()', '\n};');
-
-async function runSync(fnSrc, fetchImpl) {
-  const toasts = [];
-  const el = { textContent: 'Last sync: --' };
-  const ctx = {
-    window: {}, toasts,
-    sairnToast: (m) => toasts.push(m),
-    SAIRN_BRIDGE: 'https://example.invalid/api/bridge', SAIRN_APP_ID: 'stonedesk',
-    document: { getElementById: (id) => (id === 'sairn-last-sync' ? el : null) },
-    fetch: fetchImpl, Date, console
-  };
-  vm.createContext(ctx);
-  vm.runInContext(fnSrc, ctx);
-  await ctx.window.sairnSyncAll();
-  return { toasts, last: el.textContent };
-}
-const answer = (status) => async () => ({ ok: status >= 200 && status < 300, status });
-
 (async () => {
-  section('A. sairnSyncAll reports what the server said');
-  for (const st of [400, 401, 500]) {
-    const r = await runSync(SYNC_SRC, answer(st));
-    ok('A1[' + st + ']. a ' + st + ' is reported as a FAILURE naming the status',
-      r.toasts[r.toasts.length - 1].indexOf('Sync failed') === 0 && r.toasts[r.toasts.length - 1].indexOf('HTTP ' + st) !== -1,
-      JSON.stringify(r.toasts));
-    ok('A2[' + st + ']. ..."All apps synced" is NEVER shown', r.toasts.every((t) => t.indexOf('All apps synced') === -1), JSON.stringify(r.toasts));
-    ok('A3[' + st + ']. ...and the Last sync time is LEFT ALONE', r.last === 'Last sync: --', r.last);
-  }
-  const good = await runSync(SYNC_SRC, answer(200));
-  ok('A4. CONTROL: a 200 still says "All apps synced" and stamps the time -- the fix did not break success',
-    good.toasts[good.toasts.length - 1] === 'All apps synced' && /^Last sync: /.test(good.last) && good.last !== 'Last sync: --', JSON.stringify(good));
-  const down = await runSync(SYNC_SRC, async () => { throw new Error('offline'); });
-  ok('A5. a transport failure still lands in the catch, unchanged', down.toasts[down.toasts.length - 1].indexOf('Bridge offline') === 0, JSON.stringify(down.toasts));
-
-  section('A-ablation. remove the ok check and the same 400 must read as success again');
-  const GUARD = /\n\s*if \(!syncRes\.ok\) \{[\s\S]*?\n\s*\}\n/;
-  ok('AB0. the guard is present in the shipped source (the ablation has something to remove)', GUARD.test(SYNC_SRC));
-  const ablated = await runSync(SYNC_SRC.replace(GUARD, '\n'), answer(400));
-  ok('AB1. WITHOUT the guard a 400 toasts "All apps synced" and stamps the time -- the bug, reproduced',
-    ablated.toasts.indexOf('All apps synced') !== -1 && ablated.last !== 'Last sync: --', JSON.stringify(ablated));
+  section('A. the sync button and everything only it used are gone (b31)');
+  ok('A1. no sairnSyncAll definition remains', HTML.indexOf('window.sairnSyncAll =') === -1 && HTML.indexOf('function sairnSyncAll') === -1);
+  ok('A2. no onclick calls sairnSyncAll or sairnUpdateLastSync', !/onclick="[^"]*(sairnSyncAll|sairnUpdateLastSync)\(/.test(HTML));
+  ok('A3. no sairnUpdateLastSync definition remains (it stamped the time unconditionally)', HTML.indexOf('function sairnUpdateLastSync') === -1);
+  ok('A4. no "Last sync" element remains for anything to stamp', HTML.indexOf('id="sairn-last-sync"') === -1);
+  ok('A5. no request of type full-sync is built anywhere in the page', HTML.indexOf("type:'full-sync'") === -1);
+  ok('A6. CONTROL: the CSV Export button beside it is still there -- the removal did not take the container',
+    HTML.indexOf('onclick="sairnExportCSV()"') !== -1 && HTML.indexOf('window.sairnExportCSV = function()') !== -1);
 
   section('B. sendToNetwork is gone; the memory write beside it is not');
   ok('B1. no sendToNetwork definition or call remains in stonedesk.html', HTML.indexOf('sendToNetwork') === -1);

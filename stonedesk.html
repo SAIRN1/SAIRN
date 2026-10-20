@@ -19725,9 +19725,14 @@ if(typeof switchCamTab === 'undefined') window.switchCamTab = function(t){  };
   <div class="sairn-suite-tile-desc">Funeral Homes</div>
 </div></div>
     <div class="sairn-suite-btns">
-      <button class="sairn-suite-btn" onclick="sairnSyncAll();sairnUpdateLastSync()">🔄 Sync All Apps</button>
+      <!-- "Sync All Apps" and its "Last sync" stamp REMOVED 2026-10-20 (hank b31,
+           Michael's decision). CONCEPT: a control that can never do what its label
+           says is removed, not left to fail and not "fixed" into a write nobody
+           reads. Nothing reads bridge_data, and push is latest-wins on one row, so
+           a working sync would have overwritten the expense queue. The onclick
+           also called sairnUpdateLastSync() unconditionally, so even after b29 the
+           time was stamped on every click whatever the server said. -->
       <button class="sairn-suite-btn out" onclick="sairnExportCSV()">📊 CSV Export</button>
-      <span style="font-size:12px;color:#94A3B8;align-self:center" id="sairn-last-sync">Last sync: --</span>
     </div>
   </div>
   <!-- Copy corrected 2026-08-24. It previously read: "All connected apps
@@ -19865,7 +19870,6 @@ if(typeof switchCamTab === 'undefined') window.switchCamTab = function(t){  };
 (function() {
 const SAIRN_APP_ID    = 'stonedesk';
 const SAIRN_PROXY     = 'https://sairn.vercel.app/api/claude';
-const SAIRN_BRIDGE    = 'https://sairn.vercel.app/api/bridge';
 
 // ---- STATE ----
 let _fqStep      = 1;
@@ -19942,35 +19946,7 @@ function sairnInitSig() {
 // The suite and pricing modals do not capture signatures.
 
 
-// ---- BRIDGE SYNC ----
-window.sairnSyncAll = async function() {
-  sairnToast('Syncing all connected apps...');
-  try {
-    const syncRes = await fetch(SAIRN_BRIDGE, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({from:SAIRN_APP_ID,to:'all',type:'full-sync',timestamp:new Date().toISOString()})
-    });
-    // FIXED 2026-10-20 (hank b29). CONCEPT: a sync is reported as done only when
-    // the server said ok; a non-ok answer is shown as a failure and the "Last
-    // sync" time is left alone. `fetch` RESOLVES on a 4xx/5xx and only rejects on
-    // a transport error, so with no check here a 400 fell straight through to
-    // "All apps synced". It measurably did: the bridge answers this request 400
-    // UNKNOWN_ACTION (it has no `full-sync` action), and the page said the apps
-    // had synced and stamped the time. Found by the hover auditor in b22 and by
-    // fourth independently. The request itself still cannot succeed today, so
-    // the honest message here is the correct one rather than a transient one.
-    if (!syncRes.ok) {
-      sairnToast('Sync failed (HTTP '+syncRes.status+') -- nothing was synced');
-      return;
-    }
-    const ts = new Date().toLocaleTimeString();
-    const el = document.getElementById('sairn-last-sync');
-    if (el) el.textContent = 'Last sync: '+ts;
-    sairnToast('All apps synced');
-  } catch(e) {
-    sairnToast('Bridge offline -- will retry');
-  }
-};
+// ---- BRIDGE SYNC ---- sairnSyncAll REMOVED 2026-10-20 (hank b31), with its button.
 
 window.sairnExportCSV = function() {
   sairnToast('CSV export ready');
@@ -20179,25 +20155,8 @@ function sairnEmptyState(icon,title,sub,btnLabel,btnFn,containerId){
 }
 
 
-// Suite last sync tracker
-function sairnUpdateLastSync(){
-  var ts=new Date().toLocaleTimeString();
-  document.querySelectorAll('[id*="last-sync"],[class*="last-sync"]').forEach(function(el){
-    el.textContent='Last sync: '+ts;
-  });
-  var key=(typeof SAIRN_APP_ID!=='undefined'?SAIRN_APP_ID:'sairn')+'_last_sync';
-  stRaw(key,ts);
-}
-// Restore last sync on load
-document.addEventListener('DOMContentLoaded',function(){
-  var key=(typeof SAIRN_APP_ID!=='undefined'?SAIRN_APP_ID:'sairn')+'_last_sync';
-  try{
-    var ts=localStorage.getItem(key);
-    if(ts) document.querySelectorAll('[id*="last-sync"],[class*="last-sync"]').forEach(function(el){
-      el.textContent='Last sync: '+ts;
-    });
-  }catch(e){}
-});
+// sairnUpdateLastSync and its on-load restore REMOVED 2026-10-20 (hank b31): their
+// only element was the Sync All Apps "Last sync" stamp, removed with the button.
 </script>
 
 <!-- SAIRNscan embedded -->
