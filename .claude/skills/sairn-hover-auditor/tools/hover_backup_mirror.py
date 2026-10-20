@@ -804,7 +804,19 @@ def record_drill(source, passed, detail, anchor):
                             'source': source, 'passed': bool(passed),
                             'detail': detail,
                             'anchor_seq': anchor and anchor.get('seq'),
-                            'anchor_hash': anchor and anchor.get('tip_hash')}) + '\n')
+                            'anchor_hash': anchor and anchor.get('tip_hash'),
+                            # h1 b71: WHICH push this drill discharged. Without
+                            # it drill_due() cannot tell "due and not done"
+                            # from "due and already done at this very push
+                            # count", and kept reporting DUE after a PASSING
+                            # drill until the next push moved the counter.
+                            # Observed this batch: the drill passed at push 68
+                            # and --drill-due still said DUE. It erred toward
+                            # MORE checking, which is the safe direction and
+                            # why this is a clarity fix rather than a failure
+                            # -- but an indicator that cannot be satisfied is
+                            # one nobody reads for long.
+                            'push_count': int(load_config().get('push_count') or 0)}) + '\n')
 
 
 def drill_due():
@@ -814,6 +826,7 @@ def drill_due():
     cfg = load_config()
     pushes = int(cfg.get('push_count') or 0)
     last_at = None
+    last_push = None
     try:
         with open(ANCHORS_FILE, encoding='utf-8') as f:
             for line in f:
@@ -821,6 +834,7 @@ def drill_due():
                     row = json.loads(line)
                     if row.get('type') == 'drill' and row.get('passed'):
                         last_at = row.get('at')
+                        last_push = row.get('push_count')
     except (OSError, ValueError):
         pass
     if not last_at:
@@ -833,6 +847,14 @@ def drill_due():
     if age >= 7:
         return (True, 'last passing drill is %d day(s) old (weekly cadence)' % age)
     if pushes and pushes % 4 == 0:
+        # ALREADY DISCHARGED AT THIS PUSH COUNT -> not due. A drill row
+        # without push_count predates b71 and is treated as NOT discharging
+        # the mark, which keeps the old behaviour for old rows rather than
+        # retroactively satisfying a mark no drill was recorded against.
+        if last_push is not None and int(last_push) == pushes:
+            return (False, 'the every-fourth-push mark at push_count %d was '
+                            'already discharged by a PASSING drill %d day(s) '
+                            'ago' % (pushes, age))
         return (True, 'push_count %d hit the every-fourth-push mark' % pushes)
     return (False, 'last passing drill %d day(s) ago, push_count %d' % (age, pushes))
 
