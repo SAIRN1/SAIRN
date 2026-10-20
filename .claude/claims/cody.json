@@ -4222,8 +4222,8 @@
       "task": "b30: split EXTRA_ACTIONS into write-class and compute-only and cap the payload gate per (resource,action) instead of per resource -- cody's own b29 finding that the gate reads only action equals write; CONFIRM BY DIFF which real commit the dangling b27 citation ce15ddaa6a3c should name and route the one-field reseat to fourth, who holds docs/defect-density-register.json on a live claim -- the diagnosis is done here and the EDIT is not; split SAIRN-ACTIVE-WORK-cody.md at 795KB into closed parts under the 400KB ceiling; HOLD the CLAUDE.md:33 handoff-naming recording for cc's decision rather than acting unilaterally; push. FILES: api/sd-data.js api/_resources/index.js api/b30-cap-per-action.test.js api/b28-photo-cap.test.js SAIRN-ACTIVE-WORK-cody.md SAIRN-ACTIVE-WORK-cody-closed-1.md docs/2026-10-20-cody-b30-notes.md SAIRN-handoff-cody-b30.md SAIRN-report-cody-b30.txt SAIRN-digest-cody-b30.txt NOT-docs-defect-density-register-json-FOURTHS-ROUTED NOT-CLAUDE-md-HELD-FOR-CC NOT-dot-claude-skills-HELD-FOR-CC NOT-sql-ccs NOT-tools-shared-REPORT-ONLY NOT-html-fourths",
       "claimed_at": "2026-10-20T11:28:19Z",
       "claimed_at_epoch": 1792495699.5565062,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T12:29:30Z",
       "files": [
         "SAIRN-ACTIVE-WORK-cody-closed-1.md",
         "SAIRN-ACTIVE-WORK-cody.md",
