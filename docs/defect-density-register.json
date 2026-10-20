@@ -35731,6 +35731,64 @@
       "recurrence_open": "NOT CLOSED. (1) Vendor ids use the same shape (\"V\"+Date.now() last 4, sairnbiz.html saveVendor) and were not in scope. (2) Two TABS of one browser minting in the same instant share the counter and can race. (3) Nothing sweeps the platform for Date.now()-derived ids; stonedesk.html has INV-+Date.now() at two sites."
     },
     {
+      "commit": "e9083a1461bd",
+      "date": "2026-10-20",
+      "subject": "fix(stonedesk b29): \"All apps synced\" after a 400, and the AI question+answer pushed to an endpoint that refuses it",
+      "files": [
+        "api/b29-stonedesk-sync-honesty.test.js",
+        "api/bridge.js",
+        "docs/2026-10-20-hank-b29-notes.md",
+        "stonedesk.html"
+      ],
+      "lines_added": 151,
+      "lines_removed": 20,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "StoneDesk's sairnSyncAll toasted 'All apps synced' and stamped the Last sync time after the bridge answered 400, because fetch resolves on a 4xx and the code never read the response; measured on the deployed page before the fix. It now reports 'Sync failed (HTTP n)' and leaves the time alone. The same commit deletes sendToNetwork, which posted the user's AI question and answer to the bridge on every exchange and was refused each time.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "57db94fbf375",
+        "date": "2026-06-22",
+        "subject": "Fix JavaScript syntax errors in stonedesk.html - 94/106 scripts passing Node syntax check",
+        "lag_days": 120
+      },
+      "citation_note": "The nearest rule is 1.11 (a check that cannot run must not report a pass), but this is a handler that cannot SEE a refusal rather than a check that did not run; no standing rule covers an unchecked fetch response.",
+      "contributing_factors": [
+        {
+          "factor": "sairnSyncAll awaited a fetch and never read the response. fetch resolves on a 4xx/5xx and only rejects on a transport error, so the try/catch could not see the bridge's 400 and the code after it ran as if the sync had worked: toast 'All apps synced' and a stamped 'Last sync' time.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The response is checked with res.ok; a non-ok answer toasts 'Sync failed (HTTP n) -- nothing was synced', returns before the time is stamped. 17 arms lift the shipped function; the ablation reproduces the bug."
+        },
+        {
+          "factor": "The request has never been able to succeed: api/bridge.js has no full-sync action. A call that cannot work and a handler that cannot see failure are two defects that hide each other, so for months the page showed a success for an operation that did not exist.",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "The call is kept so the user sees an honest failure; deleting it would remove the button's only visible behaviour without deciding what a sync should do. That decision belongs to whoever owns the feature."
+        },
+        {
+          "factor": "Found twice and fixed neither time: the hover auditor reported it in b22 and fourth independently at :19938/19939; both reports were routed to a file that was claimed, and nothing in a handoff turns a routed finding into a scheduled one.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Fixed here, in the file hank holds an assigned override for, with the routing history recorded in this record."
+        },
+        {
+          "factor": "sendToNetwork, in the same file and the same class, posted the user's AI question (100 chars) and answer (200 chars) to the same refusing endpoint on every exchange, caught by a bare .catch.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Deleted with its single call; api/network.js accepts identifier-shaped patterns only by design, so the endpoint is not taught to take free text. The anonymised path sendNetworkInsight is unchanged."
+        }
+      ],
+      "recurrence_open": "The sync button still cannot succeed because the bridge has no full-sync action, and the catch arm still says 'will retry' although nothing retries."
+    },
+    {
       "commit": "ebe472e14e9b",
       "date": "2026-10-20",
       "subject": "fix(sairncode b42): a rejected coded item was counted among those that \"cleared every check\"",
