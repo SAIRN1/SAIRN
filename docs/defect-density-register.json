@@ -35125,6 +35125,63 @@
       "recurrence_open": "NOT CLOSED. (1) addCredential() still calls rCredentials() after a local add, which replaces a real board with the not-checked view during the write -- a different defect, not fixed here. (2) Out-of-order completion is unguarded: two evaluations render in the order they SETTLE, so an older response can overwrite a newer one. (3) Nothing sweeps for the class across the other apps."
     },
     {
+      "commit": "436c11f02500",
+      "date": "2026-10-20",
+      "subject": "fix(claude+stonedesk b27): the limiter reports its mode, the Field Map map stops calling a dead action, and the SEN audit licence + straight-time-floor fixtures are ready",
+      "files": [
+        "api/_lib/ai-rate-limit.js",
+        "api/b21-bridge-unknown-action.test.js",
+        "api/b27-claude-mode-echo-and-log.test.js",
+        "api/b27-sen-straight-time-floor-fixtures.test.js",
+        "api/bridge.js",
+        "api/claude.js",
+        "docs/2026-10-20-hank-b27-notes.md",
+        "docs/2026-10-20-hank-b27-sen-straight-time-floor-fixtures.json",
+        "docs/2026-10-20-hank-b27-sen-straight-time-floor-live-probe.py",
+        "sql/mint_sen_audit_2026.sql",
+        "sql/verify_sen_audit_2026.sql",
+        "stonedesk.html"
+      ],
+      "lines_added": 873,
+      "lines_removed": 16,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "The StoneDesk Field Map map never rendered: fmRenderMap POSTed ?action=maps-static to api/bridge, an action that has never existed on main, so every call was refused and every call sent each stop's customer address to the refusing endpoint; the catch arm blamed a Maps key the request never reached (cut in b26). Replaced by a directions link built from the stops. The same commit makes the AI limiter's resolved mode, configured flag and ceiling readable on the response, since the deployed mode had been unobservable from outside.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the maps-static action was added on a branch that is not an ancestor of main (the same story bridge.js records for maps-optimize), so there is no main commit that introduced the mismatch to cite"
+      },
+      "citation_note": "A caller of an action its callee never had. b21 closed the endpoint half (UNKNOWN_ACTION); no standing rule covers the caller half, which is how this page kept calling it.",
+      "contributing_factors": [
+        {
+          "factor": "stonedesk.html asked api/bridge for ?action=maps-static, an action that was only ever written on a branch and never reached main. Every call answered 400 UNKNOWN_ACTION (401 before b21), so the Field Map map has not rendered, and each call carried every stop's customer address to an endpoint that refused it.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "fmRenderMap no longer calls bridge; it builds a Google Maps directions link from the stops in display order (no key, no server call, addresses leave only on click)."
+        },
+        {
+          "factor": "The catch arm told the reader to check GOOGLE_MAPS_API_KEY, a key the request never reached, so the failure was filed under the wrong layer for as long as it existed.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The catch message was cut to 'Map unavailable.' in b26 and the whole call is gone in b27."
+        },
+        {
+          "factor": "The deployed rate-limit mode could not be read from outside: the response carried no mode, so a 12-call burst could not tell observe from a high ceiling and a misspelled variable was invisible until it bit.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "api/claude.js now echoes rate_limit_mode, rate_limit_configured and rate_limit_limit on any response that reached the limiter; an unauthenticated request still reveals nothing."
+        }
+      ],
+      "recurrence_open": "The map is now a link and not an embedded image, which is a smaller feature than the one the page was written to have; a server-built static map would need a decision about where a Maps key may live."
+    },
+    {
       "commit": "5217024d6958",
       "date": "2026-10-20",
       "subject": "fix(claude+stonedesk b26): ceiling 200->1000 now that absent means enforce, two dead calls out of the Field Map/POS, five FMEA drafts",
@@ -35295,66 +35352,6 @@
       "recurrence_open": "NOT CLOSED. While the timesheet holds SIX days the maximum recordable week is 144 hours, so thresholds 145-167 are equally unreachable and still honoured; the exact bound is the record own maximum and moves to 168 only when day seven lands (held on api/sd-data.js, cody b29)."
     },
     {
-      "commit": "8f2036615c6b",
-      "date": "2026-10-20",
-      "subject": "fix(agent+claude b25): a revoke silently overwritten, a zero-row PATCH logged as a plan change, and two controls that permitted when unset",
-      "files": [
-        "api/_lib/ai-rate-limit-tenant.test.js",
-        "api/_lib/ai-rate-limit.js",
-        "api/_lib/fail-closed-mode.js",
-        "api/agent/register.js",
-        "api/agent/stripe-webhook.js",
-        "api/b25-revoke-race-and-failclosed.test.js",
-        "api/claude.js",
-        "docs/2026-10-20-hank-b25-notes.md"
-      ],
-      "lines_added": 900,
-      "lines_removed": 8,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "THREE defects that all REPORT SUCCESS. (1) api/agent/register.js read an agent's status, refused if revoked, then wrote status=active with an ID-ONLY filter, so a revoke landing in that window was SILENTLY OVERWRITTEN and the caller got ok:true. (2) api/agent/stripe-webhook.js used Prefer: return=minimal, so a PATCH matching NO ROW answered 204 like a successful one and the handler logged 'plan_status set to paid' for a row that does not exist -- the only record that endpoint leaves, read during a billing dispute. (3) SAIRN_CLAUDE_AUTH_MODE and SAIRN_AI_RATE_LIMIT_MODE each defaulted PERMISSIVE when absent AND treated every misspelling as observe, because only an exact 'enforce' took the other branch, and nothing anywhere measured the deployed values",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "--phase"
-      },
-      "contributing_factors": [
-        {
-          "factor": "api/agent/register.js read status, checked it, then wrote with an ID-ONLY filter -- a check-then-act gap wide enough for a revoke to land between the two, and the write had no way to express the condition it had just tested",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "the PATCH carries &status=neq.revoked, a compare-and-set in one statement; arms A1/A2 and ablation D1"
-        },
-        {
-          "factor": "Prefer: return=minimal made the row count UNREADABLE on both the register PATCH and the Stripe webhook PATCH -- PostgREST answers 204 whether it changed one row or none, so even a correct database condition was invisible to the handler",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "both use return=representation and branch on the row count; ablation D2 removes only the handler half and A1 still reddens, D4 restores minimal and B1 reddens"
-        },
-        {
-          "factor": "api/agent/stripe-webhook.js logged plan_status set to the requested value on a zero-row PATCH, and that log line is the ONLY record the endpoint leaves -- Stripe gets 200, never retries, and nothing reconciles the two sides",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "three outcomes on two streams, the success line carrying the row count; it deliberately does not throw, because retrying an event that names a missing row can never succeed"
-        },
-        {
-          "factor": "SAIRN_CLAUDE_AUTH_MODE and SAIRN_AI_RATE_LIMIT_MODE both defaulted PERMISSIVE when absent, and both treated every misspelling as observe because only an exact enforce took the other branch; nothing measured the deployed values",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "api/_lib/fail-closed-mode.js resolves both -- absent, empty or unknown is ENFORCE with configured:false and a reason naming the variable. MEASURED LIVE: the auth half is already enforce in production, and the rate-limit mode is NOT OBSERVABLE from outside at all"
-        }
-      ],
-      "recurrence_open": "the deployed rate-limit mode is NOT OBSERVABLE from outside: the response carries no mode and a burst of 12 calls is equally consistent with observe and with a daily ceiling above twelve. So if SAIRN_AI_RATE_LIMIT_MODE is absent or misspelled in Vercel, this change switches the cost limiter ON at the daily ceiling on deploy. vercel env ls production is the check and it is the first open item in the handoff"
-    },
-    {
       "commit": "8ebeb1213e91",
       "date": "2026-10-20",
       "subject": "fix(reseat b28): a repair is judged on what it CHANGED, not on the state it inherited",
@@ -35416,6 +35413,66 @@
         }
       ],
       "recurrence_open": "PER-RECORD REVERT IS NOT BUILT: if a run does introduce a problem, every re-seat in it is still discarded together, because the pre-image is the whole file. Acceptable while a re-seat is cheap to re-run, and named rather than hidden. AND THE SAME ALL-OR-NOTHING SHAPE IS NOT SWEPT FOR ELSEWHERE -- nothing checks whether another repair or generator tool in tools/ judges itself on a whole-file validator it does not baseline first; this fixed one instance, not the class. FINALLY, ce15ddaa6a3c IS STILL BROKEN and --check still exits 1 platform-wide; that record is cody's to reseat or supersede and this fix does not touch it."
+    },
+    {
+      "commit": "8f2036615c6b",
+      "date": "2026-10-20",
+      "subject": "fix(agent+claude b25): a revoke silently overwritten, a zero-row PATCH logged as a plan change, and two controls that permitted when unset",
+      "files": [
+        "api/_lib/ai-rate-limit-tenant.test.js",
+        "api/_lib/ai-rate-limit.js",
+        "api/_lib/fail-closed-mode.js",
+        "api/agent/register.js",
+        "api/agent/stripe-webhook.js",
+        "api/b25-revoke-race-and-failclosed.test.js",
+        "api/claude.js",
+        "docs/2026-10-20-hank-b25-notes.md"
+      ],
+      "lines_added": 900,
+      "lines_removed": 8,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "THREE defects that all REPORT SUCCESS. (1) api/agent/register.js read an agent's status, refused if revoked, then wrote status=active with an ID-ONLY filter, so a revoke landing in that window was SILENTLY OVERWRITTEN and the caller got ok:true. (2) api/agent/stripe-webhook.js used Prefer: return=minimal, so a PATCH matching NO ROW answered 204 like a successful one and the handler logged 'plan_status set to paid' for a row that does not exist -- the only record that endpoint leaves, read during a billing dispute. (3) SAIRN_CLAUDE_AUTH_MODE and SAIRN_AI_RATE_LIMIT_MODE each defaulted PERMISSIVE when absent AND treated every misspelling as observe, because only an exact 'enforce' took the other branch, and nothing anywhere measured the deployed values",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "--phase"
+      },
+      "contributing_factors": [
+        {
+          "factor": "api/agent/register.js read status, checked it, then wrote with an ID-ONLY filter -- a check-then-act gap wide enough for a revoke to land between the two, and the write had no way to express the condition it had just tested",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the PATCH carries &status=neq.revoked, a compare-and-set in one statement; arms A1/A2 and ablation D1"
+        },
+        {
+          "factor": "Prefer: return=minimal made the row count UNREADABLE on both the register PATCH and the Stripe webhook PATCH -- PostgREST answers 204 whether it changed one row or none, so even a correct database condition was invisible to the handler",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "both use return=representation and branch on the row count; ablation D2 removes only the handler half and A1 still reddens, D4 restores minimal and B1 reddens"
+        },
+        {
+          "factor": "api/agent/stripe-webhook.js logged plan_status set to the requested value on a zero-row PATCH, and that log line is the ONLY record the endpoint leaves -- Stripe gets 200, never retries, and nothing reconciles the two sides",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "three outcomes on two streams, the success line carrying the row count; it deliberately does not throw, because retrying an event that names a missing row can never succeed"
+        },
+        {
+          "factor": "SAIRN_CLAUDE_AUTH_MODE and SAIRN_AI_RATE_LIMIT_MODE both defaulted PERMISSIVE when absent, and both treated every misspelling as observe because only an exact enforce took the other branch; nothing measured the deployed values",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "api/_lib/fail-closed-mode.js resolves both -- absent, empty or unknown is ENFORCE with configured:false and a reason naming the variable. MEASURED LIVE: the auth half is already enforce in production, and the rate-limit mode is NOT OBSERVABLE from outside at all"
+        }
+      ],
+      "recurrence_open": "the deployed rate-limit mode is NOT OBSERVABLE from outside: the response carries no mode and a burst of 12 calls is equally consistent with observe and with a daily ceiling above twelve. So if SAIRN_AI_RATE_LIMIT_MODE is absent or misspelled in Vercel, this change switches the cost limiter ON at the daily ceiling on deploy. vercel env ls production is the check and it is the first open item in the handoff"
     },
     {
       "commit": "cc919c308efd",
