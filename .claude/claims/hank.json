@@ -4308,8 +4308,8 @@
       "task": "b28 live-verification attempts for straight-time-floor and trust-lock, re-confirm pos_sale removal and law-trust-reconcile header. FILES: SAIRN-handoff-hank-b28.md SAIRN-report-hank-b28.txt SAIRN-digest-hank-b28.txt docs/2026-10-20-hank-b28-notes.md",
       "claimed_at": "2026-10-20T11:01:53Z",
       "claimed_at_epoch": 1792494113.4349124,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T11:03:24Z",
       "files": [
         "SAIRN-digest-hank-b28.txt",
         "SAIRN-handoff-hank-b28.md",
