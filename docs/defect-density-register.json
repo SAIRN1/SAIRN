@@ -36155,6 +36155,49 @@
       "recurrence_open": "NOT CLOSED. No suite in tests/ covers the coded-items panel at all; the b42 drive lives in the scratchpad, not the repo."
     },
     {
+      "commit": "dff9268a9625",
+      "date": "2026-10-20",
+      "subject": "fix(stonedesk b45): Field Map -- stops can be locked in place, a manual optimise confirms itself, and a zero saving is said rather than shown as \"~0 min\"",
+      "files": [
+        "stonedesk.html"
+      ],
+      "lines_added": 39,
+      "lines_removed": 12,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "fault-injection",
+      "summary": "From the b44 optimiser check. RED 14/33 -> GREEN 33/33 with 3 mutation controls: a per-stop lock persisted on the person|day order record and sent; the reorder banner shown on manual presses with saving and basis; savings wording separates null, zero, sub-minute and minutes. Coordinates not sent: StoneDesk stores none.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "scratchpad b45/agent_route/drive_route.py (Playwright, /api/sd-data intercepted; not in repo)",
+      "found_by_session": null,
+      "injection": {
+        "commit": "f4208738e2f5",
+        "date": "2026-10-19",
+        "subject": "feat(routing): phase 1 -- the shared primitive, two consumers, and the one branch that is blocked",
+        "lag_days": 1
+      },
+      "citation_note": "No coding rule covers this class: a request field sent with a value nothing can ever set. Proposed: a payload field must have a writer, or not be sent.",
+      "contributing_factors": [
+        {
+          "factor": "The payload carried locked:s.locked===true with no UI or store that could set it, so fixed appointments were never protected.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Lock toggle stored on the order record and copied through."
+        },
+        {
+          "factor": "The confirmation and saving text lived inside if(silent), so the user who pressed the button saw nothing.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Banner on both paths; fmSavedText() wording."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. No stored coordinates, so the great-circle fallback stays unreachable; a lock is dropped if the job installer or date changes; the button was verified through generated HTML, not a click."
+    },
+    {
       "commit": "f92444ddf917",
       "date": "2026-10-20",
       "subject": "fix(hover b71): a passing restore drill now discharges its own push-count mark",
