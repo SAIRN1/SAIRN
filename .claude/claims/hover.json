@@ -1060,6 +1060,21 @@
         "SAIRN-handoff-H1-b73.md",
         "SAIRN-report-H1-b73.txt"
       ]
+    },
+    {
+      "id": "hover-1792496879",
+      "session": "hover",
+      "subject": "hover",
+      "task": "b74: strip-mode defense wired into vendor review path for revocation-clobber, AI rate-limit mode closure state, independent re-run of hank b25 suite, groq cross-vendor sample of every batch diff, planted-bug witness tests, stryker and semgrep review-signal wrappers, push. FILES: .claude/skills/sairn-hover-auditor/ SAIRN-handoff-H1-b74.md SAIRN-report-H1-b74.txt SAIRN-digest-H1-b74.txt NOT-tools-hover2 NOT-api NOT-html NOT-sql NOT-other-sessions-files",
+      "claimed_at": "2026-10-20T11:47:59Z",
+      "claimed_at_epoch": 1792496879.9823797,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-H1-b74.txt",
+        "SAIRN-handoff-H1-b74.md",
+        "SAIRN-report-H1-b74.txt"
+      ]
     }
   ],
   "refusals": [
