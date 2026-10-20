@@ -7,7 +7,7 @@ measured blockers); the live-proof ledger; five FMEA drafts.
 Written before the report, with nothing half-finished. Notes: `docs/2026-10-20-hank-b26-notes.md`.
 
 ## 1. PUSHED STATE
-`origin/main` = **`3ac248927`**, `0 ahead, 0 behind` after a fresh fetch. **NOT FORCED. ZERO gate overrides.**
+`origin/main` = **`3ac248927`** at the time of the fix push, `0 ahead, 0 behind` after a fresh fetch. **NOT FORCED. ZERO gate overrides.** (The handoff/report/digest commit lands after it: re-derive the tip.)
 
 | sha | commit |
 |---|---|

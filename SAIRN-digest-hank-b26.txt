@@ -15,6 +15,6 @@ STATUS: LANDED origin/main 3ac248927 (verify the tip), NOT FORCED.
    +3 unskippable; CLAUDE.md:302 Twelve -> 39.
 DECISION-NEEDED (Michael): OK the two forged-app_id POSTs; mint SEN-AUDIT-2026; run the query.
 NEXT: handoff SAIRN-handoff-hank-b26.md sec.4 has the exact step per open item (A-J).
-GATE NOTE: path-scope refused my own stonedesk.html + docs; fixed by an assigned_overrides
-  entry (remove once fourth reviews) and docs/*-hank-b* names.
-Notes: docs/2026-10-20-hank-b26-notes.md
+CHANGED: ai-rate-limit.js (default 200->1000), 2 test files, stonedesk.html (2 edits), 5 FMEA drafts, manifest override.
+EVIDENCE-path: docs/2026-10-20-hank-b26-notes.md ; docs/2026-10-20-hank-b26-path-scope-probe-run1.log
+UNVERIFIED: the 1000 ceiling vs real traffic; claude.js log fix; straight-time-floor; trust-lock since cody b28.
