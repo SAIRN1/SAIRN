@@ -4169,6 +4169,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sairnbiz_benefits_and_overtime.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "'a threshold of 168 can never be exceeded in a 168-hour workweek, so it must fal"
+    }
+   ],
+   "sha": "6494262c9654872b21e9c67bf89cbf60bb4cb54b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sairnbiz_ot_threshold_coalesce.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "6494262c9654872b21e9c67bf89cbf60bb4cb54b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/sd-data-dental-ledger-validation.test.js",
    "class": "test file",
    "level": "CHANGE",

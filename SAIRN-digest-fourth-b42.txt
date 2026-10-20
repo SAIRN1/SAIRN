@@ -1,0 +1,24 @@
+SAIRN DIGEST -- fourth b42 -- 2026-10-20
+CONTEXT 49.7% of 1,000,000 -- 496,888 tokens, measured.
+STATE: 4/6 done, 2 blocked by other sessions' claims; origin/main 0/0; no force; claim released.
+READ: SAIRN-handoff-fourth-b42.md (whole state). Detail: SAIRN-report-fourth-b42.txt.
+SQL: none this batch.
+FIXES: da64a94b ids | 6494262c OT 168 | ebe472e1 sairncode queue | cf1e3cd1 dental x3
+REGISTER: 8be661b3 743713bc 4fb743c1 c61763d0 | GATES: aab71bb0 (Michael-approved override)
+LIVE: every b42 drive passes vs sairn.vercel.app -- ids 11/11, queue 11/11, dental 8/8, b41 37/37.
+1 sairnbiz ids: RED 50 invoices in one ms = ONE id. Now <prefix>-<device series>-<n>.
+2 OT threshold 168 now refused (29 CFR 778.103/.105). Two tests pinned the bug; rewritten.
+  DAY SEVEN + START/END BLOCKED: api/sd-data.js:16290 demands exactly 6 days (cody b29).
+3 sairncode: rejected items were "cleared every check" on the live page; three groups now.
+4 sairndental: stale answers overwrote newer ones; latest-ask-wins; A3 + add repaint fixed.
+5 stonedesk sairnSyncAll 4xx: NOT STARTED -- stonedesk.html held by hank b27.
+6 path-scope gate refused tests/ edits; Michael chose declare-override; 5-line insert.
+NEXT, in order:
+  a cody: accept hours.length 7 + optional times[] at api/sd-data.js:16290 (spec, handoff 6.1)
+  b fourth after (a): Sunday + start/end in sairnbiz timesheet; update timesheet test
+  c hank/fourth: sairnSyncAll forced-4xx repro then !r.ok = failure (stonedesk.html:19938)
+  d sairnbiz vendor ids still Date.now() last 4 -- sbNextId('V', ...)
+  e cody: review the two test arms, then remove fourth's assigned_overrides entry
+ROUTED: cody -- (a), (e), register record ce15ddaa6a3c. hank -- (c) when stonedesk frees.
+UNPROVEN: no server I/O in any drive; two-tab id race; no repo suite for the two panels.
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\fc1f8565-6013-48a4-b66b-d27902506016.jsonl

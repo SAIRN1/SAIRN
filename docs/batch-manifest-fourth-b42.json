@@ -1,0 +1,44 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "fourth",
+  "batch": "b42",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "",
+      "status": "done",
+      "evidence": "da64a94b + register 8be661b3; scratchpad/b42/drive_ids.py RED 2/11 -> GREEN 11/11 local AND live (same-ms x50, reload, lost counter, second device); 18 sairnbiz suites pass."
+    },
+    {
+      "id": 2,
+      "title": "",
+      "status": "blocked",
+      "evidence": "HALF DONE: off-by-one fixed 6494262c + register 743713bc, RED 11/12 -> GREEN 12/12 (tests/sairnbiz_ot_threshold_coalesce.js), B4 rewritten; 29 CFR 778.103-.105 read. BLOCKED half: day seven + start/end -- api/sd-data.js:16290 refuses hours.length!==6 and is held by cody b29; client-only would fail every save's sync."
+    },
+    {
+      "id": 3,
+      "title": "",
+      "status": "done",
+      "evidence": "ebe472e1 + register 4fb743c1; scratchpad/b42/drive_queue.py RED 4/11 on LIVE -> GREEN 11/11 local AND live."
+    },
+    {
+      "id": 4,
+      "title": "",
+      "status": "done",
+      "evidence": "cf1e3cd1 + register c61763d0; scratchpad/b42/drive_dental2.py RED 4/8 on LIVE -> GREEN 8/8 local AND live; b41 suite 37/37 live."
+    },
+    {
+      "id": 5,
+      "title": "",
+      "status": "blocked",
+      "evidence": "NOT STARTED: stonedesk.html is held by hank b27 (claim 2026-10-20T09:46:42Z, FILES lists stonedesk.html); sairn_claim.py check blocks on same app. Flagged back, not routed around."
+    },
+    {
+      "id": 6,
+      "title": "",
+      "status": "done",
+      "evidence": "git rev-list --left-right --count origin/main...HEAD = 0 0 after land.sh; every b42 sha merge-base --is-ancestor origin/main; no force; path-scope refusal answered by the Michael-approved assigned_overrides entry aab71bb0, not a skip."
+    }
+  ]
+}

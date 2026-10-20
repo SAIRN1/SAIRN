@@ -1,0 +1,70 @@
+SAIRN REPORT -- fourth b42 -- 2026-10-20
+
+RESULT: 4 of 6 done, 2 blocked by other sessions' claims (one of them half
+done). All done work is on origin/main and live; no force. Wrapped at ~50%
+real context. Handoff: SAIRN-handoff-fourth-b42.md.
+
+METHOD: concept first, RED before GREEN, count-asserted patches, node --check
+on every script block, and every drive re-run against https://sairn.vercel.app/
+after the deploy landed.
+
+ITEM 1 -- sairnbiz Z1 ids                                  da64a94b, reg 8be661b3
+  CONCEPT: one series per device, a synchronous counter within it, never
+  below the highest number already stored, and taken ids skipped.
+  RED 2/11: 50 invoices in one millisecond got ONE id; 50 employees likewise;
+  editing one employee then matched 50 records; a second device minted ids
+  the first already held. The invoice id is the GL source_id, the employee id
+  is the server upsert key, and hydrate merges by id, so a collision is
+  silent data loss.
+  GREEN 11/11 local AND live: same-ms x50 both kinds, consecutive, reload
+  continues, counter deleted still continues, second device uses its own
+  series and never collides, edit keeps the id. 18 sairnbiz suites pass.
+  RESIDUAL (in the code): two tabs minting in the same instant share the
+  counter.
+
+ITEM 2 -- sairnbiz Z2                                       HALF DONE, HALF BLOCKED
+  READ FIRST: 29 CFR 778.103 (overtime is "each hour worked in excess of the
+  maximum"), 778.104 (each workweek stands alone), 778.105 (a workweek is "a
+  fixed and regularly recurring period of 168 hours -- seven consecutive
+  24-hour periods").
+  DONE -- off-by-one, 6494262c, reg 743713bc: n>168 -> n>=168. A threshold of
+  168 can never produce an overtime hour. RED 11/12 -> GREEN 12/12. Two
+  cody-owned arms pinned the old bound, one of them arguing "168 is
+  reachable"; both are changed with the old reasoning quoted.
+  BLOCKED -- day seven + start/end: api/sd-data.js:16290 refuses hours that
+  are not exactly 6 values. Cody b29 holds that file. A client-only change
+  would fail every save's server sync. Flagged back; the server and client
+  halves are both specified in the handoff section 6.
+
+ITEM 3 -- sairncode queue line                             ebe472e1, reg 4fb743c1
+  RED on the LIVE page 4/11: 2 rejected items counted among "4 other items
+  cleared every check". Now three groups: cleared (auto-assigned only),
+  decided (new table), and the queue, where unknown statuses fail closed.
+  GREEN 11/11 local AND live; b41's (B)(7) drive still 27/27.
+
+ITEM 4 -- sairndental x3                                   cf1e3cd1, reg c61763d0
+  RED on the LIVE page 4/8: a stale "5" overwrote a newer "1"; an older
+  success overwrote a newer failure; an older null repainted the side panels
+  (Guardian A3); addCredential blanked a real board during the write.
+  Now sequence-numbered asks, and only the latest renders, all three panels
+  together. "Pending" means the latest ask is unsettled or a write is in
+  flight. GREEN 8/8 local AND live; b41's suite 37/37 live.
+
+ITEM 5 -- stonedesk sairnSyncAll 4xx toast                 BLOCKED, NOT STARTED
+  stonedesk.html is held by hank b27 (claimed 09:46Z). The claim check
+  blocks it. Flagged back. The next step is in the handoff section 6.
+
+ITEM 6 -- push                                              DONE
+  0/0, every b42 sha is an ancestor of origin/main, no force. The
+  path-scope gate refused once because two tests/ files are cody's by the
+  split. The classifier blocked both my manifest edit and a side-branch
+  landing. Michael chose "declare override": a 5-line text insertion into
+  assigned_overrides (aab71bb0), exact filenames, with a REMOVE condition.
+  Every gate still ran. Two register rebase conflicts were resolved by
+  re-adding the record with the tool, never by staging a conflicted file.
+
+NOT DONE / NOT PROVEN
+* Server I/O: every drive stubbed fetch.
+* Vendor ids still use the Date.now() last-4 shape (out of scope; noted).
+* No repo suite covers the coded-items or credential panels.
+* hank b27 and cody b29 each hold a file this batch needed.
