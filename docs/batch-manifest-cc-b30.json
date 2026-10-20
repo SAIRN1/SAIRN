@@ -37,8 +37,18 @@
     {
       "id": 6,
       "title": "Push, no force, no bypass; confirm landed",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "git push 1e2e033b..9f6c1e58; git rev-list --left-right --count origin/main...HEAD = 0 0"
     }
-  ]
+  ],
+  "closed": {
+    "drive_verify": "PASS",
+    "verified_by": "python tools/drive_upload_verify.py --agent cc --batch b30 --verify-only",
+    "criteria": "2026-10-20.1",
+    "deliverables": [
+      "SAIRN-handoff-cc-b30.md sha256 0804404afb9ef3d6",
+      "SAIRN-report-cc-b30.txt sha256 8d97ba3b90b7135a",
+      "SAIRN-digest-cc-b30.txt sha256 e3154dc160302dd4"
+    ]
+  }
 }

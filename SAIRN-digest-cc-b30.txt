@@ -1,0 +1,23 @@
+DIGEST cc b30
+STATUS: 5 of 6 items closed. Item 4's snapshot RE-CAPTURE is BLOCKED (no clone holds a DB credential). Push range STARTS at 9f6c1e58; 0/0 against the REMOTE, no --force, NO OVERRIDE.
+ITEM 1-2 FRESHNESS TOOL FIXED: it now counts a table named whole as a quoted literal or a map key on a live line, bounded to sql/-created names.
+Fixtures 11/11, locked first. The old matcher fails the constant and map arms. Against the pre-migration snapshot its list is IDENTICAL to the known 37.
+It CANNOT say "0 absent" yet: db/schema_snapshot.json is still the capture from BEFORE Michael's run.
+ITEM 4 LIVE: 32 of 37 confirmed provisioned, signed in, through the deployed endpoints (27 via provisioning check, 5 by direct reads).
+The other 5 rest on Michael's to_regclass check: sairncare_witness_tokens, both sairnvet_witness_*, sd_quote_request_photos, sairnscape_org_intel.
+Preflight --live: 0 findings on 28 of 28, against the old capture, so it adds nothing new.
+ITEM 3 NOTES: SAIRNscape customers verified live -- bare key, read 403 and write 403. Two CRITICALITY-TIERS cells were RE-DRIVEN before applying.
+supplier_lead_times flipped false -> true, so cody's 10-05 text was recorded alongside today's reading, not pasted. Two index rows added; shards CLEAN.
+CLAUDE.md corrected from measurement: 11 skippable gates (7 wired, 4 not) + 3 unskippable; 39 disciplines. hank's 520s probe DECIDED not to land in a 300s/270s sweep.
+ITEM 5: 15 FMEA drafts saved. Owed is 745 by the stated definition (b28's 901 used the wrong slug). A multi-path --save writes nothing; one file per call.
+TIER A DISCHARGED: hank 10-19 IOLTA reconcile -- MEDIUM: inert_until names two blockers both gone, and arm A4 passes on that text. cody 10-16 misclass -- LOW: P2 label.
+DECISION-NEEDED: Michael runs sql/schema_snapshot_query.sql in the Supabase editor, saves it as db/schema_snapshot.json, commits. Then the freshness tool must report 0 absent-and-queried.
+CHANGED: tools/schema_snapshot_freshness.py; CLAUDE.md (two counts); docs/CRITICALITY-TIERS.md (2 cells); docs/SAIRN-OPEN-WORK-INDEX.md + shards (2 rows); docs/tier-a-reviews.json (2); docs/fmea/ (15).
+SQL: none written this batch. sql/schema_snapshot_query.sql is the existing path for the re-capture.
+EVIDENCE-path: SAIRN-report-cc-b30.txt, SAIRN-handoff-cc-b30.md, docs/2026-10-20-cc-b30-notes.md
+UNVERIFIED: the re-capture is not done. 5 of 37 have no live corroboration. The law reconcile handler was not driven live. The b29 7-file grant end state is still unread.
+ROUTED: hank -- inert_until and arm A4, decide() paralegal reconcile. cody -- P2 buckets. b29's eight code defects are still waiting (accounting.js:296 false success first).
+NEXT: Michael re-captures. cc next: the three open cc Tier A obligations (hank 10-16 first), and the FMEA owed list newest-first.
+CONTEXT 44.5% of 1,000,000 -- 445,485 tokens, measured.
+SHA256 52c39d17e30ba725a28fe12582e1041346d3e1295687c6e5b67db3328188ec95
+END-OF-REPORT

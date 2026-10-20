@@ -1,0 +1,95 @@
+REPORT cc b30
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-20
+RANGE     from 9f6c1e58 (fix+docs(cc b30): the freshness tool sees all 37...) to origin/main.
+          Claim 271264f4, taken before the first edit. No --force, NO OVERRIDE, no BYPASS-LOG row.
+STARTUP   b29 tip 42b2710b confirmed on origin; tree clean, 0 stashes; pulled 13 commits; claimed.
+INPUT     Michael ran the 28 never-run files; sql/b29_never_run_tables_verify.sql returned 37 present of 37.
+
+== ITEM 1: CONCEPT, BEFORE CODE ==
+QUERY_RE matches only a table name written into a URL, so a table reached through a constant or a
+generic handler reads as unqueried. The fix also counts a table whose exact name appears as a whole
+quoted literal, or as a map key, on a live code line. Only names that some sql/ file creates count.
+The output was then checked against the known 37.
+
+== ITEM 2: FRESHNESS TOOL FIXED -- FIXTURES FIRST, THEN THE REAL TREE ==
+tools/schema_snapshot_freshness.py now has code_lines(), queried_tables(), NAMED_LITERAL_RE and --fixtures.
+CRITERIA LOCK, 11/11, run before the real tree:
+  Counted:     literal URL; rest('t'); TABLE constant; resource-map key; double-quoted literal.
+  Not counted: // comment; block-comment line; trailing comment; name inside a longer string;
+               name not created in sql/; select=t:col.
+FAILING FIRST: the old matcher returns False on both the constant arm and the map arm.
+REAL TREE, against the pre-migration snapshot: missing_and_queried has 37 entries, IDENTICAL to the
+known 37 (0 extra, 0 missing). missing_only holds the 6 comment-only tables.
+CONFIRM "37 PRESENT": the tool CANNOT agree yet. It reads db/schema_snapshot.json, and that is still
+the capture from before Michael's run. See item 4.
+
+== ITEM 3: NOTES ROUTED TO CC ==
+cody (1)  SAIRNscape customers: already gated (SD_SESSION_GATED + SD_GATE_APP, register A/A).
+          LIVE: SCP-DEMO-2026 with no session gives read 403 and write 403. The write moving
+          400 -> 403 is the assertion cody named.
+cody (2)  Two CRITICALITY-TIERS cells, RE-DRIVEN before applying:
+          supplier_lead_times was provisioned:false on 10-05 and is provisioned:true today, so
+          cody's text would now be false; the cell records both readings.
+          sd_inventory was provisioned:true both times. Pipe counts unchanged.
+cody (3)  Two index rows (CCB30-2026-10-20): customers FIXED+verified; never-run tables CLOSED 37/37.
+          open_work_shard --write then --check: CLEAN at 820 rows. index_duplicate_check: 3 pairs
+          before and after, none of them mine.
+cody (4)  register append: no action (union-by-identity is the file's policy).
+hank b26 (1)  path-scope probe: DECIDED NOT TO LAND. It needs about 520s; the sweep allows 300s per
+          entry and about 270s per shard, so it would be a permanent could-not-run. It belongs on a
+          schedule. The PURPOSES line stays; tooling_inventory --check is OK.
+hank b26 (2)  CLAUDE.md corrected from measurement:
+          gate_skip --gates: 11 skippable (7 wired, 4 not) + 3 unskippable (the text said "eight");
+          disciplines file: 39 headings, numbered 1..39 (the text said "Twelve").
+hank b18  The suites are already wired (push gate hook :660, :678). FMEA is covered by item 5.
+
+== ITEM 4: PREFLIGHT AND LIVE VERIFY DONE; SNAPSHOT RE-CAPTURE BLOCKED ==
+preflight --live: 0 findings on 28 of 28, against the PRE-migration capture, so it adds nothing new.
+LIVE, SIGNED IN, DEPLOYED ENDPOINTS -- 32 of 37 confirmed provisioned:
+  27 via schema_provisioning_check: SD 3, RF 8, SEN 9, DNT 3 (incl. dnt_gfe), MECH 1,
+     SF sf_trustee_audits (36 of 36), GRD 2
+   5 via direct reads: style_profile, dnt-bi list, sairncare-witness policy,
+     accounting status (both tables)
+  The other 5 rest on to_regclass only: sairncare_witness_tokens; sairnvet_witness_policy and
+  _tokens (SV demo PIN dead); sd_quote_request_photos (write-only); sairnscape_org_intel (a read
+  cannot tell present from absent).
+RE-CAPTURE NOT DONE. No clone holds a database credential, so sql/schema_snapshot_query.sql must be
+run by Michael in the Supabase editor and the result saved and committed. Manifest item 4 is
+BLOCKED with that reason; it is not marked done.
+
+== ITEM 5: BACKLOG ==
+FMEA: 15 drafts saved, newest-first, from files named by confirmed records (hover files and tests
+excluded). A multi-path --save writes NOTHING; one file per call works.
+Owed: 745 by this definition, 256 of them non-test. b28's 901 used the wrong slug: the tool's slug
+is replace('/','_'), not '__'.
+TIER A, discharged:
+  hank 2026-10-19T15:04:45Z  IOLTA reconcile
+    Sound on (a)-(d). (b) was DRIVEN through decide(): an unknown verb cannot ride a read grant.
+    MEDIUM: inert_until names two blockers that are both gone (the attestations table is in the
+            snapshot, and the gate reads the module), and arm A4 passes on that text.
+    LOW:    decide() says DENY for a paralegal reconcile; the handler admits prepare-only.
+  cody 2026-10-16T12:24:12Z  not-provisioned misclassification
+    Sound. Re-run 16/16; the leg_aftercare probe is all ok.
+    LOW: P2's "292 route through notProvisioned()" also counts unreadableNotEmpty(), which ends in a
+         200. An independent census (a different method) gives 143 / 17 / 150.
+
+== ITEM 6: PUSH ==
+1e2e033b..9f6c1e58, no force. One cannot-lock-ref, answered with pull --rebase. 0 0 against origin.
+Read back from origin.
+
+== UNVERIFIED ==
+- The snapshot re-capture: blocked, see item 4. The freshness tool still says 37 absent.
+- 5 of the 37 are not live-corroborated (listed above).
+- The 7-file grant end state (from b29) is still not read from the live catalog.
+- The law reconcile handler was NOT driven live; only the module and its suite were.
+- The 321 vs 336 census totals were not reconciled beyond the slice-versus-whole-file difference.
+
+== EVIDENCE ==
+docs/2026-10-20-cc-b30-notes.md, tools/schema_snapshot_freshness.py --fixtures, docs/tier-a-reviews.json,
+docs/CRITICALITY-TIERS.md, docs/SAIRN-OPEN-WORK-INDEX.md, docs/fmea/, docs/batch-manifest-cc-b30.json,
+SAIRN-handoff-cc-b30.md
+
+SHA256 87fb53f9335830c70e2e54ab1a428df8c82d0d5c17d6f18bf7cc5e7c130dd2d5
+END-OF-REPORT
