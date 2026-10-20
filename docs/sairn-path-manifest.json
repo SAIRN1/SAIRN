@@ -43,7 +43,9 @@
     ],
     "fourth": [
       "tests/sairnbiz_ot_threshold_coalesce.js",
-      "tests/sairnbiz_benefits_and_overtime.js"
+      "tests/sairnbiz_benefits_and_overtime.js",
+      "tests/sairnbiz_pay_frequency.js",
+      "tests/sairnbiz_timesheet_hours.js"
     ]
   },
 

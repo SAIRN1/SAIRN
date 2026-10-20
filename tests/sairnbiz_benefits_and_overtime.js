@@ -237,10 +237,14 @@ test('C1. no bare `t-40` overtime computation survives', () => {
   assert.deepStrictEqual(bare, [],
     'a hardcoded 40 still computes overtime somewhere: ' + JSON.stringify(bare)
     + ' -- two places that can disagree about what somebody was paid');
-  const calls = (codeOnly.match(/Math\.max\(0,\s*t\s*-\s*sbOtThreshold\(\)\)/g) || []).length;
-  assert.strictEqual(calls, 2,
-    'expected exactly 2 overtime computations through the helper (the panel and '
-    + 'the CSV export), found ' + calls);
+  // b45 (Z7): ONE overtime computation, inside sbWeekPay(), and every money
+  // figure prices a week through it -- payroll gross, the panel, the CSV. Was
+  // two copies in the panel and the CSV while payroll used none at all.
+  const calls = (codeOnly.match(/Math\.max\(0,\s*hours\s*-\s*sbOtThreshold\(\)\)/g) || []).length;
+  assert.strictEqual(calls, 1,
+    'expected exactly 1 overtime computation, inside sbWeekPay(), found ' + calls);
+  const users = (codeOnly.match(/sbWeekPay\(/g) || []).length - 1;
+  assert.ok(users >= 4, 'expected payroll gross, annual gross, the panel and the CSV to call sbWeekPay(), found ' + users);
 });
 test('C2. REACHABILITY: definition and both callers are in ONE script block', () => {
   // The real failure this guards is the one this app already recorded:
@@ -258,9 +262,10 @@ test('C2. REACHABILITY: definition and both callers are in ONE script block', ()
   const blockOf = (idx) => blocks.findIndex(([a, b]) => idx >= a && idx < b);
   const defAt = html.indexOf('function sbOtThreshold(){');
   const callIdx = [];
-  const cre = /Math\.max\(0,\s*t\s*-\s*sbOtThreshold\(\)\)/g;
+  // b45 (Z7): the callers are now sbWeekPay() and everything that prices a week.
+  const cre = /sbWeekPay\(|Math\.max\(0,\s*hours\s*-\s*sbOtThreshold\(\)\)/g;
   while ((m = cre.exec(html)) !== null) callIdx.push(m.index);
-  assert.strictEqual(callIdx.length, 2, 'expected 2 call sites, found ' + callIdx.length);
+  assert.ok(callIdx.length >= 5, 'expected the definition + 4 callers of sbWeekPay and its one threshold use, found ' + callIdx.length);
   const db = blockOf(defAt);
   assert.ok(db >= 0, 'the definition is outside every <script> block');
   callIdx.forEach((i, n) => assert.strictEqual(blockOf(i), db,

@@ -145,6 +145,8 @@ function harness(opts) {
     + fnBody('function sbCfg(') + '\n'
     + fnBody('function sbOtThreshold(') + '\n'
     + fnBody('function sbOtThresholdNote(') + '\n'
+    // b45 (Z7): rTS() prices each week through the one shared function.
+    + fnBody('function sbWeekPay(') + '\n'
     + fnBody('function sbWeekStart(') + '\n'
     + 'var sbTsWeek=' + JSON.stringify(opts.week || WEEK) + ';\n'
     + fnBody('function tsShiftWeek(') + '\n'

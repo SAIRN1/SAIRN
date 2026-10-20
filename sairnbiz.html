@@ -3379,7 +3379,7 @@ function rTS(){
         '<td style="text-align:right;">--</td>'+btn+'</tr>';
     }
     var t=d.reduce(function(a,b){return a+(Number(b)||0);},0);
-    var ot=Math.max(0,t-sbOtThreshold());var c=(t-ot)*e.rate+ot*e.rate*1.5;
+    var wp=sbWeekPay(e.rate,t);var ot=wp.ot;var c=wp.total;
     // COUNTED IN THE TOTALS, and this is a decision rather than a consequence
     // of rendering the row. Hours recorded against a week were WORKED in that
     // week and were payable in it; whether the person is on the roster TODAY
@@ -3678,8 +3678,25 @@ function sbHoursPerPeriodExact(e){ return sbWeeklyHours(e) * 52 / sbPeriodsPerYe
 function sbHoursPerPeriod(e){
   return Math.round(sbHoursPerPeriodExact(e) * 100) / 100;
 }
-function sbGrossPerPeriod(e){ return (Number(e && e.rate) || 0) * sbHoursPerPeriodExact(e); }
-function sbAnnualGross(e){ return (Number(e && e.rate) || 0) * sbWeeklyHours(e) * 52; }
+// ── ONE PRICE FOR A WEEK OF HOURS (b45, Z7) ────────────────────────────────
+// CONCEPT: a recorded week is priced ONCE -- straight time up to the overtime
+// threshold, 1.5x the rate above it -- and payroll, the timesheet's Est. Pay
+// and the CSV all call this, so the same week cannot be paid two ways.
+// THE DEFECT IT REPLACES: sbGrossPerPeriod() was rate x hours, so a recorded
+// 50-hour week entered PAYROLL as 50 x rate while the timesheet panel and the
+// CSV priced the same week at 40 x rate + 10 x 1.5 x rate. 29 CFR 778.107 and
+// 516.2(a)(9) treat the overtime premium as owed and recorded; the payroll
+// figure the GL posts left it out. Weekly basis, because FLSA overtime is per
+// workweek (778.104) -- a biweekly gross is two priced weeks, never one 80-hour
+// block averaged.
+function sbWeekPay(rate,hours){
+  rate=Number(rate)||0; hours=Number(hours)||0;
+  var ot=Math.max(0,hours-sbOtThreshold());
+  var straight=(hours-ot)*rate, otPay=ot*rate*1.5;
+  return {ot:ot, straight:straight, otPay:otPay, total:straight+otPay};
+}
+function sbGrossPerPeriod(e){ return sbWeekPay(e&&e.rate, sbWeeklyHours(e)).total * 52 / sbPeriodsPerYear(e); }
+function sbAnnualGross(e){ return sbWeekPay(e&&e.rate, sbWeeklyHours(e)).total * 52; }
 // The employer's real recorded monthly share if one was entered, else the
 // stated $520 assumption. A zero or negative stored cost is treated as "not
 // recorded" rather than as a real $0 -- saveBenEnroll() already refuses a
@@ -5314,7 +5331,7 @@ function csv(type){
       var ot=Math.max(0,t-sbOtThreshold());
       if(rr.correctionOnly)tsDeparted.push(e.fn+' '+e.ln+' ('+(e.status||'not active')+')');
       rows.push([e.fn+' '+e.ln,e.status||'',sbTsWeek].concat(row.hours).concat(
-        [t,ot,((t-ot)*e.rate+ot*e.rate*1.5).toFixed(2)]));
+        [t,ot,sbWeekPay(e.rate,t).total.toFixed(2)]));
     });
     // THE RULE TRAVELS WITH THE FILE. An OT column in a spreadsheet somebody
     // costs a week against is uninterpretable without the threshold that made

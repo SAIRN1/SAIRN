@@ -59,6 +59,7 @@ const hiringSrc = slice('function computeHiringCostImpact(', '\nfunction rDash()
 // of the rate living in the test, which is exactly the defect the product
 // change removed, reintroduced one file over.
 const ratesSrc = slice('var SB_TAX_FICA_RATE =', '\nvar SB_TAX_REFUSALS');
+const otSrc = slice('function sbCfg(){', '\n// The number the OT column was actually computed with');
 assert.ok(/SB_TAX_FICA_RATE\s*=\s*0\.\d+/.test(ratesSrc)
   && /SB_EMPLOYEE_FICA_RATE\s*=\s*0\.\d+/.test(ratesSrc),
   'the rate declarations were not extracted -- every arm below would fail with '
@@ -72,7 +73,10 @@ function harness(roster) {
     ld: (k, d) => { try { const r = store[k]; return r === undefined ? d : JSON.parse(r); } catch (e) { return d; } }
   };
   vm.createContext(ctx);
-  vm.runInContext(ratesSrc + '\n' + helpersSrc + '\n' + totalsSrc + '\n' + hiringSrc, ctx);
+  // b45 (Z7): sbGrossPerPeriod() prices a week through sbWeekPay(), which applies
+  // the overtime threshold -- so the REAL sbCfg()/sbOtThreshold() are extracted
+  // from the page, not retyped, for the same reason the tax rate is.
+  vm.runInContext(ratesSrc + '\n' + otSrc + '\n' + helpersSrc + '\n' + totalsSrc + '\n' + hiringSrc, ctx);
   return ctx;
 }
 
