@@ -1,0 +1,17 @@
+HANK b34 DIGEST -- 2026-10-20 -- b33 open items worked; the checker that missed the outage now sees it
+CONTEXT 75.4% of 1,000,000 -- 754,016 tokens, measured.
+STATUS: LANDED on origin/main (re-derive the tip), NOT FORCED, zero overrides.
+CONCEPT: a check that reads the file cannot see a database never rebuilt from it -- read the live CHECK.
+A  CHECK widening: DONE (Michael).
+B  straight-time-floor: VERIFIED on production (B1-B4 pass); CONFIRMED CLEAN in the register.
+C  stonedesk page half: with fourth (b45). The patch has TWO parts -- anti-framing AND the image toggle.
+D  Static Maps on the Maps key: Michael.
+E  audit_event_type_check: FIXED -- reads db/schema_snapshot.json too; three blind spots closed;
+   replaying this morning's snapshot now names the outage the old tool missed. 19 arms.
+F  image live with a session: waits on C and D.
+NEW: the committed snapshot predates the widening, so the checker exits 1 today -- re-export it.
+DECISION-NEEDED (Michael): enable Static Maps on the key; re-export the schema snapshot.
+NEXT: handoff sec.4, items C, D, F, G, H.
+CHANGED: tools/audit_event_type_check.py, docs/sairn-path-manifest.json (one override), ledgers.
+EVIDENCE-path: SAIRN-handoff-hank-b34.md
+UNVERIFIED: the stonedesk page half; a Google-drawn map image.

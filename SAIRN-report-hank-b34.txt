@@ -1,0 +1,25 @@
+HANK b34 REPORT -- 2026-10-20 -- b33 open items worked; the checker that missed the outage now sees it
+
+4. CONCEPT (before the code): a check that reads the file the database was built from cannot see a
+   database that was never rebuilt from it -- so the CHECK is also read from the snapshot exported from
+   the database.
+
+1. b33 HANDOFF sec.4, A-F:
+   A  CHECK widening ................. DONE by Michael.
+   B  straight-time-floor re-run ..... VERIFIED on production (A2 200, B0-B4 pass, identities confirmed);
+                                       recorded CONFIRMED CLEAN against 144dfb715.
+   C  stonedesk page half ............ with fourth -- their b45 claim names the b33 patch. It has TWO parts
+                                       (anti-framing AND the Field Map image toggle); both should land.
+   D  Static Maps on the Maps key .... Michael's.
+   E  checker reads file, not DB ..... FIXED: tools/audit_event_type_check.py now compares against the live
+                                       CHECK in db/schema_snapshot.json. Replaying this morning's snapshot
+                                       found NOTHING with the first version, because three regex blind spots
+                                       hid the emitted events and truncated the file's CHECK. All three fixed
+                                       with fixtures; the replay now names sairnsenior_audit_log rejecting
+                                       pay_period_closed/reopened. 19 arms. Register record filed.
+   F  image live with a session ...... waits on C and D.
+
+   NEW: the committed snapshot (13:13 UTC) predates the widening, so the checker exits 1 today -- correct for
+   its data. Re-export the snapshot and it should exit 0.
+
+5. PUSHED without force, confirmed by sha (0fb54b0c1). Handoff: SAIRN-handoff-hank-b34.md.
