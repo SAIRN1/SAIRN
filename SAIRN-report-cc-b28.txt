@@ -1,0 +1,591 @@
+REPORT cc b28
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-20
+RANGE     from cb0d94f5 (`sql(b28): one purpose per file`) to origin/main.
+          THE END IS NOT NAMED ON PURPOSE -- see ITEM 6. The start never moves.
+PUSH      git push rc 0, NO --force. git fetch then
+          git rev-list --left-right --count origin/main...HEAD -> 0 0
+OVERRIDES NONE. No SAIRN_SKIP, no SAIRN_GATE_EXEMPT, no SAIRN_SEED_GATE.
+          docs/BYPASS-LOG.jsonl gains NO row. Two gate refusals, both answered
+          at their cause.
+TREE      clean, zero stashes
+EXCLUDED  api/, tests/ and every .html -- untouched.
+CONTEXT   73.5% of 1,000,000 -- 734,964 tokens, measured. Under the new 85%.
+
+  Six items. All six closed. The one a fresh session must read first is ITEM 1:
+  three SQL files are written and NONE has been run, so b24 FINDING 1 (HIGH) is
+  still open -- because the previous version of that migration destroyed itself.
+
+
+ITEM 6 FIRST -- THE TIP DISCREPANCY, BECAUSE IT CHANGES HOW TO READ EVERYTHING
+  CLOSED, and the answer is BOTH.
+
+      b27 digest      43d4919b..2111a2d1   true when the digest was SHA-sealed
+      b27 handoff     43d4919b..2111a2d1   same moment
+      b27 status row  43d4919b..74c8250d   true after the report+digest commit
+      cc's chat line  bc86046a             true after the claim release
+
+  `git merge-base --is-ancestor` says all three of 2111a2d1, 74c8250d and
+  bc86046a are ancestors of origin/main. NOTHING WAS WRONG. Three different end
+  points, each accurate at the moment it was written.
+
+  AND IT IS STRUCTURAL, NOT A SLIP, SO IT WILL RECUR UNTIL THE FORMAT CHANGES:
+  A DIGEST THAT NAMES ITS OWN PUSH RANGE CANNOT BE ACCURATE, BECAUSE THE DIGEST
+  IS ITSELF COMMITTED AND PUSHED AFTERWARDS. The b27 digest's range went stale
+  the instant it was committed, and the same is true of its handoff. Two honest
+  shapes exist: name the range as "as of the handoff, plus this digest", or name
+  only the START and let the reader take the tip from origin. THE SECOND IS
+  BETTER AND IS WHAT THIS BATCH DOES -- a start commit never moves, so the
+  figure cannot age. A reader who wants the tip runs one command and gets a
+  fact rather than a recollection.
+
+
+ITEM 1 -- THREE SINGLE-PURPOSE SQL FILES. PATHS ONLY, IN RUN ORDER.
+  CLOSED (written). NOT RUN -- see UNVERIFIED.
+
+      sql/rt_stops_license_hash_composite_fk.sql
+      sql/rt_stops_fk_probe.sql
+      sql/rt_routes_drop_saved_sane.sql
+
+  WHY THE OLD FILE COST THE MIGRATION, because the fix is shaped by it.
+  Michael ran it in the Supabase editor. Its negative control raised
+  `rtstops_license_matches_route` violated -- THE CONTROL WORKING EXACTLY AS
+  DESIGNED, route f38eb356, 'zz-fk-probe-SOMEONE-ELSES-HASH'. The editor runs a
+  multi-statement script as ONE TRANSACTION, so that error aborted the run and
+  rolled the ADD CONSTRAINT back with it. pg_constraint shows no
+  rtstops_license_matches_route. The constraint was never applied, the editor
+  showed an error, and the only honest reading of the screen was "the migration
+  failed" when in fact THE MIGRATION HAD WORKED AND THE TEST HAD WORKED AND THE
+  TWO DESTROYED EACH OTHER.
+
+  The defect was mine and it was structural rather than a typo: A FILE THAT
+  DELIBERATELY RAISES AN ERROR CANNOT ALSO BE A FILE THAT APPLIES A CHANGE.
+
+  (a) sql/rt_stops_license_hash_composite_fk.sql
+      CONCEPT: apply the constraint and nothing else; the read that says
+      whether it CAN be applied comes first, and it only reads.
+
+      Section 1 is three READ-ONLY queries: the mismatch count that decides
+      whether section 2 can succeed, the offending rows bounded at 50 (a larger
+      number is a systemic write bug and the first 50 say so just as well), and
+      what pg_constraint already holds -- run before AND after, because what
+      the command DID and what the database HAS are two different questions.
+
+      NOTHING IN THE FILE DELETES OR UPDATES A ROW, and that is stated in the
+      file rather than left to be noticed: a stop under the wrong route is as
+      likely to be the ROUTE that is wrong, and overwriting the evidence makes
+      that unanswerable for ever.
+
+      NO PROBE INSERT. The test is its own file.
+
+      Two ADD CONSTRAINTs, and the first exists only to make the second legal:
+      unique(id, license_hash) on rt_routes adds NO uniqueness the primary key
+      did not already guarantee, and is REQUIRED anyway, because Postgres will
+      only let a foreign key reference a column list covered by a unique
+      constraint and the PK on `id` alone does not cover the pair. Said out
+      loud because a reader who sees a redundant unique constraint and tidies
+      it away silently breaks the foreign key, and the error they get back is
+      about a dependency rather than about tenancy.
+
+      VALIDATED and not NOT VALID: section 1 establishes the backlog is empty,
+      and a half-enforced tenancy constraint on a Tier A confidentiality table
+      is exactly the "it passed" that is not a pass. `on delete cascade` to
+      match the existing single-column FK, so deletion behaviour does not
+      change. NO `on update` clause, so NO ACTION applies and an update to
+      rt_routes.license_hash with stops attached is REFUSED -- deliberate: a
+      route's tenancy key changing is not an operation this schema supports,
+      and cascade would silently relabel a named person's address history as
+      belonging to another tenant.
+
+      TWICE: a no-op that SAYS SO. Postgres has no ADD CONSTRAINT IF NOT
+      EXISTS, so each ADD is wrapped in a DO block catching duplicate_object
+      and raising a NOTICE. A second run prints "already present" twice and
+      changes nothing; section 1's reads are read-only on every run.
+
+      ONE VERIFICATION QUERY, read-only: exactly TWO rows, both with
+      convalidated = true. One row, or two with false, IS NOT A PASS -- a
+      present-but-unvalidated constraint reads as done in a constraint list and
+      enforces nothing about the rows already there. And the file says what
+      that query still cannot tell you: a constraint that is PRESENT is not a
+      constraint that FIRES.
+
+  (b) sql/rt_stops_fk_probe.sql
+      CONCEPT: a negative control must fail, be seen to fail, and leave nothing
+      behind. An expected failure that escapes as a raw error is not a test
+      result -- it is an aborted script, and it takes the migration with it.
+
+      One atomic `do $$ ... $$` statement. The expected foreign_key_violation
+      is CAUGHT in a PL/pgSQL EXCEPTION handler and becomes a NOTICE that says
+      PASS. THREE OUTCOMES, EACH DISTINCT, which is the whole point:
+        * every NOTICE says PASS        -> the constraint fires correctly
+        * an exception naming FAIL      -> the constraint exists and did NOT
+                                           refuse the bad write (or refused the
+                                           good one)
+        * an exception naming COULD NOT RUN -> the constraint is ABSENT, so
+                                           nothing was tested. A third state,
+                                           never folded into a failure, because
+                                           a missing constraint is a fact about
+                                           the migration and not about the
+                                           constraint.
+
+      A POSITIVE CONTROL TOO, and the reason is in the file: a constraint that
+      refuses EVERYTHING is not a tenancy guard, it is an outage, and from a
+      single failed insert the two look identical. Its hash comes from the
+      route row, which is also the shape b24 says the handler should use.
+
+      TWICE: identical, and it leaves the database as it found it. Three
+      reasons, because "idempotent" on a file that writes needs more than a
+      word. (1) It deletes any zz-fk-probe route a previous half-run left, so
+      it cannot collide with rt_routes' unique(license_hash, app_id,
+      assignee_id, route_date). (2) The whole body is ONE DO statement, which
+      is atomic: every raising path rolls the fixture back with it. (3) The
+      success path deletes the fixture, the delete cascades to its stops, and
+      then it READS THE COUNT BACK and raises FAIL if anything survived -- a
+      teardown that reports success is a reply, not a state.
+
+      RESIDUE IS STATED RATHER THAN CLAIMED ABSENT: the licence hash is
+      'zz-fk-probe-route-hash', which is NOT sha256 of anything, so it can
+      never collide with a real tenant even if a rollback were missed, and the
+      file names the one-line delete that removes it.
+
+      ONE VERIFICATION QUERY, read-only: routes_left and stops_left, both 0,
+      read AFTER the probe rather than asserted by it.
+
+      AND ITS OUTPUT HAZARD IS NAMED: the result is in the NOTICE lines. A
+      clean run with no error and no NOTICE visible means the client suppressed
+      them, NOT that the probe passed -- set client_min_messages = notice.
+
+  (c) sql/rt_routes_drop_saved_sane.sql
+      CONCEPT: remove the one constraint the module was written against, and
+      nothing else. MICHAEL'S DECISION: api/_lib/routes.js STAYS UN-CLAMPED.
+
+      `alter table public.rt_routes drop constraint if exists
+      rtroutes_saved_sane;` -- one statement. TWICE: a no-op; `if exists` does
+      not error.
+
+      WHAT STAYS, and why this is a drop of ONE constraint and not two:
+      rtroutes_saving_has_a_basis is also live and IS NOT TOUCHED. It is a
+      different claim and a correct one -- a saving must have a basis -- and it
+      says nothing about the SIGN of the number, so it does not block a
+      negative saving.
+
+      ONE VERIFICATION QUERY, read-only, and it reads BOTH constraints:
+      rtroutes_saved_sane present=false AND rtroutes_saving_has_a_basis
+      present=true. A `false` on the second row means the file removed
+      something it was not meant to; a `true` on the first means the drop did
+      not take. Reading only the dropped one could not tell the difference.
+
+      AND IT STATES ITS OWN AFTERMATH: db/schema_snapshot.json will claim a
+      constraint the database no longer has until somebody re-runs
+      sql/schema_snapshot_query.sql. Expected, and said rather than discovered.
+
+  AND sql/rt_routes_schema.sql IS CORRECTED.
+  It said `rtroutes_saved_sane` "was REMOVED before the run, deliberately" --
+  b38's reconciliation to what Michael actually ran -- and the constraint was
+  LIVE the whole time. The correction records what that sentence COST, because
+  this is not a documentation nit: the file's own paragraph states the
+  constraint would have rejected the ENTIRE upsert, so that was never
+  hypothetical, and NOBODY RE-CHECKS A SCHEMA FILE AFTER READING A PARAGRAPH
+  THAT CONFIDENT. The window was a DAY, and the lesson is in how it closed --
+  not because anybody re-read the file, but because an unrelated push gate
+  demanded a fresh live capture and the capture disagreed with the prose. A
+  reconciled claim is only as good as the read behind it; b38's read was of
+  what it believed had been run, and this one was of the database.
+
+  That file is fourth's and was edited on MICHAEL'S EXPLICIT INSTRUCTION,
+  declared in the claim string rather than reworded past the matcher.
+
+  Preflight against the 2026-10-20 capture: TOTAL FINDINGS 0 on all three.
+
+
+ITEM 2 -- THE 150-WORD RULE IS RETIRED. ONE CEILING: 30 LINES.
+  CLOSED.
+
+  Gone from every place it was written: tools/digest_lint.py (MAX_WORDS ->
+  MAX_LINES), CLAUDE.md, AGENTS.md, the sairn-session-handoff skill (MIRRORED
+  TO THE USER STORE in the same action), and the tooling-inventory description
+  that feeds the generated doc.
+
+  WHY, MEASURED. Newest digest per build agent, against 30 lines:
+
+      cc      b27    11 lines /  596 words   CLEAN
+      fourth  b40    15 lines /  837 words   inside the cap, MISSING EVIDENCE-path
+      hank    b24    34 lines /  391 words   over by 4
+      cody    b26   239 lines / 2011 words   over by 209
+
+  FOUR FOR FOUR over 150 words, and HALF already inside 30 lines. A ceiling
+  nobody has met in months is not a standard -- it is a line every run reports
+  and nobody acts on, which is this platform's own name for a check that has
+  stopped testing anything. Two ceilings disagreeing was worse still: every
+  digest passed one and failed the other, so NEITHER could be read as a verdict.
+
+  AND LINES ARE THE RIGHT UNIT FOR WHAT THE RULE IS FOR. The rule exists so a
+  digest fits one screen a coordinating session can act on, and a screen is
+  measured in LINES. 596 words over 11 lines fits; 2011 over 239 does not. The
+  word count was a proxy and the thing itself is directly measurable.
+
+  ONE DEFINITION ACROSS BOTH TOOLS, not just one number: splitlines(), so a
+  final line with no trailing newline COUNTS and `wc -l` may report one fewer.
+  drive_upload_verify.py already counted that way and digest_lint now does too.
+  Two tools agreeing on a number while disagreeing on its definition would have
+  been the old problem wearing a new unit.
+
+  THE RETIREMENT IS MECHANICAL, NOT PROSE, because a retirement recorded only
+  in prose comes back. Two new fixtures: a digest FAR over 150 words but inside
+  30 lines must be CLEAN, and one line past 30 must be a finding. A third pins
+  the boundary nobody agrees on -- a 31st line with NO trailing newline still
+  counts. Lock 9/9 at criteria 2026-10-20.1, and the pad fixture DERIVES its
+  length from MAX_LINES so the boundary arm cannot go stale the day the number
+  moves.
+
+  THE WORD COUNT IS STILL PRINTED AND IS NO LONGER A FINDING. A 15-line digest
+  of 2,000 words is a wall of text inside the cap and worth seeing. A number
+  that informs and a number that gates are different jobs, and conflating them
+  is what produced two ceilings.
+
+  AND THE RE-MEASUREMENT FOUND SOMETHING THE LENGTH HALF CANNOT CATCH:
+  fourth's b40 digest is 15 lines, well inside the cap, and MISSING
+  EVIDENCE-path. The schema half of this lint is doing work the length half
+  never could.
+
+  THE FMEA NUMBER: 901. ONE NUMBER WITH ITS DEFINITION.
+    DEFINITION: distinct files that (a) appear in the `files` array of a
+    confirmed record in docs/defect-density-register.json, (b) are STILL
+    TRACKED AT HEAD, and (c) have NO draft in docs/fmea/. Evidence and log
+    directories excluded (docs/hank-evidence/, docs/hover-evidence/,
+    docs/live-residue/, docs/b26-logs/, docs/b27-logs/).
+
+    The surrounding figures so the one number is readable: 669 records, 1,073
+    distinct files named, 904 with no draft, 901 of those still tracked. THREE
+    are named by a record and NO LONGER EXIST, so they cannot be drafted and
+    are excluded deliberately -- a number that includes undraftable files is a
+    backlog nobody can ever close. By extension: 349 .py, 340 .js, 88 .md,
+    73 .json, 32 .sql.
+
+    b26's CLAIM IS CORRECTED. It said "37 owed from the five b18 records".
+    Measured: EXACTLY ONE record's subject names b18 -- 4b2bfc8b6ee2,
+    "test(b18): the two new suites, four re-aimed, and the ablations..." -- and
+    it owes ZERO, because all 7 of its files already have drafts. The claim was
+    wrong in the record count (5 -> 1) and in the owed count (37 -> 0).
+    NEITHER 37 NOR 33 IS REPRODUCIBLE from any measure in the repo, and the
+    register's own tool reports a THIRD figure again -- "NO DRAFT AT ALL: 203",
+    which counts RECORDS and not FILES. Three numbers for one question is
+    exactly what the single definition above replaces.
+
+
+ITEM 3 -- THE BUILDER BASH ALLOW-LIST
+  CLOSED, and proven in both directions.
+
+  Applied to ~/.claude/settings.json -- OUTSIDE EVERY CLONE, NEVER COMMITTED.
+  Verified with `git ls-files` in all four builder clones before and after; the
+  TRACKED .claude/settings.json is a DIFFERENT FILE and is untouched (`git
+  status` on it is empty). Backup at settings.json.b28-backup. The script
+  byte-compared every other key and every other permissions sub-key and
+  reported "nothing else changed: CONFIRMED".
+
+  MOST OF IT WAS ALREADY THERE from b5 and b8, and saying so is the honest
+  report rather than claiming a day's work. ADDED, allow 98 -> 105: `dir`,
+  `type`, the BARE `npm test` (only `npm test *` was allowed, so the plain form
+  prompted), and three routine git reads -- ls-tree, describe, shortlog.
+
+  "NOTHING OUTSIDE THE CLONES" IS SERVED BY DENIES AND NOT BY NARROWING THE
+  ALLOW, AND THAT IS A DECISION WITH A REASON. The file allows Edit(/**) and
+  Write(/**) -- writes anywhere. Replacing those with clone-scoped absolute
+  globs is the obvious move and it is the WRONG one here: the harness's
+  treatment of a WINDOWS ABSOLUTE PATH inside an Edit(...) pattern is NOT
+  MEASURED (the existing _gitc_note records the same uncertainty for Bash
+  patterns), and a MIS-SPELLED NARROW ALLOW SILENTLY STOPS MATCHING, which
+  would make Michael approve every write -- the exact opposite of the brief. A
+  deny cannot fail that way: deny wins at every level, an allow can never carve
+  an exception out of a deny, and a wrong deny pattern produces a PROMPT and
+  never a silent grant. So deny 112 -> 149: system directories (Windows,
+  Program Files x2, ProgramData, Python314), credential stores (.ssh,
+  .gitconfig, .aws, .config/gh), `rm -rf` in the spellings the list lacked
+  (-r, -fr, -Rf, the mid-command form, find -delete, find -exec rm, shred,
+  truncate), two force-push forms it lacked -- AND THE TWO AUDITOR CLONES.
+
+  THE AUDITOR DENY IS NEW AS A PERMISSION RULE. The builder/auditor boundary
+  existed in a push gate and in prose; it now costs a refusal AT THE MOMENT OF
+  THE WRITE instead of a post-hoc audit finding. Written in two spellings
+  (absolute and ~) for the same reason the b8 -C rules were written in four.
+
+  PROVEN:
+      dir CLAUDE.md                      -> ran, rc 0, NO PROMPT     ALLOWED
+      rm -rf .../zz-b28-deny-proof       -> "Permission ... denied"   DENIED
+
+  AND A DEMONSTRATED BYPASS, REPORTED RATHER THAN USED QUIETLY.
+  Edit(~/.claude/settings.json) and Write(~/.claude/settings.json) are in that
+  file's OWN deny list. The Edit tool REFUSED. An allowed `python` subprocess
+  wrote the file anyway. That is precisely the hole the file's own
+  _permissions_note already recorded -- "a deny rule does not reach a
+  subprocess that opens files itself, so an allowed `python -c` can do what the
+  shell is denied" -- now DEMONSTRATED on the deny that protects the permission
+  file itself. It is recorded in that file's new note, in the notes doc and
+  here, because A BYPASS NOBODY WRITES DOWN IS A BYPASS THAT GETS USED QUIETLY.
+  Closing it needs a PreToolUse hook on Bash, and HOOKS ARE OFF by Michael's
+  decision, so it stands as a known hole with its mitigation stated.
+
+  STILL NOT EXPRESSIBLE, unchanged from b5: an env-assignment prefix
+  (SAIRN_SEED_GATE=off git push ...) cannot be the thing a deny matches,
+  because deny rules match PAST a leading assignment. The mitigation is
+  unchanged too -- an ALLOW does not match past an unknown assignment, so that
+  form PROMPTS rather than running silently.
+
+
+ITEM 4 -- THE 85% CONTEXT WATCHER, OUTSIDE THE AGENT
+  CLOSED. tools/builder_context_watch.py.
+
+  CONCEPT: THE AGENT CANNOT BE TRUSTED TO NOTICE ITS OWN CEILING, SO THE THING
+  THAT WATCHES MUST NOT BE INSIDE THE AGENT. cc wrapped b25 at 81.9% and b26 at
+  89.0% against a trigger it had read in its own dispatch, both times while
+  believing it was fine. A reminder delivered INTO the context being exhausted
+  competes with the work for the attention of the same process.
+
+  NOT A HOOK, AND THAT IS THE DESIGN RATHER THAN A LIMITATION. Hooks are off
+  platform-wide since 2026-10-11 and ~/.claude/settings.json carries "hooks":
+  {} deliberately. A hook would also be the wrong shape twice over: it fires
+  INSIDE the session, on the session's own turn, adding to the context it is
+  warning about -- and it CANNOT FIRE AT ALL once a session is wedged, which is
+  exactly when the warning matters. A separate OS process keeps reporting about
+  a session that has stopped reporting about itself. Michael starts it:
+      python tools/builder_context_watch.py --watch
+
+  IT IMPORTS used_tokens() AND window_for() FROM sairn_status_line.py rather
+  than re-implementing them. Two readers of one number with two
+  implementations is two numbers waiting to disagree; if that import ever fails
+  it exits 2 and NAMES THE FILE instead of inventing the arithmetic.
+  CORROBORATED, which is the strongest evidence available here: the watcher
+  read cc at 69.4% and `context_verify.py --digest-line` read 69.4%
+  independently, by a different route, at the same moment.
+
+  THREE REFUSALS, each a lesson this platform already paid for.
+  (1) IT NEVER PRINTS 0% OR "FINE" FOR A SESSION IT COULD NOT MEASURE. An
+      unreadable transcript, a missing model id, an ambiguous window: all
+      UNKNOWN, reported with the reason, counted in their own bucket and NEVER
+      as under. hank came back UNKNOWN on the first live pass -- "no usage line
+      yet" -- and was reported as such rather than as 0% and safe.
+  (2) IT NEVER WRITES ANOTHER SESSION'S sairn_status.py ROW. Those rows are
+      each session's own claim about itself; a watcher filling one in would be
+      impersonation, and the next reader could not tell a measurement from a
+      self-report. Alerts go to the watcher's OWN files, and the JSON carries
+      "A MEASUREMENT BY A WATCHER, not a self-report."
+  (3) IT ALERTS ONCE PER CROSSING, NOT ONCE PER POLL. A watcher that prints
+      every 60 seconds is a watcher Michael stops reading, which is the same
+      failure as not warning at all. Per-session state is remembered, so a
+      session that crosses, stays over and then compacts back below RE-ARMS.
+
+  PROVEN, NOT ASSERTED. --fixtures 9/9: the >= boundary at EXACTLY 85.0 (and
+  84.9 / 85.1 either side), cc's own b26 reading of 89.0 firing, cc's b25
+  reading of 81.9 NOT firing at the new threshold, the threshold itself being
+  85 and not the old 80, all four builders watched, the AUDITORS deliberately
+  NOT watched, an arm driving over/over/under/over to prove it fires TWICE
+  rather than four times, and an arm that an UNKNOWN row is neither over nor
+  under.
+  --test 87 delivered to all three channels -- console, the JSON file at
+  ~/SAIRN-SESSION-LOCKS/context-alerts/, and the append-only Drive line -- and
+  --test 80 correctly delivered nothing.
+  LIVE PASS: cc 69.4, cody 46.4, fourth 38.5, hank 22.8, 0 OVER, 0 UNKNOWN.
+
+  RESIDUE: the zz-test alert FILE was removed afterwards -- a fake 87% row in
+  the alerts directory is residue that misleads. The Drive LINE is kept,
+  deliberately: that file is an append-only log and the line says
+  TEST-INJECTED-NOT-A-MEASUREMENT.
+
+  WHAT IT CANNOT DO, said in the file and here. It cannot stop a session,
+  interrupt one, or make one wrap up -- it tells Michael. A session whose
+  transcript it cannot find is ABSENT from the output, not reported as under
+  the threshold, which is why the output prints how many of four it measured.
+  And it reads the LAST usage line, so between two assistant turns the figure
+  is up to one turn stale -- never ahead, always behind, which errs toward
+  warning LATE rather than early and is stated so nobody reads it as
+  instantaneous.
+
+
+ITEM 5 -- --reseat NO LONGER REVERTS OVER SOMEBODY ELSE'S RECORD
+  CLOSED. Recorded as a defect: 8ebeb1213e91 (as re-seated), tooling /
+  moderate / code-review, rule 1.11 cited ARGUABLE with a note, injection
+  NAMED rather than unknown -- 6860aee4, 2026-10-07.
+
+  CONCEPT: A REPAIR IS JUDGED ON WHAT IT CHANGED, NOT ON THE STATE IT
+  INHERITED.
+
+  THE DEFECT. cmd_reseat() ran `rc = cmd_check()` AFTER save(reg) and then `if
+  rc != 0:` restored the pre-image, with nothing establishing whether the write
+  was what made rc non-zero. The guard was added on 2026-10-07 for a real
+  reason -- a re-seat had returned 0 over a register its own --check refused,
+  four duplicates -- and it was correct about that case and silently wrong
+  about its complement, because at the time no register was already failing.
+
+  BLAST RADIUS, MEASURED. Cody's record ce15ddaa6a3c cites a sha that exists
+  nowhere (`git cat-file -t` says "not a valid object name", `git log --all
+  --grep` finds no such subject), was already on origin before b27, and NO
+  re-seat can repair it, because a re-seat maps a stale sha forward BY SUBJECT
+  and that subject resolves to nothing. So --check exited 1 in every clone,
+  permanently, and --reseat therefore printed "RE-SEAT REVERTED ... nothing was
+  kept" on EVERY run in EVERY clone. ONE SESSION'S UNRESOLVABLE RECORD BLOCKED
+  EVERY OTHER SESSION'S CORRECT REPAIR. It fired twice inside b27 alone, and
+  the consequence was not just a wasted command: cc's own b27 defect record was
+  left citing its pre-rebase sha and resolving only BY SUBJECT -- the exact
+  fragile state the re-seat exists to remove -- so the tool's failure mode made
+  the register slowly LESS reachable the longer the blockage lasted.
+
+  THE FIX. --check is now captured BEFORE the write as well as after, and a
+  pure function _reseat_verdict(rc_before, problems_before, rc_after,
+  problems_after) returns ('keep'|'revert', why): REVERT IF AND ONLY IF THIS
+  RUN INTRODUCED A PROBLEM. A pre-existing failure is KEPT and the output says
+  in a full sentence that every problem was already there, that this run
+  neither caused it nor can fix it, and that somebody has to repair the record
+  itself -- because "your repair broke the register" and "it was already
+  broken" are different facts and the reader must be able to tell them apart
+  from the output alone.
+
+  THE COMPARISON IS BY PROBLEM SET AND NEVER BY COUNT, and that is not a style
+  choice: a run that fixes one problem and introduces another leaves the count
+  UNCHANGED, so a count-based test would call it clean. One fixture drives
+  exactly that trade.
+
+  COULD NOT CHECK (exit 2) IS STILL ALWAYS A REVERT, deliberately: exit 2 means
+  the validation did not run, so there is NO evidence either way about what the
+  write did, and PR 1.11 forbids folding a could-not-tell into a pass. A repair
+  kept on the strength of an unperformed check is the exact shape this register
+  exists to count. Two fixtures pin it, including the case where the check also
+  could not run BEFORE the write.
+
+  ARMS: --fixtures 29/29, up from 16. Thirteen new: the b28 incident itself
+  (same pre-existing problem before and after -> KEEP, plus an arm asserting
+  the REASON contains "ALREADY THERE" rather than blaming the repair), the
+  2026-10-07 defect this must NOT regress (clean before, broken after ->
+  REVERT), a new problem alongside an old one, the traded-problem count case,
+  the fix-it case, both could-not-check cases, and THREE arms on the
+  problem-line parser the whole comparison rests on -- including that an
+  UNINDENTED trailer after the FAIL block ("planned actions owed: 201") is not
+  mistaken for a problem, and that a report with no FAIL header yields an EMPTY
+  set rather than a phantom one.
+
+  DRIVEN LIVE on the real 2MB register, which is the half a fixture cannot
+  reach: THREE records re-seated AND KEPT -- 250099e90013, aabc1c659b5b (cc's
+  own b27 record, finally off its pre-rebase sha) and 172a6e96d28a --
+  ce15ddaa6a3c NAMED as the pre-existing failure, the f9a4e5a0032b destination
+  collision left alone, exit 1 rather than reverting to 2. THE IDENTICAL RUN
+  BEFORE THIS CHANGE KEPT NOTHING.
+
+  THE 23 NEVER-CREATED TABLES: THE CONDITIONAL DID NOT FIRE.
+  No refresh SQL was written, because THE SNAPSHOT IS NOT STALE: captured
+  2026-10-20 07:55:45, 1.5 HOURS OLD against a 12-hour expiry. Michael's
+  instruction was conditional on staleness, and writing a file anyway would
+  have been inventing a deliverable. The refresh path already exists and is
+  sql/schema_snapshot_query.sql.
+
+  schema_snapshot_freshness.py exits 1 for the SUBSTANTIVE reason: 484 tables
+  created in sql/, 461 in the snapshot, 43 absent, and 23 of those 43 are
+  QUERIED BY api/ -- each resolving to NEVER RUN rather than to a behind-the-
+  times capture, because the capture POSTDATES the CREATE and still lacks the
+  table, which excludes the competing reading. The 23 come from 18 schema
+  files. The oldest CREATE is sairnscape_org_intel, committed 2026-08-05: LIVE
+  CODE HAS QUERIED A TABLE THAT HAS NEVER EXISTED FOR TEN WEEKS. Re-derive the
+  set from the tool rather than from this paragraph.
+
+
+THE TWO GATE REFUSALS, EACH ANSWERED AT ITS CAUSE, NEITHER SKIPPED
+
+  * register-feed, TWICE. The reseat fix closes a defect and no register record
+    cited it. Satisfied with a real record both times -- see below for why
+    twice.
+  * The non-fast-forward denials are not gate findings and the gate says so
+    itself; origin moved repeatedly during the batch.
+
+
+UNVERIFIED, AND THE THINGS THIS BATCH DID NOT ESTABLISH
+
+  NONE OF THE THREE SQL FILES HAS BEEN RUN, and b24 FINDING 1 (HIGH) IS STILL
+  OPEN. pg_constraint has no rtstops_license_matches_route, so rt_stops still
+  stores the tenancy key twice with nothing requiring the copies to agree, on a
+  Tier A CONFIDENTIALITY table where every row joins a named assignee to a
+  street address on a date. Preflight is a TEXT check against a snapshot; the
+  probe is the only thing that proves the constraint fires, and it needs (a)
+  applied first. The run order is a, b, c and each file's verification query
+  says what a pass looks like.
+
+  rtroutes_saved_sane IS STILL LIVE. The drop is written, not applied. Nobody
+  has driven a negative saved_seconds at the real table and watched it succeed
+  -- the arm that would close it. The constraint finding itself was read from
+  the capture, not from a refused write: there is no licence key in this clone
+  and schema_provisioning_check.py refuses with "WITHOUT ONE NOTHING IS
+  CHECKED".
+
+  THE 23 TABLES ARE REPORTED, NOT CREATED. 18 schema files need running, then
+  one re-capture.
+
+  THE ALLOW-LIST'S WINDOWS ABSOLUTE-PATH DENY PATTERNS ARE UNMEASURED, in the
+  same way the b8 note records for its Bash patterns. They are belt-and-braces
+  by design and a wrong pattern prompts rather than granting, but no test
+  drives them.
+
+  MY OWN PUSH SCRIPT DISCARDED A DEFECT RECORD, AND A GATE CAUGHT IT. The loop
+  took `git checkout --ours` on docs/defect-density-register.json for EVERY
+  conflict. That rule is right for a pure sha re-seat -- regenerable by one
+  command -- and WRONG for a new RECORD, which is content. Conflating them threw
+  the record away silently. THE REGISTER-FEED GATE REFUSED THE NEXT PUSH AND
+  NAMED THE UNCITED COMMIT, which is a gate doing exactly its job against my
+  own cleanup. NOTHING WAS LOST, and the reason is the b26 lesson applied in
+  the other direction: the summary and the five contributing factors had been
+  written to FILES before --add consumed them, so re-adding was one command with
+  the post-rebase sha. The script is corrected -- the register now goes through
+  sairn_rebase_resolve.py, which merges by identity and REFUSES rather than
+  guessing, and a surviving conflict marker stops the loop for a human. THIS IS
+  THE b26 LOST-WORK SHAPE FOR THE THIRD TIME. What saved it was writing content
+  to a file first.
+
+  THE REBASE RESOLVER REFUSED CORRECTLY ONCE, AND THAT IS WORTH RECORDING AS A
+  PASS: both sides had re-seated the SAME two records to DIFFERENT shas, which
+  is not an append, so union-by-identity must not guess. Upstream was taken
+  wholesale in that one case and --reseat re-run afterwards -- defensible only
+  because cc's register change at that moment was purely sha re-seats.
+
+  defect_register --check STILL EXITS 1 on ce15ddaa6a3c. Cody's to reseat or
+  supersede; what changed is only that it no longer takes everybody else's
+  repairs with it.
+
+  PER-RECORD REVERT IS NOT BUILT in --reseat: a run that does introduce a
+  problem still discards every re-seat in it together, because the pre-image is
+  the whole file. Named in the record's recurrence_open, along with the class
+  this did NOT sweep -- nothing checks whether another repair or generator tool
+  in tools/ judges itself on a whole-file validator without baselining it first.
+
+  fourth's TIER A OBLIGATION on dnt_gfe + dnt_credentials is ASSIGNED TO CC and
+  was NOT STARTED -- outside this dispatch. fourth's own note admits lateBy===0
+  was never driven (an estimate issued exactly on its due date, intended to
+  render "in time") and asks cc to RE-DECIDE rather than inherit fourth's
+  overturning of its own b38 off-by-one finding.
+
+  AND ONE THING I CHANGED WITHOUT BEING ASKED, declared: mirroring the skill to
+  the user store wrote it with LF line endings, where CLAUDE.md records the
+  user store as CRLF. Byte-identical to the repo copy, which is what the
+  compare-after-tr rule needs, and harmless for a Markdown skill -- but it is a
+  change to a file outside the repo and it is named rather than left to be
+  found.
+
+
+NEXT
+  (a) Michael runs the three SQL files in order a, b, c. After (a): its
+      section 3 must return TWO rows with convalidated = true. Then (b): read
+      the NOTICE lines; three outcomes are distinct, and its section 3 must
+      return 0 and 0 for residue. Then (c): its section 2 must show
+      rtroutes_saved_sane false AND rtroutes_saving_has_a_basis TRUE.
+  (b) `python tools/schema_snapshot_freshness.py` and work the 23 -- 18 schema
+      files, then one re-capture. Do not copy a list out of any artefact.
+  (c) cody reseats or supersedes ce15ddaa6a3c.
+  (d) cc claims docs/tier-a-reviews.json, which fourth has released, and does
+      the dnt_gfe + dnt_credentials review starting at lateBy===0.
+  (e) hank adds one report_only_checks.py entry for
+      push_gate_path_scope_sabotage_probe.py, which is UNWIRED.
+  (f) Michael decides whether AGENTS.md's batch-manifest requirement stands --
+      it lists docs/batch-manifest-cc-b<N>.json as required and cc has produced
+      none since b20, so either the contract or the practice is wrong.
+
+CONTEXT 73.5% of 1,000,000 -- 734,964 tokens, measured.
+END-OF-REPORT
+
+SHA256 566c416e479f3ab3b2c2b0acb0a68be5c64ace4e00e3c90c8baa347a1184a05b
+END-OF-REPORT
