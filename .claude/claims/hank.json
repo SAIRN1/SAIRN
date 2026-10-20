@@ -4276,6 +4276,30 @@
         "docs/2026-10-20-hank-b26-notes.md",
         "stonedesk.html"
       ]
+    },
+    {
+      "id": "hank-1792489602",
+      "session": "hank",
+      "subject": "hank",
+      "task": "b27 SEN-AUDIT-2026 mint and verify SQL, claude.js rate_limit_mode echo, auth_observe in-process log proof, stonedesk fmRenderMap repoint, bridge.js stale comments, straight-time-floor live probe. FILES: sql/mint_sen_audit_2026.sql sql/verify_sen_audit_2026.sql api/claude.js api/b27-claude-mode-echo-and-log.test.js stonedesk.html api/bridge.js api/b21-bridge-unknown-action.test.js tools/sen_straight_time_floor_live_probe.py docs/2026-10-20-hank-b27-notes.md SAIRN-handoff-hank-b27.md SAIRN-report-hank-b27.txt SAIRN-digest-hank-b27.txt",
+      "claimed_at": "2026-10-20T09:46:42Z",
+      "claimed_at_epoch": 1792489602.2099907,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-hank-b27.txt",
+        "SAIRN-handoff-hank-b27.md",
+        "SAIRN-report-hank-b27.txt",
+        "api/b21-bridge-unknown-action.test.js",
+        "api/b27-claude-mode-echo-and-log.test.js",
+        "api/bridge.js",
+        "api/claude.js",
+        "docs/2026-10-20-hank-b27-notes.md",
+        "sql/mint_sen_audit_2026.sql",
+        "sql/verify_sen_audit_2026.sql",
+        "stonedesk.html",
+        "tools/sen_straight_time_floor_live_probe.py"
+      ]
     }
   ],
   "refusals": [
