@@ -35337,6 +35337,55 @@
       "recurrence_open": "NOT CLOSED. While the timesheet holds SIX days the maximum recordable week is 144 hours, so thresholds 145-167 are equally unreachable and still honoured; the exact bound is the record own maximum and moves to 168 only when day seven lands (held on api/sd-data.js, cody b29)."
     },
     {
+      "commit": "73a5f942c808",
+      "date": "2026-10-20",
+      "subject": "fix(sairndental b42): the latest credential ask wins, a stale answer no longer overwrites a newer one, and adding a credential no longer blanks the board",
+      "files": [
+        "sairndental.html"
+      ],
+      "lines_added": 32,
+      "lines_removed": 14,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "fault-injection",
+      "summary": "Left open by fourth b41 (recorded recurrence). RED on the LIVE page 4/8: a slow older answer replaced a fast newer one (stale 5 expired over the current 1), a newer failure was overwritten by an older success, an older null painted the rules and enrolment-risk panels as not-checked beside a Checking table (Guardian A3), and addCredential replaced a real board with the not-checked view during the write. GREEN 8/8: sequence-numbered asks, only the latest renders, pending = latest unsettled or a write in flight; b41 suite still 37/37.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "scratchpad drive_dental2.py (Playwright, scripted delayed fetch; not in repo)",
+      "found_by_session": null,
+      "injection": {
+        "commit": "876bd84cfad4",
+        "date": "2026-08-24",
+        "subject": "feat(sairndental): licensing/credentialing -- state licences, DEA/MATE, CE pacing",
+        "lag_days": 57
+      },
+      "citation_note": "No coding rule covers this class: async answers rendered in SETTLE order rather than REQUEST order. Proposed: any render driven by a request that can overlap another must drop answers older than the latest request.",
+      "contributing_factors": [
+        {
+          "factor": "b41 fixed first paint with a COUNT of evaluations in flight but still rendered each answer as it settled.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Sequence numbers; an answer older than the latest ask is dropped for all three panels."
+        },
+        {
+          "factor": "The rules and enrolment-risk panels were painted from the same answer as the table but not gated by the same pending rule.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "All three render together from the latest answer only."
+        },
+        {
+          "factor": "addCredential reused the could-not-run render as a 'refresh', a second meaning for one rendering.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Pending during the write; the board is re-asked afterwards whether or not the write landed."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. Nothing in tests/ drives the credential panel; both drives live in the scratchpad. The server half (api/sd-data.js evaluate) remains unread by this session."
+    },
+    {
       "commit": "8f2036615c6b",
       "date": "2026-10-20",
       "subject": "fix(agent+claude b25): a revoke silently overwritten, a zero-row PATCH logged as a plan change, and two controls that permitted when unset",
