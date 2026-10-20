@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- ANTI-FRAMING (b33 hank, routed from fourth b43 -- the same block the 16 root
+     apps carry since e137c3bc1). The page is HIDDEN until it proves it is the
+     top window. Framed, it tries to break out and otherwise STAYS hidden, so a
+     framed copy -- including a sandboxed frame with scripts switched off -- has
+     nothing to click. fourth measured stonedesk clickable inside a cross-origin
+     frame on the live site even though it already reassigned top.location:
+     Chrome silently blocks that navigation from a cross-origin frame without a
+     user gesture, and the app keeps rendering. No <noscript> fallback on
+     purpose: a sandboxed frame without scripts would render it. -->
+<style id="sairn-antiframe">html{display:none!important}</style>
+<script>(function(){if(window.self===window.top){var s=document.getElementById('sairn-antiframe');if(s)s.parentNode.removeChild(s);return;}try{window.top.location.replace(window.self.location.href);}catch(e){}})();</script>
 <script>
 /* ── LICENCE KEY ON EVERY AI CALL (added 2026-09-05) ───────────────────────
    api/claude.js accepted requests with NO credential at all and spent the
@@ -3096,12 +3107,13 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-// LAYER 4 — Clickjacking Protection (Frame-Busting)
-if (window !== window.top) {
-  window.top.location = window.location;
-  document.body.innerHTML = '<h2 style="padding:40px;font-family:sans-serif">SAIRN Security: Embedded framing not permitted.</h2>';
-  saLog('L4-FRAME', 'Clickjacking attempt detected', 'critical');
-}
+// LAYER 4 — Clickjacking Protection: REMOVED 2026-10-20 (hank b33, routed from
+// fourth b43). It reassigned window.top.location, which Chrome silently blocks
+// from a cross-origin frame without a user gesture, so the app kept rendering
+// and stayed clickable -- measured live by fourth. Its fallback replaced
+// document.body.innerHTML, which is the shape that wiped sairncode's guard
+// mid-parse. The anti-framing block at the top of <head> replaces it: the page
+// stays hidden unless it is the top window.
 
 // LAYER 5 — Session Timeout & Auto-Lock
 // ACTIVITY NO LONGER DISMISSES THE LOCK — corrected 2026-09-01, found while
@@ -12813,7 +12825,48 @@ function fmRenderMap(containerId, stops){
   if(mid.length) u+='&waypoints='+mid.map(encodeURIComponent).join('%7C');
   el.innerHTML='<div class="fm-map-placeholder"><a href="'+escHtml(u)+'" target="_blank" rel="noopener noreferrer">Open this route in Google Maps</a>'
     +'<div style="margin-top:6px">'+addrs.length+' stop'+(addrs.length===1?'':'s')+', in the order listed.'
-    +(dropped?' '+dropped+' stop'+(dropped===1?'':'s')+' between the first '+(MAXWAY+1)+' and the last '+(dropped===1?'is':'are')+' left off the link.':'')+'</div></div>';
+    +(dropped?' '+dropped+' stop'+(dropped===1?'':'s')+' between the first '+(MAXWAY+1)+' and the last '+(dropped===1?'is':'are')+' left off the link.':'')+'</div>'
+    // ── THE IMAGE, AS AN OPTION (b33, Michael's call: both, as a toggle) ────
+    // The link above stays whatever the toggle says -- it needs no key and no
+    // server. The image is drawn by api/route-map.js on the server, so the Maps
+    // key never reaches this page, and only for a signed-in employee.
+    +'<label style="display:block;margin-top:8px;font-size:12px;cursor:pointer"><input type="checkbox" '+(fmMapImageOn()?'checked ':'')
+    +'onchange="fmSetMapImage(this.checked)"> Show map image</label>'
+    +(fmMapImageOn()?'<div id="'+escHtml(containerId)+'-img" style="margin-top:8px">Loading map image...</div>':'')
+    +'</div>';
+  fmLastMap[containerId]=stops;
+  if(fmMapImageOn()) fmLoadMapImage(containerId+'-img', addrs);
+}
+
+var fmLastMap={};
+function fmMapImageOn(){ try{ return localStorage.getItem('sd_fm_map_image')==='1'; }catch(e){ return false; } }
+function fmSetMapImage(on){
+  stRaw('sd_fm_map_image', on?'1':'0');
+  Object.keys(fmLastMap).forEach(function(id){ fmRenderMap(id, fmLastMap[id]); });
+}
+// Every outcome is said in words; none of them is an empty box.
+function fmLoadMapImage(targetId, addrs){
+  var out=function(html){ var t=document.getElementById(targetId); if(t) t.innerHTML=html; };
+  var hdrs={'Content-Type':'application/json','Authorization':'Bearer '+(typeof sdLicenseKey==='function'?(sdLicenseKey()||''):'')};
+  try{ var tok=sessionStorage.getItem('sd_session_token'); if(tok) hdrs['X-SD-Auth']=tok; }catch(e){}
+  fetch('https://sairn.vercel.app/api/route-map',{method:'POST',headers:hdrs,body:JSON.stringify({addresses:addrs})})
+    .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(d){ return {status:r.status, d:d}; }); })
+    .then(function(x){
+      if(x.status===200 && x.d && typeof x.d.image==='string' && x.d.image.indexOf('data:image/')===0){
+        out('<img src="'+escHtml(x.d.image)+'" alt="Map of the stops in the order listed" style="max-width:100%;border-radius:8px">'
+          +(x.d.drawn<x.d.stops?'<div style="font-size:12px;margin-top:4px">The image shows the first '+x.d.drawn+' of '+x.d.stops+' stops.</div>':''));
+        return;
+      }
+      var code=x.d&&x.d.error&&x.d.error.code;
+      var why={NO_MAPS_KEY:'no map key is configured on the server',
+               NO_SESSION:'sign in to see the map image',
+               NO_LICENSE:'this install has no licence key',
+               UPSTREAM:'the map service refused the request',
+               UPSTREAM_TIMEOUT:'the map service did not answer in time',
+               BAD_STOPS:'one of the addresses could not be used'}[code]||('the server answered HTTP '+x.status);
+      out('<div class="fm-map-placeholder">Map image unavailable -- '+escHtml(why)+'. The link above still works.</div>');
+    })
+    .catch(function(){ out('<div class="fm-map-placeholder">Map image unavailable -- the server could not be reached. The link above still works.</div>'); });
 }
 
 // HARD GATE (2026-08-06): a stop cannot be marked Done until a QC-APPROVED

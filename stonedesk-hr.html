@@ -2,6 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<!-- ANTI-FRAMING (b33 hank, routed from fourth b43 -- the same block the 16 root
+     apps carry since e137c3bc1). The page is HIDDEN until it proves it is the
+     top window. Framed, it tries to break out and otherwise STAYS hidden, so a
+     framed copy -- including a sandboxed frame with scripts switched off -- has
+     nothing to click. fourth measured stonedesk clickable inside a cross-origin
+     frame on the live site even though it already reassigned top.location:
+     Chrome silently blocks that navigation from a cross-origin frame without a
+     user gesture, and the app keeps rendering. No <noscript> fallback on
+     purpose: a sandboxed frame without scripts would render it. -->
+<style id="sairn-antiframe">html{display:none!important}</style>
+<script>(function(){if(window.self===window.top){var s=document.getElementById('sairn-antiframe');if(s)s.parentNode.removeChild(s);return;}try{window.top.location.replace(window.self.location.href);}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>StoneDesk HR — Employee Management & Compliance</title>
 <style>
