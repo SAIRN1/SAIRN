@@ -1,0 +1,66 @@
+SAIRN REPORT -- fourth b43 -- 2026-10-20
+
+RESULT: 6 of 6 done. All on origin/main (0/0), every sha an ancestor, no
+force, no override. Live-verified with real pass/fail counts. Wrapped at
+~58% real context. Handoff: SAIRN-handoff-fourth-b43.md.
+
+ITEM 1 + 5 -- sairnbiz vendor ids                          91b588a2, reg 748ddc2d
+  CONCEPT (stated before the code): vendor ids come from the one per-device
+  series counter b42 built for invoices and employees -- sbNextId('V',
+  vendors) -- so two vendors created in the same millisecond, or on two
+  devices, can never share an id.
+  CODE: v.push({id:sbNextId('V',v), ...}) in saveVendor(), replacing
+  'V'+String(Date.now()).slice(-4).
+  RED on LIVE 2/9: 50 vendors in one ms = ONE id; reload restarted the
+  number; a second device collided.
+  GREEN 9/9 local AND live. Vendor-YTD, three-way-match, bill and preview
+  suites still pass.
+
+ITEM 2 -- clickjacking                                      e137c3bc, reg c19746af
+  CONCEPT: hidden until proven top -- a <style> hides <html>; only a script
+  seeing window.self===window.top removes it; framed, it tries to break out
+  and otherwise STAYS hidden.
+  RED, MEASURED ON LIVE by framing all 22 pages from a cross-origin parent,
+  normal and sandboxed: 18 of 22 clickable -- including sairncode and
+  stonedesk, whose busters only reassign top.location (Chrome refuses that
+  from a cross-origin frame without a user gesture), and sairnlaw, whose
+  frame-ancestors is in a meta CSP that browsers ignore. The "3 of 17
+  protected" count was 0 of 17 in a browser.
+  FIX in 16 apps (the 14 + sairnlaw + sairncode). sairncode's old buster was
+  REMOVED: its catch rewrote documentElement.innerHTML mid-parse, wiping the
+  new guard. In sairnlaw/sairncode the block sits below the CSP meta.
+  GREEN local AND live: framed 16/16 HIDDEN in both modes (32 checks);
+  top-level 16/16 visible and clickable. Node suites: 14 failures all
+  pre-existing on origin/main; two that were not resolved (phi_cache was
+  could-not-run on uncommitted files, now 72/72; sairnlaw_csp 1c fixed by
+  the CSP-first placement).
+  NOT FIXED: stonedesk + stonedesk-hr (hank holds stonedesk); four
+  satellites not proven either way; no vercel.json header change.
+
+ITEM 3 -- SAIRNdesign, next audit increment                 adafa23a
+  The worldwide audit already existed (b39 US, b41 EU). b43 section 7:
+  * LIVE B1-B3 through the real login on SDN-PINNACLE-2026 (owner): one
+    real cert write, all 13 fields read back from the SERVER, state
+    recomputed compliant, original record restored and read back
+    BYTE-IDENTICAL. 9/9. Closes b41's open item.
+  * UK FFR 1988 (SI 1988/1324, legislation.gov.uk XML): reg 3 includes
+    bedding (US excludes), reg 4's vintage line is 1950 (US 2021/2018), reg
+    14 pulls second-hand furniture back IN, reg 15 "no person shall
+    supply". The b41 predicate is US-only.
+  * 2010 ADA Standards (DOJ PDF): 305.3, 304.3.1, 403.5.1, 902.2/.3, 226.1
+    quoted. None computable: spec items have no height, projects no
+    occupancy type. B4 respecified; B9 jurisdiction and B10 layout added.
+
+ITEM 4 -- live verification counts
+  vendor 9/9 | framing 16 apps x 2 modes all HIDDEN | top-level 16/16 |
+  sairndesign live 9/9. All against https://sairn.vercel.app/ after the
+  deploy markers were confirmed in the served pages.
+
+ITEM 6 -- push
+  land.sh, no force; five tries while other sessions pushed; 0/0 at the end.
+
+NOT PROVEN
+* Chromium only. Firefox and Safari framing was not driven.
+* No repo suite drives framing.
+* UK Schedules 4/5/7 were not read.
+* No legal review.

@@ -1,0 +1,25 @@
+SAIRN DIGEST -- fourth b43 -- 2026-10-20
+CONTEXT 58.4% of 1,000,000 -- 583,648 tokens, measured.
+STATE: 6/6 done; origin/main 0/0; no force, no override; claim released.
+READ: SAIRN-handoff-fourth-b43.md (whole state). Detail: SAIRN-report-fourth-b43.txt.
+SQL: none this batch.
+COMMITS: 91b588a2 vendor ids | e137c3bc anti-framing x16 | adafa23a sairndesign audit s7
+REGISTER: 748ddc2d vendor | c19746af clickjacking | 60bbcf66 re-seat
+LIVE (sairn.vercel.app): vendor 9/9 | framed 16/16 hidden x2 modes | top-level 16/16 | design 9/9
+1 vendor ids: sbNextId('V', vendors). RED 50 vendors in one ms = ONE id. Fixed.
+2 clickjacking: measured 18/22 pages clickable when framed -- incl. sairncode + stonedesk,
+  whose top.location busters Chrome blocks. "3 of 17 protected" was 0 of 17 in a browser.
+  Hide-until-proven-top in 16 apps; sairncode's mid-parse buster removed.
+3 sairndesign s7: real cert write + read-back + byte-identical restore on the demo tenant;
+  UK FFR 1988 contradicts the US predicate 3 ways (bedding in, 1950 line, second-hand in);
+  ADA 2010 read -- nothing computable: no item heights, no project occupancy.
+NEXT, in order:
+  a hank: same block in stonedesk.html + stonedesk-hr.html; remove LAYER 4 buster (~:3122)
+  b satellites (dental-book/complaint, catalog, intake): drive with real URL params;
+    check first whether dental-book is meant to be embedded
+  c vercel.json frame-ancestors header (not done, by instruction)
+  d sairndesign B4: project occupancy + item heights -> 902.3 and 226.1 N of M
+  e carried: day seven (cody, api/sd-data.js:16290); sairnSyncAll 4xx (hank)
+ROUTED: hank -- (a). cody -- review the two b42 test arms, then drop the override.
+UNPROVEN: Chromium only; no repo suite for framing; UK Schedules 4/5/7 unread.
+Transcript: ~\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\fc1f8565-6013-48a4-b66b-d27902506016.jsonl

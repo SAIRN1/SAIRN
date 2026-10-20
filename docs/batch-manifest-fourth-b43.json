@@ -1,0 +1,44 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "fourth",
+  "batch": "b43",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "",
+      "status": "done",
+      "evidence": "91b588a2 (sbNextId('V', v)) + register 748ddc2d; scratchpad/b43/drive_vendor.py RED 2/9 on LIVE -> GREEN 9/9 local AND live."
+    },
+    {
+      "id": 2,
+      "title": "",
+      "status": "done",
+      "evidence": "e137c3bc + register c19746af; scratchpad/b43/drive_frame.py RED 18/22 pages clickable when framed on LIVE (incl. sairncode, stonedesk) -> GREEN 16/16 fixed apps hidden framed (normal + sandboxed) AND 16/16 usable top-level (drive_top.py), local AND live. stonedesk + stonedesk-hr NOT fixed (hank holds stonedesk)."
+    },
+    {
+      "id": 3,
+      "title": "",
+      "status": "done",
+      "evidence": "adafa23a; docs/cloud-research/sairndesign-worldwide-competitive-gap-audit-2026-10-20.md section 7 (UK FFR 1988 from legislation.gov.uk, 2010 ADA Standards from DOJ PDF); live B1-B3 via the real login, real cert write read back and restored byte-identical, scratchpad/b43/live_design.py 9/9."
+    },
+    {
+      "id": 4,
+      "title": "",
+      "status": "done",
+      "evidence": "live counts: vendor 9/9 (drive_vendor.py https://sairn.vercel.app/), framing 16/16 x2 modes protected + top-level 16/16 (drive_frame.py, drive_top.py with the live base url)."
+    },
+    {
+      "id": 5,
+      "title": "",
+      "status": "done",
+      "evidence": "concept line stated first in the 91b588a2 commit message and in SAIRN-report-fourth-b43.txt, before the code."
+    },
+    {
+      "id": 6,
+      "title": "",
+      "status": "done",
+      "evidence": "scratchpad/b43/land.sh, no force; git rev-list --left-right --count origin/main...HEAD = 0 0; merge-base --is-ancestor per sha."
+    }
+  ]
+}
