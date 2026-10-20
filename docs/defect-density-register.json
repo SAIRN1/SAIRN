@@ -35307,51 +35307,6 @@
       "recurrence_open": "the cross-device half is DETECTED and not PREVENTED: two devices both offline at the moment of issue can still mint the same number and nothing client-side can stop it. The complete fix is a server-side per-year sequence in api/sd-data.js, which is cody's file and is routed"
     },
     {
-      "commit": "6494262c9654",
-      "date": "2026-10-20",
-      "subject": "fix(sairnbiz b42): an overtime threshold of 168 was honoured, though no hour can ever exceed it",
-      "files": [
-        "sairnbiz.html",
-        "tests/sairnbiz_benefits_and_overtime.js",
-        "tests/sairnbiz_ot_threshold_coalesce.js"
-      ],
-      "lines_added": 20,
-      "lines_removed": 8,
-      "app": "sairnbiz",
-      "layer": "product",
-      "severity": "low",
-      "detection_method": "code-review",
-      "summary": "The bound was n>168 while the function comment said a threshold AT or above 168 is unreachable. OT is hours in excess of the threshold (29 CFR 778.103) and a workweek is 168 hours (778.105), so 168 produced no overtime ever and no note said the setting was unusable. RED: the rejectable-values arm with 168 failed. GREEN: n>=168 falls back to 40 and is reported. Two existing arms pinned the old bound (one asserted 168 is reachable) and were changed with the old reasoning quoted.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "2d9f81ba34cb",
-        "date": "2026-09-26",
-        "subject": "fix(sairnbiz): the plan cards stop asserting Ohio to every customer, and the overtime threshold is read",
-        "lag_days": 24
-      },
-      "citation_note": "No coding rule covers this class: an inclusive or exclusive bound that disagrees with the comment describing it. Proposed: a boundary test at the exact edge value, in both directions, for every refusal bound.",
-      "contributing_factors": [
-        {
-          "factor": "An inclusive/exclusive boundary disagreed with its own comment: >168 coded, >=168 described.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "n>=168 falls back; note wording no longer says 1-168."
-        },
-        {
-          "factor": "A test arm asserted the wrong reading ('168 is reachable'), conflating reachable HOURS with reachable OVERTIME, so the suite defended the defect.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Arm B4 rewritten with the old reasoning quoted and answered from 29 CFR 778.103/.105."
-        }
-      ],
-      "recurrence_open": "NOT CLOSED. While the timesheet holds SIX days the maximum recordable week is 144 hours, so thresholds 145-167 are equally unreachable and still honoured; the exact bound is the record own maximum and moves to 168 only when day seven lands (held on api/sd-data.js, cody b29)."
-    },
-    {
       "commit": "6131e5a900b0",
       "date": "2026-10-20",
       "subject": "fix(stonedesk b31): remove the Sync All Apps button, which stamped \"Last sync\" on every click whatever the server said",
@@ -35402,6 +35357,97 @@
         }
       ],
       "recurrence_open": "getBusinessContext() still reads the now-unwritten stonedesk_last_sync key; it has no callers, so nothing shows it, but a future caller would read a stale stamp."
+    },
+    {
+      "commit": "6494262c9654",
+      "date": "2026-10-20",
+      "subject": "fix(sairnbiz b42): an overtime threshold of 168 was honoured, though no hour can ever exceed it",
+      "files": [
+        "sairnbiz.html",
+        "tests/sairnbiz_benefits_and_overtime.js",
+        "tests/sairnbiz_ot_threshold_coalesce.js"
+      ],
+      "lines_added": 20,
+      "lines_removed": 8,
+      "app": "sairnbiz",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "The bound was n>168 while the function comment said a threshold AT or above 168 is unreachable. OT is hours in excess of the threshold (29 CFR 778.103) and a workweek is 168 hours (778.105), so 168 produced no overtime ever and no note said the setting was unusable. RED: the rejectable-values arm with 168 failed. GREEN: n>=168 falls back to 40 and is reported. Two existing arms pinned the old bound (one asserted 168 is reachable) and were changed with the old reasoning quoted.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "2d9f81ba34cb",
+        "date": "2026-09-26",
+        "subject": "fix(sairnbiz): the plan cards stop asserting Ohio to every customer, and the overtime threshold is read",
+        "lag_days": 24
+      },
+      "citation_note": "No coding rule covers this class: an inclusive or exclusive bound that disagrees with the comment describing it. Proposed: a boundary test at the exact edge value, in both directions, for every refusal bound.",
+      "contributing_factors": [
+        {
+          "factor": "An inclusive/exclusive boundary disagreed with its own comment: >168 coded, >=168 described.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "n>=168 falls back; note wording no longer says 1-168."
+        },
+        {
+          "factor": "A test arm asserted the wrong reading ('168 is reachable'), conflating reachable HOURS with reachable OVERTIME, so the suite defended the defect.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Arm B4 rewritten with the old reasoning quoted and answered from 29 CFR 778.103/.105."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. While the timesheet holds SIX days the maximum recordable week is 144 hours, so thresholds 145-167 are equally unreachable and still honoured; the exact bound is the record own maximum and moves to 168 only when day seven lands (held on api/sd-data.js, cody b29)."
+    },
+    {
+      "commit": "725f8584eae2",
+      "date": "2026-10-20",
+      "subject": "fix(clickjacking b44): the four public satellite pages, driven with real URL parameters, hidden when framed",
+      "files": [
+        "sairndental-book.html",
+        "sairndental-complaint.html",
+        "stonedesk-catalog.html",
+        "stonedesk-intake.html"
+      ],
+      "lines_added": 52,
+      "lines_removed": 0,
+      "app": "sairndental-complaint",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "fault-injection",
+      "summary": "Left unproven by b43 (the satellites showed under two controls without parameters). Driven in b44 with real URL params on LIVE: sairndental-complaint?slug=verify-test-slug CLICKABLE (3 controls) when framed. Embed intent checked first: the owner app offers only a public link and no embed snippet. GREEN: guard in all four, framed 4/4 HIDDEN in both modes.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "scratchpad drive_sat.py (Playwright, cross-origin and sandboxed iframe with real URL params; not in repo)",
+      "found_by_session": null,
+      "injection": {
+        "commit": "7ef20cd74069",
+        "date": "2026-08-12",
+        "subject": "feat: SAIRNdental -- public patient complaint page (submit + thread view/reply)",
+        "lag_days": 69
+      },
+      "citation_note": "Same class as the b43 clickjacking record: a page with no framing defence. Proposed: every public page carries the hide-until-proven-top guard unless it is deliberately offered as an embed.",
+      "contributing_factors": [
+        {
+          "factor": "The b43 sweep covered root apps only; the public satellites were measured without their parameters and so showed nothing to click.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Driven with real, live-resolving parameters."
+        },
+        {
+          "factor": "The pages are reached by anonymous members of the public by design, so the framing defence that the staff apps lacked mattered more here, not less -- a patient complaint form is exactly what a hostile page would overlay.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Guard added to all four public pages."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. The resolved, bookable state of sairndental-book and any StoneDesk catalog could not be driven: verify-test-slug has no procedure types, the seeded pinnacle-dental-demo slug 404s, and no StoneDesk shop has a published catalog."
     },
     {
       "commit": "8ebeb1213e91",
