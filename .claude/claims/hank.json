@@ -4377,8 +4377,8 @@
       "task": "b32 probes confirm identity via whoami, trust-lock probe signs in as audit-owner, stonedesk dead getBusinessContext and NET_URL. FILES: tools/law_trust_lock_live_probe.py docs/2026-10-20-hank-b27-sen-straight-time-floor-live-probe.py stonedesk.html docs/2026-10-20-hank-b32-notes.md SAIRN-handoff-hank-b32.md SAIRN-report-hank-b32.txt SAIRN-digest-hank-b32.txt",
       "claimed_at": "2026-10-20T12:35:42Z",
       "claimed_at_epoch": 1792499742.9615498,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T12:41:44Z",
       "files": [
         "SAIRN-digest-hank-b32.txt",
         "SAIRN-handoff-hank-b32.md",
