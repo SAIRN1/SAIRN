@@ -165,7 +165,11 @@ test('an ABSENT setting is NOT reported as rejected', () => {
 });
 
 test('every genuinely rejectable value still falls back AND is reported', () => {
-  [-5, 'abc', 500, 169, -0.5].forEach((v) => {
+  // 168 IS REJECTED (b42). It is the number of hours in a week, so a threshold
+  // of 168 can never be exceeded and no hour is ever overtime -- exactly the
+  // 'unreachable' case sbOtThreshold's own comment names. It used to be listed
+  // below as VALID, which pinned the off-by-one (n>168) in place.
+  [-5, 'abc', 500, 169, 168, -0.5].forEach((v) => {
     const r = chain({ ot: v });
     assert.strictEqual(r.threshold, 40, JSON.stringify(v) + ' -> ' + r.threshold);
     assert.ok(reportsRejected(r.note), JSON.stringify(v) + ': ' + r.note);
@@ -173,7 +177,7 @@ test('every genuinely rejectable value still falls back AND is reported', () => 
 });
 
 test('every VALID value is honoured and NOT reported', () => {
-  [[1, 1], [40, 40], [168, 168], [37.5, 37.5]].forEach(([v, want]) => {
+  [[1, 1], [40, 40], [167.75, 167.75], [37.5, 37.5]].forEach(([v, want]) => {
     const r = chain({ ot: v });
     assert.strictEqual(r.threshold, want, JSON.stringify(v));
     assert.ok(!reportsRejected(r.note),

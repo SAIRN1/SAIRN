@@ -5449,7 +5449,8 @@ function sbOtThreshold(){
   // 168 = hours in a week. A threshold at or above it is unreachable, and a
   // threshold at or below 0 makes every hour overtime -- neither is a setting,
   // both are a typo, and both fall back rather than being honoured.
-  if(!isFinite(n)||n<=0||n>168) return 40;
+  // >=, not >: 168 itself is the unreachable case this comment names (b42).
+  if(!isFinite(n)||n<=0||n>=168) return 40;
   return n;
 }
 // The number the OT column was actually computed with, for display. Says when it
@@ -5481,7 +5482,7 @@ function sbOtThresholdNote(){
   return 'Overtime is computed above '+n+' hours per week'+
     (n!==40?' (set in Shop Settings, not the federal 40)':'')+
     (blank?' — the overtime threshold was SAVED EMPTY, so the federal 40 is being used; the Shop Settings box will look blank until a number is entered':
-     rejected?' — the recorded setting '+JSON.stringify(String(raw))+' is outside 1–168 and was NOT used':'')+'.';
+     rejected?' — the recorded setting '+JSON.stringify(String(raw))+' is not above 0 and below 168 and was NOT used':'')+'.';
 }
 function loadSettings(){
   var c=sbCfg();

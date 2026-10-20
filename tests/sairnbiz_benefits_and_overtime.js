@@ -195,11 +195,18 @@ test('B3. every unusable shape falls back to 40, by name', () => {
       + 'never be reached so no hour is ever overtime. Neither looks wrong on screen');
   });
 });
-test('B4. the usable boundaries ARE honoured -- 1 and 168', () => {
+// B4 CHANGED IN b42, AND THE OLD READING IS KEPT HERE SO THE DISAGREEMENT IS
+// VISIBLE. This arm used to assert 168 is honoured: "168 is the hours in a week
+// and is reachable". The HOURS are reachable; OVERTIME AT 168 IS NOT -- OT is
+// hours IN EXCESS OF the threshold (29 CFR 778.103: "each hour worked in excess
+// of the maximum"), and a workweek is 168 hours (778.105), so a threshold of
+// 168 can never produce an overtime hour. That is the unreachable case
+// sbOtThreshold's own comment names, and the off-by-one was `n>168`.
+test('B4. the usable boundaries -- 1 is honoured, 167.75 is honoured, 168 falls back', () => {
   assert.strictEqual(otCtx({ fy: 'x', ot: 1, terms: 'y' }).sbOtThreshold(), 1);
-  assert.strictEqual(otCtx({ fy: 'x', ot: 168, terms: 'y' }).sbOtThreshold(), 168,
-    '168 is the hours in a week and is reachable; rejecting it would be an '
-    + 'off-by-one in the refusal');
+  assert.strictEqual(otCtx({ fy: 'x', ot: 167.75, terms: 'y' }).sbOtThreshold(), 167.75);
+  assert.strictEqual(otCtx({ fy: 'x', ot: 168, terms: 'y' }).sbOtThreshold(), 40,
+    'a threshold of 168 can never be exceeded in a 168-hour workweek, so it must fall back');
 });
 test('B5. the note names the number, and flags a non-federal one', () => {
   const n40 = otCtx(undefined).sbOtThresholdNote();
