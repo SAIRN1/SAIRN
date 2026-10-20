@@ -4312,8 +4312,8 @@
       "task": "b28: split the rt_stops FK migration into three single-purpose SQL files (add-constraint only with a read-only pre-check, a self-cleaning negative probe, drop rtroutes_saved_sane) and correct rt_routes_schema.sql which still claims the constraint is gone; RETIRE THE 150-WORD DIGEST RULE EVERYWHERE and enforce 30 lines only; re-derive the FMEA owed number with its definition and correct b26's five-b18-records claim; Bash allow-list in the shared user settings for the four builders; a non-hook 85-percent context watcher outside the agent; fix defect_register --reseat reverting every re-seat when --check fails for one record; freshness on the 23 never-created tables. FILES: sql/rt_stops_license_hash_composite_fk.sql sql/rt_stops_fk_probe.sql sql/rt_routes_drop_saved_sane.sql sql/rt_routes_schema.sql tools/digest_lint.py tools/defect_register.py tools/builder_context_watch.py tools/tooling_inventory.py CLAUDE.md AGENTS.md .claude/skills/sairn-session-handoff/SKILL.md docs/2026-10-20-cc-b28-notes.md SAIRN-ACTIVE-WORK-cc.md SAIRN-handoff-cc-b28.md SAIRN-report-cc-b28.txt SAIRN-digest-cc-b28.txt NOT-api-NOT-html-NOT-tests NOT-api-sd-data-js-codys NOT-CRITICALITY-TIERS-md NOT-docs-tier-a-reviews-json-EXCEPT-gate-demanded-obligations. sql/rt_routes_schema.sql is FOURTH'S and is edited here on MICHAEL'S EXPLICIT INSTRUCTION because it claims a live constraint was removed; declared rather than reworded past the matcher. settings.json is edited and NEVER COMMITTED.",
       "claimed_at": "2026-10-20T08:44:53Z",
       "claimed_at_epoch": 1792485893.5620081,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T10:27:23Z",
       "files": [
         ".claude/skills/sairn-session-handoff/SKILL.md",
         "AGENTS.md",
