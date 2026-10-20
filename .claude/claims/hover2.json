@@ -863,8 +863,8 @@
       "task": "b76 hover2-only: real review path for 9/10 planted classes + FLOAT_RULES fix, fresh frozen seed set measured paired recall; vendor diagnose+fix reply format/chunking, remeasure on fresh set; own bash allowlist + external 85pct context watcher process; close CORS/CSRF+traversal/upload+semgrep+open confidences; re-run red team once an arm detects. FILES: SAIRN-handoff-H2-b76.md SAIRN-report-H2-b76.txt SAIRN-digest-H2-b76.txt tools-hover2/ NOT-tools-shared-REPORT-ONLY NOT-dot-claude-REPORT-ONLY NOT-api-NOT-html-NOT-sql NOT-H1-skill-dir",
       "claimed_at": "2026-10-20T08:53:58Z",
       "claimed_at_epoch": 1792486438.6767266,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T10:11:45Z",
       "files": [
         "SAIRN-digest-H2-b76.txt",
         "SAIRN-handoff-H2-b76.md",
