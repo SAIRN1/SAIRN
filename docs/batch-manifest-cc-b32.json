@@ -31,8 +31,18 @@
     {
       "id": 5,
       "title": "Push, no force, confirm landed",
-      "status": "open",
-      "evidence": ""
+      "status": "done",
+      "evidence": "git push to origin/main c57e65a8, 35ed0fac; rev-list --left-right --count = 0 0"
     }
-  ]
+  ],
+  "closed": {
+    "drive_verify": "PASS",
+    "verified_by": "python tools/drive_upload_verify.py --agent cc --batch b32 --verify-only",
+    "criteria": "2026-10-20.1",
+    "deliverables": [
+      "SAIRN-handoff-cc-b32.md sha256 74440831f23e21eb",
+      "SAIRN-report-cc-b32.txt sha256 ab1d96cd0755e990",
+      "SAIRN-digest-cc-b32.txt sha256 60ff21c84e1cf3bc"
+    ]
+  }
 }

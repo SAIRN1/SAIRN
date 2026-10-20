@@ -1,0 +1,82 @@
+REPORT cc b32
+
+SESSION   cc, Documents\SAIRN-cc, branch main
+DATE      2026-10-20
+RANGE     from c57e65a8 (fix(cc b32): the push-retry loop stops on a gate refusal...) to origin/main.
+          Claim 9846be14. No --force, NO OVERRIDE, no BYPASS-LOG row.
+STARTUP   b31 tip a66079e4 on origin; clean; 0 stashes; pulled; claimed.
+
+== ITEM 1: CONCEPT, BEFORE THE CODE ==
+Classify a refused push by WHO SAID IT.
+  git's remote-race and transport rejections ...... transient, retry
+  anything the pre-push gate printed .............. deterministic for that tip, stop
+  a gate refusal naming a GENERATED document ...... retry once, only after a successful regenerate-and-fold
+  unclassified text ............................... stop (a retry costs an escalation, a stop only a re-run)
+
+== ITEM 2: THE FIX -- tools/push_retry.py ==
+The b31 bug was an inline loop, and the shared tool had the same shape: cmd_loop went round again after
+ANY refusal.
+Added classify_refusal() with gate and transient marker lists. Gate text is matched first, because
+every gate refusal also ends in git's generic line. cmd_loop now acts on the class; a stop exits 5
+(documented in the CLI block).
+DRIVEN with git stubbed, 4 attempts:
+                        before (HEAD)          after
+  Tier A refusal ...... 4 pushes, rc 1   ->    1 push, rc 5
+  fetch-first race .... 4 pushes, rc 1   ->    4 pushes, rc 1
+Selftest +11 arms, all passing; the pre-existing arms still pass.
+  9 classify the real b31 refusal texts: Tier A, could-not-run WinError 206, ESCALATING, a generated
+    document, fetch first, lock ref, network, unknown/empty, and gate-beats-generic.
+  2 drive the loop: one push then stop on a gate refusal, and a race control.
+REGISTER: the register-feed gate refused the first push (a fix needs a record). The loop stopped
+rather than retrying, and the cause was answered with record c57e65a899cf (tooling, moderate,
+code-review, rule 1.11, injection ad11ef1c, three factors with actions, recurrence_open stated).
+The FMEA loop reports MISSED: push_retry.py's draft predates this defect and cites nothing like it.
+
+== ITEM 3: TIER A fourth 2026-10-20T13:42:06Z (rt_routes optimiser) -- DISCHARGED ==
+(1) sdDataEnvelope omits _sdReadFailed/_sdWriteOk. Every reader of those maps was checked; none
+    reads rt_routes, so the drift is harmless today.
+    LOW: a failed optimise still calls sdDataFailed(), which toasts "NOT backed up ... saved on this
+    device only" (or the too-large variant). That is wrong for a compute request, and it is not gated
+    by `silent`. Routed to fourth.
+(2) routes.orderStops always returns a full permutation of 0..n-1, or the answer is 'unavailable', so
+    the client's permutation check rejects nothing legitimate. Side note: the client sends no
+    coordinates, so with no routing key the great-circle fallback cannot run.
+(3) The only non-read/write sdData calls are two soft_delete calls, and both server success paths
+    return data.
+
+== ITEM 4: FMEA ==
+20 owed at the start (not 18 -- the register grew after b31). 16 saved (hover-auditor tool files),
+written to docs/fmea/ only.
+4 are refused by fmea_draft's own records-not-code rule, permanently and by design:
+  CLAUDE.md
+  .claude/skills/sairn-code-scrubber/SKILL.md
+  two hover routing notes
+Owed is 0 once the definition excludes what the tool refuses.
+
+== ITEM 5: PUSH ==
+Landed; rev-list 0 0 against origin. c57e65a8 is on origin, and classify_refusal reads back from
+origin. defect_register --check still fails on ONE record, cody's ce15ddaa6a3c (pre-existing since
+b27), not this batch's.
+
+== CORRECTED BEFORE SENDING ==
+The first handoff draft said cc owned no open Tier A obligations. The ledger says TWO:
+  cody 2026-10-20T05:51:44Z  (b27 rt_routes reachable; open since b29 -- my b30/b31 NEXT lines dropped it)
+  cody 2026-10-20T14:09:30Z  (rf_jobs, new this batch)
+The handoff was corrected and re-uploaded before this report.
+
+== OPEN ==
+- The two cc Tier A obligations above.
+- Routed findings (fourth / hank / cody), and b29's eight defects.
+- Michael: the reopen role set.
+
+== UNVERIFIED ==
+- push_retry --loop was driven with a stubbed git, not against a live gate refusal.
+- fourth's 10/10 optimiser drive was not re-run.
+- The content of the 16 new drafts was not reviewed.
+
+== EVIDENCE ==
+docs/2026-10-20-cc-b32-notes.md, tools/push_retry.py --selftest, docs/defect-density-register.json
+(c57e65a899cf), docs/tier-a-reviews.json, docs/fmea/, SAIRN-handoff-cc-b32.md
+
+SHA256 be00e613b63c0c4f8e975308ec34f3d80b68891b660fec7fcfeb5f6c0c847b03
+END-OF-REPORT

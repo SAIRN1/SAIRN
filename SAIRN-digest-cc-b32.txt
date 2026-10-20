@@ -1,0 +1,22 @@
+DIGEST cc b32
+STATUS: 5 of 5 closed. Push range STARTS at c57e65a8; 0/0 against the REMOTE; no --force, NO OVERRIDE.
+ITEM 1 CONCEPT: classify a refusal by WHO SAID IT. Git's race and transport rejections retry. Gate text is deterministic for that tip, so STOP.
+A gate refusal naming a generated document retries once, only after a successful regenerate-and-fold. Unknown text stops: a retry costs an escalation, a stop only a re-run.
+ITEM 2 FIX: tools/push_retry.py had the same retry-everything shape as my b31 inline loop. classify_refusal() added; cmd_loop stops with exit 5 on a gate refusal.
+DRIVEN with a stubbed git: a Tier A refusal went from 4 pushes to 1; a fetch-first race still gets 4. Selftest +11 arms (9 on the real b31 texts, 2 driving the loop), all pass.
+The register-feed gate refused the first push. The loop stopped, the cause was answered with record c57e65a899cf, and the next single push landed.
+ITEM 3: fourth's rt_routes optimiser obligation DISCHARGED. The envelope drift has no consumer; the permutation check is exact (orderStops always returns a full permutation).
+LOW: a failed optimise toasts "NOT backed up ... saved on this device only" even when silent -- wrong for a compute request. Routed to fourth.
+ITEM 4 FMEA: 20 owed at the start, not 18 (the register grew). 16 saved (hover-auditor tools, written to docs/fmea/ only).
+4 are refused by fmea_draft's own records-not-code rule (CLAUDE.md, code-scrubber SKILL.md, 2 hover routing notes). Owed is 0 by the tool's own definition.
+CORRECTED BEFORE SENDING: my first handoff draft said cc owned no open Tier A. The ledger says TWO -- cody 05:51:44Z (open since b29; my b30/b31 NEXT dropped it) and cody 14:09:30Z (rf_jobs).
+DECISION-NEEDED: Michael -- may only the owner reopen a closed pay period, or the owner plus billing (today's set)?
+CHANGED: tools/push_retry.py; docs/defect-density-register.json (1 record); docs/tier-a-reviews.json (1 discharged); docs/fmea/ (16).
+SQL: none.
+EVIDENCE-path: SAIRN-report-cc-b32.txt, SAIRN-handoff-cc-b32.md, docs/2026-10-20-cc-b32-notes.md
+UNVERIFIED: push_retry was driven on a stubbed git, not a live refusal. fourth's 10/10 optimiser drive was not re-run. The 16 drafts' content was not reviewed.
+ROUTED: fourth -- optimise toast. hank -- legacy id, overlaps, inert_until. cody -- job_ref byte cap, sd-sub-data cap, consolidate, P2, 3f9e48e0, ce15ddaa6a3c.
+NEXT: cc -- discharge cody 2026-10-20T05:51:44Z first (the oldest), then cody 2026-10-20T14:09:30Z.
+CONTEXT 63.8% of 1,000,000 -- 638,443 tokens, measured.
+SHA256 6c2ef7bf796afd8e9514636c399fb45f57a9d5296b101d0588ded2356458fd83
+END-OF-REPORT
