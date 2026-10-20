@@ -1733,6 +1733,23 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b30-cap-per-action.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "'R2. past the derived ceiling (' + bytesOf(over) + ' bytes) -> 413 '"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'naming rt_routes/upsert -- a cap, not an exemption',"
+    }
+   ],
+   "sha": "257d60f532a18693aef13c8ca9f021e5dbd999cb",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/bridge-unknown-action.test.js",
    "class": "test file",
    "level": "WEAKENING",
@@ -5226,6 +5243,23 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b30-cap-per-action.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "'R2. past the derived ceiling (' + bytesOf(over) + ' bytes) -> 413 '"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'naming rt_routes/upsert -- a cap, not an exemption',"
+    }
+   ],
+   "sha": "7d7398e0b153576b378b1879105507d8b7eafbfc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/sd-data-leg-bookings-toctou.test.js",
    "class": "test file",
    "level": "WEAKENING",
@@ -6985,6 +7019,23 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "9cb57e722d6fb134e73c4a1aa934bd7f5660f193",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b30-cap-per-action.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "'R2. past the derived ceiling (' + bytesOf(over) + ' bytes) -> 413 '"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'naming rt_routes/upsert -- a cap, not an exemption',"
+    }
+   ],
+   "sha": "9d13b07f7e6e65794564c6f1f075ad67b961c345",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -10382,6 +10433,23 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b30-cap-per-action.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "'R2. past the derived ceiling (' + bytesOf(over) + ' bytes) -> 413 '"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'naming rt_routes/upsert -- a cap, not an exemption',"
+    }
+   ],
+   "sha": "da0acb38c1f9e41ac397727e030f63f431607f2b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/_lib/sairnsenior-authorizations.test.js",
    "class": "test file",
    "level": "CHANGE",
@@ -11956,6 +12024,23 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "f8baf814bfd9a2c7e23e283f8c585ea5eb20b058",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b30-cap-per-action.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "'R2. past the derived ceiling (' + bytesOf(over) + ' bytes) -> 413 '"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'naming rt_routes/upsert -- a cap, not an exemption',"
+    }
+   ],
+   "sha": "f8d628714f91f9f3a240c17b2613f3e5d77420f6",
    "criteria_version": "2026-10-06.1"
   },
   {

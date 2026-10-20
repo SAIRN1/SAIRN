@@ -7389,6 +7389,34 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-20T11:47:22Z",
+      "opened_at_sha": "7d7398e0b153576b378b1879105507d8b7eafbfc",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 6,
+      "resources": [
+        "rf_claim_agreements",
+        "rf_claims",
+        "rf_invoices",
+        "rt_routes",
+        "rt_stops",
+        "slabs"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/b30-cap-per-action.test.js",
+        "api/sd-data.js"
+      ],
+      "what": "b30(cody) -- THE PAYLOAD CAP NOW APPLIES TO EVERY VERB EXCEPT read, AND IT IS KEYED BY (resource, action). api/sd-data.js's cap gate read `if (action === 'write')`, so all 38 declared verbs across 77 resources bypassed it; rf_invoices carries rfinv_data_size <= 262144 and writes only through issue/add_payment/reconcile_claim/gl_export, so it was UNCAPPED. The gate is now `if (action !== 'read')` with a three-step resolution in one function payloadCapFor(): a (resource,action) entry, then b28/b29's per-resource entry, then 64KB. api/_resources/index.js gained ACTION_CLASS, a declared write-class/compute-only map with a load-time completeness assertion that throws. rt_routes upsert/optimize get a DERIVED larger ceiling (200 stops x 700 bytes + 32768) because a full 200-stop route is ~109KB of legitimate payload the 64KB default would have refused. 18 arms in api/b30-cap-per-action.test.js, 7 red under ablation. WHAT TO TRY TO BREAK: (a) the fail-closed claim -- find a write path that still reaches PostgREST with no cap, e.g. a resource whose branch dispatches on something other than the top-level action, or a verb reached through api/sd-sub-data.js or a per-app endpoint rather than this gate; (b) the rt_routes ceiling -- is 700 bytes per stop really the worst case given job_ref, accuracy_m and status have no length bound I checked? a longer job_ref could make a legitimate 200-stop route exceed it and my arm R1 would not see it because its payload uses short job_refs; (c) step 2 of the resolution now applies the six b28/b29 per-resource caps to EVERY verb of those resources including compute-only ones -- is any of those six reachable with a verb whose legitimate payload exceeds its row cap for a reason unrelated to the row?; (d) ACTION_CLASS's three pinned scan disagreements (consolidate, reserve, release_retainage) -- I declared all three write-class against the scan; check the branches and say whether I am right, because if reserve really does not write then my declaration is the wrong kind of wrong; (e) G4 excludes `read` from the cap entirely -- is there a read path that writes anything (an upsert-on-read, a touch of last_seen) that this now leaves uncapped?",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-20T11:47:22Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
