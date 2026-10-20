@@ -4194,8 +4194,8 @@
       "task": "b38: sql/rt_routes_schema.sql reconciled to what Michael actually ran (rtroutes_saved_sane removed) plus every doc citing that constraint; docs/CRITICALITY-TIERS.md leg_cremations and employees grounds cells as traced chains and the rf_jobs write citation; one stale line-number citation in sairnlaw.html; sairncode worldwide competitive-gap audit on primary regulation with full-text fetches; currency sweep of MY OWN items only, reporting shared ones; sairndental GFE/denials/credentialing correctness audit; push; handoff/report/digest. FILES: sql/rt_routes_schema.sql docs/CRITICALITY-TIERS.md sairnlaw.html sairndental.html docs/cloud-research/ docs/2026-10-19-fourth-b38-notes.md docs/2026-10-19-fourth-b34-routing-phase1.md SAIRN-handoff-fourth-b38.md SAIRN-report-fourth-b38.txt SAIRN-digest-fourth-b38.txt docs/batch-manifest-fourth-b38.json NOT-stonedesk-html-hanks-b37-items-1-and-2 NOT-api-sd-data-js-codys NOT-tools-shared-REPORT-ONLY NOT-dot-claude-shared-REPORT-ONLY NOT-docs-tier-a-reviews-json",
       "claimed_at": "2026-10-19T22:54:27Z",
       "claimed_at_epoch": 1792450467.5125616,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T06:19:05Z",
       "files": [
         "SAIRN-digest-fourth-b38.txt",
         "SAIRN-handoff-fourth-b38.md",
