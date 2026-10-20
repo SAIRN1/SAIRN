@@ -35352,7 +35352,7 @@
       "recurrence_open": "NOT CLOSED. While the timesheet holds SIX days the maximum recordable week is 144 hours, so thresholds 145-167 are equally unreachable and still honoured; the exact bound is the record own maximum and moves to 168 only when day seven lands (held on api/sd-data.js, cody b29)."
     },
     {
-      "commit": "8483f01051e0",
+      "commit": "91b588a222dd",
       "date": "2026-10-20",
       "subject": "fix(sairnbiz b43): vendor ids were the last four digits of the clock -- now the same per-device series as invoices and employees",
       "files": [
