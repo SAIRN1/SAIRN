@@ -240,15 +240,29 @@ function insertedStops(calls) {
   {
     const src = fs.readFileSync(path.join(__dirname, 'sd-data.js'), 'utf8');
     const i = src.indexOf('const toInsert = p.stops.map(');
-    const block = i === -1 ? '' : src.slice(i, i + 600);
+    // ── BOUNDED BY THE STRUCTURE, NOT BY A CHARACTER COUNT ───────────────
+    // This was a slice of six hundred characters from the anchor, and the
+    // push gate refused it -- api/b16-slice-window-check.test.js arm S1, "NO
+    // NEW fixed-width source window in an api/ test suite". THE DETECTOR
+    // READS RAW SOURCE, so the old form is deliberately NOT quoted here: a
+    // comment quoting it re-trips the arm, which is this clone's own
+    // recorded lesson. The refusal is right: a window measured in characters
+    // stops covering what it names the moment a comment is added inside it,
+    // and then S1 here reports a clean field list because it read half of one.
+    // Scanned to the terminator that closes the map call instead, so the
+    // window is whatever the structure is.
+    const term = i === -1 ? -1 : src.indexOf('}));', i);
+    const block = (i === -1 || term === -1) ? '' : src.slice(i, term + 4);
     is(i !== -1
        && /license_hash: routeHash/.test(block)
        && !/\.\.\.s\b/.test(block)
        && !/Object\.assign\(\{\}, s\b/.test(block),
        'S1. the stop insert sets `license_hash: routeHash` and does NOT spread '
        + 'the client stop object',
-       i === -1 ? 'the toInsert map was not found -- re-aim this arm'
-                : block.slice(0, 240));
+       (i === -1 || term === -1)
+         ? 'the toInsert map, or its closing `}));`, was not found -- re-aim '
+           + 'this arm rather than widening it'
+         : block.slice(0, 240));
   }
 
   // S2. AND THE MISMATCH REFUSAL IS NOT A FALLBACK. `routeHash || licHash`
