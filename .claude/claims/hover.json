@@ -1022,8 +1022,8 @@
       "task": "b71 hover-auditor-only: currency sweep of own skill+tools vs standing rules (report-only for shared), stripe-webhook.js:177 traced to a conclusion, preflight_citations quoted-string check + PF5 negative control, TOCTOU-on-money and unauth-expensive-endpoint rate-limit sweeps whole tree, self-log closure-state field + backfill, OTS --upgrade, mirror drill, push. FILES: .claude/skills/sairn-hover-auditor/ SAIRN-handoff-H1-b71.md SAIRN-report-H1-b71.txt SAIRN-digest-H1-b71.txt NOT-tools-NOT-api-NOT-docs-NOT-html-NOT-sql NOT-SSRF-NOT-deserialization-NOT-cache-key-NOT-CORS-CSRF-NOT-path-traversal-those-are-H2s",
       "claimed_at": "2026-10-19T22:54:27Z",
       "claimed_at_epoch": 1792450467.87382,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T07:34:49Z",
       "files": [
         "SAIRN-digest-H1-b71.txt",
         "SAIRN-handoff-H1-b71.md",
