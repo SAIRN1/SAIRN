@@ -4228,6 +4228,26 @@
         "docs/tier-a-reviews.json",
         "sairndental.html"
       ]
+    },
+    {
+      "id": "fourth-1792482222",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "b40: sairndental.html lateBy boundary drive and credentialing null-condition distinction; EUR-Lex official API route plus the EU AI Act and AMLR articles; sairncode hcc drg 92.210 read and the citation-rejection rate leaf; sairndesign.html spec-item certification fields; sairnbiz worldwide competitive-gap audit; push. FILES: sairndental.html sairndesign.html docs/cloud-research/ docs/2026-10-20-fourth-b40-notes.md docs/2026-10-20-fourth-b39-sairncode-compliance-artefacts.md SAIRN-handoff-fourth-b40.md SAIRN-report-fourth-b40.txt SAIRN-digest-fourth-b40.txt docs/batch-manifest-fourth-b40.json NOT-docs-tier-a-reviews-json-CC-IS-WAITING-FOR-IT NOT-api-ANYTHING-codys NOT-tools-shared-REPORT-ONLY NOT-CLAUDE-md-ccs NOT-dot-claude-skills-ccs NOT-sairncode-html-DOCS-ONLY",
+      "claimed_at": "2026-10-20T07:43:42Z",
+      "claimed_at_epoch": 1792482222.1003907,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b40.txt",
+        "SAIRN-handoff-fourth-b40.md",
+        "SAIRN-report-fourth-b40.txt",
+        "docs/2026-10-20-fourth-b39-sairncode-compliance-artefacts.md",
+        "docs/2026-10-20-fourth-b40-notes.md",
+        "docs/batch-manifest-fourth-b40.json",
+        "sairndental.html",
+        "sairndesign.html"
+      ]
     }
   ],
   "refusals": [
