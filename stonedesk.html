@@ -2918,7 +2918,9 @@ async function callClaude(system, messages, maxTokens) {
 // =============================================================
 'use strict';
 
-var NET_URL  = 'https://sairn.vercel.app/api/network'; // SAIRN Intelligence Network
+// NET_URL REMOVED 2026-10-20 (hank b32): a constant nothing read. The live
+// Intelligence Network calls (loadNetworkIntelligence, sendNetworkInsight) name
+// api/network directly.
 
 // --- callClaude: the one function all AI calls use ---
 
@@ -2948,22 +2950,9 @@ function learnFromResponse(question, answer) {
   } catch(e) { /* never crash on learning */ }
 }
 
-// --- getBusinessContext: read everything we know ---
-function getBusinessContext() {
-  try {
-    var profile = JSON.parse(localStorage.getItem(APP_ID + '_biz_profile') || '{}');
-    var memory  = JSON.parse(localStorage.getItem(APP_ID + '_memory') || '[]');
-    var pricing = JSON.parse(localStorage.getItem(APP_ID + '_pricing') || '{}');
-    var employees = JSON.parse(localStorage.getItem(APP_ID + '_employees') || '[]');
-    return {
-      profile:   profile,
-      memory:    memory.slice(0, 10),
-      pricing:   pricing,
-      employees: employees.length,
-      lastSync:  localStorage.getItem(APP_ID + '_last_sync') || 'never'
-    };
-  } catch(e) { return {}; }
-}
+// getBusinessContext REMOVED 2026-10-20 (hank b32): no caller in any app file,
+// and it reported `lastSync` from a key nothing has written since the Sync All
+// Apps button was removed in b31 -- a stale sync time waiting for a reader.
 
 // --- saveBusinessFact: remember key facts ---
 function saveBusinessFact(fact) {
@@ -2973,7 +2962,6 @@ function saveBusinessFact(fact) {
     st(APP_ID + '_memory', memory.slice(0, 50));
   } catch(e) {}
 }
-window.getBusinessContext = getBusinessContext;
 window.saveBusinessFact   = saveBusinessFact;
 window.learnFromResponse  = learnFromResponse;
 // =============================================================
