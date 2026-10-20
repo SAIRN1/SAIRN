@@ -4404,6 +4404,32 @@
         "sairnsenior.html",
         "sairnvet.html"
       ]
+    },
+    {
+      "id": "fourth-1792499977",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "b44: satellites driven with real URL params; sairndesign B4 occupancy+heights 902.3/226.1; sairnbiz audit increment; sairndental correctness audit GFE/denials/credentialing; push. Field Map optimiser HELD (hank holds stonedesk.html). FILES: sairndental-book.html sairndental-complaint.html stonedesk-catalog.html stonedesk-intake.html sairndesign.html sairndental.html docs/cloud-research/sairndesign-worldwide-competitive-gap-audit-2026-10-20.md docs/cloud-research/sairnbiz-worldwide-competitive-gap-audit-2026-10-20.md docs/2026-10-20-fourth-b44-sairndental-correctness-audit.md docs/defect-density-register.json docs/batch-manifest-fourth-b44.json SAIRN-handoff-fourth-b44.md SAIRN-report-fourth-b44.txt SAIRN-digest-fourth-b44.txt NOT-stonedesk-html-HANKS NOT-sairnbiz-html-AUDIT-ONLY NOT-api NOT-tests NOT-tools NOT-CLAUDE-md NOT-dot-claude-skills",
+      "claimed_at": "2026-10-20T12:39:37Z",
+      "claimed_at_epoch": 1792499977.6919987,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b44.txt",
+        "SAIRN-handoff-fourth-b44.md",
+        "SAIRN-report-fourth-b44.txt",
+        "docs/2026-10-20-fourth-b44-sairndental-correctness-audit.md",
+        "docs/batch-manifest-fourth-b44.json",
+        "docs/cloud-research/sairnbiz-worldwide-competitive-gap-audit-2026-10-20.md",
+        "docs/cloud-research/sairndesign-worldwide-competitive-gap-audit-2026-10-20.md",
+        "docs/defect-density-register.json",
+        "sairndental-book.html",
+        "sairndental-complaint.html",
+        "sairndental.html",
+        "sairndesign.html",
+        "stonedesk-catalog.html",
+        "stonedesk-intake.html"
+      ]
     }
   ],
   "refusals": [
