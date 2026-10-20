@@ -789,7 +789,7 @@ label.chk input{width:auto;}
         <div class="krow">
           <div class="kpi"><div class="klbl">Drafts</div><div class="kval" id="k-gfe-draft">0</div><div class="kt">Not yet issued</div></div>
           <div class="kpi"><div class="klbl">Due today or overdue</div><div class="kval" id="k-gfe-due">0</div><div class="kt">Against the 149.610(b)(1)(vi) clock</div></div>
-          <div class="kpi"><div class="klbl">Issued</div><div class="kval" id="k-gfe-issued">0</div><div class="kt">Given to the patient</div></div>
+          <div class="kpi"><div class="klbl">Issued</div><div class="kval" id="k-gfe-issued">0</div><div class="kt" id="k-gfe-issued-sub">Given to the patient</div></div>
           <div class="kpi"><div class="klbl">Incomplete</div><div class="kval" id="k-gfe-incomplete">0</div><div class="kt">Missing a required element</div></div>
         </div>
 
@@ -3071,8 +3071,37 @@ function rCredentials(board){
           return '<tr><td>'+H(pname(c.provider_id))+'</td><td>'+H(c.record_type)+'</td><td>'+H(c.label||'--')+'</td>'+
             '<td>'+H(c.expires_on||'--')+'</td><td><span class="badge bw">Not checked yet</span></td></tr>';
         }).join('')
-      : '<tr><td colspan="5" style="color:var(--muted);text-align:center">No credential records yet</td></tr>';
-    if($('credentials-badge'))$('credentials-badge').style.display='none';
+      : '<tr><td colspan="5" style="color:var(--muted);text-align:center">'+
+        '<strong>The credential board could not be evaluated</strong>, so nothing here has been checked &mdash; '+
+        'this is NOT the same as having no credentials to check. '+
+        'sdnEvaluateCredentials() returns nothing when there is no licence key on this install, '+
+        'when the server refuses, or when the network fails.</td></tr>';
+    // ── COULD-NOT-RUN IS A THIRD STATE AND MUST NOT RENDER AS ZERO ──────────
+    // (2026-10-20, b39.) These four tiles are hardcoded `0` in the markup and
+    // this branch used to return without touching them, so FOUR ZEROS -- the
+    // strongest all-clear the panel can show -- stood above a table that had
+    // checked nothing. REPRODUCED: with no licence key and two credentials
+    // expired 21 and 28 months, the panel read Expired 0 / Expiring 0 / CE 0 /
+    // MATE 0 with the nav badge hidden.
+    //
+    // `--` AND `?`, NEVER `0` AND NEVER HIDDEN. Folding "could not tell" into
+    // "passed" is the defect PR 1.11 names, arriving in a KPI tile instead of
+    // a gate. The badge is SHOWN rather than hidden for the same reason: a
+    // hidden badge is indistinguishable from nothing to action.
+    [['k-cred-expired','Expired'],['k-cred-expiring','Expiring soon'],
+     ['k-cred-ce','CE behind pace'],['k-cred-mate','MATE outstanding']]
+      .forEach(function(p){
+        var el=$(p[0]); if(!el)return;
+        el.textContent='--';
+        el.title=p[1]+' was NOT evaluated: the credential board could not be reached. '+
+                 'This is not zero.';
+      });
+    var cbadge=$('credentials-badge');
+    if(cbadge){
+      cbadge.textContent='?';
+      cbadge.title='The credential board could not be evaluated. Nothing has been checked.';
+      cbadge.style.display='';
+    }
     return;
   }
   var items=board.items||[];
@@ -3104,6 +3133,13 @@ function rCredentials(board){
       }).join('')
     : '<tr><td colspan="5" style="color:var(--muted);text-align:center">No credential records yet</td></tr>';
   var c=board.counts||{},ce=board.ce||{};
+  // Clear the could-not-run title set by the !board branch above, or a tile
+  // that is now a real 0 keeps a tooltip saying it was never evaluated.
+  ['k-cred-expired','k-cred-expiring','k-cred-ce','k-cred-mate'].forEach(function(id){
+    var el=$(id); if(el)el.removeAttribute('title');
+  });
+  var badgeEl0=$('credentials-badge');
+  if(badgeEl0)badgeEl0.removeAttribute('title');
   $('k-cred-expired').textContent=c.expired||0;
   $('k-cred-expiring').textContent=c.expiring||0;
   $('k-cred-ce').textContent=(ce.behind||0)+(ce.overdue||0);
@@ -5236,7 +5272,7 @@ function rGfe(){
 
   var list=gfeRecords();
   var today=dntLocalToday();
-  var dueCount=0,incompleteCount=0;
+  var dueCount=0,incompleteCount=0,lateIssued=0,onTimeIssued=0,unknownIssued=0;
   var rows=list.map(function(g){
     var d=gfeDeadline(g);
     var miss=gfeMissing(g);
@@ -5244,14 +5280,48 @@ function rGfe(){
     var overdue=false;
     if(d.applies&&g.status!=='Issued'){
       var due=gfeFmtDate(d.dueDate);
+      // `<=` IS DELIBERATE AND THE TILE SAYS SO: it is labelled "Due today or
+      // overdue". b38's audit called this an off-by-one; the audit was wrong
+      // and the label is the evidence. Left exactly as it was.
       if(due<=today){dueCount++;overdue=true;}
+    }
+    // ── WAS AN ISSUED ESTIMATE ISSUED INSIDE ITS WINDOW? (2026-10-20, b39) ──
+    // issueGfe() has stored `issued_at` since this panel shipped and NOTHING
+    // HAS EVER READ IT. Before this, marking an estimate Issued moved it out of
+    // dueCount and gave it a neutral badge, so an estimate issued 46 days past
+    // its 149.610(b)(1)(vi)(C) date rendered identically to one issued on time
+    // -- reproduced in the browser, Due tile 1 -> 0 and the nav badge gone.
+    // The whole obligation in (b)(1)(vi) is a DATE, so dropping the date is
+    // dropping the obligation.
+    //
+    // THREE OUTCOMES, NEVER TWO. on-time / late / timing-not-on-file. The third
+    // is for records issued before `issued_at` existed: those must not render
+    // as on time, because nothing established that.
+    var lateBy=null,issuedUnknown=false;
+    if(d.applies&&g.status==='Issued'){
+      if(g.issued_at){
+        lateBy=Math.round((new Date(g.issued_at+'T00:00:00').getTime()-d.dueDate.getTime())/86400000);
+        if(lateBy>0)lateIssued++; else onTimeIssued++;
+      }else{
+        issuedUnknown=true;unknownIssued++;
+      }
     }
     return '<tr><td>'+H(g.patient_name||'--')+'</td>'+
       '<td>'+(g.trigger==='request'?'Requested':'Scheduled')+' '+H(g.trigger_date||'--')+'</td>'+
       '<td>'+(g.service_date?H(g.service_date):'<span style="color:var(--muted)">not scheduled</span>')+'</td>'+
       '<td>'+fmt(gfeTotal(g))+'</td>'+
       '<td>'+(d.applies
-        ? ('<span class="badge '+(g.status==='Issued'?'bx':(overdue?'br':'bw'))+'">'+gfeFmtDate(d.dueDate)+'</span>'+
+        ? ('<span class="badge '+(g.status==='Issued'
+              ? (issuedUnknown?'bw':(lateBy>0?'br':'bg'))
+              : (overdue?'br':'bw'))+'">'+gfeFmtDate(d.dueDate)+'</span>'+
+           (g.status==='Issued'
+              ? '<div style="font-size:11px;color:'+(issuedUnknown?'var(--muted)':(lateBy>0?'var(--danger)':'var(--muted)'))+'">'+
+                (issuedUnknown
+                   ? 'issued, timing not on file'
+                   : (lateBy>0
+                        ? ('issued '+gfeFmtDate(new Date(g.issued_at+'T00:00:00'))+' &mdash; '+lateBy+' day'+(lateBy===1?'':'s')+' LATE')
+                        : ('issued '+gfeFmtDate(new Date(g.issued_at+'T00:00:00'))+' &mdash; in time')))+'</div>'
+              : '')+
            (d.altDate?'<div style="font-size:11px;color:var(--muted)">other reading '+gfeFmtDate(d.altDate)+'</div>':''))
         : '<span class="badge bx">none</span>')+'</td>'+
       '<td><span class="badge '+(g.status==='Issued'?'bg':'bw')+'">'+H(g.status)+'</span>'+
@@ -5264,6 +5334,17 @@ function rGfe(){
   if($('k-gfe-draft'))$('k-gfe-draft').textContent=list.filter(function(g){return g.status!=='Issued';}).length;
   if($('k-gfe-due'))$('k-gfe-due').textContent=dueCount;
   if($('k-gfe-issued'))$('k-gfe-issued').textContent=list.filter(function(g){return g.status==='Issued';}).length;
+  // THE SUMMARY HAS TO CARRY IT TOO. Fixing only the row would leave the tiles
+  // reading clean, and the tiles are what gets read.
+  var isub=$('k-gfe-issued-sub');
+  if(isub){
+    isub.textContent = lateIssued
+      ? (lateIssued+' issued LATE'+(unknownIssued?', '+unknownIssued+' timing not on file':''))
+      : (unknownIssued
+           ? (unknownIssued+' with timing not on file')
+           : (onTimeIssued?'All '+onTimeIssued+' issued in time':'Given to the patient'));
+    isub.style.color = lateIssued ? 'var(--danger)' : '';
+  }
   if($('k-gfe-incomplete'))$('k-gfe-incomplete').textContent=incompleteCount;
   var badge=$('gfe-badge');
   if(badge){
