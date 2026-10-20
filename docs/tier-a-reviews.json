@@ -7417,6 +7417,32 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-20T13:03:28Z",
+      "opened_at_sha": "64c02622ab6350c35ffd25d0eb8c4b45b1f27f70",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 4,
+      "resources": [
+        "rf_invoices",
+        "sc_claims",
+        "sc_dme"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/_resources/extra-actions.test.js",
+        "api/b30-cap-per-action.test.js",
+        "api/sd-data.js"
+      ],
+      "what": "b31 cody: api/_resources/extra-actions.test.js only (no production logic) touches sc_claims and sc_dme. Test expectations updated to the CURRENT grants: Tier A sc_ resources grant ['soft_delete','tombstones'] (+ 'therapy_accumulator' on sc_claims), and the hard-deletable subject is now derived from tierASoftDeleteOnly instead of naming sc_dme (which became Tier A in 5c781b990, so delete on it is correctly a 400). Please try to break: (a) that asserting 'tombstones' as a Tier A grant does not bless a verb that should not be reachable; (b) that the derived HARD subject cannot silently become undefined (an assert guards it). Also api/_resources/sairncode.js and sairnsenior.js COMMENT-ONLY requotes.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-20T13:03:28Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
