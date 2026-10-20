@@ -2376,6 +2376,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/push_gate_path_scope_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "3d7945ec9311758c8d43a4fedda25b0fecf8548e",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_drive_upload_verify_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -4998,6 +5006,23 @@
     }
    ],
    "sha": "7eae3077467fd164ca70d929c8c1cd5000b64d73",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/push_gate_path_scope_sabotage_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "timeout=600,"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(base, ignore_errors=True)"
+    }
+   ],
+   "sha": "7f68cd2c85b5b2c428cf2cbfcb37084a7d1dd537",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -9908,6 +9933,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "e253d41044c2bfa3ec977bd01eb694e86646a9db",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/push_gate_path_scope_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "e27a7510b774f2720f98952607c797523e3df674",
    "criteria_version": "2026-10-06.1"
   },
   {
