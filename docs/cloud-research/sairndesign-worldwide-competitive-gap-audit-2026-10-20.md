@@ -181,7 +181,7 @@ recommendation is unblocked, after four that were not.
    Product Safety Regulation, not REACH. **A worldwide audit that cannot read
    EU law is a US audit with a wider title, and saying so is the only honest
    handling.** Fixing the route is worth more than the next audit.
-2. **The 2010 ADA Standards for Accessible Design — NOT FETCHED.** §3.2's
+2. **[CLOSED b43 — §7.3 reads the 2010 Standards from the DOJ text.]** **The 2010 ADA Standards for Accessible Design — NOT FETCHED.** §3.2's
    finding is the measured *absence* of an accessibility dimension, not a claim
    about any clearance. **Do not take a dimension from this document.**
 3. **40 CFR 770 was read TARGETED, not whole** — §770.10's limits and §770.45's
@@ -350,3 +350,98 @@ session.
 * **No legal review.** Who is a *distributor* turns on whether the designer
   takes title and resells or only specifies; both business models exist and
   this audit does not decide which a given customer runs.
+
+---
+
+## 7. b43 ADDENDUM — THE UK LIMB, THE ADA STANDARDS, AND B1–B3 PROVEN ON THE RUNNING APP
+
+**fourth / b43, 2026-10-20.** This audit has existed since b39 (US) and b41
+(EU, §6). This increment closes **§5.2**, which said the ADA Standards were
+not fetched. It adds the **first non-EU, non-US jurisdiction**, and it proves
+B1–B3 against the live app with a real server write.
+
+### 7.1 B1–B3 on the running app — a real write, read back, then restored
+
+This is the open item b41 named: *"one real write of `cert` to the real
+endpoint, read back"*. It is now closed.
+- **How it ran:** the real login at `https://sairn.vercel.app/sairndesign.html`
+  on the demo licence (`SDN-PINNACLE-2026`, role `owner`), then the UI path
+  `editSpec` → cert form → `saveSpec` on record `SP-1786203933218-222`.
+- **Read back from the server, not localStorage:** all 13 `cert` fields
+  persisted, and `sdnCertState()` recomputed from the server copy gives
+  **compliant**.
+- **Restored:** the original record was then written back. A server read
+  after that is **byte-identical to the original** (sorted-key JSON compare),
+  so the demo tenant ends as it started.
+- **Result: 9/9** (`scratchpad/b43/live_design.py`). **The `data jsonb`
+  route needs no schema change, as §6.1 claimed — now measured, not argued.**
+
+### 7.2 UK — The Furniture and Furnishings (Fire) (Safety) Regulations 1988
+
+**SI 1988/1324**, fetched as the official XML from
+`https://www.legislation.gov.uk/uksi/1988/1324/data.xml` (HTTP 200, 176,963
+B). **That is the revised text as legislation.gov.uk holds it.** Regs 10, 12
+and 13 appear there as revoked; the date of revision was not checked.
+
+| reg. | what the text says | what it means for this app |
+|---|---|---|
+| **3** "furniture" | *"furniture of any description which is ordinarily intended for private use in a dwelling"*, and it **includes beds, divans, sofa-beds, cushions, mattresses and pillows** | **Wider than 16 CFR 1640**, whose § 1640.3(e)(3) **excludes** mattresses, foundations and bedding. **The B2 predicate built in b41 is US-only:** answering "bedding/mattress = yes" makes an item n/a, but in the UK that same item is in scope |
+| **4** | the Regulations do not apply to goods **manufactured before 1 January 1950**, nor to re-upholstery materials for such furniture | **A third vintage line**, after 1640's **25 June 2021** and 770's **1 June 2018**. One `pre2021` answer cannot carry three jurisdictions' cut-offs |
+| **5** | upholstery must pass the **cigarette test** (Sched. 4) | a test result, not a label sighting |
+| **8** | permanent covers must pass the **match test** (Sched. 5) | same |
+| **11** | furniture covered by Sched. 7 must bear the **permanent labelling** set out there | the UK analogue of § 1640.4(b) |
+| **14** | **second-hand furniture** previously supplied to a non-dealer must still satisfy regs 5, 6 and 8(1)–(2), unless reg. 4 excludes it | **a vintage piece made in 1950 or later and resold in the UK is IN scope.** The app's one-of-a-kind / vintage flag is exactly this case |
+| **15** | **"no person shall supply"** furniture that fails any requirement | the duty sits on **any** supplier, a reselling designer included |
+
+**This is the sharpest finding in the increment.** The US predicate treats
+"vintage" as a way *out* of scope (1640.2(a); 770.2(e)(4)). In the UK,
+reg. 14 pulls second-hand furniture back *in*, and only pre-1950 goods are
+excluded.
+
+### 7.3 2010 ADA Standards for Accessible Design — §5.2 closed
+
+Source: DOJ PDF `https://www.ada.gov/assets/pdfs/2010-design-standards.pdf`
+(HTTP 200, 279 pages, text-extracted). **Every figure below is quoted from
+that text.**
+
+| section | requirement |
+|---|---|
+| **305.3** | clear floor or ground space **30 in min × 48 in min** |
+| **304.3.1** | turning space **60 in diameter min** (or a T-shape in a 60 in square, 304.3.2) |
+| **403.5.1** | walking-surface clear width **36 in min** (32 in for 24 in max as an exception) |
+| **902.2 / 902.3** | dining and work surfaces need a 305 forward-approach space and 306 knee/toe clearance; tops **28 in min, 34 in max** above the floor |
+| **226.1** | where dining surfaces are provided, **at least 5 percent** of seating and standing spaces comply with 902; the same for work surfaces used by **other than employees**. Sales and service counters are excepted |
+
+**What the app holds against that.** `sdn_roomdims` stores **`width_ft`,
+`length_ft`** — one rectangle per project (`saveRoomDimensions()`). Spec
+items carry **no dimension and no height**, and `sdn_projects` carries **no
+occupancy type** (fields: `client_id name budget target_install_date status
+notes`).
+
+**So none of the ADA checks is computable today, for a precise reason.**
+Each needs either a **height on a spec item** (902.3), a **count across the
+items in a room** (226.1's 5 percent), or a **layout** (305/403/304), and the
+first two need to know whether the project is a **place of public
+accommodation** at all. A residential client is outside Title III.
+
+### 7.4 What this adds to §4
+
+| | thing | size | blocker |
+|---|---|---|---|
+| **B4** *(replaces §4's B4)* | **Project occupancy** (residential / public accommodation / employee-only). Then, on spec items that are dining or work surfaces, **a top height** checked against **902.3 (28–34 in)**, and a **226.1 count**: at least 5 percent compliant, shown as N of M | small–medium | none — **the Standards are now read** |
+| **B9** | **Jurisdiction on the project, and a predicate per jurisdiction.** The UK's reg. 3 scope (bedding in), reg. 4 date (1950) and reg. 14 (second-hand in) contradict the US predicate on three answers out of five | medium | which jurisdictions to support is a product decision |
+| **B10** | **Layout clearances** (305 / 304 / 403) | large | needs furniture placement, which this app does not model |
+
+**B4's first half and B9's data field are unblocked.** B10 is honestly large.
+
+### 7.5 Not read, or not done
+
+* **UK Schedules 4, 5 and 7 (test methods and label text) were not read**,
+  so no label wording is quoted for the UK.
+* **No other Commonwealth or Asian jurisdiction**, e.g. Canada's flammability
+  regulations or Australia's. The UK is the one non-EU, non-US limb added.
+* **ADA Title III scoping beyond 226.1** (e.g. the 2010 Standards' 802/803
+  spaces) was not read, and **no state building code** was read.
+* **No competitor was driven**, the same deliberate hole as before.
+* **No legal review.** Whether a designer is a "supplier" under reg. 15 turns
+  on whether they take title, as with the EU distributor question in §6.4.
