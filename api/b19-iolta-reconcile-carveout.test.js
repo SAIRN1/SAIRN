@@ -128,16 +128,66 @@ section('R2. the reconcile set is EXACTLY the bar-admitted tier -- b20 '
      'R2a. ...and NEITHER set is empty or a single name, so the equality above '
    + 'is a comparison between two real sets rather than two empty ones',
      JSON.stringify({ tier: tier.length, reconcile: rec.length }));
+  // ── RE-AIMED IN b29, AND THE OLD ARM DID ITS JOB TWICE ────────────────
+  // R2c used to assert `paralegal` ABSENT from LAW_RECONCILE_ROLES **and**
+  // `implemented !== true`, so that "deferred behind a mechanism" could not
+  // decay into "quietly granted". It went red TWICE and was right both times:
+  // first when hank's b23 built the attestation and flipped `implemented` to
+  // true, then again when b29 re-opened the delegation. Neither red was a
+  // false alarm and neither was fixed by weakening the arm.
+  //
+  // MICHAEL'S DECISION, 2026-10-20: the grant comes back as PREPARE-ONLY. So
+  // the thing to assert is no longer ABSENCE, it is WHICH SET -- and that is a
+  // stronger assertion than the one it replaces, because the dangerous edit
+  // was never "grant paralegal", it was "grant paralegal THE FINISHED-WORK
+  // AUTHORITY". This arm now goes red on exactly that edit and stays green on
+  // the safe one.
   is(lawRoles.LAW_RECONCILE_ROLES.paralegal !== true
+     && lawRoles.LAW_RECONCILE_PREPARE_ROLES.paralegal === true
      && lawRoles.LAW_RECONCILE_ATTESTATION.required_by_rule === true
-     && lawRoles.LAW_RECONCILE_ATTESTATION.implemented !== true,
-     'R2c. paralegal is ABSENT **and** the attestation record still says the '
-   + 'review is required by rule and NOT implemented -- so the b20 deferral is '
-   + 'a structure. Granting paralegal without building the mechanism turns '
-   + 'this red, which is what stops "deferred behind a mechanism" decaying '
-   + 'into "quietly granted"',
-     JSON.stringify({ paralegal: lawRoles.LAW_RECONCILE_ROLES.paralegal,
-                      attestation: lawRoles.LAW_RECONCILE_ATTESTATION }));
+     && lawRoles.LAW_RECONCILE_ATTESTATION.implemented === true,
+     'R2c. paralegal is PREPARE-ONLY: absent from LAW_RECONCILE_ROLES, present '
+   + 'on LAW_RECONCILE_PREPARE_ROLES, with the attestation still required by '
+   + 'rule and now implemented. Moving paralegal onto the finished-work set '
+   + 'turns this red, which is the edit that would matter',
+     JSON.stringify({ finished: lawRoles.LAW_RECONCILE_ROLES.paralegal,
+                      prepare: lawRoles.LAW_RECONCILE_PREPARE_ROLES.paralegal,
+                      required: lawRoles.LAW_RECONCILE_ATTESTATION.required_by_rule,
+                      implemented: lawRoles.LAW_RECONCILE_ATTESTATION.implemented }));
+
+  // R2d. THE RELATIONSHIP BETWEEN THE TWO PREPARE SETS, NOT THEIR IDENTITY.
+  // `LAW_TRUST_PREPARE_ROLES` (who may stage a disbursement) and
+  // `LAW_RECONCILE_PREPARE_ROLES` (who may run a reconciliation) are equal
+  // today and answer different questions. Asserting equality would make a
+  // deliberate divergence look like a bug; asserting that the reconcile set is
+  // a SUBSET of the trust one holds the real invariant -- nobody may prepare a
+  // reconciliation who may not prepare the disbursements it reconciles.
+  {
+    const trustPrep = Object.keys(lawRoles.LAW_TRUST_PREPARE_ROLES)
+      .filter((r) => lawRoles.LAW_TRUST_PREPARE_ROLES[r] === true);
+    const recPrep = Object.keys(lawRoles.LAW_RECONCILE_PREPARE_ROLES)
+      .filter((r) => lawRoles.LAW_RECONCILE_PREPARE_ROLES[r] === true);
+    is(recPrep.length >= 1 && recPrep.every((r) => trustPrep.indexOf(r) !== -1),
+       'R2d. every reconcile-preparer may also prepare a trust disbursement -- '
+     + 'a SUBSET relationship, not an equality, so the two can diverge on '
+     + 'purpose without this arm crying wolf',
+       JSON.stringify({ trustPrep: trustPrep, recPrep: recPrep }));
+  }
+
+  // R2e. AND A PREPARER MAY NOT ATTEST. The prepare-only grant is only safe
+  // while the two populations are disjoint: a paralegal attesting to their own
+  // reconciliation is the b20 state with an extra row in a table.
+  {
+    const bar = Object.keys(lawRoles.LAW_BAR_ADMITTED_ROLES)
+      .filter((r) => lawRoles.LAW_BAR_ADMITTED_ROLES[r] === true);
+    const recPrep = Object.keys(lawRoles.LAW_RECONCILE_PREPARE_ROLES)
+      .filter((r) => lawRoles.LAW_RECONCILE_PREPARE_ROLES[r] === true);
+    is(bar.length >= 1 && recPrep.length >= 1
+       && !recPrep.some((r) => bar.indexOf(r) !== -1),
+       'R2e. the prepare-only set and the bar-admitted set are DISJOINT -- no '
+     + 'role can both produce a reconciliation and attest to it',
+       JSON.stringify({ bar: bar, recPrep: recPrep }));
+  }
   is(Object.isFrozen(lawRoles.LAW_RECONCILE_ROLES)
      && Object.getPrototypeOf(lawRoles.LAW_RECONCILE_ROLES) === null,
      'R2b. ...and it is FROZEN with a NULL PROTOTYPE, so `constructor` is not a '
@@ -216,12 +266,50 @@ section('M. the bookkeeper refusal names the reason, not the generic sentence');
 section('A. the half this does NOT build is carried in the code');
 {
   const att = lawRoles.LAW_RECONCILE_ATTESTATION;
-  is(att && att.required_by_rule === true && att.implemented === false,
+  // ── RE-AIMED IN b29, AND THE TWO BOOLEANS STILL DO THE SAME JOB ───────
+  // A1 asserted `implemented === false`. hank's b23 BUILT the attestation and
+  // flipped it, so the arm went red -- correctly, and law-roles.js's own
+  // comment predicted the red and said the arm was to be RE-AIMED with the new
+  // expected answer written down, not deleted to go green. This is that
+  // re-aim.
+  //
+  // THE PAIR'S PURPOSE IS UNCHANGED. It existed so "we know and have not built
+  // it" could not decay into "it is fine"; it now asserts the OTHER corner of
+  // the same square -- required AND implemented -- so the pair still cannot be
+  // quietly collapsed, and the third state (built but not usable) lives in
+  // `inert_until` where A4 below reads it.
+  is(att && att.required_by_rule === true && att.implemented === true,
      'A1. LAW_RECONCILE_ATTESTATION says the lawyer review IS required by the '
-   + 'rule and is NOT implemented here. Two booleans, so "we know and have not '
-   + 'built it" cannot decay into "it is fine"',
+   + 'rule and IS implemented here as of b23. Two booleans, so neither "we '
+   + 'have not built it" nor "we built it" can pass unnoticed',
      JSON.stringify({ required: att && att.required_by_rule,
                       implemented: att && att.implemented }));
+
+  // A4. BUILT IS NOT USABLE, AND THAT IS THE STATE TODAY. The attestation
+  // table is unprovisioned, so api/law-attest.js answers 503 on every write.
+  // `inert_until` is what carries that, and an empty or absent value would
+  // make "armed in code" read as "a firm can use it" -- the exact conflation
+  // the structure was built to prevent.
+  is(att && typeof att.inert_until === 'string' && att.inert_until.length > 40
+     && /sairnlaw_trust_attestations\.sql/.test(att.inert_until),
+     'A4. ...and `inert_until` still names the SQL that has not been run, so '
+   + '"armed in code" cannot be read as "usable by a firm"',
+     att && att.inert_until);
+
+  // A5. THE PREPARE-ONLY CONTRACT IS CARRIED AS A STRUCTURE. b29 granted a
+  // delegation on five conditions; prose in a handoff would have been the
+  // fourth place those conditions have been written and the first to go stale.
+  {
+    const c = att && att.prepare_only_contract;
+    is(c && Object.isFrozen(c)
+       && /LAW_BAR_ADMITTED_ROLES only/.test(c.who_may_attest)
+       && /signer_mode/.test(c.solo_firm)
+       && /attested:false/.test(c.every_reply_is_stamped),
+       'A5. the prepare-only contract names who may attest, the solo-firm '
+     + 'single-signer mode, and the unconditional attested:false stamp -- '
+     + 'frozen, in the code, not in a handoff',
+       JSON.stringify(c));
+  }
   is(att && typeof att.gap === 'string' && att.gap.length > 80
      && /never/.test(att.gap),
      'A2. ...and it states what the app must NOT present as attested',

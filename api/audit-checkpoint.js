@@ -608,6 +608,22 @@ module.exports = async (req, res) => {
     // job did not do its work, and a retry cannot change that until somebody
     // runs the SQL. `retry_helps: false` says so to the watchdog.
     if (isNarrowCheck(err && err.detail)) {
+      // ── LOGGED HERE, NOT RETURNED (b29) ──────────────────────────────────
+      // `err.detail` on this path is `await r.text()` off the refused INSERT
+      // (see checkpointTable's `e.detail = body`) -- the raw PostgREST body,
+      // naming the table and the constraint. It used to ride out in the 503 as
+      // `detail: err.detail`. It is logged instead, so the operator who has to
+      // run the migration still sees exactly what the database said.
+      //
+      // NOTE THE SIBLING BRANCH BELOW DIFFERS AND THAT IS WHY BOTH WERE
+      // DRIVEN RATHER THAN COUNTED: WINDOW_INCOMPLETE's `err.detail` is a
+      // COMPOSED object ({table, read, why}) built by readWindow, not an
+      // upstream body -- the same `detail: err.detail` spelling, one a
+      // disclosure and one not. Both were removed anyway, for one reason: a
+      // client error envelope is the wrong channel for either, and leaving one
+      // means the next reader has to re-derive which is which.
+      console.error('audit-checkpoint: CHECK_NOT_WIDENED, raw refusal:',
+        err && err.detail);
       await beat({
         job: '/api/audit-checkpoint', outcome: 'failed',
         expected_interval_seconds: 86400,
@@ -627,8 +643,8 @@ module.exports = async (req, res) => {
                  + '-- it is idempotent and its second half is the ALTER that '
                  + 'widens a table which already exists. Nothing was '
                  + 'checkpointed for the rejected logs, and that is not the '
-                 + 'same as a clean run.',
-          detail: err.detail
+                 + 'same as a clean run. The raw refusal has been logged '
+                 + 'server-side.'
         }
       });
       return;
@@ -650,6 +666,21 @@ module.exports = async (req, res) => {
           message: 'A window could not be read in full, so nothing was written. ' +
                    'A digest over part of a window would verify cleanly forever ' +
                    'while covering a fraction of the rows.',
+          // ── THIS `detail` STAYS, AND b29 PUT IT BACK (2026-10-20) ────────
+          // b29 removed every `detail: err.detail` in this file for
+          // uniformity. THAT WAS ONE STEP TOO FAR HERE and api's own
+          // audit-checkpoint.test.js said so immediately -- its arm "A WINDOW
+          // WHOSE ROW COUNT IS NOT STATED REFUSES TOO -- the guard must not
+          // vanish with its input" reads `error.detail.why`, and went red with
+          // "Cannot read properties of undefined".
+          //
+          // THE ARM IS RIGHT AND THE REMOVAL WAS WRONG, because this detail is
+          // not the defect b29 was sent at. readWindow COMPOSES it --
+          // `{ table, read, why }`, three fields this file wrote -- whereas
+          // the CHECK_NOT_WIDENED sibling above carried `await r.text()` off a
+          // refused INSERT, i.e. a raw PostgREST body naming internal tables
+          // and constraints. Same `detail: err.detail` spelling, opposite
+          // facts. Removing both was tidiness; removing the raw one is the fix.
           detail: err.detail
         }
       });

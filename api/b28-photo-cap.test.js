@@ -178,16 +178,56 @@ function sqlDataSizeConstraints() {
 // out rather than derived by un-abbreviating the prefix, because `rfcph` ->
 // `rf_claim_photos` and `sdqrp` -> `sd_quote_request_photos` are not
 // derivable, and a guessed mapping would make a drift arm silently skip a row.
+// -- CORRECTED IN b29, AND THE CORRECTION IS THE FINDING -------------------
+// b28 wrote this map by un-abbreviating each constraint prefix into its TABLE
+// name and treating that as the resource. THREE OF THE NINE WERE WRONG, and
+// the error ran in the direction that OVERSTATES the problem -- b28's C7
+// pinned "six uncovered" when three of those six are not written through this
+// file's cap gate at all:
+//
+//   sdlocations  -> the resource is `locations`, NOT `sd_locations`
+//                   (api/sd-data.js:3935/3943). tools/gate1_verify.py's own
+//                   header warns about exactly this: "THE RESOURCE IS NOT THE
+//                   TABLE and that is the whole trap this map exists for."
+//   sdprogphoto  -> written by api/sd-sub-data.js, whose own cap is ALREADY
+//                   1572864 (SUB_JOB_PAYLOAD_MAX_BYTES, :92). Never a defect.
+//   sdqrp        -> written by api/stonedesk-public.js, whose MAX_PHOTO_CHARS
+//                   is 1400000 and whose comment says it was sized FROM the
+//                   1572864 row cap. Never a defect.
+//
+// And a fourth that is a different defect rather than a mis-mapping:
+//   rfinv        -> `rf_invoices` has NO `action === 'write'` branch. Its
+//                   writes are the custom verbs issue / add_payment /
+//                   reconcile_claim / gl_export, and THE CAP GATE ONLY FIRES
+//                   ON action === 'write' (api/sd-data.js:892). So it is not
+//                   under-capped, it is UNCAPPED. Routed, not fixed here.
+//
+// NOT_GOVERNED_HERE below is the three-state answer. "Covered", "uncovered"
+// and "not this gate's business" are three facts, and folding the third into
+// the second is what made b28's six a six.
 const PREFIX_TO_RESOURCE = {
   dntap: 'dnt_appointments',
   rfcph: 'rf_claim_photos',
   rfagr: 'rf_claim_agreements',
   rfphotos: 'rf_photos',
   rfpro: 'rf_proposals',
-  rfinv: 'rf_invoices',
-  sdprogphoto: 'sd_progress_photos',
-  sdqrp: 'sd_quote_request_photos',
-  sdlocations: 'sd_locations'
+  sdlocations: 'locations'
+};
+
+// Oversized constraints whose rows this file's write-cap gate does NOT govern.
+// Each carries WHERE it is governed instead, so the claim is checkable rather
+// than asserted.
+const NOT_GOVERNED_HERE = {
+  rfinv: 'rf_invoices writes through custom verbs (issue, add_payment, '
+       + 'reconcile_claim, gl_export); the cap gate fires only on the write '
+       + 'action, so this table is UNCAPPED at the API rather than '
+       + 'under-capped. api/sd-data.js:892 is the gate. ROUTED.',
+  sdprogphoto: 'sd_progress_photos is written by api/sd-sub-data.js, whose '
+             + 'SUB_JOB_PAYLOAD_MAX_BYTES (:92) is already 1572864 -- the same '
+             + 'number as its DB constraint. Correct already.',
+  sdqrp: 'sd_quote_request_photos is written by api/stonedesk-public.js, whose '
+       + 'MAX_PHOTO_CHARS is 1400000 and whose comment derives it FROM the '
+       + '1572864 row cap. Correct already.'
 };
 
 // The cap table as api/sd-data.js actually writes it, parsed from source.
@@ -343,6 +383,83 @@ const PATIENT = { id: 'PT-9', patient_id: 'PT-9', first_name: 'A',
   }
 
   // ═════════════════════════════════════════════════════════════════════
+  section('B. b29 -- THE FOUR CAPS CLOSED IN b29, DRIVEN NOT DECLARED');
+  // ═════════════════════════════════════════════════════════════════════
+
+  // C6/C7 prove the cap TABLE agrees with sql/. These prove the GATE answers
+  // differently because of it -- a table entry nothing reads is the inert
+  // protection this suite's own comments keep warning about. Every arm here
+  // was RED before the b29 entries landed, by the same stash-and-rerun
+  // ablation §6 of the b29 handoff records.
+  //
+  // THE PAYLOADS ARE THE BRANCHES' OWN AND THEY WERE PROBED, NOT GUESSED.
+  // `rf_claim_agreements` with {id, claim_id, event_type} answers 400 naming
+  // five missing fields; `rf_photos` answers 400 "payload.photo_base64 is
+  // required". A thin payload would make these arms measure a field validator
+  // while claiming to measure a cap.
+  const AGREEMENT = { id: 'AG-1', claim_id: 'CLM-1', event_type: 'executed',
+                      signer_name: 'A Homeowner', signature_data: 'data:,sig',
+                      signing_venue: 'buyer_residence',
+                      executed_at: '2026-10-19', state: 'OH' };
+  const RFPHOTO2 = { id: 'PH-9', job_id: 'JOB-1', photo_base64: 'data:,x' };
+  const PROPOSAL = { id: 'PR-9', job_id: 'JOB-1', event_type: 'issued',
+                     issued_on: '2026-10-19',
+                     line_items: [{ description: 'tear-off', amount: 1000 }] };
+  const LOCATION = { id: 'LOC-9', name: 'Yard A' };
+
+  for (const t of [
+    { app: 'sairnroofing', resource: 'rf_claim_agreements', base: AGREEMENT,
+      cap: 1572864, key: 'notes_filler',
+      why: 'its schema says a captured signature "must not be squeezed into '
+         + 'the 64KB ceiling" -- and it was' },
+    { app: 'sairnroofing', resource: 'rf_proposals', base: PROPOSAL,
+      cap: 1572864, key: 'notes_filler', why: 'line items plus a snapshot' },
+    { app: 'sairnroofing', resource: 'rf_photos', base: RFPHOTO2,
+      cap: 1572864, key: 'photo_base64', why: 'a measurement photograph' },
+    { app: 'stonedesk', resource: 'locations', base: LOCATION,
+      cap: 16384, key: 'notes_filler',
+      why: 'THE ONE THAT WENT DOWN: 16384 is its own constraint and the API '
+         + 'was permitting four times it' }
+  ]) {
+    // UNDER the cap -> it writes.
+    {
+      const under = Math.min(300 * 1024, Math.floor(t.cap / 2));
+      const pay = sizedTo(t.base, under, t.key);
+      const { res } = await write(t.app, t.resource, 'owner', pay);
+      is(res.statusCode === 200,
+         'B1[' + t.resource + ']. ' + bytesOf(pay) + ' bytes WRITES (200) -- '
+         + t.why,
+         res.statusCode + ' ' + eCode(res) + ' ' + eMsg(res));
+    }
+    // ONE BYTE OVER -> 413, and the message names this resource and this cap.
+    {
+      const pay = sizedTo(t.base, t.cap + 1, t.key);
+      const { res } = await write(t.app, t.resource, 'owner', pay);
+      is(res.statusCode === 413 && eCode(res) === 'PAYLOAD_TOO_LARGE'
+         && eMsg(res).indexOf(String(t.cap)) !== -1
+         && eMsg(res).indexOf(t.resource) !== -1,
+         'B2[' + t.resource + ']. ' + bytesOf(pay) + ' bytes -> 413 naming '
+         + t.resource + ' and ' + t.cap,
+         res.statusCode + ' ' + eCode(res) + ' ' + eMsg(res));
+    }
+  }
+
+  // B3. THE ONE THAT MATTERS MOST FOR `locations`, BECAUSE ITS CAP WENT DOWN:
+  // a payload between the new cap and the old default must now be REFUSED.
+  // Before b29 a 40KB yard record was accepted here and then refused by
+  // Postgres with an opaque error -- the slabs failure in the direction that
+  // paragraph did not consider.
+  {
+    const pay = sizedTo(LOCATION, 40 * 1024, 'notes_filler');
+    const { res } = await write('stonedesk', 'locations', 'owner', pay);
+    is(res.statusCode === 413 && /16384/.test(eMsg(res)),
+       'B3. a 40KB `locations` write -- accepted by this API before b29 and '
+       + 'refused by Postgres -- is now refused HERE, at 16384, with a clear '
+       + '413',
+       res.statusCode + ' ' + eCode(res) + ' ' + eMsg(res));
+  }
+
+  // ═════════════════════════════════════════════════════════════════════
   section('C. THE CAP TABLE POLICES ITSELF AGAINST sql/');
   // ═════════════════════════════════════════════════════════════════════
 
@@ -377,46 +494,82 @@ const PATIENT = { id: 'PT-9', patient_id: 'PT-9', first_name: 'A',
        problems.join(' | '));
   }
 
-  // C7. THE PIN ON THE SIX THAT ARE NOT COVERED YET.
+  // C7. THE PIN, REWRITTEN IN b29 AND NOW A THREE-STATE PIN.
   //
-  // This arm exists because the alternative is a comment. Six tables carry a
-  // constraint above 64KB and are still capped at 64KB by this API; each needs
-  // its write branch, its client and its DB number re-qualified before its cap
-  // moves (item 7: byte-identical is not safe-in-context). Pinning the SET --
-  // not the count alone -- means closing one of them turns this red and makes
-  // somebody update the list, and a NINTH oversized constraint arriving turns
-  // it red too.
-  const EXPECTED_UNCOVERED = [
-    'rf_claim_agreements', 'rf_invoices', 'rf_photos', 'rf_proposals',
-    'sd_progress_photos', 'sd_quote_request_photos'
-  ];
+  // b28's version pinned a SET of six "uncovered" oversized tables. Three of
+  // those six were never this gate's business, and one of the remaining three
+  // is uncapped by a different mechanism -- see PREFIX_TO_RESOURCE above for
+  // the measurement. So the pin now has two lists, and an oversized constraint
+  // in NEITHER is a finding: it means a table grew a large row cap and nobody
+  // decided which gate governs it.
+  //
+  // THE POINT IS UNCHANGED. Closing one, or a new oversized constraint
+  // arriving, still turns this red and still costs somebody a sentence.
+  const EXPECTED_UNCOVERED = [];
   {
     const uncovered = [];
     for (const [prefix, db] of Object.entries(sqlCaps)) {
       if (db.bytes <= 65536) continue;
+      if (NOT_GOVERNED_HERE[prefix]) continue;
       const resource = PREFIX_TO_RESOURCE[prefix];
       if (!resource) { uncovered.push('UNMAPPED:' + prefix); continue; }
       if (!(resource in capTable)) uncovered.push(resource);
     }
     uncovered.sort();
     is(JSON.stringify(uncovered) === JSON.stringify(EXPECTED_UNCOVERED),
-       'C7. exactly the six KNOWN-UNCOVERED oversized tables are uncovered -- '
-       + 'no silent cap, no silent new one',
+       'C7. every oversized constraint this gate governs now HAS a cap entry, '
+       + 'and the three it does not govern are declared with where they are '
+       + 'governed instead',
        'found ' + JSON.stringify(uncovered) + '\n        expected '
        + JSON.stringify(EXPECTED_UNCOVERED));
   }
 
-  // C8. sd_locations runs the OTHER WAY and must stay out of the table. Its
-  // constraint is 16384 -- the API already permits four times what the
-  // database accepts, so an entry here would have to LOWER a cap. Different
-  // fix, different risk, and this arm stops it being swept in as a seventh.
+  // C7b. THE DECLARED EXEMPTIONS MUST STILL BE OVERSIZED, which is what stops
+  // NOT_GOVERNED_HERE becoming a place to hide a table. If one drops to 64KB
+  // or below its entry is stale; if a prefix in it is not in sql/ at all, the
+  // entry is about nothing.
+  {
+    const stale = [];
+    for (const prefix of Object.keys(NOT_GOVERNED_HERE)) {
+      const db = sqlCaps[prefix];
+      if (!db) { stale.push(prefix + ': no ' + prefix + '_data_size in sql/'); continue; }
+      if (db.bytes <= 65536) {
+        stale.push(prefix + ': now ' + db.bytes + ' bytes, no longer oversized '
+                   + '-- remove the exemption');
+      }
+    }
+    is(stale.length === 0,
+       'C7b. all ' + Object.keys(NOT_GOVERNED_HERE).length + ' declared '
+       + 'not-governed-here entries are still real and still oversized',
+       stale.join(' | '));
+  }
+
+  // C8. REWRITTEN IN b29: `locations` is now IN the table, and LOWER.
+  //
+  // b28 kept it out, correctly for b28: its constraint is 16384, so the API
+  // permitted FOUR TIMES what the database accepts, and a fix here LOWERS a
+  // cap rather than raising one -- which can refuse a write that works today.
+  // Michael's b29 decision is that 16384 is the intended number.
+  //
+  // AND LOWERING IT CANNOT REFUSE AN EXISTING ROW, which had to be established
+  // before touching it. Not by sampling -- BY CONSTRUCTION:
+  // `sdlocations_data_size check (octet_length(data::text) <= 16384)` means
+  // Postgres has refused every row above 16384 for as long as the constraint
+  // has existed, so no stored row can be over it. A live read on SD-AUDIT-2026
+  // agreed and added nothing: the table answered `provisioned: false`, zero
+  // rows, which is a could-not-tell about other licences and is recorded as
+  // one rather than as a clean measurement.
+  //
+  // THE RESOURCE IS `locations`, NOT `sd_locations`. An entry under the table
+  // name would be INERT, because the gate is keyed on the dispatched resource
+  // -- and inert protection is this platform's least favourite shape.
   {
     const db = (sqlCaps.sdlocations || {}).bytes;
-    is(db < 65536 && !('sd_locations' in capTable),
-       'C8. sd_locations (' + db + ' bytes, TIGHTER than 64KB) is absent from '
-       + 'the cap table -- the API over-permits there and that is a separate '
-       + 'finding',
-       'db=' + db + ' inTable=' + ('sd_locations' in capTable));
+    is(db === 16384 && capTable.locations === 16384,
+       'C8. `locations` is capped at its own 16384-byte DB constraint, under '
+       + 'the resource name the dispatcher uses -- the API no longer '
+       + 'over-permits',
+       'db=' + db + ' apiCap=' + capTable.locations);
   }
 
   // C9. THE PROTOTYPE ARM. The table is indexed by a client-supplied resource

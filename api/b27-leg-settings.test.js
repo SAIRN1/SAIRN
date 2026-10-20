@@ -158,15 +158,41 @@ const HOME_COUNTERSIGN = {
   // COMMENT-STRIPPED, because this repo has a recorded case of a precondition
   // satisfied by a comment ABOUT the code it was checking for.
   const CODE = SRC.split('\n').map((l) => l.replace(/\/\/.*$/, '')).join('\n');
-  if (/legRoles\.decide\(resource, legSess\.role, action, null, legHome\)/.test(CODE)) {
-    ok('P1. the gate calls decide() with FIVE arguments, measured on '
-       + 'comment-stripped source. If this reverts, P1 goes red before the '
-       + 'behaviour arms do and names why');
+  // ── RE-AIMED IN b29, AND THE OLD PATTERN WAS RIGHT TO FIRE ─────────────
+  // P1 matched the call site LITERALLY, including `null` as the fourth
+  // argument:
+  //
+  //     legRoles.decide(resource, legSess.role, action, null, legHome)
+  //
+  // b29 wired the fourth argument -- `legGrants`, read from
+  // sairnlegacy_settings.livery_grants -- so the literal stopped matching and
+  // P1 went red. That red was CORRECT behaviour from an arm pinned to a
+  // spelling, and the fix is to pin it to the REQUIREMENT instead: five
+  // arguments reach decide(), and the two optional ones are real values rather
+  // than placeholders.
+  //
+  // THE NEW FORM IS STRICTLY STRONGER. It still goes red on a revert to three
+  // arguments, AND it now goes red on a revert of either optional argument to
+  // a literal `null` -- which is the state b18 to b27 was in for `home` and
+  // b18 to b29 was in for `grants`: the argument present, the value inert, and
+  // every module-level policy arm green.
+  const P1_CALL = CODE.match(
+    /legRoles\.decide\(resource, legSess\.role, action, ([^,]+), ([^)]+)\)/);
+  const P1_GRANTS = P1_CALL ? P1_CALL[1].trim() : null;
+  const P1_HOME = P1_CALL ? P1_CALL[2].trim() : null;
+  if (P1_CALL && P1_GRANTS !== 'null' && P1_HOME !== 'null') {
+    ok('P1. the gate calls decide() with FIVE arguments AND neither optional '
+       + 'one is a literal null (grants=' + P1_GRANTS + ', home=' + P1_HOME
+       + '), measured on comment-stripped source. A revert of either goes red '
+       + 'here before the behaviour arms do, and names which');
   } else {
-    bad('P1. api/sd-data.js no longer passes the fifth argument to '
-        + 'legRoles.decide() -- the b27 change has been reverted and every S '
-        + 'arm below is about to fail for that reason',
-        (CODE.match(/legRoles\.decide\([^)]*\)/) || ['<no decide call found>'])[0]);
+    bad('P1. api/sd-data.js does not pass five REAL arguments to '
+        + 'legRoles.decide() -- either the call is back to three, or an '
+        + 'optional argument is a literal null, which means the policy it '
+        + 'feeds is inert while every module-level arm stays green',
+        P1_CALL ? ('grants=' + P1_GRANTS + ' home=' + P1_HOME)
+                : (CODE.match(/legRoles\.decide\([^)]*\)/)
+                   || ['<no decide call found>'])[0]);
   }
   if (/sairnlegacy_settings\?license_hash=eq\./.test(CODE)) {
     ok('P2. ...and it reads the home\'s row from `sairnlegacy_settings`, which '

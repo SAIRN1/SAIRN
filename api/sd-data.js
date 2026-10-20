@@ -489,6 +489,65 @@ PAYLOAD_CAP_BY_RESOURCE.dnt_appointments =
 // already written at the sd_approvals signature check further down, about the
 // same mistake. Entering the resource here is what makes that handler real.
 PAYLOAD_CAP_BY_RESOURCE.rf_claim_photos = 1572864;
+// ── b29: THE REST OF WHAT THIS GATE GOVERNS, AND THREE OF b28's SIX WERE
+//    NEVER ITS BUSINESS ────────────────────────────────────────────────────
+// b28 left six oversized tables uncovered and pinned the set. b29 re-derived
+// it and the set was wrong in a way worth recording, because the error ran in
+// the direction that OVERSTATES the problem:
+//
+//   rf_claim_agreements  1572864  GOVERNED HERE (action === 'write', :12461)
+//   rf_proposals         1572864  GOVERNED HERE (action === 'write', :11392)
+//   rf_photos            1572864  GOVERNED HERE (read|write, :9491)
+//   rf_invoices           262144  NOT GOVERNED -- see below, and it is worse
+//   sd_progress_photos   1572864  NOT HERE: api/sd-sub-data.js, whose
+//                                 SUB_JOB_PAYLOAD_MAX_BYTES is ALREADY 1572864
+//   sd_quote_request_photos 1572864  NOT HERE: api/stonedesk-public.js, whose
+//                                 MAX_PHOTO_CHARS 1400000 was sized FROM that
+//                                 row cap and says so
+//
+// So two of the six were never defects at all, and b28's C7 counted them
+// because it mapped each constraint prefix to a TABLE name and assumed the
+// table was the resource. tools/gate1_verify.py's header already warned:
+// "THE RESOURCE IS NOT THE TABLE and that is the whole trap this map exists
+// for."
+//
+// ── AND THE ONE THAT IS NOT A CAP PROBLEM AT ALL: rf_invoices ─────────────
+// IT IS UNCAPPED, NOT UNDER-CAPPED, AND SO IS EVERY RESOURCE THAT WRITES
+// THROUGH A CUSTOM VERB. The gate below reads `if (action === 'write')`.
+// `rf_invoices` has no write branch; its writes are `issue`, `add_payment`,
+// `reconcile_claim` and `gl_export` (api/_resources/sairnroofing.js:245), and
+// none of them reaches the cap at all. Same for `rt_routes`/`rt_stops`
+// (`upsert`, `reorder`, `optimize`), `alf_payer_rules` (`route`) and every
+// other declared verb.
+//
+// NOT FIXED HERE, and that is a decision rather than an oversight: extending
+// the gate to every write-class verb would start refusing payloads that work
+// today -- a 200-stop `rt_routes` upsert is the obvious one -- and b29 was
+// sent at closing known caps, not at changing what the gate covers. It is
+// ROUTED in docs/2026-10-20-cody-b29-notes.md with the measurement above, and
+// arm C7b of api/b28-photo-cap.test.js keeps the declaration honest by
+// refusing to let an exempted table quietly stop being oversized.
+PAYLOAD_CAP_BY_RESOURCE.rf_claim_agreements = 1572864;
+PAYLOAD_CAP_BY_RESOURCE.rf_proposals = 1572864;
+PAYLOAD_CAP_BY_RESOURCE.rf_photos = 1572864;
+// ── AND ONE THAT GOES DOWN, NOT UP (b29, Michael's decision) ──────────────
+// `sdlocations_data_size` is **16384**, a QUARTER of the default, so this gate
+// has been permitting four times what the database will accept and sending a
+// 40KB yard record to an opaque Postgres refusal -- the exact failure the
+// slabs paragraph above records paying for, in the direction it did not
+// consider. 16384 is the intended number.
+//
+// LOWERING A CAP CANNOT REFUSE AN EXISTING ROW HERE, and that is established
+// BY CONSTRUCTION rather than by sampling: the constraint means Postgres has
+// refused every row over 16384 for as long as it has existed, so no stored row
+// can be above it. A live read on SD-AUDIT-2026 agreed and added nothing --
+// `provisioned: false`, zero rows -- which is a could-not-tell about other
+// licences and is recorded as one.
+//
+// THE KEY IS `locations`, NOT `sd_locations`. This gate is keyed on the
+// DISPATCHED RESOURCE (api/sd-data.js:3935, 3943); an entry under the table
+// name would be inert, and inert protection is worse than none.
+PAYLOAD_CAP_BY_RESOURCE.locations = 16384;
 
 // Pairs already reported by the app-boundary log, so a caller cannot drive an
 // unbounded number of log lines. Capped so the set itself cannot be grown
@@ -11443,7 +11502,7 @@ module.exports = async (req, res) => {
         const bt = await r.text();
         if (/relation .* does not exist|PGRST205|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Proposals are not set up yet — run sql/sairnroofing_billing_schema.sql in Supabase first.' } }); return; }
         if (/duplicate key|unique/i.test(bt)) { res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'A proposal with that id already exists — append-only, ids are never reused' } }); return; }
-        res.status(400).json({ error: { message: 'Data store rejected the proposal', detail: bt } }); return;
+        storeRejected(res, 'proposal', bt); return;
       }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
@@ -11590,7 +11649,7 @@ module.exports = async (req, res) => {
           const bt = await r.text();
           if (/relation .* does not exist|PGRST205|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Invoicing is not set up yet — run sql/sairnroofing_billing_schema.sql in Supabase first.' } }); return; }
           if (/rfinv_issued_needs_number/i.test(bt)) { res.status(400).json({ error: { message: 'An invoice cannot leave draft without a number — use the issue action, which allocates one.' } }); return; }
-          res.status(400).json({ error: { message: 'Data store rejected the invoice', detail: bt } }); return;
+          storeRejected(res, 'invoice', bt); return;
         }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
@@ -11789,7 +11848,7 @@ module.exports = async (req, res) => {
         const bt = await r.text();
         if (/relation .* does not exist|PGRST205|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Programmes are not set up yet — run sql/sairnroofing_programs_schema.sql in Supabase first.' } }); return; }
         if (/rfprg_expiry_coherent/i.test(bt)) { res.status(400).json({ error: { message: 'A programme recorded as held needs either a renewal date or an explicit "does not expire" — the two cases must stay distinguishable.' } }); return; }
-        res.status(400).json({ error: { message: 'Data store rejected the programme', detail: bt } }); return;
+        storeRejected(res, 'programme', bt); return;
       }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
@@ -12093,7 +12152,7 @@ module.exports = async (req, res) => {
         const bt = await r.text();
         if (/entity_id/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Entities are not set up yet — run sql/sairnroofing_entities_schema.sql in Supabase first. The branch itself was NOT saved.' } }); return; }
         if (/relation .* does not exist|PGRST205|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Locations are not set up yet — run sql/sairnroofing_locations_schema.sql in Supabase first.' } }); return; }
-        res.status(400).json({ error: { message: 'Data store rejected the location', detail: bt } }); return;
+        storeRejected(res, 'location', bt); return;
       }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
@@ -12169,7 +12228,7 @@ module.exports = async (req, res) => {
       if (r.status === 404 || r.status === 400) {
         const bt = await r.text();
         if (/relation .* does not exist|PGRST205|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Scheduling is not set up yet — run sql/sairnroofing_locations_schema.sql in Supabase first.' } }); return; }
-        res.status(400).json({ error: { message: 'Data store rejected the schedule entry', detail: bt } }); return;
+        storeRejected(res, 'schedule entry', bt); return;
       }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
@@ -12420,7 +12479,7 @@ module.exports = async (req, res) => {
       if (r.status === 404 || r.status === 400) {
         const bt = await r.text();
         if (/relation .* does not exist|PGRST205|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Contingency rules are not set up yet — run sql/sairnroofing_agreements_schema.sql in Supabase first.' } }); return; }
-        res.status(400).json({ error: { message: 'Data store rejected the rule', detail: bt } });
+        storeRejected(res, 'rule', bt);
         return;
       }
       const rows = await r.json();
@@ -12500,7 +12559,7 @@ module.exports = async (req, res) => {
         const bt = await r.text();
         if (/relation .* does not exist|PGRST205|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Contingency agreements are not set up yet — run sql/sairnroofing_agreements_schema.sql in Supabase first.' } }); return; }
         if (/duplicate key|rfagr_license_hash_agreement_id_key|unique/i.test(bt)) { res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'An agreement with that id already exists — append-only, ids are never reused' } }); return; }
-        res.status(400).json({ error: { message: 'Data store rejected the agreement', detail: bt } });
+        storeRejected(res, 'agreement', bt);
         return;
       }
       const rows = await r.json();
@@ -16818,12 +16877,57 @@ module.exports = async (req, res) => {
       // exactly like them.
       const LEG_SETTINGS_SENSITIVE_ROLES = roleSet({ apprentice: true, livery: true });
       let legHome = null;
+      // ── AND THE PER-EMPLOYEE HALF, WHICH IS F2's OTHER NOUN (b29) ───────
+      // `decide(resource, role, action, grants, home)` has taken five
+      // arguments since b18 and this call site passed a literal `null` for
+      // `grants` -- not from oversight but because NOTHING STORED IT, so
+      // branch 4 (F2's widening) was unreachable in production. b27's handoff
+      // §6.5 recorded exactly that.
+      //
+      // `sql/sairnlegacy_settings_livery_grants.sql` is the column, written in
+      // b29 FOR MICHAEL TO RUN and not run here. Everything below works
+      // before and after it, and the direction of the failure is the point: a
+      // missing column falls back to NO GRANTS, which denies.
+      let legGrants = null;
       if (LEG_SETTINGS_SENSITIVE_ROLES[legSess.role] === true) {
-        const legSetR = await fetch(rest('sairnlegacy_settings?license_hash=eq.'
-          + enc(licHash) + '&select=livery_billing,apprentice&limit=1'), { headers });
+        // TWO SELECTS, AND THE SECOND IS NOT A RETRY-FOR-LUCK. PostgREST
+        // answers 400 undefined_column for a column that does not exist, and
+        // that 400 is indistinguishable at the status line from "the table is
+        // not provisioned". Treating it as either would be wrong: the table IS
+        // there and F2's per-home half must keep working. So the narrow read
+        // is re-issued WITHOUT the new column, and the only thing lost is the
+        // grants map.
+        const legSelFull = 'livery_billing,apprentice,livery_grants';
+        const legSelBase = 'livery_billing,apprentice';
+        const legSettingsRead = async (sel) => fetch(
+          rest('sairnlegacy_settings?license_hash=eq.' + enc(licHash)
+            + '&select=' + sel + '&limit=1'), { headers });
+        let legSetR = await legSettingsRead(legSelFull);
+        if (legSetR.status === 400) {
+          const legSetTxt = await legSetR.text().catch(function () { return ''; });
+          if (/livery_grants|undefined_column|42703/i.test(legSetTxt)) {
+            console.error('sd-data: sairnlegacy_settings.livery_grants is '
+              + 'absent -- run sql/sairnlegacy_settings_livery_grants.sql. '
+              + 'Falling back to NO per-employee grants, which DENIES; F2\'s '
+              + 'per-home half is unaffected.');
+            legSetR = await legSettingsRead(legSelBase);
+          }
+        }
         if (legSetR.ok) {
           const legSetRows = await legSetR.json().catch(function () { return null; });
           legHome = (Array.isArray(legSetRows) && legSetRows[0]) || null;
+          // THIS EMPLOYEE'S OWN ROW OF THE MAP, NEVER THE WHOLE MAP. `decide`
+          // reads `grants[resource]`, so handing it the home-wide object keyed
+          // by employee id would make every lookup `undefined` -- a refusal,
+          // and therefore a bug that LOOKS like correct behaviour. Keyed by
+          // the SESSION's employee_id, which is verified, not by anything in
+          // the payload.
+          const legMap = (legHome && legHome.livery_grants) || null;
+          const legMine = (legMap && typeof legMap === 'object'
+                           && !Array.isArray(legMap))
+            ? legMap[legSess.employee_id] : null;
+          legGrants = (legMine && typeof legMine === 'object'
+                       && !Array.isArray(legMine)) ? legMine : null;
         } else if (legSetR.status !== 404 && legSetR.status !== 400) {
           // Not provisioned (404/400) is the ordinary case for a home that has
           // never saved settings. Anything else is worth a line, because
@@ -16834,7 +16938,7 @@ module.exports = async (req, res) => {
             + resource + '/' + action);
         }
       }
-      if (legRoles.decide(resource, legSess.role, action, null, legHome) === legRoles.DENY) {
+      if (legRoles.decide(resource, legSess.role, action, legGrants, legHome) === legRoles.DENY) {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: legRoles.denyMessage(legSess.role) } });
         return;
       }
@@ -19054,7 +19158,23 @@ module.exports = async (req, res) => {
       //
       // `roleSet` IS STILL USED ELSEWHERE IN THIS FILE (api/sd-data.js:8988
       // among others), so the import stays. Checked before deleting anything.
-      if (lawRoles.LAW_RECONCILE_ROLES[recSess.role] !== true) {
+      // ── AND A PARALEGAL MAY RUN IT, PREPARE-ONLY (b29) ──────────────────
+      // MICHAEL'S DECISION, 2026-10-20: the delegation b19 granted and b20
+      // withdrew re-opens as PREPARE-ONLY -- a paralegal may run the
+      // comparison, and the attorney or owner attests.
+      //
+      // TWO SETS, NEVER ONE WIDER SET, and the reason is the direction of the
+      // error. `LAW_RECONCILE_ROLES` is whose run stands on its own;
+      // `LAW_RECONCILE_PREPARE_ROLES` is who may produce one that still needs
+      // a lawyer's review. Putting `paralegal` into the first would have been
+      // the one-line version of the same words and would have restored exactly
+      // what b20 withdrew: a non-lawyer producing a finished reconciliation
+      // that nothing records a lawyer as having reviewed, on the one figure a
+      // bar association audits.
+      const recMayRun = lawRoles.LAW_RECONCILE_ROLES[recSess.role] === true;
+      const recPrepareOnly =
+        lawRoles.LAW_RECONCILE_PREPARE_ROLES[recSess.role] === true;
+      if (!recMayRun && !recPrepareOnly) {
         res.status(403).json({ error: { code: 'FORBIDDEN',
           message: lawRoles.denyMessage('law_trusttx', recSess.role,
                                         lawRoles.LAW_RECONCILE_ACTION) } });
@@ -19087,8 +19207,31 @@ module.exports = async (req, res) => {
         clientTotalCents: (payload && typeof payload.client_total_cents === 'number')
           ? payload.client_total_cents : undefined
       });
+      // ── EVERY REPLY IS STAMPED, INCLUDING AN OWNER'S (b29) ─────────────
+      // `attested: false` is UNCONDITIONAL and that is the whole safety
+      // argument for the prepare-only grant. Running the comparison and
+      // attesting to it are two acts even when one person does both, so a
+      // flag that read `attested: recMayRun` would be the lie this stamp
+      // exists to prevent -- an owner's run is not an attestation either; it
+      // is a comparison by somebody who is ALLOWED to attest and has not yet.
+      //
+      // The attestation is recorded by api/law-attest.js, which answers 503
+      // NOT_PROVISIONED until sql/sairnlaw_trust_attestations.sql is run. So
+      // today `attested` is false for a second, duller reason as well, and the
+      // reply does not need to know which: it reports what it can see.
+      //
+      // `prepared_by_role` AND NOT `prepared_by`. The employee id is already
+      // the caller's own and adding it here would put a named person into a
+      // payload the client renders beside a trust balance. The ROLE is what
+      // decides whether an attestation is still owed.
       res.status(200).json({ ok: true, data: out, provisioned: true,
-        statements_readable: stRows !== null });
+        statements_readable: stRows !== null,
+        attested: false,
+        prepared_by_role: recSess.role,
+        prepare_only: recPrepareOnly,
+        attestation_required_from: Object.keys(lawRoles.LAW_BAR_ADMITTED_ROLES)
+          .filter((r) => lawRoles.LAW_BAR_ADMITTED_ROLES[r] === true).sort(),
+        attestation_recorded_by: 'POST /api/law-attest' });
       return;
     }
 
@@ -19830,14 +19973,49 @@ module.exports = async (req, res) => {
         });
         const rrows = await rr.json();
         if (!rr.ok) return upstream(res, rrows);
-        const routeId = (Array.isArray(rrows) ? rrows[0] : rrows).id;
+        const routeRow = (Array.isArray(rrows) ? rrows[0] : rrows) || {};
+        const routeId = routeRow.id;
+        // ── EVERY STOP'S license_hash COMES FROM THE ROUTE ROW (b29) ────────
+        // THE CONCEPT: a stop belongs to a route, so the tenant a stop is
+        //   filed under is a fact about the ROUTE, never a field the caller
+        //   gets to state.
+        //
+        // IT WAS ALREADY SAFE AND IT WAS SAFE FOR A WEAKER REASON. The insert
+        // below writes an EXPLICIT field list, so a `license_hash` inside a
+        // client stop object has never been copied -- there is no spread here
+        // for it to ride in on. But the value came from `licHash`, i.e. from
+        // the LICENCE KEY, and cc's composite foreign key
+        // (sql/rt_stops_license_hash_composite_fk.sql) binds a stop to
+        // `(route_id, license_hash)` OF THE ROUTE. Those two are the same
+        // number on every well-formed request and they are not the same FACT,
+        // and the gap between "the same today" and "the same by construction"
+        // is where a tenancy bug lives.
+        //
+        // AND A DISAGREEMENT IS REFUSED RATHER THAN RECONCILED. If the route
+        // row PostgREST hands back is not under this licence, something is
+        // wrong that writing stops cannot fix: the upsert's on_conflict key
+        // includes license_hash, so this is unreachable through a correct
+        // PostgREST -- which is exactly why it must not be a silent fallback.
+        // `routeHash || licHash` would have been one character shorter and
+        // would have turned a tenancy inconsistency into a write under the
+        // caller's own licence. Driven by arm T3 of api/b29-rt-stops-hash.test.js.
+        const routeHash = routeRow.license_hash;
+        if (routeHash !== licHash) {
+          console.error('sd-data rt_stops: route row license_hash does not '
+            + 'match the licence -- refused rather than reconciled. route_id='
+            + String(routeId));
+          res.status(409).json({ error: { code: 'ROUTE_TENANCY_MISMATCH',
+            message: 'That route does not belong to this licence, so no stops '
+                   + 'were written.' } });
+          return;
+        }
         // REPLACE the stop set. The delete is bounded by route_id -- it reaches
         // only the stops of one route of one licence. See the grant note in
         // sql/rt_routes_schema.sql for why this is a hard delete and not a flag.
-        await fetch(rest('rt_stops?route_id=eq.' + enc(routeId) + '&license_hash=eq.' + enc(licHash)),
+        await fetch(rest('rt_stops?route_id=eq.' + enc(routeId) + '&license_hash=eq.' + enc(routeHash)),
           { method: 'DELETE', headers });
         const toInsert = p.stops.map((s, i) => ({
-          route_id: routeId, license_hash: licHash, seq: i + 1,
+          route_id: routeId, license_hash: routeHash, seq: i + 1,
           job_ref: s.job_ref || null, address: s.address,
           lat: s.lat === undefined ? null : s.lat,
           lng: s.lng === undefined ? null : s.lng,
@@ -19985,6 +20163,42 @@ function refuseUnconfirmedWrite(res, what) {
 function upstream(res, detail) {
   console.error('sd-data upstream error:', detail);
   res.status(502).json({ error: { message: 'Data store error — try again' } });
+}
+
+// ── THE SAME DISCIPLINE FOR THE REJECTION PATH (b29) ───────────────────────
+// `upstream()` above has logged-and-generic right since it was written. SEVEN
+// BRANCHES BYPASSED IT: having read the body themselves to classify a missing
+// relation and a duplicate key, they fell through to
+//
+//     res.status(400).json({ error: { message: 'Data store rejected the X',
+//                                     detail: bt } });
+//
+// and `bt` is the RAW PostgREST body. A PostgREST error names the TABLE, the
+// CONSTRAINT, the COLUMN and frequently the OFFENDING VALUE -- an internal
+// schema map, plus a slice of customer data, handed to anyone holding a licence
+// key. The branches were right to read the body and right to classify it; the
+// fall-through was the one line that should never have carried it outward.
+//
+// THE RAW BODY IS NOT DISCARDED, AND THAT IS HALF THE FIX. Deleting it would
+// make the next unclassified 400 undiagnosable, which is a different defect
+// wearing the shape of a fix. It goes to `console.error`, where every other
+// upstream failure in this file already goes. api/b29-error-detail.test.js
+// asserts BOTH halves: the marker planted in the body appears NOWHERE in the
+// response AND does appear in the captured log.
+//
+// `what` is the noun the branch already used, so the caller still reads the
+// same sentence it did before -- what it no longer gets is the body.
+function storeRejected(res, what, raw) {
+  console.error('sd-data store rejected ' + what + ':', raw);
+  res.status(400).json({
+    error: {
+      code: 'STORE_REJECTED',
+      message: 'The data store rejected this ' + what + ' and nothing was '
+             + 'saved. The reason has been logged server-side; it is not '
+             + 'returned here because a database error message names internal '
+             + 'tables and constraints and can quote the submitted value.'
+    }
+  });
 }
 
 // ── A 400 IS NOT A 404, AND 89 BRANCHES SAID IT WAS (2026-10-14) ────────────

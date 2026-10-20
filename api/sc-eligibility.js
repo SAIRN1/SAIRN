@@ -221,9 +221,23 @@ module.exports = async (req, res) => {
       });
       const data = await r.json().catch(function () { return null; });
       if (!r.ok) {
-        // Surface Stedi's real message. Never substitute a generic
-        // "no payers found" for what was actually an auth or quota error.
-        res.status(502).json({ error: { code: 'STEDI_ERROR', message: 'Stedi payer search failed (HTTP ' + r.status + ')', detail: data || null } });
+        // ── THE BODY IS LOGGED, NOT RETURNED (b29) ────────────────────────
+        // The comment that used to stand here read: "Surface Stedi's real
+        // message. Never substitute a generic 'no payers found' for what was
+        // actually an auth or quota error." THE SECOND SENTENCE IS RIGHT AND
+        // THE FIRST DOES NOT FOLLOW FROM IT. Distinguishing an auth error from
+        // a quota error from an empty result needs the STATUS and the CODE,
+        // both of which are still here and neither of which was ever the
+        // `detail`. What `detail` added was a third party's unbounded error
+        // document, forwarded verbatim to a browser.
+        //
+        // It is not discarded -- deleting it would make a payer-side failure
+        // undiagnosable, which is a different defect wearing the shape of a
+        // fix. See the sibling site on the 270/271 path for the sharper half
+        // of this: THAT body can carry PHI.
+        console.error('sc-eligibility payer search failed (HTTP ' + r.status
+          + '), Stedi body:', data);
+        res.status(502).json({ error: { code: 'STEDI_ERROR', message: 'Stedi payer search failed (HTTP ' + r.status + '). The payer directory service refused the request; the reason has been logged server-side.' } });
         return;
       }
       res.status(200).json({ ok: true, items: (data && data.items) || [], stats: (data && data.stats) || null });
@@ -302,11 +316,34 @@ module.exports = async (req, res) => {
     const data = await r.json().catch(function () { return null; });
 
     if (!r.ok) {
+      // ── THIS IS THE ONE THAT COULD RETURN PHI (b29) ───────────────────────
+      // THE 270/271 REQUEST CARRIES THE SUBSCRIBER BLOCK -- first name, last
+      // name, member id, date of birth -- and a payer's rejection routinely
+      // echoes the block it could not match, often with the payer's own
+      // identifiers attached. `detail: data` forwarded that document verbatim
+      // into an HTTP error envelope, where it is logged by every proxy on the
+      // way out and read by browser devtools.
+      //
+      // IT IS NOT MERELY AN INTERNAL-DETAIL LEAK AT THIS SITE. The same
+      // sentence that is a schema disclosure one app over is a disclosure of
+      // patient identifiers here, in an app whose whole subject is medical
+      // coding. That is why the three shapes were fixed together rather than
+      // the sd-data.js seven alone.
+      //
+      // The body still goes to the server log, so a payer-side failure stays
+      // diagnosable. api/b29-error-detail.test.js plants a marker in the
+      // subscriber block and asserts it appears NOWHERE in the response and
+      // DOES appear in the log.
+      console.error('sc-eligibility eligibility check failed (HTTP ' + r.status
+        + '), payer body:', data);
       res.status(502).json({
         error: {
           code: 'STEDI_ERROR',
-          message: 'Eligibility check failed (HTTP ' + r.status + ')',
-          detail: data || null
+          message: 'Eligibility check failed (HTTP ' + r.status + '). The '
+                 + 'payer or clearinghouse refused the request; the reason has '
+                 + 'been logged server-side rather than returned, because a '
+                 + 'payer error body can echo the subscriber details it was '
+                 + 'sent.'
         }
       });
       return;

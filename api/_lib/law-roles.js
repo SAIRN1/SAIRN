@@ -224,6 +224,45 @@ const LAW_RECONCILE_ROLES = Object.freeze(Object.assign(Object.create(null), {
   attorney: true
 }));
 
+// ══ b29: THE DELEGATION RE-OPENS, AND IT RE-OPENS AS PREPARE-ONLY ══════════
+// MICHAEL'S DECISION, 2026-10-20, quoted: "Paralegal: goes back on the IOLTA
+// reconcile list as PREPARE-ONLY. The attorney or owner attests (same
+// two-stage rule as trust disbursement; a solo firm self-attests per the
+// per-firm setting)."
+//
+// ── WHY THIS IS A SECOND SET AND NOT `paralegal: true` ON THE ONE ABOVE ───
+// `LAW_RECONCILE_ROLES` is the FINISHED-WORK set: whose run of the three-way
+// comparison stands on its own. Adding `paralegal` there would have satisfied
+// the words "goes back on the list" and delivered the exact state b20
+// withdrew the grant to avoid -- a non-lawyer producing a finished
+// reconciliation that nothing records a lawyer as having reviewed, on the one
+// figure a bar association audits. The duty under Rule 1.15 is the lawyer's
+// and non-delegable; Rule 5.3 makes the WORK delegable under supervision.
+// Those two sentences are the two sets.
+//
+// So a paralegal may RUN it and the answer comes back marked as not attested.
+// `api/sd-data.js`'s law_trust_reconcile gate admits either set and then
+// stamps the reply, which is the half that makes this safe rather than
+// merely permitted -- see `LAW_RECONCILE_ATTESTATION.prepare_only_contract`.
+//
+// SAME SHAPE AS THE TRUST DISBURSEMENT TWO-STAGE, deliberately and not by
+// analogy: `LAW_TRUST_PREPARE_ROLES` above is `{ paralegal: true }` for
+// exactly the same reason, and `api/_lib/countersign.js`'s MODE_PREPARED_ONLY
+// is the lock that holds it. The attestation record built in b23
+// (`api/law-attest.js`) is the countersignature half here, including its named
+// single-signer mode for a firm with one active owner/attorney -- which is the
+// "solo firm self-attests" clause, already built, stored as `signer_mode` on
+// the row so the record never claims two people looked when one did.
+//
+// NOT DERIVED FROM LAW_TRUST_PREPARE_ROLES even though the two sets are equal
+// today. They answer different questions -- who may stage a trust
+// DISBURSEMENT, and who may run a RECONCILIATION -- and a firm's answer to one
+// is not its answer to the other. Arm R2d asserts the relationship rather than
+// the identity, so making them diverge costs a sentence instead of a bug.
+const LAW_RECONCILE_PREPARE_ROLES = Object.freeze(Object.assign(Object.create(null), {
+  paralegal: true
+}));
+
 // THE HALF THIS DOES NOT BUILD, CARRIED AS A STRUCTURE SO IT CANNOT BE LOST.
 // Exported and asserted, so "the lawyer must review it" is a fact in the code
 // rather than a sentence in a handoff nobody re-reads.
@@ -266,11 +305,21 @@ const LAW_RECONCILE_ATTESTATION = Object.freeze({
   // and a paralegal producing a finished reconciliation that NO attestation
   // can be recorded against is exactly the state b20 withdrew the grant to
   // avoid. The grant is one line and it is the LAST step, not the first.
-  delegation_reopens_when: 'both inert_until steps are done; then `paralegal: '
-                         + 'true` goes back on LAW_RECONCILE_ROLES and arm R2 '
-                         + 'of api/b19-iolta-reconcile-carveout.test.js is '
-                         + 're-aimed to the tier-plus-paralegal relationship '
-                         + 'it asserted in b19.',
+  // b29: THIS PREDICTED THE WRONG SHAPE AND IS KEPT CORRECTED RATHER THAN
+  // DELETED. It said `paralegal: true` would go back on LAW_RECONCILE_ROLES.
+  // Michael's 2026-10-20 answer puts it on a SECOND set instead, PREPARE-ONLY,
+  // which is a different grant: the b23 sentence would have restored the
+  // finished-work authority b20 withdrew. A prediction that turned out wrong
+  // is worth more corrected in place than removed.
+  delegation_reopens_when: 'DONE, 2026-10-20 (b29), and NOT in the shape this '
+                         + 'key predicted: `paralegal` went onto a SECOND set, '
+                         + 'LAW_RECONCILE_PREPARE_ROLES, as PREPARE-ONLY -- '
+                         + 'never onto LAW_RECONCILE_ROLES. One of the two '
+                         + 'inert_until steps is still open (the SQL), and the '
+                         + 'grant was made anyway because the prepare-only '
+                         + 'reply is stamped attested:false regardless, so an '
+                         + 'unprovisioned attestation table cannot be mistaken '
+                         + 'for a recorded one.',
   basis: 'ABA Model Rule 1.15 (the duty is the lawyer\'s and non-delegable) '
        + 'read with Rule 5.3 (the work is delegable under supervision). State '
        + 'bar guidance mandating periodic three-way reconciliation also puts '
@@ -284,12 +333,48 @@ const LAW_RECONCILE_ATTESTATION = Object.freeze({
   // an attestation" and that stopped being true. A stale true-sounding
   // sentence in an exported constant is worse than none -- and so is a stale
   // gap-sounding one, which is what this would now be if left alone.
-  gap: 'The RECORD exists as of b23 and is NOT YET REACHABLE BY A FIRM: the '
-     + 'table is unprovisioned and the reconcile gate is still owner-only, so '
-     + 'the app must still never present "the three legs agree" as "a lawyer '
-     + 'has attested that they agree". DELEGATION IS ALSO STILL UNAVAILABLE: '
-     + '`paralegal` was granted in b19, withdrawn in b20, and is deliberately '
-     + 'NOT restored in b23 -- see delegation_reopens_when.',
+  // b29: RESTATED AGAIN, because two of the three clauses stopped being true
+  // on 2026-10-20 and a stale gap-sounding sentence in an exported constant is
+  // as bad as a stale reassuring one. The gate is NOT owner-only (it reads
+  // LAW_RECONCILE_ROLES, and since b29 LAW_RECONCILE_PREPARE_ROLES too), and
+  // delegation IS available as PREPARE-ONLY. What has NOT changed is the one
+  // clause that matters: the table is still unprovisioned, so no attestation
+  // can actually be recorded yet, and the app must still never present a
+  // comparison as attested.
+  gap: 'THE ONE REMAINING GAP IS THE TABLE: '
+     + 'sql/sairnlaw_trust_attestations.sql has not been run, so '
+     + 'api/law-attest.js answers 503 NOT_PROVISIONED on every write and NO '
+     + 'attestation can be recorded today. Until it is run, the app must never '
+     + 'present "the three legs agree" as "a lawyer has attested that they '
+     + 'agree" -- and that is now enforced in the reply rather than asked for '
+     + 'in prose: every reconcile response carries `attested: false` and names '
+     + 'who must attest. DELEGATION IS AVAILABLE as of b29 and it is '
+     + 'PREPARE-ONLY: `paralegal` was granted in b19, withdrawn in b20, left '
+     + 'off in b23, and restored in b29 on LAW_RECONCILE_PREPARE_ROLES -- a '
+     + 'SECOND set, never on LAW_RECONCILE_ROLES, because a paralegal may run '
+     + 'the comparison and may not be the person whose review it is.',
+  // ── THE CONTRACT THE PREPARE-ONLY GRANT RESTS ON (b29) ──────────────────
+  // Written as a structure rather than prose because the grant is only safe
+  // while every clause holds, and a reader who finds the grant must find the
+  // conditions in the same place.
+  prepare_only_contract: Object.freeze({
+    who_may_run: 'LAW_RECONCILE_ROLES (owner, attorney) OR '
+               + 'LAW_RECONCILE_PREPARE_ROLES (paralegal)',
+    who_may_attest: 'LAW_BAR_ADMITTED_ROLES only (owner, attorney). A '
+                  + 'paralegal cannot attest to their own work and cannot '
+                  + 'attest to anyone else\'s.',
+    solo_firm: 'api/_lib/law-attest.js\'s named single-signer mode, for a firm '
+             + 'with exactly one active owner/attorney, stored as signer_mode '
+             + 'on the row. Per-firm setting, already built in b23.',
+    every_reply_is_stamped: 'api/sd-data.js\'s law_trust_reconcile reply '
+                          + 'carries attested:false, prepared_by_role and '
+                          + 'attestation_required_from on EVERY run, including '
+                          + 'an owner\'s -- because running the comparison and '
+                          + 'attesting to it are two acts even when one person '
+                          + 'does both.',
+    armed_by: 'api/b29-funeral-f2-f3.test.js is the funeral pair; this one is '
+            + 'arms R2c/R2d/A1 of api/b19-iolta-reconcile-carveout.test.js.'
+  }),
   // The mechanism, now BUILT rather than named as a candidate.
   candidate: 'BUILT in b23 -- api/law-attest.js, its own countersignature '
            + 'profile on law_trust_attestation in MODE_ALWAYS, bound to a hash '
@@ -580,6 +665,7 @@ module.exports = {
   // calling the widening "the open question, not a rejected one". This is the
   // answer, in the module that owns law role policy.
   LAW_RECONCILE_ACTION, LAW_RECONCILE_LEGS, LAW_RECONCILE_ROLES,
+  LAW_RECONCILE_PREPARE_ROLES,
   LAW_RECONCILE_ATTESTATION, isReconcileLeg,
   ALLOW, DENY, NOT_LAW,
   decide, resources, denyMessage
