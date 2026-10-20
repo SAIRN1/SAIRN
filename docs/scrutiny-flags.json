@@ -2159,6 +2159,35 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/b21-bridge-unknown-action.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "34165febd3cf9d7ba1b08d764d0146674cdb4816",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b27-claude-mode-echo-and-log.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "if (u.indexOf('rpc/sairn_ai_rate_limit_consume') !== -1) {"
+    }
+   ],
+   "sha": "34165febd3cf9d7ba1b08d764d0146674cdb4816",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b27-sen-straight-time-floor-fixtures.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "34165febd3cf9d7ba1b08d764d0146674cdb4816",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/_lib/courtlistener-rate-limit.test.js",
    "class": "test file",
    "level": "CHANGE",
