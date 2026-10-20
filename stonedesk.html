@@ -12960,7 +12960,7 @@ function fmRunOptimize(person, dateStr, silent){
       return {job_ref:s.id, address:s.address, locked:s.locked===true, status:s.status||'pending'};
     })
   };
-  Promise.resolve(sdData('optimize','rt_routes',payload))
+  Promise.resolve(sdDataEnvelope('optimize','rt_routes',payload))
     .then(function(data){
       if(!data){
         // sdData already recorded WHY (auth refused vs could-not-ask vs
@@ -12985,7 +12985,15 @@ function fmRunOptimize(person, dateStr, silent){
         return;
       }
       var order=data.order; // indices into the stops we sent, in visiting order
-      if(!order || order.length!==notDone.length){
+      // A PERMUTATION OR NOTHING (b44). Length alone accepted [0,0,1] -- one
+      // stop twice and one stop gone -- and an out-of-range index threw inside
+      // the map and surfaced as "did not run". Every index must be an integer,
+      // in range, and used exactly once.
+      var seen={},isPerm=Array.isArray(order)&&order.length===notDone.length&&order.every(function(i){
+        if(typeof i!=='number'||i%1!==0||i<0||i>=notDone.length||seen[i])return false;
+        seen[i]=true;return true;
+      });
+      if(!isPerm){
         if(!silent) showToast('Route not reordered -- the server returned an order that does not match the stops sent. Your stop order is unchanged.');
         return;
       }
@@ -30396,6 +30404,44 @@ async function sdData(action, resource, payload) {
 // through a typeof test: this is a FAILURE PATH, and a failure path that can
 // itself fail is the shape sdData's own catch records paying for twice.
 var _sdFailBurst = { n: 0, timer: null, first: '' };
+// ── sdDataEnvelope: THE NAMED TRANSPORT FOR BARE-ENVELOPE ANSWERS (b44) ─────
+// Some actions answer with the envelope itself and NO `data` key -- `optimize`
+// on rt_routes is Object.assign({ok:true}, result), i.e. {ok, basis, order,
+// saved_seconds, reason}. sdData() returns j.data, so it handed fmRunOptimize()
+// `undefined` and every SUCCESSFUL optimise read as "the server did not
+// answer" (driven: a 200 with order [2,0,1] stored nothing, while the server
+// had already written optimized_at). tests/stonedesk_bare_envelope_actions.js
+// forbids a second carve-out inside sdData() and names this transport as the
+// sanctioned alternative, after sairnroofing's rfDataRaw(). Same licence,
+// session token, timeout, status bookkeeping and failure reporter as sdData();
+// the one difference is that it returns the whole envelope.
+async function sdDataEnvelope(action, resource, payload) {
+  const licKey = sdLicenseKey();
+  if (!licKey) return null;
+  try {
+    const headers = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + licKey };
+    try { const tok = sessionStorage.getItem('sd_session_token'); if (tok) headers['X-SD-Auth'] = tok; } catch (e) {}
+    const res = await fetch('/api/sd-data', { signal: sdFetchTimeoutSignal(), method: 'POST', headers: headers,
+      body: JSON.stringify({ action: action, resource: resource, payload: payload }) });
+    _sdLastStatus[resource] = res.status;
+    if (!res.ok) {
+      _sdAuthRefused[resource] = (res.status === 401 || res.status === 403);
+      try { sdDataFailed(action, resource, 'the server answered ' + res.status); } catch (_e) {}
+      return null;
+    }
+    _sdAuthRefused[resource] = false;
+    const j = await res.json();
+    if (!(j && j.ok)) {
+      try { sdDataFailed(action, resource, 'the server answered 200 with ok:false'); } catch (_e) {}
+      return null;
+    }
+    return j;
+  } catch (e) {
+    _sdLastStatus[resource] = 0;
+    try { sdDataFailed(action, resource, 'the request could not be made: ' + ((e && e.message) || e)); } catch (_e) {}
+    return null;
+  }
+}
 function sdDataFailed(action, resource, why) {
   try {
     console.warn('StoneDesk: ' + action + ' "' + resource + '" did NOT reach the '
