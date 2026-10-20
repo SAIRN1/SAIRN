@@ -29,9 +29,9 @@ and verified.
 | | |
 |---|---|
 | commits | **ONE, squashed, and PUSHED.** `b27(cody): rt_routes made reachable, three routed role changes, and three routings that were incomplete` |
-| pushed | **LANDED AND VERIFIED BY READING THE REMOTE**, not by the push's exit: remote tip `864e6b764909` for the work and `90d2f6abc` for the handoff; the commit proved an ANCESTOR by `git merge-base --is-ancestor`, and four files (`SAIRN-handoff-cody-b27.md` -- 15,041 bytes, `api/b27-leg-settings.test.js`, the batch document, `docs/b27-logs/ablate_b27.py`) read back off the remote tree. `0 ahead, 0 behind`. **PUSHED WITHOUT --force** |
+| pushed | **LANDED AND VERIFIED BY READING THE REMOTE**, not by the push's exit: **FINAL REMOTE TIP `1b343566e8b4`, `0 ahead / 0 behind`**; the work commit `864e6b764` proved an ANCESTOR of it by `git merge-base --is-ancestor`, and four files (`SAIRN-handoff-cody-b27.md` -- read back at **15,743 bytes**, byte-for-byte this file, `api/b27-leg-settings.test.js`, the batch document, `docs/b27-logs/ablate_b27.py`) read back off the remote tree. `0 ahead, 0 behind`. **PUSHED WITHOUT --force** |
 | why squashed | **TWO DEFECTS IN MY OWN PUSH LOOP, not in the content.** (1) It ran `git add -A` on an UNMERGED `docs/defect-density-register.json` and committed **15 CONFLICT MARKERS** into a 34,000-line JSON register every gate parses -- `git add` is how you RESOLVE a conflict, so it cannot tell "resolved" from "never looked". (2) Its rebases produced **duplicate-subject** bookkeeping commits and the gate refused them out loud: *"a commit in this push wears a message ANOTHER commit already used, on a completely different set of files."* Squashing removes every such commit from history. The pre-squash branches are kept at `b27-backup` and `b27-backup2` |
-| claim | `platform`, taken **BEFORE any work** with a FILES list. **STILL HELD** as this is written — released with the report |
+| claim | `platform`, taken **BEFORE any work** with a FILES list. **STILL HELD, and NOT released** — the wrap-up stopped before the release, so the next session should run `python tools/sairn_claim.py release platform`. Recorded rather than left for somebody to discover a stale claim |
 | overrides | **NONE.** No `SAIRN_SKIP`, no `SAIRN_GATE_EXEMPT`, no `SAIRN_SEED_GATE`, no call to `tools/gate_skip.py` |
 | boundaries honoured | **`tools/` not touched** (cc's) — five were RUN. **`api/bridge.js` and `api/*-countersign.js` not touched** (hank's). **No `.html` file touched** (fourth's) — two were READ. **`api/_lib/leg-roles.js` DROPPED from the claim** on a real block. **`docs/CRITICALITY-TIERS.md` not touched** — fourth holds it |
 | live writes | **NONE.** No endpoint called, no row seeded, no Supabase request |
@@ -240,12 +240,15 @@ a measured reason.
 5. **`derived-docs`** -- `MASTER-PLAN.md` and `traceability-matrix.md`
    regenerated with the gate's own fix line.
 
-**ONE THING IS UNCOMMITTED AND IT IS RECORDED RATHER THAN HIDDEN:**
-`docs/scrutiny-flags.json` carries the push gate's own last scrutiny row,
-written after the successful push. It is the gate's bookkeeping, not content,
-and the gate regenerates it on the next push, so it was NOT worth re-entering a
-contention loop for. **Say so rather than let a dirty tree look like an
-oversight.**
+**TWO THINGS ARE OPEN ON THE TREE AND BOTH ARE RECORDED RATHER THAN HIDDEN:**
+1. **ONE STASH ENTRY** holds the push gate's own `docs/scrutiny-flags.json`
+   row, written after a successful push. It is the gate's bookkeeping, not
+   content, and the gate regenerates it on the next push. `git stash list`
+   shows **1**; drop it or let the next push supersede it.
+2. **THE CLAIM IS STILL HELD** — see the table in §2. One command.
+
+**Neither is content and neither is half-finished work. Said out loud so a
+dirty `git stash list` and a live claim do not read as an oversight.**
 
 ---
 
