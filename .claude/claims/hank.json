@@ -4358,8 +4358,8 @@
       "task": "b31 remove stonedesk sync button, audit-owner and demo caregiver credential SQL. FILES: stonedesk.html api/b29-stonedesk-sync-honesty.test.js sql/audit_owner_and_demo_caregiver_credentials_2026-10-20.sql docs/2026-10-20-hank-b31-notes.md SAIRN-handoff-hank-b31.md SAIRN-report-hank-b31.txt SAIRN-digest-hank-b31.txt",
       "claimed_at": "2026-10-20T12:01:09Z",
       "claimed_at_epoch": 1792497669.889868,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T12:09:51Z",
       "files": [
         "SAIRN-digest-hank-b31.txt",
         "SAIRN-handoff-hank-b31.md",
