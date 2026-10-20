@@ -4148,8 +4148,8 @@
       "task": "b27 rt_routes handler branch and extraActions; office_manager in ALF_NON_MGMT; roleSet owner at 18804; LEG_RESOURCES leg_settings and the fifth argument to legRoles.decide; re-aim R1c R1f R2; the 12 unproducible known-red tails; re-drive the 10 census timeouts. TWO BLOCKS VERIFIED, TASK TEXT NOT REWORDED, ONLY THE FILES LIST CORRECTED TO WHAT THE WORK ACTUALLY TOUCHES: (1) fourth on rt_routes -- fourth's active claim declares NO api/ and NO sql/ path and fourth's OWN docs/2026-10-19-fourth-b34-routing-phase1.md section 3 routes this handler branch TO cody, saying api/sd-data.js 'was not touched'. Word collision. (2) hank on api/_lib/leg-roles.js -- REAL file overlap and I DROPPED THE FILE rather than argue: decide(resource, role, action, grants, home) ALREADY takes the fifth argument at api/_lib/leg-roles.js:490 and LEG_RESOURCES lives at api/sd-data.js:16524, so item 2c needs no edit to hank's file at all. Likewise ALF_NON_MGMT is at api/sd-data-alf-isolation.test.js:362, not in api/_lib/alf-roles.js. FILES: api/sd-data.js api/_resources/routes.js api/_lib/routes.test.js api/sd-data-alf-isolation.test.js api/b19-iolta-reconcile-carveout.test.js docs/known-red-suites.json tests/sairncare_compliance_window_boundary.test.js docs/2026-10-19-cody-b27-routing-roles-and-tails.md docs/b27-logs/ SAIRN-handoff-cody-b27.md SAIRN-report-cody-b27.txt SAIRN-digest-cody-b27.txt",
       "claimed_at": "2026-10-19T21:00:21Z",
       "claimed_at_epoch": 1792443621.1847167,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-20T07:32:03Z",
       "files": [
         "SAIRN-digest-cody-b27.txt",
         "SAIRN-handoff-cody-b27.md",
