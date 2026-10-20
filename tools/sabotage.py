@@ -54,12 +54,36 @@ and not a return value: a caller that ignores a returned `None` writes exactly
 the silent no-op this exists to remove, and on this platform PR §1.11 already
 says a check that could not run must never be folded into a pass.
 
+── AND A LAYER OUT: THE PLANT CAN LAND AND THE TEST PATH STILL NOT RUN ──────
+**A probe must prove the path under test actually executed before it reports a
+verdict.** Everything above answers *"is the defect in the file?"*. That is not
+the same question as *"did the thing being tested look at the file?"*, and on
+2026-10-20 the difference cost a verdict: cc's b26 CHECK 5d harness planted an
+out-of-scope path for the `hank` population, the plant was written to disk
+correctly, and the **pre-commit** hook then refused the commit (a `tools/*.py`
+with no inventory entry). The commit never happened. The harness drove the
+pre-push hook over a **clean tree**, read exit 0, and reported hank
+**ALLOWED** — a probe reporting a verdict on a test it never ran, and the
+friendliest possible wrong answer: *"the gate did not refuse."*
+
+`verdict()` is the only thing in this module that hands back a verdict, and it
+cannot produce one without the evidence that the subject was inside what the
+test actually examined. Absent that it returns `INCONCLUSIVE`, which is neither
+a pass nor a fail. `tally()` then keeps it out of both buckets, because *"4 of
+5 refused"* over four real refusals and one untested case is the b26 defect
+surviving into the write-up.
+
 ── WHAT THIS DOES NOT DO ────────────────────────────────────────────────────
 It does not decide whether the checker's verdict afterwards is correct — a
 control can plant perfectly and still assert the wrong thing. It does not answer
 whether the anchor is a MEANINGFUL defect rather than a cosmetic edit. And it
 does not migrate the 11: each needs its own reading, and a mechanical rewrite of
 somebody else's control is how a working control becomes a broken one.
+
+`verdict()` cannot be forced on a caller either: a harness that never calls it
+still prints whatever it likes. What it removes is having to re-invent the
+ran-check per probe, which is why b26's was inline and local and why no other
+probe in the repo had one.
 """
 import io
 import os
@@ -171,6 +195,78 @@ class Planted(object):
         return False
 
 
+INCONCLUSIVE = 'INCONCLUSIVE'
+
+
+def verdict(decided, subject, examined, label='the path under test'):
+    """The only verdict this module hands back, and it needs the ran-check.
+
+    `decided` is what the probe observed (e.g. 'REFUSED' / 'ALLOWED').
+    `subject` is the thing that had to be under test -- a planted path, a
+    marker, a line.  `examined` is the text of what the test path ACTUALLY
+    looked at: the outgoing range, the file list the checker was handed, the
+    checker's own echo of its input.  Not the probe's intent, and not the
+    bytes on disk -- `write_and_verify` already covers disk, and b26's plant
+    was on disk the whole time.
+
+    Returns `(verdict, why)`.  `verdict` is `decided` only when `subject`
+    appears in `examined`; otherwise it is `INCONCLUSIVE` and `why` says what
+    was looked for and what the test path contained instead.
+
+    `decided` may not itself be INCONCLUSIVE: a caller passing it in has
+    already made the judgement this function exists to make, and letting it
+    through would mean the evidence was never consulted.
+    """
+    if decided == INCONCLUSIVE:
+        raise CouldNotSabotage(
+            'INCONCLUSIVE is this function\'s output, never its input -- pass '
+            'what the probe OBSERVED and let the evidence decide')
+    if not subject:
+        raise CouldNotSabotage('empty subject: nothing to prove ran')
+    examined = examined or ''
+    if subject in examined:
+        return decided, ''
+    return INCONCLUSIVE, (
+        'THE TEST PATH NEVER EXAMINED THE SUBJECT, so %r is not a result in '
+        'either direction.\n'
+        '  looked for : %r\n'
+        '  %s saw     : %s'
+        % (decided, subject[:160], label,
+           (repr(examined.strip()[:300]) if examined.strip()
+            else 'NOTHING AT ALL -- an empty range reads exactly like a clean one')))
+
+
+def tally(rows):
+    """Count a verdict table so an untested case cannot be quoted as a pass.
+
+    `rows` is an iterable of `(name, got, want)`.  A row whose `got` is
+    `INCONCLUSIVE` lands in its OWN bucket -- never in passed, never in
+    failed -- and both counts are printed whether or not they are zero, so
+    neither hides behind the other.
+
+    Returns `(exit_code, lines)`.  0 only when every row was decided AND
+    matched.  1 when something genuinely failed, which outranks an unknown
+    because a confirmed failure is actionable.  2 -- the could-not-run code --
+    when nothing failed but something never ran.
+    """
+    rows = list(rows)
+    passed, failed, unran = [], [], []
+    for name, got, want in rows:
+        (unran if got == INCONCLUSIVE else
+         passed if got == want else failed).append(name)
+    lines = [
+        '  %d of %d decided and matched' % (len(passed), len(rows)),
+        '  %d decided and did NOT match%s'
+        % (len(failed), (': ' + ', '.join(failed)) if failed else ''),
+        '  %d INCONCLUSIVE -- counted in neither%s'
+        % (len(unran), (': ' + ', '.join(unran)) if unran else ''),
+    ]
+    if unran:
+        lines.append('  DO NOT QUOTE %d/%d: %d case(s) never ran.'
+                     % (len(passed), len(rows), len(unran)))
+    return (1 if failed else 2 if unran else 0), lines
+
+
 def _selftest():
     ok = True
 
@@ -255,6 +351,51 @@ def _selftest():
     check('...so a caller cannot ignore it the way a returned None is ignored',
           not raises(lambda: plant(src, 'a = 1', 'a = 99'), 'x'),
           'a successful plant must not raise')
+
+    print('\n7. verdict -- the ran-check: a plant on disk is not a test that ran')
+    RANGE = 'tools/zz_probe.txt\napi/other.js\n'
+    check('a subject INSIDE what the test path examined keeps its verdict',
+          verdict('REFUSED', 'tools/zz_probe.txt', RANGE) == ('REFUSED', ''))
+    v, why = verdict('ALLOWED', 'tools/zz_probe.txt', '')
+    check('THE b26 CASE: plant absent from the outgoing range -> INCONCLUSIVE',
+          v == INCONCLUSIVE, v)
+    check('...and the reason says an empty range reads like a clean one',
+          'NOTHING AT ALL' in why, why[:120])
+    check('...and the friendly wrong answer ALLOWED is not what comes back',
+          v != 'ALLOWED')
+    v2, why2 = verdict('REFUSED', 'tools/zz_probe.txt', 'api/other.js\n')
+    check('a NON-EMPTY range that simply lacks the subject is INCONCLUSIVE too',
+          v2 == INCONCLUSIVE and 'api/other.js' in why2, (v2, why2[:80]))
+    check('INCONCLUSIVE may not be passed IN -- that would skip the evidence',
+          raises(lambda: verdict(INCONCLUSIVE, 'x', 'x'), 'never its input'))
+    check('an empty subject refuses rather than matching everything',
+          raises(lambda: verdict('REFUSED', '', RANGE), 'nothing to prove'))
+    check('ABLATION: without the ran-check the same inputs give a VERDICT',
+          ('ALLOWED' if 'tools/zz_probe.txt' else INCONCLUSIVE) == 'ALLOWED',
+          'this arm is the counterfactual, not a test of the code')
+
+    print('\n8. tally -- an untested case is not a denominator')
+    code, lines = tally([('a', 'REFUSED', 'REFUSED'),
+                         ('b', 'REFUSED', 'REFUSED'),
+                         ('c', 'REFUSED', 'REFUSED'),
+                         ('d', 'REFUSED', 'REFUSED'),
+                         ('hank', INCONCLUSIVE, 'REFUSED')])
+    check('4 decided + 1 inconclusive is NOT exit 0', code == 2, code)
+    check('...the passed count is 4 of 5 and the inconclusive is named',
+          '4 of 5 decided and matched' in lines[0] and 'hank' in lines[2],
+          lines)
+    check('...and it says in words not to quote the ratio',
+          any('DO NOT QUOTE' in ln for ln in lines))
+    check('a real failure outranks an unknown, and both still print',
+          tally([('a', 'ALLOWED', 'REFUSED'), ('b', INCONCLUSIVE, 'REFUSED')])[0] == 1)
+    check('...and the inconclusive is still visible in that same table',
+          '1 INCONCLUSIVE' in tally([('a', 'ALLOWED', 'REFUSED'),
+                                     ('b', INCONCLUSIVE, 'REFUSED')])[1][2])
+    check('all decided and matched is the only exit 0',
+          tally([('a', 'REFUSED', 'REFUSED')])[0] == 0)
+    check('an EMPTY table is exit 0 and says 0 of 0 -- a run with no cases is '
+          'not a pass to quote either',
+          tally([])[0] == 0 and '0 of 0' in tally([])[1][0])
 
     print('')
     print('  all arms pass' if ok else '  ARMS FAILED -- do not trust this module')

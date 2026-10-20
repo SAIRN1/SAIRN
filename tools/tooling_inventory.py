@@ -1340,7 +1340,28 @@ PURPOSES = {
         'so a caller cannot reproduce the silent no-op. It does NOT migrate the '
         'remaining unguarded controls -- a mechanical rewrite of somebody '
         'else\'s control is how a working one breaks. Companion to '
-        'sabotage_control_check.py, which MEASURES the class'),
+        'sabotage_control_check.py, which MEASURES the class. As of 2026-10-20 '
+        'it also carries the RAN-CHECK, which answers a question a layer out: '
+        'everything else here asks whether the defect is in the FILE, and '
+        'verdict() asks whether the thing being tested LOOKED at the file. '
+        'CATCHES a probe reporting a verdict on a test path that never '
+        'executed -- INCONCLUSIVE is returned instead, may not be passed back '
+        'in, and tally() keeps it out of both the passed and the failed bucket '
+        'so an untested case cannot become a denominator'),
+    'push_gate_path_scope_sabotage_probe.py': ('PROBE',
+        'CATCHES pre-push CHECK 5d (gate path-scope) having stopped refusing. '
+        'Plants one out-of-scope path per build population plus one auditor '
+        'path, each committed and driven through the REAL pre-push hook in a '
+        'scratch worktree provisioned as that population, and requires the '
+        'refusal to NAME the planted path and NAME the deciding rule -- a '
+        'refusal nobody can attribute is not reviewable. Distinct from '
+        'sairn_path_manifest.py --fixtures, which proves CLASSIFICATION and '
+        'not REFUSAL. It exists as a file because b26 ran it from a scratchpad '
+        'and that directory\'s cleanup destroyed twelve FMEA drafts; and it '
+        'commits the plant with --no-verify because the plant is SETUP, so '
+        'letting the pre-COMMIT hook adjudicate it makes this probe\'s '
+        'coverage depend on rules it is not testing -- which is exactly how '
+        'b26 came to report hank ALLOWED on a clean tree'),
     'line_endings.py': ('LIBRARY',
         'the CRLF-vs-LF recombination: 52 files here handle line endings '
         'independently and most are RIGHT, because they had already converged '
