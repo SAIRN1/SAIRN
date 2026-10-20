@@ -1,0 +1,71 @@
+{
+ "app_matched": "sairncash",
+ "considered": {
+  "defect_records": 685,
+  "detectors_fired": [],
+  "detectors_run": 12,
+  "matched_this_file": 1
+ },
+ "drafted_on": "2026-10-20",
+ "exists": true,
+ "no_detector_yet": [
+  "1.6",
+  "2.2",
+  "3.1",
+  "3.2",
+  "3.3",
+  "4.1",
+  "4.2",
+  "4.3",
+  "5"
+ ],
+ "risks": [
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "a100c0785f51",
+   "date": "2026-09-16",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "reverifySubscription() and reverifyTrial() fell back to the client-only check whenever the verify request THREW, with no time bound -- so blocking the request (offline, a hosts entry, DevTools) made a stored, forgeable localStorage record grant access INDEFINITELY, with nothing ever re-asked. The fallback itself is deliberate and correct; what was missing is how long an unconfirmed answer may be reused",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncash) has this defect on record",
+   "cite": "f98c1b08d3fc",
+   "date": "2026-09-14",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "api/sairncash/portal.js returns a Stripe Billing Portal URL -- card on file, invoice history, the power to cancel -- to an UNAUTHENTICATED POST carrying only a subscription id, which Stripe puts in dashboards, webhooks, emails and CSV exports and never treated as a secret. The file refuses a cus_ id for exactly this reason and then accepts a sub_ id of comparable entropy. NOT EXPLOITABLE TODAY and the reason is an accident, not a control: production's STRIPE_SECRET_KEY is present but is an EXPIRED sk_test_ key, so every call dies before reaching a customer. The day a working key is installed, nothing announces it -- the same re-read-trigger failure that left the SOUP register claiming the key was unset",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncash) has this defect on record",
+   "cite": "ec93b60c7002",
+   "date": "2026-09-26",
+   "detected_by": "code-review",
+   "prior_severity": "critical",
+   "risk": "sairncash.html's calcQuarterlySetAside computed the current-year leg of the IRS safe harbor as calcTotalTax(ytdNetProfit), the tax on the profit earned SO FAR, and displayed it under the label \"Estimated annual tax (SE + federal income)\". Math.min(ninetyPct, priorYearBasis) is the statute -- 2026 Form 1040-ES line 12c, \"Enter the smaller of line 12a or 12b\" -- so the min was correct and the term being minimised was not: early in the year the YTD figure is near zero, min therefore selects it, and the recommended quarterly set-aside collapses. MEASURED on the unfixed code: $1,167.17/quarter against an IRS floor of $5,000 for a $120k-pace freelancer on 31 March (23.3%), $397.39 against $9,141.98 in January with no prior-year figure entered (4.3%), $2,140.79 against $3,500 on 30 June (61.2%); and the screen printed \"Estimated annual tax $5,187.42\" where the projected annual tax was $30,640.76. The exposure is the IRC 6654 estimated-tax underpayment penalty, which has NO reasonable-cause waiver -- 6654(e) provides only the de minimis, first-taxable-year and casualty/disaster exceptions. Five further defects in the same engine, all verified against the same 1040-ES: the 110% prior-year trigger was one boolean named prior_year_agi_over_150k for all four filing statuses although MFS triggers at $75,000; sumIncome/sumDeductions summed every cached entry so the figure labelled YTD was all-time; the section 199A QBI deduction was absent although worksheet line 2b takes it off taxable income before the tax is figured, overstating every set-aside; and head-of-household's 24% band top was $201,775, which is SINGLE's Schedule X figure -- Schedule Z says $201,750.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncash) has this defect on record",
+   "cite": "607f227f2125",
+   "date": "2026-09-27",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "Three of sairncash.html's 19 Math.min/Math.max call sites answered a question they could not read. bracketTax() is the worst and the reason is the return value rather than the input: Math.min(NaN, cap) is NaN, NaN > lastCap is false, so no band accumulates, the loop never breaks, and it returns a clean 0 -- measured, bracketTax(NaN|null|undefined,'single') === 0 against 5752 for 50000. A confident $0.00 of federal income tax. calcSeTax() was asymmetric from one line: Math.max(0, null) is 0 and Math.max(0, undefined) is NaN, so the same missing profit was silent down one path and loud down the other. projectAnnualFromYtd()'s 1/365 floor did not do what its own comment claimed -- the comment said it stops a $NaN beside a tax deadline and it only ever covered zero, because Math.max(1/365, NaN) is NaN. All three now refuse a non-finite input instead of computing on it, with zero explicitly still accepted. FOUND BY READING ALL 19 SITES, not by a committed tool.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncash) has this defect on record",
+   "cite": "cc6e38945baa",
+   "date": "2026-09-27",
+   "detected_by": "probe-control",
+   "prior_severity": "high",
+   "risk": "tests/sairncash_entitlement_fault_probe.py had been dead since a100c078. That commit inserted an scGraceOk(s) bound into the exact catch block arm 4 anchored on, turning the three lines the anchor spanned into eight, so once() refused the anchor and the probe exited non-zero on its FIRST arm -- arms 4 and 5 never ran at all. The entitlement gate's offline-fallback and trial-sibling properties were therefore unmutated and unverified for the whole window. Re-anchored against what the code became rather than restored: the anchor now spans only the final fallback line the arm was always about, so a later insertion above it cannot break it again, and two arms were added for the guarantees a100c078 introduced and nothing covered -- an unbounded grace window and the future-stamp skew guard.",
+   "source": "defect-register"
+  }
+ ],
+ "target": "tests/sairncash_entitlement_gate.js"
+}

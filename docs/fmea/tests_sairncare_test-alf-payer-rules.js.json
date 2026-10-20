@@ -1,0 +1,379 @@
+{
+ "app_matched": "sairncare",
+ "considered": {
+  "defect_records": 685,
+  "detectors_fired": [],
+  "detectors_run": 12,
+  "matched_this_file": 1
+ },
+ "drafted_on": "2026-10-20",
+ "exists": true,
+ "no_detector_yet": [
+  "1.6",
+  "2.2",
+  "3.1",
+  "3.2",
+  "3.3",
+  "4.1",
+  "4.2",
+  "4.3",
+  "5"
+ ],
+ "risks": [
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "395f7f2ab9ad",
+   "date": "2026-10-05",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "tests/sairncare/test-alf-incidents.js had NO arm on the alf_incidents self-scope, and the suite looked like it was guarding the resource. Three arms asserted a flat 403 for caregiver/med_aide/activities reads, which api/sd-data.js:10739 deliberately stopped answering on 2026-09-27 when a care role was given a self-scoped read of its own filings -- AND the suite's own fetch mock ignored the '&recorded_by=eq.<session.employee_id>' clause the handler adds for non-broad roles, returning every row to every caller. So the only control standing between a caregiver and the whole facility's mandated-reporting incident log was untested in both halves at once: the arms tested a status code that no longer occurs, and the fixture could not have detected a leak if one existed. Fixed by applying the eq-clause in the mock, carrying server-set recorded_by and created_at on rows because the real select asks for them, and rewriting the three arms to the real contract -- every row a care role sees was filed by that caller (asserted over the whole result, so one leaked row fails it), a report filed by a different caregiver is NOT visible, and management DOES see that same row so the arm proves a scope rather than an empty fixture. Ablated: removing the eq-clause from the handler now reddens all three rewritten arms plus the management count; before this commit it would have reddened nothing. Found only because the suite was red for an unrelated reason -- the absent-expectedApp stub shape shared by 12 files since c8b5e5b1 -- and clearing that exposed three survivors.",
+   "rules": [
+    "1.1"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "1aec3368edbd",
+   "date": "2026-08-23",
+   "detected_by": "live-verification",
+   "prior_severity": "high",
+   "risk": "api/alf-alerts.js put sendResendEmail's failure reason into the handler's JSON response only, so a Resend REJECTION on the alert cron was invisible from outside -- a 200 proved the env gate passed and did not prove an email was sent. HIGH: the same silent-failure class as e0b74b45 one layer out, and it is why that one took a live check rather than a read to find",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "e0b74b454167",
+   "date": "2026-08-23",
+   "detected_by": "live-verification",
+   "prior_severity": "high",
+   "risk": "api/alf-alerts.js read RESEND_FROM_ADDRESS, a variable that has never existed in this Vercel project -- the sender address is RESEND_FROM_EMAIL -- so the SAIRNcare alert email was never sent while the cron reported success. HIGH: a silent failure showing SUCCESS on a notification path somebody relies on",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "dd0fc32f14ae",
+   "date": "2026-09-12",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "prRefresh and cqRefresh coalesced a failed read to [], making their own '=== null' guard unreachable, so a failed read rendered 0-of-4 coverage plus advice to re-run the seed on the compliance and billing panels",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "1884f8148112",
+   "date": "2026-09-21",
+   "detected_by": "probe-control",
+   "prior_severity": "moderate",
+   "risk": "tests/faults/alf_rule_read_faults.js had been RED on main since 2026-09-18, six of thirteen arms dying on 'prRenderRecorded is not defined'. NOT A PRODUCT REGRESSION: rPayerRouting() gained a real call to a real function that exists in sairncare.html, and the suite builds its vm context one named global at a time, so every arm touching the payer panel died on a ReferenceError before reaching its assertion. Six requirements about failed rule reads were reported as failures of the product for three days. Fixed with a no-op stub rather than by extracting the real function, because prRenderRecorded() reads alf_claim_routes and needs alfIsManagement(), residents(), H() and a #pr-recorded element -- pulling that in would make a suite about rule-read failure states also a suite about the billing trail. What the stub gives up is named in the file with a pointer: that rPayerRouting calls it at all is asserted in tests/sairncare_route_record.js section 8 and planted as mutation 10 of tests/run_sairncare_route_record_sabotage_probe.py.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "ad6a6b9d9cee",
+   "date": "2026-09-21",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "sairncare.html alfPostRaw() carried 'if(!r.ok && !d.error)', the last copy of the clause deea8c55 removed from alfRoute() and alfData() the same day. The HTTP_<status> normalisation therefore fired only when the server sent NO error body, so every api/sd-data.js refusal carrying one passed through wearing the server's own code into a renderer whose code field is reserved for the COMPLIANCE ENGINE's refusals -- driven against the shipped functions: 401 -> NO_SESSION, 403 -> FORBIDDEN, 503 -> NOT_PROVISIONED, and upstream()'s 502 with NO code at all. THE HALF WITH A FILE AT THE END OF IT: crRefresh() read (r && Array.isArray(r.data)) ? r.data : [], so all four refusals set _crRecords=[] and rCredentials() rendered 'No credential or training entries recorded yet' over an append-only credential ledger nobody had been allowed to read. ALF_EXPORTS.credentials.rows() already refused on _crRecords===null under a comment saying never-loaded and genuinely-empty are different facts -- correct, and unreachable, because nothing ever produced null on a refusal, so a refused read was exportable as a CSV whose preamble prints ROWS IN THIS FILE: 0.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "b5e20fe80b4e",
+   "date": "2026-09-21",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "alf_mar append-only TOCTOU: the handler SELECTed for an existing entry_id, answered 409 ALREADY_RECORDED if found, then POSTed with Prefer: resolution=merge-duplicates. Two callers racing the SAME entry_id could both pass the SELECT before either POST landed, and the second POST's merge-duplicates resolution silently OVERWROTE the first row instead of reaching the 409 -- a recorded medication administration of 'given' replaced by 'refused', unrecoverably, with no error anywhere. Fixed by routing through public.alf_check_and_insert_mar_entry(), which holds pg_advisory_xact_lock across the check and the write in one transaction.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "357612ce4d37",
+   "date": "2026-09-22",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "prRenderRecorded() in sairncare.html rendered the alf_claim_routes trail's 'On' column as String(created_at).slice(0,10) -- DATE ONLY. The 409 ALREADY_RECORDED that this trail exists to serve tells the biller: 'record it again and the trail will show both, with the later one as what is believed now.' Two determinations recorded the same day carried IDENTICAL text, so the reader could not tell which was later EVEN WITH BOTH IN FRONT OF THEM -- the app made a promise in a refusal message that its own display could not keep. Paired with the unordered read in the same trail (b58fb38b/f9e9628f); either alone left the promise half-true, which is why the open-work row required both halves. Fixed by a new fstamp() that parses the timestamptz and renders in the READER'S LOCAL ZONE: slicing the raw ISO string to 16 characters would have been a one-character diff and would print an unmarked UTC clock face, which is worse than a date alone because it looks local and is not.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "90c1a9c3ef94",
+   "date": "2026-09-22",
+   "detected_by": "independent-review",
+   "prior_severity": "low",
+   "risk": "api/sd-data.js derive_charges: two of its three event-source reads (alf_mar, alf_activities) carried no order= clause, and api/_lib/care-charges.js sorted the derived lines on DATE ALONE. Array.prototype.sort is stable, so same-day rows kept insertion order -- the concatenation order of the three sources, and within each source whatever order the server returned. Two identical regenerations of one month could therefore list the same day's doses in different sequences, on a table whose first column is Date. The unpriced list, rendered with dates under 'Documented but NOT billed', was not sorted at all. NO MONEY WAS WRONG: the total is a sum and reconcileAgainstInvoice keys on event_id, so both the invoice total and the regenerate-diff were order-independent throughout.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "f9e9628f4762",
+   "date": "2026-09-22",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "api/sd-data.js read SIX SAIRNcare append-only trails with no order= clause -- alf_mar, alf_incidents, alf_signals, alf_claim_routes, alf_staff_credentials, alf_op_audits. Postgres promises nothing about the order of a SELECT that does not ask for one and PostgREST forwards that through, so rows came back in plan order. On a small table a seq scan usually returns heap order, which is why it looked like insertion order for the whole of development and would stop the first time the planner picked an index. WORST INSTANCE, and the one the severity is set by: prRenderRecorded maps alf_claim_routes rows straight into a table with NO client sort of any kind and renders created_at sliced to 10 characters, so the server order WAS the display order and there was none -- a billing determination trail in arbitrary order. alf_mar and alf_incidents do sort, but on a date-only jsonb field, so every same-day entry ties and falls back to server order under a stable sort. alf_staff_credentials and alf_op_audits already sorted by created_at desc client-side and were deterministic except on an exact tie. alf_signals has no consumer yet. THE INJECTION COMMIT NAMED IS f29e5f95, the claim_routes instance; the other five entered in separate commits and the lag here is that one instance's, not the class's.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "70192c7f64c7",
+   "date": "2026-09-23",
+   "detected_by": "live-verification",
+   "prior_severity": "low",
+   "risk": "api/sd-data.js: the alf_mar and alf_incidents list reads ordered by created_at and did not SELECT it, so the client received rows in a server-defined order with no way to verify or re-derive that order. Both client reads are hydrates that merge server rows into a persisted local array in arrival order, so the ordering became the order on disk while the column explaining it was dropped in transit.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "0a4b2f765941",
+   "date": "2026-09-26",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "api/_lib/compliance-rules.js evaluateTraining()'s optional per-staff branch answered meets:TRUE for a staff member with ZERO recorded training hours, in a state that mandates them. Driven 2026-09-26 against the real committed seed: West Virginia, staff member with annual_hours_recorded 0, returned { required_annual_hours: 0, recorded_annual_hours: 0, shortfall_hours: 0, meets: TRUE, applicable_requirements: [null, null] }. WV mandates 8 hours a year for an administrator and 2 hours a year of dementia training for ALL staff under 64 CSR 14. Its requirement rows are shaped {audience, hours_per_year, topic}; this branch reads r.who and r.annual_hours, so every requirement contributed Number(undefined) || 0 and the applicable_requirements array came back as [null, null]. A DIFFERENT VOCABULARY WAS READ AS AN EMPTY ONE, and once summed an empty requirement set is indistinguishable from a satisfied one. A SECOND FABRICATION SURVIVES A CORRECT VOCABULARY AND IS WRONG IN BOTH DIRECTIONS: Pennsylvania rows carry additive:true, a secured-dementia-unit requirement ON TOP OF the general annual hours, so collapsing 12 general and 6 dementia into one target of 18 and comparing one recorded total meant a staff member with 18 hours of general training and no dementia training read as compliant -- UNDER-requires, a false PASS; and Ohio rows carry counts_toward_general_annual:true, 4 and 8 hours that count TOWARD the general 8 rather than adding to it, so summing all four rows produced a required total of 29 where the code requires less -- OVER-requires, a false FAIL, which is the merciful direction and is still a wrong number on a compliance board. Both fields are machine-readable and present on the real seeded rows; nothing was reading either. THE BRANCH HAS NEVER FIRED: sairncare.html's cqShowTraining() sends {state, facility_class, requirement_type} and no staff array, so the whole branch is dormant and none of this has reached a screen -- which is the only reason this is a latent defect rather than an incident, and is not a reason to leave it, because the open request that surfaced it was to BUILD the caller. FIXED BY REFUSING RATHER THAN GUESSING, matching this module's own stated standard that nothing is ever silently substituted: a requirement row carrying neither `who` nor `annual_hours` now returns REQUIREMENTS_NOT_JOINABLE naming the state, the rule and the unreadable rows' key sets; and any applicable requirement carrying stacking semantics (additive, counts_toward_general_annual, or an explicit stacking field) now yields meets:null with a meets_unknown_reason rather than a boolean in either direction, while still reporting the recorded and required figures. Measured across all six seeded training rules after the fix: OH null, IN false, MI not applicable, PA/alr null, PA/pch null, WV refused -- one of six states can currently be answered at all.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "84edca20af14",
+   "date": "2026-09-26",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "api/sd-data.js alf_family_contacts action read checked verifySessionToken and NO role, so any authenticated sairncare employee of any role -- med_aide, activities, anyone issued a PIN -- could list every family contact on the licence with phone, email, notes and the full medication-consent trail for every resident, while the WRITE half of the same branch has always required management and its refusal message calls this a disclosure decision. Separately the family MAR read was limit=500 with nothing said, and familyMarView computes an adherence PERCENTAGE over the rows it is handed, so a resident past 500 administrations -- under a year at routine dosing -- gave a family member a number and a history presented as complete but computed from part of the record",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "c123a9250021",
+   "date": "2026-09-26",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "sairncare.html's three family-contact callers (alfFamilyRefresh, the write callback, alfFamilyPreview) read res.status and res.body off an alfData() result. alfData resolves to d.data on success and null on failure and has never returned that shape, so the feature was broken in BOTH directions: on success res.body was undefined and every caller took its failure branch, rendering 'Could not load family contacts' over an empty array every time the read worked; on failure res was null and res.status threw, so the branch meant to explain a 401 or 403 could never run and the panel said nothing. Recording a contact, listing contacts and previewing what a family member sees were all non-functional. The other 33 alfData callers use its real contract",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "f0c0cb7ac160",
+   "date": "2026-09-26",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "api/sd-data.js, alf_claim_routes and alf_staff_credentials: a caller could choose who is recorded as having made the decision. Both reads spread the stored blob LAST over FIVE mapped columns -- Object.assign({ id, resident_id, service_month, decided_by, created_at }, x.data) at :10555 and Object.assign({ id, staff_id, record_type, recorded_by, created_at }, x.data) at :10922 -- while both write paths stripped only THREE keys from the payload before storing it. So a payload carrying `decided_by` (or `recorded_by`) was kept inside `data` and OVERRODE on read the column the server had set from session.employee_id. `created_at` shadowed the same way on both, so the displayed timestamp of the record could also be chosen by the caller. Each write's own echo has the identical spread-last shape, so the forged attribution came straight back in the 200 as well, making the response look like confirmation. WHY THIS IS WORSE THAN AN ORDINARY FIELD LEAK: both tables are APPEND-ONLY BY DESIGN and each branch's 409 message states the reason -- \"a completed-training assertion that could be quietly edited later is not evidence of anything\". The record could not be edited after the fact; its ATTRIBUTION could be chosen at the moment of writing. alf_staff_credentials is the staff credential and training-hours trail (a regulated attestation about a named person); alf_claim_routes records how a real claim was billed, so the forged field names who made a money determination. FIXED by routing both through api/_lib/blob.js's storedBlob() with the column list derived from each branch's own read -- five keys each, not three. THE PLATFORM ALREADY KNEW THIS SHAPE: alf_op_audits carries a comment saying its read spreads columns LAST precisely so a client-supplied `passed` cannot override the server's computation, and the 2026-09-24 ALF review fixed the `created_at` half on alf_mar and alf_incidents. These two branches were not swept then. alf_signals -- same read shape, four mapped columns, four stripped -- is the branch that got it right, so four ALF branches produced three different outcomes from one pattern.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "6977854db7c8",
+   "date": "2026-09-27",
+   "detected_by": "code-review",
+   "prior_severity": "critical",
+   "risk": "api/sd-data.js's alf_incidents write stored `reported_by` FROM THE CALLER'S PAYLOAD. sql/sairncare_incidents_schema.sql documents reported_by as a field inside the `data` blob, and that blob is storedBlob(payload, ['id','resident_id','created_at']) -- api/_lib/blob.js copies the caller's payload and deletes only the named keys, so every other field, including the reporter's identity, is whatever the request said it was. The write is DELIBERATELY open to any authenticated employee because gating it would discourage mandated reporting, and that decision is correct -- so the two together meant ANY EMPLOYEE COULD FILE AN INCIDENT ATTRIBUTED TO ANY OTHER PERSON. The category vocabulary on this resource includes abuse_neglect_allegation, elopement, fall-with-injury and behavioral incidents; in most US states the reporter's identity on an abuse or neglect allegation is the record a surveyor asks for, and it could be set to a colleague by anybody with a PIN. There was no server-recorded filer at all: the table had no recorded_by column, while four sibling SAIRNcare tables (compliance, family_contacts, op_audit, remaining-migrations) carry one.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "ad97da6bce25",
+   "date": "2026-09-27",
+   "detected_by": "live-verification",
+   "prior_severity": "critical",
+   "risk": "The alf_incidents attribution fix did not close the attribution spoof. `recorded_by` was omitted from the write path's storedBlob strip list even though it is a real column on the table, so a caller-supplied recorded_by was stored INSIDE the data blob; and the read mapper built its response as Object.assign({id, resident_id, created_at, recorded_by: <column>}, r.data) -- spreading the blob LAST, so the blob's copy overwrote the authoritative column on every read. A live write against ALF-TEST-2026 on the deployed endpoint carrying reported_by and recorded_by both set to 'FORGED-SOMEONE-ELSE' read back recorded_by = 'FORGED-SOMEONE-ELSE' while the session's employee_id was 'sairn-demo-owner'. The same spread order applies to `id` and `resident_id`, which were safe only because they ARE in the strip list. Fixed by spreading the blob FIRST and overwriting with the columns, and by adding recorded_by to the strip list.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "cc6e38945baa",
+   "date": "2026-09-27",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "tests/sairncare_fault_probe.py had been dead since dadfedf4, which wrapped all 48 role membership sets in roleSet(...) for a null prototype. Four arms anchored on the bare object literal -- const ALF_MAR_ROLES = { owner: true, ... } -- which no longer exists anywhere in api/sd-data.js, so the anchors matched ZERO places and the probe stopped on its first mutation. SAIRNcare's scope-of-practice and assignee-scoping gates, which are medication-record and PHI gates, were unmutated for the whole window. Re-anchored onto the roleSet(...) form. Running it afterwards surfaced a SECOND and unrelated failure that is NOT fixed here and is not an anchor problem: c8b5e5b1's single-entry-point credential pre-gate calls verifySessionToken(preToken, licHash) with no expectedApp, and twelve suites stub that function to THROW on an unnamed app -- bisected 20-of-20 green at c8b5e5b1~1 and 0-of-20 at c8b5e5b1.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "e987dfb266b6",
+   "date": "2026-09-27",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "api/_lib/compliance-rules.js hoursInWindow(): the `facility_training_year` window read `from = trainingYearStart || null` and fell through with no error. `trainingYearStart` is `opts.facility_training_year_start`, a name that is not written, keyed, quoted or declared anywhere in the repo and that api/sd-data.js's evaluate branch does not accept. The per-record filter below is `if (from && ...)`, so a null `from` SKIPPED THE DATE FILTER ENTIRELY and every training record in alf_staff_credentials counted toward the annual total regardless of age -- a 2019 certificate satisfying a 2026 annual requirement. THE OVER-COUNTING DIRECTION: it reports a staff member with a real training shortfall as compliant, on a regulated verdict. REACHABLE, NOT THEORETICAL: api/sd-data.js explicitly validates `annual_window` against complianceRules.ANNUAL_WINDOWS, which INCLUDES facility_training_year, so a caller asking for that window was accepted and silently given no window at all. The response carried hours_window_from: null and hours_window_error: null -- no error anywhere. Fixed to fail closed in the same shape NO_HIRE_DATE already had twenty lines up: window_error 'NO_TRAINING_YEAR_START', nothing counted, verdict null rather than true, and the module says in place that this window is unavailable until some surface supplies a facility training year. Five arms in section 4e of api/_lib/compliance-rules-staff-join.test.js including both control directions.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "e987dfb266b6",
+   "date": "2026-09-27",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "api/sd-data.js alf_billing derive_charges: the reconciliation read `invRows[0].data.charge_lines` as the prior invoice's line detail. NO WRITE PATH ON THIS PLATFORM STORES THAT KEY -- sairncare.html's invoice record carries id, month, room_board_amount, care_amount, private_total, private_status, hcbs_claim_amount, hcbs_status, care_level_breakdown, revision_history and generated_by, and no per-event lines at all. So priorLines was ALWAYS [], and careCharges.reconcileAgainstInvoice(derived, []) answers: every derived line ADDED, nothing removed, nothing changed, unchanged_count 0, and net_change equal to the ENTIRE derived amount -- returned beside `invoice_exists: true`, which is what made the figure read as a comparison rather than as a first look. On the view this branch's own comment calls \"the audit trail that replaces the manual reconciliation\". THE ARGUMENT FOR THE FIX WAS ALREADY WRITTEN TWELVE LINES ABOVE IT, for the adjacent case: the 2026-09-04 hardening of the UNREADABLE prior invoice says \"this fell back to [], so the reconciliation reported EVERY derived line as new ... Somebody regenerates on the strength of that.\" The read below it then did exactly that for an invoice that was read perfectly well. Fixed as a named third state -- reconciliation_vs_invoice null, reconciliation_unavailable PRIOR_INVOICE_HAS_NO_CHARGE_LINES, and a sentence saying comparing against nothing would report every charge as new and the net change as the whole invoice. AND THE CLIENT HALF TOO: sairncare.html's renderer guards on `invoice_exists && rv`, so a bare null would have replaced a wrong figure with SILENCE and left the same person deciding with no more information than before; it now renders the reason. NO PRIOR INVOICE is deliberately left alone -- with nothing on file every derived line genuinely is new and invoice_exists:false says so.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "d84b1af6a15b",
+   "date": "2026-09-28",
+   "detected_by": "static-checker",
+   "prior_severity": "low",
+   "risk": "api/sd-data.js's alf_op_audits WRITE response echoed the created row as Object.assign({id, record_type, passed, recorded_by, reviewed_by}, body.data) -- the stored blob spread LAST, so a caller-supplied `reviewed_by` or `recorded_by` inside the blob overwrote the server-set value in the response. That branch's storedBlob strip list is deliberately just ['id', 'record_type'], so both identity keys DO remain in the blob. The stored row and every later READ were correct: the read path at :11009 uses the opposite, safe order (blob first, columns last). Only the echo returned to the writer was wrong, so a caller forging reviewed_by sees their own forged sign-off reflected back and no other reader ever does. alf_op_audits records fire drills, food temperatures and sanitation checks, and reviewed_by is the management sign-off on them.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "26c92942746d",
+   "date": "2026-09-29",
+   "detected_by": "mutation-testing",
+   "prior_severity": "moderate",
+   "risk": "api/sd-data.js's alf_billing/derive_charges ALF_MANAGEMENT_ROLES gate was present and correct and NOTHING DROVE IT. Proven by tools/role_gate_negative_coverage.py --ablate alf_billing, which deletes the resource's three gate blocks one at a time across 411 suites: CAUGHT / *** SILENT *** / CAUGHT. The two caught are `read` and `write`, already in api/sd-data-alf-caregiver-scope.test.js's ADMIN_REFUSALS table. The silent one is the sharpest of the three: `read` returns stored invoices, while `derive_charges` DERIVES a named resident's charges from their MAR administrations and activities and returns room_board_amount, care_amount, private_total, hcbs_claim_amount and the care-level breakdown. Deleting its gate would have handed a caregiver the full billing position of any resident they can name, and the gates either side would still have gone red, so the RESOURCE would have looked covered. NO PRODUCT DEFECT SHIPPED -- the gate has always been there; what was absent was any evidence it fires. Closed with one table row; re-ablated 3 of 3 CAUGHT with api/sd-data.js restored byte-identical. AND MEASURING IT EXPOSED A LARGER ONE: after wiring the arm the static screen STILL files alf_billing under 'NOT DRIVEN by any suite at all', because it attributes a suite by finding a role LITERAL near the resource name and ADMIN_REFUSALS drives eleven resources through a table with the role passed as a call argument. FIVE of the sixteen resources in that bucket -- alf_billing, alf_compliance_rules, alf_payer_rules, alf_signals, alf_staff -- are driven by that one table as `caregiver`, a role every one of their gates excludes, so the bucket whose own text reads 'there is no suite to add an arm to' over-reports by at least 31%.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "41c0cf783851",
+   "date": "2026-09-29",
+   "detected_by": "live-verification",
+   "prior_severity": "high",
+   "risk": "alf_family_contacts re-stamped consent_granted_at and consent_granted_by on EVERY write, so an unrelated edit rewrote the recorded moment a third party was authorised to see a resident medication administration record",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "7743faa963e0",
+   "date": "2026-09-29",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "alf_mar stored the employee who performed each entry from the request payload rather than the session, so any authenticated SAIRNcare employee could record a medication administration, controlled-substance count, reconciliation or assessment refusal against another employee name",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "7743faa963e0",
+   "date": "2026-09-29",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "SAIRNcare controlled-substance counts have NO server-side witness verification: witness_id is a caller-supplied string, so one employee alone can record a two-person count naming any colleague as the second signature",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "937bd6e858e3",
+   "date": "2026-09-29",
+   "detected_by": "code-review",
+   "prior_severity": "low",
+   "risk": "alf_billing derive_charges: a prior-invoice row that EXISTS with a null data blob made priorRow null, so the 2026-09-27 no-charge_lines guard was skipped entirely, the else branch reconciled against [] and the response reported EVERY derived charge as newly added with net_change equal to the whole invoice, beside invoice_exists true. That is the identical false reading the 2026-09-27 comment in that branch describes and claims to have closed -- the third door into one defect in one function, after the unreadable read (2026-09-04) and the absent charge_lines key (2026-09-27).",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "c4598430a425",
+   "date": "2026-09-29",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "tests/sairncare_transport_refusal.js -- the family-contact arm asserted WHICH FUNCTION a caller called (no alfData call naming alf_family_contacts, and at least 4 alfFamilyData occurrences) and never what the caller READ off the result. Both criteria are TRUE of a caller that calls alfFamilyData and then reads the OLD alfData shape -- treating the returned {ok,status,body,error} envelope as if it WERE the data array -- which is exactly the defect the suite exists for. Driven: a synthetic caller doing Array.isArray(res) and then assigning res to the contact list PASSES both of the old criteria. The arm is rewritten to brace-match each call site and its .then callback and ask two behavioural questions -- does it read any envelope field, and does it treat the result as an array -- and the known-bad control runs FIRST, asserting that the OLD criteria pass the synthetic caller, so the blindness is measured in the suite rather than claimed in a commit message. Mutation-tested against the real sairncare.html in memory: each of the three real callers rewritten into the old shape one at a time, all three caught, caller count held at 3 so the arm cannot pass on the count; then every user-facing sentence in all three reworded and nothing else, still clean.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "eb2f92fac84f",
+   "date": "2026-09-29",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "evaluateTraining reported meets:false on the FIRST DAY of a hire-anchored training year, so a person who completed a full year of training three weeks earlier read as non-compliant on their anniversary; and a leap-day hire published window_from 2026-02-29, a date that does not exist",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "8246d8bab707",
+   "date": "2026-10-05",
+   "detected_by": "hover-audit",
+   "prior_severity": "high",
+   "risk": "api/sd-data.js resource alf_family_contacts: action 'family_mar' had NO caller gate at all. The sibling action 'read' on the same resource resolves ALF_FAMILY_READ_ROLES and then the caller's assigned residents from alf_clients and 403s a resident that is not theirs; 'family_mar', sixty lines below it in the same handler, did neither. It checked famLib.familyMarView(), which is the family CONTACT's consent, and then shipped the resident's medication administration record. Any authenticated session on the licence -- including a med_aide or activities employee with no resident assigned to them at all -- could pass any contact_id and receive that resident's full MAR. The consent check was standing in for an authorisation check: it answers a question about the contact, not about the session, and nothing asked the second question. Fixed in two halves because the resident is knowable only from the stored row: role and assignment scope resolved BEFORE the contact fetch (empty scope 403s, so a caller who may not ask anything is not told whether the contact exists), then the stored row's resident_id checked against that scope with a FORBIDDEN kept distinct from NO_SUCH_CONTACT.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "ac9c21df5b93",
+   "date": "2026-10-05",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "tests/sairncare/test-alf-mar.js asserted 200 for a controlled-substance count carrying only a CLIENT-SUPPLIED witness_id, which api/sairncare-witness.js (2026-09-30) correctly refuses with 403 WITNESS_REQUIRED. The arm therefore asserted the absence of a two-person control on a controlled-substance count: left in place it would have pressured a future session into weakening the witness lock to turn a suite green. Fixed by making the fixture SATISFY the lock -- witness token store, policy row, and the attester re-read requireWitness performs at write time, with content_hash computed by the module's own contentHash imported rather than re-implemented -- so the arm goes on testing med_aide scope-of-practice, plus a NEW arm driving the refusal and asserting nothing is stored. Only visible after a second defect was cleared: the same file's verifySessionToken stub threw on an ABSENT expectedApp, which api/_lib/auth.js:604 treats as legitimate and api/sd-data.js:1387's pre-gate passes deliberately, so all 20 arms answered 502 on the stub's own throw from c8b5e5b1 and the whole MAR gate was unverified for over a week. Ablated both ways: disabling the requireWitness refusal reddens the new arm and nothing else; changing the alf_mar read gate's app scope to a wrong app reddens 5 arms, so the kept guard still has teeth. 21 passed / 0 failed.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "16b2cc70a4e2",
+   "date": "2026-10-06",
+   "detected_by": "hover-audit",
+   "prior_severity": "high",
+   "risk": "api/sd-data.js, resource alf_compliance_rules, action 'evaluate': the branch gated on verifySessionToken ALONE (:11949) and, with payload.include_staff === true (:11994), fetched every alf_staff row (:12022) and every alf_staff_credentials training-hours record on the licence filtered by license_hash alone (:12033-12034), assembled per staff member a name, a position, a hire_date and the full training-hours array (:12052-12074), and returned all of it at :12077. Any authenticated sairncare employee -- including a med_aide or an activities role with no resident assigned to them at all -- could therefore read the employment and training record of every person on the licence. THE SIBLING THAT READS THE SAME TABLE ALREADY REFUSED THAT: alf_staff_credentials/read (:12088-:12098) resolves ALF_CRED_READ_ROLES and filters every other role to its own staff_id. Two code paths reached one table and only one carried its access rules. Fixed by applying the sibling's set and predicate to opts.staff BEFORE evaluateTraining() sees it -- filtering the engine's output would leave the roster assembled and one coding mistake from the response -- and by echoing scoped_to_self on every response from the action. Third disclosure of this shape in one week after #877 (family_mar) and the SDN raw-blob branch.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "7ed27c5e78fa",
+   "date": "2026-10-07",
+   "detected_by": "hover-audit",
+   "prior_severity": "critical",
+   "risk": "alf_billing/derive_charges set description to d.medication_name on every medication_administration charge line. The gate on that action is ALF_MANAGEMENT_ROLES = { owner, billing }; the gate on alf_mar/read, which owns the table, is ALF_MAR_ROLES = { owner, nursing, med_aide }. The difference is exactly one role: billing. So a billing clerk, 403ed from the MAR directly, read which medications a NAMED resident is on by asking for that resident derived invoice. A medication regimen is diagnostic-revealing, which is what makes it PHI rather than an administrative detail. api/_lib/care-charges.js prices on e.type through CHARGEABLE[type].rate_key and never on description, so the redaction costs the billing answer nothing -- proven by an arm, not assumed.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "d051c89faa16",
+   "date": "2026-10-07",
+   "detected_by": "hover-audit",
+   "prior_severity": "critical",
+   "risk": "alf_staff/read verified the session and gated on NOTHING ELSE, then returned Object.assign({ id: r.staff_id }, r.data) -- the entire jsonb blob, spread. sairncare.html saveStaff() stores name, phone (a personal mobile), position, cert_expiry, bgcheck_date (an employment-screening date), status and free-text notes a manager typed about an employee; alf_compliance_rules/evaluate adds hire_date. The sairncare role vocabulary is six long, so caregiver, med_aide and activities -- none with any management function -- read every colleague PII field on the licence. docs/CRITICALITY-TIERS.md rates the resource A / A. CRITICAL because it is personal data of every employee, reachable by every employee, on a resource the register already rated A on both axes.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "e90d8775c7b2",
+   "date": "2026-10-07",
+   "detected_by": "hover-audit",
+   "prior_severity": "critical",
+   "risk": "alf_staff/read verified the session and gated on NOTHING ELSE, then returned Object.assign({ id: r.staff_id }, r.data) -- the entire jsonb blob, spread. sairncare.html saveStaff() stores name, phone (a personal mobile), position, cert_expiry, bgcheck_date (an employment-screening date), status and free-text notes a manager typed about an employee; alf_compliance_rules/evaluate adds hire_date. The sairncare role vocabulary is six long, so caregiver, med_aide and activities -- none with any management function -- read every colleague PII field on the licence. docs/CRITICALITY-TIERS.md rates the resource A / A. CRITICAL because it is personal data of every employee, reachable by every employee, on a resource the register already rated A on both axes.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "f13f4f4982d3",
+   "date": "2026-10-07",
+   "detected_by": "hover-audit",
+   "prior_severity": "critical",
+   "risk": "alf_billing/derive_charges set description to d.medication_name on every medication_administration charge line. The gate on that action is ALF_MANAGEMENT_ROLES = { owner, billing }; the gate on alf_mar/read, which owns the table, is ALF_MAR_ROLES = { owner, nursing, med_aide }. The difference is exactly one role: billing. So a billing clerk, 403ed from the MAR directly, read which medications a NAMED resident is on by asking for that resident derived invoice. A medication regimen is diagnostic-revealing, which is what makes it PHI rather than an administrative detail. api/_lib/care-charges.js prices on e.type through CHARGEABLE[type].rate_key and never on description, so the redaction costs the billing answer nothing -- proven by an arm, not assumed.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "07dfa24f489d",
+   "date": "2026-10-14",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "api/_lib/compliance-rules.js counted ANY non-empty applies_to_positions array as MAPPED while the leg beside it validated `audience` against STAFF_POSITIONS. A requirement declaring ['rn'] was therefore left out of unmapped_requirements_caveat, and matchAudience returned a DECIDED applies:false for every real position -- a training requirement that applies to nobody, reported to a surveyor as a determination about a person rather than as a gap in the rule.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "e3858f19aad8",
+   "date": "2026-10-14",
+   "detected_by": "independent-review",
+   "prior_severity": "critical",
+   "risk": "BILLING READ ANY RESIDENT'S FULL MEDICATION ADMINISTRATION RECORD THROUGH A SIBLING RESOURCE, AND IT WAS THE THIRD DOOR THE SAME ROLE FOUND TO THE SAME DATA. `alf_mar` -- the resource that OWNS the table -- has refused billing on both read and write since it was written (ALF_MAR_ROLES = {owner, nursing, med_aide}). But the `alf_family_contacts` action `family_mar` gated on ALF_FAMILY_READ_ROLES = {owner, billing, nursing}, so a billing clerk 403'd from the MAR directly received a named resident's whole MAR by asking for that resident's family contact -- and because billing is in the BROAD half of that set the assignment scope was skipped entirely, so it was every resident on the licence, not one. Prior two doors: 2026-10-05 H1 #877, where family_mar had NO caller gate at all and was fixed by inheriting read's role set, which is how billing arrived; and 2026-10-07 7ed27c5e, where derive_charges handed billing the medication NAME for every dose for a month. The #877 author declared this and declined to narrow it in passing, correctly -- a gate disagreeing with its sibling was the defect being repaired -- and flagged it instead. Fixed by giving family_mar its OWN set (ALF_FAMILY_MAR_ROLES = {owner, nursing}) rather than narrowing the contact LIST's set, because the decision was about the MAR and a business office still has to be able to ring a resident's daughter about an invoice. Billing now gets in only through a named, time-limited, audited grant made by an office_manager, expiring at READ time. 28 arms green from 8 passed / 16 failed / 4 unproven; ablated four ways.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "cb80fb32b9a0",
+   "date": "2026-10-15",
+   "detected_by": "independent-review",
+   "prior_severity": "low",
+   "risk": "meets_unknown_reason tells the reader that a days-remaining field says how much of the window is left, and the staff finding carried no such key. Both numbers WERE computed and stayed on the internal window object, while a third comment said the module hands 'every consumer' both -- three places said the reader had this and the reader did not. Found by cody's X2 arm.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairncare) has this defect on record",
+   "cite": "cb80fb32b9a0",
+   "date": "2026-10-15",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "A comment in api/_lib/compliance-rules.js claimed a person was compliant the day before their hire anniversary and NON-COMPLIANT on it. Measured, the anniversary evaluation returns meets: null -- the day-zero withholding superseded the hand-drive and nobody re-read the sentence the change had just made untrue. NOT merely unproven: WRONG, and it is the kind of claim a reader checks least because it names its own evidence. Found by cody's X1 arm.",
+   "source": "defect-register"
+  }
+ ],
+ "target": "tests/sairncare/test-alf-payer-rules.js"
+}

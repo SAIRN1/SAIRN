@@ -1,0 +1,241 @@
+{
+ "app_matched": "sairnbiz",
+ "considered": {
+  "defect_records": 685,
+  "detectors_fired": [
+   "1.3"
+  ],
+  "detectors_run": 12,
+  "matched_this_file": 3
+ },
+ "drafted_on": "2026-10-20",
+ "exists": true,
+ "no_detector_yet": [
+  "1.6",
+  "2.2",
+  "3.1",
+  "3.2",
+  "3.3",
+  "4.1",
+  "4.2",
+  "4.3",
+  "5"
+ ],
+ "risks": [
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "db8cc2d485db",
+   "date": "2026-10-06",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "tools/tier_a_review_gate.py strip_diff_noise() blanked PROSE STRING bodies but deliberately counted COMMENT text, so writing a sentence about a Tier A resource registered the author as changing code that serves it. Each false demand opened a real obligation costing a reviewer a full read, and complying was always cheaper than fixing, so ten accumulated instead of forcing the question. Now a comment body of three or more whitespace-separated words is blanked by the same _blank threshold already used for prose strings, with the marker chosen by file extension and NO comment stripping at all when the path is unknown -- because the direction of a wrong guess there is a gate going quiet, which the docstring already names as the worse failure. Character walk, not a regex, per the lesson _strip_code_noise() records. ONE commit-level flip in the entire register (BLOCKED->CLEAN on f07d8660), hand-verified three independent ways rather than accepted. The context-only, never-blocking walk is deliberately unchanged, so a comment is DEMOTED rather than deleted.",
+   "rules": [
+    "1.2"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "db8cc2d485db",
+   "date": "2026-10-06",
+   "detected_by": "static-checker",
+   "prior_severity": "moderate",
+   "risk": "tools/fmea_draft.py had two defects found by driving it. (1) _d_checker_without_probe's regex included the case-sensitive alternative \\bCLEAN\\b, written for the VERDICT TOKEN a checker prints, and it matched the English word 'clean' once a comment was upper-cased -- so metamorphic_check reported a verdict MOVE on tools/alf_facility_role_gate_live_probe.py. Rewording the subject file was rejected as slipping past the matcher and re.I was rejected on a measurement (\\bCLEAN\\b matches 197 times across 296 files); the detector is instead made blind to full-line comment text, which satisfies the relation by construction. Cost named, not counted: 96 files still fire, exactly 3 lose their verdict. (2) _d_fixed_window fired on 44.6% of 691 files and tests/run_fmea_probe.py arm 3b was RED ON MAIN for it. Measured per half: the bare [:NNN] slice accounted for 307 of 308 and every one inspected was a DISPLAY truncation in a message, not a window that exempts data. Slice half dropped, named half widened, 14/691 = 2.0%, and all fourteen hand-checked as real bounds.",
+   "rules": [
+    "1.9"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "db8cc2d485db",
+   "date": "2026-10-06",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "tests/sairnbiz_vendor_ytd_derivation.js was RED on main for TWO independent reasons and only one of them was the rename. (a) The extraction anchor named sbVendorPaidUndatedPriorYear, renamed to sbVendorPaidUndatedOtherYear by the seq 507/508 split -- the notStrictEqual(-1) guard refused to test an empty string, which is the anchor doing its job. (b) The disclosure arm required spendOf(x)<600&&(spendOf(x)+u)>=600 while the code reads thr.amount, which is the CORRECT shape -- so the arm was red while the code was right, and it was red before the rename went near it. Both re-pointed rather than relaxed, and (b) is strengthened in the direction the old arm had backwards: the literal 600 must now be ABSENT from that expression. The partition arm is widened from three buckets to four because the split created a fourth, and it now checks every pair.",
+   "rules": [
+    "1.3"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnbiz) has this defect on record",
+   "cite": "20afb167",
+   "date": "2026-09-14",
+   "detected_by": "static-checker",
+   "prior_severity": "moderate",
+   "risk": "the same change that gave sb_po and sb_recv a server added two TIER A resources with no removal path, and the consequence is specific rather than theoretical: sbThreeWayMatch sums every receipt for a PO, so a receipt entered in error inflates the received total for ever and the bill is refused against a figure nobody can correct -- and after the sync a duplicate po_num refuses the match outright. A control a person cannot correct is one they route around",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnbiz) has this defect on record",
+   "cite": "57236fe9db01",
+   "date": "2026-09-14",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "the three-way match shipped with both of its new documents local-only: sb_po and sb_recv had no table, no resource registration and no place in SB_SYNCED, so the purchase order and the receipt lived in one browser while the bill they justify was already backed up and the ledger entry settling it was durable in Postgres -- a browser clear leaves a payable and a payment with nothing justifying either, and sbThreeWayMatch then reports no purchase order exists against a bill that was correctly matched when it was paid",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnbiz) has this defect on record",
+   "cite": "f6544a43b84d",
+   "date": "2026-09-14",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "sbThreeWayMatch decided money equality in floating point against a tolerance of exactly 0.00, so two partial deliveries of 1870.93 and 1957.54 against a 3828.47 PO summed to 3828.4700000000003 and a correct bill was REFUSED with the message 'billed $3828.47 against $3828.47 actually received' -- two identical figures and a refusal nobody could act on",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnbiz) has this defect on record",
+   "cite": "449b8476b206",
+   "date": "2026-09-16",
+   "detected_by": "probe-control",
+   "prior_severity": "low",
+   "risk": "tests/sairnbiz_po_recv_reach_the_server.js's persistence arm failed for the right reason and reported the wrong thing. With sbEnsureIds's write-back removed, ctx.store.sb_po is undefined and JSON.parse(ctx.store.sb_po) threw a raw SyntaxError: \"undefined\" is not valid JSON out of node. The suite still FAILED -- the safe direction -- but its message was about JSON syntax and named neither purchase orders nor persistence, so a reader would go looking for a broken fixture rather than for a Tier A collection that no longer persists the ids it mints. Found on the first run of the new negative control for this suite.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnbiz) has this defect on record",
+   "cite": "ee221abe02e4",
+   "date": "2026-09-16",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "A timesheet week recorded for an employee who was later DEACTIVATED became unreachable through the product -- not editable, not zeroable, not removable, and invisible in every panel -- while the row stayed in sb_ts, on the server and in the backup. rTS() rendered only status === Active and openTsModal() refused independently, so the documented removal path (correcting a week is a re-save) existed exactly as long as the employee did. Tier A payroll data in the one store the criticality register says has no other copy.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnbiz) has this defect on record",
+   "cite": "b2764261a088",
+   "date": "2026-09-24",
+   "detected_by": "hover-audit",
+   "prior_severity": "high",
+   "risk": "sb_perf -- a NAMED EMPLOYEE's performance review row: score, raise flag, PIP flag -- rode SAIRNbiz's generic dispatch, which requires a session and NO role, so any signed-in employee of any role (including `staff`) could read every coworker's review score and PIP status, and write one. Found by H1 (log #533) and corroborated independently by H2 (seq #217); the register had already recorded the sensitivity ON THE ADJACENT ROW -- sb_train's evidence cell cites sb_perf's data class -- while sb_perf's own cell still said \"no PII ... never individually read\", the register disagreeing with itself one row apart. Fixed with a bespoke role gate ahead of the generic dispatch: read AND write refused outside {owner, hr, manager} with 403 FORBIDDEN (the SAIRNsenior minimum-necessary pattern; accounting deliberately excluded -- its business is sb_ap, not personnel files), built on roleSet/hasRole like every role map since the constructor-role finding. Driven seven ways: owner/hr/manager 200, staff/accounting 403, no-session 401, and a control proving sb_incidents still answers 200 for staff. Verified non-breaking before gating: sbData() returns null on any non-ok and the panel falls back to local data. Tier updated B->A on confidentiality in the same commit.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnbiz) has this defect on record",
+   "cite": "2d9f81ba34cb",
+   "date": "2026-09-26",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "The Benefits panel's \"Workers Comp\" row read \"Active . BWC Ohio\" as fixed text in markup, shown identically to every SAIRNbiz licence. Two assertions the app cannot make: BWC is the OHIO Bureau of Workers' Compensation, one of four monopolistic state funds, so an employer in any other state was shown the wrong regulator by name -- and in Texas, where coverage is not compulsory at all, a regulator that does not apply; and \"Active\" asserts that workers' compensation coverage IS IN FORCE, a statutory obligation carrying real penalties for a lapse, while the app holds no policy number, no carrier and no effective date. Removed, and the row kept with an explicit not-tracked value naming that coverage and its regulator are state-specific, rather than deleted -- a card that quietly gets shorter hides the absence instead of showing it. Two further values in the same block were removed in the same pass for a different reason: \"Employee Contrib. Avg 5.2%\" and \"Plan Assets (est.) $284,000\" LOOKED COMPUTED, an average implying a summed population and \"(est.)\" implying a method, where nothing in the app records a deferral rate or a plan balance and no field exists to enter one.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnbiz) has this defect on record",
+   "cite": "d4dd7428da11",
+   "date": "2026-09-26",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "sairnbiz.html compared vendor YTD spend against a hardcoded 600 to decide \"1099 Required\" -- three sites on one screen: the vendor count (`spendOf(x)>=600`), the undated-prior-year AT-RISK disclosure, and the KPI subtitle, which was the string \"$600+ paid\" TYPED INTO THE MARKUP rather than derived. The IRS minimum reporting threshold rose to $2,000 for tax years beginning after 2025 (Instructions for Forms 1099-MISC and 1099-NEC, Rev. December 2026; P.L. 119-21), so every figure on that screen has over-reported since 1 January 2026, naming vendors as 1099-required who are not -- and the typed subtitle would have kept displaying $600 even if the comparison alone had been corrected.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnbiz) has this defect on record",
+   "cite": "bc89bf345b3c",
+   "date": "2026-09-29",
+   "detected_by": "independent-review",
+   "prior_severity": "moderate",
+   "risk": "sbCfg() coalesced the overtime threshold on FALSINESS, so a typed 0 was replaced by the default 40 before sbOtThreshold could see it -- making the n<=0 branch unreachable and leaving the rejection note with nothing to report",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnbiz) has this defect on record",
+   "cite": "25814d5521fa",
+   "date": "2026-09-30",
+   "detected_by": "live-verification",
+   "prior_severity": "high",
+   "risk": "SAIRNbiz: a record entered while the server-backup latch was armed is stranded on that device permanently and nothing will ever push it. sbSyncCollection diffs the new value against the value immediately before that one save, so a record whose change already happened is never offered again -- re-saving the whole collection pushes nothing. Driven on production 2026-09-30: the two bills entered on 2026-09-29 were on the device and not on the server; sb_synced_ids correctly listed the five that were and not those two, so the app KNOWS they were never pushed and nothing reads that to decide what to send; a full re-save left the server at 5 rows; they landed only when this session called sbBackupFetch write on them by hand, after which the server read 7. Meanwhile sb_sync_stale reads false. This is the original blocker-2 symptom surviving its own fix, for the back catalogue. NOT FIXED.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnbiz) has this defect on record",
+   "cite": "28e0297966c1",
+   "date": "2026-09-30",
+   "detected_by": "live-verification",
+   "prior_severity": "moderate",
+   "risk": "sairnbiz.html rendered every month of both revenue charts ONE MONTH BEHIND in any timezone west of Greenwich. The label came from new Date(m+'-01').toLocaleDateString(...); a date-only string parses as UTC midnight per ECMA-262 21.4.3.2 while the render is local, so America/New_York (-4) showed 2026-05-31 20:00 for the key '2026-06' and printed 'May 2026'. Driven live: ['2026-05','2026-06','2026-09'] rendered ['Apr 2026','May 2026','Aug 2026']. The VALUE beside each label was correct, so the row gave no reason for doubt, and the preview check read the shifted months as MISSING DATA ('June and July are missing from a chart labelled YTD') rather than as mislabelled rows. Same expression written twice, dashboard and P&L. Fixed as one named sbMonthLabel() built from local parts.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnbiz) has this defect on record",
+   "cite": "28e0297966c1",
+   "date": "2026-09-30",
+   "detected_by": "mutation-testing",
+   "prior_severity": "high",
+   "risk": "tests/sairnbiz_server_backup.js was RED on origin/main and nothing reported it. FOUR checks went stale when the per-resource sync latch replaced the global one, and TWO OF THEM WERE PINNING THE FIXED BUG IN PLACE: they asserted that one collection's NOT_PROVISIONED silences writes to every other collection, which IS preview-check blocker 2 -- reverting the fix would have turned those arms green. Two more were mutation probes whose anchor strings no longer matched, so each replaced nothing, and the loop's assert threw out on the first of them: four stale anchors, one reported. A hand-run mutation control then found the WRITE GUARD was covered by nothing at all -- deleting the sbUnprovisioned term from it survived all 44 arms, so a table already known not to exist went on being written to on every save.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnbiz) has this defect on record",
+   "cite": "abb17d4d96e5",
+   "date": "2026-09-30",
+   "detected_by": "live-verification",
+   "prior_severity": "critical",
+   "risk": "sairnbiz.html: one unprovisioned table silenced the server backup for twelve provisioned ones. sbHydrateAll reads all 13 SB_SYNCED resources at sign-in; sb_incidents answers provisioned:false because its table was never created; sbReportHydrate set the single global sbBackupUnavailable; and sbSyncCollection then returned early on it for EVERY resource for the rest of the session. Every record entered was accepted, confirmed on screen and survived a reload while existing only in that browser, and the app own sync indicator read sb_sync_stale false. An outside HR and accounting professional was due to enter clients, employees and numbers on this app the next day.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnbiz) has this defect on record",
+   "cite": "f8acd128490b",
+   "date": "2026-09-30",
+   "detected_by": "live-verification",
+   "prior_severity": "moderate",
+   "risk": "A SAVED-EMPTY overtime threshold fell back to the federal 40 and said nothing. saveSettings() stores the raw input value, so clearing the box persists the empty string and loadSettings() puts it straight back -- the Shop Settings screen shows an EMPTY overtime box while payroll computes at 40. One stored setting, two answers on two screens. sbOtThresholdNote() excluded the empty string from its `rejected` predicate explicitly, so the one state a user reaches by CLEARING the field was the one state that could not be reported. The note now says so in its own words rather than reusing the out-of-range sentence, because an empty string is not \"outside 1-168\" and a true refusal with a false reason sends the reader to check a number they never typed.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnbiz) has this defect on record",
+   "cite": "3cf3d5ec3e2c",
+   "date": "2026-10-06",
+   "detected_by": "hover-audit",
+   "prior_severity": "high",
+   "risk": "sairnbiz rVends 1099 disclosure: the at-risk loop iterates sb_vends, so a payee present in sb_ap and ABSENT from the vendor master could never be named -- and if all of that payee's bills were marked Paid with no paidDate they were also absent from sbVendorPaidYTD. A one-off contractor nobody added to the vendor list therefore reached the 1099 view as a SILENT ZERO: in no total and in no could-not-decide note. Second half, same function: sbVendorPaidUndatedPriorYear() excluded only the CURRENT year (slice(0,4) === year), so a FUTURE-dated bill already marked Paid was counted into a bucket called PriorYear and fed the 1099 at-risk figure, attributing a payment to a year that has not happened. The guard was NOT widened to '< year', which would have silently DROPPED those rows; the function is split into sbVendorPaidUndatedOtherYear() -> {prior, future} and renamed, because the old name was itself the defect -- a reader trusting it would have believed future rows were excluded. Three notes now render: prior-year at-risk, unlisted payee, future-dated anomaly.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnbiz) has this defect on record",
+   "cite": "5941a119c8a7",
+   "date": "2026-10-20",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "sairnbiz.html sbNextCaseNo() issues the OSHA Form 300 Column A case number as max(case_no for that year)+1 over ld('sb_incidents'), which is ONE DEVICE'S localStorage, while sb_incidents is in SB_SYNCED and sbServerWinsMerge() matches rows BY id -- so two devices each issue case number 1 for the same year, both rows survive the merge, and TWO DIFFERENT RECORDABLE INJURIES PRINT AS THE SAME CASE NUMBER on a log an OSHA inspector reads. Nothing caught it because the 300A totals are computed per row and stay CORRECT while Column A is wrong. A second, narrower hole on one device: the year test was String(r.year)!==String(year), so a row whose year FIELD was absent was invisible to the max scan and the next save re-issued a number that row already held",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnbiz) has this defect on record",
+   "cite": "6494262c9654",
+   "date": "2026-10-20",
+   "detected_by": "code-review",
+   "prior_severity": "low",
+   "risk": "The bound was n>168 while the function comment said a threshold AT or above 168 is unreachable. OT is hours in excess of the threshold (29 CFR 778.103) and a workweek is 168 hours (778.105), so 168 produced no overtime ever and no note said the setting was unusable. RED: the rejectable-values arm with 168 failed. GREEN: n>=168 falls back to 40 and is reported. Two existing arms pinned the old bound (one asserted 168 is reachable) and were changed with the old reasoning quoted.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnbiz) has this defect on record",
+   "cite": "91b588a222dd",
+   "date": "2026-10-20",
+   "detected_by": "code-review",
+   "prior_severity": "low",
+   "risk": "Named as open recurrence on the b42 id record and routed in b42 (d). RED on the LIVE page 2/9: 50 vendors in one millisecond got ONE id, a reload restarted at the same number, a second device minted an id the first held. FIXED with sbNextId(V, vendors) from b42: one per-device series, synchronous counter, never below the highest stored number, taken ids skipped. GREEN 9/9.",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnbiz) has this defect on record",
+   "cite": "da64a94b38d2",
+   "date": "2026-10-20",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "Found by source read in fourth b41 (sairnbiz worldwide audit, VAT Directive Art 226(2)). REPRODUCED RED in Chromium: 50 invoices minted in one millisecond got ONE id, 50 employees likewise, editing one employee then matched 50 records, and a second device minted ids the first already held. Consequence: the invoice id is the GL source_id, the employee id is the server upsert key (on_conflict=customer_email,employee_id) and hydrate merges by id, so a collision silently overwrites or merges records. FIXED: <prefix>-<series>-<000001>, one series per device, counter synchronous and never below the highest stored number, taken ids skipped. GREEN 11/11 (RED 2/11). Employee id injected 901ccc2d; invoice id 10db5d3c.",
+   "source": "defect-register"
+  },
+  {
+   "action": "assert the anchor matches exactly once AND read what it matched before acting",
+   "basis": "section 1.3 applies -- An anchor that still matches is not an anchor that still points at the right thing",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 1.3",
+   "risk": "an exact-string anchor verifies UNIQUENESS, never that it still points at the right code",
+   "source": "process-rules"
+  }
+ ],
+ "target": "tests/sairnbiz_vendor_ytd_derivation.js"
+}
