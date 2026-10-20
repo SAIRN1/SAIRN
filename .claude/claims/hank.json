@@ -4333,6 +4333,23 @@
         "docs/2026-10-20-hank-b29-notes.md",
         "stonedesk.html"
       ]
+    },
+    {
+      "id": "hank-1792496719",
+      "session": "hank",
+      "subject": "hank",
+      "task": "b30 sen probe self-bootstrap of audit-owner, b30 decision record on full-sync and credential bootstrapping. FILES: docs/2026-10-20-hank-b27-sen-straight-time-floor-live-probe.py docs/2026-10-20-hank-b30-notes.md SAIRN-handoff-hank-b30.md SAIRN-report-hank-b30.txt SAIRN-digest-hank-b30.txt",
+      "claimed_at": "2026-10-20T11:45:19Z",
+      "claimed_at_epoch": 1792496719.6869867,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-hank-b30.txt",
+        "SAIRN-handoff-hank-b30.md",
+        "SAIRN-report-hank-b30.txt",
+        "docs/2026-10-20-hank-b27-sen-straight-time-floor-live-probe.py",
+        "docs/2026-10-20-hank-b30-notes.md"
+      ]
     }
   ],
   "refusals": [
