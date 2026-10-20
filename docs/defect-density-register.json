@@ -35249,6 +35249,70 @@
       "recurrence_open": "Nothing closes the missing measurement: the ceiling is still not derived from sairn_ai_rate_limit_log, and the deployed rate-limit mode is still not observable from outside (no mode on the response)."
     },
     {
+      "commit": "e137c3bc1dab",
+      "date": "2026-10-20",
+      "subject": "fix(clickjacking b43): 16 root apps are hidden until they prove they are the top window -- measured 18 of 22 clickable when framed on the live site",
+      "files": [
+        "sairnbiz.html",
+        "sairnbuild.html",
+        "sairncare.html",
+        "sairncash.html",
+        "sairncode.html",
+        "sairndental.html",
+        "sairndesign.html",
+        "sairnfreedom.html",
+        "sairngrounds.html",
+        "sairnlaw.html",
+        "sairnlegacy.html",
+        "sairnmechanical.html",
+        "sairnroofing.html",
+        "sairnscape.html",
+        "sairnsenior.html",
+        "sairnvet.html"
+      ],
+      "lines_added": 213,
+      "lines_removed": 16,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "fault-injection",
+      "summary": "Hover2 b70 swept 17 root apps and counted 14 unprotected; driven on the LIVE site in b43 by framing every page from a cross-origin parent (normal and sandboxed-without-scripts): 18 of 22 clickable, INCLUDING sairncode and stonedesk, whose busters only reassigned top.location -- Chrome blocks that from a cross-origin frame without a user gesture -- and sairnlaw, whose frame-ancestors sits in a meta CSP that browsers ignore. sairncode's buster also replaced documentElement.innerHTML mid-parse. FIXED in 16 apps: html hidden by a style that only a top-window check removes. GREEN: framed 16/16 hidden in both modes, top-level 16/16 usable.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "scratchpad drive_frame.py (Playwright, cross-origin and sandboxed iframe framing; not in repo)",
+      "found_by_session": null,
+      "injection": {
+        "commit": "b8c5ee9e8052",
+        "date": "2026-08-20",
+        "subject": "feat: SAIRNcode security pass -- AI audit log, injection screening, consent/disclosure, CSP, frame-busting, idle lock, persistent rate limit",
+        "lag_days": 61
+      },
+      "citation_note": "No coding rule covers this class: a defence that is present in the source and inert in the browser. Proposed: a security control is verified by driving the attack in a real browser, never by grepping for the control.",
+      "contributing_factors": [
+        {
+          "factor": "The existing busters relied on navigating the top window, which modern Chrome refuses from a cross-origin frame without a user gesture.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Hide-until-proven-top: the page stays invisible whether or not the break-out succeeds."
+        },
+        {
+          "factor": "A control counted as present (two apps protected, one meta frame-ancestors) was inert in the browser, so the protected count was overstated.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Counted by driving the attack in a browser, live and local."
+        },
+        {
+          "factor": "sairncode's catch branch rewrote the document during parsing, which would have defeated any later guard.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Removed with a comment explaining why."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. stonedesk.html and stonedesk-hr.html remain clickable when framed (hank holds stonedesk). The header form (frame-ancestors / X-Frame-Options via vercel.json) is not done, so a browser that ignores the guard is unprotected. No repo suite drives framing; the drive lives in the scratchpad."
+    },
+    {
       "commit": "5941a119c8a7",
       "date": "2026-10-20",
       "subject": "fix(sairnbiz b24): two recordable injuries printed as the same OSHA case number",
@@ -35350,49 +35414,6 @@
         }
       ],
       "recurrence_open": "NOT CLOSED. While the timesheet holds SIX days the maximum recordable week is 144 hours, so thresholds 145-167 are equally unreachable and still honoured; the exact bound is the record own maximum and moves to 168 only when day seven lands (held on api/sd-data.js, cody b29)."
-    },
-    {
-      "commit": "91b588a222dd",
-      "date": "2026-10-20",
-      "subject": "fix(sairnbiz b43): vendor ids were the last four digits of the clock -- now the same per-device series as invoices and employees",
-      "files": [
-        "sairnbiz.html"
-      ],
-      "lines_added": 2,
-      "lines_removed": 1,
-      "app": "sairnbiz",
-      "layer": "product",
-      "severity": "low",
-      "detection_method": "code-review",
-      "summary": "Named as open recurrence on the b42 id record and routed in b42 (d). RED on the LIVE page 2/9: 50 vendors in one millisecond got ONE id, a reload restarted at the same number, a second device minted an id the first held. FIXED with sbNextId(V, vendors) from b42: one per-device series, synchronous counter, never below the highest stored number, taken ids skipped. GREEN 9/9.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "10db5d3c92c7",
-        "date": "2026-08-04",
-        "subject": "feat: SAIRNbiz - build the 6 stubbed forms (Hiring, Performance, Invoices, Expenses, AP, Vendors)",
-        "lag_days": 77
-      },
-      "citation_note": "No coding rule in the register covers this class; recorded so the class is countable. Proposed: a record id must be unique by construction, never derived from a clock alone.",
-      "contributing_factors": [
-        {
-          "factor": "The b42 fix covered invoices and employees and named vendors as the same class but left them out of scope.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Vendors now use the same sbNextId, one series per device across all three kinds."
-        },
-        {
-          "factor": "Vendor id is what AP bills and the three-way match join on, so a collision would attach bills to the wrong vendor.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "Unique by construction; vendor suites re-run and pass."
-        }
-      ],
-      "recurrence_open": "NOT CLOSED. Nothing sweeps the platform for clock-derived ids; stonedesk.html still mints INV-+Date.now() at two sites (hank holds stonedesk.html). The two-tab counter race from b42 still applies."
     },
     {
       "commit": "8ebeb1213e91",
@@ -35516,6 +35537,49 @@
         }
       ],
       "recurrence_open": "the deployed rate-limit mode is NOT OBSERVABLE from outside: the response carries no mode and a burst of 12 calls is equally consistent with observe and with a daily ceiling above twelve. So if SAIRN_AI_RATE_LIMIT_MODE is absent or misspelled in Vercel, this change switches the cost limiter ON at the daily ceiling on deploy. vercel env ls production is the check and it is the first open item in the handoff"
+    },
+    {
+      "commit": "91b588a222dd",
+      "date": "2026-10-20",
+      "subject": "fix(sairnbiz b43): vendor ids were the last four digits of the clock -- now the same per-device series as invoices and employees",
+      "files": [
+        "sairnbiz.html"
+      ],
+      "lines_added": 2,
+      "lines_removed": 1,
+      "app": "sairnbiz",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "Named as open recurrence on the b42 id record and routed in b42 (d). RED on the LIVE page 2/9: 50 vendors in one millisecond got ONE id, a reload restarted at the same number, a second device minted an id the first held. FIXED with sbNextId(V, vendors) from b42: one per-device series, synchronous counter, never below the highest stored number, taken ids skipped. GREEN 9/9.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "10db5d3c92c7",
+        "date": "2026-08-04",
+        "subject": "feat: SAIRNbiz - build the 6 stubbed forms (Hiring, Performance, Invoices, Expenses, AP, Vendors)",
+        "lag_days": 77
+      },
+      "citation_note": "No coding rule in the register covers this class; recorded so the class is countable. Proposed: a record id must be unique by construction, never derived from a clock alone.",
+      "contributing_factors": [
+        {
+          "factor": "The b42 fix covered invoices and employees and named vendors as the same class but left them out of scope.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Vendors now use the same sbNextId, one series per device across all three kinds."
+        },
+        {
+          "factor": "Vendor id is what AP bills and the three-way match join on, so a collision would attach bills to the wrong vendor.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Unique by construction; vendor suites re-run and pass."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. Nothing sweeps the platform for clock-derived ids; stonedesk.html still mints INV-+Date.now() at two sites (hank holds stonedesk.html). The two-tab counter race from b42 still applies."
     },
     {
       "commit": "bc5ca0d18cb4",
