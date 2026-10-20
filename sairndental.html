@@ -2035,10 +2035,11 @@ function nav(id){
   if(id==='supplies')rSupplies();
   if(id==='bi')rBiFeeds();
   if(id==='rollup')rRollup();
-  // Renders from local records immediately, then replaces that with the real
-  // server-computed board when it arrives -- the panel is never blank, and
-  // never shows a status it computed itself.
-  if(id==='credentials'){rCredentials(null);refreshCredentialBoard();}
+  // Paints a PENDING state immediately, then replaces it with the real
+  // server-computed board (or the reason it could not be had) when the
+  // evaluation settles -- the panel is never blank, never shows a status it
+  // computed itself, and never shows a failure for a request still in flight.
+  if(id==='credentials')refreshCredentialBoard(true);
 }
 
 // -- CSV EXPORT, REWRITTEN 2026-09-02 --------------------------------
@@ -2926,13 +2927,12 @@ function cdTypeChanged(){
 // ABSENT means the sentence is browser-authored and must not be. So the
 // no-licence and catch paths deliberately set NO status, same as sdnData.
 function sdnEvaluateCredentials(today,lines){
-  // CLEARED ON ENTRY, AND THIS IS A SECOND-ORDER FIX FOUND BY DRIVING IT.
-  // nav('credentials') calls rCredentials(null) BEFORE this resolves, so that
-  // first paint renders whatever reason the PREVIOUS attempt left -- a drive of
-  // four failure modes in a row showed NO_LICENCE still on screen while a 403
-  // was in flight. Clearing here shrinks the window to the request itself and
-  // makes the pre-paint say "the reason was not recorded", which is true.
-  // The flash is NOT fully closed: see the b40 notes.
+  // CLEARED ON ENTRY, so a reason left by the PREVIOUS attempt is never read
+  // as this one's. b40 added this believing it also fixed the first paint; it
+  // did not -- nav() painted BEFORE calling here, so a revisit still showed the
+  // last attempt's diagnosis (b41 drove a stale FORBIDDEN "sign in again" on
+  // screen while a request that would SUCCEED was in flight). The first paint
+  // is now the pending state, set by refreshCredentialBoard() before it paints.
   delete dntLastErr['dnt_credentials'];
   var lic=dntLicenseKey();
   if(!lic){
@@ -3136,6 +3136,23 @@ function rCredentials(board){
   if(!tbody)return;
   var provs=providers();
   var pname=function(id){var p=provs.find(function(x){return x.id===id;});return p?p.name:id;};
+  if(!board&&dntCredPending>0){
+    var pend=credentials();
+    var why='The credential board is being evaluated now. Nothing below has been checked yet -- this is not zero and not a failure.';
+    tbody.innerHTML='<tr><td colspan="5" style="color:var(--muted);text-align:center">'+
+      '<strong>Checking the credential board&hellip;</strong> nothing below has been evaluated yet.</td></tr>'+
+      pend.map(function(c){
+        return '<tr><td>'+H(pname(c.provider_id))+'</td><td>'+H(c.record_type)+'</td><td>'+H(c.label||'--')+'</td>'+
+          '<td>'+H(c.expires_on||'--')+'</td><td><span class="badge bx" title="'+H(why)+'">Checking&hellip;</span></td></tr>';
+      }).join('');
+    ['k-cred-expired','k-cred-expiring','k-cred-ce','k-cred-mate'].forEach(function(id){
+      var el=$(id); if(!el)return;
+      el.textContent='\u2026'; el.title=why;
+    });
+    var pbadge=$('credentials-badge');
+    if(pbadge){pbadge.textContent='\u2026';pbadge.title=why;pbadge.style.display='';}
+    return;
+  }
   if(!board){
     var local=credentials();
     tbody.innerHTML=local.length
@@ -3249,9 +3266,26 @@ function rCredRules(coverage){
     : '');
 }
 
-async function refreshCredentialBoard(){
+// ── IN FLIGHT IS A FOURTH STATE (b41) ──────────────────────────────────────
+// Checked, could-not-run and never-asked each have a rendering; "being asked
+// right now" had none, so the first paint borrowed could-not-run's and showed
+// a failure -- with a reason, sometimes the previous attempt's -- for a request
+// that had not answered yet. A COUNT, not a flag: two overlapping evaluations
+// (nav twice, or nav during a sync refresh) stay pending until the last one
+// settles. paintPending is passed only by nav(): the background sync refresh
+// leaves a real board on screen while it re-asks rather than blanking it.
+var dntCredPending=0;
+async function refreshCredentialBoard(paintPending){
   var built=cdEnrollmentLines();
-  var res=await sdnEvaluateCredentials(null,built.lines);
+  dntCredPending++;
+  if(paintPending)rCredentials(null);
+  var res=null;
+  // sdnEvaluateCredentials() catches its own failures; the catch here is so a
+  // throw can never leave the panel saying "checking" forever. It renders as
+  // could-not-run with the reason unrecorded, which is then true.
+  try{res=await sdnEvaluateCredentials(null,built.lines);}
+  catch(e){res=null;}
+  finally{dntCredPending--;}
   if(!res){rCredentials(null);rCredRules(null);rEnrollmentRisk(null,0);return;}
   rCredentials(res.board);
   rCredRules(res.coverage);
