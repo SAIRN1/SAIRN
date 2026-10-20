@@ -462,7 +462,13 @@ def fold_scrutiny():
     if not ok:
         return False, '%s NOT folded: %s' % (SCRUTINY_FILE, why)
     subj = head_subject() or ''
-    if subj.startswith(BOOKKEEPING_PREFIX):
+    # A bookkeeping commit that is ALREADY PUBLISHED (the previous push landed
+    # it) is history, not this round's commit: amending it needs a force push,
+    # so the rows written by the push that published it start a new one.
+    _rc, _pub, _ = git('branch', '--remotes', '--contains', 'HEAD')
+    if _rc != 0:
+        return False, 'could not check whether HEAD is published'
+    if subj.startswith(BOOKKEEPING_PREFIX) and not _pub.strip():
         safe, reasons = amend_safety()
         if not safe:
             return False, 'amend refused by the guard: ' + '; '.join(reasons)[:200]
@@ -697,6 +703,17 @@ def selftest():
         f6, w6 = fold_scrutiny()
         arm('CONTROL -- a clean ledger folds nothing',
             not f6 and w6 == 'nothing', w6)
+
+        # A PUBLISHED bookkeeping commit is not amendable; the next push's rows
+        # start a NEW one (count +1), and the subject differs (tip7 changes).
+        git('update-ref', 'refs/remotes/origin/main', 'HEAD')
+        before, subj_pub = count(), head_subject()
+        put([{'sha': 'a1', 'path': 'p'}, {'sha': 'b2', 'path': 'p'},
+             {'sha': 'c3', 'path': 'p'}, {'sha': 'd4', 'path': 'p'}])
+        f7, w7 = fold_scrutiny()
+        arm('a PUBLISHED bookkeeping commit is not amended -- a new one starts',
+            f7 and count() == before + 1 and head_subject() != subj_pub
+            and head_subject().startswith(BOOKKEEPING_PREFIX), w7)
     finally:
         REPO, STATE_FILE = saved
         shutil.rmtree(tmp, ignore_errors=True)

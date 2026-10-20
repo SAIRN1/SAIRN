@@ -1,0 +1,163 @@
+REPORT -- cody, batch b31, 2026-10-20. Six items: three code changes, two verified already-closed, one push.
+
+================================================================================
+0. THE RESULT
+================================================================================
+
+PUSHED WITHOUT --force. Remote tip after the main push: 8d67143d3, 0 ahead /
+0 behind (git fetch, git rev-list --left-right --count). Five files read back
+off the remote tree at byte-identical sizes: tools/push_retry.py 47984,
+api/sd-data.js 1342126, api/_resources/extra-actions.test.js 36834,
+SAIRN-handoff-cody-b31.md 7964, docs/sairn-path-manifest.json 13931.
+A follow-up commit (one more push_retry.py fix, this report, the digest) is
+verified separately in section 7.
+
+NOTHING OVERRIDDEN (no SAIRN_SKIP, no SAIRN_GATE_EXEMPT, no blanket flag).
+NO LIVE WRITES. NO SQL. Wrapped far below the 85% trigger.
+
+================================================================================
+1. ITEM 1 -- THE RETRY LOOP RECOMMITTED THE GATE'S WRITE-BACK
+================================================================================
+
+THE ONE-LINE CONCEPT, stated before the code: the gate's write-back is
+bookkeeping ABOUT the commits being pushed, so it gets ONE bookkeeping commit
+that every later round AMENDS -- never a new commit per round, and never folded
+into a work commit, because a work commit's sha IS the row key and amending it
+would orphan the row the gate just wrote.
+
+tools/push_retry.py already amended generated documents but had no arm for
+docs/scrutiny-flags.json, so the loop that replaces the hand-written one
+inherited the defect. fold_scrutiny() now runs at the top of every --loop
+attempt. First round: creates "chore(gate-bookkeeping <tip7>): ..." and
+registers its subject with the amend guard. Later rounds: amend, with a pathspec
+so nothing else staged is swept in. It folds ONLY a provable append (every
+HEAD row survives unchanged; no other top-level key moved); anything else is
+named and not staged.
+
+DRIVEN LIVE, not just selftested: the real loop made exactly one bookkeeping
+commit across four refused attempts in this batch (git log showed 3 commits
+ahead -- work, handoff, one bookkeeping -- not 3 + N), and the rows stayed
+stable across amends because the keys are the work commits' shas.
+
+Selftest arms run on a real scratch repo, because the defect was a commit
+COUNT. Two ablations: replacing --amend with a plain commit turns "round 2
+AMENDS it" red; removing the published-HEAD check (section 7) turns the
+published arm red.
+
+================================================================================
+2. ITEMS 2 AND 3 -- ALREADY FIXED AT HEAD; NO CODE CHANGED
+================================================================================
+
+Both are closed by b28 commit 7e43c9dab (an ancestor of HEAD):
+- api/_lib/countersign.js:299 the MODE_PREPARED_ONLY branch calls
+  currentStanding(), which re-reads employee_id,role from the DB under
+  active=eq.true and returns COUNTERSIGN_ROLE_REVOKED if the roster role is no
+  longer a signer. A failed read is a 503, not a pass.
+- the settling step loops over BOTH attesters with isPreparer / isSigner and a
+  fresh roster read each.
+- api/_lib/countersign-endpoint.js:174 activeCaller() already reads role from the
+  DB, which is what the instruction named as the model.
+- node api/b28-role-from-token.test.js -> 15 passed, 0 failed, with ablation
+  arms A1 (one caller lookup) and A2 (two lookups at settle).
+- all four requireCountersignature call sites go through that one function.
+
+I COULD NOT FIND THE TEXT OF H1 #1613 / #1614 in this repo. If those rows
+describe a path other than the one above, I have not seen it; send the text.
+They were most likely raised against pre-b28 code. I did not re-implement a fix
+that exists.
+
+One observation, not a defect: api/law-attest.js:429 omits callerEmployeeId.
+Its only locked resource is MODE_ALWAYS, which never reaches the prepared-only
+branch; if that ever changed it would fail CLOSED. Left alone.
+
+================================================================================
+3. ITEM 4 -- MEASURED, AND THE MEASUREMENT MOVED THE TARGET
+================================================================================
+
+The instruction was to measure `issue` payloads and raise rf_invoices to its
+ceiling. Measured with the real modules and the payloads sairnroofing.html
+builds:
+  issue        61 bytes (87 with issue_date)
+  add_payment  964 bytes (200-char reference, 500-char notes)
+  write        carries line_items: 134 B/line typical, 438 B/line worst, and
+               NOTHING bounds the line count.
+
+`issue` is two orders of magnitude inside the 64KB default; raising it would
+loosen a gate for no measured need. The verb that can approach the table's
+262144 (rfinv_data_size) is `write`. So the new entry is
+PAYLOAD_CAP_BY_ACTION['rf_invoices|write'] = 262144 + 32768 = 294912, derived
+the way rt_routes was (one bound plus one stated allowance), and issue /
+add_payment / reconcile_claim / gl_export stay at the default.
+
+THIS DEPARTS FROM THE LITERAL INSTRUCTION. If a per-resource 262144 was wanted
+anyway it is a one-line change and arm W3 must be inverted.
+
+Arms W1-W4 in api/b30-cap-per-action.test.js (22/0, was 18): W1 a 256000-byte
+write passes; W2 307200 -> 413 naming rf_invoices/write and 294912; W3 an
+`issue` is STILL refused at 65536; W4 reads the SQL constraint and compares it
+to the code constant. Ablating the entry turns W1 and W2 red.
+NOT MEASURED: stored invoices on a live licence (no audit-licence read this
+batch), so the line-count ceiling is the table's, not an observed maximum.
+
+================================================================================
+4. ITEM 5 -- extra-actions.test.js 41/7 -> 48/0
+================================================================================
+
+All seven reds were the SUITE going stale against deliberate code: Tier A sc_
+resources grew to 24 (5c781b990) and grant 'tombstones' beside 'soft_delete';
+sc_dme became Tier A so 'delete' on it is a correct 400; two compute-only verbs
+were documented with backticks where the suite requires quotes. Fixed: expected
+grants and messages updated, the hard-deletable subject DERIVED rather than
+named (the naming is what rotted), two comments requoted in sairncode.js and
+sairnsenior.js. Its row moved from `entries` to `recovered` in
+docs/known-red-suites.json -- the file's own rule, because a standing
+exemption over a green suite swallows the next real failure.
+
+================================================================================
+5. THE PUSH WAS REFUSED TWICE, AND BOTH REFUSALS WERE CORRECT
+================================================================================
+
+1. PATH SCOPE: four paths were foreign (three in hank's api/_resources/, one in
+   cc's tools/). Not overridden. Declared in docs/sairn-path-manifest.json
+   assigned_overrides -- the route the gate names -- as FILES, no glob, with
+   the b30 list REPLACED (api/_resources/index.js dropped because b31 did not
+   touch it) and the reason written beside it.
+2. TIER A: extra-actions.test.js names sc_claims and sc_dme. Obligation OPENED
+   and ASSIGNED TO cc (python tools/tier_a_review_gate.py --open). It is a
+   test-only change; the two things I would want broken are in the record.
+
+================================================================================
+6. VERIFICATION -- every line is a command that was run
+================================================================================
+
+EXIT=0  node api/b28-role-from-token.test.js            15/0
+EXIT=0  node api/b30-cap-per-action.test.js             22/0
+EXIT=0  node api/_resources/extra-actions.test.js       48/0
+EXIT=0  node api/b28-photo-cap.test.js                  23/0
+EXIT=0  node api/_lib/roofing-billing-endpoint.test.js  42/0
+EXIT=0  node api/sd-data-approvals.test.js              23 assertions
+EXIT=0  python tools/push_retry.py --selftest           ALL ARMS PASS
+EXIT=0  node --check on api/sd-data.js, both resource modules, both test files
+
+================================================================================
+7. A FLAW FOUND IN MY OWN FIX, AFTER THE MAIN PUSH
+================================================================================
+
+After the push the tree was dirty again (the gate writes rows on the successful
+push too) and HEAD was a PUBLISHED bookkeeping commit. fold_scrutiny() would have
+tried to amend it and been refused by the guard, leaving the next batch with the
+same manual step. Fixed: a published bookkeeping commit starts a new one. New
+selftest arm; ablating the check turns it red. That fix, this report and the
+digest travel in the follow-up commit; see the digest for its verified tip.
+
+================================================================================
+8. DECISIONS AND LIMITS
+================================================================================
+
+cc:      discharge the Tier A obligation on sc_claims + sc_dme (test-only).
+Michael: item 4 chose `write`, not `issue` -- confirm or say per-resource.
+Michael: send the H1 #1613/#1614 row text if they name a path other than the
+         b28-fixed one.
+Limit:   rows the gate wrote before a REBASE name shas that no longer exist and
+         nothing re-seats them (post-rewrite has no scrutiny arm). Pre-existing;
+         scrutiny_ledger_check counts them UNRESOLVABLE, exit 0.
