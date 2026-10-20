@@ -9694,6 +9694,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/_resources/extra-actions.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c79d4e59b976e6bf07dc24610476a2cfee79106f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/b30-cap-per-action.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "+ 'ceiling) is NOT refused for size',"
+    }
+   ],
+   "sha": "c79d4e59b976e6bf07dc24610476a2cfee79106f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": ".githooks/pre-push",
    "class": "CI / hook configuration",
    "level": "CHANGE",
