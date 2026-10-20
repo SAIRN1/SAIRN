@@ -1,0 +1,450 @@
+REPORT -- cody, batch b28, 2026-10-20. Six instructed items, all six done.
+
+================================================================================
+0. THE RESULT
+================================================================================
+
+Two security defects reproduced, fixed and armed. One live endpoint
+verification that b27 could not make. b27's reverted item 4 redone and measured
+at 12 of 12. A currency sweep with seven findings, two of them closed by
+another session mid-batch. Pushed without --force and read back off the remote.
+
+FINAL REMOTE TIP e721db4b723b, 0 ahead / 0 behind. Work commit 7e43c9dab proved
+an ANCESTOR by git merge-base --is-ancestor. Ten files read back off the remote
+tree; the handoff is byte-identical at 28,089 bytes after CRLF normalisation.
+NOTHING OVERRIDDEN: no SAIRN_SKIP, no SAIRN_GATE_EXEMPT, no SAIRN_SEED_GATE, no
+call to tools/gate_skip.py. NO LIVE WRITES, asserted by an arm rather than
+intended. NO SQL OWED.
+
+================================================================================
+1. ITEM 1 -- THE CLAIM AND THE STASH
+================================================================================
+
+`python tools/sairn_claim.py release platform` -- committed and pushed, so other
+clones can see it after a fetch. b27 held it past its own wrap-up and recorded
+that rather than leaving a stale claim to be discovered.
+
+THE STASH DIFF WAS READ BEFORE DROPPING. 50 lines of the push gate's own
+docs/scrutiny-flags.json and nothing else -- five test-file rows at sha
+864e6b764. `git stash list` is now empty. "numstat says how much, never what" is
+a lesson this clone has already paid for once.
+
+================================================================================
+2. ITEM 2 -- rt_routes ANSWERS A REAL REQUEST
+================================================================================
+
+tests/rt_routes_live_probe.py, 6 arms, exit 0, against
+https://sairn.vercel.app/api/sd-data with SD-AUDIT-2026 and a real employee
+session.
+
+  A1   authenticated read of an absent route -> 200 ok provisioned=true
+       data=null .................................................... PASS
+  A2   licence alone -> 403 FORBIDDEN "A valid employee session is
+       required" ................................................... PASS
+  A3   a non-ISO route_date -> 400 with validateRouteKey's OWN message . PASS
+  A4   optimize with one stop -> 200 basis=unavailable
+       reason=too-few-stops ........................................ PASS
+  A4b  the probe key is STILL absent after A4 ...................... PASS
+  A5   action=write -> 400 with the BRANCH's own terminal message ... PASS
+
+WHY EACH ARM ASSERTS A MESSAGE THE BRANCH ALONE CAN EMIT. "Not 500" would pass
+against a deployment where this branch does not exist, because the dispatcher's
+fallthrough also answers 400. A3 and A5 assert strings written INSIDE the
+branch, so only the deployed branch can say either.
+
+A4 IS THE ARM THAT COMPUTES. A read of an absent row proves the dispatcher, the
+session gate and the table; it does not prove the routing primitive runs.
+`optimize` with ONE stop is answered by api/_lib/routes.js:373 --
+basis='unavailable', reason='too-few-stops' -- a real computed answer out of the
+deployed module. ONE stop is chosen on purpose: `optimize` WRITES whenever
+basis != 'unavailable' and the branch has NO delete verb, so a write here would
+be residue only Michael could remove with SQL. stops.length < 2 short-circuits
+before driveMatrix is ever called, so the no-write outcome does not depend on
+whether a maps key happens to be set in the deployment's environment.
+
+A4b asserts the absence afterwards rather than arguing it.
+
+THREE STATES, NOT TWO: VERIFIED exit 0, UNVERIFIED exit 2 (licence row absent,
+PIN not live, bot challenge, or provisioned=false), FAILED exit 1.
+
+b27 handoff section 6.8 is CLOSED.
+
+================================================================================
+3. ITEM 3 -- THE ROLE CAME FROM THE TOKEN, AND THE SETTLING STEP ASKED THE
+   WRONG COLUMN
+================================================================================
+
+THE SENTENCE: a signed token proves WHO ASKED and WHEN THEY SIGNED IN. It
+cannot prove what they may do NOW, because it was minted before now.
+Authentication survives in a token; authorisation does not.
+
+    // api/_lib/countersign.js, before
+    if (mode === MODE_PREPARED_ONLY && isSigner(profile, ctx.callerRole)) return null;
+
+ctx.callerRole is gateSession.role, out of the signed session token, which lives
+SESSION_TTL_MS = 12 hours (api/_lib/auth.js:104). An attorney demoted to
+paralegal went on writing law_trusttx -- client trust money -- with NO
+countersignature and NO second person until the token expired. The firm does the
+one thing it can do about someone it no longer trusts with client money, and the
+platform honours yesterday's answer until tomorrow.
+
+THE SECOND HALF IS SHARPER. The SETTLING STEP exists because "between the
+signature and the write the world has up to TOKEN_TTL_MS to move" -- and it
+selected `employee_id` under active=eq.true and nothing about role. A struck-off
+attorney who is still on the payroll is `active`. The one check that DID reach
+the database was asking the wrong question.
+
+THE FIX. One helper, currentStanding(), with three outcomes and not two:
+  * 503 COUNTERSIGN_CHECK_FAILED -- the roster could not be read. NOT "no longer
+    qualified" and NOT "still qualified". Could-not-tell, and on an irreversible
+    write the only safe answer to that is refusal (PR 1.11).
+  * 403 COUNTERSIGN_NO_LONGER_ACTIVE -- no active row. Deactivated and
+    not-on-the-roster-at-all arrive identically and share one message, which is
+    honest: both mean nobody currently employed stands behind this.
+  * { role } -- what the roster holds at this instant.
+
+Called from both places. The settling step now asks isSigner of the
+COUNTERSIGNER and isPreparer of the PREPARER -- two different questions, because
+asking isSigner of both would refuse every paralegal-prepared record, which is
+the normal C2 case. And it asks "is the CURRENT role qualified", never "is it the
+same string": an attorney promoted to owner is MORE qualified, and a string match
+would have refused them.
+
+IT ONLY EVER REFUSES MORE, AND THAT IS A DECISION. The roster role is required IN
+ADDITION to the token role, never instead of it. A paralegal PROMOTED to attorney
+who has not signed in again is still refused, with COUNTERSIGN_REQUIRED and its
+obvious remedy -- unchanged from before b28. Arm R3 asserts exactly that and goes
+red if someone tidies it into reading authority purely from the roster, which
+would WIDEN who can write from a path that refuses today. A security fix is the
+wrong place to smuggle that in.
+
+AND IT FAILS CLOSED, DIFFERENTLY FROM THE CHECK ABOVE IT. api/sd-data.js's
+per-request active-credential re-check LOGS and CONTINUES when the roster is
+unreadable ("NO_ACTIVE_CHECK ... NOT an admission"). Right for a request
+something downstream will still gate; wrong here, because this IS the downstream
+gate. Arm R4 drives it.
+
+api/b28-role-from-token.test.js -- 15 arms, exit 0, the real dispatcher against a
+recorded PostgREST stand-in:
+
+  R1  THE REPRODUCTION: token=attorney, roster=paralegal -> 403
+      COUNTERSIGN_ROLE_REVOKED                      (was 200: the write LANDED)
+  R2  CONTROL: roster still says attorney -> 200, no countersignature needed
+  R3  ONE-DIRECTIONAL: a promotion does not grant the bypass -> 403 unchanged
+  R4  roster unreadable -> 503, never the token's word as a fallback
+  R5  a DEACTIVATED employee is refused by the PRE-EXISTING check
+      (CREDENTIAL_INACTIVE), not by b28 -- attribution asserted
+  R6  a READ costs ZERO role lookups
+  S1  THE SECOND REPRODUCTION: the countersigner's role was revoked between
+      signing and the write -> 403                  (was 200: the write LANDED)
+  S2  CONTROL: still an attorney -> 200
+  S3  the PREPARER is now a bookkeeper, who may not prepare trust -> 403
+  S4  the countersigner was PROMOTED attorney -> owner, still bar-admitted -> 200
+  S5  REGRESSION: the ACTIVE half still refuses, with its own code
+  M1  MODE_ALWAYS (sairnlegacy) untouched -> COUNTERSIGN_REQUIRED as before
+  M2  a NON-LOCKED resource costs ZERO role lookups
+  A1  the prepared-only path issues EXACTLY ONE role lookup, for the caller
+  A2  the settling step issues TWO, one per attester, neither assumed
+
+EVERY REFUSAL ARM IS PAIRED WITH A CONTROL THAT MUST BE ALLOWED. A suite where
+everything is refused proves a lockout, not a gate.
+
+================================================================================
+4. ITEM 4 -- A CAP THAT WAS RIGHT ABOUT SLABS AND WRONG ABOUT THE PLATFORM
+================================================================================
+
+api/sairndental/public-book.js accepts 1.2MB of patient photos on a fully
+UNAUTHENTICATED self-scheduled booking and writes them into dnt_appointments,
+whose DB constraint was raised to 1,291,059 bytes for exactly that reason
+(sql/sairndental_appointments_photo_size_migration.sql, derived as
+MAX_PHOTOS_PAYLOAD_BYTES + 32KiB). api/sd-data.js capped EVERY write at 65,536.
+
+WHAT THAT COST IS NOT "LARGE PHOTOS ARE REFUSED". The booking LANDS, as
+designed. Then the staff open it: sairndental.html's pending queue reads the row
+whole, photos included, and sends it back on confirm or decline -- so every staff
+write on a photo-bearing booking was answered 413 PAYLOAD_TOO_LARGE. NOT
+CONFIRMABLE AND NOT DECLINABLE. A real patient request parked in a queue nobody
+can empty, under a size error that points at the staff member's own click rather
+than at the photo. And the branch's own validatePhotosPayload 1.2MB answer could
+never fire on size, sitting behind a 64KB gate.
+
+THE OVER-WIDE SENTENCE, QUOTED FROM THE FILE: "there's no per-resource override
+at the DB layer, so there can't usefully be one here either -- this cap stays
+uniform across every resource." Right about sd_slabs. Wrong about the platform,
+and it became a platform-wide claim by sitting still. That line now carries its
+own correction and points at the table below it.
+
+THE :9857 1.5MB HANDLER WAS THE SAME DEFECT ONE APP OVER. rf_claim_photos
+answers 413 on a rfcph_data_size violation -- a 1,572,864-byte constraint -- and
+nothing behind a 64KB gate could ever violate it. Unreachable from ABOVE and
+from BELOW. THE DEAD HANDLER IS HOW THE SECOND RESOURCE WAS FOUND, which is the
+argument for not deleting dormant code until you know why it is dormant.
+
+IT IS STILL INERT AFTER THE FIX, AND THAT IS CORRECT RATHER THAN HALF-DONE. The
+API cap is now exactly 1,572,864 -- the same number -- so the API refuses first
+with a clear 413 instead of an opaque Postgres error, which is the trade the
+slabs paragraph records paying for the hard way. And the two measures are not the
+same measure: the cap counts the WHOLE payload, the constraint counts `data` =
+storedBlob(payload, ['id']) with photo_id/claim_id/captured_by promoted to
+COLUMNS -- a SUBSET. So the API refusal always arrives first, and the handler is a
+drift backstop. Arm R3 ASSERTS the ordering (api cap <= db constraint) rather
+than leaving it to habit.
+
+EIGHT TABLES, NOT TWO. MEASURED, with the command, in the comment above
+PAYLOAD_CAP_BY_RESOURCE:
+
+  grep -rhoE "constraint [a-z_]+ check \(octet_length\(data::text\) <= [0-9]+\)" sql/*.sql | sort -u
+
+  dnt_appointments          1,291,059   FIXED
+  rf_claim_photos           1,572,864   FIXED
+  rf_claim_agreements       1,572,864   open -- and its own schema comment says
+                                        "a captured signature is an image, not
+                                        app data, and must not be squeezed into
+                                        the 64KB ceiling". It is.
+  rf_photos                 1,572,864   open
+  rf_proposals              1,572,864   open
+  rf_invoices                 262,144   open
+  sd_progress_photos        1,572,864   open
+  sd_quote_request_photos   1,572,864   open
+
+THE SIX ARE NOT SWEPT IN, and the reason is item 7 of
+docs/2026-09-13-cross-domain-disciplines.md: byte-identical is not
+safe-in-context. Each needs its write branch confirmed to pass through the
+generic gate, its client confirmed to send the field, and its DB number
+confirmed to be current intent rather than an abandoned plan. ARM C7 PINS THE
+UNCOVERED SET AT THOSE SIX, so closing one or adding a ninth both turn it red.
+
+sd_locations RUNS THE OTHER WAY and is deliberately absent: sdlocations_data_size
+is 16,384, so the API already permits FOUR TIMES what the database accepts. A fix
+there LOWERS a cap and can break a working client. Arm C8 asserts its absence so
+it cannot be swept in as a seventh.
+
+Object.create(null) AND NOT A LITERAL. The table is indexed by a client-supplied
+resource name; on a plain literal PAYLOAD_CAP_BY_RESOURCE['constructor'] is a
+FUNCTION and `payloadBytes > thatFunction` is false -- the cap silently disabled
+by a resource name. Inert today only because the envelope gate whitelists the
+resource first, which is exactly how all 48 role literals
+tests/role_maps_have_no_prototype.js was built for were inert. Arm C9 asserts it.
+
+api/b28-photo-cap.test.js -- 13 arms, exit 0. P1 a 307,200-byte appointment write
+SUCCEEDS (200). P2 one byte past the ceiling -> 413. P3 the 413 names the
+resource and its REAL cap and does not say 65536. D1/D2 the 64KB default is
+UNCHANGED for dnt_patients. R1 a 307,200-byte claim photo WRITES. R2 past
+1,572,864 -> 413. R3 the ordering. C5 the SQL scan found something at all (391
+constraints), so nothing below passes vacuously. C6 every covered cap EQUALS the
+number in the SQL file. C7 the pin. C8 sd_locations. C9 the prototype.
+
+================================================================================
+5. ITEM 5 -- THE CURRENCY SWEEP, AND b27's ITEM 4 REDONE
+================================================================================
+
+5A. THE SWEEP -- docs/2026-10-20-cody-b28-currency-sweep.md, 7 findings.
+Nothing under tools/, .claude/skills/ or CLAUDE.md was edited; six shared tools
+were RUN, which is the permitted half.
+
+  MINE, MEASURED AND BAD:
+  * 16 of 23 cody digests exceed the 30-line rule. b4 at 323 lines, 10.8x.
+    b5-b10 were compliant, the rule broke at b11 and never recovered.
+  * b27 wrapped at CONTEXT 92.0%, not 80% -- 12 points past the trigger, and the
+    cost is in b27's own handoff: a wrap-up order arrived mid-edit and item 4 had
+    to be reverted. FOURTEEN of my digests carry no CONTEXT line at all, which is
+    the worse number: an unmeasured batch cannot be reported either way.
+  * SAIRN-ACTIVE-WORK-cody.md is 795,238 bytes, 2.0x the ceiling. NOT split in
+    this batch: a cut in the wrong place makes the history unsearchable in
+    exactly the way the ceiling exists to prevent.
+
+  SHARED, REPORTED, NOT EDITED:
+  * THE BIGGEST: the documented handoff naming convention describes 3 of 86
+    handoffs on disk. 83 files use SAIRN-handoff-<session>-b<NN>.md; the skill
+    says APP-YYYY-MM-DD-subject-handoff.md and calls the counter scheme
+    superseded, and CLAUDE.md:33 tells a fresh session to "sort by the date in
+    the filename" -- UNEXECUTABLE for 83 of 86 files. It was 80 before the
+    rebase and 83 after. Two opposite candidate fixes with pasteable text are in
+    the sweep; the recommendation is to record the practice, because the scheme
+    in use is per-session and so cannot collide between sessions.
+  * unproven_arm_check A1 against tests/run_floor_layers_probe.py is a FALSE
+    POSITIVE: that file prints the unproven count at :406 and exits 3 at :413,
+    and never prints "N passed, 0 failed" in any form. The tool's own header
+    anticipates this shape.
+  * unproven_arm_check A4 is cleared by ANY durable write. 9 files have an
+    unproven mechanism, 4 are flagged, and one of the 5 clean ones clears it on a
+    TEST FIXTURE write. The one A4 finding that is mine is deliberately not
+    "fixed", because the only available fix clears the finding without making the
+    rule enforceable -- that is writing for the checker instead of the reader.
+
+  AND TWO FINDINGS WERE CLOSED BY ANOTHER SESSION MID-BATCH. The rebase before
+  the push brought 31 commits including cc's b27, which wrote all four
+  previously-unwritten rules into CLAUDE.md (with
+  `python tools/context_verify.py --digest-line` as the only thing that may write
+  a digest's CONTEXT line, and tools/drive_upload_verify.py --max-lines 30 as the
+  mechanical digest check) and corrected the ceiling count from 7 to 8. BOTH ARE
+  KEPT AND MARKED rather than deleted. That is the most useful thing in the
+  sweep: a sweep is a snapshot, and in a five-session repository a snapshot's
+  shelf life is minutes -- item 8 of the cross-domain disciplines, lived rather
+  than quoted. A sweep must be re-measured AFTER the rebase that precedes the
+  push, and this one was.
+
+5B. b27's ITEM 4, REDONE AND MEASURED.
+
+    python docs/b27-logs/stable_last_line.py --drive
+    -> 12 of 12 subjects now end with SUITE-RESULT       (b27: 0 of 12)
+
+b27 appended the hook to the END of each file, drove it, measured 0 of 12 and
+REVERTED rather than leave a committed fix that does nothing. TWO INDEPENDENT
+ERRORS:
+
+  1. UNREACHABLE. These probes call sys.exit(...) at MODULE LEVEL. SystemExit
+     propagates out of the module body, so every line below it -- including the
+     atexit.register() call -- never executes.
+  2. THE REASONING WAS ALSO BACKWARDS. b27's comment read "the end of the file is
+     the earliest registration, so it fires last". It is the LATEST registration.
+     atexit runs handlers in REVERSE order, so the end of the file would have
+     printed the line BEFORE every cleanup handler even if it had run. Top
+     placement is correct on BOTH counts: it is reached, and being the first
+     registration it fires last.
+
+"THE TOP" IS COMPUTED, NOT LINE 1. A Python docstring must stay the first
+statement or it stops being a docstring -- and tools/live_probe_declaration_check.py
+READS these docstrings. A JavaScript 'use strict' must stay first in its prologue
+or it SILENTLY STOPS APPLYING, which would change the semantics of the suite
+under test. So .py goes after the docstring, located with `ast` (a regex cannot
+find the end of a docstring that itself contains a triple-quote, and several do);
+.js goes after the directive if there is one.
+
+FOUR POST-CONDITIONS, AND ONE IS b27's DEFECT AS A REFUSAL. assert_reached()
+refuses to write any file where the hook would land after a module-level exit,
+re-checked on the RESULT text rather than inferred from the input. b27 could
+assert "the original is a PREFIX of the result" because it appended; an insert
+cannot, and the weaker "the file got longer" is what let an earlier sweep on this
+platform delete 1,465 lines with a green assertion -- so the hook is REMOVED from
+the result and the remainder must equal the original byte for byte. Plus the
+result must compile(). Plus the marker must appear exactly once.
+
+docs/known-red-suites.json: all 12 rows now record a tail the runner really
+produces, with tail_before_b28 keeping each previous value.
+tail_verdict_2026_10_19 is LEFT ALONE -- it is a dated verdict about 2026-10-19
+and the tool selects its subjects by it. ONE SUBJECT DROVE EXIT 0
+(tests/run_selftest_independence_probe.py), recorded as OBSERVED rather than
+reclassified: RECOVERED is tools/known_red_check.py's verdict to make from a real
+run, not this file's.
+
+================================================================================
+6. THE ABLATION -- PER ARM, NOT PER EXIT CODE
+================================================================================
+
+The b28 change was stashed and both new suites re-run against HEAD:
+
+  b28-role-from-token   R1 and S1 answered 200 -- the demoted attorney's trust
+                        write LANDED, twice, by two different routes
+  b28-photo-cap         9 of 13 arms RED. D1, D2, C5 and C8 green in BOTH
+                        directions
+
+D1/D2/C5/C8 green in both directions is the half that makes it a measurement.
+D1 and D2 are the 64KB default, unchanged; C5 is the SQL scan finding anything at
+all; C8 is sd_locations staying out. If the fix had been a global cap raise, D1
+would have gone red.
+
+================================================================================
+7. FIVE ARMS WERE WRONG ON THEIR FIRST SPELLING AND EVERY ONE FAILED LOUDLY
+================================================================================
+
+1. A5 of the live probe asserted the rt_routes branch's terminal message against
+   action='frobnicate' -- which NEVER REACHES the branch, because the ACTION is
+   whitelisted at the top of the handler. The arm was reading the DISPATCHER's
+   refusal and would have gone green against a deployment where the branch does
+   not exist. Re-aimed to action='write': globally legal, not an rt_routes verb.
+2. R5 and R6/M2 named the wrong control. api/sd-data.js ALREADY re-reads the
+   roster on every request for its active check, so counting _employee_auth
+   requests reported a leak that was not there, and R5 credited b28 with a
+   deactivation refusal that CREDENTIAL_INACTIVE already handles.
+3. P1, R1 and D2 asserted statusCode !== 413, which passes on a 400 from any
+   unrelated validator. Tightened to === 200, and two of the three then FAILED:
+   my fixtures used phase='before'/elevation='north' (not in the branch's
+   vocabulary) and a patient with no adult dob. "Some answer that was not a size
+   refusal" is not "the staff member can confirm this booking".
+4. py_insert_line's own docstring contained a literal triple-quote while
+   explaining why a parser is needed to find one. It would not compile and the
+   tool refused to run at all, which is the right direction to fail in.
+5. LIVE_PROBE_CLASS = 'read-only' -- honest prose, and not one of the three
+   values live_probe_residue_audit accepts. THE PRE-COMMIT GATE REFUSED THE
+   COMMIT, and it was right twice over: the auditor matches 'action': 'write' in
+   source and arm A5 posts exactly that, deliberately. A source scan cannot tell
+   a write that is SENT from one ASSERTED TO BE REFUSED, and it should not guess.
+   Re-declared VERIFICATION with the reason; audit exit 0.
+
+================================================================================
+8. THE PUSH -- FOUR GATES REFUSED, ALL FOUR SATISFIED AT CAUSE
+================================================================================
+
+1. derived-docs -- three generated documents stopped matching their sources.
+   Regenerated with the three generators named. TWICE: two conflicted on a later
+   rebase, resolved by taking the UPSTREAM side, asserting zero conflict markers
+   with grep, and REGENERATING afterwards. The two files were named explicitly to
+   `git add` rather than using -A, because git add is how you RESOLVE a conflict
+   and cannot tell "resolved" from "never looked" -- which is exactly how b27
+   committed 15 conflict markers into a 34,000-line register every gate parses.
+2. tier-a -- six Tier A resources with no open obligation. OPENED with
+   tier_a_review_gate.py --open, assigned to hank, naming FIVE THINGS TO TRY TO
+   BREAK rather than a summary -- including the claim that four of the six are
+   named only because the drift arms MENTION them and no code serving them
+   changed, which a reviewer should check against the diff rather than take on
+   my word.
+3. path-scope -- resolved by the MANIFEST, not a skip. b27's
+   assigned_overrides.cody entry was REPLACED, not extended: six of its nine
+   paths dropped because b28 does not touch them. b27's own _why key said
+   "SCOPED TO b27 AND IT SHOULD BE REMOVED WHEN THIS BATCH CLOSES" and b27's
+   handoff then recorded that it COULD NOT prune it, because hank held the file;
+   that claim has expired, checked rather than assumed. api/_lib/countersign.js
+   is declared WITH the reason it is not one of hank's api/*-countersign.js
+   ENDPOINTS: it is the shared library api/sd-data.js:2233 calls, and fixing the
+   call site instead would have left the same bypass reachable through
+   api/_lib/countersign-endpoint.js. Re-measured: 31 of 31 paths IN SCOPE.
+4. register-feed COULD NOT TELL what was being pushed -- the clone was 3 ahead
+   and 11 behind, so git was about to refuse the non-fast-forward itself and the
+   hook got no ref lines. NOT A FINDING about the commits, and the gate says so.
+
+SIX COMMITS, FIVE OF THEM BOOKKEEPING. NO SQUASH NEEDED, unlike b27: no commit
+carries a duplicate subject and no conflict markers reached a register. FOUR
+REBASES -- the remote moved under three of them, which is ordinary with six
+sessions pushing.
+
+================================================================================
+9. OPEN -- SEE THE HANDOFF FOR THE EXACT NEXT STEP PER ITEM
+================================================================================
+
+SAIRN-handoff-cody-b28.md sections 4.1 to 4.11. In short:
+
+  4.1  -> hank   b19 R2c/A1 RED AT HEAD, not caused by b28 (proved by stashing).
+                 A POLICY question, not a re-aim: does paralegal go back on the
+                 IOLTA reconcile list now hank's attestation exists?
+  4.2  -> cody   b22 D1 asks to be DELETED and the F2/F3 arms promoted to handler
+                 level. Both halves together or neither.
+  4.3  -> cody   the six remaining oversized caps, rf_claim_agreements first.
+                 Update arm C7's EXPECTED_UNCOVERED in the same change.
+  4.4  -> ?      sd_locations: the API over-permits 4x. Decide which number is
+                 intended before changing either.
+  4.5  -> cc     the two unproven_arm_check findings.
+  4.6  -> Michael the handoff naming convention. Getting worse ~3 files/day.
+  4.7  -> cody   split SAIRN-ACTIVE-WORK-cody.md.
+  4.8  -> cody   digest length and wrap-up discipline. Both rules now exist in
+                 writing, which they did not when either breach happened.
+  4.9           CLOSED -- the b27 path override was pruned.
+  4.10 -> b27's sections 6.2-6.7 are unchanged. 6.1 and 6.8 are CLOSED.
+  4.11 -> Michael nothing is blocked on you and no SQL is owed. Three decisions:
+                 4.6, 4.1, 4.4.
+
+================================================================================
+10. BOUNDARIES
+================================================================================
+
+tools/ NOT touched (cc's) -- six were RUN. .claude/skills/ NOT touched -- one was
+READ and the finding is a report. CLAUDE.md NOT touched, treated as shared by
+JUDGMENT and said out loud. docs/CRITICALITY-TIERS.md NOT touched (fourth's). No
+.html (fourth's). api/bridge.js and api/<app>-countersign.js NOT touched (hank's).
+api/_lib/law-roles.js NOT touched (hank's) -- the fix landed in
+api/_lib/countersign.js, which no active claim holds.
+
+Transcript:
+C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cody\cc73112b-c907-4081-b7af-37c09862bb32.jsonl
+This session carries b28 ONLY -- b26 and b27 shared one transcript, so this is
+the first b-batch in a window of its own.
