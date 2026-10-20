@@ -7763,6 +7763,28 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-20T14:09:30Z",
+      "opened_at_sha": "13533e393decfad8169efd780a03df4ed5dbe70b",
+      "opened_at_sha_basis": "file-set",
+      "opened_at_sha_extra_files": 2,
+      "resources": [
+        "rf_jobs"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/b32-rf-jobs-projection.test.js"
+      ],
+      "what": "b32 cody: api/sd-data.js rf_jobs read + write-response projections now apply the real columns (id, job_class, assigned_employee_id, location_id) LAST (Object.assign blob first). Implements fourth's b37 Tier A review 7.1; no behaviour change while storedBlob's strip list holds. Please try to break: (a) any consumer that relied on the BLOB winning for one of those four keys (I found none: blob never carries them, window none per b37); (b) the write response when requestedAssignee is null (still '' as before); (c) that R1/W1 in api/b32-rf-jobs-projection.test.js really fail under the old order (ablation: 3 arms red).",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-20T14:09:30Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
