@@ -102,6 +102,81 @@ CREATE_RE = re.compile(
     r'create\s+table\s+(?:if\s+not\s+exists\s+)?(?:public\.)?([a-z_][a-z0-9_]*)', re.I)
 QUERY_RE = re.compile(r"/rest/v1/([a-z_][a-z0-9_]*)|\brest(?:Url)?\(\s*'([a-z_][a-z0-9_]*)")
 
+# ── A TABLE NAMED BY A CONSTANT OR A RESOURCE MAP IS STILL QUERIED (cc b30) ──
+# QUERY_RE sees only a table name written INTO a URL. Fourteen live tables were
+# reached another way -- `const TOKEN_TABLE = 'sairndental_bi_tokens'`, or a
+# generic handler that builds `rest(resource + '?...')` from a map entry such as
+# `dnt_gfe: 'gfe_id'` -- and every one was filed under "NOT queried by api/".
+# dnt_gfe, a Tier A table, was among them and was confirmed MISSING live on
+# 2026-10-20 while this tool said nothing about it.
+#
+# The widening is BOUNDED BY sql/: only a name some sql/ file CREATEs can count,
+# and only as a WHOLE quoted literal ('t', "t", `t`) or an object key (`t:`) on
+# a line that is not a comment. A name inside a longer string -- an error
+# message naming sql/t_schema.sql -- does not count, and neither does prose.
+NAMED_LITERAL_RE = r"""(?:['"`]%s['"`]|(?<![\w.$'"`/?&=])%s\s*:(?!:))"""
+
+
+def code_lines(src):
+    """Non-comment lines. `//` lines and block-comment body lines (`*`, `/*`)
+    are dropped; a trailing `// ...` on a code line is cut off."""
+    out = []
+    for line in src.split('\n'):
+        s = line.strip()
+        if s.startswith('//') or s.startswith('*') or s.startswith('/*'):
+            continue
+        out.append(re.sub(r'\s//\s.*$', '', line))
+    return '\n'.join(out)
+
+
+def queried_tables(code, candidates):
+    """Tables `code` (already comment-stripped) queries: QUERY_RE's literal URL
+    forms, plus any CANDIDATE named whole as a quoted literal or a map key."""
+    found = set(a or b for a, b in QUERY_RE.findall(code))
+    for t in candidates:
+        if t in found or t not in code:
+            continue
+        if re.search(NAMED_LITERAL_RE % (re.escape(t), re.escape(t)), code):
+            found.add(t)
+    found.discard('rpc')
+    return found
+
+
+def run_fixtures():
+    """Criteria lock. Each arm is a synthetic snippet with a known answer, run
+    BEFORE the widened matcher is trusted on the real api/ tree."""
+    cand = {'x_gfe', 'x_tokens', 'x_rounds', 'x_comment_only', 'x_in_prose',
+            'x_block', 'x_trailing'}
+    arms = [
+        ("a literal REST URL is queried (the old form still works)",
+         "fetch(SUPA + '/rest/v1/x_rounds?license_hash=eq.' + h)", 'x_rounds', True),
+        ("rest('<t>') is queried (the old form still works)",
+         "fetch(rest('x_rounds?select=data'))", 'x_rounds', True),
+        ("a TABLE CONSTANT is queried", "const TOKEN_TABLE = 'x_tokens';", 'x_tokens', True),
+        ("a RESOURCE-MAP key is queried", "const M = { x_gfe: 'gfe_id', y: 'z' };", 'x_gfe', True),
+        ("a double-quoted literal is queried", 'const T = "x_tokens";', 'x_tokens', True),
+        ("a comment-only mention is NOT queried",
+         "// x_comment_only is described here\nconst a = 1;", 'x_comment_only', False),
+        ("a block-comment line is NOT queried",
+         "/* header\n * x_block is the table\n */\nconst a = 1;", 'x_block', False),
+        ("a trailing // comment is NOT queried",
+         "const a = 1; // reads x_trailing later", 'x_trailing', False),
+        ("a name INSIDE a longer string is NOT queried",
+         "msg('run sql/x_in_prose_schema.sql first')", 'x_in_prose', False),
+        ("a name NOT created in sql/ never counts, however it is written",
+         "const T = 'x_not_a_table';", 'x_not_a_table', False),
+        ("a URL query string 'select=x_gfe:...' is NOT a map key",
+         "rest('other?select=x_gfe:col')", 'x_gfe', False),
+    ]
+    bad = 0
+    for label, src, table, want in arms:
+        got = table in queried_tables(code_lines(src), cand)
+        ok = got == want
+        bad += not ok
+        print('  %s  %-66s want=%s got=%s' % ('ok  ' if ok else 'FAIL', label, want, got))
+    print('  %d/%d fixtures classify correctly' % (len(arms) - bad, len(arms)))
+    return 1 if bad else 0
+
 
 def strip_sql_comments(text):
     out, i, n = list(text), 0, len(text)
@@ -375,6 +450,8 @@ def verdicts(missing, created, snap):
 
 
 def main(argv):
+    if '--fixtures' in argv:
+        return run_fixtures()
     if not os.path.exists(SNAPSHOT):
         print('db/schema_snapshot.json is missing. NOT a pass -- nothing was checked.')
         return 2
@@ -396,10 +473,7 @@ def main(argv):
         if f.endswith('.test.js'):
             continue
         src = io.open(f, encoding='utf-8', errors='replace').read()
-        code = '\n'.join(l for l in src.split('\n') if not l.strip().startswith('//'))
-        for a, b in QUERY_RE.findall(code):
-            queried.add(a or b)
-    queried.discard('rpc')
+        queried |= queried_tables(code_lines(src), created)
 
     real_tables = sum(1 for k in snap if not k.startswith('_'))
     missing = sorted(t for t in created if t not in snap)

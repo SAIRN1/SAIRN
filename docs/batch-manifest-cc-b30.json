@@ -1,0 +1,44 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "cc",
+  "batch": "b30",
+  "id_lock": "906816e5cf0d24f9",
+  "items": [
+    {
+      "id": 1,
+      "title": "Concept before code for the freshness-tool widening",
+      "status": "done",
+      "evidence": "docs/2026-10-20-cc-b30-notes.md section 1"
+    },
+    {
+      "id": 2,
+      "title": "Fix freshness QUERY_RE for the 14 missed tables; fixtures first; confirm 37",
+      "status": "done",
+      "evidence": "python tools/schema_snapshot_freshness.py --fixtures (11/11); docs/2026-10-20-cc-b30-notes.md section 2"
+    },
+    {
+      "id": 3,
+      "title": "Action cc-owned notes from cody and hank (b18, b26)",
+      "status": "done",
+      "evidence": "docs/2026-10-20-cc-b30-notes.md section 5; docs/CRITICALITY-TIERS.md; CLAUDE.md"
+    },
+    {
+      "id": 4,
+      "title": "Preflight --live across the 37, then re-capture and commit the schema snapshot",
+      "status": "blocked",
+      "evidence": "preflight --live 0 findings on 28 of 28 and 32 of 37 live-corroborated (notes sections 3-4); the snapshot RE-CAPTURE is blocked: no clone holds a database credential, Michael runs sql/schema_snapshot_query.sql"
+    },
+    {
+      "id": 5,
+      "title": "Continue FMEA drafts and tier-a-reviews backlog",
+      "status": "done",
+      "evidence": "docs/fmea/ (15 new drafts); docs/tier-a-reviews.json (2 discharged); notes sections 6-7"
+    },
+    {
+      "id": 6,
+      "title": "Push, no force, no bypass; confirm landed",
+      "status": "open",
+      "evidence": ""
+    }
+  ]
+}

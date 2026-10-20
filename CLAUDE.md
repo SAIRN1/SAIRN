@@ -253,10 +253,14 @@ Full detail in **PR §3**. The short form:
 
    **There is a WIDER scoped form, and the gate's own refusal recommends it
    over the one above:** `SAIRN_SKIP=<gate> SAIRN_SKIP_WHY="<what this gate
-   would have refused and why that is acceptable>"`. It covers **eight** named
+   would have refused and why that is acceptable>"`. It names **eleven**
    gates where `SAIRN_GATE_EXEMPT` covers one, and the reason is required
-   rather than optional. Get the list from `python tools/gate_skip.py --gates`
-   — never from this paragraph.
+   rather than optional — **but only seven are wired**: a skip for the four
+   declared-but-unwired ids is granted and then ignored, so it does nothing.
+   Three more (credentials, hook-integrity, syntax) cannot be skipped at all.
+   Measured 2026-10-20 (cc b30, after hank b26 found "eight" stale); get the
+   current list from `python tools/gate_skip.py --gates` — never from this
+   paragraph.
 
    **`SAIRN_SEED_GATE=off` NO LONGER WORKS. Corrected 2026-10-14; this
    paragraph said "still works" for a day after it stopped.** Since
@@ -299,7 +303,7 @@ looks.
 ## Skills — read them, don't rely on trigger-word matching
 
 **BEFORE BUILDING ANY CHECKER, PROBE, GATE OR TOOL, read
-`docs/2026-09-13-cross-domain-disciplines.md`.** Twelve standing conventions -- COUNT THE `## <n>.` HEADINGS IN THAT FILE RATHER THAN TRUSTING THIS WORD, which has been wrong here before and was wrong again on 2026-09-25 when two sessions each added an eleventh within the hour (the ninth, 2026-09-25: verification rigor follows what the artifact IS -- the real costly thing earns exhaustive verification, a cheap stand-in earns iteration; the tenth, 2026-09-24: segmented verification -- no long run whose first check is at the end; the eleventh, 2026-09-25: human-gated auto-remediation -- a fixer may PROPOSE a repair and may never apply it, because a detector that blesses its own fix is item 8 one step later; the twelfth, 2026-09-25: ABLATION over chaos -- remove ONE named layer on already-clean code and measure what it alone catches, per ARM not per exit code), each
+`docs/2026-09-13-cross-domain-disciplines.md`.** Thirty-nine standing conventions as of 2026-10-20 (it said "Twelve" until cc b30; hank b26 counted 39) -- COUNT THE `## <n>.` HEADINGS IN THAT FILE RATHER THAN TRUSTING THIS WORD, which has been wrong here before and was wrong again on 2026-09-25 when two sessions each added an eleventh within the hour (the ninth, 2026-09-25: verification rigor follows what the artifact IS -- the real costly thing earns exhaustive verification, a cheap stand-in earns iteration; the tenth, 2026-09-24: segmented verification -- no long run whose first check is at the end; the eleventh, 2026-09-25: human-gated auto-remediation -- a fixer may PROPOSE a repair and may never apply it, because a detector that blesses its own fix is item 8 one step later; the twelfth, 2026-09-25: ABLATION over chaos -- remove ONE named layer on already-clean code and measure what it alone catches, per ARM not per exit code), each
 paid for by a real defect: lock a check's criteria against synthetic fixtures
 before running it on real data; report accuracy and stability as two numbers,
 never one; publish a named uncertainty table rather than a combined figure; set
