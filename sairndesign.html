@@ -395,6 +395,7 @@ label.chk input{width:auto;}
     <div class="fg"><label>Project Name</label><input id="pjname" placeholder="Lakeshore Living Room Refresh"></div>
     <div class="fr"><div class="fg"><label>Budget ($)</label><input id="pjbudget" type="number" placeholder="45000"></div><div class="fg"><label>Target Install Date</label><input id="pjtarget" type="date"></div></div>
     <div class="fg"><label>Status</label><select id="pjstatus"><option>Planning</option><option>In Progress</option><option>Complete</option></select></div>
+    <div class="fg"><label for="pjocc">Occupancy (for accessibility scoping)</label><select id="pjocc"><option value="">Not set</option><option value="residential">Residential -- a private dwelling</option><option value="public">Public -- a place of public accommodation or public entity</option><option value="employee">Employee-only workplace</option></select></div>
     <div class="fg"><label>Notes</label><textarea id="pjnotes" rows="2"></textarea></div>
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
       <button class="btn bo" onclick="closeProjectModal()">Cancel</button>
@@ -421,6 +422,7 @@ label.chk input{width:auto;}
     <div class="fr" style="margin-top:10px"><div class="fg"><label>Width (ft)</label><input id="room-width" type="number" step="0.1" oninput="saveRoomDimensions()"></div><div class="fg"><label>Length (ft)</label><input id="room-length" type="number" step="0.1" oninput="saveRoomDimensions()"></div></div>
     <div class="srow"><span class="slbl">Computed Area</span><span class="sval" id="room-sqft">--</span></div>
   </div></div>
+  <div class="card"><div class="ch"><span class="ct">Accessibility &middot; 2010 ADA 226.1 / 902.3</span></div><div class="cb" id="s-ada"></div></div>
   <div class="card"><div class="ch"><span class="ct">AI Compliance Check</span></div><div class="cb" id="s-compliance"><div style="color:var(--muted)">Run a check to review this project's spec list against budget, lead times, and install sequencing before the proposal ships.</div></div></div>
   <div class="card"><div class="cb">
     <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Item</th><th>Vendor</th><th>SKU</th><th>Cost</th><th>Retail</th><th>Markup</th><th>Lead Time</th><th>Compliance</th><th>Status</th><th>Actions</th></tr></thead>
@@ -451,6 +453,8 @@ label.chk input{width:auto;}
       <div class="fr"><div class="fg"><label for="spc-cw_contains">Contains hardwood plywood, MDF or particleboard?</label><select id="spc-cw_contains" onchange="specCertPreview()"><option value="">Not answered</option><option value="yes">Yes</option><option value="no">No</option></select></div><div class="fg"><label for="spc-cw_pre2018">Composite wood made before 1 Jun 2018 (e.g. a vintage piece)?</label><select id="spc-cw_pre2018" onchange="specCertPreview()"><option value="">Not answered</option><option value="yes">Yes</option><option value="no">No</option></select></div></div>
       <div class="fr"><div class="fg"><label for="spc-cw_fabricator">Fabricator named on the label</label><input id="spc-cw_fabricator" oninput="specCertPreview()"></div><div class="fg"><label for="spc-cw_produced">Month/year produced (on the label)</label><input id="spc-cw_produced" type="month" oninput="specCertPreview()"></div></div>
       <div class="fr"><div class="fg"><label for="spc-cw_label">&ldquo;TSCA Title VI compliant&rdquo; label</label><select id="spc-cw_label" onchange="specCertPreview()"><option value="">Not checked</option><option value="sighted">Sighted</option><option value="absent">Absent</option></select></div><div class="fg"><label for="spc-cw_evidence">Evidence for the label</label><input id="spc-cw_evidence" oninput="specCertPreview()"></div></div>
+      <div class="fg"><b>Accessibility</b> &mdash; 2010 ADA 902.3 top height <span id="spc-ada-state"></span></div>
+      <div class="fr"><div class="fg"><label for="spc-ada_surface">Dining or work surface?</label><select id="spc-ada_surface" onchange="specCertPreview()"><option value="">Not answered</option><option value="dining">Dining surface</option><option value="work">Work surface</option><option value="no">Neither</option></select></div><div class="fg"><label for="spc-ada_top_in">Top height above the floor (inches)</label><input id="spc-ada_top_in" type="number" step="0.25" min="0" oninput="specCertPreview()"></div></div>
       <div id="spc-join" style="font-size:12px;margin-top:4px"></div>
     </details>
     <div class="fg"><label>Notes</label><textarea id="spnotes" rows="2"></textarea></div>
@@ -2114,12 +2118,12 @@ async function saveSpec(){
 // as a clean one. A label marked sighted with nothing recorded to back it is
 // also not established.
 var SDN_CERT_FIELDS=['ufl_seat','ufl_uph','ufl_fill','ufl_excl','ufl_pre2021','ufl_label','ufl_evidence',
-  'cw_contains','cw_pre2018','cw_fabricator','cw_produced','cw_label','cw_evidence'];
+  'cw_contains','cw_pre2018','cw_fabricator','cw_produced','cw_label','cw_evidence','ada_surface','ada_top_in'];
 // Facts about the PRODUCT (same vendor + SKU, same answer) versus facts about
 // the UNIT in hand (a label sighted, a production month, a vintage date).
 // Only the first kind joins across spec items: copying a sighting from
 // another project's sofa would certify a label nobody looked at.
-var SDN_CERT_PRODUCT_FIELDS=['ufl_seat','ufl_uph','ufl_fill','ufl_excl','cw_contains','cw_fabricator'];
+var SDN_CERT_PRODUCT_FIELDS=['ufl_seat','ufl_uph','ufl_fill','ufl_excl','cw_contains','cw_fabricator','ada_surface','ada_top_in'];
 
 function sdnUflScope(c){
   c=c||{};
@@ -2173,6 +2177,8 @@ function specCertPreview(){
   $('spc-overall').innerHTML=sdnCertBadge(cs.overall);
   $('spc-ufl-state').innerHTML=sdnCertBadge(cs.ufl.state)+' <span style="font-size:12px;color:var(--muted)">'+H(cs.ufl.why)+'</span>';
   $('spc-cw-state').innerHTML=sdnCertBadge(cs.cw.state)+' <span style="font-size:12px;color:var(--muted)">'+H(cs.cw.why)+'</span>';
+  var ah=sdnAdaHeight(sdnReadCertForm());
+  $('spc-ada-state').innerHTML=sdnCertBadge(ah.state)+' <span style="font-size:12px;color:var(--muted)">'+H(ah.why)+'</span>';
   specCertJoinHint();
 }
 function sdnProductKey(vendor,sku){return String(vendor||'').trim().toLowerCase()+'|'+String(sku||'').trim().toLowerCase();}
@@ -2201,6 +2207,66 @@ function specCertUseProduct(id){
   var src=specItems().find(function(x){return x.id===id;});if(!src||!src.cert)return;
   SDN_CERT_PRODUCT_FIELDS.forEach(function(f){var el=$('spc-'+f);if(el&&src.cert[f])el.value=src.cert[f];});
   specCertPreview();
+}
+
+// ── ACCESSIBILITY: 2010 ADA 902.3 AND 226.1 (b44, audit section 7.3/7.4 B4) ─
+// Read from the DOJ text of the 2010 Standards:
+//   902.3  "The tops of dining surfaces and work surfaces shall be 28 inches
+//          (710 mm) minimum and 34 inches (865 mm) maximum above the finish
+//          floor or ground."  -- BOTH ENDS INCLUSIVE.
+//   226.1  "Where dining surfaces are provided ... at least 5 percent of the
+//          seating spaces and standing spaces at the dining surfaces shall
+//          comply with 902. In addition, where work surfaces are provided for
+//          use by other than employees, at least 5 percent shall comply."
+// HONEST LIMITS, stated where the figure is shown: 226.1 counts SEATING
+// SPACES, and this app counts spec ITEMS (one table can seat many), so the
+// figure is items, said so on screen; 902.2's clear floor space and 306 knee
+// clearance are not modelled, so a compliant height is necessary, not
+// sufficient. Title III does not reach a private dwelling: a residential
+// project is out of scope, and an unset occupancy is NOT ESTABLISHED.
+function sdnAdaHeight(c){
+  c=c||{};
+  if(c.ada_surface==='no')return {state:'not_applicable',why:'not a dining or work surface'};
+  if(c.ada_surface!=='dining'&&c.ada_surface!=='work')return {state:'not_established',why:'surface type not answered'};
+  var raw=String(c.ada_top_in===undefined||c.ada_top_in===null?'':c.ada_top_in).trim();
+  if(raw==='')return {state:'not_established',why:'no top height recorded'};
+  var h=Number(raw);
+  if(!isFinite(h)||h<=0)return {state:'not_established',why:'top height "'+raw+'" is not a height'};
+  if(h>=28&&h<=34)return {state:'compliant',why:h+' in is within 902.3 (28-34 in)'};
+  return {state:'not_compliant',why:h+' in is outside 902.3 (28-34 in)'};
+}
+// One kind of surface on one project -> {applies, M, n, unknown, required, verdict}.
+// verdict: met | not_met | not_established. NEVER "met" on unknowns: if the
+// compliant count is short but unrecorded heights could close the gap, the
+// answer is not established, not met and not not-met.
+function sdnAda226(occupancy,kind,items){
+  if(!occupancy)return {applies:null,why:'project occupancy not set'};
+  if(occupancy==='residential')return {applies:false,why:'residential -- Title III scoping does not reach a private dwelling'};
+  if(kind==='work'&&occupancy==='employee')return {applies:false,why:'226.1 reaches work surfaces "for use by other than employees"'};
+  var rows=items.filter(function(s){return s&&s.cert&&s.cert.ada_surface===kind;});
+  var M=rows.length,n=0,unknown=0;
+  rows.forEach(function(s){var st=sdnAdaHeight(s.cert).state;if(st==='compliant')n++;else if(st==='not_established')unknown++;});
+  var required=M?Math.ceil(M*0.05):0;
+  var verdict=!M?'none':(n>=required?'met':(n+unknown<required?'not_met':'not_established'));
+  return {applies:true,M:M,n:n,unknown:unknown,required:required,verdict:verdict};
+}
+function sdnRenderAda(pj,items){
+  var el=$('s-ada');if(!el)return;
+  if(!pj){el.innerHTML='<div style="color:var(--muted)">Select a project above</div>';return;}
+  var undeclared=items.filter(function(s){var c=s.cert||{};return c.ada_surface!=='dining'&&c.ada_surface!=='work'&&c.ada_surface!=='no';}).length;
+  var line=function(kind,label){
+    var r=sdnAda226(pj.occupancy,kind,items);
+    if(r.applies===null)return '<div class="srow"><span class="slbl">'+label+'</span>'+sdnCertBadge('not_established')+'</div><div style="font-size:12px;color:var(--muted);margin:-4px 0 8px">'+H(r.why)+'</div>';
+    if(r.applies===false)return '<div class="srow"><span class="slbl">'+label+'</span>'+sdnCertBadge('not_applicable')+'</div><div style="font-size:12px;color:var(--muted);margin:-4px 0 8px">'+H(r.why)+'</div>';
+    if(r.verdict==='none')return '<div class="srow"><span class="slbl">'+label+'</span><span style="color:var(--muted)">none specified</span></div>';
+    var badge={met:'compliant',not_met:'not_compliant',not_established:'not_established'}[r.verdict];
+    return '<div class="srow"><span class="slbl">'+label+'</span>'+sdnCertBadge(badge)+'</div><div style="font-size:12px;color:var(--muted);margin:-4px 0 8px">'+
+      '<b>'+r.n+' of '+r.M+'</b> '+kind+' surface item(s) have a 902.3 top height (28-34 in); 226.1 needs at least <b>'+r.required+'</b> (5%)'+
+      (r.unknown?' &middot; '+r.unknown+' without a recorded height':'')+'</div>';
+  };
+  el.innerHTML=line('dining','Dining surfaces')+line('work','Work surfaces')+
+    '<div style="font-size:12px;color:var(--muted)">Counted per spec ITEM; 226.1 counts seating spaces, and a compliant height is necessary, not sufficient (902.2 clear floor space and 306 knee clearance are not modelled).'+
+    (undeclared?' '+undeclared+' item(s) on this project have no surface answer.':'')+'</div>';
 }
 
 var complianceCheckSeq=0;
@@ -2308,6 +2374,7 @@ function rSpec(){
     $('s-budget-sub').className='kt'+(over?' d':'');
   }else{$('s-budget-sub').textContent='No budget set on this project';$('s-budget-sub').className='kt';}
   $('s-markup').textContent=avgMarkup+'%';
+  sdnRenderAda(pj,list);
   $('s-ooak').textContent=ooakCount;
   var tb=$('stbody');
   tb.innerHTML=list.length?list.map(function(s){
@@ -2696,7 +2763,7 @@ async function sdnReassignClient(id,newEmployeeId){
 }
 function openProjectModal(){
   pjeid=null;fillProjectSelects();
-  $('pjname').value='';$('pjbudget').value='';$('pjtarget').value='';$('pjnotes').value='';$('pjstatus').value='Planning';
+  $('pjname').value='';$('pjbudget').value='';$('pjtarget').value='';$('pjnotes').value='';$('pjstatus').value='Planning';$('pjocc').value='';
   $('projectmodal').classList.add('on');
   if(typeof installSdnVoiceInputTargets==='function')installSdnVoiceInputTargets();
 }
@@ -2705,7 +2772,7 @@ function editProject(id){
   var p=projects().find(function(x){return x.id===id;});if(!p)return;
   pjeid=id;fillProjectSelects();
   $('pjclient').value=p.client_id;$('pjname').value=p.name;$('pjbudget').value=p.budget;
-  $('pjtarget').value=p.target_install_date;$('pjstatus').value=p.status;$('pjnotes').value=p.notes||'';
+  $('pjtarget').value=p.target_install_date;$('pjstatus').value=p.status;$('pjnotes').value=p.notes||'';$('pjocc').value=p.occupancy||'';
   $('projectmodal').classList.add('on');
   if(typeof installSdnVoiceInputTargets==='function')installSdnVoiceInputTargets();
 }
@@ -2714,7 +2781,8 @@ async function saveProject(){
   if(!name){toast('Project name required');return;}
   if(!clients().length){toast('Add a client first');return;}
   var rec={id:pjeid||newId('PJ'),client_id:$('pjclient').value,name:name,budget:Number($('pjbudget').value)||0,
-    target_install_date:$('pjtarget').value,status:$('pjstatus').value,notes:$('pjnotes').value.trim(),created_at:sdnLocalToday()};
+    target_install_date:$('pjtarget').value,status:$('pjstatus').value,notes:$('pjnotes').value.trim(),created_at:sdnLocalToday(),
+    occupancy:$('pjocc').value};
   var list=projects();
   if(pjeid){list=list.map(function(x){return x.id===pjeid?rec:x;});}else{list.push(rec);}
   st('sdn_projects',list);
