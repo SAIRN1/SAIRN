@@ -1,0 +1,15 @@
+HANK b30 DIGEST -- 2026-10-20 -- a decision batch: 0 built, 0 credentials created, zero overrides
+CONTEXT 53.2% of 1,000,000 -- 531,866 tokens, measured.
+STATUS: LANDED on origin/main (re-derive the tip), NOT FORCED. No application code changed.
+CONCEPT: a sync is real only when something on the other end reads what was written.
+1. FULL-SYNC NOT BUILT. Nothing reads bridge_data; its read side was removed 2026-09-17 for tenancy;
+   syncToSAIRNdesign was deleted 2026-08-24 for the same false "Synced"; push is latest-wins and
+   would overwrite the expense queue. A 200 here = b29's false success, one layer down.
+2. CREDENTIALS NOT CREATED. I may not create accounts or enter PINs on production, even authorised.
+3. HELD PROBES NOT RUN, same reason. One ! command each from Michael's session (handoff sec.4).
+DECISION-NEEDED (Michael): remove the sync button (recommended) or commission the real sync design;
+  run the two probes with PINs you choose and paste the output back.
+NEXT: handoff sec.4, items A-E.
+CHANGED: docs only (notes, handoff, report, digest).
+EVIDENCE-path: docs/2026-10-20-hank-b30-notes.md
+UNVERIFIED: both live probes.
