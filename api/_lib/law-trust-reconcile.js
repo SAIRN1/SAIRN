@@ -19,23 +19,38 @@
 //    genuinely independent per-entity attribution, NOT JUST A THIRD TOTAL
 //    COMPUTED THE SAME WAY AS THE OTHER TWO."
 //
-// ── WHAT THE CLIENT ALREADY DOES, AND WHY IT IS NOT THIS ───────────────────
-// sairnlaw.html:3134 `reconcileTrust()` already compares three figures. Read
-// closely, one of its legs cannot fail:
+// ── WHAT THE CLIENT USED TO DO, AND WHY IT WAS NOT THIS ────────────────────
+// PAST TENSE AS OF 2026-10-20 (b24), AND THE TENSE IS THE FIX. This passage
+// read "sairnlaw.html:3134 `reconcileTrust()` ALREADY COMPARES three figures"
+// -- present tense, naming a function that NO LONGER EXISTS and a line number
+// that now points at an unrelated toast. `reconcileTrust()` was deleted when
+// the client was repointed at this module; sairnlaw.html:3287 carries the note
+// recording that, and the rename was deliberate so a missed caller would throw
+// a ReferenceError instead of quietly reading a `matches` that was true when
+// nothing had been compared.
+//
+// IT IS REWRITTEN RATHER THAN DELETED because the dissection below is the
+// whole argument for this file existing, and a reader who cannot find the
+// function it dissects concludes the argument is about code that is not there
+// -- which is worse than either the old text or no text. What follows is what
+// that function DID. Read closely, one of its legs could not fail:
 //
 //   clientIds = unique(tx.map(t => t.client_id))        // includes undefined
 //   clientSum = sum over those ids of clientLedgerBalance(id, tx)
 //
-// Every row belongs to exactly one of those groups -- INCLUDING the rows with
-// no client_id, which form the `undefined` group and are summed like any
-// other. So `clientSum` PARTITIONS THE SAME ARRAY `ledgerBal` sums whole, and
-// the two are equal by arithmetic. `ledgerVsClient` is a tautology that can
-// only be disturbed by float summation order. That is precisely "a third total
-// computed the same way as the other two".
+// Every row belonged to exactly one of those groups -- INCLUDING the rows with
+// no client_id, which formed the `undefined` group and were summed like any
+// other. So `clientSum` PARTITIONED THE SAME ARRAY `ledgerBal` summed whole,
+// and the two were equal by arithmetic. `ledgerVsClient` was a tautology that
+// could only be disturbed by float summation order. That is precisely "a third
+// total computed the same way as the other two".
 //
-// It is also CLIENT-SIDE, over ONE DEVICE'S localStorage. A device that has
-// been offline, or whose writes returned "saved on this device only", will
-// reconcile its own partial view and report agreement.
+// It was also CLIENT-SIDE, over ONE DEVICE'S localStorage. A device that has
+// been offline, or whose writes returned "saved on this device only", would
+// reconcile its own partial view and report agreement. THAT HALF IS STILL
+// LIVE: `trustLedgerBalance()` and `clientLedgerBalance()` are still at
+// sairnlaw.html:3281 and :3284 and still read one device's store. What was
+// removed is the VERDICT they fed, not the arithmetic.
 //
 // ── SO THE INDEPENDENT LEGS HERE ARE THESE, AND THEY REALLY ARE INDEPENDENT ─
 //   SERVER  the law_trusttx rows this licence actually holds server-side
@@ -49,13 +64,13 @@
 // the only leg that can catch a sync divergence, and this file says which kind
 // each leg is rather than calling them all "independent".
 //
-// ── AND THE AS-OF BUG, WHICH IS THE REAL DEFECT IN THE EXISTING CHECK ───────
-// `reconcileTrust()` compares an ALL-TIME ledger balance against a bank
-// balance that is true AS OF ONE DATE. Any deposit or disbursement recorded
-// after the statement date makes them differ -- correctly, and the check
-// reports it as a mismatch. A reconciliation that cannot distinguish "the
-// books are wrong" from "three cheques cleared since Tuesday" is one nobody
-// acts on, and an alarm nobody acts on is one that gets turned off.
+// ── AND THE AS-OF BUG, WHICH WAS THE REAL DEFECT IN THE CHECK IT REPLACED ───
+// `reconcileTrust()` COMPARED an ALL-TIME ledger balance against a bank
+// balance true AS OF ONE DATE. Any deposit or disbursement recorded after the
+// statement date made them differ -- correctly, and the check reported it as a
+// mismatch. A reconciliation that cannot distinguish "the books are wrong"
+// from "three cheques cleared since Tuesday" is one nobody acts on, and an
+// alarm nobody acts on is one that gets turned off.
 //
 // So the bank leg here compares the ledger AS OF THE STATEMENT DATE, and
 // reports the post-statement movement separately as its own figure.
