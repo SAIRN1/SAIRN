@@ -28,7 +28,9 @@ and verified.
 
 | | |
 |---|---|
-| commits | **seven**, on `main`. §7 records the push |
+| commits | **ONE, squashed, and PUSHED.** `b27(cody): rt_routes made reachable, three routed role changes, and three routings that were incomplete` |
+| pushed | **LANDED AND VERIFIED BY READING THE REMOTE**, not by the push's exit: remote tip `864e6b764909`, the commit proved an ANCESTOR of it by `git merge-base --is-ancestor`, and four files (`SAIRN-handoff-cody-b27.md`, `api/b27-leg-settings.test.js`, the batch document, `docs/b27-logs/ablate_b27.py`) read back off the remote tree. `0 ahead, 0 behind`. **PUSHED WITHOUT --force** |
+| why squashed | **TWO DEFECTS IN MY OWN PUSH LOOP, not in the content.** (1) It ran `git add -A` on an UNMERGED `docs/defect-density-register.json` and committed **15 CONFLICT MARKERS** into a 34,000-line JSON register every gate parses -- `git add` is how you RESOLVE a conflict, so it cannot tell "resolved" from "never looked". (2) Its rebases produced **duplicate-subject** bookkeeping commits and the gate refused them out loud: *"a commit in this push wears a message ANOTHER commit already used, on a completely different set of files."* Squashing removes every such commit from history. The pre-squash branches are kept at `b27-backup` and `b27-backup2` |
 | claim | `platform`, taken **BEFORE any work** with a FILES list. **STILL HELD** as this is written — released with the report |
 | overrides | **NONE.** No `SAIRN_SKIP`, no `SAIRN_GATE_EXEMPT`, no `SAIRN_SEED_GATE`, no call to `tools/gate_skip.py` |
 | boundaries honoured | **`tools/` not touched** (cc's) — five were RUN. **`api/bridge.js` and `api/*-countersign.js` not touched** (hank's). **No `.html` file touched** (fourth's) — two were READ. **`api/_lib/leg-roles.js` DROPPED from the claim** on a real block. **`docs/CRITICALITY-TIERS.md` not touched** — fourth holds it |
@@ -196,24 +198,51 @@ a measured reason.
 
 ---
 
-## 7. The push
+## 7. The push -- FIVE GATES REFUSED AND ALL FIVE WERE SATISFIED AT CAUSE
 
-Recorded in full in `SAIRN-report-cody-b27.txt`. Three other clones push this
-trunk and the gate suite takes ~90s, so the loop in
-`<scratch>/push27.sh` retries, **committing every hook-written file on every
-round and stashing none** — those rows are keyed per COMMIT, so a stash held
-across a rebase keys them to shas that no longer exist.
+**NOTHING WAS OVERRIDDEN. No `SAIRN_SKIP`, no `SAIRN_GATE_EXEMPT`, no
+`SAIRN_SEED_GATE`, no call to `tools/gate_skip.py`.**
 
----
+1. **`register-feed`** -- the rt_routes fix closed a defect and no record cited
+   it. **Record WRITTEN**, not skipped: `PLATFORM / product / HIGH /
+   probe-control`, rule 1.11, injection `f4208738e`, three contributing
+   factors, `recurrence_open` naming the `shared.js` half (cc's) and the absent
+   live check.
+2. **`path-scope`** -- 14 of 18 paths FOREIGN, because the populations split
+   gives all of `api/` to hank and all of `docs/` to fourth. **Michael's
+   assignment DECLARED** in `docs/sairn-path-manifest.json`'s
+   `assigned_overrides` as **nine exact paths, never a prefix**, scoped to b27
+   and saying so. **That file arrived CONFLICTED and was resolved as a UNION**
+   -- hank's b23 added the first two entries this key has ever carried, in the
+   same window, and a conflict in an *ownership manifest* must not silently
+   drop one side's permission.
+3. **A named GUARD test** -- `tests/role_maps_have_no_prototype.js` refused my
+   `const LEG_SETTINGS_SENSITIVE_ROLES = { apprentice: true, livery: true }`.
+   **A real catch**: an inherited name indexes truthy on a plain literal. It
+   was inert here (`=== true`) and that is the guard's whole point -- all 48
+   literals it was built for were inert for a distant reason too. Now
+   `roleSet()`. **And fixing it broke my own arm H0**, which read that list off
+   source and matched only `= {`; both forms are read now. That pair is the
+   mechanism working.
+4. **`tier-a`** -- obligation opened in `docs/tier-a-reviews.json` naming what
+   to try to break, assigned to **cc** (the gate refuses a record whose
+   reviewer is its own author).
+5. **`derived-docs`** -- `MASTER-PLAN.md` and `traceability-matrix.md`
+   regenerated with the gate's own fix line.
 
-## 8. Scratch and transcript
+**ONE THING IS UNCOMMITTED AND IT IS RECORDED RATHER THAN HIDDEN:**
+`docs/scrutiny-flags.json` carries the push gate's own last scrutiny row,
+written after the successful push. It is the gate's bookkeeping, not content,
+and the gate regenerates it on the next push, so it was NOT worth re-entering a
+contention loop for. **Say so rather than let a dirty tree look like an
+oversight.**## 8. Scratch and transcript
 
 **Transcript:**
 `C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-cody\f979712d-5568-4f2c-90db-611d70cdc27b.jsonl`
-— 5,428,474 bytes. **This session carries b26 AND b27**; b27 begins at the
+— 5.4 MB+. **This session carries b26 AND b27**; b27 begins at the
 fresh-start paste naming the six items.
 
-**REAL MEASURED CONTEXT: `CONTEXT 82.2% of 1,000,000 -- 822,170 tokens,
+**REAL MEASURED CONTEXT: `CONTEXT 92.0% of 1,000,000 -- 919,859 tokens,
 measured.`** Pasted exactly as `python tools/context_verify.py --digest-line`
 printed it, which is the only form the push gate accepts.
 
