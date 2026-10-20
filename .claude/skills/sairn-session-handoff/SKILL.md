@@ -1,6 +1,6 @@
 ---
 name: sairn-session-handoff
-description: 'How to write a SAIRN session handoff, codified from what actually worked across three real handoffs (65, 66, 67) rather than adopted wholesale from any single external source. Naming is APP-DATE-SUBJECT as of 2026-08-23 (the old app+counter scheme collided in production — see Naming convention), and a handoff is not considered written until it is committed in the same action. Trigger before capacity runs low, before a known stopping point, or any time a session needs to hand off to a fresh one.'
+description: 'How to write a SAIRN session handoff, codified from what actually worked across three real handoffs (65, 66, 67) rather than adopted wholesale from any single external source. Naming is SAIRN-handoff-<session>-b<N>.md as of 2026-10-20 (a per-SESSION counter has one writer; the 2026-08-23 APP-DATE-SUBJECT scheme did not take -- see Naming convention), and a handoff is not considered written until it is committed in the same action. Trigger before capacity runs low, before a known stopping point, or any time a session needs to hand off to a fresh one.'
 ---
 
 # SAIRN Session Handoff
@@ -12,9 +12,30 @@ Two genuinely good mechanical ideas borrowed from the upstream skill, kept:
 1. **Automated triggering** — a SessionStart hook that reminds a fresh session to read the latest handoff before touching anything, and a SessionEnd hook that prompts writing one if capacity is running low. (Add to `.claude/settings.json` if not already present — mechanical trigger, not just a remembered habit.)
 2. **A redaction check before saving** — given tonight involved a real GitHub PAT and could easily have involved Stripe keys in a handoff doc, scan for anything credential-shaped before writing the file, same category of check as Guardian's "no API keys in HTML."
 
-## Naming convention — CORRECTED 2026-08-23 (supersedes the 2026-07-26 resolution)
+## Naming convention — CORRECTED 2026-10-20 (supersedes the 2026-08-23 correction below)
 
-**Use `APP-YYYY-MM-DD-subject-handoff.md`.** Examples:
+**Use `SAIRN-handoff-<session>-b<N>.md`** — e.g. `SAIRN-handoff-cc-b31.md`.
+It is what every batch dispatch asks for by name, and what the build sessions
+actually write: **103 of the 157 handoff files in the repo root**, measured
+2026-10-20 (cc b31). Only 8 follow the 2026-08-23 `APP-YYYY-MM-DD-subject`
+scheme, and that share was falling by about three files a day (cody b30:
+80 → 83 → 86 non-conforming across three batches). **Michael's b29 decision:
+record the practice, do not rename the old files.**
+
+**Why a counter is safe now when it was the root cause in August.** The
+collision below was two sessions sharing ONE counter (`SAIRNLAW-SESSION6`
+written twice, by different clones). Here the counter is scoped to a SESSION
+prefix, and each prefix has exactly one writer — the clone that owns it. The
+coordination the August text said was unenforceable is not needed, because
+nobody else increments `cc`'s `N`.
+
+**Reading:** take the highest `N` within your own session's prefix, **compared
+as a number** (`b9` < `b28`; a lexical sort reverses them), then confirm the
+subject matches the work you were sent to do, exactly as below.
+
+### The 2026-08-23 correction, kept for the record
+
+**It said: use `APP-YYYY-MM-DD-subject-handoff.md`.** Examples:
 
 ```
 SAIRNLAW-2026-08-23-lemaj-handoff.md
@@ -34,7 +55,7 @@ The 2026-07-26 resolution (below, kept for the record) settled on a **per-app pr
 
 This is the **second** recorded instance of this failure class (the first is the `sairn_handoff_naming_correction` memory: STONEDESK numbering at 78 vs SAIRN-PLATFORM at 2, "re-derive latest, don't assume"). Treat a third as evidence the convention is still wrong, not that someone was careless.
 
-### Consequences for reading handoffs
+### Consequences for reading handoffs (2026-08-23 text -- SUPERSEDED for `SAIRN-handoff-<session>-b<N>.md`, where the highest `N` in your own prefix IS the latest; see the top of this section)
 
 Do **not** find the latest handoff by taking the highest `N`. Sort by the date in the filename, and confirm the subject matches the work you were actually sent to do. If the content does not match the task you were given, say so immediately rather than proceeding on the wrong document.
 
@@ -78,7 +99,7 @@ These are four independent **clones**, not `git worktree` checkouts of one repo 
 
 ## The Template (proven across Sessions 65-67)
 
-Save as `APP-YYYY-MM-DD-subject-handoff.md`, in a real clone, committed in the same action.
+Save as `SAIRN-handoff-<session>-b<N>.md`, in a real clone, committed in the same action.
 
 # APP — Handoff, YYYY-MM-DD (subject)
 

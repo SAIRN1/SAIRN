@@ -642,6 +642,129 @@ def selftest():
     return 1 if bad else 0
 
 
+def _save_drafts(out, argv):
+    """Write every draft and RETURN the lines to report, printing nothing.
+
+    THE WRITE MUST NOT DEPEND ON ANYBODY READING THE REPORT (cc b31). The save
+    used to run AFTER the full render was printed, so a reader that closed
+    stdout early -- `| head`, a pager quit -- raised BrokenPipeError inside the
+    render and the process died before a single draft was written. Measured:
+    eight paths piped through `head -3` saved 0 of 8, and cc b30 recorded that
+    as "a multi-path --save writes nothing", which was the pipe, not the
+    loop. Writing first means a closed pipe can only lose the printout."""
+    said = []
+
+    def _say(*a, **k):
+        said.append(' '.join(str(x) for x in a))
+
+    if not os.path.isdir(FMEA_DIR):
+        os.makedirs(FMEA_DIR)
+    for a in out:
+        if a.get('refused'):
+            # A refused target must not leave an empty draft behind: it
+            # would inflate drafts_on_disk in the prediction check and make
+            # coverage look better than it is.
+            _say('\nNOT saved (%s): %s' % (a['target'], a['refused']))
+            continue
+        slug = a['target'].replace('/', '_').replace('\\', '_')
+        p = os.path.join(FMEA_DIR, slug + '.json')
+        # ── drafted_on, added 2026-09-13, AND IT IS NOT COSMETIC ────────
+        # tools/fmea_prediction_check.py needs to know a draft was written
+        # BEFORE the defect it claims to predict. Without this field it
+        # falls back to "the newest defect the draft cites", which is only
+        # a LOWER bound -- and its own comment says so. The first run that
+        # ever had drafts on disk immediately scored one PREDICTION that
+        # was a BACKDATING ARTEFACT: a draft saved today, citing a defect
+        # from today, matching that same defect. A risk tool scoring itself
+        # right on a defect that had already happened is the fabrication
+        # shape fmea_draft.py's own docstring is written against, arriving
+        # through the TIMESTAMP instead of through the generator.
+        # ── A PREDICTION RECORD MUST BE APPEND-ONLY (b16) ───────────────
+        # `--save` OVERWROTE an existing draft, and that is how a negative
+        # result gets laundered. tools/fmea_prediction_check.py buckets a
+        # defect as MISSED when a draft for its file predates it and named
+        # nothing like it, and as DRAFT NEWER -- unscoreable BY
+        # CONSTRUCTION -- when the only draft postdates it. So replacing a
+        # dated draft with a fresh one silently converts every MISSED
+        # verdict against it into an unscoreable one.
+        #
+        # MEASURED ON THE REAL CASE: sairnsenior.html carries a draft dated
+        # 2026-09-14 and FIFTEEN defects landed in that file afterwards,
+        # none predicted. A bare `--save` would have turned fifteen honest
+        # MISSES into fifteen "needs time", improved the headline, and
+        # changed nothing about the prediction. That is the 38%-from-false-
+        # positives shape this file's own docstring is written against,
+        # arriving through the FILENAME instead of the matcher.
+        #
+        # So an existing draft is REFUSED unless --supersede is given, and
+        # --supersede KEEPS it: it is renamed to
+        # <slug>.superseded-<drafted_on>.json, which load_drafts() still
+        # reads (it globs every *.json and keys on the `target` field), so
+        # the old draft goes on covering the defects it was contemporary
+        # with while the new one covers what happens next. Both verdicts
+        # stay derivable, which is the only reason a re-draft is honest.
+        if os.path.isfile(p) and '--supersede' not in argv:
+            try:
+                _old = json.load(io.open(p, encoding='utf-8'))
+                _when = _old.get('drafted_on') or '(no drafted_on)'
+                _nr = len(_old.get('risks') or [])
+            except Exception:                                # noqa: BLE001
+                _when, _nr = '(unreadable)', 0
+            _say('\nNOT SAVED (%s): a draft already exists, dated %s with '
+                  '%d risk(s).' % (a['target'], _when, _nr))
+            _say('  Overwriting it would convert every MISSED verdict '
+                  'against it into')
+            _say('  "DRAFT NEWER -- unscoreable", which improves the '
+                  'headline and predicts')
+            _say('  nothing. Pass --supersede to keep the old draft '
+                  'beside the new one:')
+            _say('      python tools/fmea_draft.py %s --save --supersede'
+                  % a['target'])
+            continue
+        if os.path.isfile(p):
+            try:
+                _old = json.load(io.open(p, encoding='utf-8'))
+                _when = _old.get('drafted_on') or 'undated'
+            except Exception:                                # noqa: BLE001
+                _when = 'unreadable'
+            _keep = os.path.join(FMEA_DIR,
+                                 '%s.superseded-%s.json' % (slug, _when))
+            _n = 1
+            while os.path.isfile(_keep):
+                _keep = os.path.join(
+                    FMEA_DIR, '%s.superseded-%s.%d.json' % (slug, _when, _n))
+                _n += 1
+            os.rename(p, _keep)
+            _say('\nKEPT the previous draft as %s'
+                  % os.path.relpath(_keep, REPO).replace(os.sep, '/'))
+            _say('  It stays LIVE in tools/fmea_prediction_check.py, which '
+                  'globs every')
+            _say('  *.json and keys on the `target` field -- so it goes on '
+                  'covering the')
+            _say('  defects it was contemporary with, and the new draft '
+                  'covers what')
+            _say('  happens next. A superseded prediction is not a deleted '
+                  'one.')
+        a['drafted_on'] = _today()
+        # ONE TARGET THAT CANNOT BE WRITTEN MUST NOT TAKE THE REST WITH IT
+        # (cc b31). An OSError here used to propagate out of the loop, so a
+        # single bad path -- measured: a trailing \r on a name read from a
+        # CRLF list -- left every later draft in the batch unwritten and the
+        # run exiting on a traceback. It is reported as NOT saved, by name,
+        # and the loop goes on.
+        try:
+            io.open(p, 'w', encoding='utf-8', newline='\n').write(
+                json.dumps(a, indent=1, sort_keys=True))
+        except OSError as e:
+            _say('\nNOT saved (%s): could not write %s -- %s'
+                 % (a['target'], os.path.relpath(p, REPO).replace(os.sep, '/'), e))
+            continue
+        _say('\nsaved %s' % os.path.relpath(p, REPO).replace(os.sep, '/'))
+    _say('A SAVED DRAFT IS A PREDICTION. tools/fmea_prediction_check.py '
+          'scores it against what actually went wrong.')
+    return said
+
+
 def main(argv):
     if '--selftest' in argv:
         return selftest()
@@ -689,106 +812,14 @@ def main(argv):
     titles = rule_titles()
 
     out = [analyse(p, records, titles) for p in paths]
+    said = _save_drafts(out, argv) if '--save' in argv else []
     if '--json' in argv:
         print(json.dumps(out, indent=1, sort_keys=True))
     else:
         print('\n\n'.join(render(a) for a in out))
 
-    if '--save' in argv:
-        if not os.path.isdir(FMEA_DIR):
-            os.makedirs(FMEA_DIR)
-        for a in out:
-            if a.get('refused'):
-                # A refused target must not leave an empty draft behind: it
-                # would inflate drafts_on_disk in the prediction check and make
-                # coverage look better than it is.
-                print('\nNOT saved (%s): %s' % (a['target'], a['refused']))
-                continue
-            slug = a['target'].replace('/', '_').replace('\\', '_')
-            p = os.path.join(FMEA_DIR, slug + '.json')
-            # ── drafted_on, added 2026-09-13, AND IT IS NOT COSMETIC ────────
-            # tools/fmea_prediction_check.py needs to know a draft was written
-            # BEFORE the defect it claims to predict. Without this field it
-            # falls back to "the newest defect the draft cites", which is only
-            # a LOWER bound -- and its own comment says so. The first run that
-            # ever had drafts on disk immediately scored one PREDICTION that
-            # was a BACKDATING ARTEFACT: a draft saved today, citing a defect
-            # from today, matching that same defect. A risk tool scoring itself
-            # right on a defect that had already happened is the fabrication
-            # shape fmea_draft.py's own docstring is written against, arriving
-            # through the TIMESTAMP instead of through the generator.
-            # ── A PREDICTION RECORD MUST BE APPEND-ONLY (b16) ───────────────
-            # `--save` OVERWROTE an existing draft, and that is how a negative
-            # result gets laundered. tools/fmea_prediction_check.py buckets a
-            # defect as MISSED when a draft for its file predates it and named
-            # nothing like it, and as DRAFT NEWER -- unscoreable BY
-            # CONSTRUCTION -- when the only draft postdates it. So replacing a
-            # dated draft with a fresh one silently converts every MISSED
-            # verdict against it into an unscoreable one.
-            #
-            # MEASURED ON THE REAL CASE: sairnsenior.html carries a draft dated
-            # 2026-09-14 and FIFTEEN defects landed in that file afterwards,
-            # none predicted. A bare `--save` would have turned fifteen honest
-            # MISSES into fifteen "needs time", improved the headline, and
-            # changed nothing about the prediction. That is the 38%-from-false-
-            # positives shape this file's own docstring is written against,
-            # arriving through the FILENAME instead of the matcher.
-            #
-            # So an existing draft is REFUSED unless --supersede is given, and
-            # --supersede KEEPS it: it is renamed to
-            # <slug>.superseded-<drafted_on>.json, which load_drafts() still
-            # reads (it globs every *.json and keys on the `target` field), so
-            # the old draft goes on covering the defects it was contemporary
-            # with while the new one covers what happens next. Both verdicts
-            # stay derivable, which is the only reason a re-draft is honest.
-            if os.path.isfile(p) and '--supersede' not in argv:
-                try:
-                    _old = json.load(io.open(p, encoding='utf-8'))
-                    _when = _old.get('drafted_on') or '(no drafted_on)'
-                    _nr = len(_old.get('risks') or [])
-                except Exception:                                # noqa: BLE001
-                    _when, _nr = '(unreadable)', 0
-                print('\nNOT SAVED (%s): a draft already exists, dated %s with '
-                      '%d risk(s).' % (a['target'], _when, _nr))
-                print('  Overwriting it would convert every MISSED verdict '
-                      'against it into')
-                print('  "DRAFT NEWER -- unscoreable", which improves the '
-                      'headline and predicts')
-                print('  nothing. Pass --supersede to keep the old draft '
-                      'beside the new one:')
-                print('      python tools/fmea_draft.py %s --save --supersede'
-                      % a['target'])
-                continue
-            if os.path.isfile(p):
-                try:
-                    _old = json.load(io.open(p, encoding='utf-8'))
-                    _when = _old.get('drafted_on') or 'undated'
-                except Exception:                                # noqa: BLE001
-                    _when = 'unreadable'
-                _keep = os.path.join(FMEA_DIR,
-                                     '%s.superseded-%s.json' % (slug, _when))
-                _n = 1
-                while os.path.isfile(_keep):
-                    _keep = os.path.join(
-                        FMEA_DIR, '%s.superseded-%s.%d.json' % (slug, _when, _n))
-                    _n += 1
-                os.rename(p, _keep)
-                print('\nKEPT the previous draft as %s'
-                      % os.path.relpath(_keep, REPO).replace(os.sep, '/'))
-                print('  It stays LIVE in tools/fmea_prediction_check.py, which '
-                      'globs every')
-                print('  *.json and keys on the `target` field -- so it goes on '
-                      'covering the')
-                print('  defects it was contemporary with, and the new draft '
-                      'covers what')
-                print('  happens next. A superseded prediction is not a deleted '
-                      'one.')
-            a['drafted_on'] = _today()
-            io.open(p, 'w', encoding='utf-8', newline='\n').write(
-                json.dumps(a, indent=1, sort_keys=True))
-            print('\nsaved %s' % os.path.relpath(p, REPO).replace(os.sep, '/'))
-        print('A SAVED DRAFT IS A PREDICTION. tools/fmea_prediction_check.py '
-              'scores it against what actually went wrong.')
+    for line in said:
+        print(line)
     return 0
 
 

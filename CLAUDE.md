@@ -29,11 +29,17 @@ piecemeal before being named: **PR §1.11**.
 
 1. **Read the most recent handoff.** This file is static and only reflects what
    was true when last edited; the handoff carries the latest verified state.
-   Find it by **DATE**, not by a counter — handoffs are named
-   `APP-YYYY-MM-DD-subject-handoff.md`. Sort by the date in the filename, then
-   **confirm the subject matches the work you were actually sent to do**; if it
-   does not, say so immediately rather than proceeding on the wrong document.
-   (Why not a counter: PR §6.)
+   Handoffs are named **`SAIRN-handoff-<session>-b<N>.md`** — the name every
+   batch dispatch asks for, and 103 of the 157 handoff files in the repo root
+   (measured 2026-10-20, cc b31; the rest are the older `APP-SESSION-N` and
+   `APP-YYYY-MM-DD-subject` schemes, kept unrenamed by Michael's b29
+   decision). Take the **highest `N` within your own session's prefix,
+   compared as a NUMBER** (`b9` < `b28`; a plain text sort gets that
+   backwards), then **confirm the subject matches the work you were actually
+   sent to do**; if it does not, say so immediately rather than proceeding on
+   the wrong document. A counter is safe here where it was not in 2026-07/08
+   (PR §6) because it is per SESSION: one clone writes each prefix, so there is
+   exactly one writer per counter.
 2. **`grep` all four `SAIRN-ACTIVE-WORK-*.md` files** for the app or subject you
    were sent at. Not for write conflicts — for *"is somebody already doing
    this."*

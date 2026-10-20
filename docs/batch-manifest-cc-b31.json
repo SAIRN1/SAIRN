@@ -1,0 +1,50 @@
+{
+  "_what_this_is": "The batch manifest. CHAT WRITES THE IDS AND THEY ARE IMMUTABLE; the agent may only move `status` and add `evidence`. `id_lock` is a hash over the ordered id list and `batch_manifest.py --check` refuses a manifest whose ids have been renumbered, duplicated, added to or removed.",
+  "agent": "cc",
+  "batch": "b31",
+  "id_lock": "e0b39f746415767d",
+  "items": [
+    {
+      "id": 1,
+      "title": "Resolve and discharge the Tier A obligation b30 called hank 10-16",
+      "status": "done",
+      "evidence": "docs/tier-a-reviews.json record hank 2026-10-16T13:03:47Z; docs/2026-10-20-cc-b31-notes.md section 1"
+    },
+    {
+      "id": 2,
+      "title": "FMEA drafts toward 745; fix multi-path --save",
+      "status": "done",
+      "evidence": "tools/fmea_draft.py _save_drafts; docs/fmea/ (720 new); python tools/fmea_draft.py --selftest; notes section 4"
+    },
+    {
+      "id": 3,
+      "title": "CLAUDE.md:33 handoff convention vs practice",
+      "status": "done",
+      "evidence": "CLAUDE.md step 1; .claude/skills/sairn-session-handoff/SKILL.md; notes section 5"
+    },
+    {
+      "id": 4,
+      "title": "Tier A cap-per-action: run the five attack points, 700 B/stop and job_ref",
+      "status": "done",
+      "evidence": "docs/tier-a-reviews.json record cody 2026-10-20T11:47:22Z; notes section 2"
+    },
+    {
+      "id": 5,
+      "title": "Tier A sc_claims/sc_dme (test-only) discharge",
+      "status": "done",
+      "evidence": "docs/tier-a-reviews.json record cody 2026-10-20T13:03:28Z; notes section 3"
+    },
+    {
+      "id": 6,
+      "title": "One-line concept before new logic",
+      "status": "done",
+      "evidence": "docs/2026-10-20-cc-b31-notes.md sections 1, 2, 4 (concept lines)"
+    },
+    {
+      "id": 7,
+      "title": "Push, no force, confirm landed",
+      "status": "open",
+      "evidence": ""
+    }
+  ]
+}
